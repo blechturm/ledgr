@@ -3,17 +3,37 @@ config_hash <- function(config) {
 }
 
 config_hash_payload <- function(config) {
+  if (!identical(config$identity_rule_version, ledgr_identity_rule_version)) {
+    rlang::abort(
+      "Config identity_rule_version must equal 2.",
+      class = "ledgr_invalid_config"
+    )
+  }
+  snapshot_hash <- config$data$snapshot_hash
+  if (!is.character(snapshot_hash) || length(snapshot_hash) != 1L ||
+      is.na(snapshot_hash) || !nzchar(snapshot_hash)) {
+    rlang::abort(
+      "Config field data.snapshot_hash must be a non-empty character scalar.",
+      class = "ledgr_invalid_config"
+    )
+  }
+  if (!is.list(config$risk_chain) ||
+      is.null(config$risk_chain$risk_chain_hash) ||
+      is.null(config$risk_chain$risk_plan_json)) {
+    rlang::abort(
+      "Config field risk_chain must contain current risk identity.",
+      class = "ledgr_invalid_config"
+    )
+  }
   payload <- unclass(config)
-  payload <- ledgr_config_normalize_risk_identity(payload)
   payload$db_path <- NULL
   payload$run_id <- NULL
   payload$alias_map_order <- NULL
   payload$sweep_retention <- NULL
   if (is.list(payload$data)) {
     payload$data$snapshot_db_path <- NULL
-    # Identity rule 2 binds the sealed content hash, not the store-local
-    # snapshot ID (LDG-3004). A config without the field keeps rule 1.
-    if (identical(ledgr_config_identity_rule(payload), 2L)) payload$data$snapshot_id <- NULL
+    # Identity rule 2 binds the sealed content hash, not the store-local ID.
+    payload$data$snapshot_id <- NULL
   }
   if (is.list(payload$sweep)) {
     payload$sweep$sweep_retention <- NULL
@@ -40,27 +60,5 @@ config_hash_payload <- function(config) {
 }
 
 
-# Run and session identity rules. Rule 1 hashed the store-local snapshot ID;
-# rule 2 hashes the sealed snapshot content hash instead (LDG-3004). Stored
-# runs keep the rule they were recorded under and stay readable.
+# Run and session identity bind the sealed snapshot content hash.
 ledgr_identity_rule_version <- 2L
-
-ledgr_config_identity_rule <- function(config) {
-  version <- config$identity_rule_version
-  if (is.null(version)) return(1L)
-  as.integer(version)
-}
-
-# A run recorded under an earlier identity rule is inspection-only: resuming
-# it under the current rule would hash differently. (A walk-forward rerun of a
-# rule-1 session forks into a new session instead.)
-ledgr_identity_rule_retired_abort <- function(subject, rule) {
-  rlang::abort(
-    paste0(
-      subject, " was recorded under identity rule ", rule, ", which bound the store-local snapshot ID. ",
-      "It remains readable, but cannot be resumed under identity rule ", ledgr_identity_rule_version,
-      ", which binds the snapshot content hash. Start a new run_id."
-    ),
-    class = c("ledgr_identity_rule_retired", "ledgr_run_hash_mismatch")
-  )
-}

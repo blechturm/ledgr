@@ -29,6 +29,43 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-14 [ux] Compress the conceptual surface without erasing semantics
+
+Ledgr's concepts are individually defensible, but the ordinary research path
+still exposes too many neighboring distinctions at once. The future design
+question is not whether backtesting can be made simple; it is whether ledgr can
+teach a small progressive model while keeping the deeper state explicit for
+researchers who need it.
+
+The likely compression points are:
+
+- indicators and features: present identity, validity and gap behavior as the
+  primary model instead of making users assemble IDs, aliases, maps, bundles,
+  warmup and implementation form in their heads;
+- historical data: put causal cutoff, time axis, missingness, hydration and
+  identity-preserving frame/matrix conversion behind one coherent history
+  surface;
+- universe state: provide an intuitive default for estimation eligibility
+  while preserving the real distinctions among membership, lifetime activity,
+  tradability, observability, admissibility and already-held instruments;
+- strategy decisions: teach signal -> selection -> weights -> target ->
+  execution as one ladder, with an explicit opt-in path for retaining upstream
+  research evidence;
+- identity and persistence: let users experience one promise -- the same
+  declared data and experiment produce the same identified result -- while
+  hashes, fingerprints and format versions remain explainable internals;
+- scheduling: express when a strategy acts in experiment setup rather than as
+  repeated timestamp control flow inside callbacks; and
+- maintenance: use fold-core consolidation to collapse duplicate semantic
+  tests and review concepts without weakening their oracles.
+
+Do not create a universal facade merely to reduce vocabulary. Test this after
+the accepted history surface, scheduling direction and fold-core consolidation
+exist, using real strategy articles and research methods. A useful compression
+removes repeated explanation or boilerplate across several workflows while
+retaining the underlying contract boundaries and an escape hatch for advanced
+inspection. This entry authorizes no API, deprecation, RFC or release scope.
+
 ### 2026-10-13 [adapters] Exchange archives as a free, survivorship-complete real-data source
 
 ledgr has no users (maintainer, 2026-10-13), and a newcomer cannot reproduce a

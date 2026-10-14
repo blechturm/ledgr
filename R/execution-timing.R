@@ -1,6 +1,4 @@
-ledgr_availability_execution_timing_version <- function() {
-  2L
-}
+ledgr_availability_execution_timing_rule_version <- 2L
 
 ledgr_execution_timing_provenance <- function(config) {
   unknown <- function(source = "unknown_config") {
@@ -41,17 +39,14 @@ ledgr_execution_timing_provenance <- function(config) {
   }
 
   version <- availability$execution_timing_version
-  if (is.null(version)) {
-    return(list(
-      execution_timing_version = 1L,
-      execution_timing_convention = "availability_close_v1",
-      execution_timing_source = "legacy_config_inference"
-    ))
-  }
   if (is.numeric(version) && length(version) == 1L && !is.na(version) &&
-      is.finite(version) && identical(as.integer(version), 2L) && version == 2) {
+      is.finite(version) &&
+      identical(
+        as.integer(version),
+        ledgr_availability_execution_timing_rule_version
+      ) && version == ledgr_availability_execution_timing_rule_version) {
     return(list(
-      execution_timing_version = 2L,
+      execution_timing_version = ledgr_availability_execution_timing_rule_version,
       execution_timing_convention = "availability_open_v2",
       execution_timing_source = "recorded_config"
     ))
@@ -71,13 +66,13 @@ ledgr_execution_timing_from_json <- function(config_json) {
 ledgr_execution_timing_require_current <- function(config) {
   if (!ledgr_availability_config_active(config)) return(invisible(TRUE))
   timing <- ledgr_execution_timing_provenance(config)
-  if (!identical(timing$execution_timing_version, ledgr_availability_execution_timing_version())) {
+  if (!identical(
+    timing$execution_timing_version,
+    ledgr_availability_execution_timing_rule_version
+  )) {
     rlang::abort(
-      paste0(
-        "Availability-aware execution requires the current execution timing version; ",
-        "legacy or unknown timing configs are inspection-only."
-      ),
-      class = c("ledgr_execution_timing_version_mismatch", "ledgr_run_hash_mismatch")
+      "Availability-aware execution requires execution timing version 2.",
+      class = "ledgr_invalid_config"
     )
   }
   invisible(TRUE)
@@ -137,7 +132,7 @@ ledgr_fill_recording_pulses_from_evidence <- function(fills,
   if (identical(timing$execution_timing_convention, "dense_bar_timestamp")) {
     return(as.POSIXct(fills$ts_utc, tz = "UTC"))
   }
-  if (!timing$execution_timing_convention %in% c("availability_close_v1", "availability_open_v2") ||
+  if (!identical(timing$execution_timing_convention, "availability_open_v2") ||
       !is.data.frame(diagnostics) || nrow(diagnostics) == 0L ||
       !is.data.frame(sessions) || nrow(sessions) == 0L) {
     return(unavailable)
@@ -193,7 +188,10 @@ ledgr_fill_recording_pulses_from_evidence <- function(fills,
   resolved[resolved] <- !is.na(same_time) & same_time
   # (4) Exactly one execution session at that time whose previous session
   # closed at the decision time; its close is the recording pulse.
-  execution_time <- if (identical(timing$execution_timing_version, 2L)) session_open else session_close
+  execution_time <- if (identical(
+    timing$execution_timing_version,
+    ledgr_availability_execution_timing_rule_version
+  )) session_open else session_close
   shared_time <- execution_time[duplicated(execution_time)]
   session <- match(fill_time, execution_time)
   simple <- resolved & !(fill_time %in% shared_time) & !is.na(session) & session >= 2L
@@ -223,36 +221,28 @@ ledgr_run_fill_recording_pulses <- function(bt, fills, con) {
     return(rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), nrow(fills)))
   }
 
-  diagnostics <- if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
-    DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT event_seq, instrument_id, stage, outcome,",
-        "decision_ts_utc, execution_ts_utc FROM run_diagnostics",
-        "WHERE run_id = ? AND stage = 'execution' AND outcome = 'filled'",
-        "ORDER BY diagnostic_seq"
-      ),
-      params = list(bt$run_id)
-    )
-  } else {
-    data.frame()
-  }
+  diagnostics <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT event_seq, instrument_id, stage, outcome,",
+      "decision_ts_utc, execution_ts_utc FROM run_diagnostics",
+      "WHERE run_id = ? AND stage = 'execution' AND outcome = 'filled'",
+      "ORDER BY diagnostic_seq"
+    ),
+    params = list(bt$run_id)
+  )
 
   snapshot <- ledgr_availability_snapshot_connection(bt, con)
   on.exit(snapshot$close(), add = TRUE)
   snapshot_id <- as.character(bt$config$data$snapshot_id)
-  sessions <- if (ledgr_experiment_store_table_exists(snapshot$con, "snapshot_sessions")) {
-    DBI::dbGetQuery(
-      snapshot$con,
-      paste(
-        "SELECT status, session_open, session_close FROM snapshot_sessions",
-        "WHERE snapshot_id = ? ORDER BY session_close"
-      ),
-      params = list(snapshot_id)
-    )
-  } else {
-    data.frame()
-  }
+  sessions <- DBI::dbGetQuery(
+    snapshot$con,
+    paste(
+      "SELECT status, session_open, session_close FROM snapshot_sessions",
+      "WHERE snapshot_id = ? ORDER BY session_close"
+    ),
+    params = list(snapshot_id)
+  )
   ledgr_fill_recording_pulses_from_evidence(fills, diagnostics, sessions, timing)
 }
 
@@ -272,24 +262,4 @@ ledgr_fill_timing_comparison <- function(timing) {
     return(list(comparable = FALSE, reason = "mixed_timing_conventions"))
   }
   list(comparable = TRUE, reason = "same_timing_convention")
-}
-
-ledgr_comparison_assert_fill_timing_comparable <- function(comparison) {
-  if (!inherits(comparison, "ledgr_comparison")) {
-    rlang::abort(
-      "`comparison` must be a ledgr_comparison object.",
-      class = "ledgr_invalid_args"
-    )
-  }
-  if (!isTRUE(attr(comparison, "fill_timing_comparable", exact = TRUE))) {
-    reason <- attr(comparison, "fill_timing_comparability_reason", exact = TRUE)
-    rlang::abort(
-      sprintf(
-        "Fill timing is not comparable for this selected run set: %s.",
-        reason %||% "unknown"
-      ),
-      class = c("ledgr_fill_timing_not_comparable", "ledgr_invalid_args")
-    )
-  }
-  invisible(TRUE)
 }

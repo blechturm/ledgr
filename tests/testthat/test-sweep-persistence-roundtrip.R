@@ -176,7 +176,7 @@ testthat::test_that("reopened sweeps round-trip retained closed-trade evidence",
 })
 
 # ledgr-test-profile: review
-testthat::test_that("pre-trade-retention saved sweeps reopen without sweep_trades table", {
+testthat::test_that("saved sweeps refuse a store missing sweep_trades", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
     db_path = tempfile(fileext = ".duckdb"),
@@ -203,18 +203,15 @@ testthat::test_that("pre-trade-retention saved sweeps reopen without sweep_trade
     params = list(legacy_retention)
   )
 
-  reopened <- ledgr_sweep_open(snapshot, "legacy_trade_retention")
-  testthat::expect_identical(attr(reopened, "sweep_retention", exact = TRUE)$returns, "completed")
-  testthat::expect_identical(attr(reopened, "sweep_retention", exact = TRUE)$trades, "none")
-  testthat::expect_gt(nrow(ledgr_sweep_returns(reopened)), 0L)
   testthat::expect_error(
-    ledgr_sweep_trades(reopened),
-    class = "ledgr_sweep_trades_unretained"
+    ledgr_sweep_open(snapshot, "legacy_trade_retention"),
+    "Missing table: sweep_trades",
+    fixed = TRUE
   )
 })
 
 # ledgr-test-profile: review
-testthat::test_that("schema-1 saved sweeps reopen with no-op risk identity", {
+testthat::test_that("saved sweeps refuse a store missing risk columns", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
     db_path = tempfile(fileext = ".duckdb"),
@@ -236,17 +233,11 @@ testthat::test_that("schema-1 saved sweeps reopen with no-op risk identity", {
     try(DBI::dbExecute(con, sql), silent = TRUE)
   }
 
-  reopened <- ledgr_sweep_open(snapshot, "schema1_saved")
-  noop_hash <- ledgr:::ledgr_risk_chain_hash(ledgr_risk_none())
-  noop_plan <- ledgr:::ledgr_risk_plan_json(ledgr_risk_none())
-
-  testthat::expect_identical(attr(reopened, "risk_chain_hash", exact = TRUE), noop_hash)
-  testthat::expect_identical(attr(reopened, "risk_plan_json", exact = TRUE), noop_plan)
-  testthat::expect_identical(reopened$risk_chain_hash, rep(noop_hash, nrow(reopened)))
-  testthat::expect_true(all(vapply(reopened$provenance, function(provenance) {
-    identical(provenance$risk_chain_hash, noop_hash) &&
-      identical(provenance$risk_plan_json, noop_plan)
-  }, logical(1))))
+  testthat::expect_error(
+    ledgr_sweep_open(snapshot, "schema1_saved"),
+    "Missing columns in sweep_candidates: risk_chain_hash, risk_plan_json",
+    fixed = TRUE
+  )
 })
 
 # ledgr-test-profile: heavy_protocol

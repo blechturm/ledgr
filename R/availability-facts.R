@@ -115,7 +115,13 @@ ledgr_facts_membership_intervals <- function(df,
   rows$fact_id <- ledgr_fact_ids("membership", rows, supplied_id)
   rows <- ledgr_fact_deduplicate(rows, "membership")
   ledgr_fact_validate_membership_conflicts(rows)
-  rows <- rows[order(rows$universe_id, rows$instrument_id, rows$effective_from, rows$fact_id), , drop = FALSE]
+  rows <- rows[order(
+    rows$universe_id,
+    rows$instrument_id,
+    rows$effective_from,
+    rows$fact_id,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(rows) <- NULL
 
   ledgr_new_fact_family(
@@ -221,8 +227,19 @@ ledgr_facts_membership_snapshots <- function(df,
     rows$fact_id <- ledgr_fact_ids("membership", rows, rep(NA_character_, nrow(rows)))
     rows <- ledgr_fact_deduplicate(rows, "membership")
   }
-  headers <- headers[order(headers$effective_from, headers$knowledge_time, headers$set_id, na.last = TRUE), , drop = FALSE]
-  rows <- rows[order(rows$effective_from, rows$set_id, rows$instrument_id), , drop = FALSE]
+  headers <- headers[order(
+    headers$effective_from,
+    headers$knowledge_time,
+    headers$set_id,
+    na.last = TRUE,
+    method = "radix"
+  ), , drop = FALSE]
+  rows <- rows[order(
+    rows$effective_from,
+    rows$set_id,
+    rows$instrument_id,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(headers) <- NULL
   rownames(rows) <- NULL
 
@@ -292,7 +309,14 @@ ledgr_facts_trading_status <- function(df,
   rows <- ledgr_fact_deduplicate(rows, "trading_status")
   ledgr_fact_validate_status_supersession(rows)
   ledgr_fact_validate_source_conflicts(rows)
-  rows <- rows[order(rows$instrument_id, rows$effective_from, -rows$precedence, rows$source, rows$fact_id), , drop = FALSE]
+  rows <- rows[order(
+    rows$instrument_id,
+    rows$effective_from,
+    -rows$precedence,
+    rows$source,
+    rows$fact_id,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(rows) <- NULL
 
   ledgr_new_fact_family(
@@ -343,7 +367,13 @@ ledgr_facts_lifetime <- function(df,
   rows$fact_id <- ledgr_fact_ids("lifetime", rows, supplied_id)
   rows <- ledgr_fact_deduplicate(rows, "lifetime")
   ledgr_fact_validate_lifetime_conflicts(rows)
-  rows <- rows[order(rows$instrument_id, rows$effective_from, rows$source, rows$fact_id), , drop = FALSE]
+  rows <- rows[order(
+    rows$instrument_id,
+    rows$effective_from,
+    rows$source,
+    rows$fact_id,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(rows) <- NULL
 
   ledgr_new_fact_family(
@@ -613,7 +643,7 @@ ledgr_facts_equity_corporate_actions <- function(df) {
     rows,
     metadata = list(
       contract = "vendor_neutral_normalized_terms_v1",
-      provenance_tiers = sort(unique(rows$provenance_tier))
+      provenance_tiers = sort(unique(rows$provenance_tier), method = "radix")
     )
   )
 }
@@ -917,7 +947,7 @@ ledgr_facts <- function(...) {
       class = c("ledgr_duplicate_fact_family", "ledgr_invalid_facts", "ledgr_invalid_args")
     )
   }
-  ord <- order(keys)
+  ord <- order(keys, method = "radix")
   families <- unname(families[ord])
   bundle_hash <- digest::digest(
     as.character(canonical_json(list(
@@ -1345,7 +1375,10 @@ ledgr_fact_deduplicate <- function(rows, family) {
   prepared <- ledgr_fact_canonical_frame(rows)
   distinct_payload <- !duplicated(prepared)
   distinct_ids <- rows$fact_id[distinct_payload]
-  incompatible <- sort(unique(distinct_ids[duplicated(distinct_ids)]))
+  incompatible <- sort(
+    unique(distinct_ids[duplicated(distinct_ids)]),
+    method = "radix"
+  )
   if (length(incompatible) > 0L) {
     rlang::abort(
       sprintf("%s contains incompatible payloads for the same canonical fact identity.", family),
@@ -1796,7 +1829,7 @@ ledgr_fact_opposing_state_overlap <- function(rows,
     scope_columns,
     already_sorted = TRUE
   )
-  state_levels <- sort(unique(states))
+  state_levels <- sort(unique(states), method = "radix")
   previous_end <- matrix(
     -Inf,
     nrow = nrow(rows),

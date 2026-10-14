@@ -104,7 +104,7 @@ ledgr_backtest_checkpoint_state <- function(state, strict = FALSE) {
   if (!ledgr_backtest_state_is_durable(state)) {
     return(invisible(FALSE))
   }
-  opened <- ledgr_open_duckdb_with_retry(state$db_path)
+  opened <- ledgr_store_open(state$db_path, mode = "open")
   on.exit({
     suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))
     suppressWarnings(try(duckdb::duckdb_shutdown(opened$drv), silent = TRUE))
@@ -151,10 +151,11 @@ ledgr_backtest_open <- function(bt) {
   state <- backtest_state(bt)
   con <- state$con
   if (!is.null(con) && DBI::dbIsValid(con)) {
+    ledgr_store_assert_current(con, bt$db_path)
     return(list(con = con, opened_new = FALSE))
   }
 
-  opened <- ledgr_open_duckdb_with_retry(bt$db_path)
+  opened <- ledgr_store_open(bt$db_path, mode = "open")
   state$con <- opened$con
   state$drv <- opened$drv
   attr(state$con, "ledgr_duckdb_drv") <- opened$drv
@@ -188,6 +189,7 @@ ledgr_backtest_read_connection <- function(bt) {
 
   state <- backtest_state(bt)
   if (!is.null(state$con) && DBI::dbIsValid(state$con)) {
+    ledgr_store_assert_current(state$con, bt$db_path)
     return(list(
       con = state$con,
       temporary = FALSE,
@@ -206,6 +208,7 @@ ledgr_backtest_read_connection <- function(bt) {
 
   held_store <- ledgr_held_store(bt$db_path)
   if (!is.null(held_store)) {
+    ledgr_store_assert_current(held_store, bt$db_path)
     return(list(
       con = held_store,
       temporary = FALSE,
@@ -222,7 +225,7 @@ ledgr_backtest_read_connection <- function(bt) {
     ))
   }
 
-  opened <- ledgr_open_duckdb_with_retry(bt$db_path)
+  opened <- ledgr_store_open(bt$db_path, mode = "open")
   list(
     con = opened$con,
     temporary = TRUE,

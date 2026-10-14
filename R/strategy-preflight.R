@@ -200,8 +200,8 @@ print.ledgr_strategy_preflight <- function(x, ...) {
 
 ledgr_strategy_preflight_analysis <- function(strategy) {
   globals <- codetools::findGlobals(strategy, merge = FALSE)
-  functions <- sort(unique(as.character(globals$functions)))
-  variables <- sort(unique(as.character(globals$variables)))
+  functions <- sort(unique(as.character(globals$functions)), method = "radix")
+  variables <- sort(unique(as.character(globals$variables)), method = "radix")
   qualified <- ledgr_strategy_qualified_calls(body(strategy))
   string_constants <- unique(ledgr_strategy_character_constants(body(strategy)))
   forbidden_do_call_symbols <- ledgr_strategy_forbidden_do_call_targets(body(strategy))
@@ -212,16 +212,19 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   rng_mutation_symbols <- sort(unique(c(
     intersect(raw_functions, ledgr_strategy_rng_mutation_functions()),
     intersect(qualified_names, ledgr_strategy_rng_mutation_functions())
-  )))
+  )), method = "radix")
   ambient_rng_symbols <- sort(unique(c(
     intersect(raw_functions, ledgr_strategy_ambient_rng_functions()),
     intersect(qualified_names, ledgr_strategy_ambient_rng_functions())
-  )))
+  )), method = "radix")
   forbidden_call_symbols <- sort(unique(intersect(
     c(raw_functions, qualified_names),
     ledgr_determinism_forbidden_calls(allow_rng = TRUE)
-  )))
-  forbidden_call_symbols <- sort(unique(c(forbidden_call_symbols, forbidden_do_call_symbols)))
+  )), method = "radix")
+  forbidden_call_symbols <- sort(
+    unique(c(forbidden_call_symbols, forbidden_do_call_symbols)),
+    method = "radix"
+  )
   has_global_assignment <- ledgr_strategy_has_global_assignment(strategy)
 
   functions <- setdiff(functions, ledgr_strategy_syntax_functions())
@@ -253,7 +256,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   dependency_packages <- sort(unique(c(
     qualified_dependency_packages,
     attached_dependency_packages
-  )))
+  )), method = "radix")
 
   dynamic_symbols <- intersect(
     c("do.call", "get", "eval", "assign"),
@@ -265,7 +268,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       notes,
       sprintf(
         "Dynamic construct(s) detected (%s); static analysis cannot prove their runtime targets.",
-        paste(sort(dynamic_symbols), collapse = ", ")
+        paste(sort(dynamic_symbols, method = "radix"), collapse = ", ")
       )
     )
   }
@@ -274,7 +277,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       notes,
       sprintf(
         "Resolved external object(s) detected (%s); ledgr stores the strategy source but not those objects.",
-        paste(sort(resolved_external_objects), collapse = ", ")
+        paste(sort(resolved_external_objects, method = "radix"), collapse = ", ")
       )
     )
   }
@@ -286,7 +289,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       notes,
       sprintf(
         "Captured mutable external object(s) detected (%s); these remain Tier 2 when statically resolved, but may be mutated externally outside stored run metadata.",
-        paste(sort(mutable_external_objects), collapse = ", ")
+        paste(sort(mutable_external_objects, method = "radix"), collapse = ", ")
       )
     )
   }
@@ -305,17 +308,26 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       sprintf(
         "Unqualified package call(s) detected (%s); parallel workers must attach package(s): %s.",
         paste(sprintf("%s from %s", names(unqualified_package_functions), unname(unqualified_package_functions)), collapse = ", "),
-        paste(sort(unique(unname(unqualified_package_functions))), collapse = ", ")
+        paste(sort(
+          unique(unname(unqualified_package_functions)),
+          method = "radix"
+        ), collapse = ", ")
       )
     )
   }
 
   list(
-    unresolved_symbols = sort(unique(c(functions, variables))),
-    package_dependencies = sort(unique(dependency_packages)),
-    qualified_package_dependencies = sort(unique(qualified_dependency_packages)),
-    attached_package_dependencies = sort(unique(attached_dependency_packages)),
-    external_objects = sort(unique(resolved_external_objects)),
+    unresolved_symbols = sort(unique(c(functions, variables)), method = "radix"),
+    package_dependencies = sort(unique(dependency_packages), method = "radix"),
+    qualified_package_dependencies = sort(
+      unique(qualified_dependency_packages),
+      method = "radix"
+    ),
+    attached_package_dependencies = sort(
+      unique(attached_dependency_packages),
+      method = "radix"
+    ),
+    external_objects = sort(unique(resolved_external_objects), method = "radix"),
     rng_mutation_symbols = rng_mutation_symbols,
     ambient_rng_symbols = ambient_rng_symbols,
     forbidden_call_symbols = forbidden_call_symbols,
@@ -351,7 +363,7 @@ ledgr_strategy_global_assignment_lhs <- function(expr) {
     invisible(NULL)
   }
   visit(expr)
-  sort(unique(out))
+  sort(unique(out), method = "radix")
 }
 
 ledgr_strategy_rng_mutation_functions <- function() {
@@ -431,7 +443,10 @@ ledgr_strategy_package_exports <- function(package, symbol) {
 ledgr_strategy_tier1_search_order <- function() {
   packages <- ledgr_strategy_priority_packages()
   attached <- c("stats", "graphics", "grDevices", "utils", "datasets", "methods", "base")
-  c(intersect(attached, packages), sort(setdiff(packages, attached)))
+  c(
+    intersect(attached, packages),
+    sort(setdiff(packages, attached), method = "radix")
+  )
 }
 
 # The package a Tier 1 strategy's unqualified symbol resolves to: ledgr's
@@ -482,8 +497,11 @@ ledgr_strategy_symbol_resolves_to_mutable_external_object <- function(symbol, en
 ledgr_strategy_worker_dependencies_fields <- function(require_namespace,
                                                        attach) {
   list(
-    require_namespace = sort(unique(as.character(require_namespace))),
-    attach = sort(unique(as.character(attach)))
+    require_namespace = sort(
+      unique(as.character(require_namespace)),
+      method = "radix"
+    ),
+    attach = sort(unique(as.character(attach)), method = "radix")
   )
 }
 
@@ -499,7 +517,7 @@ ledgr_strategy_unqualified_package_functions <- function(symbols, env) {
   )
   keep <- nzchar(packages) &
     !vapply(packages, ledgr_strategy_package_is_tier1, logical(1))
-  sort(packages[keep])
+  sort(packages[keep], method = "radix")
 }
 
 ledgr_strategy_symbol_package_function <- function(symbol, env) {
@@ -556,7 +574,7 @@ ledgr_strategy_forbidden_do_call_targets <- function(expr) {
     }
   }
   visit(expr)
-  sort(unique(out))
+  sort(unique(out), method = "radix")
 }
 
 ledgr_strategy_do_call_target_name <- function(target) {
@@ -603,7 +621,7 @@ ledgr_strategy_unsupported_context_mutations <- function(expr) {
     }
   }
   visit(expr)
-  sort(unique(out))
+  sort(unique(out), method = "radix")
 }
 
 ledgr_strategy_is_attr_ctx_call <- function(node) {
@@ -719,7 +737,7 @@ ledgr_strategy_preflight_ambient_rng_symbols <- function(preflight) {
   if (is.null(symbols)) {
     return(character())
   }
-  sort(unique(as.character(symbols)))
+  sort(unique(as.character(symbols)), method = "radix")
 }
 
 ledgr_strategy_preflight_uses_ambient_rng <- function(preflight) {

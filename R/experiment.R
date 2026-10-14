@@ -175,9 +175,6 @@ print.ledgr_opening <- function(x, ...) {
 #'   trip crosses approximately `spread_bps` basis points before explicit fees.
 #' @param risk_chain Target-risk chain object. Defaults to
 #'   `ledgr_risk_none()` for explicit no-risk execution.
-#' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
-#'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
-#'   `cost_model`.
 #' @param persist_features Logical scalar.
 #' @param execution_mode Execution mode (`"audit_log"` or `"db_live"`).
 #' @param metric_context Optional `ledgr_metric_context` object or scalar
@@ -229,7 +226,6 @@ ledgr_experiment <- function(snapshot,
                              timing_model = ledgr_timing_next_open(),
                              cost_model,
                              risk_chain = ledgr_risk_none(),
-                             fill_model = NULL,
                              persist_features = TRUE,
                              execution_mode = "audit_log",
                              metric_context = NULL,
@@ -277,9 +273,6 @@ ledgr_experiment <- function(snapshot,
     ledgr_availability_validate_features(features, features_mode)
   }
 
-  if (!is.null(fill_model)) {
-    ledgr_legacy_fill_model_abort()
-  }
   if (missing(cost_model) || is.null(cost_model)) {
     ledgr_cost_model_unspecified()
   }
@@ -337,7 +330,7 @@ ledgr_experiment <- function(snapshot,
       active = TRUE,
       declared_families = availability$declared_families,
       headers = availability$headers,
-      execution_timing_version = ledgr_availability_execution_timing_version()
+      execution_timing_version = ledgr_availability_execution_timing_rule_version
     )
     out$universe_rule <- universe_rule
     out$valuation_policy <- availability$valuation_policy

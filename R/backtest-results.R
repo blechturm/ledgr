@@ -133,53 +133,6 @@ compute_sharpe_ratio <- function(returns,
   mean(excess_returns) / sd_excess * sqrt(bars_per_year)
 }
 
-ledgr_estimate_bars_per_year <- function(bt, equity, con = NULL) {
-  fallback <- 252
-  if (!inherits(bt, "ledgr_backtest")) return(fallback)
-  if (!is.list(bt$config) || is.null(bt$config$data$snapshot_id)) return(fallback)
-
-  if (is.null(con)) {
-    opened <- ledgr_backtest_read_connection(bt)
-    con <- opened$con
-    on.exit(opened$close(), add = TRUE)
-  }
-  ledgr_backtest_ensure_snapshot(bt, con)
-  snapshot_id <- bt$config$data$snapshot_id
-  if (!is.null(bt$config$data) && is.list(bt$config$data) && identical(bt$config$data$source, "snapshot")) {
-    run_db_path <- bt$config$db_path
-    snapshot_db_path <- ledgr_snapshot_db_path_from_config(bt$config, run_db_path)
-    ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, run_db_path)
-  }
-
-  inst <- DBI::dbGetQuery(
-    con,
-    "SELECT instrument_id FROM snapshot_instruments WHERE snapshot_id = ? ORDER BY instrument_id LIMIT 1",
-    params = list(snapshot_id)
-  )$instrument_id[[1]]
-  if (is.null(inst) || is.na(inst) || !nzchar(inst)) return(fallback)
-
-  median_seconds <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT median(diff_seconds) AS median_diff
-    FROM (
-      SELECT datediff('second', LAG(ts_utc) OVER (ORDER BY ts_utc), ts_utc) AS diff_seconds
-      FROM snapshot_bars
-      WHERE snapshot_id = ? AND instrument_id = ?
-    )
-    WHERE diff_seconds IS NOT NULL
-    ",
-    params = list(snapshot_id, inst)
-  )$median_diff[[1]]
-
-  median_seconds <- suppressWarnings(as.numeric(median_seconds))
-  if (!is.finite(median_seconds) || median_seconds <= 0) return(fallback)
-
-  bars_per_year <- snap_to_frequency(median_seconds)
-  if (!is.finite(bars_per_year) || bars_per_year <= 0) return(fallback)
-  bars_per_year
-}
-
 snap_to_frequency <- function(median_seconds) {
   if (!is.numeric(median_seconds) || length(median_seconds) != 1 || !is.finite(median_seconds) || median_seconds <= 0) {
     return(NA_real_)
@@ -772,7 +725,6 @@ ledgr_result_period_label <- function(start, end) {
 ledgr_backtest_off_session_bar_count <- function(bt) {
   opened <- ledgr_backtest_read_connection(bt)
   on.exit(opened$close(), add = TRUE)
-  if (!ledgr_experiment_store_table_exists(opened$con, "snapshot_observation_quarantine")) return(0L)
   as.integer(DBI::dbGetQuery(
     opened$con,
     "SELECT COUNT(*) AS n FROM snapshot_observation_quarantine WHERE snapshot_id = ? AND reason = ?",
@@ -1073,7 +1025,7 @@ ledgr_backtest_bar_counts <- function(bt, con = NULL) {
   query_con <- con
   close_query <- function() invisible(FALSE)
   if (!isTRUE(use_existing)) {
-    opened <- ledgr_open_duckdb_with_retry(bt$db_path)
+    opened <- ledgr_store_open(bt$db_path, mode = "open")
     query_con <- opened$con
     close_query <- function() {
       suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))
@@ -1168,8 +1120,7 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' @param x A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"returns"`, `"fills"`,
 #'   `"trades"`, or `"ledger"`.
-#' @param ... Unused.
-#' @param type Deprecated alias for `what`.
+#' @param ... Must be empty.
 #' @return A tibble with the requested result table.
 #' @details
 #' `what = "fills"` returns execution fill rows, including opening and closing
@@ -1226,12 +1177,12 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' tibble::as_tibble(bt, what = "equity")
 #' close(bt)
 #' @export
-as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
+as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
+  rlang::check_dots_empty()
   if (!inherits(x, "ledgr_backtest")) {
     rlang::abort("`x` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
-  if (!is.null(type)) what <- type
   what <- ledgr_match_result_table(what)
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con

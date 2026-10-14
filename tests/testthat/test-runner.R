@@ -123,6 +123,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
       targets_after = c(AAA = 2)
     )
   )
+  cfg <- ledgr_test_modernize_config(cfg)
 
   run_id <- "run-resume-1"
   ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
@@ -382,7 +383,10 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
   clean_cfg <- make_config(clean_path)
   resumed_cfg <- make_config(resumed_path)
   run_id <- "post-fold-finalization-recovery"
-  clean <- run_without_last_bar_warning(ledgr_run_config(clean_cfg, run_id = run_id))
+  clean <- run_without_last_bar_warning(ledgr_run_config(
+    ledgr_test_modernize_config(clean_cfg),
+    run_id = run_id
+  ))
   clean_rows <- read_artifacts(clean_path, run_id)
 
   seam <- new.env(parent = emptyenv())
@@ -431,7 +435,10 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
       .package = "DBI"
     )
     testthat::expect_error(
-      run_without_last_bar_warning(ledgr_run_config(resumed_cfg, run_id = run_id)),
+      run_without_last_bar_warning(ledgr_run_config(
+        ledgr_test_modernize_config(resumed_cfg),
+        run_id = run_id
+      )),
       "injected finalization failure",
       fixed = TRUE
     )
@@ -452,7 +459,10 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
   testthat::expect_identical(failed_rows$fills, clean_rows$fills)
   testthat::expect_identical(failed_rows$trades, clean_rows$trades)
 
-  resumed <- run_without_last_bar_warning(ledgr_run_config(resumed_cfg, run_id = run_id))
+  resumed <- run_without_last_bar_warning(ledgr_run_config(
+    ledgr_test_modernize_config(resumed_cfg),
+    run_id = run_id
+  ))
   resumed_rows <- read_artifacts(resumed_path, run_id)
   testthat::expect_identical(resumed$run_id, clean$run_id)
   testthat::expect_identical(resumed_rows$status$status, "DONE")

@@ -220,3 +220,7 @@ guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
 ledgr is not yet on CRAN. Until the first CRAN release, stored
 artifacts, database schemas, and APIs may change without a deprecation
 cycle, so expect to rerun experiments after upgrading.
+
+Contributors can hide the repository-wide formatting commit from blame
+history with
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`.

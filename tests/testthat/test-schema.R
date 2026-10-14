@@ -125,15 +125,15 @@ testthat::test_that("[LTB-0039] schema catalogue work is bounded per call", {
 
   testthat::expect_lte(
     length(schema_catalogue_calls(validate_calls$get)),
-    4L
+    5L
   )
-  testthat::expect_lte(length(validate_calls$get), 5L)
+  testthat::expect_lte(length(validate_calls$get), 6L)
   testthat::expect_length(validate_calls$execute, 0L)
-  testthat::expect_lte(length(create_calls$get), 2L)
+  testthat::expect_lte(length(create_calls$get), 3L)
   testthat::expect_length(create_calls$execute, 0L)
 })
 
-testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
+testthat::test_that("[LTB-0040] schema gate refuses damaged marker states", {
   db_path <- tempfile(fileext = ".duckdb")
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
   on.exit({
@@ -141,57 +141,45 @@ testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
     unlink(c(db_path, paste0(db_path, ".wal")), force = TRUE)
   }, add = TRUE)
   ledgr_create_schema(con)
-  current_shape <- schema_information_shape(con)
-  testthat::expect_identical(
-    digest::digest(schema_shape_text(current_shape), algo = "sha256", serialize = FALSE),
-    "b28c7c693636f404319c5c8e9b0c0359919e30b36c7c975a01d9f8f100662ed8"
-  )
-
   DBI::dbExecute(
     con,
     "DELETE FROM ledgr_schema_metadata
      WHERE key = 'experiment_store_schema_version'"
   )
-  missing_marker_calls <- trace_schema_dbi_calls(ledgr_create_schema(con))
-  restored <- DBI::dbGetQuery(
-    con,
-    "SELECT value FROM ledgr_schema_metadata
-     WHERE key = 'experiment_store_schema_version'"
-  )$value[[1L]]
-  testthat::expect_identical(
-    as.integer(restored),
-    ledgr:::ledgr_experiment_store_schema_version
+  missing <- testthat::expect_error(
+    ledgr_create_schema(con),
+    class = "ledgr_store_rebuild_required"
   )
-  testthat::expect_gt(length(missing_marker_calls$execute), 0L)
-  testthat::expect_no_error(ledgr_validate_schema(con))
+  testthat::expect_identical(missing$cause, "missing_marker")
 
   DBI::dbExecute(
     con,
-    "UPDATE ledgr_schema_metadata
-     SET value = ?
-     WHERE key = 'experiment_store_schema_version'",
+    "INSERT INTO ledgr_schema_metadata (key, value, updated_at_utc)
+     VALUES ('experiment_store_schema_version', ?, CURRENT_TIMESTAMP)",
     params = list(as.character(
       ledgr:::ledgr_experiment_store_schema_version - 1L
     ))
   )
-  DBI::dbExecute(con, "DROP TABLE snapshot_equity_corporate_actions")
   DBI::dbExecute(con, "DROP TABLE bars")
-  older_calls <- trace_schema_dbi_calls(ledgr_create_schema(con))
+  older <- testthat::expect_error(
+    ledgr_create_schema(con),
+    class = "ledgr_store_rebuild_required"
+  )
+  testthat::expect_identical(older$cause, "older")
   tables <- DBI::dbGetQuery(
     con,
     "SELECT table_name FROM information_schema.tables
      WHERE table_schema = 'main'"
   )$table_name
-  testthat::expect_true(all(c(
-    "snapshot_equity_corporate_actions",
-    "bars"
-  ) %in% tables))
-  testthat::expect_gt(length(older_calls$execute), 0L)
-  testthat::expect_no_error(ledgr_validate_schema(con))
-  testthat::expect_identical(schema_information_shape(con), current_shape)
+  testthat::expect_false("bars" %in% tables)
 
-  DBI::dbExecute(con, "DROP TABLE bars")
-  ledgr_create_schema(con)
+  DBI::dbExecute(
+    con,
+    "UPDATE ledgr_schema_metadata SET value = ?
+     WHERE key = 'experiment_store_schema_version'",
+    params = list(as.character(ledgr:::ledgr_experiment_store_schema_version))
+  )
+  testthat::expect_no_error(ledgr_create_schema(con))
   testthat::expect_error(
     ledgr_validate_schema(con),
     "Missing table: bars",
@@ -199,64 +187,39 @@ testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
   )
 })
 
-testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", {
+testthat::test_that("[LTB-0041] current creation keeps its structural boundary", {
   create_source <- paste(
     readLines(testthat::test_path("..", "..", "R", "db-schema-create.R")),
-    collapse = "\n"
-  )
-  runner_source <- paste(
-    readLines(testthat::test_path("..", "..", "R", "backtest-runner.R")),
     collapse = "\n"
   )
   public_source <- paste(
     readLines(testthat::test_path("..", "..", "R", "public-api.R")),
     collapse = "\n"
   )
-  marker_source <- readLines(testthat::test_path(
-    "..", "..", "R", "experiment-store-schema.R"
-  ))
+  gate_source <- paste(readLines(testthat::test_path(
+    "..", "..", "R", "store-gate.R"
+  )), collapse = "\n")
 
   testthat::expect_match(
     create_source,
-    paste0(
-      "if \\(identical\\(\\s*",
-      "as.integer\\(schema_state\\$schema_version\\),\\s*",
-      "as.integer\\(ledgr_experiment_store_schema_version\\)\\s*",
-      "\\)\\) \\{\\s*return\\(invisible\\(TRUE\\)\\)"
-    ),
+    "ledgr_store_create_current\\(con\\)",
     perl = TRUE
   )
   testthat::expect_no_match(
     create_source,
-    "if \\(table_exists\\([^)]*\\)\\) \\{[\\s\\S]{0,120}return\\(invisible\\(TRUE\\)\\)",
-    perl = TRUE
-  )
-  testthat::expect_match(
-    runner_source,
-    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema_once\\(con\\)",
+    "legacy|migrat|template|trigger",
     perl = TRUE
   )
   testthat::expect_match(
     public_source,
-    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema_once\\(con\\)",
+    "ledgr_store_open\\(db_path, mode = \"create\"\\)[\\s\\S]+ledgr_validate_schema_once\\(con\\)",
     perl = TRUE
   )
-  failure_line <- grep("if \\(isTRUE\\(simulate_failure\\)\\)", marker_source)
-  marker_line <- grep("INSERT OR REPLACE INTO ledgr_schema_metadata", marker_source)
-  testthat::expect_length(failure_line, 1L)
-  testthat::expect_length(marker_line, 1L)
-  testthat::expect_gt(marker_line, failure_line)
-  # covr rewrites function bodies, so the body hash holds only in ordinary runs.
-  if (!(requireNamespace("covr", quietly = TRUE) && covr::in_covr())) {
-    migration_body <- paste(
-      deparse(body(ledgr:::ledgr_experiment_store_migrate)),
-      collapse = "\n"
-    )
-    testthat::expect_identical(
-      digest::digest(migration_body, algo = "sha256", serialize = FALSE),
-      "1b836d6b78a2c24621bb8bcc0275075c6f8ba8ab570f93af9c8d4cff8b384f10"
-    )
-  }
+  testthat::expect_match(
+    gate_source,
+    "for \\(statement in statements\\)[\\s\\S]+experiment_store_schema_version[\\s\\S]+format_fingerprint",
+    perl = TRUE
+  )
 })
 
 testthat::test_that("schema creation is idempotent", {
@@ -518,7 +481,7 @@ testthat::test_that("ledger_events enforces uniqueness of (run_id, event_seq)", 
   )
 })
 
-testthat::test_that("upgrade path: old runs schema is migrated and COMPLETED is mapped to DONE", {
+testthat::test_that("an unmarked runs table is refused without rewriting rows", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -540,11 +503,14 @@ testthat::test_that("upgrade path: old runs schema is migrated and COMPLETED is 
     "
   )
 
-  testthat::expect_true(ledgr_create_schema(con))
-  testthat::expect_true(ledgr_validate_schema(con))
+  error <- testthat::expect_error(
+    ledgr_create_schema(con),
+    class = "ledgr_store_rebuild_required"
+  )
+  testthat::expect_identical(error$cause, "missing_marker")
 
   status <- DBI::dbGetQuery(con, "SELECT status FROM runs WHERE run_id = 'old-run'")$status[[1]]
-  testthat::expect_identical(status, "DONE")
+  testthat::expect_identical(status, "COMPLETED")
 })
 
 testthat::test_that("validator fails if runs.status does not accept DONE", {
@@ -586,7 +552,7 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
   )
 })
 
-testthat::test_that("create-side runs.status metadata parser fails loudly on unexpected expressions", {
+testthat::test_that("create refuses an unmarked table before interpreting its constraints", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -631,11 +597,11 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
     "
   )
 
-  testthat::expect_error(
+  error <- testthat::expect_error(
     ledgr_create_schema(con),
-    "Cannot interpret runs.status constraint metadata",
-    fixed = TRUE
+    class = "ledgr_store_rebuild_required"
   )
+  testthat::expect_identical(error$cause, "missing_marker")
 
   row <- DBI::dbGetQuery(con, "SELECT run_id, status FROM runs")
   testthat::expect_identical(row$run_id, "bad-check")
@@ -648,11 +614,15 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
   cache <- ledgr:::.ledgr_schema_validation_cache
   rm(list = ls(cache, all.names = TRUE), envir = cache)
   calls <- 0L
-  full_validation <- ledgr:::ledgr_validate_schema
+  full_validation <- ledgr:::ledgr_schema_validate_catalogue
   testthat::local_mocked_bindings(
-    ledgr_validate_schema = function(con) {
+    ledgr_schema_validate_catalogue = function(actual, expected = NULL) {
       calls <<- calls + 1L
-      full_validation(con)
+      if (is.null(expected)) {
+        full_validation(actual)
+      } else {
+        full_validation(actual, expected)
+      }
     },
     .package = "ledgr"
   )
@@ -676,7 +646,11 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
   path <- tempfile(fileext = ".duckdb")
   second <- tempfile(fileext = ".duckdb")
   copy <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(c(store_files(path), store_files(second), store_files(copy)), force = TRUE), add = TRUE)
+  view_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(
+    store_files(path), store_files(second), store_files(copy),
+    store_files(view_path)
+  ), force = TRUE), add = TRUE)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "validation_once")
   exp <- ledgr_experiment(
     snapshot,
@@ -731,6 +705,21 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
     DBI::dbDisconnect(memory, shutdown = TRUE)
   }), 0L)
 
+  # A new main-schema view changes the columns observed by full validation,
+  # so it must also invalidate a previously successful signature.
+  testthat::expect_identical(validations(init_and_close(view_path)), 0L)
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = view_path)
+  DBI::dbExecute(con, "CREATE VIEW zz_view AS SELECT 1 AS x")
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  testthat::expect_identical(
+    validations(testthat::expect_error(
+      init_and_close(view_path),
+      "Schema catalogue mismatch: extra column zz_view.x.",
+      fixed = TRUE
+    )),
+    1L
+  )
+
   # A rewritten marker timestamp leaves the catalogue unchanged.
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = second)
   DBI::dbExecute(
@@ -769,83 +758,31 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
   testthat::expect_identical(validations(testthat::expect_error(init_and_close(unconstrained))), 1L)
 })
 
-testthat::test_that("[LTB-0239] a proven-empty store gets the current schema without the legacy migration", {
-  catalogue_of <- function(con) {
-    q <- function(sql) DBI::dbGetQuery(con, sql)
-    constraints <- q("SELECT table_name, constraint_type, constraint_text, expression FROM duckdb_constraints() WHERE schema_name = 'main'")
-    list(
-      tables = q("SELECT table_name, sql FROM duckdb_tables() WHERE schema_name = 'main' ORDER BY table_name"),
-      indexes = q("SELECT index_name, table_name, sql FROM duckdb_indexes() WHERE schema_name = 'main' ORDER BY index_name"),
-      columns = q("SELECT table_name, column_name, ordinal_position, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'main' ORDER BY table_name, ordinal_position"),
-      constraints = sort(do.call(paste, c(constraints, sep = " | "))),
-      marker = q("SELECT key, value FROM ledgr_schema_metadata ORDER BY key")
-    )
-  }
-  connect <- function() DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  migrations <- 0L
-  migrate <- ledgr:::ledgr_experiment_store_migrate
-  testthat::local_mocked_bindings(
-    ledgr_experiment_store_migrate = function(...) {
-      migrations <<- migrations + 1L
-      migrate(...)
-    },
-    .package = "ledgr"
+testthat::test_that("[LTB-0239] current creation bypasses every legacy helper", {
+  con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  retired <- c(
+    "ledgr_create_schema_legacy",
+    "ledgr_experiment_store_migrate",
+    "ledgr_schema_template"
   )
-
-  # The fresh store matches the legacy-path catalogue and never migrates.
-  legacy <- connect()
-  on.exit(DBI::dbDisconnect(legacy, shutdown = TRUE), add = TRUE)
-  suppressMessages(ledgr:::ledgr_create_schema_legacy(legacy, ledgr:::ledgr_schema_catalogue(legacy)))
-  # The session's first fresh store builds the template through the legacy
-  # path once; build it before counting, so the block does not depend on order.
-  invisible(ledgr:::ledgr_schema_template())
-  migrations <- 0L
-  fresh <- connect()
-  on.exit(DBI::dbDisconnect(fresh, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(fresh)
-  testthat::expect_identical(migrations, 0L)
-  testthat::expect_identical(catalogue_of(fresh), catalogue_of(legacy))
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(fresh), ledgr:::ledgr_experiment_store_schema_version)
-  testthat::expect_true(ledgr_validate_schema(fresh))
-
-  # Trigger support belongs to the DuckDB build: the template probes it once
-  # per session, and later stores skip the statements when it is absent.
-  supported <- ledgr:::.ledgr_schema_template_cache[[ledgr:::ledgr_schema_trigger_support_key()]]
-  testthat::expect_true(is.logical(supported) && length(supported) == 1L)
-  statements <- character()
-  execute <- DBI::dbExecute
-  again <- connect()
-  on.exit(DBI::dbDisconnect(again, shutdown = TRUE), add = TRUE)
-  testthat::with_mocked_bindings(
-    ledgr_create_schema(again),
-    dbExecute = function(conn, statement, ...) {
-      statements <<- c(statements, statement)
-      execute(conn, statement, ...)
-    },
-    .package = "DBI"
+  package_r <- list.files(
+    testthat::test_path("..", "..", "R"),
+    pattern = "[.]R$", full.names = TRUE
   )
-  testthat::expect_identical(any(grepl("CREATE TRIGGER", statements, fixed = TRUE)), isTRUE(supported))
-
-  # An interrupted creation leaves no table and no marker, and a retry works.
-  interrupted <- connect()
-  on.exit(DBI::dbDisconnect(interrupted, shutdown = TRUE), add = TRUE)
-  statements <- ledgr:::ledgr_schema_template()
-  testthat::with_mocked_bindings(
-    testthat::expect_error(ledgr_create_schema(interrupted)),
-    ledgr_schema_template = function() append(statements, "CREATE TABLE broken (", after = 5L),
-    .package = "ledgr"
+  package_source <- paste(unlist(lapply(package_r, readLines)), collapse = "\n")
+  testthat::expect_false(any(vapply(
+    retired,
+    grepl,
+    logical(1),
+    x = package_source,
+    fixed = TRUE
+  )))
+  testthat::expect_true(ledgr_create_schema(con))
+  testthat::expect_true(ledgr:::ledgr_store_assert_current(con))
+  testthat::expect_true(ledgr_validate_schema(con))
+  testthat::expect_identical(
+    names(ledgr:::ledgr_store_read_markers(con)),
+    c("experiment_store_schema_version", "format_fingerprint")
   )
-  testthat::expect_identical(nrow(ledgr:::ledgr_schema_catalogue(interrupted)$tables), 0L)
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(interrupted), 0L)
-  ledgr_create_schema(interrupted)
-  testthat::expect_identical(catalogue_of(interrupted)$tables, catalogue_of(legacy)$tables)
-
-  # A store that already holds a table but no marker keeps the legacy path.
-  unmarked <- connect()
-  on.exit(DBI::dbDisconnect(unmarked, shutdown = TRUE), add = TRUE)
-  DBI::dbExecute(unmarked, "CREATE TABLE strategy_state (run_id TEXT NOT NULL, ts_utc TIMESTAMP NOT NULL, state_json TEXT NOT NULL, PRIMARY KEY (run_id, ts_utc))")
-  migrations <- 0L
-  suppressMessages(ledgr_create_schema(unmarked))
-  testthat::expect_identical(migrations, 1L)
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(unmarked), ledgr:::ledgr_experiment_store_schema_version)
 })

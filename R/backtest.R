@@ -23,9 +23,6 @@
 #'   `ledgr_risk_none()` for explicit no-risk execution.
 #' @param corporate_action_policy Corporate-action settlement policy. Defaults
 #'   to [ledgr_corporate_actions_research()].
-#' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
-#'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
-#'   `cost_model`.
 #' @param execution_mode Execution mode ("db_live" or "audit_log").
 #' @param checkpoint_every Flush interval for audit_log mode.
 #' @param db_path Database path for the run ledger (NULL = snapshot DB).
@@ -98,7 +95,6 @@ ledgr_backtest <- function(snapshot = NULL,
                            timing_model = ledgr_timing_next_open(),
                            cost_model,
                            risk_chain = ledgr_risk_none(),
-                           fill_model = NULL,
                            execution_mode = "audit_log",
                            checkpoint_every = 10000L,
                            persist_features = TRUE,
@@ -210,9 +206,6 @@ ledgr_backtest <- function(snapshot = NULL,
     }
   }
 
-  if (!is.null(fill_model)) {
-    ledgr_legacy_fill_model_abort()
-  }
   if (missing(cost_model) || is.null(cost_model)) {
     ledgr_cost_model_unspecified()
   }
@@ -292,7 +285,7 @@ ledgr_infer_universe_from_data <- function(data) {
       class = "ledgr_invalid_args"
     )
   }
-  universe <- sort(unique(as.character(data$instrument_id)))
+  universe <- sort(unique(as.character(data$instrument_id)), method = "radix")
   universe <- universe[!is.na(universe) & nzchar(universe)]
   if (length(universe) < 1) {
     rlang::abort("`data$instrument_id` must contain at least one non-empty instrument id.", class = "ledgr_invalid_args")

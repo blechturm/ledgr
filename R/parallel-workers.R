@@ -80,7 +80,7 @@ ledgr_parallel_normalize_worker_packages <- function(worker_packages,
       class = c("ledgr_invalid_worker_packages", "ledgr_parallel_error")
     )
   }
-  sort(unique(worker_packages))
+  sort(unique(worker_packages), method = "radix")
 }
 
 ledgr_parallel_worker_dependencies <- function(preflight,
@@ -116,10 +116,13 @@ ledgr_parallel_worker_dependencies <- function(preflight,
   )
   out <- list(
     require_namespace = qualified,
-    attach = sort(unique(c(attached, user_packages))),
+    attach = sort(unique(c(attached, user_packages)), method = "radix"),
     user_packages = user_packages
   )
-  out$all_packages <- sort(unique(c(out$require_namespace, out$attach)))
+  out$all_packages <- sort(
+    unique(c(out$require_namespace, out$attach)),
+    method = "radix"
+  )
   structure(out, class = c("ledgr_worker_dependencies", "list"))
 }
 

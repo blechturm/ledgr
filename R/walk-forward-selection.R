@@ -174,6 +174,9 @@ ledgr_selection_rule_select <- function(rule, scores) {
     min(eligible_values)
   }
   tied <- eligible_rows[eligible_values == best_value, , drop = FALSE]
-  tied <- tied[order(as.character(tied$candidate_key)), , drop = FALSE]
+  tied <- tied[order(
+    as.character(tied$candidate_key),
+    method = "radix"
+  ), , drop = FALSE]
   tied[1L, , drop = FALSE]
 }

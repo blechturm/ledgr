@@ -81,13 +81,15 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
     if (length(value) == 1L && !is.na(value) && nzchar(value)) {
       parsed <- tryCatch(
         ledgr_json_read_nested(value),
-        error = function(e) ledgr_accounting_event_error(
-          "Accounting event meta_json is malformed.",
-          "ledgr_invalid_ledger_meta"
-        )
+        error = function(e) {
+          ledgr_accounting_event_error(
+            "Accounting event meta_json is malformed.",
+            "ledgr_invalid_ledger_meta"
+          )
+        }
       )
       if (identical(event_type[[i]], "FILL") && side[[i]] %in% c("BUY", "SELL") &&
-          is.finite(qty[[i]]) && is.finite(price[[i]]) && is.finite(fee[[i]])) {
+        is.finite(qty[[i]]) && is.finite(price[[i]]) && is.finite(fee[[i]])) {
         direction <- if (identical(side[[i]], "BUY")) 1 else -1
         if (is.null(parsed$cash_delta)) {
           parsed$cash_delta <- -direction * qty[[i]] * price[[i]] - fee[[i]]
@@ -99,14 +101,20 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
       return(parsed)
     }
     if (identical(event_type[[i]], "FILL") && side[[i]] %in% c("BUY", "SELL") &&
-        is.finite(qty[[i]]) && is.finite(price[[i]]) && is.finite(fee[[i]])) {
+      is.finite(qty[[i]]) && is.finite(price[[i]]) && is.finite(fee[[i]])) {
       direction <- if (identical(side[[i]], "BUY")) 1 else -1
       return(list(
         fee = fee[[i]],
-        cash_delta = if (has_cash) cash_delta[[i]] else
-          -direction * qty[[i]] * price[[i]] - fee[[i]],
-        position_delta = if (has_cash) position_delta[[i]] else
-          direction * qty[[i]],
+        cash_delta = if (has_cash) {
+          cash_delta[[i]]
+        } else {
+          -direction * qty[[i]] * price[[i]] - fee[[i]]
+        },
+        position_delta = if (has_cash) {
+          position_delta[[i]]
+        } else {
+          direction * qty[[i]]
+        },
         realized_pnl = NULL
       ))
     }
@@ -118,14 +126,16 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
   if (!has_cash) {
     scalar_delta <- function(value, name) {
       delta <- value[[name]]
-      if (!is.numeric(delta) || length(delta) != 1L) return(NA_real_)
+      if (!is.numeric(delta) || length(delta) != 1L) {
+        return(NA_real_)
+      }
       as.numeric(delta)
     }
     cash_delta <- vapply(meta, scalar_delta, numeric(1), name = "cash_delta")
     position_delta <- vapply(meta, scalar_delta, numeric(1), name = "position_delta")
   }
   if (anyNA(cash_delta) || any(!is.finite(cash_delta)) ||
-      anyNA(position_delta) || any(!is.finite(position_delta))) {
+    anyNA(position_delta) || any(!is.finite(position_delta))) {
     ledgr_accounting_event_error(
       "Accounting event metadata must provide finite cash_delta and position_delta values.",
       "ledgr_invalid_ledger_meta"
@@ -140,8 +150,8 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
         ledgr_accounting_event_error("FILL side must be BUY or SELL.")
       }
       if (is.na(qty[[i]]) || !is.finite(qty[[i]]) || qty[[i]] <= 0 ||
-          is.na(price[[i]]) || !is.finite(price[[i]]) || price[[i]] <= 0 ||
-          is.na(fee[[i]]) || !is.finite(fee[[i]]) || fee[[i]] < 0) {
+        is.na(price[[i]]) || !is.finite(price[[i]]) || price[[i]] <= 0 ||
+        is.na(fee[[i]]) || !is.finite(fee[[i]]) || fee[[i]] < 0) {
         ledgr_accounting_event_error(
           "FILL qty and price must be positive and fee must be non-negative."
         )
@@ -153,13 +163,13 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
     } else if (identical(type, "CASHFLOW")) {
       if (identical(meta[[i]]$source, "opening_position")) {
         if (!ledgr_lot_meta_is_opening(meta[[i]]) ||
-            length(meta[[i]]$position_delta) != 1L ||
-            !is.numeric(meta[[i]]$position_delta) ||
-            !is.finite(meta[[i]]$position_delta) ||
-            length(meta[[i]]$cost_basis) != 1L ||
-            !is.numeric(meta[[i]]$cost_basis) ||
-            !is.finite(meta[[i]]$cost_basis) ||
-            is.na(instrument_id[[i]]) || !nzchar(instrument_id[[i]])) {
+          length(meta[[i]]$position_delta) != 1L ||
+          !is.numeric(meta[[i]]$position_delta) ||
+          !is.finite(meta[[i]]$position_delta) ||
+          length(meta[[i]]$cost_basis) != 1L ||
+          !is.numeric(meta[[i]]$cost_basis) ||
+          !is.finite(meta[[i]]$cost_basis) ||
+          is.na(instrument_id[[i]]) || !nzchar(instrument_id[[i]])) {
           ledgr_accounting_event_error(
             "Opening-position metadata is malformed.",
             "ledgr_invalid_ledger_meta"
@@ -181,29 +191,29 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
         "disposition_policy_id"
       )
       if (length(forbidden) > 0L ||
-          !isTRUE(meta[[i]]$source %in% ledgr_disposition_sources()) ||
-          any(!required_meta %in% names(meta[[i]])) ||
-          is.na(instrument_id[[i]]) || !nzchar(instrument_id[[i]]) ||
-          !is.numeric(meta[[i]]$quantity) || length(meta[[i]]$quantity) != 1L ||
-          !is.finite(meta[[i]]$quantity) || meta[[i]]$quantity <= 0 ||
-          !is.numeric(meta[[i]]$mark) || length(meta[[i]]$mark) != 1L ||
-          !is.finite(meta[[i]]$mark) || meta[[i]]$mark < 0 ||
-          !is.numeric(meta[[i]]$position_before) ||
-          length(meta[[i]]$position_before) != 1L ||
-          !is.finite(meta[[i]]$position_before) ||
-          !is.numeric(meta[[i]]$position_after) ||
-          length(meta[[i]]$position_after) != 1L ||
-          !identical(as.numeric(meta[[i]]$position_after), 0) ||
-          !is.numeric(meta[[i]]$realized_model_pnl) ||
-          length(meta[[i]]$realized_model_pnl) != 1L ||
-          !is.finite(meta[[i]]$realized_model_pnl) ||
-          !is.character(meta[[i]]$source_fact_id) ||
-          length(meta[[i]]$source_fact_id) != 1L ||
-          is.na(meta[[i]]$source_fact_id) || !nzchar(meta[[i]]$source_fact_id) ||
-          !is.character(meta[[i]]$disposition_policy_id) ||
-          length(meta[[i]]$disposition_policy_id) != 1L ||
-          is.na(meta[[i]]$disposition_policy_id) ||
-          !nzchar(meta[[i]]$disposition_policy_id)) {
+        !isTRUE(meta[[i]]$source %in% ledgr_disposition_sources()) ||
+        any(!required_meta %in% names(meta[[i]])) ||
+        is.na(instrument_id[[i]]) || !nzchar(instrument_id[[i]]) ||
+        !is.numeric(meta[[i]]$quantity) || length(meta[[i]]$quantity) != 1L ||
+        !is.finite(meta[[i]]$quantity) || meta[[i]]$quantity <= 0 ||
+        !is.numeric(meta[[i]]$mark) || length(meta[[i]]$mark) != 1L ||
+        !is.finite(meta[[i]]$mark) || meta[[i]]$mark < 0 ||
+        !is.numeric(meta[[i]]$position_before) ||
+        length(meta[[i]]$position_before) != 1L ||
+        !is.finite(meta[[i]]$position_before) ||
+        !is.numeric(meta[[i]]$position_after) ||
+        length(meta[[i]]$position_after) != 1L ||
+        !identical(as.numeric(meta[[i]]$position_after), 0) ||
+        !is.numeric(meta[[i]]$realized_model_pnl) ||
+        length(meta[[i]]$realized_model_pnl) != 1L ||
+        !is.finite(meta[[i]]$realized_model_pnl) ||
+        !is.character(meta[[i]]$source_fact_id) ||
+        length(meta[[i]]$source_fact_id) != 1L ||
+        is.na(meta[[i]]$source_fact_id) || !nzchar(meta[[i]]$source_fact_id) ||
+        !is.character(meta[[i]]$disposition_policy_id) ||
+        length(meta[[i]]$disposition_policy_id) != 1L ||
+        is.na(meta[[i]]$disposition_policy_id) ||
+        !nzchar(meta[[i]]$disposition_policy_id)) {
         ledgr_accounting_event_error(
           "DISPOSITION metadata is malformed or carries a forbidden subtype.",
           "ledgr_invalid_ledger_meta"
@@ -214,9 +224,9 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
       # The persisted event row must agree with its metadata, so an event
       # quantity or price cannot drift from the amount replay disposes.
       if (!isTRUE(all.equal(position_delta[[i]], expected_position, tolerance = 0)) ||
-          !isTRUE(all.equal(cash_delta[[i]], expected_cash, tolerance = 0)) ||
-          !isTRUE(all.equal(qty[[i]], as.numeric(meta[[i]]$quantity), tolerance = 0)) ||
-          !isTRUE(all.equal(price[[i]], as.numeric(meta[[i]]$mark), tolerance = 0))) {
+        !isTRUE(all.equal(cash_delta[[i]], expected_cash, tolerance = 0)) ||
+        !isTRUE(all.equal(qty[[i]], as.numeric(meta[[i]]$quantity), tolerance = 0)) ||
+        !isTRUE(all.equal(price[[i]], as.numeric(meta[[i]]$mark), tolerance = 0))) {
         ledgr_accounting_event_error(
           "DISPOSITION cash and position deltas do not reconcile to its position and mark.",
           "ledgr_invalid_ledger_meta"
@@ -344,7 +354,9 @@ ledgr_accounting_position_after <- function(prepared) {
   delta <- prepared$position_delta
   out <- rep(NA_real_, length(delta))
   has <- which(!is.na(inst))
-  if (length(has) == 0L) return(out)
+  if (length(has) == 0L) {
+    return(out)
+  }
   ord <- has[order(inst[has], has)]
   d <- delta[ord]
   group <- inst[ord]
@@ -377,7 +389,9 @@ ledgr_accounting_position_after <- function(prepared) {
 ledgr_accounting_positions_at_pairs <- function(replay, query_ids, query_times) {
   prepared <- replay$prepared
   event_num <- as.numeric(prepared$ts_utc)
-  if (is.unsorted(event_num)) return(NULL)
+  if (is.unsorted(event_num)) {
+    return(NULL)
+  }
   inst <- prepared$instrument_index
   has <- !is.na(inst)
   big <- length(event_num) + 1
@@ -390,7 +404,9 @@ ledgr_accounting_positions_at_pairs <- function(replay, query_ids, query_times) 
   prefix <- findInterval(as.numeric(as.POSIXct(query_times, tz = "UTC")), event_num)
   out <- numeric(length(q_inst))
   ok <- which(!is.na(q_inst) & !is.na(prefix))
-  if (length(ok) == 0L) return(out)
+  if (length(ok) == 0L) {
+    return(out)
+  }
   hit <- findInterval(q_inst[ok] * big + prefix[ok], key)
   found <- hit > 0L
   found[found] <- key_inst[hit[found]] == q_inst[ok][found]
@@ -470,7 +486,9 @@ ledgr_accounting_fills_from_replay <- function(replay,
                                                execution_opportunities_posix = NULL) {
   prepared <- replay$prepared
   fill <- which(prepared$operation == 1L)
-  if (length(fill) == 0L) return(ledgr_empty_fills_table())
+  if (length(fill) == 0L) {
+    return(ledgr_empty_fills_table())
+  }
 
   source <- rep(fill, each = 2L)
   close_leg <- rep(c(TRUE, FALSE), times = length(fill))
@@ -479,7 +497,9 @@ ledgr_accounting_fills_from_replay <- function(replay,
   source <- source[keep]
   close_leg <- close_leg[keep]
   quantity <- quantity[keep]
-  if (length(source) == 0L) return(ledgr_empty_fills_table())
+  if (length(source) == 0L) {
+    return(ledgr_empty_fills_table())
+  }
 
   close_total <- replay$close_qty[source]
   open_total <- replay$open_qty[source]

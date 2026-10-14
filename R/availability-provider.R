@@ -13,7 +13,6 @@ ledgr_availability_stable_ids <- function(ids) {
 }
 
 ledgr_availability_read_table <- function(con, table, snapshot_id, order_by) {
-  if (!ledgr_experiment_store_table_exists(con, table)) return(data.frame())
   DBI::dbGetQuery(
     con,
     sprintf(

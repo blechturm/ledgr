@@ -232,7 +232,7 @@ ledgr_snapshot_from_df <- function(bars_df,
       )
     }
 
-    ord_inst <- order(inst_id)
+    ord_inst <- order(inst_id, method = "radix")
     inst_out <- data.frame(
       instrument_id = inst_id[ord_inst],
       symbol = symbol[ord_inst],
@@ -244,7 +244,7 @@ ledgr_snapshot_from_df <- function(bars_df,
     )
     if (!is.null(meta_updates)) meta_updates <- meta_updates[ord_inst]
   } else {
-    inst_id <- sort(unique(bars_out$instrument_id))
+    inst_id <- sort(unique(bars_out$instrument_id), method = "radix")
     inst_out <- data.frame(
       instrument_id = inst_id,
       symbol = inst_id,
@@ -270,15 +270,10 @@ ledgr_snapshot_from_df <- function(bars_df,
     add = TRUE
   )
 
-  if (identical(db_path, ":memory:") || !file.exists(db_path)) {
-    drv <- ledgr_duckdb_driver()
-    con <- DBI::dbConnect(drv, dbdir = db_path)
-    attr(con, "ledgr_duckdb_drv") <- drv
-    ledgr_create_schema(con)
-  } else {
-    con <- ledgr_db_init(db_path)
-    drv <- attr(con, "ledgr_duckdb_drv")
-  }
+  opened <- ledgr_store_open(db_path, mode = "create")
+  con <- opened$con
+  drv <- opened$drv
+  attr(con, "ledgr_duckdb_drv") <- drv
 
   snapshot_id <- ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = list())
 
@@ -382,11 +377,6 @@ ledgr_snapshot_from_df <- function(bars_df,
 
   DBI::dbExecute(
     con,
-    "CREATE INDEX IF NOT EXISTS idx_snapshot_bars_ts ON snapshot_bars(snapshot_id, ts_utc)"
-  )
-
-  DBI::dbExecute(
-    con,
     paste0(
       "CREATE OR REPLACE TEMP VIEW bars AS ",
       "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
@@ -416,7 +406,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   if (!is.null(price_basis)) {
     metadata$price_basis <- price_basis
   }
-  metadata$snapshot_hash_rule_version <- ledgr_snapshot_hash_rule3_version
+  metadata$snapshot_hash_rule_version <- ledgr_snapshot_content_hash_rule_version
   if (!is.null(availability_report)) {
     metadata$fact_family_count <- length(facts$families) +
       as.integer(identical(invalid_observations, "quarantine"))

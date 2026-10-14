@@ -20,9 +20,9 @@ and seed.
 Every run records \code{identity_rule_version}. Under identity rule 2 the
 snapshot identity in \code{config_hash} is the sealed content hash
 (\code{data.snapshot_hash}), not the store-local \code{data.snapshot_id}: the same
-bars sealed under two snapshot IDs give the same \code{config_hash}. A config
-without the field was recorded under rule 1, which hashed the snapshot ID;
-it stays readable, but resuming it refuses with \code{ledgr_identity_rule_retired}.
+bars sealed under two snapshot IDs give the same \code{config_hash}. Every
+current config carries rule 2 and a snapshot hash; missing or different
+identity records are invalid rather than inferred or migrated.
 
 \code{feature_set_hash} identifies the resolved concrete feature definitions by
 hashing the set of feature fingerprints. It changes when concrete feature
@@ -63,11 +63,8 @@ fields are execution identity and participate in \code{config_hash}.
 
 Sweeps expose \code{risk_chain_hash} on candidate rows and carry
 \code{risk_plan_json} in row-level provenance and reproduction keys. Saved sweeps
-store both fields on the parent sweep row and candidate rows; the first
-\code{ledgr_sweep_save()} against a v0.1.9.2 store performs an additive schema
-migration for these risk identity columns. Missing pre-v0.1.9.3 risk fields
-reopen as the no-op risk plan in memory; stored historical config JSON is not
-rewritten by the compatibility normalizer.
+store both fields on the parent sweep row and candidate rows. Saved sweeps
+carry the current schema and exact risk identity; other schemas are invalid.
 }
 
 \section{Walk-forward identity}{

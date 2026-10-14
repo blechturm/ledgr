@@ -1,12 +1,12 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-12 are complete and accepted: 26 workstreams. Cut 12 closes the systematic
-point-in-time consistency audit and the held maintenance needed to restore the
-fast-profile gate. Cut 13 implements the accepted WS5-A snapshot-verification
-policy before the point-in-time history (WS3) and recursive-indicator (WS4)
-implementation cut. Their shared history-start decision replaces Cut 9's
-temporary rule.
+13 are complete and accepted. Draft Cut 14 owns the accepted pre-CRAN legacy
+removal and its codebase-hygiene amendment; its cut-review corrections await
+focused re-review before implementation. The interim rule-3 lake rebuild and
+one-execution-mode probe then precede the point-in-time history (WS3) and
+recursive-indicator (WS4) implementation cut. Their shared history-start
+decision replaces Cut 9's temporary rule.
 
 **Date:** 2026-10-03
 
@@ -952,10 +952,9 @@ resulting order is: Cut 13, the legacy-removal cut, the interim lake rebuild
 under rule 3, the one-execution-mode probe, the governance cut, the WS3/WS4
 history wave and implementation cut, the lake rebuild with dividend facts,
 WS7, the WS6 probe, WS8.
-
 2026-10-14 maintainer amendment, unowned-debt routing: issues that no ticket
 owned were routed. The identity-hashing collation defect and the
-identity-type looseness go to Cut 14 (`tickets.yml`). The store gate's
+identity-type looseness go to Cut 14 LDG-3036 (`tickets.yml`). The store gate's
 per-open cost is accepted as a component miss: about 1.1 ms per store open,
 under 0.1 percent of any public call, with end-to-end clocks unchanged
 (maintainer, 2026-10-14; recorded in the WS29 decisions). Three review-found

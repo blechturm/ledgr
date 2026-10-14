@@ -1,23 +1,18 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 13 are closed. Workstream 27's final focused Type 1
-re-review returned `PASS` at `fa41283d`, and the maintainer accepted it on
-2026-10-13. LDG-3019's rule-3 encoder and refusal boundary and LDG-3020's
-process-local verification reuse are complete. The correction fast lane passes
-566 of 566 blocks in 110.04 seconds. Final full-matrix run 38371833556 is green
-on both Ubuntu jobs and Windows: the rule-3 roots, ordinary and isolated-CRAN
-profiles, R CMD checks and the 87.25 percent coverage gate all pass. The
-checked-in post-residue fast record keeps its 131.70-second loaded-host timing
-miss; the reviewer's three alternating scratch pairs measured 108.04 seconds
-at `fa41283d` against 107.84 seconds at the preceding tree. Workstream 28's
-focused Type 1 re-review returned `PASS` at `901325af`, and the maintainer
-accepted it on 2026-10-13. LDG-3021's singleton-fingerprint persistence,
-reopen and promotion repair is complete. Its two correctness-clean
-P-core-pinned record sets missed the unchanged 112-second gate by 1.91 and
-3.05 seconds at their medians. The accepted exception keeps those records as
-failures, leaves the bound unchanged and moves no tests ahead of next-version
-fold-core unification. Final Cut 13 review accounting is 6 invocations over 3
-tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
+**Status:** Cuts 1 through 14 are closed. Cut 14's nineteen tickets across
+Workstreams 29 through 31 were accepted by the maintainer on 2026-10-14. The
+release now has one current schema and store gate, current-only persisted
+records and public surfaces, and the structural hygiene baseline: the design
+tree is excluded from builds, seeded runs preserve caller RNG, persisted
+schema-version literals are fingerprinted, lint is blocking, and the helper
+and condition inventories have failure-sensitive gates. The final source
+census records 1,627 helpers, 2,240 condition call sites and 23 contracted
+test seams. The binding local fast record has a 105.64-second median; a final
+post-deletion sample passes 564/564 blocks in 106.12 seconds. GitHub Actions
+run 38588320767 passes both blocking lint jobs, all three hosted fast runs and
+R CMD check. Its 166.797-second hosted median remains advisory and above the
+unchanged local 112-second bound.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -52,9 +47,15 @@ ledger.
   task-oriented routes.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
-- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
-  closed. Workstreams 27 and 28 and LDG-3019 through LDG-3021 are complete and
-  accepted.
+- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 14 are
+  closed. Cut 14 contains nineteen completed tickets across Workstreams 29
+  through 31. Its review artifacts are `cut_review_14.md`,
+  `close_review_29.md`, `close_review_30.md`,
+  `close_review_30_rereview_1.md`, `close_review_31.md` and
+  `close_review_31_rereview_1.md`; older review fields remain historical
+  records. The current 22-member fingerprint makes the earlier 21-member
+  interim lake truthfully stale. The existing WS7 lake rebuild with dividend
+  facts owns the next private rebuild.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
@@ -63,6 +64,8 @@ ledger.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
   record for the accepted prepared feature accessors and exact explicit-map
   memoization.
+- `current_store_format_closeout.md`: agent-provisional Workstream 29 record
+  for schema 119, the marker-pair gate and strict catalogue validation.
 
 ## Cut 1: Design-memory authority and discoverability
 
@@ -572,6 +575,62 @@ over four tickets, 0.750. This is chosen rather than inherent: one combined
 workstream would meet 0.500, but would combine a present defect with a distinct
 temporary product-semantic decision. The cut records that cost rather than
 adding ceremonial work.
+
+## Cut 14: Pre-CRAN legacy removal and structural hygiene
+
+**Status:** Closed and accepted by the maintainer on 2026-10-14. All nineteen
+tickets and all three workstreams are complete.
+
+Authority is the accepted pre-CRAN legacy-removal synthesis, its Type 1 final
+review, and the macro plan's 2026-10-12 legacy-removal,
+interim-lake-rebuild and codebase-hygiene amendments. The cut consolidates the
+synthesis's contract changes now, removes its RFC-pipeline obligation, and
+amends the temporary legacy-readability clauses in the accepted WS5-A
+synthesis. `tickets.yml` remains the sole execution and sequencing authority.
+
+The cut has three claims:
+
+| Workstream | Tickets | Claim |
+| --- | --- | --- |
+| 29 One current schema and one store gate | LDG-3024 to LDG-3027 | every persistent ledgr store is created or opened through schema 119, one marker-pair gate and one strict catalogue authority |
+| 30 Current-only records and public surfaces | LDG-3028 to LDG-3031, LDG-3036 | no supported record or call surface retains a legacy branch, canonical identity is locale-independent and exact-typed, current outputs stay exact, and the private lake is rebuilt under the final format |
+| 31 Structural codebase hygiene | LDG-3022, LDG-3023, LDG-3032 to LDG-3040 | design memory leaves built packages, seeded runs preserve caller RNG, inline schema versions are classified, ticket-named helpers are renamed, the measured helper and condition backlog is reconciled before the source census becomes two failure-sensitive gates, lint moves from advisory to blocking, and the helper rule becomes standing review guidance |
+
+The sequence deliberately crosses Workstream 31 once. LDG-3022's report-only
+census and LDG-3023's advisory lint land before product deletion. Workstream 29
+then centralizes schema and opening, Workstream 30 removes record and call-form
+compatibility and rebuilds the research lake, and Workstream 31 finishes with
+the isolated style pass, explicit backlog reconciliation, blocking lint,
+structural tests and standing rules. This lets the same source-derived evidence
+guide removal and later detect its regression without combining the three
+review claims.
+
+Workstream 31's lint interval is recorded explicitly: formatting moved from
+the advisory [`lint/`](../../../dev/bench/v0_2_2_pre_cran_removal/lint/) record
+to [`format_lint_blocking/`](../../../dev/bench/v0_2_2_pre_cran_removal/format_lint_blocking/),
+while semantic lint moved from
+[`semantic_lint_advisory/`](../../../dev/bench/v0_2_2_pre_cran_removal/semantic_lint_advisory/)
+to [`semantic_lint_blocking/`](../../../dev/bench/v0_2_2_pre_cran_removal/semantic_lint_blocking/).
+
+The spec-cut choices are closed. `ledgr_db_init()` keeps its public name and
+means create-empty-or-open-current. The store marker holds version 119 and
+typed canonical JSON written by a dedicated radix-order serializer over an
+independent literal oracle of the enumerated format constants. The rebuild
+condition has a closed five-cause vocabulary. Existing public validator errors
+stay exact. Existing condition classes are documented rather than renamed. No
+migration, legacy reader, missing-marker fallback, public diagnostic opener or
+compatibility alias is authorized.
+
+The M1 close measurement is eight independent verdicts over nineteen completed
+tickets, or 0.421; it is not a gate. One verdict was a combined Type 1/Type 2
+cut review and seven were Type 1 focused-cut, workstream-close or focused
+workstream re-reviews. All eight returned findings and changed ticketing,
+implementation, tests, evidence or acceptance handling; none reopened the
+accepted architecture. There were no own-session verdicts in the count. Four
+maintainer review-disposition turns accepted the patched cut, the Workstream 29
+store-gate cost, the Workstream 30 corrections without a third review, and the
+Workstream 31 corrections without a third review. `tickets.yml` holds the
+complete accounting and the scope of the non-counted preparatory checkpoint.
 
 ## Expected later artifacts
 

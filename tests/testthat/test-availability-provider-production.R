@@ -1,5 +1,5 @@
 availability_v201_membership_fixture <- function(days = 5L,
-                                                  bar_days = seq_len(days)) {
+                                                 bar_days = seq_len(days)) {
   membership <- ledgr_facts_membership_snapshots(
     data.frame(
       effective_from = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
@@ -32,11 +32,16 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
     snapshot_id = "provider-consumer",
     facts = fixture$facts, price_basis = "split_adjusted"
   )
-  on.exit({
-    ledgr_snapshot_close(snapshot)
-    unlink(c(db, paste0(db, ".wal")), force = TRUE)
-  }, add = TRUE)
-  interrupt_at <- if (is.null(interrupt_day)) "" else {
+  on.exit(
+    {
+      ledgr_snapshot_close(snapshot)
+      unlink(c(db, paste0(db, ".wal")), force = TRUE)
+    },
+    add = TRUE
+  )
+  interrupt_at <- if (is.null(interrupt_day)) {
+    ""
+  } else {
     format(
       availability_v201_at(interrupt_day, "21:00:00"),
       "%Y-%m-%dT%H:%M:%SZ",

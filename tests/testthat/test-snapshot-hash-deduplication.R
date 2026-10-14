@@ -61,162 +61,113 @@ testthat::test_that("[LTB-0251] rule-3 blocks are fixed and order checked", {
   testthat::expect_no_match(source, "append\\(")
 })
 
-testthat::test_that("[LTB-0250] old hash rules are readable but not executable", {
-  path <- tempfile(fileext = ".duckdb")
-  snapshot <- ledgr_snapshot_from_df(
-    ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2),
-    db_path = path
-  )
-  id <- snapshot$snapshot_id
-  current <- ledgr_snapshot_info(snapshot)
-  testthat::expect_identical(current$hash_rule_version[[1L]], 3L)
-  testthat::expect_identical(current$verified_in_process[[1L]], TRUE)
-  testthat::expect_match(
-    paste(capture.output(print(snapshot)), collapse = "\n"),
-    "Hash rule:    3 \\(verified in this process\\)",
-    perl = TRUE
-  )
-
-  strategy <- function(ctx, params) ctx$flat()
-  experiment <- ledgr_experiment(
-    snapshot,
-    strategy,
-    cost_model = ledgr_cost_zero()
-  )
-  completed <- ledgr_run(experiment, run_id = "rule3-completed")
-  initial_cash <- completed$config$backtest$initial_cash
-  close(completed)
-  ledgr_snapshot_close(snapshot)
-
-  incomplete_snapshot <- availability_runtime_fixture(
-    days = 4L,
-    bar_days = c(1L, 2L, 4L)
-  )
-  incomplete_path <- incomplete_snapshot$db_path
-  incomplete_id <- incomplete_snapshot$snapshot_id
-  incomplete_experiment <- ledgr_experiment(
-    incomplete_snapshot,
-    function(ctx, params) {
-      target <- ctx$hold()
-      target[["AAA"]] <- 1
-      target
-    },
-    valuation_policy = ledgr_valuation_stale(0L, exhausted = "refuse"),
-    cost_model = ledgr_cost_zero()
-  )
-  incomplete <- ledgr_run(
-    incomplete_experiment,
-    run_id = "rule3-incomplete"
-  )
-  testthat::expect_identical(
-    ledgr_run_info(incomplete_snapshot, incomplete$run_id)$status,
-    "INCOMPLETE"
-  )
-  close(incomplete)
-  ledgr_snapshot_close(incomplete_snapshot)
-
-  expect_rebuild <- function(expr, rule) {
-    shown <- if (is.na(rule)) "missing" else as.character(rule)
-    message <- paste0(
-      "Snapshot hash rule ", shown,
-      " is not executable. Rebuild the snapshot from source under hash rule 3."
-    )
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0250] every content reader refuses a non-current hash rule", {
+  expect_unsupported <- function(expr) {
     testthat::expect_error(
       force(expr),
-      message,
-      class = "ledgr_snapshot_rebuild_required",
-      fixed = TRUE
+      class = "ledgr_snapshot_hash_rule_unsupported"
     )
   }
 
-  for (rule in list(NA_integer_, 1L, 2L)) {
-    con <- ledgr_db_init(path)
+  for (rule in list(NA_integer_, 1L, 99L)) {
+    path <- tempfile(fileext = ".duckdb")
+    snapshot <- ledgr_snapshot_from_df(
+      ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2),
+      db_path = path
+    )
+    id <- snapshot$snapshot_id
+    strategy <- function(ctx, params) ctx$flat()
+    experiment <- ledgr_experiment(
+      snapshot,
+      strategy,
+      cost_model = ledgr_cost_zero()
+    )
+    completed <- ledgr_run(
+      experiment,
+      run_id = paste0("rule3-completed-", ifelse(is.na(rule), "missing", rule))
+    )
+    initial_cash <- completed$config$backtest$initial_cash
+    close(completed)
+
+    incomplete_snapshot <- availability_runtime_fixture(
+      days = 4L,
+      bar_days = c(1L, 2L, 4L)
+    )
+    incomplete_experiment <- ledgr_experiment(
+      incomplete_snapshot,
+      function(ctx, params) {
+        target <- ctx$hold()
+        target[["AAA"]] <- 1
+        target
+      },
+      valuation_policy = ledgr_valuation_stale(0L, exhausted = "refuse"),
+      cost_model = ledgr_cost_zero()
+    )
+    incomplete <- ledgr_run(
+      incomplete_experiment,
+      run_id = paste0("rule3-incomplete-", ifelse(is.na(rule), "missing", rule))
+    )
+    incomplete_run_id <- incomplete$run_id
+    close(incomplete)
+
+    con <- ledgr:::get_connection(snapshot)
     DBI::dbExecute(
       con,
       "UPDATE snapshots SET hash_rule_version = ? WHERE snapshot_id = ?",
       params = list(rule, id)
     )
-    DBI::dbDisconnect(con, shutdown = TRUE)
-    reopened <- ledgr_snapshot_open(path, id, verify = FALSE)
-    info <- ledgr_snapshot_info(reopened)
-    testthat::expect_identical(info$hash_rule_version[[1L]], rule)
-    expect_rebuild(ledgr_snapshot_open(path, id, verify = TRUE), rule)
-    expect_rebuild(ledgr_snapshot_validate(reopened), rule)
-    expect_rebuild(ledgr_snapshot_seal(reopened), rule)
-    expect_rebuild(
-      ledgr_facts_history(reopened, "membership", "legacy-guard"),
-      rule
-    )
-    expect_rebuild(
-      ledgr_pulse_snapshot(
-        reopened,
-        universe = "AAA",
-        ts_utc = "2020-01-03T00:00:00Z"
-      ),
-      rule
-    )
-    expect_rebuild(
-      ledgr_indicator_dev(
-        reopened,
-        instrument_id = "AAA",
-        ts_utc = "2020-01-03T00:00:00Z",
-        lookback = 2L
-      ),
-      rule
-    )
-
-    incomplete_con <- ledgr_db_init(incomplete_path)
+    incomplete_con <- ledgr:::get_connection(incomplete_snapshot)
     DBI::dbExecute(
       incomplete_con,
       "UPDATE snapshots SET hash_rule_version = ? WHERE snapshot_id = ?",
-      params = list(rule, incomplete_id)
+      params = list(rule, incomplete_snapshot$snapshot_id)
     )
-    DBI::dbDisconnect(incomplete_con, shutdown = TRUE)
-    incomplete_reopened <- ledgr_snapshot_open(
-      incomplete_path,
-      incomplete_id,
-      verify = FALSE
+    ledgr:::ledgr_snapshot_verified_reset()
+
+    expect_unsupported(ledgr_snapshot_open(path, id, verify = TRUE))
+    expect_unsupported(ledgr_snapshot_validate(snapshot))
+    expect_unsupported(ledgr_snapshot_seal(snapshot))
+    expect_unsupported(
+      ledgr_facts_history(snapshot, "membership", "current-only-guard")
     )
-    expect_rebuild(
-      ledgr_run_open(incomplete_reopened, "rule3-incomplete"),
-      rule
+    expect_unsupported(
+      ledgr_pulse_snapshot(
+        snapshot,
+        universe = "AAA",
+        ts_utc = "2020-01-03T00:00:00Z"
+      )
     )
-    ledgr_snapshot_close(incomplete_reopened)
-    expect_rebuild(
+    expect_unsupported(
+      ledgr_indicator_dev(
+        snapshot,
+        instrument_id = "AAA",
+        ts_utc = "2020-01-03T00:00:00Z",
+        lookback = 2L
+      )
+    )
+    expect_unsupported(
+      ledgr_run_open(incomplete_snapshot, incomplete_run_id)
+    )
+    expect_unsupported(
       ledgr_run(
         experiment,
         params = list(rule = rule),
-        run_id = paste0("legacy-guard-", ifelse(is.na(rule), "missing", rule))
-      ),
-      rule
+        run_id = paste0("current-only-guard-", ifelse(is.na(rule), "missing", rule))
+      )
     )
-
-    con <- ledgr_db_init(path)
-    expect_rebuild(
+    expect_unsupported(
       ledgr:::ledgr_rebuild_derived_state(
         con,
-        completed$run_id,
+        paste0("rule3-completed-", ifelse(is.na(rule), "missing", rule)),
         initial_cash = initial_cash
-      ),
-      rule
+      )
     )
-    DBI::dbDisconnect(con, shutdown = TRUE)
-    ledgr_snapshot_close(reopened)
+
+    ledgr_snapshot_close(incomplete_snapshot)
+    ledgr_snapshot_close(snapshot)
   }
-
-  con <- ledgr_db_init(path)
-  DBI::dbExecute(
-    con,
-    "UPDATE snapshots SET hash_rule_version = 99 WHERE snapshot_id = ?",
-    params = list(id)
-  )
-  testthat::expect_error(
-    ledgr:::ledgr_snapshot_hash(con, id),
-    class = "ledgr_snapshot_hash_rule_unsupported"
-  )
-  DBI::dbDisconnect(con, shutdown = TRUE)
 })
-
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("run, timestamp, price, and stored-hash guards still detect tampering", {
   path <- tempfile(fileext = ".duckdb")

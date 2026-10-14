@@ -60,11 +60,13 @@ ledgr_sweep_retention_normalize <- function(retain) {
       class = c("ledgr_invalid_sweep_retention", "ledgr_invalid_args")
     )
   }
-  legacy_version <- identical(retain$retention_schema_version, 1L)
-  current_version <- identical(retain$retention_schema_version, ledgr_sweep_retention_schema_version)
-  trades <- retain$trades %||% "none"
+  current_version <- identical(
+    retain$retention_schema_version,
+    ledgr_sweep_retention_schema_version
+  )
+  trades <- retain$trades
   if (!is.list(retain) ||
-      (!legacy_version && !current_version) ||
+      !current_version ||
       !is.character(retain$returns) ||
       length(retain$returns) != 1L ||
       is.na(retain$returns) ||
@@ -816,7 +818,7 @@ ledgr_return_panel_long_labels <- function(returns, label_columns) {
       class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
     )
   }
-  unique_labels <- sort(unique(labels))
+  unique_labels <- sort(unique(labels), method = "radix")
   list(labels = unique_labels, row_labels = labels, ts_utc = unique_labels)
 }
 

@@ -50,7 +50,6 @@ ledgr_sweep_save <- function(sweep, snapshot, sweep_id = NULL, note = NULL) {
 
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
   ledgr_sweep_assert_schema_compatible(opened$con, write = TRUE)
   ledgr_sweep_assert_snapshot_matches(opened$con, sweep, snapshot)
   ledgr_sweep_assert_id_available(opened$con, sweep_id)
@@ -85,7 +84,6 @@ ledgr_sweep_open <- function(snapshot, sweep_id) {
 
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = FALSE)
   ledgr_sweep_assert_schema_compatible(opened$con, write = FALSE)
 
   parent <- ledgr_sweep_fetch_parent(opened$con, sweep_id)
@@ -119,7 +117,6 @@ ledgr_sweep_list <- function(snapshot) {
   db_path <- ledgr_run_store_snapshot_path(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = FALSE)
   ledgr_sweep_assert_schema_compatible(opened$con, write = FALSE)
 
   rows <- DBI::dbGetQuery(
@@ -320,50 +317,7 @@ ledgr_sweep_assert_id_available <- function(con, sweep_id) {
 }
 
 ledgr_sweep_assert_schema_compatible <- function(con, write = FALSE) {
-  required <- list(
-    sweeps = c(
-      "sweep_id", "snapshot_id", "snapshot_hash", "created_at_utc",
-      "engine_version", "sweep_schema_version", "note", "retention_json",
-      "metric_context_json", "metric_context_hash", "metric_context_version",
-      "cost_model_hash", "cost_plan_json", "execution_assumptions_json",
-      "feature_union_hash", "feature_engine_version", "candidate_features_json",
-      "grid_json"
-    ),
-    sweep_candidates = c(
-      "sweep_id", "candidate_id", "candidate_row", "status", "final_equity",
-      "metrics_json", "total_return", "annualized_return", "volatility",
-      "sharpe_ratio", "max_drawdown", "n_trades", "win_rate", "avg_trade",
-      "time_in_market", "execution_seed", "error_class", "error_msg",
-      "params_json", "feature_params_json", "warnings_json",
-      "feature_set_hash", "feature_fingerprints_json", "provenance_json",
-      "cost_model_hash", "metric_context_hash"
-    ),
-    sweep_returns = c("sweep_id", "candidate_row", "pulse_index", "ts_utc", "equity", "period_return")
-  )
-  if (isTRUE(write)) {
-    required$sweeps <- c(required$sweeps, "risk_chain_hash", "risk_plan_json")
-    required$sweep_candidates <- c(required$sweep_candidates, "risk_chain_hash", "risk_plan_json")
-    required$sweep_candidates <- c(required$sweep_candidates, "completion_json")
-    required$sweep_trades <- c(
-      "sweep_id", "candidate_row", "trade_seq", "close_ts_utc",
-      "realized_pnl", "win_loss"
-    )
-  }
-  for (table in names(required)) {
-    if (!ledgr_experiment_store_table_exists(con, table)) {
-      rlang::abort(
-        sprintf("Saved sweep schema is missing required table: %s", table),
-        class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
-      )
-    }
-    missing <- setdiff(required[[table]], ledgr_experiment_store_columns(con, table))
-    if (length(missing) > 0L) {
-      rlang::abort(
-        sprintf("Saved sweep schema table %s is missing required column(s): %s.", table, paste(missing, collapse = ", ")),
-        class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
-      )
-    }
-  }
+  ledgr_validate_schema_once(con)
   invisible(TRUE)
 }
 
@@ -420,7 +374,7 @@ ledgr_sweep_assert_snapshot_row <- function(con, snapshot_id, snapshot_hash) {
 
 ledgr_sweep_assert_parent_schema_version <- function(parent) {
   version <- as.integer(parent$sweep_schema_version[[1]])
-  if (is.na(version) || version > ledgr_saved_sweep_schema_version || version < 1L) {
+  if (is.na(version) || !identical(version, ledgr_saved_sweep_schema_version)) {
     rlang::abort(
       sprintf(
         "Saved sweep schema version %s is incompatible with this ledgr version.",
@@ -484,9 +438,6 @@ ledgr_sweep_fetch_returns <- function(con, sweep_id, candidates) {
 }
 
 ledgr_sweep_fetch_trades <- function(con, sweep_id, candidates) {
-  if (!ledgr_experiment_store_table_exists(con, "sweep_trades")) {
-    return(ledgr_sweep_empty_trades(include_sweep_id = TRUE))
-  }
   trades <- DBI::dbGetQuery(
     con,
     "
@@ -544,11 +495,7 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     candidate_id = as.character(candidates$candidate_id),
     candidate_row = as.integer(candidates$candidate_row),
     status = as.character(candidates$status),
-    completion_json = if ("completion_json" %in% names(candidates)) {
-      as.character(candidates$completion_json)
-    } else {
-      rep(NA_character_, nrow(candidates))
-    },
+    completion_json = as.character(candidates$completion_json),
     final_equity = as.numeric(candidates$final_equity),
     total_return = as.numeric(candidates$total_return),
     annualized_return = as.numeric(candidates$annualized_return),
@@ -617,22 +564,11 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
 }
 
 ledgr_sweep_reconstruct_risk_identity <- function(parent, candidates) {
-  version <- as.integer(parent$sweep_schema_version[[1]])
-  noop <- ledgr_sweep_reconstruct_noop_risk_identity()
   parent_has_risk <- all(c("risk_chain_hash", "risk_plan_json") %in% names(parent))
   candidate_has_risk <- all(c("risk_chain_hash", "risk_plan_json") %in% names(candidates))
-  if (version < 2L) {
-    ledgr_sweep_assert_legacy_risk_unambiguous(parent, candidates, noop, parent_has_risk, candidate_has_risk)
-    return(list(
-      parent_hash = noop$risk_chain_hash,
-      parent_plan = noop$risk_plan_json,
-      candidate_hashes = rep(noop$risk_chain_hash, nrow(candidates)),
-      candidate_plans = rep(noop$risk_plan_json, nrow(candidates))
-    ))
-  }
   if (!parent_has_risk || !candidate_has_risk) {
     rlang::abort(
-      "Saved sweep schema v2 requires risk_chain_hash and risk_plan_json columns.",
+      "Saved sweep schema 4 requires risk_chain_hash and risk_plan_json columns.",
       class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
     )
   }
@@ -670,49 +606,6 @@ ledgr_sweep_reconstruct_risk_identity <- function(parent, candidates) {
     parent_plan = parent_plan,
     candidate_hashes = candidate_hashes,
     candidate_plans = candidate_plans
-  )
-}
-
-ledgr_sweep_assert_legacy_risk_unambiguous <- function(parent,
-                                                       candidates,
-                                                       noop,
-                                                       parent_has_risk,
-                                                       candidate_has_risk) {
-  nonempty <- function(x) {
-    is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
-  }
-  assert_value <- function(hash, plan, label) {
-    has_hash <- nonempty(hash)
-    has_plan <- nonempty(plan)
-    if (!has_hash && !has_plan) {
-      return(invisible(TRUE))
-    }
-    if (!has_hash || !has_plan ||
-        !identical(as.character(hash), noop$risk_chain_hash) ||
-        !identical(as.character(canonical_json(plan)), noop$risk_plan_json)) {
-      rlang::abort(
-        sprintf("Saved sweep schema v1 has ambiguous risk identity in %s.", label),
-        class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
-      )
-    }
-    invisible(TRUE)
-  }
-  if (isTRUE(parent_has_risk)) {
-    assert_value(parent$risk_chain_hash[[1]], parent$risk_plan_json[[1]], "parent row")
-  }
-  if (isTRUE(candidate_has_risk)) {
-    for (i in seq_len(nrow(candidates))) {
-      assert_value(candidates$risk_chain_hash[[i]], candidates$risk_plan_json[[i]], "candidate row")
-    }
-  }
-  invisible(TRUE)
-}
-
-ledgr_sweep_reconstruct_noop_risk_identity <- function() {
-  risk <- ledgr_risk_none()
-  list(
-    risk_chain_hash = ledgr_risk_chain_hash(risk),
-    risk_plan_json = ledgr_risk_plan_json(risk)
   )
 }
 
@@ -806,8 +699,21 @@ ledgr_sweep_validate_reconstructed_identity <- function(parent, candidates, out)
 
 ledgr_sweep_retention_from_json <- function(json) {
   record <- ledgr_json_read_nested(json)
-  if (is.list(record) && is.character(record$returns) && length(record$returns) == 1L) {
-    return(ledgr_sweep_retention(record$returns, trades = record$trades %||% "none"))
+  required <- c("retention_schema_version", "returns", "trades")
+  if (is.list(record) &&
+      length(record) == length(required) &&
+      setequal(names(record), required)) {
+    class(record) <- c("ledgr_sweep_retention", "list")
+    return(tryCatch(
+      ledgr_sweep_retention_normalize(record),
+      error = function(e) {
+        rlang::abort(
+          "Saved sweep retention_json is incompatible.",
+          class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store"),
+          parent = e
+        )
+      }
+    ))
   }
   rlang::abort("Saved sweep retention_json is incompatible.", class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store"))
 }

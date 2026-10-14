@@ -131,21 +131,6 @@ ledgr_run_completion_validate_finalized <- function(con, completion, run_id, cal
   invisible(TRUE)
 }
 
-ledgr_run_terminal_recovery_telemetry <- function() {
-  telemetry <- new.env(parent = emptyenv())
-  telemetry$t_pre <- 0
-  telemetry$t_post <- NA_real_
-  telemetry$t_loop <- 0
-  telemetry$telemetry_stride <- 0L
-  telemetry$telemetry_samples <- 0L
-  telemetry$feature_cache_hits <- 0L
-  telemetry$feature_cache_misses <- 0L
-  for (name in c("t_pulse", "t_bars", "t_ctx", "t_fill", "t_state", "t_feats", "t_strat", "t_target", "t_event", "t_exec")) {
-    telemetry[[name]] <- numeric()
-  }
-  telemetry
-}
-
 ledgr_run_terminal_recovery_equity <- function(con,
                                                run_id,
                                                completion,

@@ -351,38 +351,8 @@ ledgr_metric_crypto <- function(risk_free_rate = 0, bars_per_day = 1L) {
 
 ledgr_metric_context_version <- function() 1L
 
-ledgr_metric_kernel <- function(context = NULL,
-                                pulses = NULL,
-                                bars_per_year = NULL) {
-  if (is.null(context) && !is.null(bars_per_year)) {
-    bars_per_year <- ledgr_validate_positive_scalar(bars_per_year, "bars_per_year")
-    # Legacy fallback preserves the annualization product only; the
-    # trading_days_per_year/bars_per_day decomposition is synthetic.
-    context <- ledgr_new_metric_context(
-      calendar = ledgr_calendar(
-        trading_days_per_year = bars_per_year,
-        bars_per_day = 1,
-        label = "legacy inferred cadence",
-        source = "legacy_inference"
-      )
-    )
-  } else if (is.null(context) && !is.null(pulses)) {
-    inferred <- ledgr_bars_per_year_from_pulses(
-      as.POSIXct(pulses, tz = "UTC", origin = "1970-01-01")
-    )
-    # Legacy fallback preserves the annualization product only; the
-    # trading_days_per_year/bars_per_day decomposition is synthetic.
-    context <- ledgr_new_metric_context(
-      calendar = ledgr_calendar(
-        trading_days_per_year = inferred,
-        bars_per_day = 1,
-        label = "legacy inferred cadence",
-        source = "legacy_inference"
-      )
-    )
-  } else {
-    context <- ledgr_metric_context_resolve(context)
-  }
+ledgr_metric_kernel <- function(context = NULL, pulses = NULL) {
+  context <- ledgr_metric_context_resolve(context)
 
   if (!is.null(pulses)) {
     ledgr_calendar_warn_if_inconsistent(
@@ -659,11 +629,6 @@ ledgr_metric_context_bars_per_year <- function(context) {
   ledgr_calendar_bars_per_year(context$calendar)
 }
 
-ledgr_metric_context_annual_risk_free_rate <- function(context) {
-  context <- ledgr_metric_context_resolve(context)
-  context$risk_free_rate$annual_rate
-}
-
 ledgr_backtest_metric_context <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_args")
@@ -706,7 +671,8 @@ ledgr_run_metric_context_from_db <- function(con, run_id) {
   }
   context <- ledgr_metric_context_from_json(json)
   stored_version <- suppressWarnings(as.integer(row$metric_context_version[[1]]))
-  if (!is.na(stored_version) && !identical(stored_version, as.integer(context$metric_context_version))) {
+  if (!is.na(stored_version) &&
+      !identical(stored_version, ledgr_metric_context_version())) {
     rlang::abort("Stored metric_context_version does not match metric_context_json.", class = "ledgr_invalid_metric_context")
   }
   stored_hash <- row$metric_context_hash[[1]]

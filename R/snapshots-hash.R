@@ -1,4 +1,4 @@
-ledgr_snapshot_hash_rule3_version <- 3L
+ledgr_snapshot_content_hash_rule_version <- 3L
 ledgr_snapshot_hash_rule3_block_rows <- 10000L
 
 ledgr_snapshot_hash_u32_le <- function(x) {
@@ -511,7 +511,7 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
 
   ledgr_snapshot_hash_hex(ledgr_snapshot_hash_sha256(c(
     charToRaw("LEDGR-SNAPSHOT"),
-    ledgr_snapshot_hash_u32_le(ledgr_snapshot_hash_rule3_version),
+    ledgr_snapshot_hash_u32_le(ledgr_snapshot_content_hash_rule_version),
     instruments,
     bars,
     facts

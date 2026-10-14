@@ -211,9 +211,6 @@ ledgr_write_run_telemetry <- function(con,
                                       persist_features,
                                       feature_cache_hits,
                                       feature_cache_misses) {
-  if (!ledgr_experiment_store_table_exists(con, "run_telemetry")) {
-    return(invisible(FALSE))
-  }
   DBI::dbExecute(
     con,
     "
@@ -710,6 +707,22 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   availability_active <- ledgr_availability_config_active(cfg)
   run_wall_start <- ledgr_time_now()
 
+  if (!is.null(seed)) {
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    old_seed <- if (had_seed) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit({
+      if (had_seed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    }, add = TRUE)
+  }
+
   engine <- ledgr_run_prepare_engine(cfg, db_path)
   persist_features <- engine$persist_features
   execution_mode <- engine$execution_mode
@@ -718,11 +731,7 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   snapshot_db_path <- engine$snapshot_db_path
   snapshot_hash_for_features <- NULL
 
-  if (!is.null(seed)) {
-    set.seed(as.integer(seed))
-  }
-
-  opened <- ledgr_open_duckdb_with_retry(db_path)
+  opened <- ledgr_store_open(db_path, mode = "create")
   drv <- opened$drv
   con <- opened$con
   on.exit({
@@ -731,7 +740,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
   }, add = TRUE)
 
-  ledgr_create_schema(con)
   ledgr_validate_schema_once(con)
 
   registration <- ledgr_run_registration(
@@ -845,7 +853,10 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   active_alias_map <- ledgr_alias_map_from_config(cfg)
   run_feature_matrix <- list()
   if (length(feature_defs) > 0) {
-    feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
+    feature_defs <- feature_defs[order(
+      vapply(feature_defs, function(d) d$id, character(1)),
+      method = "radix"
+    )]
   }
   DBI::dbExecute(
     con,
@@ -1446,207 +1457,6 @@ ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
 
   if (nrow(row) == 0) return(NULL)
   ledgr_json_read_nested(row$state_json[[1]])
-}
-
-ledgr_features_at_pulse <- function(con,
-                                    run_id,
-                                    instrument_ids,
-                                    start_ts_utc,
-                                    ts_utc,
-                                    feature_defs,
-                                    persist_features = TRUE) {
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
-  }
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-  if (!is.character(instrument_ids) || length(instrument_ids) < 1 || anyNA(instrument_ids) || any(!nzchar(instrument_ids))) {
-    rlang::abort("`instrument_ids` must be a non-empty character vector of non-empty strings.", class = "ledgr_invalid_args")
-  }
-
-  ledgr_validate_feature_defs(feature_defs)
-  feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
-
-  start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
-  start_ts <- as.POSIXct(start_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  ts_iso <- ledgr_normalize_ts_utc(ts_utc)
-  ts_posix <- as.POSIXct(ts_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (is.na(start_ts) || is.na(ts_posix)) {
-    rlang::abort("Invalid timestamps for feature computation.", class = "ledgr_invalid_args")
-  }
-  if (ts_posix < start_ts) {
-    rlang::abort("`ts_utc` must be >= start_ts_utc.", class = "ledgr_invalid_args")
-  }
-
-  ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-  max_lookback <- max(vapply(
-    feature_defs,
-    function(d) max(as.integer(d$requires_bars), as.integer(d$stable_after)),
-    integer(1)
-  ))
-
-  bars <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
-      "FROM (",
-      "  SELECT instrument_id, ts_utc, open, high, low, close, volume, ",
-      "         ROW_NUMBER() OVER (PARTITION BY instrument_id ORDER BY ts_utc DESC) AS rn ",
-      "  FROM bars ",
-      "  WHERE instrument_id IN (", ids_sql, ") AND ts_utc <= ? AND ts_utc >= ?",
-      ") sub ",
-      "WHERE rn <= ? ",
-      "ORDER BY instrument_id, ts_utc"
-    ),
-    params = list(ts_posix, start_ts, as.integer(max_lookback))
-  )
-
-  if (nrow(bars) == 0) {
-    rlang::abort("No bars found for feature computation.", class = "ledgr_missing_bars")
-  }
-
-  out_rows <- vector("list", length(instrument_ids) * length(feature_defs))
-  idx <- 1L
-
-  for (instrument_id in instrument_ids) {
-    b <- bars[bars$instrument_id == instrument_id, , drop = FALSE]
-    b <- b[order(b$ts_utc), , drop = FALSE]
-    if (nrow(b) == 0) {
-      rlang::abort(sprintf("Missing bars for instrument_id=%s during feature computation.", instrument_id), class = "ledgr_missing_bars")
-    }
-    if (!isTRUE(all.equal(as.POSIXct(b$ts_utc[[nrow(b)]], tz = "UTC"), ts_posix, tolerance = 0))) {
-      rlang::abort(sprintf("Missing bars for instrument_id=%s at ts_utc=%s.", instrument_id, ts_iso), class = "ledgr_missing_bars")
-    }
-
-    for (def in feature_defs) {
-      value <- ledgr_compute_feature_latest(b, def)
-      out_rows[[idx]] <- list(
-        run_id = run_id,
-        instrument_id = instrument_id,
-        ts_utc = ts_posix,
-        feature_name = def$id,
-        feature_value = as.numeric(value)
-      )
-      idx <- idx + 1L
-    }
-  }
-
-  out_rows <- out_rows[seq_len(idx - 1L)]
-  out_df <- data.frame(
-    run_id = vapply(out_rows, `[[`, character(1), "run_id"),
-    instrument_id = vapply(out_rows, `[[`, character(1), "instrument_id"),
-    ts_utc = as.POSIXct(vapply(out_rows, function(x) format(x$ts_utc, "%Y-%m-%d %H:%M:%S", tz = "UTC"), character(1)), tz = "UTC"),
-    feature_name = vapply(out_rows, `[[`, character(1), "feature_name"),
-    feature_value = vapply(out_rows, function(x) as.numeric(x$feature_value), numeric(1)),
-    stringsAsFactors = FALSE
-  )
-
-  feature_ids <- vapply(feature_defs, function(d) d$id, character(1))
-  features_sql <- paste(DBI::dbQuoteString(con, feature_ids), collapse = ", ")
-  inst_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-
-  if (isTRUE(persist_features)) {
-    DBI::dbExecute(
-      con,
-      paste0(
-        "DELETE FROM features WHERE run_id = ? ",
-        "AND instrument_id IN (", inst_sql, ") ",
-        "AND feature_name IN (", features_sql, ") ",
-        "AND ts_utc = ?"
-      ),
-      params = list(run_id, ts_posix)
-    )
-    DBI::dbAppendTable(con, "features", out_df)
-  }
-
-  out_df[, c("instrument_id", "ts_utc", "feature_name", "feature_value")]
-}
-
-ledgr_features_at_pulse_cached <- function(con,
-                                           run_id,
-                                           instrument_ids,
-                                           ts_utc,
-                                           feature_defs,
-                                           run_feature_series,
-                                           pulse_idx,
-                                           persist_features = TRUE) {
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
-  }
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-  if (!is.character(instrument_ids) || length(instrument_ids) < 1 || anyNA(instrument_ids) || any(!nzchar(instrument_ids))) {
-    rlang::abort("`instrument_ids` must be a non-empty character vector of non-empty strings.", class = "ledgr_invalid_args")
-  }
-  if (!is.list(run_feature_series) || length(run_feature_series) < 1) {
-    rlang::abort("`run_feature_series` must be a non-empty list.", class = "ledgr_invalid_args")
-  }
-  if (!is.numeric(pulse_idx) || length(pulse_idx) != 1 || is.na(pulse_idx) || pulse_idx < 1) {
-    rlang::abort("`pulse_idx` must be a positive integer.", class = "ledgr_invalid_args")
-  }
-
-  ledgr_validate_feature_defs(feature_defs)
-  feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
-
-  ts_iso <- ledgr_normalize_ts_utc(ts_utc)
-  ts_posix <- as.POSIXct(ts_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (is.na(ts_posix)) {
-    rlang::abort("Invalid timestamp for feature cache lookup.", class = "ledgr_invalid_args")
-  }
-
-  out_rows <- vector("list", length(instrument_ids) * length(feature_defs))
-  idx <- 1L
-
-  for (instrument_id in instrument_ids) {
-    for (def in feature_defs) {
-      cache <- run_feature_series[[def$id]]
-      if (is.null(cache) || is.null(cache[[instrument_id]])) {
-        rlang::abort(sprintf("Missing feature cache for %s/%s.", def$id, instrument_id), class = "ledgr_invalid_args")
-      }
-      values <- cache[[instrument_id]]
-      value <- if (pulse_idx <= length(values)) values[[pulse_idx]] else NA_real_
-      out_rows[[idx]] <- list(
-        run_id = run_id,
-        instrument_id = instrument_id,
-        ts_utc = ts_posix,
-        feature_name = def$id,
-        feature_value = as.numeric(value)
-      )
-      idx <- idx + 1L
-    }
-  }
-
-  out_rows <- out_rows[seq_len(idx - 1L)]
-  out_df <- data.frame(
-    run_id = vapply(out_rows, `[[`, character(1), "run_id"),
-    instrument_id = vapply(out_rows, `[[`, character(1), "instrument_id"),
-    ts_utc = as.POSIXct(vapply(out_rows, function(x) format(x$ts_utc, "%Y-%m-%d %H:%M:%S", tz = "UTC"), character(1)), tz = "UTC"),
-    feature_name = vapply(out_rows, `[[`, character(1), "feature_name"),
-    feature_value = vapply(out_rows, function(x) as.numeric(x$feature_value), numeric(1)),
-    stringsAsFactors = FALSE
-  )
-
-  feature_ids <- vapply(feature_defs, function(d) d$id, character(1))
-  features_sql <- paste(DBI::dbQuoteString(con, feature_ids), collapse = ", ")
-  inst_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-
-  if (isTRUE(persist_features)) {
-    DBI::dbExecute(
-      con,
-      paste0(
-        "DELETE FROM features WHERE run_id = ? ",
-        "AND instrument_id IN (", inst_sql, ") ",
-        "AND feature_name IN (", features_sql, ") ",
-        "AND ts_utc = ?"
-      ),
-      params = list(run_id, ts_posix)
-    )
-    DBI::dbAppendTable(con, "features", out_df)
-  }
-
-  out_df[, c("instrument_id", "ts_utc", "feature_name", "feature_value")]
 }
 
 ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids = character()) {

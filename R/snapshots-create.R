@@ -37,6 +37,7 @@ ledgr_snapshot_create <- function(con, snapshot_id = NULL, meta = NULL) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
+  ledgr_store_assert_current(con)
 
   if (!is.null(snapshot_id)) {
     if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {

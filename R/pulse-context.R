@@ -44,7 +44,10 @@ ledgr_feature_table_ready <- function(features) {
 ledgr_feature_names <- function(features) {
   if (!ledgr_feature_table_ready(features)) return(character(0))
   feature_names <- unique(as.character(features[["feature_name"]]))
-  sort(feature_names[!is.na(feature_names) & nzchar(feature_names)])
+  sort(
+    feature_names[!is.na(feature_names) & nzchar(feature_names)],
+    method = "radix"
+  )
 }
 
 ledgr_feature_names_message <- function(feature_names) {

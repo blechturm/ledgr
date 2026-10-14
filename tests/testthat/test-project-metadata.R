@@ -1,16 +1,9 @@
 testthat::test_that("LDG-509 ticket metadata mirrors markdown ticket IDs", {
-  ticket_md <- system.file(
-    "design",
-    "ledgr_v0_1_2_spec_packet",
-    "v0_1_2_tickets.md",
-    package = "ledgr"
-  )
-  ticket_yml <- system.file(
-    "design",
-    "ledgr_v0_1_2_spec_packet",
-    "tickets.yml",
-    package = "ledgr"
-  )
+  root <- ledgr_test_source_root()
+  if (!ledgr_test_design_source_context(root)) return(invisible(NULL))
+  packet <- file.path(root, "inst", "design", "ledgr_v0_1_2_spec_packet")
+  ticket_md <- file.path(packet, "v0_1_2_tickets.md")
+  ticket_yml <- file.path(packet, "tickets.yml")
 
   testthat::expect_true(file.exists(ticket_md))
   testthat::expect_true(file.exists(ticket_yml))
@@ -30,12 +23,14 @@ testthat::test_that("LDG-509 ticket metadata mirrors markdown ticket IDs", {
   testthat::expect_true(all(all_refs %in% yml_ids))
 })
 
-testthat::test_that("LDG-509 contract index and design rationale are packaged", {
-  contracts <- system.file("design", "contracts.md", package = "ledgr")
+testthat::test_that("LDG-509 contract index and design rationale stay source-only", {
+  root <- ledgr_test_source_root()
+  if (!ledgr_test_design_source_context(root)) return(invisible(NULL))
+  contracts <- file.path(root, "inst", "design", "contracts.md")
   rationale_files <- c(
-    system.file("design", "adr", "README.md", package = "ledgr"),
-    system.file("design", "manual", "observability_determinism.md", package = "ledgr"),
-    system.file("design", "manual", "snapshots_data.md", package = "ledgr")
+    file.path(root, "inst", "design", "adr", "README.md"),
+    file.path(root, "inst", "design", "manual", "observability_determinism.md"),
+    file.path(root, "inst", "design", "manual", "snapshots_data.md")
   )
 
   testthat::expect_true(file.exists(contracts))

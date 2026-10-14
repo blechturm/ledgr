@@ -184,9 +184,30 @@ ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) 
   cfg$data <- list(
     source = "snapshot",
     snapshot_id = snapshot$snapshot_id,
-    snapshot_db_path = snapshot$db_path
+    snapshot_db_path = snapshot$db_path,
+    snapshot_hash = ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
   )
-  cfg
+  cfg$identity_rule_version <- 2L
+  ledgr_test_modernize_config(cfg)
+}
+
+ledgr_test_store_tables <- function(con) {
+  as.character(DBI::dbGetQuery(
+    con,
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+  )$table_name)
+}
+
+ledgr_test_store_columns <- function(con, table_name) {
+  as.character(DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT column_name FROM information_schema.columns",
+      "WHERE table_schema = 'main' AND table_name = ?",
+      "ORDER BY ordinal_position"
+    ),
+    params = list(table_name)
+  )$column_name)
 }
 
 ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
@@ -196,6 +217,41 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
     cost_model_hash = ledgr:::ledgr_cost_model_hash(cost_model),
     cost_plan_json = ledgr:::ledgr_cost_plan_json(cost_model)
   )
+  cfg$risk_chain <- ledgr:::ledgr_config_risk_identity()
+  cfg$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
+    ledgr_corporate_actions_research()
+  )
+  cfg$identity_rule_version <- 2L
+  if (is.list(cfg$strategy) && !is.list(cfg$strategy$provenance)) {
+    strategy <- ledgr:::ledgr_strategy_spec(cfg$strategy)
+    cfg$strategy$id <- strategy$id
+    cfg$strategy$params <- strategy$params
+    cfg$strategy$provenance <- strategy$provenance
+  }
+  if (is.null(cfg$strategy_params_json) || is.null(cfg$strategy_params_hash)) {
+    strategy_params <- ledgr:::ledgr_strategy_params_info(
+      cfg$strategy_params %||% list()
+    )
+    cfg$strategy_params <- strategy_params$value
+    cfg$strategy_params_json <- strategy_params$json
+    cfg$strategy_params_hash <- strategy_params$hash
+  }
+  if (is.list(cfg$data) && is.null(cfg$data$snapshot_hash) &&
+      is.character(cfg$data$snapshot_id) &&
+      length(cfg$data$snapshot_id) == 1L &&
+      !is.na(cfg$data$snapshot_id)) {
+    path <- cfg$data$snapshot_db_path %||% cfg$db_path
+    if (is.character(path) && length(path) == 1L && file.exists(path)) {
+      opened <- ledgr:::ledgr_run_store_open(path)
+      on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+      row <- DBI::dbGetQuery(
+        opened$con,
+        "SELECT snapshot_hash FROM snapshots WHERE snapshot_id = ?",
+        params = list(cfg$data$snapshot_id)
+      )
+      if (nrow(row) == 1L) cfg$data$snapshot_hash <- row$snapshot_hash[[1L]]
+    }
+  }
   cfg
 }
 

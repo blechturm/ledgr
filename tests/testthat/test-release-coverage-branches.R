@@ -16,45 +16,50 @@ ledgr_test_coverage_script <- function() {
     file.path("..", "..", "tools", "check-coverage.R")
   )
   for (candidate in candidates) {
-    if (nzchar(candidate) && file.exists(candidate)) return(candidate)
+    if (nzchar(candidate) && file.exists(candidate)) {
+      return(candidate)
+    }
   }
   testthat::skip("coverage helper source unavailable in installed-package test context")
 }
 
 testthat::test_that("coverage helper defaults to one attempt and retries transient failures", {
   local({
-  source(ledgr_test_coverage_script())
+    source(ledgr_test_coverage_script())
 
-  attempts <- 0L
-  coverage <- ledgr_collect_coverage(
-    package_coverage = function() {
-      attempts <<- attempts + 1L
-      if (attempts < 3L) stop("temporary coverage shard failure")
-      list(ok = TRUE)
-    },
-    attempts = 3L
-  )
+    attempts <- 0L
+    coverage <- ledgr_collect_coverage(
+      package_coverage = function() {
+        attempts <<- attempts + 1L
+        if (attempts < 3L) stop("temporary coverage shard failure")
+        list(ok = TRUE)
+      },
+      attempts = 3L
+    )
 
-  testthat::expect_equal(attempts, 3L)
-  testthat::expect_equal(coverage, list(ok = TRUE))
+    testthat::expect_equal(attempts, 3L)
+    testthat::expect_equal(coverage, list(ok = TRUE))
   })
 
   # Also covers: coverage helper defaults to one collection attempt
   local({
-  source(ledgr_test_coverage_script())
+    source(ledgr_test_coverage_script())
 
-  old <- Sys.getenv("LEDGR_COVERAGE_ATTEMPTS", unset = NA_character_)
-  on.exit({
-    if (is.na(old)) {
-      Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
-    } else {
-      Sys.setenv(LEDGR_COVERAGE_ATTEMPTS = old)
-    }
-  }, add = TRUE)
+    old <- Sys.getenv("LEDGR_COVERAGE_ATTEMPTS", unset = NA_character_)
+    on.exit(
+      {
+        if (is.na(old)) {
+          Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
+        } else {
+          Sys.setenv(LEDGR_COVERAGE_ATTEMPTS = old)
+        }
+      },
+      add = TRUE
+    )
 
-  Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
+    Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
 
-  testthat::expect_identical(ledgr_coverage_attempts(), 1L)
+    testthat::expect_identical(ledgr_coverage_attempts(), 1L)
   })
 })
 
@@ -119,7 +124,10 @@ testthat::test_that("indicator validation and fingerprint helpers fail loud on i
   testthat::expect_error(ledgr_indicator("x", good_fn, 1, params = 1), class = "ledgr_invalid_args")
   testthat::expect_error(ledgr_indicator("x", good_fn, 1, params = list(1)), class = "ledgr_invalid_args")
   testthat::expect_error(ledgr_indicator("x", good_fn, 1, params = list(ts = Sys.Date())), class = "ledgr_invalid_args")
-  testthat::expect_error(ledgr_indicator("x", function(window) { x <<- 1; 1 }, 1), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator("x", function(window) {
+    x <<- 1
+    1
+  }, 1), class = "ledgr_invalid_args")
   testthat::expect_error(ledgr_indicator("x", function(window) runif(1), 1), class = "ledgr_purity_violation")
 
   testthat::expect_error(ledgr:::ledgr_static_function_signature(1), class = "ledgr_invalid_args")

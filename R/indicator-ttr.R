@@ -194,7 +194,7 @@ ledgr_ind_ttr <- function(ttr_fn,
       )
     }
     inferred_requires <- as.integer(requires_bars)
-    id_args <- sort(names(args))
+    id_args <- sort(names(args), method = "radix")
   }
 
   if (is.null(requires_bars)) {
@@ -627,7 +627,7 @@ ledgr_ttr_example_call <- function(ttr_fn, input, required_args) {
 }
 
 ledgr_ttr_default_id <- function(ttr_fn, id_args, args, output) {
-  id_args <- c(id_args, sort(setdiff(names(args), id_args)))
+  id_args <- c(id_args, sort(setdiff(names(args), id_args), method = "radix"))
   arg_values <- character(0)
   if (length(id_args) > 0L) {
     arg_values <- vapply(id_args, function(name) {

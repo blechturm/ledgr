@@ -80,10 +80,10 @@ ledgr_checkpoint_duckdb <- function(con, strict = FALSE) {
   invisible(out)
 }
 
-#' Initialize or open a ledgr DuckDB database (v0.1.0)
+#' Initialize or open a ledgr DuckDB database
 #'
-#' Opens a DuckDB database at `db_path`, creates the v0.1.0 schema if needed,
-#' and validates it.
+#' Opens a DuckDB database at `db_path`, creates the current schema when the
+#' file is empty, and otherwise requires the current version and fingerprint.
 #'
 #' @param db_path Path to a DuckDB database file (or `":memory:"`).
 #' @return A DBI connection.
@@ -98,13 +98,14 @@ ledgr_db_init <- function(db_path) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
 
-  opened <- ledgr_open_duckdb_with_retry(db_path)
+  opened <- ledgr_store_open(db_path, mode = "create")
   con <- opened$con
   drv <- opened$drv
   attr(con, "ledgr_duckdb_drv") <- drv
 
-  ledgr_create_schema(con)
-  ledgr_validate_schema_once(con)
+  if (!isTRUE(opened$created_current)) {
+    ledgr_validate_schema_once(con)
+  }
   con
 }
 
@@ -168,6 +169,7 @@ ledgr_state_reconstruct <- function(run_id, con) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
+  ledgr_store_assert_current(con)
   if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }

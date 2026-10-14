@@ -22,7 +22,8 @@ A \code{ledgr_signal} object.
 \code{ledgr_signal()} creates a named numeric score vector for strategy helper
 pipelines. Signals are intermediate objects; strategies must not return them
 directly. A zero-length named signal represents an empty decision domain.
-
+}
+\details{
 In context mode, \code{ledgr_signal(ctx, values = ...)} returns one value per
 instrument in \code{ctx$universe} and carries \code{ctx$vec$admissible} as its
 \code{eligible} attribute. Unnamed \code{values} align by position and must have one

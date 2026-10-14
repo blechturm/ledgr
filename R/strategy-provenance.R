@@ -78,10 +78,6 @@ ledgr_strategy_source_info <- function(fn) {
   )
 }
 
-ledgr_strategy_external_symbols <- function(fn) {
-  ledgr_strategy_preflight(fn)$unresolved_symbols
-}
-
 ledgr_strategy_reproducibility_level <- function(strategy_type, signature = NULL, source_info = NULL) {
   if (identical(strategy_type, "functional")) {
     if (is.list(source_info) &&
@@ -123,17 +119,10 @@ ledgr_write_strategy_provenance <- function(con, run_id, cfg, created_at_utc = N
   provenance <- cfg$strategy$provenance
   params_json <- cfg$strategy_params_json
   params_hash <- cfg$strategy_params_hash
-  fallback <- function(x, default) {
-    if (is.null(x)) default else x
-  }
-
-  if (is.null(provenance) || !is.list(provenance)) {
-    provenance <- list(
-      strategy_type = "legacy",
-      strategy_source = NA_character_,
-      strategy_source_hash = NA_character_,
-      strategy_source_capture_method = "legacy_pre_provenance",
-      reproducibility_level = "legacy"
+  if (!is.list(provenance)) {
+    rlang::abort(
+      "Config field strategy.provenance is required.",
+      class = "ledgr_invalid_config"
     )
   }
 
@@ -157,17 +146,17 @@ ledgr_write_strategy_provenance <- function(con, run_id, cfg, created_at_utc = N
     ",
     params = list(
       run_id,
-      fallback(provenance$strategy_type, "legacy"),
-      fallback(provenance$strategy_source, NA_character_),
-      fallback(provenance$strategy_source_hash, NA_character_),
-      fallback(provenance$strategy_source_capture_method, "legacy_pre_provenance"),
-      fallback(params_json, unname(canonical_json(list()))),
-      fallback(params_hash, digest::digest(unname(canonical_json(list())), algo = "sha256")),
-      fallback(provenance$reproducibility_level, "legacy"),
+      provenance$strategy_type,
+      provenance$strategy_source,
+      provenance$strategy_source_hash,
+      provenance$strategy_source_capture_method,
+      params_json,
+      params_hash,
+      provenance$reproducibility_level,
       as.character(utils::packageVersion("ledgr")),
       as.character(getRversion()),
       ledgr_dependency_versions_json(),
-      fallback(created_at_utc, as.POSIXct(Sys.time(), tz = "UTC"))
+      created_at_utc %||% as.POSIXct(Sys.time(), tz = "UTC")
     )
   )
 

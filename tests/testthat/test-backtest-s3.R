@@ -83,7 +83,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   testthat::expect_s3_class(fills, "tbl_df")
   testthat::expect_true("realized_pnl" %in% names(fills))
 
-  trades <- as_tibble(bt, type = "trades")
+  trades <- as_tibble(bt, what = "trades")
   testthat::expect_s3_class(trades, "tbl_df")
 
   ledger <- as_tibble(bt, "ledger")
@@ -117,6 +117,10 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(as_tibble(bt, "unknown"))
+  testthat::expect_error(
+    as_tibble(bt, type = "equity"),
+    class = "rlib_error_dots_nonempty"
+  )
   metrics_err <- rlang::catch_cnd(ledgr_results(bt, what = "metrics"))
   testthat::expect_s3_class(metrics_err, "ledgr_invalid_result_table")
   testthat::expect_match(conditionMessage(metrics_err), "ledgr_compute_metrics", fixed = TRUE)

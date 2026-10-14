@@ -11,21 +11,14 @@ ledgr_disposition_sources <- function() {
 # Labels are exact sealed terminal_event values; scheduled corporate-action
 # rows carry none and therefore take the map's default entry. A choice that
 # needs a currently permissible mark falls back to frozen_terminal_position
-# when the holding is frozen. A NULL policy (a historical config without a
-# policy identity) refuses every terminal.
+# when the holding is frozen.
 ledgr_terminal_resolve <- function(policy, ids, labels, valuation) {
   ids <- as.character(ids)
   labels <- as.character(labels)
   labels[is.na(labels)] <- ""
-  if (is.null(policy)) {
-    map <- c(default = "refuse")
-    frozen_choice <- "refuse"
-    haircut <- NA_real_
-  } else {
-    map <- policy$held_terminal_position
-    frozen_choice <- policy$frozen_terminal_position
-    haircut <- policy$haircut %||% NA_real_
-  }
+  map <- policy$held_terminal_position
+  frozen_choice <- policy$frozen_terminal_position
+  haircut <- policy$haircut %||% NA_real_
   matched <- ledgr_corporate_action_resolve_terminal(map, labels)
   choice <- unname(matched)
   matched_label <- names(matched)
@@ -81,11 +74,7 @@ ledgr_terminal_resolve <- function(policy, ids, labels, valuation) {
 # haircut, write_off and frozen_terminal_position never apply here.
 ledgr_terminal_resolve_scheduled <- function(policy, ids, valuation) {
   ids <- as.character(ids)
-  default <- if (is.null(policy)) {
-    "refuse"
-  } else {
-    unname(policy$held_terminal_position[["default"]])
-  }
+  default <- unname(policy$held_terminal_position[["default"]])
   choice <- if (identical(default, "last_mark")) "last_mark" else "last_permissible"
   permissible <- as.logical(valuation$permissible[ids])
   permissible[is.na(permissible)] <- FALSE
@@ -234,11 +223,10 @@ ledgr_disposition_post <- function(ids,
   )
 }
 
-# Summary key for every recorded disposition policy id: held-terminal choices
-# (v002 and the historical v001) and frozen-terminal fallbacks.
+# Summary key for every recorded disposition policy id.
 ledgr_terminal_policy_id_keys <- function() {
   ids <- ledgr_corporate_action_policy_ids()
-  held <- c(ids$held_terminal_position, ledgr_corporate_action_policy_ids_v1()$held_terminal_position)
+  held <- ids$held_terminal_position
   frozen <- ids$frozen_terminal_position
   stats::setNames(
     c(paste0("held_terminal_position.", names(held)), paste0("frozen_terminal_position.", names(frozen))),

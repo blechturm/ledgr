@@ -131,7 +131,7 @@ testthat::test_that("run tag validation and missing runs fail clearly", {
   )
 })
 
-testthat::test_that("run tag reads do not mutate legacy stores but writes migrate additively", {
+testthat::test_that("run tag reads and writes refuse unmarked stores", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   opened <- ledgr_test_open_duckdb(db_path)
@@ -214,7 +214,10 @@ testthat::test_that("run tag reads do not mutate legacy stores but writes migrat
   snapshot <- new_ledgr_snapshot(db_path, "legacy-snapshot")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  testthat::expect_identical(nrow(ledgr_run_tags(snapshot)), 0L)
+  testthat::expect_error(
+    ledgr_run_tags(snapshot),
+    class = "ledgr_store_rebuild_required"
+  )
 
   reopened_read <- ledgr_test_open_duckdb(db_path)
   after_read_tables <- DBI::dbGetQuery(
@@ -224,20 +227,20 @@ testthat::test_that("run tag reads do not mutate legacy stores but writes migrat
   ledgr_test_close_duckdb(reopened_read$con, reopened_read$drv)
   testthat::expect_identical(after_read_tables, before_tables)
 
-  tagged <- ledgr_run_tag(snapshot, "legacy-tag", "legacy")
-  testthat::expect_s3_class(tagged, "ledgr_snapshot")
-  testthat::expect_identical(ledgr_run_info(snapshot, "legacy-tag")$tags, "legacy")
+  testthat::expect_error(
+    ledgr_run_tag(snapshot, "legacy-tag", "legacy"),
+    class = "ledgr_store_rebuild_required"
+  )
   reopened_write <- ledgr_test_open_duckdb(db_path)
   after_write_tables <- DBI::dbGetQuery(
     reopened_write$con,
     "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' ORDER BY table_name"
   )$table_name
-  testthat::expect_true("run_tags" %in% after_write_tables)
+  testthat::expect_identical(after_write_tables, before_tables)
   status_after_write <- DBI::dbGetQuery(
     reopened_write$con,
     "SELECT status FROM runs WHERE run_id = 'legacy-tag'"
   )$status[[1]]
   ledgr_test_close_duckdb(reopened_write$con, reopened_write$drv)
-  testthat::expect_identical(ledgr_run_tags(snapshot, "legacy-tag")$tag, "legacy")
   testthat::expect_identical(status_after_write, "DONE")
 })

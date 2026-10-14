@@ -24,8 +24,8 @@ created with \code{\link[=ledgr_promote]{ledgr_promote()}}, and \code{error_msg}
 terminal completion evidence exists, the object also reports requested
 and achieved windows, stop reason, last fully valued and executed times,
 whether performance is complete, and affected instrument identifiers.
-Historical or dense runs without that evidence report those fields as
-unknown. See \link{ledgr_identity_fields} for hash-field semantics.
+Runs without that evidence report those fields as unknown. See
+\link{ledgr_identity_fields} for hash-field semantics.
 }
 \description{
 Returns a structured \code{ledgr_run_info} object for a stored run. This function

@@ -1,17 +1,8 @@
 #' ledgr condition classes
 #'
 #' ledgr uses stable top-level condition classes for public cost-model,
-#' timing-model, execution-window, saved-sweep, retained-series, and
-#' legacy-shape failures. User tests should assert on these classes instead of
-#' parsing message text.
-#'
-#' @section Legacy shape classes:
-#' `ledgr_legacy_fill_model_shape` is raised when callers pass the v0.1.8
-#' `fill_model` shape or legacy scalar cost fields to public entry points.
-#' ledgr fails closed; it does not translate the legacy shape.
-#'
-#' `ledgr_legacy_config_shape` is raised when reopening a stored config whose
-#' execution shape still contains legacy fill/cost fields.
+#' timing-model, execution-window, saved-sweep, and retained-series failures.
+#' User tests should assert on these classes instead of parsing message text.
 #'
 #' @section Cost and timing classes:
 #' `ledgr_cost_model_unspecified` is raised when a public execution entry point
@@ -49,14 +40,16 @@
 #' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
 #' timestamp representation drift instead of silently re-keying sealed data.
 #'
-#' `ledgr_snapshot_rebuild_required` is raised when a content-dependent read
-#' reaches a snapshot with a missing, rule-1, or rule-2 hash marker. Such
-#' snapshots remain metadata-readable but are not executable; rebuild them
-#' from source under rule 3. ledgr does not migrate or reinterpret their roots.
+#' `ledgr_snapshot_hash_rule_unsupported` is raised when a snapshot does not
+#' carry the current content-hash rule.
+#' `ledgr_snapshot_hash_order_invalid` is raised when source rows are not in
+#' the bytewise order required by rule 3.
 #'
-#' `ledgr_snapshot_hash_rule_unsupported` is raised for an unrecognized future
-#' hash-rule marker. `ledgr_snapshot_hash_order_invalid` is raised when source
-#' rows are not in the bytewise order required by rule 3.
+#' @section Store-format classes:
+#' `ledgr_store_rebuild_required` is raised when a persistent store is older,
+#' newer, unmarked, malformed, or carries a format fingerprint different from
+#' this ledgr build. Before the first CRAN release ledgr does not migrate old
+#' stores: rebuild them with the current package.
 #'
 #' @section Availability classes:
 #' `ledgr_invalid_valuation_policy` is raised for malformed stale-valuation
@@ -73,10 +66,8 @@
 #' receives a snapshot that declares point-in-time facts; use
 #' `ledgr_experiment()` and `ledgr_run()`.
 #'
-#' `ledgr_identity_rule_retired` is raised when a run recorded under identity
-#' rule 1 is resumed; it remains readable. `ledgr_promote_identity_mismatch` is
-#' a warning raised when a promoted candidate's recorded identities differ from
-#' the promoting experiment's.
+#' `ledgr_promote_identity_mismatch` is a warning raised when a promoted
+#' candidate's recorded identities differ from the promoting experiment's.
 #'
 #' `ledgr_sessions_incomplete` is raised when the declared session calendar
 #' does not cover the requested start and end of a run, sweep, run window or
@@ -88,18 +79,13 @@
 #' `ledgr_compiled_availability_unsupported` is raised before execution when
 #' availability-aware execution is combined with the compiled spot-FIFO path.
 #'
-#' `ledgr_execution_timing_version_mismatch` is raised when an active legacy or
-#' unknown timing config is submitted for current execution. Historical runs
-#' remain inspectable, but they cannot resume under corrected timing semantics.
-#'
 #' `ledgr_policy_schema_mismatch` is raised when a config or stored run carries
-#' a retired corporate-action or valuation policy schema and is submitted for
-#' execution, resume, rerun or promotion. Such runs remain readable through
-#' `ledgr_run_open()`, `ledgr_run_info()` and result readers, which report the
-#' recorded identity unchanged; they are never reinterpreted under schema 2.
+#' a non-current corporate-action or valuation policy schema. Current stores
+#' carry schema 2; ledgr does not infer, migrate, or reinterpret older policy
+#' records.
 #'
-#' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
-#' when selected runs have differing or unknown execution-timing conventions.
+#' `ledgr_strategy_provenance_missing` is raised when a current run row exists
+#' but its required strategy-provenance row is absent.
 #'
 #' `ledgr_session_time_ambiguous` and `ledgr_session_time_nonexistent` are
 #' raised when a local session wall time resolves to multiple UTC instants or
@@ -478,7 +464,8 @@
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers
 #' ask for a concrete feature ID before parameterized feature declarations have
-#' been resolved.
+#' been resolved. `ledgr_strategy_error` wraps an error raised by user strategy
+#' code while preserving the original error as its parent.
 #'
 #' @examples
 #' err <- try(ledgr_cost_spread_bps(-1), silent = TRUE)
@@ -491,31 +478,30 @@
 #' inherits(attr(err, "condition"), "ledgr_invalid_cost_chain_order")
 #'
 #' @name ledgr_condition_classes
-#' @aliases ledgr_condition_classes ledgr_legacy_fill_model_shape
-#' @aliases ledgr_legacy_config_shape ledgr_cost_model_unspecified
+#' @aliases ledgr_condition_classes ledgr_cost_model_unspecified
 #' @aliases ledgr_invalid_cost_chain_order ledgr_invalid_cost_model
 #' @aliases ledgr_invalid_timing_model ledgr_invalid_fill_proposal
 #' @aliases ledgr_invalid_fill_context ledgr_run_not_found
 #' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
 #' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
-#' @aliases ledgr_snapshot_rebuild_required
 #' @aliases ledgr_snapshot_hash_rule_unsupported
 #' @aliases ledgr_snapshot_hash_order_invalid
+#' @aliases ledgr_store_rebuild_required ledgr_invalid_store
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
 #' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
-#' @aliases ledgr_sessions_incomplete ledgr_identity_rule_retired ledgr_promote_identity_mismatch
+#' @aliases ledgr_sessions_incomplete ledgr_promote_identity_mismatch
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
-#' @aliases ledgr_execution_timing_version_mismatch ledgr_policy_schema_mismatch
-#' @aliases ledgr_fill_timing_not_comparable
+#' @aliases ledgr_policy_schema_mismatch
+#' @aliases ledgr_strategy_provenance_missing
 #' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
 #' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list
 #' @aliases ledgr_facts_inspection_invalid_args ledgr_facts_scope_not_found
 #' @aliases ledgr_facts_snapshot_not_sealed ledgr_facts_snapshot_hash_mismatch
 #' @aliases ledgr_session_adapter_invalid ledgr_session_override_invalid
 #' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
-#' @aliases ledgr_invalid_strategy_state
+#' @aliases ledgr_invalid_strategy_state ledgr_strategy_error
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target
 #' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible
 #' @aliases ledgr_short_exposure_unsupported
@@ -593,6 +579,617 @@
 #' @aliases ledgr_walk_forward_invalid_session
 #' @aliases ledgr_walk_forward_latest_without_rationale
 #' @aliases ledgr_walk_forward_candidate_not_found
+#'
+#' @section Additional public condition classes:
+#' The classes below complete the public condition index. Each message carries
+#' the concrete field, identity, or operation that failed; callers should assert
+#' on the class rather than parse that message.
+#'
+#' - `ledgr_ambiguous_bundle_output` reports the ambiguous bundle output
+#'   boundary.
+#' - `ledgr_availability_validation_failed` reports the availability
+#'   validation failed boundary.
+#' - `ledgr_availability_valuation_out_of_order` reports the availability
+#'   valuation out of order boundary.
+#' - `ledgr_broker_adapter_not_supported` reports the broker adapter not
+#'   supported boundary.
+#' - `ledgr_candidate_cost_identity_mismatch` reports the candidate cost
+#'   identity mismatch boundary.
+#' - `ledgr_candidate_missing_snapshot_hash` reports the candidate missing
+#'   snapshot hash boundary.
+#' - `ledgr_candidate_risk_identity_mismatch` reports the candidate risk
+#'   identity mismatch boundary.
+#' - `ledgr_candidate_snapshot_mismatch` reports the candidate snapshot
+#'   mismatch boundary.
+#' - `ledgr_checkpoint_failed` reports the checkpoint failed boundary.
+#' - `ledgr_compiled_spot_fifo_invalid_input` reports the compiled spot fifo
+#'   invalid input boundary.
+#' - `ledgr_compiled_spot_fifo_unavailable` reports the compiled spot fifo
+#'   unavailable boundary.
+#' - `ledgr_config_invalid_json` reports the config invalid json boundary.
+#' - `ledgr_config_non_deterministic` reports the config non deterministic
+#'   boundary.
+#' - `ledgr_config_non_finite` reports the config non finite boundary.
+#' - `ledgr_config_unsupported_type` reports the config unsupported type
+#'   boundary.
+#' - `ledgr_corporate_action_clock_mismatch` reports the corporate action
+#'   clock mismatch boundary.
+#' - `ledgr_corporate_action_double_credit` reports the corporate action
+#'   double credit boundary.
+#' - `ledgr_corporate_action_quantity_unsupported` reports the corporate
+#'   action quantity unsupported boundary.
+#' - `ledgr_db_not_found` reports db was not found.
+#' - `ledgr_distribution_adjusted_bars_unsupported` reports the distribution
+#'   adjusted bars unsupported boundary.
+#' - `ledgr_duplicate_corporate_action_event` reports duplicate corporate
+#'   action event evidence.
+#' - `ledgr_duplicate_corporate_action_fact` reports duplicate corporate
+#'   action fact evidence.
+#' - `ledgr_duplicate_executable_grid_labels` reports duplicate executable
+#'   grid labels evidence.
+#' - `ledgr_duplicate_fact_family` reports duplicate fact family evidence.
+#' - `ledgr_duplicate_feature_id` reports duplicate feature id evidence.
+#' - `ledgr_duplicate_grid_labels` reports duplicate grid labels evidence.
+#' - `ledgr_duplicate_param_grid_labels` reports duplicate param grid labels
+#'   evidence.
+#' - `ledgr_empty_warmup_input` reports the empty warmup input boundary.
+#' - `ledgr_event_buffer_capacity_exceeded` reports the event buffer capacity
+#'   exceeded boundary.
+#' - `ledgr_fact_identity_conflict` reports the fact identity conflict
+#'   boundary.
+#' - `ledgr_fact_invalid_clock_order` reports the fact invalid clock order
+#'   boundary.
+#' - `ledgr_fact_invalid_complete` reports the fact invalid complete
+#'   boundary.
+#' - `ledgr_fact_invalid_completeness` reports the fact invalid completeness
+#'   boundary.
+#' - `ledgr_fact_invalid_id` reports the fact invalid id boundary.
+#' - `ledgr_fact_invalid_instrument` reports the fact invalid instrument
+#'   boundary.
+#' - `ledgr_fact_invalid_instrument_master` reports the fact invalid
+#'   instrument master boundary.
+#' - `ledgr_fact_invalid_interval` reports the fact invalid interval
+#'   boundary.
+#' - `ledgr_fact_invalid_lifetime` reports the fact invalid lifetime
+#'   boundary.
+#' - `ledgr_fact_invalid_logical` reports the fact invalid logical boundary.
+#' - `ledgr_fact_invalid_membership_set` reports the fact invalid membership
+#'   set boundary.
+#' - `ledgr_fact_invalid_precedence` reports the fact invalid precedence
+#'   boundary.
+#' - `ledgr_fact_invalid_provenance` reports the fact invalid provenance
+#'   boundary.
+#' - `ledgr_fact_invalid_provenance_tier` reports the fact invalid provenance
+#'   tier boundary.
+#' - `ledgr_fact_invalid_shape` reports the fact invalid shape boundary.
+#' - `ledgr_fact_invalid_source` reports the fact invalid source boundary.
+#' - `ledgr_fact_invalid_status` reports the fact invalid status boundary.
+#' - `ledgr_fact_invalid_subtype` reports the fact invalid subtype boundary.
+#' - `ledgr_fact_invalid_supersession` reports the fact invalid supersession
+#'   boundary.
+#' - `ledgr_fact_invalid_time` reports the fact invalid time boundary.
+#' - `ledgr_fact_structural_conflict` reports the fact structural conflict
+#'   boundary.
+#' - `ledgr_fact_unvalidated_term` reports the fact unvalidated term
+#'   boundary.
+#' - `ledgr_failed_sweep_candidate` reports the failed sweep candidate
+#'   boundary.
+#' - `ledgr_feature_factory_requires_params` reports the feature factory
+#'   requires params boundary.
+#' - `ledgr_feature_lookahead_detected` reports the feature lookahead
+#'   detected boundary.
+#' - `ledgr_grid_filter_invalid` reports the grid filter invalid boundary.
+#' - `ledgr_invalid_accounting_event` reports invalid accounting event input.
+#' - `ledgr_invalid_alias_map` reports invalid alias map input.
+#' - `ledgr_invalid_args` reports invalid args input.
+#' - `ledgr_invalid_backtest` reports invalid backtest input.
+#' - `ledgr_invalid_con` reports invalid con input.
+#' - `ledgr_invalid_config` reports invalid config input.
+#' - `ledgr_invalid_corporate_action_event` reports invalid corporate action
+#'   event input.
+#' - `ledgr_invalid_corporate_action_fidelity` reports invalid corporate
+#'   action fidelity input.
+#' - `ledgr_invalid_corporate_action_policy` reports invalid corporate action
+#'   policy input.
+#' - `ledgr_invalid_event_order` reports invalid event order input.
+#' - `ledgr_invalid_executable_grid` reports invalid executable grid input.
+#' - `ledgr_invalid_execution_spec` reports invalid execution spec input.
+#' - `ledgr_invalid_experiment` reports invalid experiment input.
+#' - `ledgr_invalid_experiment_features` reports invalid experiment features
+#'   input.
+#' - `ledgr_invalid_experiment_strategy` reports invalid experiment strategy
+#'   input.
+#' - `ledgr_invalid_facts` reports invalid facts input.
+#' - `ledgr_invalid_feature_def` reports invalid feature def input.
+#' - `ledgr_invalid_feature_input` reports invalid feature input input.
+#' - `ledgr_invalid_feature_map` reports invalid feature map input.
+#' - `ledgr_invalid_feature_output` reports invalid feature output input.
+#' - `ledgr_invalid_feature_params` reports invalid feature params input.
+#' - `ledgr_invalid_feature_resolution` reports invalid feature resolution
+#'   input.
+#' - `ledgr_invalid_feature_value` reports invalid feature value input.
+#' - `ledgr_invalid_fill_input` reports invalid fill input input.
+#' - `ledgr_invalid_fill_intent` reports invalid fill intent input.
+#' - `ledgr_invalid_fold_execution` reports invalid fold execution input.
+#' - `ledgr_invalid_grid` reports invalid grid input.
+#' - `ledgr_invalid_indicator_bundle` reports invalid indicator bundle input.
+#' - `ledgr_invalid_ledger_event` reports invalid ledger event input.
+#' - `ledgr_invalid_ledger_meta` reports invalid ledger meta input.
+#' - `ledgr_invalid_metric_context` reports invalid metric context input.
+#' - `ledgr_invalid_opening` reports invalid opening input.
+#' - `ledgr_invalid_option` reports invalid option input.
+#' - `ledgr_invalid_parallel_backend` reports invalid parallel backend input.
+#' - `ledgr_invalid_parallel_workers` reports invalid parallel workers input.
+#' - `ledgr_invalid_param_constructor` reports invalid param constructor
+#'   input.
+#' - `ledgr_invalid_param_grid` reports invalid param grid input.
+#' - `ledgr_invalid_param_reference` reports invalid param reference input.
+#' - `ledgr_invalid_parameterized_bundle` reports invalid parameterized
+#'   bundle input.
+#' - `ledgr_invalid_post_risk_targets` reports invalid post risk targets
+#'   input.
+#' - `ledgr_invalid_precompute_range` reports invalid precompute range input.
+#' - `ledgr_invalid_precomputed_features` reports invalid precomputed
+#'   features input.
+#' - `ledgr_invalid_price_basis` reports invalid price basis input.
+#' - `ledgr_invalid_promotion_context_summary` reports invalid promotion
+#'   context summary input.
+#' - `ledgr_invalid_pulse_context` reports invalid pulse context input.
+#' - `ledgr_invalid_pulse_plan` reports invalid pulse plan input.
+#' - `ledgr_invalid_pulse_wide_names` reports invalid pulse wide names input.
+#' - `ledgr_invalid_result_table` reports invalid result table input.
+#' - `ledgr_invalid_return_panel` reports invalid return panel input.
+#' - `ledgr_invalid_return_panel_input` reports invalid return panel input
+#'   input.
+#' - `ledgr_invalid_risk_context` reports invalid risk context input.
+#' - `ledgr_invalid_risk_model` reports invalid risk model input.
+#' - `ledgr_invalid_risk_plan` reports invalid risk plan input.
+#' - `ledgr_invalid_run` reports invalid run input.
+#' - `ledgr_invalid_runtime_projection` reports invalid runtime projection
+#'   input.
+#' - `ledgr_invalid_snapshot` reports invalid snapshot input.
+#' - `ledgr_invalid_state` reports invalid state input.
+#' - `ledgr_invalid_store` reports invalid store input.
+#' - `ledgr_invalid_strategy` reports invalid strategy input.
+#' - `ledgr_invalid_strategy_helper` reports invalid strategy helper input.
+#' - `ledgr_invalid_strategy_params` reports invalid strategy params input.
+#' - `ledgr_invalid_strategy_preflight` reports invalid strategy preflight
+#'   input.
+#' - `ledgr_invalid_strategy_result` reports invalid strategy result input.
+#' - `ledgr_invalid_strategy_signature` reports invalid strategy signature
+#'   input.
+#' - `ledgr_invalid_strategy_type` reports invalid strategy type input.
+#' - `ledgr_invalid_sweep_candidate_input` reports invalid sweep candidate
+#'   input input.
+#' - `ledgr_invalid_sweep_projection` reports invalid sweep projection input.
+#' - `ledgr_invalid_sweep_review_input` reports invalid sweep review input
+#'   input.
+#' - `ledgr_invalid_sweep_review_rank` reports invalid sweep review rank
+#'   input.
+#' - `ledgr_invalid_target_price` reports invalid target price input.
+#' - `ledgr_invalid_timestamp` reports invalid timestamp input.
+#' - `ledgr_invalid_warmup_input` reports invalid warmup input input.
+#' - `ledgr_invalid_worker_dependencies` reports invalid worker dependencies
+#'   input.
+#' - `ledgr_invalid_worker_packages` reports invalid worker packages input.
+#' - `ledgr_invariant_violation` reports the invariant violation boundary.
+#' - `ledgr_legacy_feature_factory_feature_params_unsupported` reports the
+#'   legacy feature factory feature params unsupported boundary.
+#' - `ledgr_levered_weights` reports the levered weights boundary.
+#' - `ledgr_lot_state_invariant` reports the lot state invariant boundary.
+#' - `ledgr_missing_bars` reports missing bars evidence.
+#' - `ledgr_missing_dependency` reports missing dependency evidence.
+#' - `ledgr_missing_metric_context` reports missing metric context evidence.
+#' - `ledgr_missing_optional_dependency` reports missing optional dependency
+#'   evidence.
+#' - `ledgr_missing_precomputed_features_warning` reports missing precomputed
+#'   features warning evidence.
+#' - `ledgr_mixed_metric_cadence` reports the mixed metric cadence boundary.
+#' - `ledgr_negative_weights` reports the negative weights boundary.
+#' - `ledgr_no_active_alias_map` reports the no active alias map boundary.
+#' - `ledgr_observation_invalid_shape` reports the observation invalid shape
+#'   boundary.
+#' - `ledgr_observation_quarantine_duplicate` reports the observation
+#'   quarantine duplicate boundary.
+#' - `ledgr_ohlc_non_positive` reports the ohlc non positive boundary.
+#' - `ledgr_opening_cost_basis_missing` reports the opening cost basis
+#'   missing boundary.
+#' - `ledgr_parallel_backend_missing` reports the parallel backend missing
+#'   boundary.
+#' - `ledgr_parallel_error` reports the parallel error boundary.
+#' - `ledgr_parallel_strategy_not_allowed` reports the parallel strategy not
+#'   allowed boundary.
+#' - `ledgr_parallel_sweep_interrupted` reports the parallel sweep
+#'   interrupted boundary.
+#' - `ledgr_parallel_worker_failed` reports the parallel worker failed
+#'   boundary.
+#' - `ledgr_parallel_worker_package_missing` reports the parallel worker
+#'   package missing boundary.
+#' - `ledgr_param_missing` reports the param missing boundary.
+#' - `ledgr_param_non_scalar` reports the param non scalar boundary.
+#' - `ledgr_partial_selection` reports the partial selection boundary.
+#' - `ledgr_precomputed_coverage_error` reports the precomputed coverage
+#'   error boundary.
+#' - `ledgr_precomputed_engine_mismatch` reports the precomputed engine
+#'   mismatch boundary.
+#' - `ledgr_precomputed_feature_mismatch` reports the precomputed feature
+#'   mismatch boundary.
+#' - `ledgr_precomputed_grid_mismatch` reports the precomputed grid mismatch
+#'   boundary.
+#' - `ledgr_precomputed_hydration_mismatch` reports the precomputed hydration
+#'   mismatch boundary.
+#' - `ledgr_precomputed_range_mismatch` reports the precomputed range
+#'   mismatch boundary.
+#' - `ledgr_precomputed_snapshot_mismatch` reports the precomputed snapshot
+#'   mismatch boundary.
+#' - `ledgr_precomputed_universe_mismatch` reports the precomputed universe
+#'   mismatch boundary.
+#' - `ledgr_promote_failed_candidate` reports the promote failed candidate
+#'   boundary.
+#' - `ledgr_promotion_context_write_failed` reports the promotion context
+#'   write failed boundary.
+#' - `ledgr_purity_violation` reports the purity violation boundary.
+#' - `ledgr_quarantine_requires_sessions` reports the quarantine requires
+#'   sessions boundary.
+#' - `ledgr_return_panel_ambiguous_shape` reports the return panel ambiguous
+#'   shape boundary.
+#' - `ledgr_return_panel_invalid_ts` reports the return panel invalid ts
+#'   boundary.
+#' - `ledgr_return_panel_missing_candidate_ids` reports the return panel
+#'   missing candidate ids boundary.
+#' - `ledgr_risk_application_error` reports the risk application error
+#'   boundary.
+#' - `ledgr_risk_plan_parameter_missing` reports the risk plan parameter
+#'   missing boundary.
+#' - `ledgr_run_hash_mismatch` reports the run hash mismatch boundary.
+#' - `ledgr_run_lookup_mismatch` reports the run lookup mismatch boundary.
+#' - `ledgr_run_not_complete` reports the run not complete boundary.
+#' - `ledgr_run_registration_failed` reports the run registration failed
+#'   boundary.
+#' - `ledgr_run_telemetry_failed` reports the run telemetry failed boundary.
+#' - `ledgr_scalar_accessor_loop` reports the scalar accessor loop boundary.
+#' - `ledgr_session_coverage_incomplete` reports the session coverage
+#'   incomplete boundary.
+#' - `ledgr_session_instant_duplicate` reports the session instant duplicate
+#'   boundary.
+#' - `ledgr_session_instant_off_date` reports the session instant off date
+#'   boundary.
+#' - `ledgr_session_invalid` reports the session invalid boundary.
+#' - `ledgr_session_invalid_timezone` reports the session invalid timezone
+#'   boundary.
+#' - `ledgr_session_knowledge_late` reports the session knowledge late
+#'   boundary.
+#' - `ledgr_session_multiple_venues` reports the session multiple venues
+#'   boundary.
+#' - `ledgr_sim_pit_insufficient_shape` reports the sim pit insufficient
+#'   shape boundary.
+#' - `ledgr_sim_pit_invalid` reports the sim pit invalid boundary.
+#' - `ledgr_snapshot_exists` reports the snapshot exists boundary.
+#' - `ledgr_snapshot_fact_family_invalid` reports the snapshot fact family
+#'   invalid boundary.
+#' - `ledgr_snapshot_fact_family_missing` reports the snapshot fact family
+#'   missing boundary.
+#' - `ledgr_snapshot_fact_interval_invalid` reports the snapshot fact
+#'   interval invalid boundary.
+#' - `ledgr_snapshot_fact_json_invalid` reports the snapshot fact json
+#'   invalid boundary.
+#' - `ledgr_snapshot_fact_referential_integrity` reports the snapshot fact
+#'   referential integrity boundary.
+#' - `ledgr_snapshot_fact_timestamp_invalid` reports the snapshot fact
+#'   timestamp invalid boundary.
+#' - `ledgr_snapshot_hash_encoding_invalid` reports the snapshot hash
+#'   encoding invalid boundary.
+#' - `ledgr_snapshot_id_noncanonical` reports the snapshot id noncanonical
+#'   boundary.
+#' - `ledgr_snapshot_id_required` reports snapshot id is required.
+#' - `ledgr_snapshot_membership_set_invalid` reports the snapshot membership
+#'   set invalid boundary.
+#' - `ledgr_snapshot_membership_set_missing` reports the snapshot membership
+#'   set missing boundary.
+#' - `ledgr_snapshot_not_found` reports snapshot was not found.
+#' - `ledgr_snapshot_not_sealed` reports the snapshot not sealed boundary.
+#' - `ledgr_snapshot_quarantine_unacknowledged` reports the snapshot
+#'   quarantine unacknowledged boundary.
+#' - `ledgr_snapshot_required` reports snapshot is required.
+#' - `ledgr_snapshot_sessions_invalid` reports the snapshot sessions invalid
+#'   boundary.
+#' - `ledgr_strategy_ambient_rng_not_supported` reports the strategy ambient
+#'   rng not supported boundary.
+#' - `ledgr_strategy_ambient_rng_parallel` reports the strategy ambient rng
+#'   parallel boundary.
+#' - `ledgr_strategy_ambient_rng_resume` reports the strategy ambient rng
+#'   resume boundary.
+#' - `ledgr_strategy_eval_failed` reports the strategy eval failed boundary.
+#' - `ledgr_strategy_hash_mismatch` reports the strategy hash mismatch
+#'   boundary.
+#' - `ledgr_strategy_hash_unverified` reports the strategy hash unverified
+#'   boundary.
+#' - `ledgr_strategy_not_function` reports the strategy not function
+#'   boundary.
+#' - `ledgr_strategy_parse_failed` reports the strategy parse failed
+#'   boundary.
+#' - `ledgr_strategy_preflight_error` reports the strategy preflight error
+#'   boundary.
+#' - `ledgr_strategy_source_unavailable` reports the strategy source
+#'   unavailable boundary.
+#' - `ledgr_strategy_tier3` reports the strategy tier3 boundary.
+#' - `ledgr_sweep_candidate_not_found` reports sweep candidate was not found.
+#' - `ledgr_sweep_storage_identity_mismatch` reports the sweep storage
+#'   identity mismatch boundary.
+#' - `ledgr_sweep_storage_invalid_identity` reports the sweep storage invalid
+#'   identity boundary.
+#' - `ledgr_sweep_storage_invalid_provenance` reports the sweep storage
+#'   invalid provenance boundary.
+#' - `ledgr_temp_store_unlink_failed` reports the temp store unlink failed
+#'   boundary.
+#' - `ledgr_unknown_feature_id` reports an unknown feature id.
+#' - `ledgr_unsupported_accounting_model` reports unsupported accounting
+#'   model use.
+#' - `ledgr_unsupported_execution_start` reports unsupported execution start
+#'   use.
+#' - `ledgr_unsupported_hydration_start` reports unsupported hydration start
+#'   use.
+#' - `ledgr_unsupported_param_placement` reports unsupported param placement
+#'   use.
+#' - `ledgr_unsupported_risk_step` reports unsupported risk step use.
+#' - `ledgr_walk_forward_cold_start_warning` reports the walk forward cold
+#'   start warning boundary.
+#' - `ledgr_walk_forward_gap_not_supported` reports the walk forward gap not
+#'   supported boundary.
+#' - `ledgr_walk_forward_invalid_fold` reports the walk forward invalid fold
+#'   boundary.
+#' - `ledgr_walk_forward_invalid_identity` reports the walk forward invalid
+#'   identity boundary.
+#' - `ledgr_walk_forward_invalid_opening_state` reports the walk forward
+#'   invalid opening state boundary.
+#' - `ledgr_walk_forward_invalid_selection_rule` reports the walk forward
+#'   invalid selection rule boundary.
+#' @aliases ledgr_ambiguous_bundle_output
+#' @aliases ledgr_availability_validation_failed
+#' @aliases ledgr_availability_valuation_out_of_order
+#' @aliases ledgr_broker_adapter_not_supported
+#' @aliases ledgr_candidate_cost_identity_mismatch
+#' @aliases ledgr_candidate_missing_snapshot_hash
+#' @aliases ledgr_candidate_risk_identity_mismatch
+#' @aliases ledgr_candidate_snapshot_mismatch
+#' @aliases ledgr_checkpoint_failed
+#' @aliases ledgr_compiled_spot_fifo_invalid_input
+#' @aliases ledgr_compiled_spot_fifo_unavailable
+#' @aliases ledgr_config_invalid_json
+#' @aliases ledgr_config_non_deterministic
+#' @aliases ledgr_config_non_finite
+#' @aliases ledgr_config_unsupported_type
+#' @aliases ledgr_corporate_action_clock_mismatch
+#' @aliases ledgr_corporate_action_double_credit
+#' @aliases ledgr_corporate_action_quantity_unsupported
+#' @aliases ledgr_corporate_action_unsupported
+#' @aliases ledgr_db_not_found
+#' @aliases ledgr_distribution_adjusted_bars_unsupported
+#' @aliases ledgr_duplicate_corporate_action_event
+#' @aliases ledgr_duplicate_corporate_action_fact
+#' @aliases ledgr_duplicate_executable_grid_labels
+#' @aliases ledgr_duplicate_fact_family
+#' @aliases ledgr_duplicate_feature_id
+#' @aliases ledgr_duplicate_grid_labels
+#' @aliases ledgr_duplicate_param_grid_labels
+#' @aliases ledgr_empty_warmup_input
+#' @aliases ledgr_event_buffer_capacity_exceeded
+#' @aliases ledgr_fact_identity_conflict
+#' @aliases ledgr_fact_invalid_clock_order
+#' @aliases ledgr_fact_invalid_complete
+#' @aliases ledgr_fact_invalid_completeness
+#' @aliases ledgr_fact_invalid_id
+#' @aliases ledgr_fact_invalid_instrument
+#' @aliases ledgr_fact_invalid_instrument_master
+#' @aliases ledgr_fact_invalid_interval
+#' @aliases ledgr_fact_invalid_lifetime
+#' @aliases ledgr_fact_invalid_logical
+#' @aliases ledgr_fact_invalid_membership_set
+#' @aliases ledgr_fact_invalid_precedence
+#' @aliases ledgr_fact_invalid_provenance
+#' @aliases ledgr_fact_invalid_provenance_tier
+#' @aliases ledgr_fact_invalid_shape
+#' @aliases ledgr_fact_invalid_source
+#' @aliases ledgr_fact_invalid_status
+#' @aliases ledgr_fact_invalid_subtype
+#' @aliases ledgr_fact_invalid_supersession
+#' @aliases ledgr_fact_invalid_time
+#' @aliases ledgr_fact_structural_conflict
+#' @aliases ledgr_fact_unvalidated_term
+#' @aliases ledgr_failed_sweep_candidate
+#' @aliases ledgr_feature_factory_requires_params
+#' @aliases ledgr_feature_lookahead_detected
+#' @aliases ledgr_grid_filter_invalid
+#' @aliases ledgr_invalid_accounting_event
+#' @aliases ledgr_invalid_alias_map
+#' @aliases ledgr_invalid_args
+#' @aliases ledgr_invalid_backtest
+#' @aliases ledgr_invalid_con
+#' @aliases ledgr_invalid_config
+#' @aliases ledgr_invalid_corporate_action_event
+#' @aliases ledgr_invalid_corporate_action_fidelity
+#' @aliases ledgr_invalid_corporate_action_policy
+#' @aliases ledgr_invalid_event_order
+#' @aliases ledgr_invalid_executable_grid
+#' @aliases ledgr_invalid_execution_spec
+#' @aliases ledgr_invalid_experiment
+#' @aliases ledgr_invalid_experiment_features
+#' @aliases ledgr_invalid_experiment_strategy
+#' @aliases ledgr_invalid_facts
+#' @aliases ledgr_invalid_feature_def
+#' @aliases ledgr_invalid_feature_input
+#' @aliases ledgr_invalid_feature_map
+#' @aliases ledgr_invalid_feature_output
+#' @aliases ledgr_invalid_feature_params
+#' @aliases ledgr_invalid_feature_resolution
+#' @aliases ledgr_invalid_feature_value
+#' @aliases ledgr_invalid_fill_input
+#' @aliases ledgr_invalid_fill_intent
+#' @aliases ledgr_invalid_fold_execution
+#' @aliases ledgr_invalid_grid
+#' @aliases ledgr_invalid_indicator_bundle
+#' @aliases ledgr_invalid_ledger_event
+#' @aliases ledgr_invalid_ledger_meta
+#' @aliases ledgr_invalid_metric_context
+#' @aliases ledgr_invalid_opening
+#' @aliases ledgr_invalid_option
+#' @aliases ledgr_invalid_parallel_backend
+#' @aliases ledgr_invalid_parallel_workers
+#' @aliases ledgr_invalid_param_constructor
+#' @aliases ledgr_invalid_param_grid
+#' @aliases ledgr_invalid_param_reference
+#' @aliases ledgr_invalid_parameterized_bundle
+#' @aliases ledgr_invalid_post_risk_targets
+#' @aliases ledgr_invalid_precompute_range
+#' @aliases ledgr_invalid_precomputed_features
+#' @aliases ledgr_invalid_price_basis
+#' @aliases ledgr_invalid_promotion_context_summary
+#' @aliases ledgr_invalid_pulse_context
+#' @aliases ledgr_invalid_pulse_plan
+#' @aliases ledgr_invalid_pulse_wide_names
+#' @aliases ledgr_invalid_result_table
+#' @aliases ledgr_invalid_return_panel
+#' @aliases ledgr_invalid_return_panel_input
+#' @aliases ledgr_invalid_risk_context
+#' @aliases ledgr_invalid_risk_model
+#' @aliases ledgr_invalid_risk_plan
+#' @aliases ledgr_invalid_run
+#' @aliases ledgr_invalid_runtime_projection
+#' @aliases ledgr_invalid_snapshot
+#' @aliases ledgr_invalid_state
+#' @aliases ledgr_invalid_strategy
+#' @aliases ledgr_invalid_strategy_helper
+#' @aliases ledgr_invalid_strategy_params
+#' @aliases ledgr_invalid_strategy_preflight
+#' @aliases ledgr_invalid_strategy_result
+#' @aliases ledgr_invalid_strategy_signature
+#' @aliases ledgr_invalid_strategy_type
+#' @aliases ledgr_invalid_sweep_candidate_input
+#' @aliases ledgr_invalid_sweep_projection
+#' @aliases ledgr_invalid_sweep_review_input
+#' @aliases ledgr_invalid_sweep_review_rank
+#' @aliases ledgr_invalid_target_price
+#' @aliases ledgr_invalid_timestamp
+#' @aliases ledgr_invalid_warmup_input
+#' @aliases ledgr_invalid_worker_dependencies
+#' @aliases ledgr_invalid_worker_packages
+#' @aliases ledgr_invariant_violation
+#' @aliases ledgr_legacy_feature_factory_feature_params_unsupported
+#' @aliases ledgr_levered_weights
+#' @aliases ledgr_lot_state_invariant
+#' @aliases ledgr_missing_bars
+#' @aliases ledgr_missing_dependency
+#' @aliases ledgr_missing_metric_context
+#' @aliases ledgr_missing_optional_dependency
+#' @aliases ledgr_missing_precomputed_features_warning
+#' @aliases ledgr_mixed_metric_cadence
+#' @aliases ledgr_negative_weights
+#' @aliases ledgr_no_active_alias_map
+#' @aliases ledgr_observation_invalid_shape
+#' @aliases ledgr_observation_quarantine_duplicate
+#' @aliases ledgr_ohlc_non_positive
+#' @aliases ledgr_opening_cost_basis_missing
+#' @aliases ledgr_parallel_backend_missing
+#' @aliases ledgr_parallel_error
+#' @aliases ledgr_parallel_strategy_not_allowed
+#' @aliases ledgr_parallel_sweep_interrupted
+#' @aliases ledgr_parallel_worker_failed
+#' @aliases ledgr_parallel_worker_package_missing
+#' @aliases ledgr_param_missing
+#' @aliases ledgr_param_non_scalar
+#' @aliases ledgr_partial_selection
+#' @aliases ledgr_precomputed_coverage_error
+#' @aliases ledgr_precomputed_engine_mismatch
+#' @aliases ledgr_precomputed_feature_mismatch
+#' @aliases ledgr_precomputed_grid_mismatch
+#' @aliases ledgr_precomputed_hydration_mismatch
+#' @aliases ledgr_precomputed_range_mismatch
+#' @aliases ledgr_precomputed_snapshot_mismatch
+#' @aliases ledgr_precomputed_universe_mismatch
+#' @aliases ledgr_promote_failed_candidate
+#' @aliases ledgr_promotion_context_write_failed
+#' @aliases ledgr_purity_violation
+#' @aliases ledgr_quarantine_requires_sessions
+#' @aliases ledgr_return_panel_ambiguous_shape
+#' @aliases ledgr_return_panel_invalid_ts
+#' @aliases ledgr_return_panel_missing_candidate_ids
+#' @aliases ledgr_risk_application_error
+#' @aliases ledgr_risk_plan_parameter_missing
+#' @aliases ledgr_run_hash_mismatch
+#' @aliases ledgr_run_lookup_mismatch
+#' @aliases ledgr_run_not_complete
+#' @aliases ledgr_run_registration_failed
+#' @aliases ledgr_run_telemetry_failed
+#' @aliases ledgr_scalar_accessor_loop
+#' @aliases ledgr_session_coverage_incomplete
+#' @aliases ledgr_session_instant_duplicate
+#' @aliases ledgr_session_instant_off_date
+#' @aliases ledgr_session_invalid
+#' @aliases ledgr_session_invalid_timezone
+#' @aliases ledgr_session_knowledge_late
+#' @aliases ledgr_session_multiple_venues
+#' @aliases ledgr_sim_pit_insufficient_shape
+#' @aliases ledgr_sim_pit_invalid
+#' @aliases ledgr_snapshot_exists
+#' @aliases ledgr_snapshot_fact_family_invalid
+#' @aliases ledgr_snapshot_fact_family_missing
+#' @aliases ledgr_snapshot_fact_interval_invalid
+#' @aliases ledgr_snapshot_fact_json_invalid
+#' @aliases ledgr_snapshot_fact_referential_integrity
+#' @aliases ledgr_snapshot_fact_timestamp_invalid
+#' @aliases ledgr_snapshot_hash_encoding_invalid
+#' @aliases ledgr_snapshot_id_noncanonical
+#' @aliases ledgr_snapshot_id_required
+#' @aliases ledgr_snapshot_membership_set_invalid
+#' @aliases ledgr_snapshot_membership_set_missing
+#' @aliases ledgr_snapshot_not_found
+#' @aliases ledgr_snapshot_not_sealed
+#' @aliases ledgr_snapshot_quarantine_unacknowledged
+#' @aliases ledgr_snapshot_required
+#' @aliases ledgr_snapshot_sessions_invalid
+#' @aliases ledgr_strategy_ambient_rng_not_supported
+#' @aliases ledgr_strategy_ambient_rng_parallel
+#' @aliases ledgr_strategy_ambient_rng_resume
+#' @aliases ledgr_strategy_eval_failed
+#' @aliases ledgr_strategy_hash_mismatch
+#' @aliases ledgr_strategy_hash_unverified
+#' @aliases ledgr_strategy_not_function
+#' @aliases ledgr_strategy_parse_failed
+#' @aliases ledgr_strategy_preflight_error
+#' @aliases ledgr_strategy_source_unavailable
+#' @aliases ledgr_strategy_tier3
+#' @aliases ledgr_sweep_candidate_not_found
+#' @aliases ledgr_sweep_storage_identity_mismatch
+#' @aliases ledgr_sweep_storage_invalid_identity
+#' @aliases ledgr_sweep_storage_invalid_provenance
+#' @aliases ledgr_temp_store_unlink_failed
+#' @aliases ledgr_unknown_feature_id
+#' @aliases ledgr_unsupported_accounting_model
+#' @aliases ledgr_unsupported_execution_start
+#' @aliases ledgr_unsupported_hydration_start
+#' @aliases ledgr_unsupported_param_placement
+#' @aliases ledgr_unsupported_risk_step
+#' @aliases ledgr_validation_cluster_invalid_returns
+#' @aliases ledgr_validation_cluster_invalid_threshold
+#' @aliases ledgr_validation_cluster_too_few_candidates
+#' @aliases ledgr_validation_cluster_too_few_observations
+#' @aliases ledgr_validation_dsr_invalid_confidence
+#' @aliases ledgr_validation_dsr_invalid_effective_trials
+#' @aliases ledgr_validation_dsr_invalid_returns
+#' @aliases ledgr_validation_dsr_invalid_risk_free
+#' @aliases ledgr_validation_dsr_too_few_candidates
+#' @aliases ledgr_validation_dsr_too_few_observations
+#' @aliases ledgr_validation_k_ratio_invalid_periods_per_year
+#' @aliases ledgr_validation_k_ratio_invalid_returns
+#' @aliases ledgr_validation_k_ratio_invalid_risk_free
+#' @aliases ledgr_validation_k_ratio_too_few_observations
+#' @aliases ledgr_walk_forward_cold_start_warning
+#' @aliases ledgr_walk_forward_gap_not_supported
+#' @aliases ledgr_walk_forward_invalid_fold
+#' @aliases ledgr_walk_forward_invalid_fold_window
+#' @aliases ledgr_walk_forward_invalid_identity
+#' @aliases ledgr_walk_forward_invalid_opening_state
+#' @aliases ledgr_walk_forward_invalid_selection_rule
 NULL
 
 #' LEDGR_LAST_BAR_NO_FILL warning code

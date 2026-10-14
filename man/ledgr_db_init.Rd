@@ -2,7 +2,7 @@
 % Please edit documentation in R/public-api.R
 \name{ledgr_db_init}
 \alias{ledgr_db_init}
-\title{Initialize or open a ledgr DuckDB database (v0.1.0)}
+\title{Initialize or open a ledgr DuckDB database}
 \usage{
 ledgr_db_init(db_path)
 }
@@ -13,8 +13,8 @@ ledgr_db_init(db_path)
 A DBI connection.
 }
 \description{
-Opens a DuckDB database at \code{db_path}, creates the v0.1.0 schema if needed,
-and validates it.
+Opens a DuckDB database at \code{db_path}, creates the current schema when the
+file is empty, and otherwise requires the current version and fingerprint.
 }
 \examples{
 db_path <- tempfile(fileext = ".duckdb")

@@ -64,7 +64,7 @@ ledgr_run_tag <- function(snapshot, run_id, tags) {
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
+  ledgr_store_assert_current(opened$con, db_path)
   ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
   created_at <- as.POSIXct(Sys.time(), tz = "UTC")
@@ -119,7 +119,7 @@ ledgr_run_untag <- function(snapshot, run_id, tags = NULL) {
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
+  ledgr_store_assert_current(opened$con, db_path)
   ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
   if (is.null(tags)) {
@@ -139,8 +139,8 @@ ledgr_run_untag <- function(snapshot, run_id, tags = NULL) {
 
 #' List run tags
 #'
-#' Lists mutable run tags stored in a ledgr experiment store. This is a
-#' read-only operation and does not migrate legacy stores.
+#' Lists mutable run tags stored in a current ledgr experiment store. Older,
+#' newer, unmarked or fingerprint-mismatched stores refuse before the read.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
 #'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
@@ -168,15 +168,11 @@ ledgr_run_tags <- function(snapshot, run_id = NULL) {
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = FALSE)
+  ledgr_store_assert_current(opened$con, db_path)
 
   if (!is.null(run_id)) {
     ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
   }
-  if (!ledgr_experiment_store_table_exists(opened$con, "run_tags")) {
-    return(ledgr_run_tags_empty())
-  }
-
   if (is.null(run_id)) {
     out <- DBI::dbGetQuery(
       opened$con,

@@ -64,7 +64,6 @@ ledgr_write_promotion_context <- function(bt, candidate, note = NULL, identity_c
   opened <- ledgr_run_store_open(bt$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   con <- opened$con
-  ledgr_create_schema(con)
   DBI::dbExecute(
     con,
     "
@@ -242,7 +241,7 @@ ledgr_summary_warnings <- function(row) {
 
 ledgr_warning_classes <- function(warnings) {
   classes <- unique(unlist(lapply(warnings, class), use.names = FALSE))
-  sort(as.character(classes))
+  sort(as.character(classes), method = "radix")
 }
 
 #' Read promotion context for a promoted run
@@ -262,8 +261,8 @@ ledgr_warning_classes <- function(warnings) {
 #' Records written by `ledgr_promotion_v2` carry `identity_check`: the
 #' candidate's and the promoting run's identity hashes (`candidate`,
 #' `promoting`), the identities that differed (`mismatched`) and those the
-#' candidate's sweep did not record (`not_recorded`). A `ledgr_promotion_v1`
-#' record reads unchanged with `identity_check = NULL`.
+#' candidate's sweep did not record (`not_recorded`). Stored promotion context
+#' records must use the current `ledgr_promotion_v2` representation.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -307,10 +306,7 @@ ledgr_run_promotion_context <- function(exp, run_id) {
 }
 
 ledgr_fetch_promotion_context <- function(con, run_id) {
-  ledgr_experiment_store_check_schema(con, write = FALSE)
-  if (!ledgr_experiment_store_table_exists(con, "run_promotion_context")) {
-    return(NULL)
-  }
+  ledgr_store_assert_current(con)
   row <- DBI::dbGetQuery(
     con,
     "
@@ -327,6 +323,13 @@ ledgr_fetch_promotion_context <- function(con, run_id) {
 }
 
 ledgr_parse_promotion_context <- function(row) {
+  version <- as.character(row$promotion_context_version[[1L]])
+  if (!identical(version, ledgr_promotion_context_version)) {
+    rlang::abort(
+      "Stored promotion context does not use ledgr_promotion_v2.",
+      class = "ledgr_invalid_store"
+    )
+  }
   source_sweep <- ledgr_parse_source_sweep_record(row$source_sweep_json[[1]])
   structure(list(
     run_id = as.character(row$run_id[[1]]),
@@ -341,7 +344,6 @@ ledgr_parse_promotion_context <- function(row) {
   ), class = c("ledgr_promotion_context", "list"))
 }
 
-# A ledgr_promotion_v1 record has no identity check and reads as NULL.
 ledgr_parse_identity_check <- function(record) {
   if (is.null(record)) return(NULL)
   list(

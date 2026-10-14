@@ -1,0 +1,6 @@
+The checker reports exactly two differing families at LDG-3025:
+equal_weight_run_info and momentum_run_info. In each family, the only
+different row is schema_version, which changes from 118 to 119. That is the
+ticket's declared current-format change. All other rows in those families
+and all other 49 families are byte-identical. The identity family is
+byte-identical.

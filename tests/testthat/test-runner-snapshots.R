@@ -52,7 +52,7 @@ runner_snapshot_config <- function(db_path, snapshot_id, universe_ids, snapshot_
   data <- list(source = "snapshot", snapshot_id = snapshot_id)
   if (!is.null(snapshot_db_path)) data$snapshot_db_path <- snapshot_db_path
 
-  ledgr_test_modernize_config(list(
+  cfg <- ledgr_test_modernize_config(list(
     db_path = db_path,
     engine = list(seed = 1L, tz = "UTC"),
     data = data,
@@ -67,6 +67,14 @@ runner_snapshot_config <- function(db_path, snapshot_id, universe_ids, snapshot_
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "hold_zero", params = list())
   ))
+  cfg$identity_rule_version <- 2L
+  if (!is.character(cfg$data$snapshot_hash) ||
+      length(cfg$data$snapshot_hash) != 1L ||
+      is.na(cfg$data$snapshot_hash) ||
+      !nzchar(cfg$data$snapshot_hash)) {
+    cfg$data$snapshot_hash <- "unsealed-test-snapshot"
+  }
+  cfg
 }
 
 testthat::test_that("runner can use a SEALED snapshot and a subset universe; run stores runs.snapshot_id", {

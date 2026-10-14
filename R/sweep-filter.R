@@ -144,7 +144,7 @@ ledgr_sweep_filter_validate_sweep <- function(x) {
     "params", "feature_params"
   )
   if (!inherits(x, "ledgr_sweep_results") || !is.data.frame(x) ||
-      !all(required %in% names(x)) || nrow(x) == 0L) {
+    !all(required %in% names(x)) || nrow(x) == 0L) {
     rlang::abort(
       "`sweep_results` must be a non-empty ledgr_sweep_results object with its canonical candidate columns.",
       class = c("ledgr_invalid_sweep_filter_input", "ledgr_invalid_args")
@@ -153,7 +153,7 @@ ledgr_sweep_filter_validate_sweep <- function(x) {
   candidate_ids <- as.character(x$candidate_id)
   candidate_rows <- as.integer(x$candidate_row)
   if (anyNA(candidate_ids) || any(!nzchar(candidate_ids)) || anyDuplicated(candidate_ids) ||
-      anyNA(candidate_rows) || anyDuplicated(candidate_rows)) {
+    anyNA(candidate_rows) || anyDuplicated(candidate_rows)) {
     rlang::abort(
       "Sweep-filter candidate ids and candidate rows must be unique and complete.",
       class = c("ledgr_invalid_sweep_filter_input", "ledgr_invalid_args")
@@ -217,7 +217,7 @@ ledgr_sweep_filter_validate_diagnostic_sources <- function(criteria, panel) {
   for (step in diagnostic) {
     source_panel_hash <- step$evidence_snapshot$source_metadata$panel_hash %||% NA_character_
     if (!is.character(source_panel_hash) || length(source_panel_hash) != 1L ||
-        is.na(source_panel_hash) || !identical(source_panel_hash, panel$panel_hash)) {
+      is.na(source_panel_hash) || !identical(source_panel_hash, panel$panel_hash)) {
       rlang::abort(
         sprintf(
           "Diagnostic evidence for criterion `%s` was computed from a different return panel.",
@@ -237,8 +237,7 @@ ledgr_sweep_filter_evidence <- function(context,
                                         step,
                                         candidate_id,
                                         candidate_index) {
-  switch(
-    step$evidence_key,
+  switch(step$evidence_key,
     "summary.max_drawdown" = context$completed$max_drawdown[[candidate_index]],
     "summary.n_trades" = context$completed$n_trades[[candidate_index]],
     retained_equity = {
@@ -247,14 +246,15 @@ ledgr_sweep_filter_evidence <- function(context,
     },
     closed_trades = list(
       trades = context$trades[
-        as.character(context$trades$candidate_id) == candidate_id,
-        ,
+        as.character(context$trades$candidate_id) == candidate_id, ,
         drop = FALSE
       ],
       scoring_range = context$scoring_range
     ),
     candidate_metric_lattice = context$stable_regions[[step$criterion_hash]],
-    if (grepl("^diagnostic\\.", step$evidence_key)) NULL else {
+    if (grepl("^diagnostic\\.", step$evidence_key)) {
+      NULL
+    } else {
       ledgr_objective_abort_missing(step$criterion_id, step$evidence_key, candidate_id)
     }
   )
@@ -283,7 +283,7 @@ ledgr_sweep_filter_parameter_grid <- function(completed, parameter_columns = NUL
     strategy <- completed$params[[i]]
     feature <- completed$feature_params[[i]]
     if (!is.list(strategy) || is.data.frame(strategy) ||
-        !is.list(feature) || is.data.frame(feature)) {
+      !is.list(feature) || is.data.frame(feature)) {
       rlang::abort(
         "Stable-region sweep parameters must be named scalar lists.",
         class = c("ledgr_stable_region_invalid_grid", "ledgr_invalid_args")
@@ -346,7 +346,9 @@ ledgr_sweep_filter_parameter_grid <- function(completed, parameter_columns = NUL
 }
 
 ledgr_sweep_filter_parameter_key <- function(x) {
-  if (length(x) != 1L || is.list(x) || is.data.frame(x)) return("<non-scalar>")
+  if (length(x) != 1L || is.list(x) || is.data.frame(x)) {
+    return("<non-scalar>")
+  }
   paste(paste(class(x), collapse = "/"), as.character(x), sep = ":")
 }
 
@@ -377,10 +379,16 @@ ledgr_sweep_filter_parameter_column <- function(values, column) {
 }
 
 ledgr_sweep_filter_threshold_label <- function(x) {
-  if (is.character(x)) return(as.character(x))
-  if (is.logical(x)) return(if (isTRUE(x)) "TRUE" else "FALSE")
+  if (is.character(x)) {
+    return(as.character(x))
+  }
+  if (is.logical(x)) {
+    return(if (isTRUE(x)) "TRUE" else "FALSE")
+  }
   if (is.numeric(x)) {
-    if (is.infinite(x)) return(if (x > 0) "Inf" else "-Inf")
+    if (is.infinite(x)) {
+      return(if (x > 0) "Inf" else "-Inf")
+    }
     return(format(x, digits = 15L, scientific = FALSE, trim = TRUE))
   }
   as.character(x)
@@ -419,11 +427,11 @@ ledgr_sweep_filter_result_validate <- function(x) {
     "criterion_params", "details"
   )
   if (!inherits(x, "ledgr_sweep_filter_result") || !is.list(x) ||
-      !is.data.frame(x$tear_down) || !is.list(x$metadata) ||
-      !all(required %in% names(x$tear_down)) ||
-      !identical(as.integer(x$metadata$schema_version), ledgr_sweep_filter_schema_version) ||
-      !identical(x$metadata$composition, "all_pass") ||
-      nrow(x$tear_down) == 0L) {
+    !is.data.frame(x$tear_down) || !is.list(x$metadata) ||
+    !all(required %in% names(x$tear_down)) ||
+    !identical(as.integer(x$metadata$schema_version), ledgr_sweep_filter_schema_version) ||
+    !identical(x$metadata$composition, "all_pass") ||
+    nrow(x$tear_down) == 0L) {
     rlang::abort(
       "`x` has an invalid ledgr sweep-filter result shape.",
       class = c("ledgr_invalid_sweep_filter_result", "ledgr_invalid_args")
@@ -450,14 +458,14 @@ ledgr_sweep_filter_result_validate <- function(x) {
     logical(1)
   )
   if (nrow(x$tear_down) != expected_rows ||
-      anyNA(x$tear_down$passed) || anyNA(x$tear_down$eligible) ||
-      !identical(as.character(x$tear_down$candidate_id), expected_candidate_ids) ||
-      !identical(as.character(x$tear_down$criterion_id), expected_criterion_ids) ||
-      !identical(
-        as.logical(x$tear_down$eligible),
-        unname(expected_eligible[x$tear_down$candidate_id])
-      ) ||
-      !all(as.character(x$tear_down$business_objective_hash) == x$metadata$business_objective_hash)) {
+    anyNA(x$tear_down$passed) || anyNA(x$tear_down$eligible) ||
+    !identical(as.character(x$tear_down$candidate_id), expected_candidate_ids) ||
+    !identical(as.character(x$tear_down$criterion_id), expected_criterion_ids) ||
+    !identical(
+      as.logical(x$tear_down$eligible),
+      unname(expected_eligible[x$tear_down$candidate_id])
+    ) ||
+    !all(as.character(x$tear_down$business_objective_hash) == x$metadata$business_objective_hash)) {
     rlang::abort(
       "Sweep-filter result rows do not match their objective or candidate metadata.",
       class = c("ledgr_invalid_sweep_filter_result", "ledgr_invalid_args")
@@ -467,8 +475,7 @@ ledgr_sweep_filter_result_validate <- function(x) {
 }
 
 ledgr_sweep_filter_abort_selection <- function(operation) {
-  classes <- switch(
-    operation,
+  classes <- switch(operation,
     candidate = "ledgr_sweep_filter_not_candidate",
     promote = "ledgr_sweep_filter_promotion_forbidden",
     walk_forward = "ledgr_sweep_filter_walk_forward_forbidden"
@@ -476,8 +483,7 @@ ledgr_sweep_filter_abort_selection <- function(operation) {
   rlang::abort(
     sprintf(
       "A ledgr_sweep_filter_result is all-candidates eligibility evidence and cannot be used for %s.",
-      switch(
-        operation,
+      switch(operation,
         candidate = "candidate extraction",
         promote = "promotion",
         walk_forward = "walk-forward selection"

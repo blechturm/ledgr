@@ -46,6 +46,18 @@ ledgr_prepare_snapshot_source_tables <- function(con, snapshot_db_path, run_db_p
 
   snapshot_path_sql <- DBI::dbQuoteString(con, ledgr_db_path_key(snapshot_db_path))
   DBI::dbExecute(con, paste0("ATTACH ", snapshot_path_sql, " AS ledgr_snapshot_src (READ_ONLY)"))
+  accepted <- FALSE
+  on.exit({
+    if (!accepted) {
+      try(DBI::dbExecute(con, "DETACH ledgr_snapshot_src"), silent = TRUE)
+    }
+  }, add = TRUE)
+  ledgr_store_assert_current(
+    con,
+    snapshot_db_path,
+    catalog = "ledgr_snapshot_src"
+  )
+  accepted <- TRUE
   DBI::dbExecute(con, "CREATE TEMP VIEW snapshots AS SELECT * FROM ledgr_snapshot_src.snapshots")
   DBI::dbExecute(con, "CREATE TEMP VIEW snapshot_instruments AS SELECT * FROM ledgr_snapshot_src.snapshot_instruments")
   DBI::dbExecute(con, "CREATE TEMP VIEW snapshot_bars AS SELECT * FROM ledgr_snapshot_src.snapshot_bars")

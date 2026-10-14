@@ -43,6 +43,7 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
     con <- opened$con
     on.exit(opened$close(), add = TRUE)
   }
+  ledgr_store_assert_current(con, bt$db_path)
   ledgr_backtest_ensure_snapshot(bt, con)
   out <- ledgr_valuation_summary_evidence(bt, con)
   ledgr_valuation_summary_add_basis(out, bt$config, con)
@@ -454,14 +455,6 @@ ledgr_completion_columns <- function(completion_json) {
   )
 }
 
-ledgr_completion_column_names <- function() {
-  c(
-    "stop_reason", "affected_instrument_ids", "valuation_state",
-    "frozen_instrument_sessions", "max_frozen_equity_weight",
-    "frozen_at_end_value", "assumed_terminal_outcomes"
-  )
-}
-
 # Inserts the derived columns directly after completion_json.
 ledgr_add_completion_columns <- function(x) {
   if (!"completion_json" %in% names(x)) return(x)
@@ -539,7 +532,7 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
     frozen_at_end_value = rep(NA_real_, length(run_ids)),
     assumed_terminal_outcomes = rep(NA_integer_, length(run_ids))
   )
-  if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
+  if (length(run_ids) == 0L) {
     return(out)
   }
   quoted <- paste(DBI::dbQuoteString(con, unique(run_ids)), collapse = ", ")

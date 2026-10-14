@@ -52,13 +52,26 @@ testthat::test_that("risk identity participates in config_hash without a separat
       risk_chain_hash = ledgr:::ledgr_risk_chain_hash(ledgr_risk_none()),
       risk_plan_json = ledgr:::ledgr_risk_plan_json(ledgr_risk_none())
     ),
+    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+      ledgr_corporate_actions_research()
+    ),
     strategy = list(id = "x", params = list()),
-    data = list(source = "snapshot", snapshot_id = "test-snapshot")
+    data = list(
+      source = "snapshot",
+      snapshot_id = "test-snapshot",
+      snapshot_hash = "test-hash"
+    ),
+    identity_rule_version = 2L
   )
 
   cfg_missing <- cfg
   cfg_missing$risk_chain <- NULL
-  testthat::expect_identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg_missing))
+  testthat::expect_error(
+    ledgr:::config_hash(cfg_missing),
+    "Config field risk_chain must contain current risk identity.",
+    class = "ledgr_invalid_config",
+    fixed = TRUE
+  )
 
   cfg_null_equivalent <- cfg
   cfg_null_equivalent$risk_chain <- list(
@@ -98,8 +111,16 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
       risk_chain_hash = ledgr:::ledgr_risk_chain_hash(ledgr_risk_none()),
       risk_plan_json = ledgr:::ledgr_risk_plan_json(ledgr_risk_none())
     ),
+    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+      ledgr_corporate_actions_research()
+    ),
     strategy = list(id = "x", params = list()),
-    data = list(source = "snapshot", snapshot_id = "test-snapshot")
+    data = list(
+      source = "snapshot",
+      snapshot_id = "test-snapshot",
+      snapshot_hash = "test-hash"
+    ),
+    identity_rule_version = 2L
   )
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)
@@ -111,39 +132,4 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
   cfg_bad_plan <- cfg
   cfg_bad_plan$risk_chain$risk_plan_json <- "{}"
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg_bad_plan), "risk_chain.risk_chain_hash", fixed = TRUE)
-})
-
-# ledgr-test-profile: heavy_protocol
-testthat::test_that("stored pre-risk run config reopens with in-memory no-op risk identity only", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
-  db_path <- tempfile(fileext = ".duckdb")
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  bt <- ledgr_run(exp, run_id = "legacy-risk-reopen")
-  close(bt)
-
-  legacy_cfg <- bt$config
-  legacy_cfg$risk_chain <- NULL
-  legacy_cfg_json <- ledgr:::canonical_json(legacy_cfg)
-  con <- ledgr:::get_connection(snapshot)
-  DBI::dbExecute(
-    con,
-    "UPDATE runs SET config_json = ? WHERE run_id = ?",
-    params = list(legacy_cfg_json, "legacy-risk-reopen")
-  )
-
-  reopened <- ledgr_run_open(snapshot, "legacy-risk-reopen")
-  on.exit(close(reopened), add = TRUE)
-  testthat::expect_identical(
-    reopened$config$risk_chain$risk_chain_hash,
-    ledgr:::ledgr_risk_chain_hash(ledgr_risk_none())
-  )
-  stored_json <- DBI::dbGetQuery(
-    con,
-    "SELECT config_json FROM runs WHERE run_id = ?",
-    params = list("legacy-risk-reopen")
-  )$config_json[[1]]
-  testthat::expect_identical(as.character(stored_json), as.character(legacy_cfg_json))
 })

@@ -10,9 +10,11 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
     ids <- ctx$universe[ctx$vec$admissible]
     ledgr_weights(weights[ids], universe = ctx$universe) |> ledgr_target_rebalance(ctx, equity_fraction = 0.9)
   }
-  bt <- ledgr_run(ledgr_experiment(snapshot, rotate, universe = ledgr_universe_members("u"),
-                                   valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
-                                   opening = ledgr_opening(cash = 1000)), run_id = "timeline")
+  bt <- ledgr_run(ledgr_experiment(snapshot, rotate,
+    universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  ), run_id = "timeline")
   on.exit(close(bt), add = TRUE)
   con <- ledgr:::get_connection(snapshot)
   times <- sort(unique(ledgr_results(bt, "diagnostics")$ts_utc))
@@ -83,7 +85,7 @@ scale_test_reference_recording <- function(fills, diagnostics, sessions, version
     cand <- which(!is.na(diagnostics$event_seq) & diagnostics$event_seq == fills$event_seq[[i]])
     if (length(cand) == 0L) {
       cand <- which(diagnostics$instrument_id == fills$instrument_id[[i]] & !is.na(diag_execution) &
-                      diag_execution == fill_time[[i]])
+        diag_execution == fill_time[[i]])
     }
     if (length(cand) != 1L) next
     if (is.na(diag_execution[[cand]]) || diag_execution[[cand]] != fill_time[[i]]) next
@@ -99,29 +101,31 @@ scale_test_reference_recording <- function(fills, diagnostics, sessions, version
 testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-fill rule", {
   set.seed(210)
   day <- as.POSIXct("2021-01-04", tz = "UTC") + 86400 * (0:59)
-  for (version in c(1L, 2L)) {
-    sessions <- data.frame(status = "open", session_open = day + 14.5 * 3600, session_close = day + 21 * 3600)
-    # Two sessions share an execution time (the rare path).
-    sessions$session_open[[31]] <- sessions$session_open[[30]]
-    n <- 400L
-    k <- sample.int(59L, n, TRUE) + 1L
-    exec_time <- if (version == 2L) sessions$session_open[k] else sessions$session_close[k]
-    fills <- data.frame(event_seq = seq_len(n), ts_utc = exec_time, instrument_id = sample(c("A", "B", NA), n, TRUE))
-    diag <- data.frame(event_seq = seq_len(n), instrument_id = fills$instrument_id, stage = "execution",
-                       outcome = "filled", decision_ts_utc = sessions$session_close[k - 1L], execution_ts_utc = exec_time)
-    diag$event_seq[sample.int(n, 40L)] <- NA                # fall back to instrument and time
-    diag$event_seq[sample.int(n, 20L)] <- 7L                # repeated event_seq: unresolved
-    diag$execution_ts_utc[sample.int(n, 20L)] <- NA         # missing execution time
-    diag$decision_ts_utc[sample.int(n, 20L)] <- day[[1]]     # decision does not match
-    diag <- rbind(diag, transform(diag[1:30, ], stage = "decision"))
-    timing <- list(execution_timing_convention = if (version == 2L) "availability_open_v2" else "availability_close_v1",
-                   execution_timing_version = version)
-    got <- ledgr:::ledgr_fill_recording_pulses_from_evidence(fills, diag, sessions, timing)
-    expected <- scale_test_reference_recording(fills, diag, sessions, version)
-    testthat::expect_identical(got, expected)
-    testthat::expect_gt(sum(!is.na(got)), 100L)
-    testthat::expect_gt(sum(is.na(got)), 20L)
-  }
+  sessions <- data.frame(status = "open", session_open = day + 14.5 * 3600, session_close = day + 21 * 3600)
+  # Two sessions share an execution time (the rare path).
+  sessions$session_open[[31]] <- sessions$session_open[[30]]
+  n <- 400L
+  k <- sample.int(59L, n, TRUE) + 1L
+  exec_time <- sessions$session_open[k]
+  fills <- data.frame(event_seq = seq_len(n), ts_utc = exec_time, instrument_id = sample(c("A", "B", NA), n, TRUE))
+  diag <- data.frame(
+    event_seq = seq_len(n), instrument_id = fills$instrument_id, stage = "execution",
+    outcome = "filled", decision_ts_utc = sessions$session_close[k - 1L], execution_ts_utc = exec_time
+  )
+  diag$event_seq[sample.int(n, 40L)] <- NA
+  diag$event_seq[sample.int(n, 20L)] <- 7L
+  diag$execution_ts_utc[sample.int(n, 20L)] <- NA
+  diag$decision_ts_utc[sample.int(n, 20L)] <- day[[1]]
+  diag <- rbind(diag, transform(diag[1:30, ], stage = "decision"))
+  timing <- list(
+    execution_timing_convention = "availability_open_v2",
+    execution_timing_version = 2L
+  )
+  got <- ledgr:::ledgr_fill_recording_pulses_from_evidence(fills, diag, sessions, timing)
+  expected <- scale_test_reference_recording(fills, diag, sessions, 2L)
+  testthat::expect_identical(got, expected)
+  testthat::expect_gt(sum(!is.na(got)), 100L)
+  testthat::expect_gt(sum(is.na(got)), 20L)
 })
 
 testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows its candidate row reads", {
@@ -131,8 +135,10 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
     instrument_id = c("A", "B", "A", "C", "B", "A", "D", "E"),
     stage = c("decision", "decision", "decision", "valuation", "decision", "execution", "valuation", "decision"),
     outcome = c("recorded", "recorded", "recorded", "disposed", "recorded", "filled", "stopped", "recorded"),
-    reason_code = c("decision_recorded", "decision_recorded", "decision_recorded", "terminal_disposition",
-                    "decision_recorded", "", "valuation_horizon_exhausted", "decision_recorded"),
+    reason_code = c(
+      "decision_recorded", "decision_recorded", "decision_recorded", "terminal_disposition",
+      "decision_recorded", "", "valuation_horizon_exhausted", "decision_recorded"
+    ),
     quantity = c(10, 0, 5, 3, 7, 2, 4, NA), price = 1,
     mark_source = c("stale_close", "stale_close", "current_close", "", "frozen_close", "", "", "frozen_close"),
     mark_age = c(2L, 3L, 0L, NA, 9L, NA, NA, 4L), stringsAsFactors = FALSE
@@ -144,8 +150,10 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
   testthat::expect_identical(kept$diagnostic_seq, c(1L, 4L, 5L, 7L, 9L))
   full <- rbind(rows, rows[7, ])
   full$diagnostic_seq <- seq_len(nrow(full))
-  testthat::expect_identical(ledgr:::ledgr_valuation_inputs_from_diagnostics(kept),
-                             ledgr:::ledgr_valuation_inputs_from_diagnostics(full))
+  testthat::expect_identical(
+    ledgr:::ledgr_valuation_inputs_from_diagnostics(kept),
+    ledgr:::ledgr_valuation_inputs_from_diagnostics(full)
+  )
   testthat::expect_identical(ledgr:::ledgr_stopped_instrument_ids(kept), ledgr:::ledgr_stopped_instrument_ids(full))
   testthat::expect_null(ledgr:::ledgr_memory_output_handler("empty")$diagnostics())
 })
@@ -195,9 +203,11 @@ testthat::test_that("[LTB-0214] carried strategy state equals normalising it on 
     seen$updates[k] <- list(update)
     list(targets = ctx$flat(), state_update = update)
   }
-  bt <- ledgr_run(ledgr_experiment(snapshot, carry, universe = ledgr_universe_members("u"),
-                                   valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
-                                   opening = ledgr_opening(cash = 1000)), run_id = "carry")
+  bt <- ledgr_run(ledgr_experiment(snapshot, carry,
+    universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  ), run_id = "carry")
   on.exit(close(bt), add = TRUE)
   testthat::expect_true(any(lengths(seen$axes) == 3L) && any(lengths(seen$axes) == 2L))
   expected <- character(length(seen$axes))
@@ -207,8 +217,10 @@ testthat::test_that("[LTB-0214] carried strategy state equals normalising it on 
     previous <- reference(state, seen$axes[[k]])
     expected[[k]] <- as.character(ledgr:::canonical_json(previous))
   }
-  got <- DBI::dbGetQuery(ledgr:::get_connection(snapshot),
-                         "SELECT state_json FROM strategy_state WHERE run_id = 'carry' ORDER BY ts_utc")$state_json
+  got <- DBI::dbGetQuery(
+    ledgr:::get_connection(snapshot),
+    "SELECT state_json FROM strategy_state WHERE run_id = 'carry' ORDER BY ts_utc"
+  )$state_json
   testthat::expect_identical(got, expected)
 })
 
@@ -217,14 +229,18 @@ testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the origin
   b <- c("t1", "t1", "t1", "t2", "t2", NA)
   testthat::expect_identical(duplicated(ledgr:::ledgr_pair_key(a, b)), duplicated(paste(a, b, sep = "\r")))
   ts <- as.POSIXct("2021-01-04 21:00", tz = "UTC") + c(0, 0, 86400, 86400)
-  testthat::expect_identical(duplicated(ledgr:::ledgr_pair_key(c("A", "A", "A", "B"), ts)),
-                             duplicated(paste0(c("A", "A", "A", "B"), "\n", ts)))
+  testthat::expect_identical(
+    duplicated(ledgr:::ledgr_pair_key(c("A", "A", "A", "B"), ts)),
+    duplicated(paste0(c("A", "A", "A", "B"), "\n", ts))
+  )
   fall_back <- as.POSIXct("2021-11-07 05:30", tz = "UTC") + c(0, 3600)
   local <- .POSIXct(as.numeric(fall_back), tz = "America/New_York")
   testthat::expect_identical(as.character(local[[1]]), as.character(local[[2]]))
   testthat::expect_false(identical(as.numeric(local[[1]]), as.numeric(local[[2]])))
-  testthat::expect_identical(duplicated(ledgr:::ledgr_pair_key(c("A", "A"), local)),
-                             duplicated(paste(c("A", "A"), local, sep = "\r")))
+  testthat::expect_identical(
+    duplicated(ledgr:::ledgr_pair_key(c("A", "A"), local)),
+    duplicated(paste(c("A", "A"), local, sep = "\r"))
+  )
 
   ids <- c("I1", "I2", "I3")
   pulses <- as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:3
@@ -234,13 +250,17 @@ testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the origin
   expected <- do.call(rbind, lapply(seq_along(ids), function(j) {
     vals <- matrix(NA_real_, length(defs), length(pulses))
     for (d in seq_along(defs)) vals[d, ] <- values[[defs[[d]]]][j, ]
-    data.frame(run_id = "r", instrument_id = ids[[j]], ts_utc = rep(pulses, each = length(defs)),
-               feature_name = rep(defs, times = length(pulses)), feature_value = as.vector(vals),
-               stringsAsFactors = FALSE)
+    data.frame(
+      run_id = "r", instrument_id = ids[[j]], ts_utc = rep(pulses, each = length(defs)),
+      feature_name = rep(defs, times = length(pulses)), feature_value = as.vector(vals),
+      stringsAsFactors = FALSE
+    )
   }))
   rownames(expected) <- NULL
-  got <- rbind(ledgr:::ledgr_feature_rows_block("r", ids, 1:2, pulses, defs, values),
-               ledgr:::ledgr_feature_rows_block("r", ids, 3L, pulses, defs, values))
+  got <- rbind(
+    ledgr:::ledgr_feature_rows_block("r", ids, 1:2, pulses, defs, values),
+    ledgr:::ledgr_feature_rows_block("r", ids, 3L, pulses, defs, values)
+  )
   testthat::expect_identical(got, expected)
 })
 
@@ -260,11 +280,15 @@ testthat::test_that("[LTB-0215] strategy state changed in place is persisted as 
     live$x <- c(live$x, st$x)
     list(targets = ctx$flat(), state_update = st)
   }
-  bt <- ledgr_run(ledgr_experiment(snapshot, mutate, cost_model = ledgr_cost_zero(),
-                                   opening = ledgr_opening(cash = 1000)), run_id = "in_place")
+  bt <- ledgr_run(ledgr_experiment(snapshot, mutate,
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  ), run_id = "in_place")
   on.exit(close(bt), add = TRUE)
-  got <- DBI::dbGetQuery(ledgr:::get_connection(snapshot),
-                         "SELECT state_json FROM strategy_state WHERE run_id = 'in_place' ORDER BY ts_utc")$state_json
+  got <- DBI::dbGetQuery(
+    ledgr:::get_connection(snapshot),
+    "SELECT state_json FROM strategy_state WHERE run_id = 'in_place' ORDER BY ts_utc"
+  )$state_json
   expected <- vapply(live$x, function(x) as.character(ledgr:::canonical_json(list(x = x))), character(1))
   testthat::expect_gt(length(unique(live$x)), 3L)
   testthat::expect_identical(got, expected)
@@ -279,15 +303,20 @@ testthat::test_that("[LTB-0216] the dense results plane replays the ledger once,
     target[[if (as.integer(format(as.Date(substr(ctx$ts_utc, 1, 10)), "%d")) %% 2L == 0L) "AAA" else "BBB"]] <- 3
     target
   }
-  bt <- suppressWarnings(ledgr_run(ledgr_experiment(snapshot, flip, cost_model = ledgr_cost_zero(),
-                                   opening = ledgr_opening(cash = 10000)), run_id = "dense_once"))
+  bt <- suppressWarnings(ledgr_run(ledgr_experiment(snapshot, flip,
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 10000)
+  ), run_id = "dense_once"))
   on.exit(close(bt), add = TRUE)
   testthat::expect_gt(nrow(ledgr_results(bt, "fills")), 4L)
   per_time <- new.env()
   per_time$calls <- 0L
   asof <- ledgr:::ledgr_availability_positions_asof
   testthat::local_mocked_bindings(
-    ledgr_availability_positions_asof = function(...) { per_time$calls <- per_time$calls + 1L; asof(...) },
+    ledgr_availability_positions_asof = function(...) {
+      per_time$calls <- per_time$calls + 1L
+      asof(...)
+    },
     .package = "ledgr"
   )
   once <- ledgr_results(bt, "availability")

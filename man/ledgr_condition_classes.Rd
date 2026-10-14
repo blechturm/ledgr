@@ -2,8 +2,6 @@
 % Please edit documentation in R/condition-reference.R
 \name{ledgr_condition_classes}
 \alias{ledgr_condition_classes}
-\alias{ledgr_legacy_fill_model_shape}
-\alias{ledgr_legacy_config_shape}
 \alias{ledgr_cost_model_unspecified}
 \alias{ledgr_invalid_cost_chain_order}
 \alias{ledgr_invalid_cost_model}
@@ -15,21 +13,20 @@
 \alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_lot_fill}
 \alias{ledgr_snapshot_hash_invalid_timestamp}
-\alias{ledgr_snapshot_rebuild_required}
 \alias{ledgr_snapshot_hash_rule_unsupported}
 \alias{ledgr_snapshot_hash_order_invalid}
+\alias{ledgr_store_rebuild_required}
+\alias{ledgr_invalid_store}
 \alias{ledgr_invalid_valuation_policy}
 \alias{ledgr_availability_inactive}
 \alias{ledgr_availability_sessions_required}
 \alias{ledgr_backtest_availability_unsupported}
 \alias{ledgr_sessions_incomplete}
-\alias{ledgr_identity_rule_retired}
 \alias{ledgr_promote_identity_mismatch}
 \alias{ledgr_membership_universe_not_found}
 \alias{ledgr_compiled_availability_unsupported}
-\alias{ledgr_execution_timing_version_mismatch}
 \alias{ledgr_policy_schema_mismatch}
-\alias{ledgr_fill_timing_not_comparable}
+\alias{ledgr_strategy_provenance_missing}
 \alias{ledgr_session_time_ambiguous}
 \alias{ledgr_session_time_nonexistent}
 \alias{ledgr_fact_ambiguous_membership_shape}
@@ -43,6 +40,7 @@
 \alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
 \alias{ledgr_invalid_strategy_state}
+\alias{ledgr_strategy_error}
 \alias{ledgr_target_sizing_unavailable}
 \alias{ledgr_restricted_target}
 \alias{ledgr_nonmember_exposure_increase}
@@ -128,23 +126,258 @@
 \alias{ledgr_walk_forward_invalid_session}
 \alias{ledgr_walk_forward_latest_without_rationale}
 \alias{ledgr_walk_forward_candidate_not_found}
+\alias{ledgr_ambiguous_bundle_output}
+\alias{ledgr_availability_validation_failed}
+\alias{ledgr_availability_valuation_out_of_order}
+\alias{ledgr_broker_adapter_not_supported}
+\alias{ledgr_candidate_cost_identity_mismatch}
+\alias{ledgr_candidate_missing_snapshot_hash}
+\alias{ledgr_candidate_risk_identity_mismatch}
+\alias{ledgr_candidate_snapshot_mismatch}
+\alias{ledgr_checkpoint_failed}
+\alias{ledgr_compiled_spot_fifo_invalid_input}
+\alias{ledgr_compiled_spot_fifo_unavailable}
+\alias{ledgr_config_invalid_json}
+\alias{ledgr_config_non_deterministic}
+\alias{ledgr_config_non_finite}
+\alias{ledgr_config_unsupported_type}
+\alias{ledgr_corporate_action_clock_mismatch}
+\alias{ledgr_corporate_action_double_credit}
+\alias{ledgr_corporate_action_quantity_unsupported}
+\alias{ledgr_corporate_action_unsupported}
+\alias{ledgr_db_not_found}
+\alias{ledgr_distribution_adjusted_bars_unsupported}
+\alias{ledgr_duplicate_corporate_action_event}
+\alias{ledgr_duplicate_corporate_action_fact}
+\alias{ledgr_duplicate_executable_grid_labels}
+\alias{ledgr_duplicate_fact_family}
+\alias{ledgr_duplicate_feature_id}
+\alias{ledgr_duplicate_grid_labels}
+\alias{ledgr_duplicate_param_grid_labels}
+\alias{ledgr_empty_warmup_input}
+\alias{ledgr_event_buffer_capacity_exceeded}
+\alias{ledgr_fact_identity_conflict}
+\alias{ledgr_fact_invalid_clock_order}
+\alias{ledgr_fact_invalid_complete}
+\alias{ledgr_fact_invalid_completeness}
+\alias{ledgr_fact_invalid_id}
+\alias{ledgr_fact_invalid_instrument}
+\alias{ledgr_fact_invalid_instrument_master}
+\alias{ledgr_fact_invalid_interval}
+\alias{ledgr_fact_invalid_lifetime}
+\alias{ledgr_fact_invalid_logical}
+\alias{ledgr_fact_invalid_membership_set}
+\alias{ledgr_fact_invalid_precedence}
+\alias{ledgr_fact_invalid_provenance}
+\alias{ledgr_fact_invalid_provenance_tier}
+\alias{ledgr_fact_invalid_shape}
+\alias{ledgr_fact_invalid_source}
+\alias{ledgr_fact_invalid_status}
+\alias{ledgr_fact_invalid_subtype}
+\alias{ledgr_fact_invalid_supersession}
+\alias{ledgr_fact_invalid_time}
+\alias{ledgr_fact_structural_conflict}
+\alias{ledgr_fact_unvalidated_term}
+\alias{ledgr_failed_sweep_candidate}
+\alias{ledgr_feature_factory_requires_params}
+\alias{ledgr_feature_lookahead_detected}
+\alias{ledgr_grid_filter_invalid}
+\alias{ledgr_invalid_accounting_event}
+\alias{ledgr_invalid_alias_map}
+\alias{ledgr_invalid_args}
+\alias{ledgr_invalid_backtest}
+\alias{ledgr_invalid_con}
+\alias{ledgr_invalid_config}
+\alias{ledgr_invalid_corporate_action_event}
+\alias{ledgr_invalid_corporate_action_fidelity}
+\alias{ledgr_invalid_corporate_action_policy}
+\alias{ledgr_invalid_event_order}
+\alias{ledgr_invalid_executable_grid}
+\alias{ledgr_invalid_execution_spec}
+\alias{ledgr_invalid_experiment}
+\alias{ledgr_invalid_experiment_features}
+\alias{ledgr_invalid_experiment_strategy}
+\alias{ledgr_invalid_facts}
+\alias{ledgr_invalid_feature_def}
+\alias{ledgr_invalid_feature_input}
+\alias{ledgr_invalid_feature_map}
+\alias{ledgr_invalid_feature_output}
+\alias{ledgr_invalid_feature_params}
+\alias{ledgr_invalid_feature_resolution}
+\alias{ledgr_invalid_feature_value}
+\alias{ledgr_invalid_fill_input}
+\alias{ledgr_invalid_fill_intent}
+\alias{ledgr_invalid_fold_execution}
+\alias{ledgr_invalid_grid}
+\alias{ledgr_invalid_indicator_bundle}
+\alias{ledgr_invalid_ledger_event}
+\alias{ledgr_invalid_ledger_meta}
+\alias{ledgr_invalid_metric_context}
+\alias{ledgr_invalid_opening}
+\alias{ledgr_invalid_option}
+\alias{ledgr_invalid_parallel_backend}
+\alias{ledgr_invalid_parallel_workers}
+\alias{ledgr_invalid_param_constructor}
+\alias{ledgr_invalid_param_grid}
+\alias{ledgr_invalid_param_reference}
+\alias{ledgr_invalid_parameterized_bundle}
+\alias{ledgr_invalid_post_risk_targets}
+\alias{ledgr_invalid_precompute_range}
+\alias{ledgr_invalid_precomputed_features}
+\alias{ledgr_invalid_price_basis}
+\alias{ledgr_invalid_promotion_context_summary}
+\alias{ledgr_invalid_pulse_context}
+\alias{ledgr_invalid_pulse_plan}
+\alias{ledgr_invalid_pulse_wide_names}
+\alias{ledgr_invalid_result_table}
+\alias{ledgr_invalid_return_panel}
+\alias{ledgr_invalid_return_panel_input}
+\alias{ledgr_invalid_risk_context}
+\alias{ledgr_invalid_risk_model}
+\alias{ledgr_invalid_risk_plan}
+\alias{ledgr_invalid_run}
+\alias{ledgr_invalid_runtime_projection}
+\alias{ledgr_invalid_snapshot}
+\alias{ledgr_invalid_state}
+\alias{ledgr_invalid_strategy}
+\alias{ledgr_invalid_strategy_helper}
+\alias{ledgr_invalid_strategy_params}
+\alias{ledgr_invalid_strategy_preflight}
+\alias{ledgr_invalid_strategy_result}
+\alias{ledgr_invalid_strategy_signature}
+\alias{ledgr_invalid_strategy_type}
+\alias{ledgr_invalid_sweep_candidate_input}
+\alias{ledgr_invalid_sweep_projection}
+\alias{ledgr_invalid_sweep_review_input}
+\alias{ledgr_invalid_sweep_review_rank}
+\alias{ledgr_invalid_target_price}
+\alias{ledgr_invalid_timestamp}
+\alias{ledgr_invalid_warmup_input}
+\alias{ledgr_invalid_worker_dependencies}
+\alias{ledgr_invalid_worker_packages}
+\alias{ledgr_invariant_violation}
+\alias{ledgr_legacy_feature_factory_feature_params_unsupported}
+\alias{ledgr_levered_weights}
+\alias{ledgr_lot_state_invariant}
+\alias{ledgr_missing_bars}
+\alias{ledgr_missing_dependency}
+\alias{ledgr_missing_metric_context}
+\alias{ledgr_missing_optional_dependency}
+\alias{ledgr_missing_precomputed_features_warning}
+\alias{ledgr_mixed_metric_cadence}
+\alias{ledgr_negative_weights}
+\alias{ledgr_no_active_alias_map}
+\alias{ledgr_observation_invalid_shape}
+\alias{ledgr_observation_quarantine_duplicate}
+\alias{ledgr_ohlc_non_positive}
+\alias{ledgr_opening_cost_basis_missing}
+\alias{ledgr_parallel_backend_missing}
+\alias{ledgr_parallel_error}
+\alias{ledgr_parallel_strategy_not_allowed}
+\alias{ledgr_parallel_sweep_interrupted}
+\alias{ledgr_parallel_worker_failed}
+\alias{ledgr_parallel_worker_package_missing}
+\alias{ledgr_param_missing}
+\alias{ledgr_param_non_scalar}
+\alias{ledgr_partial_selection}
+\alias{ledgr_precomputed_coverage_error}
+\alias{ledgr_precomputed_engine_mismatch}
+\alias{ledgr_precomputed_feature_mismatch}
+\alias{ledgr_precomputed_grid_mismatch}
+\alias{ledgr_precomputed_hydration_mismatch}
+\alias{ledgr_precomputed_range_mismatch}
+\alias{ledgr_precomputed_snapshot_mismatch}
+\alias{ledgr_precomputed_universe_mismatch}
+\alias{ledgr_promote_failed_candidate}
+\alias{ledgr_promotion_context_write_failed}
+\alias{ledgr_purity_violation}
+\alias{ledgr_quarantine_requires_sessions}
+\alias{ledgr_return_panel_ambiguous_shape}
+\alias{ledgr_return_panel_invalid_ts}
+\alias{ledgr_return_panel_missing_candidate_ids}
+\alias{ledgr_risk_application_error}
+\alias{ledgr_risk_plan_parameter_missing}
+\alias{ledgr_run_hash_mismatch}
+\alias{ledgr_run_lookup_mismatch}
+\alias{ledgr_run_not_complete}
+\alias{ledgr_run_registration_failed}
+\alias{ledgr_run_telemetry_failed}
+\alias{ledgr_scalar_accessor_loop}
+\alias{ledgr_session_coverage_incomplete}
+\alias{ledgr_session_instant_duplicate}
+\alias{ledgr_session_instant_off_date}
+\alias{ledgr_session_invalid}
+\alias{ledgr_session_invalid_timezone}
+\alias{ledgr_session_knowledge_late}
+\alias{ledgr_session_multiple_venues}
+\alias{ledgr_sim_pit_insufficient_shape}
+\alias{ledgr_sim_pit_invalid}
+\alias{ledgr_snapshot_exists}
+\alias{ledgr_snapshot_fact_family_invalid}
+\alias{ledgr_snapshot_fact_family_missing}
+\alias{ledgr_snapshot_fact_interval_invalid}
+\alias{ledgr_snapshot_fact_json_invalid}
+\alias{ledgr_snapshot_fact_referential_integrity}
+\alias{ledgr_snapshot_fact_timestamp_invalid}
+\alias{ledgr_snapshot_hash_encoding_invalid}
+\alias{ledgr_snapshot_id_noncanonical}
+\alias{ledgr_snapshot_id_required}
+\alias{ledgr_snapshot_membership_set_invalid}
+\alias{ledgr_snapshot_membership_set_missing}
+\alias{ledgr_snapshot_not_found}
+\alias{ledgr_snapshot_not_sealed}
+\alias{ledgr_snapshot_quarantine_unacknowledged}
+\alias{ledgr_snapshot_required}
+\alias{ledgr_snapshot_sessions_invalid}
+\alias{ledgr_strategy_ambient_rng_not_supported}
+\alias{ledgr_strategy_ambient_rng_parallel}
+\alias{ledgr_strategy_ambient_rng_resume}
+\alias{ledgr_strategy_eval_failed}
+\alias{ledgr_strategy_hash_mismatch}
+\alias{ledgr_strategy_hash_unverified}
+\alias{ledgr_strategy_not_function}
+\alias{ledgr_strategy_parse_failed}
+\alias{ledgr_strategy_preflight_error}
+\alias{ledgr_strategy_source_unavailable}
+\alias{ledgr_strategy_tier3}
+\alias{ledgr_sweep_candidate_not_found}
+\alias{ledgr_sweep_storage_identity_mismatch}
+\alias{ledgr_sweep_storage_invalid_identity}
+\alias{ledgr_sweep_storage_invalid_provenance}
+\alias{ledgr_temp_store_unlink_failed}
+\alias{ledgr_unknown_feature_id}
+\alias{ledgr_unsupported_accounting_model}
+\alias{ledgr_unsupported_execution_start}
+\alias{ledgr_unsupported_hydration_start}
+\alias{ledgr_unsupported_param_placement}
+\alias{ledgr_unsupported_risk_step}
+\alias{ledgr_validation_cluster_invalid_returns}
+\alias{ledgr_validation_cluster_invalid_threshold}
+\alias{ledgr_validation_cluster_too_few_candidates}
+\alias{ledgr_validation_cluster_too_few_observations}
+\alias{ledgr_validation_dsr_invalid_confidence}
+\alias{ledgr_validation_dsr_invalid_effective_trials}
+\alias{ledgr_validation_dsr_invalid_returns}
+\alias{ledgr_validation_dsr_invalid_risk_free}
+\alias{ledgr_validation_dsr_too_few_candidates}
+\alias{ledgr_validation_dsr_too_few_observations}
+\alias{ledgr_validation_k_ratio_invalid_periods_per_year}
+\alias{ledgr_validation_k_ratio_invalid_returns}
+\alias{ledgr_validation_k_ratio_invalid_risk_free}
+\alias{ledgr_validation_k_ratio_too_few_observations}
+\alias{ledgr_walk_forward_cold_start_warning}
+\alias{ledgr_walk_forward_gap_not_supported}
+\alias{ledgr_walk_forward_invalid_fold}
+\alias{ledgr_walk_forward_invalid_fold_window}
+\alias{ledgr_walk_forward_invalid_identity}
+\alias{ledgr_walk_forward_invalid_opening_state}
+\alias{ledgr_walk_forward_invalid_selection_rule}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
-timing-model, execution-window, saved-sweep, retained-series, and
-legacy-shape failures. User tests should assert on these classes instead of
-parsing message text.
+timing-model, execution-window, saved-sweep, and retained-series failures.
+User tests should assert on these classes instead of parsing message text.
 }
-\section{Legacy shape classes}{
-
-\code{ledgr_legacy_fill_model_shape} is raised when callers pass the v0.1.8
-\code{fill_model} shape or legacy scalar cost fields to public entry points.
-ledgr fails closed; it does not translate the legacy shape.
-
-\code{ledgr_legacy_config_shape} is raised when reopening a stored config whose
-execution shape still contains legacy fill/cost fields.
-}
-
 \section{Cost and timing classes}{
 
 \code{ledgr_cost_model_unspecified} is raised when a public execution entry point
@@ -190,14 +423,18 @@ fails closed because the ledger event stream and lot state must not diverge.
 a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on driver
 timestamp representation drift instead of silently re-keying sealed data.
 
-\code{ledgr_snapshot_rebuild_required} is raised when a content-dependent read
-reaches a snapshot with a missing, rule-1, or rule-2 hash marker. Such
-snapshots remain metadata-readable but are not executable; rebuild them
-from source under rule 3. ledgr does not migrate or reinterpret their roots.
+\code{ledgr_snapshot_hash_rule_unsupported} is raised when a snapshot does not
+carry the current content-hash rule.
+\code{ledgr_snapshot_hash_order_invalid} is raised when source rows are not in
+the bytewise order required by rule 3.
+}
 
-\code{ledgr_snapshot_hash_rule_unsupported} is raised for an unrecognized future
-hash-rule marker. \code{ledgr_snapshot_hash_order_invalid} is raised when source
-rows are not in the bytewise order required by rule 3.
+\section{Store-format classes}{
+
+\code{ledgr_store_rebuild_required} is raised when a persistent store is older,
+newer, unmarked, malformed, or carries a format fingerprint different from
+this ledgr build. Before the first CRAN release ledgr does not migrate old
+stores: rebuild them with the current package.
 }
 
 \section{Availability classes}{
@@ -216,10 +453,8 @@ execution lacks a complete session calendar.
 receives a snapshot that declares point-in-time facts; use
 \code{ledgr_experiment()} and \code{ledgr_run()}.
 
-\code{ledgr_identity_rule_retired} is raised when a run recorded under identity
-rule 1 is resumed; it remains readable. \code{ledgr_promote_identity_mismatch} is
-a warning raised when a promoted candidate's recorded identities differ from
-the promoting experiment's.
+\code{ledgr_promote_identity_mismatch} is a warning raised when a promoted
+candidate's recorded identities differ from the promoting experiment's.
 
 \code{ledgr_sessions_incomplete} is raised when the declared session calendar
 does not cover the requested start and end of a run, sweep, run window or
@@ -231,18 +466,13 @@ rule names a universe that is not declared by the snapshot.
 \code{ledgr_compiled_availability_unsupported} is raised before execution when
 availability-aware execution is combined with the compiled spot-FIFO path.
 
-\code{ledgr_execution_timing_version_mismatch} is raised when an active legacy or
-unknown timing config is submitted for current execution. Historical runs
-remain inspectable, but they cannot resume under corrected timing semantics.
-
 \code{ledgr_policy_schema_mismatch} is raised when a config or stored run carries
-a retired corporate-action or valuation policy schema and is submitted for
-execution, resume, rerun or promotion. Such runs remain readable through
-\code{ledgr_run_open()}, \code{ledgr_run_info()} and result readers, which report the
-recorded identity unchanged; they are never reinterpreted under schema 2.
+a non-current corporate-action or valuation policy schema. Current stores
+carry schema 2; ledgr does not infer, migrate, or reinterpret older policy
+records.
 
-\code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
-when selected runs have differing or unknown execution-timing conventions.
+\code{ledgr_strategy_provenance_missing} is raised when a current run row exists
+but its required strategy-provenance row is absent.
 
 \code{ledgr_session_time_ambiguous} and \code{ledgr_session_time_nonexistent} are
 raised when a local session wall time resolves to multiple UTC instants or
@@ -636,7 +866,376 @@ Sharpe ratio or drawdown.
 \code{ledgr_run_not_found} is raised when run-store inspection helpers cannot
 find the requested run. \code{ledgr_unresolved_feature_id} is raised when callers
 ask for a concrete feature ID before parameterized feature declarations have
-been resolved.
+been resolved. \code{ledgr_strategy_error} wraps an error raised by user strategy
+code while preserving the original error as its parent.
+}
+
+\section{Additional public condition classes}{
+
+The classes below complete the public condition index. Each message carries
+the concrete field, identity, or operation that failed; callers should assert
+on the class rather than parse that message.
+\itemize{
+\item \code{ledgr_ambiguous_bundle_output} reports the ambiguous bundle output
+boundary.
+\item \code{ledgr_availability_validation_failed} reports the availability
+validation failed boundary.
+\item \code{ledgr_availability_valuation_out_of_order} reports the availability
+valuation out of order boundary.
+\item \code{ledgr_broker_adapter_not_supported} reports the broker adapter not
+supported boundary.
+\item \code{ledgr_candidate_cost_identity_mismatch} reports the candidate cost
+identity mismatch boundary.
+\item \code{ledgr_candidate_missing_snapshot_hash} reports the candidate missing
+snapshot hash boundary.
+\item \code{ledgr_candidate_risk_identity_mismatch} reports the candidate risk
+identity mismatch boundary.
+\item \code{ledgr_candidate_snapshot_mismatch} reports the candidate snapshot
+mismatch boundary.
+\item \code{ledgr_checkpoint_failed} reports the checkpoint failed boundary.
+\item \code{ledgr_compiled_spot_fifo_invalid_input} reports the compiled spot fifo
+invalid input boundary.
+\item \code{ledgr_compiled_spot_fifo_unavailable} reports the compiled spot fifo
+unavailable boundary.
+\item \code{ledgr_config_invalid_json} reports the config invalid json boundary.
+\item \code{ledgr_config_non_deterministic} reports the config non deterministic
+boundary.
+\item \code{ledgr_config_non_finite} reports the config non finite boundary.
+\item \code{ledgr_config_unsupported_type} reports the config unsupported type
+boundary.
+\item \code{ledgr_corporate_action_clock_mismatch} reports the corporate action
+clock mismatch boundary.
+\item \code{ledgr_corporate_action_double_credit} reports the corporate action
+double credit boundary.
+\item \code{ledgr_corporate_action_quantity_unsupported} reports the corporate
+action quantity unsupported boundary.
+\item \code{ledgr_db_not_found} reports db was not found.
+\item \code{ledgr_distribution_adjusted_bars_unsupported} reports the distribution
+adjusted bars unsupported boundary.
+\item \code{ledgr_duplicate_corporate_action_event} reports duplicate corporate
+action event evidence.
+\item \code{ledgr_duplicate_corporate_action_fact} reports duplicate corporate
+action fact evidence.
+\item \code{ledgr_duplicate_executable_grid_labels} reports duplicate executable
+grid labels evidence.
+\item \code{ledgr_duplicate_fact_family} reports duplicate fact family evidence.
+\item \code{ledgr_duplicate_feature_id} reports duplicate feature id evidence.
+\item \code{ledgr_duplicate_grid_labels} reports duplicate grid labels evidence.
+\item \code{ledgr_duplicate_param_grid_labels} reports duplicate param grid labels
+evidence.
+\item \code{ledgr_empty_warmup_input} reports the empty warmup input boundary.
+\item \code{ledgr_event_buffer_capacity_exceeded} reports the event buffer capacity
+exceeded boundary.
+\item \code{ledgr_fact_identity_conflict} reports the fact identity conflict
+boundary.
+\item \code{ledgr_fact_invalid_clock_order} reports the fact invalid clock order
+boundary.
+\item \code{ledgr_fact_invalid_complete} reports the fact invalid complete
+boundary.
+\item \code{ledgr_fact_invalid_completeness} reports the fact invalid completeness
+boundary.
+\item \code{ledgr_fact_invalid_id} reports the fact invalid id boundary.
+\item \code{ledgr_fact_invalid_instrument} reports the fact invalid instrument
+boundary.
+\item \code{ledgr_fact_invalid_instrument_master} reports the fact invalid
+instrument master boundary.
+\item \code{ledgr_fact_invalid_interval} reports the fact invalid interval
+boundary.
+\item \code{ledgr_fact_invalid_lifetime} reports the fact invalid lifetime
+boundary.
+\item \code{ledgr_fact_invalid_logical} reports the fact invalid logical boundary.
+\item \code{ledgr_fact_invalid_membership_set} reports the fact invalid membership
+set boundary.
+\item \code{ledgr_fact_invalid_precedence} reports the fact invalid precedence
+boundary.
+\item \code{ledgr_fact_invalid_provenance} reports the fact invalid provenance
+boundary.
+\item \code{ledgr_fact_invalid_provenance_tier} reports the fact invalid provenance
+tier boundary.
+\item \code{ledgr_fact_invalid_shape} reports the fact invalid shape boundary.
+\item \code{ledgr_fact_invalid_source} reports the fact invalid source boundary.
+\item \code{ledgr_fact_invalid_status} reports the fact invalid status boundary.
+\item \code{ledgr_fact_invalid_subtype} reports the fact invalid subtype boundary.
+\item \code{ledgr_fact_invalid_supersession} reports the fact invalid supersession
+boundary.
+\item \code{ledgr_fact_invalid_time} reports the fact invalid time boundary.
+\item \code{ledgr_fact_structural_conflict} reports the fact structural conflict
+boundary.
+\item \code{ledgr_fact_unvalidated_term} reports the fact unvalidated term
+boundary.
+\item \code{ledgr_failed_sweep_candidate} reports the failed sweep candidate
+boundary.
+\item \code{ledgr_feature_factory_requires_params} reports the feature factory
+requires params boundary.
+\item \code{ledgr_feature_lookahead_detected} reports the feature lookahead
+detected boundary.
+\item \code{ledgr_grid_filter_invalid} reports the grid filter invalid boundary.
+\item \code{ledgr_invalid_accounting_event} reports invalid accounting event input.
+\item \code{ledgr_invalid_alias_map} reports invalid alias map input.
+\item \code{ledgr_invalid_args} reports invalid args input.
+\item \code{ledgr_invalid_backtest} reports invalid backtest input.
+\item \code{ledgr_invalid_con} reports invalid con input.
+\item \code{ledgr_invalid_config} reports invalid config input.
+\item \code{ledgr_invalid_corporate_action_event} reports invalid corporate action
+event input.
+\item \code{ledgr_invalid_corporate_action_fidelity} reports invalid corporate
+action fidelity input.
+\item \code{ledgr_invalid_corporate_action_policy} reports invalid corporate action
+policy input.
+\item \code{ledgr_invalid_event_order} reports invalid event order input.
+\item \code{ledgr_invalid_executable_grid} reports invalid executable grid input.
+\item \code{ledgr_invalid_execution_spec} reports invalid execution spec input.
+\item \code{ledgr_invalid_experiment} reports invalid experiment input.
+\item \code{ledgr_invalid_experiment_features} reports invalid experiment features
+input.
+\item \code{ledgr_invalid_experiment_strategy} reports invalid experiment strategy
+input.
+\item \code{ledgr_invalid_facts} reports invalid facts input.
+\item \code{ledgr_invalid_feature_def} reports invalid feature def input.
+\item \code{ledgr_invalid_feature_input} reports invalid feature input input.
+\item \code{ledgr_invalid_feature_map} reports invalid feature map input.
+\item \code{ledgr_invalid_feature_output} reports invalid feature output input.
+\item \code{ledgr_invalid_feature_params} reports invalid feature params input.
+\item \code{ledgr_invalid_feature_resolution} reports invalid feature resolution
+input.
+\item \code{ledgr_invalid_feature_value} reports invalid feature value input.
+\item \code{ledgr_invalid_fill_input} reports invalid fill input input.
+\item \code{ledgr_invalid_fill_intent} reports invalid fill intent input.
+\item \code{ledgr_invalid_fold_execution} reports invalid fold execution input.
+\item \code{ledgr_invalid_grid} reports invalid grid input.
+\item \code{ledgr_invalid_indicator_bundle} reports invalid indicator bundle input.
+\item \code{ledgr_invalid_ledger_event} reports invalid ledger event input.
+\item \code{ledgr_invalid_ledger_meta} reports invalid ledger meta input.
+\item \code{ledgr_invalid_metric_context} reports invalid metric context input.
+\item \code{ledgr_invalid_opening} reports invalid opening input.
+\item \code{ledgr_invalid_option} reports invalid option input.
+\item \code{ledgr_invalid_parallel_backend} reports invalid parallel backend input.
+\item \code{ledgr_invalid_parallel_workers} reports invalid parallel workers input.
+\item \code{ledgr_invalid_param_constructor} reports invalid param constructor
+input.
+\item \code{ledgr_invalid_param_grid} reports invalid param grid input.
+\item \code{ledgr_invalid_param_reference} reports invalid param reference input.
+\item \code{ledgr_invalid_parameterized_bundle} reports invalid parameterized
+bundle input.
+\item \code{ledgr_invalid_post_risk_targets} reports invalid post risk targets
+input.
+\item \code{ledgr_invalid_precompute_range} reports invalid precompute range input.
+\item \code{ledgr_invalid_precomputed_features} reports invalid precomputed
+features input.
+\item \code{ledgr_invalid_price_basis} reports invalid price basis input.
+\item \code{ledgr_invalid_promotion_context_summary} reports invalid promotion
+context summary input.
+\item \code{ledgr_invalid_pulse_context} reports invalid pulse context input.
+\item \code{ledgr_invalid_pulse_plan} reports invalid pulse plan input.
+\item \code{ledgr_invalid_pulse_wide_names} reports invalid pulse wide names input.
+\item \code{ledgr_invalid_result_table} reports invalid result table input.
+\item \code{ledgr_invalid_return_panel} reports invalid return panel input.
+\item \code{ledgr_invalid_return_panel_input} reports invalid return panel input
+input.
+\item \code{ledgr_invalid_risk_context} reports invalid risk context input.
+\item \code{ledgr_invalid_risk_model} reports invalid risk model input.
+\item \code{ledgr_invalid_risk_plan} reports invalid risk plan input.
+\item \code{ledgr_invalid_run} reports invalid run input.
+\item \code{ledgr_invalid_runtime_projection} reports invalid runtime projection
+input.
+\item \code{ledgr_invalid_snapshot} reports invalid snapshot input.
+\item \code{ledgr_invalid_state} reports invalid state input.
+\item \code{ledgr_invalid_store} reports invalid store input.
+\item \code{ledgr_invalid_strategy} reports invalid strategy input.
+\item \code{ledgr_invalid_strategy_helper} reports invalid strategy helper input.
+\item \code{ledgr_invalid_strategy_params} reports invalid strategy params input.
+\item \code{ledgr_invalid_strategy_preflight} reports invalid strategy preflight
+input.
+\item \code{ledgr_invalid_strategy_result} reports invalid strategy result input.
+\item \code{ledgr_invalid_strategy_signature} reports invalid strategy signature
+input.
+\item \code{ledgr_invalid_strategy_type} reports invalid strategy type input.
+\item \code{ledgr_invalid_sweep_candidate_input} reports invalid sweep candidate
+input input.
+\item \code{ledgr_invalid_sweep_projection} reports invalid sweep projection input.
+\item \code{ledgr_invalid_sweep_review_input} reports invalid sweep review input
+input.
+\item \code{ledgr_invalid_sweep_review_rank} reports invalid sweep review rank
+input.
+\item \code{ledgr_invalid_target_price} reports invalid target price input.
+\item \code{ledgr_invalid_timestamp} reports invalid timestamp input.
+\item \code{ledgr_invalid_warmup_input} reports invalid warmup input input.
+\item \code{ledgr_invalid_worker_dependencies} reports invalid worker dependencies
+input.
+\item \code{ledgr_invalid_worker_packages} reports invalid worker packages input.
+\item \code{ledgr_invariant_violation} reports the invariant violation boundary.
+\item \code{ledgr_legacy_feature_factory_feature_params_unsupported} reports the
+legacy feature factory feature params unsupported boundary.
+\item \code{ledgr_levered_weights} reports the levered weights boundary.
+\item \code{ledgr_lot_state_invariant} reports the lot state invariant boundary.
+\item \code{ledgr_missing_bars} reports missing bars evidence.
+\item \code{ledgr_missing_dependency} reports missing dependency evidence.
+\item \code{ledgr_missing_metric_context} reports missing metric context evidence.
+\item \code{ledgr_missing_optional_dependency} reports missing optional dependency
+evidence.
+\item \code{ledgr_missing_precomputed_features_warning} reports missing precomputed
+features warning evidence.
+\item \code{ledgr_mixed_metric_cadence} reports the mixed metric cadence boundary.
+\item \code{ledgr_negative_weights} reports the negative weights boundary.
+\item \code{ledgr_no_active_alias_map} reports the no active alias map boundary.
+\item \code{ledgr_observation_invalid_shape} reports the observation invalid shape
+boundary.
+\item \code{ledgr_observation_quarantine_duplicate} reports the observation
+quarantine duplicate boundary.
+\item \code{ledgr_ohlc_non_positive} reports the ohlc non positive boundary.
+\item \code{ledgr_opening_cost_basis_missing} reports the opening cost basis
+missing boundary.
+\item \code{ledgr_parallel_backend_missing} reports the parallel backend missing
+boundary.
+\item \code{ledgr_parallel_error} reports the parallel error boundary.
+\item \code{ledgr_parallel_strategy_not_allowed} reports the parallel strategy not
+allowed boundary.
+\item \code{ledgr_parallel_sweep_interrupted} reports the parallel sweep
+interrupted boundary.
+\item \code{ledgr_parallel_worker_failed} reports the parallel worker failed
+boundary.
+\item \code{ledgr_parallel_worker_package_missing} reports the parallel worker
+package missing boundary.
+\item \code{ledgr_param_missing} reports the param missing boundary.
+\item \code{ledgr_param_non_scalar} reports the param non scalar boundary.
+\item \code{ledgr_partial_selection} reports the partial selection boundary.
+\item \code{ledgr_precomputed_coverage_error} reports the precomputed coverage
+error boundary.
+\item \code{ledgr_precomputed_engine_mismatch} reports the precomputed engine
+mismatch boundary.
+\item \code{ledgr_precomputed_feature_mismatch} reports the precomputed feature
+mismatch boundary.
+\item \code{ledgr_precomputed_grid_mismatch} reports the precomputed grid mismatch
+boundary.
+\item \code{ledgr_precomputed_hydration_mismatch} reports the precomputed hydration
+mismatch boundary.
+\item \code{ledgr_precomputed_range_mismatch} reports the precomputed range
+mismatch boundary.
+\item \code{ledgr_precomputed_snapshot_mismatch} reports the precomputed snapshot
+mismatch boundary.
+\item \code{ledgr_precomputed_universe_mismatch} reports the precomputed universe
+mismatch boundary.
+\item \code{ledgr_promote_failed_candidate} reports the promote failed candidate
+boundary.
+\item \code{ledgr_promotion_context_write_failed} reports the promotion context
+write failed boundary.
+\item \code{ledgr_purity_violation} reports the purity violation boundary.
+\item \code{ledgr_quarantine_requires_sessions} reports the quarantine requires
+sessions boundary.
+\item \code{ledgr_return_panel_ambiguous_shape} reports the return panel ambiguous
+shape boundary.
+\item \code{ledgr_return_panel_invalid_ts} reports the return panel invalid ts
+boundary.
+\item \code{ledgr_return_panel_missing_candidate_ids} reports the return panel
+missing candidate ids boundary.
+\item \code{ledgr_risk_application_error} reports the risk application error
+boundary.
+\item \code{ledgr_risk_plan_parameter_missing} reports the risk plan parameter
+missing boundary.
+\item \code{ledgr_run_hash_mismatch} reports the run hash mismatch boundary.
+\item \code{ledgr_run_lookup_mismatch} reports the run lookup mismatch boundary.
+\item \code{ledgr_run_not_complete} reports the run not complete boundary.
+\item \code{ledgr_run_registration_failed} reports the run registration failed
+boundary.
+\item \code{ledgr_run_telemetry_failed} reports the run telemetry failed boundary.
+\item \code{ledgr_scalar_accessor_loop} reports the scalar accessor loop boundary.
+\item \code{ledgr_session_coverage_incomplete} reports the session coverage
+incomplete boundary.
+\item \code{ledgr_session_instant_duplicate} reports the session instant duplicate
+boundary.
+\item \code{ledgr_session_instant_off_date} reports the session instant off date
+boundary.
+\item \code{ledgr_session_invalid} reports the session invalid boundary.
+\item \code{ledgr_session_invalid_timezone} reports the session invalid timezone
+boundary.
+\item \code{ledgr_session_knowledge_late} reports the session knowledge late
+boundary.
+\item \code{ledgr_session_multiple_venues} reports the session multiple venues
+boundary.
+\item \code{ledgr_sim_pit_insufficient_shape} reports the sim pit insufficient
+shape boundary.
+\item \code{ledgr_sim_pit_invalid} reports the sim pit invalid boundary.
+\item \code{ledgr_snapshot_exists} reports the snapshot exists boundary.
+\item \code{ledgr_snapshot_fact_family_invalid} reports the snapshot fact family
+invalid boundary.
+\item \code{ledgr_snapshot_fact_family_missing} reports the snapshot fact family
+missing boundary.
+\item \code{ledgr_snapshot_fact_interval_invalid} reports the snapshot fact
+interval invalid boundary.
+\item \code{ledgr_snapshot_fact_json_invalid} reports the snapshot fact json
+invalid boundary.
+\item \code{ledgr_snapshot_fact_referential_integrity} reports the snapshot fact
+referential integrity boundary.
+\item \code{ledgr_snapshot_fact_timestamp_invalid} reports the snapshot fact
+timestamp invalid boundary.
+\item \code{ledgr_snapshot_hash_encoding_invalid} reports the snapshot hash
+encoding invalid boundary.
+\item \code{ledgr_snapshot_id_noncanonical} reports the snapshot id noncanonical
+boundary.
+\item \code{ledgr_snapshot_id_required} reports snapshot id is required.
+\item \code{ledgr_snapshot_membership_set_invalid} reports the snapshot membership
+set invalid boundary.
+\item \code{ledgr_snapshot_membership_set_missing} reports the snapshot membership
+set missing boundary.
+\item \code{ledgr_snapshot_not_found} reports snapshot was not found.
+\item \code{ledgr_snapshot_not_sealed} reports the snapshot not sealed boundary.
+\item \code{ledgr_snapshot_quarantine_unacknowledged} reports the snapshot
+quarantine unacknowledged boundary.
+\item \code{ledgr_snapshot_required} reports snapshot is required.
+\item \code{ledgr_snapshot_sessions_invalid} reports the snapshot sessions invalid
+boundary.
+\item \code{ledgr_strategy_ambient_rng_not_supported} reports the strategy ambient
+rng not supported boundary.
+\item \code{ledgr_strategy_ambient_rng_parallel} reports the strategy ambient rng
+parallel boundary.
+\item \code{ledgr_strategy_ambient_rng_resume} reports the strategy ambient rng
+resume boundary.
+\item \code{ledgr_strategy_eval_failed} reports the strategy eval failed boundary.
+\item \code{ledgr_strategy_hash_mismatch} reports the strategy hash mismatch
+boundary.
+\item \code{ledgr_strategy_hash_unverified} reports the strategy hash unverified
+boundary.
+\item \code{ledgr_strategy_not_function} reports the strategy not function
+boundary.
+\item \code{ledgr_strategy_parse_failed} reports the strategy parse failed
+boundary.
+\item \code{ledgr_strategy_preflight_error} reports the strategy preflight error
+boundary.
+\item \code{ledgr_strategy_source_unavailable} reports the strategy source
+unavailable boundary.
+\item \code{ledgr_strategy_tier3} reports the strategy tier3 boundary.
+\item \code{ledgr_sweep_candidate_not_found} reports sweep candidate was not found.
+\item \code{ledgr_sweep_storage_identity_mismatch} reports the sweep storage
+identity mismatch boundary.
+\item \code{ledgr_sweep_storage_invalid_identity} reports the sweep storage invalid
+identity boundary.
+\item \code{ledgr_sweep_storage_invalid_provenance} reports the sweep storage
+invalid provenance boundary.
+\item \code{ledgr_temp_store_unlink_failed} reports the temp store unlink failed
+boundary.
+\item \code{ledgr_unknown_feature_id} reports an unknown feature id.
+\item \code{ledgr_unsupported_accounting_model} reports unsupported accounting
+model use.
+\item \code{ledgr_unsupported_execution_start} reports unsupported execution start
+use.
+\item \code{ledgr_unsupported_hydration_start} reports unsupported hydration start
+use.
+\item \code{ledgr_unsupported_param_placement} reports unsupported param placement
+use.
+\item \code{ledgr_unsupported_risk_step} reports unsupported risk step use.
+\item \code{ledgr_walk_forward_cold_start_warning} reports the walk forward cold
+start warning boundary.
+\item \code{ledgr_walk_forward_gap_not_supported} reports the walk forward gap not
+supported boundary.
+\item \code{ledgr_walk_forward_invalid_fold} reports the walk forward invalid fold
+boundary.
+\item \code{ledgr_walk_forward_invalid_identity} reports the walk forward invalid
+identity boundary.
+\item \code{ledgr_walk_forward_invalid_opening_state} reports the walk forward
+invalid opening state boundary.
+\item \code{ledgr_walk_forward_invalid_selection_rule} reports the walk forward
+invalid selection rule boundary.
+}
 }
 
 \examples{

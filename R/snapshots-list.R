@@ -37,13 +37,15 @@ ledgr_snapshot_list <- function(con, status = NULL) {
     if (!file.exists(db_path)) {
       rlang::abort(sprintf("Snapshot database file does not exist: %s", db_path), class = "LEDGR_SNAPSHOT_DB_NOT_FOUND")
     }
-    con <- ledgr_db_init(db_path)
-    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+    opened <- ledgr_store_open(db_path, mode = "open")
+    con <- opened$con
+    on.exit(ledgr_run_store_close(opened), add = TRUE)
   }
 
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection or DuckDB file path.", class = "ledgr_invalid_con")
   }
+  ledgr_store_assert_current(con)
 
   allowed <- c("CREATED", "SEALED", "FAILED")
   where_sql <- ""
@@ -190,8 +192,9 @@ ledgr_snapshot_open <- function(db_path, snapshot_id = NULL, verify = FALSE) {
 
   con <- ledgr_held_store(db_path)
   if (is.null(con)) {
-    con <- ledgr_db_init(db_path)
-    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+    opened <- ledgr_store_open(db_path, mode = "open")
+    con <- opened$con
+    on.exit(ledgr_run_store_close(opened), add = TRUE)
   }
   if (is.null(snapshot_id)) {
     snapshots <- ledgr_snapshot_list(con)

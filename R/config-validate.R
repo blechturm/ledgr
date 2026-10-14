@@ -30,8 +30,6 @@ validate_ledgr_config <- function(config) {
   if (!is.list(config)) {
     rlang::abort("`config` must be a list (or parsed JSON list).", class = "ledgr_invalid_config")
   }
-  config <- ledgr_config_normalize_risk_identity(config)
-
   cfg_get <- function(path) {
     cur <- config
     for (key in path) {
@@ -79,11 +77,9 @@ validate_ledgr_config <- function(config) {
   }
   ledgr_public_compiled_accounting_model(config$engine$compiled_accounting_model)
 
-  # Historical configs predate corporate-action policy identity. They remain
-  # valid and must not acquire a contemporary default when reopened.
-  if (!is.null(config$corporate_actions)) {
-    ledgr_validate_corporate_action_policy_identity(config$corporate_actions)
-  }
+  cfg_get(c("corporate_actions"))
+  ledgr_policy_schema_require_current(config)
+  ledgr_validate_corporate_action_policy_identity(config$corporate_actions)
 
   if (!is.null(config$availability)) {
     availability <- config$availability
@@ -101,9 +97,10 @@ validate_ledgr_config <- function(config) {
         class = "ledgr_invalid_config"
       )
     }
-    # Stored schema-1 records stay readable; execution requires schema 2
-    # through ledgr_policy_schema_require_current().
-    if (is.na(ledgr_valuation_policy_record_version(availability$valuation_policy))) {
+    if (!identical(
+      ledgr_valuation_policy_record_version(availability$valuation_policy),
+      ledgr_valuation_policy_schema_version
+    )) {
       rlang::abort(
         "`valuation_policy` must be created by `ledgr_valuation_stale()`.",
         class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_experiment")
@@ -112,7 +109,8 @@ validate_ledgr_config <- function(config) {
     timing_version <- availability$execution_timing_version
     if (!is.null(timing_version) &&
         (!is.numeric(timing_version) || length(timing_version) != 1L ||
-         is.na(timing_version) || !is.finite(timing_version) || timing_version != 2)) {
+         is.na(timing_version) || !is.finite(timing_version) ||
+         timing_version != ledgr_availability_execution_timing_rule_version)) {
       rlang::abort(
         "Config field availability.execution_timing_version must be 2 when recorded.",
         class = "ledgr_invalid_config"
@@ -120,7 +118,9 @@ validate_ledgr_config <- function(config) {
     }
     rule <- availability$universe_rule
     if (!is.null(rule) &&
-        (!is.list(rule) || !identical(rule$type_id, "membership_universe") ||
+        (!is.list(rule) ||
+         !identical(as.integer(rule$schema_version), ledgr_universe_rule_schema_version) ||
+         !identical(rule$type_id, "membership_universe") ||
          !is.character(rule$universe_id) || length(rule$universe_id) != 1L ||
          is.na(rule$universe_id) || !nzchar(rule$universe_id))) {
       rlang::abort(
@@ -209,13 +209,6 @@ validate_ledgr_config <- function(config) {
   assert_scalar_num(initial_cash, "backtest.initial_cash")
   if (initial_cash <= 0) {
     rlang::abort("Config field backtest.initial_cash must be > 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
-  }
-
-  if (!is.null(config$fill_model)) {
-    rlang::abort(
-      "Stored config uses legacy `fill_model`; recreate the experiment with `timing_model` and `cost_model`.",
-      class = "ledgr_legacy_config_shape"
-    )
   }
 
   timing_type <- cfg_get(c("timing_model", "type_id"))
@@ -352,15 +345,16 @@ validate_ledgr_config <- function(config) {
     assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
   }
 
-  # Identity rule 2 binds the content hash; rule 1 (no field) bound the ID.
   identity_rule <- config$identity_rule_version
-  if (!is.null(identity_rule) &&
-      (length(identity_rule) != 1L || is.na(identity_rule) || !identity_rule %in% c(1L, 2L))) {
-    rlang::abort("Config field identity_rule_version must be 1 or 2.", class = "ledgr_invalid_config")
+  if (!is.integer(identity_rule) || length(identity_rule) != 1L ||
+      is.na(identity_rule) ||
+      !identical(identity_rule, ledgr_identity_rule_version)) {
+    rlang::abort(
+      "Config field identity_rule_version must be the integer 2L.",
+      class = "ledgr_invalid_config"
+    )
   }
-  if (identical(ledgr_config_identity_rule(config), 2L)) {
-    assert_scalar_chr(config$data$snapshot_hash, "data.snapshot_hash")
-  }
+  assert_scalar_chr(config$data$snapshot_hash, "data.snapshot_hash")
 
   if (!is.null(config$features) && is.list(config$features) && isTRUE(config$features$enabled)) {
     defs <- config$features$defs
@@ -389,20 +383,21 @@ ledgr_validate_config <- function(config) {
   invisible(TRUE)
 }
 
-# Execution, resume, rerun and promotion require current policy schemas.
-# Older recorded policies remain readable by validate_ledgr_config(); they are
-# refused here rather than reinterpreted under schema-2 meaning.
 ledgr_policy_schema_require_current <- function(config, run_id = NULL) {
-  retired <- character()
   identity <- config$corporate_actions
-  if (!is.null(identity) &&
-      !identical(
-        ledgr_corporate_action_identity_schema(identity),
-        ledgr_corporate_action_policy_schema_version
-      )) {
-    retired <- c(
-      retired,
-      sprintf("corporate-action policy schema %s", identity$policy_schema_version)
+  corporate_schema <- if (is.list(identity)) {
+    identity$policy_schema_version
+  } else {
+    NULL
+  }
+  if (!identical(
+    corporate_schema,
+    ledgr_corporate_action_policy_schema_version
+  )) {
+    subject <- if (is.null(run_id)) "Config" else sprintf("Run '%s'", run_id)
+    rlang::abort(
+      sprintf("%s must use corporate-action policy schema 2.", subject),
+      class = c("ledgr_policy_schema_mismatch", "ledgr_invalid_config")
     )
   }
   valuation <- if (is.list(config$availability)) {
@@ -411,49 +406,16 @@ ledgr_policy_schema_require_current <- function(config, run_id = NULL) {
     NULL
   }
   if (!is.null(valuation) &&
-      !identical(
-        ledgr_valuation_policy_record_version(valuation),
-        ledgr_valuation_policy_schema_version
-      )) {
-    retired <- c(
-      retired,
-      sprintf(
-        "valuation policy schema %s",
-        format(valuation$schema_version %||% "unknown")
-      )
+      (!is.list(valuation) ||
+       !identical(
+         valuation$schema_version,
+         ledgr_valuation_policy_schema_version
+       ))) {
+    subject <- if (is.null(run_id)) "Config" else sprintf("Run '%s'", run_id)
+    rlang::abort(
+      sprintf("%s must use valuation policy schema 2.", subject),
+      class = c("ledgr_policy_schema_mismatch", "ledgr_invalid_config")
     )
   }
-  if (length(retired) == 0L) {
-    return(invisible(TRUE))
-  }
-  subject <- if (is.null(run_id)) {
-    "This config was"
-  } else {
-    sprintf("Run '%s' was", run_id)
-  }
-  rlang::abort(
-    paste0(
-      subject, " recorded under ", paste(retired, collapse = " and "),
-      ". It remains readable, but cannot be executed, resumed, rerun or ",
-      "promoted into under the current schema 2. Start a new run_id."
-    ),
-    class = c("ledgr_policy_schema_mismatch", "ledgr_run_hash_mismatch")
-  )
-}
-
-ledgr_config_noop_risk_identity <- function() {
-  list(
-    risk_chain_hash = ledgr_risk_chain_hash(ledgr_risk_none()),
-    risk_plan_json = ledgr_risk_plan_json(ledgr_risk_none())
-  )
-}
-
-ledgr_config_normalize_risk_identity <- function(config) {
-  if (!is.list(config)) {
-    return(config)
-  }
-  if (is.null(config$risk_chain)) {
-    config$risk_chain <- ledgr_config_noop_risk_identity()
-  }
-  config
+  invisible(TRUE)
 }

@@ -134,13 +134,14 @@ ledgr_function_fingerprint <- function(fn, include_captures = FALSE, label = "`f
   if (isTRUE(include_captures)) {
     globals <- codetools::findGlobals(fn, merge = FALSE)$variables
     env <- environment(fn)
-    captures <- lapply(sort(unique(globals)), function(nm) {
+    globals <- sort(unique(globals), method = "radix")
+    captures <- lapply(globals, function(nm) {
       if (!exists(nm, envir = env, inherits = TRUE)) {
         return(list(type = "unresolved"))
       }
       ledgr_stable_payload(get(nm, envir = env, inherits = TRUE), paste0(label, " capture `", nm, "`"))
     })
-    names(captures) <- sort(unique(globals))
+    names(captures) <- globals
   }
 
   payload <- list(

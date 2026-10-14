@@ -18,12 +18,6 @@ ledgr_corporate_action_fidelity <- function(value) {
 }
 
 ledgr_corporate_action_policy_settings <- function(identity) {
-  if (is.null(identity)) {
-    return(stats::setNames(
-      rep(NA_character_, length(ledgr_corporate_action_policy_choices())),
-      names(ledgr_corporate_action_policy_choices())
-    ))
-  }
   ledgr_corporate_action_decoded_settings(
     identity,
     ledgr_corporate_action_identity_decode(identity)
@@ -31,12 +25,6 @@ ledgr_corporate_action_policy_settings <- function(identity) {
 }
 
 ledgr_corporate_action_decoded_settings <- function(identity, decoded) {
-  if (identical(decoded$schema, 1L)) {
-    ids <- ledgr_corporate_action_policy_ids_v1()
-    return(vapply(names(ids), function(field) {
-      names(ids[[field]])[[match(identity[[field]], ids[[field]])]]
-    }, character(1)))
-  }
   policy <- decoded$policy
   # Scheduled corporate-action rows carry no terminal label, so they resolve
   # the held-terminal map through its required default entry.
@@ -50,20 +38,9 @@ ledgr_corporate_action_decoded_settings <- function(identity, decoded) {
 }
 
 # Display form of a recorded policy: one string per setting and identity.
-# Schema-1 records are reported exactly as recorded.
 ledgr_corporate_action_policy_display <- function(identity) {
-  if (is.null(identity)) {
-    settings <- ledgr_corporate_action_policy_settings(identity)
-    return(list(settings = settings, identities = settings))
-  }
   decoded <- ledgr_corporate_action_identity_decode(identity)
   settings <- ledgr_corporate_action_decoded_settings(identity, decoded)
-  if (identical(decoded$schema, 1L)) {
-    return(list(
-      settings = settings,
-      identities = unlist(identity[names(settings)], use.names = TRUE)
-    ))
-  }
   policy <- decoded$policy
   map_text <- function(values) {
     if (length(values) == 1L) return(unname(values))
@@ -99,20 +76,15 @@ ledgr_corporate_action_fact_state <- function(con, snapshot_id) {
   supplied <- FALSE
   refusal_reasons <- character()
   rows <- data.frame()
-  if (ledgr_experiment_store_table_exists(con, "snapshot_fact_families")) {
-    supplied <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT COUNT(*) AS n FROM snapshot_fact_families",
-        "WHERE snapshot_id = ? AND family = 'equity_corporate_actions'"
-      ),
-      params = list(snapshot_id)
-    )$n[[1L]] > 0L
-  }
-  if (isTRUE(supplied) && ledgr_experiment_store_table_exists(
-      con,
-      "snapshot_equity_corporate_actions"
-    )) {
+  supplied <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT COUNT(*) AS n FROM snapshot_fact_families",
+      "WHERE snapshot_id = ? AND family = 'equity_corporate_actions'"
+    ),
+    params = list(snapshot_id)
+  )$n[[1L]] > 0L
+  if (isTRUE(supplied)) {
     rows <- ledgr_corporate_action_rows(con, snapshot_id)
     refusal_reasons <- DBI::dbGetQuery(
       con,
@@ -396,11 +368,12 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     con <- opened$con
     on.exit(opened$close(), add = TRUE)
   }
+  ledgr_store_assert_current(con, bt$db_path)
   ledgr_backtest_ensure_snapshot(bt, con)
   config <- bt$config
   snapshot_id <- config$data$snapshot_id
   facts <- ledgr_corporate_action_fact_state(con, snapshot_id)
-  identity <- config$corporate_actions %||% NULL
+  identity <- config$corporate_actions
   display <- ledgr_corporate_action_policy_display(identity)
   settings <- display$settings
   identities <- display$identities
@@ -460,7 +433,6 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       character(1),
       "disposition_policy_id"
     )
-    # Stored schema-1 runs carry v001 disposition ids; count both versions.
     # A frozen-terminal fallback is counted under its own field.
     keys <- ledgr_terminal_policy_id_keys()
     disposition_keys <- unname(keys[disposition_ids])

@@ -280,15 +280,11 @@ ledgr_derived_state_dense_close_map <- function(con, ids_sql, instrument_ids, pu
 # far as it went.
 ledgr_derived_state_availability_pulses <- function(con, run_id, provider, start_ts_utc, end_ts_utc) {
   pulses <- as.POSIXct(ledgr_availability_calendar(provider, start_ts_utc, end_ts_utc)$pulses_posix, tz = "UTC")
-  completion <- if (ledgr_experiment_store_table_exists(con, "run_completion")) {
-    DBI::dbGetQuery(
-      con,
-      "SELECT last_fully_valued_ts_utc FROM run_completion WHERE run_id = ?",
-      params = list(run_id)
-    )
-  } else {
-    data.frame()
-  }
+  completion <- DBI::dbGetQuery(
+    con,
+    "SELECT last_fully_valued_ts_utc FROM run_completion WHERE run_id = ?",
+    params = list(run_id)
+  )
   if (nrow(completion) == 1L) {
     valued <- as.POSIXct(completion$last_fully_valued_ts_utc[[1L]], tz = "UTC")
     pulses <- if (is.na(valued)) pulses[0L] else pulses[pulses <= valued]

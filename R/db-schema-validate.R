@@ -1,7 +1,7 @@
-#' Validate ledgr DuckDB schema (v0.1.0)
+#' Validate the current ledgr DuckDB schema
 #'
-#' Validates required tables, columns, types, primary keys, UNIQUE constraints,
-#' and required behavioral constraints.
+#' Compares every current table, ordered column, type, nullability, default,
+#' constraint and index with ledgr's current schema catalogue.
 #'
 #' @param con A DBI connection to DuckDB.
 #' @return Invisibly returns `TRUE` on success.
@@ -15,821 +15,400 @@ ledgr_validate_schema <- function(con) {
   if (!DBI::dbIsValid(con)) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)
   }
+  ledgr_store_assert_current(con)
+  actual <- ledgr_schema_normalized_catalogue(con)
+  ledgr_schema_validate_catalogue(actual)
+  invisible(TRUE)
+}
 
-  schema <- "main"
-  catalogue <- ledgr_schema_catalogue(con, schema = schema)
+.ledgr_current_schema_catalogue_cache <- new.env(parent = emptyenv())
+.ledgr_schema_validation_cache <- new.env(parent = emptyenv())
 
-  required <- list(
-    runs = list(
-      columns = c(
-        run_id = "TEXT",
-        created_at_utc = "TIMESTAMP",
-        engine_version = "TEXT",
-        config_json = "TEXT",
-        config_hash = "TEXT",
-        snapshot_id = "TEXT",
-        status = "TEXT",
-        error_msg = "TEXT",
-        label = "TEXT",
-        archived = "BOOLEAN",
-        archived_at_utc = "TIMESTAMP",
-        archive_reason = "TEXT",
-        execution_mode = "TEXT",
-        schema_version = "INTEGER",
-        metric_context_json = "TEXT",
-        metric_context_hash = "TEXT",
-        metric_context_version = "INTEGER"
-      ),
-      pk = c("run_id")
-    ),
-    ledgr_schema_metadata = list(
-      columns = c(
-        key = "TEXT",
-        value = "TEXT",
-        updated_at_utc = "TIMESTAMP"
-      ),
-      pk = c("key"),
-      not_null = c("key", "value", "updated_at_utc")
-    ),
-    run_provenance = list(
-      columns = c(
-        run_id = "TEXT",
-        strategy_type = "TEXT",
-        strategy_source = "TEXT",
-        strategy_source_hash = "TEXT",
-        strategy_source_capture_method = "TEXT",
-        strategy_params_json = "TEXT",
-        strategy_params_hash = "TEXT",
-        reproducibility_level = "TEXT",
-        ledgr_version = "TEXT",
-        R_version = "TEXT",
-        dependency_versions_json = "TEXT",
-        created_at_utc = "TIMESTAMP"
-      ),
-      pk = c("run_id"),
-      not_null = c("run_id")
-    ),
-    run_telemetry = list(
-      columns = c(
-        run_id = "TEXT",
-        status = "TEXT",
-        execution_mode = "TEXT",
-        elapsed_sec = "DOUBLE",
-        pulse_count = "INTEGER",
-        persist_features = "BOOLEAN",
-        feature_cache_hits = "INTEGER",
-        feature_cache_misses = "INTEGER",
-        updated_at_utc = "TIMESTAMP"
-      ),
-      pk = c("run_id"),
-      not_null = c("run_id")
-    ),
-    run_completion = list(
-      columns = c(
-        run_id = "TEXT", intended_start_utc = "TIMESTAMP", intended_end_utc = "TIMESTAMP",
-        achieved_start_utc = "TIMESTAMP", achieved_end_utc = "TIMESTAMP",
-        intended_terminal_status = "TEXT", stop_reason = "TEXT",
-        affected_exposure = "DOUBLE", affected_exposure_ts_utc = "TIMESTAMP",
-        affected_exposure_basis = "TEXT", last_fully_valued_ts_utc = "TIMESTAMP",
-        last_executed_ts_utc = "TIMESTAMP", complete_performance = "BOOLEAN"
-      ),
-      pk = c("run_id"),
-      not_null = c("run_id", "intended_start_utc", "intended_end_utc", "intended_terminal_status", "complete_performance")
-    ),
-    run_diagnostics = list(
-      columns = c(
-        run_id = "TEXT", diagnostic_seq = "INTEGER", ts_utc = "TIMESTAMP",
-        instrument_id = "TEXT", stage = "TEXT", outcome = "TEXT",
-        reason_code = "TEXT", reasons = "TEXT", target = "DOUBLE", quantity = "DOUBLE",
-        price = "DOUBLE", mark_source = "TEXT", mark_age = "INTEGER",
-        decision_ts_utc = "TIMESTAMP", execution_ts_utc = "TIMESTAMP", event_seq = "INTEGER",
-        target_before_risk = "DOUBLE", target_after_risk = "DOUBLE",
-        position_before = "DOUBLE", position_after = "DOUBLE",
-        feature_identity_json = "TEXT", detail_json = "TEXT"
-      ),
-      pk = c("run_id", "diagnostic_seq"),
-      not_null = c("run_id", "diagnostic_seq", "ts_utc", "instrument_id", "stage", "outcome", "reason_code", "reasons", "detail_json")
-    ),
-    run_tags = list(
-      columns = c(
-        run_id = "TEXT",
-        tag = "TEXT",
-        created_at_utc = "TIMESTAMP"
-      ),
-      pk = c("run_id", "tag"),
-      not_null = c("run_id", "tag", "created_at_utc")
-    ),
-    run_promotion_context = list(
-      columns = c(
-        run_id = "TEXT",
-        promotion_context_version = "TEXT",
-        source = "TEXT",
-        promoted_at_utc = "TIMESTAMP",
-        note = "TEXT",
-        selected_candidate_json = "TEXT",
-        source_sweep_json = "TEXT",
-        candidate_summary_json = "TEXT"
-      ),
-      pk = c("run_id"),
-      not_null = c(
-        "run_id", "promotion_context_version", "source",
-        "promoted_at_utc", "selected_candidate_json",
-        "source_sweep_json", "candidate_summary_json"
-      )
-    ),
-    sweeps = list(
-      columns = c(
-        sweep_id = "TEXT",
-        snapshot_id = "TEXT",
-        snapshot_hash = "TEXT",
-        created_at_utc = "TIMESTAMP",
-        engine_version = "TEXT",
-        sweep_schema_version = "INTEGER",
-        note = "TEXT",
-        retention_json = "TEXT",
-        metric_context_json = "TEXT",
-        metric_context_hash = "TEXT",
-        metric_context_version = "INTEGER",
-        cost_model_hash = "TEXT",
-        cost_plan_json = "TEXT",
-        risk_chain_hash = "TEXT",
-        risk_plan_json = "TEXT",
-        execution_assumptions_json = "TEXT",
-        feature_union_hash = "TEXT",
-        feature_engine_version = "TEXT",
-        candidate_features_json = "TEXT",
-        grid_json = "TEXT"
-      ),
-      pk = c("sweep_id"),
-      not_null = c(
-        "sweep_id", "snapshot_id", "snapshot_hash", "created_at_utc",
-        "engine_version", "sweep_schema_version", "retention_json",
-        "metric_context_json", "metric_context_hash",
-        "metric_context_version", "cost_model_hash", "cost_plan_json",
-        "execution_assumptions_json", "feature_union_hash",
-        "feature_engine_version", "candidate_features_json", "grid_json"
-      )
-    ),
-    sweep_candidates = list(
-      columns = c(
-        sweep_id = "TEXT",
-        candidate_id = "TEXT",
-        candidate_row = "INTEGER",
-        status = "TEXT",
-        completion_json = "TEXT",
-        final_equity = "DOUBLE",
-        metrics_json = "TEXT",
-        total_return = "DOUBLE",
-        annualized_return = "DOUBLE",
-        volatility = "DOUBLE",
-        sharpe_ratio = "DOUBLE",
-        max_drawdown = "DOUBLE",
-        n_trades = "INTEGER",
-        win_rate = "DOUBLE",
-        avg_trade = "DOUBLE",
-        time_in_market = "DOUBLE",
-        execution_seed = "INTEGER",
-        error_class = "TEXT",
-        error_msg = "TEXT",
-        params_json = "TEXT",
-        feature_params_json = "TEXT",
-        warnings_json = "TEXT",
-        feature_set_hash = "TEXT",
-        feature_fingerprints_json = "TEXT",
-        provenance_json = "TEXT",
-        cost_model_hash = "TEXT",
-        metric_context_hash = "TEXT",
-        risk_chain_hash = "TEXT",
-        risk_plan_json = "TEXT"
-      ),
-      pk = c("sweep_id", "candidate_row"),
-      unique = list(c("sweep_id", "candidate_id")),
-      not_null = c(
-        "sweep_id", "candidate_id", "candidate_row", "status",
-        "metrics_json", "params_json", "feature_params_json",
-        "warnings_json", "feature_set_hash", "feature_fingerprints_json",
-        "provenance_json", "cost_model_hash", "metric_context_hash"
-      )
-    ),
-    sweep_returns = list(
-      columns = c(
-        sweep_id = "TEXT",
-        candidate_row = "INTEGER",
-        pulse_index = "INTEGER",
-        ts_utc = "TIMESTAMP",
-        equity = "DOUBLE",
-        period_return = "DOUBLE"
-      ),
-      pk = c("sweep_id", "candidate_row", "pulse_index"),
-      not_null = c("sweep_id", "candidate_row", "pulse_index", "ts_utc", "equity")
-    ),
-    sweep_trades = list(
-      columns = c(
-        sweep_id = "TEXT",
-        candidate_row = "INTEGER",
-        trade_seq = "INTEGER",
-        close_ts_utc = "TIMESTAMP",
-        realized_pnl = "DOUBLE",
-        win_loss = "TEXT"
-      ),
-      pk = c("sweep_id", "candidate_row", "trade_seq"),
-      not_null = c("sweep_id", "candidate_row", "trade_seq", "close_ts_utc")
-    ),
-    walk_forward_sessions = list(
-      columns = c(
-        session_id = "TEXT",
-        snapshot_hash = "TEXT",
-        experiment_hash = "TEXT",
-        param_grid_hash = "TEXT",
-        fold_list_hash = "TEXT",
-        selection_rule_hash = "TEXT",
-        metric_context_hash = "TEXT",
-        cost_model_hash = "TEXT",
-        risk_chain_hash = "TEXT",
-        master_seed = "INTEGER",
-        opening_state_policy = "TEXT",
-        created_at_utc = "TIMESTAMP",
-        ledgr_version = "TEXT",
-        meta_json = "TEXT"
-      ),
-      pk = c("session_id"),
-      not_null = c(
-        "session_id", "snapshot_hash", "experiment_hash",
-        "param_grid_hash", "fold_list_hash", "selection_rule_hash",
-        "metric_context_hash", "cost_model_hash", "risk_chain_hash",
-        "opening_state_policy", "created_at_utc", "ledgr_version",
-        "meta_json"
-      )
-    ),
-    walk_forward_folds = list(
-      columns = c(
-        session_id = "TEXT",
-        fold_id = "TEXT",
-        fold_seq = "INTEGER",
-        scheme = "TEXT",
-        train_start_utc = "TIMESTAMP",
-        train_end_utc = "TIMESTAMP",
-        test_start_utc = "TIMESTAMP",
-        test_end_utc = "TIMESTAMP",
-        hydration_start_utc = "TIMESTAMP",
-        train_scoring_start_utc = "TIMESTAMP",
-        test_scoring_start_utc = "TIMESTAMP",
-        opening_state_policy = "TEXT",
-        selected_candidate_key = "TEXT",
-        selected_at_utc = "TIMESTAMP",
-        test_run_id = "TEXT",
-        status = "TEXT",
-        selection_source = "TEXT"
-      ),
-      pk = c("session_id", "fold_seq"),
-      unique = list(c("session_id", "fold_id")),
-      not_null = c(
-        "session_id", "fold_id", "fold_seq", "scheme",
-        "train_start_utc", "train_end_utc", "test_start_utc",
-        "test_end_utc", "hydration_start_utc", "train_scoring_start_utc",
-        "test_scoring_start_utc", "opening_state_policy", "status"
-      )
-    ),
-    walk_forward_scores = list(
-      columns = c(
-        session_id = "TEXT",
-        fold_id = "TEXT",
-        fold_seq = "INTEGER",
-        candidate_key = "TEXT",
-        candidate_label = "TEXT",
-        params_hash = "TEXT",
-        feature_params_hash = "TEXT",
-        feature_set_hash = "TEXT",
-        alias_map_hash = "TEXT",
-        metric_context_hash = "TEXT",
-        cost_model_hash = "TEXT",
-        risk_chain_hash = "TEXT",
-        window = "TEXT",
-        metric_name = "TEXT",
-        metric_value = "DOUBLE",
-        n_trades = "INTEGER",
-        status = "TEXT",
-        completion_json = "TEXT",
-        error_class = "TEXT",
-        error_msg = "TEXT",
-        execution_seed = "INTEGER"
-      ),
-      pk = c("session_id", "fold_seq", "window", "candidate_key", "metric_name"),
-      not_null = c(
-        "session_id", "fold_id", "fold_seq", "candidate_key",
-        "params_hash", "feature_params_hash", "feature_set_hash",
-        "alias_map_hash", "metric_context_hash", "cost_model_hash",
-        "risk_chain_hash", "window", "metric_name", "status"
-      )
-    ),
-    instruments = list(
-      columns = c(
-        instrument_id = "TEXT",
-        symbol = "TEXT",
-        currency = "TEXT",
-        asset_class = "TEXT"
-      ),
-      pk = c("instrument_id")
-    ),
-    bars = list(
-      columns = c(
-        instrument_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        open = "DOUBLE",
-        high = "DOUBLE",
-        low = "DOUBLE",
-        close = "DOUBLE",
-        volume = "DOUBLE",
-        gap_type = "TEXT",
-        is_synthetic = "BOOLEAN"
-      ),
-      pk = c("instrument_id", "ts_utc")
-    ),
-    features = list(
-      columns = c(
-        run_id = "TEXT",
-        instrument_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        feature_name = "TEXT",
-        feature_value = "DOUBLE"
-      ),
-      pk = c("run_id", "instrument_id", "ts_utc", "feature_name")
-    ),
-    ledger_events = list(
-      columns = c(
-        event_id = "TEXT",
-        run_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        event_type = "TEXT",
-        instrument_id = "TEXT",
-        side = "TEXT",
-        qty = "DOUBLE",
-        price = "DOUBLE",
-        fee = "DOUBLE",
-        meta_json = "TEXT",
-        event_seq = "INTEGER"
-      ),
-      pk = c("event_id"),
-      unique = list(c("run_id", "event_seq")),
-      not_null = c("event_id", "run_id", "ts_utc", "event_type", "event_seq")
-    ),
-    equity_curve = list(
-      columns = c(
-        run_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        cash = "DOUBLE",
-        positions_value = "DOUBLE",
-        equity = "DOUBLE",
-        realized_pnl = "DOUBLE",
-        unrealized_pnl = "DOUBLE"
-      ),
-      pk = c("run_id", "ts_utc")
-    ),
-    strategy_state = list(
-      columns = c(
-        run_id = "TEXT",
-        ts_utc = "TEXT",
-        state_json = "TEXT"
-      ),
-      pk = c("run_id", "ts_utc"),
-      not_null = c("run_id", "ts_utc", "state_json")
-    ),
-    snapshots = list(
-      columns = c(
-        snapshot_id = "TEXT",
-        status = "TEXT",
-        created_at_utc = "TIMESTAMP",
-        sealed_at_utc = "TIMESTAMP",
-        snapshot_hash = "TEXT",
-        hash_rule_version = "INTEGER",
-        meta_json = "TEXT",
-        error_msg = "TEXT"
-      ),
-      pk = c("snapshot_id"),
-      not_null = c("snapshot_id", "status", "created_at_utc")
-    ),
-    snapshot_instruments = list(
-      columns = c(
-        snapshot_id = "TEXT",
-        instrument_id = "TEXT",
-        symbol = "TEXT",
-        currency = "TEXT",
-        asset_class = "TEXT",
-        multiplier = "DOUBLE",
-        tick_size = "DOUBLE",
-        meta_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "instrument_id"),
-      not_null = c("snapshot_id", "instrument_id")
-    ),
-    snapshot_bars = list(
-      columns = c(
-        snapshot_id = "TEXT",
-        instrument_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        open = "DOUBLE",
-        high = "DOUBLE",
-        low = "DOUBLE",
-        close = "DOUBLE",
-        volume = "DOUBLE"
-      ),
-      pk = c("snapshot_id", "instrument_id", "ts_utc"),
-      not_null = c("snapshot_id", "instrument_id", "ts_utc", "open", "high", "low", "close")
-    ),
-    snapshot_fact_families = list(
-      columns = c(
-        snapshot_id = "TEXT", family = "TEXT", scope_id = "TEXT",
-        family_schema_version = "INTEGER", metadata_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "family", "scope_id"),
-      not_null = c("snapshot_id", "family", "scope_id", "family_schema_version", "metadata_json")
-    ),
-    snapshot_membership_sets = list(
-      columns = c(
-        snapshot_id = "TEXT", universe_id = "TEXT", set_id = "TEXT",
-        effective_from = "TIMESTAMP", knowledge_time = "TIMESTAMP",
-        complete = "BOOLEAN", provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "universe_id", "set_id"),
-      not_null = c("snapshot_id", "universe_id", "set_id", "effective_from", "complete", "provenance_json")
-    ),
-    snapshot_membership = list(
-      columns = c(
-        snapshot_id = "TEXT", fact_id = "TEXT", instrument_id = "TEXT",
-        universe_id = "TEXT", set_id = "TEXT", effective_from = "TIMESTAMP",
-        effective_to = "TIMESTAMP", knowledge_time = "TIMESTAMP",
-        member = "BOOLEAN", provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "fact_id"),
-      not_null = c(
-        "snapshot_id", "fact_id", "instrument_id", "universe_id",
-        "effective_from", "member", "provenance_json"
-      )
-    ),
-    snapshot_trading_status = list(
-      columns = c(
-        snapshot_id = "TEXT", fact_id = "TEXT", instrument_id = "TEXT",
-        effective_from = "TIMESTAMP", effective_to = "TIMESTAMP",
-        knowledge_time = "TIMESTAMP", status = "TEXT", source = "TEXT",
-        precedence = "INTEGER", revision_id = "TEXT",
-        supersedes_fact_id = "TEXT", provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "fact_id"),
-      not_null = c(
-        "snapshot_id", "fact_id", "instrument_id", "effective_from",
-        "status", "source", "precedence", "provenance_json"
-      )
-    ),
-    snapshot_lifetime = list(
-      columns = c(
-        snapshot_id = "TEXT", fact_id = "TEXT", instrument_id = "TEXT",
-        effective_from = "TIMESTAMP", effective_to = "TIMESTAMP",
-        knowledge_time = "TIMESTAMP", assertion = "TEXT",
-        terminal_event = "TEXT", provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "fact_id"),
-      not_null = c(
-        "snapshot_id", "fact_id", "instrument_id", "effective_from",
-        "assertion", "provenance_json"
-      )
-    ),
-    snapshot_equity_corporate_actions = list(
-      columns = c(
-        snapshot_id = "TEXT", fact_id = "TEXT", subtype = "TEXT",
-        parent_instrument_id = "TEXT", entitlement_time = "TIMESTAMP",
-        effective_time = "TIMESTAMP", knowledge_time = "TIMESTAMP",
-        payment_time = "TIMESTAMP", complete = "BOOLEAN",
-        refusal_reason = "TEXT", provenance_tier = "TEXT",
-        upstream_build_id = "TEXT", bar_vintage_id = "TEXT",
-        gross_cash_per_parent_unit = "DOUBLE",
-        gross_cash_validated = "BOOLEAN",
-        recipient_instrument_id = "TEXT",
-        recipient_identity_validated = "BOOLEAN",
-        recipient_quantity_per_parent_unit = "DOUBLE",
-        recipient_quantity_validated = "BOOLEAN", provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "fact_id"),
-      not_null = c(
-        "snapshot_id", "fact_id", "subtype", "parent_instrument_id",
-        "complete", "provenance_tier", "gross_cash_validated",
-        "recipient_identity_validated", "recipient_quantity_validated",
-        "provenance_json"
-      )
-    ),
-    snapshot_sessions = list(
-      columns = c(
-        snapshot_id = "TEXT", venue_id = "TEXT", session_date = "DATE",
-        effective_from = "TIMESTAMP", effective_to = "TIMESTAMP",
-        knowledge_time = "TIMESTAMP", status = "TEXT",
-        session_open = "TIMESTAMP", session_close = "TIMESTAMP",
-        provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "venue_id", "session_date"),
-      not_null = c(
-        "snapshot_id", "venue_id", "session_date", "effective_from",
-        "effective_to", "status", "provenance_json"
-      )
-    ),
-    snapshot_observation_quarantine = list(
-      columns = c(
-        snapshot_id = "TEXT", quarantine_id = "TEXT",
-        supplied_instrument_id = "TEXT", supplied_ts_utc = "TIMESTAMP",
-        reason = "TEXT", original_row_json = "TEXT", provenance_json = "TEXT"
-      ),
-      pk = c("snapshot_id", "quarantine_id"),
-      not_null = c("snapshot_id", "quarantine_id", "reason", "original_row_json", "provenance_json")
-    )
+ledgr_current_schema_catalogue <- function() {
+  cached <- .ledgr_current_schema_catalogue_cache$catalogue
+  if (!is.null(cached)) {
+    return(cached)
+  }
+  con <- DBI::dbConnect(
+    duckdb::duckdb(shared_home = FALSE),
+    dbdir = ":memory:"
   )
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_schema_render_current(con)
+  catalogue <- ledgr_schema_normalized_catalogue(con)
+  .ledgr_current_schema_catalogue_cache$catalogue <- catalogue
+  catalogue
+}
 
-  normalize_type <- function(x) {
-    normalize_one <- function(one) {
-      one <- toupper(trimws(one))
-      one <- gsub("\\s+", " ", one)
-      if (one %in% c("VARCHAR", "CHAR", "BPCHAR", "STRING")) return("TEXT")
-      if (one %in% c("INTEGER", "INT", "INT4", "BIGINT", "INT8", "SMALLINT", "INT2", "UBIGINT", "UINTEGER", "USMALLINT")) return("INTEGER")
-      if (one %in% c("DOUBLE", "DOUBLE PRECISION", "FLOAT", "FLOAT4", "FLOAT8", "REAL", "DECIMAL", "NUMERIC")) return("DOUBLE")
-      if (one %in% c("TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMPTZ")) return("TIMESTAMP")
-      one
-    }
-
-    vapply(x, normalize_one, character(1))
+ledgr_schema_normalize_display_type <- function(x) {
+  normalize_one <- function(one) {
+    one <- toupper(trimws(one))
+    one <- gsub("\\s+", " ", one)
+    if (one %in% c("VARCHAR", "CHAR", "BPCHAR", "STRING")) return("TEXT")
+    if (one %in% c(
+      "INTEGER", "INT", "INT4", "BIGINT", "INT8", "SMALLINT", "INT2",
+      "UBIGINT", "UINTEGER", "USMALLINT"
+    )) return("INTEGER")
+    if (one %in% c(
+      "DOUBLE", "DOUBLE PRECISION", "FLOAT", "FLOAT4", "FLOAT8", "REAL",
+      "DECIMAL", "NUMERIC"
+    )) return("DOUBLE")
+    if (one %in% c(
+      "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMPTZ"
+    )) return("TIMESTAMP")
+    one
   }
+  vapply(x, normalize_one, character(1), USE.NAMES = FALSE)
+}
 
-  table_exists <- function(table_name) {
-    ledgr_schema_catalogue_table_exists(catalogue, table_name)
-  }
+ledgr_schema_constraint_signature <- function(x) {
+  if (nrow(x) == 0L) return(character())
+  do.call(paste, c(x, sep = "\r"))
+}
 
-  ledgr_experiment_store_check_schema(
-    con,
-    write = FALSE,
-    table_names = catalogue$tables$table_name
+ledgr_schema_abort_enum_difference <- function(expected, actual) {
+  rules <- list(
+    list("runs", "status", c("CREATED", "RUNNING", "DONE", "INCOMPLETE", "FAILED")),
+    list("snapshots", "status", c("CREATED", "SEALED", "FAILED")),
+    list("sweep_candidates", "status", c("DONE", "INCOMPLETE", "FAILED")),
+    list("walk_forward_scores", "status", c("DONE", "INCOMPLETE", "FAILED")),
+    list("walk_forward_folds", "selection_source", c("train", "previous", "none")),
+    list("snapshot_trading_status", "status", c("active", "halted", "quotation_only")),
+    list("snapshot_lifetime", "assertion", c("known_active", "known_inactive", "unknown")),
+    list(
+      "snapshot_equity_corporate_actions", "provenance_tier",
+      c("snapshot_bound", "upstream_vintage_bound")
+    ),
+    list("snapshot_sessions", "status", c("open", "closed"))
   )
-
-  get_columns <- function(table_name) {
-    ledgr_schema_catalogue_columns(catalogue, table_name)
-  }
-
-  get_pk_columns <- function(table_name) {
-    ledgr_schema_catalogue_key_columns(
-      catalogue,
-      table_name,
-      "PRIMARY KEY"
-    )$column_name
-  }
-
-  get_unique_sets <- function(table_name) {
-    out <- ledgr_schema_catalogue_key_columns(
-      catalogue,
-      table_name,
-      "UNIQUE"
-    )
-    if (nrow(out) == 0) return(list())
-    split(out$column_name, out$constraint_name)
-  }
-
-  check_enum_constraint_metadata <- function(table_name, column_name, expected_values, label) {
-    checks <- ledgr_schema_catalogue_checks(catalogue, table_name)
-    expressions <- as.character(checks$expression)
-    enum_pattern <- sprintf('"?%s"?\\s+IN\\s*\\(', column_name)
-    status_expr <- expressions[grepl(enum_pattern, expressions, ignore.case = TRUE)]
-    if (length(status_expr) == 0L) {
-      stop(
-        sprintf("%s must enforce status values (%s).", label, paste(expected_values, collapse = ", ")),
-        call. = FALSE
-      )
+  for (rule in rules) {
+    table_name <- rule[[1L]]
+    column_name <- rule[[2L]]
+    subset_check <- function(catalogue) {
+      catalogue$constraints[
+        catalogue$constraints$table_name == table_name &
+          catalogue$constraints$constraint_type == "CHECK" &
+          grepl(column_name, catalogue$constraints$expression, fixed = TRUE),
+        ,
+        drop = FALSE
+      ]
     }
-    # DuckDB currently exposes CHECK expressions in SQL text form.
-    # If that metadata format changes, fail validation rather than adding write probes.
-    values <- unique(unlist(regmatches(
-      status_expr,
-      gregexpr("'[^']+'", status_expr)
-    )))
-    values <- gsub("^'|'$", "", values)
-    if (!setequal(values, expected_values)) {
-      stop(
-        sprintf("%s must enforce status values (%s).", label, paste(expected_values, collapse = ", ")),
-        call. = FALSE
-      )
-    }
-    invisible(TRUE)
-  }
-
-  check_runs_status_constraint <- function() {
-    check_enum_constraint_metadata(
-      "runs",
-      "status",
-      c("CREATED", "RUNNING", "DONE", "INCOMPLETE", "FAILED"),
-      "runs.status"
-    )
-    invisible(TRUE)
-  }
-
-  check_snapshots_status_constraint <- function() {
-    check_enum_constraint_metadata(
-      "snapshots",
-      "status",
-      c("CREATED", "SEALED", "FAILED"),
-      "snapshots.status"
-    )
-    invisible(TRUE)
-  }
-
-  check_sweep_candidates_status_constraint <- function() {
-    check_enum_constraint_metadata(
-      "sweep_candidates",
-      "status",
-      c("DONE", "INCOMPLETE", "FAILED"),
-      "sweep_candidates.status"
-    )
-    invisible(TRUE)
-  }
-
-  for (table_name in names(required)) {
-    if (!table_exists(table_name)) {
-      stop(sprintf("Missing table: %s", table_name), call. = FALSE)
-    }
-
-    cols <- get_columns(table_name)
-    present <- cols$column_name
-
-    expected_types <- required[[table_name]]$columns
-    expected_cols <- names(expected_types)
-    missing_cols <- setdiff(expected_cols, present)
-    if (length(missing_cols) > 0) {
+    if (!identical(
+      ledgr_schema_constraint_signature(subset_check(expected)),
+      ledgr_schema_constraint_signature(subset_check(actual))
+    )) {
       stop(
         sprintf(
-          "Missing columns in %s: %s",
+          "%s.%s must enforce status values (%s).",
           table_name,
-          paste(missing_cols, collapse = ", ")
+          column_name,
+          paste(rule[[3L]], collapse = ", ")
         ),
         call. = FALSE
       )
     }
+  }
+  invisible(TRUE)
+}
 
-    present_types <- normalize_type(cols$data_type)
-    names(present_types) <- cols$column_name
-    for (col_name in expected_cols) {
-      expected_type <- normalize_type(unname(expected_types[[col_name]]))
-      actual_type <- normalize_type(unname(present_types[[col_name]]))
-      if (!identical(actual_type, expected_type)) {
-        stop(
-          sprintf(
-            "Column type mismatch: %s.%s expected %s, got %s",
-            table_name,
-            col_name,
-            expected_type,
-            actual_type
+ledgr_schema_abort_catalogue_difference <- function(expected, actual) {
+  expected_tables <- expected$tables$table_name
+  actual_tables <- actual$tables$table_name
+  missing_tables <- setdiff(expected_tables, actual_tables)
+  if (length(missing_tables) > 0L) {
+    stop(sprintf("Missing table: %s", missing_tables[[1L]]), call. = FALSE)
+  }
+  extra_tables <- setdiff(actual_tables, expected_tables)
+  if (length(extra_tables) > 0L) {
+    stop(
+      sprintf("Schema catalogue mismatch: extra table %s.", extra_tables[[1L]]),
+      call. = FALSE
+    )
+  }
+
+  column_key <- function(x) paste(x$table_name, x$column_name, sep = ".")
+  expected_column_key <- column_key(expected$columns)
+  actual_column_key <- column_key(actual$columns)
+  missing_column_key <- setdiff(expected_column_key, actual_column_key)
+  if (length(missing_column_key) > 0L) {
+    table_name <- sub("[.].*$", "", missing_column_key[[1L]])
+    missing <- expected$columns$column_name[
+      expected$columns$table_name == table_name &
+        !(expected_column_key %in% actual_column_key)
+    ]
+    stop(
+      sprintf(
+        "Missing columns in %s: %s",
+        table_name,
+        paste(missing, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  extra_column_key <- setdiff(actual_column_key, expected_column_key)
+  if (length(extra_column_key) > 0L) {
+    stop(
+      sprintf(
+        "Schema catalogue mismatch: extra column %s.",
+        extra_column_key[[1L]]
+      ),
+      call. = FALSE
+    )
+  }
+
+  actual_at <- match(expected_column_key, actual_column_key)
+  actual_columns <- actual$columns[actual_at, , drop = FALSE]
+  different_type <- which(
+    expected$columns$data_type != actual_columns$data_type
+  )
+  if (length(different_type) > 0L) {
+    i <- different_type[[1L]]
+    expected_type <- ledgr_schema_normalize_display_type(
+      expected$columns$data_type[[i]]
+    )
+    actual_type <- ledgr_schema_normalize_display_type(
+      actual_columns$data_type[[i]]
+    )
+    if (identical(expected_type, actual_type)) {
+      stop(
+        sprintf(
+          paste0(
+            "Schema catalogue mismatch: column %s differs in data_type ",
+            "(expected %s, got %s)."
           ),
-          call. = FALSE
-        )
-      }
+          expected_column_key[[i]], expected$columns$data_type[[i]],
+          actual_columns$data_type[[i]]
+        ),
+        call. = FALSE
+      )
     }
+    stop(
+      sprintf(
+        "Column type mismatch: %s expected %s, got %s",
+        expected_column_key[[i]], expected_type, actual_type
+      ),
+      call. = FALSE
+    )
+  }
 
-    if (!is.null(required[[table_name]]$not_null)) {
-      expected_not_null <- required[[table_name]]$not_null
-      is_nullable <- cols$is_nullable
-      names(is_nullable) <- cols$column_name
-      nullable_violations <- expected_not_null[unname(is_nullable[expected_not_null]) != "NO"]
-      if (length(nullable_violations) > 0) {
-        stop(
-          sprintf(
-            "Expected NOT NULL constraints missing for %s: %s",
-            table_name,
-            paste(nullable_violations, collapse = ", ")
+  ledgr_schema_abort_enum_difference(expected, actual)
+
+  nullable <- which(
+    expected$columns$is_nullable == "NO" &
+      actual_columns$is_nullable != "NO"
+  )
+  if (length(nullable) > 0L) {
+    table_name <- expected$columns$table_name[[nullable[[1L]]]]
+    columns <- expected$columns$column_name[
+      expected$columns$table_name == table_name &
+        expected$columns$is_nullable == "NO" &
+        actual_columns$is_nullable != "NO"
+    ]
+    stop(
+      sprintf(
+        "Expected NOT NULL constraints missing for %s: %s",
+        table_name,
+        paste(columns, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  column_attributes <- c("ordinal_position", "is_nullable", "column_default")
+  for (attribute in column_attributes) {
+    different <- which(
+      as.character(expected$columns[[attribute]]) !=
+        as.character(actual_columns[[attribute]])
+    )
+    if (length(different) > 0L) {
+      i <- different[[1L]]
+      stop(
+        sprintf(
+          paste0(
+            "Schema catalogue mismatch: column %s differs in %s ",
+            "(expected %s, got %s)."
           ),
-          call. = FALSE
-        )
-      }
+          expected_column_key[[i]], attribute,
+          expected$columns[[attribute]][[i]],
+          actual_columns[[attribute]][[i]]
+        ),
+        call. = FALSE
+      )
     }
+  }
 
-    pk_expected <- required[[table_name]]$pk
-    pk_actual <- get_pk_columns(table_name)
-    if (!identical(pk_actual, pk_expected)) {
+  expected_constraints <- expected$constraints
+  actual_constraints <- actual$constraints
+  tables <- expected_tables
+  for (table_name in tables) {
+    expected_pk <- expected_constraints[
+      expected_constraints$table_name == table_name &
+        expected_constraints$constraint_type == "PRIMARY KEY",
+      "column_names",
+      drop = TRUE
+    ]
+    actual_pk <- actual_constraints[
+      actual_constraints$table_name == table_name &
+        actual_constraints$constraint_type == "PRIMARY KEY",
+      "column_names",
+      drop = TRUE
+    ]
+    if (!identical(expected_pk, actual_pk)) {
       stop(
         sprintf(
           "Primary key mismatch for %s: expected (%s), got (%s)",
           table_name,
-          paste(pk_expected, collapse = ", "),
-          paste(pk_actual, collapse = ", ")
+          paste(strsplit(expected_pk, "|", fixed = TRUE)[[1L]], collapse = ", "),
+          if (length(actual_pk) == 0L) "" else paste(
+            strsplit(actual_pk, "|", fixed = TRUE)[[1L]],
+            collapse = ", "
+          )
         ),
         call. = FALSE
       )
     }
-
-    if (!is.null(required[[table_name]]$unique)) {
-      uniques <- get_unique_sets(table_name)
-      for (u in required[[table_name]]$unique) {
-        u_sorted <- sort(u)
-        ok <- any(vapply(uniques, function(x) identical(sort(x), u_sorted), logical(1)))
-        if (!ok) {
-          stop(
-            sprintf(
-              "Missing UNIQUE constraint on %s: (%s)",
-              table_name,
-              paste(u, collapse = ", ")
-            ),
-            call. = FALSE
+    expected_unique <- expected_constraints[
+      expected_constraints$table_name == table_name &
+        expected_constraints$constraint_type == "UNIQUE",
+      "column_names",
+      drop = TRUE
+    ]
+    actual_unique <- actual_constraints[
+      actual_constraints$table_name == table_name &
+        actual_constraints$constraint_type == "UNIQUE",
+      "column_names",
+      drop = TRUE
+    ]
+    missing_unique <- setdiff(expected_unique, actual_unique)
+    if (length(missing_unique) > 0L) {
+      stop(
+        sprintf(
+          "Missing UNIQUE constraint on %s: (%s)",
+          table_name,
+          paste(
+            strsplit(missing_unique[[1L]], "|", fixed = TRUE)[[1L]],
+            collapse = ", "
           )
-        }
-      }
+        ),
+        call. = FALSE
+      )
     }
   }
 
-  check_runs_status_constraint()
-  check_snapshots_status_constraint()
-  check_sweep_candidates_status_constraint()
-  check_enum_constraint_metadata(
-    "walk_forward_scores",
-    "status",
-    c("DONE", "INCOMPLETE", "FAILED"),
-    "walk_forward_scores.status"
+  expected_constraint_signature <- ledgr_schema_constraint_signature(
+    expected_constraints
   )
-  check_enum_constraint_metadata(
-    "walk_forward_folds",
-    "selection_source",
-    c("train", "previous", "none"),
-    "walk_forward_folds.selection_source"
+  actual_constraint_signature <- ledgr_schema_constraint_signature(
+    actual_constraints
   )
-  check_enum_constraint_metadata(
-    "snapshot_trading_status",
-    "status",
-    c("active", "halted", "quotation_only"),
-    "snapshot_trading_status.status"
+  missing_constraint <- which(
+    !(expected_constraint_signature %in% actual_constraint_signature)
   )
-  check_enum_constraint_metadata(
-    "snapshot_lifetime",
-    "assertion",
-    c("known_active", "known_inactive", "unknown"),
-    "snapshot_lifetime.assertion"
+  if (length(missing_constraint) > 0L) {
+    row <- expected_constraints[missing_constraint[[1L]], , drop = FALSE]
+    stop(
+      sprintf(
+        "Schema catalogue mismatch: constraint %s.%s differs.",
+        row$table_name[[1L]], row$constraint_type[[1L]]
+      ),
+      call. = FALSE
+    )
+  }
+  extra_constraint <- which(
+    !(actual_constraint_signature %in% expected_constraint_signature)
   )
-  check_enum_constraint_metadata(
-    "snapshot_equity_corporate_actions",
-    "provenance_tier",
-    c("snapshot_bound", "upstream_vintage_bound"),
-    "snapshot_equity_corporate_actions.provenance_tier"
-  )
-  check_enum_constraint_metadata(
-    "snapshot_sessions",
-    "status",
-    c("open", "closed"),
-    "snapshot_sessions.status"
-  )
+  if (length(extra_constraint) > 0L) {
+    row <- actual_constraints[extra_constraint[[1L]], , drop = FALSE]
+    stop(
+      sprintf(
+        "Schema catalogue mismatch: extra constraint %s.%s.",
+        row$table_name[[1L]], row$constraint_type[[1L]]
+      ),
+      call. = FALSE
+    )
+  }
 
+  index_key <- function(x) paste(x$table_name, x$index_name, sep = ".")
+  expected_index_key <- index_key(expected$indexes)
+  actual_index_key <- index_key(actual$indexes)
+  missing_index <- setdiff(expected_index_key, actual_index_key)
+  if (length(missing_index) > 0L) {
+    stop(
+      sprintf(
+        "Schema catalogue mismatch: missing index %s.",
+        missing_index[[1L]]
+      ),
+      call. = FALSE
+    )
+  }
+  extra_index <- setdiff(actual_index_key, expected_index_key)
+  if (length(extra_index) > 0L) {
+    stop(
+      sprintf("Schema catalogue mismatch: extra index %s.", extra_index[[1L]]),
+      call. = FALSE
+    )
+  }
+  actual_index_at <- match(expected_index_key, actual_index_key)
+  actual_indexes <- actual$indexes[actual_index_at, , drop = FALSE]
+  for (attribute in c("is_unique", "is_primary", "expressions", "sql")) {
+    different <- which(
+      as.character(expected$indexes[[attribute]]) !=
+        as.character(actual_indexes[[attribute]])
+    )
+    if (length(different) > 0L) {
+      i <- different[[1L]]
+      stop(
+        sprintf(
+          "Schema catalogue mismatch: index %s differs in %s.",
+          expected_index_key[[i]], attribute
+        ),
+        call. = FALSE
+      )
+    }
+  }
+
+  stop("Schema catalogue mismatch.", call. = FALSE)
+}
+
+ledgr_schema_validate_catalogue <- function(
+  actual,
+  expected = ledgr_current_schema_catalogue()
+) {
+  if (!identical(expected, actual)) {
+    ledgr_schema_abort_catalogue_difference(expected, actual)
+  }
   invisible(TRUE)
 }
 
-.ledgr_schema_validation_cache <- new.env(parent = emptyenv())
+ledgr_schema_validation_signature <- function(con) {
+  row <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT ",
+      "(SELECT md5(string_agg(table_name || ':' || sql, ',' ",
+      "ORDER BY table_name)) FROM duckdb_tables() ",
+      "WHERE database_name = current_database() ",
+      "AND schema_name = 'main') AS tables, ",
+      "(SELECT md5(string_agg(",
+      "index_name || ':' || sql, ',' ORDER BY index_name)) ",
+      "FROM duckdb_indexes() WHERE database_name = current_database() ",
+      "AND schema_name = 'main') AS indexes, ",
+      "(SELECT md5(string_agg(",
+      "view_name || ':' || coalesce(sql, ''), ',' ORDER BY view_name)) ",
+      "FROM duckdb_views() WHERE database_name = current_database() ",
+      "AND schema_name = 'main' AND NOT internal AND NOT temporary) AS views"
+    )
+  )
+  paste(unname(unlist(row[1L, ], use.names = FALSE)), collapse = "\r")
+}
 
-# Pay schema validation once per catalogue and session. The full validator
-# reads only the catalogue, so its result is a function of the schema version
-# marker and a fingerprint of that catalogue (every table, column, type,
-# nullability, order and constraint with its text), read in one query of a few
-# milliseconds; the key is exactly those (LDG-3018, amending LDG-2916's
-# per-store key). A store whose catalogue was already validated in the session
-# (another store, a copy, a replaced file, an in-memory store) is not validated
-# again; a changed catalogue or marker value is. Only a successful validation
-# is remembered: a store that fails validation fails on every call. Stores
-# without a marker are always validated. The public `ledgr_validate_schema()`
-# stays a full check on every call.
 ledgr_validate_schema_once <- function(con) {
-  key <- ledgr_schema_validation_key(con)
-  if (!is.null(key) && isTRUE(.ledgr_schema_validation_cache[[key]])) {
+  signature <- ledgr_schema_validation_signature(con)
+  if (isTRUE(.ledgr_schema_validation_cache[[signature]])) {
     return(invisible(TRUE))
   }
-  ledgr_validate_schema(con)
-  if (!is.null(key)) {
-    assign(key, TRUE, envir = .ledgr_schema_validation_cache)
-  }
+  actual <- ledgr_schema_normalized_catalogue(con)
+  ledgr_schema_validate_catalogue(actual)
+  assign(signature, TRUE, envir = .ledgr_schema_validation_cache)
   invisible(TRUE)
-}
-
-ledgr_schema_validation_key <- function(con) {
-  marker <- tryCatch(
-    DBI::dbGetQuery(
-      con,
-      "SELECT m.value,
-              (SELECT md5(string_agg(
-                 c.table_name || '.' || c.column_name || ':' || c.data_type || ':' ||
-                   c.is_nullable::VARCHAR, ',' ORDER BY c.table_name, c.column_index))
-               FROM duckdb_columns() c WHERE c.schema_name = 'main') AS columns_fp,
-              (SELECT md5(string_agg(
-                 k.table_name || ':' || k.constraint_type || ':' ||
-                   array_to_string(k.constraint_column_names, '|') || ':' ||
-                   coalesce(k.constraint_text, '') || ':' || coalesce(k.expression, ''), ','
-                 ORDER BY k.table_name, k.constraint_type, array_to_string(k.constraint_column_names, '|'), coalesce(k.constraint_text, ''), coalesce(k.expression, '')))
-               FROM duckdb_constraints() k WHERE k.schema_name = 'main') AS constraints_fp
-       FROM ledgr_schema_metadata m
-       WHERE m.key = 'experiment_store_schema_version'"
-    ),
-    error = function(e) NULL
-  )
-  if (!is.data.frame(marker) || nrow(marker) != 1L) {
-    return(NULL)
-  }
-  paste(
-    marker$value[[1L]],
-    marker$columns_fp[[1L]],
-    marker$constraints_fp[[1L]],
-    sep = "\r"
-  )
 }

@@ -530,11 +530,17 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
         ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1.25))
       )
     ),
+    risk_chain = ledgr:::ledgr_config_risk_identity(),
+    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+      ledgr_corporate_actions_research()
+    ),
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     strategy = list(id = "x", params = list())
   )
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "9e29021ba11784777f4adc93d5569e49eb1d90d49bd48bb04a030a6b0a2300cc"
+    "5be47a39d2fc3ab8ace1d5de14b04797552365c89c2e1202cb2cc691e4e4b08c"
   )
 })

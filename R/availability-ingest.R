@@ -64,7 +64,10 @@ ledgr_availability_prepare_instruments <- function(bars_df, instruments_df) {
   }
   bar_ids <- enc2utf8(as.character(bars_df$instrument_id))
   if (is.null(instruments_df)) {
-    ids <- sort(unique(bar_ids[!is.na(bar_ids) & nzchar(bar_ids)]))
+    ids <- sort(
+      unique(bar_ids[!is.na(bar_ids) & nzchar(bar_ids)]),
+      method = "radix"
+    )
     if (length(ids) == 0L) {
       rlang::abort("At least one valid instrument is required.", class = c("ledgr_fact_invalid_instrument_master", "ledgr_invalid_args"))
     }
@@ -137,7 +140,7 @@ ledgr_availability_prepare_observations <- function(bars_df,
   # never be a mark; zero volume with positive prices stays valid.
   non_positive <- Reduce(`|`, lapply(numeric_values, function(x) round(x, 8L) <= 0))
   set_reason(non_positive, "ohlc_non_positive")
-  max_ohlc <-pmax(numeric_values$open, numeric_values$close, numeric_values$low, na.rm = TRUE)
+  max_ohlc <- pmax(numeric_values$open, numeric_values$close, numeric_values$low, na.rm = TRUE)
   min_ohlc <- pmin(numeric_values$open, numeric_values$close, numeric_values$high, na.rm = TRUE)
   set_reason(numeric_values$high < max_ohlc | numeric_values$low > min_ohlc, "ohlc_invalid")
   outside_expectation <- !is.na(ts) & !ledgr_availability_times_are_session_closes(
@@ -177,7 +180,11 @@ ledgr_availability_prepare_observations <- function(bars_df,
     volume = round(volume[keep], 8L),
     stringsAsFactors = FALSE
   )
-  accepted <- accepted[order(accepted$instrument_id, accepted$ts_utc), , drop = FALSE]
+  accepted <- accepted[order(
+    accepted$instrument_id,
+    accepted$ts_utc,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(accepted) <- NULL
 
   bad <- outcome == "quarantine_candidate"
@@ -266,11 +273,14 @@ ledgr_availability_observation_times <- function(x,
 }
 
 ledgr_availability_times_are_session_closes <- function(
-    ts,
-    facts,
-    session_rows = ledgr_session_open_rows(facts),
-    tokens = ledgr_fact_time_token(ts)) {
-  if (is.null(session_rows)) return(rep(TRUE, length(ts)))
+  ts,
+  facts,
+  session_rows = ledgr_session_open_rows(facts),
+  tokens = ledgr_fact_time_token(ts)
+) {
+  if (is.null(session_rows)) {
+    return(rep(TRUE, length(ts)))
+  }
   tokens %in% ledgr_fact_time_token(session_rows$session_close)
 }
 
@@ -281,12 +291,20 @@ ledgr_availability_times_are_session_closes <- function(
 # the per-row form writes as a string, is written as a list column in the same
 # pass; no row is visited on its own.
 ledgr_availability_original_rows_json <- function(df) {
-  if (nrow(df) == 0L) return(character())
+  if (nrow(df) == 0L) {
+    return(character())
+  }
   cols <- lapply(df, function(x) {
-    if (inherits(x, "POSIXt")) return(ledgr_fact_time_tokens_distinct(x))
-    if (inherits(x, "Date")) return(as.character(x))
+    if (inherits(x, "POSIXt")) {
+      return(ledgr_fact_time_tokens_distinct(x))
+    }
+    if (inherits(x, "Date")) {
+      return(as.character(x))
+    }
     if (is.factor(x)) x <- as.character(x)
-    if (is.character(x)) return(enc2utf8(unname(x)))
+    if (is.character(x)) {
+      return(enc2utf8(unname(x)))
+    }
     if (is.numeric(x) && any(is.infinite(x))) {
       # The per-row form writes an infinite value as the string "Inf" or
       # "-Inf"; a list column carries those cells beside the numbers.
@@ -297,10 +315,11 @@ ledgr_availability_original_rows_json <- function(df) {
     }
     unname(x)
   })
-  cols <- cols[order(names(cols))]
+  cols <- cols[order(names(cols), method = "radix")]
   listed <- vapply(cols, is.list, logical(1))
   frame <- as.data.frame(lapply(cols, function(x) if (is.list(x)) rep(NA, length(x)) else x),
-                         stringsAsFactors = FALSE, optional = TRUE)
+    stringsAsFactors = FALSE, optional = TRUE
+  )
   for (j in which(listed)) frame[[j]] <- cols[[j]]
   lines <- strsplit(ledgr_json_write_canonical_ndjson(frame), "\n", fixed = TRUE)[[1L]]
   lines[nzchar(lines)]
@@ -309,10 +328,18 @@ ledgr_availability_original_rows_json <- function(df) {
 ledgr_availability_original_row_json <- function(row) {
   payload <- lapply(row, function(x) {
     value <- x[[1L]]
-    if (inherits(value, "POSIXt")) return(ledgr_fact_time_token(value))
-    if (inherits(value, "Date")) return(as.character(value))
-    if (length(value) == 0L || is.na(value)) return(NULL)
-    if (is.numeric(value) && !is.finite(value)) return(as.character(value))
+    if (inherits(value, "POSIXt")) {
+      return(ledgr_fact_time_token(value))
+    }
+    if (inherits(value, "Date")) {
+      return(as.character(value))
+    }
+    if (length(value) == 0L || is.na(value)) {
+      return(NULL)
+    }
+    if (is.numeric(value) && !is.finite(value)) {
+      return(as.character(value))
+    }
     if (is.factor(value)) value <- as.character(value)
     # The JSON writer requires UTF-8 text.
     if (is.character(value)) value <- enc2utf8(value)

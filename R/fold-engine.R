@@ -269,6 +269,22 @@ ledgr_execute_fold <- function(execution, output_handler) {
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
+  if (!is.null(execution_seed)) {
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    old_seed <- if (had_seed) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit({
+      if (had_seed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    }, add = TRUE)
+    set.seed(as.integer(execution_seed))
+  }
   event_mode <- execution$event_mode
   use_fast_context <- isTRUE(execution$use_fast_context)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(
@@ -302,10 +318,6 @@ ledgr_execute_fold <- function(execution, output_handler) {
         corporate_action_plan$event_kinds()
       )
     }
-  }
-
-  if (!is.null(execution_seed)) {
-    set.seed(as.integer(execution_seed))
   }
 
   max_events <- max(1L, length(pulses_posix) * length(instrument_ids))
@@ -440,9 +452,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
   dense_planes <- if (availability_active) NULL else ledgr_dense_eligibility_planes(length(instrument_ids))
 
   # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
-  # 3.4). The decoded policy is NULL for a historical config without a policy
-  # identity, which refuses every terminal as before.
-  terminal_policy <- execution$corporate_action_policy %||% NULL
+  # 3.4). Current configs always carry the decoded policy.
+  terminal_policy <- execution$corporate_action_policy
   frozen_prev <- as.character(execution$frozen_at_resume %||% character())
   availability_decision <- function(ts, pulse_idx, positions) {
     full_positions <- ledgr_fold_positions_snapshot(positions, instrument_ids)

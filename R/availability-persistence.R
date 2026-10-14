@@ -147,18 +147,19 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
 }
 
 ledgr_snapshot_hash_rule_version <- function(con, snapshot_id) {
-  if (!ledgr_experiment_store_table_exists(con, "snapshots") ||
-      !"hash_rule_version" %in% ledgr_experiment_store_columns(con, "snapshots")) {
-    return(NA_integer_)
-  }
   value <- DBI::dbGetQuery(
     con,
     "SELECT hash_rule_version FROM snapshots WHERE snapshot_id = ?",
     params = list(snapshot_id)
   )$hash_rule_version
-  if (length(value) == 0L || is.na(value[[1L]])) return(NA_integer_)
+  if (length(value) == 0L || is.na(value[[1L]])) {
+    rlang::abort(
+      "Snapshot hash rule version is missing.",
+      class = c("ledgr_snapshot_hash_rule_unsupported", "ledgr_invalid_state")
+    )
+  }
   value <- as.integer(value[[1L]])
-  if (!value %in% c(1L, 2L, 3L)) {
+  if (!identical(value, ledgr_snapshot_content_hash_rule_version)) {
     rlang::abort(
       sprintf("Unsupported snapshot hash rule version: %s.", value),
       class = c("ledgr_snapshot_hash_rule_unsupported", "ledgr_invalid_state")
@@ -168,20 +169,12 @@ ledgr_snapshot_hash_rule_version <- function(con, snapshot_id) {
 }
 
 ledgr_snapshot_require_hash_rule3 <- function(rule) {
-  if (length(rule) != 1L || is.na(rule) || rule %in% c(1L, 2L)) {
+  if (length(rule) != 1L || is.na(rule) ||
+      !identical(as.integer(rule), ledgr_snapshot_content_hash_rule_version)) {
     shown <- if (length(rule) != 1L || is.na(rule)) "missing" else
-      as.character(as.integer(rule))
+      as.character(rule)
     rlang::abort(
-      paste0(
-        "Snapshot hash rule ", shown,
-        " is not executable. Rebuild the snapshot from source under hash rule 3."
-      ),
-      class = c("ledgr_snapshot_rebuild_required", "ledgr_invalid_state")
-    )
-  }
-  if (!identical(as.integer(rule), ledgr_snapshot_hash_rule3_version)) {
-    rlang::abort(
-      sprintf("Unsupported snapshot hash rule version: %s.", rule),
+      sprintf("Unsupported snapshot hash rule version: %s.", shown),
       class = c("ledgr_snapshot_hash_rule_unsupported", "ledgr_invalid_state")
     )
   }

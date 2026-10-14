@@ -489,18 +489,21 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     function(indicator) is.null(indicator$gap_contract),
     logical(1)
   )))
-  contract_text <- paste(readLines(
-    testthat::test_path("..", "..", "inst", "design", "contracts.md"),
-    warn = FALSE
-  ), collapse = "\n")
-  testthat::expect_match(
-    contract_text,
-    'single-output `ledgr_ind_ttr\\("SMA", input = "close", n = \\.\\.\\.\\)`'
-  )
-  testthat::expect_match(
-    contract_text,
-    "TTR bundles and all\\n  other TTR families remain uncertified"
-  )
+  root <- ledgr_test_source_root()
+  if (ledgr_test_design_source_context(root)) {
+    contract_text <- paste(readLines(
+      file.path(root, "inst", "design", "contracts.md"),
+      warn = FALSE
+    ), collapse = "\n")
+    testthat::expect_match(
+      contract_text,
+      'single-output `ledgr_ind_ttr\\("SMA", input = "close", n = \\.\\.\\.\\)`'
+    )
+    testthat::expect_match(
+      contract_text,
+      "TTR bundles and all\\n  other TTR families remain uncertified"
+    )
+  }
 
   indicator_article <- readLines(
     testthat::test_path("..", "..", "vignettes", "indicators.qmd"),

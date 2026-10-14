@@ -36,14 +36,6 @@ ledgr_public_compiled_accounting_model <- function(value) {
   ledgr_normalize_compiled_accounting_model(value)
 }
 
-ledgr_internal_compiled_accounting_model <- function() {
-  # Internal benchmark/test harness hook only. Public callers should use the
-  # explicit `compiled_accounting_model` argument on supported entry points.
-  ledgr_normalize_compiled_accounting_model(
-    getOption("ledgr.internal.compiled_accounting_model", NULL)
-  )
-}
-
 ledgr_compiled_spot_fifo_unavailable_error <- function(message = NULL) {
   if (is.null(message)) {
     message <- paste0(

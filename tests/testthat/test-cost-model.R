@@ -177,7 +177,7 @@ testthat::test_that("optional cost identity is stored on experiments and configs
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("cost model is required and legacy fill_model fails loudly", {
+testthat::test_that("cost model is required and removed fill_model is unsupported", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -194,7 +194,8 @@ testthat::test_that("cost model is required and legacy fill_model fails loudly",
       cost_model = ledgr_cost_zero(),
       fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0)
     ),
-    class = "ledgr_legacy_fill_model_shape"
+    "unused argument",
+    fixed = TRUE
   )
 })
 
@@ -279,7 +280,7 @@ testthat::test_that("direct run, sweep candidate, and promotion preserve cost id
 })
 
 # ledgr-test-profile: review
-testthat::test_that("ledgr_backtest shares required cost and legacy fill_model behavior", {
+testthat::test_that("ledgr_backtest requires costs and has no fill_model formal", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   strategy <- function(ctx, params) ctx$flat()
   testthat::expect_error(
@@ -293,34 +294,7 @@ testthat::test_that("ledgr_backtest shares required cost and legacy fill_model b
       cost_model = ledgr_cost_zero(),
       fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0)
     ),
-    class = "ledgr_legacy_fill_model_shape"
-  )
-})
-
-# ledgr-test-profile: heavy_protocol
-testthat::test_that("ledgr_run_open rejects stored legacy fill_model config", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
-  db_path <- tempfile(fileext = ".duckdb")
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  bt <- ledgr_run(exp, run_id = "legacy-reopen-fixture")
-  close(bt)
-
-  legacy_cfg <- bt$config
-  legacy_cfg$fill_model <- list(type = "next_open", spread_bps = 0, commission_fixed = 0)
-  legacy_cfg$timing_model <- NULL
-  legacy_cfg$cost_model <- NULL
-  con <- ledgr:::get_connection(snapshot)
-  DBI::dbExecute(
-    con,
-    "UPDATE runs SET config_json = ? WHERE run_id = ?",
-    params = list(ledgr:::canonical_json(legacy_cfg), "legacy-reopen-fixture")
-  )
-
-  testthat::expect_error(
-    ledgr_run_open(snapshot, "legacy-reopen-fixture"),
-    class = "ledgr_legacy_config_shape"
+    "unused argument",
+    fixed = TRUE
   )
 })

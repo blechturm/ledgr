@@ -69,17 +69,19 @@ ledgr_snapshot_connection <- function(snapshot) {
   state <- snapshot_state(snapshot)
   con <- state$con
   if (!is.null(con) && DBI::dbIsValid(con)) {
+    ledgr_store_assert_current(con, snapshot$db_path)
     return(list(con = con, opened_new = FALSE))
   }
   held <- ledgr_held_store(snapshot$db_path)
   if (!is.null(held)) {
+    ledgr_store_assert_current(held, snapshot$db_path)
     state$con <- held
     state$drv <- NULL
     state$borrowed <- TRUE
     return(list(con = held, opened_new = FALSE))
   }
 
-  opened <- ledgr_open_duckdb_with_retry(snapshot$db_path)
+  opened <- ledgr_store_open(snapshot$db_path, mode = "open")
   state$con <- opened$con
   state$drv <- opened$drv
   state$borrowed <- FALSE
@@ -118,6 +120,7 @@ ledgr_held_store <- function(db_path) {
 # Registers `con` as the held connection of `db_path` unless one is held
 # already, and returns the closer that unregisters it.
 ledgr_store_register <- function(db_path, con) {
+  ledgr_store_assert_current(con, db_path)
   key <- ledgr_store_key(db_path)
   if (is.null(key) || !is.null(ledgr_held_store(db_path))) {
     return(function() invisible(FALSE))
@@ -138,16 +141,13 @@ ledgr_store_hold <- function(db_path) {
       !file.exists(db_path)) {
     return(function() invisible(FALSE))
   }
-  con <- ledgr_db_init(db_path)
+  opened <- ledgr_store_open(db_path, mode = "open")
+  con <- opened$con
   unregister <- ledgr_store_register(db_path, con)
   function() {
     unregister()
     ledgr_checkpoint_duckdb(con)
-    suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
-    drv <- attr(con, "ledgr_duckdb_drv", exact = TRUE)
-    if (!is.null(drv)) {
-      suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
-    }
+    ledgr_run_store_close(opened)
     invisible(TRUE)
   }
 }

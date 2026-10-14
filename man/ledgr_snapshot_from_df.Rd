@@ -34,7 +34,7 @@ canonical bar columns are persisted and hashed.}
 \item{price_basis}{Optional declaration of the economic basis of the bars.
 Supported values are \code{"split_adjusted"} and \code{"distribution_adjusted"}.
 \code{NULL} leaves the basis undeclared. Distribution-adjusted bars can be
-sealed for inspection but are refused by \code{ledgr_experiment()}.}
+sealed for inspection but are refused by \code{\link[=ledgr_experiment]{ledgr_experiment()}}.}
 }
 \value{
 A \code{ledgr_snapshot} object.

@@ -149,6 +149,21 @@ ledgr_sweep_impl <- function(exp,
                              compiled_accounting_model = NULL,
                              window = NULL,
                              execution_seed_resolver = NULL) {
+  if (!is.null(seed)) {
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    old_seed <- if (had_seed) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit({
+      if (had_seed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    }, add = TRUE)
+  }
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -401,7 +416,7 @@ ledgr_sweep_impl <- function(exp,
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
     execution_timing_version = if (availability_active) {
-      ledgr_availability_execution_timing_version()
+      ledgr_availability_execution_timing_rule_version
     } else {
       NULL
     },
@@ -2443,7 +2458,7 @@ ledgr_sweep_feature_union <- function(candidate_features) {
     return(character())
   }
   values <- unlist(candidate_features$feature_fingerprints, use.names = FALSE)
-  sort(unique(as.character(values)))
+  sort(unique(as.character(values)), method = "radix")
 }
 
 ledgr_sweep_telemetry_env <- function() {
@@ -2481,7 +2496,7 @@ ledgr_sweep_availability_config <- function(exp) {
       universe_rule = if (is.null(exp$universe_rule)) NULL else unclass(exp$universe_rule),
       valuation_policy = unclass(exp$valuation_policy),
       provider_version = ledgr_availability_provider_version(),
-      execution_timing_version = ledgr_availability_execution_timing_version()
+      execution_timing_version = ledgr_availability_execution_timing_rule_version
     )
   )
 }
@@ -2573,35 +2588,6 @@ ledgr_sweep_compute_feature_matrix <- function(feature_defs, bars_by_id, univers
     out[[d]] <- mat
   }
   names(out) <- def_ids
-  out
-}
-
-ledgr_sweep_feature_matrix_from_precomputed <- function(precomputed,
-                                                        feature_fingerprints,
-                                                        bars_by_id,
-                                                        universe) {
-  if (length(feature_fingerprints) == 0L) {
-    return(list())
-  }
-  out <- vector("list", length(feature_fingerprints))
-  feature_ids <- character(length(feature_fingerprints))
-  for (d in seq_along(feature_fingerprints)) {
-    fingerprint <- feature_fingerprints[[d]]
-    payload <- precomputed$payload[[fingerprint]]
-    if (is.null(payload)) {
-      rlang::abort(
-        sprintf("Missing precomputed payload for feature fingerprint %s.", fingerprint),
-        class = "ledgr_precomputed_feature_mismatch"
-      )
-    }
-    mat <- matrix(NA_real_, nrow = length(universe), ncol = nrow(bars_by_id[[universe[[1L]]]]))
-    for (j in seq_along(universe)) {
-      mat[j, ] <- as.numeric(payload$values[[universe[[j]]]])
-    }
-    out[[d]] <- mat
-    feature_ids[[d]] <- payload$feature_id
-  }
-  names(out) <- feature_ids
   out
 }
 

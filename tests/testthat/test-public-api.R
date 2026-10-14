@@ -216,6 +216,7 @@ testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources
   )
   DBI::dbDisconnect(snap_con, shutdown = TRUE)
   duckdb::duckdb_shutdown(snap_drv)
+  ledgr:::ledgr_snapshot_verified_reset()
   gc()
   Sys.sleep(0.05)
 

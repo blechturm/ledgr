@@ -341,7 +341,10 @@ ledgr_indicator_get <- function(name) {
     rlang::abort("`name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
   if (!exists(name, envir = .ledgr_indicator_registry, inherits = FALSE)) {
-    available <- sort(ls(envir = .ledgr_indicator_registry))
+    available <- sort(
+      ls(envir = .ledgr_indicator_registry),
+      method = "radix"
+    )
     if (length(available) == 0) {
       msg <- sprintf("Indicator '%s' not found in registry.", name)
     } else {
@@ -384,7 +387,7 @@ ledgr_indicator_list <- function(pattern = NULL) {
   if (!is.null(pattern) && (!is.character(pattern) || length(pattern) != 1 || !nzchar(pattern))) {
     rlang::abort("`pattern` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
   }
-  names <- sort(ls(envir = .ledgr_indicator_registry))
+  names <- sort(ls(envir = .ledgr_indicator_registry), method = "radix")
   if (!is.null(pattern)) {
     names <- grep(pattern, names, value = TRUE)
   }

@@ -35,7 +35,7 @@ corporate_action_cash_bars <- function() {
 }
 
 corporate_action_cash_plan_fixture <- function(posting = "effective_close",
-                                                knowledge_day = 1L) {
+                                               knowledge_day = 1L) {
   pulses <- corporate_action_cash_bars()$ts_utc
   rows <- corporate_action_cash_rows(
     entitlement = pulses[[2L]],
@@ -63,7 +63,8 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
   fixture$plan$bind_boundary(2L, state$positions)
   state$positions[["AAA"]] <- 0
   result <- fixture$plan$post(
-    2L, "plan-run", 1L, handler, state, marks = c(AAA = 90)
+    2L, "plan-run", 1L, handler, state,
+    marks = c(AAA = 90)
   )
 
   testthat::expect_identical(result$state$cash, 1002.5)
@@ -176,9 +177,11 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   close <- day + 21 * 3600
   open <- day + 14.5 * 3600
   fill <- function(seq, ts, side, qty) {
-    data.frame(event_id = paste0("r_", seq), run_id = "r", ts_utc = ts, event_type = "FILL",
-               instrument_id = "AAA", side = side, qty = qty, price = 50, fee = 0,
-               meta_json = "{}", event_seq = seq, stringsAsFactors = FALSE)
+    data.frame(
+      event_id = paste0("r_", seq), run_id = "r", ts_utc = ts, event_type = "FILL",
+      instrument_id = "AAA", side = side, qty = qty, price = 50, fee = 0,
+      meta_json = "{}", event_seq = seq, stringsAsFactors = FALSE
+    )
   }
   bound <- function(events, entitlement_pulse) {
     rows <- corporate_action_cash_rows(entitlement = close[[entitlement_pulse]], knowledge = close[[1L]])
@@ -228,8 +231,10 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   # The position-only pass behind the recount equals the full replay's
   # positions on interleaved instruments, whole and fractional.
   mixed <- function(qty) {
-    out <- rbind(fill(1L, open[[2L]], "BUY", qty[[1L]]), fill(2L, open[[2L]] + 1, "BUY", qty[[2L]]),
-                 fill(3L, open[[3L]], "SELL", qty[[3L]]), fill(4L, open[[3L]] + 1, "BUY", qty[[4L]]))
+    out <- rbind(
+      fill(1L, open[[2L]], "BUY", qty[[1L]]), fill(2L, open[[2L]] + 1, "BUY", qty[[2L]]),
+      fill(3L, open[[3L]], "SELL", qty[[3L]]), fill(4L, open[[3L]] + 1, "BUY", qty[[4L]])
+    )
     out$instrument_id <- c("AAA", "BBB", "AAA", "BBB")
     ledgr:::ledgr_prepare_accounting_events(out)
   }
@@ -431,10 +436,12 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
       cost_model = ledgr_cost_zero()
     )
   }
-  decision_params <- function(target) list(
-    decision_ts = ledgr:::ledgr_normalize_ts_utc(bars$ts_utc[[1L]]),
-    target = target
-  )
+  decision_params <- function(target) {
+    list(
+      decision_ts = ledgr:::ledgr_normalize_ts_utc(bars$ts_utc[[1L]]),
+      target = target
+    )
+  }
 
   seller <- ledgr_run(
     boundary_experiment(4),

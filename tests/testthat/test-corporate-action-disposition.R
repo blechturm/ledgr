@@ -1,5 +1,5 @@
 corporate_action_disposition_rows <- function(pulses,
-                                               subtype = "cash_acquisition") {
+                                              subtype = "cash_acquisition") {
   data.frame(
     fact_id = "acquisition-1",
     subtype = subtype,
@@ -18,9 +18,9 @@ corporate_action_disposition_rows <- function(pulses,
 }
 
 corporate_action_disposition_valuation <- function(mark = 90,
-                                                    reference = mark,
-                                                    age = 0L,
-                                                    source = "current_close") {
+                                                   reference = mark,
+                                                   age = 0L,
+                                                   source = "current_close") {
   list(
     mark = c(AAA = mark),
     reference = c(AAA = reference),
@@ -105,7 +105,7 @@ corporate_action_disposition_snapshot <- function() {
   )
 }
 
-testthat::test_that("[LTB-0050] DISPOSITION is prepared, migrated and replays through FIFO", {
+testthat::test_that("[LTB-0050] DISPOSITION is prepared, constrained and replays through FIFO", {
   fixture <- corporate_action_disposition_plan()
   emitted <- list()
   handler <- list(
@@ -165,35 +165,6 @@ testthat::test_that("[LTB-0050] DISPOSITION is prepared, migrated and replays th
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   withr::defer(DBI::dbDisconnect(con, shutdown = TRUE))
   ledgr_create_schema(con)
-  DBI::dbExecute(con, "DROP TABLE ledger_events")
-  DBI::dbExecute(con, paste(
-    "CREATE TABLE ledger_events (",
-    "event_id TEXT NOT NULL PRIMARY KEY, run_id TEXT NOT NULL,",
-    "ts_utc TIMESTAMP NOT NULL, event_type TEXT NOT NULL",
-    "CHECK (event_type IN ('FILL','CASHFLOW')), instrument_id TEXT,",
-    "side TEXT CHECK (side IN ('BUY','SELL')), qty DOUBLE, price DOUBLE,",
-    "fee DOUBLE, meta_json TEXT, event_seq INTEGER NOT NULL,",
-    "UNIQUE(run_id, event_seq))"
-  ))
-  DBI::dbExecute(con, paste(
-    "INSERT INTO ledger_events",
-    "(event_id, run_id, ts_utc, event_type, meta_json, event_seq)",
-    "VALUES ('old-event', 'old-run', TIMESTAMP '2020-01-01 00:00:00',",
-    "'CASHFLOW', '{}', 1)"
-  ))
-  DBI::dbExecute(
-    con,
-    paste(
-      "UPDATE ledgr_schema_metadata SET value = ?",
-      "WHERE key = 'experiment_store_schema_version'"
-    ),
-    params = list(as.character(ledgr:::ledgr_experiment_store_schema_version - 1L))
-  )
-  ledgr_create_schema(con)
-  testthat::expect_identical(
-    DBI::dbGetQuery(con, "SELECT event_id FROM ledger_events")$event_id,
-    "old-event"
-  )
   testthat::expect_no_error(DBI::dbAppendTable(con, "ledger_events", emitted[[1L]]))
   unknown <- emitted[[1L]]
   unknown$event_id <- "unknown-event"
@@ -275,18 +246,20 @@ testthat::test_that("[LTB-0051] terminal mark policy disposes or refuses without
 
   snapshot <- corporate_action_disposition_snapshot()
   withr::defer(ledgr_snapshot_close(snapshot))
-  experiment <- function(policy) ledgr_experiment(
-    snapshot,
-    function(ctx, params) ctx$hold(),
-    opening = ledgr_opening(
-      cash = 1000,
-      positions = c(AAA = 2),
-      cost_basis = c(AAA = 100)
-    ),
-    valuation_policy = ledgr_valuation_stale(1L),
-    cost_model = ledgr_cost_zero(),
-    corporate_action_policy = policy
-  )
+  experiment <- function(policy) {
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) ctx$hold(),
+      opening = ledgr_opening(
+        cash = 1000,
+        positions = c(AAA = 2),
+        cost_basis = c(AAA = 100)
+      ),
+      valuation_policy = ledgr_valuation_stale(1L),
+      cost_model = ledgr_cost_zero(),
+      corporate_action_policy = policy
+    )
+  }
   modeled <- ledgr_run(
     experiment(ledgr_corporate_actions_research()),
     run_id = "disposition-public-modeled"

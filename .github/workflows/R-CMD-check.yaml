@@ -105,6 +105,104 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "event $EVENT, ref $REF, tier $tier, run $run" >> "$GITHUB_STEP_SUMMARY"
 
+  lint-format:
+    name: Lint (formatting, blocking)
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::lintr@3.4.0
+            any::styler@1.11.0
+
+      - name: Run formatting lint
+        id: lint_tool
+        run: |
+          Rscript --vanilla tools/run-advisory-lint.R --output=lint-artifacts --source-commit=${{ github.sha }} --fail-on-findings=true
+
+      - name: Summarize formatting lint
+        if: always()
+        shell: bash
+        env:
+          TOOL_OUTCOME: ${{ steps.lint_tool.outcome }}
+        run: |
+          set -euo pipefail
+          echo "### Formatting lint" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$TOOL_OUTCOME" != "success" ]; then
+            echo "Outcome: failed. See the lint artifact." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          findings="$(Rscript --vanilla -e "x <- read.csv('lint-artifacts/findings.csv'); cat(nrow(x))")"
+          echo "Outcome: $findings finding(s)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload formatting lint record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatting-lint
+          path: lint-artifacts
+          if-no-files-found: warn
+
+  lint-semantic:
+    name: Lint (semantic, blocking)
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::lintr@3.4.0
+            any::styler@1.11.0
+
+      - name: Verify semantic-lint configuration
+        run: |
+          Rscript --vanilla tools/check-semantic-lint-config.R
+
+      - name: Run semantic lint
+        id: lint_tool
+        run: |
+          Rscript --vanilla tools/run-advisory-lint.R --config=.lintr-semantic --name=semantic --output=semantic-lint-artifacts --source-commit=${{ github.sha }} --fail-on-findings=true
+
+      - name: Summarize semantic lint
+        if: always()
+        shell: bash
+        env:
+          TOOL_OUTCOME: ${{ steps.lint_tool.outcome }}
+        run: |
+          set -euo pipefail
+          echo "### Semantic lint" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$TOOL_OUTCOME" != "success" ]; then
+            echo "Outcome: failed. See the lint artifact." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          findings="$(Rscript --vanilla -e "x <- read.csv('semantic-lint-artifacts/findings.csv'); cat(nrow(x))")"
+          echo "Outcome: $findings finding(s)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload semantic lint record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-lint
+          path: semantic-lint-artifacts
+          if-no-files-found: warn
+
   R-CMD-check:
     needs: plan
     if: needs.plan.outputs.run == 'true'

@@ -27,7 +27,7 @@ ledgr_snapshot_from_yahoo(
 
 \item{price_basis}{Declaration of the economic basis of the bars. Yahoo's
 adjusted series defaults to \code{"split_adjusted"}; callers may override it.
-See \code{ledgr_snapshot_from_df()}.}
+See \code{\link[=ledgr_snapshot_from_df]{ledgr_snapshot_from_df()}}.}
 
 \item{...}{Additional arguments passed to \code{quantmod::getSymbols()}.}
 }

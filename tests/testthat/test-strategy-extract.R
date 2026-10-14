@@ -278,7 +278,7 @@ testthat::test_that("ledgr_run_strategy surfaces Tier 2 warnings", {
   testthat::expect_true(any(grepl("may depend on external state", trusted$warnings, fixed = TRUE)))
 })
 
-testthat::test_that("ledgr_run_strategy handles legacy pre-provenance runs without migration", {
+testthat::test_that("ledgr_run_strategy refuses an unmarked pre-provenance store", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   opened <- ledgr_test_open_duckdb(db_path)
@@ -351,20 +351,19 @@ testthat::test_that("ledgr_run_strategy handles legacy pre-provenance runs witho
   snapshot <- new_ledgr_snapshot(db_path, "snap")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  extracted <- ledgr_run_strategy(snapshot, "legacy-extract")
+  testthat::expect_error(
+    ledgr_run_strategy(snapshot, "legacy-extract"),
+    class = "ledgr_store_rebuild_required"
+  )
 
   reopened <- ledgr_test_open_duckdb(db_path)
   after_tables <- DBI::dbGetQuery(reopened$con, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' ORDER BY table_name")
   ledgr_test_close_duckdb(reopened$con, reopened$drv)
 
   testthat::expect_identical(after_tables, before_tables)
-  testthat::expect_identical(extracted$reproducibility_level, "legacy")
-  testthat::expect_true(is.na(extracted$strategy_source_text))
-  testthat::expect_false(extracted$hash_verified)
-  testthat::expect_true(any(grepl("No stored strategy source", extracted$warnings, fixed = TRUE)))
   testthat::expect_error(
     ledgr_run_strategy(snapshot, "legacy-extract", trust = TRUE),
-    class = "ledgr_strategy_source_unavailable"
+    class = "ledgr_store_rebuild_required"
   )
 })
 

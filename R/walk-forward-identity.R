@@ -160,7 +160,7 @@ ledgr_walk_forward_param_grid_hash <- function(param_grid) {
   })
   row_json <- vapply(rows, function(row) as.character(canonical_json(row)), character(1))
   ledgr_walk_forward_hash_payload(list(
-    rows = as.list(sort(row_json)),
+    rows = as.list(sort(row_json, method = "radix")),
     param_grid_schema_version = "v1"
   ))
 }

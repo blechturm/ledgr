@@ -140,11 +140,9 @@ ledgr_availability_valuation_state <- function(bars_mat,
   list(advance = advance, stats = stats)
 }
 
-# The exhaustion choice a recorded valuation policy declares. A schema-1
-# record predates the choice and always stopped at the horizon, so its
-# recorded behavior reads as "refuse"; it is never executed under schema 2.
+# The exhaustion choice declared by the current valuation policy.
 ledgr_availability_exhausted_choice <- function(valuation_policy) {
-  valuation_policy$exhausted %||% "refuse"
+  valuation_policy$exhausted
 }
 
 # A frozen holding stays on the decision axis but is target-restricted, so

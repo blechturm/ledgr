@@ -35,7 +35,8 @@ A \code{ledgr_selection} object.
 \code{ledgr_selection()} creates a named logical vector for strategy helper
 pipelines. Selections are intermediate objects; strategies must not return
 them directly.
-
+}
+\details{
 In context mode, the selection covers the whole decision axis and is \code{FALSE}
 for every ineligible instrument, whatever the payload: no payload selects
 every eligible instrument, \code{where} decides eligible instruments only, and
