@@ -1,18 +1,13 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 14 are closed. Cut 14's nineteen tickets across
-Workstreams 29 through 31 were accepted by the maintainer on 2026-10-14. The
-release now has one current schema and store gate, current-only persisted
-records and public surfaces, and the structural hygiene baseline: the design
-tree is excluded from builds, seeded runs preserve caller RNG, persisted
-schema-version literals are fingerprinted, lint is blocking, and the helper
-and condition inventories have failure-sensitive gates. The final source
-census records 1,627 helpers, 2,240 condition call sites and 23 contracted
-test seams. The binding local fast record has a 105.64-second median; a final
-post-deletion sample passes 564/564 blocks in 106.12 seconds. GitHub Actions
-run 38588320767 passes both blocking lint jobs, all three hosted fast runs and
-R CMD check. Its 166.797-second hosted median remains advisory and above the
-unchanged local 112-second bound.
+**Status:** Cuts 1 through 14 are closed. Accepted Cut 15 contains sixteen
+tickets across Workstreams 32 through 39. Workstreams 32 and 36 may now open
+in parallel. It is the single pre-history boundary: apply the
+accepted governance lifecycle, delete both failed feature-retention
+mechanisms under schema 120, remove two value-neutral strict-TTR costs,
+extract named fold phases and rebuild the private research lake. The design
+tree stays under `inst/design`; Cut 14 already excludes it from package
+builds.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -48,8 +43,8 @@ ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 14 are
-  closed. Cut 14 contains nineteen completed tickets across Workstreams 29
-  through 31. Its review artifacts are `cut_review_14.md`,
+  closed. Accepted Cut 15 owns Workstreams 32 through 39 and LDG-3041 through
+  LDG-3056. Cut 14's review artifacts are `cut_review_14.md`,
   `close_review_29.md`, `close_review_30.md`,
   `close_review_30_rereview_1.md`, `close_review_31.md` and
   `close_review_31_rereview_1.md`; older review fields remain historical
@@ -631,6 +626,42 @@ maintainer review-disposition turns accepted the patched cut, the Workstream 29
 store-gate cost, the Workstream 30 corrections without a third review, and the
 Workstream 31 corrections without a third review. `tickets.yml` holds the
 complete accounting and the scope of the non-counted preparatory checkpoint.
+
+## Cut 15: Pre-history foundations
+
+**Status:** Accepted and open. The maintainer accepted the corrected cut on
+2026-10-14 under M1; Workstreams 32 and 36 may start independently.
+
+The cut applies decisions that are already settled; it does not design the
+history surface. Its two tracks may begin independently, then join for the
+post-schema contract pass. Both must close before the WS3/WS4 history-wave RFC
+resumes.
+
+| Track | Workstream | Tickets | Claim |
+| --- | --- | --- | --- |
+| Governance | 32 Rules and report-only guard | LDG-3041 to LDG-3042 | adopted lifecycle rules have one standing expression and one non-blocking, failure-sensitive drift report |
+| Governance | 33 Current contracts and bridge | LDG-3043 to LDG-3044 | contracts state current behavior at stable addresses and accepted pending changes have exact bridges and backlinks |
+| Governance | 34 Planning front doors and horizon | LDG-3045 to LDG-3046 | roadmap, Remaining order and horizon have distinct roles, one owner per open item, and no repository-wide design-tree move |
+| Governance | 35 Record normalization | LDG-3047 to LDG-3048 | lifecycle headers, notices, packet summaries and open-ticket evidence expose current state without erasing history |
+| Product | 36 Remove feature retention and bind surviving identity | LDG-3049, LDG-3050 and LDG-3056 | no unsound cache or unconsumed durable feature surface remains; schema 120 and identity rule 3 are current; precomputed-feature identity binds deterministic captures |
+| Product | 37 Strict TTR cleanup | LDG-3051 | two redundant per-window operations disappear with exact feature values and unchanged semantics |
+| Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates eight named typed phases without changing behavior or cost materially |
+| Product | 39 Private lake rebuild | LDG-3055 | the history wave receives one verified schema-120, rule-3 real-data store built from frozen inputs |
+
+Workstreams 32 and 36 open independently. Workstream 34 follows 32 and
+Workstream 37 follows 36. Workstream 33 waits for both 32 and all of Workstream
+36, so its contract pass sees the final current product. Workstream
+35 follows 33 and 34; product continues through 38 and 39. The public history
+API, hydration and recursive-indicator semantics stay outside this cut. The
+RED one-execution-mode result requires the later history implementation to
+support both dense and availability modes. LFB-028 remains the later opt-in
+factor/prediction evidence design; it does not preserve the current `features`
+table.
+
+Each workstream receives one Type 1 close review. M1/M2 apply from the cut
+review onward: findings get a packet artifact, ratios are measurements rather
+than gates, and a third correction round on one workstream returns to the
+maintainer.
 
 ## Expected later artifacts
 

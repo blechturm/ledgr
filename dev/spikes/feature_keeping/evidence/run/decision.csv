@@ -1,0 +1,2 @@
+"verdict","cold_cache_ratio","repeat_cache_ratio","repeat_cache_saving","cache_benefit","cache_correctness","cache_memory_measured","cache_keep","persistence_ratio","persistence_public_consumer","persistence_outputs_equal","persistence_keep"
+"RED",1.00487804878049,0.614406779661017,0.385593220338983,TRUE,FALSE,TRUE,FALSE,1.01136363636364,FALSE,TRUE,FALSE
