@@ -100,3 +100,51 @@ testthat::test_that("[LTB-0009] snapshot ingestion and nonempty fill reads prese
   assert_preserves_rng(testthat::expect_gt(nrow(ledgr_run_fills(bt)), 0L))
   assert_preserves_absent_seed(testthat::expect_gt(nrow(ledgr_run_fills(bt)), 0L))
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
+  seed_existed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (seed_existed) {
+    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  }
+  on.exit({
+    if (seed_existed) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "rng-run")
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      targets <- ctx$hold()
+      if (all(targets == 0)) {
+        targets[["AAA"]] <- floor(stats::runif(1L) * 2) + 1
+      }
+      targets
+    },
+    cost_model = ledgr_cost_zero()
+  )
+
+  set.seed(8675309L)
+  before <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  seeded <- ledgr_run(experiment, run_id = "rng-run-present", seed = 2026L)
+  on.exit(close(seeded), add = TRUE)
+  testthat::expect_identical(
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE),
+    before
+  )
+
+  rm(".Random.seed", envir = .GlobalEnv)
+  absent <- ledgr_run(experiment, run_id = "rng-run-absent", seed = 2026L)
+  on.exit(close(absent), add = TRUE)
+  testthat::expect_false(
+    exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  )
+})

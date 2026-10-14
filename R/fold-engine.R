@@ -304,10 +304,6 @@ ledgr_execute_fold <- function(execution, output_handler) {
     }
   }
 
-  if (!is.null(execution_seed)) {
-    set.seed(as.integer(execution_seed))
-  }
-
   max_events <- max(1L, length(pulses_posix) * length(instrument_ids))
   output_handler$init_buffers(max_events)
 
