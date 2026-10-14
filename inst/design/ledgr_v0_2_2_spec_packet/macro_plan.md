@@ -542,8 +542,9 @@ The following do not gate v0.2.2:
 - plotting, print and CI polish unrelated to a release claim;
 - broad optimization cleanup without a measured product-path cost; and
 - the items deferred to the next release on 2026-10-14 (maintainer):
-  - the defensive-code and complexity audit, and the fold split
-    (`horizon.md`, the 2026-10-12 architecture entry);
+  - the defensive-code and complexity audit (`horizon.md`, the 2026-10-12
+    architecture entry). The fold split was moved into v0.2.2 later the same
+    day (Section 7, fold phase extraction);
   - a user-facing adoption item: the survivorship-bias article on synthetic
     data and a CRAN target date;
   - the decision on the v0.2.1.0 packet path
@@ -941,3 +942,26 @@ change the user's global RNG without restoring it, 22 inline
 `schema_version = 1L` literals may sit outside the format fingerprint, and
 three test helpers are named after tickets. The documentation surface,
 NEWS and the complexity-audit items go to the next release (Section 5).
+
+2026-10-14 maintainer amendment, fold phase extraction: one workstream,
+after the one-execution-mode probe and before the WS3/WS4 implementation
+cut, extracts the pulse-loop body of `ledgr_execute_fold()` (about 880
+lines) into phase functions: inputs and corporate actions, availability
+decision, context build, strategy call and target validation, fill
+planning, accounting, event emission, and valuation and state update.
+- It is a pure refactor. Phases are top-level package functions passing
+  one fold-state object. Each phase is its own commit, byte-identical on
+  the fixture ladder and within the 1.05 rule on paired clocks. A defect
+  found on the way is routed, not fixed in passing.
+- One Type 1 close review.
+- The probe's findings decide which phases hold the dense-only branches.
+- `ledgr_run_fold_impl()` and the output handlers stay with the
+  post-v0.2.2 execution-core consolidation.
+- It may run alongside the governance cut, which edits only documents.
+
+Reason: every WS3/WS4 ticket edits this loop, and named phases make those
+edits local and reviewable. The resulting order is: Cut 14 (including the
+interim lake rebuild), the one-execution-mode probe, the fold phase
+extraction alongside the governance cut, the WS3/WS4 history wave and
+implementation cut, the lake rebuild with dividend facts, WS7, the WS6
+probe, WS8.
