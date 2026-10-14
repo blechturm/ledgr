@@ -1010,3 +1010,54 @@ history semantics, and the history wave should not be built around a
 mechanism the probe may delete. Deletion is the default; the conditions are
 in the WS5 section. WS5-B's reuse-key design stays after WS3/WS4 and covers
 only what survives.
+
+2026-10-14 maintainer amendment, one-execution-mode probe result: red. The
+probe (branch `spike/one-execution-mode` at `bd0e1bd9`, unmerged;
+`dev/spikes/one_execution_mode/probe_findings.md` there) ran the dense
+fixtures through the availability path.
+
+**What matched.** The economic core is shared: equity, positions, metrics,
+prices, quantities, cash and P&L are byte-identical on the peer and
+long-window fixtures.
+
+**Why it is red.** Both pre-registered kill conditions hold:
+- Dense missing-bar strictness lives only in a dense-only guard branch
+  (`R/run-snapshot.R:104-123`), and no availability policy reproduces it.
+  On the availability path an unheld gap, or a missing execution bar, ends
+  DONE (the fill is dropped as `execution_bar_missing`).
+- The dense peer fixture is materially slower on the availability path:
+  8.07x with TTR SMA, 1.41x with the built-in SMA, and 1.7-1.9x in the fold
+  loop alone.
+
+**Consequence.** The WS3/WS4 implementation cut builds history for both
+modes. The post-v0.2.2 execution-core consolidation opens as an RFC that
+consumes the probe's findings:
+- an implied calendar needs sealed sessions (no calendar is derived from
+  bars, and midnight-UTC bars cannot be declared as UTC sessions);
+- fill timestamps follow two conventions: next bar in dense mode, next
+  session open on the availability path;
+- missing-bar strictness needs an explicit coverage policy;
+- the availability path's cost.
+
+The fold phase extraction places the dense-only fold differences in named
+phases: the last-bar warning (`R/fold-engine.R:114`) and fill stamping
+(`:154`). The guard branch is outside the fold.
+
+**Two measured findings routed.**
+- The availability path's strict feature engine computes TTR indicators in
+  a per-window R loop that calls TTR twice per bar
+  (`R/features-engine.R:291-347`; no fast strict kind at `:351`), about
+  137x the dense preparation. It goes to WS4 (strict-feature
+  acceleration). Under the admission test it may be cut before the history
+  wave, which will run on that path; the maintainer decides at the WS3/WS4
+  cut.
+- The fast prepared context does not apply on the availability path
+  (`R/backtest-runner.R:988`). This is WS8's availability-aware fast-context
+  candidate, now measured.
+
+**Growth-shape matrix spike.** It started the same day (branch
+`spike/growth-shape-matrix` from `4b729300`) and sweeps feature kind
+(built-in, TTR, custom, none) by mode (dense, availability) by entry point
+(run, sweep, walk-forward, result readers) at two sizes per growth axis.
+Its findings feed WS8's internal regression suite and the ticket cuts that
+own each cell.
