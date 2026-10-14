@@ -10,14 +10,43 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     "fixtures",
     "reviewed"
   )
-  source_tree <- file.exists(tool) && dir.exists(fixture)
+  require_source_fixture <- function(tool_path, fixture_path) {
+    if (!file.exists(tool_path)) {
+      return(FALSE)
+    }
+    if (!dir.exists(fixture_path)) {
+      stop("required governance fixture is missing inside the source checkout")
+    }
+    TRUE
+  }
+  source_tree <- require_source_fixture(tool, fixture)
   testthat::skip_if_not(
     source_tree,
     "governance sources are intentionally absent from an installed package"
   )
+  synthetic_tool <- tempfile("governance-tool-")
+  file.create(synthetic_tool)
+  on.exit(unlink(synthetic_tool), add = TRUE)
+  testthat::expect_error(
+    require_source_fixture(synthetic_tool, tempfile("missing-fixture-")),
+    "required governance fixture is missing"
+  )
 
   guard <- new.env(parent = globalenv())
   sys.source(tool, envir = guard)
+  production_baseline <- yaml::read_yaml(file.path(
+    package_root,
+    "dev",
+    "governance_guard",
+    "baseline.yml"
+  ))
+  testthat::expect_length(production_baseline$entries, 51L)
+  testthat::expect_null(production_baseline$census)
+  testthat::expect_false(any(grepl(
+    "governance_census",
+    readLines(tool, warn = FALSE),
+    fixed = TRUE
+  )))
   copy_fixture <- function() {
     parent <- tempfile("ledgr-governance-fixture-")
     dir.create(parent)
@@ -69,8 +98,12 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   second <- run_fixture(pristine)
   testthat::expect_identical(first, second)
   testthat::expect_true("MODE\treport-only" %in% first)
+  testthat::expect_true("BASELINE_SOURCE_COUNT\t8" %in% first)
+  testthat::expect_true(any(startsWith(first, "BASELINE_SOURCE_SHA256\t")))
   testthat::expect_true("BASELINE_POPULATION_MATCH\ttrue" %in% first)
   testthat::expect_true("SCAN_SOURCE_COUNT\t8" %in% first)
+  testthat::expect_true("CLAIMS_INPUT\tclaims.yml" %in% first)
+  testthat::expect_true(any(startsWith(first, "CLAIMS_SHA256\t")))
   testthat::expect_true("CLAIMS_COUNT\t1" %in% first)
   testthat::expect_true("NEW_STRUCTURAL_COUNT\t0" %in% first)
   testthat::expect_length(finding_line(first, "broken_local_target", 1L), 1L)
@@ -80,6 +113,31 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     fixed = TRUE
   )
   testthat::expect_length(finding_line(first, "untracked_local_target"), 1L)
+
+  portable <- copy_fixture()
+  on.exit(unlink(dirname(portable), recursive = TRUE), add = TRUE)
+  testthat::expect_identical(first, run_fixture(portable))
+
+  kind_key <- copy_fixture()
+  on.exit(unlink(dirname(kind_key), recursive = TRUE), add = TRUE)
+  replace_once(
+    kind_key,
+    "baseline.yml",
+    "kind: broken_local_target",
+    "kind: broken_local_anchor"
+  )
+  kind_report <- run_fixture(kind_key)
+  kind_finding <- finding_line(kind_report, "broken_local_target", 1L)
+  testthat::expect_length(kind_finding, 1L)
+  testthat::expect_match(kind_finding, "state=new", fixed = TRUE)
+  testthat::expect_true(any(grepl(
+    paste0(
+      "RESOLVED_BASELINE_ENTRY\tkind=broken_local_anchor",
+      "\tsource=inst/design/README.md\ttarget=missing.md\toccurrence=1"
+    ),
+    kind_report,
+    fixed = TRUE
+  )))
 
   new_debt <- copy_fixture()
   on.exit(unlink(dirname(new_debt), recursive = TRUE), add = TRUE)
@@ -105,6 +163,36 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     finding_line(run_fixture(links), "broken_local_anchor"),
     1L
   )
+
+  root_link <- copy_fixture()
+  on.exit(unlink(dirname(root_link), recursive = TRUE), add = TRUE)
+  replace_once(
+    root_link,
+    "inst/design/README.md",
+    "../../outside.md#current-rule",
+    "/outside.md#current-rule"
+  )
+  root_link_report <- run_fixture(root_link)
+  testthat::expect_false(any(grepl(
+    "target=/outside.md#current-rule",
+    root_link_report,
+    fixed = TRUE
+  )))
+
+  escaping <- copy_fixture()
+  on.exit(unlink(dirname(escaping), recursive = TRUE), add = TRUE)
+  replace_once(
+    escaping,
+    "inst/design/README.md",
+    "../../outside.md#current-rule",
+    "../../../outside.md#current-rule"
+  )
+  escaping_finding <- finding_line(run_fixture(escaping), "broken_local_target")
+  testthat::expect_true(any(grepl(
+    "local target escapes the repository root",
+    escaping_finding,
+    fixed = TRUE
+  )))
 
   ids <- copy_fixture()
   on.exit(unlink(dirname(ids), recursive = TRUE), add = TRUE)
@@ -145,6 +233,136 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     testthat::expect_gt(length(finding_line(metadata_report, kind)), 0L)
   }
 
+  invalid_status <- copy_fixture()
+  on.exit(unlink(dirname(invalid_status), recursive = TRUE), add = TRUE)
+  replace_once(
+    invalid_status,
+    "inst/design/README.md",
+    "Status: working",
+    "Status: started"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(invalid_status), "invalid_status"),
+    1L
+  )
+
+  missing_headers <- copy_fixture()
+  on.exit(unlink(dirname(missing_headers), recursive = TRUE), add = TRUE)
+  header_path <- file.path(missing_headers, "inst", "design", "README.md")
+  header_lines <- readLines(header_path, warn = FALSE)
+  header_lines <- header_lines[
+    !startsWith(header_lines, "Role:") &
+      !startsWith(header_lines, "Authority:")
+  ]
+  writeLines(header_lines, header_path, useBytes = TRUE)
+  missing_header_report <- run_fixture(missing_headers)
+  testthat::expect_length(finding_line(missing_header_report, "missing_role"), 1L)
+  testthat::expect_length(
+    finding_line(missing_header_report, "missing_authority"),
+    1L
+  )
+
+  embedded_authority <- copy_fixture()
+  on.exit(unlink(dirname(embedded_authority), recursive = TRUE), add = TRUE)
+  embedded_path <- file.path(embedded_authority, "inst", "design", "README.md")
+  embedded_lines <- readLines(embedded_path, warn = FALSE)
+  embedded_lines <- sub(
+    "Role: living; fixture navigation front door.",
+    "Role: record; accepted governance decisions, binding in their stated scope.",
+    embedded_lines,
+    fixed = TRUE
+  )
+  embedded_lines <- embedded_lines[!startsWith(embedded_lines, "Authority:")]
+  writeLines(embedded_lines, embedded_path, useBytes = TRUE)
+  testthat::expect_length(
+    finding_line(run_fixture(embedded_authority), "missing_authority"),
+    0L
+  )
+
+  amendment <- copy_fixture()
+  on.exit(unlink(dirname(amendment), recursive = TRUE), add = TRUE)
+  replace_once(
+    amendment,
+    "inst/design/current_packet/README.md",
+    "Status: accepted",
+    "Status: amended 2026-10-14"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(amendment), "missing_amendment_provenance"),
+    1L
+  )
+
+  receiver <- copy_fixture()
+  on.exit(unlink(dirname(receiver), recursive = TRUE), add = TRUE)
+  replace_once(
+    receiver,
+    "inst/design/current_packet/README.md",
+    "Status: accepted",
+    "Status: consolidated"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(receiver), "missing_receiver_provenance"),
+    1L
+  )
+
+  remainder <- copy_fixture()
+  on.exit(unlink(dirname(remainder), recursive = TRUE), add = TRUE)
+  replace_once(
+    remainder,
+    "inst/design/manual/guide.qmd",
+    "Status: superseded",
+    "Status: superseded in part"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(remainder), "missing_remainder_provenance"),
+    1L
+  )
+
+  rejected <- copy_fixture()
+  on.exit(unlink(dirname(rejected), recursive = TRUE), add = TRUE)
+  replace_once(
+    rejected,
+    "inst/design/current_packet/README.md",
+    "Status: accepted",
+    "Status: rejected"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(rejected), "missing_rejection_reason"),
+    1L
+  )
+
+  type_2 <- copy_fixture()
+  on.exit(unlink(dirname(type_2), recursive = TRUE), add = TRUE)
+  replace_once(type_2, "inst/design/rfc/review.md", "Mode: Type 1", "Mode: Type 2")
+  replace_once(
+    type_2,
+    "inst/design/rfc/review.md",
+    "Verdict: PASS",
+    "Verdict: **`PROCEED`**"
+  )
+  cat(
+    "\n## Historical quotation\n\nVerdict: MAYBE\n",
+    file = file.path(type_2, "inst", "design", "rfc", "review.md"),
+    append = TRUE
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(type_2), "invalid_verdict"),
+    0L
+  )
+
+  invalid_type_2 <- copy_fixture()
+  on.exit(unlink(dirname(invalid_type_2), recursive = TRUE), add = TRUE)
+  replace_once(
+    invalid_type_2,
+    "inst/design/rfc/review.md",
+    "Mode: Type 1",
+    "Mode: Type 2"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(invalid_type_2), "invalid_verdict"),
+    1L
+  )
+
   notices <- copy_fixture()
   on.exit(unlink(dirname(notices), recursive = TRUE), add = TRUE)
   notice_path <- file.path(notices, "inst", "design", "contracts.md")
@@ -160,6 +378,58 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   notice_report <- run_fixture(notices)
   testthat::expect_gt(length(finding_line(notice_report, "missing_target_notice")), 0L)
   testthat::expect_length(finding_line(notice_report, "missing_target_marker"), 1L)
+
+  invalid_disposition <- copy_fixture()
+  on.exit(unlink(dirname(invalid_disposition), recursive = TRUE), add = TRUE)
+  replace_once(
+    invalid_disposition,
+    "inst/design/rfc/change.md",
+    "| superseded |",
+    "| retired |"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(invalid_disposition), "invalid_disposition"),
+    1L
+  )
+
+  malformed_row <- copy_fixture()
+  on.exit(unlink(dirname(malformed_row), recursive = TRUE), add = TRUE)
+  replace_once(
+    malformed_row,
+    "inst/design/rfc/change.md",
+    "[New rule](#new-rule)",
+    "New rule"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(malformed_row), "malformed_change_row"),
+    1L
+  )
+
+  declared_remainder <- copy_fixture()
+  on.exit(unlink(dirname(declared_remainder), recursive = TRUE), add = TRUE)
+  replace_once(
+    declared_remainder,
+    "inst/design/rfc/change.md",
+    "[Partial remainder](../contracts.md#partial-remainder)",
+    "Partial remainder"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(declared_remainder), "missing_declared_remainder"),
+    1L
+  )
+
+  invalid_bridge <- copy_fixture()
+  on.exit(unlink(dirname(invalid_bridge), recursive = TRUE), add = TRUE)
+  replace_once(
+    invalid_bridge,
+    "inst/design/decisions.md",
+    "| pending |",
+    "| started |"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(invalid_bridge), "invalid_row_state"),
+    1L
+  )
 
   stages <- copy_fixture()
   on.exit(unlink(dirname(stages), recursive = TRUE), add = TRUE)
@@ -180,6 +450,59 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     2L
   )
 
+  stale_backlink <- copy_fixture()
+  on.exit(unlink(dirname(stale_backlink), recursive = TRUE), add = TRUE)
+  replace_once(
+    stale_backlink,
+    "inst/design/contracts.md",
+    "The accepted rule is consolidated. There is no pending backlink.",
+    paste0(
+      "Accepted change pending: [consolidated choice]",
+      "(decisions.md#consolidated-choice)."
+    )
+  )
+  stale_report <- finding_line(
+    run_fixture(stale_backlink),
+    "stage_inconsistent_mapping"
+  )
+  testthat::expect_true(any(grepl(
+    "consolidated bridge row retains a stale pending backlink",
+    stale_report,
+    fixed = TRUE
+  )))
+
+  orphan_notice <- copy_fixture()
+  on.exit(unlink(dirname(orphan_notice), recursive = TRUE), add = TRUE)
+  replace_once(
+    orphan_notice,
+    "inst/design/current_packet/README.md",
+    "Authority: fixture ticket cut.",
+    paste0(
+      "Authority: fixture ticket cut.\n",
+      "Amendments: 2026-10-14 [accepted change map]",
+      "(../rfc/change.md#change-map)."
+    )
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(orphan_notice), "missing_change_row"),
+    1L
+  )
+
+  orphan_marker <- copy_fixture()
+  on.exit(unlink(dirname(orphan_marker), recursive = TRUE), add = TRUE)
+  cat(
+    paste0(
+      "\n## Orphan marker\n\nSuperseded by the ",
+      "[new rule](rfc/change.md#new-rule).\n"
+    ),
+    file = file.path(orphan_marker, "inst", "design", "contracts.md"),
+    append = TRUE
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(orphan_marker), "missing_change_row"),
+    1L
+  )
+
   untracked <- copy_fixture()
   on.exit(unlink(dirname(untracked), recursive = TRUE), add = TRUE)
   unlink(file.path(untracked, "untracked.md"))
@@ -195,6 +518,20 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     run_fixture(malformed),
     class = "ledgr_governance_report_input"
   )
+  malformed_claims <- copy_fixture()
+  on.exit(unlink(dirname(malformed_claims), recursive = TRUE), add = TRUE)
+  writeLines("claims: [", file.path(malformed_claims, "claims.yml"))
+  testthat::expect_error(
+    run_fixture(malformed_claims),
+    class = "ledgr_governance_report_input"
+  )
+  malformed_tracked <- copy_fixture()
+  on.exit(unlink(dirname(malformed_tracked), recursive = TRUE), add = TRUE)
+  writeLines("tracked: not-a-list", file.path(malformed_tracked, "tracked.yml"))
+  testthat::expect_error(
+    run_fixture(malformed_tracked),
+    class = "ledgr_governance_report_input"
+  )
   unreadable <- copy_fixture()
   on.exit(unlink(dirname(unreadable), recursive = TRUE), add = TRUE)
   unlink(file.path(unreadable, "inst", "design", "current_packet", "README.md"))
@@ -202,6 +539,21 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     run_fixture(unreadable),
     class = "ledgr_governance_report_input"
   )
+
+  claims_warning <- copy_fixture()
+  on.exit(unlink(dirname(claims_warning), recursive = TRUE), add = TRUE)
+  replace_once(
+    claims_warning,
+    "claims.yml",
+    "accepted synthesis Section 6",
+    "LDG-3042"
+  )
+  warning_line <- finding_line(
+    run_fixture(claims_warning),
+    "claim_source_ticket_only"
+  )
+  testthat::expect_length(warning_line, 1L)
+  testthat::expect_match(warning_line, "source=claims.yml", fixed = TRUE)
   testthat::expect_error(
     guard$governance_parse_args("--check"),
     class = "ledgr_governance_report_input"

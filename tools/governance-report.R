@@ -254,14 +254,19 @@ governance_resolve_target <- function(source, target) {
   } else {
     ""
   }
-  resolved <- if (!nzchar(path)) source else governance_rel_path(file.path(dirname(source), path))
+  resolved <- if (!nzchar(path)) {
+    source
+  } else if (startsWith(path, "/")) {
+    governance_rel_path(sub("^/+", "", path))
+  } else {
+    governance_rel_path(file.path(dirname(source), path))
+  }
   list(path = resolved, fragment = tolower(fragment))
 }
 
 governance_is_external <- function(target) {
   grepl("^[[:alpha:]][[:alnum:]+.-]*:", target) ||
-    startsWith(target, "//") ||
-    startsWith(target, "/")
+    startsWith(target, "//")
 }
 
 governance_scan_links <- function(root, sources, tracked) {
@@ -372,12 +377,25 @@ governance_scan_links <- function(root, sources, tracked) {
   )
 }
 
+governance_header_end <- function(lines) {
+  first_section <- grep("^##[[:space:]]+", lines)[1L]
+  if (is.na(first_section)) {
+    return(min(25L, length(lines)))
+  }
+  max(0L, min(25L, first_section - 1L))
+}
+
 governance_header_value <- function(lines, field) {
   pattern <- sprintf(
     "^[[:space:]]*(?:[*][*])?%s:(?:[*][*])?[[:space:]]*(.*)$",
     field
   )
-  matches <- grep(pattern, head(lines, 25L), value = TRUE, ignore.case = TRUE)
+  matches <- grep(
+    pattern,
+    head(lines, governance_header_end(lines)),
+    value = TRUE,
+    ignore.case = TRUE
+  )
   if (!length(matches)) {
     return("")
   }
@@ -389,7 +407,11 @@ governance_header_line <- function(lines, field) {
     "^[[:space:]]*(?:[*][*])?%s:(?:[*][*])?",
     field
   )
-  match <- grep(pattern, head(lines, 25L), ignore.case = TRUE)
+  match <- grep(
+    pattern,
+    head(lines, governance_header_end(lines)),
+    ignore.case = TRUE
+  )
   if (length(match)) match[[1L]] else 1L
 }
 
@@ -406,6 +428,12 @@ governance_scan_headers <- function(root, sources) {
     status <- governance_header_value(lines, "Status")
     authority <- governance_header_value(lines, "Authority")
     role_token <- tolower(trimws(sub("[;.,].*$", "", role)))
+    role_has_authority <- grepl(
+      "\\b(non[- ]binding|binds|binding|authority)\\b",
+      role,
+      ignore.case = TRUE,
+      perl = TRUE
+    )
     status_lower <- tolower(status)
     status_token <- if (grepl("^amended[[:space:]]+[0-9]{4}-[0-9]{2}-[0-9]{2}", status_lower)) {
       "amended"
@@ -439,14 +467,14 @@ governance_scan_headers <- function(root, sources) {
         sprintf("invalid Status token '%s'", status)
       )
     }
-    if (!nzchar(authority)) {
+    if (!nzchar(authority) && !role_has_authority) {
       findings[[length(findings) + 1L]] <- governance_finding(
         "structural", "missing_authority", source, 1L, "metadata:authority",
         "governance source has no Authority header or non-binding declaration"
       )
     }
     if (identical(status_token, "amended") &&
-        !any(grepl("^[[:space:]]*(?:[*][*])?Amendments:(?:[*][*])?.*\\[[^]]+\\]\\(", head(lines, 25L), perl = TRUE))) {
+        !any(grepl("^[[:space:]]*(?:[*][*])?Amendments:(?:[*][*])?.*\\[[^]]+\\]\\(", head(lines, governance_header_end(lines)), perl = TRUE))) {
       findings[[length(findings) + 1L]] <- governance_finding(
         "structural", "missing_amendment_provenance", source,
         governance_header_line(lines, "Status"), "metadata:amendments",
@@ -454,7 +482,7 @@ governance_scan_headers <- function(root, sources) {
       )
     }
     if (identical(status_token, "consolidated") &&
-        !any(grepl("^[[:space:]]*(?:[*][*])?Receiver:(?:[*][*])?.*\\[[^]]+\\]\\(", head(lines, 25L), perl = TRUE))) {
+        !any(grepl("^[[:space:]]*(?:[*][*])?Receiver:(?:[*][*])?.*\\[[^]]+\\]\\(", head(lines, governance_header_end(lines)), perl = TRUE))) {
       findings[[length(findings) + 1L]] <- governance_finding(
         "structural", "missing_receiver_provenance", source,
         governance_header_line(lines, "Status"), "metadata:receiver",
@@ -462,7 +490,7 @@ governance_scan_headers <- function(root, sources) {
       )
     }
     if (status_token %in% c("superseded", "superseded in part") &&
-        !any(grepl("^[[:space:]]*(?:[*][*])?Replacement:(?:[*][*])?.*20[0-9]{2}-[0-9]{2}-[0-9]{2}.*\\[[^]]+\\]\\(", head(lines, 25L), perl = TRUE))) {
+        !any(grepl("^[[:space:]]*(?:[*][*])?Replacement:(?:[*][*])?.*20[0-9]{2}-[0-9]{2}-[0-9]{2}.*\\[[^]]+\\]\\(", head(lines, governance_header_end(lines)), perl = TRUE))) {
       findings[[length(findings) + 1L]] <- governance_finding(
         "structural", "missing_replacement_provenance", source,
         governance_header_line(lines, "Status"), "metadata:replacement",
@@ -470,7 +498,7 @@ governance_scan_headers <- function(root, sources) {
       )
     }
     if (identical(status_token, "superseded in part") &&
-        !any(grepl("^[[:space:]]*(?:[*][*])?Operative remainder:(?:[*][*])?.+", head(lines, 25L), perl = TRUE))) {
+        !any(grepl("^[[:space:]]*(?:[*][*])?Operative remainder:(?:[*][*])?.+", head(lines, governance_header_end(lines)), perl = TRUE))) {
       findings[[length(findings) + 1L]] <- governance_finding(
         "structural", "missing_remainder_provenance", source,
         governance_header_line(lines, "Status"), "metadata:remainder",
@@ -478,7 +506,7 @@ governance_scan_headers <- function(root, sources) {
       )
     }
     if (identical(status_token, "rejected") &&
-        !any(grepl("^[[:space:]]*(?:[*][*])?Reason:(?:[*][*])?.+", head(lines, 25L), perl = TRUE))) {
+        !any(grepl("^[[:space:]]*(?:[*][*])?Reason:(?:[*][*])?.+", head(lines, governance_header_end(lines)), perl = TRUE))) {
       findings[[length(findings) + 1L]] <- governance_finding(
         "structural", "missing_rejection_reason", source,
         governance_header_line(lines, "Status"), "metadata:reason",
@@ -544,6 +572,20 @@ governance_section_lines <- function(lines, fragment) {
   next_lines <- info$headings$line[info$headings$line > start]
   end <- if (length(next_lines)) min(next_lines) - 1L else length(lines)
   seq.int(start, end)
+}
+
+governance_section_fragment_at_line <- function(lines, line) {
+  info <- governance_anchor_info(lines)
+  hit <- which(info$headings$line <= line)
+  if (!length(hit)) {
+    return("")
+  }
+  row <- info$headings[tail(hit, 1L), , drop = FALSE]
+  tolower(if (nzchar(row$explicit_id[[1L]])) {
+    row$explicit_id[[1L]]
+  } else {
+    row$slug[[1L]]
+  })
 }
 
 governance_link_resolves_to <- function(source, target, expected_path, expected_fragment = "") {
@@ -682,6 +724,92 @@ governance_scan_mappings <- function(root, sources) {
     }
   }
 
+  map_sources <- unique(vapply(source_maps, `[[`, character(1L), "source"))
+  if (length(map_sources)) {
+    for (source in sources) {
+      lines <- governance_read_lines(file.path(root, source))
+      links <- governance_links(source, lines)
+      if (!nrow(links)) {
+        next
+      }
+      resolved_links <- lapply(seq_len(nrow(links)), function(i) {
+        governance_resolve_target(source, links$target[[i]])
+      })
+      points_to_map <- vapply(
+        resolved_links,
+        function(value) !is.na(value$path) && value$path %in% map_sources,
+        logical(1L)
+      )
+      if (!any(points_to_map)) {
+        next
+      }
+
+      header_end <- governance_header_end(lines)
+      notice_lines <- grep(
+        "^[[:space:]]*(?:[*][*])?(Amendments|Replacement|Receiver):",
+        head(lines, header_end),
+        ignore.case = TRUE,
+        perl = TRUE
+      )
+      notice_links <- which(points_to_map & links$line %in% notice_lines)
+      for (i in notice_links) {
+        has_row <- any(vapply(source_maps, function(map) {
+          target <- governance_resolve_target(map$source, map$target)
+          identical(map$source, resolved_links[[i]]$path) &&
+            !is.na(target$path) && identical(target$path, source)
+        }, logical(1L)))
+        if (!has_row) {
+          findings[[length(findings) + 1L]] <- governance_finding(
+            "structural", "missing_change_row", source, links$line[[i]],
+            links$target[[i]],
+            "target header notice points to a change map with no matching row"
+          )
+        }
+      }
+
+      marker_text <- governance_code_free(lines)
+      marker_lines <- grep(
+        "supersed|amend|replac|accepted change pending",
+        marker_text,
+        ignore.case = TRUE,
+        perl = TRUE
+      )
+      change_row_lines <- vapply(
+        source_maps[vapply(source_maps, function(map) {
+          identical(map$source, source)
+        }, logical(1L))],
+        `[[`,
+        integer(1L),
+        "line"
+      )
+      marker_links <- which(
+        points_to_map & links$line > header_end &
+          links$line %in% marker_lines &
+          !(links$line %in% change_row_lines)
+      )
+      for (i in marker_links) {
+        section <- governance_section_fragment_at_line(lines, links$line[[i]])
+        has_row <- any(vapply(source_maps, function(map) {
+          target <- governance_resolve_target(map$source, map$target)
+          replacement <- governance_resolve_target(map$source, map$replacement)
+          identical(map$source, resolved_links[[i]]$path) &&
+            !is.na(target$path) && identical(target$path, source) &&
+            identical(target$fragment, section) &&
+            !is.na(replacement$path) &&
+            identical(replacement$path, resolved_links[[i]]$path) &&
+            identical(replacement$fragment, resolved_links[[i]]$fragment)
+        }, logical(1L)))
+        if (!has_row) {
+          findings[[length(findings) + 1L]] <- governance_finding(
+            "structural", "missing_change_row", source, links$line[[i]],
+            links$target[[i]],
+            "target section marker points to a change map with no matching row"
+          )
+        }
+      }
+    }
+  }
+
   map_replacements <- vapply(source_maps, function(map) {
     resolved <- governance_resolve_target(map$source, map$replacement)
     paste(resolved$path, resolved$fragment, sep = "#")
@@ -748,7 +876,7 @@ governance_scan_states_and_verdicts <- function(root, sources) {
   findings <- list()
   for (source in sources) {
     lines <- governance_read_lines(file.path(root, source))
-    mode <- tolower(governance_header_value(lines, "Mode"))
+    mode <- tolower(gsub("[*`_]", "", governance_header_value(lines, "Mode")))
     for (table in governance_tables(lines)) {
       header <- tolower(gsub("[*`]", "", table$header))
       state_i <- match("state", header)
@@ -765,7 +893,12 @@ governance_scan_states_and_verdicts <- function(root, sources) {
         }
       }
     }
-    verdict_lines <- grep("^[[:space:]]*(?:[*][*])?Verdict:(?:[*][*])?", lines, ignore.case = TRUE)
+    header <- head(lines, governance_header_end(lines))
+    verdict_lines <- grep(
+      "^[[:space:]]*(?:[*][*])?Verdict:(?:[*][*])?",
+      header,
+      ignore.case = TRUE
+    )
     for (line in verdict_lines) {
       verdict <- tolower(trimws(sub(
         "^[[:space:]]*(?:[*][*])?Verdict:(?:[*][*])?[[:space:]]*",
@@ -773,6 +906,7 @@ governance_scan_states_and_verdicts <- function(root, sources) {
         lines[[line]],
         ignore.case = TRUE
       )))
+      verdict <- gsub("[*`_]", "", verdict)
       verdict <- sub("[[:space:].].*$", "", verdict)
       allowed <- if (grepl("type 2", mode, fixed = TRUE)) type_2 else type_1
       if (!(verdict %in% allowed)) {
@@ -806,66 +940,7 @@ governance_validate_baseline <- function(baseline) {
       governance_abort(sprintf("baseline entry %d is malformed", i))
     }
   }
-  if (!is.null(baseline$census)) {
-    census_required <- c("path", "scope", "reason", "owner", "disposition")
-    if (!is.list(baseline$census) ||
-        !all(census_required %in% names(baseline$census)) ||
-        any(!vapply(baseline$census[census_required], function(value) {
-          is.character(value) && length(value) == 1L && nzchar(value)
-        }, logical(1L)))) {
-      governance_abort("baseline census provenance is malformed")
-    }
-  }
   invisible(TRUE)
-}
-
-governance_expand_baseline <- function(baseline, root) {
-  if (is.null(baseline$census)) {
-    return(baseline)
-  }
-  path <- baseline$census$path
-  if (!grepl("^(?:[A-Za-z]:)?/", gsub("\\\\", "/", path))) {
-    path <- file.path(root, path)
-  }
-  governance_read_lines(path)
-  census <- tryCatch(
-    utils::read.csv(path, stringsAsFactors = FALSE),
-    error = function(e) governance_abort(sprintf(
-      "malformed baseline census '%s': %s",
-      path,
-      conditionMessage(e)
-    ))
-  )
-  required <- c("source", "target", "missing_file", "broken_anchor", "scope")
-  if (!all(required %in% names(census))) {
-    governance_abort("baseline census lacks its required columns")
-  }
-  census <- census[census$scope == baseline$census$scope, , drop = FALSE]
-  occurrences <- ave(
-    seq_len(nrow(census)),
-    interaction(census$source, census$target, drop = TRUE),
-    FUN = seq_along
-  )
-  derived <- lapply(seq_len(nrow(census)), function(i) {
-    kind <- if (isTRUE(census$missing_file[[i]])) {
-      "broken_local_target"
-    } else if (isTRUE(census$broken_anchor[[i]])) {
-      "broken_local_anchor"
-    } else {
-      governance_abort(sprintf("baseline census row %d is not broken", i))
-    }
-    list(
-      source = census$source[[i]],
-      target = census$target[[i]],
-      occurrence = as.integer(occurrences[[i]]),
-      kind = kind,
-      reason = baseline$census$reason,
-      owner = baseline$census$owner,
-      disposition = baseline$census$disposition
-    )
-  })
-  baseline$entries <- c(baseline$entries, derived)
-  baseline
 }
 
 governance_validate_claims <- function(claims) {
@@ -882,16 +957,16 @@ governance_validate_claims <- function(claims) {
   invisible(TRUE)
 }
 
-governance_claim_warnings <- function(claims) {
+governance_claim_warnings <- function(claims, source = "tests/claims.yml") {
   rows <- list()
   for (claim in claims$claims) {
-    source <- paste(unlist(claim$source), collapse = " ")
-    has_contract <- grepl("contracts[.]md|[A-Z][A-Za-z]+ Contract", source)
-    has_accepted <- grepl("[Ss]ynthesis|rfc_|accepted", source)
-    has_ticket <- grepl("LDG-|Cut [0-9]|Workstream|WS[0-9]", source)
+    claim_source <- paste(unlist(claim$source), collapse = " ")
+    has_contract <- grepl("contracts[.]md|[A-Z][A-Za-z]+ Contract", claim_source)
+    has_accepted <- grepl("[Ss]ynthesis|rfc_|accepted", claim_source)
+    has_ticket <- grepl("LDG-|Cut [0-9]|Workstream|WS[0-9]", claim_source)
     if (has_ticket && !has_contract && !has_accepted) {
       rows[[length(rows) + 1L]] <- governance_finding(
-        "advisory", "claim_source_ticket_only", "tests/claims.yml", 0L,
+        "advisory", "claim_source_ticket_only", source, 0L,
         claim$id, "claim source names ticket authority without a contract or accepted section"
       )
     }
@@ -902,6 +977,25 @@ governance_claim_warnings <- function(claims) {
 governance_sha256_lines <- function(lines) {
   bytes <- charToRaw(enc2utf8(paste0(paste(lines, collapse = "\n"), "\n")))
   digest::digest(bytes, algo = "sha256", serialize = FALSE)
+}
+
+governance_sha256_file <- function(path) {
+  governance_read_lines(path)
+  digest::digest(file = path, algo = "sha256", serialize = FALSE)
+}
+
+governance_root_relative <- function(root, path, label) {
+  absolute <- normalizePath(path, winslash = "/", mustWork = TRUE)
+  prefix <- paste0(root, "/")
+  matches <- if (.Platform$OS.type == "windows") {
+    startsWith(tolower(absolute), tolower(prefix))
+  } else {
+    startsWith(absolute, prefix)
+  }
+  if (!matches) {
+    governance_abort(sprintf("%s input must be inside the repository root", label))
+  }
+  substring(absolute, nchar(prefix) + 1L)
 }
 
 governance_population <- function(tracked, current_packet) {
@@ -950,6 +1044,10 @@ governance_read_tracked <- function(root, tracked_path = NULL) {
   sort(unique(gsub("\\\\", "/", output)), method = "radix")
 }
 
+governance_baseline_key <- function(source, target, occurrence, kind) {
+  paste(source, target, as.integer(occurrence), kind, sep = "\r")
+}
+
 governance_apply_baseline <- function(findings, baseline) {
   if (!nrow(findings)) {
     findings$occurrence <- integer()
@@ -970,9 +1068,19 @@ governance_apply_baseline <- function(findings, baseline) {
     FUN = seq_along
   )
   baseline_keys <- vapply(baseline$entries, function(entry) {
-    paste(entry$source, entry$target, as.integer(entry$occurrence), sep = "\r")
+    governance_baseline_key(
+      entry$source,
+      entry$target,
+      entry$occurrence,
+      entry$kind
+    )
   }, character(1L))
-  keys <- paste(findings$source, findings$target, findings$occurrence, sep = "\r")
+  keys <- governance_baseline_key(
+    findings$source,
+    findings$target,
+    findings$occurrence,
+    findings$kind
+  )
   findings$state <- ifelse(keys %in% baseline_keys, "baseline", "new")
   rownames(findings) <- NULL
   findings
@@ -990,8 +1098,9 @@ governance_report <- function(root, baseline_path, claims_path,
   baseline <- governance_read_yaml(baseline_path)
   claims <- governance_read_yaml(claims_path)
   governance_validate_baseline(baseline)
-  baseline <- governance_expand_baseline(baseline, root)
   governance_validate_claims(claims)
+  claims_input <- governance_root_relative(root, claims_path, "claims")
+  claims_sha256 <- governance_sha256_file(claims_path)
   tracked <- governance_read_tracked(root, tracked_path)
   sources <- governance_population(tracked, current_packet)
   if (!length(sources)) {
@@ -1011,7 +1120,7 @@ governance_report <- function(root, baseline_path, claims_path,
     governance_scan_headers(root, sources),
     governance_scan_mappings(root, sources),
     governance_scan_states_and_verdicts(root, sources),
-    governance_claim_warnings(claims)
+    governance_claim_warnings(claims, claims_input)
   ))
   findings <- governance_apply_baseline(findings, baseline)
   population_hash <- governance_sha256_lines(sources)
@@ -1033,21 +1142,53 @@ governance_report <- function(root, baseline_path, claims_path,
     )
   }
   counts <- counts[order(counts$severity, counts$state, counts$kind, method = "radix"), , drop = FALSE]
-  resolved_baseline <- max(0L, length(baseline$entries) - sum(findings$state == "baseline"))
+  baseline_keys <- vapply(baseline$entries, function(entry) {
+    governance_baseline_key(
+      entry$source,
+      entry$target,
+      entry$occurrence,
+      entry$kind
+    )
+  }, character(1L))
+  finding_keys <- governance_baseline_key(
+    findings$source,
+    findings$target,
+    findings$occurrence,
+    findings$kind
+  )
+  resolved_entries <- baseline$entries[!(baseline_keys %in% finding_keys)]
+  resolved_baseline <- length(resolved_entries)
   report <- c(
     "GOVERNANCE_REPORT\tversion=1",
     "MODE\treport-only",
     sprintf("BASELINE_COMMIT\t%s", governance_escape(baseline$baseline_commit)),
+    sprintf("BASELINE_SOURCE_COUNT\t%d", as.integer(baseline$population$source_count)),
+    sprintf("BASELINE_SOURCE_SHA256\t%s", baseline$population$source_sha256),
     sprintf("BASELINE_POPULATION_MATCH\t%s", tolower(as.character(baseline_population_match))),
     sprintf("BASELINE_ENTRY_COUNT\t%d", length(baseline$entries)),
     sprintf("RESOLVED_BASELINE_ENTRY_COUNT\t%d", resolved_baseline),
     sprintf("SCAN_SOURCE_COUNT\t%d", length(sources)),
     sprintf("SCAN_SOURCE_SHA256\t%s", population_hash),
-    sprintf("CLAIMS_INPUT\t%s", governance_escape(claims_path)),
+    sprintf("CLAIMS_INPUT\t%s", governance_escape(claims_input)),
+    sprintf("CLAIMS_SHA256\t%s", claims_sha256),
     sprintf("CLAIMS_COUNT\t%d", length(claims$claims)),
     sprintf("FINDING_COUNT\t%d", nrow(findings)),
     sprintf("NEW_STRUCTURAL_COUNT\t%d", sum(findings$severity == "structural" & findings$state == "new"))
   )
+  if (length(resolved_entries)) {
+    report <- c(report, vapply(resolved_entries, function(entry) {
+      sprintf(
+        paste0(
+          "RESOLVED_BASELINE_ENTRY\tkind=%s\tsource=%s\ttarget=%s",
+          "\toccurrence=%d"
+        ),
+        governance_escape(entry$kind),
+        governance_escape(entry$source),
+        governance_escape(entry$target),
+        as.integer(entry$occurrence)
+      )
+    }, character(1L)))
+  }
   if (nrow(counts)) {
     report <- c(report, vapply(seq_len(nrow(counts)), function(i) {
       sprintf(

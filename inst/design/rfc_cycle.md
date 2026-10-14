@@ -294,6 +294,13 @@ workstream gets Type 2 first when it chooses architecture, public semantics,
 an oracle, or an evidence boundary. Batches sequence work; they are not review
 units and produce no evidence essay.
 
+At packet closeout, record what shipped, which claims are supported, what
+remains open, and one line for each rejected approach or record. Retain the
+measurement counters for review invocations, reruns, rejected records and
+disputed classifications, together with findings by mode, whether they changed
+an outcome and maintainer decision turns. These are closeout evidence, not
+success gates.
+
 **Evidence and findings.** Ticket evidence gives every acceptance item a
 record pointer and one-line result. Empirical evidence also records input
 identity, environment, source commit, reproduction command, result and clock
