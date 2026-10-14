@@ -302,7 +302,10 @@ ledgr_availability_feature_identity_json <- function(config) {
   }, character(1))
   as.character(canonical_json(list(
     feature_set_hash = ledgr_feature_set_hash(fingerprints),
-    feature_fingerprints = sort(unique(unname(fingerprints)))
+    feature_fingerprints = sort(
+      unique(unname(fingerprints)),
+      method = "radix"
+    )
   )))
 }
 

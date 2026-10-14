@@ -18,12 +18,6 @@ ledgr_corporate_action_fidelity <- function(value) {
 }
 
 ledgr_corporate_action_policy_settings <- function(identity) {
-  if (is.null(identity)) {
-    return(stats::setNames(
-      rep(NA_character_, length(ledgr_corporate_action_policy_choices())),
-      names(ledgr_corporate_action_policy_choices())
-    ))
-  }
   ledgr_corporate_action_decoded_settings(
     identity,
     ledgr_corporate_action_identity_decode(identity)
@@ -45,10 +39,6 @@ ledgr_corporate_action_decoded_settings <- function(identity, decoded) {
 
 # Display form of a recorded policy: one string per setting and identity.
 ledgr_corporate_action_policy_display <- function(identity) {
-  if (is.null(identity)) {
-    settings <- ledgr_corporate_action_policy_settings(identity)
-    return(list(settings = settings, identities = settings))
-  }
   decoded <- ledgr_corporate_action_identity_decode(identity)
   settings <- ledgr_corporate_action_decoded_settings(identity, decoded)
   policy <- decoded$policy
@@ -383,7 +373,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   config <- bt$config
   snapshot_id <- config$data$snapshot_id
   facts <- ledgr_corporate_action_fact_state(con, snapshot_id)
-  identity <- config$corporate_actions %||% NULL
+  identity <- config$corporate_actions
   display <- ledgr_corporate_action_policy_display(identity)
   settings <- display$settings
   identities <- display$identities

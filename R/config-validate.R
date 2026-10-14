@@ -344,11 +344,11 @@ validate_ledgr_config <- function(config) {
   }
 
   identity_rule <- config$identity_rule_version
-  if (!is.numeric(identity_rule) || length(identity_rule) != 1L ||
+  if (!is.integer(identity_rule) || length(identity_rule) != 1L ||
       is.na(identity_rule) ||
-      !identical(as.integer(identity_rule), ledgr_identity_rule_version)) {
+      !identical(identity_rule, ledgr_identity_rule_version)) {
     rlang::abort(
-      "Config field identity_rule_version must be 2.",
+      "Config field identity_rule_version must be the integer 2L.",
       class = "ledgr_invalid_config"
     )
   }
@@ -404,10 +404,11 @@ ledgr_policy_schema_require_current <- function(config, run_id = NULL) {
     NULL
   }
   if (!is.null(valuation) &&
-      !identical(
-        ledgr_valuation_policy_record_version(valuation),
-        ledgr_valuation_policy_schema_version
-      )) {
+      (!is.list(valuation) ||
+       !identical(
+         valuation$schema_version,
+         ledgr_valuation_policy_schema_version
+       ))) {
     subject <- if (is.null(run_id)) "Config" else sprintf("Run '%s'", run_id)
     rlang::abort(
       sprintf("%s must use valuation policy schema 2.", subject),

@@ -1,10 +1,10 @@
 # Workstream 30 Closeout: Current-Only Records And Public Surfaces
 
-**Status:** Close-review corrections implemented; awaiting focused Type 1 re-review.
+**Status:** Focused-review corrections implemented; awaiting maintainer acceptance.
 **Date:** 2026-10-14
 **Baseline commit:** `fc4d8fc7`
 **Implementation range:** `fc4d8fc7..10c8b444`
-**Tickets:** LDG-3028 through LDG-3031
+**Tickets:** LDG-3028 through LDG-3031 and LDG-3036
 
 ## A. Claim And Boundary
 
@@ -13,7 +13,7 @@ surface now speaks only the current format. There is no migration, older
 record reader, missing-marker fallback, compatibility argument or replacement
 legacy condition.
 
-The workstream changes four related boundaries:
+The workstream changes five related boundaries:
 
 - LDG-3028 removes record-level legacy branches and requires identity rule 2,
   policy schema 2, timing version 2, saved-sweep schema 4 and snapshot hash
@@ -22,7 +22,10 @@ The workstream changes four related boundaries:
 - LDG-3030 reconciles claims, contracts, conditions, help and teaching with
   the current-only surface; and
 - LDG-3031 builds a fresh current-format research store and exercises the
-  documented aggregate Sharadar lane without exporting private rows.
+  documented aggregate Sharadar lane without exporting private rows; and
+- LDG-3036 makes canonical identity ordering locale-independent, requires the
+  exact integer identity-rule shape and repeats the aggregate lake build after
+  the final fingerprint change.
 
 This workstream does not redesign current records or results. It does not
 remove `ledgr_backtest()`, parameterized strategy factories or the existing
@@ -40,6 +43,7 @@ R6 refusal. It adds no compatibility code.
 | roxygen2 8.1 tooling regeneration | `b538246c`, `b623d758` | upgrade and repin generator-only output |
 | F10 documentation correction | `0adbd7b1` | regenerate only the corrected current-only help text |
 | Final current-config fixture | `10c8b444` | supply required identities and repin the sweep hash |
+| Focused-review and identity corrections | pending commit | close N1 through N4 and implement LDG-3036 |
 
 ## C. Current Record And Call Surface
 
@@ -88,7 +92,7 @@ tree and writes the committed census under
 | Family | Rows | Recorded findings |
 | --- | ---: | ---: |
 | connection entries | 69 | 0 |
-| persisted versions and conventions | 136 | 1 |
+| persisted versions and conventions | 137 | 1 |
 | hand-built run-config entries | 80 | 0 |
 | helpers | 1,640 | 11 |
 | condition call sites | 2,267 | 64 |
@@ -99,15 +103,37 @@ finds no current-only violation and no hand-built run-config violation. The
 sole version-inventory finding is the separately versioned promotion context,
 whose reader now requires exact v2 equality. Helper and condition counts are
 measured inputs for Workstream 31, not Workstream 30 failures. The production
-format-fingerprint inventory contains twenty members.
+format-fingerprint inventory contains twenty-one members.
 
-The registered detector uses positive rules for persisted-version reads and
-rejects a restored rule-1 or `availability_close_v1` arm, a hand-built current
-run config missing either identity field and a restored removed call or
-fallback surface. Its self-test injects a legacy branch and proves that check
-mode fails rather than relying on a fixed text denylist.
+The registered census checks directly extracted persisted-version comparisons;
+it does not claim to resolve arbitrary local aliases. It separately rejects the
+retired literal `availability_close_v1`, a hand-built current run config
+missing either identity field and a restored removed call or fallback surface.
+Its self-test extracts an injected source row as well as challenging the
+comparison classifier.
 
-## E. Exactness
+LTB-0264 deletes a real telemetry row and requires typed missing telemetry plus
+`telemetry_missing = TRUE`. LTB-0265 uses weekly pulses so restoring cadence
+inference produces 52 rather than the current explicit 252. A malformed
+schema-2 valuation record keeps its original shape-validation condition rather
+than being mislabeled as an old schema.
+
+## E. Locale-independent identity
+
+Canonical JSON orders named atomic vectors and lists with radix ordering. The
+rule is recorded as `ledgr_canonical_json_rule_version = 1L`, the twenty-first
+member of the current format fingerprint. There is no reader for the preceding
+fingerprint. `identity_rule_version` is accepted only as integer `2L`; double
+or character spellings refuse rather than being coerced.
+
+The explicit identity-order audit is recorded in
+`dev/bench/v0_2_2_pre_cran_removal/identity_order_census.md`. LTB-0266 runs two
+fresh R processes under C and a non-C locale whose ordinary order differs and
+requires identical canonical JSON and `config_hash`. Lower-case existing
+identity bytes remain pinned by a literal oracle. Restoring locale-sensitive
+key order fails twice, and restoring integer coercion fails three assertions.
+
+## F. Exactness
 
 The final fixture record is under
 `dev/bench/v0_2_2_real_data_scale/evidence/ladder24/`. It compares the
@@ -127,7 +153,7 @@ Ties, typed missing telemetry, current policy identities, saved-sweep bytes,
 current provenance, fills, equity, metrics, run information and public result
 shapes remain exact. No tolerance or replacement legacy branch was added.
 
-## F. Current-Format Research Store
+## G. Current-Format Research Store
 
 LDG-3031 ran the documented build and census stages at ledgr commit
 `b55552e322464fa9ed179e824223ca489dab4ab0` and ledgr.sharadar commit
@@ -160,7 +186,7 @@ per-family hashes and phase clocks were exported. The committed record under
 row, instrument identifier, private path, credential or vendor canonical-build
 identity.
 
-## G. The Seven Shapes
+## H. The Seven Shapes
 
 1. No one-row frame is built per element. The work removes legacy parsing and
    keeps current records in their existing whole-table or fixed-record forms.
@@ -179,15 +205,15 @@ identity.
 The largest product diff is deletion. The new registered tests use bounded
 fixtures, and the census runs once as a development gate.
 
-## H. Verification
+## I. Verification
 
 The focused identity, policy, timing, sweep, provenance, result, condition,
 documentation-contract and control-plane suites pass. The original ordinary
 fast record executes 563 of 563 blocks with zero failures or skips in 101.40
-seconds. The final correction record at
-`C:/Users/maxth/ledgr-research/.test-evidence/ws30-correction-fast-10c8b444`
-executes 562 of 562 blocks with zero failures or skips in 106.21 seconds
-against the unchanged 112-second bound. The original complete review profile
+seconds. The earlier correction record executed 562 of 562 blocks with zero
+failures or skips in 106.21 seconds against the unchanged 112-second bound. It
+was local evidence and is not cited as a durable record. LDG-3036 owns the
+committed post-correction fast record. The original complete review profile
 executes 334 of 334 blocks with zero failures and one pre-existing optional
 path skip in 278.98 seconds.
 
@@ -203,16 +229,17 @@ before the evidence and closeout commit. Most additions are updated fixtures,
 claims and refreshed census rows; production compatibility branches are
 deleted rather than hidden.
 
-## I. Review Boundary
+## J. Review Boundary
 
 The independent Type 1 close review returned CHANGES_REQUIRED with twelve
 findings. Its durable record is `close_review_30.md`. Corrections
 `d9a0306a`, `b538246c`, `b623d758`, `0adbd7b1` and `10c8b444` close the
 current-only reader, detector, census, provenance and generated-help gaps
-without changing the accepted design. A focused Type 1 re-review should verify
-only those corrections and anything they could break. A third correction
-round stops for maintainer disposition. Review counts are measured once at
-Cut 14 close and are not a workstream gate.
+without changing the accepted design. The focused Type 1 re-review found four
+bounded detector and condition-parity residues; its durable record is
+`close_review_30_rereview_1.md`. The maintainer directed one mechanical
+correction with mutation witnesses and no third review round. Review counts are
+measured once at Cut 14 close and are not a workstream gate.
 
-Workstream 30 remains `review_pending` until focused re-review and maintainer
+Workstream 30 remains `review_pending` until final evidence and maintainer
 acceptance. Workstream 31 resumes only after acceptance.

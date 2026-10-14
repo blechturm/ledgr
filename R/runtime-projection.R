@@ -172,7 +172,7 @@ ledgr_projection_feature_at <- function(projection,
         "Unknown feature ID `%s` for instrument_id `%s`. Available feature IDs: %s.",
         feature_id,
         instrument_id,
-        ledgr_feature_names_message(sort(available_features))
+        ledgr_feature_names_message(sort(available_features, method = "radix"))
       ),
       class = "ledgr_unknown_feature_id"
     )
@@ -451,7 +451,10 @@ ledgr_projection_feature_name_state <- function(projection,
   )
   list(
     available_features = available_features,
-    available_message = ledgr_feature_names_message(sort(available_features)),
+    available_message = ledgr_feature_names_message(sort(
+      available_features,
+      method = "radix"
+    )),
     known_features = name_lookup$feature_env,
     active_lookup = active_lookup,
     name_lookup = name_lookup

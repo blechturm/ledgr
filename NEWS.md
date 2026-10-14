@@ -14,6 +14,11 @@
   records are not inferred, translated or reopened; rebuild the research store
   from its source inputs with this ledgr version.
 
+- Canonical identity JSON now orders named keys with radix ordering, so config,
+  strategy, feature, sweep and walk-forward hashes do not depend on process
+  collation. The ordering rule is versioned in the current store fingerprint,
+  and `identity_rule_version` is accepted only as the exact integer `2L`.
+
 - Removed the pre-release public `fill_model` argument, the `type` alias for
   `as_tibble.ledgr_backtest()`, and their dedicated compatibility conditions.
   Use `timing_model`, a classed `cost_model`, and `what`, respectively.

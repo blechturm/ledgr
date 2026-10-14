@@ -147,7 +147,11 @@ ledgr_feature_contract_check <- function(snapshot,
     available_bars = as.integer(counts$available_bars[count_idx])
   )
   out$warmup_achievable <- out$available_bars >= out$stable_after
-  out <- out[order(out$instrument_id, out$feature_id), , drop = FALSE]
+  out <- out[order(
+    out$instrument_id,
+    out$feature_id,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(out) <- NULL
   out
 }
@@ -351,7 +355,11 @@ ledgr_pulse_features <- function(pulse, feature_map = NULL) {
       return(ledgr_pulse_feature_rows_for_alias_map(table, pulse$universe, active_alias_map))
     }
     out <- ledgr_pulse_feature_rows(table)
-    out <- out[order(out$instrument_id, out$feature_id), , drop = FALSE]
+    out <- out[order(
+      out$instrument_id,
+      out$feature_id,
+      method = "radix"
+    ), , drop = FALSE]
     rownames(out) <- NULL
     out$alias <- NA_character_
     return(out)
@@ -443,7 +451,11 @@ ledgr_pulse_feature_rows_for_alias_map <- function(table, universe, alias_map) {
     )
   }
 
-  rows <- rows[order(rows$instrument_id, rows$feature_id), , drop = FALSE]
+  rows <- rows[order(
+    rows$instrument_id,
+    rows$feature_id,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(rows) <- NULL
   alias_map <- ledgr_normalize_alias_map(alias_map)
   aliases <- names(alias_map)
@@ -544,7 +556,7 @@ ledgr_pulse_feature_rows_for_alias_map <- function(table, universe, alias_map) {
 ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
   ledgr_validate_feature_inspection_pulse(pulse)
   rows <- ledgr_pulse_features(pulse, feature_map)
-  instruments <- sort(as.character(pulse$universe))
+  instruments <- sort(as.character(pulse$universe), method = "radix")
 
   out <- tibble::tibble(
     ts_utc = if (!is.null(pulse$ts_utc)) ledgr_utc(pulse$ts_utc) else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"),

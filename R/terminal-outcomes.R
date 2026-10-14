@@ -74,11 +74,7 @@ ledgr_terminal_resolve <- function(policy, ids, labels, valuation) {
 # haircut, write_off and frozen_terminal_position never apply here.
 ledgr_terminal_resolve_scheduled <- function(policy, ids, valuation) {
   ids <- as.character(ids)
-  default <- if (is.null(policy)) {
-    "refuse"
-  } else {
-    unname(policy$held_terminal_position[["default"]])
-  }
+  default <- unname(policy$held_terminal_position[["default"]])
   choice <- if (identical(default, "last_mark")) "last_mark" else "last_permissible"
   permissible <- as.logical(valuation$permissible[ids])
   permissible[is.na(permissible)] <- FALSE

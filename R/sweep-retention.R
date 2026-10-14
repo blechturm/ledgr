@@ -818,7 +818,7 @@ ledgr_return_panel_long_labels <- function(returns, label_columns) {
       class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
     )
   }
-  unique_labels <- sort(unique(labels))
+  unique_labels <- sort(unique(labels), method = "radix")
   list(labels = unique_labels, row_labels = labels, ts_utc = unique_labels)
 }
 

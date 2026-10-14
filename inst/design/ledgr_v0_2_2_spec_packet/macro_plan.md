@@ -909,7 +909,7 @@ history wave and implementation cut, the lake rebuild with dividend facts,
 WS7, the WS6 probe, WS8.
 2026-10-14 maintainer amendment, unowned-debt routing: issues that no ticket
 owned were routed. The identity-hashing collation defect and the
-identity-type looseness go to Cut 14 (`tickets.yml`). The store gate's
+identity-type looseness go to Cut 14 LDG-3036 (`tickets.yml`). The store gate's
 per-open cost is accepted as a component miss: about 1.1 ms per store open,
 under 0.1 percent of any public call, with end-to-end clocks unchanged
 (maintainer, 2026-10-14; recorded in the WS29 decisions). Three review-found

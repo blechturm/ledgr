@@ -841,7 +841,10 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   active_alias_map <- ledgr_alias_map_from_config(cfg)
   run_feature_matrix <- list()
   if (length(feature_defs) > 0) {
-    feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
+    feature_defs <- feature_defs[order(
+      vapply(feature_defs, function(d) d$id, character(1)),
+      method = "radix"
+    )]
   }
   DBI::dbExecute(
     con,
@@ -1462,7 +1465,10 @@ ledgr_features_at_pulse <- function(con,
   }
 
   ledgr_validate_feature_defs(feature_defs)
-  feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
+  feature_defs <- feature_defs[order(
+    vapply(feature_defs, function(d) d$id, character(1)),
+    method = "radix"
+  )]
 
   start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
   start_ts <- as.POSIXct(start_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
@@ -1584,7 +1590,10 @@ ledgr_features_at_pulse_cached <- function(con,
   }
 
   ledgr_validate_feature_defs(feature_defs)
-  feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
+  feature_defs <- feature_defs[order(
+    vapply(feature_defs, function(d) d$id, character(1)),
+    method = "radix"
+  )]
 
   ts_iso <- ledgr_normalize_ts_utc(ts_utc)
   ts_posix <- as.POSIXct(ts_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")

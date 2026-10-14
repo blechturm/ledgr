@@ -285,7 +285,7 @@ ledgr_infer_universe_from_data <- function(data) {
       class = "ledgr_invalid_args"
     )
   }
-  universe <- sort(unique(as.character(data$instrument_id)))
+  universe <- sort(unique(as.character(data$instrument_id)), method = "radix")
   universe <- universe[!is.na(universe) & nzchar(universe)]
   if (length(universe) < 1) {
     rlang::abort("`data$instrument_id` must contain at least one non-empty instrument id.", class = "ledgr_invalid_args")

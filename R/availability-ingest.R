@@ -64,7 +64,10 @@ ledgr_availability_prepare_instruments <- function(bars_df, instruments_df) {
   }
   bar_ids <- enc2utf8(as.character(bars_df$instrument_id))
   if (is.null(instruments_df)) {
-    ids <- sort(unique(bar_ids[!is.na(bar_ids) & nzchar(bar_ids)]))
+    ids <- sort(
+      unique(bar_ids[!is.na(bar_ids) & nzchar(bar_ids)]),
+      method = "radix"
+    )
     if (length(ids) == 0L) {
       rlang::abort("At least one valid instrument is required.", class = c("ledgr_fact_invalid_instrument_master", "ledgr_invalid_args"))
     }
@@ -177,7 +180,11 @@ ledgr_availability_prepare_observations <- function(bars_df,
     volume = round(volume[keep], 8L),
     stringsAsFactors = FALSE
   )
-  accepted <- accepted[order(accepted$instrument_id, accepted$ts_utc), , drop = FALSE]
+  accepted <- accepted[order(
+    accepted$instrument_id,
+    accepted$ts_utc,
+    method = "radix"
+  ), , drop = FALSE]
   rownames(accepted) <- NULL
 
   bad <- outcome == "quarantine_candidate"
@@ -297,7 +304,7 @@ ledgr_availability_original_rows_json <- function(df) {
     }
     unname(x)
   })
-  cols <- cols[order(names(cols))]
+  cols <- cols[order(names(cols), method = "radix")]
   listed <- vapply(cols, is.list, logical(1))
   frame <- as.data.frame(lapply(cols, function(x) if (is.list(x)) rep(NA, length(x)) else x),
                          stringsAsFactors = FALSE, optional = TRUE)

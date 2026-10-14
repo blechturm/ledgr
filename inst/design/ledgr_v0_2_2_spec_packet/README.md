@@ -19,7 +19,7 @@ failures, leaves the bound unchanged and moves no tests ahead of next-version
 fold-core unification. Final Cut 13 review accounting is 6 invocations over 3
 tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
 Accepted Cut 14 now owns the pre-CRAN legacy-removal synthesis and the macro
-plan's codebase-hygiene amendment. Its fourteen tickets across three
+plan's codebase-hygiene amendment. Its fifteen tickets across three
 workstreams passed cut review after patches on 2026-10-13. Implementation
 opens with the report-only LDG-3022 census.
 
@@ -610,7 +610,7 @@ The cut has three claims:
 | Workstream | Tickets | Claim |
 | --- | --- | --- |
 | 29 One current schema and one store gate | LDG-3024 to LDG-3027 | every persistent ledgr store is created or opened through schema 119, one marker-pair gate and one strict catalogue authority |
-| 30 Current-only records and public surfaces | LDG-3028 to LDG-3031 | no supported record or call surface retains a legacy branch, current outputs stay exact, and the private lake is rebuilt under the final format |
+| 30 Current-only records and public surfaces | LDG-3028 to LDG-3031, LDG-3036 | no supported record or call surface retains a legacy branch, canonical identity is locale-independent and exact-typed, current outputs stay exact, and the private lake is rebuilt under the final format |
 | 31 Structural codebase hygiene | LDG-3022, LDG-3023, LDG-3032 to LDG-3035 | the measured helper and condition backlog is reconciled before the source census becomes two failure-sensitive gates, lint moves from advisory to blocking, and the helper rule becomes standing review guidance |
 
 The sequence deliberately crosses Workstream 31 once. LDG-3022's report-only

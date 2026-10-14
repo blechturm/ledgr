@@ -2,6 +2,11 @@
 .ledgr_json_cache_max <- 1024L
 .ledgr_json_cache$count <- 0L
 
+# Canonical identity JSON uses byte-stable radix key ordering. This version is
+# part of the current store fingerprint so stores written under the former
+# locale-sensitive ordering fail closed rather than reusing ambiguous hashes.
+ledgr_canonical_json_rule_version <- 1L
+
 # Fixed yyjsonr options are hoisted so hot read/write helpers do not rebuild
 # option objects on every JSON payload.
 .ledgr_json_read_nested_opts <- yyjsonr::opts_read_json(
@@ -163,7 +168,7 @@ ledgr_canonical_json_encode <- function(x) {
 
       if (!is.null(names(obj)) && length(obj) > 0) {
         nm <- names(obj)
-        ord <- order(nm)
+        ord <- order(nm, method = "radix")
         obj <- as.list(obj)
         names(obj) <- nm
         obj <- obj[ord]
@@ -176,7 +181,7 @@ ledgr_canonical_json_encode <- function(x) {
     if (is.list(obj)) {
       nm <- names(obj)
       if (!is.null(nm)) {
-        ord <- order(nm)
+        ord <- order(nm, method = "radix")
         obj <- obj[ord]
         nm <- nm[ord]
         names(obj) <- nm

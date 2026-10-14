@@ -63,6 +63,37 @@ current_only_comparison_violation <- function(expression,
   !equality || !has_current_binding
 }
 
+current_only_literal_rows <- function(root) {
+  files <- list.files(
+    file.path(root, "R"),
+    pattern = "[.]R$",
+    full.names = TRUE
+  )
+  rows <- lapply(files, function(file) {
+    lines <- readLines(file, warn = FALSE)
+    hits <- grep("availability_close_v1", lines, fixed = TRUE)
+    if (length(hits) == 0L) return(NULL)
+    data.frame(
+      file = file.path("R", basename(file)),
+      line = as.integer(hits),
+      owner = NA_character_,
+      record_kind = "retired_literal",
+      expression = trimws(lines[hits]),
+      persisted_or_convention = TRUE,
+      persistence_evidence = "literal_guard",
+      fingerprint_member = FALSE,
+      atomic_scalar = FALSE,
+      outside_fingerprint = FALSE,
+      comparison_operator = "literal",
+      equality_assertion = FALSE,
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- Filter(Negate(is.null), rows)
+  if (length(rows) == 0L) return(NULL)
+  do.call(rbind, rows)
+}
+
 if ("--self-test-current-only" %in% args) {
   cases <- data.frame(
     expression = c(
@@ -89,6 +120,20 @@ if ("--self-test-current-only" %in% args) {
     USE.NAMES = FALSE
   )
   if (!identical(actual, cases$expected)) {
+    stop("LEDGR_CURRENT_ONLY_SELF_TEST_FAILED", call. = FALSE)
+  }
+  probe <- tempfile("ledgr-current-only-source-")
+  dir.create(file.path(probe, "R"), recursive = TRUE)
+  on.exit(unlink(probe, recursive = TRUE), add = TRUE)
+  writeLines(
+    "if (identical(timing, 'availability_close_v1')) timing <- timing",
+    file.path(probe, "R", "legacy.R"),
+    useBytes = TRUE
+  )
+  literal_rows <- current_only_literal_rows(probe)
+  if (is.null(literal_rows) || nrow(literal_rows) != 1L ||
+      !identical(literal_rows$file[[1L]], "R/legacy.R") ||
+      !identical(literal_rows$record_kind[[1L]], "retired_literal")) {
     stop("LEDGR_CURRENT_ONLY_SELF_TEST_FAILED", call. = FALSE)
   }
   cat("LEDGR_CURRENT_ONLY_SELF_TEST_OK\n")
@@ -530,6 +575,7 @@ if (nrow(connection_rows) > 0L) {
 fingerprint_names <- c(
   "ledgr_availability_execution_timing_rule_version",
   "ledgr_business_objective_schema_version",
+  "ledgr_canonical_json_rule_version",
   "ledgr_corporate_action_policy_schema_version",
   "ledgr_cost_schema_version",
   "ledgr_experiment_store_schema_version",
@@ -673,6 +719,10 @@ for (entry in r_index) {
     )
   }
 }
+literal_rows <- current_only_literal_rows(root)
+if (!is.null(literal_rows)) {
+  version_rows[[length(version_rows) + 1L]] <- literal_rows
+}
 if (length(version_rows) == 0L) {
   version_rows <- empty_frame(c(
     "file", "line", "owner", "record_kind", "expression",
@@ -685,8 +735,9 @@ if (length(version_rows) == 0L) {
   version_rows <- unique(version_rows)
   version_rows$current_only_violation <- mapply(
     function(record_kind, expression, operator, owner) {
-      identical(record_kind, "read_branch_or_equality") &&
-        current_only_comparison_violation(expression, operator, owner)
+      identical(record_kind, "retired_literal") ||
+        (identical(record_kind, "read_branch_or_equality") &&
+           current_only_comparison_violation(expression, operator, owner))
     },
     version_rows$record_kind,
     version_rows$expression,

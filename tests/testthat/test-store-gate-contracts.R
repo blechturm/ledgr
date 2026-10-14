@@ -3,6 +3,7 @@ testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
   expected_types <- c(
     ledgr_availability_execution_timing_rule_version = "integer",
     ledgr_business_objective_schema_version = "integer",
+    ledgr_canonical_json_rule_version = "integer",
     ledgr_corporate_action_policy_schema_version = "integer",
     ledgr_cost_schema_version = "integer",
     ledgr_experiment_store_schema_version = "integer",
@@ -64,7 +65,7 @@ testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
     "ledgr_cost_schema_version"
   )
 
-  testthat::expect_identical(length(bindings), 20L)
+  testthat::expect_identical(length(bindings), 21L)
 })
 
 testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
@@ -140,6 +141,14 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
   expect_cause(marker_store("119", "not-json"), "invalid_marker", 119L)
 
   current <- ledgr:::ledgr_store_format_bindings()
+  prior_ordering <- current
+  prior_ordering[["ledgr_canonical_json_rule_version"]] <- NULL
+  expect_cause(
+    marker_store("119", ledgr:::ledgr_store_format_json(prior_ordering)),
+    "fingerprint_mismatch",
+    119L,
+    "ledgr_canonical_json_rule_version"
+  )
   changed <- current
   changed[["ledgr_cost_schema_version"]] <- 999L
   changed[["ledgr_business_objective_schema_version"]] <- 999L

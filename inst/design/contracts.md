@@ -310,8 +310,9 @@ Accepted change pending:
   equal identity and different content under one reused ID does not; the
   walk-forward `experiment_hash` and `session_id` follow, and each session
   records the rule in its `meta_json`. Every config and session carries
-  identity rule 2; a missing or different rule is refused rather than inferred
-  or migrated. `feature_set_hash` identifies resolved
+  identity rule 2 as the exact integer `2L`; a missing, differently typed or
+  different rule is refused rather than coerced, inferred or migrated.
+  `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
   identifies user-supplied feature parameter values. `alias_map_hash`
   identifies alias declarations and must not change solely because a
@@ -986,7 +987,8 @@ Accepted change pending:
 ## Canonical JSON Contract
 
 - Canonical JSON is produced by `canonical_json()`.
-- Named vectors and named lists are sorted by key before serialization.
+- Named vectors and named lists are sorted by key with radix ordering before
+  serialization, independent of `LC_COLLATE`.
 - Serialization uses `yyjsonr::write_json_str()` with
   `yyjsonr::opts_write_json(pretty = FALSE, auto_unbox = TRUE,
   digits = -1L, null = "null", num_specials = "null")`.
@@ -995,6 +997,10 @@ Accepted change pending:
   keep yyjsonr's shortest round-trippable representation, and exponent notation
   may differ from the v1 jsonlite surface. Hashes that include canonical JSON
   bytes are not expected to match pre-v0.1.8.9 values.
+- The current canonical-identity ordering rule is recorded by
+  `ledgr_canonical_json_rule_version = 1L` in the store format fingerprint.
+  It replaces the former locale-sensitive key order without a compatibility
+  fallback; stores written without that rule marker are rebuilt.
 - Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
   `meta_json` must use this canonical path when deterministic identity matters.
 - Session-local, non-persisted lookup keys are not durable identity artifacts

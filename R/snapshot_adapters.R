@@ -232,7 +232,7 @@ ledgr_snapshot_from_df <- function(bars_df,
       )
     }
 
-    ord_inst <- order(inst_id)
+    ord_inst <- order(inst_id, method = "radix")
     inst_out <- data.frame(
       instrument_id = inst_id[ord_inst],
       symbol = symbol[ord_inst],
@@ -244,7 +244,7 @@ ledgr_snapshot_from_df <- function(bars_df,
     )
     if (!is.null(meta_updates)) meta_updates <- meta_updates[ord_inst]
   } else {
-    inst_id <- sort(unique(bars_out$instrument_id))
+    inst_id <- sort(unique(bars_out$instrument_id), method = "radix")
     inst_out <- data.frame(
       instrument_id = inst_id,
       symbol = inst_id,

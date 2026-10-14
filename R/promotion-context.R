@@ -241,7 +241,7 @@ ledgr_summary_warnings <- function(row) {
 
 ledgr_warning_classes <- function(warnings) {
   classes <- unique(unlist(lapply(warnings, class), use.names = FALSE))
-  sort(as.character(classes))
+  sort(as.character(classes), method = "radix")
 }
 
 #' Read promotion context for a promoted run

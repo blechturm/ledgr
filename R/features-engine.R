@@ -527,7 +527,10 @@ ledgr_compute_features <- function(con, run_id, instrument_ids, start_ts_utc, en
   }
 
   ledgr_validate_feature_defs(feature_defs)
-  feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
+  feature_defs <- feature_defs[order(
+    vapply(feature_defs, function(d) d$id, character(1)),
+    method = "radix"
+  )]
 
   start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
   end_iso <- ledgr_normalize_ts_utc(end_ts_utc)

@@ -185,8 +185,11 @@ ledgr_validate_precomputed_features <- function(precomputed,
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)
   required <- sort(unique(unlist(lapply(resolved$candidates, function(candidate) {
     vapply(candidate$feature_defs, ledgr_feature_def_fingerprint, character(1))
-  }), use.names = FALSE)))
-  available <- sort(unique(as.character(precomputed$feature_union$fingerprint)))
+  }), use.names = FALSE)), method = "radix")
+  available <- sort(
+    unique(as.character(precomputed$feature_union$fingerprint)),
+    method = "radix"
+  )
   missing <- setdiff(required, available)
   if (length(missing) > 0L) {
     rlang::abort(
@@ -567,7 +570,7 @@ ledgr_feature_set_hash <- function(feature_fingerprints) {
   if (!is.character(feature_fingerprints) || anyNA(feature_fingerprints) || any(!nzchar(feature_fingerprints))) {
     rlang::abort("`feature_fingerprints` must be a character vector of non-empty strings.", class = "ledgr_invalid_args")
   }
-  normalized <- sort(unique(unname(feature_fingerprints)))
+  normalized <- sort(unique(unname(feature_fingerprints)), method = "radix")
   digest::digest(canonical_json(list(feature_fingerprints = normalized)), algo = "sha256")
 }
 
@@ -641,7 +644,7 @@ ledgr_precompute_feature_union <- function(unique_defs) {
     )
   })
   out <- tibble::as_tibble(do.call(rbind, rows))
-  out[order(out$feature_id, out$fingerprint), , drop = FALSE]
+  out[order(out$feature_id, out$fingerprint, method = "radix"), , drop = FALSE]
 }
 
 ledgr_precompute_payload <- function(unique_defs, bars_by_id, availability_active = FALSE) {

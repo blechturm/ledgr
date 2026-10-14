@@ -185,7 +185,7 @@ ledgr_corporate_action_plan <- function(rows,
                                         existing_events = data.frame(),
                                         start_idx = 1L,
                                         dispositions_active = TRUE) {
-  if (is.null(policy_identity) || is.null(rows) || nrow(rows) == 0L) return(NULL)
+  if (is.null(rows) || nrow(rows) == 0L) return(NULL)
   settings <- ledgr_corporate_action_policy_settings(policy_identity)
   if (anyDuplicated(rows$fact_id)) {
     rlang::abort(

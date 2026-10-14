@@ -112,11 +112,11 @@ ledgr_alias_map_storage <- function(alias_map, identity_map = NULL) {
     )
   }
 
-  canonical_alias_map <- alias_map[order(names(alias_map))]
+  canonical_alias_map <- alias_map[order(names(alias_map), method = "radix")]
   mappings <- lapply(names(canonical_alias_map), function(alias) {
     list(alias = alias, feature_id = unname(canonical_alias_map[[alias]]))
   })
-  canonical_identity_map <- identity_map[order(names(identity_map))]
+  canonical_identity_map <- identity_map[order(names(identity_map), method = "radix")]
   identity_mappings <- lapply(names(canonical_identity_map), function(alias) {
     list(alias = alias, feature_identity = unname(canonical_identity_map[[alias]]))
   })
@@ -213,7 +213,7 @@ ledgr_feature_lookup_map <- function(feature_map = NULL, active_alias_map = NULL
 ledgr_feature_name_lookup_state <- function(feature_ids,
                                             active_alias_map = NULL,
                                             normalized = FALSE) {
-  feature_ids <- sort(unique(as.character(feature_ids)))
+  feature_ids <- sort(unique(as.character(feature_ids)), method = "radix")
   feature_ids <- feature_ids[!is.na(feature_ids) & nzchar(feature_ids)]
   alias_map <- if (isTRUE(normalized)) {
     active_alias_map

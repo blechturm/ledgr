@@ -2443,7 +2443,7 @@ ledgr_sweep_feature_union <- function(candidate_features) {
     return(character())
   }
   values <- unlist(candidate_features$feature_fingerprints, use.names = FALSE)
-  sort(unique(as.character(values)))
+  sort(unique(as.character(values)), method = "radix")
 }
 
 ledgr_sweep_telemetry_env <- function() {

@@ -191,7 +191,8 @@ ledgr_walk_forward <- function(exp,
       score_table$fold_seq,
       score_table$window,
       score_table$candidate_key,
-      score_table$metric_name
+      score_table$metric_name,
+      method = "radix"
     ), , drop = FALSE]
     rownames(score_table) <- NULL
   }

@@ -56,6 +56,14 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     ledgr:::config_hash_payload(missing_hash),
     class = "ledgr_invalid_config"
   )
+  for (wrong_type in list(2, "2")) {
+    wrong_rule <- current
+    wrong_rule$identity_rule_version <- wrong_type
+    testthat::expect_error(
+      ledgr:::config_hash_payload(wrong_rule),
+      class = "ledgr_invalid_config"
+    )
+  }
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -77,6 +85,10 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
     db_path = db_path
   )
+  round_trip <- ledgr:::ledgr_json_read_config(
+    ledgr:::canonical_json(config)
+  )
+  testthat::expect_identical(round_trip$identity_rule_version, 2L)
 
   invalid_configs <- list(
     missing_identity_rule = function(x) {
@@ -85,6 +97,14 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     },
     old_identity_rule = function(x) {
       x$identity_rule_version <- 1L
+      x
+    },
+    double_identity_rule = function(x) {
+      x$identity_rule_version <- 2
+      x
+    },
+    character_identity_rule = function(x) {
+      x$identity_rule_version <- "2"
       x
     },
     missing_snapshot_hash = function(x) {
@@ -112,10 +132,27 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     ledgr:::validate_ledgr_config(old_policy),
     class = "ledgr_policy_schema_mismatch"
   )
+  bad_valuation <- config
+  bad_valuation$availability <- list(
+    active = TRUE,
+    declared_families = "sessions",
+    valuation_policy = unclass(ledgr_valuation_stale()),
+    provider_version = ledgr:::ledgr_availability_provider_version(),
+    execution_timing_version = 2L,
+    universe_rule = NULL
+  )
+  bad_valuation$availability$valuation_policy$exhausted <- "bogus"
+  testthat::expect_error(
+    ledgr:::validate_ledgr_config(bad_valuation),
+    "`valuation_policy` must be created by `ledgr_valuation_stale()`.",
+    class = "ledgr_invalid_valuation_policy",
+    fixed = TRUE
+  )
 
   con <- ledgr:::get_connection(snapshot)
   resume_cases <- invalid_configs[c(
-    "missing_identity_rule", "old_identity_rule", "missing_snapshot_hash"
+    "missing_identity_rule", "old_identity_rule", "double_identity_rule",
+    "character_identity_rule", "missing_snapshot_hash"
   )]
   for (case_name in names(resume_cases)) {
     run_id <- paste0("current-only-", case_name)
@@ -144,6 +181,18 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   }
 
   ledgr_run_config(config, run_id = "current-only-open")
+  current_info <- ledgr_run_info(snapshot, "current-only-open")
+  testthat::expect_identical(current_info$telemetry_missing, FALSE)
+  DBI::dbExecute(
+    con,
+    "DELETE FROM run_telemetry WHERE run_id = 'current-only-open'"
+  )
+  missing_info <- ledgr_run_info(snapshot, "current-only-open")
+  testthat::expect_identical(missing_info$telemetry_missing, TRUE)
+  testthat::expect_identical(missing_info$elapsed_sec, NA_real_)
+  testthat::expect_identical(missing_info$persist_features, NA)
+  testthat::expect_identical(missing_info$feature_cache_hits, NA_integer_)
+  testthat::expect_identical(missing_info$feature_cache_misses, NA_integer_)
   original_json <- DBI::dbGetQuery(
     con,
     "SELECT config_json FROM runs WHERE run_id = 'current-only-open'"
@@ -209,12 +258,12 @@ testthat::test_that("[LTB-0265] removed public call forms have no compatibility 
     names(formals(ledgr:::ledgr_metric_kernel)),
     c("context", "pulses")
   )
-  sparse_pulses <- as.POSIXct(
-    c("2020-01-01", "2021-01-01"),
+  weekly_pulses <- as.POSIXct(
+    c("2020-01-01", "2020-01-08"),
     tz = "UTC"
   )
   testthat::expect_identical(
-    suppressWarnings(ledgr:::ledgr_metric_kernel(pulses = sparse_pulses))$bars_per_year,
+    suppressWarnings(ledgr:::ledgr_metric_kernel(pulses = weekly_pulses))$bars_per_year,
     ledgr:::ledgr_metric_kernel()$bars_per_year
   )
 
@@ -251,4 +300,69 @@ testthat::test_that("[LTB-0265] removed public call forms have no compatibility 
     ledgr:::ledgr_sweep_retention_from_json(legacy_retention),
     class = "ledgr_sweep_schema_incompatible"
   )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0266] identity JSON is locale-independent across processes", {
+  testthat::skip_if_not_installed("pkgload")
+  testthat::expect_identical(
+    as.character(ledgr:::canonical_json(list(
+      strategy_params = list(lookback = 60L, n = 20L)
+    ))),
+    '{"strategy_params":{"lookback":60,"n":20}}'
+  )
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  script <- tempfile(fileext = ".R")
+  on.exit(unlink(script), add = TRUE)
+  writeLines(c(
+    ".libPaths(c(Sys.getenv('R_LIBS_USER'), .libPaths()))",
+    "pkgload::load_all(commandArgs(TRUE)[[1L]], quiet = TRUE)",
+    "active <- suppressWarnings(Sys.setlocale('LC_COLLATE', commandArgs(TRUE)[[2L]]))",
+    "if (is.na(active) || !nzchar(active)) { cat('LEDGR_LOCALE_UNAVAILABLE\\n'); quit(save = 'no') }",
+    "keys <- c('a_key', 'B_key', '_key')",
+    "params <- stats::setNames(list(1L, 2L, 3L), keys)",
+    "config <- list(identity_rule_version = 2L, data = list(snapshot_id = 'local', snapshot_hash = 'hash'), risk_chain = list(risk_chain_hash = 'risk', risk_plan_json = '{}'), strategy = list(params = params))",
+    "cat(paste0('LEDGR_ACTIVE=', active, '\\n'))",
+    "cat(paste0('LEDGR_ORDER=', paste(order(keys), collapse = ','), '\\n'))",
+    "cat(paste0('LEDGR_JSON=', unname(ledgr:::canonical_json(list(strategy_params = params))), '\\n'))",
+    "cat(paste0('LEDGR_HASH=', ledgr:::config_hash(config), '\\n'))"
+  ), script, useBytes = TRUE)
+  run_locale <- function(locale) {
+    output <- suppressWarnings(system2(
+      file.path(R.home("bin"), "Rscript"),
+      c("--vanilla", shQuote(script), shQuote(root), shQuote(locale)),
+      stdout = TRUE,
+      stderr = TRUE
+    ))
+    if (any(output == "LEDGR_LOCALE_UNAVAILABLE")) return(NULL)
+    field <- function(prefix) {
+      hit <- output[startsWith(output, prefix)]
+      if (length(hit) != 1L) return(NA_character_)
+      substring(hit, nchar(prefix) + 1L)
+    }
+    list(
+      active = field("LEDGR_ACTIVE="),
+      order = field("LEDGR_ORDER="),
+      json = field("LEDGR_JSON="),
+      hash = field("LEDGR_HASH=")
+    )
+  }
+  c_result <- run_locale("C")
+  testthat::expect_false(is.null(c_result))
+  candidates <- c(
+    "en_US.UTF-8", "English_United States.1252",
+    "English_United States.utf8", "de_AT.UTF-8",
+    "German_Germany.1252"
+  )
+  other <- NULL
+  for (candidate in candidates) {
+    result <- run_locale(candidate)
+    if (!is.null(result) && !identical(result$order, c_result$order)) {
+      other <- result
+      break
+    }
+  }
+  testthat::expect_false(is.null(other))
+  testthat::expect_identical(other$json, c_result$json)
+  testthat::expect_identical(other$hash, c_result$hash)
 })

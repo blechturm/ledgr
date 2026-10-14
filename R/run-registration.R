@@ -94,7 +94,7 @@ ledgr_run_registration <- function(con,
   } else {
     stored_cfg <- ledgr_json_read_config(run_row$config_json[[1]])
     if (!identical(
-      as.integer(stored_cfg$identity_rule_version),
+      stored_cfg$identity_rule_version,
       ledgr_identity_rule_version
     ) || !is.character(stored_cfg$data$snapshot_hash) ||
         length(stored_cfg$data$snapshot_hash) != 1L ||
