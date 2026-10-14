@@ -547,7 +547,10 @@ The following do not gate v0.2.2:
   - a user-facing adoption item: the survivorship-bias article on synthetic
     data and a CRAN target date;
   - the decision on the v0.2.1.0 packet path
-    (`ledgr_v0_2_0_2_spec_packet/`).
+    (`ledgr_v0_2_0_2_spec_packet/`);
+  - the install floor as an adoption barrier: `R (>= 4.6.0)` together with
+    the hard DuckDB dependency. Lower the floor, or state the reason in the
+    README.
 
   The governance cut's roadmap rewrite lists them in the next-release
   section.
@@ -842,6 +845,11 @@ workstreams each carry one claim and one Type 1 close review:
 4. Records: synthesis status headers, the packet `README.md` trim and the
    evidence form for open tickets.
 
+The cut also decides whether the design tree moves out of `inst/` to a
+repository-level directory (maintainer, 2026-10-14). Cut 14 Workstream 31
+already excludes it from the package build, so this is a naming and
+location decision, about 900 path references, not a size fix.
+
 Two parts of the synthesis do not wait for this cut. M1 (the 0.5 gate is
 retired; the ratio of independent verdicts to completed tickets is recorded
 at cut close and as a packet total; a third correction round on one
@@ -916,4 +924,7 @@ under 0.1 percent of any public call, with end-to-end clocks unchanged
 (maintainer, 2026-10-14; recorded in the WS29 decisions). Three review-found
 hot spots, CI cadence and fast-lane headroom go to WS8 (above), and the
 audit, fold split, adoption item and packet path to the next release
-(Section 5).
+(Section 5). Later the same day: the design tree ships inside the package
+(about 4.8 MB gzipped against 1.6 MB for the rest), so its build exclusion
+goes to Cut 14 Workstream 31, the decision to move it out of `inst/` to the
+governance cut, and the install floor to the next release.
