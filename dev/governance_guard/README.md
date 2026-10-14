@@ -16,9 +16,11 @@ The command reads tracked Markdown and Quarto sources at top-level
 It also reads `tests/claims.yml`. It prints the baseline commit, every scanned
 path, the population digest, counts and each finding. The claims identity is
 the repository-root-relative path plus SHA-256 of its UTF-8 text normalized to
-LF with one terminal newline; no checkout directory or platform line ending
-enters successful report output. It never changes a file, offers no check mode
-and returns success when structural findings exist. Missing or malformed
+LF with one terminal newline. No checkout directory enters report content, but
+raw shell stdout uses the platform's line endings. The report SHA recorded in
+ticket evidence is instead computed over the returned report lines joined
+with LF and no final newline. The tool never changes a file, offers no check
+mode and returns success when structural findings exist. Missing or malformed
 inputs are invocation errors.
 
 `baseline.yml` is the measured, entry-specific debt baseline. Every entry is

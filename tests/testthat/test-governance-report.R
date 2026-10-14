@@ -197,6 +197,24 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     fixed = TRUE
   )))
 
+  broken_root_link <- copy_fixture()
+  on.exit(unlink(dirname(broken_root_link), recursive = TRUE), add = TRUE)
+  replace_once(
+    broken_root_link,
+    "inst/design/README.md",
+    "../../outside.md#current-rule",
+    "/missing-root.md"
+  )
+  broken_root_finding <- finding_line(
+    run_fixture(broken_root_link),
+    "broken_local_target"
+  )
+  testthat::expect_true(any(grepl(
+    "target=/missing-root.md",
+    broken_root_finding,
+    fixed = TRUE
+  )))
+
   escaping <- copy_fixture()
   on.exit(unlink(dirname(escaping), recursive = TRUE), add = TRUE)
   replace_once(
@@ -356,7 +374,7 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     type_2,
     "inst/design/rfc/review.md",
     "Verdict: PASS",
-    "Verdict: **`PROCEED`**"
+    "Verdict: **`REVISE_SEED`**"
   )
   cat(
     "\n## Historical quotation\n\nVerdict: MAYBE\n",
@@ -365,6 +383,51 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   )
   testthat::expect_length(
     finding_line(run_fixture(type_2), "invalid_verdict"),
+    0L
+  )
+
+  type_1_changes <- copy_fixture()
+  on.exit(unlink(dirname(type_1_changes), recursive = TRUE), add = TRUE)
+  replace_once(
+    type_1_changes,
+    "inst/design/rfc/review.md",
+    "Verdict: PASS",
+    "Verdict: **`CHANGES_REQUIRED`**"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(type_1_changes), "invalid_verdict"),
+    0L
+  )
+
+  accepted_verdicts <- list(
+    `Type 1` = c("PASS", "PASS_AFTER_PATCHES", "CHANGES_REQUIRED", "NEEDS_TYPE_2"),
+    `Type 2` = c("PROCEED", "REVISE_SEED", "REJECT")
+  )
+  verdict_root <- tempfile("governance-verdicts-")
+  dir.create(verdict_root)
+  on.exit(unlink(verdict_root, recursive = TRUE), add = TRUE)
+  verdict_sources <- character()
+  for (mode in names(accepted_verdicts)) {
+    for (token in accepted_verdicts[[mode]]) {
+      source <- paste0(
+        tolower(gsub("[^A-Z0-9]+", "-", paste(mode, token))),
+        ".md"
+      )
+      decorated <- if (token %in% c("CHANGES_REQUIRED", "REVISE_SEED")) {
+        paste0("**`", token, "`**")
+      } else {
+        token
+      }
+      writeLines(
+        c(paste0("Mode: ", mode), paste0("Verdict: ", decorated)),
+        file.path(verdict_root, source),
+        useBytes = TRUE
+      )
+      verdict_sources <- c(verdict_sources, source)
+    }
+  }
+  testthat::expect_equal(
+    nrow(guard$governance_scan_states_and_verdicts(verdict_root, verdict_sources)),
     0L
   )
 
@@ -536,6 +599,16 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     run_fixture(malformed),
     class = "ledgr_governance_report_input"
   )
+  invalid_baseline <- copy_fixture()
+  on.exit(unlink(dirname(invalid_baseline), recursive = TRUE), add = TRUE)
+  invalid_baseline_value <- yaml::read_yaml(file.path(invalid_baseline, "baseline.yml"))
+  invalid_baseline_value$entries[[1L]]$kind <- NULL
+  yaml::write_yaml(invalid_baseline_value, file.path(invalid_baseline, "baseline.yml"))
+  testthat::expect_error(
+    run_fixture(invalid_baseline),
+    "baseline entry 1 is malformed",
+    class = "ledgr_governance_report_input"
+  )
   malformed_claims <- copy_fixture()
   on.exit(unlink(dirname(malformed_claims), recursive = TRUE), add = TRUE)
   writeLines("claims: [", file.path(malformed_claims, "claims.yml"))
@@ -543,11 +616,22 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     run_fixture(malformed_claims),
     class = "ledgr_governance_report_input"
   )
+  invalid_claims <- copy_fixture()
+  on.exit(unlink(dirname(invalid_claims), recursive = TRUE), add = TRUE)
+  invalid_claims_value <- yaml::read_yaml(file.path(invalid_claims, "claims.yml"))
+  invalid_claims_value$claims[[1L]]$source <- NULL
+  yaml::write_yaml(invalid_claims_value, file.path(invalid_claims, "claims.yml"))
+  testthat::expect_error(
+    run_fixture(invalid_claims),
+    "claims entry 1 lacks id or source",
+    class = "ledgr_governance_report_input"
+  )
   malformed_tracked <- copy_fixture()
   on.exit(unlink(dirname(malformed_tracked), recursive = TRUE), add = TRUE)
-  writeLines("tracked: not-a-list", file.path(malformed_tracked, "tracked.yml"))
+  writeLines("tracked: 12", file.path(malformed_tracked, "tracked.yml"))
   testthat::expect_error(
     run_fixture(malformed_tracked),
+    "tracked manifest must contain a non-empty tracked list",
     class = "ledgr_governance_report_input"
   )
   unreadable <- copy_fixture()

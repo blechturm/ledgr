@@ -906,8 +906,9 @@ governance_scan_states_and_verdicts <- function(root, sources) {
         lines[[line]],
         ignore.case = TRUE
       )))
-      verdict <- gsub("[*`_]", "", verdict)
+      verdict <- gsub("[*`]", "", verdict)
       verdict <- sub("[[:space:].].*$", "", verdict)
+      verdict <- gsub("^_+|_+$", "", verdict)
       allowed <- if (grepl("type 2", mode, fixed = TRUE)) type_2 else type_1
       if (!(verdict %in% allowed)) {
         findings[[length(findings) + 1L]] <- governance_finding(
