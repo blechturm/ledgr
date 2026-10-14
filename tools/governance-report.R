@@ -980,8 +980,7 @@ governance_sha256_lines <- function(lines) {
 }
 
 governance_sha256_file <- function(path) {
-  governance_read_lines(path)
-  digest::digest(file = path, algo = "sha256", serialize = FALSE)
+  governance_sha256_lines(governance_read_lines(path))
 }
 
 governance_root_relative <- function(root, path, label) {

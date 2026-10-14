@@ -34,6 +34,21 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
 
   guard <- new.env(parent = globalenv())
   sys.source(tool, envir = guard)
+  lf_claims <- tempfile("claims-lf-", fileext = ".yml")
+  crlf_claims <- tempfile("claims-crlf-", fileext = ".yml")
+  on.exit(unlink(c(lf_claims, crlf_claims)), add = TRUE)
+  writeBin(
+    charToRaw("claims:\n  - id: portable\n    source: accepted synthesis\n"),
+    lf_claims
+  )
+  writeBin(
+    charToRaw("claims:\r\n  - id: portable\r\n    source: accepted synthesis\r\n"),
+    crlf_claims
+  )
+  testthat::expect_identical(
+    guard$governance_sha256_file(lf_claims),
+    guard$governance_sha256_file(crlf_claims)
+  )
   production_baseline <- yaml::read_yaml(file.path(
     package_root,
     "dev",
@@ -103,7 +118,10 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   testthat::expect_true("BASELINE_POPULATION_MATCH\ttrue" %in% first)
   testthat::expect_true("SCAN_SOURCE_COUNT\t8" %in% first)
   testthat::expect_true("CLAIMS_INPUT\tclaims.yml" %in% first)
-  testthat::expect_true(any(startsWith(first, "CLAIMS_SHA256\t")))
+  testthat::expect_true(paste0(
+    "CLAIMS_SHA256\t",
+    guard$governance_sha256_file(file.path(pristine, "claims.yml"))
+  ) %in% first)
   testthat::expect_true("CLAIMS_COUNT\t1" %in% first)
   testthat::expect_true("NEW_STRUCTURAL_COUNT\t0" %in% first)
   testthat::expect_length(finding_line(first, "broken_local_target", 1L), 1L)
