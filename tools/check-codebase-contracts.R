@@ -1359,9 +1359,6 @@ test_seam_contracts <- c(
   ledgr_check_no_lookahead = paste(
     "Inject hostile callbacks into the prefix-invariance causality oracle."
   ),
-  ledgr_compute_features = paste(
-    "Exercise the private feature-engine oracle over controlled bars."
-  ),
   ledgr_equity_from_events = paste(
     "Reconstruct equity from controlled events for fold-parity assertions."
   ),
