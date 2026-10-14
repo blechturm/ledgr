@@ -1,3 +1,5 @@
+ledgr_universe_rule_schema_version <- 1L
+
 #' Point-in-time universe and valuation policies
 #'
 #' These constructors opt an experiment into point-in-time availability
@@ -41,7 +43,7 @@ ledgr_universe_members <- function(universe_id) {
   universe_id <- ledgr_fact_scalar_id(universe_id, "universe_id")
   structure(
     list(
-      schema_version = 1L,
+      schema_version = ledgr_universe_rule_schema_version,
       type_id = "membership_universe",
       universe_id = universe_id
     ),

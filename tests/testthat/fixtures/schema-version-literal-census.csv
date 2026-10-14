@@ -1,0 +1,18 @@
+source_location,enclosing_object,field,classification,persistence_path,disposition
+R/availability-inspection.R:228,ledgr_facts_inspection_result,schema_version,memory_only,returned inspection object; not persisted by ledgr,literal retained
+R/availability-policy.R:46,ledgr_universe_members,schema_version,config_persisted,run_configs.config_json availability.universe_rule,fingerprinted_constant:ledgr_universe_rule_schema_version
+R/availability-policy.R:355,ledgr_experiment_plan,schema_version,memory_only,returned experiment plan; not persisted by ledgr,literal retained
+R/business-objective.R:653,ledgr_objective_validate_snapshot,snapshot_schema_version,memory_only,validated objective evidence snapshot embedded in an in-memory plan; not persisted by ledgr,literal retained
+R/business-objective.R:725,ledgr_objective_diagnostic_snapshot,snapshot_schema_version,memory_only,objective evidence snapshot embedded in an in-memory plan; not persisted by ledgr,literal retained
+R/business-objective.R:732,ledgr_objective_diagnostic_snapshot,source_metadata.schema_version,memory_only,source metadata embedded in an in-memory objective plan; not persisted by ledgr,literal retained
+R/sim-pit-inputs.R:285,ledgr_sim_pit_inputs recipe,schema_version,memory_only,returned simulation recipe; not persisted by ledgr,literal retained
+R/validation-dsr.R:54,ledgr_effective_trials_cluster summary,schema_version,memory_only,returned diagnostic summary; not persisted by ledgr,literal retained
+R/validation-dsr.R:82,ledgr_effective_trials_cluster metadata,schema_version,memory_only,returned diagnostic metadata; not persisted by ledgr,literal retained
+R/validation-dsr.R:209,ledgr_dsr summary,schema_version,memory_only,returned diagnostic summary; not persisted by ledgr,literal retained
+R/validation-dsr.R:231,ledgr_dsr metadata,schema_version,memory_only,returned diagnostic metadata; not persisted by ledgr,literal retained
+R/validation-k-ratio.R:51,ledgr_k_ratio summary,schema_version,memory_only,returned diagnostic summary; not persisted by ledgr,literal retained
+R/validation-k-ratio.R:69,ledgr_k_ratio metadata,schema_version,memory_only,returned diagnostic metadata; not persisted by ledgr,literal retained
+R/validation-min-track-record.R:51,ledgr_min_track_record summary,schema_version,memory_only,returned diagnostic summary; not persisted by ledgr,literal retained
+R/validation-min-track-record.R:69,ledgr_min_track_record metadata,schema_version,memory_only,returned diagnostic metadata; not persisted by ledgr,literal retained
+R/validation-pbo.R:56,ledgr_pbo summary,schema_version,memory_only,returned diagnostic summary; not persisted by ledgr,literal retained
+R/validation-pbo.R:88,ledgr_pbo metadata,schema_version,memory_only,returned diagnostic metadata; not persisted by ledgr,literal retained

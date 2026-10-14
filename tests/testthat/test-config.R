@@ -322,6 +322,27 @@ testthat::test_that("validation fails loud on required fields and constraints", 
   cfg_bad_seed <- base_cfg
   cfg_bad_seed$engine$seed <- 1.2
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg_bad_seed), "engine.seed", fixed = TRUE)
+
+  cfg_membership <- base_cfg
+  cfg_membership$data$snapshot_id <- "test-snapshot"
+  cfg_membership$availability <- list(
+    active = TRUE,
+    declared_families = "sessions",
+    valuation_policy = ledgr_valuation_stale(),
+    provider_version = ledgr:::ledgr_availability_provider_version(),
+    execution_timing_version = ledgr:::ledgr_availability_execution_timing_rule_version,
+    universe_rule = ledgr_universe_members("research_universe")
+  )
+  testthat::expect_error(ledgr:::ledgr_validate_config(cfg_membership), NA)
+
+  cfg_old_universe_rule <- cfg_membership
+  cfg_old_universe_rule$availability$universe_rule$schema_version <- 0L
+  testthat::expect_error(
+    ledgr:::ledgr_validate_config(cfg_old_universe_rule),
+    "availability.universe_rule",
+    fixed = TRUE,
+    class = "ledgr_invalid_config"
+  )
 })
 
 testthat::test_that("canonical JSON does not include environment addresses or environment serialization", {

@@ -118,7 +118,9 @@ validate_ledgr_config <- function(config) {
     }
     rule <- availability$universe_rule
     if (!is.null(rule) &&
-        (!is.list(rule) || !identical(rule$type_id, "membership_universe") ||
+        (!is.list(rule) ||
+         !identical(as.integer(rule$schema_version), ledgr_universe_rule_schema_version) ||
+         !identical(rule$type_id, "membership_universe") ||
          !is.character(rule$universe_id) || length(rule$universe_id) != 1L ||
          is.na(rule$universe_id) || !nzchar(rule$universe_id))) {
       rlang::abort(
