@@ -66,9 +66,12 @@ ledger.
   residues, corrected with detecting evidence at `1a240476`. The corrected
   fast record passes at a 107.03-second median. The maintainer accepted
   Workstream 29 and its honestly recorded cold-open miss on 2026-10-13.
-  Workstream 30 is implemented through `b55552e3`; its exact fixture ladder,
-  check-mode censuses, aggregate-only current-format lake rebuild and complete
-  validation record are ready for independent Type 1 close review.
+  Workstream 30 received a CHANGES_REQUIRED Type 1 close review, preserved in
+  `close_review_30.md`. Corrections through `0adbd7b1` remove the residual
+  current-only reader and detector gaps, refresh the census at 20 fingerprint
+  members, regenerate the corrected help with roxygen2 8.1.0 and repin the
+  final current-config sweep fixture at `10c8b444`. Focused
+  re-review and maintainer acceptance remain before Workstream 31 resumes.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.

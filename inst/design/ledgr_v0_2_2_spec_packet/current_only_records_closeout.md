@@ -1,9 +1,9 @@
 # Workstream 30 Closeout: Current-Only Records And Public Surfaces
 
-**Status:** Awaiting independent Type 1 close review and maintainer acceptance.
+**Status:** Close-review corrections implemented; awaiting focused Type 1 re-review.
 **Date:** 2026-10-14
 **Baseline commit:** `fc4d8fc7`
-**Implementation range:** `fc4d8fc7..b55552e3`
+**Implementation range:** `fc4d8fc7..10c8b444`
 **Tickets:** LDG-3028 through LDG-3031
 
 ## A. Claim And Boundary
@@ -36,6 +36,10 @@ R6 refusal. It adds no compatibility code.
 | Census refresh | `02167e15` | current source-derived check-mode reports |
 | Exactness correction | `b55552e3` | retain the current run-information shape exactly |
 | LDG-3031 | `fe95d4e7` | fresh current-format lake and aggregate-only lane record |
+| Close-review product corrections | `d9a0306a` | close F1-F9, F11 and F12 with detecting evidence |
+| roxygen2 8.1 tooling regeneration | `b538246c`, `b623d758` | upgrade and repin generator-only output |
+| F10 documentation correction | `0adbd7b1` | regenerate only the corrected current-only help text |
+| Final current-config fixture | `10c8b444` | supply required identities and repin the sweep hash |
 
 ## C. Current Record And Call Surface
 
@@ -43,7 +47,11 @@ Current run configuration hashing and validation require identity rule 2 and
 `data.snapshot_hash`. Policy identities require their current schema-2
 representations. Availability execution timing accepts only version 2.
 Saved sweeps accept only schema 4 and retention schema 2. Strategy provenance
-and run reopening no longer infer older shapes.
+and run reopening no longer infer older shapes. Promotion contexts require
+version 2. Stored configurations require both `risk_chain` and
+`corporate_actions`; only public experiment construction normalizes an
+omitted risk declaration. The metric kernel has no context-free result
+fallback.
 
 The executable tree no longer contains the six retired condition classes:
 
@@ -61,12 +69,15 @@ dots. Retention-v1 normalization and the unreachable metric-kernel fallback
 are absent. Old calls fail as unsupported calls through ordinary current API
 validation; no translator or compatibility alias replaces them.
 
-LTB-0264 and LCL-0262 pin the current-only record boundary. LTB-0265 and
-LCL-0263 pin the removed public forms, fallback branches and retired
-conditions. Existing claims were either rewritten with their owning deletion
-or explicitly retired. Current telemetry absence still yields typed missing
-values, omitted risk still normalizes during construction and timing version 2
-keeps its exact convention.
+LTB-0264 and LCL-0262 pin validation and resume refusal for missing or
+non-current identity fields, reopen refusal for missing stored risk and
+corporate-action identities, exact policy-schema refusal and missing strategy
+provenance. LTB-0265 and LCL-0263 pin the removed public forms, the exact
+retention-schema reader, the removed metric fallback and retired conditions.
+LTB-0250 again covers missing, older and future snapshot-hash rules across the
+current row-dependent read surfaces. Separate owning tests retain the
+typed-missing telemetry, construction-time risk normalization and timing-v2
+contracts.
 
 ## D. Source-Derived Checks
 
@@ -77,20 +88,24 @@ tree and writes the committed census under
 | Family | Rows | Recorded findings |
 | --- | ---: | ---: |
 | connection entries | 69 | 0 |
-| persisted versions and conventions | 119 | 3 |
-| hand-built run-config entries | 77 | 0 |
-| helpers | 1,642 | 10 |
-| condition call sites | 2,259 | 64 |
-| condition classes | 377 | 247 |
+| persisted versions and conventions | 136 | 1 |
+| hand-built run-config entries | 80 | 0 |
+| helpers | 1,640 | 11 |
+| condition call sites | 2,267 | 64 |
+| condition classes | 379 | 247 |
 
 The version and run-config families are binding in this workstream. Check mode
 finds no current-only violation and no hand-built run-config violation. The
-helper and condition counts are measured inputs for Workstream 31, not
-Workstream 30 failures. The fingerprint inventory remains eighteen members.
+sole version-inventory finding is the separately versioned promotion context,
+whose reader now requires exact v2 equality. Helper and condition counts are
+measured inputs for Workstream 31, not Workstream 30 failures. The production
+format-fingerprint inventory contains twenty members.
 
-The registered detector rejects a restored rule-1 or
-`availability_close_v1` arm, a hand-built current run config missing either
-identity field and a restored removed call or fallback surface.
+The registered detector uses positive rules for persisted-version reads and
+rejects a restored rule-1 or `availability_close_v1` arm, a hand-built current
+run config missing either identity field and a restored removed call or
+fallback surface. Its self-test injects a legacy branch and proves that check
+mode fails rather than relying on a fixed text denylist.
 
 ## E. Exactness
 
@@ -167,17 +182,21 @@ fixtures, and the census runs once as a development gate.
 ## H. Verification
 
 The focused identity, policy, timing, sweep, provenance, result, condition,
-documentation-contract and control-plane suites pass. The final ordinary fast
-record executes 563 of 563 blocks with zero failures or skips in 101.40
-seconds against the unchanged 112-second bound. The complete review profile
+documentation-contract and control-plane suites pass. The original ordinary
+fast record executes 563 of 563 blocks with zero failures or skips in 101.40
+seconds. The final correction record at
+`C:/Users/maxth/ledgr-research/.test-evidence/ws30-correction-fast-10c8b444`
+executes 562 of 562 blocks with zero failures or skips in 106.21 seconds
+against the unchanged 112-second bound. The original complete review profile
 executes 334 of 334 blocks with zero failures and one pre-existing optional
 path skip in 278.98 seconds.
 
-The package builds. `R CMD check --no-manual --no-build-vignettes` completes
-with all tests and all 24 vignette replays passing. Its two warnings and two
-notes are the pre-existing no-built-vignette, hidden `.lintr` and long evidence
-path findings; no Workstream 30 error, S3 consistency failure or dependency
-failure remains. `git diff --check` is clean.
+The package builds. The final
+`R CMD check --no-manual --no-build-vignettes` completes with all tests and
+all 24 vignette replays passing. Its two warnings and two notes are the
+pre-existing no-built-vignette, hidden `.lintr` and long evidence-path
+findings. All Rd, cross-reference, usage and code/documentation checks pass;
+roxygen2 8.1.0 introduces no Rd warning.
 
 The implementation removes 3,179 lines and adds 2,474 across 79 changed files
 before the evidence and closeout commit. Most additions are updated fixtures,
@@ -186,17 +205,14 @@ deleted rather than hidden.
 
 ## I. Review Boundary
 
-The requested independent Type 1 close review follows the governance-lifecycle
-synthesis accepted on 2026-10-14. The review should inspect current-only
-failure sensitivity, exact current outputs, the source-derived censuses, the
-fixture ladder, the seven shapes and the committed aggregate-only research
-record. It must not read private vendor rows.
+The independent Type 1 close review returned CHANGES_REQUIRED with twelve
+findings. Its durable record is `close_review_30.md`. Corrections
+`d9a0306a`, `b538246c`, `b623d758`, `0adbd7b1` and `10c8b444` close the
+current-only reader, detector, census, provenance and generated-help gaps
+without changing the accepted design. A focused Type 1 re-review should verify
+only those corrections and anything they could break. A third correction
+round stops for maintainer disposition. Review counts are measured once at
+Cut 14 close and are not a workstream gate.
 
-If the review returns findings, they live in `close_review_30.md`; the
-workstream review result then records its verdict, link and one line on what
-changed. A finding-free PASS is recorded in one line without a new file. A
-third correction round stops for maintainer disposition. Review counts are
-measured once at Cut 14 close and are not a workstream gate.
-
-Workstream 30 remains `review_pending` until that review and maintainer
+Workstream 30 remains `review_pending` until focused re-review and maintainer
 acceptance. Workstream 31 resumes only after acceptance.
