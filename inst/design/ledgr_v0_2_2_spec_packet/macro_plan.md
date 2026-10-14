@@ -282,6 +282,32 @@ scale.
   WS3 and WS4 bind the relevant history, knowledge-cutoff, missingness and
   recursive-initialization semantics; snapshot and feature identity alone
   must not be assumed sufficient.
+- First, decide whether ledgr needs to keep computed features at all
+  (maintainer, 2026-10-14). The in-process feature cache (`R/feature-cache.R`:
+  an unbounded session registry keyed by snapshot, instrument, feature
+  fingerprint, engine version and exact window, used only by committed runs)
+  and the default `persist_features = TRUE` writes were specified early and
+  never measured. Deletion is the default outcome. A probe keeps either one
+  only if it clears all three conditions, set in advance:
+  - its best case (repeated runs of one experiment in one session for the
+    cache; a named reader of the stored rows for persistence) shows at least
+    a ten percent end-to-end speedup;
+  - the correctness cases are clean: a feature function whose behaviour
+    depends on a captured variable (the fingerprint excludes captures), an
+    engine-version change, and two snapshots with the same hash;
+  - the memory it retains after a run is acceptable at Sharadar scale.
+
+  The probe reads the existing `feature_cache_hits` and
+  `feature_cache_misses` telemetry, and runs alternating fresh-process
+  pairs with and without each mechanism on:
+  - a single cold run;
+  - the best case above;
+  - a walk-forward;
+  - a Sharadar-scale run, measuring retained memory.
+
+  Results must stay byte-identical. What fails the conditions is removed in
+  a pure-deletion ticket. Reuse keys are designed later in WS5-B only for
+  what survives.
 - Measure complete public operations: snapshot creation and sealing, opening
   and verification, membership and session-history reads, and a subsequent
   run on the same snapshot. Attribute hashing separately without presenting
@@ -536,9 +562,11 @@ The following do not gate v0.2.2:
   helpers. The maintainer scheduled this for the next release on 2026-10-04
   ([RFC pipeline](../rfc/README.md#ctx-frame-retirement));
 - the broader memory optimization pass: per-phase memory gates, per-pulse fold
-  churn, a memory budget and feature-cache lifetime. It is scheduled as the
-  next release's memory release (roadmap, "Post-v0.2.2 memory optimization
-  release"). v0.2.2 keeps Cut 5 and the WS5 feature-persistence decision;
+  churn, a memory budget and feature-cache lifetime (whether a cache exists
+  to bound is decided first by the WS5 feature-keeping probe). It is
+  scheduled as the next release's memory release (roadmap, "Post-v0.2.2
+  memory optimization release"). v0.2.2 keeps Cut 5 and the WS5
+  feature-persistence decision;
 - plotting, print and CI polish unrelated to a release claim;
 - broad optimization cleanup without a measured product-path cost; and
 - the items deferred to the next release on 2026-10-14 (maintainer):
@@ -972,3 +1000,13 @@ interim lake rebuild), the one-execution-mode probe, the fold phase
 extraction alongside the governance cut, the WS3/WS4 history wave and
 implementation cut, the lake rebuild with dividend facts, WS7, the WS6
 probe, WS8.
+
+2026-10-14 maintainer amendment, feature-keeping probe: the WS5 probe that
+decides whether ledgr keeps computed features at all (the in-process feature
+cache and `persist_features` writes) runs after the one-execution-mode
+probe, alongside the fold phase extraction and the governance cut, and
+before the WS3/WS4 implementation cut. Its question does not depend on
+history semantics, and the history wave should not be built around a
+mechanism the probe may delete. Deletion is the default; the conditions are
+in the WS5 section. WS5-B's reuse-key design stays after WS3/WS4 and covers
+only what survives.
