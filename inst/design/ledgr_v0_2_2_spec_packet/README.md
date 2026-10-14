@@ -65,8 +65,10 @@ ledger.
   corrections through `0699ba3c`. Its focused re-review found three bounded
   residues, corrected with detecting evidence at `1a240476`. The corrected
   fast record passes at a 107.03-second median. The maintainer accepted
-  Workstream 29 and its honestly recorded cold-open miss on 2026-10-13;
-  Workstream 30 is next.
+  Workstream 29 and its honestly recorded cold-open miss on 2026-10-13.
+  Workstream 30 is implemented through `b55552e3`; its exact fixture ladder,
+  check-mode censuses, aggregate-only current-format lake rebuild and complete
+  validation record are ready for independent Type 1 close review.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
