@@ -44,6 +44,7 @@ R6 refusal. It adds no compatibility code.
 | F10 documentation correction | `0adbd7b1` | regenerate only the corrected current-only help text |
 | Final current-config fixture | `10c8b444` | supply required identities and repin the sweep hash |
 | Focused-review and identity corrections | `46a761be`, `2e818088`, `c566e433` | close N1 through N4, implement LDG-3036 and record its census |
+| Final evidence | `d45a524b` | commit mutation, profile, fixture-ladder and aggregate Sharadar records |
 
 ## C. Current Record And Call Surface
 
