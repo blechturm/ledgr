@@ -3,7 +3,7 @@
 # LDG-2789. ledgr_snapshot_normalize_ts_utc() deduplicates before it converts
 # and, on two branches, returns the supplied strings instead of reformatting
 # the parse. Every branch must be exact. The witness is the frozen pre-change
-# body in helper-ldg2789-reference-ts.R, which converts every element.
+# body in helper-snapshot-timestamp-reference.R, which converts every element.
 
 ldg2789_cases <- function() {
   sessions <- as.POSIXct("2020-01-01", tz = "UTC") + (0:4) * 86400

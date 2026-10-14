@@ -16,10 +16,10 @@ suppressPackageStartupMessages(
 )
 source(file.path(repo, "tests", "test-control-plane.R"), local = globalenv())
 source(file.path(
-  repo, "tests", "testthat", "helper-workstream14-facts.R"
+  repo, "tests", "testthat", "helper-availability-fact-matrix.R"
 ), local = globalenv())
 source(file.path(
-  repo, "tests", "testthat", "helper-workstream10-fact-integrity.R"
+  repo, "tests", "testthat", "helper-fact-integrity-fixtures.R"
 ), local = globalenv())
 
 ns <- asNamespace("ledgr")

@@ -5,10 +5,10 @@ output_dir <- if (length(args) >= 1L) args[[1L]] else file.path(
 
 pkgload::load_all(".", quiet = TRUE, export_all = TRUE)
 source(file.path("tests", "test-control-plane.R"), local = globalenv())
-source(file.path("tests", "testthat", "helper-workstream14-facts.R"),
+source(file.path("tests", "testthat", "helper-availability-fact-matrix.R"),
        local = globalenv())
 source(file.path(
-  "tests", "testthat", "helper-workstream10-fact-integrity.R"
+  "tests", "testthat", "helper-fact-integrity-fixtures.R"
 ), local = globalenv())
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)

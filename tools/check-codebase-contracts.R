@@ -591,6 +591,7 @@ fingerprint_names <- c(
   "ledgr_sweep_filter_schema_version",
   "ledgr_sweep_retention_schema_version",
   "ledgr_timing_schema_version",
+  "ledgr_universe_rule_schema_version",
   "ledgr_valuation_policy_schema_version",
   "ledgr_walk_forward_candidate_schema_version",
   "ledgr_walk_forward_schema_version"
