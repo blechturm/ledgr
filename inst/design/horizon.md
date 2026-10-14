@@ -230,7 +230,26 @@ Two companions to the levers, from the 2026-10-12 review of this entry:
   agents and these checks fail at the line that caused the mistake rather
   than three layers later. Route: a Type 2 audit brief producing a table
   and proposed tickets, per `rfc_cycle.md`; the review's unverified guess is
-  1,000 to 2,000 lines.
+  1,000 to 2,000 lines. The same audit carries the complexity review
+  (maintainer, 2026-10-12): candidates come from metrics, not reading
+  (length over 150 lines, more than one `availability_active` fork in a
+  function, argument count, the single-call-site helpers), capped at about
+  twenty functions, each classified as contract-driven complexity (two
+  execution modes, durable atomicity, fail-closed inputs) or accidental
+  (layered validation, carried-forward compatibility, patches on patches);
+  only accidental complexity earns a ticket, and every ticket is a pure
+  refactor under the fixture ladder, paired clocks and the seven shapes,
+  with any behaviour change routed to design instead. Measured on
+  2026-10-12: nine functions over 300 lines and 24 between 150 and 300,
+  led by `ledgr_execute_fold()` (1,180), `ledgr_validate_schema()` (766),
+  `ledgr_run_fold_impl()` (675), the memory handler (615), the legacy
+  schema path (453), `ledgr_snapshot_from_df()` (394),
+  `ledgr_corporate_action_plan()` (392), `validate_ledgr_config()` (366)
+  and the persistent handler (353); nesting is not the problem (nine lines
+  in the package sit six levels deep). Two of those are deleted by the
+  legacy-removal cut and four are already the fold split's and lever 2's
+  targets, so the audit runs after the removal cut and before the fold
+  split, fed by the hygiene workstream's census tool.
 
 Order: lever 1 before lever 4, because one run shape means one reader;
 lever 2 is independent and lower risk; lever 3 is already scheduled. The

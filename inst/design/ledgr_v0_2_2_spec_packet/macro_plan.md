@@ -456,6 +456,26 @@ writer profile. Likewise, do not reopen scalar accessor micro-optimization
 here: WS3 first removes avoidable per-instrument calls, and WS4 owns any
 post-semantics indicator residual.
 
+Routed inputs (maintainer, 2026-10-14), found by close reviews and owned by
+no ticket:
+
+- three named optimization shapes, which enter by their growth shape (one
+  growth probe each, before and after), not by the five-percent profile
+  threshold:
+  - sweep-candidate assembly subsets the full candidate-feature table once
+    per candidate, quadratic in candidates (`R/sweep-persistence-schema.R`;
+    WS28 close review). WS7's estimator sweeps make it material;
+  - `ledgr_run_store_fetch()` subsets the full equity table once per run
+    (WS30 close review);
+  - `ledgr_fetch_latest_bars()` issues one query per instrument (WS27 close
+    review);
+- CI before the release: decide how often the review profile runs in CI and
+  which host's timing binds, so that review-profile and cross-platform
+  breakage stops surfacing only in nightly runs. The roadmap's "v0.2.2 CI
+  strategy review" row has no ticket;
+- fast-lane headroom: each cut close records the ordinary fast profile's
+  margin against its 112-second gate beside the review ratio.
+
 Promote a remaining candidate only when the current product path, not a private
 harness, shows the cost. Then run one integrated long-window record covering:
 
@@ -519,8 +539,18 @@ The following do not gate v0.2.2:
   churn, a memory budget and feature-cache lifetime. It is scheduled as the
   next release's memory release (roadmap, "Post-v0.2.2 memory optimization
   release"). v0.2.2 keeps Cut 5 and the WS5 feature-persistence decision;
-- plotting, print and CI polish unrelated to a release claim; and
-- broad optimization cleanup without a measured product-path cost.
+- plotting, print and CI polish unrelated to a release claim;
+- broad optimization cleanup without a measured product-path cost; and
+- the items deferred to the next release on 2026-10-14 (maintainer):
+  - the defensive-code and complexity audit, and the fold split
+    (`horizon.md`, the 2026-10-12 architecture entry);
+  - a user-facing adoption item: the survivorship-bias article on synthetic
+    data and a CRAN target date;
+  - the decision on the v0.2.1.0 packet path
+    (`ledgr_v0_2_0_2_spec_packet/`).
+
+  The governance cut's roadmap rewrite lists them in the next-release
+  section.
 
 These are not rejected capabilities. They stay visible in the roadmap or
 horizon and require their own evidence and design route.
@@ -788,6 +818,7 @@ opens as an RFC. The unification itself stays after v0.2.2 (roadmap row
 13, the legacy-removal cut, the interim lake rebuild under rule 3, the
 one-execution-mode probe, the WS3/WS4 history wave and implementation cut,
 the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
+
 2026-10-13 maintainer amendment, planning-document cleanup after the probe:
 the roadmap no longer works as a planning document, and this plan's
 change-control log has become the only place the current order lives, restated
@@ -876,3 +907,12 @@ resulting order is: Cut 13, the legacy-removal cut, the interim lake rebuild
 under rule 3, the one-execution-mode probe, the governance cut, the WS3/WS4
 history wave and implementation cut, the lake rebuild with dividend facts,
 WS7, the WS6 probe, WS8.
+2026-10-14 maintainer amendment, unowned-debt routing: issues that no ticket
+owned were routed. The identity-hashing collation defect and the
+identity-type looseness go to Cut 14 (`tickets.yml`). The store gate's
+per-open cost is accepted as a component miss: about 1.1 ms per store open,
+under 0.1 percent of any public call, with end-to-end clocks unchanged
+(maintainer, 2026-10-14; recorded in the WS29 decisions). Three review-found
+hot spots, CI cadence and fast-lane headroom go to WS8 (above), and the
+audit, fold split, adoption item and packet path to the next release
+(Section 5).

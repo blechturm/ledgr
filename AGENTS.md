@@ -15,6 +15,14 @@ the execution contracts in `inst/design/contracts.md`.
 - Functional strategies must return full named numeric target vectors, or use an
   explicit wrapper such as `ledgr_signal_strategy()` that maps to those targets.
 - Do not silently treat missing strategy targets as zero.
+- No backward compatibility before the first CRAN release (README;
+  `inst/design/rfc_cycle.md`, "Pre-CRAN Compatibility Policy"): do not add
+  migrations, old-format readers, missing-marker fallbacks or compatibility
+  arguments. A stored-format change bumps its version, and older stores refuse
+  with a classed condition.
+- Never change a registered test's setup, fixture or oracle to make a product
+  failure pass. Fix the product, or stop and report the failure; a test change
+  needs its own stated reason in the ticket evidence.
 - Do not commit generated local artifacts: `*.tar.gz`, `*.Rcheck/`,
   `coverage.html`, `tests/testthat/Rplots.pdf`.
 - Use UTF-8 or ASCII encoding only. Do not introduce other encodings in R
@@ -66,7 +74,7 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-10-03):
+Current planning context (2026-10-13):
 
 - v0.2.1.0 is published. Its packet retains the historical
   `ledgr_v0_2_0_2_spec_packet/` path and is release evidence, not current
@@ -98,7 +106,6 @@ planning are evidence, not authorization for new work.
 | Which accepted decisions are pending implementation? | `inst/design/decisions.md`, then the linked accepted source |
 | Which RFC is active or due? | `inst/design/rfc/README.md` |
 | What is decided for WS3/WS4 history so far? | `inst/design/rfc/rfc_history_wave_v0_2_2_decisions.md` ("Resume here") |
-| What is the point-in-time universe audit? | `inst/design/audits/v0_2_2_pit_universe_audit/charter.md` ("Resume here") |
 | Where is a non-binding idea parked? | `inst/design/horizon.md` |
 | What is the cross-version sequence? | `inst/design/ledgr_roadmap.md` |
 | Where is displaced planning history? | `inst/design/roadmap_history.md` and `inst/design/planning_context_history.md` |
