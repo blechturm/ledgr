@@ -186,12 +186,17 @@ deleted rather than hidden.
 
 ## I. Review Boundary
 
-The requested independent Type 1 close review is Cut 14 invocation six. With
-four completed Workstream 30 tickets, the cut count becomes 6 invocations over
-14 tickets, 0.429 against the 0.5 gate. The review should inspect current-only
+The requested independent Type 1 close review follows the governance-lifecycle
+synthesis accepted on 2026-10-14. The review should inspect current-only
 failure sensitivity, exact current outputs, the source-derived censuses, the
 fixture ladder, the seven shapes and the committed aggregate-only research
 record. It must not read private vendor rows.
+
+If the review returns findings, they live in `close_review_30.md`; the
+workstream review result then records its verdict, link and one line on what
+changed. A finding-free PASS is recorded in one line without a new file. A
+third correction round stops for maintainer disposition. Review counts are
+measured once at Cut 14 close and are not a workstream gate.
 
 Workstream 30 remains `review_pending` until that review and maintainer
 acceptance. Workstream 31 resumes only after acceptance.

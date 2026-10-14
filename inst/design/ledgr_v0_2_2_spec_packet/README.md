@@ -628,11 +628,15 @@ stay exact. Existing condition classes are documented rather than renamed. No
 migration, legacy reader, missing-marker fallback, public diagnostic opener or
 compatibility alias is authorized.
 
-Five review invocations have run over fourteen tickets, 0.357 against the 0.5
-gate. The Workstream 30 and final Workstream 31 close reviews would make seven
-over fourteen, exactly 0.500. The added backlog-reconciliation ticket is sized
-by the cut review's 228 undocumented classes and helper census; it is not
-review padding.
+The governance-lifecycle synthesis accepted on 2026-10-14 retires the numeric
+review gate for the remaining Cut 14 work. Independent verdicts over completed
+tickets, findings by mode and outcome effect, and maintainer decision turns
+are recorded once when the cut closes. A review with findings gets a packet
+file named for its review point; a finding-free PASS is one line. A third
+correction round on one workstream stops for maintainer disposition. Past
+Cut 14 review fields remain historical records. The added backlog-reconciliation
+ticket is still sized by the cut review's 228 undocumented classes and helper
+census; it is not review padding.
 
 ## Expected later artifacts
 
