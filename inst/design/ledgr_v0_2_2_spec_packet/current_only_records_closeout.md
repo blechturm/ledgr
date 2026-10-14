@@ -1,9 +1,9 @@
 # Workstream 30 Closeout: Current-Only Records And Public Surfaces
 
-**Status:** Focused-review corrections implemented; awaiting maintainer acceptance.
+**Status:** Corrections and LDG-3036 complete; awaiting maintainer acceptance.
 **Date:** 2026-10-14
 **Baseline commit:** `fc4d8fc7`
-**Implementation range:** `fc4d8fc7..10c8b444`
+**Implementation range:** `fc4d8fc7..c566e433`
 **Tickets:** LDG-3028 through LDG-3031 and LDG-3036
 
 ## A. Claim And Boundary
@@ -43,7 +43,7 @@ R6 refusal. It adds no compatibility code.
 | roxygen2 8.1 tooling regeneration | `b538246c`, `b623d758` | upgrade and repin generator-only output |
 | F10 documentation correction | `0adbd7b1` | regenerate only the corrected current-only help text |
 | Final current-config fixture | `10c8b444` | supply required identities and repin the sweep hash |
-| Focused-review and identity corrections | pending commit | close N1 through N4 and implement LDG-3036 |
+| Focused-review and identity corrections | `46a761be`, `2e818088`, `c566e433` | close N1 through N4, implement LDG-3036 and record its census |
 
 ## C. Current Record And Call Surface
 
@@ -153,6 +153,12 @@ Ties, typed missing telemetry, current policy identities, saved-sweep bytes,
 current provenance, fills, equity, metrics, run information and public result
 shapes remain exact. No tolerance or replacement legacy branch was added.
 
+Ladder25 then compares the final pre-LDG-3036 tree at `10c8b444` with
+`c566e433`. All 51 fixture families and the identity family are byte-identical.
+The fixture's lower-case identity keys therefore retain their prior bytes; the
+registered mixed-case/underscore process witness separately detects the
+intended locale-order correction.
+
 ## G. Current-Format Research Store
 
 LDG-3031 ran the documented build and census stages at ledgr commit
@@ -186,6 +192,23 @@ per-family hashes and phase clocks were exported. The committed record under
 row, instrument identifier, private path, credential or vendor canonical-build
 identity.
 
+LDG-3036 repeats that build at ledgr commit
+`c566e4338e640926091109e13398fc35f52f6fae` and the same adapter commit. The
+fresh store is SEALED under the final 21-member fingerprint, including
+`ledgr_canonical_json_rule_version = 1L`. Its native snapshot hash and all
+aggregate population counts match LDG-3031. The repeat build takes 213.4
+seconds at 5,987 MiB sampled peak; construction takes 200.67 seconds and
+complete verification 9.18 seconds. These are repeatability evidence, not an
+effect estimate.
+
+The complete repeated scale lane retains all 38 family row counts. Thirty-five
+hashes are identical to LDG-3031; only the two run-information families and
+snapshot information change because they disclose the intended format
+fingerprint. Accounting, fills, equity, returns, features, diagnostics,
+strategy state, trades, metrics, sweep, promotion and walk-forward hashes are
+unchanged. The aggregate-only record is under
+`dev/bench/v0_2_2_sharadar_run/evidence/ws30_locale_identity/`.
+
 ## H. The Seven Shapes
 
 1. No one-row frame is built per element. The work removes legacy parsing and
@@ -208,14 +231,14 @@ fixtures, and the census runs once as a development gate.
 ## I. Verification
 
 The focused identity, policy, timing, sweep, provenance, result, condition,
-documentation-contract and control-plane suites pass. The original ordinary
-fast record executes 563 of 563 blocks with zero failures or skips in 101.40
-seconds. The earlier correction record executed 562 of 562 blocks with zero
-failures or skips in 106.21 seconds against the unchanged 112-second bound. It
-was local evidence and is not cited as a durable record. LDG-3036 owns the
-committed post-correction fast record. The original complete review profile
-executes 334 of 334 blocks with zero failures and one pre-existing optional
-path skip in 278.98 seconds.
+documentation-contract and control-plane suites pass. The durable LDG-3036
+ordinary fast record executes 562 of 562 blocks with zero failures or skips in
+108.72 seconds against the unchanged 112-second bound. The locale process
+witness runs in review, while LCL-0262's exact-integer witness remains fast.
+The final complete review profile executes 336 of 336 blocks with zero
+failures and one pre-existing optional-path skip in 274.06 seconds. The
+release-profile checker accepts the committed fast and review summaries
+together.
 
 The package builds. The final
 `R CMD check --no-manual --no-build-vignettes` completes with all tests and
@@ -238,8 +261,11 @@ current-only reader, detector, census, provenance and generated-help gaps
 without changing the accepted design. The focused Type 1 re-review found four
 bounded detector and condition-parity residues; its durable record is
 `close_review_30_rereview_1.md`. The maintainer directed one mechanical
-correction with mutation witnesses and no third review round. Review counts are
-measured once at Cut 14 close and are not a workstream gate.
+correction with mutation witnesses and no third review round. Commits
+`46a761be`, `2e818088` and `c566e433` close that residue and the merged
+locale/type identity work; Ladder25, the fast gate and the repeated Sharadar
+record supply the final evidence. Review counts are measured once at Cut 14
+close and are not a workstream gate.
 
 Workstream 30 remains `review_pending` until final evidence and maintainer
 acceptance. Workstream 31 resumes only after acceptance.

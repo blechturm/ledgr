@@ -21,7 +21,11 @@ tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
 Accepted Cut 14 now owns the pre-CRAN legacy-removal synthesis and the macro
 plan's codebase-hygiene amendment. Its fifteen tickets across three
 workstreams passed cut review after patches on 2026-10-13. Implementation
-opens with the report-only LDG-3022 census.
+is complete through Workstream 30. Workstream 29 is accepted. Workstream 30's
+close and focused reviews found correction work; the final mechanical fixes,
+21-member source census, exact Ladder25, 108.72-second fast record and repeated
+aggregate Sharadar lane are now complete. Maintainer acceptance is next; no
+third review round is planned under M1.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -58,7 +62,7 @@ ledger.
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
   closed. Accepted Cut 14 contains Workstreams 29 through 31 and LDG-3022
-  through LDG-3035. The preparatory Workstream 31 slice is complete through
+  through LDG-3036. The preparatory Workstream 31 slice is complete through
   LDG-3023. A Type 1 checkpoint returned CHANGES_REQUIRED; commits d85ec87e
   and a8416492 correct the census and lint records, with confirmation folded
   into Workstream 29's close review. The Type 1 close review required
@@ -67,11 +71,13 @@ ledger.
   fast record passes at a 107.03-second median. The maintainer accepted
   Workstream 29 and its honestly recorded cold-open miss on 2026-10-13.
   Workstream 30 received a CHANGES_REQUIRED Type 1 close review, preserved in
-  `close_review_30.md`. Corrections through `0adbd7b1` remove the residual
-  current-only reader and detector gaps, refresh the census at 20 fingerprint
-  members, regenerate the corrected help with roxygen2 8.1.0 and repin the
-  final current-config sweep fixture at `10c8b444`. Focused
-  re-review and maintainer acceptance remain before Workstream 31 resumes.
+  `close_review_30.md`; its focused re-review is preserved in
+  `close_review_30_rereview_1.md`. Corrections through `c566e433` close its
+  four residues and implement LDG-3036: locale-stable identity, exact integer
+  identity-rule validation and the 21-member store fingerprint. Ladder25,
+  the committed fast and review profiles, and the repeated aggregate Sharadar
+  lane pass.
+  Maintainer acceptance remains before Workstream 31 resumes.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
