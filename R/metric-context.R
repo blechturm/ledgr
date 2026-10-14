@@ -629,11 +629,6 @@ ledgr_metric_context_bars_per_year <- function(context) {
   ledgr_calendar_bars_per_year(context$calendar)
 }
 
-ledgr_metric_context_annual_risk_free_rate <- function(context) {
-  context <- ledgr_metric_context_resolve(context)
-  context$risk_free_rate$annual_rate
-}
-
 ledgr_backtest_metric_context <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_args")

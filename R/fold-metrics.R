@@ -1,11 +1,3 @@
-ledgr_bars_per_year_from_pulses <- function(pulses_posix) {
-  if (length(pulses_posix) < 2L) {
-    return(252)
-  }
-  diffs <- as.numeric(diff(pulses_posix), units = "secs")
-  snap_to_frequency(stats::median(diffs, na.rm = TRUE))
-}
-
 ledgr_metrics_from_equity_fills <- function(equity,
                                             fills,
                                             metric_kernel) {

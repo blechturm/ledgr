@@ -1,0 +1,32 @@
+linters: list(
+    object_usage_linter = object_usage_linter(),
+    commented_code_linter = commented_code_linter(),
+    seq_linter = seq_linter(),
+    T_and_F_symbol_linter = T_and_F_symbol_linter(),
+    duplicate_argument_linter = duplicate_argument_linter(),
+    unreachable_code_linter = unreachable_code_linter(),
+    redundant_ifelse_linter = redundant_ifelse_linter(),
+    undesirable_function_linter = undesirable_function_linter(
+      fun = c(
+        sapply = "Use a type-stable apply function in package code.",
+        browser = "Do not commit interactive debugger calls.",
+        debug = "Do not commit persistent debug instrumentation."
+      )
+    )
+  )
+exclusions: list(
+    "R/cpp11.R",
+    "dev",
+    "docs",
+    "inst",
+    "src",
+    "vendor",
+    "lib",
+    "lib-wsl",
+    ".tmp",
+    ".agents",
+    ".claude",
+    ".understand-anything",
+    "test-profile-artifacts"
+  )
+encoding: "UTF-8"

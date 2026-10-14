@@ -455,14 +455,6 @@ ledgr_completion_columns <- function(completion_json) {
   )
 }
 
-ledgr_completion_column_names <- function() {
-  c(
-    "stop_reason", "affected_instrument_ids", "valuation_state",
-    "frozen_instrument_sessions", "max_frozen_equity_weight",
-    "frozen_at_end_value", "assumed_terminal_outcomes"
-  )
-}
-
 # Inserts the derived columns directly after completion_json.
 ledgr_add_completion_columns <- function(x) {
   if (!"completion_json" %in% names(x)) return(x)

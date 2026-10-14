@@ -2576,35 +2576,6 @@ ledgr_sweep_compute_feature_matrix <- function(feature_defs, bars_by_id, univers
   out
 }
 
-ledgr_sweep_feature_matrix_from_precomputed <- function(precomputed,
-                                                        feature_fingerprints,
-                                                        bars_by_id,
-                                                        universe) {
-  if (length(feature_fingerprints) == 0L) {
-    return(list())
-  }
-  out <- vector("list", length(feature_fingerprints))
-  feature_ids <- character(length(feature_fingerprints))
-  for (d in seq_along(feature_fingerprints)) {
-    fingerprint <- feature_fingerprints[[d]]
-    payload <- precomputed$payload[[fingerprint]]
-    if (is.null(payload)) {
-      rlang::abort(
-        sprintf("Missing precomputed payload for feature fingerprint %s.", fingerprint),
-        class = "ledgr_precomputed_feature_mismatch"
-      )
-    }
-    mat <- matrix(NA_real_, nrow = length(universe), ncol = nrow(bars_by_id[[universe[[1L]]]]))
-    for (j in seq_along(universe)) {
-      mat[j, ] <- as.numeric(payload$values[[universe[[j]]]])
-    }
-    out[[d]] <- mat
-    feature_ids[[d]] <- payload$feature_id
-  }
-  names(out) <- feature_ids
-  out
-}
-
 ledgr_sweep_resolved_from_precomputed <- function(precomputed, param_grid) {
   candidates <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {

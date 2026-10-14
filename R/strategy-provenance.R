@@ -78,10 +78,6 @@ ledgr_strategy_source_info <- function(fn) {
   )
 }
 
-ledgr_strategy_external_symbols <- function(fn) {
-  ledgr_strategy_preflight(fn)$unresolved_symbols
-}
-
 ledgr_strategy_reproducibility_level <- function(strategy_type, signature = NULL, source_info = NULL) {
   if (identical(strategy_type, "functional")) {
     if (is.list(source_info) &&

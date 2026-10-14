@@ -133,53 +133,6 @@ compute_sharpe_ratio <- function(returns,
   mean(excess_returns) / sd_excess * sqrt(bars_per_year)
 }
 
-ledgr_estimate_bars_per_year <- function(bt, equity, con = NULL) {
-  fallback <- 252
-  if (!inherits(bt, "ledgr_backtest")) return(fallback)
-  if (!is.list(bt$config) || is.null(bt$config$data$snapshot_id)) return(fallback)
-
-  if (is.null(con)) {
-    opened <- ledgr_backtest_read_connection(bt)
-    con <- opened$con
-    on.exit(opened$close(), add = TRUE)
-  }
-  ledgr_backtest_ensure_snapshot(bt, con)
-  snapshot_id <- bt$config$data$snapshot_id
-  if (!is.null(bt$config$data) && is.list(bt$config$data) && identical(bt$config$data$source, "snapshot")) {
-    run_db_path <- bt$config$db_path
-    snapshot_db_path <- ledgr_snapshot_db_path_from_config(bt$config, run_db_path)
-    ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, run_db_path)
-  }
-
-  inst <- DBI::dbGetQuery(
-    con,
-    "SELECT instrument_id FROM snapshot_instruments WHERE snapshot_id = ? ORDER BY instrument_id LIMIT 1",
-    params = list(snapshot_id)
-  )$instrument_id[[1]]
-  if (is.null(inst) || is.na(inst) || !nzchar(inst)) return(fallback)
-
-  median_seconds <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT median(diff_seconds) AS median_diff
-    FROM (
-      SELECT datediff('second', LAG(ts_utc) OVER (ORDER BY ts_utc), ts_utc) AS diff_seconds
-      FROM snapshot_bars
-      WHERE snapshot_id = ? AND instrument_id = ?
-    )
-    WHERE diff_seconds IS NOT NULL
-    ",
-    params = list(snapshot_id, inst)
-  )$median_diff[[1]]
-
-  median_seconds <- suppressWarnings(as.numeric(median_seconds))
-  if (!is.finite(median_seconds) || median_seconds <= 0) return(fallback)
-
-  bars_per_year <- snap_to_frequency(median_seconds)
-  if (!is.finite(bars_per_year) || bars_per_year <= 0) return(fallback)
-  bars_per_year
-}
-
 snap_to_frequency <- function(median_seconds) {
   if (!is.numeric(median_seconds) || length(median_seconds) != 1 || !is.finite(median_seconds) || median_seconds <= 0) {
     return(NA_real_)

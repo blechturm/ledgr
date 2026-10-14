@@ -263,23 +263,3 @@ ledgr_fill_timing_comparison <- function(timing) {
   }
   list(comparable = TRUE, reason = "same_timing_convention")
 }
-
-ledgr_comparison_assert_fill_timing_comparable <- function(comparison) {
-  if (!inherits(comparison, "ledgr_comparison")) {
-    rlang::abort(
-      "`comparison` must be a ledgr_comparison object.",
-      class = "ledgr_invalid_args"
-    )
-  }
-  if (!isTRUE(attr(comparison, "fill_timing_comparable", exact = TRUE))) {
-    reason <- attr(comparison, "fill_timing_comparability_reason", exact = TRUE)
-    rlang::abort(
-      sprintf(
-        "Fill timing is not comparable for this selected run set: %s.",
-        reason %||% "unknown"
-      ),
-      class = c("ledgr_fill_timing_not_comparable", "ledgr_invalid_args")
-    )
-  }
-  invisible(TRUE)
-}

@@ -1284,6 +1284,53 @@ if (nrow(condition_class_rows) > 0L) {
   ))
 }
 
+test_only_seams <- helper_rows[
+  helper_rows$classification == "test_only_private",
+  c(
+    "file", "line", "helper", "test_reference_count",
+    "reference_locations"
+  ),
+  drop = FALSE
+]
+if (nrow(test_only_seams) == 0L) {
+  test_only_seams <- empty_frame(c(
+    "file", "line", "helper", "test_reference_count",
+    "reference_locations", "testing_contract"
+  ))
+} else {
+  test_only_seams$testing_contract <- paste0(
+    "direct_test_seam:", test_only_seams$helper
+  )
+}
+
+condition_dynamics <- condition_rows[
+  !condition_rows$call_kind %in% c(
+    "abort_class", "abort_wrapper_class", "warning_class"
+  ),
+  c("file", "line", "call_kind", "expression"),
+  drop = FALSE
+]
+if (nrow(condition_dynamics) == 0L) {
+  condition_dynamics <- empty_frame(c(
+    "file", "line", "call_kind", "expression", "disposition", "reason"
+  ))
+} else {
+  base_condition <- condition_dynamics$call_kind %in% c("stop", "warning")
+  condition_dynamics$disposition <- ifelse(
+    base_condition,
+    "base_condition",
+    "runtime_class_expression"
+  )
+  condition_dynamics$reason <- ifelse(
+    base_condition,
+    "Base R condition without a ledgr public class-vector element.",
+    paste(
+      "The class is supplied by a validated caller, wrapper formal, or",
+      "caught runtime condition and cannot be enumerated at this site."
+    )
+  )
+}
+
 ## Records -----------------------------------------------------------------
 
 connection_rows <- write_table(connection_rows, "connections.csv", c("file", "line", "entry_kind"))
@@ -1295,6 +1342,16 @@ condition_classes <- write_table(
   condition_classes,
   "condition_classes.csv",
   c("condition_class", "first_file", "first_line")
+)
+test_only_seams <- write_table(
+  test_only_seams,
+  "test_only_seams.csv",
+  c("file", "line", "helper")
+)
+condition_dynamics <- write_table(
+  condition_dynamics,
+  "condition_dynamics.csv",
+  c("file", "line", "call_kind", "expression")
 )
 
 summary <- data.frame(
