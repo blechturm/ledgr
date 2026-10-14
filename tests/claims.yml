@@ -3040,7 +3040,7 @@ claims:
     source: "Cut 14 LDG-3039"
     scope: "Every inline schema-version writer, default and validator in R is classified as ledgr-persisted or memory-only, and the one persisted inline literal is fingerprinted"
     oracle_class: "Source-derived occurrence census plus literal store-format binding oracle"
-    detecting_blocks: ["LTB-0269", "LTB-0259", "LTB-0260"]
+    detecting_blocks: ["LTB-0269"]
     promised_profile: "fast"
     owner: "maintainer"
     protected_contract_or_defect: "Inline schema-version literals could change durable config semantics without moving the strict current-store fingerprint, while memory-only result schemas were indistinguishable from stored formats."
