@@ -1,0 +1,3 @@
+"case","arm","status","completion","engine_s","t_pre","t_loop","snapshot_hash","config_hash","warnings","reasons","note"
+"gap_held_default","dense","ERROR LEDGR_SNAPSHOT_COVERAGE_ERROR",NA,0.0999999999999943,NA,NA,"cf0da962ed693d831c493d6aa144143dce75405c8202cdac3bc0911ef8406c3b",NA,"","","gap held: removed bar PEER_01 at 2018-07-02T00:00:00Z"
+"gap_held_default","availability","DONE","DONE / NA / 2018-12-18 / ",21.5,19.74,1.56999999999999,"d2b5f3023ae0c89b7d9c914320c621c3b950ba74d75d34bb75cfc9cd51137627","4181fb60a26e991ebba4e86ad38b271ce2f75ac60db84fcefb4e9d41223c3522","","final_pulse_no_execution=22 stale_mark_pass_through=1","gap held: removed bar PEER_01 at 2018-07-02T00:00:00Z"

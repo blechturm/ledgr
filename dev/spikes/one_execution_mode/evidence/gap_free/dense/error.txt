@@ -1,0 +1,2 @@
+LEDGR_SNAPSHOT_COVERAGE_ERROR|rlang_error|error|condition
+LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range.

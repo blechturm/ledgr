@@ -1,0 +1,3 @@
+"case","arm","status","completion","engine_s","t_pre","t_loop","snapshot_hash","config_hash","warnings","reasons","note"
+"peer_builtin","dense","DONE","no completion record",1.19,0.0599999999999987,0.799999999999997,"9021d0ac0726ed5758917b8d2f0608a5ced58ad35bbf90591b0aa51519c6867e","c12a113a0055ed5a641672d284891ae530b9637ca641adba4a5298f59aab1772","22x LEDGR_LAST_BAR_NO_FILL: target changed on the final availabl","",""
+"peer_builtin","availability","DONE","DONE / NA / 2018-12-18 / ",2.13,0.369999999999997,1.45,"da039df758e8d781863fe29f610e2286b6c502fd5f1b6b433ca5a7727b4d6255","bd80233003612d28012d2639e1d6537d7a6f97154ad008561324d6d441e3de24","","final_pulse_no_execution=22",""

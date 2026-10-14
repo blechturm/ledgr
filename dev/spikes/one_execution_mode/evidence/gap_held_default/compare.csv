@@ -1,0 +1,7 @@
+"case","surface","result"
+"gap_held_default","fills","dense error: LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+"gap_held_default","ledger","dense error: LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+"gap_held_default","equity","dense error: LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+"gap_held_default","trades","dense error: LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+"gap_held_default","positions","dense error: LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+"gap_held_default","metrics","dense error: LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."

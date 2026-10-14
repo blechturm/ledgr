@@ -1,0 +1,4 @@
+"features","phase","dense_median_s","availability_median_s","median_pair_ratio"
+"builtin","engine_s",3.17,4.52,1.40694006309148
+"builtin","t_pre",0.15,0.47,3.13333333333333
+"builtin","t_loop",1.42,2.5,1.74468085106383

@@ -1,0 +1,7 @@
+"case","surface","result"
+"peer_builtin","fills","first row 1: ts_utc 2018-01-15T00:00:00Z -> 2018-01-14T23:59:59Z | differing rows by column: ts_utc=2731 of 2731"
+"peer_builtin","ledger","first row 1: ts_utc 2018-01-15T00:00:00Z -> 2018-01-14T23:59:59Z | differing rows by column: ts_utc=2731 of 2731"
+"peer_builtin","equity","identical"
+"peer_builtin","trades","first row 1: ts_utc 2018-01-16T00:00:00Z -> 2018-01-15T23:59:59Z | differing rows by column: ts_utc=1340 of 1340"
+"peer_builtin","positions","identical"
+"peer_builtin","metrics","identical"

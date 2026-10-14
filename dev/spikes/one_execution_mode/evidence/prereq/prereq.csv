@@ -1,0 +1,6 @@
+"step","outcome"
+"public: ledgr_experiment(dense snapshot, valuation_policy = never stale)","ledgr_availability_sessions_required: Availability-aware experiments require a complete declared session calendar."
+"internal: sealed snapshot_sessions rows on the dense snapshot","0"
+"internal: ledgr_availability_require_coverage(provider sessions)","ledgr_sessions_incomplete: The declared session calendar (none to none) does not cover the requested sealed bars, 2018-01-01T00:00:00Z to 2018-12-18T00:00:00Z."
+"internal: ledgr_availability_calendar(provider sessions)","ledgr_run_window_too_short: The declared session calendar must provide at least two open-session pulses in the run window."
+"snapshot root unchanged by the attempts","TRUE"

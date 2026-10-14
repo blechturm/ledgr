@@ -1,0 +1,3 @@
+"case","arm","status","completion","engine_s","t_pre","t_loop","snapshot_hash","config_hash","warnings","reasons","note"
+"lw","dense","DONE","no completion record",3.73,0.960000000000008,2.47000000000001,"604abcc19d8fb843cc9e080027aab81efffa989e13701f84e3ca1dcc046c2247","2729cfa0d1b1b4dcae3fac4c1380affe6dd46663390da2c7179817fa10b1d806","","",""
+"lw","availability","DONE","DONE / NA / 2003-10-23 21:00:00 / ",11.1,1.52999999999999,9.31,"9d322c077f48f3fc9c7b580a210cc9b18b34a13289388ef99afa252c97c8b894","84ededb6914b1c05d29953ee5ce5521e89e1eeee4ee80dbb2be8d31dfd3fb416","","",""

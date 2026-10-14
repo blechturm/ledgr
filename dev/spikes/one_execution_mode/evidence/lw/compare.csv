@@ -1,0 +1,7 @@
+"case","surface","result"
+"lw","fills","first row 1: ts_utc 1999-01-04T21:00:00Z -> 1999-01-04T20:59:59Z | differing rows by column: ts_utc=790 of 790"
+"lw","ledger","first row 1: ts_utc 1999-01-04T21:00:00Z -> 1999-01-04T20:59:59Z | differing rows by column: ts_utc=790 of 790"
+"lw","equity","identical"
+"lw","trades","first row 1: ts_utc 1999-02-02T21:00:00Z -> 1999-02-02T20:59:59Z | differing rows by column: ts_utc=443 of 443"
+"lw","positions","identical"
+"lw","metrics","identical"

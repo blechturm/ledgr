@@ -1,0 +1,7 @@
+"features","pair","arm","engine_s","t_pre","t_loop"
+"builtin",1,"dense",3.68,0.19,1.51
+"builtin",1,"availability",4.52,0.47,2.5
+"builtin",2,"availability",4.55,0.51,2.46
+"builtin",2,"dense",3.14,0.14,1.41
+"builtin",3,"dense",3.17,0.15,1.42
+"builtin",3,"availability",4.46,0.47,2.53
