@@ -954,6 +954,13 @@ planning, accounting, event emission, and valuation and state update.
   the fixture ladder and within the 1.05 rule on paired clocks. A defect
   found on the way is routed, not fixed in passing.
 - One Type 1 close review.
+- Phase interfaces pass typed primitives (vectors, matrices, indices), and
+  no per-pulse data frame crosses a phase boundary, so a phase can later be
+  swapped for a compiled kernel without marshalling cost. Nothing is
+  compiled in this workstream.
+- The close records each phase's share of a profiled run, as input for
+  the compiled-execution envelope RFC
+  (`rfc/README.md#compiled-execution-envelope`).
 - The probe's findings decide which phases hold the dense-only branches.
 - `ledgr_run_fold_impl()` and the output handlers stay with the
   post-v0.2.2 execution-core consolidation.
