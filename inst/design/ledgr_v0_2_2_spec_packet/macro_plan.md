@@ -1061,3 +1061,35 @@ phases: the last-bar warning (`R/fold-engine.R:114`) and fill stamping
 (run, sweep, walk-forward, result readers) at two sizes per growth axis.
 Its findings feed WS8's internal regression suite and the ticket cuts that
 own each cell.
+
+2026-10-14 maintainer amendment, growth-shape matrix result: green. The
+record is in `dev/spikes/growth_shape_matrix/` (copied from branch
+`spike/growth-shape-matrix` at `3a539ca4`). No cell of feature kind by mode
+by entry point grows superlinearly up to 4,000 bars, 320 instruments and 32
+candidates; the largest exponent is 1.04. The antipattern family survives as
+linear R loops with large constants:
+- TTR SMA on the availability path hits the 60 s cap (preparation 130x
+  dense at T=1,000), in the per-window loop routed above.
+- A custom indicator in the documented `fn` form slices a data-frame window
+  per bar (`R/features-engine.R:253`, `:285-286`): preparation 17x the
+  built-in. Routed to WS8.
+- The fills and trades readers replay every event through R lot accounting
+  (`R/accounting-replay.R:294-322`): 2.1 s for about 40k fills against
+  0.06 s for the ledger reader. Routed to WS8, with the `print(bt)` replay.
+- The gut check (a planted quadratic step) was caught only by the
+  preparation-phase clock; run, sweep and walk-forward totals hid it. Phase
+  timing inside sweep and walk-forward is routed to WS8's regression suite.
+
+**TTR strict path, decided.** The per-window loop is split:
+- Before the WS3/WS4 implementation cut, alongside the fold phase
+  extraction, one small workstream removes two costs that change no value:
+  the per-window parity call for the TTR wrapper (its `fn` is the last value
+  of the same `series_fn` call, so the check compares a value with itself;
+  user indicators declaring both keep the check) and the per-window
+  completeness check, replaced by `ledgr_strict_complete_window_mask()`.
+  Byte-identical on the fixture ladder, measured on paired clocks, one
+  Type 1 close review.
+- Calling TTR once per gap-free segment instead of once per window stays in
+  WS4. It decides what a strict window means for TTR indicators: for SMA
+  the difference is rounding, for recursive indicators such as EMA it is
+  warm-up semantics.

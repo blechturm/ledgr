@@ -1,0 +1,13 @@
+"feature","mode","entry","phase","axis","small_s","large_s","exponent","rep_min","rep_max","n_reps","verdict","avail_over_dense_large"
+"custom_quad","dense","readers","equity","T:250-1000",0.02,0.02,0,-0.79,0.79,2,"below_floor",NA
+"custom_quad","dense","readers","fills","T:250-1000",0.07,0.15,0.55,0.4,0.71,2,"below_floor",NA
+"custom_quad","dense","readers","ledger","T:250-1000",0.035,0.02,-0.4,-0.79,-0.21,2,"below_floor",NA
+"custom_quad","dense","readers","trades","T:250-1000",0.1,0.185,0.44,0.39,0.5,2,"below_floor",NA
+"custom_quad","dense","run","other","T:250-1000",1.16,1.275,0.07,0.05,0.09,2,"sublinear",NA
+"custom_quad","dense","run","t_loop","T:250-1000",0.445,1.46,0.86,0.85,0.87,2,"linear",NA
+"custom_quad","dense","run","t_post","T:250-1000",0.185,0.29,0.32,0.32,0.33,2,"below_floor",NA
+"custom_quad","dense","run","t_pre","T:250-1000",0.365,2.08,1.26,1.25,1.27,2,"SUPERLINEAR",NA
+"custom_quad","dense","run","total","T:250-1000",2.155,5.105,0.62,0.61,0.63,2,"sublinear",NA
+"custom_quad","dense","seal","total","T:250-1000",0.39,0.44,0.09,0.09,0.09,2,"sublinear",NA
+"custom_quad","dense","sweep","total","T:250-1000",1.335,4.69,0.91,0.88,0.93,2,"linear",NA
+"custom_quad","dense","wf","total","T:250-1000",3.8,9.22,0.64,0.63,0.65,2,"sublinear",NA
