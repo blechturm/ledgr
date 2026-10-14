@@ -41,6 +41,7 @@
 \alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
 \alias{ledgr_invalid_strategy_state}
+\alias{ledgr_strategy_error}
 \alias{ledgr_target_sizing_unavailable}
 \alias{ledgr_restricted_target}
 \alias{ledgr_nonmember_exposure_increase}
@@ -869,7 +870,8 @@ Sharpe ratio or drawdown.
 \code{ledgr_run_not_found} is raised when run-store inspection helpers cannot
 find the requested run. \code{ledgr_unresolved_feature_id} is raised when callers
 ask for a concrete feature ID before parameterized feature declarations have
-been resolved.
+been resolved. \code{ledgr_strategy_error} wraps an error raised by user strategy
+code while preserving the original error as its parent.
 }
 
 \section{Additional public condition classes}{

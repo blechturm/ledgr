@@ -467,7 +467,8 @@
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers
 #' ask for a concrete feature ID before parameterized feature declarations have
-#' been resolved.
+#' been resolved. `ledgr_strategy_error` wraps an error raised by user strategy
+#' code while preserving the original error as its parent.
 #'
 #' @examples
 #' err <- try(ledgr_cost_spread_bps(-1), silent = TRUE)
@@ -504,7 +505,7 @@
 #' @aliases ledgr_facts_snapshot_not_sealed ledgr_facts_snapshot_hash_mismatch
 #' @aliases ledgr_session_adapter_invalid ledgr_session_override_invalid
 #' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
-#' @aliases ledgr_invalid_strategy_state
+#' @aliases ledgr_invalid_strategy_state ledgr_strategy_error
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target
 #' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible
 #' @aliases ledgr_short_exposure_unsupported

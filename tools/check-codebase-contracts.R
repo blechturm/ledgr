@@ -158,6 +158,11 @@ output_arg <- value_arg(
 output <- normalizePath(output_arg, winslash = "/", mustWork = FALSE)
 source_commit <- value_arg("source-commit", "working-tree")
 mode <- value_arg("mode", "report")
+structure_path <- file.path(root, "tools", "codebase-structure.R")
+if (!file.exists(structure_path)) {
+  stop("The shared codebase-structure scanner is missing.", call. = FALSE)
+}
+source(structure_path, local = TRUE)
 if (!mode %in% c("report", "check")) {
   stop("`--mode` must be report or check.", call. = FALSE)
 }
@@ -724,15 +729,13 @@ literal_rows <- current_only_literal_rows(root)
 if (!is.null(literal_rows)) {
   version_rows[[length(version_rows) + 1L]] <- literal_rows
 }
-if (length(version_rows) == 0L) {
-  version_rows <- empty_frame(c(
-    "file", "line", "owner", "record_kind", "expression",
-    "persisted_or_convention", "persistence_evidence", "fingerprint_member",
-    "atomic_scalar", "outside_fingerprint", "comparison_operator",
-    "equality_assertion", "current_only_violation"
-  ))
-} else {
-  version_rows <- do.call(rbind, version_rows)
+version_rows <- ledgr_census_bind_rows(version_rows, c(
+  "file", "line", "owner", "record_kind", "expression",
+  "persisted_or_convention", "persistence_evidence", "fingerprint_member",
+  "atomic_scalar", "outside_fingerprint", "comparison_operator",
+  "equality_assertion", "current_only_violation"
+))
+if (nrow(version_rows) > 0L) {
   version_rows <- unique(version_rows)
   version_rows$current_only_violation <- mapply(
     function(record_kind, expression, operator, owner) {
@@ -1068,15 +1071,11 @@ for (entry in r_index) {
     )
   }
 }
-if (length(helper_rows) == 0L) {
-  helper_rows <- empty_frame(c(
-    "file", "line", "helper", "exported", "s3_method", "hook",
-    "in_scope_private", "r_reference_count", "test_reference_count",
-    "dynamic_reference_count", "reference_locations", "classification"
-  ))
-} else {
-  helper_rows <- do.call(rbind, helper_rows)
-}
+helper_rows <- ledgr_census_bind_rows(helper_rows, c(
+  "file", "line", "helper", "exported", "s3_method", "hook",
+  "in_scope_private", "r_reference_count", "test_reference_count",
+  "dynamic_reference_count", "reference_locations", "classification"
+))
 
 ## Condition census --------------------------------------------------------
 
@@ -1223,15 +1222,11 @@ for (spec in wrapper_specs) {
     }
   }
 }
-if (length(condition_rows) == 0L) {
-  condition_rows <- empty_frame(c(
-    "file", "line", "call_kind", "condition_class", "recoverable",
-    "expression", "documented_alias", "documented_description",
-    "internal_prefix"
-  ))
-} else {
-  condition_rows <- do.call(rbind, condition_rows)
-}
+condition_rows <- ledgr_census_bind_rows(condition_rows, c(
+  "file", "line", "call_kind", "condition_class", "recoverable",
+  "expression", "documented_alias", "documented_description",
+  "internal_prefix"
+))
 
 condition_class_rows <- condition_rows[
   condition_rows$call_kind %in% c(
