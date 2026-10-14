@@ -30,8 +30,6 @@ validate_ledgr_config <- function(config) {
   if (!is.list(config)) {
     rlang::abort("`config` must be a list (or parsed JSON list).", class = "ledgr_invalid_config")
   }
-  config <- ledgr_config_normalize_risk_identity(config)
-
   cfg_get <- function(path) {
     cur <- config
     for (key in path) {
@@ -79,10 +77,9 @@ validate_ledgr_config <- function(config) {
   }
   ledgr_public_compiled_accounting_model(config$engine$compiled_accounting_model)
 
-  # When a config carries policy identity, it must be the current exact shape.
-  if (!is.null(config$corporate_actions)) {
-    ledgr_validate_corporate_action_policy_identity(config$corporate_actions)
-  }
+  cfg_get(c("corporate_actions"))
+  ledgr_policy_schema_require_current(config)
+  ledgr_validate_corporate_action_policy_identity(config$corporate_actions)
 
   if (!is.null(config$availability)) {
     availability <- config$availability
@@ -112,7 +109,8 @@ validate_ledgr_config <- function(config) {
     timing_version <- availability$execution_timing_version
     if (!is.null(timing_version) &&
         (!is.numeric(timing_version) || length(timing_version) != 1L ||
-         is.na(timing_version) || !is.finite(timing_version) || timing_version != 2)) {
+         is.na(timing_version) || !is.finite(timing_version) ||
+         timing_version != ledgr_availability_execution_timing_rule_version)) {
       rlang::abort(
         "Config field availability.execution_timing_version must be 2 when recorded.",
         class = "ledgr_invalid_config"
@@ -385,14 +383,19 @@ ledgr_validate_config <- function(config) {
 
 ledgr_policy_schema_require_current <- function(config, run_id = NULL) {
   identity <- config$corporate_actions
-  if (!is.null(identity) &&
-      !identical(
-        ledgr_corporate_action_identity_schema(identity),
-        ledgr_corporate_action_policy_schema_version
-      )) {
+  corporate_schema <- if (is.list(identity)) {
+    identity$policy_schema_version
+  } else {
+    NULL
+  }
+  if (!identical(
+    corporate_schema,
+    ledgr_corporate_action_policy_schema_version
+  )) {
+    subject <- if (is.null(run_id)) "Config" else sprintf("Run '%s'", run_id)
     rlang::abort(
-      "Config field corporate_actions must use policy schema 2.",
-      class = "ledgr_invalid_config"
+      sprintf("%s must use corporate-action policy schema 2.", subject),
+      class = c("ledgr_policy_schema_mismatch", "ledgr_invalid_config")
     )
   }
   valuation <- if (is.list(config$availability)) {
@@ -405,27 +408,11 @@ ledgr_policy_schema_require_current <- function(config, run_id = NULL) {
         ledgr_valuation_policy_record_version(valuation),
         ledgr_valuation_policy_schema_version
       )) {
+    subject <- if (is.null(run_id)) "Config" else sprintf("Run '%s'", run_id)
     rlang::abort(
-      "Config field availability.valuation_policy must use schema 2.",
-      class = "ledgr_invalid_config"
+      sprintf("%s must use valuation policy schema 2.", subject),
+      class = c("ledgr_policy_schema_mismatch", "ledgr_invalid_config")
     )
   }
   invisible(TRUE)
-}
-
-ledgr_config_noop_risk_identity <- function() {
-  list(
-    risk_chain_hash = ledgr_risk_chain_hash(ledgr_risk_none()),
-    risk_plan_json = ledgr_risk_plan_json(ledgr_risk_none())
-  )
-}
-
-ledgr_config_normalize_risk_identity <- function(config) {
-  if (!is.list(config)) {
-    return(config)
-  }
-  if (is.null(config$risk_chain)) {
-    config$risk_chain <- ledgr_config_noop_risk_identity()
-  }
-  config
 }

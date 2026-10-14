@@ -17,8 +17,15 @@ config_hash_payload <- function(config) {
       class = "ledgr_invalid_config"
     )
   }
+  if (!is.list(config$risk_chain) ||
+      is.null(config$risk_chain$risk_chain_hash) ||
+      is.null(config$risk_chain$risk_plan_json)) {
+    rlang::abort(
+      "Config field risk_chain must contain current risk identity.",
+      class = "ledgr_invalid_config"
+    )
+  }
   payload <- unclass(config)
-  payload <- ledgr_config_normalize_risk_identity(payload)
   payload$db_path <- NULL
   payload$run_id <- NULL
   payload$alias_map_order <- NULL

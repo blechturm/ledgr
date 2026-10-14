@@ -19,6 +19,14 @@ ledgr_test_cost_config <- function(cost_model = ledgr_cost_zero()) {
   ledgr_test_cost_identity(cost_model)
 }
 
+ledgr_test_current_config <- function(config) {
+  config$risk_chain <- ledgr:::ledgr_config_risk_identity()
+  config$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
+    ledgr_corporate_actions_research()
+  )
+  config
+}
+
 testthat::test_that("canonicalization is stable across key ordering (including nested lists)", {
   cost_cfg <- ledgr_test_cost_config(ledgr_cost_spread_bps(1))
   cfg1 <- list(
@@ -37,6 +45,7 @@ testthat::test_that("canonicalization is stable across key ordering (including n
     identity_rule_version = 2L,
     strategy = list(id = "buy_and_hold", params = list(z = 1, a = 2))
   )
+  cfg1 <- ledgr_test_current_config(cfg1)
 
   cfg2 <- list(
     strategy = list(params = list(a = 2, z = 1), id = "buy_and_hold"),
@@ -54,6 +63,7 @@ testthat::test_that("canonicalization is stable across key ordering (including n
     identity_rule_version = 2L,
     db_path = "db.duckdb"
   )
+  cfg2 <- ledgr_test_current_config(cfg2)
 
   j1 <- ledgr:::canonical_json(cfg1)
   j2 <- ledgr:::canonical_json(cfg2)
@@ -82,6 +92,7 @@ testthat::test_that("hash is deterministic and sensitive to small changes", {
     identity_rule_version = 2L,
     strategy = list(id = "x")
   )
+  cfg <- ledgr_test_current_config(cfg)
 
   testthat::expect_identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg))
 
@@ -115,6 +126,7 @@ testthat::test_that("config hash excludes storage paths and run-local diagnostic
     identity_rule_version = 2L,
     strategy = list(id = "x")
   )
+  cfg <- ledgr_test_current_config(cfg)
 
   cfg2 <- cfg
   cfg2$db_path <- "store-b.duckdb"
@@ -154,6 +166,7 @@ testthat::test_that("config hash excludes derived feature-set hash surface", {
     ),
     strategy = list(id = "x")
   )
+  cfg <- ledgr_test_current_config(cfg)
 
   cfg2 <- cfg
   cfg2$features$feature_set_hash <- "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -182,6 +195,7 @@ testthat::test_that("config hash excludes sweep retention policy", {
     data = list(source = "snapshot", snapshot_id = "test", snapshot_hash = "hash"),
     identity_rule_version = 2L
   )
+  cfg <- ledgr_test_current_config(cfg)
 
   cfg_top_level <- cfg
   cfg_top_level$sweep_retention <- ledgr_sweep_retention("completed")
@@ -217,10 +231,11 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
     identity_rule_version = 2L,
     strategy = list(id = "x", params = list())
   )
+  cfg <- ledgr_test_current_config(cfg)
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "6df73a6552b06a913587167c132fdc7d16c789f2431f25f4b65a125fb6c31bf5"
+    "5be47a39d2fc3ab8ace1d5de14b04797552365c89c2e1202cb2cc691e4e4b08c"
   )
 })
 
@@ -242,6 +257,7 @@ testthat::test_that("instrument_ids ordering affects canonical JSON and hash", {
     identity_rule_version = 2L,
     strategy = list(id = "x")
   )
+  cfg1 <- ledgr_test_current_config(cfg1)
 
   cfg2 <- cfg1
   cfg2$universe$instrument_ids <- c("B", "A")
@@ -268,6 +284,7 @@ testthat::test_that("validation fails loud on required fields and constraints", 
     identity_rule_version = 2L,
     strategy = list(id = "x")
   )
+  base_cfg <- ledgr_test_current_config(base_cfg)
 
   cfg_missing_cash <- base_cfg
   cfg_missing_cash$backtest$initial_cash <- NULL
@@ -338,6 +355,7 @@ testthat::test_that("validation passes for a minimal valid config (list and JSON
     ),
     identity_rule_version = 2L
   )
+  cfg <- ledgr_test_current_config(cfg)
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)
 

@@ -450,7 +450,6 @@ ledgr_walk_forward_read_run_config <- function(con, snapshot, run_id) {
   if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
     cfg$alias_map_order <- character()
   }
-  cfg <- ledgr_config_normalize_risk_identity(cfg)
   class(cfg) <- unique(c("ledgr_config", class(cfg)))
   tryCatch(
     validate_ledgr_config(cfg),

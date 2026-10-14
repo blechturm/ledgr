@@ -11,21 +11,14 @@ ledgr_disposition_sources <- function() {
 # Labels are exact sealed terminal_event values; scheduled corporate-action
 # rows carry none and therefore take the map's default entry. A choice that
 # needs a currently permissible mark falls back to frozen_terminal_position
-# when the holding is frozen. A NULL policy (a historical config without a
-# policy identity) refuses every terminal.
+# when the holding is frozen.
 ledgr_terminal_resolve <- function(policy, ids, labels, valuation) {
   ids <- as.character(ids)
   labels <- as.character(labels)
   labels[is.na(labels)] <- ""
-  if (is.null(policy)) {
-    map <- c(default = "refuse")
-    frozen_choice <- "refuse"
-    haircut <- NA_real_
-  } else {
-    map <- policy$held_terminal_position
-    frozen_choice <- policy$frozen_terminal_position
-    haircut <- policy$haircut %||% NA_real_
-  }
+  map <- policy$held_terminal_position
+  frozen_choice <- policy$frozen_terminal_position
+  haircut <- policy$haircut %||% NA_real_
   matched <- ledgr_corporate_action_resolve_terminal(map, labels)
   choice <- unname(matched)
   matched_label <- names(matched)

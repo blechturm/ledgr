@@ -84,8 +84,13 @@
   beside the promoting experiment's, in
   `ledgr_promotion_context(bt)$identity_check`, and warns with
   `ledgr_promote_identity_mismatch` when they differ. It still promotes.
-  Promotion context records are now `ledgr_promotion_v2`; v1 records read
-  unchanged.
+  Promotion context records are now `ledgr_promotion_v2`; other versions
+  refuse rather than being inferred.
+
+- Current run configurations must carry explicit risk and corporate-action
+  policy identities. Saved sweeps require retention schema 2, and a current
+  run whose required strategy-provenance row is missing refuses with
+  `ledgr_strategy_provenance_missing`.
 
 - Results of an availability-aware run now say what their point-in-time view
   rested on. `print()` shows a `Point in time:` line naming the universe kind

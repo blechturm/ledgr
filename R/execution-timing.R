@@ -46,7 +46,7 @@ ledgr_execution_timing_provenance <- function(config) {
         ledgr_availability_execution_timing_rule_version
       ) && version == ledgr_availability_execution_timing_rule_version) {
     return(list(
-      execution_timing_version = 2L,
+      execution_timing_version = ledgr_availability_execution_timing_rule_version,
       execution_timing_convention = "availability_open_v2",
       execution_timing_source = "recorded_config"
     ))
@@ -188,7 +188,10 @@ ledgr_fill_recording_pulses_from_evidence <- function(fills,
   resolved[resolved] <- !is.na(same_time) & same_time
   # (4) Exactly one execution session at that time whose previous session
   # closed at the decision time; its close is the recording pulse.
-  execution_time <- if (identical(timing$execution_timing_version, 2L)) session_open else session_close
+  execution_time <- if (identical(
+    timing$execution_timing_version,
+    ledgr_availability_execution_timing_rule_version
+  )) session_open else session_close
   shared_time <- execution_time[duplicated(execution_time)]
   session <- match(fill_time, execution_time)
   simple <- resolved & !(fill_time %in% shared_time) & !is.na(session) & session >= 2L

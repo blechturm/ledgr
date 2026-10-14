@@ -35,7 +35,7 @@ ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
       p.R_version,
       p.dependency_versions_json
     FROM runs r
-    INNER JOIN run_provenance p ON p.run_id = r.run_id
+    LEFT JOIN run_provenance p ON p.run_id = r.run_id
     WHERE %s
     ",
     where
@@ -163,6 +163,12 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
   row <- ledgr_strategy_extract_fetch(opened$con, run_id, snapshot_id = snapshot_id)
   if (nrow(row) != 1L) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
+  }
+  if (is.na(row$strategy_type[[1L]])) {
+    rlang::abort(
+      sprintf("Run '%s' has no strategy provenance record.", run_id),
+      class = c("ledgr_strategy_provenance_missing", "ledgr_invalid_run")
+    )
   }
 
   source <- row$strategy_source[[1]]

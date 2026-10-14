@@ -101,12 +101,12 @@ ledgr_valuation_policy_record_version <- function(x) {
   }
   fields <- sort(names(x))
   required <- sort(c("schema_version", "type_id", "max_sessions", "exhausted"))
-  if (identical(x$schema_version, 2L) &&
+  if (identical(x$schema_version, ledgr_valuation_policy_schema_version) &&
       identical(fields, required) &&
       is.character(x$exhausted) && length(x$exhausted) == 1L &&
       !is.na(x$exhausted) &&
       x$exhausted %in% ledgr_valuation_exhausted_choices()) {
-    return(2L)
+    return(ledgr_valuation_policy_schema_version)
   }
   NA_integer_
 }

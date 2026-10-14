@@ -52,6 +52,9 @@ testthat::test_that("risk identity participates in config_hash without a separat
       risk_chain_hash = ledgr:::ledgr_risk_chain_hash(ledgr_risk_none()),
       risk_plan_json = ledgr:::ledgr_risk_plan_json(ledgr_risk_none())
     ),
+    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+      ledgr_corporate_actions_research()
+    ),
     strategy = list(id = "x", params = list()),
     data = list(
       source = "snapshot",
@@ -63,7 +66,12 @@ testthat::test_that("risk identity participates in config_hash without a separat
 
   cfg_missing <- cfg
   cfg_missing$risk_chain <- NULL
-  testthat::expect_identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg_missing))
+  testthat::expect_error(
+    ledgr:::config_hash(cfg_missing),
+    "Config field risk_chain must contain current risk identity.",
+    class = "ledgr_invalid_config",
+    fixed = TRUE
+  )
 
   cfg_null_equivalent <- cfg
   cfg_null_equivalent$risk_chain <- list(
@@ -102,6 +110,9 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
     risk_chain = list(
       risk_chain_hash = ledgr:::ledgr_risk_chain_hash(ledgr_risk_none()),
       risk_plan_json = ledgr:::ledgr_risk_plan_json(ledgr_risk_none())
+    ),
+    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+      ledgr_corporate_actions_research()
     ),
     strategy = list(id = "x", params = list()),
     data = list(

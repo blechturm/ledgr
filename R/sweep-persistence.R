@@ -495,11 +495,7 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     candidate_id = as.character(candidates$candidate_id),
     candidate_row = as.integer(candidates$candidate_row),
     status = as.character(candidates$status),
-    completion_json = if ("completion_json" %in% names(candidates)) {
-      as.character(candidates$completion_json)
-    } else {
-      rep(NA_character_, nrow(candidates))
-    },
+    completion_json = as.character(candidates$completion_json),
     final_equity = as.numeric(candidates$final_equity),
     total_return = as.numeric(candidates$total_return),
     annualized_return = as.numeric(candidates$annualized_return),
@@ -703,8 +699,21 @@ ledgr_sweep_validate_reconstructed_identity <- function(parent, candidates, out)
 
 ledgr_sweep_retention_from_json <- function(json) {
   record <- ledgr_json_read_nested(json)
-  if (is.list(record) && is.character(record$returns) && length(record$returns) == 1L) {
-    return(ledgr_sweep_retention(record$returns, trades = record$trades %||% "none"))
+  required <- c("retention_schema_version", "returns", "trades")
+  if (is.list(record) &&
+      length(record) == length(required) &&
+      setequal(names(record), required)) {
+    class(record) <- c("ledgr_sweep_retention", "list")
+    return(tryCatch(
+      ledgr_sweep_retention_normalize(record),
+      error = function(e) {
+        rlang::abort(
+          "Saved sweep retention_json is incompatible.",
+          class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store"),
+          parent = e
+        )
+      }
+    ))
   }
   rlang::abort("Saved sweep retention_json is incompatible.", class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store"))
 }

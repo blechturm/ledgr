@@ -1005,7 +1005,7 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
     close(bt)
   }
 
-  # A record written under ledgr_promotion_v1 reads unchanged, without a check.
+  # A non-current promotion record refuses instead of losing its identity check.
   con <- ledgr:::get_connection(snapshot)
   stored <- DBI::dbGetQuery(con, "SELECT source_sweep_json FROM run_promotion_context WHERE run_id = 'promote_same'")
   v1_sweep <- ledgr:::ledgr_json_read_nested(stored$source_sweep_json[[1]])
@@ -1015,10 +1015,12 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
     "UPDATE run_promotion_context SET promotion_context_version = 'ledgr_promotion_v1', source_sweep_json = ? WHERE run_id = 'promote_same'",
     params = list(as.character(ledgr:::canonical_json(v1_sweep)))
   )
-  legacy <- ledgr_promotion_context(same)
-  testthat::expect_identical(legacy$promotion_context_version, "ledgr_promotion_v1")
-  testthat::expect_null(legacy$identity_check)
-  testthat::expect_identical(legacy$selected_candidate$candidate_id, "q1")
+  testthat::expect_error(
+    ledgr_promotion_context(same),
+    "Stored promotion context does not use ledgr_promotion_v2.",
+    class = "ledgr_invalid_store",
+    fixed = TRUE
+  )
 })
 
 # ledgr-test-profile: review

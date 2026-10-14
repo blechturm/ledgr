@@ -1,5 +1,100 @@
 args <- commandArgs(trailingOnly = TRUE)
 
+current_only_specs <- list(
+  list(
+    pattern = "identity_rule_version",
+    bindings = "ledgr_identity_rule_version"
+  ),
+  list(
+    pattern = "corporate_schema|(?<!valuation_)policy_schema_version",
+    bindings = "ledgr_corporate_action_policy_schema_version"
+  ),
+  list(
+    pattern = "valuation_policy_record_version|valuation_schema",
+    bindings = "ledgr_valuation_policy_schema_version"
+  ),
+  list(
+    pattern = "retention_schema_version",
+    bindings = "ledgr_sweep_retention_schema_version"
+  ),
+  list(
+    pattern = "sweep_schema_version",
+    bindings = "ledgr_saved_sweep_schema_version"
+  ),
+  list(
+    pattern = "hash_rule_version|snapshot_hash_rule",
+    bindings = "ledgr_snapshot_content_hash_rule_version"
+  ),
+  list(
+    pattern = "execution_timing_version",
+    bindings = "ledgr_availability_execution_timing_rule_version"
+  ),
+  list(
+    pattern = "metric_context_version",
+    bindings = "ledgr_metric_context_version"
+  )
+)
+
+current_only_comparison_violation <- function(expression,
+                                              operator,
+                                              owner = NA_character_) {
+  if (identical(owner, "ledgr_store_assert_current") &&
+      grepl("schema_state.*schema_version", expression, perl = TRUE) &&
+      grepl("ledgr_experiment_store_schema_version", expression, fixed = TRUE)) {
+    return(FALSE)
+  }
+  specs <- current_only_specs[vapply(current_only_specs, function(spec) {
+    grepl(spec$pattern, expression, perl = TRUE)
+  }, logical(1))]
+  if (identical(owner, "ledgr_parse_promotion_context") &&
+      grepl("version|ledgr_promotion_v[0-9]+", expression, perl = TRUE)) {
+    specs[[length(specs) + 1L]] <- list(
+      pattern = "promotion_context_version",
+      bindings = "ledgr_promotion_context_version"
+    )
+  }
+  if (length(specs) == 0L) return(FALSE)
+  equality <- operator %in% c("==", "!=", "identical")
+  has_current_binding <- all(vapply(specs, function(spec) {
+    any(vapply(spec$bindings, function(binding) {
+      grepl(binding, expression, fixed = TRUE)
+    }, logical(1)))
+  }, logical(1)))
+  !equality || !has_current_binding
+}
+
+if ("--self-test-current-only" %in% args) {
+  cases <- data.frame(
+    expression = c(
+      "identical(x$identity_rule_version, ledgr_identity_rule_version)",
+      "identical(x$identity_rule_version, 1L)",
+      "is.null(x$identity_rule_version)",
+      "x$sweep_schema_version %in% 1:3",
+      "identical(version, 'ledgr_promotion_v1')",
+      "schema_state$schema_version < ledgr_experiment_store_schema_version"
+    ),
+    operator = c("identical", "identical", "is.null", "%in%", "identical", "<"),
+    owner = c(
+      NA, NA, NA, NA, "ledgr_parse_promotion_context",
+      "ledgr_store_assert_current"
+    ),
+    expected = c(FALSE, TRUE, TRUE, TRUE, TRUE, FALSE),
+    stringsAsFactors = FALSE
+  )
+  actual <- mapply(
+    current_only_comparison_violation,
+    cases$expression,
+    cases$operator,
+    cases$owner,
+    USE.NAMES = FALSE
+  )
+  if (!identical(actual, cases$expected)) {
+    stop("LEDGR_CURRENT_ONLY_SELF_TEST_FAILED", call. = FALSE)
+  }
+  cat("LEDGR_CURRENT_ONLY_SELF_TEST_OK\n")
+  quit(save = "no", status = 0L)
+}
+
 value_arg <- function(name, default = NULL) {
   prefix <- paste0("--", name, "=")
   hit <- args[startsWith(args, prefix)]
@@ -433,6 +528,7 @@ if (nrow(connection_rows) > 0L) {
 ## Version and convention census ------------------------------------------
 
 fingerprint_names <- c(
+  "ledgr_availability_execution_timing_rule_version",
   "ledgr_business_objective_schema_version",
   "ledgr_corporate_action_policy_schema_version",
   "ledgr_cost_schema_version",
@@ -445,6 +541,7 @@ fingerprint_names <- c(
   "ledgr_risk_schema_version",
   "ledgr_saved_sweep_schema_version",
   "ledgr_selection_rule_schema_version",
+  "ledgr_snapshot_content_hash_rule_version",
   "ledgr_sweep_filter_schema_version",
   "ledgr_sweep_retention_schema_version",
   "ledgr_timing_schema_version",
@@ -530,14 +627,19 @@ for (entry in r_index) {
     }
   }
 
-  comparison_names <- c("==", "!=", ">", ">=", "<", "<=", "identical")
+  comparison_names <- c(
+    "==", "!=", ">", ">=", "<", "<=", "identical", "is.null", "is.na",
+    "%in%"
+  )
   comparisons <- Filter(function(x) {
     identical(x$kind, "call") && !is.na(x$name) && x$name %in% comparison_names
   }, entry$nodes)
   token_rows <- entry$data[
     entry$data$text %in% comparison_names &
-      entry$data$token %in% c("EQ", "NE", "GT", "GE", "LT", "LE",
-                               "SYMBOL_FUNCTION_CALL"),
+      entry$data$token %in% c(
+        "EQ", "NE", "GT", "GE", "LT", "LE", "SPECIAL",
+        "SYMBOL_FUNCTION_CALL"
+      ),
     c("text", "line1"), drop = FALSE
   ]
   line_queues <- split(as.integer(token_rows$line1), token_rows$text)
@@ -581,22 +683,17 @@ if (length(version_rows) == 0L) {
 } else {
   version_rows <- do.call(rbind, version_rows)
   version_rows <- unique(version_rows)
-  legacy_pattern <- paste(
-    c(
-      "availability_close_v1",
-      "ledgr_config_identity_rule",
-      "identity_rule_version.*(?:NULL|1L)",
-      "policy_schema_version.*1L",
-      "retention_schema_version.*1L",
-      "sweep_schema_version.*(?:<|>|1L|2L|3L)"
-    ),
-    collapse = "|"
-  )
-  version_rows$current_only_violation <- grepl(
-    legacy_pattern,
+  version_rows$current_only_violation <- mapply(
+    function(record_kind, expression, operator, owner) {
+      identical(record_kind, "read_branch_or_equality") &&
+        current_only_comparison_violation(expression, operator, owner)
+    },
+    version_rows$record_kind,
     version_rows$expression,
-    perl = TRUE
-  ) & version_rows$record_kind != "binding"
+    version_rows$comparison_operator,
+    version_rows$owner,
+    USE.NAMES = FALSE
+  )
 }
 
 ## Hand-built run-config census -------------------------------------------

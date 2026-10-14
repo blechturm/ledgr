@@ -40,8 +40,8 @@
 #' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
 #' timestamp representation drift instead of silently re-keying sealed data.
 #'
-#' `ledgr_snapshot_hash_rule_unsupported` is raised for an unrecognized future
-#' or missing hash-rule marker in a current store.
+#' `ledgr_snapshot_hash_rule_unsupported` is raised when a snapshot does not
+#' carry the current content-hash rule.
 #' `ledgr_snapshot_hash_order_invalid` is raised when source rows are not in
 #' the bytewise order required by rule 3.
 #'
@@ -83,6 +83,9 @@
 #' a non-current corporate-action or valuation policy schema. Current stores
 #' carry schema 2; ledgr does not infer, migrate, or reinterpret older policy
 #' records.
+#'
+#' `ledgr_strategy_provenance_missing` is raised when a current run row exists
+#' but its required strategy-provenance row is absent.
 #'
 #' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
 #' when selected runs have differing or unknown execution-timing conventions.
@@ -493,6 +496,7 @@
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
 #' @aliases ledgr_policy_schema_mismatch
+#' @aliases ledgr_strategy_provenance_missing
 #' @aliases ledgr_fill_timing_not_comparable
 #' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
 #' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list

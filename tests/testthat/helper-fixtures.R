@@ -217,6 +217,10 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
     cost_model_hash = ledgr:::ledgr_cost_model_hash(cost_model),
     cost_plan_json = ledgr:::ledgr_cost_plan_json(cost_model)
   )
+  cfg$risk_chain <- ledgr:::ledgr_config_risk_identity()
+  cfg$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
+    ledgr_corporate_actions_research()
+  )
   cfg$identity_rule_version <- 2L
   if (is.list(cfg$strategy) && !is.list(cfg$strategy$provenance)) {
     strategy <- ledgr:::ledgr_strategy_spec(cfg$strategy)

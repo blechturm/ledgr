@@ -1097,8 +1097,10 @@ ledgr_run_open <- function(snapshot, run_id) {
   if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
     cfg$alias_map_order <- character()
   }
-  cfg <- ledgr_config_normalize_risk_identity(cfg)
-  required_config_fields <- c("db_path", "engine", "universe", "backtest", "timing_model", "cost_model", "strategy")
+  required_config_fields <- c(
+    "db_path", "engine", "universe", "backtest", "timing_model",
+    "cost_model", "risk_chain", "corporate_actions", "strategy"
+  )
   missing_config_fields <- setdiff(required_config_fields, names(cfg))
   if (length(missing_config_fields) > 0L) {
     rlang::abort(

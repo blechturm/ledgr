@@ -2,7 +2,8 @@ terminal_policy_hash <- function(policy) {
   ledgr:::config_hash(list(
     corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(policy),
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L
+    identity_rule_version = 2L,
+    risk_chain = ledgr:::ledgr_config_risk_identity()
   ))
 }
 
@@ -361,9 +362,12 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
   )
   testthat::expect_error(
     ledgr:::ledgr_policy_schema_require_current(list(
+      corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+        ledgr_corporate_actions_research()
+      ),
       availability = list(valuation_policy = schema1)
     )),
-    class = "ledgr_invalid_config"
+    class = "ledgr_policy_schema_mismatch"
   )
   with_new_field <- c(schema1, list(exhausted = "freeze"))
   testthat::expect_true(is.na(ledgr:::ledgr_valuation_policy_record_version(with_new_field)))
@@ -375,6 +379,9 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
   testthat::expect_true(is.na(ledgr:::ledgr_valuation_policy_record_version(unknown)))
   testthat::expect_identical(
     ledgr:::ledgr_policy_schema_require_current(list(
+      corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(
+        ledgr_corporate_actions_research()
+      ),
       availability = list(valuation_policy = unclass(freeze))
     )),
     TRUE

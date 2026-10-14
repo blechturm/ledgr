@@ -440,9 +440,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
   dense_planes <- if (availability_active) NULL else ledgr_dense_eligibility_planes(length(instrument_ids))
 
   # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
-  # 3.4). The decoded policy is NULL for a historical config without a policy
-  # identity, which refuses every terminal as before.
-  terminal_policy <- execution$corporate_action_policy %||% NULL
+  # 3.4). Current configs always carry the decoded policy.
+  terminal_policy <- execution$corporate_action_policy
   frozen_prev <- as.character(execution$frozen_at_resume %||% character())
   availability_decision <- function(ts, pulse_idx, positions) {
     full_positions <- ledgr_fold_positions_snapshot(positions, instrument_ids)

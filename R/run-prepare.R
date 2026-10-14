@@ -12,7 +12,6 @@ ledgr_run_prepare_config <- function(config) {
       class = "ledgr_invalid_config"
     )
   }
-  cfg <- ledgr_config_normalize_risk_identity(cfg)
   ledgr_execution_timing_require_current(cfg)
   ledgr_policy_schema_require_current(cfg)
 
