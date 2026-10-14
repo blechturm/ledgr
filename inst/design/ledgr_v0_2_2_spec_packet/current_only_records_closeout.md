@@ -1,6 +1,6 @@
 # Workstream 30 Closeout: Current-Only Records And Public Surfaces
 
-**Status:** Corrections and LDG-3036 complete; awaiting maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-10-14.
 **Date:** 2026-10-14
 **Baseline commit:** `fc4d8fc7`
 **Implementation range:** `fc4d8fc7..c566e433`
@@ -268,5 +268,6 @@ locale/type identity work; Ladder25, the fast gate and the repeated Sharadar
 record supply the final evidence. Review counts are measured once at Cut 14
 close and are not a workstream gate.
 
-Workstream 30 remains `review_pending` until final evidence and maintainer
-acceptance. Workstream 31 resumes only after acceptance.
+The maintainer accepted Workstream 30 on the recorded mutation, profile,
+exactness and aggregate-only Sharadar evidence without a third review round
+under M1. Workstream 31 may resume.

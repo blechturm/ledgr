@@ -21,11 +21,12 @@ tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
 Accepted Cut 14 now owns the pre-CRAN legacy-removal synthesis and the macro
 plan's codebase-hygiene amendment. Its fifteen tickets across three
 workstreams passed cut review after patches on 2026-10-13. Implementation
-is complete through Workstream 30. Workstream 29 is accepted. Workstream 30's
-close and focused reviews found correction work; the final mechanical fixes,
+is complete through Workstream 30. Workstreams 29 and 30 are accepted.
+Workstream 30's close and focused reviews found correction work; the final
+mechanical fixes,
 21-member source census, exact Ladder25, 108.72-second fast record and repeated
-aggregate Sharadar lane are now complete. Maintainer acceptance is next; no
-third review round is planned under M1.
+aggregate Sharadar lane are complete. The maintainer accepted that evidence on
+2026-10-14 without a third review round under M1. Workstream 31 is next.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -77,7 +78,8 @@ ledger.
   identity-rule validation and the 21-member store fingerprint. Ladder25,
   the committed fast and review profiles, and the repeated aggregate Sharadar
   lane pass.
-  Maintainer acceptance remains before Workstream 31 resumes.
+  The maintainer accepted Workstream 30 on 2026-10-14. Workstream 31 may now
+  resume.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
