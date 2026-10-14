@@ -23,7 +23,7 @@ measured inputs for Workstream 31 rather than Workstream 30 failures.
   handle reads, six held-store borrows, two held-store registrations and
   eight exported caller-supplied connections. Every persistent-store entry
   reaches the accepted current-store guard.
-- `versions.csv` contains 32 bindings, 25 convention-string occurrences, 79
+- `versions.csv` contains 33 bindings, 25 convention-string occurrences, 80
   read comparisons and one retired-literal guard. It records no current-only
   violation. The sole reported inventory finding is the deliberately separate
   promotion-context version binding, which remains outside the format
@@ -44,7 +44,7 @@ measured inputs for Workstream 31 rather than Workstream 30 failures.
   abort wrappers are retained. Unresolved dynamic expressions, `stop()`,
   `warning()` and `rlang::warn()` remain visible in the call-site file.
 - `summary.csv` reconciles the row and finding counts; `metadata.csv` records
-  the mode, source commit, root and the 21-member format fingerprint.
+  the mode, source commit, root and the 22-member format fingerprint.
 
 These counts size the later reconciliation. They are not acceptance targets
 for the permanent gates.

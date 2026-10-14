@@ -1,6 +1,6 @@
 "file","line","owner","entry_kind","call","persistent_store","classification","current_guard"
 "R/availability-inspection.R",282,"ledgr_facts_inspection_source","cached_or_handle_connection","ledgr_snapshot_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
-"R/availability-policy.R",135,"ledgr_snapshot_fact_headers","cached_or_handle_connection","ledgr_snapshot_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
+"R/availability-policy.R",137,"ledgr_snapshot_fact_headers","cached_or_handle_connection","ledgr_snapshot_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/backtest-handle.R",201,"ledgr_backtest_read_connection","cached_or_handle_connection","ledgr_backtest_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/backtest-handle.R",209,"ledgr_backtest_read_connection","held_store_borrow","ledgr_held_store",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/backtest-handle.R",222,"ledgr_backtest_read_connection","cached_or_handle_connection","ledgr_backtest_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
