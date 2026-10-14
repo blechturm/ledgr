@@ -637,6 +637,13 @@ structural tests and standing rules. This lets the same source-derived evidence
 guide removal and later detect its regression without combining the three
 review claims.
 
+Workstream 31's lint interval is recorded explicitly: formatting moved from
+the advisory [`lint/`](../../../dev/bench/v0_2_2_pre_cran_removal/lint/) record
+to [`format_lint_blocking/`](../../../dev/bench/v0_2_2_pre_cran_removal/format_lint_blocking/),
+while semantic lint moved from
+[`semantic_lint_advisory/`](../../../dev/bench/v0_2_2_pre_cran_removal/semantic_lint_advisory/)
+to [`semantic_lint_blocking/`](../../../dev/bench/v0_2_2_pre_cran_removal/semantic_lint_blocking/).
+
 The spec-cut choices are closed. `ledgr_db_init()` keeps its public name and
 means create-empty-or-open-current. The store marker holds version 119 and
 typed canonical JSON written by a dedicated radix-order serializer over an

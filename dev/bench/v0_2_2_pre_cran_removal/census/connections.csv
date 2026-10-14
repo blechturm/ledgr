@@ -58,7 +58,7 @@
 "R/sweep-persistence.R",118,"ledgr_sweep_list","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/sweep-persistence.R",51,"ledgr_sweep_save","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/sweep-persistence.R",85,"ledgr_sweep_open","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
-"R/sweep.R",235,"ledgr_sweep_impl","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
+"R/sweep.R",250,"ledgr_sweep_impl","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/valuation-summary.R",34,"ledgr_valuation_summary","exported_caller_connection","con",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/walk-forward-folds.R",648,"ledgr_experiment_window_validate_pulses","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/walk-forward-folds.R",657,"ledgr_experiment_window_validate_pulses","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"

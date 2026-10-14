@@ -1,20 +1,19 @@
 # Pre-CRAN removal source census
 
-This is the Workstream 30 check-mode census after the current-only and
-locale-independent identity corrections. It was produced from clean
-implementation commit `46a761be` with:
+This is the corrected Workstream 31 check-mode census after helper and
+condition reconciliation. It is regenerated from the accepted implementation
+plus the close-review corrections with:
 
 ```text
 Rscript --vanilla tools/check-codebase-contracts.R --mode=check \
   --output=dev/bench/v0_2_2_pre_cran_removal/census \
-  --source-commit=46a761be
+  --source-commit=c13eb5cc
 ```
 
-The command exits successfully because the current-only, connection and
-hand-built run-config rules pass. It changes no package code, schema,
-identity, public API or stored output. The CSV files use stable radix ordering
-and contain source file and line locations. Helper and condition findings are
-measured inputs for Workstream 31 rather than Workstream 30 failures.
+The command exits successfully because the current-only, connection,
+hand-built run-config, helper and condition rules pass. The CSV files use
+stable radix ordering and contain source file and line locations. Empty
+families use the same typed schemas and summary arithmetic as populated ones.
 
 ## Baseline
 
@@ -32,28 +31,27 @@ measured inputs for Workstream 31 rather than Workstream 30 failures.
   both required identity fields. Sixteen bounded fixture/config-builder rows
   supply neither and are classified by the checker's accepted construction
   rules; no current run-config consumer violates the gate.
-- `helpers.csv` contains 1,640 package functions: 168 exports, 84 registered
-  S3 methods, one hook, 1,352 R-referenced private helpers, 24 test-only
-  private helpers and 11 uncalled private helpers.
-- `conditions.csv` contains 2,267 call-site records. The derived
-  `condition_classes.csv` contains 379 recoverable classes: 119 documented
-  public classes, one public alias-only class, 16 public description-only
-  classes, 230 undocumented public classes, one internal class and 12
-  non-public labels.
-  Literal elements of mixed vectors and classes propagated through package
-  abort wrappers are retained. Unresolved dynamic expressions, `stop()`,
-  `warning()` and `rlang::warn()` remain visible in the call-site file.
+- `helpers.csv` contains 1,629 package functions: 168 exports, 84 registered
+  S3 methods, one hook, 1,352 R-referenced private helpers and 24 test-only
+  private helpers. No private helper is uncalled. Each retained test seam has
+  a concrete one-line testing contract and a real test caller.
+- `conditions.csv` contains 2,249 call-site records. The derived
+  `condition_classes.csv` contains 379 recoverable classes: 366 documented
+  public classes, one internal class and 12 non-public labels. Literal,
+  positional, class-builder and statically resolvable package-wrapper forms
+  agree with the executable scanner. The 63 unresolved dynamic or base
+  condition sites remain visible with explicit dispositions.
 - `summary.csv` reconciles the row and finding counts; `metadata.csv` records
   the mode, source commit, root and the 22-member format fingerprint.
 
-These counts size the later reconciliation. They are not acceptance targets
-for the permanent gates.
+These are evidence counts, not fixed acceptance targets. The permanent gates
+derive their inventories from the current source and require the report and
+test scanners to agree.
 
 ## Failure sensitivity
 
-A minimal scratch repository with no connection calls still emitted every
-typed record and returned success. It reported an added version equality and
-`fixture_v1` convention, an unreferenced helper, literal parent and child
-classes propagated through an abort wrapper, a quoted `[` S3 registration,
-and both factory-built and literal configs with supplied identity fields. An
-`expect_s3_class()` string did not turn the unreferenced helper into a call.
+A typed zero-row instance of all six summary families produces six zero row
+counts and six zero finding counts. Restoring an unconditional row bind at the
+version call site fails LTB-0272. Wrapper, positional and builder class forms
+are included in both inventories; making either inventory narrower fails
+LTB-0271 or the check-mode reconciliation.

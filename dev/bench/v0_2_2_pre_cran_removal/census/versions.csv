@@ -116,11 +116,11 @@
 "R/sweep-retention.R",1,"ledgr_sweep_retention_schema_version","binding","ledgr_sweep_retention_schema_version <- 2L",FALSE,"none",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep-retention.R",63,"ledgr_sweep_retention_normalize","read_branch_or_equality","identical(retain$retention_schema_version, ledgr_sweep_retention_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/sweep-retention.R",902,"ledgr_return_panel_hash","convention_string","ledgr_return_panel_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/sweep.R",2423,"ledgr_sweep_provenance","convention_string","ledgr_provenance_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/sweep.R",2431,"ledgr_sweep_provenance","convention_string","ledgr_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/sweep.R",2598,"ledgr_sweep_resolved_from_precomputed","read_branch_or_equality","""alias_map_version"" %in% names(row)",TRUE,"comparison",FALSE,FALSE,FALSE,"%in%",FALSE,FALSE
-"R/sweep.R",376,"ledgr_sweep_impl","convention_string","ledgr_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/sweep.R",554,"ledgr_candidate_reproduction_key","convention_string","ledgr_candidate_reproduction_key_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/sweep.R",2438,"ledgr_sweep_provenance","convention_string","ledgr_provenance_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/sweep.R",2446,"ledgr_sweep_provenance","convention_string","ledgr_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/sweep.R",2613,"ledgr_sweep_resolved_from_precomputed","read_branch_or_equality","""alias_map_version"" %in% names(row)",TRUE,"comparison",FALSE,FALSE,FALSE,"%in%",FALSE,FALSE
+"R/sweep.R",391,"ledgr_sweep_impl","convention_string","ledgr_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/sweep.R",569,"ledgr_candidate_reproduction_key","convention_string","ledgr_candidate_reproduction_key_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/validation-dsr.R",232,"ledgr_dsr","convention_string","ledgr_dsr_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/validation-dsr.R",83,"ledgr_effective_trials","convention_string","ledgr_effective_trial_cluster_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/validation-k-ratio.R",70,"ledgr_k_ratio","convention_string","ledgr_k_ratio_kestner_2013_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE

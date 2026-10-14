@@ -81,12 +81,16 @@ checks run successfully.
   `2011db66` records that exact hash in `.git-blame-ignore-revs`, documents
   the local Git configuration and makes only the formatting job blocking.
 - The raw parser trees are exact for two files. The other 16 differ only
-  because the accepted `brace_linter` findings require removing redundant
-  one-expression braces; after normalizing those braces, all 18 parser trees
-  are identical. The complete fixture ladder is 51/51 exact, including the
+  because styler inserted 62 single-expression brace nodes while resolving
+  the accepted `brace_linter` findings; it removed none. After unwrapping
+  only those inserted nodes, all 18 parser trees are identical. The complete
+  fixture ladder is 51/51 exact, including the
   identity family, and the owning focused tests pass.
 - The formatting record moves from 39 advisory findings at `a8416492` to
-  zero blocking findings. Formatting lint remains independent of tests,
+  zero blocking findings. The advisory and blocking records are
+  [`lint/`](../../lint/) and
+  [`format_lint_blocking/`](../../format_lint_blocking/). Formatting lint
+  remains independent of tests,
   package check, coverage and the semantic layer.
 
 ## LDG-3033: reconciled helper and condition debt
@@ -102,7 +106,8 @@ checks run successfully.
   `ledgr_strategy_error`; no current condition class or message was renamed.
 - `.lintr-semantic` contains exactly the accepted eight linters and the
   explicit undesirable list for `sapply`, `browser` and `debug`. The advisory
-  record under `semantic_lint_advisory/` scans 335 files with zero findings.
+  record under [`semantic_lint_advisory/`](../../semantic_lint_advisory/)
+  scans 335 files with zero findings.
   It changes no formatting, test, check or coverage outcome.
 
 ## LDG-3034: permanent structural and semantic gates
@@ -120,7 +125,8 @@ checks run successfully.
 - `tools/check-semantic-lint-config.R` injects one violation for each of the
   eight rules and requires each named linter to fire. The separate semantic
   job is blocking and does not share an execution edge with formatting or
-  package checks. `semantic_lint_blocking/` records 338 files and zero
+  package checks. [`semantic_lint_blocking/`](../../semantic_lint_blocking/)
+  records 338 files and zero
   findings at `b51f853e`, with the same configuration as the advisory arm.
 
 ## LDG-3035: standing rules and package gates
@@ -151,3 +157,37 @@ checks run successfully.
   membership-universe schema. The 21-member store is truthfully stale; the
   existing WS7 lake rebuild with dividend facts must use the 22-member current
   build.
+
+## Close-review corrections
+
+The independent Type 1 close review is preserved in
+`inst/design/ledgr_v0_2_2_spec_packet/close_review_31.md`. Commits `3ab97b33`
+and `c13eb5cc` close its five findings without changing a schema, identity,
+stored row or public result:
+
+- The shared fold entry is the sole execution `set.seed()` site. Seeded run
+  and sweep boundaries restore an existing caller seed or remove a seed that
+  did not exist before the call. Two sweeps started under different ambient
+  seeds agree, and their recorded execution seed reproduces through
+  `ledgr_run()`. Disabling shared-fold seeding makes the sweep arms diverge.
+- All six census families now have declared typed empty schemas and use one
+  summary implementation. Restoring an untyped empty bind makes the summary
+  fail. The final check-mode record at `c13eb5cc` has 69 connection rows, 139
+  version rows, 80 run-config rows, 1,629 helpers, 2,249 condition call sites,
+  379 recovered classes and 64 recorded findings.
+- The report and executable condition inventories share one scanner for
+  literal, positional, builder and statically resolvable wrapper classes and
+  must reconcile. Every retained test-only seam has a concrete named testing
+  contract; adding a seam without one fails check mode. The dead
+  `ledgr_fill_timing_not_comparable` reference was removed from source and
+  generated help.
+- The corrected implementation remains 51/51 exact against the pre-review
+  candidate, including the identity family. The final ordinary fast record
+  executes 567/567 blocks in 105.64 seconds against the unchanged 112-second
+  bound. The review profile executes 337/337 blocks with no failure and the
+  one pre-existing optional-package skip.
+- The final formatting and semantic records each scan 338 files with zero
+  findings; the semantic configuration self-check detects all eight rules.
+  `R CMD check --no-manual --no-build-vignettes` passes every installed test
+  and all 24 vignette replays. Its only two warnings are the expected missing
+  prebuilt-vignette warnings caused by `--no-build-vignettes`.
