@@ -550,7 +550,15 @@ The following do not gate v0.2.2:
     (`ledgr_v0_2_0_2_spec_packet/`);
   - the install floor as an adoption barrier: `R (>= 4.6.0)` together with
     the hard DuckDB dependency. Lower the floor, or state the reason in the
-    README.
+    README;
+  - the documentation surface, paired with the export census: 39 of 156
+    help pages without examples, 6 using `dontrun`, and no `@inheritParams`
+    across 495 hand-written `@param` blocks;
+  - NEWS.md (1,544 lines) collapsed to one first-release entry, as part of
+    CRAN preparation;
+  - for the complexity audit: scattered numeric tolerances, the store-open
+    retry helper (50 attempts with `gc()`, now behind the gate) and the five
+    test files over 1,000 lines besides the documentation-contract test.
 
   The governance cut's roadmap rewrite lists them in the next-release
   section.
@@ -927,4 +935,9 @@ audit, fold split, adoption item and packet path to the next release
 (Section 5). Later the same day: the design tree ships inside the package
 (about 4.8 MB gzipped against 1.6 MB for the rest), so its build exclusion
 goes to Cut 14 Workstream 31, the decision to move it out of `inst/` to the
-governance cut, and the install floor to the next release.
+governance cut, and the install floor to the next release. A further check
+of the code routed three items to Cut 14 Workstream 31: the run and fold
+change the user's global RNG without restoring it, 22 inline
+`schema_version = 1L` literals may sit outside the format fingerprint, and
+three test helpers are named after tickets. The documentation surface,
+NEWS and the complexity-audit items go to the next release (Section 5).
