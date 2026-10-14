@@ -191,3 +191,9 @@ stored row or public result:
   `R CMD check --no-manual --no-build-vignettes` passes every installed test
   and all 24 vignette replays. Its only two warnings are the expected missing
   prebuilt-vignette warnings caused by `--no-build-vignettes`.
+- GitHub Actions run `38578216775` at `93d801a8` is green. Its independent
+  blocking formatting and semantic jobs pass, all three ordinary fast-profile
+  runs and their unchanged gate pass, and the Ubuntu package job passes its
+  cold-start, historical-acceptance and `R CMD check` stages. Release-only,
+  isolated-CRAN and coverage stages are correctly absent from this quick-tier
+  branch run rather than counted as evidence.
