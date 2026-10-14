@@ -185,6 +185,8 @@ ledgr_validate_precomputed_features <- function(precomputed,
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)
   current_candidates <- resolved$candidate_features
   stored_candidates <- precomputed$candidate_features
+  # Keep this candidate-local so the refusal names the first offending
+  # candidate without resolving the grid or scanning either table again.
   for (i in seq_len(nrow(current_candidates))) {
     fingerprints_match <- identical(
       stored_candidates$feature_fingerprints[[i]],
@@ -194,7 +196,11 @@ ledgr_validate_precomputed_features <- function(precomputed,
       stored_candidates$alias_map_hash[[i]],
       current_candidates$alias_map_hash[[i]]
     )
-    if (!fingerprints_match || !alias_map_hash_matches) {
+    alias_map_matches <- identical(
+      stored_candidates$alias_map_json[[i]],
+      current_candidates$alias_map_json[[i]]
+    )
+    if (!fingerprints_match || !alias_map_hash_matches || !alias_map_matches) {
       rlang::abort(
         sprintf(
           paste(

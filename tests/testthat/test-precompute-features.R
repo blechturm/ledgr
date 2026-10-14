@@ -47,6 +47,8 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
   testthat::expect_s3_class(precomputed$projection, "ledgr_runtime_projection")
   testthat::expect_identical(precomputed$projection$feature_engine_version, ledgr:::ledgr_feature_engine_version())
   testthat::expect_null(precomputed$projection$alias_index)
+  testthat::expect_true(all(is.na(precomputed$candidate_features$alias_map_json)))
+  testthat::expect_true(all(is.na(precomputed$candidate_features$alias_map_hash)))
   testthat::expect_identical(names(precomputed$projection$instrument_index), c("AAA", "BBB"))
   testthat::expect_equal(unname(precomputed$projection$instrument_index), c(1L, 2L))
   testthat::expect_equal(length(precomputed$projection$pulse_index), 8L)
@@ -477,6 +479,132 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   testthat::expect_identical(with_precompute$status, fresh$status)
   testthat::expect_identical(with_precompute$final_equity, fresh$final_equity)
   testthat::expect_identical(with_precompute$n_trades, fresh$n_trades)
+
+  nm <- c("fast", "slow")
+  alias_strategy <- function(ctx, params) {
+    target <- ctx$flat()
+    value <- ctx$feature("AAA", "fast")
+    if (is.finite(value) && ctx$close("AAA") > value) target[["AAA"]] <- 1
+    target
+  }
+  alias_exp <- ledgr_experiment(
+    snapshot,
+    alias_strategy,
+    features = function(params) {
+      indicators <- list(ledgr_ind_sma(5), ledgr_ind_sma(20))
+      names(indicators) <- nm
+      do.call(ledgr_feature_map, indicators)
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  alias_precomputed <- ledgr_precompute_features(alias_exp, grid)
+  testthat::expect_identical(
+    alias_precomputed$candidate_features$feature_fingerprints[[1L]],
+    alias_precomputed$candidate_features$feature_fingerprints[[2L]]
+  )
+  testthat::expect_silent(
+    ledgr:::ledgr_validate_precomputed_features(alias_precomputed, alias_exp, grid)
+  )
+
+  nm <- c("slow", "fast")
+  alias_current <- ledgr:::ledgr_precompute_resolve_grid(
+    alias_exp,
+    grid
+  )$candidate_features
+  testthat::expect_identical(
+    alias_current$feature_fingerprints,
+    alias_precomputed$candidate_features$feature_fingerprints
+  )
+  testthat::expect_identical(
+    alias_current$alias_map_hash,
+    alias_precomputed$candidate_features$alias_map_hash
+  )
+  testthat::expect_false(identical(
+    alias_current$alias_map_json,
+    alias_precomputed$candidate_features$alias_map_json
+  ))
+
+  runs_before_alias_refusal <- count_rows("runs")
+  fills_before_alias_refusal <- count_rows("fills")
+  local({
+    executed <- FALSE
+    testthat::local_mocked_bindings(
+      ledgr_execute_fold = function(...) {
+        executed <<- TRUE
+        stop("candidate executed")
+      },
+      .package = "ledgr"
+    )
+
+    testthat::expect_error(
+      ledgr_sweep(alias_exp, grid, precomputed_features = alias_precomputed),
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+    testthat::expect_false(executed)
+    testthat::expect_identical(count_rows("runs"), runs_before_alias_refusal)
+    testthat::expect_identical(count_rows("fills"), fills_before_alias_refusal)
+  })
+
+  alias_rebuilt <- ledgr_precompute_features(alias_exp, grid)
+  alias_with_precompute <- ledgr_sweep(
+    alias_exp,
+    grid,
+    precomputed_features = alias_rebuilt
+  )
+  alias_fresh <- ledgr_sweep(alias_exp, grid)
+  testthat::expect_identical(alias_with_precompute$status, alias_fresh$status)
+  testthat::expect_identical(
+    alias_with_precompute$final_equity,
+    alias_fresh$final_equity
+  )
+  testthat::expect_identical(alias_with_precompute$n_trades, alias_fresh$n_trades)
+
+  reordered_grid <- ledgr_param_grid(
+    slow = list(speed = "slow"),
+    fast = list(speed = "fast")
+  )
+  reordered_precomputed <- ledgr_precompute_features(alias_exp, reordered_grid)
+  testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(
+    reordered_precomputed,
+    alias_exp,
+    reordered_grid
+  ))
+  reordered_with_precompute <- ledgr_sweep(
+    alias_exp,
+    reordered_grid,
+    precomputed_features = reordered_precomputed
+  )
+  reordered_fresh <- ledgr_sweep(alias_exp, reordered_grid)
+  testthat::expect_identical(
+    reordered_with_precompute$final_equity,
+    reordered_fresh$final_equity
+  )
+  testthat::expect_identical(
+    reordered_with_precompute$n_trades,
+    reordered_fresh$n_trades
+  )
+
+  parameterized_exp <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    features = ledgr_feature_map(
+      signal = ledgr_ind_sma(ledgr_param("n"))
+    ),
+    cost_model = ledgr_cost_zero()
+  )
+  parameterized_grid <- ledgr_param_grid(
+    short = list(n = 5L),
+    long = list(n = 20L)
+  )
+  parameterized_precomputed <- ledgr_precompute_features(
+    parameterized_exp,
+    parameterized_grid
+  )
+  testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(
+    parameterized_precomputed,
+    parameterized_exp,
+    parameterized_grid
+  ))
 })
 
 testthat::test_that("large grids without precomputed features warn through the reserved sweep helper", {

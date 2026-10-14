@@ -4,8 +4,13 @@
 
 Workstream 36 is complete for implementation. Its independent Type 1 close
 review returned CHANGES_REQUIRED; `close_review_36.md` preserves that review,
-and this correction record is ready for the required focused re-review of
-F1-F4. The smallest valid product change was deletion, not repair. The accepted
+and correction round 1 was independently re-reviewed in
+`close_review_36_rereview_1.md`. That focused review closed F2-F6 and the
+fingerprint half of F1, but returned CHANGES_REQUIRED for N1 because the stored
+alias-map hash did not bind aliases to concrete feature IDs. Correction round 2
+adds that one comparison and is ready for final N1-only focused re-review; any
+further finding after that review escalates to the maintainer under M1. The
+smallest valid product change was deletion, not repair. The accepted
 feature-keeping probe observed that the process-local cache could return stale
 values after a captured dependency changed, retained about 67.7 MB at the
 1,166-by-7,213 shape, and did not help the measured repeated walk-forward. The
@@ -82,10 +87,13 @@ The exact current format fingerprint is:
 - A stale precomputed sweep refuses with
   `ledgr_precomputed_feature_mismatch` before candidate execution, fills, or
   store writes. Validation binds the exact ordered feature-fingerprint vector
-  and alias-map hash for every candidate, not merely the union. The exact
-  `fast = 5, slow = 20` to `fast = 20, slow = 5` permutation is refused even
-  though its union is unchanged; a rebuilt payload matches a fresh
-  non-precomputed sweep.
+  plus the alias-map hash and canonical alias-to-concrete-feature map for every
+  candidate, not merely the union. The exact `fast = 5, slow = 20` to
+  `fast = 20, slow = 5` candidate permutation is refused even though its union
+  is unchanged. The N1 `names = c("fast", "slow")` to
+  `c("slow", "fast")` alias permutation is also refused although both the
+  fingerprints and alias-map hashes are unchanged; a rebuilt payload matches a
+  fresh non-precomputed sweep.
 
 The one-time built-in pins include SMA(20)
 `722be865c97f7cc5d2aa85b95d7ceef74959da6c754d643cde2063ed5d0366a0`
@@ -178,9 +186,11 @@ diagnostics after removing only the retired telemetry/config fields.
    `data_hash`, not row values or public labels, even when its private captured
    values are mutated with the data hash unchanged.
 3. **PASS:** `test-precompute-features.R` proves exact per-candidate fingerprint
-   and alias-map binding: the unchanged-union fast/slow capture permutation
-   refuses before candidate execution or run/fill writes, and rebuilding is
-   exact against a fresh sweep.
+   and alias-map binding: the unchanged-union fast/slow capture permutation and
+   the same-fingerprint, same-hash alias-to-feature permutation both refuse
+   before candidate execution or run/fill writes. Rebuilding is exact against
+   a fresh sweep, while valid aliased, plain-list/NA-alias, parameterized,
+   duplicate-set, and reordered-rebuilt cases do not falsely refuse.
 4. **PASS:** run, sweep, and walk-forward focused suites exercise capture-
    distinct current identities and repeat exactness.
 5. **PASS:** atomic/list captures are accepted; environment and connection
@@ -212,7 +222,7 @@ deleted persisted-row half.
 | `test-feature-retention-removal.R` (new) | Source and pkgdown-index detector, old-call refusal, real-run in-memory/stored config-shape check, zero-durable-surface, capture-change, and repeat-exact witnesses. |
 | `test-feature-capture-identity.R` (new) | Direct-capture, unsupported-capture, constructor, non-integer/missing CSV data-hash and capture-mutation, and nonrecursive-function witnesses. |
 | `test-fingerprint-stability.R`, `test-strict-feature-acceleration.R` | Pin the intentional rule-3 fingerprints and retain the engine-helper mutation detector. |
-| `test-precompute-features.R` | Add stale-capture refusal plus the unchanged-union per-candidate permutation witness; remove retired persistence setup. |
+| `test-precompute-features.R` | Add stale-capture refusal plus the unchanged-union per-candidate permutation witness; strengthen that existing heavy block with N1's exact alias-name permutation, pre-execution/write refusal, rebuilt/fresh equality, and valid plain-list, parameterized, duplicate-set, and reordered-rebuilt cases; remove retired persistence setup. |
 | `test-schema-current.R`, `test-schema.R`, `test-schema-validator-side-effects.R`, `test-store-gate-contracts.R`, `test-current-only-records.R` | Pin schema 120/rule 3, deleted catalogue objects, older-store refusal, and remove the deleted table from side-effect counts. |
 | `test-config.R`, `test-experiment.R`, `test-api-exports.R`, `test-backtest-wrapper.R`, `test-result-output.R`, `test-run-telemetry.R` | Remove public/config/result/telemetry persistence assumptions and assert ordinary old-call failure. |
 | `test-indicators.R`, `test-indicator-adapters.R`, `test-indicator-ttr.R` | Update capture-aware pins and prove all supported constructors/adapters remain deterministic. |
@@ -246,7 +256,12 @@ deleted persisted-row half.
    for identity validation; the review measured 1.83 s for 500 candidates,
    about 2 percent of its 90 s sweep. That bounded recomputation is necessary
    to refuse stale or permuted candidate mappings and is acceptable here.
-6. **Quadratic validators:** none added. Current store/config validation is
+6. **Quadratic validators:** none added. Precomputed validation makes one
+   linear pass over the already-resolved current and stored candidate tables.
+   The loop is deliberately candidate-local so the error names the first
+   offending candidate without another resolution or scan; each iteration
+   compares the candidate's bounded fingerprint vector, hash scalar, and
+   canonical alias-map scalar. Current store/config validation is otherwise
    reused unchanged apart from literal current versions.
 7. **Scalar writes into an environment-held vector:** none added. The cache
    environment and its retained vectors were deleted.
@@ -276,22 +291,30 @@ network input was used.
 | Package check | `R CMD check --no-manual --no-build-vignettes ledgr_0.2.1.0.tar.gz` | PASS, Status: OK in 274.1 s; code, examples, tests, installed vignettes, and vignette execution all OK. Offline repository-index messages occurred after Status: OK. |
 
 Close-review correction verification used the same R 4.6.1 toolchain on
-2026-10-14:
+2026-10-14. Correction round 2 is limited to N1 and leaves the original fast
+pass and correction-round-1 timing record unchanged:
 
 | Correction check | Result |
 |---|---|
 | F1 candidate permutation | PASS. Swapping `c(fast = 5, slow = 20)` to `c(fast = 20, slow = 5)` with the same union raises `ledgr_precomputed_feature_mismatch`; the mocked fold is not called, run/fill row counts remain unchanged, and rebuilt versus fresh status, final equity, and trade counts are exact. Disabling the per-candidate fingerprint/alias-hash condition produces three focused failures. |
+| Focused re-review 1 | **CHANGES_REQUIRED.** F2-F6 and the fingerprint half of F1 closed. N1 found that `alias_map_hash` does not bind aliases to concrete feature IDs; `close_review_36_rereview_1.md` preserves the exact report. |
+| N1 alias-map permutation | PASS. A factory capturing `nm = c("fast", "slow")` over SMA(5)/SMA(20), then changing to `c("slow", "fast")`, retains identical candidate fingerprint vectors and alias-map hashes but changes canonical alias-map JSON. The stale public sweep now raises `ledgr_precomputed_feature_mismatch` before candidate execution or run/fill writes; rebuilt-precomputed status, final equity, and trade counts equal fresh. |
+| N1 exact mutation | PASS. Removing only `|| !alias_map_matches` makes the registered permutation detector fail twice: the expected mismatch is absent and the mocked candidate-execution flag becomes true. Restoring the comparison returns the suite to green. |
+| N1 false-refusal coverage | PASS. Valid aliased maps, plain-list candidates with `NA` alias JSON/hash, parameterized maps, duplicate feature sets, and a reordered grid with a rebuilt payload validate without refusal; rebuilt reordered sweep economics equal fresh. |
 | F2 pkgdown reference index | PASS. With the bundled Quarto path configured, `pkgdown:::data_reference_index(pkgdown::as_pkgdown('.'))` exits successfully after removal of the deleted topic. Restoring the topic produces two current-surface detector failures. |
 | F3 CSV row-value mutation | PASS. The normal non-integer/missing fixture is green; replacing the constructor override with captured row values fails with `ledgr_config_non_deterministic` on the non-finite capture. Changing the private `values` vector while retaining `params$data_hash` leaves the normal fingerprint identical. |
 | F4 config-shape mutation | PASS. Restoring `persist = TRUE` in the real config produces six focused failures, covering both the returned run config and stored `config_json`. |
 | Focused correction and affected suites | PASS in 110.6 s. Twenty-five feature, indicator, precompute, sweep, walk-forward, current-format, documentation, codebase, control-plane, telemetry, result, backtest, and API files completed with zero failures. |
+| N1 focused suites | PASS. Eight precompute, sweep, sweep-parity, one-feature persistence, feature-map, feature-read, active-alias, and capture-identity files completed with zero failures; documentation, codebase, and control-plane contract files also completed with zero failures. `tickets.yml` parsed successfully. |
 | Corrected control-plane census | PASS: 1,091 total blocks = 565 fast, 336 review, 190 heavy protocol; 267 registered load-bearing blocks. |
 | Corrected ordinary fast timing protocol | **MISS**, with all 565 blocks passing and zero skips/failures in every run: 117.530, 112.490, and 107.480 s; median 112.490 s, 0.490 s above the unchanged 112 s bound. The heavy permutation block does not enter this lane. The miss remains evidence and is not relabelled as a pass. |
 
-The focused correction did not rerun the full package suite, source build, or
+Neither focused correction reran the full package suite, source build, or
 R CMD check; the table above retains the implementation commit's supported-
-toolchain results and the correction batch covers every changed runtime and
-documentation surface. Focused re-review remains the acceptance gate.
+toolchain results, correction round 1 covers the original F1-F6 surfaces, and
+correction round 2 covers the sole N1 runtime and documentation surface. Final
+N1-only focused re-review remains the acceptance gate; status stays complete,
+review stays CHANGES_REQUIRED, and `accepted` stays null until that review.
 
 The first diagnostic full pass under unsupported R 4.5.2 exposed stale test
 assumptions and two interruption assertions plus the PIT serialized-byte pin.
