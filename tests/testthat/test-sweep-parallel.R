@@ -13,7 +13,7 @@ ledgr_parallel_sweep_test_bars <- function() {
 
 ledgr_parallel_sweep_artifact_counts <- function(snapshot) {
   con <- get_connection(snapshot)
-  tables <- c("runs", "ledger_events", "equity_curve", "features", "run_telemetry")
+  tables <- c("runs", "ledger_events", "equity_curve", "run_telemetry")
   stats::setNames(vapply(tables, function(table) {
     if (!DBI::dbExistsTable(con, table)) {
       return(0L)

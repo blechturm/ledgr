@@ -12,9 +12,7 @@ ledgr_finalize_fold_telemetry <- function(output_handler,
       "t_post",
       "t_loop",
       "telemetry_stride",
-      "telemetry_samples",
-      "feature_cache_hits",
-      "feature_cache_misses"
+      "telemetry_samples"
     )
     trimmed <- lapply(telemetry_names, function(name) {
       x <- telemetry[[name]]

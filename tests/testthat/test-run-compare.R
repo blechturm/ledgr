@@ -1,5 +1,5 @@
 ledgr_compare_test_table_counts <- function(con) {
-  tables <- c("runs", "run_provenance", "run_telemetry", "ledger_events", "equity_curve", "features")
+  tables <- c("runs", "run_provenance", "run_telemetry", "ledger_events", "equity_curve")
   stats::setNames(
     vapply(tables, function(table) {
       if (!table %in% ledgr_test_store_tables(con)) return(NA_integer_)

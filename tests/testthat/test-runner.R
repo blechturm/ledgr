@@ -77,8 +77,7 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   testthat::expect_identical(run$status[[1]], "DONE")
   testthat::expect_true(is.na(run$error_msg[[1]]))
 
-  n_features <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM features WHERE run_id = ?", params = list(out$run_id))$n[[1]]
-  testthat::expect_true(n_features > 0)
+  testthat::expect_false("features" %in% ledgr_test_store_tables(con))
 
   n_ledger <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(out$run_id))$n[[1]]
   testthat::expect_true(n_ledger >= 0)
@@ -345,10 +344,6 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
     queries <- list(
       ledger = "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
       state = "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-      features = paste(
-        "SELECT * FROM features WHERE run_id = ?",
-        "ORDER BY instrument_id, ts_utc, feature_name"
-      ),
       equity = "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc"
     )
     c(
@@ -420,14 +415,6 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
             "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
             params = list(run_id)
           )
-          seam$features <- DBI::dbGetQuery(
-            conn,
-            paste(
-              "SELECT * FROM features WHERE run_id = ?",
-              "ORDER BY instrument_id, ts_utc, feature_name"
-            ),
-            params = list(run_id)
-          )
           stop("injected finalization failure", call. = FALSE)
         }
         original_transaction(conn, code, ...)
@@ -451,11 +438,9 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
   testthat::expect_identical(failed_rows$status$error_msg, "injected finalization failure")
   testthat::expect_identical(failed_rows$ledger, seam$ledger)
   testthat::expect_identical(failed_rows$state, seam$state)
-  testthat::expect_identical(failed_rows$features, seam$features)
   testthat::expect_identical(nrow(failed_rows$equity), 0L)
   testthat::expect_identical(failed_rows$ledger, clean_rows$ledger)
   testthat::expect_identical(failed_rows$state, clean_rows$state)
-  testthat::expect_identical(failed_rows$features, clean_rows$features)
   testthat::expect_identical(failed_rows$fills, clean_rows$fills)
   testthat::expect_identical(failed_rows$trades, clean_rows$trades)
 
@@ -469,7 +454,6 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
   testthat::expect_true(is.na(resumed_rows$status$error_msg))
   testthat::expect_identical(resumed_rows$ledger, clean_rows$ledger)
   testthat::expect_identical(resumed_rows$state, clean_rows$state)
-  testthat::expect_identical(resumed_rows$features, clean_rows$features)
   testthat::expect_identical(resumed_rows$equity, clean_rows$equity)
   testthat::expect_identical(resumed_rows$fills, clean_rows$fills)
   testthat::expect_identical(resumed_rows$trades, clean_rows$trades)

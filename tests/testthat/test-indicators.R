@@ -235,7 +235,7 @@ testthat::test_that("indicator deregistration handles missing and invalid names"
 })
 
 # ledgr-test-profile: review
-testthat::test_that("indicator deregistration does not mutate persisted feature artifacts", {
+testthat::test_that("indicator deregistration does not mutate completed run artifacts", {
   name <- "test_registry_persisted_artifact"
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -267,18 +267,19 @@ testthat::test_that("indicator deregistration does not mutate persisted feature 
   con <- ledgr:::get_connection(bt)
   before <- DBI::dbGetQuery(
     con,
-    "SELECT COUNT(*) AS n FROM features WHERE run_id = ? AND feature_name = ?",
-    params = list(bt$run_id, name)
-  )$n[[1]]
+    "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
+    params = list(bt$run_id)
+  )
 
-  testthat::expect_gt(before, 0L)
+  testthat::expect_gt(nrow(before), 0L)
+  testthat::expect_false("features" %in% ledgr_test_store_tables(con))
   ledgr_indicator_remove(name)
 
   after <- DBI::dbGetQuery(
     con,
-    "SELECT COUNT(*) AS n FROM features WHERE run_id = ? AND feature_name = ?",
-    params = list(bt$run_id, name)
-  )$n[[1]]
+    "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
+    params = list(bt$run_id)
+  )
 
   testthat::expect_identical(after, before)
   testthat::expect_false(name %in% ledgr_indicator_list("^test_registry_persisted_artifact$"))

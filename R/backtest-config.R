@@ -75,7 +75,6 @@ ledgr_config <- function(snapshot,
                          feature_params = list(),
                          alias_map = NULL,
                          alias_identity_map = NULL,
-                         persist_features = TRUE,
                          execution_mode = "audit_log",
                          checkpoint_every = 10000L,
                          timing_model = ledgr_timing_next_open(),
@@ -115,9 +114,6 @@ ledgr_config <- function(snapshot,
     )
   }
   features <- ledgr_flatten_feature_list(features, context = "`features`")
-  if (!is.logical(persist_features) || length(persist_features) != 1 || is.na(persist_features)) {
-    rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_args")
-  }
   if (!is.character(execution_mode) || length(execution_mode) != 1 || is.na(execution_mode) || !nzchar(execution_mode)) {
     rlang::abort("`execution_mode` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -242,15 +238,13 @@ ledgr_config <- function(snapshot,
       list(
         enabled = TRUE,
         defs = defs,
-        feature_set_hash = ledgr_feature_set_hash(fingerprints),
-        persist = isTRUE(persist_features)
+        feature_set_hash = ledgr_feature_set_hash(fingerprints)
       )
     } else {
       list(
         enabled = FALSE,
         defs = list(),
-        feature_set_hash = ledgr_feature_set_hash(character()),
-        persist = isTRUE(persist_features)
+        feature_set_hash = ledgr_feature_set_hash(character())
       )
     },
     strategy = list(

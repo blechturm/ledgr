@@ -10,7 +10,6 @@ ledgr_run_resume <- function(con,
                              run_id,
                              is_resume,
                              calendar,
-                             persist_features,
                              start_ts_utc,
                              opening_positions,
                              opening_cost_basis) {
@@ -72,9 +71,6 @@ ledgr_run_resume <- function(con,
       DBI::dbWithTransaction(con, {
         if (!is.na(resume_exec_posix)) {
           DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_exec_posix))
-        }
-        if (isTRUE(persist_features)) {
-          DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
         }
         DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
         DBI::dbExecute(con, "DELETE FROM strategy_state WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_iso))

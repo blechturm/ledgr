@@ -17,6 +17,13 @@
 #' @param gap_contract Optional availability-aware gap contract. Version 1
 #'   supports only `"strict_window"`.
 #'
+#' @details Indicator fingerprints bind deterministic direct captures of `fn`
+#'   and `series_fn`. Atomic values and deterministic lists are supported;
+#'   environments, connections, and other unsupported captures refuse as
+#'   non-deterministic. A captured function contributes its function identity,
+#'   but its own captures are not recursively included. Put explicitly varying
+#'   research inputs in `params`.
+#'
 #' @return A `ledgr_indicator` object.
 #' @examples
 #' last_close <- ledgr_indicator(
@@ -197,17 +204,44 @@ ledgr_indicator_fingerprint <- function(indicator) {
   }
   payload <- list(
     id = indicator$id,
-    fn = ledgr_function_fingerprint(indicator$fn, include_captures = FALSE, label = sprintf("indicator `%s`", indicator$id)),
+    fn = ledgr_function_fingerprint(
+      indicator$fn,
+      include_captures = TRUE,
+      label = sprintf("indicator `%s`", indicator$id),
+      capture_overrides = ledgr_indicator_capture_overrides(indicator, "fn")
+    ),
     series_fn = if (is.null(indicator$series_fn)) {
       NULL
     } else {
-      ledgr_function_fingerprint(indicator$series_fn, include_captures = FALSE, label = sprintf("indicator `%s` series_fn", indicator$id))
+      ledgr_function_fingerprint(
+        indicator$series_fn,
+        include_captures = TRUE,
+        label = sprintf("indicator `%s` series_fn", indicator$id),
+        capture_overrides = ledgr_indicator_capture_overrides(indicator, "series_fn")
+      )
     },
     requires_bars = indicator$requires_bars,
     stable_after = indicator$stable_after,
     params = ledgr_stable_payload(indicator$params, sprintf("indicator `%s` params", indicator$id))
   )
   digest::digest(canonical_json(payload), algo = "sha256")
+}
+
+ledgr_indicator_capture_overrides <- function(indicator, member) {
+  route <- attr(indicator, "ledgr_constructor_capture_identity", exact = TRUE)
+  if (is.null(route)) return(list())
+  if (!identical(
+    route,
+    list(type = "csv_data_hash_v1", fn_capture = "values")
+  )) {
+    rlang::abort("Invalid constructor-owned indicator capture identity.", class = "ledgr_internal_error")
+  }
+  if (!identical(member, "fn")) return(list())
+  data_hash <- indicator$params$data_hash
+  if (!is.character(data_hash) || length(data_hash) != 1L || is.na(data_hash) || !nzchar(data_hash)) {
+    rlang::abort("CSV indicator capture identity requires params$data_hash.", class = "ledgr_internal_error")
+  }
+  list(values = list(type = "params_data_hash", data_hash = data_hash))
 }
 
 .ledgr_indicator_registry <- new.env(parent = emptyenv())
@@ -272,7 +306,7 @@ ledgr_indicator_register <- function(indicator, name = NULL, overwrite = FALSE) 
 #'
 #' Removes an indicator registration from the current R session. This only
 #' affects the in-memory registry used for interactive lookup and tests; it does
-#' not alter any persisted snapshots, runs, features, or ledger artifacts.
+#' not alter any persisted snapshots, runs, or ledger artifacts.
 #'
 #' @param name Indicator registry name.
 #' @param missing_ok If `TRUE`, missing names are ignored. If `FALSE`, missing

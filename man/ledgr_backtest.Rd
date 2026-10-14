@@ -18,7 +18,6 @@ ledgr_backtest(
   risk_chain = ledgr_risk_none(),
   execution_mode = "audit_log",
   checkpoint_every = 10000L,
-  persist_features = TRUE,
   db_path = NULL,
   control = list(),
   run_id = NULL,
@@ -60,8 +59,6 @@ for explicit zero-cost execution.}
 \item{execution_mode}{Execution mode ("db_live" or "audit_log").}
 
 \item{checkpoint_every}{Flush interval for audit_log mode.}
-
-\item{persist_features}{If FALSE, skip persisting per-pulse features to DuckDB.}
 
 \item{db_path}{Database path for the run ledger (NULL = snapshot DB).}
 

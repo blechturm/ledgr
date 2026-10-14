@@ -26,7 +26,6 @@
 #' @param execution_mode Execution mode ("db_live" or "audit_log").
 #' @param checkpoint_every Flush interval for audit_log mode.
 #' @param db_path Database path for the run ledger (NULL = snapshot DB).
-#' @param persist_features If FALSE, skip persisting per-pulse features to DuckDB.
 #' @param control Optional list of engine overrides (e.g., execution_mode).
 #' @param run_id Optional run identifier to resume or reuse.
 #' @param data Optional data frame/tibble or `ledgr_snapshot`. Exactly one of
@@ -97,7 +96,6 @@ ledgr_backtest <- function(snapshot = NULL,
                            risk_chain = ledgr_risk_none(),
                            execution_mode = "audit_log",
                            checkpoint_every = 10000L,
-                           persist_features = TRUE,
                            db_path = NULL,
                            control = list(),
                            run_id = NULL,
@@ -172,10 +170,6 @@ ledgr_backtest <- function(snapshot = NULL,
   }
   if (anyDuplicated(universe)) {
     rlang::abort("'universe' must not contain duplicates.", class = "ledgr_invalid_args")
-  }
-
-  if (!is.logical(persist_features) || length(persist_features) != 1 || is.na(persist_features)) {
-    rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
   if (is.null(db_path)) db_path <- snapshot$db_path
@@ -255,7 +249,6 @@ ledgr_backtest <- function(snapshot = NULL,
     strategy_params = strategy_params,
     backtest = ledgr_backtest_config(start = start, end = end, initial_cash = initial_cash),
     features = features,
-    persist_features = persist_features,
     execution_mode = execution_mode,
     checkpoint_every = checkpoint_every,
     timing_model = timing_model,
@@ -480,7 +473,6 @@ ledgr_run_experiment <- function(exp,
     features = feature_result$features,
     alias_map = feature_result$alias_map,
     alias_identity_map = feature_result$alias_identity_map,
-    persist_features = exp$persist_features,
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash,

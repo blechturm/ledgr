@@ -374,12 +374,7 @@ testthat::test_that("backtest feature hydration uses indicator series_fn", {
   on.exit(close(bt), add = TRUE)
 
   testthat::expect_identical(calls$series_fn, 2L)
-  features <- DBI::dbGetQuery(
-    ledgr:::get_connection(bt),
-    "SELECT feature_name FROM features WHERE run_id = ?",
-    params = list(bt$run_id)
-  )
-  testthat::expect_true("series_backtest_probe" %in% features$feature_name)
+  testthat::expect_false("features" %in% ledgr_test_store_tables(ledgr:::get_connection(bt)))
 })
 
 # ledgr-test-profile: review

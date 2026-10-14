@@ -2,7 +2,7 @@ availability_store_contents <- function(path, run_id) {
   opened <- ledgr:::ledgr_run_store_open(path)
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
   tables <- c(
-    "runs", "ledger_events", "strategy_state", "features", "equity_curve",
+    "runs", "ledger_events", "strategy_state", "equity_curve",
     "run_completion", "run_diagnostics"
   )
   stats::setNames(lapply(tables, function(table) {
@@ -156,8 +156,7 @@ testthat::test_that("[LTB-0064] incomplete completion evidence matches persisted
     "Run ID:", "Label:", "Status:", "Archived:", "Tags:", "Snapshot:",
     "Snapshot Hash:", "Feature Set Hash:", "Risk Chain Hash:",
     "Config Hash:", "Strategy Hash:", "Params Hash:", "Reproducibility:",
-    "Execution Mode:", "Fill Timing:", "Timing Version:", "Elapsed Sec:",
-    "Persist Features:", "Cache Hits:", "Cache Misses:"
+    "Execution Mode:", "Fill Timing:", "Timing Version:", "Elapsed Sec:"
   )) {
     testthat::expect_true(any(grepl(label, info_output, fixed = TRUE)))
   }

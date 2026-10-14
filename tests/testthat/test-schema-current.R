@@ -1,5 +1,5 @@
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0258] current schema definition matches the pre-cut catalogue", {
+testthat::test_that("[LTB-0258] current schema definition matches the schema-120 catalogue", {
   connect <- function(path = ":memory:") {
     DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), dbdir = path)
   }
@@ -18,7 +18,7 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
     file.path(root, "tests", "testthat", "fixtures", "schema-current-golden.csv"),
     stringsAsFactors = FALSE
   )
-  testthat::expect_identical(unique(golden$pre_cut_commit), "24bcc161")
+  testthat::expect_identical(unique(golden$schema_version), 120L)
   testthat::expect_identical(
     unique(golden$duckdb_version),
     as.character(utils::packageVersion("duckdb"))
@@ -31,15 +31,12 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-  testthat::expect_identical(
-    unique(golden_rows$pre_cut_commit),
-    "24bcc161"
-  )
+  testthat::expect_identical(unique(golden_rows$schema_version), 120L)
   testthat::expect_identical(
     unique(golden_rows$duckdb_version),
     as.character(utils::packageVersion("duckdb"))
   )
-  golden_rows$pre_cut_commit <- NULL
+  golden_rows$schema_version <- NULL
   golden_rows$duckdb_version <- NULL
   expected_rows <- ledgr:::ledgr_schema_catalogue_rows(expected)
   row_key <- function(x) {
@@ -59,7 +56,7 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
     nrow(missing),
     0L,
     info = paste(
-      "missing pre-cut catalogue rows:",
+      "missing schema-120 catalogue rows:",
       paste(paste(missing$dimension, missing$object), collapse = ", ")
     )
   )

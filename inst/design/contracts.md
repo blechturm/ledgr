@@ -304,13 +304,15 @@ Accepted change pending:
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
   declaration-order diagnostics. Every run records `identity_rule_version`.
-  Under identity rule 2 (Cut 12 LDG-3004) the config carries the sealed
+  Under identity rule 3 (Cut 15 LDG-3050 and LDG-3056) the config carries the sealed
   `data.snapshot_hash` and `config_hash` drops the store-local
   `data.snapshot_id`, so identical content sealed under two snapshot IDs gives
   equal identity and different content under one reused ID does not; the
   walk-forward `experiment_hash` and `session_id` follow, and each session
-  records the rule in its `meta_json`. Every config and session carries
-  identity rule 2 as the exact integer `2L`; a missing, differently typed or
+  records the rule in its `meta_json`. Rule 3 also removes the feature-retention
+  switch from config identity and binds deterministic direct captures of
+  indicator functions. Every config and session carries identity rule 3 as the
+  exact integer `3L`; a missing, differently typed or
   different rule is refused rather than coerced, inferred or migrated.
   `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
@@ -808,9 +810,10 @@ Accepted change pending:
   disconnect/shutdown when a later fresh connection is expected to read the
   same database file.
 - Cross-connection read-back is part of the persistence contract: completed
-  runs and their `ledger_events`, `features`, and `equity_curve` rows must be
-  visible from a newly opened connection.
-- Experiment-store schema 119 is the sole current store schema. One opener and
+  runs and their `ledger_events` and `equity_curve` rows must be visible from a
+  newly opened connection. Runtime feature values are ephemeral and are not a
+  durable result table.
+- Experiment-store schema 120 is the sole current store schema. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
@@ -961,12 +964,11 @@ Accepted change pending:
   `risk_plan_json` field, execute recovered strategy code, or write persistent
   rows.
 - Completed and failed v0.1.5+ runs persist compact `run_telemetry`:
-  `status`, `execution_mode`, elapsed seconds, pulse count, `persist_features`,
-  and feature-cache hit/miss counts. Detailed per-component telemetry remains
+  `status`, `execution_mode`, elapsed seconds, and pulse count. Detailed per-component telemetry remains
   session-scoped through `ledgr_backtest_bench()`.
 - A failure after the fold has committed but before equity and `DONE`
   finalization records `FAILED` with the original error and preserves committed
-  ledger, strategy-state, and feature evidence. Resuming the same run identity
+  ledger and strategy-state evidence. Resuming the same run identity
   after that failure performs finalization only: it must not delete or duplicate
   committed fold rows, and its ordered economic evidence must equal a clean run.
   Best-effort failed telemetry must not mask the original error; successful
@@ -1442,8 +1444,14 @@ Accepted change pending:
   output remains an aligned all-`NA_real_` series for that feature/instrument.
 - Feature warmup `NA_real_` and warmup `NaN` are normalized to `NA_real_`.
   Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
-- Indicator fingerprints include `series_fn` when present. Changing `fn`,
-  `series_fn`, parameters, or warmup requirements changes the fingerprint.
+- Indicator fingerprints include `series_fn` when present and bind deterministic
+  direct captures of `fn` and `series_fn`. Changing either function, its direct
+  atomic/list captures, parameters, or warmup requirements changes the
+  fingerprint. Unsupported direct captures refuse as non-deterministic. A
+  captured function is represented by its function identity without recursively
+  including that function's own captures. The CSV adapter represents its
+  constructor-owned captured values through `params$data_hash`; public source or
+  adapter labels do not authorize that private route.
 - Availability-aware indicators declare `gap_contract = "strict_window"` on
   the existing indicator definition. The declaration commits the definition to
   a finite window with no internal carry or imputation. Omission fails with
@@ -1463,9 +1471,9 @@ Accepted change pending:
   feature computation. Scalar `fn` and the terminal value from `series_fn`
   receive the same bounded fully observed window and must agree on
   certification fixtures.
-- Active feature fingerprints and cache keys include strict expected-session
-  and cutoff-causal history semantics. Future-known facts cannot rewrite cached
-  earlier feature values. Dense indicator fingerprints and feature-engine
+- Active feature fingerprints include strict expected-session and cutoff-causal
+  history semantics. Future-known facts cannot rewrite earlier feature values.
+  Dense indicator fingerprints and feature-engine
   identity omit the availability declaration and remain unchanged.
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
@@ -1493,14 +1501,9 @@ Accepted change pending:
   semantics; list input returns IDs in list order.
 - Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
   stable windows, not expanding full-history windows.
-- Feature precomputation may use a session-scoped cache. Cache entries are keyed
-  by sealed `snapshot_hash`, instrument ID, indicator fingerprint,
-  feature-engine version, and date range. The cache is never persisted to
-  DuckDB and may be cleared with `ledgr_feature_cache_clear()`.
-- The session feature cache is a runner precomputation optimization for
-  repeated backtests over sealed snapshots. Low-level recovery helpers and
-  interactive pulse/indicator tools recompute features because they do not own
-  a sealed snapshot hash cache key.
+- Feature computation follows one uncached production path. Explicit
+  `ledgr_precomputed_features` payloads are validated against current feature
+  identity before reuse; a mismatch refuses before candidate execution.
 - In v0.1.7 public workflows, `ctx$flat()` creates a full named target vector
   initialized to flat positions. It is appropriate when unspecified instruments
   should go flat.

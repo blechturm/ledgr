@@ -224,7 +224,7 @@ testthat::test_that("[LTB-0214] carried strategy state equals normalising it on 
   testthat::expect_identical(got, expected)
 })
 
-testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the original duplicates and order", {
+testthat::test_that("[LTB-0213] pair keys keep the original duplicates and order", {
   a <- c("x", "x", "y", NA, "NA", "y")
   b <- c("t1", "t1", "t1", "t2", "t2", NA)
   testthat::expect_identical(duplicated(ledgr:::ledgr_pair_key(a, b)), duplicated(paste(a, b, sep = "\r")))
@@ -242,26 +242,6 @@ testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the origin
     duplicated(paste(c("A", "A"), local, sep = "\r"))
   )
 
-  ids <- c("I1", "I2", "I3")
-  pulses <- as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:3
-  defs <- c("f_a", "f_b")
-  values <- list(f_a = matrix(1:12 + 0.5, 3), f_b = matrix(101:112 + 0.25, 3))
-  values$f_b[2, 3] <- NA
-  expected <- do.call(rbind, lapply(seq_along(ids), function(j) {
-    vals <- matrix(NA_real_, length(defs), length(pulses))
-    for (d in seq_along(defs)) vals[d, ] <- values[[defs[[d]]]][j, ]
-    data.frame(
-      run_id = "r", instrument_id = ids[[j]], ts_utc = rep(pulses, each = length(defs)),
-      feature_name = rep(defs, times = length(pulses)), feature_value = as.vector(vals),
-      stringsAsFactors = FALSE
-    )
-  }))
-  rownames(expected) <- NULL
-  got <- rbind(
-    ledgr:::ledgr_feature_rows_block("r", ids, 1:2, pulses, defs, values),
-    ledgr:::ledgr_feature_rows_block("r", ids, 3L, pulses, defs, values)
-  )
-  testthat::expect_identical(got, expected)
 })
 
 testthat::test_that("[LTB-0215] strategy state changed in place is persisted as it is on every pulse", {

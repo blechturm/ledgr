@@ -13,7 +13,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_calendar_us_equity",
     "ledgr_candidate",
     "ledgr_candidate_reproduction_key",
-    "ledgr_feature_cache_clear",
     "ledgr_run_compare",
     "ledgr_compute_metrics",
     "ledgr_cost_chain",

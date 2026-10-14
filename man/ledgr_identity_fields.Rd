@@ -17,11 +17,11 @@ sensitive to execution inputs such as snapshot identity, universe, strategy,
 parameters, feature definitions, timing model, cost identity, opening state,
 and seed.
 
-Every run records \code{identity_rule_version}. Under identity rule 2 the
+Every run records \code{identity_rule_version}. Under identity rule 3 the
 snapshot identity in \code{config_hash} is the sealed content hash
 (\code{data.snapshot_hash}), not the store-local \code{data.snapshot_id}: the same
 bars sealed under two snapshot IDs give the same \code{config_hash}. Every
-current config carries rule 2 and a snapshot hash; missing or different
+current config carries rule 3 and a snapshot hash; missing or different
 identity records are invalid rather than inferred or migrated.
 
 \code{feature_set_hash} identifies the resolved concrete feature definitions by

@@ -1,3 +1,129 @@
+ledgr_feature_engine_version <- function(availability_active = FALSE) {
+  # Feature-engine provenance includes every helper whose semantics can change
+  # computed feature values.
+  payload <- list(
+    namespace = "v0.1.4-feature-engine",
+    compute_series = ledgr_function_fingerprint(
+      ledgr_compute_feature_series,
+      include_captures = FALSE,
+      label = "`ledgr_compute_feature_series()`"
+    ),
+    normalize_series = ledgr_function_fingerprint(
+      ledgr_normalize_feature_series_output,
+      include_captures = FALSE,
+      label = "`ledgr_normalize_feature_series_output()`"
+    ),
+    compute_scalar_at = ledgr_function_fingerprint(
+      ledgr_compute_feature_scalar_at,
+      include_captures = FALSE,
+      label = "`ledgr_compute_feature_scalar_at()`"
+    ),
+    normalize_scalar = ledgr_function_fingerprint(
+      ledgr_normalize_feature_scalar_output,
+      include_captures = FALSE,
+      label = "`ledgr_normalize_feature_scalar_output()`"
+    ),
+    call_series_fn = ledgr_function_fingerprint(
+      ledgr_call_feature_series_fn,
+      include_captures = FALSE,
+      label = "`ledgr_call_feature_series_fn()`"
+    ),
+    call_fn = ledgr_function_fingerprint(
+      ledgr_call_feature_fn,
+      include_captures = FALSE,
+      label = "`ledgr_call_feature_fn()`"
+    )
+  )
+  if (isTRUE(availability_active)) {
+    payload$availability <- list(
+      semantics = "strict_expected_session_window_v1",
+      compute = ledgr_function_fingerprint(
+        ledgr_compute_feature_series_strict,
+        include_captures = FALSE,
+        label = "`ledgr_compute_feature_series_strict()`"
+      ),
+      scalar_reference = ledgr_function_fingerprint(
+        ledgr_compute_feature_series_strict_scalar,
+        include_captures = FALSE,
+        label = "`ledgr_compute_feature_series_strict_scalar()`"
+      ),
+      builtin_kind = ledgr_function_fingerprint(
+        ledgr_strict_builtin_kind,
+        include_captures = FALSE,
+        label = "`ledgr_strict_builtin_kind()`"
+      ),
+      completeness = ledgr_function_fingerprint(
+        ledgr_strict_complete_window_mask,
+        include_captures = FALSE,
+        label = "`ledgr_strict_complete_window_mask()`"
+      ),
+      strict_sma = ledgr_function_fingerprint(
+        ledgr_strict_sma_series,
+        include_captures = FALSE,
+        label = "`ledgr_strict_sma_series()`"
+      ),
+      builtin_compute = ledgr_function_fingerprint(
+        ledgr_compute_feature_series_strict_builtin,
+        include_captures = FALSE,
+        label = "`ledgr_compute_feature_series_strict_builtin()`"
+      ),
+      fingerprint = ledgr_function_fingerprint(
+        ledgr_active_feature_fingerprint,
+        include_captures = FALSE,
+        label = "`ledgr_active_feature_fingerprint()`"
+      )
+    )
+  }
+  digest::digest(canonical_json(payload), algo = "sha256")
+}
+
+ledgr_active_feature_fingerprint <- function(feature_def) {
+  base <- feature_def$fingerprint
+  if (is.null(base)) base <- ledgr_feature_def_fingerprint(feature_def)
+  digest::digest(
+    canonical_json(list(
+      schema = "ledgr_active_feature_v1",
+      base_fingerprint = as.character(base),
+      gap_contract = feature_def$gap_contract %||% NULL,
+      history_semantics = "expected_sessions_cutoff_causal"
+    )),
+    algo = "sha256"
+  )
+}
+
+ledgr_feature_def_fingerprint <- function(feature_def) {
+  if (!is.null(feature_def$fingerprint) &&
+      is.character(feature_def$fingerprint) &&
+      length(feature_def$fingerprint) == 1L &&
+      !is.na(feature_def$fingerprint) &&
+      nzchar(feature_def$fingerprint)) {
+    return(feature_def$fingerprint)
+  }
+
+  payload <- list(
+    id = feature_def$id,
+    fn = ledgr_function_fingerprint(
+      feature_def$fn,
+      include_captures = TRUE,
+      label = sprintf("feature `%s` fn", feature_def$id)
+    ),
+    series_fn = if (is.null(feature_def$series_fn)) {
+      NULL
+    } else {
+      ledgr_function_fingerprint(
+        feature_def$series_fn,
+        include_captures = TRUE,
+        label = sprintf("feature `%s` series_fn", feature_def$id)
+      )
+    },
+    requires_bars = as.integer(feature_def$requires_bars),
+    stable_after = as.integer(feature_def$stable_after),
+    params = ledgr_stable_payload(feature_def$params, sprintf("feature `%s` params", feature_def$id))
+  )
+
+  digest::digest(canonical_json(payload), algo = "sha256")
+}
+
 ledgr_duplicate_feature_ids <- function(ids) {
   ids <- as.character(ids)
   unique(ids[!is.na(ids) & nzchar(ids) & duplicated(ids)])

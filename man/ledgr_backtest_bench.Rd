@@ -19,7 +19,7 @@ Summarize per-pulse telemetry
 \details{
 This is a diagnostic helper for engine profiling. It only reports detailed
 telemetry captured for runs executed in the current R session. Timing
-components are reported in seconds; feature-cache hit/miss rows are counts.
+components are reported in seconds.
 The compact telemetry persisted in durable experiment stores is available
 through \code{ledgr_run_info()}.
 }

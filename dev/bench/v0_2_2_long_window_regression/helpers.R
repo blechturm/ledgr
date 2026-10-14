@@ -444,8 +444,7 @@ lwreg_experiment <- function(snapshot, row, timing = NULL) {
     universe = ledgr_universe_members("synthetic_members"),
     valuation_policy = ledgr_valuation_stale(as.integer(row$stale_budget)),
     opening = lwreg_opening(row),
-    cost_model = ledgr_cost_zero(),
-    persist_features = FALSE
+    cost_model = ledgr_cost_zero()
   )
 }
 

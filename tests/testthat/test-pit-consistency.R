@@ -1118,7 +1118,7 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
   }
 })
 
-testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 2", {
+testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 3", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   flat <- function(ctx, params) ctx$flat()
@@ -1127,7 +1127,7 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
     exp <- ledgr_experiment(snapshot, flat, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
     bt <- ledgr_run(exp, run_id = run_id)
     on.exit(close(bt))
-    testthat::expect_identical(bt$config$identity_rule_version, 2L)
+    testthat::expect_identical(bt$config$identity_rule_version, 3L)
     testthat::expect_identical(bt$config$data$snapshot_hash, ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]])
     ledgr_run_info(snapshot, run_id)$config_hash
   }
@@ -1168,7 +1168,7 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
 testthat::test_that("[LTB-0244] walk-forward sessions use current content identity", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  # A walk-forward session records rule 2 and reuses the same current identity.
+  # A walk-forward session records rule 3 and reuses the same current identity.
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(),
@@ -1185,7 +1185,7 @@ testthat::test_that("[LTB-0244] walk-forward sessions use current content identi
   wf_con <- ledgr:::get_connection(snapshot)
   session <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions")
   testthat::expect_identical(nrow(session), 1L)
-  testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 2L)
+  testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 3L)
 
   identity <- ledgr:::ledgr_walk_forward_session_identity(
     exp, wf_args$grid, folds, wf_args$selection_rule, NULL, "carry_test_state", "previous"

@@ -223,8 +223,7 @@ make_experiment <- function(snapshot, indicator) {
     universe = ledgr_universe_members("ws8_members"),
     valuation_policy = ledgr_valuation_stale(1L),
     opening = ledgr_opening(cash = 1e7),
-    cost_model = ledgr_cost_zero(),
-    persist_features = FALSE
+    cost_model = ledgr_cost_zero()
   )
 }
 grid <- ledgr_param_grid(list(threshold = 0))
@@ -270,7 +269,6 @@ run_arm <- function(feature, workflow, candidate = NULL) {
   } else {
     ledgr_ind_returns(20L)
   }
-  ledgr_feature_cache_clear()
   candidate_calls$n <- 0L
   dense_calls$n <- 0L
   bindings <- if (is.null(candidate)) NULL else list(
@@ -298,18 +296,11 @@ run_arm <- function(feature, workflow, candidate = NULL) {
       ledgr_sweep(experiment, grid, seed = 1L, workers = 1L)
     }
   })
-  cache <- if (inherits(value, "ledgr_backtest")) {
-    info <- ledgr_run_info(snapshot, value$run_id)
-    c(hits = info$feature_cache_hits, misses = info$feature_cache_misses)
-  } else {
-    c(hits = NA_integer_, misses = NA_integer_)
-  }
   list(
     elapsed = as.numeric(Sys.time() - t0, units = "secs"),
     gc_s = gc.time()[[3L]] - g0,
     candidate_calls = candidate_calls$n,
     dense_calls = dense_calls$n,
-    cache = cache,
     value = semantic(value)
   )
 }

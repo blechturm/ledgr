@@ -250,24 +250,18 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
     three = list(feature = list(n = 3L), strategy = list(window = 3L))
   )
 
-  ledgr_feature_cache_clear()
   direct_cold <- availability_strict_capture(ledgr_run(
     concrete,
     params = list(window = 2L),
     run_id = "strict-direct-cold"
   ))
   on.exit(close(direct_cold$value), add = TRUE)
-  cache_keys <- ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE)
   direct_warm <- availability_strict_capture(ledgr_run(
     concrete,
     params = list(window = 2L),
     run_id = "strict-direct-warm"
   ))
   on.exit(close(direct_warm$value), add = TRUE)
-  testthat::expect_identical(
-    ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE),
-    cache_keys
-  )
   testthat::expect_identical(
     direct_warm$value$config$config_hash,
     direct_cold$value$config$config_hash
@@ -624,14 +618,12 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   )
 
   ttr_experiment <- source_runs$public_ttr$experiment
-  ledgr_feature_cache_clear()
   ttr_cold <- availability_strict_capture(ledgr_run(
     ttr_experiment,
     params = list(window = 2L),
     run_id = "strict-ttr-cold"
   ))
   on.exit(close(ttr_cold$value), add = TRUE)
-  cache_keys <- ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE)
   ttr_warm <- availability_strict_capture(ledgr_run(
     ttr_experiment,
     params = list(window = 2L),
@@ -641,10 +633,6 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   testthat::expect_identical(
     availability_strict_matrix(ttr_warm$messages),
     availability_strict_matrix(ttr_cold$messages)
-  )
-  testthat::expect_identical(
-    ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE),
-    cache_keys
   )
 
   ttr_one <- ledgr_sweep(
@@ -812,7 +800,7 @@ testthat::test_that("unsupported active indicators fail during experiment valida
 })
 
 # ledgr-test-profile: review
-testthat::test_that("future facts isolate cache identity without changing earlier features", {
+testthat::test_that("future facts do not change earlier features", {
   future_status <- ledgr_facts_trading_status(data.frame(
     instrument_id = "AAA",
     effective_from = as.POSIXct("2020-02-01", tz = "UTC"),
@@ -832,7 +820,6 @@ testthat::test_that("future facts isolate cache identity without changing earlie
     history[[length(history) + 1L]] <- if (is.na(value)) "NA" else format(value, digits = 17)
     list(targets = ctx$hold(), state_update = list(history = history))
   }
-  ledgr_feature_cache_clear()
   runs <- lapply(snapshots, function(snapshot) {
     ledgr_run(ledgr_experiment(
       snapshot,
@@ -846,9 +833,5 @@ testthat::test_that("future facts isolate cache identity without changing earlie
   testthat::expect_identical(
     availability_last_state(runs[[1L]])$history,
     availability_last_state(runs[[2L]])$history
-  )
-  testthat::expect_length(
-    ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE),
-    2L
   )
 })

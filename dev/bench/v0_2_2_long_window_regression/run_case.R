@@ -117,7 +117,6 @@ walk_forward_once <- function() {
 }
 
 if (identical(row$mode, "run") || identical(row$mode, "run_resolve")) {
-  ledgr_feature_cache_clear()
   cold <- run_once("cold")
   warm <- run_once("warm")
   resolve <- NULL
@@ -139,12 +138,10 @@ if (identical(row$mode, "run") || identical(row$mode, "run_resolve")) {
     )
   }
 } else if (identical(row$mode, "sweep")) {
-  ledgr_feature_cache_clear()
   cold <- sweep_once()
   warm <- sweep_once()
   resolve <- NULL
 } else if (identical(row$mode, "walk_forward")) {
-  ledgr_feature_cache_clear()
   cold <- walk_forward_once()
   warm <- walk_forward_once()
   resolve <- NULL

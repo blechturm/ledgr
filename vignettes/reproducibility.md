@@ -157,9 +157,6 @@ ledgr_run_info(snapshot, "qty_10")
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
     Elapsed Sec:      0.970
-    Persist Features: TRUE
-    Cache Hits:       0
-    Cache Misses:     2
 
 ## Extract Stored Strategy Source
 

@@ -25,11 +25,11 @@ testthat::test_that("core indicator fingerprints remain stable", {
   }
 
   pins <- c(
-    sma_20 = "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc",
-    ema_20 = "ed5d334c60ebec6e23d9b2572e71528b02d9657497cd3f84ca85ad173f07886c",
-    rsi_14 = "486e61f755bc773dd751c29c34b1eee31d0a673c5e2d721bb205552c0b975357",
-    return_5 = "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed",
-    adapter_r = "ffee226bce01827ed2fe1bc1b33cba7d1f0d95e43198fc72b9be0165207d608f",
+    sma_20 = "722be865c97f7cc5d2aa85b95d7ceef74959da6c754d643cde2063ed5d0366a0",
+    ema_20 = "74dfc14203e87304e4a819c47f4ae45cc743723b940e3f6022bd5dd33d655fe9",
+    rsi_14 = "bc3a58bbd1657d24ebb73b2b8141e392a8989c0391677b0b0a9865773e72e092",
+    return_5 = "d3feff6aeb660729888928583c4cf36150a66dba0053ab944783e064f090d9cb",
+    adapter_r = "1db65a21158519f20fed668b45dcedf54cd076c94af7f3c8fb7789dadc675508",
     strategy_fn = "bf2bef3c9c4540717f9165a987e62d35033f4af3c706f22014e5ae78ff6393c8",
     feature_engine = "80d1ae6d2165196044db3f0d1944d69f21b76e264d2df16df49e23f448a7c681"
   )
@@ -60,6 +60,27 @@ testthat::test_that("core indicator fingerprints remain stable", {
   )), c("sma_20", "ema_20", "rsi_14", "return_5"))
 })
 
+testthat::test_that("[LTB-0105] scalar helpers enter feature-engine identity", {
+  baseline <- ledgr:::ledgr_feature_engine_version()
+  changed_window <- local({
+    testthat::local_mocked_bindings(
+      ledgr_compute_feature_scalar_at = function(...) -1,
+      .package = "ledgr"
+    )
+    ledgr:::ledgr_feature_engine_version()
+  })
+  changed_normalizer <- local({
+    testthat::local_mocked_bindings(
+      ledgr_normalize_feature_scalar_output = function(...) -2,
+      .package = "ledgr"
+    )
+    ledgr:::ledgr_feature_engine_version()
+  })
+
+  testthat::expect_false(identical(changed_window, baseline))
+  testthat::expect_false(identical(changed_normalizer, baseline))
+})
+
 # ledgr-test-profile: review
 testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
   testthat::skip_if(
@@ -82,8 +103,8 @@ testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
     )
   )
   pins <- c(
-    ttr_rsi_14 = "e0a6a07b0c09a68bbbd8d7dd781926a9a54eef1a9a3df51982ac7fbe2aa37d22",
-    ttr_bbands_up_20 = "3f4d0d9d7f1de20584f4070fcbac6dce1ecf20bcfcab2458bc90aac74096c92a"
+    ttr_rsi_14 = "8670b3cd92078b67319bda000591f3d8bc0c176d229fcc6310aadc590501eae6",
+    ttr_bbands_up_20 = "fb7649a1cb8d1c2668d0a98ff637e8797367f8299c8ea0136c26301222324aae"
   )
 
   testthat::expect_identical(observed, pins)
@@ -122,26 +143,26 @@ testthat::test_that("feature-factory sweep identity remains stable", {
   testthat::expect_identical(
     unlist(out$feature_fingerprints, use.names = FALSE),
     c(
-      "0a63e853ab6575ae4735f06d72943d177a19925573d3758f465a76dedd8de228",
-      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
+      "638fc7be8fb9fa707dc42739a571e55dd4d06da3439c673efce25fe11bbb70d7",
+      "722be865c97f7cc5d2aa85b95d7ceef74959da6c754d643cde2063ed5d0366a0"
     )
   )
   testthat::expect_identical(
     feature_set_hashes,
     c(
-      "3fca8f891000430d9acb774b9d0eeaf2d499c6d21e20b56efaca635ce3903f89",
-      "7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e"
+      "ec1b4b596232f550fef2354b08230dcbebd52dba16b618a15be28c4bcba34c1f",
+      "790156753ee13f87911742cd1a70cfcf05124271e95c0f352b4ca10370601860"
     )
   )
   testthat::expect_identical(
     attr(out, "feature_union"),
     c(
-      "0a63e853ab6575ae4735f06d72943d177a19925573d3758f465a76dedd8de228",
-      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
+      "638fc7be8fb9fa707dc42739a571e55dd4d06da3439c673efce25fe11bbb70d7",
+      "722be865c97f7cc5d2aa85b95d7ceef74959da6c754d643cde2063ed5d0366a0"
     )
   )
   testthat::expect_identical(
     attr(out, "feature_union_hash"),
-    "e5fbf0013f67e30f4d6d4bb75e5fa7c056b3e93ea61f08076575a974da10ee70"
+    "f7026cd02411bdc7b52beab150390fc3facb90a9dd7c5c0b419ac4ddee22ee69"
   )
 })

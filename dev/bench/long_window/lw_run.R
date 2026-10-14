@@ -1,7 +1,6 @@
 # Long-window scaling reproducer: measured ledgr_run() calls in a fresh process.
 # Rscript lw_run.R <repo> <snapshot_db> <strategy: momentum|flat> <marker> <out_json> [prof_file] [n_runs]
-# n_runs > 1 repeats the same experiment on the same store with new run_ids, so
-# run 1 computes and persists features and later runs can reuse them.
+# n_runs > 1 repeats the same experiment on the same store with new run_ids.
 # Each run is split into phases by timestamps taken inside the strategy:
 #   setup    = ledgr_run() entry to the first strategy call
 #   loop     = first to last strategy call
@@ -48,8 +47,7 @@ exp <- ledgr_experiment(
   universe = ledgr_universe_members("synthetic_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2L),
   cost_model = ledgr_cost_zero(),
-  opening = ledgr_opening(cash = 1e6),
-  persist_features = !identical(Sys.getenv("LW_PERSIST", "TRUE"), "FALSE")
+  opening = ledgr_opening(cash = 1e6)
 )
 gc(full = TRUE)
 writeLines("start", marker)

@@ -42,7 +42,7 @@ testthat::test_that("canonicalization is stable across key ordering (including n
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     strategy = list(id = "buy_and_hold", params = list(z = 1, a = 2))
   )
   cfg1 <- ledgr_test_current_config(cfg1)
@@ -60,7 +60,7 @@ testthat::test_that("canonicalization is stable across key ordering (including n
     universe = list(instrument_ids = c("B", "A")),
     engine = list(tz = "UTC", seed = 1L),
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     db_path = "db.duckdb"
   )
   cfg2 <- ledgr_test_current_config(cfg2)
@@ -89,7 +89,7 @@ testthat::test_that("hash is deterministic and sensitive to small changes", {
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     strategy = list(id = "x")
   )
   cfg <- ledgr_test_current_config(cfg)
@@ -123,7 +123,7 @@ testthat::test_that("config hash excludes storage paths and run-local diagnostic
       snapshot_db_path = "snapshot-a.duckdb",
       snapshot_hash = "hash-a"
     ),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     strategy = list(id = "x")
   )
   cfg <- ledgr_test_current_config(cfg)
@@ -157,12 +157,11 @@ testthat::test_that("config hash excludes derived feature-set hash surface", {
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     features = list(
       enabled = TRUE,
       defs = list(list(id = "sma_2", fingerprint = "feature-fingerprint")),
-      feature_set_hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      persist = TRUE
+      feature_set_hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     ),
     strategy = list(id = "x")
   )
@@ -193,7 +192,7 @@ testthat::test_that("config hash excludes sweep retention policy", {
     cost_model = cost_cfg,
     strategy = list(id = "x"),
     data = list(source = "snapshot", snapshot_id = "test", snapshot_hash = "hash"),
-    identity_rule_version = 2L
+    identity_rule_version = 3L
   )
   cfg <- ledgr_test_current_config(cfg)
 
@@ -228,14 +227,14 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     strategy = list(id = "x", params = list())
   )
   cfg <- ledgr_test_current_config(cfg)
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "5be47a39d2fc3ab8ace1d5de14b04797552365c89c2e1202cb2cc691e4e4b08c"
+    "ea8085da468c23fd167bb9e8fe46a121d03b897185cec1f08f7ba8174245f8f9"
   )
 })
 
@@ -254,7 +253,7 @@ testthat::test_that("instrument_ids ordering affects canonical JSON and hash", {
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     strategy = list(id = "x")
   )
   cfg1 <- ledgr_test_current_config(cfg1)
@@ -281,7 +280,7 @@ testthat::test_that("validation fails loud on required fields and constraints", 
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     strategy = list(id = "x")
   )
   base_cfg <- ledgr_test_current_config(base_cfg)
@@ -374,7 +373,7 @@ testthat::test_that("validation passes for a minimal valid config (list and JSON
       snapshot_id = "test-snapshot",
       snapshot_hash = "test-hash"
     ),
-    identity_rule_version = 2L
+    identity_rule_version = 3L
   )
   cfg <- ledgr_test_current_config(cfg)
 

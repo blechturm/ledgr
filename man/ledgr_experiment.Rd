@@ -14,7 +14,6 @@ ledgr_experiment(
   timing_model = ledgr_timing_next_open(),
   cost_model,
   risk_chain = ledgr_risk_none(),
-  persist_features = TRUE,
   execution_mode = "audit_log",
   metric_context = NULL,
   risk_free_rate = NULL,
@@ -56,8 +55,6 @@ trip crosses approximately \code{spread_bps} basis points before explicit fees.}
 
 \item{risk_chain}{Target-risk chain object. Defaults to
 \code{ledgr_risk_none()} for explicit no-risk execution.}
-
-\item{persist_features}{Logical scalar.}
 
 \item{execution_mode}{Execution mode (\code{"audit_log"} or \code{"db_live"}).}
 

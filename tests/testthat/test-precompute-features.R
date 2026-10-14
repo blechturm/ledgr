@@ -342,6 +342,60 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
   )
 })
 
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("precomputed features refuse after a direct capture changes", {
+  make_indicator <- function(scale) {
+    ledgr_indicator(
+      id = "captured_scale",
+      fn = function(window) tail(window$close, 1L) * scale,
+      series_fn = function(bars, params) bars$close * scale,
+      requires_bars = 1L
+    )
+  }
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    target <- ctx$flat()
+    value <- ctx$feature("AAA", "captured_scale")
+    if (is.finite(value) && value > params$threshold) target[["AAA"]] <- 1
+    target
+  }
+  experiment <- function(scale) ledgr_experiment(
+    snapshot,
+    strategy,
+    features = list(make_indicator(scale)),
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(one = list(threshold = 0))
+  original <- experiment(1)
+  changed <- experiment(2)
+  precomputed <- ledgr_precompute_features(original, grid)
+
+  local({
+    executed <- FALSE
+    testthat::local_mocked_bindings(
+      ledgr_execute_fold = function(...) {
+        executed <<- TRUE
+        stop("candidate executed")
+      },
+      .package = "ledgr"
+    )
+    testthat::expect_error(
+      ledgr_sweep(changed, grid, precomputed_features = precomputed),
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+    testthat::expect_false(executed)
+  })
+
+  rebuilt <- ledgr_precompute_features(changed, grid)
+  with_precompute <- ledgr_sweep(changed, grid, precomputed_features = rebuilt)
+  fresh <- ledgr_sweep(changed, grid)
+  testthat::expect_identical(with_precompute$status, fresh$status)
+  testthat::expect_identical(with_precompute$final_equity, fresh$final_equity)
+  testthat::expect_identical(with_precompute$n_trades, fresh$n_trades)
+})
+
 testthat::test_that("large grids without precomputed features warn through the reserved sweep helper", {
   grid <- do.call(
     ledgr_param_grid,

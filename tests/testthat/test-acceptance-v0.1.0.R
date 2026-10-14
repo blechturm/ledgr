@@ -145,7 +145,6 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
       SELECT
         r.run_id,
         (SELECT COUNT(*) FROM ledger_events le WHERE le.run_id = r.run_id) AS ledger_n,
-        (SELECT COUNT(*) FROM features f WHERE f.run_id = r.run_id) AS features_n,
         (SELECT COUNT(*) FROM equity_curve e WHERE e.run_id = r.run_id) AS equity_n
       FROM runs r
       ORDER BY r.run_id
@@ -193,11 +192,6 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
   ledger_b <- ledgr_test_fetch_ledger_core(h$con, run_b)
   testthat::expect_gt(nrow(ledger_b), 0L)
   testthat::expect_equal(ledger_a, ledger_b)
-
-  feat_a <- ledgr_test_fetch_features_core(h$con, run_a)
-  feat_b <- ledgr_test_fetch_features_core(h$con, run_b)
-  testthat::expect_gt(nrow(feat_b), 0L)
-  testthat::expect_equal(feat_a, feat_b)
 
   eq_a <- ledgr_test_fetch_equity_curve_core(h$con, run_a)
   eq_b <- ledgr_test_fetch_equity_curve_core(h$con, run_b)
@@ -314,7 +308,6 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   testthat::expect_identical(as.integer(seqs), seq_along(seqs))
 
   ledger_resume <- ledgr_test_fetch_ledger_core(h1$con, run_id)
-  feat_resume <- ledgr_test_fetch_features_core(h1$con, run_id)
   eq_resume <- ledgr_test_fetch_equity_curve_core(h1$con, run_id)
   st_resume <- DBI::dbGetQuery(
     h1$con,
@@ -335,7 +328,6 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   on.exit(ledgr_test_close_duckdb(h2$con, h2$drv), add = TRUE)
 
   ledger_clean <- ledgr_test_fetch_ledger_core(h2$con, run_id)
-  feat_clean <- ledgr_test_fetch_features_core(h2$con, run_id)
   eq_clean <- ledgr_test_fetch_equity_curve_core(h2$con, run_id)
   st_clean <- DBI::dbGetQuery(
     h2$con,
@@ -344,7 +336,6 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   )
 
   testthat::expect_equal(ledger_resume, ledger_clean)
-  testthat::expect_equal(feat_resume, feat_clean)
   testthat::expect_equal(eq_resume, eq_clean)
   testthat::expect_equal(st_resume, st_clean)
 })

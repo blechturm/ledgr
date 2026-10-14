@@ -230,7 +230,7 @@ testthat::test_that("[LTB-0207] an empty unfinished row resumes with its opening
   statuses <- c("CREATED", "RUNNING", "FAILED")
   for (k in seq_along(statuses)) {
     status <- statuses[[k]]
-    # A distinct BBB price per case keeps the feature cache from serving the gate.
+    # A distinct BBB price per case keeps each gate case independent.
     bars <- rbind(continuity_ii_bars("AAA", days, c(10, 11, 12, 13)), continuity_ii_bars("BBB", days, 20 + k))
     snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
     exp <- ledgr_experiment(snapshot, hold, features = list(gate), cost_model = ledgr_cost_zero(),

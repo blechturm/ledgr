@@ -240,7 +240,6 @@ diag_run_once <- function(name, spec, iteration, seed, telemetry_stride) {
       strategy_params = list(qty = 1),
       initial_cash = 1e7,
       features = features,
-      persist_features = spec$persist_features %||% FALSE,
       run_id = run_id,
       control = list(telemetry_stride = telemetry_stride)
     )

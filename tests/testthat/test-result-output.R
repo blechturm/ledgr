@@ -379,9 +379,6 @@ testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precisio
       execution_timing_convention = "dense_bar_timestamp",
       execution_timing_version = NA_character_,
       elapsed_sec = 0.430000000000001,
-      persist_features = TRUE,
-      feature_cache_hits = 0L,
-      feature_cache_misses = 0L,
       legacy_pre_provenance = FALSE,
       error_msg = NA_character_
     ),
@@ -390,10 +387,9 @@ testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precisio
   stored_elapsed <- info$elapsed_sec
   info_output <- utils::capture.output(print(info))
   testthat::expect_true("Elapsed Sec:      0.430" %in% info_output)
-  testthat::expect_true("Persist Features: TRUE" %in% info_output)
   metadata_lines <- info_output[grepl("^[^:]+:", info_output)]
   metadata_columns <- value_columns(metadata_lines)
-  testthat::expect_length(metadata_lines, 20L)
+  testthat::expect_length(metadata_lines, 17L)
   testthat::expect_identical(length(unique(metadata_columns)), 1L)
   testthat::expect_false(any(grepl("0.430000000000001", info_output, fixed = TRUE)))
   testthat::expect_identical(info$elapsed_sec, stored_elapsed)

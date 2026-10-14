@@ -110,9 +110,14 @@ testthat::test_that("schema can be created on an empty DuckDB", {
     "
   )$table_name
 
-  for (t in c("runs", "instruments", "bars", "features", "ledger_events", "equity_curve", "strategy_state", "run_promotion_context")) {
+  for (t in c("runs", "instruments", "bars", "ledger_events", "equity_curve", "strategy_state", "run_promotion_context")) {
     testthat::expect_true(t %in% tables, info = sprintf("expected table %s to exist", t))
   }
+  testthat::expect_false("features" %in% tables)
+  telemetry_columns <- ledgr_test_store_columns(con, "run_telemetry")
+  testthat::expect_false(any(c(
+    "persist_features", "feature_cache_hits", "feature_cache_misses"
+  ) %in% telemetry_columns))
 })
 
 testthat::test_that("[LTB-0039] schema catalogue work is bounded per call", {
@@ -395,17 +400,6 @@ testthat::test_that("run and snapshot status constraints are enforced", {
 })
 
 
-testthat::test_that("missing features table fails validation", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-  DBI::dbExecute(con, "DROP TABLE features")
-
-  testthat::expect_error(ledgr_validate_schema(con), "Missing table: features", fixed = TRUE)
-})
-
-
 testthat::test_that("strategy_state primary key prevents duplicates", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -426,31 +420,6 @@ testthat::test_that("strategy_state primary key prevents duplicates", {
       "
       INSERT INTO strategy_state (run_id, ts_utc, state_json)
       VALUES ('run-1', '2020-01-01T00:00:00Z', '{}')
-      "
-    )
-  )
-})
-
-testthat::test_that("features primary key prevents duplicates", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-
-  DBI::dbExecute(
-    con,
-    "
-    INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
-    VALUES ('run-1', 'ABC', TIMESTAMP '2020-01-01 00:00:00', 'sma_2', 1.0)
-    "
-  )
-
-  testthat::expect_error(
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
-      VALUES ('run-1', 'ABC', TIMESTAMP '2020-01-01 00:00:00', 'sma_2', 2.0)
       "
     )
   )

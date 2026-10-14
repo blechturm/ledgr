@@ -74,7 +74,6 @@ testthat::test_that("metric context changes do not change execution config hashe
         initial_cash = exp$opening$cash
       ),
       features = ledgr_experiment_materialize_features(exp, list()),
-      persist_features = exp$persist_features,
       execution_mode = exp$execution_mode,
       timing_model = exp$timing_model,
       cost_model_hash = exp$cost_model_hash,

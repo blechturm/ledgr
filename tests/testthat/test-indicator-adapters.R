@@ -140,13 +140,18 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_r("TTR::RSI", id = "test_ttr_rsi", requires_bars = 15L, n = 14L)
-  zero_strategy <- function(ctx, params) {
-    stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
+  capture_strategy <- function(ctx, params) {
+    values <- vapply(ctx$universe, function(id) ctx$feature(id, params$feature), numeric(1))
+    list(
+      targets = ctx$flat(),
+      state_update = list(finite = as.list(stats::setNames(is.finite(values), names(values))))
+    )
   }
 
   bt <- ledgr_backtest(
     snapshot = snap,
-    strategy = zero_strategy,
+    strategy = capture_strategy,
+    strategy_params = list(feature = "test_ttr_rsi"),
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
     end = "2020-01-31",
@@ -155,16 +160,13 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   cost_model = ledgr_cost_zero()
   )
 
-  features <- DBI::dbGetQuery(
-    ledgr:::get_connection(bt),
-    "SELECT feature_name FROM features WHERE run_id = ?",
-    params = list(bt$run_id)
-  )
-  testthat::expect_true("test_ttr_rsi" %in% unique(features$feature_name))
+  state <- availability_last_state(bt)
+  testthat::expect_setequal(names(state$finite), c("TEST_A", "TEST_B"))
+  testthat::expect_true(all(unlist(state$finite, use.names = FALSE)))
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
+testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
   db_path <- tempfile(fileext = ".duckdb")
   csv_path <- tempfile(fileext = ".csv")
   on.exit(unlink(db_path), add = TRUE)
@@ -183,13 +185,15 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_csv(csv_path = csv_path, value_col = "signal", id = "test_csv_signal")
-  zero_strategy <- function(ctx, params) {
-    stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
+  capture_strategy <- function(ctx, params) {
+    values <- vapply(ctx$universe, function(id) ctx$feature(id, params$feature), numeric(1))
+    list(targets = ctx$flat(), state_update = list(values = as.list(values)))
   }
 
   bt <- ledgr_backtest(
     snapshot = snap,
-    strategy = zero_strategy,
+    strategy = capture_strategy,
+    strategy_params = list(feature = "test_csv_signal"),
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
     end = "2020-01-10",
@@ -198,21 +202,13 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
   cost_model = ledgr_cost_zero()
   )
 
-  persisted <- DBI::dbGetQuery(
-    ledgr:::get_connection(bt),
-    "
-    SELECT ts_utc, instrument_id, feature_value
-    FROM features
-    WHERE run_id = ? AND feature_name = 'test_csv_signal'
-    ORDER BY ts_utc, instrument_id
-    ",
-    params = list(bt$run_id)
-  )
-  testthat::expect_gt(nrow(persisted), 0L)
-  first_key <- paste(ledgr_iso_utc(persisted$ts_utc[[1]]), persisted$instrument_id[[1]], sep = "||")
+  state <- availability_last_state(bt)
+  testthat::expect_setequal(names(state$values), c("TEST_A", "TEST_B"))
+  last_rows <- bars$ts_utc == max(bars$ts_utc)
+  last_keys <- paste(vapply(bars$ts_utc[last_rows], ledgr_iso_utc, character(1)), bars$instrument_id[last_rows], sep = "||")
   expected_key <- paste(csv_df$ts_utc, csv_df$instrument_id, sep = "||")
   testthat::expect_equal(
-    as.numeric(persisted$feature_value[[1]]),
-    csv_df$signal[[match(first_key, expected_key)]]
+    unlist(state$values[c("TEST_A", "TEST_B")], use.names = FALSE),
+    csv_df$signal[match(last_keys, expected_key)]
   )
 })

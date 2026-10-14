@@ -18,7 +18,7 @@ testthat::test_that("[LTB-0266] identity JSON is locale-independent across proce
     "if (is.na(active) || !nzchar(active)) { cat('LEDGR_LOCALE_UNAVAILABLE\\n'); quit(save = 'no') }",
     "keys <- c('a_key', 'B_key', '_key')",
     "params <- stats::setNames(list(1L, 2L, 3L), keys)",
-    "config <- list(identity_rule_version = 2L, data = list(snapshot_id = 'local', snapshot_hash = 'hash'), risk_chain = list(risk_chain_hash = 'risk', risk_plan_json = '{}'), strategy = list(params = params))",
+    "config <- list(identity_rule_version = 3L, data = list(snapshot_id = 'local', snapshot_hash = 'hash'), risk_chain = list(risk_chain_hash = 'risk', risk_plan_json = '{}'), strategy = list(params = params))",
     "cat(paste0('LEDGR_ACTIVE=', active, '\\n'))",
     "cat(paste0('LEDGR_ORDER=', paste(order(keys), collapse = ','), '\\n'))",
     "cat(paste0('LEDGR_JSON=', unname(ledgr:::canonical_json(list(strategy_params = params))), '\\n'))",

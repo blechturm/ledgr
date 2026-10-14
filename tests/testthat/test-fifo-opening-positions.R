@@ -44,7 +44,6 @@ fifo_opening_config <- function(snapshot,
       initial_cash = opening$cash
     ),
     features = list(),
-    persist_features = TRUE,
     execution_mode = execution_mode,
     timing_model = ledgr_timing_next_open(),
     cost_model_hash = ledgr:::ledgr_cost_model_hash(cost_model),

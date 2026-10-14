@@ -175,7 +175,6 @@ print.ledgr_opening <- function(x, ...) {
 #'   trip crosses approximately `spread_bps` basis points before explicit fees.
 #' @param risk_chain Target-risk chain object. Defaults to
 #'   `ledgr_risk_none()` for explicit no-risk execution.
-#' @param persist_features Logical scalar.
 #' @param execution_mode Execution mode (`"audit_log"` or `"db_live"`).
 #' @param metric_context Optional `ledgr_metric_context` object or scalar
 #'   annual risk-free rate shorthand. `NULL` uses the default metric context.
@@ -226,7 +225,6 @@ ledgr_experiment <- function(snapshot,
                              timing_model = ledgr_timing_next_open(),
                              cost_model,
                              risk_chain = ledgr_risk_none(),
-                             persist_features = TRUE,
                              execution_mode = "audit_log",
                              metric_context = NULL,
                              risk_free_rate = NULL,
@@ -293,9 +291,6 @@ ledgr_experiment <- function(snapshot,
     risk_plan_json = ledgr_risk_plan_json(risk_chain)
   )
 
-  if (!is.logical(persist_features) || length(persist_features) != 1L || is.na(persist_features)) {
-    rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_experiment")
-  }
   if (!is.character(execution_mode) || length(execution_mode) != 1L || is.na(execution_mode) || !nzchar(execution_mode)) {
     rlang::abort("`execution_mode` must be a non-empty character scalar.", class = "ledgr_invalid_experiment")
   }
@@ -317,7 +312,6 @@ ledgr_experiment <- function(snapshot,
       risk_chain = risk_chain,
       risk_chain_hash = risk_identity$risk_chain_hash,
       risk_plan_json = risk_identity$risk_plan_json,
-      persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,
       metric_context = metric_context,
       corporate_action_policy = corporate_action_policy,
