@@ -707,14 +707,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   availability_active <- ledgr_availability_config_active(cfg)
   run_wall_start <- ledgr_time_now()
 
-  engine <- ledgr_run_prepare_engine(cfg, db_path)
-  persist_features <- engine$persist_features
-  execution_mode <- engine$execution_mode
-  checkpoint_every <- engine$checkpoint_every
-  snapshot_id <- engine$snapshot_id
-  snapshot_db_path <- engine$snapshot_db_path
-  snapshot_hash_for_features <- NULL
-
   if (!is.null(seed)) {
     had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
     old_seed <- if (had_seed) {
@@ -729,8 +721,15 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
         rm(".Random.seed", envir = .GlobalEnv)
       }
     }, add = TRUE)
-    set.seed(as.integer(seed))
   }
+
+  engine <- ledgr_run_prepare_engine(cfg, db_path)
+  persist_features <- engine$persist_features
+  execution_mode <- engine$execution_mode
+  checkpoint_every <- engine$checkpoint_every
+  snapshot_id <- engine$snapshot_id
+  snapshot_db_path <- engine$snapshot_db_path
+  snapshot_hash_for_features <- NULL
 
   opened <- ledgr_store_open(db_path, mode = "create")
   drv <- opened$drv

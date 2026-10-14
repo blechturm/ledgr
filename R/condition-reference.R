@@ -87,9 +87,6 @@
 #' `ledgr_strategy_provenance_missing` is raised when a current run row exists
 #' but its required strategy-provenance row is absent.
 #'
-#' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
-#' when selected runs have differing or unknown execution-timing conventions.
-#'
 #' `ledgr_session_time_ambiguous` and `ledgr_session_time_nonexistent` are
 #' raised when a local session wall time resolves to multiple UTC instants or
 #' no UTC instant. Supply an explicit POSIXct instant to disambiguate a real
@@ -498,7 +495,6 @@
 #' @aliases ledgr_compiled_availability_unsupported
 #' @aliases ledgr_policy_schema_mismatch
 #' @aliases ledgr_strategy_provenance_missing
-#' @aliases ledgr_fill_timing_not_comparable
 #' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
 #' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list
 #' @aliases ledgr_facts_inspection_invalid_args ledgr_facts_scope_not_found

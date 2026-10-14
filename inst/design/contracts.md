@@ -2043,11 +2043,13 @@ Accepted change pending:
   are classified separately. This is the executable no-uncalled-function
   floor, not a claim that every one-caller helper is justified.
 - The same gate derives literal elements of `rlang::abort()` and
-  `rlang::warn()` class vectors, including resolvable class-builder calls.
+  `rlang::warn()` class vectors, including positional class arguments,
+  resolvable class-builder calls and statically resolvable package wrappers.
   Every public `ledgr_` element must have both an alias and prose description
   in the condition reference. A newly introduced wholly private class uses
   the `ledgr_internal_` prefix. Dynamic class expressions remain visible in
   the source census and require explicit review disposition.
 - A zero-row source-census family is a valid typed table with its declared
-  columns. The fast boundary block protects that empty result; the full census
-  remains a report/check tool rather than running inside the test lane.
+  columns. The fast boundary block runs every empty family through the shared
+  summary arithmetic and pins the report to that boundary; the full populated
+  census remains a report/check tool rather than running inside the test lane.

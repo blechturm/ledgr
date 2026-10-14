@@ -340,8 +340,12 @@ write_table <- function(x, name, order_by = names(x)) {
 }
 
 empty_frame <- function(columns) {
-  setNames(as.data.frame(rep(list(character()), length(columns))), columns)
+  ledgr_census_empty_frame(stats::setNames(
+    rep("character", length(columns)), columns
+  ))
 }
+
+census_schemas <- ledgr_census_schemas()
 
 namespace_calls <- as.list(parse(file.path(root, "NAMESPACE"), keep.source = FALSE))
 exports <- unique(vapply(Filter(function(x) identical(call_name(x), "export"), namespace_calls), function(x) {
@@ -729,12 +733,12 @@ literal_rows <- current_only_literal_rows(root)
 if (!is.null(literal_rows)) {
   version_rows[[length(version_rows) + 1L]] <- literal_rows
 }
-version_rows <- ledgr_census_bind_rows(version_rows, c(
-  "file", "line", "owner", "record_kind", "expression",
-  "persisted_or_convention", "persistence_evidence", "fingerprint_member",
-  "atomic_scalar", "outside_fingerprint", "comparison_operator",
-  "equality_assertion", "current_only_violation"
-))
+version_rows <- ledgr_census_bind_rows(
+  version_rows,
+  census_schemas$versions[, setdiff(
+    names(census_schemas$versions), "current_only_violation"
+  ), drop = FALSE]
+)
 if (nrow(version_rows) > 0L) {
   version_rows <- unique(version_rows)
   version_rows$current_only_violation <- mapply(
@@ -749,6 +753,8 @@ if (nrow(version_rows) > 0L) {
     version_rows$owner,
     USE.NAMES = FALSE
   )
+} else {
+  version_rows$current_only_violation <- logical()
 }
 
 ## Hand-built run-config census -------------------------------------------
@@ -1071,11 +1077,7 @@ for (entry in r_index) {
     )
   }
 }
-helper_rows <- ledgr_census_bind_rows(helper_rows, c(
-  "file", "line", "helper", "exported", "s3_method", "hook",
-  "in_scope_private", "r_reference_count", "test_reference_count",
-  "dynamic_reference_count", "reference_locations", "classification"
-))
+helper_rows <- ledgr_census_bind_rows(helper_rows, census_schemas$helpers)
 
 ## Condition census --------------------------------------------------------
 
@@ -1120,20 +1122,38 @@ wrapper_specs <- vector("list", 0L)
 
 for (item in condition_calls) {
   call <- item$call
-  named <- names(as.list(call))
-  class_index <- which(named == "class")
-  classes <- if (length(class_index) == 1L) literal_strings(call[[class_index]]) else character()
-  classed <- item$name %in% c("abort", "warn") && length(class_index) == 1L
+  class_expression <- if (item$name %in% c("abort", "warn")) {
+    call_argument(call, "class", 2L)
+  } else {
+    NULL
+  }
+  classes <- if (is.null(class_expression)) {
+    character()
+  } else {
+    literal_strings(class_expression)
+  }
+  resolver <- if (is.call(class_expression)) call_name(class_expression) else ""
+  if (nzchar(resolver) && !is.null(definition_lookup[[resolver]])) {
+    classes <- unique(c(
+      classes,
+      ledgr_structure_ledgr_literals(
+        definition_lookup[[resolver]]$definition$rhs
+      )
+    ))
+  }
+  classed <- item$name %in% c("abort", "warn") && !is.null(class_expression)
   if (classed && length(classes) > 0L) {
     for (class in classes) {
       condition_rows[[length(condition_rows) + 1L]] <- condition_row(
         item$file, item$line,
         if (identical(item$name, "abort")) "abort_class" else "warning_class",
-        class, TRUE, deparse_one(call[[class_index]])
+        class, TRUE, deparse_one(class_expression)
       )
     }
   }
-  unresolved <- classed && length(setdiff(symbols_in(call[[class_index]]), c("c"))) > 0L
+  unresolved <- classed && length(setdiff(
+    symbols_in(class_expression), c("c")
+  )) > 0L
   if (!classed || unresolved || length(classes) == 0L) {
     kind <- if (identical(item$name, "abort")) {
       "abort_dynamic"
@@ -1143,8 +1163,8 @@ for (item in condition_calls) {
       item$name
     }
     condition_rows[[length(condition_rows) + 1L]] <- condition_row(
-      item$file, item$line, kind, expression = if (length(class_index) == 1L) {
-        deparse_one(call[[class_index]])
+      item$file, item$line, kind, expression = if (!is.null(class_expression)) {
+        deparse_one(class_expression)
       } else {
         deparse_one(call)
       }
@@ -1155,11 +1175,11 @@ for (item in condition_calls) {
     found <- definition_lookup[[item$owner]]
     if (!is.null(found)) {
       formals <- names(as.list(found$definition$rhs[[2L]]))
-      dynamic_formals <- intersect(symbols_in(call[[class_index]]), formals)
+      dynamic_formals <- intersect(symbols_in(class_expression), formals)
       if (length(dynamic_formals) > 0L) {
         wrapper_specs[[length(wrapper_specs) + 1L]] <- list(
           name = item$owner,
-          class_expression = call[[class_index]],
+          class_expression = class_expression,
           definition = found$definition
         )
       }
@@ -1197,6 +1217,14 @@ resolved_class_literals <- function(x, call, formals, seen = character()) {
                          call = call, formals = formals, seen = seen),
                   use.names = FALSE))
   }
+  if (is.call(x)) {
+    resolver <- call_name(x)
+    if (!is.null(definition_lookup[[resolver]])) {
+      return(ledgr_structure_ledgr_literals(
+        definition_lookup[[resolver]]$definition$rhs
+      ))
+    }
+  }
   character()
 }
 
@@ -1222,11 +1250,7 @@ for (spec in wrapper_specs) {
     }
   }
 }
-condition_rows <- ledgr_census_bind_rows(condition_rows, c(
-  "file", "line", "call_kind", "condition_class", "recoverable",
-  "expression", "documented_alias", "documented_description",
-  "internal_prefix"
-))
+condition_rows <- ledgr_census_bind_rows(condition_rows, census_schemas$conditions)
 
 condition_class_rows <- condition_rows[
   condition_rows$call_kind %in% c(
@@ -1272,12 +1296,103 @@ if (nrow(condition_class_rows) > 0L) {
   }))
   rownames(condition_classes) <- NULL
 } else {
-  condition_classes <- empty_frame(c(
-    "condition_class", "first_file", "first_line", "occurrence_count",
-    "public", "internal_prefix", "documented_alias",
-    "documented_description", "classification"
-  ))
+  condition_classes <- census_schemas$condition_classes
 }
+
+structural_condition_classes <- ledgr_structure_scan(root)$condition_classes
+structural_public_classes <- structural_condition_classes[
+  startsWith(structural_condition_classes, "ledgr_") &
+    !startsWith(structural_condition_classes, "ledgr_internal_")
+]
+census_public_classes <- condition_classes$condition_class[
+  condition_classes$public
+]
+if (!setequal(structural_public_classes, census_public_classes)) {
+  stop(sprintf(
+    paste0(
+      "The condition scanner and census disagree. Scanner-only: %s. ",
+      "Census-only: %s."
+    ),
+    paste(setdiff(structural_public_classes, census_public_classes), collapse = ", "),
+    paste(setdiff(census_public_classes, structural_public_classes), collapse = ", ")
+  ), call. = FALSE)
+}
+
+test_seam_contracts <- c(
+  ledgr_local_time_resolve = paste(
+    "Exercise ambiguous and nonexistent local-time policy without building",
+    "a complete availability input."
+  ),
+  ledgr_session_decision_pulses = paste(
+    "Isolate session-to-decision-axis derivation and off-session exclusion."
+  ),
+  ledgr_business_objective_from_plan_json = paste(
+    "Check canonical stored-plan decoding independently of experiment assembly."
+  ),
+  ledgr_with_collapse_deterministic = paste(
+    "Verify the collapse determinism boundary and scoped option restoration."
+  ),
+  ledgr_validate_config = paste(
+    "Target validation failures on controlled hand-built run configurations."
+  ),
+  ledgr_corporate_action_identity_schema = paste(
+    "Inspect the exact private corporate-action identity payload and version."
+  ),
+  ledgr_create_schema = paste(
+    "Create controlled schemas for catalogue and interrupted-transaction tests."
+  ),
+  ledgr_schema_catalogue_difference = paste(
+    "Compare synthetic catalogue mutations without a public store workflow."
+  ),
+  ledgr_schema_catalogue_digest = paste(
+    "Pin the deterministic digest of a controlled schema catalogue."
+  ),
+  ledgr_experiment_store_version = paste(
+    "Inspect schema binding without creating an experiment store."
+  ),
+  ledgr_experiment_materialize_features = paste(
+    "Exercise feature-map materialization independently of a complete run."
+  ),
+  ledgr_feature_cache_key = paste(
+    "Pin feature-cache identity components without running a backtest."
+  ),
+  ledgr_check_no_lookahead = paste(
+    "Inject hostile callbacks into the prefix-invariance causality oracle."
+  ),
+  ledgr_compute_features = paste(
+    "Exercise the private feature-engine oracle over controlled bars."
+  ),
+  ledgr_equity_from_events = paste(
+    "Reconstruct equity from controlled events for fold-parity assertions."
+  ),
+  ledgr_fills_from_events = paste(
+    "Reconstruct fills from controlled events for fold-parity assertions."
+  ),
+  ledgr_pulse_context = paste(
+    "Construct minimal pulse contexts for accessor contract tests."
+  ),
+  ledgr_projection_feature_at = paste(
+    "Probe indexed projection reads and missing-value behavior directly."
+  ),
+  ledgr_snapshot_verified_reset = paste(
+    "Clear the process-local verification registry between isolation tests."
+  ),
+  ledgr_snapshot_validate = paste(
+    "Validate controlled and tampered snapshot roots without reopening a run."
+  ),
+  ledgr_strategy_preflight_uses_ambient_rng = paste(
+    "Probe the static ambient-RNG classifier on controlled strategy bodies."
+  ),
+  ledgr_sweep_wide_candidate_id = paste(
+    "Exercise wide-retention candidate-ID parsing and collision handling."
+  ),
+  ledgr_event_row_df = paste(
+    "Build typed event rows for writer and reconstruction test oracles."
+  ),
+  ledgr_sweep_compute_feature_matrix = paste(
+    "Exercise sweep feature-matrix preparation independently of execution."
+  )
+)
 
 test_only_seams <- helper_rows[
   helper_rows$classification == "test_only_private",
@@ -1293,8 +1408,17 @@ if (nrow(test_only_seams) == 0L) {
     "reference_locations", "testing_contract"
   ))
 } else {
-  test_only_seams$testing_contract <- paste0(
-    "direct_test_seam:", test_only_seams$helper
+  missing_contract <- setdiff(test_only_seams$helper, names(test_seam_contracts))
+  stale_contract <- setdiff(names(test_seam_contracts), test_only_seams$helper)
+  if (length(missing_contract) > 0L || length(stale_contract) > 0L) {
+    stop(sprintf(
+      "Test-seam contracts disagree. Missing: %s. Stale: %s.",
+      paste(missing_contract, collapse = ", "),
+      paste(stale_contract, collapse = ", ")
+    ), call. = FALSE)
+  }
+  test_only_seams$testing_contract <- unname(
+    test_seam_contracts[test_only_seams$helper]
   )
 }
 
@@ -1349,38 +1473,14 @@ condition_dynamics <- write_table(
   c("file", "line", "call_kind", "expression")
 )
 
-summary <- data.frame(
-  family = c(
-    "condition_call_sites", "condition_classes", "connections", "helpers",
-    "run_configs", "versions"
-  ),
-  rows = c(
-    nrow(condition_rows), nrow(condition_classes), nrow(connection_rows),
-    nrow(helper_rows), nrow(run_config_rows), nrow(version_rows)
-  ),
-  findings = c(
-    sum(!condition_rows$call_kind %in% c(
-      "abort_class", "abort_wrapper_class", "warning_class"
-    )),
-    sum(condition_classes$public &
-          (!condition_classes$documented_alias |
-             !condition_classes$documented_description)),
-    sum(
-      connection_rows$persistent_store &
-        connection_rows$current_guard == "none" &
-        !connection_rows$owner %in% c(
-          "ledgr_open_duckdb_with_retry", "ledgr_join_open_duckdb"
-        )
-    ),
-    sum(helper_rows$classification == "uncalled_private"),
-    sum(run_config_rows$consumer != "config_builder" &
-          (run_config_rows$identity_rule_version != "supplied" |
-             run_config_rows$data_snapshot_hash != "supplied")),
-    sum(version_rows$outside_fingerprint) +
-      sum(version_rows$current_only_violation)
-  ),
-  stringsAsFactors = FALSE
-)
+summary <- ledgr_census_summary(list(
+  conditions = condition_rows,
+  condition_classes = condition_classes,
+  connections = connection_rows,
+  helpers = helper_rows,
+  run_configs = run_config_rows,
+  versions = version_rows
+))
 summary <- write_table(summary, "summary.csv", "family")
 
 metadata <- data.frame(

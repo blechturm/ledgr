@@ -27,7 +27,6 @@
 \alias{ledgr_compiled_availability_unsupported}
 \alias{ledgr_policy_schema_mismatch}
 \alias{ledgr_strategy_provenance_missing}
-\alias{ledgr_fill_timing_not_comparable}
 \alias{ledgr_session_time_ambiguous}
 \alias{ledgr_session_time_nonexistent}
 \alias{ledgr_fact_ambiguous_membership_shape}
@@ -474,9 +473,6 @@ records.
 
 \code{ledgr_strategy_provenance_missing} is raised when a current run row exists
 but its required strategy-provenance row is absent.
-
-\code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
-when selected runs have differing or unknown execution-timing conventions.
 
 \code{ledgr_session_time_ambiguous} and \code{ledgr_session_time_nonexistent} are
 raised when a local session wall time resolves to multiple UTC instants or

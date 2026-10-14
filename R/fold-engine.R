@@ -269,6 +269,22 @@ ledgr_execute_fold <- function(execution, output_handler) {
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
+  if (!is.null(execution_seed)) {
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    old_seed <- if (had_seed) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit({
+      if (had_seed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    }, add = TRUE)
+    set.seed(as.integer(execution_seed))
+  }
   event_mode <- execution$event_mode
   use_fast_context <- isTRUE(execution$use_fast_context)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(

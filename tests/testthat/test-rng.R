@@ -117,7 +117,7 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:29)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "rng-run")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   experiment <- ledgr_experiment(
@@ -125,7 +125,7 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
     function(ctx, params) {
       targets <- ctx$hold()
       if (all(targets == 0)) {
-        targets[["AAA"]] <- floor(stats::runif(1L) * 2) + 1
+        targets[["AAA"]] <- floor(stats::runif(1L) * 100) + 1
       }
       targets
     },
@@ -147,4 +147,52 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
   testthat::expect_false(
     exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   )
+
+  grid <- ledgr_param_grid(candidate = list(unused = 1L))
+  set.seed(1L)
+  sweep_before_1 <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  sweep_1 <- ledgr_sweep(experiment, grid, seed = 2026L)
+  testthat::expect_identical(
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE),
+    sweep_before_1
+  )
+
+  set.seed(2L)
+  sweep_before_2 <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  sweep_2 <- ledgr_sweep(experiment, grid, seed = 2026L)
+  testthat::expect_identical(
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE),
+    sweep_before_2
+  )
+  compared <- c(
+    "status", "final_equity", "total_return", "annualized_return",
+    "volatility", "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
+    "avg_trade", "time_in_market"
+  )
+  for (field in compared) {
+    testthat::expect_equal(
+      sweep_1[[field]], sweep_2[[field]], tolerance = 0,
+      info = paste("ambient-seed sweep field", field)
+    )
+  }
+
+  candidate <- ledgr_candidate(sweep_1, "candidate")
+  direct <- ledgr_run(
+    experiment,
+    params = candidate$params,
+    run_id = "rng-sweep-direct",
+    seed = candidate$execution_seed
+  )
+  on.exit(close(direct), add = TRUE)
+  metrics <- ledgr_compute_metrics(direct)
+  equity <- ledgr_results(direct, "equity")
+  testthat::expect_equal(
+    sweep_1$final_equity[[1L]], equity$equity[[nrow(equity)]], tolerance = 1e-10
+  )
+  for (field in setdiff(compared, c("status", "final_equity"))) {
+    testthat::expect_equal(
+      sweep_1[[field]][[1L]], metrics[[field]], tolerance = 1e-10,
+      info = field
+    )
+  }
 })
