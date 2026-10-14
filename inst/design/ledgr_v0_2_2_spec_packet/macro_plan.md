@@ -1012,9 +1012,9 @@ in the WS5 section. WS5-B's reuse-key design stays after WS3/WS4 and covers
 only what survives.
 
 2026-10-14 maintainer amendment, one-execution-mode probe result: red. The
-probe (branch `spike/one-execution-mode` at `bd0e1bd9`, unmerged;
-`dev/spikes/one_execution_mode/probe_findings.md` there) ran the dense
-fixtures through the availability path.
+probe (record in `dev/spikes/one_execution_mode/`, copied from branch
+`spike/one-execution-mode` at `bd0e1bd9` without the regenerable result
+tables) ran the dense fixtures through the availability path.
 
 **What matched.** The economic core is shared: equity, positions, metrics,
 prices, quantities, cash and P&L are byte-identical on the peer and
