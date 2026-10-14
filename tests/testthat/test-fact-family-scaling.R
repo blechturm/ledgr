@@ -120,10 +120,12 @@ test_that("[LTB-0044] constructors retain validation precedence", {
   }
   cases <- list(
     membership = list(
-      call = function() ledgr_facts_membership_intervals(
-        invalid_interval(),
-        universe_id = "matrix"
-      ),
+      call = function() {
+        ledgr_facts_membership_intervals(
+          invalid_interval(),
+          universe_id = "matrix"
+        )
+      },
       class = "ledgr_fact_invalid_interval",
       message = paste0(
         "membership intervals effective intervals must be half-open with ",
@@ -147,21 +149,23 @@ test_that("[LTB-0044] constructors retain validation precedence", {
       )
     ),
     equity_corporate_actions = list(
-      call = function() ledgr_facts_equity_corporate_actions(data.frame(
-        fact_id = c("shared", "shared"),
-        subtype = "ordinary_cash_dividend",
-        parent_instrument_id = "AAA",
-        entitlement_time = stamp,
-        effective_time = stamp,
-        knowledge_time = stamp,
-        complete = TRUE,
-        provenance_tier = "snapshot_bound",
-        gross_cash_per_parent_unit = c(1, 2),
-        gross_cash_validated = FALSE,
-        recipient_identity_validated = FALSE,
-        recipient_quantity_validated = FALSE,
-        stringsAsFactors = FALSE
-      )),
+      call = function() {
+        ledgr_facts_equity_corporate_actions(data.frame(
+          fact_id = c("shared", "shared"),
+          subtype = "ordinary_cash_dividend",
+          parent_instrument_id = "AAA",
+          entitlement_time = stamp,
+          effective_time = stamp,
+          knowledge_time = stamp,
+          complete = TRUE,
+          provenance_tier = "snapshot_bound",
+          gross_cash_per_parent_unit = c(1, 2),
+          gross_cash_validated = FALSE,
+          recipient_identity_validated = FALSE,
+          recipient_quantity_validated = FALSE,
+          stringsAsFactors = FALSE
+        ))
+      },
       class = "ledgr_fact_identity_conflict",
       message = paste0(
         "Equity corporate-action `fact_id` values must be non-empty and ",
@@ -169,16 +173,18 @@ test_that("[LTB-0044] constructors retain validation precedence", {
       )
     ),
     sessions = list(
-      call = function() ledgr_facts_sessions(
-        data.frame(
-          session_date = as.Date(c("2020-01-01", "2020-01-01")),
-          status = c("invalid", "closed"),
-          session_open = c("09:30:00", NA_character_),
-          session_close = c("16:00:00", NA_character_),
-          stringsAsFactors = FALSE
-        ),
-        venue_id = "MATRIX"
-      ),
+      call = function() {
+        ledgr_facts_sessions(
+          data.frame(
+            session_date = as.Date(c("2020-01-01", "2020-01-01")),
+            status = c("invalid", "closed"),
+            session_open = c("09:30:00", NA_character_),
+            session_close = c("16:00:00", NA_character_),
+            stringsAsFactors = FALSE
+          ),
+          venue_id = "MATRIX"
+        )
+      },
       class = "ledgr_session_invalid",
       message = "Session calendar contains duplicate `session_date` values."
     )
@@ -440,9 +446,13 @@ test_that("[LTB-0248] availability tables are found with one catalogue read per 
   reference <- function(con) {
     present <- DBI::dbListTables(con)
     out <- lapply(names(tables), function(table_name) {
-      if (!table_name %in% present) return(data.frame())
-      DBI::dbGetQuery(con, sprintf("SELECT * EXCLUDE (snapshot_id) FROM %s WHERE snapshot_id = ? ORDER BY %s",
-                                   table_name, tables[[table_name]]), params = list(snapshot$snapshot_id))
+      if (!table_name %in% present) {
+        return(data.frame())
+      }
+      DBI::dbGetQuery(con, sprintf(
+        "SELECT * EXCLUDE (snapshot_id) FROM %s WHERE snapshot_id = ? ORDER BY %s",
+        table_name, tables[[table_name]]
+      ), params = list(snapshot$snapshot_id))
     })
     stats::setNames(out, names(tables))
   }

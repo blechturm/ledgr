@@ -22,9 +22,13 @@ ledgr_corporate_action_existing_events <- function(con, run_id) {
 }
 
 ledgr_corporate_action_event_meta <- function(events) {
-  if (is.null(events) || nrow(events) == 0L) return(list())
+  if (is.null(events) || nrow(events) == 0L) {
+    return(list())
+  }
   lapply(events$meta_json, function(value) {
-    if (is.na(value) || !nzchar(value)) return(list())
+    if (is.na(value) || !nzchar(value)) {
+      return(list())
+    }
     ledgr_json_read_nested(value)
   })
 }
@@ -43,11 +47,11 @@ ledgr_corporate_action_event_meta <- function(events) {
 # timestamps decrease in event order (never written by ledgr) has no prefix to
 # look up, so each boundary then adds its own events in order.
 ledgr_corporate_action_past_quantities <- function(events,
-                                                    meta,
-                                                    rows,
-                                                    selected,
-                                                    instrument_ids,
-                                                    cum_boundaries) {
+                                                   meta,
+                                                   rows,
+                                                   selected,
+                                                   instrument_ids,
+                                                   cum_boundaries) {
   out <- rep(0, length(selected))
   if (length(selected) == 0L || is.null(events) || nrow(events) == 0L) {
     return(out)
@@ -56,7 +60,9 @@ ledgr_corporate_action_past_quantities <- function(events,
   cum_boundaries <- as.POSIXct(cum_boundaries, tz = "UTC")
   known <- ids %in% instrument_ids
   keep <- which(as.character(events$instrument_id) %in% ids[known])
-  if (length(keep) == 0L) return(out)
+  if (length(keep) == 0L) {
+    return(out)
+  }
   keep <- keep[order(as.integer(events$event_seq[keep]))]
   meta <- meta[keep]
   event_instrument <- as.character(events$instrument_id[keep])
@@ -114,7 +120,10 @@ ledgr_corporate_action_past_quantities <- function(events,
 # the fold ends an availability run with (Cut 12 LDG-2997), or, in a dense run
 # that has no stop, raises through ledgr_corporate_action_refusal_abort().
 ledgr_corporate_action_refusal <- function(rows, kind) {
-  reason <- switch(kind, cash = "corporate_action_cash_refused", quantity = "corporate_action_quantity_refused")
+  reason <- switch(kind,
+    cash = "corporate_action_cash_refused",
+    quantity = "corporate_action_quantity_refused"
+  )
   list(
     kind = kind,
     ids = unique(as.character(rows$parent_instrument_id)),
@@ -149,8 +158,8 @@ ledgr_corporate_action_supported_subtypes <- function() {
 }
 
 ledgr_corporate_action_clock_index <- function(clock,
-                                                pulses_posix,
-                                                label) {
+                                               pulses_posix,
+                                               label) {
   clock <- as.POSIXct(clock, tz = "UTC")
   idx <- match(as.numeric(clock), as.numeric(pulses_posix))
   inside <- !is.na(clock) & clock >= min(pulses_posix) &
@@ -168,7 +177,7 @@ ledgr_corporate_action_clock_index <- function(clock,
 }
 
 ledgr_corporate_action_knowledge_index <- function(knowledge_time,
-                                                    pulses_posix) {
+                                                   pulses_posix) {
   pulse_number <- as.numeric(pulses_posix)
   knowledge_number <- as.numeric(as.POSIXct(knowledge_time, tz = "UTC"))
   idx <- findInterval(knowledge_number, pulse_number)
@@ -185,7 +194,9 @@ ledgr_corporate_action_plan <- function(rows,
                                         existing_events = data.frame(),
                                         start_idx = 1L,
                                         dispositions_active = TRUE) {
-  if (is.null(rows) || nrow(rows) == 0L) return(NULL)
+  if (is.null(rows) || nrow(rows) == 0L) {
+    return(NULL)
+  }
   settings <- ledgr_corporate_action_policy_settings(policy_identity)
   if (anyDuplicated(rows$fact_id)) {
     rlang::abort(
@@ -213,7 +224,7 @@ ledgr_corporate_action_plan <- function(rows,
   # `unsupported_quantity = "refuse"` and reported otherwise.
   unmodeled <- rows$complete &
     (!rows$subtype %in% ledgr_corporate_action_supported_subtypes() |
-       (acquisition & !isTRUE(dispositions_active)))
+      (acquisition & !isTRUE(dispositions_active)))
   quantity_eligible <- (rows$subtype %in% c(
     "stock_acquisition", "mixed_acquisition", "spin_off"
   ) & rows$complete) | unmodeled
@@ -354,10 +365,12 @@ ledgr_corporate_action_plan <- function(rows,
 
   has_cashflow <- function() any(state$cash_eligible)
   has_disposition <- function() any(state$disposition_eligible)
-  event_kinds <- function() c(
-    if (has_cashflow()) "CASHFLOW",
-    if (has_disposition()) "DISPOSITION"
-  )
+  event_kinds <- function() {
+    c(
+      if (has_cashflow()) "CASHFLOW",
+      if (has_disposition()) "DISPOSITION"
+    )
+  }
 
   check_quantity_effects <- function(index) {
     selected <- state$quantity_due_by_pulse[[as.character(index)]] %||%
@@ -365,11 +378,13 @@ ledgr_corporate_action_plan <- function(rows,
     selected <- selected[
       !state$quantity_checked[selected] & state$bound[selected]
     ]
-    if (length(selected) == 0L) return(NULL)
+    if (length(selected) == 0L) {
+      return(NULL)
+    }
     held <- selected[state$quantity[selected] != 0]
     # A declared refusal returns a typed stop; the fold ends the run there.
     if (length(held) > 0L &&
-        identical(state$settings[["unsupported_quantity"]], "refuse")) {
+      identical(state$settings[["unsupported_quantity"]], "refuse")) {
       return(ledgr_corporate_action_refusal(state$rows[held, , drop = FALSE], "quantity"))
     }
     state$quantity_checked <- replace(state$quantity_checked, selected, TRUE)
@@ -385,8 +400,8 @@ ledgr_corporate_action_plan <- function(rows,
     }
     held <- selected[state$quantity[selected] != 0]
     if (length(held) > 0L &&
-        (identical(state$settings[["cash_amount"]], "refuse") ||
-         identical(state$settings[["cash_posting"]], "refuse"))) {
+      (identical(state$settings[["cash_amount"]], "refuse") ||
+        identical(state$settings[["cash_posting"]], "refuse"))) {
       return(list(
         state = state_value,
         next_event_seq = as.integer(event_seq),
@@ -467,7 +482,7 @@ ledgr_corporate_action_plan <- function(rows,
     ids <- as.character(state$rows$parent_instrument_id[selected])
     position_names <- names(state_value$positions)
     if (is.null(position_names) &&
-        length(state_value$positions) == length(state$instrument_ids)) {
+      length(state_value$positions) == length(state$instrument_ids)) {
       position_names <- state$instrument_ids
     }
     before <- as.numeric(state_value$positions[match(ids, position_names)])

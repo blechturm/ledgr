@@ -55,26 +55,27 @@
 #' inputs$cases
 #' @export
 ledgr_sim_pit_inputs <- function(
-    instrument_ids,
-    from,
-    to,
-    seed = 1L,
-    venue_id = "DEMO_VENUE",
-    universe_id = "DEMO_UNIVERSE",
-    timezone = "UTC",
-    session_open = "09:30:00",
-    session_close = "16:00:00",
-    cases = c(
-      "venue_closure", "missing_observation", "delisting", "halt",
-      "cash_dividend"
-    ),
-    knowledge = c(
-      sessions = "evidenced",
-      membership = "evidenced",
-      lifetime = "evidenced",
-      trading_status = "evidenced"
-    ),
-    include_instruments = TRUE) {
+  instrument_ids,
+  from,
+  to,
+  seed = 1L,
+  venue_id = "DEMO_VENUE",
+  universe_id = "DEMO_UNIVERSE",
+  timezone = "UTC",
+  session_open = "09:30:00",
+  session_close = "16:00:00",
+  cases = c(
+    "venue_closure", "missing_observation", "delisting", "halt",
+    "cash_dividend"
+  ),
+  knowledge = c(
+    sessions = "evidenced",
+    membership = "evidenced",
+    lifetime = "evidenced",
+    trading_status = "evidenced"
+  ),
+  include_instruments = TRUE
+) {
   instrument_ids <- ledgr_sim_pit_ids(instrument_ids)
   from <- ledgr_sim_pit_date(from, "from")
   to <- ledgr_sim_pit_date(to, "to")
@@ -88,7 +89,7 @@ ledgr_sim_pit_inputs <- function(
   ledgr_sim_pit_session_hour(session_open, "session_open")
   ledgr_sim_pit_session_hour(session_close, "session_close")
   if (!is.logical(include_instruments) || length(include_instruments) != 1L ||
-      is.na(include_instruments)) {
+    is.na(include_instruments)) {
     ledgr_sim_pit_abort("`include_instruments` must be TRUE or FALSE.")
   }
   cases <- ledgr_sim_pit_cases(cases)
@@ -112,11 +113,13 @@ ledgr_sim_pit_inputs <- function(
     cash_dividend = 3L
   )
   needed_days <- if (length(cases) == 0L) 2L else max(required_weekday[cases])
-  needed_instruments <- if (length(cases) == 0L) 1L else {
+  needed_instruments <- if (length(cases) == 0L) {
+    1L
+  } else {
     max(1L, required_instrument[cases])
   }
   if (length(weekdays) < needed_days ||
-      length(instrument_ids) < needed_instruments) {
+    length(instrument_ids) < needed_instruments) {
     rlang::abort(
       sprintf(
         paste(
@@ -311,7 +314,7 @@ ledgr_sim_pit_abort <- function(message) {
 
 ledgr_sim_pit_ids <- function(x) {
   if (!is.character(x) || length(x) == 0L || anyNA(x) ||
-      any(!nzchar(trimws(x))) || anyDuplicated(x)) {
+    any(!nzchar(trimws(x))) || anyDuplicated(x)) {
     ledgr_sim_pit_abort(
       "`instrument_ids` must contain unique, non-empty character values."
     )
@@ -331,7 +334,7 @@ ledgr_sim_pit_date <- function(x, arg) {
 
 ledgr_sim_pit_session_hour <- function(x, arg) {
   if (!is.character(x) || length(x) != 1L || is.na(x) ||
-      !grepl("^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$", x)) {
+    !grepl("^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$", x)) {
     ledgr_sim_pit_abort(
       sprintf("`%s` must use one HH:MM:SS local time.", arg)
     )
@@ -345,7 +348,7 @@ ledgr_sim_pit_cases <- function(x) {
     "cash_dividend"
   )
   if (!is.character(x) || anyNA(x) || any(!x %in% allowed) ||
-      anyDuplicated(x)) {
+    anyDuplicated(x)) {
     ledgr_sim_pit_abort(
       sprintf(
         "`cases` must contain unique values from: %s.",
@@ -359,8 +362,8 @@ ledgr_sim_pit_cases <- function(x) {
 ledgr_sim_pit_knowledge <- function(x) {
   required <- c("sessions", "membership", "lifetime", "trading_status")
   if (!is.character(x) || is.null(names(x)) || anyDuplicated(names(x)) ||
-      !setequal(names(x), required) || anyNA(x) ||
-      any(!x %in% c("evidenced", "assume_effective"))) {
+    !setequal(names(x), required) || anyNA(x) ||
+    any(!x %in% c("evidenced", "assume_effective"))) {
     ledgr_sim_pit_abort(
       paste(
         "`knowledge` must name sessions, membership, lifetime, and",
@@ -401,13 +404,16 @@ ledgr_sim_pit_bars <- function(instrument_ids, closes, seed) {
   } else {
     NULL
   }
-  on.exit({
-    if (had_seed) {
-      assign(".Random.seed", old_seed, envir = .GlobalEnv)
-    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-      rm(".Random.seed", envir = .GlobalEnv)
-    }
-  }, add = TRUE)
+  on.exit(
+    {
+      if (had_seed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    },
+    add = TRUE
+  )
   set.seed(seed)
 
   n_session <- length(closes)
@@ -531,7 +537,9 @@ ledgr_sim_pit_status <- function(instrument_ids,
     source = "ledgr_sim_pit",
     stringsAsFactors = FALSE
   )
-  if (!("halt" %in% cases)) return(rows)
+  if (!("halt" %in% cases)) {
+    return(rows)
+  }
 
   halt_from <- ledgr_sim_pit_time_for_date(
     weekdays[[3L]], session_close_utc, sessions
@@ -562,10 +570,10 @@ ledgr_sim_pit_status <- function(instrument_ids,
 }
 
 ledgr_sim_pit_corporate_actions <- function(instrument_ids,
-                                             weekdays,
-                                             session_close_utc,
-                                             sessions,
-                                             cases) {
+                                            weekdays,
+                                            session_close_utc,
+                                            sessions,
+                                            cases) {
   if (!("cash_dividend" %in% cases)) {
     return(data.frame(
       subtype = character(),

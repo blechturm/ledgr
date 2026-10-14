@@ -79,11 +79,14 @@ testthat::test_that("[LTB-0252] complete verification is PID-bound and truthful"
 
   run_path <- tempfile(fileext = ".duckdb")
   run_con <- ledgr_db_init(run_path)
-  on.exit({
-    if (!is.null(run_con) && DBI::dbIsValid(run_con)) {
-      DBI::dbDisconnect(run_con, shutdown = TRUE)
-    }
-  }, add = TRUE)
+  on.exit(
+    {
+      if (!is.null(run_con) && DBI::dbIsValid(run_con)) {
+        DBI::dbDisconnect(run_con, shutdown = TRUE)
+      }
+    },
+    add = TRUE
+  )
   ledgr:::ledgr_prepare_snapshot_source_tables(run_con, path, run_path)
   ledgr:::ledgr_snapshot_verified_reset()
   ledgr:::ledgr_snapshot_ensure_verified(
@@ -332,11 +335,13 @@ testthat::test_that("[LTB-0255] every snapshot-table source file is classified",
   )
   source_files <- basename(r_files[vapply(
     r_files,
-    function(path) grepl(
-      pattern,
-      paste(readLines(path, warn = FALSE), collapse = "\n"),
-      perl = TRUE
-    ),
+    function(path) {
+      grepl(
+        pattern,
+        paste(readLines(path, warn = FALSE), collapse = "\n"),
+        perl = TRUE
+      )
+    },
     logical(1)
   )])
   if (ledgr_test_design_source_context(root)) {

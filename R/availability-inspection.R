@@ -62,8 +62,7 @@ ledgr_facts_history <- function(facts,
     selected <- source$data$sessions[
       source$data$sessions$venue_id == scope_id &
         source$data$sessions$session_date >= bounds$from &
-        source$data$sessions$session_date <= bounds$to,
-      ,
+        source$data$sessions$session_date <= bounds$to, ,
       drop = FALSE
     ]
     selected <- ledgr_session_evidence(selected)
@@ -237,7 +236,7 @@ ledgr_facts_inspection_result <- function(class, rows, evidence, metadata) {
 ledgr_facts_inspection_family <- function(family) {
   allowed <- c("membership", "sessions")
   if (!is.character(family) || length(family) != 1L || is.na(family) ||
-      !family %in% allowed) {
+    !family %in% allowed) {
     rlang::abort(
       sprintf("`family` must be one of: %s.", paste(allowed, collapse = ", ")),
       class = c("ledgr_facts_inspection_invalid_args", "ledgr_invalid_args")
@@ -247,7 +246,9 @@ ledgr_facts_inspection_family <- function(family) {
 }
 
 ledgr_facts_inspection_instruments <- function(instruments, family) {
-  if (is.null(instruments)) return(NULL)
+  if (is.null(instruments)) {
+    return(NULL)
+  }
   if (!identical(family, "membership")) {
     rlang::abort(
       "`instruments` is valid only for membership facts.",
@@ -362,8 +363,7 @@ ledgr_facts_inspection_data <- function(facts) {
 
 ledgr_facts_inspection_scope <- function(source, family, scope_id) {
   row <- source$data$families[
-    source$data$families$family == family & source$data$families$scope_id == scope_id,
-    ,
+    source$data$families$family == family & source$data$families$scope_id == scope_id, ,
     drop = FALSE
   ]
   if (nrow(row) != 1L) {
@@ -432,8 +432,7 @@ ledgr_membership_evidence <- function(data, scope_id) {
   )
   out <- rbind(header_evidence, row_evidence)
   out <- out[
-    order(out$effective_from, out$knowledge_time, out$evidence_id, na.last = TRUE),
-    ,
+    order(out$effective_from, out$knowledge_time, out$evidence_id, na.last = TRUE), ,
     drop = FALSE
   ]
   rownames(out) <- NULL
@@ -480,7 +479,9 @@ ledgr_membership_history_select <- function(evidence, instruments, from, to) {
 ledgr_session_evidence <- function(rows) {
   if (!"source" %in% names(rows)) rows$source <- ledgr_fact_evidence_source(rows)
   rows$evidence_type <- rep("session_assertion", nrow(rows))
-  rows$evidence_id <- if (nrow(rows) == 0L) character() else {
+  rows$evidence_id <- if (nrow(rows) == 0L) {
+    character()
+  } else {
     paste0("session:", rows$venue_id, ":", rows$session_date)
   }
   rows[, c(
@@ -491,7 +492,9 @@ ledgr_session_evidence <- function(rows) {
 }
 
 ledgr_fact_evidence_source <- function(rows) {
-  if ("source" %in% names(rows)) return(as.character(rows$source))
+  if ("source" %in% names(rows)) {
+    return(as.character(rows$source))
+  }
   vapply(rows$provenance_json, function(json) {
     parsed <- tryCatch(ledgr_json_read_nested(json), error = function(error) list())
     as.character(parsed$source %||% "")

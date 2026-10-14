@@ -47,7 +47,8 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   # An opening dated on the session where its holding has no bar stops on the
   # run's first pulse: no NA equity rows, and the run opens and reruns.
   first <- ledgr_experiment(
-    snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
+    snapshot, function(ctx, params) ctx$hold(),
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000, date = days[[6]], positions = c(BBB = 1), cost_basis = c(BBB = 20))
   )
@@ -83,7 +84,8 @@ testthat::test_that("[LTB-0245] interrupted availability runs resume to what the
     target
   }
   stopped <- ledgr_experiment(
-    snapshot, buy_then_stop, universe = ledgr_universe_members("u"),
+    snapshot, buy_then_stop,
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
@@ -115,7 +117,8 @@ testthat::test_that("[LTB-0245] interrupted availability runs resume to what the
     ctx$hold()
   }
   held <- ledgr_experiment(
-    snapshot, hold_or_interrupt, universe = ledgr_universe_members("u"),
+    snapshot, hold_or_interrupt,
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
@@ -148,7 +151,8 @@ testthat::test_that("[LTB-0219] an INCOMPLETE run with a fill after its achieved
     target
   }
   exp <- ledgr_experiment(
-    snapshot, strategy, universe = ledgr_universe_members("u"),
+    snapshot, strategy,
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
@@ -170,10 +174,12 @@ testthat::test_that("[LTB-0219] an INCOMPLETE run with a fill after its achieved
 testthat::test_that("[LTB-0221] ingest refuses non-positive prices and keeps zero volume", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  set_aaa <- function(field, value, day = days[[3]]) function(bars) {
-    k <- bars$instrument_id == "AAA" & bars$ts_utc == at(day)
-    bars[k, field] <- value
-    bars
+  set_aaa <- function(field, value, day = days[[3]]) {
+    function(bars) {
+      k <- bars$instrument_id == "AAA" & bars$ts_utc == at(day)
+      bars[k, field] <- value
+      bars
+    }
   }
   # A fact-bearing snapshot refuses a zero, a negative, or a price that rounds
   # to zero at the stored 8 digits, naming the reason.
@@ -202,7 +208,8 @@ testthat::test_that("[LTB-0221] ingest refuses non-positive prices and keeps zer
     target
   }
   exp <- ledgr_experiment(
-    zero_volume, buy, universe = ledgr_universe_members("u"),
+    zero_volume, buy,
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
   )
   close(ledgr_run(exp, run_id = "zero_volume_fill"))
@@ -263,7 +270,8 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
   hold <- function(ctx, params) ctx$hold()
   experiment <- function(snapshot) {
     ledgr_experiment(
-      snapshot, hold, universe = ledgr_universe_members("u"),
+      snapshot, hold,
+      universe = ledgr_universe_members("u"),
       valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
     )
   }
@@ -305,11 +313,14 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
     ))
   )
   on.exit(ledgr_snapshot_close(late), add = TRUE)
-  late_exp <- ledgr_experiment(late, hold, universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
-                               cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+  late_exp <- ledgr_experiment(late, hold,
+    universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+  )
   testthat::expect_error(ledgr_run(late_exp, run_id = "late_calendar_full"), class = "ledgr_sessions_incomplete")
   testthat::expect_error(ledgr_experiment_window(late_exp, ny_close[[1]], ny_close[[3]]),
-                         class = "ledgr_sessions_incomplete")
+    class = "ledgr_sessions_incomplete"
+  )
 })
 
 # ledgr-test-profile: review
@@ -319,7 +330,8 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   hold <- function(ctx, params) ctx$hold()
   experiment <- function(snapshot) {
     ledgr_experiment(
-      snapshot, hold, universe = ledgr_universe_members("u"),
+      snapshot, hold,
+      universe = ledgr_universe_members("u"),
       valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
     )
   }
@@ -356,8 +368,10 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   )
   on.exit(ledgr_snapshot_close(ny), add = TRUE)
   for (opening_date in list(ny_days[[1]], ny_days[[1]] - 10)) {
-    exp <- ledgr_experiment(ny, hold, universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
-                            cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, date = opening_date))
+    exp <- ledgr_experiment(ny, hold,
+      universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, date = opening_date)
+    )
     run_id <- paste0("ny_opening_", as.character(opening_date))
     close(ledgr_run(exp, run_id = run_id))
     testthat::expect_identical(ledgr_run_info(ny, run_id)$status, "DONE")
@@ -376,8 +390,10 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   )
   on.exit(ledgr_snapshot_close(late), add = TRUE)
   late_exp <- function(...) {
-    ledgr_experiment(late, hold, universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
-                     cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, ...))
+    ledgr_experiment(late, hold,
+      universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, ...)
+    )
   }
   close(ledgr_run(late_exp(date = ny_days[[2]]), run_id = "late_calendar_opening"))
   testthat::expect_identical(ledgr_run_info(late, "late_calendar_opening")$status, "DONE")
@@ -456,7 +472,8 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
     ctx$hold()
   }
   exp <- ledgr_experiment(
-    snapshot, spy, universe = ledgr_universe_members("u"),
+    snapshot, spy,
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
   )
   bt <- ledgr_run(exp, run_id = "off_session_run")
@@ -465,7 +482,7 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   testthat::expect_true(any(grepl("Off-session bars: 1 sealed bar in the snapshot", utils::capture.output(summary(bt)), fixed = TRUE)))
   # The record is derived evidence: it is not counted as quarantined, and
   # removing it leaves the snapshot hash verifying.
-  meta <-ledgr:::ledgr_json_read_nested(ledgr_snapshot_info(snapshot)$meta_json)
+  meta <- ledgr:::ledgr_json_read_nested(ledgr_snapshot_info(snapshot)$meta_json)
   testthat::expect_identical(as.integer(meta$quarantined_observation_count), 0L)
   close(bt)
   DBI::dbExecute(ledgr:::get_connection(snapshot), "DELETE FROM snapshot_observation_quarantine WHERE reason = 'off_session_bar'")
@@ -478,10 +495,12 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   # The record serializer never visits a row on its own, even when every row
   # holds an exceptional value: the whole frame is one NDJSON write, the bytes
   # match the per-row form, and that form is never called.
-  exceptional <- data.frame(instrument_id = "AAA", ts_utc = saturday + 86400 * 0:2, open = 1, high = 1, low = 1,
-                            close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = iconv(cafe, "UTF-8", "latin1"))
+  exceptional <- data.frame(
+    instrument_id = "AAA", ts_utc = saturday + 86400 * 0:2, open = 1, high = 1, low = 1,
+    close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = iconv(cafe, "UTF-8", "latin1")
+  )
   testthat::expect_identical(Encoding(exceptional$note), rep("latin1", 3L))
-  expected <-vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
+  expected <- vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
   writes <- 0L
   write_ndjson <- ledgr:::ledgr_json_write_canonical_ndjson
   testthat::local_mocked_bindings(
@@ -572,8 +591,10 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
     target
   }
   run_summary <- function(snapshot, run_id, policy, ...) {
-    exp <- ledgr_experiment(snapshot, buy_aaa, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000),
-                            corporate_action_policy = policy, ...)
+    exp <- ledgr_experiment(snapshot, buy_aaa,
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000),
+      corporate_action_policy = policy, ...
+    )
     bt <- ledgr_run(exp, run_id = run_id)
     on.exit(close(bt))
     ledgr_corporate_action_summary(bt)
@@ -601,10 +622,13 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
   testthat::expect_identical(quiet$unsupported_facts, 0L)
 
   # A held cash acquisition in a dense run: no disposition acts there.
-  dense_bars <- data.frame(instrument_id = rep(c("AAA", "CCC"), each = 5), ts_utc = rep(at(days[1:5]), 2),
-                           open = 10, high = 10, low = 10, close = 10, volume = 1)
+  dense_bars <- data.frame(
+    instrument_id = rep(c("AAA", "CCC"), each = 5), ts_utc = rep(at(days[1:5]), 2),
+    open = 10, high = 10, low = 10, close = 10, volume = 1
+  )
   dense <- ledgr_snapshot_from_df(
-    dense_bars, db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
+    dense_bars,
+    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
     facts = ledgr_facts(pit_consistency_ca("cash_acquisition", "AAA", at(days[[3]]), at(days[[4]])))
   )
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
@@ -618,8 +642,10 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
     class = "ledgr_corporate_action_quantity_unsupported"
   )
   dense_sweep <- ledgr_sweep(
-    ledgr_experiment(dense, buy_aaa, universe = c("AAA", "CCC"), cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = 1000), corporate_action_policy = ledgr_corporate_actions_strict()),
+    ledgr_experiment(dense, buy_aaa,
+      universe = c("AAA", "CCC"), cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 1000), corporate_action_policy = ledgr_corporate_actions_strict()
+    ),
     ledgr_param_grid(a = list())
   )
   testthat::expect_identical(dense_sweep$error_class[[1L]], "ledgr_corporate_action_quantity_unsupported")
@@ -639,7 +665,8 @@ testthat::test_that("[LTB-0228] a declared corporate-action refusal stops the ru
     target
   }
   exp <- ledgr_experiment(
-    snapshot, buy_aaa, universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2),
+    snapshot, buy_aaa,
+    universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2),
     cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000),
     corporate_action_policy = ledgr_corporate_actions_strict()
   )
@@ -692,8 +719,10 @@ testthat::test_that("[LTB-0230] ledgr_compute_metrics() withholds annualized fig
     target
   }
   experiment <- function(policy) {
-    ledgr_experiment(snapshot, buy_bbb, universe = ledgr_universe_members("u"), valuation_policy = policy,
-                     cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+    ledgr_experiment(snapshot, buy_bbb,
+      universe = ledgr_universe_members("u"), valuation_policy = policy,
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+    )
   }
   # BBB has no bar on the sixth session: refuse stops there, freeze runs on.
   stopped <- ledgr_run(experiment(ledgr_valuation_stale(0, exhausted = "refuse")), run_id = "metrics_incomplete")
@@ -731,7 +760,8 @@ testthat::test_that("[LTB-0231] ledgr_backtest() refuses snapshots with point-in
   status_days <- as.POSIXct(paste(pit_consistency_days()[1:4], "21:00:00"), tz = "UTC")
   status_only <- ledgr_snapshot_from_df(
     data.frame(instrument_id = "AAA", ts_utc = status_days, open = 10, high = 10, low = 10, close = 10, volume = 1),
-    data.frame(instrument_id = "AAA"), db_path = tempfile(fileext = ".duckdb"),
+    data.frame(instrument_id = "AAA"),
+    db_path = tempfile(fileext = ".duckdb"),
     facts = ledgr_facts(ledgr_facts_trading_status(data.frame(
       instrument_id = "AAA", effective_from = status_days[[2]], knowledge_time = status_days[[1]],
       status = "halted", source = "t"
@@ -746,8 +776,10 @@ testthat::test_that("[LTB-0231] ledgr_backtest() refuses snapshots with point-in
 
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  bars <- data.frame(instrument_id = "AAA", ts_utc = at(days),
-                     open = 10, high = 10, low = 10, close = 10, volume = 100)
+  bars <- data.frame(
+    instrument_id = "AAA", ts_utc = at(days),
+    open = 10, high = 10, low = 10, close = 10, volume = 100
+  )
   dense <- ledgr_snapshot_from_df(bars, data.frame(instrument_id = "AAA"), db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
   ran <- ledgr_backtest(dense, hold, cost_model = ledgr_cost_zero(), run_id = "dense_ok")
@@ -755,7 +787,8 @@ testthat::test_that("[LTB-0231] ledgr_backtest() refuses snapshots with point-in
   testthat::expect_identical(ledgr_run_list(dense)$status, "DONE")
 
   ca_only <- ledgr_snapshot_from_df(
-    bars, data.frame(instrument_id = "AAA"), db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
+    bars, data.frame(instrument_id = "AAA"),
+    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
     facts = ledgr_facts(pit_consistency_ca("cash_dividend", "AAA", at(days[[3]]), at(days[[4]])))
   )
   on.exit(ledgr_snapshot_close(ca_only), add = TRUE)
@@ -767,8 +800,10 @@ testthat::test_that("[LTB-0231] ledgr_backtest() refuses snapshots with point-in
 testthat::test_that("[LTB-0232] an undeclared price basis runs as a disclosed split_adjusted default", {
   hold <- function(ctx, params) ctx$hold()
   experiment <- function(snapshot) {
-    ledgr_experiment(snapshot, hold, universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2),
-                     cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+    ledgr_experiment(snapshot, hold,
+      universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2),
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+    )
   }
   undeclared <- scale_test_events_snapshot(price_basis = NULL)
   on.exit(ledgr_snapshot_close(undeclared), add = TRUE)
@@ -811,8 +846,10 @@ testthat::test_that("[LTB-0233] availability-aware experiments default to a disc
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   experiment <- function(...) {
-    ledgr_experiment(snapshot, hold, universe = ledgr_universe_members("u"), cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = 1000), ...)
+    ledgr_experiment(snapshot, hold,
+      universe = ledgr_universe_members("u"), cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 1000), ...
+    )
   }
   omitted <- experiment()
   testthat::expect_identical(omitted$valuation_policy, ledgr_valuation_stale())
@@ -842,8 +879,10 @@ testthat::test_that("[LTB-0246] a declared horizon carries no default marker and
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   experiment <- function(...) {
-    ledgr_experiment(snapshot, hold, universe = ledgr_universe_members("u"), cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = 1000), ...)
+    ledgr_experiment(snapshot, hold,
+      universe = ledgr_universe_members("u"), cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 1000), ...
+    )
   }
 
   # A declared horizon other than the default carries no marker.
@@ -857,8 +896,10 @@ testthat::test_that("[LTB-0246] a declared horizon carries no default marker and
   # facts stays dense and its config carries no valuation policy.
   days <- pit_consistency_days()
   dense <- ledgr_snapshot_from_df(
-    data.frame(instrument_id = "AAA", ts_utc = as.POSIXct(paste(days, "21:00:00"), tz = "UTC"),
-               open = 10, high = 10, low = 10, close = 10, volume = 1),
+    data.frame(
+      instrument_id = "AAA", ts_utc = as.POSIXct(paste(days, "21:00:00"), tz = "UTC"),
+      open = 10, high = 10, low = 10, close = 10, volume = 1
+    ),
     db_path = tempfile(fileext = ".duckdb")
   )
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
@@ -874,8 +915,10 @@ testthat::test_that("[LTB-0246] a declared horizon carries no default marker and
 testthat::test_that("[LTB-0234] results name the universe kind and the assumption-backed fact families", {
   hold <- function(ctx, params) ctx$hold()
   run <- function(snapshot, universe, run_id) {
-    exp <- ledgr_experiment(snapshot, hold, universe = universe, valuation_policy = ledgr_valuation_stale(2),
-                            cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+    exp <- ledgr_experiment(snapshot, hold,
+      universe = universe, valuation_policy = ledgr_valuation_stale(2),
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+    )
     ledgr_run(exp, run_id = run_id)
   }
   assumed <- scale_test_events_snapshot()
@@ -931,17 +974,22 @@ testthat::test_that("[LTB-0234] results name the universe kind and the assumptio
 testthat::test_that("[LTB-0243] a membership rule rests only on its own universe's assumptions", {
   hold <- function(ctx, params) ctx$hold()
   run <- function(snapshot, universe, run_id) {
-    exp <- ledgr_experiment(snapshot, hold, universe = universe, valuation_policy = ledgr_valuation_stale(2),
-                            cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+    exp <- ledgr_experiment(snapshot, hold,
+      universe = universe, valuation_policy = ledgr_valuation_stale(2),
+      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+    )
     ledgr_run(exp, run_id = run_id)
   }
   # A membership rule rests only on its own universe: an assumed second
   # universe in the same snapshot does not label an evidenced one.
-  second <- data.frame(effective_from = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"),
-                       knowledge_time = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"), source = "t")
+  second <- data.frame(
+    effective_from = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"),
+    knowledge_time = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"), source = "t"
+  )
   second$members <- I(list(c("AAA", "BBB")))
   mixed <- scale_test_events_snapshot(knowledge = "evidenced", extra_facts = ledgr_facts_membership_snapshots(
-    second, universe_id = "v", complete = TRUE, knowledge = "assume_effective"
+    second,
+    universe_id = "v", complete = TRUE, knowledge = "assume_effective"
   ))
   on.exit(ledgr_snapshot_close(mixed), add = TRUE)
   evidenced_rule <- run(mixed, ledgr_universe_members("u"), "kind_mixed_u")
@@ -969,8 +1017,10 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
   }
   experiment <- function(strategy = buy, universe = ledgr_universe_members("u"), valuation = ledgr_valuation_stale(2),
                          policy = ledgr_corporate_actions_research(), cash = 1000, features = list()) {
-    ledgr_experiment(snapshot, strategy, universe = universe, valuation_policy = valuation, cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features)
+    ledgr_experiment(snapshot, strategy,
+      universe = universe, valuation_policy = valuation, cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features
+    )
   }
   sweep <- ledgr_sweep(experiment(), ledgr_param_grid(q1 = list(qty = 1)))
   candidate <- ledgr_candidate(sweep, which = 1L)
@@ -1041,8 +1091,10 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
   }
   experiment <- function(strategy = buy, universe = ledgr_universe_members("u"), valuation = ledgr_valuation_stale(2),
                          policy = ledgr_corporate_actions_research(), cash = 1000, features = list()) {
-    ledgr_experiment(snapshot, strategy, universe = universe, valuation_policy = valuation, cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features)
+    ledgr_experiment(snapshot, strategy,
+      universe = universe, valuation_policy = valuation, cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features
+    )
   }
   sweep <- ledgr_sweep(experiment(), ledgr_param_grid(q1 = list(qty = 1)))
   candidate <- ledgr_candidate(sweep, which = 1L)
@@ -1103,7 +1155,8 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   bt_early <- ledgr_run(early, run_id = "early_opening")
   on.exit(close(bt_early), add = TRUE)
   plain <- ledgr_run(ledgr_experiment(one, flat, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)),
-                     run_id = "plain_opening")
+    run_id = "plain_opening"
+  )
   on.exit(close(plain), add = TRUE)
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, plain$config$backtest$start_ts_utc)
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, one$metadata$start_date)
@@ -1118,9 +1171,11 @@ testthat::test_that("[LTB-0244] walk-forward sessions use current content identi
   # A walk-forward session records rule 2 and reuses the same current identity.
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
-                          valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
-                          opening = ledgr_opening(cash = 1000))
+  exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(),
+    universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(at(days[[2]]), at(days[[7]]), at(days[[8]]), at(days[[13]]), fold_seq = 1L)),
     constructor = list(type_id = "explicit")

@@ -55,10 +55,18 @@ testthat::test_that("[LTB-0084] retired context names stay absent and rule hashe
 
 strategy_context_surface_capture <- function(ctx, params) {
   classify <- function(value, name, scope) {
-    if (is.null(value)) return("NULL")
-    if (is.function(value)) return("function")
-    if (is.data.frame(value)) return("data_frame")
-    if (is.list(value)) return("list")
+    if (is.null(value)) {
+      return("NULL")
+    }
+    if (is.function(value)) {
+      return("function")
+    }
+    if (is.data.frame(value)) {
+      return("data_frame")
+    }
+    if (is.list(value)) {
+      return("list")
+    }
     prefix <- if (is.character(value)) {
       "character"
     } else if (is.logical(value)) {
@@ -87,7 +95,8 @@ strategy_context_surface_capture <- function(ctx, params) {
         function(index) classify(values[[index]], names[[index]], scope),
         character(1)
       ),
-            sep = "="),
+      sep = "="
+      ),
       collapse = ";"
     )
   }
@@ -131,7 +140,8 @@ strategy_context_surface_table <- function() {
   rows <- lines[grepl("^(top|plane) \\|", lines)]
   fields <- strsplit(rows, "|", fixed = TRUE)
   out <- as.data.frame(do.call(rbind, lapply(fields, trimws)),
-                       stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   names(out) <- c(
     "scope", "member", "applies", "shape", "axis", "units",
     "missingness", "counterpart"
@@ -140,8 +150,12 @@ strategy_context_surface_table <- function() {
 }
 
 strategy_context_surface_shape_matches <- function(observed, documented) {
-  if (documented == "nullable_scalar") return(observed %in% c("NULL", "integer_scalar", "numeric_scalar"))
-  if (documented == "nullable_list") return(observed %in% c("NULL", "list"))
+  if (documented == "nullable_scalar") {
+    return(observed %in% c("NULL", "integer_scalar", "numeric_scalar"))
+  }
+  if (documented == "nullable_list") {
+    return(observed %in% c("NULL", "list"))
+  }
   identical(observed, documented)
 }
 
@@ -217,16 +231,18 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
   }
   assert_surface <- function(observed, mode) {
     expected <- table[table$applies == "all" |
-                        (mode == "availability" & table$applies == "availability"), ]
+      (mode == "availability" & table$applies == "availability"), ]
     for (scope in c("top", "plane")) {
       actual <- decode(observed[[scope]])
       wanted <- expected[expected$scope == scope, ]
       testthat::expect_identical(names(actual), wanted$member)
       testthat::expect_true(all(vapply(
         seq_len(nrow(wanted)),
-        function(index) strategy_context_surface_shape_matches(
-          actual[[wanted$member[[index]]]], wanted$shape[[index]]
-        ),
+        function(index) {
+          strategy_context_surface_shape_matches(
+            actual[[wanted$member[[index]]]], wanted$shape[[index]]
+          )
+        },
         logical(1)
       )))
     }

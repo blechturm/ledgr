@@ -383,10 +383,13 @@ availability_v201_run_case <- function(arm,
     snapshot_id = "witness",
     facts = fixture$facts, price_basis = "split_adjusted"
   )
-  on.exit({
-    ledgr_snapshot_close(snapshot)
-    unlink(c(db, paste0(db, ".wal")), force = TRUE)
-  }, add = TRUE)
+  on.exit(
+    {
+      ledgr_snapshot_close(snapshot)
+      unlink(c(db, paste0(db, ".wal")), force = TRUE)
+    },
+    add = TRUE
+  )
   capacity_expr <- substitute(
     chunk_rows <- value,
     list(value = as.integer(chunk_rows))
@@ -402,7 +405,9 @@ availability_v201_run_case <- function(arm,
     where = asNamespace("ledgr")
   )), add = TRUE)
   timestamp <- function(day) {
-    if (is.null(day)) "" else {
+    if (is.null(day)) {
+      ""
+    } else {
       format(
         availability_v201_at(day, "21:00:00"),
         "%Y-%m-%dT%H:%M:%SZ",

@@ -1,5 +1,5 @@
 corporate_action_disposition_rows <- function(pulses,
-                                               subtype = "cash_acquisition") {
+                                              subtype = "cash_acquisition") {
   data.frame(
     fact_id = "acquisition-1",
     subtype = subtype,
@@ -18,9 +18,9 @@ corporate_action_disposition_rows <- function(pulses,
 }
 
 corporate_action_disposition_valuation <- function(mark = 90,
-                                                    reference = mark,
-                                                    age = 0L,
-                                                    source = "current_close") {
+                                                   reference = mark,
+                                                   age = 0L,
+                                                   source = "current_close") {
   list(
     mark = c(AAA = mark),
     reference = c(AAA = reference),
@@ -246,18 +246,20 @@ testthat::test_that("[LTB-0051] terminal mark policy disposes or refuses without
 
   snapshot <- corporate_action_disposition_snapshot()
   withr::defer(ledgr_snapshot_close(snapshot))
-  experiment <- function(policy) ledgr_experiment(
-    snapshot,
-    function(ctx, params) ctx$hold(),
-    opening = ledgr_opening(
-      cash = 1000,
-      positions = c(AAA = 2),
-      cost_basis = c(AAA = 100)
-    ),
-    valuation_policy = ledgr_valuation_stale(1L),
-    cost_model = ledgr_cost_zero(),
-    corporate_action_policy = policy
-  )
+  experiment <- function(policy) {
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) ctx$hold(),
+      opening = ledgr_opening(
+        cash = 1000,
+        positions = c(AAA = 2),
+        cost_basis = c(AAA = 100)
+      ),
+      valuation_policy = ledgr_valuation_stale(1L),
+      cost_model = ledgr_cost_zero(),
+      corporate_action_policy = policy
+    )
+  }
   modeled <- ledgr_run(
     experiment(ledgr_corporate_actions_research()),
     run_id = "disposition-public-modeled"

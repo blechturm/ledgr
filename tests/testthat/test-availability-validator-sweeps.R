@@ -278,13 +278,14 @@ testthat::test_that("persisted missing states raise the domain condition", {
 })
 
 availability_validator_status_shape <- function(
-    ids,
-    statuses,
-    starts,
-    ends,
-    supersedes = rep(NA_character_, length(ids)),
-    sources = rep("venue", length(ids)),
-    precedence = rep(5L, length(ids))) {
+  ids,
+  statuses,
+  starts,
+  ends,
+  supersedes = rep(NA_character_, length(ids)),
+  sources = rep("venue", length(ids)),
+  precedence = rep(5L, length(ids))
+) {
   data.frame(
     fact_id = ids,
     instrument_id = "AAA",
@@ -308,11 +309,13 @@ testthat::test_that("status hybrid is exact on supersession and separation shape
     ),
     source_separated = availability_validator_status_shape(
       c("Y", "Z"), c("active", "halted"), c(0L, 5L),
-      c(at(20L), na_time()), sources = c("venue", "vendor")
+      c(at(20L), na_time()),
+      sources = c("venue", "vendor")
     ),
     precedence_separated = availability_validator_status_shape(
       c("Y", "Z"), c("active", "halted"), c(0L, 5L),
-      c(at(20L), na_time()), precedence = c(5L, 6L)
+      c(at(20L), na_time()),
+      precedence = c(5L, 6L)
     ),
     xyj = availability_validator_status_shape(
       c("X", "Y", "J"), c("active", "active", "halted"),
@@ -379,28 +382,49 @@ testthat::test_that("setwise membership bypass validates every persisted invaria
   )
 
   mutations <- list(
-    member = function(x) { x$rows$member[[1L]] <- FALSE; x },
-    missing_header = function(x) { x$headers <- x$headers[0, ]; x },
-    header_complete = function(x) { x$headers$complete[[1L]] <- NA; x },
-    duplicate_header = function(x) {
-      x$headers <- rbind(x$headers, x$headers); x
+    member = function(x) {
+      x$rows$member[[1L]] <- FALSE
+      x
     },
-    scope = function(x) { x$rows$universe_id[[1L]] <- "OTHER"; x },
-    set_identity = function(x) { x$rows$set_id[[1L]] <- ""; x },
+    missing_header = function(x) {
+      x$headers <- x$headers[0, ]
+      x
+    },
+    header_complete = function(x) {
+      x$headers$complete[[1L]] <- NA
+      x
+    },
+    duplicate_header = function(x) {
+      x$headers <- rbind(x$headers, x$headers)
+      x
+    },
+    scope = function(x) {
+      x$rows$universe_id[[1L]] <- "OTHER"
+      x
+    },
+    set_identity = function(x) {
+      x$rows$set_id[[1L]] <- ""
+      x
+    },
     effective_from = function(x) {
-      x$rows$effective_from[[1L]] <- availability_v201_at(2L); x
+      x$rows$effective_from[[1L]] <- availability_v201_at(2L)
+      x
     },
     effective_to = function(x) {
-      x$rows$effective_to[[1L]] <- availability_v201_at(3L); x
+      x$rows$effective_to[[1L]] <- availability_v201_at(3L)
+      x
     },
     knowledge_time = function(x) {
-      x$rows$knowledge_time[[1L]] <- availability_v201_at(2L); x
+      x$rows$knowledge_time[[1L]] <- availability_v201_at(2L)
+      x
     },
     provenance = function(x) {
-      x$rows$provenance_json[[1L]] <- '{"source":"other"}'; x
+      x$rows$provenance_json[[1L]] <- '{"source":"other"}'
+      x
     },
     duplicate = function(x) {
-      x$rows$instrument_id[[2L]] <- x$rows$instrument_id[[1L]]; x
+      x$rows$instrument_id[[2L]] <- x$rows$instrument_id[[1L]]
+      x
     },
     combined = function(x) {
       x$rows$member[[1L]] <- FALSE
