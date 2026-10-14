@@ -1,36 +1,18 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 13 are closed. Workstream 27's final focused Type 1
-re-review returned `PASS` at `fa41283d`, and the maintainer accepted it on
-2026-10-13. LDG-3019's rule-3 encoder and refusal boundary and LDG-3020's
-process-local verification reuse are complete. The correction fast lane passes
-566 of 566 blocks in 110.04 seconds. Final full-matrix run 38371833556 is green
-on both Ubuntu jobs and Windows: the rule-3 roots, ordinary and isolated-CRAN
-profiles, R CMD checks and the 87.25 percent coverage gate all pass. The
-checked-in post-residue fast record keeps its 131.70-second loaded-host timing
-miss; the reviewer's three alternating scratch pairs measured 108.04 seconds
-at `fa41283d` against 107.84 seconds at the preceding tree. Workstream 28's
-focused Type 1 re-review returned `PASS` at `901325af`, and the maintainer
-accepted it on 2026-10-13. LDG-3021's singleton-fingerprint persistence,
-reopen and promotion repair is complete. Its two correctness-clean
-P-core-pinned record sets missed the unchanged 112-second gate by 1.91 and
-3.05 seconds at their medians. The accepted exception keeps those records as
-failures, leaves the bound unchanged and moves no tests ahead of next-version
-fold-core unification. Final Cut 13 review accounting is 6 invocations over 3
-tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
-Accepted Cut 14 now owns the pre-CRAN legacy-removal synthesis and the macro
-plan's codebase-hygiene amendment. Its nineteen tickets across three
-workstreams passed cut review after patches on 2026-10-13. Implementation
-is complete through Workstream 31. Workstreams 29 and 30 are accepted, and
-Workstream 31 is ready for its Type 1 close review.
-Workstream 30's close and focused reviews found correction work; the final
-mechanical fixes,
-21-member source census, exact Ladder25, 108.72-second fast record and repeated
-aggregate Sharadar lane are complete. The maintainer accepted that evidence on
-2026-10-14 without a third review round under M1. Workstream 31 now records a
-51/51 exact style and RNG boundary, zero formatting and semantic findings,
-three mutation-proven structural claims, a 101.25-second passing fast lane and
-a complete 337-block review lane.
+**Status:** Cuts 1 through 14 are closed. Cut 14's nineteen tickets across
+Workstreams 29 through 31 were accepted by the maintainer on 2026-10-14. The
+release now has one current schema and store gate, current-only persisted
+records and public surfaces, and the structural hygiene baseline: the design
+tree is excluded from builds, seeded runs preserve caller RNG, persisted
+schema-version literals are fingerprinted, lint is blocking, and the helper
+and condition inventories have failure-sensitive gates. The final source
+census records 1,627 helpers, 2,240 condition call sites and 23 contracted
+test seams. The binding local fast record has a 105.64-second median; a final
+post-deletion sample passes 564/564 blocks in 106.12 seconds. GitHub Actions
+run 38588320767 passes both blocking lint jobs, all three hosted fast runs and
+R CMD check. Its 166.797-second hosted median remains advisory and above the
+unchanged local 112-second bound.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -65,28 +47,15 @@ ledger.
   task-oriented routes.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
-- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
-  closed. Accepted Cut 14 contains Workstreams 29 through 31 and LDG-3022
-  through LDG-3040. The preparatory Workstream 31 slice is complete through
-  LDG-3023. A Type 1 checkpoint returned CHANGES_REQUIRED; commits d85ec87e
-  and a8416492 correct the census and lint records, with confirmation folded
-  into Workstream 29's close review. The Type 1 close review required
-  corrections through `0699ba3c`. Its focused re-review found three bounded
-  residues, corrected with detecting evidence at `1a240476`. The corrected
-  fast record passes at a 107.03-second median. The maintainer accepted
-  Workstream 29 and its honestly recorded cold-open miss on 2026-10-13.
-  Workstream 30 received a CHANGES_REQUIRED Type 1 close review, preserved in
-  `close_review_30.md`; its focused re-review is preserved in
-  `close_review_30_rereview_1.md`. Corrections through `c566e433` close its
-  four residues and implement LDG-3036: locale-stable identity, exact integer
-  identity-rule validation and the 21-member store fingerprint. Ladder25,
-  the committed fast and review profiles, and the repeated aggregate Sharadar
-  lane pass.
-  The maintainer accepted Workstream 30 on 2026-10-14. Workstream 31 then
-  completed LDG-3037 through LDG-3040 and LDG-3032 through LDG-3035. Its
-  22-member current fingerprint makes the earlier 21-member interim lake
-  truthfully stale; the existing WS7 lake rebuild with dividend facts owns
-  the next private rebuild. Workstream 31 awaits Type 1 close review.
+- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 14 are
+  closed. Cut 14 contains nineteen completed tickets across Workstreams 29
+  through 31. Its review artifacts are `cut_review_14.md`,
+  `close_review_29.md`, `close_review_30.md`,
+  `close_review_30_rereview_1.md`, `close_review_31.md` and
+  `close_review_31_rereview_1.md`; older review fields remain historical
+  records. The current 22-member fingerprint makes the earlier 21-member
+  interim lake truthfully stale. The existing WS7 lake rebuild with dividend
+  facts owns the next private rebuild.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
@@ -609,9 +578,8 @@ adding ceremonial work.
 
 ## Cut 14: Pre-CRAN legacy removal and structural hygiene
 
-**Status:** Accepted by the maintainer on 2026-10-13 after independent cut
-review and focused re-review. Every required patch is incorporated, and
-implementation opens with LDG-3022.
+**Status:** Closed and accepted by the maintainer on 2026-10-14. All nineteen
+tickets and all three workstreams are complete.
 
 Authority is the accepted pre-CRAN legacy-removal synthesis, its Type 1 final
 review, and the macro plan's 2026-10-12 legacy-removal,
@@ -653,15 +621,16 @@ stay exact. Existing condition classes are documented rather than renamed. No
 migration, legacy reader, missing-marker fallback, public diagnostic opener or
 compatibility alias is authorized.
 
-The governance-lifecycle synthesis accepted on 2026-10-14 retires the numeric
-review gate for the remaining Cut 14 work. Independent verdicts over completed
-tickets, findings by mode and outcome effect, and maintainer decision turns
-are recorded once when the cut closes. A review with findings gets a packet
-file named for its review point; a finding-free PASS is one line. A third
-correction round on one workstream stops for maintainer disposition. Past
-Cut 14 review fields remain historical records. The added backlog-reconciliation
-ticket is still sized by the cut review's 228 undocumented classes and helper
-census; it is not review padding.
+The M1 close measurement is eight independent verdicts over nineteen completed
+tickets, or 0.421; it is not a gate. One verdict was a combined Type 1/Type 2
+cut review and seven were Type 1 focused-cut, workstream-close or focused
+workstream re-reviews. All eight returned findings and changed ticketing,
+implementation, tests, evidence or acceptance handling; none reopened the
+accepted architecture. There were no own-session verdicts in the count. Four
+maintainer review-disposition turns accepted the patched cut, the Workstream 29
+store-gate cost, the Workstream 30 corrections without a third review, and the
+Workstream 31 corrections without a third review. `tickets.yml` holds the
+complete accounting and the scope of the non-counted preparatory checkpoint.
 
 ## Expected later artifacts
 

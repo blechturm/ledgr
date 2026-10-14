@@ -209,3 +209,7 @@ stored row or public result:
   executes the resulting 564/564 fast blocks in 106.12 seconds. It is a
   correctness sample, not a replacement for the binding three-run
   105.64-second record.
+- GitHub Actions run `38588320767` at `ae43629b` passes both blocking lint
+  jobs, all three hosted 564-block ordinary fast runs and R CMD check. Its
+  166.797-second hosted median remains advisory and above the unchanged local
+  112-second bound; it is not relabelled as a timing pass.
