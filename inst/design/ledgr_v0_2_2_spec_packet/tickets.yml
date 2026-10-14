@@ -511,7 +511,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 32", reason: "One claim: the accepted lifecycle rules become the standing process text and one reproducible guard reports drift without changing a gate. Review checks the guard's necessity, source-derived population, baseline identity, failure sensitivity and strict report-only boundary."}
+    review: {mode: "Type 1", point: "close of workstream 32", verdict: "CHANGES_REQUIRED", artifact: "close_review_32.md", result: "The independent review found nine bounded process, detector and evidence gaps: failure-class coverage was not failure-sensitive, reverse mapping and adopted closeout text were missing, and metadata, baseline, verdict, local-path, portable-identity and source-checkout handling needed correction. Correction round 1 must close them without activating check mode."}
     integration_evidence: "Implementation commit 4a812eb2 applies the accepted lifecycle to AGENTS.md, inst/design/README.md and inst/design/rfc_cycle.md and adds the standalone report-only guard, exact occurrence baseline, reviewed fixtures and LTB-0273 / LCL-0271. The focused guard block passes 45 expectations; documentation-contract and test-control-plane suites pass. Two full reports at source 4a812eb2 are byte-identical (SHA-256 4bda837b38adee7b621d9891178db0537c9bfdb4e5a92cf8215984528769975b) and exit zero while reporting the 51-entry baseline plus 844 new structural and 181 advisory findings. Independent Type 1 review remains required; this record does not activate a gate or preclaim acceptance."
     accepted: null
   - id: 33
