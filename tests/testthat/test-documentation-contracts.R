@@ -841,7 +841,11 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(signal_strategy_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(signal_help, "\\examples{", fixed = TRUE)
   testthat::expect_match(signal_help, "ledgr_signal_return(ctx, lookback = 5)", fixed = TRUE)
-  testthat::expect_match(signal_help, "stable active alias with \\code{ledgr_signal_feature()}", fixed = TRUE)
+  testthat::expect_match(
+    signal_help,
+    "stable active alias with \\code{\\link[=ledgr_signal_feature]{ledgr_signal_feature()}}",
+    fixed = TRUE
+  )
   testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(ledgr_param(\"lookback\"))}", fixed = TRUE)
   testthat::expect_match(select_help, "\\code{ledgr_empty_selection}", fixed = TRUE)
   testthat::expect_match(select_help, "without warning", fixed = TRUE)
@@ -2179,8 +2183,8 @@ testthat::test_that("[LTB-0129] the ledgr_indicator help documents both scalar a
   help_path <- file.path(root, "man", "ledgr_indicator.Rd")
   testthat::skip_if_not(file.exists(help_path), "help sources not available during installed-package tests")
   help <- gsub("\\s+", " ", paste(readLines(help_path, warn = FALSE), collapse = " "))
-  testthat::expect_match(help, "\\code{function(window)}", fixed = TRUE)
-  testthat::expect_match(help, "\\code{function(window, params)}", fixed = TRUE)
+  testthat::expect_match(help, "\\verb{function(window)}", fixed = TRUE)
+  testthat::expect_match(help, "\\verb{function(window, params)}", fixed = TRUE)
   testthat::expect_match(help, "ledgr also passes the indicator's \\code{params}", fixed = TRUE)
   testthat::expect_match(help, "fn = function(window, params) mean(tail(window$close, params$n))", fixed = TRUE)
 })
