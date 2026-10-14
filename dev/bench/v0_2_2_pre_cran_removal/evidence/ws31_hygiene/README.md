@@ -70,3 +70,52 @@ The final source tarball passes every installed test under
 expected vignette warnings caused by `--no-build-vignettes` and the existing
 `.lintr` hidden-file NOTE; it has no test error. All 24 vignette replay checks
 run successfully.
+
+## LDG-3032: one formatting pass and blocking lint
+
+- Clean commit `15b12a85` applies styler 1.11.0 once to the exact 18 files
+  carrying LDG-3023's 39 findings, with roxygen examples disabled. Commit
+  `2011db66` records that exact hash in `.git-blame-ignore-revs`, documents
+  the local Git configuration and makes only the formatting job blocking.
+- The raw parser trees are exact for two files. The other 16 differ only
+  because the accepted `brace_linter` findings require removing redundant
+  one-expression braces; after normalizing those braces, all 18 parser trees
+  are identical. The complete fixture ladder is 51/51 exact, including the
+  identity family, and the owning focused tests pass.
+- The formatting record moves from 39 advisory findings at `a8416492` to
+  zero blocking findings. Formatting lint remains independent of tests,
+  package check, coverage and the semantic layer.
+
+## LDG-3033: reconciled helper and condition debt
+
+- Commit `8348bc4f` removes eleven genuinely uncalled private helpers. The
+  refreshed source census at `114e5f62` has 1,629 helpers, no uncalled helper
+  finding, 24 named test-only seams with real callers, 2,248 condition call
+  sites and no undocumented statically recovered public class. Sixty-four
+  dynamic or base-condition sites carry an explicit disposition.
+- Every recoverable public class and parent has an alias and prose entry in
+  the condition reference. The structural implementation additionally
+  resolved the dynamic strategy wrapper and documented
+  `ledgr_strategy_error`; no current condition class or message was renamed.
+- `.lintr-semantic` contains exactly the accepted eight linters and the
+  explicit undesirable list for `sapply`, `browser` and `debug`. The advisory
+  record under `semantic_lint_advisory/` scans 335 files with zero findings.
+  It changes no formatting, test, check or coverage outcome.
+
+## LDG-3034: permanent structural and semantic gates
+
+- Commit `b51f853e` adds fast-profile blocks LTB-0270 through LTB-0272 and
+  claims LCL-0268 through LCL-0270. One cached parse derives 1,629 top-level
+  helpers, their static and string-dispatch references, 357 literal or
+  resolvable dynamic condition classes and the empty-census boundary. The
+  focused block takes about two seconds after package load.
+- Three disposable-worktree mutations fail as intended: a wholly uncalled
+  helper fails LTB-0270 once; an undocumented child and parent fail LTB-0271
+  twice; restoring unconditional `do.call(rbind, list())` fails LTB-0272
+  three times. The report-only check independently passes with 69 connection,
+  139 version, 80 run-config, 1,629 helper and 2,248 condition-call rows.
+- `tools/check-semantic-lint-config.R` injects one violation for each of the
+  eight rules and requires each named linter to fire. The separate semantic
+  job is blocking and does not share an execution edge with formatting or
+  package checks. `semantic_lint_blocking/` records 338 files and zero
+  findings at `b51f853e`, with the same configuration as the advisory arm.

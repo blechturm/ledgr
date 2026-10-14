@@ -115,6 +115,12 @@ cite as one.
    list mutates in place, so `bars_mat$close[j, ] <- v` over a local list is a
    different shape and carries no penalty.
 
+**Helper criterion.** A new internal helper exists because a reviewer can name
+its contract or because it has a second caller. A test-only seam needs a named
+testing contract and a real test caller. The executable source detector applies
+the deliberately weaker floor—no wholly uncalled private function—while review
+still asks whether a one-caller extraction reduces risk or only adds surface.
+
 ## Rules
 
 - **Prepare before the loop; read primitives inside it.** Anything that can
