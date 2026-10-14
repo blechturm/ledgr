@@ -1,0 +1,8 @@
+# Retired Fixture Guide
+
+Role: record; redirect stub.
+Status: superseded
+Authority: fixture historical locator.
+Replacement: 2026-10-14 [current rule](../../../outside.md#current-rule).
+
+Use the [current rule](../../../outside.md#current-rule).

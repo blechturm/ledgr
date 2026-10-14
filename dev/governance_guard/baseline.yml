@@ -1,0 +1,12 @@
+version: 1
+baseline_commit: 31ad6d39237709a0661b1e763e9c26d73981ab77
+population:
+  source_count: 313
+  source_sha256: dd86f2630f73bff8b38479d0b7a0d307dc0cf89ecf76ad62c182471f714cf7d5
+entries: []
+census:
+  path: dev/governance_census/records/links_broken.csv
+  scope: governance
+  reason: exact inherited local-link debt measured by the accepted governance census
+  owner: Cut 15 governance normalization
+  disposition: shrink when a source occurrence is repaired; additions require a maintainer reason

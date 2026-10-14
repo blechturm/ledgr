@@ -1,0 +1,13 @@
+version: 1
+baseline_commit: fixture-reviewed-v1
+population:
+  source_count: 8
+  source_sha256: 5eb49f6dbee7bb9f4a5e5915caf2f6bfc100bf39224bf6d33bd3f16361906429
+entries:
+  - source: inst/design/README.md
+    target: missing.md
+    occurrence: 1
+    kind: broken_local_target
+    reason: reviewed fixture for one exact occurrence of inherited dead link debt
+    owner: Workstream 32 fixture
+    disposition: retained only to prove that a second occurrence is new debt

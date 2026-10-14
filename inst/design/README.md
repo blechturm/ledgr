@@ -1,9 +1,12 @@
 # ledgr Design Memory
 
-**Status:** Current design front door for release `v0.2.2`.
-**Authority:** Routing map only. This file does not create package behavior,
-accept a decision or authorize implementation.
-**Current packet:** [ledgr v0.2.2](ledgr_v0_2_2_spec_packet/README.md).
+Role: living; current design-memory front door for release `v0.2.2`.
+Status: working
+Authority: routing map only under the accepted governance-lifecycle synthesis
+[Sections 2 and 7](rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md#2-authority-and-document-lifetime-s-r1-r2).
+This file does not create package behavior, accept a decision or authorize
+implementation.
+Current packet: [ledgr v0.2.2](ledgr_v0_2_2_spec_packet/README.md).
 Its `tickets.yml` is the sole ticket and sequencing authority for cut work.
 
 Use this page to identify the shortest authoritative route. Do not infer
@@ -31,15 +34,20 @@ For RFC work, read [rfc_cycle.md](rfc_cycle.md). For a spike, read
 
 1. [contracts.md](contracts.md) is normative for shipped public behavior and
    preserved internal invariants.
-2. An accepted synthesis and recorded maintainer decisions bind their stated
-   future scope until consolidated or explicitly superseded. The temporary
+2. Accepted synthesis sections and recorded maintainer decisions bind their
+   stated pending scope until consolidated or explicitly superseded.
+   Acceptance does not claim implementation. The temporary
    [decision bridge](decisions.md) points to their exact operative sections;
    it is not authority itself.
-3. [ledgr_roadmap.md](ledgr_roadmap.md) binds committed release scope and
-   dependency order, not package semantics.
-4. A versioned packet turns accepted scope into implementation work. Its
-   `tickets.yml` alone owns ticket detail, state and sequencing.
-5. [rfc_cycle.md](rfc_cycle.md), [spike_protocol.md](spike_protocol.md),
+3. [ledgr_roadmap.md](ledgr_roadmap.md) binds release scope and release
+   sequence, not package semantics. The current release's
+   [macro plan](ledgr_v0_2_2_spec_packet/macro_plan.md) binds uncut
+   within-release order.
+4. A versioned packet turns accepted scope into implementation work. Within a
+   cut, its `tickets.yml` alone owns ticket detail, state and sequencing.
+5. Incorporated evidence binds only the rule an accepted section expressly
+   promotes, with a link to that section.
+6. [rfc_cycle.md](rfc_cycle.md), [spike_protocol.md](spike_protocol.md),
    [release_ci_playbook.md](release_ci_playbook.md) and repository `AGENTS.md`
    bind the processes they govern.
 
@@ -62,12 +70,12 @@ rule from them. `horizon.md` is non-binding parking.
 
 ## Current release
 
-Release `v0.2.2` is active. Its maintained scope and dependency plan is
-[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md). Cuts 1 through 13 are
-complete and accepted. Draft Cut 14 owns pre-CRAN legacy removal and codebase
-hygiene; its cut-review corrections await focused re-review. Their live record
-is in [tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml). The point-in-time
-history wave follows the accepted intervening rebuild and probe sequence.
+Release `v0.2.2` is active. Its maintained uncut order is
+[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md). Cuts 1 through 14 are
+complete and accepted. Cut 15 owns the pre-history foundations; its live
+workstream state and sequence are in
+[tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml). The point-in-time history
+wave follows the accepted Cut 15 boundary.
 
 The latest tagged release and older release outcomes remain discoverable in
 the [roadmap](ledgr_roadmap.md) and their versioned packet directories. Those
