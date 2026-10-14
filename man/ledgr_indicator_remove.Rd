@@ -19,7 +19,7 @@ when the indicator was already absent and \code{missing_ok = TRUE}.
 \description{
 Removes an indicator registration from the current R session. This only
 affects the in-memory registry used for interactive lookup and tests; it does
-not alter any persisted snapshots, runs, features, or ledger artifacts.
+not alter any persisted snapshots, runs, or ledger artifacts.
 }
 \examples{
 local({

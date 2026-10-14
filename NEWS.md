@@ -815,6 +815,7 @@ bars.
 | `signal_return()` | `ledgr_signal_return()` |
 | `target_rebalance()` | `ledgr_target_rebalance()` |
 | `weight_equal()` | `ledgr_weight_equal()` |
+| `ledgr_clear_feature_cache()` | `ledgr_feature_cache_clear()` |
 | `ledgr_compare_runs()` | `ledgr_run_compare()` |
 | `ledgr_deregister_indicator()` | `ledgr_indicator_remove()` |
 | `ledgr_extract_strategy()` | `ledgr_run_strategy()` |
@@ -1024,7 +1025,7 @@ bars.
   grow-by-doubling, preserving event IDs, event order, POSIXct UTC timestamps,
   per-row `meta_json`, and durable/memory event surfaces.
 - Rejected sub-second snapshot input, carried trusted whole-second POSIXct values
-  through hot fill paths, and replaced session-local feature lookup JSON+hash keys
+  through hot fill paths, and replaced session-local feature cache JSON+hash keys
   with deterministic length-prefixed lookup keys while keeping durable identity
   hashes fenced.
 - Rewrote fills reconstruction/read-back around primitive column buffers instead
@@ -1043,7 +1044,7 @@ bars.
 
 # ledgr 0.1.8.6
 
-- Reduced feature setup/materialization cost by deduplicating feature lookup-key
+- Reduced feature setup/materialization cost by deduplicating feature cache-key
   inputs, making `ctx$feature_table` schema-only by default, and preserving
   long-row inspection through explicit/on-demand paths.
 - Kept `ctx$features_wide` contract-compatible while making wide-view
@@ -1468,7 +1469,7 @@ bars.
   instead of silently returning `NA`, while preserving warmup `NA` behavior for
   known features.
 - Persisted compact run telemetry summaries, including execution mode, elapsed
-  time and pulse count;
+  time, pulse count, feature-cache hit/miss counts, and `persist_features`;
   `print.ledgr_backtest()` and `ledgr_run_info()` now surface execution mode.
 - Relaxed snapshot ID diagnostics so explicit durable custom IDs do not warn
   unless they use the generated `snapshot_` prefix in a malformed way.
@@ -1491,6 +1492,9 @@ bars.
   run/snapshot-adapter hash call sites to explicitly named internal helpers.
 - Added optional vectorized indicator `series_fn` support for full-series
   feature precomputation, including vectorized built-in indicators.
+- Added a session-scoped feature cache keyed by snapshot hash, instrument,
+  indicator fingerprint, feature-engine version, and date range, with
+  `ledgr_clear_feature_cache()` for explicit cleanup.
 - Added `ledgr_ind_ttr()` and `ledgr_ttr_warmup_rules()` for low-code TTR
   indicator construction with explicit warmup and fingerprint metadata.
 - Expanded low-code TTR support to common close, high/low, HLC, and HLCV

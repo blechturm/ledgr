@@ -648,10 +648,12 @@ resumes.
 | Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates eight named typed phases without changing behavior or cost materially |
 | Product | 39 Private lake rebuild | LDG-3055 | the history wave receives one verified schema-120, rule-3 real-data store built from frozen inputs |
 
-Workstream 36 implementation is complete and awaits its Type 1 close review.
-`feature_retention_identity_closeout.md` records the deletion, schema-120 and
-identity-rule-3 boundaries, direct-capture identity, acceptance evidence, test
-ledger, seven-shape walk and supported-toolchain verification.
+Workstream 36 implementation is complete. Its Type 1 close review returned
+CHANGES_REQUIRED and is preserved in `close_review_36.md`; correction round 1
+is recorded in `feature_retention_identity_closeout.md` and awaits focused
+re-review of F1-F4. The closeout records the deletion, schema-120 and identity-
+rule-3 boundaries, direct-capture identity, acceptance evidence, test ledger,
+seven-shape walk and supported-toolchain verification.
 
 Workstreams 32 and 36 open independently. Workstream 34 follows 32 and
 Workstream 37 follows 36. Workstream 33 waits for both 32 and all of Workstream

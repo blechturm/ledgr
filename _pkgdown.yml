@@ -214,7 +214,6 @@ reference:
       - ledgr_indicator_get
       - ledgr_indicator_list
       - ledgr_ind_ttr_warmup_rules
-      - ledgr_feature_cache_clear
       - ledgr_adapter_r
       - ledgr_adapter_csv
       - ledgr_indicator_dev

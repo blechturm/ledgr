@@ -121,17 +121,27 @@ testthat::test_that("CSV capture identity uses params data_hash, including missi
     ), path, row.names = FALSE)
     path
   }
-  plain_path <- make_csv(c(1, 2))
-  missing_path <- make_csv(c(1, NA_real_))
+  plain_path <- make_csv(c(1.5, 2.25))
+  missing_path <- make_csv(c(1.5, NA_real_))
   on.exit(unlink(c(plain_path, missing_path)), add = TRUE)
 
   plain <- ledgr_adapter_csv(plain_path, value_col = "signal", id = "csv_signal")
   missing <- ledgr_adapter_csv(missing_path, value_col = "signal", id = "csv_signal")
   plain_fingerprint <- ledgr:::ledgr_indicator_fingerprint(plain)
+  missing_fingerprint <- ledgr:::ledgr_indicator_fingerprint(missing)
   testthat::expect_identical(plain_fingerprint, ledgr:::ledgr_indicator_fingerprint(plain))
-  testthat::expect_false(identical(plain_fingerprint, ledgr:::ledgr_indicator_fingerprint(missing)))
+  testthat::expect_false(identical(plain_fingerprint, missing_fingerprint))
 
-  values <- c(1, NA_real_)
+  changed_capture <- ledgr_adapter_csv(missing_path, value_col = "signal", id = "csv_signal")
+  captured_values <- environment(changed_capture$fn)$values
+  captured_values[] <- c(99.75, -3.5)
+  environment(changed_capture$fn)$values <- captured_values
+  testthat::expect_identical(
+    ledgr:::ledgr_indicator_fingerprint(changed_capture),
+    missing_fingerprint
+  )
+
+  values <- c(1.5, NA_real_)
   labelled_only <- ledgr_indicator(
     id = "csv_signal",
     fn = function(window) values[[1L]],

@@ -866,9 +866,8 @@ Accepted change pending:
   no equity rows and its run opens and reruns; a resumed run keeps the
   prefix, achieved end and last execution its earlier invocations committed,
   so its equity, completion row, ledger and diagnostics equal the
-  uninterrupted run's (Cut 12 LDG-2994). Persisted feature rows are not part
-  of that agreement: a resumed run's can differ from the uninterrupted run's.
-  An interrupt inside the durable fold transaction
+  uninterrupted run's (Cut 12 LDG-2994). An interrupt inside the durable fold
+  transaction
   rolls the transaction back and is then re-raised, so the invocation ends
   `FAILED` rather than finalizing the rolled-back pulses as a completed run.
 - Pulse-level fill staging does not create a partial-flush persistence promise.

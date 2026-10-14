@@ -396,6 +396,89 @@ testthat::test_that("precomputed features refuse after a direct capture changes"
   testthat::expect_identical(with_precompute$n_trades, fresh$n_trades)
 })
 
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("precomputed candidates stay bound when captured windows are permuted", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:29)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  windows <- c(fast = 5, slow = 20)
+  strategy <- function(ctx, params) {
+    target <- ctx$flat()
+    value <- ctx$feature("AAA", "trend")
+    if (is.finite(value)) target[["AAA"]] <- 1
+    target
+  }
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = function(params) {
+      ledgr_feature_map(trend = ledgr_ind_sma(windows[[params$speed]]))
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(
+    fast = list(speed = "fast"),
+    slow = list(speed = "slow")
+  )
+  precomputed <- ledgr_precompute_features(exp, grid)
+  original_union <- sort(precomputed$feature_union$fingerprint, method = "radix")
+
+  windows <- c(fast = 20, slow = 5)
+  con <- ledgr:::get_connection(snapshot)
+  count_rows <- function(table) {
+    if (!DBI::dbExistsTable(con, table)) return(0L)
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n[[1L]]
+  }
+  runs_before <- count_rows("runs")
+  fills_before <- count_rows("fills")
+  local({
+    executed <- FALSE
+    testthat::local_mocked_bindings(
+      ledgr_execute_fold = function(...) {
+        executed <<- TRUE
+        stop("candidate executed")
+      },
+      .package = "ledgr"
+    )
+
+    testthat::expect_error(
+      ledgr_sweep(exp, grid, precomputed_features = precomputed),
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+    testthat::expect_false(executed)
+    testthat::expect_identical(count_rows("runs"), runs_before)
+    testthat::expect_identical(count_rows("fills"), fills_before)
+  })
+
+  rebuilt <- ledgr_precompute_features(exp, grid)
+  testthat::expect_identical(
+    sort(rebuilt$feature_union$fingerprint, method = "radix"),
+    original_union
+  )
+  testthat::expect_identical(
+    rebuilt$candidate_features$feature_fingerprints[[1L]],
+    precomputed$candidate_features$feature_fingerprints[[2L]]
+  )
+  testthat::expect_identical(
+    rebuilt$candidate_features$feature_fingerprints[[2L]],
+    precomputed$candidate_features$feature_fingerprints[[1L]]
+  )
+  stale_alias <- rebuilt
+  stale_alias$candidate_features$alias_map_hash[[1L]] <- strrep("0", 64L)
+  testthat::expect_error(
+    ledgr:::ledgr_validate_precomputed_features(stale_alias, exp, grid),
+    class = "ledgr_precomputed_feature_mismatch"
+  )
+  with_precompute <- ledgr_sweep(exp, grid, precomputed_features = rebuilt)
+  fresh <- ledgr_sweep(exp, grid)
+  testthat::expect_identical(with_precompute$status, fresh$status)
+  testthat::expect_identical(with_precompute$final_equity, fresh$final_equity)
+  testthat::expect_identical(with_precompute$n_trades, fresh$n_trades)
+})
+
 testthat::test_that("large grids without precomputed features warn through the reserved sweep helper", {
   grid <- do.call(
     ledgr_param_grid,

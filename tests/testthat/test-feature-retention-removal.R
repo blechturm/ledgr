@@ -21,6 +21,44 @@ testthat::test_that("deleted feature-retention surfaces cannot return", {
   namespace <- paste(readLines(file.path(root, "NAMESPACE"), warn = FALSE), collapse = "\n")
   testthat::expect_false(grepl("ledgr_feature_cache", namespace, fixed = TRUE))
   testthat::expect_false(file.exists(file.path(root, "man", "ledgr_feature_cache_clear.Rd")))
+  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+  testthat::expect_false(grepl("ledgr_feature_cache_clear", pkgdown, fixed = TRUE))
+
+  current_doc_paths <- c(
+    file.path(root, "_pkgdown.yml"),
+    file.path(root, "README.md"),
+    file.path(root, "README.Rmd"),
+    file.path(root, "inst", "design", "contracts.md"),
+    file.path(root, "tests", "claims.yml"),
+    list.files(file.path(root, "man"), pattern = "[.]Rd$", full.names = TRUE),
+    list.files(
+      file.path(root, "vignettes"),
+      pattern = "[.](Rmd|qmd|md)$",
+      full.names = TRUE,
+      recursive = TRUE
+    )
+  )
+  current_docs <- paste(vapply(current_doc_paths, function(path) {
+    paste(readLines(path, warn = FALSE), collapse = "\n")
+  }, character(1)), collapse = "\n")
+  retired_current_claims <- c(
+    "ledgr_feature_cache_clear",
+    "ledgr_clear_feature_cache",
+    "feature_cache_hits",
+    "feature_cache_misses",
+    "persist_features",
+    "Persisted feature rows"
+  )
+  for (claim in retired_current_claims) {
+    testthat::expect_false(grepl(claim, current_docs, fixed = TRUE), info = claim)
+  }
+
+  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(news, "Removed the process-local feature cache", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_clear_feature_cache()` | `ledgr_feature_cache_clear()`", fixed = TRUE)
+  testthat::expect_match(news, "session-local feature cache JSON+hash keys", fixed = TRUE)
+  testthat::expect_match(news, "feature-cache hit/miss counts", fixed = TRUE)
+  testthat::expect_match(news, "Added a session-scoped feature cache", fixed = TRUE)
 
   testthat::expect_false("persist_features" %in% names(formals(ledgr_experiment)))
   testthat::expect_false("persist_features" %in% names(formals(ledgr_backtest)))
@@ -76,6 +114,14 @@ testthat::test_that("changed captures recompute values and repeated captures sta
       run_id = run_id
     )
     on.exit(close(result), add = TRUE)
+    stored <- DBI::dbGetQuery(
+      ledgr:::get_connection(snapshot),
+      "SELECT config_json FROM runs WHERE run_id = ?",
+      params = list(run_id)
+    )
+    stored_config <- ledgr:::ledgr_json_read_config(stored$config_json[[1L]])
+    testthat::expect_false("persist" %in% names(result$config$features))
+    testthat::expect_false("persist" %in% names(stored_config$features))
     list(
       fills = ledgr_results(result, "fills")[
         c("ts_utc", "instrument_id", "side", "qty", "price")
