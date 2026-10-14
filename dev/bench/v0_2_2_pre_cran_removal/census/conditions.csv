@@ -52,181 +52,181 @@
 "R/availability-economics.R",62,"abort_class","ledgr_availability_valuation_out_of_order",TRUE,"c(""ledgr_availability_valuation_out_of_order"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
 "R/availability-economics.R",62,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_availability_valuation_out_of_order"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
 "R/availability-economics.R",74,"abort_class","ledgr_invalid_fold_execution",TRUE,"""ledgr_invalid_fold_execution""",FALSE,FALSE,FALSE
-"R/availability-facts.R",1048,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1048,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1071,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1071,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1163,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1163,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1171,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1171,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1182,"abort_class","ledgr_fact_invalid_id",TRUE,"c(""ledgr_fact_invalid_id"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1182,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_id"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1191,"abort_class","ledgr_fact_invalid_instrument",TRUE,"c(""ledgr_fact_invalid_instrument"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1191,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1210,"abort_class","ledgr_fact_invalid_time",TRUE,"c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1210,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1213,"abort_wrapper_class","LEDGR_SUBSECOND_TIMESTAMP",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
-"R/availability-facts.R",1213,"abort_wrapper_class","ledgr_fact_invalid_time",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
-"R/availability-facts.R",1213,"abort_wrapper_class","ledgr_fact_invalid_time",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
-"R/availability-facts.R",1213,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
-"R/availability-facts.R",1213,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
-"R/availability-facts.R",1251,"abort_class","ledgr_fact_invalid_interval",TRUE,"c(""ledgr_fact_invalid_interval"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1251,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_interval"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1261,"abort_class","ledgr_fact_invalid_logical",TRUE,"c(""ledgr_fact_invalid_logical"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1261,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_logical"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1270,"abort_class","ledgr_fact_invalid_source",TRUE,"c(""ledgr_fact_invalid_source"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1270,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_source"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1290,"abort_class","ledgr_fact_invalid_provenance",TRUE,"c(""ledgr_fact_invalid_provenance"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1290,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_provenance"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1350,"abort_class","ledgr_fact_identity_conflict",TRUE,"c(""ledgr_fact_identity_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1350,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_identity_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1368,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1368,"abort_class","ledgr_session_invalid_timezone",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1377,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1377,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1391,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1391,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1397,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_time_nonexistent"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1397,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_time_nonexistent"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1397,"abort_class","ledgr_session_time_nonexistent",TRUE,"c(""ledgr_session_time_nonexistent"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1403,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_time_ambiguous"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1403,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_time_ambiguous"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1403,"abort_class","ledgr_session_time_ambiguous",TRUE,"c(""ledgr_session_time_ambiguous"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",143,"abort_class","ledgr_fact_invalid_complete",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",143,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1477,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1477,"abort_class","ledgr_session_invalid_timezone",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1492,"abort_class","ledgr_fact_ambiguous_membership_shape",TRUE,"c(""ledgr_fact_ambiguous_membership_shape"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1492,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_ambiguous_membership_shape"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1492,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_ambiguous_membership_shape"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1506,"abort_class","ledgr_fact_invalid_membership_list",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1506,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1506,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1519,"abort_class","ledgr_fact_invalid_membership_list",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1519,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1519,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1543,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1543,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1551,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1551,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1562,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1562,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1573,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1573,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1581,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1581,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1600,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1600,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1600,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1615,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1615,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1615,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1626,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1626,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1626,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1650,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1650,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1650,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",1696,"abort_class","ledgr_fact_invalid_supersession",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1696,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1701,"abort_class","ledgr_fact_invalid_supersession",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1701,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1711,"abort_class","ledgr_fact_invalid_supersession",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1711,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1755,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1755,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",177,"abort_class","ledgr_fact_invalid_membership_set",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",177,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",183,"abort_class","ledgr_fact_invalid_complete",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",183,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1867,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1867,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1884,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1884,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1898,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1898,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1953,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_session_multiple_venues"", ""ledgr_invalid_facts"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",1953,"abort_class","ledgr_session_multiple_venues",TRUE,"c(""ledgr_session_multiple_venues"", ""ledgr_invalid_facts"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",201,"abort_class","ledgr_fact_invalid_membership_set",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",201,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",255,"abort_class","ledgr_fact_invalid_status",TRUE,"c(""ledgr_fact_invalid_status"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",255,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_status"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",263,"abort_class","ledgr_fact_invalid_precedence",TRUE,"c(""ledgr_fact_invalid_precedence"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",263,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_precedence"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",320,"abort_class","ledgr_fact_invalid_lifetime",TRUE,"c(""ledgr_fact_invalid_lifetime"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",320,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_lifetime"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",360,"abort_dynamic","",FALSE,"c(subclass, if (isTRUE(state)) ""ledgr_invalid_state"" else ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",382,"abort_wrapper_class","ledgr_fact_invalid_shape",TRUE,"ledgr_equity_corporate_action_abort(sprintf(""Equity corporate-action rows are missing required field(s): %s."", paste(missing, collapse = "", "")), ""ledgr_fact_invalid_shape"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",397,"abort_wrapper_class","ledgr_fact_identity_conflict",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action `fact_id` values must be non-empty and unique."", ""ledgr_fact_identity_conflict"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",404,"abort_wrapper_class","ledgr_fact_invalid_subtype",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action `subtype` must be a stable lower-snake-case code."", ""ledgr_fact_invalid_subtype"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",412,"abort_wrapper_class","ledgr_fact_invalid_instrument",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action parent identities must be non-empty strings."", ""ledgr_fact_invalid_instrument"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",427,"abort_wrapper_class","ledgr_fact_invalid_logical",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action completeness and validation flags must be logical."", ""ledgr_fact_invalid_logical"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",439,"abort_wrapper_class","ledgr_fact_invalid_completeness",TRUE,"ledgr_equity_corporate_action_abort(paste(""Complete corporate-action facts must have no refusal reason;"", ""incomplete facts require one stable lower-snake-case reason.""), ""ledgr_fact_invalid_completeness"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",461,"abort_wrapper_class","ledgr_fact_invalid_provenance_tier",TRUE,"ledgr_equity_corporate_action_abort(paste(""`snapshot_bound` facts omit upstream build and bar vintage;"", ""`upstream_vintage_bound` facts require both.""), ""ledgr_fact_invalid_provenance_tier"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",479,"abort_wrapper_class","ledgr_fact_invalid_clock_order",TRUE,"ledgr_equity_corporate_action_abort(""Corporate-action clocks must preserve entitlement <= effective <= payment when supplied."", ""ledgr_fact_invalid_clock_order"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",489,"abort_wrapper_class","ledgr_fact_unvalidated_term",TRUE,"ledgr_equity_corporate_action_abort(sprintf(""Corporate-action term `%s` must be valid and independently validated."", label), ""ledgr_fact_unvalidated_term"", state)",FALSE,FALSE,FALSE
-"R/availability-facts.R",523,"abort_wrapper_class","ledgr_fact_unvalidated_term",TRUE,"ledgr_equity_corporate_action_abort(sprintf(""Corporate-action term `%s` must be numeric when supplied."", field), ""ledgr_fact_unvalidated_term"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",638,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",638,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",643,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_coverage_incomplete"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",643,"abort_class","ledgr_session_coverage_incomplete",TRUE,"c(""ledgr_session_coverage_incomplete"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",643,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_coverage_incomplete"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",651,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",651,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",658,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",658,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",664,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",664,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",670,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_instant_duplicate"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",670,"abort_class","ledgr_session_instant_duplicate",TRUE,"c(""ledgr_session_instant_duplicate"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",670,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_instant_duplicate"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",679,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_instant_off_date"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",679,"abort_class","ledgr_session_instant_off_date",TRUE,"c(""ledgr_session_instant_off_date"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",679,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_instant_off_date"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",704,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_knowledge_late"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",704,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_knowledge_late"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",704,"abort_class","ledgr_session_knowledge_late",TRUE,"c(""ledgr_session_knowledge_late"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",779,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_missing_package"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",779,"abort_class","ledgr_missing_package",TRUE,"c(""ledgr_missing_package"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",779,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_missing_package"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",785,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",785,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",793,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",793,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",805,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",805,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",812,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",812,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",819,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",819,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",828,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",828,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",839,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",839,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/availability-facts.R",907,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",907,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",911,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",911,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",915,"abort_class","ledgr_duplicate_fact_family",TRUE,"c(""ledgr_duplicate_fact_family"", ""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",915,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_duplicate_fact_family"", ""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-facts.R",915,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_duplicate_fact_family"", ""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",104,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",104,"abort_class","ledgr_observation_invalid_shape",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",112,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",112,"abort_class","ledgr_observation_invalid_shape",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",232,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_observation_quarantine_duplicate"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",232,"abort_class","ledgr_observation_quarantine_duplicate",TRUE,"c(""ledgr_observation_quarantine_duplicate"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",397,"abort_class","ledgr_availability_validation_failed",TRUE,"c(""ledgr_availability_validation_failed"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",397,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_availability_validation_failed"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1078,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1078,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1101,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1101,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1193,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1193,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1201,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1201,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1212,"abort_class","ledgr_fact_invalid_id",TRUE,"c(""ledgr_fact_invalid_id"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1212,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_id"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1221,"abort_class","ledgr_fact_invalid_instrument",TRUE,"c(""ledgr_fact_invalid_instrument"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1221,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1240,"abort_class","ledgr_fact_invalid_time",TRUE,"c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1240,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1243,"abort_wrapper_class","LEDGR_SUBSECOND_TIMESTAMP",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
+"R/availability-facts.R",1243,"abort_wrapper_class","ledgr_fact_invalid_time",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
+"R/availability-facts.R",1243,"abort_wrapper_class","ledgr_fact_invalid_time",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
+"R/availability-facts.R",1243,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
+"R/availability-facts.R",1243,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_assert_whole_second_utc(out[!is.na(out)], label = paste0(""fact `"", field, ""`""), class = c(""ledgr_fact_invalid_time"", ""ledgr_invalid_args""))",FALSE,FALSE,FALSE
+"R/availability-facts.R",1281,"abort_class","ledgr_fact_invalid_interval",TRUE,"c(""ledgr_fact_invalid_interval"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1281,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_interval"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1291,"abort_class","ledgr_fact_invalid_logical",TRUE,"c(""ledgr_fact_invalid_logical"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1291,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_logical"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1300,"abort_class","ledgr_fact_invalid_source",TRUE,"c(""ledgr_fact_invalid_source"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1300,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_source"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1320,"abort_class","ledgr_fact_invalid_provenance",TRUE,"c(""ledgr_fact_invalid_provenance"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1320,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_provenance"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1383,"abort_class","ledgr_fact_identity_conflict",TRUE,"c(""ledgr_fact_identity_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1383,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_identity_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1401,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1401,"abort_class","ledgr_session_invalid_timezone",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1410,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1410,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1424,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1424,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1430,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_time_nonexistent"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1430,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_time_nonexistent"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1430,"abort_class","ledgr_session_time_nonexistent",TRUE,"c(""ledgr_session_time_nonexistent"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1436,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_time_ambiguous"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1436,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_time_ambiguous"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1436,"abort_class","ledgr_session_time_ambiguous",TRUE,"c(""ledgr_session_time_ambiguous"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",149,"abort_class","ledgr_fact_invalid_complete",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",149,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1510,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1510,"abort_class","ledgr_session_invalid_timezone",TRUE,"c(""ledgr_session_invalid_timezone"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1525,"abort_class","ledgr_fact_ambiguous_membership_shape",TRUE,"c(""ledgr_fact_ambiguous_membership_shape"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1525,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_ambiguous_membership_shape"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1525,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_ambiguous_membership_shape"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1539,"abort_class","ledgr_fact_invalid_membership_list",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1539,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1539,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1552,"abort_class","ledgr_fact_invalid_membership_list",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1552,"abort_class","ledgr_fact_invalid_shape",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1552,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_list"", ""ledgr_fact_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1576,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1576,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1584,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1584,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1595,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1595,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1606,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1606,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1614,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1614,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1633,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1633,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1633,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1648,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1648,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1648,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1659,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1659,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1659,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1683,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1683,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1683,"abort_class","ledgr_session_override_invalid",TRUE,"c(""ledgr_session_override_invalid"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",1729,"abort_class","ledgr_fact_invalid_supersession",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1729,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1734,"abort_class","ledgr_fact_invalid_supersession",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1734,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1744,"abort_class","ledgr_fact_invalid_supersession",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1744,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_supersession"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1788,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1788,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",183,"abort_class","ledgr_fact_invalid_membership_set",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",183,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",189,"abort_class","ledgr_fact_invalid_complete",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",189,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_complete"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1900,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1900,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1917,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1917,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1931,"abort_class","ledgr_fact_structural_conflict",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1931,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_structural_conflict"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1986,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_session_multiple_venues"", ""ledgr_invalid_facts"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",1986,"abort_class","ledgr_session_multiple_venues",TRUE,"c(""ledgr_session_multiple_venues"", ""ledgr_invalid_facts"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",207,"abort_class","ledgr_fact_invalid_membership_set",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",207,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_membership_set"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",272,"abort_class","ledgr_fact_invalid_status",TRUE,"c(""ledgr_fact_invalid_status"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",272,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_status"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",280,"abort_class","ledgr_fact_invalid_precedence",TRUE,"c(""ledgr_fact_invalid_precedence"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",280,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_precedence"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",344,"abort_class","ledgr_fact_invalid_lifetime",TRUE,"c(""ledgr_fact_invalid_lifetime"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",344,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_lifetime"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",390,"abort_dynamic","",FALSE,"c(subclass, if (isTRUE(state)) ""ledgr_invalid_state"" else ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",412,"abort_wrapper_class","ledgr_fact_invalid_shape",TRUE,"ledgr_equity_corporate_action_abort(sprintf(""Equity corporate-action rows are missing required field(s): %s."", paste(missing, collapse = "", "")), ""ledgr_fact_invalid_shape"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",427,"abort_wrapper_class","ledgr_fact_identity_conflict",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action `fact_id` values must be non-empty and unique."", ""ledgr_fact_identity_conflict"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",434,"abort_wrapper_class","ledgr_fact_invalid_subtype",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action `subtype` must be a stable lower-snake-case code."", ""ledgr_fact_invalid_subtype"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",442,"abort_wrapper_class","ledgr_fact_invalid_instrument",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action parent identities must be non-empty strings."", ""ledgr_fact_invalid_instrument"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",457,"abort_wrapper_class","ledgr_fact_invalid_logical",TRUE,"ledgr_equity_corporate_action_abort(""Equity corporate-action completeness and validation flags must be logical."", ""ledgr_fact_invalid_logical"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",469,"abort_wrapper_class","ledgr_fact_invalid_completeness",TRUE,"ledgr_equity_corporate_action_abort(paste(""Complete corporate-action facts must have no refusal reason;"", ""incomplete facts require one stable lower-snake-case reason.""), ""ledgr_fact_invalid_completeness"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",491,"abort_wrapper_class","ledgr_fact_invalid_provenance_tier",TRUE,"ledgr_equity_corporate_action_abort(paste(""`snapshot_bound` facts omit upstream build and bar vintage;"", ""`upstream_vintage_bound` facts require both.""), ""ledgr_fact_invalid_provenance_tier"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",509,"abort_wrapper_class","ledgr_fact_invalid_clock_order",TRUE,"ledgr_equity_corporate_action_abort(""Corporate-action clocks must preserve entitlement <= effective <= payment when supplied."", ""ledgr_fact_invalid_clock_order"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",519,"abort_wrapper_class","ledgr_fact_unvalidated_term",TRUE,"ledgr_equity_corporate_action_abort(sprintf(""Corporate-action term `%s` must be valid and independently validated."", label), ""ledgr_fact_unvalidated_term"", state)",FALSE,FALSE,FALSE
+"R/availability-facts.R",553,"abort_wrapper_class","ledgr_fact_unvalidated_term",TRUE,"ledgr_equity_corporate_action_abort(sprintf(""Corporate-action term `%s` must be numeric when supplied."", field), ""ledgr_fact_unvalidated_term"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",668,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",668,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",673,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_coverage_incomplete"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",673,"abort_class","ledgr_session_coverage_incomplete",TRUE,"c(""ledgr_session_coverage_incomplete"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",673,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_coverage_incomplete"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",681,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",681,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",688,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",688,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",694,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",694,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",700,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_instant_duplicate"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",700,"abort_class","ledgr_session_instant_duplicate",TRUE,"c(""ledgr_session_instant_duplicate"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",700,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_instant_duplicate"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",709,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_instant_off_date"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",709,"abort_class","ledgr_session_instant_off_date",TRUE,"c(""ledgr_session_instant_off_date"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",709,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_instant_off_date"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",734,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_knowledge_late"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",734,"abort_class","ledgr_session_invalid",TRUE,"c(""ledgr_session_knowledge_late"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",734,"abort_class","ledgr_session_knowledge_late",TRUE,"c(""ledgr_session_knowledge_late"", ""ledgr_session_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",809,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_missing_package"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",809,"abort_class","ledgr_missing_package",TRUE,"c(""ledgr_missing_package"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",809,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_missing_package"", ""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",815,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",815,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",823,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",823,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",835,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",835,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",842,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",842,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",849,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",849,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",858,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",858,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",869,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",869,"abort_class","ledgr_session_adapter_invalid",TRUE,"c(""ledgr_session_adapter_invalid"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/availability-facts.R",937,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",937,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",941,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",941,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",945,"abort_class","ledgr_duplicate_fact_family",TRUE,"c(""ledgr_duplicate_fact_family"", ""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",945,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_duplicate_fact_family"", ""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-facts.R",945,"abort_class","ledgr_invalid_facts",TRUE,"c(""ledgr_duplicate_fact_family"", ""ledgr_invalid_facts"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",107,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",107,"abort_class","ledgr_observation_invalid_shape",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",115,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",115,"abort_class","ledgr_observation_invalid_shape",TRUE,"c(""ledgr_observation_invalid_shape"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",239,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_observation_quarantine_duplicate"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",239,"abort_class","ledgr_observation_quarantine_duplicate",TRUE,"c(""ledgr_observation_quarantine_duplicate"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",404,"abort_class","ledgr_availability_validation_failed",TRUE,"c(""ledgr_availability_validation_failed"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",404,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_availability_validation_failed"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/availability-ingest.R",60,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/availability-ingest.R",63,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/availability-ingest.R",69,"abort_class","ledgr_fact_invalid_instrument_master",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",69,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",82,"abort_class","ledgr_fact_invalid_instrument_master",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",82,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",89,"abort_class","ledgr_fact_invalid_instrument_master",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/availability-ingest.R",89,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",72,"abort_class","ledgr_fact_invalid_instrument_master",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",72,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",85,"abort_class","ledgr_fact_invalid_instrument_master",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",85,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",92,"abort_class","ledgr_fact_invalid_instrument_master",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/availability-ingest.R",92,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_fact_invalid_instrument_master"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/availability-inspection.R",241,"abort_class","ledgr_facts_inspection_invalid_args",TRUE,"c(""ledgr_facts_inspection_invalid_args"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/availability-inspection.R",241,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_facts_inspection_invalid_args"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/availability-inspection.R",252,"abort_class","ledgr_facts_inspection_invalid_args",TRUE,"c(""ledgr_facts_inspection_invalid_args"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
@@ -318,14 +318,14 @@
 "R/availability-results.R",162,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
 "R/availability-results.R",189,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/availability-results.R",3,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
-"R/availability-results.R",416,"abort_class","ledgr_invalid_run",TRUE,"""ledgr_invalid_run""",FALSE,FALSE,FALSE
-"R/availability-results.R",465,"abort_class","ledgr_invalid_snapshot",TRUE,"""ledgr_invalid_snapshot""",FALSE,FALSE,FALSE
-"R/availability-results.R",482,"abort_class","ledgr_invalid_run",TRUE,"""ledgr_invalid_run""",FALSE,FALSE,FALSE
-"R/availability-results.R",621,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
-"R/availability-results.R",626,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/availability-results.R",633,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/availability-results.R",645,"abort_class","ledgr_run_explanation_unavailable",TRUE,"""ledgr_run_explanation_unavailable""",TRUE,TRUE,FALSE
-"R/availability-results.R",667,"abort_class","ledgr_run_explanation_unavailable",TRUE,"""ledgr_run_explanation_unavailable""",TRUE,TRUE,FALSE
+"R/availability-results.R",419,"abort_class","ledgr_invalid_run",TRUE,"""ledgr_invalid_run""",FALSE,FALSE,FALSE
+"R/availability-results.R",468,"abort_class","ledgr_invalid_snapshot",TRUE,"""ledgr_invalid_snapshot""",FALSE,FALSE,FALSE
+"R/availability-results.R",485,"abort_class","ledgr_invalid_run",TRUE,"""ledgr_invalid_run""",FALSE,FALSE,FALSE
+"R/availability-results.R",624,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
+"R/availability-results.R",629,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/availability-results.R",636,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/availability-results.R",648,"abort_class","ledgr_run_explanation_unavailable",TRUE,"""ledgr_run_explanation_unavailable""",TRUE,TRUE,FALSE
+"R/availability-results.R",670,"abort_class","ledgr_run_explanation_unavailable",TRUE,"""ledgr_run_explanation_unavailable""",TRUE,TRUE,FALSE
 "R/backtest-config.R",102,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/backtest-config.R",105,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/backtest-config.R",109,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
@@ -383,46 +383,46 @@
 "R/backtest-results.R",714,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
 "R/backtest-results.R",877,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",118,"abort_class","ledgr_invalid_fill_intent",TRUE,"""ledgr_invalid_fill_intent""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1192,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1195,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",122,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",139,"abort_wrapper_class","ledgr_invalid_fill_intent",TRUE,"ledgr_ts_utc_posix(ts_exec_utc, label = ""`fill_intent$ts_exec_utc`"", class = ""ledgr_invalid_fill_intent"")",FALSE,FALSE,FALSE
 "R/backtest-runner.R",139,"abort_wrapper_class","ledgr_invalid_fill_intent",TRUE,"ledgr_ts_utc_posix(ts_exec_utc, label = ""`fill_intent$ts_exec_utc`"", class = ""ledgr_invalid_fill_intent"")",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1404,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1409,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1423,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1426,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1455,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1458,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1407,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1412,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1426,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1429,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1458,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",1461,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1472,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1475,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1502,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1512,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1515,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1571,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1574,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1577,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1464,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1478,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1481,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1508,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1518,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1521,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1577,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",1580,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",1583,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1592,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1602,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1699,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1711,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1717,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1734,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1751,"abort_class","ledgr_run_hash_mismatch",TRUE,"""ledgr_run_hash_mismatch""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1770,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1781,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1799,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1808,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1811,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
-"R/backtest-runner.R",1814,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1586,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1589,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1601,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1611,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1708,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1720,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1726,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1743,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1760,"abort_class","ledgr_run_hash_mismatch",TRUE,"""ledgr_run_hash_mismatch""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1779,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1790,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1808,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1817,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1820,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",1823,"abort_class","ledgr_invalid_strategy",TRUE,"""ledgr_invalid_strategy""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",342,"abort_class","ledgr_run_telemetry_failed",TRUE,"""ledgr_run_telemetry_failed""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",360,"abort_dynamic","",FALSE,"class",FALSE,FALSE,FALSE
 "R/backtest-runner.R",436,"abort_class","ledgr_invalid_state",TRUE,"""ledgr_invalid_state""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",461,"abort_class","ledgr_invalid_state",TRUE,"""ledgr_invalid_state""",FALSE,FALSE,FALSE
 "R/backtest-runner.R",49,"abort_dynamic","",FALSE,"ledgr_strategy_error_classes(error)",FALSE,FALSE,FALSE
-"R/backtest-runner.R",852,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
+"R/backtest-runner.R",855,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/backtest.R",108,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/backtest.R",114,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/backtest.R",135,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
@@ -588,11 +588,11 @@
 "R/compiled-spot-fifo.R",56,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_compiled_spot_fifo_unavailable"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
 "R/compiled-spot-fifo.R",96,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_pulse_plan"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
 "R/compiled-spot-fifo.R",96,"abort_class","ledgr_invalid_pulse_plan",TRUE,"c(""ledgr_invalid_pulse_plan"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
-"R/config-canonical-json.R",119,"abort_class","ledgr_config_invalid_json",TRUE,"""ledgr_config_invalid_json""",FALSE,FALSE,FALSE
-"R/config-canonical-json.R",134,"abort_class","ledgr_config_non_deterministic",TRUE,"""ledgr_config_non_deterministic""",FALSE,FALSE,FALSE
-"R/config-canonical-json.R",146,"abort_class","ledgr_config_unsupported_type",TRUE,"""ledgr_config_unsupported_type""",FALSE,FALSE,FALSE
-"R/config-canonical-json.R",158,"abort_class","ledgr_config_non_finite",TRUE,"""ledgr_config_non_finite""",FALSE,FALSE,FALSE
-"R/config-canonical-json.R",187,"abort_class","ledgr_config_unsupported_type",TRUE,"""ledgr_config_unsupported_type""",FALSE,FALSE,FALSE
+"R/config-canonical-json.R",124,"abort_class","ledgr_config_invalid_json",TRUE,"""ledgr_config_invalid_json""",FALSE,FALSE,FALSE
+"R/config-canonical-json.R",139,"abort_class","ledgr_config_non_deterministic",TRUE,"""ledgr_config_non_deterministic""",FALSE,FALSE,FALSE
+"R/config-canonical-json.R",151,"abort_class","ledgr_config_unsupported_type",TRUE,"""ledgr_config_unsupported_type""",FALSE,FALSE,FALSE
+"R/config-canonical-json.R",163,"abort_class","ledgr_config_non_finite",TRUE,"""ledgr_config_non_finite""",FALSE,FALSE,FALSE
+"R/config-canonical-json.R",192,"abort_class","ledgr_config_unsupported_type",TRUE,"""ledgr_config_unsupported_type""",FALSE,FALSE,FALSE
 "R/config-hash.R",15,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/config-hash.R",23,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/config-hash.R",7,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
@@ -637,8 +637,8 @@
 "R/config-validate.R",371,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/config-validate.R",396,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_policy_schema_mismatch"", ""ledgr_invalid_config"")",FALSE,FALSE,FALSE
 "R/config-validate.R",396,"abort_class","ledgr_policy_schema_mismatch",TRUE,"c(""ledgr_policy_schema_mismatch"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
-"R/config-validate.R",412,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_policy_schema_mismatch"", ""ledgr_invalid_config"")",FALSE,FALSE,FALSE
-"R/config-validate.R",412,"abort_class","ledgr_policy_schema_mismatch",TRUE,"c(""ledgr_policy_schema_mismatch"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/config-validate.R",413,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_policy_schema_mismatch"", ""ledgr_invalid_config"")",FALSE,FALSE,FALSE
+"R/config-validate.R",413,"abort_class","ledgr_policy_schema_mismatch",TRUE,"c(""ledgr_policy_schema_mismatch"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
 "R/config-validate.R",49,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/config-validate.R",59,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/config-validate.R",73,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
@@ -649,7 +649,7 @@
 "R/corporate-action-policy.R",313,"stop","",FALSE,"stop(""malformed held-terminal map"", call. = FALSE)",FALSE,FALSE,FALSE
 "R/corporate-action-policy.R",342,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/corporate-action-policy.R",348,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
-"R/corporate-action-results.R",373,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
+"R/corporate-action-results.R",363,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",FALSE,FALSE,FALSE
 "R/corporate-action-results.R",9,"abort_class","ledgr_invalid_corporate_action_fidelity",TRUE,"c(""ledgr_invalid_corporate_action_fidelity"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
 "R/corporate-action-results.R",9,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_invalid_corporate_action_fidelity"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
 "R/corporate-action-settlement.R",129,"abort_class","ledgr_corporate_action_quantity_unsupported",TRUE,"c(""ledgr_corporate_action_quantity_unsupported"", ""ledgr_corporate_action_unsupported"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
@@ -802,28 +802,28 @@
 "R/feature-cache.R",167,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/feature-inspection.R",109,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/feature-inspection.R",109,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",157,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",161,"abort_class","ledgr_invalid_snapshot",TRUE,"c(""ledgr_snapshot_not_sealed"", ""ledgr_invalid_snapshot"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",161,"abort_class","ledgr_snapshot_not_sealed",TRUE,"c(""ledgr_snapshot_not_sealed"", ""ledgr_invalid_snapshot"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",198,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",204,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",204,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",221,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",221,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",247,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",247,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",375,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",386,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",393,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",415,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",440,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",453,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",464,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",584,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/feature-inspection.R",601,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",601,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",609,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/feature-inspection.R",609,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",161,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",165,"abort_class","ledgr_invalid_snapshot",TRUE,"c(""ledgr_snapshot_not_sealed"", ""ledgr_invalid_snapshot"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",165,"abort_class","ledgr_snapshot_not_sealed",TRUE,"c(""ledgr_snapshot_not_sealed"", ""ledgr_invalid_snapshot"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",202,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",208,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",208,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",225,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",225,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",251,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",251,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",383,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",394,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",401,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",423,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",448,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",465,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",476,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",596,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/feature-inspection.R",613,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",613,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",621,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
+"R/feature-inspection.R",621,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/feature-map.R",110,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/feature-map.R",110,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/feature-map.R",138,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
@@ -929,11 +929,11 @@
 "R/features-engine.R",520,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",FALSE,FALSE,FALSE
 "R/features-engine.R",523,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/features-engine.R",526,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/features-engine.R",537,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/features-engine.R",542,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/features-engine.R",540,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/features-engine.R",545,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/features-engine.R",55,"abort_class","ledgr_invalid_feature_def",TRUE,"""ledgr_invalid_feature_def""",FALSE,FALSE,FALSE
-"R/features-engine.R",560,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
-"R/features-engine.R",566,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/features-engine.R",563,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
+"R/features-engine.R",569,"abort_class","ledgr_missing_bars",TRUE,"""ledgr_missing_bars""",FALSE,FALSE,FALSE
 "R/features-engine.R",60,"abort_class","ledgr_invalid_feature_def",TRUE,"""ledgr_invalid_feature_def""",FALSE,FALSE,FALSE
 "R/features-engine.R",67,"abort_class","ledgr_invalid_feature_def",TRUE,"""ledgr_invalid_feature_def""",FALSE,FALSE,FALSE
 "R/features-engine.R",86,"abort_class","ledgr_invalid_feature_def",TRUE,"""ledgr_invalid_feature_def""",FALSE,FALSE,FALSE
@@ -1069,8 +1069,8 @@
 "R/indicator.R",299,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/indicator.R",306,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/indicator.R",341,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/indicator.R",354,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/indicator.R",385,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/indicator.R",357,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/indicator.R",388,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/indicator.R",50,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/indicator.R",53,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/indicator.R",56,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
@@ -1147,11 +1147,11 @@
 "R/metric-context.R",795,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/parallel-workers.R",11,"abort_class","ledgr_invalid_parallel_workers",TRUE,"c(""ledgr_invalid_parallel_workers"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
 "R/parallel-workers.R",11,"abort_class","ledgr_parallel_error",TRUE,"c(""ledgr_invalid_parallel_workers"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
-"R/parallel-workers.R",128,"abort_class","ledgr_invalid_worker_dependencies",TRUE,"c(""ledgr_invalid_worker_dependencies"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
-"R/parallel-workers.R",128,"abort_class","ledgr_parallel_error",TRUE,"c(""ledgr_invalid_worker_dependencies"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
-"R/parallel-workers.R",146,"abort_class","ledgr_parallel_error",TRUE,"c(""ledgr_parallel_worker_package_missing"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
-"R/parallel-workers.R",146,"abort_class","ledgr_parallel_worker_package_missing",TRUE,"c(""ledgr_parallel_worker_package_missing"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
-"R/parallel-workers.R",317,"stop","",FALSE,"stop(sprintf(""Worker package `%s` is not installed."", .ledgr_worker_package), call. = FALSE)",FALSE,FALSE,FALSE
+"R/parallel-workers.R",131,"abort_class","ledgr_invalid_worker_dependencies",TRUE,"c(""ledgr_invalid_worker_dependencies"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
+"R/parallel-workers.R",131,"abort_class","ledgr_parallel_error",TRUE,"c(""ledgr_invalid_worker_dependencies"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
+"R/parallel-workers.R",149,"abort_class","ledgr_parallel_error",TRUE,"c(""ledgr_parallel_worker_package_missing"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
+"R/parallel-workers.R",149,"abort_class","ledgr_parallel_worker_package_missing",TRUE,"c(""ledgr_parallel_worker_package_missing"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
+"R/parallel-workers.R",320,"stop","",FALSE,"stop(sprintf(""Worker package `%s` is not installed."", .ledgr_worker_package), call. = FALSE)",FALSE,FALSE,FALSE
 "R/parallel-workers.R",33,"abort_class","ledgr_invalid_parallel_backend",TRUE,"c(""ledgr_invalid_parallel_backend"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
 "R/parallel-workers.R",33,"abort_class","ledgr_parallel_error",TRUE,"c(""ledgr_invalid_parallel_backend"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
 "R/parallel-workers.R",53,"abort_class","ledgr_parallel_backend_missing",TRUE,"c(""ledgr_parallel_backend_missing"", ""ledgr_parallel_error"")",FALSE,FALSE,FALSE
@@ -1226,31 +1226,31 @@
 "R/precompute-features.R",161,"abort_class","ledgr_precomputed_grid_mismatch",TRUE,"""ledgr_precomputed_grid_mismatch""",FALSE,FALSE,FALSE
 "R/precompute-features.R",164,"abort_class","ledgr_precomputed_engine_mismatch",TRUE,"""ledgr_precomputed_engine_mismatch""",FALSE,FALSE,FALSE
 "R/precompute-features.R",175,"abort_class","ledgr_precomputed_feature_mismatch",TRUE,"""ledgr_precomputed_feature_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",192,"abort_class","ledgr_precomputed_feature_mismatch",TRUE,"""ledgr_precomputed_feature_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",205,"abort_class","ledgr_precomputed_range_mismatch",TRUE,"""ledgr_precomputed_range_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",210,"abort_class","ledgr_precomputed_hydration_mismatch",TRUE,"""ledgr_precomputed_hydration_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",230,"abort_class","ledgr_precomputed_range_mismatch",TRUE,"""ledgr_precomputed_range_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",238,"abort_class","ledgr_precomputed_hydration_mismatch",TRUE,"""ledgr_precomputed_hydration_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",248,"abort_class","ledgr_precomputed_hydration_mismatch",TRUE,"""ledgr_precomputed_hydration_mismatch""",FALSE,FALSE,FALSE
-"R/precompute-features.R",273,"warning_class","ledgr_missing_precomputed_features_warning",TRUE,"""ledgr_missing_precomputed_features_warning""",FALSE,FALSE,FALSE
-"R/precompute-features.R",294,"abort_class","ledgr_invalid_snapshot",TRUE,"""ledgr_invalid_snapshot""",FALSE,FALSE,FALSE
-"R/precompute-features.R",298,"abort_class","ledgr_invalid_snapshot",TRUE,"""ledgr_invalid_snapshot""",FALSE,FALSE,FALSE
-"R/precompute-features.R",326,"abort_dynamic","",FALSE,"class",FALSE,FALSE,FALSE
-"R/precompute-features.R",348,"abort_class","ledgr_invalid_precompute_range",TRUE,"""ledgr_invalid_precompute_range""",FALSE,FALSE,FALSE
-"R/precompute-features.R",350,"abort_wrapper_class","ledgr_invalid_precompute_range",TRUE,"ledgr_sealed_range_window(start_posix, end_posix, meta_start, meta_end, ""Precompute scoring range"", ""ledgr_invalid_precompute_range"")",FALSE,FALSE,FALSE
-"R/precompute-features.R",383,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
-"R/precompute-features.R",393,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
-"R/precompute-features.R",402,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
-"R/precompute-features.R",411,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
-"R/precompute-features.R",420,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/precompute-features.R",429,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/precompute-features.R",447,"abort_class","ledgr_invalid_experiment",TRUE,"""ledgr_invalid_experiment""",FALSE,FALSE,FALSE
-"R/precompute-features.R",450,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/precompute-features.R",195,"abort_class","ledgr_precomputed_feature_mismatch",TRUE,"""ledgr_precomputed_feature_mismatch""",FALSE,FALSE,FALSE
+"R/precompute-features.R",208,"abort_class","ledgr_precomputed_range_mismatch",TRUE,"""ledgr_precomputed_range_mismatch""",FALSE,FALSE,FALSE
+"R/precompute-features.R",213,"abort_class","ledgr_precomputed_hydration_mismatch",TRUE,"""ledgr_precomputed_hydration_mismatch""",FALSE,FALSE,FALSE
+"R/precompute-features.R",233,"abort_class","ledgr_precomputed_range_mismatch",TRUE,"""ledgr_precomputed_range_mismatch""",FALSE,FALSE,FALSE
+"R/precompute-features.R",241,"abort_class","ledgr_precomputed_hydration_mismatch",TRUE,"""ledgr_precomputed_hydration_mismatch""",FALSE,FALSE,FALSE
+"R/precompute-features.R",251,"abort_class","ledgr_precomputed_hydration_mismatch",TRUE,"""ledgr_precomputed_hydration_mismatch""",FALSE,FALSE,FALSE
+"R/precompute-features.R",276,"warning_class","ledgr_missing_precomputed_features_warning",TRUE,"""ledgr_missing_precomputed_features_warning""",FALSE,FALSE,FALSE
+"R/precompute-features.R",297,"abort_class","ledgr_invalid_snapshot",TRUE,"""ledgr_invalid_snapshot""",FALSE,FALSE,FALSE
+"R/precompute-features.R",301,"abort_class","ledgr_invalid_snapshot",TRUE,"""ledgr_invalid_snapshot""",FALSE,FALSE,FALSE
+"R/precompute-features.R",329,"abort_dynamic","",FALSE,"class",FALSE,FALSE,FALSE
+"R/precompute-features.R",351,"abort_class","ledgr_invalid_precompute_range",TRUE,"""ledgr_invalid_precompute_range""",FALSE,FALSE,FALSE
+"R/precompute-features.R",353,"abort_wrapper_class","ledgr_invalid_precompute_range",TRUE,"ledgr_sealed_range_window(start_posix, end_posix, meta_start, meta_end, ""Precompute scoring range"", ""ledgr_invalid_precompute_range"")",FALSE,FALSE,FALSE
+"R/precompute-features.R",386,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
+"R/precompute-features.R",396,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
+"R/precompute-features.R",405,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
+"R/precompute-features.R",414,"abort_class","ledgr_precomputed_coverage_error",TRUE,"""ledgr_precomputed_coverage_error""",FALSE,FALSE,FALSE
+"R/precompute-features.R",423,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/precompute-features.R",432,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/precompute-features.R",450,"abort_class","ledgr_invalid_experiment",TRUE,"""ledgr_invalid_experiment""",FALSE,FALSE,FALSE
 "R/precompute-features.R",453,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/precompute-features.R",482,"stop","",FALSE,"stop(e)",FALSE,FALSE,FALSE
+"R/precompute-features.R",456,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/precompute-features.R",485,"stop","",FALSE,"stop(e)",FALSE,FALSE,FALSE
 "R/precompute-features.R",51,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/precompute-features.R",54,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/precompute-features.R",568,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/precompute-features.R",571,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/promotion-context.R",225,"abort_class","ledgr_invalid_promotion_context_summary",TRUE,"""ledgr_invalid_promotion_context_summary""",FALSE,FALSE,FALSE
 "R/promotion-context.R",274,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/promotion-context.R",298,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
@@ -1271,58 +1271,58 @@
 "R/public-api.R",32,"stop","",FALSE,"stop(last_err)",FALSE,FALSE,FALSE
 "R/public-api.R",75,"abort_class","ledgr_checkpoint_failed",TRUE,"""ledgr_checkpoint_failed""",FALSE,FALSE,FALSE
 "R/public-api.R",98,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1011,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1018,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1034,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/pulse-context.R",104,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1054,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",107,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1083,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1096,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1110,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1128,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1014,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1021,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1037,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1057,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",107,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1086,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1099,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",110,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1113,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/pulse-context.R",1131,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1135,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1142,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1156,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1162,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1169,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1177,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1185,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1189,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1197,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1203,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1208,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1212,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1216,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1227,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1231,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1243,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1251,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1259,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",126,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1263,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1267,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1273,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1278,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1134,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1138,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1145,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1159,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1165,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1172,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1180,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1188,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1192,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1200,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1206,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1211,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1215,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1219,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1230,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1234,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1246,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1254,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1262,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1266,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1270,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1276,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
 "R/pulse-context.R",1281,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1289,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1301,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",1307,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1284,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",129,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1292,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1304,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",1310,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
 "R/pulse-context.R",20,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",460,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",641,"warning_class","ledgr_scalar_accessor_loop",TRUE,"""ledgr_scalar_accessor_loop""",FALSE,FALSE,FALSE
-"R/pulse-context.R",69,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/pulse-context.R",811,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",858,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",873,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",463,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",644,"warning_class","ledgr_scalar_accessor_loop",TRUE,"""ledgr_scalar_accessor_loop""",FALSE,FALSE,FALSE
+"R/pulse-context.R",72,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/pulse-context.R",814,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",861,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
 "R/pulse-context.R",876,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",907,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",917,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",926,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",978,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",983,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/pulse-context.R",995,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",879,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",910,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",920,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",929,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",981,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",986,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/pulse-context.R",998,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
 "R/pulse-snapshot.R",100,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/pulse-snapshot.R",112,"abort_wrapper_class","LEDGR_SNAPSHOT_CORRUPTED",TRUE,"ledgr_snapshot_ensure_verified(con, snapshot$snapshot_id, snapshot_db_path = snapshot$db_path)",FALSE,FALSE,FALSE
 "R/pulse-snapshot.R",138,"stop","",FALSE,"stop(err)",FALSE,FALSE,FALSE
@@ -1459,12 +1459,12 @@
 "R/runtime-projection.R",28,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",FALSE,FALSE,FALSE
 "R/runtime-projection.R",291,"stop","",FALSE,"stop(""'arg' should be one of \""schema\"", \""full\"""", call. = FALSE)",FALSE,FALSE,FALSE
 "R/runtime-projection.R",383,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/runtime-projection.R",524,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/runtime-projection.R",556,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",FALSE,FALSE,FALSE
-"R/runtime-projection.R",598,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/runtime-projection.R",601,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
-"R/runtime-projection.R",668,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
-"R/runtime-projection.R",671,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/runtime-projection.R",527,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/runtime-projection.R",559,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",FALSE,FALSE,FALSE
+"R/runtime-projection.R",601,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/runtime-projection.R",604,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
+"R/runtime-projection.R",671,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
+"R/runtime-projection.R",674,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",FALSE,FALSE,FALSE
 "R/runtime-projection.R",94,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",FALSE,FALSE,FALSE
 "R/runtime-projection.R",97,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",FALSE,FALSE,FALSE
 "R/signal-strategy.R",101,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",FALSE,FALSE,FALSE
@@ -1692,14 +1692,14 @@
 "R/strategy-helpers.R",9,"abort_class","ledgr_invalid_strategy_helper",TRUE,"""ledgr_invalid_strategy_helper""",FALSE,FALSE,FALSE
 "R/strategy-helpers.R",95,"abort_class","ledgr_invalid_strategy_helper",TRUE,"""ledgr_invalid_strategy_helper""",FALSE,FALSE,FALSE
 "R/strategy-preflight.R",56,"abort_class","ledgr_invalid_strategy_preflight",TRUE,"""ledgr_invalid_strategy_preflight""",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",705,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",705,"abort_class","ledgr_strategy_tier3",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",734,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",734,"abort_class","ledgr_strategy_ambient_rng_resume",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",734,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",754,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",754,"abort_class","ledgr_strategy_ambient_rng_parallel",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
-"R/strategy-preflight.R",754,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",723,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",723,"abort_class","ledgr_strategy_tier3",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",752,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",752,"abort_class","ledgr_strategy_ambient_rng_resume",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",752,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",772,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",772,"abort_class","ledgr_strategy_ambient_rng_parallel",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
+"R/strategy-preflight.R",772,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",FALSE,FALSE,FALSE
 "R/strategy-provenance.R",127,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",FALSE,FALSE,FALSE
 "R/strategy-provenance.R",13,"abort_class","ledgr_invalid_strategy_signature",TRUE,"""ledgr_invalid_strategy_signature""",FALSE,FALSE,FALSE
 "R/strategy-provenance.R",3,"abort_class","ledgr_invalid_strategy_signature",TRUE,"""ledgr_invalid_strategy_signature""",FALSE,FALSE,FALSE
@@ -2033,12 +2033,12 @@
 "R/sweep.R",988,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_candidate_risk_identity_mismatch"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/sweep.R",998,"abort_class","ledgr_candidate_risk_identity_mismatch",TRUE,"c(""ledgr_candidate_risk_identity_mismatch"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
 "R/sweep.R",998,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_candidate_risk_identity_mismatch"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/terminal-outcomes.R",148,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
-"R/terminal-outcomes.R",148,"abort_class","ledgr_lot_state_invariant",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
-"R/terminal-outcomes.R",154,"abort_class","ledgr_duplicate_corporate_action_event",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
-"R/terminal-outcomes.R",154,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
-"R/terminal-outcomes.R",183,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
-"R/terminal-outcomes.R",183,"abort_class","ledgr_lot_state_invariant",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
+"R/terminal-outcomes.R",144,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
+"R/terminal-outcomes.R",144,"abort_class","ledgr_lot_state_invariant",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
+"R/terminal-outcomes.R",150,"abort_class","ledgr_duplicate_corporate_action_event",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
+"R/terminal-outcomes.R",150,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_fold_execution"")",FALSE,FALSE,FALSE
+"R/terminal-outcomes.R",179,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
+"R/terminal-outcomes.R",179,"abort_class","ledgr_lot_state_invariant",TRUE,"c(""ledgr_lot_state_invariant"", ""ledgr_invalid_state"")",FALSE,FALSE,FALSE
 "R/timestamp.R",107,"abort_class","ledgr_invalid_timestamp",TRUE,"""ledgr_invalid_timestamp""",FALSE,FALSE,FALSE
 "R/timestamp.R",115,"abort_class","ledgr_invalid_timestamp",TRUE,"""ledgr_invalid_timestamp""",FALSE,FALSE,FALSE
 "R/timestamp.R",144,"abort_dynamic","",FALSE,"class",FALSE,FALSE,FALSE
@@ -2260,9 +2260,9 @@
 "R/walk-forward-selection.R",92,"abort_class","ledgr_walk_forward_invalid_selection_rule",TRUE,"""ledgr_walk_forward_invalid_selection_rule""",FALSE,FALSE,FALSE
 "R/walk-forward-selection.R",97,"abort_class","ledgr_walk_forward_invalid_selection_rule",TRUE,"""ledgr_walk_forward_invalid_selection_rule""",FALSE,FALSE,FALSE
 "R/walk-forward.R",101,"warning_class","ledgr_walk_forward_cold_start_warning",TRUE,"""ledgr_walk_forward_cold_start_warning""",FALSE,FALSE,FALSE
-"R/walk-forward.R",1092,"abort_class","ledgr_walk_forward_invalid_opening_state",TRUE,"""ledgr_walk_forward_invalid_opening_state""",FALSE,FALSE,FALSE
-"R/walk-forward.R",213,"stop","",FALSE,"stop(terminal_error)",FALSE,FALSE,FALSE
-"R/walk-forward.R",666,"abort_dynamic","",FALSE,"as.character(test_scores$error_class[[1]])",FALSE,FALSE,FALSE
+"R/walk-forward.R",1093,"abort_class","ledgr_walk_forward_invalid_opening_state",TRUE,"""ledgr_walk_forward_invalid_opening_state""",FALSE,FALSE,FALSE
+"R/walk-forward.R",214,"stop","",FALSE,"stop(terminal_error)",FALSE,FALSE,FALSE
+"R/walk-forward.R",667,"abort_dynamic","",FALSE,"as.character(test_scores$error_class[[1]])",FALSE,FALSE,FALSE
 "R/walk-forward.R",81,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/walk-forward.R",84,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE
 "R/walk-forward.R",87,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",FALSE,FALSE,FALSE

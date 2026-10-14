@@ -1,12 +1,13 @@
 # Pre-CRAN removal source census
 
-This is the Workstream 30 check-mode census after the current-only correction.
-It was produced from clean implementation commit `10c8b444` with:
+This is the Workstream 30 check-mode census after the current-only and
+locale-independent identity corrections. It was produced from clean
+implementation commit `46a761be` with:
 
 ```text
 Rscript --vanilla tools/check-codebase-contracts.R --mode=check \
   --output=dev/bench/v0_2_2_pre_cran_removal/census \
-  --source-commit=10c8b444
+  --source-commit=46a761be
 ```
 
 The command exits successfully because the current-only, connection and
@@ -22,11 +23,11 @@ measured inputs for Workstream 31 rather than Workstream 30 failures.
   handle reads, six held-store borrows, two held-store registrations and
   eight exported caller-supplied connections. Every persistent-store entry
   reaches the accepted current-store guard.
-- `versions.csv` contains 32 bindings, 25 convention-string occurrences and
-  79 read comparisons. It records no current-only violation. The sole
-  reported inventory finding is the deliberately separate promotion-context
-  version binding, which remains outside the format fingerprint and is now
-  checked for exact v2 equality by its reader.
+- `versions.csv` contains 32 bindings, 25 convention-string occurrences, 79
+  read comparisons and one retired-literal guard. It records no current-only
+  violation. The sole reported inventory finding is the deliberately separate
+  promotion-context version binding, which remains outside the format
+  fingerprint and is checked for exact v2 equality by its reader.
 - `run_configs.csv` contains 80 discovered config origins. Sixty-four supply
   both required identity fields. Sixteen bounded fixture/config-builder rows
   supply neither and are classified by the checker's accepted construction
@@ -43,7 +44,7 @@ measured inputs for Workstream 31 rather than Workstream 30 failures.
   abort wrappers are retained. Unresolved dynamic expressions, `stop()`,
   `warning()` and `rlang::warn()` remain visible in the call-site file.
 - `summary.csv` reconciles the row and finding counts; `metadata.csv` records
-  the mode, source commit, root and accepted fingerprint-member count.
+  the mode, source commit, root and the 21-member format fingerprint.
 
 These counts size the later reconciliation. They are not acceptance targets
 for the permanent gates.
