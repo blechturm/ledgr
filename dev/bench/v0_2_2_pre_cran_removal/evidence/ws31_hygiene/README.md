@@ -119,3 +119,25 @@ run successfully.
   job is blocking and does not share an execution edge with formatting or
   package checks. `semantic_lint_blocking/` records 338 files and zero
   findings at `b51f853e`, with the same configuration as the advisory arm.
+
+## LDG-3035: standing rules and package gates
+
+- The Verification Contract names the exact opener, fingerprint, helper,
+  condition and empty-census detectors. The optimization manual keeps its
+  seven performance shapes unchanged and adds the broader helper criterion:
+  a named contract or a second caller, with a named exception for test seams.
+- The first fast-profile attempt correctly refused an orphan file-level
+  profile marker before running tests. After attaching a marker to each block,
+  it exposed two stale source records caused by the accepted style and
+  condition-documentation edits. The refreshed literal locations and the
+  documentation-only snapshot-census row make those older detectors exact
+  again; no runtime code changed.
+- The final P-core-pinned ordinary fast record under `fast_profile/` executes
+  567 of 567 blocks with no skip or failure in 101.25 seconds. The unchanged
+  112-second gate passes. LTB-0270 through LTB-0272 account for three of those
+  blocks and share one source parse.
+- The final source fingerprint has 22 members. That is intentionally one more
+  than LDG-3036's 21-member research-lake rebuild because the later
+  maintainer-added LDG-3039 classified and fingerprinted the persisted
+  membership-universe schema. The 21-member store is truthfully stale; the
+  existing later lake-rebuild owner must use the 22-member current build.

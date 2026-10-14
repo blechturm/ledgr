@@ -6,6 +6,7 @@ availability-provider.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward|result
 availability-results.R,reader,3,ledgr_results|ledgr_run_explain|print.ledgr_backtest|summary.ledgr_backtest,ledgr_backtest_ensure_snapshot
 backtest.R,reader,3,ledgr_backtest|ledgr_run,ledgr_snapshot_ensure_handle|ledgr_run_snapshot_guard
 backtest-results.R,reader,2+3,ledgr_compute_metrics|print.ledgr_backtest|summary.ledgr_backtest,guard only before snapshot-dependent branch
+condition-reference.R,documentation,NA,roxygen condition reference,mentions table-shaped condition names but reads no snapshot content
 corporate-action-results.R,reader,3,ledgr_corporate_action_summary|print.ledgr_backtest|summary.ledgr_backtest,ledgr_backtest_ensure_snapshot
 corporate-action-settlement.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward,enclosing class-3 guard
 csv-utils.R,writer,NA,adapter ingest,not a content reader

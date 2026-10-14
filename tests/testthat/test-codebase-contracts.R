@@ -1,4 +1,3 @@
-# ledgr-test-profile: fast
 ledgr_test_structure_inventory <- local({
   cached <- NULL
   function() {
@@ -15,6 +14,7 @@ ledgr_test_structure_inventory <- local({
   }
 })
 
+# ledgr-test-profile: fast
 testthat::test_that("[LTB-0270] private helpers retain an executable caller", {
   inventory <- ledgr_test_structure_inventory()
   testthat::expect_gt(length(inventory$scan$helpers), 0L)
@@ -22,6 +22,7 @@ testthat::test_that("[LTB-0270] private helpers retain an executable caller", {
   testthat::expect_identical(inventory$scan$orphan_helpers, character())
 })
 
+# ledgr-test-profile: fast
 testthat::test_that("[LTB-0271] public condition classes remain documented", {
   inventory <- ledgr_test_structure_inventory()
   reference <- readLines(
@@ -50,6 +51,7 @@ testthat::test_that("[LTB-0271] public condition classes remain documented", {
   testthat::expect_setequal(setdiff(public, descriptions), character())
 })
 
+# ledgr-test-profile: fast
 testthat::test_that("[LTB-0272] an empty census family remains a valid table", {
   inventory <- ledgr_test_structure_inventory()
   columns <- c("file", "line", "record_kind")
