@@ -23,17 +23,21 @@ testthat::test_that("[LTB-0270] private helpers retain an executable caller", {
   testthat::expect_gt(length(inventory$scan$private_helpers), 0L)
   testthat::expect_identical(inventory$scan$orphan_helpers, character())
 
-  seams <- utils::read.csv(
-    file.path(
-      inventory$root, "dev", "bench", "v0_2_2_pre_cran_removal",
-      "census", "test_only_seams.csv"
-    ),
-    stringsAsFactors = FALSE
-  )
-  testthat::expect_true(all(nzchar(seams$testing_contract)))
-  testthat::expect_false(any(startsWith(
-    seams$testing_contract, "direct_test_seam:"
-  )))
+  if (ledgr_test_checkout_context(inventory$root)) {
+    seams <- utils::read.csv(
+      file.path(
+        inventory$root, "dev", "bench", "v0_2_2_pre_cran_removal",
+        "census", "test_only_seams.csv"
+      ),
+      stringsAsFactors = FALSE
+    )
+    testthat::expect_true(all(nzchar(seams$testing_contract)))
+    testthat::expect_false(any(startsWith(
+      seams$testing_contract, "direct_test_seam:"
+    )))
+  } else {
+    testthat::expect_false(dir.exists(file.path(inventory$root, "dev")))
+  }
 })
 
 # ledgr-test-profile: fast
@@ -58,18 +62,21 @@ testthat::test_that("[LTB-0271] public condition classes remain documented", {
   public <- inventory$scan$condition_classes[
     !grepl("^ledgr_internal_", inventory$scan$condition_classes)
   ]
-  reported <- utils::read.csv(
-    file.path(
-      inventory$root, "dev", "bench", "v0_2_2_pre_cran_removal",
-      "census", "condition_classes.csv"
-    ),
-    stringsAsFactors = FALSE
-  )
-  reported_public <- reported$condition_class[reported$public]
-
   testthat::expect_gt(length(public), 0L)
   testthat::expect_true("ledgr_strategy_error" %in% public)
-  testthat::expect_setequal(public, reported_public)
+  if (ledgr_test_checkout_context(inventory$root)) {
+    reported <- utils::read.csv(
+      file.path(
+        inventory$root, "dev", "bench", "v0_2_2_pre_cran_removal",
+        "census", "condition_classes.csv"
+      ),
+      stringsAsFactors = FALSE
+    )
+    reported_public <- reported$condition_class[reported$public]
+    testthat::expect_setequal(public, reported_public)
+  } else {
+    testthat::expect_false(dir.exists(file.path(inventory$root, "dev")))
+  }
   testthat::expect_setequal(setdiff(public, aliases), character())
   testthat::expect_setequal(setdiff(public, descriptions), character())
 })
