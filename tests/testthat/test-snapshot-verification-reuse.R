@@ -339,29 +339,31 @@ testthat::test_that("[LTB-0255] every snapshot-table source file is classified",
     ),
     logical(1)
   )])
-  census <- utils::read.csv(
-    file.path(
-      root,
-      "inst", "design", "ledgr_v0_2_2_spec_packet",
-      "snapshot_verification_consumer_census.csv"
-    ),
-    stringsAsFactors = FALSE,
-    na.strings = character()
-  )
-  testthat::expect_setequal(census$source_file, source_files)
-  testthat::expect_false(anyDuplicated(census$source_file) > 0L)
-  testthat::expect_true(all(nzchar(census$role)))
-  testthat::expect_true(all(nzchar(census$enclosing_entries)))
-  testthat::expect_true(all(nzchar(census$guard)))
-  required <- paste(census$enclosing_entries, collapse = "|")
-  testthat::expect_match(required, "summary.ledgr_snapshot", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_facts_history", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_snapshot_quarantine", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_run_open", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_sweep_open", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_pulse_snapshot", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_indicator_dev", fixed = TRUE)
-  testthat::expect_match(required, "ledgr_feature_contract_check", fixed = TRUE)
+  if (ledgr_test_design_source_context(root)) {
+    census <- utils::read.csv(
+      file.path(
+        root,
+        "inst", "design", "ledgr_v0_2_2_spec_packet",
+        "snapshot_verification_consumer_census.csv"
+      ),
+      stringsAsFactors = FALSE,
+      na.strings = character()
+    )
+    testthat::expect_setequal(census$source_file, source_files)
+    testthat::expect_false(anyDuplicated(census$source_file) > 0L)
+    testthat::expect_true(all(nzchar(census$role)))
+    testthat::expect_true(all(nzchar(census$enclosing_entries)))
+    testthat::expect_true(all(nzchar(census$guard)))
+    required <- paste(census$enclosing_entries, collapse = "|")
+    testthat::expect_match(required, "summary.ledgr_snapshot", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_facts_history", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_snapshot_quarantine", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_run_open", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_sweep_open", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_pulse_snapshot", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_indicator_dev", fixed = TRUE)
+    testthat::expect_match(required, "ledgr_feature_contract_check", fixed = TRUE)
+  }
 })
 
 # ledgr-test-profile: review

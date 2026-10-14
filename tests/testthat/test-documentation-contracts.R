@@ -20,7 +20,6 @@ testthat::test_that("current documentation artifacts, links, and optional bounda
     root,
     c(
       "_pkgdown.yml", "README.Rmd", "README.md", "man", "vignettes",
-      "inst/design/ledgr_v0_1_7_7_spec_packet/ledgr.svg",
       "man/figures/logo.svg"
     )
   )
@@ -1254,8 +1253,9 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
 
 
 testthat::test_that("release checks preserve optional-reference and platform gates", {
-  local({
   root <- testthat::test_path("..", "..")
+  if (!ledgr_test_design_source_context(root)) return(invisible(NULL))
+  local({
   description_path <- file.path(root, "DESCRIPTION")
   dsr_test_path <- file.path(root, "tests", "testthat", "test-validation-dsr.R")
   manual_path <- file.path(root, "dev", "manual", "verify-dsr-quantstrat.R")
@@ -1292,7 +1292,6 @@ testthat::test_that("release checks preserve optional-reference and platform gat
 
   # Also covers: release playbook records v0.1.7.6 Ubuntu and DuckDB gates
   local({
-  root <- testthat::test_path("..", "..")
   playbook <- file.path(root, "inst", "design", "release_ci_playbook.md")
   playbook_exists <- file.exists(playbook)
   testthat::expect_true(playbook_exists, info = "release playbook is required in the review lane")
@@ -1541,12 +1540,14 @@ testthat::test_that("condition help exposes stable classes and final-bar behavio
 
 
 testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey", {
-  local({
   root <- testthat::test_path("..", "..")
-  paths <- file.path(
+  checkout <- ledgr_test_design_source_context(root)
+  local({
+  paths <- c(
+    if (checkout) file.path(root, "inst", "design", "contracts.md"),
+    file.path(
     root,
     c(
-      "inst/design/contracts.md",
       "README.Rmd",
       "README.md",
       "vignettes/sweeps.qmd",
@@ -1557,6 +1558,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
       "NAMESPACE"
     )
   )
+  )
   workflow_sources_exist <- all(file.exists(paths))
   testthat::expect_true(
     workflow_sources_exist,
@@ -1565,28 +1567,31 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   if (workflow_sources_exist) {
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
   names(docs) <- c(
-    "contracts", "readme_rmd", "readme", "research_qmd", "research",
+    if (checkout) "contracts",
+    "readme_rmd", "readme", "research_qmd", "research",
     "strategy_qmd", "strategy", "run_store", "namespace"
   )
 
-  testthat::expect_match(
-    docs$contracts,
-    "A durable `ledgr_backtest` handle is a locator",
-    fixed = TRUE
-  )
-  testthat::expect_match(
-    docs$contracts,
-    "Current configs always carry the field",
-    fixed = TRUE
-  )
-  testthat::expect_match(
-    gsub("\\s+", " ", docs$contracts),
-    paste(
-      "must not infer a plan, substitute current experiment state,",
-      "add a top-level `risk_plan_json` field"
-    ),
-    fixed = TRUE
-  )
+  if (checkout) {
+    testthat::expect_match(
+      docs$contracts,
+      "A durable `ledgr_backtest` handle is a locator",
+      fixed = TRUE
+    )
+    testthat::expect_match(
+      docs$contracts,
+      "Current configs always carry the field",
+      fixed = TRUE
+    )
+    testthat::expect_match(
+      gsub("\\s+", " ", docs$contracts),
+      paste(
+        "must not infer a plan, substitute current experiment state,",
+        "add a top-level `risk_plan_json` field"
+      ),
+      fixed = TRUE
+    )
+  }
   testthat::expect_match(
     docs$contracts,
     "`target[[instrument_id]]` extracts one named quantity",
@@ -2013,10 +2018,7 @@ testthat::test_that("[LTB-0126] no rendered article or the README shows stray co
 
 testthat::test_that("[LTB-0187] feature-map read teaching matches the accepted contract", {
   root <- testthat::test_path("..", "..")
-  testthat::skip_if_not(
-    file.exists(file.path(root, "inst", "design", "contracts.md")),
-    "design sources not available during installed-package tests"
-  )
+  if (!ledgr_test_design_source_context(root)) return(invisible(NULL))
   read <- function(...) paste(
     readLines(file.path(root, ...), warn = FALSE, encoding = "UTF-8"),
     collapse = "\n"

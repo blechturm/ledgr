@@ -23,6 +23,7 @@
 /src/*.dll
 /src/*.so
 /src/*.dylib
+/src/*.gcda
 
 # Coverage reports
 /coverage.html

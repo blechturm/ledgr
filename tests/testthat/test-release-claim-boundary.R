@@ -74,9 +74,14 @@ testthat::test_that("[LTB-0181] the Sharadar boundary is pinned and frozen equit
     file.path(root, "vignettes", c(
       "survivorship-bias.qmd", "survivorship-bias.md",
       "missing-data-and-sessions.qmd", "missing-data-and-sessions.md"
-    )),
-    file.path(root, "inst", "design", c("contracts.md", "release_ci_playbook.md"))
+    ))
   )
+  if (ledgr_test_design_source_context(root)) {
+    pinned <- c(
+      pinned,
+      file.path(root, "inst", "design", c("contracts.md", "release_ci_playbook.md"))
+    )
+  }
   for (path in pinned) {
     testthat::expect_true(grepl(boundary, squish(path), fixed = TRUE), info = basename(path))
   }
