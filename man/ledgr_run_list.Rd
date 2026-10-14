@@ -24,7 +24,7 @@ flag declared valuation assumptions: \code{valuation_state} (\code{"current"},
 \code{max_frozen_equity_weight}, \code{frozen_at_end_value}, and
 \code{assumed_terminal_outcomes}; \code{\link[=ledgr_valuation_summary]{ledgr_valuation_summary()}} gives the full
 evidence for one run. Typed missing values mean that completion or
-availability evidence is unavailable, as for dense or historical runs.
+availability evidence is unavailable.
 Print adds attempted, done, incomplete, and failed counts. See
 \link{ledgr_identity_fields} for hash-field semantics.
 }

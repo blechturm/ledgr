@@ -63,8 +63,8 @@ the package preflight resolves it to. It cannot reach objects in the global
 environment or ledgr's unexported functions; a strategy that needs those was
 not Tier 1 when it ran.
 
-Legacy/pre-provenance runs and strategy types without capturable source may
-return \code{NA} for \code{strategy_source_text}.
+Every current run has a provenance row. Strategy types without capturable
+source may still return \code{NA} for \code{strategy_source_text}.
 }
 \section{Articles}{
 

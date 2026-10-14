@@ -88,8 +88,8 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' environment or ledgr's unexported functions; a strategy that needs those was
 #' not Tier 1 when it ran.
 #'
-#' Strategy types without capturable source may return `NA` for
-#' `strategy_source_text`.
+#' Every current run has a provenance row. Strategy types without capturable
+#' source may still return `NA` for `strategy_source_text`.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
 #'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable

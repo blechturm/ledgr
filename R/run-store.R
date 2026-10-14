@@ -821,7 +821,7 @@ print.ledgr_comparison <- function(x, ...) {
 #'   `max_frozen_equity_weight`, `frozen_at_end_value`, and
 #'   `assumed_terminal_outcomes`; [ledgr_valuation_summary()] gives the full
 #'   evidence for one run. Typed missing values mean that completion or
-#'   availability evidence is unavailable, as for dense runs.
+#'   availability evidence is unavailable.
 #'   Print adds attempted, done, incomplete, and failed counts. See
 #'   [ledgr_identity_fields] for hash-field semantics.
 #' @examples
@@ -932,8 +932,8 @@ print.ledgr_run_list <- function(x, ...) {
 #'   terminal completion evidence exists, the object also reports requested
 #'   and achieved windows, stop reason, last fully valued and executed times,
 #'   whether performance is complete, and affected instrument identifiers.
-#'   Historical or dense runs without that evidence report those fields as
-#'   unknown. See [ledgr_identity_fields] for hash-field semantics.
+#'   Runs without that evidence report those fields as unknown. See
+#'   [ledgr_identity_fields] for hash-field semantics.
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
