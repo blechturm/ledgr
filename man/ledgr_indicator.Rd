@@ -20,7 +20,7 @@ ledgr_indicator(
 
 \item{fn}{Scalar indicator function evaluated on one bounded window of bars
 ending at the current bar, returning a numeric value or a list. Two forms
-are accepted: \code{function(window)}, and \code{function(window, params)}. When the
+are accepted: \verb{function(window)}, and \verb{function(window, params)}. When the
 function declares a second argument, ledgr also passes the indicator's
 \code{params}.}
 

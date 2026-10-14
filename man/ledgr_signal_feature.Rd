@@ -9,8 +9,8 @@ ledgr_signal_feature(ctx, feature_id)
 \arguments{
 \item{ctx}{ledgr strategy context.}
 
-\item{feature_id}{One non-empty active feature-map alias or registered feature
-ID. The supplied name is retained as the signal origin.}
+\item{feature_id}{One non-empty active feature-map alias or registered
+feature ID. The supplied name is retained as the signal origin.}
 }
 \value{
 A \code{ledgr_signal} object.

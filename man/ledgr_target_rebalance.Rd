@@ -25,7 +25,8 @@ A full-universe \code{ledgr_target} object.
 \code{ledgr_target}. It uses current pulse equity and current close prices at
 decision time; fills still occur at the next open, so small drift between
 decision-time sizing and fill-time value is expected.
-
+}
+\details{
 In a dense run, allocatable equity is current equity. In an
 availability-aware run, ledgr first reserves the absolute marked exposure of
 ineligible holdings, held nonmembers and target-restricted members alike, and
@@ -47,8 +48,7 @@ allocatable equity; then the priced quantities are scaled down, before
 flooring, by \code{max(0, allocatable - held_exposure) / priced_value}. Each skip
 is recorded as a \code{sizing_unavailable} decision row in
 \code{ledgr_results(bt, "diagnostics")}.
-}
-\details{
+
 Warning and error classes:
 \itemize{
 \item \code{ledgr_invalid_target_price} when a selected instrument has missing,

@@ -16,9 +16,9 @@ omitted, every retained decision for \code{instrument_id} is returned in pulse
 order.}
 }
 \value{
-A tibble with one row for a requested timestamp or one row per retained
-decision when \code{ts_utc} is omitted. An instrument absent from the retained
-trace returns a zero-row tibble in history mode. Columns are:
+A tibble with one row for a requested timestamp or one row per
+retained decision when \code{ts_utc} is omitted. An instrument absent from the
+retained trace returns a zero-row tibble in history mode. Columns are:
 \itemize{
 \item identifiers: \code{run_id}, \code{ts_utc}, and \code{instrument_id};
 \item availability: \code{member}, \code{held}, \code{target_restricted},
@@ -30,7 +30,6 @@ trace returns a zero-row tibble in history mode. Columns are:
 \item valuation evidence: \code{mark_source} and \code{mark_age}; and
 \item terminal evidence: \code{completion_status} and \code{complete_performance}.
 }
-
 When no execution diagnostic exists for an unchanged target,
 \code{execution_outcome} is \code{"no_action"} and the two execution-reason fields
 are \code{"no_target_change"}. These are explain-time values, not durable
@@ -47,3 +46,4 @@ Point-in-time universe workflow:
 \code{vignette("survivorship-bias", package = "ledgr")}
 \code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
+

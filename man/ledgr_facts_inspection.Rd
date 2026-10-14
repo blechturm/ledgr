@@ -56,9 +56,9 @@ cutoff. Both functions accept an in-memory fact family or bundle, or a
 sealed snapshot. Results are eager and read-only.
 Default prints show the columns needed to interpret the selected family and
 operation, disclose omitted stored columns, and leave the complete \verb{$rows}
-and \verb{$evidence} members unchanged. Session-resolution
-\code{knowledge_time} is a presentation value derived from applicable
-\verb{$evidence}; it is not stored in \verb{$rows}.
+and \verb{$evidence} members unchanged. Session-resolution \code{knowledge_time} is a
+presentation value derived from applicable \verb{$evidence}; it is not stored in
+\verb{$rows}.
 }
 \section{Information boundary}{
 
@@ -66,10 +66,10 @@ History may include future-effective, future-known, and audit-only evidence.
 Resolution excludes evidence not yet effective and knowable at \code{at}.
 Neither result is a strategy context or a selection surface.
 }
-
 \section{Errors}{
 
 Invalid argument combinations raise \code{ledgr_facts_inspection_invalid_args}.
 Missing scopes raise \code{ledgr_facts_scope_not_found}. Snapshot inputs must be
 sealed and hash-valid on every call.
 }
+

@@ -25,7 +25,8 @@ instrument gets zero. Use it for rules such as "hold 10 shares of each instrumen
 passes the condition"; use \code{\link[=ledgr_weight_equal]{ledgr_weight_equal()}} and
 \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} instead when positions should be sized from
 account equity.
-
+}
+\details{
 Missing decisions are settled by the selection, not here: build the
 selection with \code{ledgr_selection(ctx, where = ..., missing = "exclude")} when
 a missing value, such as a feature still in warmup, should mean "not
@@ -35,8 +36,7 @@ In an availability-aware run, every ineligible instrument, a held nonmember
 or a target-restricted member, keeps its current quantity, exactly as
 \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} preserves it. The selection may name any instrument
 on the decision axis, but may select eligible instruments only.
-}
-\details{
+
 Error class: \code{ledgr_invalid_strategy_helper} when \code{selection} is not a
 \code{ledgr_selection}, names an instrument outside the decision axis, selects
 an ineligible instrument, or

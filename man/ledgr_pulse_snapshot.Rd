@@ -28,7 +28,7 @@ ledgr_pulse_snapshot(
 declarations when \code{features} is a feature map.}
 
 \item{cash}{Cash held alongside \code{positions}. It is not total account value;
-pulse equity is \code{cash + sum(positions * current close)}.}
+pulse equity is \verb{cash + sum(positions * current close)}.}
 
 \item{positions}{Named numeric vector of positions (NULL = flat).}
 

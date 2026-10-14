@@ -89,4 +89,9 @@ Useful links:
 \author{
 \strong{Maintainer}: Max Thomasberger \email{31213680+blechturm@users.noreply.github.com}
 
+Authors:
+\itemize{
+  \item Max Thomasberger \email{31213680+blechturm@users.noreply.github.com}
+}
+
 }

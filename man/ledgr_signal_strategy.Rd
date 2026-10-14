@@ -30,7 +30,8 @@ named numeric target vector.
 strategies that emit explicit signals. It does not change the runner
 contract: the returned strategy maps signals to a full named numeric target
 vector before the shared StrategyResult validator runs.
-
+}
+\details{
 Only eligible instruments (\code{ctx$vec$admissible}) are mapped from their
 signals. Every ineligible instrument, a held nonmember or a target-restricted
 member, keeps its current quantity, whatever signal it received. On an empty

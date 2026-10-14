@@ -45,7 +45,6 @@ Constructor fields:
 \item \code{mar}: reserved for future minimum-acceptable-return providers and must be
 \code{NULL} in v0.1.8.
 }
-
 \code{ledgr_metric_context_hash()} hashes metric-context version, annual
 risk-free rate, risk-free source, risk-free \code{as_of}, and calendar
 annualization and source fields. Human display labels are stored for
@@ -57,3 +56,4 @@ inspection but do not enter the hash. Inspect nested risk-free provenance with
 \code{vignette("metrics-and-accounting", package = "ledgr")}
 \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
 }
+

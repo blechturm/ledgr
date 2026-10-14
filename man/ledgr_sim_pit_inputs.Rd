@@ -14,10 +14,9 @@ ledgr_sim_pit_inputs(
   timezone = "UTC",
   session_open = "09:30:00",
   session_close = "16:00:00",
-  cases = c("venue_closure", "missing_observation", "delisting", "halt",
-    "cash_dividend"),
-  knowledge = c(sessions = "evidenced", membership = "evidenced", lifetime =
-    "evidenced", trading_status = "evidenced"),
+  cases = c("venue_closure", "missing_observation", "delisting", "halt", "cash_dividend"),
+  knowledge = c(sessions = "evidenced", membership = "evidenced", lifetime = "evidenced",
+    trading_status = "evidenced"),
   include_instruments = TRUE
 )
 }
@@ -41,18 +40,18 @@ membership universe.}
 
 \item{knowledge}{Named character vector selecting \code{"evidenced"} or
 \code{"assume_effective"} separately for sessions, membership, lifetime, and
-trading status. Corporate-action rows always carry explicit evidence clocks.}
+trading status. Corporate-action rows always carry explicit evidence
+clocks.}
 
 \item{include_instruments}{Whether to include the optional instrument master.}
 }
 \value{
 An ordinary named list. \code{bars}, \code{instruments}, \code{sessions},
-\code{membership}, \code{lifetime}, \code{trading_status}, and
-\code{corporate_actions} are plain data frames; \code{recipe} records
-constructor arguments and scope IDs; and \code{cases} locates each applied
-teaching case. When \code{cash_dividend} is disabled,
-\code{corporate_actions} is an empty data frame and its recipe entry is marked
-disabled.
+\code{membership}, \code{lifetime}, \code{trading_status}, and \code{corporate_actions} are
+plain data frames; \code{recipe} records constructor arguments and scope IDs;
+and \code{cases} locates each applied teaching case. When \code{cash_dividend} is
+disabled, \code{corporate_actions} is an empty data frame and its recipe entry
+is marked disabled.
 }
 \description{
 Creates one deterministic, offline input unit containing a declared session
@@ -66,15 +65,15 @@ requested window. They add one weekday venue closure, one missing observation
 on a declared open session, one delisting, one halt whose knowledge arrives
 after its effective time, and one validated gross cash dividend. Effective
 intervals are half-open. Missing knowledge stays audit-only under
-\code{"evidenced"}; selecting \code{"assume_effective"} is recorded in the
-recipe and delegates that substitution to the public fact constructor.
+\code{"evidenced"}; selecting \code{"assume_effective"} is recorded in the recipe and
+delegates that substitution to the public fact constructor.
 The delisting retains its boundary observation and emits no later bars. The
 halt retains its effective-boundary bar, omits observations strictly inside
 the halted interval, and resumes at the excluded interval end.
 
-A changed seed changes prices and volumes, not calendar, facts, case placement,
-columns, or scope. The returned facts and bars belong together; they are not a
-fact overlay for an unrelated observation panel.
+A changed seed changes prices and volumes, not calendar, facts, case
+placement, columns, or scope. The returned facts and bars belong together;
+they are not a fact overlay for an unrelated observation panel.
 }
 \examples{
 inputs <- ledgr_sim_pit_inputs(

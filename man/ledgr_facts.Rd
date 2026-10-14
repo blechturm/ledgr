@@ -82,14 +82,14 @@ and \code{supersedes_fact_id}. Lifetime rows require \code{instrument_id},
 
 Equity corporate-action rows require \code{subtype}, \code{parent_instrument_id},
 \code{complete}, and \code{provenance_tier}. The optional clocks are
-\code{entitlement_time}, \code{effective_time}, \code{knowledge_time}, and
-\code{payment_time}. Optional normalized terms are
-\code{gross_cash_per_parent_unit}, \code{recipient_instrument_id}, and
-\code{recipient_quantity_per_parent_unit}; each supplied term requires its
-matching \code{*_validated} flag. Incomplete rows require one lower-snake-case
-\code{refusal_reason}. Provenance is either \code{snapshot_bound}, with no upstream
-identifiers, or \code{upstream_vintage_bound}, with both \code{upstream_build_id}
-and \code{bar_vintage_id}.
+\code{entitlement_time}, \code{effective_time}, \code{knowledge_time}, and \code{payment_time}.
+Optional normalized terms are \code{gross_cash_per_parent_unit},
+\code{recipient_instrument_id}, and \code{recipient_quantity_per_parent_unit}; each
+supplied term requires its matching \verb{*_validated} flag. Incomplete rows
+require one lower-snake-case \code{refusal_reason}. Provenance is either
+\code{snapshot_bound}, with no upstream identifiers, or
+\code{upstream_vintage_bound}, with both \code{upstream_build_id} and
+\code{bar_vintage_id}.
 
 Session rows require \code{session_date}, \code{status}, \code{session_open}, and
 \code{session_close}; \code{knowledge_time} is required under evidenced knowledge and

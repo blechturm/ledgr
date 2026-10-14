@@ -23,7 +23,8 @@ A tibble with columns \code{alias}, \code{feature_id}, \code{source},
 accepts the same feature declarations used by experiments: a feature map, a
 named or unnamed list of indicators and indicator bundles, one indicator, or
 one indicator bundle.
-
+}
+\details{
 Parameterized feature maps are resolved for inspection when concrete
 \code{feature_params} are supplied. Without them, unresolved declarations fail
 with \code{ledgr_feature_factory_requires_params}.

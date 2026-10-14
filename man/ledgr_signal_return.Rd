@@ -23,13 +23,12 @@ indicators. Like \code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}, it
 whole decision axis and marks eligibility in the \code{eligible} attribute.
 }
 \details{
-For a fixed concrete lookback, register the matching return indicator. For a
-parameterized sweep, put
-\code{ledgr_ind_returns(ledgr_param("lookback"))} in a feature map and read its
-stable active alias with \code{ledgr_signal_feature()}. The generic helper
-resolves that alias to each candidate's concrete return feature; strategy code
-does not need to register or switch among every concrete
-\verb{return_<lookback>} name.
+For a fixed concrete lookback, register the matching return indicator. For
+a parameterized sweep, put \code{ledgr_ind_returns(ledgr_param("lookback"))} in a
+feature map and read its stable active alias with \code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}.
+The generic helper resolves that alias to each candidate's concrete return
+feature; strategy code does not need to register or switch among every
+concrete \verb{return_<lookback>} name.
 }
 \section{Articles}{
 

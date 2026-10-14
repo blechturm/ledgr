@@ -2,7 +2,7 @@
 % Please edit documentation in R/db-schema-validate.R
 \name{ledgr_validate_schema}
 \alias{ledgr_validate_schema}
-\title{Validate ledgr DuckDB schema (v0.1.0)}
+\title{Validate the current ledgr DuckDB schema}
 \usage{
 ledgr_validate_schema(con)
 }
@@ -13,8 +13,8 @@ ledgr_validate_schema(con)
 Invisibly returns \code{TRUE} on success.
 }
 \description{
-Validates required tables, columns, types, primary keys, UNIQUE constraints,
-and required behavioral constraints.
+Compares every current table, ordered column, type, nullability, default,
+constraint and index with ledgr's current schema catalogue.
 }
 \examples{
 db_path <- tempfile(fileext = ".duckdb")

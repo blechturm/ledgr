@@ -31,7 +31,7 @@ ledgr_snapshot_from_csv(
 \code{facts}.}
 
 \item{price_basis}{Optional declaration of the economic basis of the bars.
-See \code{ledgr_snapshot_from_df()}.}
+See \code{\link[=ledgr_snapshot_from_df]{ledgr_snapshot_from_df()}}.}
 }
 \value{
 A \code{ledgr_snapshot} object.

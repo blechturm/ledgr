@@ -13,7 +13,6 @@
 \code{"trades"}, or \code{"ledger"}.}
 
 \item{...}{Must be empty.}
-
 }
 \value{
 A tibble with the requested result table.
