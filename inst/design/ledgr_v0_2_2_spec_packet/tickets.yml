@@ -547,13 +547,7 @@ workstreams:
     status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review:
-      mode: "Type 1"
-      point: "focused re-review 1 of workstream 36"
-      reason: "One claim: neither unsound in-process feature caching nor unconsumed durable feature persistence remains, surviving precomputed-feature identity binds deterministic captures, schema 120 and identity rule 3 are current, and recorded deterministic economic outputs are otherwise exact; candidate-key-derived stochastic seeds are intended identity changes. Review reruns the applicable deterministic substitute for the now-refused environment-capturing RED spike and the stale-precompute witnesses, mutates each removal and identity boundary, checks every public entry point and walks the seven optimization shapes."
-      verdict: "CHANGES_REQUIRED"
-      artifact: "close_review_36_rereview_1.md"
-      result: "Focused re-review 1 closed F2-F6 and the fingerprint half of F1, but found N1: alias_map_hash did not bind each alias to its concrete feature ID. Correction round 2 now compares the stored canonical alias map per candidate and registers the exact same-fingerprint, same-hash alias permutation; its focused suites and map-only mutation are green. Final N1-only focused re-review remains pending, and any further finding escalates to the maintainer under M1. The existing 565/565 correction median of 112.490 seconds remains a recorded 0.490-second MISS against the unchanged 112-second bound; the original 106.110-second implementation pass is preserved."
+    review: {mode: "Type 1", point: "final N1-only focused re-review of workstream 36", verdict: "PASS", result: "Finding-free PASS on 2026-10-14: N1 is resolved; removing only alias_map_matches causes two detector failures, the unguarded stale/fresh final equities are 100024/100009, and all 12 focused files plus YAML and diff checks pass. The 112.490-second median remains an honest 0.490-second MISS against the unchanged 112-second bound and is the sole maintainer decision; accepted remains null."}
     integration_evidence: ["feature_retention_identity_closeout.md records the necessity judgment, implementation, all seventeen acceptance-item results, intended identities, entry-point coverage, test-change ledger, verbatim seven-shape walk, supported-toolchain checks and reproduction commands for LDG-3049, LDG-3050 and LDG-3056."]
     accepted: null
   - id: 37
