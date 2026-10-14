@@ -26,6 +26,11 @@ output_arg <- value_arg(
 output <- normalizePath(output_arg, winslash = "/", mustWork = FALSE)
 source_commit <- value_arg("source-commit", "working-tree")
 fail_on_findings <- logical_arg("fail-on-findings", FALSE)
+config_name <- value_arg("config", ".lintr")
+lint_name <- value_arg(
+  "name",
+  if (identical(config_name, ".lintr-semantic")) "semantic" else "formatting"
+)
 
 if (!requireNamespace("lintr", quietly = TRUE)) {
   stop("The advisory lint runner requires the lintr package.", call. = FALSE)
@@ -34,8 +39,10 @@ if (!requireNamespace("styler", quietly = TRUE)) {
   stop("The advisory lint record requires the styler package version.", call. = FALSE)
 }
 
-config <- file.path(root, ".lintr")
-if (!file.exists(config)) stop("The repository .lintr file is missing.", call. = FALSE)
+config <- file.path(root, config_name)
+if (!file.exists(config)) {
+  stop(sprintf("The repository lint config `%s` is missing.", config_name), call. = FALSE)
+}
 
 if (!identical(source_commit, "working-tree")) {
   git <- Sys.which("git")
@@ -133,7 +140,7 @@ if (nrow(findings) == 0L) {
 metadata <- data.frame(
   key = c(
     "source_commit", "lintr_version", "styler_version", "included_roots",
-    "excluded_paths", "source_files", "mode"
+    "excluded_paths", "source_files", "config", "lint_name", "mode"
   ),
   value = c(
     source_commit,
@@ -142,7 +149,9 @@ metadata <- data.frame(
     paste(included_roots, collapse = ";"),
     paste(excluded_paths, collapse = ";"),
     as.character(length(files)),
-    "advisory"
+    config_name,
+    lint_name,
+    if (fail_on_findings) "blocking" else "advisory"
   ),
   stringsAsFactors = FALSE
 )
@@ -174,8 +183,10 @@ utils::write.csv(
 )
 
 cat(sprintf(
-  "LEDGR_ADVISORY_LINT files=%d findings=%d output=%s\n",
-  length(files), nrow(findings), relative_path(output)
+  "LEDGR_LINT name=%s files=%d findings=%d mode=%s output=%s\n",
+  lint_name, length(files), nrow(findings),
+  if (fail_on_findings) "blocking" else "advisory",
+  relative_path(output)
 ))
 
 if (fail_on_findings && nrow(findings) > 0L) quit(status = 1L)

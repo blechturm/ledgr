@@ -5,6 +5,7 @@
 ^data-raw$
 ^\.github$
 ^\.git$
+^\.git-blame-ignore-revs$
 ^\.claude$
 ^\.understand-anything$
 ^docs$
