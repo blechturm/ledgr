@@ -8,7 +8,10 @@ the execution contracts in `inst/design/contracts.md`.
 
 - Do not add a second execution engine. `ledgr_run()` is the committed-run
   execution entry point. `ledgr_sweep()` must share the same internal fold core and
-  must not introduce a second execution path.
+  must not introduce a second execution path. One fold core means one set of
+  semantics: do not add a new execution-mode branch (`availability_active` or
+  equivalent) to fold, run, sweep or walk-forward code. Dense mode is frozen
+  until the execution-core consolidation removes it (macro plan, 2026-10-14).
 - Do not bypass snapshot creation, sealing, hash verification, or no-lookahead
   pulse execution.
 - Interactive tools must remain read-only against persistent ledgr tables.

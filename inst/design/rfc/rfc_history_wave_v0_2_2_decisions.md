@@ -35,6 +35,11 @@ linked below.
 - Durable factor and prediction evidence is routed downstream, not into WS3:
   the amendment preserves the identity needed to join future decision evidence
   to history, while capture, retention and reopening remain a separate RFC.
+- Mode (maintainer, 2026-10-14): history is built on the availability path
+  only. Dense mode is frozen and leaves through the execution-core
+  consolidation before the first CRAN release (macro plan, one-execution-mode
+  probe result). B's "dense universes" means full membership on the
+  availability path.
 
 **Still open:** Session D (indicator labels, recommendations ready), Session E
 (memory budget: proposed no more than +10% peak from WS3/WS4, the real

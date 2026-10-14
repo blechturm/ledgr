@@ -1038,6 +1038,27 @@ consumes the probe's findings:
 - missing-bar strictness needs an explicit coverage policy;
 - the availability path's cost.
 
+**Superseded the same day (maintainer, 2026-10-14): one mode goes.**
+ledgr's design rests on one fold core. The fold is one function but
+carries two semantics: 29 `availability_active` branches in
+`R/fold-engine.R` and 128 across `R/`. So the history wave builds on the
+availability path only and does not serve dense mode.
+- Dense mode is frozen: fixes only, no new features and no new mode
+  branches.
+- The execution-core consolidation is a committed goal before the first
+  CRAN release, not an optional RFC. Dense becomes the availability path
+  with an implied calendar; the open decisions above stay its inputs, and
+  the branch-site count is its progress measure.
+- The availability core needs further optimization, because the history
+  wave and the consolidation both run on it: the fast prepared context,
+  the per-pulse diagnostic flush and canonical JSON, and the strict
+  feature path (`dev/spikes/one_execution_mode/probe_findings.md`). Its
+  placement relative to the WS3/WS4 implementation cut is decided at that
+  cut.
+- Register decision B's "ragged and dense universes" means universe shapes
+  on the availability path, not dense mode.
+- Cut 15 statements that history supports both modes are superseded.
+
 The fold phase extraction places the dense-only fold differences in named
 phases: the last-bar warning (`R/fold-engine.R:114`) and fill stamping
 (`:154`). The guard branch is outside the fold.
