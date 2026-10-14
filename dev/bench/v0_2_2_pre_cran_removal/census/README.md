@@ -7,7 +7,7 @@ plus the close-review corrections with:
 ```text
 Rscript --vanilla tools/check-codebase-contracts.R --mode=check \
   --output=dev/bench/v0_2_2_pre_cran_removal/census \
-  --source-commit=c13eb5cc
+  --source-commit=693a32dc
 ```
 
 The command exits successfully because the current-only, connection,
@@ -31,11 +31,11 @@ families use the same typed schemas and summary arithmetic as populated ones.
   both required identity fields. Sixteen bounded fixture/config-builder rows
   supply neither and are classified by the checker's accepted construction
   rules; no current run-config consumer violates the gate.
-- `helpers.csv` contains 1,629 package functions: 168 exports, 84 registered
-  S3 methods, one hook, 1,352 R-referenced private helpers and 24 test-only
+- `helpers.csv` contains 1,627 package functions: 168 exports, 84 registered
+  S3 methods, one hook, 1,351 R-referenced private helpers and 23 test-only
   private helpers. No private helper is uncalled. Each retained test seam has
   a concrete one-line testing contract and a real test caller.
-- `conditions.csv` contains 2,249 call-site records. The derived
+- `conditions.csv` contains 2,240 call-site records. The derived
   `condition_classes.csv` contains 379 recoverable classes: 366 documented
   public classes, one internal class and 12 non-public labels. Literal,
   positional, class-builder and statically resolvable package-wrapper forms
@@ -47,6 +47,13 @@ families use the same typed schemas and summary arithmetic as populated ones.
 These are evidence counts, not fixed acceptance targets. The permanent gates
 derive their inventories from the current source and require the report and
 test scanners to agree.
+
+The final correction removes `ledgr_compute_features`, its now-unused
+`ledgr_validate_feature_defs` helper and the three tests that exercised only
+that obsolete database-writing engine. The production feature-series paths
+remain covered by their existing tests. The source-derived census therefore
+drops one R-referenced private helper and one test-only seam without adding an
+allowlist or weakening a detector.
 
 ## Failure sensitivity
 

@@ -172,8 +172,8 @@ stored row or public result:
   `ledgr_run()`. Disabling shared-fold seeding makes the sweep arms diverge.
 - All six census families now have declared typed empty schemas and use one
   summary implementation. Restoring an untyped empty bind makes the summary
-  fail. The final check-mode record at `c13eb5cc` has 69 connection rows, 139
-  version rows, 80 run-config rows, 1,629 helpers, 2,249 condition call sites,
+  fail. The final check-mode record at `693a32dc` has 69 connection rows, 139
+  version rows, 80 run-config rows, 1,627 helpers, 2,240 condition call sites,
   379 recovered classes and 64 recorded findings.
 - The report and executable condition inventories share one scanner for
   literal, positional, builder and statically resolvable wrapper classes and
@@ -192,8 +192,20 @@ stored row or public result:
   and all 24 vignette replays. Its only two warnings are the expected missing
   prebuilt-vignette warnings caused by `--no-build-vignettes`.
 - GitHub Actions run `38578216775` at `93d801a8` is green. Its independent
-  blocking formatting and semantic jobs pass, all three ordinary fast-profile
-  runs and their unchanged gate pass, and the Ubuntu package job passes its
-  cold-start, historical-acceptance and `R CMD check` stages. Release-only,
-  isolated-CRAN and coverage stages are correctly absent from this quick-tier
-  branch run rather than counted as evidence.
+  blocking formatting and semantic jobs pass, and all three hosted ordinary
+  fast-profile runs execute 567/567 blocks. Their advisory clocks are 176.3,
+  172.6 and 171.7 seconds, with a 172.584-second median above the unchanged
+  112-second bound. The binding fixed-host record is the local 105.64-second
+  median. The Ubuntu package job passes its cold-start,
+  historical-acceptance and `R CMD check` stages. Release-only, isolated-CRAN
+  and coverage stages are correctly absent from this quick-tier branch run
+  rather than counted as evidence.
+- Commit `693a32dc` removes the unused v0.1.0 database-writing
+  `ledgr_compute_features` engine, its now-unused feature-list validator, two
+  test-only utilities and three tests that exercised only the dead engine.
+  The live feature-series, precompute, availability and strict-feature suites
+  pass. The final census has 23 contracted test seams; no seam was retained by
+  inventing a contract for dead code. A final current-tree ordinary sample
+  executes the resulting 564/564 fast blocks in 106.12 seconds. It is a
+  correctness sample, not a replacement for the binding three-run
+  105.64-second record.
