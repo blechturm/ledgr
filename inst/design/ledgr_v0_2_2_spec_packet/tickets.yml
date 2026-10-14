@@ -486,7 +486,7 @@ workstreams:
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 31 after workstreams 29 and 30", reason: "One claim joins LDG-3022, LDG-3023 and LDG-3032 through LDG-3040: source-only design memory is absent from built packages without weakening checkout or installed-context tests; seeded runs restore the caller's RNG with byte-identical outputs; every inline schema-version literal is classified and every persisted one is fingerprinted; ticket-named helpers are renamed without content change; the source-derived census becomes two failure-sensitive structural gates; formatting and semantic lint complete their recorded advisory-to-blocking transitions; and the standing helper rule names the maintained boundary. The review checks the package build boundary and size record, both A and B mutations, the schema-literal census and any named fingerprint change, the exact helper renames, the report-to-gate transition, both lint chronologies and the blame-ignored style commit. Its request names the range, per-ticket commits and claim IDs, build/check and fixture records, census and lint records, mutation results and exact product-change boundary.", artifact_rule: "Under M2, findings create close_review_31.md and this review result records verdict, link and one line on what changed; a finding-free PASS is recorded in one line without a file. A third correction round stops for maintainer disposition."}
-    integration_evidence: "Preparatory checkpoint range 646c3266..a33f27c6 received a Type 1 CHANGES_REQUIRED review before the accepted M1/M2 lifecycle. Corrections d85ec87e and a8416492 replace the invalid connection, run-config, namespace, condition and version shortcuts; align the advisory rules with styler; pin the CI tools; and distinguish lint findings from tool failure. The correction is author-verified below. Its focused confirmation is folded into the start of Workstream 29's close review rather than charged as a separate independent verdict. Workstream 31 stays open and resumes after Workstreams 29 and 30. Past wording remains a historical record; its future close review follows the M1/M2 accounting, findings-home and escalation rules."
+    integration_evidence: "Preparatory checkpoint range 646c3266..a33f27c6 received a Type 1 CHANGES_REQUIRED review before the accepted M1/M2 lifecycle. Corrections d85ec87e and a8416492 replace the invalid connection, run-config, namespace, condition and version shortcuts; align the advisory rules with styler; pin the CI tools; and distinguish lint findings from tool failure. The correction is author-verified below. Its focused confirmation is folded into the start of Workstream 29's close review rather than charged as a separate independent verdict. Workstream 31 stays open and resumes after Workstreams 29 and 30. Past wording remains a historical record; its future close review follows the M1/M2 accounting, findings-home and escalation rules. The LDG-3037 through LDG-3040 checkpoint is implemented by 7d2bf9a6 through 4d99a743 with the refreshed census at 3126c692. dev/bench/v0_2_2_pre_cran_removal/evidence/ws31_hygiene/README.md records the build boundary, mutations, exact fixture comparisons, schema classification, helper renames and package gates. Workstream 31 remains open for LDG-3032 through LDG-3035."
     scope_change: "Maintainer, 2026-10-13: LDG-3032 records its dedicated whole-tree styler commit in .git-blame-ignore-revs and documents the local blame configuration. After formatting lint becomes blocking, LDG-3033 measures the eight named non-styler semantic linters for one advisory interval and LDG-3034 reconciles and promotes that separate layer to blocking. The optional large-function census is not adopted without an observed failure; the post-v0.2.2 fold-splitting owner may measure it if needed. Maintainer, 2026-10-14: after Workstream 30 acceptance, LDG-3037 through LDG-3040 join Workstream 31 ahead of the style pass. They stop shipping inst/design, preserve caller RNG around seeded runs, classify every inline schema-version literal and fingerprint persisted ones, and rename three ticket-named test helpers. The documentation surface, NEWS collapse and complexity-audit work remain routed to the next release."
     accepted: null
 tickets:
@@ -1615,43 +1615,43 @@ tickets:
   - id: "LDG-3037"
     title: "Keep design memory out of built packages"
     workstream: 31
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3036"]
     scope: "Replace the hand-picked inst/design exclusions in .Rbuildignore with one ^inst/design$ rule while retaining only generated-state exclusions that remain independently necessary. Keep the .github R-CMD-check path filter for inst/design changes unchanged. Reconcile every test that reads inst/design: an independent .git or .Rbuildignore marker identifies a checkout, where the design source must exist and its full oracle runs; without either marker the test asserts that inst/design is absent rather than skipping. Replace the obsolete design-tree logo requirement with man/figures/logo.svg. Add src/*.gcda to .gitignore. Moving design memory out of inst/ belongs to the governance cut and is not part of this ticket."
     acceptance: [".Rbuildignore contains one exact ^inst/design$ entry and no hand-picked inst/design file exclusions; a built source tarball contains no inst/design entry, while the CI quick-tier path filter still recognizes inst/design-only changes", "every test that reads a design artifact uses the independent checkout marker: checkout execution requires the source and runs the oracle; installed execution requires inst/design to be absent; no design-tree block uses skip_if_not(file.exists(...)) or an equivalent absence-means-pass guard", "the documentation artifact check requires only man/figures/logo.svg, and project-metadata tests no longer claim design sources are installed", "a mutation that re-includes a design file in the built package fails the installed-context assertion; the checkout documentation-contract and affected focused suites pass", "R CMD build records compressed tarball bytes and design-entry counts before and after the change; R CMD check runs all tests successfully", ".gitignore excludes /src/*.gcda and no tracked coverage artifact is removed"]
-    evidence: []
+    evidence: ["dev/bench/v0_2_2_pre_cran_removal/evidence/ws31_hygiene/README.md#ldg-3037-build-boundary records the 6,770,854-byte/811-design-entry before tarball, the 1,958,849-byte/zero-design-entry after tarball, the final installed-package check and the failure-sensitive re-inclusion mutation."]
   - id: "LDG-3038"
     title: "Restore caller RNG after seeded runs"
     workstream: 31
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3037"]
     scope: "At the outer run-fold boundary, save the caller's global .Random.seed only when a non-NULL execution seed is supplied, seed exactly once, and restore the previous value on every exit; if no seed existed before the seeded run, remove the seed created by ledgr. Delete the duplicate fold-engine set.seed() call. Preserve the existing seed-NULL ambient-RNG semantics, run identity, pulse seeds and outputs."
     acceptance: ["a registered seeded ledgr_run() witness leaves an existing global .Random.seed byte-identical and removes .Random.seed when none existed before the call", "the run/fold path has exactly one production set.seed() site; seed = NULL retains its current ambient strategy-RNG behavior", "removing only the restoration fails the registered RNG witness", "the fixture ladder is 51 of 51 exact, including the identity family, and focused seeded-run tests pass", "the seven optimization shapes are walked on the changed run boundary and no scale-growing state is introduced"]
-    evidence: []
+    evidence: ["dev/bench/v0_2_2_pre_cran_removal/evidence/ws31_hygiene/README.md#ldg-3038-rng-ownership records the single seed site, both restoration cases, the failing no-restore mutation and the 51/51 exact fixture comparison with identity exact."]
   - id: "LDG-3039"
     title: "Classify inline schema-version literals"
     workstream: 31
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3038"]
     scope: "Produce a source-derived table for every current R/ occurrence that writes, defaults or validates a schema-version value against literal 1L. Classify each object as persisted by ledgr in a store, saved sweep, config or promotion record, or as returned only in memory. A persisted literal becomes an exact named *_schema_version constant inside the literal store-format fingerprint; its current validator uses that constant. A memory-only literal remains literal or receives a non-fingerprinted name and is recorded as not persisted. The current census identifies the membership-universe rule as persisted in config_json; its new constant changes the fingerprint and must refuse the preceding fingerprint through the current store gate without migration or fallback."
     acceptance: ["the checked-in classification table reconciles exactly to the current source occurrences and records file, line, enclosing object, field, classification, persistence path and disposition", "the membership-universe rule writes ledgr_universe_rule_schema_version rather than an inline 1L, config validation requires the exact current value, and the literal store-format oracle gains that integer binding", "a store carrying the preceding fingerprint refuses with ledgr_store_rebuild_required and names ledgr_universe_rule_schema_version in differing_constants; no migration, legacy reader, missing-marker fallback or old fingerprint path is added", "memory-only inspection, plan, simulation-recipe, validation-diagnostic and objective-snapshot records retain their existing bytes and are named as not persisted by ledgr", "the registered census detector fails when a new inline schema-version literal is introduced or a classified row disappears", "the post-LDG-3038 fixture comparison names every identity family changed solely by the fingerprint addition; all other rows and hashes remain exact, and the current research-store status under the new fingerprint is recorded honestly"]
-    evidence: []
+    evidence: ["tests/testthat/fixtures/schema-version-literal-census.csv classifies all 17 live sites; dev/bench/v0_2_2_pre_cran_removal/evidence/ws31_hygiene/README.md#ldg-3039-schema-version-classification records the one persisted binding, preceding-fingerprint refusal, 51/51 exact fixture result and deliberately stale research-store status."]
   - id: "LDG-3040"
     title: "Rename ticket-named test helpers by content"
     workstream: 31
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3039"]
     scope: "Rename helper-ldg2789-reference-ts.R, helper-workstream10-fact-integrity.R and helper-workstream14-facts.R to content-based names. Change no helper content. Refresh source-census paths and any exact references after the pure renames."
     acceptance: ["the three old helper paths are absent and their three replacements describe timestamp references, fact-integrity or fact fixtures without ticket or workstream numbers", "each old and new blob is byte-identical by git rename detection and no helper expression or test behavior changes", "all static references and committed census rows use the new paths; no test, claim or documentation link names an old helper", "the affected focused suites and codebase census pass"]
-    evidence: []
+    evidence: ["dev/bench/v0_2_2_pre_cran_removal/evidence/ws31_hygiene/README.md#ldg-3040-helper-names-and-source-census records three 100-percent Git renames, focused suite results and the passing refreshed 69/139/80/1640/2267 source census with 22 fingerprint members."]
   - id: "LDG-3032"
     title: "Apply one style pass and make lint blocking"
     workstream: 31
