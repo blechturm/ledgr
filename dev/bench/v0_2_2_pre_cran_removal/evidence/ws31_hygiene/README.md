@@ -10,8 +10,9 @@ implementation commits are `7d2bf9a6`, `15bba2eb`, `997b8e7e`, `516ada54`,
   a 6,770,854-byte (6.457 MiB) tarball with 1,421 entries, 811 below
   `inst/design`.
 - After `7d2bf9a6`, the same command produced a 1,958,849-byte (1.868 MiB)
-  tarball with 611 entries and no `inst/design` entry. The final checkpoint
-  tarball is 1,961,184 bytes with 613 entries and no `inst/design` entry.
+  tarball with 611 entries and no `inst/design` entry. The final Workstream 31
+  tarball is 1,972,750 bytes with 615 entries, no design tree and no
+  checkout-only lint configuration.
 - The checkout documentation-contract suite and LTB-0267 pass. In an
   extracted built package, adding `inst/design/mutation.md` makes LTB-0267
   fail both the installed-directory and `system.file()` absence assertions.
@@ -66,10 +67,12 @@ implementation commits are `7d2bf9a6`, `15bba2eb`, `997b8e7e`, `516ada54`,
 The checkout documentation-contract, build-boundary, RNG, schema-literal,
 store-gate, timestamp-reference, fact-integrity and control-plane suites pass.
 The final source tarball passes every installed test under
-`R CMD check --no-manual --no-build-vignettes`. The check status is two
-expected vignette warnings caused by `--no-build-vignettes` and the existing
-`.lintr` hidden-file NOTE; it has no test error. All 24 vignette replay checks
-run successfully.
+`R CMD check --no-manual --no-build-vignettes`. The first final check exposed
+that `.lintr` and `.lintr-semantic` would ship and create a hidden-file NOTE;
+the build-boundary correction excludes both checkout-only CI configurations.
+The repeated check has only the two expected vignette warnings caused by
+`--no-build-vignettes`, no NOTE and no test error. All 24 vignette replay
+checks run successfully.
 
 ## LDG-3032: one formatting pass and blocking lint
 
@@ -136,8 +139,15 @@ run successfully.
   567 of 567 blocks with no skip or failure in 101.25 seconds. The unchanged
   112-second gate passes. LTB-0270 through LTB-0272 account for three of those
   blocks and share one source parse.
+- The complete review record under `review_profile/` executes 337 of 337
+  blocks with no failure in 266.11 seconds. Its one skip is the pre-existing
+  optional-package path. Two earlier attempts are excluded because child
+  processes resolved DuckDB 1.5.2 from the user library; the recorded run
+  pins the R 4.6 project library and resolves DuckDB 1.5.6.9000 in both parent
+  and child processes.
 - The final source fingerprint has 22 members. That is intentionally one more
   than LDG-3036's 21-member research-lake rebuild because the later
   maintainer-added LDG-3039 classified and fingerprinted the persisted
   membership-universe schema. The 21-member store is truthfully stale; the
-  existing later lake-rebuild owner must use the 22-member current build.
+  existing WS7 lake rebuild with dividend facts must use the 22-member current
+  build.

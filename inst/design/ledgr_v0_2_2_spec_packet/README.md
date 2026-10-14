@@ -21,12 +21,16 @@ tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
 Accepted Cut 14 now owns the pre-CRAN legacy-removal synthesis and the macro
 plan's codebase-hygiene amendment. Its nineteen tickets across three
 workstreams passed cut review after patches on 2026-10-13. Implementation
-is complete through Workstream 30. Workstreams 29 and 30 are accepted.
+is complete through Workstream 31. Workstreams 29 and 30 are accepted, and
+Workstream 31 is ready for its Type 1 close review.
 Workstream 30's close and focused reviews found correction work; the final
 mechanical fixes,
 21-member source census, exact Ladder25, 108.72-second fast record and repeated
 aggregate Sharadar lane are complete. The maintainer accepted that evidence on
-2026-10-14 without a third review round under M1. Workstream 31 is next.
+2026-10-14 without a third review round under M1. Workstream 31 now records a
+51/51 exact style and RNG boundary, zero formatting and semantic findings,
+three mutation-proven structural claims, a 101.25-second passing fast lane and
+a complete 337-block review lane.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -63,7 +67,7 @@ ledger.
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
   closed. Accepted Cut 14 contains Workstreams 29 through 31 and LDG-3022
-  through LDG-3036. The preparatory Workstream 31 slice is complete through
+  through LDG-3040. The preparatory Workstream 31 slice is complete through
   LDG-3023. A Type 1 checkpoint returned CHANGES_REQUIRED; commits d85ec87e
   and a8416492 correct the census and lint records, with confirmation folded
   into Workstream 29's close review. The Type 1 close review required
@@ -78,8 +82,11 @@ ledger.
   identity-rule validation and the 21-member store fingerprint. Ladder25,
   the committed fast and review profiles, and the repeated aggregate Sharadar
   lane pass.
-  The maintainer accepted Workstream 30 on 2026-10-14. Workstream 31 may now
-  resume.
+  The maintainer accepted Workstream 30 on 2026-10-14. Workstream 31 then
+  completed LDG-3037 through LDG-3040 and LDG-3032 through LDG-3035. Its
+  22-member current fingerprint makes the earlier 21-member interim lake
+  truthfully stale; the existing WS7 lake rebuild with dividend facts owns
+  the next private rebuild. Workstream 31 awaits Type 1 close review.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
