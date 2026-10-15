@@ -91,7 +91,7 @@ testthat::test_that("[LTB-0279] fold phase ownership rejects structural boundary
     service_owner = "ledgr_fold_stage_decide <- function(fold_state, services) valuation_state$advance(1)",
     duplicated_inline_stage_body = c(
       base_stages,
-      "ledgr_execute_fold <- function(execution, output_handler) output_handler$write_fill_events(data.frame())"
+      "ledgr_fold_envelope <- function(execution, output_handler) output_handler$write_fill_events(data.frame())"
     )
   )
   for (kind in names(mutations)) {

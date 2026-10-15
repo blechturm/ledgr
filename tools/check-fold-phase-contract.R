@@ -114,9 +114,9 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "ledgr_fold_stage_commit"
   )
   if (all(expected_stages %in% names(definitions)) &&
-      "ledgr_execute_fold" %in% names(definitions)) {
+      "ledgr_fold_envelope" %in% names(definitions)) {
     envelope <- paste(deparse(
-      definitions$ledgr_execute_fold[[3L]],
+      definitions$ledgr_fold_envelope[[3L]],
       width.cutoff = 500L
     ), collapse = "\n")
     inline_sentinels <- c(
@@ -127,7 +127,7 @@ ledgr_fold_phase_source_findings <- function(paths) {
       "output_handler\\$write_strategy_state\\s*\\("
     )
     if (any(vapply(inline_sentinels, grepl, logical(1L), x = envelope, perl = TRUE))) {
-      findings <- c(findings, "duplicated_inline_stage_body:ledgr_execute_fold")
+      findings <- c(findings, "duplicated_inline_stage_body:ledgr_fold_envelope")
     }
   }
   unique(findings)

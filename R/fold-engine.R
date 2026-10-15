@@ -234,6 +234,10 @@ ledgr_fold_pulse_plan_fill_intents <- function(accounting_events) {
 }
 
 ledgr_execute_fold <- function(execution, output_handler) {
+  ledgr_fold_envelope(execution, output_handler)
+}
+
+ledgr_fold_envelope <- function(execution, output_handler) {
   execution <- ledgr_validate_execution_spec(execution)
   run_id <- execution$run_id
   instrument_ids <- execution$instrument_ids
