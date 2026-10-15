@@ -538,15 +538,15 @@ workstreams:
   - id: 35
     name: "Governance record normalization"
     cut: 15
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 34
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "focused re-review 1 of workstream 35", verdict: "CHANGES_REQUIRED", artifact: "close_review_35_rereview_1.md", result: "The original eight findings are closed; the focused re-review found five merge-reconciliation, evidence-detector and record-accuracy residues. Corrections f1ae8b97, e3f2987b and b16d269b leave the RFC state/header and current-cut evidence scans at zero pending independent confirmation.", reason: "One claim: record headers, notices, packet summaries and open-ticket evidence consistently expose current state without erasing acceptance evidence, duties or rejection reasons. Review checks the lifecycle state machine and every receiver named by the synthesis."}
+    review: {mode: "Type 1", point: "final focused re-review of workstream 35", verdict: "PASS", result: "Finding-free PASS at 1c06f989: N1 through N5 are closed; governance, documentation and control-plane suites pass 197/1,031/66 expectations; the report scans 340 sources with 1,031 findings; direct RFC-state and current-cut evidence scans are zero; and both N1/N3 mutations are detected. No new M2 artifact.", reason: "One claim: record headers, notices, packet summaries and open-ticket evidence consistently expose current state without erasing acceptance evidence, duties or rejection reasons. Review checks the lifecycle state machine and every receiver named by the synthesis."}
     integration_evidence:
       - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md records the bounded lifecycle normalization, packet-front-door reduction, failure-sensitive guard extensions, verification results and relevant seven-shape walk."
-      - "inst/design/ledgr_v0_2_2_spec_packet/close_review_35.md preserves the finding-bearing independent review; commit 477980e2 closes F1 through F8 without accepting the workstream."
+      - "inst/design/ledgr_v0_2_2_spec_packet/close_review_35.md and close_review_35_rereview_1.md preserve both finding-bearing independent reviews; commits 477980e2, f1ae8b97, e3f2987b and b16d269b close F1 through F8 and N1 through N5."
       - "Empirical: input tracked design and governance population; environment Windows x64 with R 4.6.1 ucrt; source commit b16d269b; reproduction command Rscript tools/governance-report.R; reviewed range d6c4c85d..b16d269b; result completed report-only over 340 sources with 1,031 visible findings, zero RFC-index state/header findings and zero direct current-cut evidence-form findings; clock 72.401 seconds; inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md#verification."
-    accepted: null
+    accepted: "2026-10-15 by the maintainer after the final independent focused re-review returned finding-free PASS at 1c06f989."
   - id: 36
     name: "Remove current feature retention"
     cut: 15
@@ -1894,7 +1894,7 @@ tickets:
     evidence:
       - "inst/design/ledgr_v0_2_2_spec_packet/README.md#start-here, #current-cut-review-records and #durable-closeouts-and-reconciliations provide the routing front door without copying mutable ticket fields; the closeout records the 684-to-115 raw-line and 582-to-93 nonblank-line reduction."
       - "inst/design/ledgr_v0_2_2_spec_packet/README.md#evidence-form defines the pointer-plus-result rule, the Empirical label and exact reviewed-range retention; tools/governance-report.R reports zero malformed, incomplete-count or incomplete-empirical findings for Cut 15."
-      - "inst/design/ledgr_v0_2_2_spec_packet/README.md#current-cut-review-records and #review-records link earlier cut reviews, finding-bearing artifacts and M2's finding-free PASS rule; close_review_35.md preserves this review unchanged."
+      - "inst/design/ledgr_v0_2_2_spec_packet/README.md#current-cut-review-records and #review-records link earlier cut reviews, finding-bearing artifacts and M2's finding-free PASS rule; close_review_35.md and close_review_35_rereview_1.md preserve both finding-bearing WS35 reviews unchanged."
       - "tests/testthat/test-governance-report.R#LTB-0273 and tests/claims.yml#LCL-0271 detect pointer-free conclusions, pointer-path result-verb leakage, bare paths and anchors, path-word false positives, empty evidence, count mismatch, incomplete empirical metadata and deletion of tickets.yml; 197 focused expectations pass."
       - "inst/design/ledgr_v0_2_2_spec_packet/README.md#document-roles and dev/governance_guard/README.md record the distinct packet-front-door, design-index, RFC-routing and report-only guard roles."
   - id: "LDG-3049"
