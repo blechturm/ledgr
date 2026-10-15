@@ -932,6 +932,68 @@ testthat::test_that("unexpected fold errors roll back economics and retain error
 })
 
 # ledgr-test-profile: review
+testthat::test_that("[LTB-0282] availability exception stages retain baseline labels", {
+  snapshot <- availability_economics_snapshot("AAA", days = 3L)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  hold_experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_error(
+    testthat::with_mocked_bindings(
+      ledgr_run(hold_experiment, run_id = "p2-context-stage"),
+      ledgr_update_pulse_context_helpers = function(...) {
+        rlang::abort("injected context failure", class = "ledgr_test_context_failure")
+      },
+      .package = "ledgr"
+    ),
+    class = "ledgr_test_context_failure"
+  )
+
+  state_experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) list(targets = ctx$hold(), state_update = 5),
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  original_normalize <- ledgr:::ledgr_fold_asset_state_normalize
+  testthat::expect_error(
+    testthat::with_mocked_bindings(
+      ledgr_run(state_experiment, run_id = "p5-state-stage"),
+      ledgr_fold_asset_state_normalize = function(state, ...) {
+        if (identical(state, 5)) {
+          rlang::abort("injected state failure", class = "ledgr_test_state_failure")
+        }
+        original_normalize(state, ...)
+      },
+      .package = "ledgr"
+    ),
+    class = "ledgr_test_state_failure"
+  )
+
+  opened <- ledgr_test_open_duckdb(snapshot$db_path)
+  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+  stages <- DBI::dbGetQuery(
+    opened$con,
+    paste0(
+      "SELECT run_id, stage FROM run_diagnostics ",
+      "WHERE run_id IN ('p2-context-stage', 'p5-state-stage') ",
+      "ORDER BY run_id"
+    )
+  )
+  testthat::expect_identical(
+    stages,
+    data.frame(
+      run_id = c("p2-context-stage", "p5-state-stage"),
+      stage = c("valuation", "accounting"),
+      stringsAsFactors = FALSE
+    )
+  )
+})
+
+# ledgr-test-profile: review
 testthat::test_that("prepared valuation and linear event growth coexist in one eventful fold", {
   dates <- as.Date("2020-01-01") + 0:3
   closes <- as.POSIXct(paste(dates, "16:00:00"), tz = "UTC")

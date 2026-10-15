@@ -2,6 +2,7 @@
 
 testthat::test_that("deleted feature-retention surfaces cannot return", {
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  checkout <- ledgr_test_design_source_context(root)
   r_files <- list.files(file.path(root, "R"), pattern = "[.]R$", full.names = TRUE)
   source <- paste(vapply(r_files, function(path) {
     paste(readLines(path, warn = FALSE), collapse = "\n")
@@ -21,14 +22,18 @@ testthat::test_that("deleted feature-retention surfaces cannot return", {
   namespace <- paste(readLines(file.path(root, "NAMESPACE"), warn = FALSE), collapse = "\n")
   testthat::expect_false(grepl("ledgr_feature_cache", namespace, fixed = TRUE))
   testthat::expect_false(file.exists(file.path(root, "man", "ledgr_feature_cache_clear.Rd")))
-  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
-  testthat::expect_false(grepl("ledgr_feature_cache_clear", pkgdown, fixed = TRUE))
+  if (checkout) {
+    pkgdown <- paste(
+      readLines(file.path(root, "_pkgdown.yml"), warn = FALSE),
+      collapse = "\n"
+    )
+    testthat::expect_false(grepl("ledgr_feature_cache_clear", pkgdown, fixed = TRUE))
+  } else {
+    testthat::expect_false(file.exists(file.path(root, "_pkgdown.yml")))
+  }
 
   current_doc_paths <- c(
-    file.path(root, "_pkgdown.yml"),
     file.path(root, "README.md"),
-    file.path(root, "README.Rmd"),
-    file.path(root, "inst", "design", "contracts.md"),
     file.path(root, "tests", "claims.yml"),
     list.files(file.path(root, "man"), pattern = "[.]Rd$", full.names = TRUE),
     list.files(
@@ -38,6 +43,15 @@ testthat::test_that("deleted feature-retention surfaces cannot return", {
       recursive = TRUE
     )
   )
+  if (checkout) {
+    current_doc_paths <- c(
+      current_doc_paths,
+      file.path(root, "_pkgdown.yml"),
+      file.path(root, "README.Rmd"),
+      file.path(root, "inst", "design", "contracts.md")
+    )
+  }
+  testthat::expect_true(all(file.exists(current_doc_paths)))
   current_docs <- paste(vapply(current_doc_paths, function(path) {
     paste(readLines(path, warn = FALSE), collapse = "\n")
   }, character(1)), collapse = "\n")

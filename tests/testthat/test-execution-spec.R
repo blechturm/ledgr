@@ -541,7 +541,10 @@ testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event k
 
   # covr rewrites function bodies, so the source text holds only in ordinary runs.
   if (!(requireNamespace("covr", quietly = TRUE) && covr::in_covr())) {
-    fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+    fold_source <- paste(
+      deparse(body(ledgr:::ledgr_fold_stage_apply)),
+      collapse = "\n"
+    )
     testthat::expect_match(
       fold_source,
       "ledgr_fold_pulse_plan_fill_intents(accounting_events)",

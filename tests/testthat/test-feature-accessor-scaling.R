@@ -120,7 +120,7 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   )
   testthat::expect_identical(lookup_a$name_lookup, lookup_b$name_lookup)
   testthat::expect_identical(lookup_a$known_features, lookup_b$known_features)
-  fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+  fold_source <- paste(deparse(body(ledgr:::ledgr_fold_envelope)), collapse = "\n")
   testthat::expect_match(
     fold_source,
     "feature_name_state = availability_feature_name_state",
@@ -427,7 +427,7 @@ testthat::test_that("[LTB-0189] availability folds prepare hashed feature lookup
     direct_equity$equity[[nrow(direct_equity)]]
   )
 
-  fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+  fold_source <- paste(deparse(body(ledgr:::ledgr_fold_envelope)), collapse = "\n")
   testthat::expect_match(
     fold_source,
     "feature_lookup_state = availability_feature_lookup_state",

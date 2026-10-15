@@ -28,8 +28,9 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
 - `run_record.R`: one tree, the whole public cycle: snapshot build; snapshot
   table digests; refusal and quarantine outcomes; momentum and equal-weight
   runs with equity, returns, fills, trades, ledger, diagnostics, run info,
-  completion, metrics, valuation and corporate-action summaries, persisted
-  features and strategy state; the active availability plane and
+  completion, metrics, valuation and corporate-action summaries and strategy
+  state; one per-pulse hash of the momentum feature plane read through the
+  real callback `ctx$vec$feature()` surface; the active availability plane and
   `ledgr_run_explain()` (momentum); the dense run and its availability
   branch; a three-candidate equal-weight sweep with retained returns and
   trades, in which every candidate holds the dividend payers and posts through
@@ -43,6 +44,11 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
   tree).
 - `summarize_record.R`: one row per family (rows, sha256) plus phase clocks;
   the only form in which a Sharadar record leaves the private store.
+- `family_manifest.csv` and `record_manifest.R`: the exact families owned by
+  each selected phase and lane, plus the validator that refuses a missing or
+  undeclared family. `family_transition_schema120.csv` records the one-time
+  change from the last accepted record: delete `momentum_features` and
+  `equal_weight_features`, and add `momentum_feature_plane`.
 - `ladder.sh`: per-ticket byte identity; records each commit in a clean
   worktree and compares it with its predecessor's record.
 - `check_record.R`: per-family byte comparison; a missing family fails; the
@@ -103,3 +109,15 @@ on the pre-cut tree. Full records and work databases stay local.
 equal-weight run and the sweep; a subchange whose code is below 5 percent of
 its workload cannot meet the materiality rule and closes as measured and
 rejected.
+
+## Schema-120 recorder repair (2026-10-15)
+
+Feature retention was removed before the fold refactor, so the recorder no
+longer queries the deleted `features` table. The full fixture lane now has 50
+gated families plus the informational `identity` family (the previous record
+had 51 gated families plus identity). The Sharadar lane has 36 gated families
+plus identity. The only new family, `momentum_feature_plane`, contains one
+timestamp, instrument count and MD5 value per strategy pulse; the digest
+is computed from the feature values the real strategy context supplies over
+that pulse's ordered universe. It is comparison evidence, not restored product
+persistence.

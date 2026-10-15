@@ -503,3 +503,50 @@ testthat::test_that("ledgr_run validates params before execution", {
     fixed = TRUE
   )
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0283] dense resume carries scalar strategy state", {
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct("2024-01-01", tz = "UTC") + 86400 * 0:2,
+    open = c(10, 11, 12),
+    high = c(10, 11, 12),
+    low = c(10, 11, 12),
+    close = c(10, 11, 12),
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      list(targets = ctx$hold(), state_update = 5)
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  old_options <- options(ledgr.interrupt = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  first <- ledgr_run(experiment, run_id = "dense-scalar-state")
+  close(first)
+  options(ledgr.interrupt = FALSE)
+  resumed <- ledgr_run(experiment, run_id = "dense-scalar-state")
+  on.exit(close(resumed), add = TRUE)
+
+  states <- DBI::dbGetQuery(
+    get_connection(snapshot),
+    paste0(
+      "SELECT state_json FROM strategy_state ",
+      "WHERE run_id = 'dense-scalar-state' ORDER BY ts_utc"
+    )
+  )
+  testthat::expect_equal(nrow(states), 3L)
+  testthat::expect_identical(
+    unname(vapply(
+      states$state_json,
+      ledgr:::ledgr_json_read_nested,
+      numeric(1L)
+    )),
+    rep(5, 3L)
+  )
+})

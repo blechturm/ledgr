@@ -29,6 +29,16 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-15 [execution] Fused plan-plus-apply compiled kernel and a unified stop-or-abort type
+
+Parked at acceptance of the fold-phase RFC synthesis
+(rfc/rfc_fold_execution_phase_ownership_v0_2_2_synthesis.md, Section 11). Two
+speculative deferrals, neither authorized: a compiled kernel fusing P3 plan
+execution with P4 apply, which the compiled-execution-envelope RFC may weigh
+against keeping P4 alone as the seam; and one typed stop-or-abort result that
+also covers the P5 reconciliation mismatch, today a fold exception rather than
+a stop. Both wait for the measured stage profile LDG-3054 records.
+
 ### 2026-10-14 [ux] Compress the conceptual surface without erasing semantics
 
 Ledgr's concepts are individually defensible, but the ordinary research path

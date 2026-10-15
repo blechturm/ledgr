@@ -43,7 +43,9 @@ if (nzchar(dirty) && !"--allow-dirty" %in% args) stop("Refusing to record from a
 suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])))
 source(file.path(here, "fixture.R"))
+source(file.path(here, "record_manifest.R"))
 fam_dir <- file.path(out_dir, "families")
+if (dir.exists(fam_dir)) unlink(fam_dir, recursive = TRUE)
 dir.create(fam_dir, recursive = TRUE, showWarnings = FALSE)
 work <- file.path(out_dir, "work")
 dir.create(work, showWarnings = FALSE)
@@ -145,13 +147,83 @@ run_families <- function(tag, bt) {
   family(paste0(tag, "_metrics"), ledgr_compute_metrics(bt))
   family(paste0(tag, "_valuation_summary"), ledgr_valuation_summary(bt))
   family(paste0(tag, "_ca_summary"), s3list(ledgr_corporate_action_summary(bt)))
-  family(paste0(tag, "_features"), DBI::dbGetQuery(con, "SELECT * FROM features WHERE run_id = ? ORDER BY ALL", params = list(bt$run_id)))
   family(paste0(tag, "_strategy_state"), DBI::dbGetQuery(con, "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc", params = list(bt$run_id)))
 }
 
+scale_momentum_recorded <- function(ctx, params) {
+  record_feature_path <- getOption("ledgr.scale.record.feature.path", NULL)
+  if (is.null(record_feature_path)) {
+    stop("The scale recorder did not declare its feature-plane output path.", call. = FALSE)
+  }
+  instrument_id <- ctx$universe
+  feature_id <- paste0("return_", as.integer(params$lookback))
+  values <- unname(ctx$vec$feature(feature_id)[instrument_id])
+  payload_path <- tempfile("ledgr-scale-feature-plane-", fileext = ".rds")
+  on.exit(unlink(payload_path), add = TRUE)
+  saveRDS(
+    list(instrument_id = instrument_id, value = values),
+    payload_path,
+    version = 3,
+    compress = FALSE
+  )
+  feature_hash <- unname(tools::md5sum(payload_path))
+  unlink(payload_path)
+  utils::write.table(
+    data.frame(
+      ts_utc = as.character(ctx$ts_utc),
+      instrument_count = length(instrument_id),
+      md5 = feature_hash
+    ),
+    record_feature_path,
+    append = TRUE,
+    sep = ",",
+    row.names = FALSE,
+    col.names = FALSE,
+    quote = TRUE
+  )
+
+  month <- substr(ctx$ts_utc, 1L, 7L)
+  if (identical(ctx$state_prev$month, month)) return(ctx$hold())
+  target <- ctx |>
+    ledgr_signal_return(params$lookback) |>
+    ledgr_select_top_n(params$n, partial = "allow") |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(ctx, equity_fraction = 0.95)
+  list(targets = target, state_update = list(month = month))
+}
+
+record_momentum_run <- function(record_feature_path, expr) {
+  prior <- options(structure(
+    list(record_feature_path),
+    names = "ledgr.scale.record.feature.path"
+  ))
+  on.exit(options(prior), add = TRUE)
+  force(expr)
+}
+
 if (want("run_momentum")) {
-  mom <- in_phase("run_momentum", ledgr_run(experiment(scale_momentum, list(mom_feature)), params = mom_params, run_id = "scale-momentum"))
-  in_phase("readers", run_families("momentum", mom))
+  feature_record <- file.path(work, "momentum-feature-plane.csv")
+  utils::write.csv(
+    data.frame(ts_utc = character(), instrument_count = integer(), md5 = character()),
+    feature_record,
+    row.names = FALSE
+  )
+  mom <- in_phase("run_momentum", record_momentum_run(
+    feature_record,
+    ledgr_run(
+      experiment(scale_momentum_recorded, list(mom_feature)),
+      params = mom_params,
+      run_id = "scale-momentum"
+    )
+  ))
+  in_phase("readers", {
+    family("momentum_feature_plane", utils::read.csv(
+      feature_record,
+      colClasses = c("character", "integer", "character"),
+      stringsAsFactors = FALSE
+    ))
+    run_families("momentum", mom)
+  })
   if (want("availability")) in_phase("availability", family("momentum_availability", ledgr_results(mom, "availability")))
   if (want("explain")) {
     fills <- ledgr_results(mom, "fills")
@@ -207,6 +279,12 @@ if (want("walk_forward")) {
 }
 
 family("identity", data.frame(key = names(identity), value = unlist(identity), stringsAsFactors = FALSE))
+manifest <- ledgr_scale_record_manifest_read(file.path(here, "family_manifest.csv"))
+ledgr_scale_record_validate_transition(
+  manifest,
+  file.path(here, "family_transition_schema120.csv")
+)
+ledgr_scale_record_validate_manifest(out_dir, manifest, lane, phases)
 utils::write.csv(data.frame(
   key = c("commit", "lane", "size", "phases", "R", "recorded_at"),
   value = c(git("rev-parse", "HEAD"), lane, paste(size, collapse = ","), paste(phases, collapse = ","),

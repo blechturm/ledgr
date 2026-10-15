@@ -45,7 +45,9 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
 - [`close_review_35.md`](close_review_35.md);
 - [`close_review_36.md`](close_review_36.md) and
   [`close_review_36_rereview_1.md`](close_review_36_rereview_1.md);
-- [`close_review_37.md`](close_review_37.md).
+- [`close_review_37.md`](close_review_37.md);
+- [`close_review_38.md`](close_review_38.md) and
+  [`close_review_38_rereview_1.md`](close_review_38_rereview_1.md).
 
 A finding-free `PASS` is recorded as one line in `tickets.yml` and has no
 separate file. The ticket authority says which reviews are operative.
@@ -61,6 +63,8 @@ second status ledger:
   and
   [`horizon_migration_reconciliation.md`](horizon_migration_reconciliation.md);
 - [`governance_record_normalization.md`](governance_record_normalization.md);
+- [`fold_phase_contract_closeout.md`](fold_phase_contract_closeout.md) and
+  [`fold_phase_extraction_closeout.md`](fold_phase_extraction_closeout.md);
 - [`current_only_records_closeout.md`](current_only_records_closeout.md),
   [`current_store_format_closeout.md`](current_store_format_closeout.md),
   [`feature_map_read_surface_reconciliation.md`](feature_map_read_surface_reconciliation.md)

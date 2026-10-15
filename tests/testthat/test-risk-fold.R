@@ -118,6 +118,76 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
   testthat::expect_identical(as.integer(events$event_seq), 1:2)
 })
 
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in order", {
+  stage_order <- character()
+  stage_packets <- list()
+  capture_stage <- function(name, fn) {
+    force(name)
+    force(fn)
+    function(...) {
+      value <- fn(...)
+      stage_order <<- c(stage_order, name)
+      stage_packets[[name]] <<- value
+      value
+    }
+  }
+  originals <- list(
+    observe = ledgr:::ledgr_fold_stage_observe_settle,
+    decide = ledgr:::ledgr_fold_stage_decide,
+    plan = ledgr:::ledgr_fold_stage_plan,
+    apply = ledgr:::ledgr_fold_stage_apply,
+    commit = ledgr:::ledgr_fold_stage_commit
+  )
+  testthat::local_mocked_bindings(
+    ledgr_fold_stage_observe_settle = capture_stage("observe", originals$observe),
+    ledgr_fold_stage_decide = capture_stage("decide", originals$decide),
+    ledgr_fold_stage_plan = capture_stage("plan", originals$plan),
+    ledgr_fold_stage_apply = capture_stage("apply", originals$apply),
+    ledgr_fold_stage_commit = capture_stage("commit", originals$commit),
+    .package = "ledgr"
+  )
+  execution <- ledgr_risk_fold_test_execution(
+    strategy = function(ctx, params) ctx$hold(),
+    cost_resolver = ledgr_test_cost_resolver(0, 0),
+    run_id = "phase-packet-contract"
+  )
+  ledgr:::ledgr_execute_fold(
+    execution,
+    ledgr:::ledgr_memory_output_handler("phase-packet-contract")
+  )
+  expected_names <- list(
+    observe = c(
+      "pulse_idx", "ts", "ts_iso", "context_ids", "context_position_idx",
+      "positions_snapshot", "positions_value", "availability_view",
+      "valuation", "members", "sample_start", "t_feats", "t_bars"
+    ),
+    decide = c(
+      "strategy_targets", "targets", "state_update", "sample_start",
+      "t_ctx", "t_strat", "t_target"
+    ),
+    plan = c(
+      "pulse_plan", "accounting_events", "diagnostic_segments",
+      "sample_start", "t_target", "t_fill"
+    ),
+    apply = c("sample_start", "t_event", "t_state"),
+    commit = "continue"
+  )
+  has_data_frame <- function(x) {
+    is.data.frame(x) ||
+      (is.list(x) && any(vapply(x, has_data_frame, logical(1L))))
+  }
+  testthat::expect_identical(
+    stage_order,
+    rep(c("observe", "decide", "plan", "apply", "commit"), 3L)
+  )
+  for (name in names(expected_names)) {
+    testthat::expect_true(is.list(stage_packets[[name]]), info = name)
+    testthat::expect_identical(names(stage_packets[[name]]), expected_names[[name]])
+    testthat::expect_false(has_data_frame(stage_packets[[name]]), info = name)
+  }
+})
+
 testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
@@ -267,6 +337,137 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
       reference[[name]][[1L]],
       info = name
     )
+  }
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both data modes", {
+  pulses <- as.POSIXct("2024-01-01 16:00:00", tz = "UTC") + 86400 * 0:2
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), pulses)
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = as.Date(pulses),
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = pulses - 86400,
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  snapshots <- list(
+    dense = ledgr_snapshot_from_df(
+      bars,
+      db_path = tempfile(fileext = ".duckdb")
+    ),
+    availability = ledgr_snapshot_from_df(
+      bars,
+      instruments_df = data.frame(
+        instrument_id = c("AAA", "BBB"),
+        stringsAsFactors = FALSE
+      ),
+      facts = ledgr_facts(sessions),
+      price_basis = "split_adjusted",
+      db_path = tempfile(fileext = ".duckdb")
+    )
+  )
+  on.exit(lapply(snapshots, ledgr_snapshot_close), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets[] <- 1
+    targets
+  }
+  experiments <- lapply(snapshots, function(snapshot) {
+    ledgr_experiment(
+      snapshot,
+      strategy,
+      cost_model = ledgr_cost_zero(),
+      execution_mode = "db_live"
+    )
+  })
+  fault_factory <- function(original_factory, method, fail_at = 2L) {
+    force(original_factory)
+    force(method)
+    force(fail_at)
+    function(...) {
+      handler <- original_factory(...)
+      original_method <- handler[[method]]
+      calls <- 0L
+      handler[[method]] <- function(...) {
+        calls <<- calls + 1L
+        if (calls == fail_at) {
+          rlang::abort(
+            paste("injected", method, "failure"),
+            class = "ledgr_test_handler_failure"
+          )
+        }
+        original_method(...)
+      }
+      handler
+    }
+  }
+
+  persistent_factory <- ledgr:::ledgr_persistent_output_handler
+  for (mode in names(experiments)) {
+    run_id <- paste0("handler-fault-", mode)
+    testthat::expect_error(
+      testthat::with_mocked_bindings(
+        ledgr_run(experiments[[mode]], run_id = run_id, seed = 1L),
+        ledgr_persistent_output_handler = fault_factory(
+          persistent_factory,
+          "write_fill_events"
+        ),
+        .package = "ledgr"
+      ),
+      class = "ledgr_test_handler_failure",
+      info = mode
+    )
+    con <- get_connection(snapshots[[mode]])
+    testthat::expect_identical(
+      as.integer(DBI::dbGetQuery(
+        con,
+        "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?",
+        params = list(run_id)
+      )$n[[1L]]),
+      0L,
+      info = mode
+    )
+    if (identical(mode, "availability")) {
+      testthat::expect_true(DBI::dbGetQuery(
+        con,
+        paste0(
+          "SELECT COUNT(*) AS n FROM run_diagnostics ",
+          "WHERE run_id = ? AND outcome = 'error'"
+        ),
+        params = list(run_id)
+      )$n[[1L]] > 0)
+    }
+  }
+
+  memory_factory <- ledgr:::ledgr_memory_output_handler
+  for (method in c("write_fill_events", "record_accounting_fact")) {
+    for (mode in names(experiments)) {
+      sweep <- testthat::with_mocked_bindings(
+        ledgr_sweep(
+          experiments[[mode]],
+          ledgr_param_grid(failed = list()),
+          seed = 1L
+        ),
+        ledgr_memory_output_handler = fault_factory(memory_factory, method),
+        .package = "ledgr"
+      )
+      testthat::expect_identical(sweep$status, "FAILED", info = paste(method, mode))
+      testthat::expect_identical(
+        sweep$error_class[[1L]],
+        "ledgr_test_handler_failure",
+        info = paste(method, mode)
+      )
+      testthat::expect_true(
+        is.na(sweep$final_equity[[1L]]),
+        info = paste(method, mode)
+      )
+    }
   }
 })
 

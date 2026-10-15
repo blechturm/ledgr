@@ -1,0 +1,12 @@
+"phase","elapsed_s"
+"build",12.296
+"run_momentum",12.236
+"readers",15.311
+"availability",5.781
+"explain",1.304
+"run_equal_weight",13.576
+"readers",29.8
+"dense",0.531
+"sweep",31.657
+"promote",13.045
+"walk_forward",19.016

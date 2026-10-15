@@ -148,6 +148,55 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
     exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   )
 
+  failing_experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      stats::runif(1L)
+      rlang::abort("injected seeded strategy failure", class = "ledgr_test_rng_failure")
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  set.seed(2468L)
+  failure_before <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  testthat::expect_error(
+    ledgr_run(failing_experiment, run_id = "rng-run-error", seed = 2026L),
+    class = "ledgr_test_rng_failure"
+  )
+  testthat::expect_identical(
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE),
+    failure_before
+  )
+
+  interrupt_experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      stats::runif(1L)
+      options(ledgr.interrupt = TRUE)
+      ctx$hold()
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  old_interrupt <- getOption("ledgr.interrupt")
+  on.exit(options(ledgr.interrupt = old_interrupt), add = TRUE)
+  options(ledgr.interrupt = FALSE)
+  set.seed(1357L)
+  interrupt_before <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  interrupted <- ledgr_run(
+    interrupt_experiment,
+    run_id = "rng-run-interrupted",
+    seed = 2026L
+  )
+  on.exit(close(interrupted), add = TRUE)
+  testthat::expect_identical(
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE),
+    interrupt_before
+  )
+  testthat::expect_identical(
+    ledgr_run_info(snapshot, "rng-run-interrupted")$status,
+    "RUNNING"
+  )
+  options(ledgr.interrupt = FALSE)
+
   grid <- ledgr_param_grid(candidate = list(unused = 1L))
   set.seed(1L)
   sweep_before_1 <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
