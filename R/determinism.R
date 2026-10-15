@@ -116,7 +116,11 @@ ledgr_stable_payload <- function(x, path = "`value`") {
   )
 }
 
-ledgr_function_fingerprint <- function(fn, include_captures = FALSE, label = "`function`", allow_rng = FALSE) {
+ledgr_function_fingerprint <- function(fn,
+                                       include_captures = FALSE,
+                                       label = "`function`",
+                                       allow_rng = FALSE,
+                                       capture_overrides = list()) {
   if (!is.function(fn)) {
     rlang::abort(sprintf("%s must be a function.", label), class = "ledgr_invalid_args")
   }
@@ -135,7 +139,22 @@ ledgr_function_fingerprint <- function(fn, include_captures = FALSE, label = "`f
     globals <- codetools::findGlobals(fn, merge = FALSE)$variables
     env <- environment(fn)
     globals <- sort(unique(globals), method = "radix")
+    if (!is.list(capture_overrides) ||
+        (length(capture_overrides) > 0L &&
+         (is.null(names(capture_overrides)) || anyNA(names(capture_overrides)) ||
+          any(!nzchar(names(capture_overrides))) || anyDuplicated(names(capture_overrides))))) {
+      rlang::abort("Internal capture overrides must be a uniquely named list.", class = "ledgr_internal_error")
+    }
+    if (length(capture_overrides) > 0L && !all(names(capture_overrides) %in% globals)) {
+      rlang::abort("Internal capture overrides must name direct function captures.", class = "ledgr_internal_error")
+    }
     captures <- lapply(globals, function(nm) {
+      if (nm %in% names(capture_overrides)) {
+        return(ledgr_stable_payload(
+          capture_overrides[[nm]],
+          paste0(label, " capture identity `", nm, "`")
+        ))
+      }
       if (!exists(nm, envir = env, inherits = TRUE)) {
         return(list(type = "unresolved"))
       }

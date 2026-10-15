@@ -2,14 +2,14 @@
 
 ## Current-only experiment stores
 
-- Experiment-store schema 119 is opened through one marker-pair gate. Every
+- Experiment-store schema 120 is opened through one marker-pair gate. Every
   package-owned persistent-store path refuses an older, newer, unmarked,
   malformed, or fingerprint-mismatched store with
   `ledgr_store_rebuild_required`; pre-CRAN migrations and tolerant readers
   have been removed.
 
 - Stored experiment records are current-only as well: run and walk-forward
-  identity rule 2, policy schema 2, saved-sweep schema 4, retention schema 2,
+  identity rule 3, policy schema 2, saved-sweep schema 4, retention schema 2,
   current provenance and execution timing version 2 are required. Older
   records are not inferred, translated or reopened; rebuild the research store
   from its source inputs with this ledgr version.
@@ -17,7 +17,21 @@
 - Canonical identity JSON now orders named keys with radix ordering, so config,
   strategy, feature, sweep and walk-forward hashes do not depend on process
   collation. The ordering rule is versioned in the current store fingerprint,
-  and `identity_rule_version` is accepted only as the exact integer `2L`.
+  and `identity_rule_version` is accepted only as the exact integer `3L`.
+
+## Feature retention and identity
+
+- Removed the process-local feature cache and its public clear function. Feature
+  computation now follows the existing uncached production path, and cache
+  telemetry is no longer recorded or printed.
+- Removed `persist_features`, durable feature rows, and the unused `features`
+  table. Schema 119 and identity-rule-2 records now refuse through the existing
+  current-only gates; no migration, fallback, ignored argument, or compatibility
+  alias is provided.
+- Indicator and feature fingerprints now bind deterministic direct function
+  captures. Unsupported captures refuse as non-deterministic, stale precomputed
+  features refuse before execution, and the CSV adapter continues to represent
+  captured row values through its existing `params$data_hash`.
 
 - Removed the pre-release public `fill_model` argument, the `type` alias for
   `as_tibble.ledgr_backtest()`, and their dedicated compatibility conditions.

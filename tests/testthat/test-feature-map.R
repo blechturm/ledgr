@@ -344,7 +344,6 @@ testthat::test_that("feature maps preserve concrete feature-set identity while a
       initial_cash = exp_list$opening$cash
     ),
     features = ledgr_experiment_materialize_features(exp_list, list()),
-    persist_features = exp_list$persist_features,
     execution_mode = exp_list$execution_mode,
     timing_model = exp_list$timing_model,
     cost_model_hash = exp_list$cost_model_hash,
@@ -365,7 +364,6 @@ testthat::test_that("feature maps preserve concrete feature-set identity while a
     ),
     features = feature_map_result$features,
     alias_map = feature_map_result$alias_map,
-    persist_features = exp_map$persist_features,
     execution_mode = exp_map$execution_mode,
     timing_model = exp_map$timing_model,
     cost_model_hash = exp_map$cost_model_hash,

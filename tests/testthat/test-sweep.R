@@ -14,7 +14,7 @@ ledgr_sweep_test_bars <- function(n_pulses = 6L) {
 
 ledgr_sweep_artifact_counts <- function(snapshot) {
   con <- get_connection(snapshot)
-  tables <- c("runs", "ledger_events", "equity_curve", "features", "run_telemetry")
+  tables <- c("runs", "ledger_events", "equity_curve", "run_telemetry")
   stats::setNames(vapply(tables, function(table) {
     if (!DBI::dbExistsTable(con, table)) {
       return(0L)
@@ -737,7 +737,6 @@ testthat::test_that("sweep candidate key supports later durable materialization"
   testthat::expect_gt(after_promote_counts[["runs"]], after_sweep_counts[["runs"]])
   testthat::expect_gt(after_promote_counts[["ledger_events"]], after_sweep_counts[["ledger_events"]])
   testthat::expect_gt(after_promote_counts[["equity_curve"]], after_sweep_counts[["equity_curve"]])
-  testthat::expect_gt(after_promote_counts[["features"]], after_sweep_counts[["features"]])
   equity <- ledgr_results(bt, "equity")
   testthat::expect_equal(equity$equity[[nrow(equity)]], results$final_equity[[1]], tolerance = 1e-12)
 })
@@ -1295,7 +1294,7 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
 
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("precomputed features are consumed without calling the feature factory during sweep", {
+testthat::test_that("precomputed features validate current factory identity before sweep", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -1318,7 +1317,7 @@ testthat::test_that("precomputed features are consumed without calling the featu
   calls$n <- 0L
   out <- ledgr_sweep(exp, grid, precomputed_features = precomputed)
   testthat::expect_identical(out$status, c("DONE", "DONE"))
-  testthat::expect_identical(calls$n, 0L)
+  testthat::expect_identical(calls$n, 2L)
 })
 
 # ledgr-test-profile: review

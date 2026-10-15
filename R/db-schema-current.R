@@ -8,12 +8,6 @@ ledgr_current_schema_definition <- function() {
         "instrument_id VARCHAR PRIMARY KEY, symbol VARCHAR,",
         "currency VARCHAR, asset_class VARCHAR DEFAULT('EQUITY'))"
       ),
-      features = sql(
-        "CREATE TABLE features(",
-        "run_id VARCHAR, instrument_id VARCHAR, ts_utc TIMESTAMP,",
-        "feature_name VARCHAR, feature_value DOUBLE,",
-        "PRIMARY KEY(run_id, instrument_id, ts_utc, feature_name))"
-      ),
       equity_curve = sql(
         "CREATE TABLE equity_curve(",
         "run_id VARCHAR, ts_utc TIMESTAMP, cash DOUBLE,",
@@ -111,8 +105,7 @@ ledgr_current_schema_definition <- function() {
       run_telemetry = sql(
         "CREATE TABLE run_telemetry(",
         "run_id VARCHAR PRIMARY KEY, status VARCHAR, execution_mode VARCHAR,",
-        "elapsed_sec DOUBLE, pulse_count INTEGER, persist_features BOOLEAN,",
-        "feature_cache_hits INTEGER, feature_cache_misses INTEGER,",
+        "elapsed_sec DOUBLE, pulse_count INTEGER,",
         "updated_at_utc TIMESTAMP,",
         "CHECK(((execution_mode IS NULL) OR",
         "(execution_mode IN ('audit_log', 'db_live')))))"

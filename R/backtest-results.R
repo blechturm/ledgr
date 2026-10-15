@@ -296,7 +296,7 @@ ledgr_compute_equity_curve_impl <- function(bt, con = NULL) {
 #' @details
 #' This is a diagnostic helper for engine profiling. It only reports detailed
 #' telemetry captured for runs executed in the current R session. Timing
-#' components are reported in seconds; feature-cache hit/miss rows are counts.
+#' components are reported in seconds.
 #' The compact telemetry persisted in durable experiment stores is available
 #' through `ledgr_run_info()`.
 #'
@@ -351,9 +351,7 @@ ledgr_backtest_bench <- function(bt) {
     "t_strat",
     "t_target",
     "t_event",
-    "t_exec",
-    "feature_cache_hits",
-    "feature_cache_misses"
+    "t_exec"
   )
   out <- lapply(components, function(name) summarize_vec(telemetry[[name]]))
 

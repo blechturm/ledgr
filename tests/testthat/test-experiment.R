@@ -57,7 +57,6 @@ testthat::test_that("ledgr_experiment builds a validated experiment object", {
   testthat::expect_identical(exp$timing_model$type_id, "next_open")
   testthat::expect_identical(exp$cost_model_hash, ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()))
   testthat::expect_identical(exp$cost_plan_json, ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()))
-  testthat::expect_true(exp$persist_features)
   testthat::expect_identical(exp$execution_mode, "audit_log")
   testthat::expect_s3_class(exp$metric_context, "ledgr_metric_context")
   testthat::expect_equal(exp$metric_context$risk_free_rate$annual_rate, 0)

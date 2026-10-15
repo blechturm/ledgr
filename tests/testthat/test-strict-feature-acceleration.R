@@ -198,11 +198,11 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
-      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
+      "722be865c97f7cc5d2aa85b95d7ceef74959da6c754d643cde2063ed5d0366a0"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_returns(5L)),
-      "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed"
+      "d3feff6aeb660729888928583c4cf36150a66dba0053ab944783e064f090d9cb"
     )
   }
 })

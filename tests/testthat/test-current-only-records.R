@@ -22,7 +22,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     testthat::expect_no_match(source, token, fixed = TRUE)
   }
 
-  testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 2L)
+  testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 3L)
   testthat::expect_identical(
     ledgr:::ledgr_saved_sweep_schema_version,
     4L
@@ -37,7 +37,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   )
 
   current <- list(
-    identity_rule_version = 2L,
+    identity_rule_version = 3L,
     data = list(snapshot_id = "local-id", snapshot_hash = "content-hash"),
     risk_chain = ledgr:::ledgr_config_risk_identity()
   )
@@ -88,7 +88,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   round_trip <- ledgr:::ledgr_json_read_config(
     ledgr:::canonical_json(config)
   )
-  testthat::expect_identical(round_trip$identity_rule_version, 2L)
+  testthat::expect_identical(round_trip$identity_rule_version, 3L)
 
   invalid_configs <- list(
     missing_identity_rule = function(x) {
@@ -97,6 +97,10 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     },
     old_identity_rule = function(x) {
       x$identity_rule_version <- 1L
+      x
+    },
+    prior_identity_rule = function(x) {
+      x$identity_rule_version <- 2L
       x
     },
     double_identity_rule = function(x) {
@@ -190,9 +194,6 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   missing_info <- ledgr_run_info(snapshot, "current-only-open")
   testthat::expect_identical(missing_info$telemetry_missing, TRUE)
   testthat::expect_identical(missing_info$elapsed_sec, NA_real_)
-  testthat::expect_identical(missing_info$persist_features, NA)
-  testthat::expect_identical(missing_info$feature_cache_hits, NA_integer_)
-  testthat::expect_identical(missing_info$feature_cache_misses, NA_integer_)
   original_json <- DBI::dbGetQuery(
     con,
     "SELECT config_json FROM runs WHERE run_id = 'current-only-open'"

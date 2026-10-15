@@ -124,7 +124,7 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
     )
   }
 
-  expect_cause(marker_store("118"), "older", 118L)
+  expect_cause(marker_store("119"), "older", 119L)
   expect_cause(marker_store("999"), "newer", 999L)
   expect_cause(marker_store(NULL), "missing_marker")
 
@@ -138,33 +138,33 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
   )
   expect_cause(temp_only, "missing_marker")
   expect_cause(marker_store("not-an-integer"), "invalid_marker")
-  expect_cause(marker_store("119"), "missing_marker", 119L)
-  expect_cause(marker_store("119", "not-json"), "invalid_marker", 119L)
+  expect_cause(marker_store("120"), "missing_marker", 120L)
+  expect_cause(marker_store("120", "not-json"), "invalid_marker", 120L)
 
   current <- ledgr:::ledgr_store_format_bindings()
   prior_universe_rule <- current
   prior_universe_rule[["ledgr_universe_rule_schema_version"]] <- NULL
   expect_cause(
-    marker_store("119", ledgr:::ledgr_store_format_json(prior_universe_rule)),
+    marker_store("120", ledgr:::ledgr_store_format_json(prior_universe_rule)),
     "fingerprint_mismatch",
-    119L,
+    120L,
     "ledgr_universe_rule_schema_version"
   )
   prior_ordering <- current
   prior_ordering[["ledgr_canonical_json_rule_version"]] <- NULL
   expect_cause(
-    marker_store("119", ledgr:::ledgr_store_format_json(prior_ordering)),
+    marker_store("120", ledgr:::ledgr_store_format_json(prior_ordering)),
     "fingerprint_mismatch",
-    119L,
+    120L,
     "ledgr_canonical_json_rule_version"
   )
   changed <- current
   changed[["ledgr_cost_schema_version"]] <- 999L
   changed[["ledgr_business_objective_schema_version"]] <- 999L
   expect_cause(
-    marker_store("119", ledgr:::ledgr_store_format_json(changed)),
+    marker_store("120", ledgr:::ledgr_store_format_json(changed)),
     "fingerprint_mismatch",
-    119L,
+    120L,
     c(
       "ledgr_business_objective_schema_version",
       "ledgr_cost_schema_version"

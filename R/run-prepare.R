@@ -36,13 +36,6 @@ ledgr_run_prepare_config <- function(config) {
 }
 
 ledgr_run_prepare_engine <- function(cfg, db_path) {
-  persist_features <- TRUE
-  if (!is.null(cfg$features) &&
-    is.list(cfg$features) &&
-    !is.null(cfg$features$persist)) {
-    persist_features <- isTRUE(cfg$features$persist)
-  }
-
   execution_mode <- "audit_log"
   checkpoint_every <- 10000L
   if (!is.null(cfg$engine) && is.list(cfg$engine)) {
@@ -61,7 +54,6 @@ ledgr_run_prepare_engine <- function(cfg, db_path) {
   }
 
   list(
-    persist_features = persist_features,
     execution_mode = execution_mode,
     checkpoint_every = checkpoint_every,
     snapshot_id = cfg$data$snapshot_id,

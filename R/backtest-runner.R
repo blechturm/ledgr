@@ -207,10 +207,7 @@ ledgr_write_run_telemetry <- function(con,
                                       status,
                                       execution_mode,
                                       elapsed_sec,
-                                      pulse_count,
-                                      persist_features,
-                                      feature_cache_hits,
-                                      feature_cache_misses) {
+                                      pulse_count) {
   DBI::dbExecute(
     con,
     "
@@ -220,11 +217,8 @@ ledgr_write_run_telemetry <- function(con,
       execution_mode,
       elapsed_sec,
       pulse_count,
-      persist_features,
-      feature_cache_hits,
-      feature_cache_misses,
       updated_at_utc
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?)
     ",
     params = list(
       run_id,
@@ -232,9 +226,6 @@ ledgr_write_run_telemetry <- function(con,
       execution_mode,
       elapsed_sec,
       pulse_count,
-      persist_features,
-      feature_cache_hits,
-      feature_cache_misses,
       as.POSIXct(Sys.time(), tz = "UTC")
     )
   )
@@ -256,7 +247,6 @@ ledgr_persistent_output_handler <- function(con,
                                             run_id,
                                             run_wall_start,
                                             execution_mode,
-                                            persist_features,
                                             .event_initial_capacity = 1024L) {
   state <- new.env(parent = emptyenv())
   state$pending_idx <- 0L
@@ -310,17 +300,6 @@ ledgr_persistent_output_handler <- function(con,
                                       telemetry = NULL,
                                       processed = NA_integer_) {
     elapsed_sec <- ledgr_time_elapsed(run_wall_start, ledgr_time_now())
-    cache_hits <- if (is.environment(telemetry) || is.list(telemetry)) {
-      as.integer(telemetry$feature_cache_hits)
-    } else {
-      NA_integer_
-    }
-    cache_misses <- if (is.environment(telemetry) || is.list(telemetry)) {
-      as.integer(telemetry$feature_cache_misses)
-    } else {
-      NA_integer_
-    }
-
     err <- tryCatch(
       {
         ledgr_write_run_telemetry(
@@ -329,10 +308,7 @@ ledgr_persistent_output_handler <- function(con,
           status = status,
           execution_mode = execution_mode,
           elapsed_sec = elapsed_sec,
-          pulse_count = as.integer(processed),
-          persist_features = persist_features,
-          feature_cache_hits = cache_hits,
-          feature_cache_misses = cache_misses
+          pulse_count = as.integer(processed)
         )
         NULL
       },
@@ -724,7 +700,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   }
 
   engine <- ledgr_run_prepare_engine(cfg, db_path)
-  persist_features <- engine$persist_features
   execution_mode <- engine$execution_mode
   checkpoint_every <- engine$checkpoint_every
   snapshot_id <- engine$snapshot_id
@@ -764,8 +739,7 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     con = con,
     run_id = run_id,
     run_wall_start = run_wall_start,
-    execution_mode = execution_mode,
-    persist_features = persist_features
+    execution_mode = execution_mode
   )
   guard_handler <- output_handler
   fail_run <- output_handler$abort_run
@@ -881,7 +855,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
       run_id = run_id,
       is_resume = is_resume,
       calendar = calendar,
-      persist_features = persist_features,
       start_ts_utc = start_ts_utc,
       opening_positions = opening_positions,
       opening_cost_basis = opening_cost_basis
@@ -926,8 +899,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   telemetry$t_target <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
   telemetry$t_event <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
   telemetry$t_exec <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-  telemetry$feature_cache_hits <- 0L
-  telemetry$feature_cache_misses <- 0L
   telemetry_idx <- 0L
 
   state_env <- new.env(parent = emptyenv())
@@ -1093,11 +1064,9 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
 
   feature_engine_version <- ledgr_feature_engine_version(availability_active)
   if (length(feature_defs) > 0) {
-    feature_fingerprints <- vapply(feature_defs, ledgr_feature_def_fingerprint, character(1))
     run_feature_series <- list()
     for (def_idx in seq_along(feature_defs)) {
       def <- feature_defs[[def_idx]]
-      feature_fingerprint <- feature_fingerprints[[def_idx]]
       strict_kind <- if (availability_active) {
         ledgr_strict_builtin_kind(def)
       } else {
@@ -1106,25 +1075,10 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
       per_inst <- list()
       for (instrument_id in instrument_ids) {
         b <- bars_by_id[[instrument_id]]
-        cache_key <- ledgr_feature_cache_key_from_normalized_parts(
-          snapshot_hash = snapshot_hash_for_features,
-          instrument_id = instrument_id,
-          feature_fingerprint = feature_fingerprint,
-          feature_engine_version = feature_engine_version,
-          start_ts_utc = start_iso,
-          end_ts_utc = end_iso
-        )
-        values <- ledgr_feature_cache_get(cache_key, expected_len = nrow(b))
-        if (is.null(values)) {
-          values <- if (availability_active) {
-            ledgr_compute_feature_series_strict(b, def, kind = strict_kind)
-          } else {
-            ledgr_compute_feature_series(b, def)
-          }
-          ledgr_feature_cache_set(cache_key, values)
-          if (!is.null(cache_key)) telemetry$feature_cache_misses <- telemetry$feature_cache_misses + 1L
+        values <- if (availability_active) {
+          ledgr_compute_feature_series_strict(b, def, kind = strict_kind)
         } else {
-          telemetry$feature_cache_hits <- telemetry$feature_cache_hits + 1L
+          ledgr_compute_feature_series(b, def)
         }
         if (length(values) != nrow(b)) {
           fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
@@ -1185,10 +1139,7 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
       ),
       calendar = calendar,
       projection = list(
-        bars_mat = bars_mat,
-        persist_features = persist_features,
-        feature_defs = feature_defs,
-        runtime_projection = runtime_projection
+        bars_mat = bars_mat
       ),
       fold = list(
         telemetry = telemetry,
@@ -1365,10 +1316,7 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     ),
     calendar = calendar,
     projection = list(
-      bars_mat = bars_mat,
-      persist_features = persist_features,
-      feature_defs = feature_defs,
-      runtime_projection = runtime_projection
+      bars_mat = bars_mat
     ),
     fold = list(
       telemetry = telemetry,

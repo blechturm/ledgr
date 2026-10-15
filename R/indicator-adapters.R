@@ -148,9 +148,8 @@ ledgr_adapter_csv <- function(csv_path,
   values <- indicator_data[[value_col]]
   names(values) <- key
   data_hash <- digest::digest(indicator_data, algo = "sha256")
-  na_value <- NA_real_
 
-  ledgr_indicator(
+  indicator <- ledgr_indicator(
     id = id,
     fn = function(window) {
       current_ts <- ledgr_iso_utc(window$ts_utc[nrow(window)])
@@ -161,7 +160,7 @@ ledgr_adapter_csv <- function(csv_path,
           sprintf("No CSV value for ts_utc=%s instrument_id=%s.", current_ts, current_inst),
           call. = FALSE
         )
-        return(na_value)
+        return(NA_real_)
       }
       values[[key]]
     },
@@ -176,4 +175,9 @@ ledgr_adapter_csv <- function(csv_path,
       data_hash = data_hash
     )
   )
+  attr(indicator, "ledgr_constructor_capture_identity") <- list(
+    type = "csv_data_hash_v1",
+    fn_capture = "values"
+  )
+  indicator
 }

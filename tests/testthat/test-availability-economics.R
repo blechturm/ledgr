@@ -1009,14 +1009,12 @@ testthat::test_that("prepared valuation and linear event growth coexist in one e
                                                 run_id,
                                                 run_wall_start,
                                                 execution_mode,
-                                                persist_features,
                                                 .event_initial_capacity = 1024L) {
       original_handler(
         con,
         run_id,
         run_wall_start,
         execution_mode,
-        persist_features,
         .event_initial_capacity = 2L
       )
     },

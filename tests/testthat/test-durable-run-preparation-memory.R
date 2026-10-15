@@ -10,14 +10,12 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
     strategy,
     features = list(ledgr_ind_sma(2L)),
     valuation_policy = ledgr_valuation_stale(1L),
-    cost_model = ledgr_cost_zero(),
-    persist_features = TRUE
+    cost_model = ledgr_cost_zero()
   )
   feature_boundary <- NULL
   fold_boundary <- NULL
   original_strict <- ledgr:::ledgr_compute_feature_series_strict
   original_fold <- ledgr:::ledgr_execute_fold
-  ledgr_feature_cache_clear()
   testthat::local_mocked_bindings(
     ledgr_compute_feature_series_strict = function(...) {
       caller <- parent.frame()
@@ -73,8 +71,7 @@ testthat::test_that("[LTB-0156] finalization skips only work its branch cannot u
     function(ctx, params) ctx$flat(),
     features = list(ledgr_ind_sma(2L)),
     valuation_policy = ledgr_valuation_stale(1L),
-    cost_model = ledgr_cost_zero(),
-    persist_features = TRUE
+    cost_model = ledgr_cost_zero()
   )
   slice_calls <- 0L
   event_reads <- 0L
@@ -121,10 +118,7 @@ testthat::test_that("[LTB-0156] finalization skips only work its branch cannot u
       "else \\{\\s+events_df <- ledgr_run_finalize_events\\(con, run_id\\)",
       perl = TRUE
     )
-    testthat::expect_match(
-      source,
-      "if \\(full_projection\\) \\{\\s+runtime_projection",
-      perl = TRUE
-    )
+    testthat::expect_false(grepl("full_projection", source, fixed = TRUE))
+    testthat::expect_false(grepl("runtime_projection", source, fixed = TRUE))
   }
 })

@@ -406,8 +406,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
     features = features,
     opening = ledgr_opening(cash = 1e7),
     cost_model = cost_model,
-    risk_chain = risk_chain,
-    persist_features = FALSE
+    risk_chain = risk_chain
   )
   run_id <- paste0("peer_", engine, "_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
   t2 <- proc.time()[["elapsed"]]
@@ -584,8 +583,7 @@ peer_indicator_feature_parity <- function(bars_path, fast, slow) {
       features = features,
       opening = ledgr_opening(cash = 1e7),
       cost_model = peer_cost_zero_model(),
-      risk_chain = peer_risk_none_model(),
-      persist_features = FALSE
+      risk_chain = peer_risk_none_model()
     )
   }
   ttr <- ledgr_precompute_features(
@@ -1064,8 +1062,7 @@ peer_run_ledgr_sweep <- function(engine, bars_path, features, strategy, seed,
     features = features,
     opening = ledgr_opening(cash = 1e7),
     cost_model = cost_model,
-    risk_chain = risk_chain,
-    persist_features = FALSE
+    risk_chain = risk_chain
   )
   grid <- ledgr_param_grid(benchmark = list())
   retention <- ledgr_sweep_retention(returns = "completed", trades = "closed")

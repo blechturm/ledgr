@@ -167,8 +167,14 @@ the registered feature definition still matches the one recorded with
 the run.
 
 The fingerprint includes the feature ID, scalar function, vectorized
-function when present, `requires_bars`, `stable_after`, and
-deterministic `params`.
+function when present, deterministic direct captures of those functions,
+`requires_bars`, `stable_after`, and deterministic `params`. Atomic
+values and deterministic lists can be direct captures; environments,
+connections, and other unsupported session objects refuse as
+non-deterministic. A captured function contributes its own function
+identity, but ledgr does not recursively include that helper function's
+captures. Put explicitly varying research inputs in `params` so their
+identity stays visible.
 
 Fingerprints are an identity check, not a semantic proof. They help
 ledgr answer “is this the same feature definition?” They do not prove

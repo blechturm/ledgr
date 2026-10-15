@@ -112,8 +112,7 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
     con = con,
     run_id = run_id,
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
-    persist_features = FALSE
+    execution_mode = "audit_log"
   )
   handler$init_buffers(1L)
 
@@ -172,8 +171,7 @@ testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
     con = con,
     run_id = run_id,
     run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
-    execution_mode = "audit_log",
-    persist_features = FALSE
+    execution_mode = "audit_log"
   )
   block <- function(reason, n) {
     do.call(rbind, lapply(seq_len(n), function(i) {
@@ -265,7 +263,6 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     run_id = "pulse-durable",
     run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
     execution_mode = "audit_log",
-    persist_features = FALSE,
     .event_initial_capacity = 1L
   )
   durable$init_buffers(2L)
@@ -354,8 +351,7 @@ testthat::test_that("persistent output handler grows event buffer without changi
     con = con,
     run_id = run_id,
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
-    persist_features = FALSE
+    execution_mode = "audit_log"
   )
   n_events <- 1025L
   handler$init_buffers(n_events)
@@ -390,8 +386,7 @@ testthat::test_that("persistent output handler preserves all pending event colum
     con = con,
     run_id = run_id,
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
-    persist_features = FALSE
+    execution_mode = "audit_log"
   )
   handler$init_buffers(3L)
   for (i in seq_len(3L)) {
@@ -440,8 +435,7 @@ testthat::test_that("persistent output handler preserves full columns across gro
     con = con,
     run_id = run_id,
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
-    persist_features = FALSE
+    execution_mode = "audit_log"
   )
   n_events <- 1025L
   handler$init_buffers(n_events)
@@ -498,8 +492,7 @@ testthat::test_that("persistent output handler enforces hard event cap", {
     con = NULL,
     run_id = "run-ledger-buffered-cap",
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
-    persist_features = FALSE
+    execution_mode = "audit_log"
   )
   handler$init_buffers(1L)
   testthat::expect_true(handler$buffer_event(fake_write_result("run-ledger-buffered-cap", 1L)))
@@ -612,7 +605,6 @@ testthat::test_that("both event handlers preserve rows across two injected growt
     run_id = "linear-durable",
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
     execution_mode = "audit_log",
-    persist_features = FALSE,
     .event_initial_capacity = 2L
   )
   durable$init_buffers(n_events)
@@ -667,7 +659,6 @@ testthat::test_that("failed event-buffer writes do not expose a partial active r
     run_id = "linear-failure-durable",
     run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
     execution_mode = "audit_log",
-    persist_features = FALSE,
     .event_initial_capacity = 2L
   )
   durable$init_buffers(2L)

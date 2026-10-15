@@ -114,8 +114,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     "strategy_params_hash", "ledgr_version", "R_version",
     "dependency_versions_json", "config_hash", "execution_mode",
     "feature_set_hash",
-    "elapsed_sec", "pulse_count", "persist_features", "feature_cache_hits",
-    "feature_cache_misses", "error_msg", "final_equity", "max_drawdown",
+    "elapsed_sec", "pulse_count", "error_msg", "final_equity", "max_drawdown",
     "total_return", "n_trades", "config_json", "schema_version"
   )
 
@@ -190,8 +189,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     }
 
     telem_cols <- c(
-      "run_id", "execution_mode", "elapsed_sec", "pulse_count",
-      "persist_features", "feature_cache_hits", "feature_cache_misses"
+      "run_id", "execution_mode", "elapsed_sec", "pulse_count"
     )
     telemetry <- DBI::dbGetQuery(
       con,
@@ -250,7 +248,6 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     out$archived_at_utc <- vapply(out$archived_at_utc, ledgr_run_store_format_ts, character(1))
   }
   if ("archived" %in% names(out)) out$archived <- as.logical(out$archived)
-  if ("persist_features" %in% names(out)) out$persist_features <- as.logical(out$persist_features)
   if ("pulse_count" %in% names(out)) out$pulse_count <- as.integer(out$pulse_count)
   if ("n_trades" %in% names(out)) out$n_trades <- as.integer(out$n_trades)
   if ("n_trades" %in% names(out)) {
@@ -605,7 +602,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
   info$execution_timing_source <- timing$execution_timing_source
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
-    info[c("elapsed_sec", "persist_features", "feature_cache_hits", "feature_cache_misses")],
+    info[c("elapsed_sec", "pulse_count")],
     function(x) is.null(x) || length(x) == 0L || is.na(x),
     logical(1)
   ))
@@ -927,8 +924,8 @@ print.ledgr_run_list <- function(x, ...) {
 #'   `strategy_params_hash`, `feature_set_hash`, `risk_chain_hash`, `config_hash`,
 #'   `execution_timing_version`, `execution_timing_convention`,
 #'   `reproducibility_level`, `execution_mode`, `elapsed_sec`, `pulse_count`,
-#'   `persist_features`, feature-cache counts, `promotion_context` for runs
-#'   created with [ledgr_promote()], and `error_msg` for failed runs. When
+#'   `promotion_context` for runs created with [ledgr_promote()], and
+#'   `error_msg` for failed runs. When
 #'   terminal completion evidence exists, the object also reports requested
 #'   and achieved windows, stop reason, last fully valued and executed times,
 #'   whether performance is complete, and affected instrument identifiers.
@@ -1020,9 +1017,6 @@ print.ledgr_run_info <- function(x, ...) {
     sprintf("%.3f", as.numeric(elapsed[[1]]))
   }
   line("Elapsed Sec", elapsed)
-  line("Persist Features", value("persist_features"))
-  line("Cache Hits", value("feature_cache_hits"))
-  line("Cache Misses", value("feature_cache_misses"))
   error_msg <- x$error_msg
   if (
     length(error_msg) == 1L && !is.na(error_msg) &&

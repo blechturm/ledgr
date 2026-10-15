@@ -61,7 +61,7 @@ testthat::test_that("risk identity participates in config_hash without a separat
       snapshot_id = "test-snapshot",
       snapshot_hash = "test-hash"
     ),
-    identity_rule_version = 2L
+    identity_rule_version = 3L
   )
 
   cfg_missing <- cfg
@@ -120,7 +120,7 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
       snapshot_id = "test-snapshot",
       snapshot_hash = "test-hash"
     ),
-    identity_rule_version = 2L
+    identity_rule_version = 3L
   )
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)

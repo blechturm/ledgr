@@ -47,6 +47,8 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
   testthat::expect_s3_class(precomputed$projection, "ledgr_runtime_projection")
   testthat::expect_identical(precomputed$projection$feature_engine_version, ledgr:::ledgr_feature_engine_version())
   testthat::expect_null(precomputed$projection$alias_index)
+  testthat::expect_true(all(is.na(precomputed$candidate_features$alias_map_json)))
+  testthat::expect_true(all(is.na(precomputed$candidate_features$alias_map_hash)))
   testthat::expect_identical(names(precomputed$projection$instrument_index), c("AAA", "BBB"))
   testthat::expect_equal(unname(precomputed$projection$instrument_index), c(1L, 2L))
   testthat::expect_equal(length(precomputed$projection$pulse_index), 8L)
@@ -340,6 +342,269 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     ledgr:::ledgr_validate_precomputed_features(precomputed, exp, changed_grid),
     class = "ledgr_precomputed_feature_mismatch"
   )
+})
+
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("precomputed features refuse after a direct capture changes", {
+  make_indicator <- function(scale) {
+    ledgr_indicator(
+      id = "captured_scale",
+      fn = function(window) tail(window$close, 1L) * scale,
+      series_fn = function(bars, params) bars$close * scale,
+      requires_bars = 1L
+    )
+  }
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    target <- ctx$flat()
+    value <- ctx$feature("AAA", "captured_scale")
+    if (is.finite(value) && value > params$threshold) target[["AAA"]] <- 1
+    target
+  }
+  experiment <- function(scale) ledgr_experiment(
+    snapshot,
+    strategy,
+    features = list(make_indicator(scale)),
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(one = list(threshold = 0))
+  original <- experiment(1)
+  changed <- experiment(2)
+  precomputed <- ledgr_precompute_features(original, grid)
+
+  local({
+    executed <- FALSE
+    testthat::local_mocked_bindings(
+      ledgr_execute_fold = function(...) {
+        executed <<- TRUE
+        stop("candidate executed")
+      },
+      .package = "ledgr"
+    )
+    testthat::expect_error(
+      ledgr_sweep(changed, grid, precomputed_features = precomputed),
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+    testthat::expect_false(executed)
+  })
+
+  rebuilt <- ledgr_precompute_features(changed, grid)
+  with_precompute <- ledgr_sweep(changed, grid, precomputed_features = rebuilt)
+  fresh <- ledgr_sweep(changed, grid)
+  testthat::expect_identical(with_precompute$status, fresh$status)
+  testthat::expect_identical(with_precompute$final_equity, fresh$final_equity)
+  testthat::expect_identical(with_precompute$n_trades, fresh$n_trades)
+})
+
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("precomputed candidates stay bound when captured windows are permuted", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:29)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  windows <- c(fast = 5, slow = 20)
+  strategy <- function(ctx, params) {
+    target <- ctx$flat()
+    value <- ctx$feature("AAA", "trend")
+    if (is.finite(value)) target[["AAA"]] <- 1
+    target
+  }
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = function(params) {
+      ledgr_feature_map(trend = ledgr_ind_sma(windows[[params$speed]]))
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(
+    fast = list(speed = "fast"),
+    slow = list(speed = "slow")
+  )
+  precomputed <- ledgr_precompute_features(exp, grid)
+  original_union <- sort(precomputed$feature_union$fingerprint, method = "radix")
+
+  windows <- c(fast = 20, slow = 5)
+  con <- ledgr:::get_connection(snapshot)
+  count_rows <- function(table) {
+    if (!DBI::dbExistsTable(con, table)) return(0L)
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n[[1L]]
+  }
+  runs_before <- count_rows("runs")
+  fills_before <- count_rows("fills")
+  local({
+    executed <- FALSE
+    testthat::local_mocked_bindings(
+      ledgr_execute_fold = function(...) {
+        executed <<- TRUE
+        stop("candidate executed")
+      },
+      .package = "ledgr"
+    )
+
+    testthat::expect_error(
+      ledgr_sweep(exp, grid, precomputed_features = precomputed),
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+    testthat::expect_false(executed)
+    testthat::expect_identical(count_rows("runs"), runs_before)
+    testthat::expect_identical(count_rows("fills"), fills_before)
+  })
+
+  rebuilt <- ledgr_precompute_features(exp, grid)
+  testthat::expect_identical(
+    sort(rebuilt$feature_union$fingerprint, method = "radix"),
+    original_union
+  )
+  testthat::expect_identical(
+    rebuilt$candidate_features$feature_fingerprints[[1L]],
+    precomputed$candidate_features$feature_fingerprints[[2L]]
+  )
+  testthat::expect_identical(
+    rebuilt$candidate_features$feature_fingerprints[[2L]],
+    precomputed$candidate_features$feature_fingerprints[[1L]]
+  )
+  stale_alias <- rebuilt
+  stale_alias$candidate_features$alias_map_hash[[1L]] <- strrep("0", 64L)
+  testthat::expect_error(
+    ledgr:::ledgr_validate_precomputed_features(stale_alias, exp, grid),
+    class = "ledgr_precomputed_feature_mismatch"
+  )
+  with_precompute <- ledgr_sweep(exp, grid, precomputed_features = rebuilt)
+  fresh <- ledgr_sweep(exp, grid)
+  testthat::expect_identical(with_precompute$status, fresh$status)
+  testthat::expect_identical(with_precompute$final_equity, fresh$final_equity)
+  testthat::expect_identical(with_precompute$n_trades, fresh$n_trades)
+
+  nm <- c("fast", "slow")
+  alias_strategy <- function(ctx, params) {
+    target <- ctx$flat()
+    value <- ctx$feature("AAA", "fast")
+    if (is.finite(value) && ctx$close("AAA") > value) target[["AAA"]] <- 1
+    target
+  }
+  alias_exp <- ledgr_experiment(
+    snapshot,
+    alias_strategy,
+    features = function(params) {
+      indicators <- list(ledgr_ind_sma(5), ledgr_ind_sma(20))
+      names(indicators) <- nm
+      do.call(ledgr_feature_map, indicators)
+    },
+    cost_model = ledgr_cost_zero()
+  )
+  alias_precomputed <- ledgr_precompute_features(alias_exp, grid)
+  testthat::expect_identical(
+    alias_precomputed$candidate_features$feature_fingerprints[[1L]],
+    alias_precomputed$candidate_features$feature_fingerprints[[2L]]
+  )
+  testthat::expect_silent(
+    ledgr:::ledgr_validate_precomputed_features(alias_precomputed, alias_exp, grid)
+  )
+
+  nm <- c("slow", "fast")
+  alias_current <- ledgr:::ledgr_precompute_resolve_grid(
+    alias_exp,
+    grid
+  )$candidate_features
+  testthat::expect_identical(
+    alias_current$feature_fingerprints,
+    alias_precomputed$candidate_features$feature_fingerprints
+  )
+  testthat::expect_identical(
+    alias_current$alias_map_hash,
+    alias_precomputed$candidate_features$alias_map_hash
+  )
+  testthat::expect_false(identical(
+    alias_current$alias_map_json,
+    alias_precomputed$candidate_features$alias_map_json
+  ))
+
+  runs_before_alias_refusal <- count_rows("runs")
+  fills_before_alias_refusal <- count_rows("fills")
+  local({
+    executed <- FALSE
+    testthat::local_mocked_bindings(
+      ledgr_execute_fold = function(...) {
+        executed <<- TRUE
+        stop("candidate executed")
+      },
+      .package = "ledgr"
+    )
+
+    testthat::expect_error(
+      ledgr_sweep(alias_exp, grid, precomputed_features = alias_precomputed),
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+    testthat::expect_false(executed)
+    testthat::expect_identical(count_rows("runs"), runs_before_alias_refusal)
+    testthat::expect_identical(count_rows("fills"), fills_before_alias_refusal)
+  })
+
+  alias_rebuilt <- ledgr_precompute_features(alias_exp, grid)
+  alias_with_precompute <- ledgr_sweep(
+    alias_exp,
+    grid,
+    precomputed_features = alias_rebuilt
+  )
+  alias_fresh <- ledgr_sweep(alias_exp, grid)
+  testthat::expect_identical(alias_with_precompute$status, alias_fresh$status)
+  testthat::expect_identical(
+    alias_with_precompute$final_equity,
+    alias_fresh$final_equity
+  )
+  testthat::expect_identical(alias_with_precompute$n_trades, alias_fresh$n_trades)
+
+  reordered_grid <- ledgr_param_grid(
+    slow = list(speed = "slow"),
+    fast = list(speed = "fast")
+  )
+  reordered_precomputed <- ledgr_precompute_features(alias_exp, reordered_grid)
+  testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(
+    reordered_precomputed,
+    alias_exp,
+    reordered_grid
+  ))
+  reordered_with_precompute <- ledgr_sweep(
+    alias_exp,
+    reordered_grid,
+    precomputed_features = reordered_precomputed
+  )
+  reordered_fresh <- ledgr_sweep(alias_exp, reordered_grid)
+  testthat::expect_identical(
+    reordered_with_precompute$final_equity,
+    reordered_fresh$final_equity
+  )
+  testthat::expect_identical(
+    reordered_with_precompute$n_trades,
+    reordered_fresh$n_trades
+  )
+
+  parameterized_exp <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    features = ledgr_feature_map(
+      signal = ledgr_ind_sma(ledgr_param("n"))
+    ),
+    cost_model = ledgr_cost_zero()
+  )
+  parameterized_grid <- ledgr_param_grid(
+    short = list(n = 5L),
+    long = list(n = 20L)
+  )
+  parameterized_precomputed <- ledgr_precompute_features(
+    parameterized_exp,
+    parameterized_grid
+  )
+  testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(
+    parameterized_precomputed,
+    parameterized_exp,
+    parameterized_grid
+  ))
 })
 
 testthat::test_that("large grids without precomputed features warn through the reserved sweep helper", {

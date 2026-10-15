@@ -645,8 +645,6 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  ledgr_feature_cache_clear()
-  on.exit(ledgr_feature_cache_clear(), add = TRUE)
   bars <- ledgr_test_compact_bars()
 
   snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
@@ -670,10 +668,5 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
   )
   on.exit(close(bt), add = TRUE)
 
-  features <- DBI::dbGetQuery(
-    ledgr:::get_connection(bt),
-    "SELECT DISTINCT feature_name FROM features WHERE run_id = ?",
-    params = list(bt$run_id)
-  )
-  testthat::expect_true(ind$id %in% features$feature_name)
+  testthat::expect_false("features" %in% ledgr_test_store_tables(ledgr:::get_connection(bt)))
 })

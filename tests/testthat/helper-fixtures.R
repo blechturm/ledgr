@@ -187,7 +187,7 @@ ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) 
     snapshot_db_path = snapshot$db_path,
     snapshot_hash = ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
   )
-  cfg$identity_rule_version <- 2L
+  cfg$identity_rule_version <- 3L
   ledgr_test_modernize_config(cfg)
 }
 
@@ -221,7 +221,7 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
   cfg$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
     ledgr_corporate_actions_research()
   )
-  cfg$identity_rule_version <- 2L
+  cfg$identity_rule_version <- 3L
   if (is.list(cfg$strategy) && !is.list(cfg$strategy$provenance)) {
     strategy <- ledgr:::ledgr_strategy_spec(cfg$strategy)
     cfg$strategy$id <- strategy$id
@@ -280,23 +280,6 @@ ledgr_test_fetch_ledger_core <- function(con, run_id) {
   )
   if (nrow(df) == 0) return(df)
   df$ts_utc <- ledgr_test_norm_ts(df$ts_utc)
-  df
-}
-
-ledgr_test_fetch_features_core <- function(con, run_id) {
-  df <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT ts_utc, instrument_id, feature_name, feature_value
-    FROM features
-    WHERE run_id = ?
-    ORDER BY ts_utc, instrument_id, feature_name
-    ",
-    params = list(run_id)
-  )
-  if (nrow(df) == 0) return(df)
-  df$ts_utc <- ledgr_test_norm_ts(df$ts_utc)
-  df$feature_value <- as.numeric(df$feature_value)
   df
 }
 

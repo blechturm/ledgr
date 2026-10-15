@@ -648,6 +648,19 @@ resumes.
 | Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates eight named typed phases without changing behavior or cost materially |
 | Product | 39 Private lake rebuild | LDG-3055 | the history wave receives one verified schema-120, rule-3 real-data store built from frozen inputs |
 
+Workstream 36 implementation is complete. Its Type 1 close review returned
+CHANGES_REQUIRED and is preserved in `close_review_36.md`. Focused re-review 1
+closed F2-F6 and the fingerprint half of F1, but returned CHANGES_REQUIRED for
+N1 and is preserved in `close_review_36_rereview_1.md`: `alias_map_hash` does
+not bind each alias to its concrete feature ID. Correction round 2 is limited
+to the per-candidate alias-map comparison and exact permutation witness, after
+which final N1-only focused re-review is required. Any further finding after
+that review escalates to the maintainer under M1. The closeout records the
+deletion, schema-120 and identity-rule-3 boundaries, direct-capture identity,
+acceptance evidence, test ledger, seven-shape walk and supported-toolchain
+verification; the original 106.110-second implementation pass and the
+correction's 112.490-second median MISS remain unchanged.
+
 Workstreams 32 and 36 open independently. Workstream 34 follows 32 and
 Workstream 37 follows 36. Workstream 33 waits for both 32 and all of Workstream
 36, so its contract pass sees the final current product. Workstream

@@ -74,7 +74,6 @@ testthat::test_that("[LTB-0157] strict dispatch resolves once per definition", {
     snapshot <- strict_dispatch_fixture(instruments)
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     experiment <- strict_dispatch_experiment(snapshot, instruments)
-    ledgr_feature_cache_clear()
     calls <- character()
     bt <- ledgr_run(experiment, run_id = paste0("dispatch-", count))
     on.exit(close(bt), add = TRUE)

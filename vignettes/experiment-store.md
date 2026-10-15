@@ -202,16 +202,12 @@ info
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
     Elapsed Sec:      1.000
-    Persist Features: TRUE
-    Cache Hits:       0
-    Cache Misses:     2
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution
 mode, compact telemetry, status, identity hashes, and reproducibility
 tier. The hashes identify every input and are the same whenever the same
-inputs run; `Elapsed Sec` and the cache counts describe how this
-execution went on this machine and can differ between otherwise
-identical runs.
+inputs run; `Elapsed Sec` describes how this execution went on this
+machine and can differ between otherwise identical runs.
 
 Useful fields include:
 
@@ -222,7 +218,6 @@ Useful fields include:
 | `strategy_source_hash`, `strategy_params_hash`, `config_hash` | strategy, parameter, and run-configuration identity |
 | `reproducibility_level` | strategy preflight tier recorded with the run |
 | `execution_mode`, `elapsed_sec`, `pulse_count` | execution telemetry |
-| `persist_features`, `feature_cache_hits`, `feature_cache_misses` | compact feature-engine telemetry |
 | `error_msg` | failure diagnostic for non-completed runs |
 
 ``` r

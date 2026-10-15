@@ -49,7 +49,6 @@ testthat::test_that("audit_log matches db_live results", {
     universe = "BTC",
     end = end_ts,
     execution_mode = "audit_log",
-    persist_features = FALSE,
   cost_model = ledgr_cost_zero()
   ))
   on.exit(close(bt_audit), add = TRUE)
@@ -59,7 +58,6 @@ testthat::test_that("audit_log matches db_live results", {
     universe = "BTC",
     end = end_ts,
     execution_mode = "db_live",
-    persist_features = FALSE,
   cost_model = ledgr_cost_zero()
   ))
   on.exit(close(bt_db), add = TRUE)

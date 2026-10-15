@@ -350,7 +350,7 @@ validate_ledgr_config <- function(config) {
       is.na(identity_rule) ||
       !identical(identity_rule, ledgr_identity_rule_version)) {
     rlang::abort(
-      "Config field identity_rule_version must be the integer 2L.",
+      "Config field identity_rule_version must be the integer 3L.",
       class = "ledgr_invalid_config"
     )
   }

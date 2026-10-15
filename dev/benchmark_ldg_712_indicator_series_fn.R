@@ -187,7 +187,6 @@ run_backtest_once <- function(indicator, run_id) {
     initial_cash = 10000,
     run_id = run_id,
     features = list(indicator),
-    persist_features = FALSE,
     db_path = db_path
   )
   on.exit(close(bt), add = TRUE)
@@ -211,7 +210,6 @@ bt_series <- benchmark_backtest(series_indicator, "ldg-712-series-fn", reps)
 
 cat("\nEnd-to-end backtest\n")
 cat("-------------------\n")
-cat("persist_features:    FALSE\n")
 cat(sprintf("repetitions:         %d\n", reps))
 cat(sprintf("fn-only median:      %.3fs (%d fn calls total)\n", bt_fn$median, fn_calls$n))
 cat(sprintf("series_fn median:    %.3fs (%d series_fn calls total)\n", bt_series$median, series_calls$n))
