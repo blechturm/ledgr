@@ -203,34 +203,42 @@ experiments <- rbind(
 
 reconciliation <- data.frame(
   metric = c(
-    "bars", "instruments", "open_sessions", "membership_rows",
-    "membership_sets", "lifetime_rows", "snapshot_hash",
-    "experiment_store_schema_version", "features_table",
-    "retired_run_telemetry_columns"
+    "bars", "instruments", "first_bar_date", "last_bar_date",
+    "open_sessions", "membership_rows", "membership_sets", "lifetime_rows",
+    "snapshot_hash", "experiment_store_schema_version",
+    "identity_rule_version", "features_table", "retired_run_telemetry_columns"
   ),
   current = as.character(c(
-    build$bars, build$instruments, build$open_sessions, build$membership_rows,
-    build$membership_sets, build$lifetime_rows, build$snapshot_hash,
-    build$experiment_store_schema_version, build$feature_table_present,
-    build$retired_telemetry_columns_present
+    build$bars, build$instruments,
+    substr(build$start_date, 1L, 10L), substr(build$end_date, 1L, 10L),
+    build$open_sessions, build$membership_rows, build$membership_sets,
+    build$lifetime_rows, build$snapshot_hash,
+    build$experiment_store_schema_version, build$identity_rule_version,
+    build$feature_table_present, build$retired_telemetry_columns_present
   )),
-  frozen_source_or_current_contract = as.character(c(
-    build$source_bars, build$source_instruments, build$open_sessions,
-    build$membership_rows, build$membership_sets, build$lifetime_rows,
-    build$snapshot_hash, 120L, FALSE, 0L
+  independent_source_or_current_contract = as.character(c(
+    build$source_bars, build$source_instruments,
+    build$source_start_date, build$source_end_date,
+    rep("not independently projected", 5L),
+    120L, 3L, FALSE, 0L
   )),
   prior_schema119_record = as.character(c(
-    build$prior_bars, build$prior_instruments, build$prior_open_sessions,
-    build$prior_membership_rows, build$prior_membership_sets,
-    build$prior_lifetime_rows, build$prior_snapshot_hash, 119L,
-    "present", "3"
+    build$prior_bars, build$prior_instruments,
+    "1998-01-02", "2026-09-04",
+    build$prior_open_sessions, build$prior_membership_rows,
+    build$prior_membership_sets, build$prior_lifetime_rows,
+    build$prior_snapshot_hash, 119L, 2L, "present", "3"
   )),
   outcome = c(
-    rep("exact", 7L),
+    rep("exact frozen source and LDG-3036", 2L),
+    rep("exact frozen source; span recorded by LDG-3036", 2L),
+    rep("matches independent LDG-3036; not independently projected here", 5L),
     "intended schema-120 change",
+    "intended identity-rule change",
     "deleted by LDG-3050",
     "deleted by LDG-3049/3050"
   ),
+  owner = c(rep("", 10L), "LDG-3050", "LDG-3050", "LDG-3049/LDG-3050"),
   stringsAsFactors = FALSE
 )
 
