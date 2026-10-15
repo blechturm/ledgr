@@ -1,0 +1,5 @@
+"stage","exit_status","elapsed_s","peak_rss_mib"
+"build",0,211.7,5757
+"cold_verify",0,10.8,1437
+"full_membership",0,13.9,1030
+"availability",0,13.9,1076

@@ -637,14 +637,18 @@ Cut 15 now has one remaining workstream on each of its two tracks:
 - **Governance track:** WS32, WS33 and WS34 are complete and accepted. WS35
   remains as the governance-record normalization gate.
 - **Product track:** WS36, WS37 and WS38 are complete and accepted. WS39 now
-  rebuilds the current private research lake from that final pre-history tree.
+  supplies the fresh schema-120, rule-3
+  [current real-data record](../../../dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md)
+  from that final pre-history tree; its public cold verification and the two
+  same-identity representative experiments pass.
 
 The tracks meet at one gate: WS35 and WS39 must both be accepted before the
 WS3/WS4 history wave resumes. That wave consumes the normalized governance
-record, final fold structure, and current real-data evidence. Workstreams 32
-through 39 are Cut 15's complete pre-history boundary. `tickets.yml` alone
-binds exact dependencies and status; this section records track shape and
-concurrency only.
+record, final fold structure, and the WS39 current real-data evidence. Old
+schema-119 stores remain unreachable evidence, not compatibility targets.
+Workstreams 32 through 39 are Cut 15's complete pre-history boundary.
+`tickets.yml` alone binds exact dependencies and status; this section records
+track shape and concurrency only.
 
 <a id="execution-core-consolidation"></a>
 

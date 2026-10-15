@@ -1,0 +1,3 @@
+"probe","universe_mode","run_id","status","snapshot_id","snapshot_hash","schema_version","config_hash","availability_active","pulse_count","elapsed_sec","equity_rows","fill_rows"
+"full_membership_availability_path","all snapshot instruments (universe = NULL)","ws39-full-membership","DONE","snapshot_20261015_192255_63d4","c5b4f12f6ec60e34de1b602c08a2cf3fb2619c35ba0fdf50d536e9d26c4433fc",120,"4278ae077fd50792e43318d484ae5a3fa8fecfbbee8ba1fcd0a25dd20e3acf1c",TRUE,25,2.27,25,0
+"dynamic_membership_availability_path","membership universe rule","ws39-dynamic-membership","DONE","snapshot_20261015_192255_63d4","c5b4f12f6ec60e34de1b602c08a2cf3fb2619c35ba0fdf50d536e9d26c4433fc",120,"c1fd025464c0567bec6bb4a916bc55ca2fa79118c268377ad2d7afcb165b66f2",TRUE,25,2.24,25,0
