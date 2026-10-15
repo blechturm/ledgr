@@ -56,7 +56,7 @@ with the history wave.
 ## Packet front door and evidence form
 
 The packet README shrank from 684 raw lines and 582 nonblank lines (45,534
-UTF-8 bytes at `07f91bcf`) to 115 raw lines and 93 nonblank lines (5,792
+UTF-8 bytes at `07f91bcf`) to 115 raw lines and 93 nonblank lines (5,686
 bytes). It now links the macro plan, ticket authority, current and earlier cut
 review artifacts and durable closeouts without copying mutable ticket status,
 dependencies or acceptance text.
