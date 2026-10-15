@@ -428,8 +428,8 @@ ledgr_compute_feature_series_strict_scalar <- function(bars_df,
   n <- nrow(bars_df)
   width <- as.integer(feature_def$stable_after)
   out <- rep(NA_real_, n)
-  complete <- ledgr_strict_complete_window_mask(bars_df, width)
   if (n < width) return(out)
+  complete <- ledgr_strict_complete_window_mask(bars_df, width)
   for (i in seq.int(width, n)) {
     if (!complete[[i]]) next
     window <- bars_df[seq.int(i - width + 1L, i), , drop = FALSE]

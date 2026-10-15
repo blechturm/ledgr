@@ -1,3 +1,6 @@
+# Records made before the correction that introduced verify_input() treated
+# --source-commit as a caller-supplied label. Current records resolve that
+# label to HEAD, require a clean Git input, and retain the HEAD tree hash.
 args <- commandArgs(trailingOnly = TRUE)
 arg_value <- function(flag, default = NULL) {
   i <- match(flag, args)
@@ -24,6 +27,7 @@ if ("--child" %in% args) {
   attempt <- as.integer(required_arg("--attempt"))
   order <- as.integer(required_arg("--order"))
   source_commit <- required_arg("--source-commit")
+  source_tree <- required_arg("--source-tree")
   output <- required_arg("--output")
   stopifnot(arm %in% c("baseline", "candidate"), length >= 50L)
 
@@ -145,6 +149,7 @@ if ("--child" %in% args) {
     order = order,
     arm = arm,
     source_commit = source_commit,
+    source_tree = source_tree,
     r_version = paste(R.version$major, R.version$minor, sep = "."),
     ttr_version = as.character(utils::packageVersion("TTR")),
     strict_prep_s = stats::median(prep_times),
@@ -169,6 +174,81 @@ lengths <- as.integer(strsplit(
 )[[1L]])
 pairs <- as.integer(arg_value("--pairs", "5"))
 stopifnot(length(lengths) >= 2L, all(lengths >= 50L), pairs >= 5L)
+
+git_read <- function(repo, args, label) {
+  value <- suppressWarnings(system2(
+    "git",
+    c("-C", shQuote(repo), args),
+    stdout = TRUE,
+    stderr = FALSE
+  ))
+  status <- attr(value, "status")
+  if (!is.null(status) && status != 0L) {
+    stop(
+      label,
+      " input verification failed: ",
+      paste(value, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+  value
+}
+
+verify_input <- function(repo, claimed_commit, label) {
+  head <- git_read(repo, c("rev-parse", "--verify", "HEAD^{commit}"), label)
+  claimed <- git_read(
+    repo,
+    c("rev-parse", "--verify", paste0(claimed_commit, "^{commit}")),
+    label
+  )
+  if (length(head) != 1L || length(claimed) != 1L || !identical(head, claimed)) {
+    stop(
+      label,
+      " HEAD does not match --",
+      label,
+      "-commit.",
+      call. = FALSE
+    )
+  }
+  dirty <- git_read(
+    repo,
+    c("status", "--porcelain=v1", "--untracked-files=all"),
+    label
+  )
+  if (length(dirty) > 0L) {
+    stop(
+      label,
+      " input tree is not clean:\n",
+      paste(dirty, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+  tree <- git_read(repo, c("rev-parse", "--verify", "HEAD^{tree}"), label)
+  if (length(tree) != 1L) stop(label, " tree hash is unavailable.", call. = FALSE)
+  list(commit = head[[1L]], tree = tree[[1L]])
+}
+
+git_config <- tempfile("ws37-git-config-")
+old_git_config <- Sys.getenv("GIT_CONFIG_GLOBAL", unset = NA_character_)
+writeLines(
+  c(
+    "[safe]",
+    paste("\tdirectory =", encodeString(baseline, quote = "\"")),
+    paste("\tdirectory =", encodeString(candidate, quote = "\""))
+  ),
+  git_config
+)
+Sys.setenv(GIT_CONFIG_GLOBAL = git_config)
+baseline_input <- verify_input(baseline, baseline_commit, "baseline")
+candidate_input <- verify_input(candidate, candidate_commit, "candidate")
+unlink(git_config)
+if (is.na(old_git_config)) {
+  Sys.unsetenv("GIT_CONFIG_GLOBAL")
+} else {
+  Sys.setenv(GIT_CONFIG_GLOBAL = old_git_config)
+}
+baseline_commit <- baseline_input$commit
+candidate_commit <- candidate_input$commit
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 raw_dir <- file.path(out, "raw")
 dir.create(raw_dir, recursive = TRUE, showWarnings = FALSE)
@@ -192,6 +272,11 @@ run_attempt <- function(attempt) {
         } else {
           candidate_commit
         }
+        source_tree <- if (identical(arm, "baseline")) {
+          baseline_input$tree
+        } else {
+          candidate_input$tree
+        }
         output <- file.path(raw_dir, sprintf(
           "attempt-%d-length-%d-pair-%02d-%s.csv",
           attempt,
@@ -211,6 +296,7 @@ run_attempt <- function(attempt) {
             "--attempt", attempt,
             "--order", order,
             "--source-commit", source_commit,
+            "--source-tree", source_tree,
             "--output", shQuote(output)
           )
         )
@@ -323,6 +409,12 @@ environment <- data.frame(
   candidate = candidate,
   baseline_commit = baseline_commit,
   candidate_commit = candidate_commit,
+  baseline_tree = baseline_input$tree,
+  candidate_tree = candidate_input$tree,
+  input_verification = paste(
+    "Each arm's supplied commit resolved to HEAD and git status",
+    "--porcelain=v1 --untracked-files=all was empty before measurement."
+  ),
   lengths = paste(lengths, collapse = ","),
   pairs = pairs,
   retry_rule = paste(

@@ -56,6 +56,10 @@ workstream37_clone_function <- function(fn, env) {
   out
 }
 
+workstream37_scalar_call_symbols <- function(fn) {
+  all.names(body(fn), functions = TRUE, unique = TRUE)
+}
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bounded", {
   testthat::skip_if_not_installed("TTR")
@@ -87,6 +91,12 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
       dense,
       open = NA_real_, high = NA_real_, low = NA_real_, close = NA_real_
     )
+  )
+  invalid_short <- dense[1:2, , drop = FALSE]
+  invalid_short$open <- I(list(new.env(), new.env()))
+  testthat::expect_identical(
+    ledgr:::ledgr_compute_feature_series_strict(invalid_short, custom),
+    rep(NA_real_, 2L)
   )
   for (i in seq_len(nrow(dense))) {
     fixture <- dense
@@ -169,8 +179,8 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
     )
     testthat::expect_identical(
       mask_calls,
-      1L,
-      info = paste(fixture_name, "computes completeness once")
+      if (nrow(fixtures[[fixture_name]]) < 3L) 0L else 1L,
+      info = paste(fixture_name, "computes completeness at most once")
     )
   }
 
@@ -190,6 +200,57 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   testthat::expect_error(
     ledgr:::ledgr_compute_feature_series_strict(dense, hand_built),
     class = "ledgr_indicator_gap_parity"
+  )
+
+  mismatched_body_env <- new.env(parent = asNamespace("ledgr"))
+  mismatched_body <- ttr
+  mismatched_body$fn <- workstream37_clone_function(
+    mismatched_body$fn,
+    mismatched_body_env
+  )
+  body(mismatched_body$fn) <- quote({
+    selected <- ledgr_ttr_call(window, params)
+    as.numeric(utils::tail(selected, 1L)) + 1
+  })
+  mismatched_body$series_fn <- workstream37_clone_function(
+    mismatched_body$series_fn,
+    mismatched_body_env
+  )
+  testthat::expect_true(
+    identical(environment(mismatched_body$fn), mismatched_body_env) &&
+      identical(environment(mismatched_body$series_fn), mismatched_body_env) &&
+      identical(parent.env(mismatched_body_env), asNamespace("ledgr"))
+  )
+  mismatched_body_kind <- ledgr:::ledgr_strict_builtin_kind(mismatched_body)
+  testthat::expect_null(mismatched_body_kind)
+  testthat::expect_error(
+    ledgr:::ledgr_compute_feature_series_strict(
+      dense,
+      mismatched_body,
+      kind = mismatched_body_kind
+    ),
+    class = "ledgr_indicator_gap_parity"
+  )
+
+  non_namespace_parent <- new.env(parent = asNamespace("ledgr"))
+  wrong_parent_env <- new.env(parent = non_namespace_parent)
+  wrong_parent <- ttr
+  wrong_parent$fn <- workstream37_clone_function(ttr$fn, wrong_parent_env)
+  wrong_parent$series_fn <- workstream37_clone_function(
+    ttr$series_fn,
+    wrong_parent_env
+  )
+  wrong_parent_kind <- ledgr:::ledgr_strict_builtin_kind(wrong_parent)
+  testthat::expect_null(wrong_parent_kind)
+  ttr_calls <- 0L
+  ledgr:::ledgr_compute_feature_series_strict(
+    dense,
+    wrong_parent,
+    kind = wrong_parent_kind
+  )
+  testthat::expect_identical(
+    ttr_calls,
+    2L * as.integer(sum(old_mask(dense, 3L)))
   )
 
   distinct <- ttr
@@ -280,7 +341,15 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
     )),
     1L
   )
-  testthat::expect_false(grepl("vapply(window", scalar_source, fixed = TRUE))
+  testthat::expect_length(
+    intersect(
+      c("is.finite", "anyNA", "complete.cases"),
+      workstream37_scalar_call_symbols(
+        ledgr:::ledgr_compute_feature_series_strict_scalar
+      )
+    ),
+    0L
+  )
   testthat::expect_match(strict_source, "check_series_parity = FALSE", fixed = TRUE)
   for (source in list(precompute_source, runtime_source)) {
     testthat::expect_match(source, "ledgr_strict_builtin_kind", fixed = TRUE)
@@ -295,6 +364,6 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   )
   testthat::expect_identical(
     availability_engine_version,
-    "9ffede2b67d9ea4d1651eae7f2862ec2a819867e1588ac8069f449e73d5821dd"
+    "25d86252352ea2228c9b49cade9eb482e21adf41d01f1ec5ce4a8a7db5809281"
   )
 })

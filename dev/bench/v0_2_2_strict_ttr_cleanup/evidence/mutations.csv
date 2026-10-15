@@ -1,4 +1,8 @@
 mutation,detector,result
 restore_certified_series_parity,LTB-0276,"3 failures: TTR helper count doubled from 5 to 10, structural skip disappeared, and availability provenance changed"
-restore_per_window_completeness,LTB-0276,"21 failures: the mask count fell from one to zero on the certified and hostile fixture series, and both structural assertions failed"
+restore_per_window_completeness,LTB-0276,"19 failures: the mask count fell from one to zero on every eligible certified and hostile fixture series, the parsed completeness-call detector failed, and availability provenance changed"
 add_one_to_scalar_output,LTB-0276,"9 failures: TTR and custom runtime and precompute scalar oracles failed on complete and gapped inputs, and availability provenance changed"
+remove_template_body_guard,LTB-0276,"3 failures: the orthogonal mismatched-body fixture certified, its required parity error disappeared, and availability provenance changed"
+remove_namespace_parent_guard,LTB-0276,"3 failures: the orthogonal wrong-parent fixture certified, its TTR call count fell from 20 to 10, and availability provenance changed"
+add_respelled_per_window_anyNA_scan,LTB-0276,"2 failures: the parsed call-symbol detector found anyNA even though the one-mask call remained, and availability provenance changed"
+move_short_return_after_mask,LTB-0276,"1 error: the exact invalid short OHLC list-column witness errored while constructing the unnecessary mask"
