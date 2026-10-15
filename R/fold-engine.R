@@ -1208,7 +1208,10 @@ ledgr_fold_stage_apply <- function(
         instrument_ids = services$instrument_ids,
         event_seq_start = fold_state$event_seq
       )
-      fold_state$positions <- batch$positions
+      fold_state$positions <- stats::setNames(
+        as.numeric(batch$positions),
+        services$instrument_ids
+      )
       fold_state$cash <- batch$cash
       fold_state$lot_state <- batch$lot_state
       fold_state$event_seq <- batch$next_event_seq
@@ -1466,9 +1469,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   if (!is.list(state$lot_state)) {
     state$lot_state <- ledgr_lot_state(instrument_ids)
   }
-  legacy_return_state <- state
-  legacy_return_state_prev <- execution$state_prev
-  legacy_return_event_seq <- execution$event_seq_start
   state$positions <- stats::setNames(state$positions, instrument_ids)
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
@@ -1749,14 +1749,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       sample_telemetry <- telemetry_stride > 0L &&
         ((fold_state$processed + 1L) %% telemetry_stride == 0L)
       sample_start <- if (sample_telemetry) pulse_start else NULL
-      t_bars <- 0
-      t_feats <- 0
-      t_ctx <- 0
-      t_strat <- 0
-      t_target <- 0
-      t_fill <- 0
-      t_event <- 0
-      t_state <- 0
 
       observation <- ledgr_fold_stage_observe_settle(
         fold_state = fold_state,
@@ -1780,14 +1772,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         flush_pulse_block(ts)
         break
       }
-      availability_view <- observation$availability_view
-      valuation <- observation$valuation
-      context_ids <- observation$context_ids
-      positions_snapshot <- observation$positions_snapshot
-      positions_value <- observation$positions_value
       sample_start <- observation$sample_start
-      t_feats <- observation$t_feats
-      t_bars <- observation$t_bars
 
       decision_result <- ledgr_fold_stage_decide(
         fold_state = fold_state,
@@ -1809,13 +1794,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         flush_pulse_block(ts)
         break
       }
-      strategy_targets <- decision_result$strategy_targets
-      targets <- decision_result$targets
-      result <- list(state_update = decision_result$state_update)
       sample_start <- decision_result$sample_start
-      t_ctx <- decision_result$t_ctx
-      t_strat <- decision_result$t_strat
-      t_target <- decision_result$t_target
 
       plan_result <- ledgr_fold_stage_plan(
         fold_state = fold_state,
@@ -1841,11 +1820,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       for (segment in plan_result$diagnostic_segments) {
         add_segment(segment)
       }
-      pulse_plan <- plan_result$pulse_plan
-      accounting_events <- plan_result$accounting_events
       sample_start <- plan_result$sample_start
-      t_target <- plan_result$t_target
-      t_fill <- plan_result$t_fill
 
       apply_result <- ledgr_fold_stage_apply(
         fold_state = fold_state,
@@ -1855,10 +1830,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         sample_telemetry = sample_telemetry,
         sample_start = sample_start
       )
-      sample_start <- apply_result$sample_start
-      t_event <- apply_result$t_event
-      t_state <- apply_result$t_state
-
       commit_result <- ledgr_fold_stage_commit(
         fold_state = fold_state,
         services = services,
@@ -1936,9 +1907,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     processed = fold_state$processed,
     full_run = fold_state$full_run,
     telemetry = telemetry,
-    state = legacy_return_state,
-    state_prev = legacy_return_state_prev,
-    next_event_seq = legacy_return_event_seq,
+    state = ledgr_fold_state_value(fold_state),
+    state_prev = fold_state$state_prev,
+    next_event_seq = fold_state$event_seq,
     equity_facts = fold_state$equity_facts
   )
 }

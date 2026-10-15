@@ -270,6 +270,137 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
   }
 })
 
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both data modes", {
+  pulses <- as.POSIXct("2024-01-01 16:00:00", tz = "UTC") + 86400 * 0:2
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), pulses)
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = as.Date(pulses),
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = pulses - 86400,
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  snapshots <- list(
+    dense = ledgr_snapshot_from_df(
+      bars,
+      db_path = tempfile(fileext = ".duckdb")
+    ),
+    availability = ledgr_snapshot_from_df(
+      bars,
+      instruments_df = data.frame(
+        instrument_id = c("AAA", "BBB"),
+        stringsAsFactors = FALSE
+      ),
+      facts = ledgr_facts(sessions),
+      price_basis = "split_adjusted",
+      db_path = tempfile(fileext = ".duckdb")
+    )
+  )
+  on.exit(lapply(snapshots, ledgr_snapshot_close), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets[] <- 1
+    targets
+  }
+  experiments <- lapply(snapshots, function(snapshot) {
+    ledgr_experiment(
+      snapshot,
+      strategy,
+      cost_model = ledgr_cost_zero(),
+      execution_mode = "db_live"
+    )
+  })
+  fault_factory <- function(original_factory, method, fail_at = 2L) {
+    force(original_factory)
+    force(method)
+    force(fail_at)
+    function(...) {
+      handler <- original_factory(...)
+      original_method <- handler[[method]]
+      calls <- 0L
+      handler[[method]] <- function(...) {
+        calls <<- calls + 1L
+        if (calls == fail_at) {
+          rlang::abort(
+            paste("injected", method, "failure"),
+            class = "ledgr_test_handler_failure"
+          )
+        }
+        original_method(...)
+      }
+      handler
+    }
+  }
+
+  persistent_factory <- ledgr:::ledgr_persistent_output_handler
+  for (mode in names(experiments)) {
+    run_id <- paste0("handler-fault-", mode)
+    testthat::expect_error(
+      testthat::with_mocked_bindings(
+        ledgr_run(experiments[[mode]], run_id = run_id, seed = 1L),
+        ledgr_persistent_output_handler = fault_factory(
+          persistent_factory,
+          "write_fill_events"
+        ),
+        .package = "ledgr"
+      ),
+      class = "ledgr_test_handler_failure",
+      info = mode
+    )
+    con <- get_connection(snapshots[[mode]])
+    testthat::expect_identical(
+      as.integer(DBI::dbGetQuery(
+        con,
+        "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?",
+        params = list(run_id)
+      )$n[[1L]]),
+      0L,
+      info = mode
+    )
+    if (identical(mode, "availability")) {
+      testthat::expect_true(DBI::dbGetQuery(
+        con,
+        paste0(
+          "SELECT COUNT(*) AS n FROM run_diagnostics ",
+          "WHERE run_id = ? AND outcome = 'error'"
+        ),
+        params = list(run_id)
+      )$n[[1L]] > 0)
+    }
+  }
+
+  memory_factory <- ledgr:::ledgr_memory_output_handler
+  for (method in c("write_fill_events", "record_accounting_fact")) {
+    for (mode in names(experiments)) {
+      sweep <- testthat::with_mocked_bindings(
+        ledgr_sweep(
+          experiments[[mode]],
+          ledgr_param_grid(failed = list()),
+          seed = 1L
+        ),
+        ledgr_memory_output_handler = fault_factory(memory_factory, method),
+        .package = "ledgr"
+      )
+      testthat::expect_identical(sweep$status, "FAILED", info = paste(method, mode))
+      testthat::expect_identical(
+        sweep$error_class[[1L]],
+        "ledgr_test_handler_failure",
+        info = paste(method, mode)
+      )
+      testthat::expect_true(
+        is.na(sweep$final_equity[[1L]]),
+        info = paste(method, mode)
+      )
+    }
+  }
+})
+
 testthat::test_that("no-op feasibility hook does not sequentially reject same-pulse rebalances", {
   cost_resolver <- ledgr_test_cost_resolver(
     spread_bps = 0,

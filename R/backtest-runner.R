@@ -1265,9 +1265,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
   processed <- fold_result$processed
   full_run <- fold_result$full_run
   telemetry <- fold_result$telemetry
-  state_env$current <- fold_result$state
-  state_prev_mem <- fold_result$state_prev
-  next_event_seq <- fold_result$next_event_seq
 
   if (!isTRUE(full_run)) {
     if (availability_active && length(fold_result$equity_facts) > 0L) {
