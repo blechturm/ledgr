@@ -117,7 +117,7 @@ longer queries the deleted `features` table. The full fixture lane now has 50
 gated families plus the informational `identity` family (the previous record
 had 51 gated families plus identity). The Sharadar lane has 36 gated families
 plus identity. The only new family, `momentum_feature_plane`, contains one
-timestamp, instrument count and SHA-256 value per strategy pulse; the digest
+timestamp, instrument count and MD5 value per strategy pulse; the digest
 is computed from the feature values the real strategy context supplies over
 that pulse's ordered universe. It is comparison evidence, not restored product
 persistence.

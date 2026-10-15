@@ -151,23 +151,30 @@ run_families <- function(tag, bt) {
 }
 
 scale_momentum_recorded <- function(ctx, params) {
+  record_feature_path <- getOption("ledgr.scale.record.feature.path", NULL)
+  if (is.null(record_feature_path)) {
+    stop("The scale recorder did not declare its feature-plane output path.", call. = FALSE)
+  }
   instrument_id <- ctx$universe
-  values <- unname(ctx$vec$feature(params$record_feature_id)[instrument_id])
-  payload <- jsonlite::toJSON(
-    data.frame(instrument_id = instrument_id, value = values),
-    dataframe = "rows",
-    auto_unbox = TRUE,
-    digits = NA,
-    na = "null",
-    null = "null"
+  feature_id <- paste0("return_", as.integer(params$lookback))
+  values <- unname(ctx$vec$feature(feature_id)[instrument_id])
+  payload_path <- tempfile("ledgr-scale-feature-plane-", fileext = ".rds")
+  on.exit(unlink(payload_path), add = TRUE)
+  saveRDS(
+    list(instrument_id = instrument_id, value = values),
+    payload_path,
+    version = 3,
+    compress = FALSE
   )
+  feature_hash <- unname(tools::md5sum(payload_path))
+  unlink(payload_path)
   utils::write.table(
     data.frame(
       ts_utc = as.character(ctx$ts_utc),
       instrument_count = length(instrument_id),
-      sha256 = digest::digest(payload, algo = "sha256", serialize = FALSE)
+      md5 = feature_hash
     ),
-    params$record_feature_path,
+    record_feature_path,
     append = TRUE,
     sep = ",",
     row.names = FALSE,
@@ -185,21 +192,29 @@ scale_momentum_recorded <- function(ctx, params) {
   list(targets = target, state_update = list(month = month))
 }
 
+record_momentum_run <- function(record_feature_path, expr) {
+  prior <- options(structure(
+    list(record_feature_path),
+    names = "ledgr.scale.record.feature.path"
+  ))
+  on.exit(options(prior), add = TRUE)
+  force(expr)
+}
+
 if (want("run_momentum")) {
   feature_record <- file.path(work, "momentum-feature-plane.csv")
   utils::write.csv(
-    data.frame(ts_utc = character(), instrument_count = integer(), sha256 = character()),
+    data.frame(ts_utc = character(), instrument_count = integer(), md5 = character()),
     feature_record,
     row.names = FALSE
   )
-  recorded_params <- c(mom_params, list(
-    record_feature_id = mom_feature$id,
-    record_feature_path = feature_record
-  ))
-  mom <- in_phase("run_momentum", ledgr_run(
-    experiment(scale_momentum_recorded, list(mom_feature)),
-    params = recorded_params,
-    run_id = "scale-momentum"
+  mom <- in_phase("run_momentum", record_momentum_run(
+    feature_record,
+    ledgr_run(
+      experiment(scale_momentum_recorded, list(mom_feature)),
+      params = mom_params,
+      run_id = "scale-momentum"
+    )
   ))
   in_phase("readers", {
     family("momentum_feature_plane", utils::read.csv(
