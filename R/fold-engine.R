@@ -589,6 +589,329 @@ ledgr_fold_stage_observe_settle <- function(
   )
 }
 
+ledgr_fold_stage_decide <- function(
+    fold_state,
+    services,
+    observation,
+    sample_telemetry,
+    sample_start) {
+  fold_state$current_stage <- "decision"
+  pulse_idx <- observation$pulse_idx
+  ts <- observation$ts
+  ts_iso <- observation$ts_iso
+  context_ids <- observation$context_ids
+  positions_snapshot <- observation$positions_snapshot
+  availability_view <- observation$availability_view
+  valuation <- observation$valuation
+  add_segment <- function(segment) {
+    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
+    invisible(NULL)
+  }
+
+  bars_current <- services$bars_views[[pulse_idx]]
+  features_current <- services$feature_table_views[[pulse_idx]]
+  if (!is.data.frame(features_current)) {
+    features_current <- services$empty_feature_table
+  }
+  features_wide_current <- services$features_wide_views[[pulse_idx]]
+  if (!is.data.frame(features_wide_current)) {
+    features_wide_current <- services$empty_df
+  }
+  if (services$availability_active) {
+    bars_current <- bars_current[valuation$source_row, , drop = FALSE]
+    if (nrow(features_current) > 0L) {
+      features_current <- features_current[
+        as.character(features_current$instrument_id) %in% context_ids,
+        ,
+        drop = FALSE
+      ]
+    }
+    if (nrow(features_wide_current) > 0L &&
+        "instrument_id" %in% names(features_wide_current)) {
+      features_wide_current <- features_wide_current[
+        as.character(features_wide_current$instrument_id) %in% context_ids,
+        ,
+        drop = FALSE
+      ]
+    }
+  }
+
+  ctx <- list(
+    run_id = services$run_id,
+    ts_utc = ts_iso,
+    universe = context_ids,
+    bars = bars_current,
+    feature_table = features_current,
+    .positions = positions_snapshot,
+    cash = fold_state$cash,
+    equity = fold_state$cash + observation$positions_value,
+    seed = services$execution_seed,
+    pulse_seed = ledgr_derive_pulse_seed(services$execution_seed, pulse_idx),
+    state_prev = fold_state$state_prev,
+    .safety_state = "GREEN"
+  )
+  if (services$availability_active) {
+    ctx$availability_active <- TRUE
+    ctx$members <- observation$members
+  } else {
+    ctx$members <- context_ids
+  }
+  class(ctx) <- "ledgr_pulse_context"
+  ctx <- if (!is.null(services$fast_context) &&
+      !services$availability_active) {
+    ledgr_update_fast_pulse_context_helpers(
+      ctx,
+      fast_context = services$fast_context,
+      bars = bars_current,
+      features = features_current,
+      features_wide = features_wide_current,
+      positions = fold_state$positions,
+      universe = services$instrument_ids,
+      pulse_idx = pulse_idx,
+      active_alias_map = services$active_alias_map,
+      id_to_idx = services$id_to_idx,
+      scalar_access_state = services$scalar_access_state,
+      dense_planes = services$dense_planes
+    )
+  } else {
+    ledgr_update_pulse_context_helpers(
+      ctx,
+      bars = bars_current,
+      features = features_current,
+      positions = positions_snapshot,
+      universe = context_ids,
+      projection = services$runtime_projection,
+      pulse_idx = pulse_idx,
+      feature_ids = services$def_ids,
+      features_wide = features_wide_current,
+      active_alias_map = services$active_alias_map,
+      feature_name_state = services$availability_feature_name_state,
+      feature_lookup_state = services$availability_feature_lookup_state,
+      id_to_idx = if (services$availability_active) NULL else services$id_to_idx,
+      availability = availability_view,
+      scalar_access_state = services$scalar_access_state,
+      dense_planes = services$dense_planes
+    )
+  }
+  if (services$availability_active) {
+    ctx <- ledgr_filter_pulse_context_features(
+      ctx,
+      context_ids,
+      services$instrument_ids
+    )
+  }
+  if (sample_telemetry) {
+    sample_now <- ledgr_time_now()
+    t_ctx <- ledgr_time_elapsed(sample_start, sample_now)
+    sample_start <- sample_now
+  } else {
+    t_ctx <- 0
+  }
+
+  services$pulse_notes$sizing_skipped <- character()
+  ctx$.notes <- services$pulse_notes
+  result <- tryCatch(
+    {
+      fold_state$current_stage <- "strategy"
+      if (isTRUE(services$strategy_is_functional)) {
+        ledgr_call_strategy_fn(
+          services$strategy_fn,
+          ctx,
+          services$strategy_params,
+          services$strategy_call_signature
+        )
+      } else {
+        services$strategy_fn(ctx)
+      }
+    },
+    error = function(e) ledgr_abort_strategy_error(e, ctx)
+  )
+  if (sample_telemetry) {
+    sample_now <- ledgr_time_now()
+    t_strat <- ledgr_time_elapsed(sample_start, sample_now)
+    sample_start <- sample_now
+  } else {
+    t_strat <- 0
+  }
+  if (ledgr_is_strategy_intermediate(result)) {
+    ledgr_abort_intermediate_strategy_result(result)
+  }
+  if (is.numeric(result)) {
+    result <- list(targets = result, state_update = NULL)
+  }
+  if (!is.list(result) || is.null(result$targets)) {
+    rlang::abort(
+      sprintf(
+        "Strategy must return %s or a list with `targets`.",
+        ledgr_strategy_targets_contract()
+      ),
+      class = "ledgr_invalid_strategy_result"
+    )
+  }
+
+  targets <- ledgr_validate_strategy_targets(
+    result$targets,
+    context_ids,
+    allow_empty = services$availability_active
+  )
+  strategy_targets <- targets
+  append_decision_trace <- function(target_after = NULL) {
+    if (length(context_ids) == 0L) {
+      add_segment(list(
+        n = 1L,
+        stage = "decision",
+        outcome = "recorded",
+        reason_code = "empty_public_domain"
+      ))
+      return(invisible(NULL))
+    }
+    restriction <- as.character(
+      availability_view$target_restriction_reason[context_ids]
+    )
+    restrictions <- as.character(
+      availability_view$target_restriction_reasons[context_ids]
+    )
+    reason <- ifelse(nzchar(restriction), restriction, "decision_recorded")
+    reasons <- ifelse(nzchar(restrictions), restrictions, reason)
+    skipped <- context_ids %in% services$pulse_notes$sizing_skipped
+    if (any(skipped)) {
+      reason[skipped] <- "sizing_unavailable"
+      reasons[skipped] <- ifelse(
+        nzchar(restrictions[skipped]),
+        paste(restrictions[skipped], "sizing_unavailable", sep = "|"),
+        "sizing_unavailable"
+      )
+    }
+    add_segment(list(
+      n = length(context_ids),
+      instrument_id = context_ids,
+      stage = "decision",
+      outcome = "recorded",
+      reason_code = reason,
+      reasons = reasons,
+      target = strategy_targets[context_ids],
+      quantity = positions_snapshot[context_ids],
+      price = valuation$mark[context_ids],
+      mark_source = valuation$source[context_ids],
+      mark_age = valuation$age[context_ids],
+      target_before_risk = strategy_targets[context_ids],
+      target_after_risk = if (is.null(target_after)) {
+        NA_real_
+      } else {
+        target_after[context_ids]
+      },
+      position_before = positions_snapshot[context_ids],
+      position_after = positions_snapshot[context_ids]
+    ))
+    invisible(NULL)
+  }
+  if (length(targets) > 0L) {
+    if (services$availability_active) {
+      ledgr_availability_validate_strategy_targets(
+        targets,
+        positions_snapshot,
+        availability_view
+      )
+      new_positive <- as.numeric(targets) > as.numeric(positions_snapshot) &
+        as.numeric(targets) > 0 &
+        !valuation$permissible[names(targets)]
+      if (any(new_positive)) {
+        append_decision_trace()
+        stopped_ids <- names(targets)[new_positive]
+        affected <- ledgr_availability_affected_exposure(
+          stopped_ids,
+          positions_snapshot,
+          valuation
+        )
+        affected <- c(affected, list(ts_utc = ts, specified = TRUE))
+        segment <- list(
+          n = length(stopped_ids),
+          instrument_id = stopped_ids,
+          stage = "risk",
+          outcome = "stopped",
+          reason_code = "risk_mark_unavailable",
+          target = targets[stopped_ids],
+          quantity = positions_snapshot[stopped_ids],
+          mark_source = valuation$source[stopped_ids],
+          mark_age = valuation$age[stopped_ids],
+          target_before_risk = targets[stopped_ids],
+          position_before = positions_snapshot[stopped_ids],
+          position_after = positions_snapshot[stopped_ids],
+          detail_json = canonical_json(list(
+            risk_step = "availability_risk_mark_gate"
+          ))
+        )
+        return(ledgr_fold_stop_result(
+          status = "INCOMPLETE",
+          reason_code = "risk_mark_unavailable",
+          affected_instrument_ids = stopped_ids,
+          affected_exposure = affected,
+          diagnostic_segments = list(segment),
+          counts_processed = TRUE
+        ))
+      }
+    }
+    fold_state$current_stage <- "risk"
+    targets <- ledgr_apply_risk_plan(targets, services$risk_plan, ctx)
+    targets <- ledgr_validate_post_risk_targets(targets, context_ids)
+    if (services$availability_active) {
+      ledgr_availability_validate_post_risk(targets, strategy_targets)
+      ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+    }
+  }
+  if (services$availability_active) {
+    append_decision_trace(targets)
+    stale_ids <- context_ids[
+      valuation$permissible[context_ids] &
+        !is.na(valuation$age[context_ids]) &
+        valuation$age[context_ids] > 0L &
+        (positions_snapshot[context_ids] != 0 | targets[context_ids] != 0)
+    ]
+    if (length(stale_ids) > 0L) {
+      reduced <- vapply(stale_ids, function(id) {
+        !isTRUE(all.equal(
+          as.numeric(targets[[id]]),
+          as.numeric(strategy_targets[[id]])
+        ))
+      }, logical(1))
+      add_segment(list(
+        n = length(stale_ids), instrument_id = stale_ids, stage = "risk",
+        outcome = ifelse(reduced, "reduced", "passed"),
+        reason_code = ifelse(
+          reduced,
+          "stale_mark_reduction",
+          "stale_mark_pass_through"
+        ),
+        target = targets[stale_ids],
+        quantity = positions_snapshot[stale_ids],
+        price = valuation$mark[stale_ids],
+        mark_source = valuation$source[stale_ids],
+        mark_age = valuation$age[stale_ids],
+        target_before_risk = strategy_targets[stale_ids],
+        target_after_risk = targets[stale_ids],
+        position_before = positions_snapshot[stale_ids],
+        position_after = positions_snapshot[stale_ids]
+      ))
+    }
+  }
+  if (sample_telemetry) {
+    sample_now <- ledgr_time_now()
+    t_target <- ledgr_time_elapsed(sample_start, sample_now)
+    sample_start <- sample_now
+  } else {
+    t_target <- 0
+  }
+  list(
+    strategy_targets = strategy_targets,
+    targets = targets,
+    state_update = result$state_update,
+    sample_start = sample_start,
+    t_ctx = t_ctx,
+    t_strat = t_strat,
+    t_target = t_target
+  )
+}
+
 ledgr_execute_fold <- function(execution, output_handler) {
   ledgr_fold_envelope(execution, output_handler)
 }
@@ -822,16 +1145,38 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
+  pulse_notes <- new.env(parent = emptyenv())
   services <- list(
     run_id = run_id,
     instrument_ids = instrument_ids,
+    id_to_idx = id_to_idx,
     bars_mat = bars_mat,
+    bars_views = bars_views,
+    feature_table_views = feature_table_views,
+    features_wide_views = features_wide_views,
+    empty_df = empty_df,
+    empty_feature_table = empty_feature_table,
+    runtime_projection = runtime_projection,
+    def_ids = def_ids,
+    active_alias_map = active_alias_map,
+    risk_plan = risk_plan,
+    execution_seed = execution_seed,
+    strategy_fn = strategy_fn,
+    strategy_params = strategy_params,
+    strategy_call_signature = strategy_call_signature,
+    strategy_is_functional = strategy_is_functional,
     availability_active = availability_active,
     availability_provider = availability_provider,
     valuation_state = valuation_state,
     corporate_action_plan = corporate_action_plan,
     terminal_policy = terminal_policy,
-    output_handler = output_handler
+    output_handler = output_handler,
+    fast_context = fast_context,
+    availability_feature_name_state = availability_feature_name_state,
+    availability_feature_lookup_state = availability_feature_lookup_state,
+    scalar_access_state = scalar_access_state,
+    dense_planes = dense_planes,
+    pulse_notes = pulse_notes
   )
 
   run_loop <- function() {
@@ -862,10 +1207,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         ledgr_fold_positions_snapshot(fold_state$positions, instrument_ids)
       )
     }
-
-    # Per-pulse note slot that strategy helpers write to (reset each pulse), so
-    # what they record survives whatever the strategy does to its target.
-    pulse_notes <- new.env(parent = emptyenv())
 
     for (i in seq(from = start_idx, to = length(pulses_posix))) {
       ts <- pulses_posix[[i]]
@@ -916,248 +1257,33 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       t_feats <- observation$t_feats
       t_bars <- observation$t_bars
 
-      bars_current <- bars_views[[i]]
-      features_current <- feature_table_views[[i]]
-      if (!is.data.frame(features_current)) {
-        features_current <- empty_feature_table
-      }
-      features_wide_current <- features_wide_views[[i]]
-      if (!is.data.frame(features_wide_current)) {
-        features_wide_current <- empty_df
-      }
-      if (availability_active) {
-        bars_current <- bars_current[valuation$source_row, , drop = FALSE]
-        if (nrow(features_current) > 0L) {
-          features_current <- features_current[
-            as.character(features_current$instrument_id) %in% context_ids,
-            ,
-            drop = FALSE
-          ]
-        }
-        if (nrow(features_wide_current) > 0L &&
-            "instrument_id" %in% names(features_wide_current)) {
-          features_wide_current <- features_wide_current[
-            as.character(features_wide_current$instrument_id) %in% context_ids,
-            ,
-            drop = FALSE
-          ]
-        }
-      }
-
-      # The pulse context is the only strategy-visible boundary in the fold.
-      # Everything below this point must preserve no-lookahead: bars/features are
-      # the current pulse view, while fills are resolved against the next bar.
-      ctx <- list(
-        run_id = run_id,
-        ts_utc = ts_iso,
-        universe = context_ids,
-        bars = bars_current,
-        feature_table = features_current,
-        .positions = positions_snapshot,
-        cash = fold_state$cash,
-        equity = fold_state$cash + positions_value,
-        seed = execution_seed,
-        pulse_seed = ledgr_derive_pulse_seed(execution_seed, i),
-        state_prev = fold_state$state_prev,
-        .safety_state = "GREEN"
+      decision_result <- ledgr_fold_stage_decide(
+        fold_state = fold_state,
+        services = services,
+        observation = observation,
+        sample_telemetry = sample_telemetry,
+        sample_start = sample_start
       )
-      if (availability_active) {
-        ctx$availability_active <- TRUE
-        ctx$members <- as.character(availability_view$members)
-      } else {
-        ctx$members <- context_ids
-      }
-      class(ctx) <- "ledgr_pulse_context"
-      ctx <- if (!is.null(fast_context) && !availability_active) {
-        ledgr_update_fast_pulse_context_helpers(
-          ctx,
-          fast_context = fast_context,
-          bars = bars_current,
-          features = features_current,
-          features_wide = features_wide_current,
-          positions = fold_state$positions,
-          universe = instrument_ids,
-          pulse_idx = i,
-          active_alias_map = active_alias_map,
-          id_to_idx = id_to_idx,
-          scalar_access_state = scalar_access_state,
-          dense_planes = dense_planes
-        )
-      } else {
-        ledgr_update_pulse_context_helpers(
-          ctx,
-          bars = bars_current,
-          features = features_current,
-          positions = positions_snapshot,
-          universe = context_ids,
-          projection = runtime_projection,
-          pulse_idx = i,
-          feature_ids = def_ids,
-          features_wide = features_wide_current,
-          active_alias_map = active_alias_map,
-          feature_name_state = availability_feature_name_state,
-          feature_lookup_state = availability_feature_lookup_state,
-          id_to_idx = if (availability_active) NULL else id_to_idx,
-          availability = availability_view,
-          scalar_access_state = scalar_access_state,
-          dense_planes = dense_planes
-        )
-      }
-      if (availability_active) {
-        ctx <- ledgr_filter_pulse_context_features(ctx, context_ids, instrument_ids)
-      }
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_ctx <- ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
-
-      pulse_notes$sizing_skipped <- character()
-      ctx$.notes <- pulse_notes
-      result <- tryCatch(
-        {
-          fold_state$current_stage <- "strategy"
-          if (isTRUE(strategy_is_functional)) {
-            ledgr_call_strategy_fn(
-              strategy_fn,
-              ctx,
-              strategy_params,
-              strategy_call_signature
-            )
-          } else {
-            strategy_fn(ctx)
-          }
-        },
-        error = function(e) ledgr_abort_strategy_error(e, ctx)
-      )
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_strat <- ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
-      if (ledgr_is_strategy_intermediate(result)) {
-        ledgr_abort_intermediate_strategy_result(result)
-      }
-      if (is.numeric(result)) {
-        result <- list(targets = result, state_update = NULL)
-      }
-      if (!is.list(result) || is.null(result$targets)) {
-        rlang::abort(
-          sprintf(
-            "Strategy must return %s or a list with `targets`.",
-            ledgr_strategy_targets_contract()
-          ),
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
-
-      targets <- ledgr_validate_strategy_targets(
-        result$targets,
-        context_ids,
-        allow_empty = availability_active
-      )
-      strategy_targets <- targets
-      append_decision_trace <- function(target_after = NULL) {
-        if (length(context_ids) == 0L) {
-          add_segment(list(n = 1L, stage = "decision", outcome = "recorded", reason_code = "empty_public_domain"))
-          return(invisible(NULL))
+      if (ledgr_is_fold_stop_result(decision_result)) {
+        fold_state$status <- decision_result$status
+        fold_state$stop_reason <- decision_result$reason_code
+        fold_state$affected_exposure <- decision_result$affected_exposure
+        for (segment in decision_result$diagnostic_segments) {
+          add_segment(segment)
         }
-        restriction <- as.character(availability_view$target_restriction_reason[context_ids])
-        restrictions <- as.character(availability_view$target_restriction_reasons[context_ids])
-        reason <- ifelse(nzchar(restriction), restriction, "decision_recorded")
-        reasons <- ifelse(nzchar(restrictions), restrictions, reason)
-        skipped <- context_ids %in% pulse_notes$sizing_skipped
-        if (any(skipped)) {
-          reason[skipped] <- "sizing_unavailable"
-          reasons[skipped] <- ifelse(
-            nzchar(restrictions[skipped]),
-            paste(restrictions[skipped], "sizing_unavailable", sep = "|"),
-            "sizing_unavailable"
-          )
+        if (isTRUE(decision_result$counts_processed)) {
+          fold_state$processed <- fold_state$processed + 1L
         }
-        add_segment(list(
-          n = length(context_ids), instrument_id = context_ids, stage = "decision", outcome = "recorded",
-          reason_code = reason, reasons = reasons,
-          target = strategy_targets[context_ids], quantity = positions_snapshot[context_ids],
-          price = valuation$mark[context_ids], mark_source = valuation$source[context_ids],
-          mark_age = valuation$age[context_ids], target_before_risk = strategy_targets[context_ids],
-          target_after_risk = if (is.null(target_after)) NA_real_ else target_after[context_ids],
-          position_before = positions_snapshot[context_ids], position_after = positions_snapshot[context_ids]
-        ))
-        invisible(NULL)
+        flush_pulse_block(ts)
+        break
       }
-      if (length(targets) > 0L) {
-        if (availability_active) {
-          ledgr_availability_validate_strategy_targets(
-            targets,
-            positions_snapshot,
-            availability_view
-          )
-          new_positive <- as.numeric(targets) > as.numeric(positions_snapshot) &
-            as.numeric(targets) > 0 & !valuation$permissible[names(targets)]
-          if (any(new_positive)) {
-            append_decision_trace()
-            stopped_ids <- names(targets)[new_positive]
-            fold_state$status <- "INCOMPLETE"
-            fold_state$stop_reason <- "risk_mark_unavailable"
-            affected_value <- ledgr_availability_affected_exposure(
-              stopped_ids,
-              positions_snapshot,
-              valuation
-            )
-            fold_state$affected_exposure <- c(
-              affected_value,
-              list(ts_utc = ts, specified = TRUE)
-            )
-            add_segment(list(
-              n = length(stopped_ids), instrument_id = stopped_ids, stage = "risk", outcome = "stopped",
-              reason_code = fold_state$stop_reason, target = targets[stopped_ids], quantity = positions_snapshot[stopped_ids],
-              mark_source = valuation$source[stopped_ids], mark_age = valuation$age[stopped_ids],
-              target_before_risk = targets[stopped_ids], position_before = positions_snapshot[stopped_ids],
-              position_after = positions_snapshot[stopped_ids],
-              detail_json = canonical_json(list(risk_step = "availability_risk_mark_gate"))
-            ))
-            fold_state$processed <- fold_state$processed + 1L
-            flush_pulse_block(ts)
-            break
-          }
-        }
-        fold_state$current_stage <- "risk"
-        targets <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
-        targets <- ledgr_validate_post_risk_targets(targets, context_ids)
-        if (availability_active) {
-          ledgr_availability_validate_post_risk(targets, strategy_targets)
-          ledgr_availability_validate_short_exposure(targets, positions_snapshot)
-        }
-      }
-      if (availability_active) {
-        append_decision_trace(targets)
-        stale_ids <- context_ids[
-          valuation$permissible[context_ids] &
-            !is.na(valuation$age[context_ids]) &
-            valuation$age[context_ids] > 0L &
-            (positions_snapshot[context_ids] != 0 | targets[context_ids] != 0)
-        ]
-        if (length(stale_ids) > 0L) {
-          reduced <- vapply(stale_ids, function(id) {
-            !isTRUE(all.equal(as.numeric(targets[[id]]), as.numeric(strategy_targets[[id]])))
-          }, logical(1))
-          add_segment(list(
-            n = length(stale_ids), instrument_id = stale_ids, stage = "risk",
-            outcome = ifelse(reduced, "reduced", "passed"),
-            reason_code = ifelse(reduced, "stale_mark_reduction", "stale_mark_pass_through"),
-            target = targets[stale_ids], quantity = positions_snapshot[stale_ids], price = valuation$mark[stale_ids],
-            mark_source = valuation$source[stale_ids], mark_age = valuation$age[stale_ids],
-            target_before_risk = strategy_targets[stale_ids], target_after_risk = targets[stale_ids],
-            position_before = positions_snapshot[stale_ids], position_after = positions_snapshot[stale_ids]
-          ))
-        }
-      }
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
+      strategy_targets <- decision_result$strategy_targets
+      targets <- decision_result$targets
+      result <- list(state_update = decision_result$state_update)
+      sample_start <- decision_result$sample_start
+      t_ctx <- decision_result$t_ctx
+      t_strat <- decision_result$t_strat
+      t_target <- decision_result$t_target
 
       target_names <- names(targets)
       desired_vec <- as.numeric(targets)

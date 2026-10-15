@@ -87,7 +87,11 @@ ledgr_fold_phase_source_findings <- function(paths) {
         grepl("\\b[A-Za-z][A-Za-z0-9_.]*\\s*<-\\s*fold_state\\b(?!\\$)", body_text, perl = TRUE)) {
       findings <- c(findings, paste0("second_mutable_aggregate:", name))
     }
-    if (grepl("ctx[^\\n;]*fold_state|fold_state[^\\n;]*ctx", body_text, perl = TRUE)) {
+    if (grepl(
+      "ctx\\$[A-Za-z0-9_.]+\\s*<-\\s*fold_state\\b(?!\\$)",
+      body_text,
+      perl = TRUE
+    )) {
       findings <- c(findings, paste0("ctx_references_carrier:", name))
     }
     for (slot in names(slot_owners)) {
