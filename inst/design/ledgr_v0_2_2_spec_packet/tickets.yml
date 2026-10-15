@@ -574,12 +574,12 @@ workstreams:
   - id: 39
     name: "Current private research lake rebuild"
     cut: 15
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 38
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 39", verdict: "PASS_AFTER_PATCHES", artifact: "close_review_39.md", result: "The rebuild passes. F1 through F4 are record-only corrections to reconciliation labels, identity-rule accounting, workstream status and attempt/harness disclosure; no private rerun or further review is required.", reason: "One claim: the private research lake is reproducibly rebuilt once from frozen vendor inputs under the exact schema-120 and rule-3 package tree, with aggregate evidence sufficient for the history wave. Review checks the script, native hashes and counts, resource record and privacy boundary; it does not inspect vendor rows. This workstream makes no contracts.md edit while Workstream 33 runs; any needed contract edit joins Workstream 33."}
-    integration_evidence: ["dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md records the successful fresh schema-120/rule-3 build, public cold verification, same-identity representative experiments, resource measurements, aggregate reconciliation boundary and privacy result.", "close_review_39.md preserves the independent Type 1 PASS_AFTER_PATCHES review. Its four record-only findings are closed without a private rerun: five values are marked not independently projected, identity rule 3 versus prior rule 2 is owned by LDG-3050, the workstream is review_pending, and the two rejected recorder attempts plus post-run harness commit are disclosed; the rejected stores remain untouched and were never opened as inputs to the accepted record."]
-    accepted: null
+    integration_evidence: ["dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md records the successful fresh schema-120/rule-3 build, public cold verification, same-identity representative experiments, resource measurements, aggregate reconciliation boundary and privacy result.", "close_review_39.md preserves the independent Type 1 PASS_AFTER_PATCHES review. Its four record-only findings are closed without a private rerun: five values are marked not independently projected, identity rule 3 versus prior rule 2 is owned by LDG-3050, the workstream is complete, and the two rejected recorder attempts plus post-run harness commit are disclosed; the rejected stores remain untouched and were never opened as inputs to the accepted record."]
+    accepted: "2026-10-15 by the maintainer after directly verifying the four record-only patches under the existing PASS_AFTER_PATCHES close review; no additional private rerun or review was required."
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
