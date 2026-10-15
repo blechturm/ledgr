@@ -176,6 +176,25 @@ implementation source is `cfa7b969`. Verification ran on Windows x64 with R
   local-target and fragment checks exercised by the documentation suite,
   ASCII checks on all four changed files and `git diff --check` passed.
 
+Correction commit `2e87c6a9` was verified from the same environment:
+
+- The exact per-row oracle reports four retained rows and eleven contract
+  backlinks. Deleting each of the three OMS backlinks independently fails;
+  deleting any of the four bridge rows also fails.
+- The documentation-contract, governance-report, control-plane, cost-model,
+  corporate-action-disposition and terminal-outcomes files pass 1,712
+  expectations with no failures or errors. The cost-model block distinguishes
+  an unrounded notional fee from its separately rounded fill price; the
+  terminal blocks exercise zero-price write-off dispositions.
+- The tracked real-tree report exits zero in 69.925 seconds over 320 sources.
+  It reports 1,104 findings: 51 baseline structural, 872 new structural and
+  181 advisory. The eleven WS33-introduced broken anchors are gone. The only
+  finding on a changed semantic source is the unchanged three-header debt on
+  `contracts.md`, still owned by Workstream 35; `decisions.md`, the review and
+  this reconciliation produce none.
+- YAML, ASCII, local-target and fragment checks and `git diff --check` pass.
+  The correction touches no product source.
+
 The independent Type 1 close review is preserved in `close_review_33.md` with
 `CHANGES_REQUIRED`. Correction round 1 fixes the two semantic clauses, restores
 removed-address locators and lifecycle wording, names exact durable owners and
