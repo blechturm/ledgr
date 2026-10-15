@@ -1,0 +1,3 @@
+"attempt","length","pairs","strict_median_ratio","end_to_end_median_ratio","strict_gate","end_to_end_gate","exact"
+1,250,5,0.5,0.938325991189427,TRUE,TRUE,TRUE
+1,1000,5,0.478260869565217,0.969387755102041,TRUE,TRUE,TRUE

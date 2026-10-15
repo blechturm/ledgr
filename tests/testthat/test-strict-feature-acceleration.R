@@ -179,6 +179,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   helpers <- c(
     "ledgr_compute_feature_series_strict_scalar",
     "ledgr_strict_builtin_kind",
+    "ledgr_strict_ttr_template_match",
     "ledgr_strict_complete_window_mask",
     "ledgr_strict_sma_series",
     "ledgr_compute_feature_series_strict_builtin"
@@ -194,7 +195,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     )
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(TRUE),
-      "6bd61d705a94f2cd955b5eab2a526f65e36419393de0baef4d95c64718658a76"
+      "25d86252352ea2228c9b49cade9eb482e21adf41d01f1ec5ce4a8a7db5809281"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
