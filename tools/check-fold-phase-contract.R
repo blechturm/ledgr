@@ -57,14 +57,14 @@ ledgr_fold_phase_source_findings <- function(paths) {
     telemetry_idx = "commit"
   )
   service_rules <- list(
-    "valuation_state\\$advance\\s*\\(" = "observe",
-    "availability_provider\\$decision_view\\s*\\(" = "observe",
-    "availability_provider\\$execution_view\\s*\\(" = "plan",
-    "corporate_action_plan\\$(post|post_disposition|check_quantity_effects)\\s*\\(" = "observe",
-    "corporate_action_plan\\$bind_boundary\\s*\\(" = c("envelope", "apply"),
+    "(services\\$)?valuation_state\\$advance\\s*\\(" = "observe",
+    "(services\\$)?availability_provider\\$decision_view\\s*\\(" = "observe",
+    "(services\\$)?availability_provider\\$execution_view\\s*\\(" = "plan",
+    "(services\\$)?corporate_action_plan\\$(post|post_disposition|check_quantity_effects)\\s*\\(" = "observe",
+    "(services\\$)?corporate_action_plan\\$bind_boundary\\s*\\(" = c("envelope", "apply"),
     "diagnostic_writer\\$append_block\\s*\\(" = c("commit", "envelope"),
     "diagnostic_writer\\$(drain|release)\\s*\\(" = "envelope",
-    "output_handler\\$(append_event_rows|record_equity_fact)\\s*\\(" = "observe",
+    "(services\\$)?output_handler\\$(append_event_rows|record_equity_fact)\\s*\\(" = "observe",
     "output_handler\\$(write_fill_events|record_accounting_fact|append_compiled_spot_batch)\\s*\\(" = "apply",
     "output_handler\\$(flush_pulse_events|write_strategy_state|buffer_strategy_state)\\s*\\(" = "commit",
     "output_handler\\$(pending_event_count|pending_state_count|flush_pending)\\s*\\(" = c("commit", "envelope"),
