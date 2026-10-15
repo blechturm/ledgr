@@ -553,11 +553,11 @@ workstreams:
   - id: 37
     name: "Strict TTR constant-factor cleanup"
     cut: 15
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 36
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 37", reason: "One claim: the availability strict TTR path stops repeating two value-neutral operations while all feature bytes and declared user-indicator validation remain exact. Review uses certified and hostile indicator fixtures, paired clocks, failure-sensitive structure, engine-version provenance and the seven-shape walk. This workstream and Workstreams 38-39 make no contracts.md edits while Workstream 33 runs; any needed contract edit joins Workstream 33."}
-    integration_evidence: []
+    integration_evidence: ["strict_ttr_cleanup_closeout.md records the necessity judgment, exact implementation boundary, all six LDG-3051 acceptance results, registered LCL-0274/LTB-0276 evidence, paired clocks, mutations, engine provenance, test-change ledger and verbatim seven-shape walk. Implementation is complete; Type 1 review and maintainer acceptance remain pending."]
     accepted: null
   - id: 38
     name: "Fold phase extraction"
@@ -1893,13 +1893,13 @@ tickets:
   - id: "LDG-3051"
     title: "Remove two redundant strict-TTR window costs"
     workstream: 37
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3056"]
     scope: "On the availability strict-feature path, skip the per-window fn/series_fn parity call only when both function bodies are fingerprint-equal to the package templates produced by ledgr_ind_ttr(), both functions share one enclosing environment, that environment's parent is the ledgr namespace, and the environment locally binds none of the call symbols resolved by either template body, including ledgr_ttr_call, as.numeric and ::; a user-settable source label or shadowed helper is not sufficient. User indicators that independently declare both functions keep the parity check. Replace repeated per-window completeness testing with one ledgr_strict_complete_window_mask() result consumed by the existing loop. Cover both the run-time and precompute strict callers. Do not certify new TTR families or change gap, warmup, recursion, convergence or window semantics, and do not add segment-level execution."
     acceptance: ["the certified TTR SMA and one custom strict-window indicator with leading, internal and trailing gaps are byte-identical before and after at every pulse and through precompute, including eligibility and warmup; uncertified TTR EMA, RSI and MACD remain refused unchanged", "a hand-built indicator labelled TTR with a mismatched fn, distinct enclosing environments or an enclosing environment whose parent is the ledgr namespace but which locally binds ledgr_ttr_call still refuses through the existing parity condition, while a counting package TTR wrapper whose fn and series_fn bodies and environment provenance match the templates performs no redundant scalar parity call", "the completeness mask is computed once per instrument-feature series and matches the prior per-window decision on empty, short, complete and every-position-missing hostile fixtures", "restoring either redundant operation fails a registered structural or counting detector, and changing the certified TTR or custom strict-window output fails the scalar oracle on both the run-time and precompute callers", "paired current-tree clocks report strict preparation and end-to-end ratios on at least two bar lengths; the change must improve the strict-preparation median by at least 5 percent without making either end-to-end arm exceed 1.05, otherwise the production optimization is rejected and only the measured result is recorded; the seven-shape walk is clean", "the availability feature-engine-version digest changes as expected because the strict implementation body changed, the dense digest remains byte-identical, and sweep, run-time projection and precompute consumers are enumerated and validated"]
-    evidence: []
+    evidence: ["Acceptance 1 PASS. strict_ttr_cleanup_closeout.md#acceptance-results records byte-identical certified TTR SMA and custom strict outputs through runtime and strict precompute on complete and leading/internal/trailing-gap fixtures, exact warmup/eligibility masks, and unchanged EMA/RSI/MACD refusal.", "Acceptance 2 PASS. strict_ttr_cleanup_closeout.md#acceptance-results records body, shared-environment, namespace-parent and no-local-call-symbol certification; hostile label, body, distinct-environment and shadowed-helper cases keep parity, while the genuine wrapper makes one TTR call per eligible window.", "Acceptance 3 PASS. strict_ttr_cleanup_closeout.md#acceptance-results records one completeness-mask call on empty, short, complete, all-missing, leading/internal/trailing and every-position-missing fixtures, all exact against the pre-cut per-window decision.", "Acceptance 4 PASS. strict_ttr_cleanup_closeout.md#acceptance-results and dev/bench/v0_2_2_strict_ttr_cleanup/evidence/mutations.csv record three parity-restoration failures, 21 completeness-restoration failures and nine exact-value mutation failures across TTR/custom and runtime/precompute.", "Acceptance 5 PASS. strict_ttr_cleanup_closeout.md#paired-clock-record records five alternating fresh-process pairs at 250 and 1,000 bars: strict median ratios 0.5128/0.4928, end-to-end ratios 0.9231/1.0048, exact hashes throughout and no retry; its seven-shape walk is clean.", "Acceptance 6 PASS. strict_ttr_cleanup_closeout.md#acceptance-results records unchanged dense digest 80d1ae6d, availability change 6bd61d70 to 9ffede2b, and validated runtime-projection, strict-precompute, sweep and inherited walk-forward consumers."]
   - id: "LDG-3052"
     title: "Define the typed fold-state and phase contract"
     workstream: 38

@@ -1,0 +1,4 @@
+mutation,detector,result
+restore_certified_series_parity,LTB-0276,"3 failures: TTR helper count doubled from 5 to 10, structural skip disappeared, and availability provenance changed"
+restore_per_window_completeness,LTB-0276,"21 failures: the mask count fell from one to zero on the certified and hostile fixture series, and both structural assertions failed"
+add_one_to_scalar_output,LTB-0276,"9 failures: TTR and custom runtime and precompute scalar oracles failed on complete and gapped inputs, and availability provenance changed"
