@@ -46,7 +46,7 @@ the bridge.
 | Cost resolution, pulse-plan and disposition paragraphs | `contract-execution-accounting-events` | Unchanged meaning | Adds an address only; accepted equity-settlement behavior was already present. |
 | v0.1.8.10 compiled-accounting paragraph | `contract-execution-compiled-accounting` | Unchanged meaning | Removes release chronology; the same model closure and refusal remain. The internal legacy option is retained because the current product still exposes that hook. |
 | Decision/fill contexts and v0.1.9.1 timing paragraph | `contract-execution-decision-and-fill-contexts` | Unchanged meaning | Removes the version prefix; timing and context separation are unchanged. |
-| Cost identity paragraph plus M-7 bridge | `contract-execution-cost-model` | Consolidated | Adds the accepted round-price-before-fee and adjusted-notional rule. Source history remains in the v0.1.9.5 packet. |
+| Cost identity paragraph plus M-7 bridge | `contract-execution-cost-model` | Consolidated, corrected after review | States the shipped order exactly: price transforms precede fees, notional fees use the spread-adjusted unrounded price, and exposed fill price is rounded separately. Source history remains in the v0.1.9.5 packet. |
 | v0.1.9.3 target-risk paragraphs | `contract-execution-target-risk` | Unchanged meaning | Removes the version prefix; public constructors, identity, exclusions and sweep provenance are unchanged. |
 | Walk-forward and config/feature identity paragraphs | `contract-execution-identity` | Unchanged meaning plus consolidated | Removes Cut 15 narration while retaining current rule 3, schema-120 feature-retention deletion and capture identity. Adds the accepted walk-forward override match rule. |
 | Strategy preflight paragraph | `contract-execution-preflight` | Unchanged meaning | Adds an address only. |
@@ -85,7 +85,7 @@ the bridge.
 | v0.1.7.7 metric chronology and alternate v0.1.8 wording | `contract-result-standard-metrics` | Unchanged meaning / moved history | Keeps shipped Sharpe, scalar risk-free and formula rules; release chronology and obsolete alternate-path wording leave the operative clause. |
 | Return panels, diagnostics, objectives and trade statistics | four matching result groups | Unchanged meaning | Adds addresses; objective-filtered identity remains a link-only pending change. |
 | Documentation bullets | five documentation groups | Unchanged meaning | Adds addresses and changes `v0.2.2 release notes` to `current release notes`; the pinned claim sentence is unchanged. |
-| Testing-architecture bridge and verification bullets | four verification groups | Consolidated / unchanged meaning | Removes the fully shipped testing bridge and groups the existing release, diagnostic, snapshot and codebase gates. |
+| Testing-architecture bridge and verification bullets | verification groups plus standing test-control artifacts | Corrected / transferred to exact owners | The Verification Contract owns shipped release gates; `tests/README.md`, `tests/test-gates.yml` and `tests/claims.yml` own the current runner, memberships and claim registry. The accepted synthesis remains design history. The contract does not claim to restate that whole process architecture. |
 
 ## Decision-bridge reconciliation
 
@@ -102,8 +102,8 @@ The pre-change bridge held fifteen rows. Each appears exactly once below.
 | Objective-filtered walk-forward identity | retained | Exact validation sections, future completion owner, affected groups and pipeline row remain in `decisions.md`. |
 | OMS order lifecycle | retained | Exact target-risk/OMS sections, future OMS owner, affected groups and pipeline row remain in `decisions.md`. |
 | Equity corporate actions | removed-to-contract / transferred-to-pipeline | Current rules are in `contract-execution-accounting-events`, `contract-availability-valuation` and `contract-result-corporate-actions`; exact-quantity work remains only in the pipeline row `exact-equity-quantity-settlement`. |
-| Testing architecture | removed-to-contract | Current gates are under `contract-verification-release-gates` through `contract-verification-store-and-codebase-gates`; synthesis history remains at its path. |
-| Accounting-core consolidation | removed-to-contract / transferred-to-pipeline | Current event staging and compiled dispatch are under `contract-execution-event-staging` and `contract-execution-compiled-accounting`; the future compiled envelope remains only in its pipeline row. |
+| Testing architecture | corrected / transferred-to-standing-process-owners | Shipped release gates are under `contract-verification-release-gates`; the current runner, memberships, gate values and bounded claims registry are owned by `tests/README.md`, `tests/test-gates.yml` and `tests/claims.yml`. The accepted synthesis retains design history. |
+| Accounting-core consolidation | corrected / transferred-to-current-internal-owners / transferred-to-pipeline | Current staging and compiled dispatch rules are under `contract-execution-event-staging` and `contract-execution-compiled-accounting`. The accepted synthesis remains authority for the internal carrier/preparer/replay architecture implemented by `R/accounting-replay.R` and `R/lot-accounting.R`; the future compiled envelope remains only in its pipeline row. |
 | Feature-map read surface | removed-to-contract | Current alias, explicit-map, signal and inspection rules are under `contract-context-feature-resolution` and `contract-context-inspection`; synthesis history remains at its path. |
 | Governance-document authority and lifecycle | transferred-to-ticket / transferred-to-pipeline | Cut 15 Workstreams 32-35 own implementation; check-mode activation and M1 closeout reassessment remain only in the governance-lifecycle pipeline row. |
 | Snapshot verification policy | removed-to-contract | Current hash, read-class, verified-set and gate rules are under `contract-snapshot-identity-and-verification`, `contract-execution-snapshot-trust` and `contract-verification-terminal-and-snapshot-gates`; synthesis and Cut 13 retain history. |
@@ -113,6 +113,24 @@ Result: four bridge rows remain, eleven leave, and no accepted unimplemented
 decision disappears. The remaining four rows have exact sources, one owner,
 affected addressed groups and one pipeline route. No obligation prose is copied
 into `contracts.md` or `decisions.md`.
+
+Ordinary bridge exit still occurs at release closeout. Governance-lifecycle
+synthesis Section 4 gives this governance workstream one-time authority to
+close already-consolidated rows with the same receiver proof. The removed
+locator stubs in `decisions.md` preserve every known inbound address without
+continuing the row's authority.
+
+### Exact retained-row backlink oracle
+
+The correction check compares each retained row independently, rather than
+comparing only the set of bridge IDs.
+
+| Retained row | Exact addressed contract backlinks |
+| --- | --- |
+| `point-in-time-historical-projection` | `contract-snapshot-point-in-time-facts`; `contract-availability-provider-and-timing`; `contract-context-pulse-data`; `contract-result-read-surfaces` |
+| `recursive-indicator-boundary` | `contract-context-indicator-computation`; `contract-context-strict-features` |
+| `objective-filtered-walk-forward-identity` | `contract-execution-identity`; `contract-result-business-objectives` |
+| `oms-order-lifecycle` | `contract-execution-entry-points`; `contract-execution-accounting-events`; `contract-execution-target-risk` |
 
 ## Source-derived scans
 
@@ -125,8 +143,11 @@ roots and R6 strategies, the v0.2.2 terminal-gate evidence locator, and a
 current format-oracle test that requires replacement constant names to
 disappear.
 
-The report-only governance guard remains report-only. Its real-tree report is
-review evidence, not an implementation gate and not a second semantic oracle.
+The report-only governance guard remains report-only. Its reviewed fixtures
+exercise bridge-shape failures, but it does not parse the current bridge table
+and therefore does not validate this real-tree bridge. The reconciliation,
+the exact per-row backlink comparison and independent close review establish
+the real-tree result. Workstream 35 owns guard/table alignment.
 
 ## Verification
 
@@ -141,10 +162,10 @@ implementation source is `cfa7b969`. Verification ran on Windows x64 with R
   control-plane and governance-report files passed 350 expectations in 30.7
   seconds. There were no failures, errors, warnings or skips.
 - A source-derived R probe counted 13 H2 routes, 81 H3 rule groups and 81
-  unique explicit group IDs. It compared the four live bridge IDs with the
-  four unique contract backlinks. Removing one OMS backlink or its bridge row
-  independently failed that comparison; prepending an unrelated paragraph
-  left the sampled explicit address unchanged.
+  unique explicit group IDs. It compared the exact addressed backlink set for
+  each of the four retained rows. Removing any one of the three OMS backlinks,
+  or removing its bridge row, independently failed that comparison; prepending
+  an unrelated paragraph left the sampled explicit address unchanged.
 - `Rscript tools/governance-report.R` exited zero in 69.941 seconds over 319
   tracked sources. It reported 1,115 findings: 51 baseline structural, 883 new
   structural and 181 advisory. Neither `decisions.md` nor this reconciliation
@@ -155,5 +176,9 @@ implementation source is `cfa7b969`. Verification ran on Windows x64 with R
   local-target and fragment checks exercised by the documentation suite,
   ASCII checks on all four changed files and `git diff --check` passed.
 
-No product code, public behavior, claim registration or RFC decision changed.
-The implementation introduces no unresolved decision for the maintainer.
+The independent Type 1 close review is preserved in `close_review_33.md` with
+`CHANGES_REQUIRED`. Correction round 1 fixes the two semantic clauses, restores
+removed-address locators and lifecycle wording, names exact durable owners and
+replaces the set-only bridge witness with the per-row oracle above. No product
+code, public behavior, claim registration or RFC decision changed. The
+correction introduces no unresolved decision for the maintainer.

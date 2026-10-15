@@ -307,9 +307,11 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   that plan. Sweep persistence and walk-forward candidate/session identity
   consume these fields. Cost-grid sweep composition remains separate future
   work.
-- Cost resolution rounds the execution price before computing fees. Fees apply
-  to adjusted notional, and fill price, fee, cash delta and event metadata all
-  reflect that same resolved order.
+- Cost resolution applies price transforms first. Notional fees use the
+  spread-adjusted, unrounded execution price; the exposed `fill_price` is then
+  rounded separately to eight digits by default for ledger cash arithmetic.
+  Fill price, fee, cash delta and event metadata retain those distinct,
+  deterministic values.
 
 <a id="contract-execution-target-risk"></a>
 ### Target-Risk Transformation
@@ -354,8 +356,9 @@ Accepted change pending:
   window-role inputs. `session_id` identifies the walk-forward session envelope
   and includes snapshot, experiment, grid, fold-list, selection-rule,
   metric-context, cost, risk, seed, and opening-state policy identity, plus
-  the no-selection policy when it is not `"fail"`, so `"fail"` sessions
-  keep their pre-Cut-10 identity.
+  the no-selection policy when it is not `"fail"`. A `"fail"` policy is
+  omitted from the identity payload; every other no-selection policy is
+  included.
   Locator attributes on `ledgr_walk_forward_results` objects (`db_path`,
   `snapshot_id`, and `snapshot_hash`) are recovery and resolve-at-call
   verification metadata. They are not identity bytes and must not enter
@@ -405,9 +408,12 @@ Accepted change pending:
   arithmetic residue after matched close quantities; it is not a new
   affordability rule, quantity granularity, liquidity policy, or identity
   component.
-- `ledgr_lot_apply_fill()` accepts only a known side, finite positive quantity,
-  finite positive price and finite non-negative fee. Invalid transitions fail
-  closed with a classed condition aligned with the compiled lot kernel.
+- `ledgr_lot_apply_fill()` accepts only a known side, finite positive quantity
+  and finite non-negative fee. Ordinary fills require a finite positive price.
+  A terminal `DISPOSITION` alone may close lots at a finite zero price through
+  the internal `allow_zero_price = TRUE` path; a negative or non-finite price
+  always fails. Invalid transitions fail closed with a classed condition
+  aligned with the compiled lot kernel on its supported fill subset.
 
 ## Sweep Promotion Contract
 

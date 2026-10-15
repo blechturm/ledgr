@@ -13,18 +13,36 @@ but still awaits implementation or consolidation. Implementation status belongs
 in the owning packet's `tickets.yml`; accepted unscheduled obligations belong
 in the [RFC pipeline](rfc/README.md#rfc-pipeline).
 
-A row leaves when its shipped behavior is stated by the named contract groups
-and its history remains recoverable, or when ownership moves exactly once to a
-ticket or pipeline row. Partial supersession keeps every operative source
-section visible. The [Workstream 33 reconciliation][ws33] records the complete
-pre-change population and every exit.
+Ordinarily, a row leaves only at release closeout, when the exact receiving
+rule group is recorded. The governance-lifecycle synthesis Section 4 gives
+Workstream 33 one-time authority to close already-consolidated rows with that
+same proof; it is not a general early-exit rule. Partial supersession keeps
+every operative source section visible. The [Workstream 33
+reconciliation][ws33] records the complete pre-change population and every
+authorized exit.
 
 | Topic | Exact binding source sections | Current owner | Affected contract rule groups | Pipeline row |
 | --- | --- | --- | --- | --- |
 | <a id="point-in-time-historical-projection"></a>Point-in-time historical projection | [v11 Section 1](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#1-decision-and-scope); [Section 3](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#3-information-shape-and-ownership); [Section 5](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#5-the-simple-missing-data-policy); [Section 6](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#6-preparation-without-mandatory-revision-machinery); [Section 7](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#7-checkpoint-disposition-and-ticket-cut-boundary); [Section 8](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#8-contract-changes-and-detecting-requirements) | History-wave RFC amendment, then its implementation cut | [Snapshot facts](contracts.md#contract-snapshot-point-in-time-facts); [availability provider and timing](contracts.md#contract-availability-provider-and-timing); [context pulse data](contracts.md#contract-context-pulse-data); [result reads](contracts.md#contract-result-read-surfaces) | [Pipeline](rfc/README.md#point-in-time-historical-projection) |
 | <a id="recursive-indicator-boundary"></a>Recursive-indicator history boundary | [Feature projection Direction 5.4](rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md#direction-54---lookback-primitive); [v11 Section 2](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#2-evidence-and-the-decision-it-supports); [v11 Section 6](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#6-preparation-without-mandatory-revision-machinery) | History-wave RFC amendment and recursive-indicator synthesis | [Indicator computation](contracts.md#contract-context-indicator-computation); [strict features](contracts.md#contract-context-strict-features) | [Pipeline](rfc/README.md#recursive-indicator-semantics) |
-| <a id="objective-filtered-walk-forward-identity"></a>Objective-filtered walk-forward identity | [Validation synthesis Section 6](rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md#6-d4-business-objective-enters-session-identity); [maintainer amendment Section 14](rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md#14-amendment-2026-06-26-maintainer-v0197-business-objective-promotion) | Future business-objective completion RFC and implementation packet | [Execution identity](contracts.md#contract-execution-identity); [business objectives](contracts.md#contract-result-business-objectives) | [Pipeline](rfc/README.md#objective-filtered-walk-forward-identity) |
-| <a id="oms-order-lifecycle"></a>OMS order lifecycle | [Target-risk synthesis Section 5](rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md#5-explicit-deferrals); [OMS synthesis Sections 3-10](rfc/rfc_ledgr_oms_seed_synthesis.md#3-accepted-architecture); [OMS minimum scope](rfc/rfc_ledgr_oms_seed_synthesis.md#12-v02x-minimum-scope) | Future OMS contract and owning implementation packet | [Entry points](contracts.md#contract-execution-entry-points); [target risk](contracts.md#contract-execution-target-risk); [accounting events](contracts.md#contract-execution-accounting-events) | [Pipeline](rfc/README.md#oms-order-lifecycle) |
+| <a id="objective-filtered-walk-forward-identity"></a>Objective-filtered walk-forward identity | [Validation synthesis Section 6](rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md#6-d4-business-objective-enters-session-identity); [maintainer amendment Section 14](rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md#14-amendment-2026-06-26-maintainer-v0197-business-objective-promotion) | No implementation ticket is open; the pipeline row routes future completion | [Execution identity](contracts.md#contract-execution-identity); [business objectives](contracts.md#contract-result-business-objectives) | [Pipeline](rfc/README.md#objective-filtered-walk-forward-identity) |
+| <a id="oms-order-lifecycle"></a>OMS order lifecycle | [Target-risk synthesis Section 5](rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md#5-explicit-deferrals); [OMS synthesis Sections 3-10](rfc/rfc_ledgr_oms_seed_synthesis.md#3-accepted-architecture); [OMS minimum scope](rfc/rfc_ledgr_oms_seed_synthesis.md#12-v02x-minimum-scope) | No implementation ticket is open; the pipeline row routes the future OMS contract and implementation packet | [Entry points](contracts.md#contract-execution-entry-points); [target risk](contracts.md#contract-execution-target-risk); [accounting events](contracts.md#contract-execution-accounting-events) | [Pipeline](rfc/README.md#oms-order-lifecycle) |
+
+## Removed locators
+
+These anchors preserve inbound links only. They carry no current authority or
+editable obligation; follow the named receiver.
+
+| Former topic | Current receiver |
+| --- | --- |
+| <a id="execution-window-minimum"></a>Execution-window minimum | [Execution window start](contracts.md#contract-execution-window-start); historical authority remains in the v0.1.9.5 packet. |
+| <a id="fill-transition-validity"></a>Fill-transition validity | [Fill and lot validity](contracts.md#contract-execution-fills-and-lots); historical authority remains in the v0.1.9.5 packet. |
+| <a id="cost-rounding-and-fees"></a>Cost rounding and fees | [Cost-model arithmetic](contracts.md#contract-execution-cost-model); historical authority remains in the v0.1.9.5 packet. |
+| <a id="walk-forward-snapshot-override"></a>Walk-forward snapshot override | [Execution identity](contracts.md#contract-execution-identity); historical authority remains in the v0.1.9.5 packet. |
+| <a id="equity-corporate-actions"></a>Equity corporate actions | Current behavior is in [accounting events](contracts.md#contract-execution-accounting-events), [availability valuation](contracts.md#contract-availability-valuation) and [corporate-action results](contracts.md#contract-result-corporate-actions); unimplemented exact-quantity work remains in the [pipeline](rfc/README.md#exact-equity-quantity-settlement). |
+| <a id="testing-architecture"></a>Testing architecture | Shipped release gates are in the [Verification Contract](contracts.md#contract-verification-release-gates); the current control plane is owned by `tests/README.md`, `tests/test-gates.yml` and `tests/claims.yml`; accepted design history remains in the testing-architecture synthesis. |
+| <a id="accounting-core-consolidation"></a>Accounting-core consolidation | Current staging and dispatch rules are in [event staging](contracts.md#contract-execution-event-staging) and [compiled dispatch](contracts.md#contract-execution-compiled-accounting); the accepted internal architecture remains in the accounting-core synthesis and its implementations in `R/accounting-replay.R` and `R/lot-accounting.R`; future compiled work remains in the [pipeline](rfc/README.md#compiled-execution-envelope). |
+| <a id="snapshot-verification-policy"></a>Snapshot verification policy | Current rule-3 identity, verification and read-class rules are in the [Snapshot Contract](contracts.md#contract-snapshot-identity-and-verification), [snapshot trust boundary](contracts.md#contract-execution-snapshot-trust) and [verification gate](contracts.md#contract-verification-terminal-and-snapshot-gates); accepted history remains in the snapshot-verification synthesis and Cut 13. |
 
 ## Migration evidence
 
