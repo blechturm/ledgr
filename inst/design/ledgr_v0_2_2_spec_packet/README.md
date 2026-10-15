@@ -647,7 +647,7 @@ resumes.
 | Governance | 35 Record normalization | LDG-3047 to LDG-3048 | lifecycle headers, notices, packet summaries and open-ticket evidence expose current state without erasing history |
 | Product | 36 Remove feature retention and bind surviving identity | LDG-3049, LDG-3050 and LDG-3056 | no unsound cache or unconsumed durable feature surface remains; schema 120 and identity rule 3 are current; precomputed-feature identity binds deterministic captures |
 | Product | 37 Strict TTR cleanup | LDG-3051 | two redundant per-window operations disappear with exact feature values and unchanged semantics |
-| Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates eight named typed phases without changing behavior or cost materially |
+| Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates one envelope and five named stages through one locked fold-state environment without changing behavior or cost materially (RFC synthesis accepted 2026-10-15) |
 | Product | 39 Private lake rebuild | LDG-3055 | the history wave receives one verified schema-120, rule-3 real-data store built from frozen inputs |
 
 Workstreams 32, 33, 34, 36 and 37 are accepted. The governance guard remains
