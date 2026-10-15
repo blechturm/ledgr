@@ -1008,7 +1008,13 @@ governance_horizon_archived_bodies <- function(lines) {
     first <- headings$line[[i]] + 1L
     later <- which(
       seq_along(lines) >= first &
-        grepl("^###[[:space:]]+|^##[[:space:]]+", lines)
+        grepl(
+          paste0(
+            "^###[[:space:]]+|^##[[:space:]]+|^<a[[:space:]]|",
+            "^\\[Back to classification\\]"
+          ),
+          lines
+        )
     )
     last <- if (length(later)) later[[1L]] - 1L else length(lines)
     if (first > last) {

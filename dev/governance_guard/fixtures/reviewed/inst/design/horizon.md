@@ -15,3 +15,7 @@ The trigger remains open and this note binds nothing.
 ### 2026-10-14 [ux] Shipped fixture question
 
 Shipped: [historical body](horizon_archive.md#fixture-shipped).
+
+### 2026-10-13 [data] Second shipped fixture question
+
+Shipped: [historical body](horizon_archive.md#fixture-shipped-second).

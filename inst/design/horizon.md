@@ -329,8 +329,9 @@ Three levers were visible on 2026-10-12, in order of least semantic risk:
    Workstream 6 fill-event flush
    (`ledgr_v0_2_2_spec_packet/writer_scaling_closeout.md`) shipped after the
    record, so the remaining gap must be re-measured on the v0.2.2 record
-   before any lever is sized. The roadmap's "one store connection per
-   composite call" row touches the same boundary.
+   before any lever is sized. [Macro-plan Section 5](ledgr_v0_2_2_spec_packet/macro_plan.md#5-explicit-non-goals)
+   retains one store connection per composite public call as non-gating work
+   on the same boundary.
 3. The compiled accounting model for committed runs. `ledgr_run()` refuses
    `compiled_accounting_model = "spot_fifo"`, so the 4x engine result exists
    only on the ephemeral sweep. Widening it is owned by the compiled-execution
@@ -1835,10 +1836,10 @@ The earlier inline note in this file ("ML strategy artifact management
 depends on stable walk-forward windows, point-in-time feature tables, model
 artifact identity, prediction-table provenance, and selection diagnostics.
 Do not bolt it on as 'call `predict()` inside a strategy.'") stands; this
-entry names the concrete pieces that would operationalize it. The roadmap
-"Deferred Strategy And Integration Families" row for ML strategy artifact
-management already records the deferral; this entry stays in horizon until a
-v0.2.x packet promotes it.
+entry names the concrete pieces that would operationalize it. The current
+[ML-architecture pipeline row](rfc/README.md#ml-architecture) owns the accepted
+causality and model-lifecycle obligations. This entry remains non-binding
+parking until that row's causal-history and concrete-workflow trigger fires.
 
 Non-commitments:
 
@@ -2815,12 +2816,13 @@ Potential additions:
 - small diagnostics that explain how weights became full target quantities.
 
 Keep this separate from target risk, liquidity/capacity, transaction cost, and
-full portfolio optimization. Promoted roadmap hook:
-`v0.1.9.x Target Construction Helper Extensions` (per the canonical roadmap
-entry; the paired-cycle synthesis in
-`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md` binds Pass 2 per-stage
-helper extensions to that window. See the 2026-06-01 post-synthesis horizon
-entry below.).
+full portfolio optimization. Cut 16 Workstream 23 shipped the context-first
+signal and selection entrances, kept-position sizing and strict missing/
+partial-selection policy recorded in the
+[strategy-helper closeout](ledgr_v0_2_0_2_spec_packet/strategy_authoring_helpers_closeout.md).
+The additions above did not all ship. They remain parked here and route through
+the [portfolio-construction pipeline row](rfc/README.md#portfolio-construction)
+after the public historical surface ships; there is no surviving roadmap row.
 
 ### 2026-05-24 [research] Beta as three distinct uses
 
@@ -2886,7 +2888,12 @@ A future `ledgr_benchmark_from_universe()` may still be useful but should be
 designed after external benchmarks ship and after point-in-time universe
 semantics are explicit.
 
-Promoted roadmap hook: `v0.2.x Benchmark Context And Active Metrics`.
+Current route: no packet or RFC-pipeline row owns an aligned external
+benchmark provider. The accepted metric-context contract above remains the
+design input, and provider work is parked here until a concrete diagnostic or
+comparison workflow opens its focused RFC. The pipeline's
+[benchmark-methodology row](rfc/README.md#benchmark-methodology) governs public
+performance claims, not this provider implementation.
 
 ### 2026-06-28 [data] Cross-asset accounting-critical economic events
 
@@ -3223,11 +3230,12 @@ The v0.2.x slot is the right window — after the prerequisites stabilize and
 before paper/live shifts the question from "does this beat the baseline" to
 "is this still working in production."
 
-Promoted roadmap hooks
+Current parked routes
 
-- baseline strategy library RFC (v0.2.x, after walk-forward and cost API
+- baseline strategy library RFC, parked here until a concrete comparison
+  workflow needs it after walk-forward and the cost API
   stabilize);
-- baseline-comparison API RFC (v0.2.x, coordinated with baseline library);
+- baseline-comparison API RFC, coordinated with the baseline library;
 - benchmark-return-series adapter RFC (later, if external-time-series
   comparison surfaces user demand — distinct from baseline strategies);
 - companion-package reference strategy library (out of core, when the
@@ -3383,10 +3391,12 @@ helpers deferred" entry. The work is now a v0.2.0-class RFC/spec cycle
 candidate, not a near-term v0.1.x slot. This entry stays the binding
 seed-shape input for whenever that cycle opens.
 
-Promoted roadmap hooks
+Current route and parked follow-ups
 
-- snapshot administration and ETL provenance metadata RFC: v0.2.0-class
-  cycle when revived; this entry is its seed-shape input.
+- snapshot administration and ETL provenance metadata RFC: the current
+  [instrument-master-data pipeline row](rfc/README.md#instrument-master-data)
+  owns the accepted provider and PIT boundaries when its trigger fires; this
+  entry is its seed-shape input.
 - `ledgr_snapshot_list()` filtering and listing API (coordinated with
   the metadata schema RFC).
 - `ledgr_snapshot_deprecate()` and `ledgr_snapshot_supersede()`
@@ -3480,14 +3490,19 @@ First-class intraday is a multi-cycle endeavor:
 4. **Intraday-aware metric context** (extends v0.1.8.2 metric context
    work) — annualization factor parameterized by cadence and sessions,
    not hardcoded.
-5. **Liquidity / capacity policy** (already v0.2.x roadmap) — execution
+5. **Liquidity / capacity policy** (current
+   [execution-policy route](rfc/README.md#execution-policy)) — execution
    feasibility separate from cost, with participation limits that mean
    something different intraday vs EOD.
 6. **Storage scale evidence** (extends v0.1.8.6 spike) — the spike's
    exit-decision changes once intraday workloads enter the comparison.
 
-The arc spans v0.2.x through v0.3.0 in the existing roadmap. The OMS
-synthesis is the entry point. Calendar infrastructure is the missing RFC.
+The arc is parked across the RFC pipeline's
+[OMS lifecycle](rfc/README.md#oms-order-lifecycle),
+[execution-policy](rfc/README.md#execution-policy), and
+[instrument-specific session-axis](rfc/README.md#instrument-specific-session-axis)
+routes. The accepted OMS synthesis is the entry point; calendar infrastructure
+still needs its focused RFC.
 
 #### Architectural footguns the v0.1.x cycles must avoid
 
@@ -3714,13 +3729,13 @@ specific clauses need updating in the existing synthesis), or **extend**
 audit output is itself an input for the v0.2.x intraday-arc cycle
 planning.
 
-#### Promoted roadmap hooks
+#### Current routes and parked follow-ups
 
-- intraday support arc (v0.2.x through v0.3.0, multi-cycle) — depends
+- intraday support arc (multi-cycle, not committed) — depends
   on OMS, session calendars, intraday fill timing, liquidity/capacity,
   intraday-aware metric context, and intraday storage scale evidence;
-- session calendar infrastructure RFC — new work, no current roadmap
-  line; cut after OMS lands;
+- session calendar infrastructure RFC — parked new work routed through the
+  instrument-specific session-axis row after OMS lands;
 - intraday metric context extension — extends v0.1.8.2 metric context
   work; same calendar surface, parameterized cadence;
 - intraday fill timing policy — extends v0.1.9.x/v0.2.0 cost API arc;
@@ -3882,9 +3897,10 @@ the chosen approach (B) so the eventual RFC starts from a known shape.
 
 ledgr's stable public result tables (equity, fills, trades, ledger) plus the
 stored metric context are the right substrate for thin, optional, output-only
-adapters into the established R quant ecosystem. **Committed for v0.2.x** (see
-the roadmap "External Package Adapters" entry); this horizon note records
-direction, and an RFC synthesis — not this entry — authorizes any public API.
+adapters into the established R quant ecosystem. No current packet, roadmap
+row or RFC-pipeline row commits this work; it remains parked here until a
+concrete output-consumer workflow triggers a focused RFC. An accepted RFC
+synthesis — not this entry — would authorize any public API.
 
 The first adapter is **PerformanceAnalytics**, scoped to its real strength — the
 drawdown/return tables and long-tail risk/return stats, not its charts. It is a

@@ -10,6 +10,9 @@ and where its packet lives. It does not duplicate ticket order, RFC
 obligations, or parked ideas. Historical planning prose is preserved in
 [roadmap history](roadmap_history.md).
 
+**Latest release:** v0.2.1.0, published 2026-10-01. Its packet retains the
+v0.2.0.2 planning path used when that release was cut.
+
 ## Release sequence
 
 | Release | State | Release outcome | Authoritative packet |
@@ -53,7 +56,7 @@ obligations, or parked ideas. Historical planning prose is preserved in
 | v0.1.9.7 | Released | Business-objective eligibility and robustness diagnostics. | [packet](ledgr_v0_1_9_7_spec_packet/) |
 | v0.2.0.0 | Released | API hardening and point-in-time asset availability. | [packet](ledgr_v0_2_0_0_spec_packet/) |
 | v0.2.0.1 | Released | Availability performance, resume repair, and benchmark closeout. | [packet](ledgr_v0_2_0_1_spec_packet/) |
-| v0.2.1.0 | Released | Accounting consolidation, equity events, strategy context, and release hardening. | [packet](ledgr_v0_2_0_2_spec_packet/) |
+| v0.2.1.0 | Released 2026-10-01 | Accounting consolidation, equity events, strategy context, and release hardening. | [packet](ledgr_v0_2_0_2_spec_packet/) |
 | v0.2.2 | Active | Long-window point-in-time research, pre-history foundations, historical projection, recursive-indicator semantics, and release evidence. | [packet](ledgr_v0_2_2_spec_packet/); [tickets](ledgr_v0_2_2_spec_packet/tickets.yml) |
 
 <a id="next-release"></a>

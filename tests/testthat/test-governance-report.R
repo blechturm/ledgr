@@ -824,6 +824,33 @@ testthat::test_that("[LTB-0275] horizon classification drift stays report-only a
     1L
   )
 
+  missing_second_archive_body <- copy_fixture()
+  on.exit(
+    unlink(dirname(missing_second_archive_body), recursive = TRUE),
+    add = TRUE
+  )
+  second_archive_path <- file.path(
+    missing_second_archive_body,
+    "inst", "design", "horizon_archive.md"
+  )
+  second_archive_lines <- readLines(
+    second_archive_path,
+    warn = FALSE,
+    encoding = "UTF-8"
+  )
+  second_archive_lines <- second_archive_lines[
+    second_archive_lines !=
+      "The second preserved body proves adjacent dispositions are not body content."
+  ]
+  writeLines(second_archive_lines, second_archive_path, useBytes = TRUE)
+  testthat::expect_length(
+    finding_kind(
+      run_fixture(missing_second_archive_body),
+      "missing_horizon_archive_body"
+    ),
+    1L
+  )
+
   duplicate_classification <- copy_fixture()
   on.exit(unlink(dirname(duplicate_classification), recursive = TRUE), add = TRUE)
   classification_path <- file.path(

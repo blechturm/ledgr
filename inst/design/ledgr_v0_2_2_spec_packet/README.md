@@ -662,10 +662,11 @@ widening the bound or moving tests.
 Workstreams 33, 34 and 37 may now open independently. Workstream 35 follows 33
 and 34; product continues through 38 and 39. The public history
 API, hydration and recursive-indicator semantics stay outside this cut. The
-RED one-execution-mode result requires the later history implementation to
-support both dense and availability modes. LFB-028 remains the later opt-in
-factor/prediction evidence design; it does not preserve the current `features`
-table.
+later accepted release-line authority supersedes the RED probe's both-modes
+wording: [execution-core consolidation](macro_plan.md#execution-core-consolidation)
+builds history on availability, freezes dense and lands before first CRAN.
+LFB-028 remains the later opt-in factor/prediction evidence design; it does not
+preserve the current `features` table.
 
 Each workstream receives one Type 1 close review. M1/M2 apply from the cut
 review onward: findings get a packet artifact, ratios are measurements rather

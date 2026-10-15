@@ -3040,7 +3040,7 @@ navigation. The text below is historical evidence, not active parking.
 <a id="ws34-open-006"></a>
 
 **Disposition:** promoted. Current owner:
-[research findings index](research/ledgr-research-findings-index.md), LFB-013.
+[post-gate live routes](ledgr_v0_2_2_spec_packet/macro_plan.md#post-gate-live-routes).
 
 ### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
 
