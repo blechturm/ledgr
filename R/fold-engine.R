@@ -248,6 +248,27 @@ ledgr_fold_state_install_value <- function(fold_state, value) {
   invisible(NULL)
 }
 
+ledgr_fold_flush_pulse_block <- function(
+    fold_state,
+    diagnostic_writer,
+    run_id,
+    ts) {
+  if (length(fold_state$pending_segments) == 0L) {
+    return(invisible(NULL))
+  }
+  block <- ledgr_availability_diagnostic_block(
+    run_id,
+    ts,
+    fold_state$diagnostic_seq + 1L,
+    fold_state$pending_segments
+  )
+  fold_state$pending_segments <- list()
+  fold_state$diagnostic_seq <-
+    fold_state$diagnostic_seq + length(block$diagnostic_seq)
+  diagnostic_writer$append_block(block)
+  invisible(NULL)
+}
+
 ledgr_fold_stage_observe_settle <- function(
     fold_state,
     services,
@@ -1263,6 +1284,164 @@ ledgr_fold_stage_apply <- function(
   )
 }
 
+ledgr_fold_stage_commit <- function(
+    fold_state,
+    services,
+    observation,
+    decision,
+    plan,
+    apply,
+    sample_telemetry,
+    pulse_start) {
+  fold_state$current_stage <- "commit"
+  output_handler <- services$output_handler
+  pulse_plan <- plan$pulse_plan
+  ts <- observation$ts
+  ts_iso <- observation$ts_iso
+  context_ids <- observation$context_ids
+  valuation <- observation$valuation
+  strategy_targets <- decision$strategy_targets
+  targets <- decision$targets
+  state_update <- decision$state_update
+  sample_start <- apply$sample_start
+  t_state <- apply$t_state
+
+  if (is.function(output_handler$flush_pulse_events)) {
+    output_handler$flush_pulse_events()
+  }
+
+  if (services$availability_active) {
+    if (length(pulse_plan$fills) > 0L) {
+      fill_times <- as.POSIXct(vapply(
+        pulse_plan$fills,
+        function(entry) as.numeric(entry$execution_ts_utc),
+        numeric(1)
+      ), origin = "1970-01-01", tz = "UTC")
+      fold_state$last_executed <- max(
+        c(fold_state$last_executed, fill_times),
+        na.rm = TRUE
+      )
+    }
+    if (!isTRUE(all.equal(
+      as.numeric(fold_state$cash),
+      as.numeric(pulse_plan$expected_final_cash),
+      tolerance = ledgr_availability_cash_tolerance
+    ))) {
+      rlang::abort(
+        "Recorded cash does not reconcile with the availability affordability ledger.",
+        class = c(
+          "ledgr_affordability_reconciliation_failed",
+          "ledgr_invalid_fold_execution"
+        )
+      )
+    }
+    actual_positions <- ledgr_fold_positions_snapshot(
+      fold_state$positions[valuation$source_row],
+      context_ids
+    )
+    reconciliation_detail <- canonical_json(list(
+      cash_before = fold_state$cash - sum(vapply(
+        pulse_plan$fills,
+        function(entry) ledgr_availability_fill_cash_delta(entry$fill),
+        numeric(1)
+      )),
+      virtual_final_cash = pulse_plan$expected_final_cash,
+      recorded_final_cash = fold_state$cash,
+      intended_gross_exposure = ledgr_availability_marked_gross(
+        strategy_targets,
+        valuation$mark[names(strategy_targets)]
+      ),
+      post_risk_gross_exposure = ledgr_availability_marked_gross(
+        targets,
+        valuation$mark[names(targets)]
+      ),
+      actual_gross_exposure = ledgr_availability_marked_gross(
+        actual_positions,
+        valuation$mark[names(actual_positions)]
+      ),
+      exposure_basis = "decision_mark_gross"
+    ))
+    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <-
+      list(
+        n = 1L,
+        stage = "reconciliation",
+        outcome = "reconciled",
+        reason_code = "affordability_reconciled",
+        detail_json = reconciliation_detail
+      )
+    ledgr_fold_flush_pulse_block(
+      fold_state,
+      services$diagnostic_writer,
+      services$run_id,
+      ts
+    )
+  }
+
+  if (services$availability_active) {
+    if (is.null(state_update)) {
+      # The carried state is already normalized for this pulse's axis.
+      state_update <- fold_state$state_prev
+    } else {
+      state_update <- ledgr_fold_asset_state_normalize(state_update, context_ids)
+    }
+    fold_state$state_axis <- context_ids
+  }
+  if (!is.null(state_update)) {
+    if (sample_telemetry) sample_start <- ledgr_time_now()
+    # Serialised every pulse: the state object reaches user code, which may
+    # change it in place, so no comparison with an earlier object is safe.
+    state_json <- canonical_json(state_update)
+    fold_state$state_prev <- state_update
+    if (identical(services$event_mode, "live")) {
+      output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)
+    } else {
+      output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
+    }
+    if (sample_telemetry) {
+      t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
+    }
+  }
+
+  fold_state$processed <- fold_state$processed + 1L
+
+  if (services$telemetry_stride > 0L &&
+      fold_state$processed %% services$telemetry_stride == 0L) {
+    fold_state$telemetry_idx <- fold_state$telemetry_idx + 1L
+    idx <- fold_state$telemetry_idx
+    telemetry <- services$telemetry
+    telemetry$t_pulse[[idx]] <- ledgr_time_elapsed(pulse_start, ledgr_time_now())
+    telemetry$t_bars[[idx]] <- observation$t_bars
+    telemetry$t_ctx[[idx]] <- decision$t_ctx
+    telemetry$t_fill[[idx]] <- plan$t_fill
+    telemetry$t_state[[idx]] <- t_state
+    telemetry$t_feats[[idx]] <- observation$t_feats
+    telemetry$t_strat[[idx]] <- decision$t_strat
+    telemetry$t_target[[idx]] <- plan$t_target
+    telemetry$t_event[[idx]] <- apply$t_event
+    telemetry$t_exec[[idx]] <-
+      plan$t_target + plan$t_fill + apply$t_event + t_state
+  }
+
+  if (services$checkpoint_every > 0L &&
+      fold_state$processed %% services$checkpoint_every == 0L &&
+      !identical(services$event_mode, "live") &&
+      (output_handler$pending_event_count() > 0L ||
+       output_handler$pending_state_count() > 0L)) {
+    output_handler$flush_pending()
+  }
+
+  continue <- TRUE
+  if (fold_state$processed >= services$max_pulses) {
+    fold_state$full_run <- FALSE
+    continue <- FALSE
+  }
+  if (isTRUE(getOption("ledgr.interrupt", FALSE))) {
+    fold_state$full_run <- FALSE
+    continue <- FALSE
+  }
+  list(continue = continue)
+}
+
 ledgr_execute_fold <- function(execution, output_handler) {
   ledgr_fold_envelope(execution, output_handler)
 }
@@ -1433,20 +1612,12 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     invisible(NULL)
   }
   flush_pulse_block <- function(ts) {
-    if (length(fold_state$pending_segments) == 0L) {
-      return(invisible(NULL))
-    }
-    block <- ledgr_availability_diagnostic_block(
+    ledgr_fold_flush_pulse_block(
+      fold_state,
+      diagnostic_writer,
       run_id,
-      ts,
-      fold_state$diagnostic_seq + 1L,
-      fold_state$pending_segments
+      ts
     )
-    fold_state$pending_segments <- list()
-    fold_state$diagnostic_seq <-
-      fold_state$diagnostic_seq + length(block$diagnostic_seq)
-    diagnostic_writer$append_block(block)
-    invisible(NULL)
   }
   fast_context <- if (isTRUE(use_fast_context) && !availability_active) {
     ledgr_fast_context_state(
@@ -1532,7 +1703,12 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     cost_resolver = cost_resolver,
     pulses_posix = pulses_posix,
     use_compiled_spot_fifo = use_compiled_spot_fifo,
-    event_mode = event_mode
+    event_mode = event_mode,
+    diagnostic_writer = diagnostic_writer,
+    telemetry = telemetry,
+    telemetry_stride = telemetry_stride,
+    checkpoint_every = checkpoint_every,
+    max_pulses = max_pulses
   )
 
   run_loop <- function() {
@@ -1683,128 +1859,17 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       t_event <- apply_result$t_event
       t_state <- apply_result$t_state
 
-      if (is.function(output_handler$flush_pulse_events)) {
-        output_handler$flush_pulse_events()
-      }
-
-      if (availability_active) {
-        if (length(pulse_plan$fills) > 0L) {
-          fill_times <- as.POSIXct(vapply(
-            pulse_plan$fills,
-            function(entry) as.numeric(entry$execution_ts_utc),
-            numeric(1)
-          ), origin = "1970-01-01", tz = "UTC")
-          fold_state$last_executed <- max(
-            c(fold_state$last_executed, fill_times),
-            na.rm = TRUE
-          )
-        }
-        if (!isTRUE(all.equal(
-          as.numeric(fold_state$cash),
-          as.numeric(pulse_plan$expected_final_cash),
-          tolerance = ledgr_availability_cash_tolerance
-        ))) {
-          rlang::abort(
-            "Recorded cash does not reconcile with the availability affordability ledger.",
-            class = c("ledgr_affordability_reconciliation_failed", "ledgr_invalid_fold_execution")
-          )
-        }
-        actual_positions <- ledgr_fold_positions_snapshot(
-          fold_state$positions[valuation$source_row],
-          context_ids
-        )
-        reconciliation_detail <- canonical_json(list(
-          cash_before = fold_state$cash - sum(vapply(
-            pulse_plan$fills,
-            function(entry) ledgr_availability_fill_cash_delta(entry$fill),
-            numeric(1)
-          )),
-          virtual_final_cash = pulse_plan$expected_final_cash,
-          recorded_final_cash = fold_state$cash,
-          intended_gross_exposure = ledgr_availability_marked_gross(
-            strategy_targets,
-            valuation$mark[names(strategy_targets)]
-          ),
-          post_risk_gross_exposure = ledgr_availability_marked_gross(
-            targets,
-            valuation$mark[names(targets)]
-          ),
-          actual_gross_exposure = ledgr_availability_marked_gross(
-            actual_positions,
-            valuation$mark[names(actual_positions)]
-          ),
-          exposure_basis = "decision_mark_gross"
-        ))
-        add_segment(list(
-          n = 1L, stage = "reconciliation", outcome = "reconciled",
-          reason_code = "affordability_reconciled", detail_json = reconciliation_detail
-        ))
-        flush_pulse_block(ts)
-      }
-
-      if (availability_active) {
-        if (is.null(result$state_update)) {
-          # The carried state is already normalized for this pulse's axis.
-          result$state_update <- fold_state$state_prev
-        } else {
-          result$state_update <- ledgr_fold_asset_state_normalize(
-            result$state_update,
-            context_ids
-          )
-        }
-        fold_state$state_axis <- context_ids
-      }
-      if (is.list(result) && !is.null(result$state_update)) {
-        if (sample_telemetry) sample_start <- ledgr_time_now()
-        # Serialised every pulse: the state object reaches user code, which may
-        # change it in place, so no comparison with an earlier object is safe.
-        state_json <- canonical_json(result$state_update)
-        fold_state$state_prev <- result$state_update
-        if (identical(event_mode, "live")) {
-          output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)
-        } else {
-          output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
-        }
-        if (sample_telemetry) {
-          t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
-        }
-      }
-
-      fold_state$processed <- fold_state$processed + 1L
-
-      if (telemetry_stride > 0L &&
-          fold_state$processed %% telemetry_stride == 0L) {
-        fold_state$telemetry_idx <- fold_state$telemetry_idx + 1L
-        telemetry$t_pulse[[fold_state$telemetry_idx]] <- ledgr_time_elapsed(
-          pulse_start,
-          ledgr_time_now()
-        )
-        telemetry$t_bars[[fold_state$telemetry_idx]] <- t_bars
-        telemetry$t_ctx[[fold_state$telemetry_idx]] <- t_ctx
-        telemetry$t_fill[[fold_state$telemetry_idx]] <- t_fill
-        telemetry$t_state[[fold_state$telemetry_idx]] <- t_state
-        telemetry$t_feats[[fold_state$telemetry_idx]] <- t_feats
-        telemetry$t_strat[[fold_state$telemetry_idx]] <- t_strat
-        telemetry$t_target[[fold_state$telemetry_idx]] <- t_target
-        telemetry$t_event[[fold_state$telemetry_idx]] <- t_event
-        telemetry$t_exec[[fold_state$telemetry_idx]] <-
-          t_target + t_fill + t_event + t_state
-      }
-
-      if (checkpoint_every > 0L &&
-          fold_state$processed %% checkpoint_every == 0L &&
-          !identical(event_mode, "live") &&
-          (output_handler$pending_event_count() > 0L ||
-           output_handler$pending_state_count() > 0L)) {
-        output_handler$flush_pending()
-      }
-
-      if (fold_state$processed >= max_pulses) {
-        fold_state$full_run <- FALSE
-        break
-      }
-      if (isTRUE(getOption("ledgr.interrupt", FALSE))) {
-        fold_state$full_run <- FALSE
+      commit_result <- ledgr_fold_stage_commit(
+        fold_state = fold_state,
+        services = services,
+        observation = observation,
+        decision = decision_result,
+        plan = plan_result,
+        apply = apply_result,
+        sample_telemetry = sample_telemetry,
+        pulse_start = pulse_start
+      )
+      if (!isTRUE(commit_result$continue)) {
         break
       }
     }
