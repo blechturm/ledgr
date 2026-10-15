@@ -39,6 +39,13 @@ The normalization added metadata only. The synthesis diff contains no removed
 line, so decisions, alternative rejections, review results, author names and
 independence disclosures remain verbatim below the new headers.
 
+The close review corrected three records that the initial census had mistaken
+for `under review`: their final reviews and the v0.1.8.10 accepted-input list
+establish all three as accepted. It also restores the exact recorded reason for
+the rejected governance synthesis, names receivers for two promotion drafts,
+and makes clear that the history-wave register is an input to, not an amendment
+of, accepted v11 authority.
+
 The RFC pipeline now documents all six allowed row states. Its history-wave
 row stays Paused, every Obligations-open row names Trigger and Route, and the
 compiled-execution row carries feasibility as evidence rather than embedding
@@ -65,6 +72,10 @@ LDG-3045 and LDG-3046 are complete, and LDG-3046's last item now records the
 finding-bearing review files plus the final finding-free PASS instead of the
 superseded CHANGES_REQUIRED state.
 
+The independent WS35 finding report is preserved in `close_review_35.md`.
+Earlier Cut 7, 9, 13 and 14 reviews are linked again, and the two legacy RFC
+anchors handed over from WS34 now resolve through explicit redirect stubs.
+
 ## Guard extension and mutations
 
 `tools/governance-report.R` remains report-only. It now additionally reports:
@@ -88,16 +99,20 @@ record, remains byte-deterministic and the command still rejects `--check`.
 
 ## Verification
 
-- `test-governance-report.R`: 177 expectations passed, with no failure,
+- `test-governance-report.R`: 182 expectations passed, with no failure,
   warning or skip.
 - `test-documentation-contracts.R` and `test-test-control-plane.R`: passed
   with no failure, warning or skip.
 - Canonical header scan: all 47 bounded syntheses passed with zero lifecycle
   findings; state counts match the table above.
 - Cut 15 evidence scan: zero findings after the WS34 current-state correction.
-- Full report-only scan: completed successfully with 327 sources and 996
-  findings. It resolves existing debt but remains informational; no finding
-  changes a package, CI, release or local gate result.
+- Empirical: input was the tracked design and governance population;
+  environment was Windows with R 4.6.1; source commit was `477980e2`;
+  reproduction command was `Rscript tools/governance-report.R`; reviewed range
+  was `07f91bcf..477980e2`; result was a successful report-only scan of 328
+  sources with 996 visible findings; clock was 71.687 seconds. It resolves
+  existing debt but remains informational; no finding changes a package, CI,
+  release or local gate result.
 - The new replacement, amendment and packet links resolve; pre-existing link
   debt remains visible in the report. YAML parsing and `git diff --check`
   passed.
