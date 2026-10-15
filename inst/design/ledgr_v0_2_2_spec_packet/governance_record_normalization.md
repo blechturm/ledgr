@@ -113,6 +113,14 @@ record, remains byte-deterministic and the command still rejects `--check`.
   sources with 996 visible findings; clock was 71.687 seconds. It resolves
   existing debt but remains informational; no finding changes a package, CI,
   release or local gate result.
+- Reconciliation against the accepted WS38 integration tree at merge commit
+  `7a030be9` preserved that report-only boundary. `Rscript
+  tools/governance-report.R` scanned 339 sources and reported 1,034 visible
+  findings in 74.129 seconds; the direct current-cut evidence scan reported
+  zero malformed, incomplete-count or incomplete-empirical findings. The
+  reconciliation also retained WS38's accepted evidence while repairing its
+  three records to the pointer-plus-result and one-evidence-per-acceptance
+  form.
 - The new replacement, amendment and packet links resolve; pre-existing link
   debt remains visible in the report. YAML parsing and `git diff --check`
   passed.

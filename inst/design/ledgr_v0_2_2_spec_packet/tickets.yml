@@ -545,6 +545,7 @@ workstreams:
     integration_evidence:
       - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md records the bounded lifecycle normalization, packet-front-door reduction, failure-sensitive guard extensions, verification results and relevant seven-shape walk."
       - "inst/design/ledgr_v0_2_2_spec_packet/close_review_35.md preserves the finding-bearing independent review; commit 477980e2 closes F1 through F8 without accepting the workstream."
+      - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md#verification records reconciliation at 7a030be9 with the accepted WS38 baseline: 339 report-only sources, 1,034 visible findings and zero current-cut evidence-form findings."
     accepted: null
   - id: 36
     name: "Remove current feature retention"
