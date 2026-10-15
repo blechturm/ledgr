@@ -1,5 +1,11 @@
 # RFC Synthesis: Chainable Risk And OMS Policy Boundary
 
+Role: record; partially superseded RFC-cycle synthesis retained as history.
+Status: superseded in part
+Authority: binding only for its operative remainder.
+Replacement: 2026-05-26 [OMS synthesis](rfc_ledgr_oms_seed_synthesis.md).
+Operative remainder: target-risk rules outside the OMS sections named below remain accepted.
+
 **Status:** Accepted synthesis - binding for v0.1.9 target-risk ticket cut; broader execution-policy pipeline deferred to a new RFC.
 **Superseded in part by:** the OMS synthesis
 [Section 3](rfc_ledgr_oms_seed_synthesis.md#3-accepted-architecture),

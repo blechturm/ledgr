@@ -1,5 +1,10 @@
 # RFC Synthesis: Validation Toolkit
 
+Role: record; amended RFC-cycle synthesis and durable decision record.
+Status: amended 2026-06-28
+Authority: accepted synthesis as amended; binds only its stated scope.
+Amendments: 2026-06-26 [business-objective promotion](#14-amendment-2026-06-26-maintainer-v0197-business-objective-promotion); 2026-06-28 [selection-integrity diagnostic rename](#15-amendment-2026-06-28-maintainer-selection-integrity-diagnostic-rename).
+
 **Status:** Accepted 2026-06-12. Final review passed 2026-06-12
 (APPROVED WITH PATCHES; see
 `rfc_validation_toolkit_v0_1_9_x_final_review.md`). Binding for the

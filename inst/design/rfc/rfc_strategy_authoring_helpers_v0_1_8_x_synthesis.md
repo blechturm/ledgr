@@ -1,5 +1,9 @@
 # RFC Synthesis: Strategy Authoring Helpers (v0.1.8.x)
 
+Role: record; RFC-cycle synthesis awaiting final review.
+Status: under review
+Authority: non-binding until maintainer acceptance.
+
 **Status:** Synthesis. Binding artifact pending final review.
 **Cycle:** v0.1.8.x ergonomics.
 **Synthesizes:** seed v1, response, seed v2.

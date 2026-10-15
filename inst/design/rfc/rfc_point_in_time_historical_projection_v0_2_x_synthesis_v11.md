@@ -1,5 +1,9 @@
 # RFC Synthesis v11: Point-in-Time Historical Projection With Missing Data
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** **Accepted by the maintainer 2026-09-28.** Operative synthesis; it
 replaces v10, which becomes part of the derivation and correction record. The
 simplification direction is authorized. This document still authorizes no

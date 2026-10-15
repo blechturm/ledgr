@@ -1,5 +1,9 @@
 # RFC Synthesis: Compiled Hot Frame B2 (v0.1.9.x)
 
+Role: record; RFC-cycle synthesis awaiting final review.
+Status: under review
+Authority: non-binding until maintainer acceptance.
+
 **Status:** Synthesis. Binding artifact pending final review.
 **Cycle:** Architecture B2 measurement gate and v0.1.9.x promotion scoping.
 **Synthesizes:** seed v1, response, seed v2, seed-v2 review,

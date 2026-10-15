@@ -1,5 +1,9 @@
 # Synthesis: Sweep Candidate Promotion And Lineage Contract For v0.1.8
 
+Role: record; RFC-cycle synthesis draft.
+Status: draft
+Authority: non-binding synthesis input.
+
 **Status:** Draft synthesis for review.
 **Date:** 2026-05-14
 **Author:** Codex

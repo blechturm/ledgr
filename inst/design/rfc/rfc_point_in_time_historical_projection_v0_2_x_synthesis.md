@@ -1,5 +1,10 @@
 # RFC Synthesis: Point-in-Time Historical Projection
 
+Role: record; superseded RFC-cycle synthesis retained as history.
+Status: superseded
+Authority: non-binding after replacement.
+Replacement: 2026-09-26 [synthesis v2](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v2.md).
+
 **Status: SUPERSEDED 2026-09-26** by
 [synthesis v2](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v2.md),
 after a final review returned `NEEDS_TYPE_2`. Section 5 of this document

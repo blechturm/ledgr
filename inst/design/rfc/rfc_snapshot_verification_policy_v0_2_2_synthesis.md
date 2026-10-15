@@ -1,5 +1,10 @@
 # Synthesis: Snapshot Verification Policy For v0.2.2
 
+Role: record; amended RFC-cycle synthesis and durable decision record.
+Status: amended 2026-10-13
+Authority: accepted synthesis as amended; binds only its stated scope.
+Amendments: 2026-10-13 [pre-CRAN legacy removal](rfc_pre_cran_legacy_removal_v0_2_2_synthesis.md) replaced the temporary legacy-readability boundary.
+
 **Status:** Accepted by the maintainer on 2026-10-12 after Codex's Type 1
 final review returned PASS_AFTER_PATCHES and all three patches were applied.
 Binding for WS5-A; implements as two ordered direct tickets; no further RFC.

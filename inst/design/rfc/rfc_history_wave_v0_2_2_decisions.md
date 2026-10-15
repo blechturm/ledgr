@@ -1,6 +1,11 @@
 # Decision Register: WS3/WS4 History Wave
 
-**Status:** Working register, opened 2026-10-08. Records the maintainer's
+Role: living; current decision register for the paused WS3/WS4 history wave.
+Status: working
+Authority: accepted maintainer decisions recorded here bind the later v11
+amendment; undecided rows and recommendations remain non-binding.
+
+Opened 2026-10-08. Records the maintainer's
 decision on every finding of the
 [Type 2 review](rfc_history_wave_v0_2_2_review.md) of the
 [proposal](rfc_history_wave_v0_2_2_proposal.md). Binds nothing until stage 3
@@ -14,6 +19,13 @@ LFB-017, LFB-023, LFB-018) is finished first (maintainer decision, recorded in
 the [macro plan change control](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-change-control)).
 This register is the single place to resume WS3/WS4; everything needed is
 linked below.
+
+The stage-3 amendment to
+[historical-projection v11](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
+is the first application-specific supersession carrier required by the
+[governance-lifecycle synthesis](rfc_governance_lifecycle_v0_2_2_synthesis.md)
+Sections 4 and 7. The history wave owns that amendment; this register does not
+apply it early.
 
 **Decided so far** (details in the rows):
 - Session 0: the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)

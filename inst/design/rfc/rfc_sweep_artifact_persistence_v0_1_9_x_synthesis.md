@@ -1,5 +1,9 @@
 # RFC Synthesis: Sweep Artifact Persistence For ledgr (v0.1.9.2)
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Binding synthesis for the v0.1.9.2 spec-packet cut.
 **Author:** Codex.
 **Date:** 2026-06-06.

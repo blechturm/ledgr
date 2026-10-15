@@ -1,5 +1,9 @@
 # RFC Synthesis: OMS Semantics For ledgr
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding for the future v0.2.x OMS data-model and lifecycle planning window; non-binding for v0.1.9, v0.1.9.x, and the public cost-model API window.
 **Date:** 2026-05-26
 **Source RFC:** `inst/design/rfc/rfc_ledgr_oms_seed.md`

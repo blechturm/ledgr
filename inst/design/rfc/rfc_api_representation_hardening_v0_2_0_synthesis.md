@@ -1,5 +1,9 @@
 # RFC Synthesis: Public API And Representation-Boundary Hardening
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-09 after Claude final review and one
 in-place patch set. Binding for the v0.2.0 hardening packet until superseded by a spec
 packet, contract, ADR, or architecture note.

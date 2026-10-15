@@ -1,5 +1,10 @@
 # RFC Synthesis: Walk-Forward Evaluation For ledgr
 
+Role: record; amended RFC-cycle synthesis and durable decision record.
+Status: amended 2026-06-04
+Authority: accepted synthesis as amended; binds only its stated scope.
+Amendments: 2026-06-04 [Amendment 1](#14-amendment-1-final-review) and [Amendment 2](#16-amendment-2-post-amendment-1-review).
+
 **Status:** Accepted synthesis with Amendment 1 and Amendment 2 (both 2026-06-04), gated by Section 17 ticket-cut matrix - binding for the v0.1.9.x walk-forward ticket cut.
 **Date:** 2026-05-27
 **Source RFC v1:** `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed.md`

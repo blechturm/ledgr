@@ -1,5 +1,9 @@
 # RFC Synthesis: API Naming Consistency And Surface Tightening
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted 2026-06-12. Final review passed 2026-06-12
 (APPROVED WITH PATCHES; see
 `rfc_api_naming_consistency_v0_1_9_5_final_review.md`). Binding for the

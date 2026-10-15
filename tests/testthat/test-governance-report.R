@@ -328,6 +328,48 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     1L
   )
 
+  stale_status <- copy_fixture()
+  on.exit(unlink(dirname(stale_status), recursive = TRUE), add = TRUE)
+  replace_once(
+    stale_status,
+    "inst/design/current_packet/README.md",
+    "Authority: fixture ticket cut.",
+    paste0(
+      "Authority: fixture ticket cut.\n",
+      "Amendments: 2026-10-14 [fixture amendment](README.md)."
+    )
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(stale_status), "stale_current_state"),
+    1L
+  )
+
+  stale_pipeline <- copy_fixture()
+  on.exit(unlink(dirname(stale_pipeline), recursive = TRUE), add = TRUE)
+  replace_once(
+    stale_pipeline,
+    "inst/design/rfc/pipeline.md",
+    "| Header normalization | active | Current packet |",
+    "| Header normalization | active | Paused until the next cut |"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(stale_pipeline), "stale_current_state"),
+    1L
+  )
+
+  obligation_route <- copy_fixture()
+  on.exit(unlink(dirname(obligation_route), recursive = TRUE), add = TRUE)
+  replace_once(
+    obligation_route,
+    "inst/design/rfc/pipeline.md",
+    "**Trigger:** reviewed fixture milestone.",
+    "**When:** reviewed fixture milestone."
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(obligation_route), "missing_obligation_routing"),
+    1L
+  )
+
   receiver <- copy_fixture()
   on.exit(unlink(dirname(receiver), recursive = TRUE), add = TRUE)
   replace_once(
@@ -364,6 +406,38 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   )
   testthat::expect_length(
     finding_line(run_fixture(rejected), "missing_rejection_reason"),
+    1L
+  )
+
+  bare_evidence <- copy_fixture()
+  on.exit(unlink(dirname(bare_evidence), recursive = TRUE), add = TRUE)
+  replace_once(
+    bare_evidence,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "inst/design/current_packet/README.md"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(bare_evidence), "malformed_ticket_evidence"),
+    1L
+  )
+
+  empirical_evidence <- copy_fixture()
+  on.exit(unlink(dirname(empirical_evidence), recursive = TRUE), add = TRUE)
+  replace_once(
+    empirical_evidence,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    paste0(
+      "Empirical: input fixture; result passed; ",
+      "inst/design/current_packet/README.md."
+    )
+  )
+  testthat::expect_length(
+    finding_line(
+      run_fixture(empirical_evidence),
+      "incomplete_empirical_evidence"
+    ),
     1L
   )
 

@@ -1,5 +1,9 @@
 # RFC Synthesis: Primitive Internals And Conditional collapse Acceleration
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding planning direction for v0.1.9 and
 later primitive-internals work. Does not amend the active v0.1.8.3 implementation
 packet.

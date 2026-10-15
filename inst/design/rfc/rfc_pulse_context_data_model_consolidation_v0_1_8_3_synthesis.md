@@ -1,5 +1,9 @@
 # RFC Synthesis: Pulse Context Data Model Consolidation
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding amendment for LDG-2413 and the
 v0.1.8.3 spec packet.
 **Date:** 2026-05-25

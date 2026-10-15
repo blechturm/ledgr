@@ -1,5 +1,9 @@
 # RFC Synthesis: Strategy Callback Contract Addendum (v0.1.8.10)
 
+Role: record; RFC-cycle synthesis awaiting final review.
+Status: under review
+Authority: non-binding until maintainer acceptance.
+
 **Status:** Synthesis. Binding artifact pending final review.
 **Cycle:** v0.1.8.10 single-core optimization round.
 **Synthesizes:** seed v1, response, seed v2.
