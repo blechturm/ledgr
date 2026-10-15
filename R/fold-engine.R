@@ -1149,6 +1149,120 @@ ledgr_fold_stage_plan <- function(
   )
 }
 
+ledgr_fold_stage_apply <- function(
+    fold_state,
+    services,
+    observation,
+    plan,
+    sample_telemetry,
+    sample_start) {
+  fold_state$current_stage <- "accounting"
+  pulse_idx <- observation$pulse_idx
+  accounting_events <- plan$accounting_events
+  output_handler <- services$output_handler
+  t_event <- 0
+  t_state <- 0
+
+  # Event emission and state mutation happen only after the private pulse plan
+  # is complete. Event order still follows the validated target vector so
+  # sweep and durable replay see the same canonical stream.
+  if (!is.null(services$corporate_action_plan) &&
+      pulse_idx < length(services$pulses_posix)) {
+    services$corporate_action_plan$bind_boundary(
+      pulse_idx + 1L,
+      ledgr_fold_positions_snapshot(
+        fold_state$positions,
+        services$instrument_ids
+      )
+    )
+  }
+  if (services$use_compiled_spot_fifo) {
+    compiled_fills <- ledgr_fold_pulse_plan_fill_intents(accounting_events)
+    if (length(compiled_fills) > 0L) {
+      if (sample_telemetry) sample_start <- ledgr_time_now()
+      batch <- ledgr_run_compiled_spot_fifo_batch(
+        run_id = services$run_id,
+        fills = compiled_fills,
+        state = ledgr_fold_state_value(fold_state),
+        instrument_ids = services$instrument_ids,
+        event_seq_start = fold_state$event_seq
+      )
+      fold_state$positions <- batch$positions
+      fold_state$cash <- batch$cash
+      fold_state$lot_state <- batch$lot_state
+      fold_state$event_seq <- batch$next_event_seq
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
+      output_handler$append_compiled_spot_batch(batch)
+      if (sample_telemetry) {
+        t_event <- t_event + ledgr_time_elapsed(sample_start, ledgr_time_now())
+      }
+    }
+  } else {
+    for (entry in accounting_events$fills) {
+      if (sample_telemetry) sample_start <- ledgr_time_now()
+      fill <- entry$fill
+      instrument_id <- entry$instrument_id
+      inst_idx <- entry$inst_idx
+      cur_qty <- entry$current_qty
+
+      lot_res <- ledgr_lot_apply_fill(
+        fold_state$lot_state,
+        instrument_id = instrument_id,
+        side = fill$side,
+        qty = fill$qty,
+        price = fill$fill_price,
+        fee = fill$fee
+      )
+      fold_state$lot_state <- lot_res$state
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
+
+      write_res <- output_handler$write_fill_events(
+        fill_intent = fill,
+        event_seq = fold_state$event_seq,
+        use_transaction = identical(services$event_mode, "live")
+      )
+      fold_state$event_seq <- write_res$next_event_seq
+      if (is.function(output_handler$record_accounting_fact)) {
+        output_handler$record_accounting_fact(
+          write_res = write_res,
+          lot_res = lot_res,
+          lot_state = fold_state$lot_state
+        )
+      }
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
+
+      qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
+      cash_delta <- if (identical(fill$side, "BUY")) {
+        -(fill$qty * fill$fill_price + fill$fee)
+      } else {
+        fill$qty * fill$fill_price - fill$fee
+      }
+      fold_state$positions[[inst_idx]] <- cur_qty + qty
+      fold_state$cash <- fold_state$cash + cash_delta
+      if (sample_telemetry) {
+        t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
+      }
+    }
+  }
+  list(
+    sample_start = sample_start,
+    t_event = t_event,
+    t_state = t_state
+  )
+}
+
 ledgr_execute_fold <- function(execution, output_handler) {
   ledgr_fold_envelope(execution, output_handler)
 }
@@ -1417,7 +1531,8 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     execution_opportunities_posix = execution_opportunities_posix,
     cost_resolver = cost_resolver,
     pulses_posix = pulses_posix,
-    use_compiled_spot_fifo = use_compiled_spot_fifo
+    use_compiled_spot_fifo = use_compiled_spot_fifo,
+    event_mode = event_mode
   )
 
   run_loop <- function() {
@@ -1556,96 +1671,17 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       t_target <- plan_result$t_target
       t_fill <- plan_result$t_fill
 
-      # Event emission and state mutation happen only after the private pulse
-      # plan is complete. Event order still follows the validated target vector
-      # so sweep and durable replay see the same canonical stream.
-      fold_state$current_stage <- "accounting"
-      if (!is.null(corporate_action_plan) && i < length(pulses_posix)) {
-        corporate_action_plan$bind_boundary(
-          i + 1L,
-          ledgr_fold_positions_snapshot(fold_state$positions, instrument_ids)
-        )
-      }
-      if (use_compiled_spot_fifo) {
-        compiled_fills <- ledgr_fold_pulse_plan_fill_intents(accounting_events)
-        if (length(compiled_fills) > 0L) {
-          if (sample_telemetry) sample_start <- ledgr_time_now()
-          batch <- ledgr_run_compiled_spot_fifo_batch(
-            run_id = run_id,
-            fills = compiled_fills,
-            state = ledgr_fold_state_value(fold_state),
-            instrument_ids = instrument_ids,
-            event_seq_start = fold_state$event_seq
-          )
-          fold_state$positions <- batch$positions
-          fold_state$cash <- batch$cash
-          fold_state$lot_state <- batch$lot_state
-          fold_state$event_seq <- batch$next_event_seq
-          if (sample_telemetry) {
-            sample_now <- ledgr_time_now()
-            t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
-            sample_start <- sample_now
-          }
-          output_handler$append_compiled_spot_batch(batch)
-          if (sample_telemetry) {
-            t_event <- t_event + ledgr_time_elapsed(sample_start, ledgr_time_now())
-          }
-        }
-      } else {
-        for (entry in accounting_events$fills) {
-          if (sample_telemetry) sample_start <- ledgr_time_now()
-          fill <- entry$fill
-          instrument_id <- entry$instrument_id
-          inst_idx <- entry$inst_idx
-          cur_qty <- entry$current_qty
-
-          lot_res <- ledgr_lot_apply_fill(
-            fold_state$lot_state,
-            instrument_id = instrument_id,
-            side = fill$side,
-            qty = fill$qty,
-            price = fill$fill_price,
-            fee = fill$fee
-          )
-          fold_state$lot_state <- lot_res$state
-          if (sample_telemetry) {
-            sample_now <- ledgr_time_now()
-            t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
-            sample_start <- sample_now
-          }
-
-          write_res <- output_handler$write_fill_events(
-            fill_intent = fill,
-            event_seq = fold_state$event_seq,
-            use_transaction = identical(event_mode, "live")
-          )
-          fold_state$event_seq <- write_res$next_event_seq
-          if (is.function(output_handler$record_accounting_fact)) {
-            output_handler$record_accounting_fact(
-              write_res = write_res,
-              lot_res = lot_res,
-              lot_state = fold_state$lot_state
-            )
-          }
-          if (sample_telemetry) {
-            sample_now <- ledgr_time_now()
-            t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
-            sample_start <- sample_now
-          }
-
-          qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
-          cash_delta <- if (identical(fill$side, "BUY")) {
-            -(fill$qty * fill$fill_price + fill$fee)
-          } else {
-            fill$qty * fill$fill_price - fill$fee
-          }
-          fold_state$positions[[inst_idx]] <- cur_qty + qty
-          fold_state$cash <- fold_state$cash + cash_delta
-          if (sample_telemetry) {
-            t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
-          }
-        }
-      }
+      apply_result <- ledgr_fold_stage_apply(
+        fold_state = fold_state,
+        services = services,
+        observation = observation,
+        plan = plan_result,
+        sample_telemetry = sample_telemetry,
+        sample_start = sample_start
+      )
+      sample_start <- apply_result$sample_start
+      t_event <- apply_result$t_event
+      t_state <- apply_result$t_state
 
       if (is.function(output_handler$flush_pulse_events)) {
         output_handler$flush_pulse_events()
