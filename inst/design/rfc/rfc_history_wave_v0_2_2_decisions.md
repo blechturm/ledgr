@@ -15,6 +15,14 @@ the [macro plan change control](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-chan
 This register is the single place to resume WS3/WS4; everything needed is
 linked below.
 
+**Current real-data input (2026-10-15):** the Cut 15 WS39
+[schema-120, rule-3 aggregate record](../../../dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md)
+is the pre-history Sharadar build. Its cold verification and full-membership
+plus dynamic-membership availability-path probes pass on one snapshot
+identity. It opens no schema-119 store and includes no dividend facts. Resume
+still waits for the macro plan's joint WS35-plus-WS39 acceptance gate; this
+implementation record does not open the wave by itself.
+
 **Decided so far** (details in the rows):
 - Session 0: the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)
   is the WS3 history API direction (`ledgr_history_frame()`,
@@ -48,10 +56,12 @@ release's headline), Session F (after the Sharadar census), and the
 remaining consider-level rows (one batch).
 
 **Next steps when resuming:**
-1. Sharadar track: eight adapter patches in `ledgr-research`, build the
-   1998-2026 snapshot, census (fact refusals, gap lengths after dropping
-   carried bars, delisting reasons, correction chains), end-to-end runs with
-   runtime and per-phase memory. Feeds B's gap thresholds, E's baseline, F.
+1. Sharadar track: start from the WS39 schema-120 snapshot record above, then
+   extend its aggregate build evidence with the history census (fact refusals,
+   gap lengths after dropping carried bars, delisting reasons, correction
+   chains) and end-to-end history runs with runtime and per-phase memory. Feeds
+   B's gap thresholds, E's baseline, F. The later dividend-facts rebuild stays
+   with its existing adapter/WS7 owner.
 2. Close stage 2, then stage 3 (one v11 amendment), 4 (Type 1 final review),
    5 (WS3/WS4 cut).
 
