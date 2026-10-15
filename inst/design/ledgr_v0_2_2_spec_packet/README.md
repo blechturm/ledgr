@@ -650,7 +650,8 @@ resumes.
 | Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates eight named typed phases without changing behavior or cost materially |
 | Product | 39 Private lake rebuild | LDG-3055 | the history wave receives one verified schema-120, rule-3 real-data store built from frozen inputs |
 
-Workstreams 32 and 36 are accepted. The governance guard remains report-only.
+Workstreams 32, 33, 34, 36 and 37 are accepted. The governance guard remains
+report-only.
 Feature retention is removed under schema 120 and identity rule 3, and
 surviving precomputed-feature identity binds deterministic captures and exact
 alias mappings. The final WS36 review returned PASS after its exact mutation
@@ -659,8 +660,8 @@ reproduced stale versus fresh equity of 100024 versus 100009. Its original
 remains an explicit 0.490-second MISS accepted by the maintainer without
 widening the bound or moving tests.
 
-Workstreams 33, 34 and 37 may now open independently. Workstream 35 follows 33
-and 34; product continues through 38 and 39. The public history
+Workstreams 35 and 38 may now open independently; product then continues to
+Workstream 39. The public history
 API, hydration and recursive-indicator semantics stay outside this cut. The
 later accepted release-line authority supersedes the RED probe's both-modes
 wording: [execution-core consolidation](macro_plan.md#execution-core-consolidation)
