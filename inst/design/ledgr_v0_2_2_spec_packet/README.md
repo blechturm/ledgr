@@ -1,8 +1,9 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cuts 1 through 14 are closed. Accepted Cut 15 contains sixteen
-tickets across Workstreams 32 through 39. Workstreams 32 and 36 may now open
-in parallel. It is the single pre-history boundary: apply the
+tickets across Workstreams 32 through 39. Workstreams 32 and 36 are accepted;
+Workstreams 33, 34 and 37 may now open in parallel. It is the single
+pre-history boundary: apply the
 accepted governance lifecycle, delete both failed feature-retention
 mechanisms under schema 120, remove two value-neutral strict-TTR costs,
 extract named fold phases and rebuild the private research lake. The design
@@ -630,7 +631,8 @@ complete accounting and the scope of the non-counted preparatory checkpoint.
 ## Cut 15: Pre-history foundations
 
 **Status:** Accepted and open. The maintainer accepted the corrected cut on
-2026-10-14 under M1; Workstreams 32 and 36 may start independently.
+2026-10-14 under M1. Workstreams 32 and 36 were accepted on 2026-10-15;
+Workstreams 33, 34 and 37 may now start independently.
 
 The cut applies decisions that are already settled; it does not design the
 history surface. Its two tracks may begin independently, then join for the
@@ -648,23 +650,17 @@ resumes.
 | Product | 38 Fold phase extraction | LDG-3052 to LDG-3054 | the fold loop delegates eight named typed phases without changing behavior or cost materially |
 | Product | 39 Private lake rebuild | LDG-3055 | the history wave receives one verified schema-120, rule-3 real-data store built from frozen inputs |
 
-Workstream 36 implementation is complete. Its Type 1 close review returned
-CHANGES_REQUIRED and is preserved in `close_review_36.md`. Focused re-review 1
-closed F2-F6 and the fingerprint half of F1, but returned CHANGES_REQUIRED for
-N1 and is preserved in `close_review_36_rereview_1.md`: `alias_map_hash` does
-not bind each alias to its concrete feature ID. Correction round 2 is limited
-to the per-candidate alias-map comparison and exact permutation witness, after
-which final N1-only focused re-review is required. Any further finding after
-that review escalates to the maintainer under M1. The closeout records the
-deletion, schema-120 and identity-rule-3 boundaries, direct-capture identity,
-acceptance evidence, test ledger, seven-shape walk and supported-toolchain
-verification; the original 106.110-second implementation pass and the
-correction's 112.490-second median MISS remain unchanged.
+Workstreams 32 and 36 are accepted. The governance guard remains report-only.
+Feature retention is removed under schema 120 and identity rule 3, and
+surviving precomputed-feature identity binds deterministic captures and exact
+alias mappings. The final WS36 review returned PASS after its exact mutation
+reproduced stale versus fresh equity of 100024 versus 100009. Its original
+106.110-second fast record passed; the correction median of 112.490 seconds
+remains an explicit 0.490-second MISS accepted by the maintainer without
+widening the bound or moving tests.
 
-Workstreams 32 and 36 open independently. Workstream 34 follows 32 and
-Workstream 37 follows 36. Workstream 33 waits for both 32 and all of Workstream
-36, so its contract pass sees the final current product. Workstream
-35 follows 33 and 34; product continues through 38 and 39. The public history
+Workstreams 33, 34 and 37 may now open independently. Workstream 35 follows 33
+and 34; product continues through 38 and 39. The public history
 API, hydration and recursive-indicator semantics stay outside this cut. The
 RED one-execution-mode result requires the later history implementation to
 support both dense and availability modes. LFB-028 remains the later opt-in
