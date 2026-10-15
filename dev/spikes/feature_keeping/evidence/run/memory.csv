@@ -1,0 +1,2 @@
+"scale","n_instruments","n_sessions","expected_values","cache_entries","cache_values","cache_bytes","rss_start","rss_after_bars","rss_after_seal_gc","rss_after_run_gc","run_seconds","total_seconds","result_hash","status","note"
+"full",1166,7213,8410358,1166,8410358,67749472,256905216,1690161152,1594167296,1266434048,12.28,200.86,"f9e8c9654cda03a6d9c4d876ac9ec62973f59e1d50890fc922bbd35b6e2a9169","ok",

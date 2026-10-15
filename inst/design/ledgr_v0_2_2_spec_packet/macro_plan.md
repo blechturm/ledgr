@@ -1,12 +1,12 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-13 are complete and accepted. Draft Cut 14 owns the accepted pre-CRAN legacy
-removal and its codebase-hygiene amendment; its cut-review corrections await
-focused re-review before implementation. The interim rule-3 lake rebuild and
-one-execution-mode probe then precede the point-in-time history (WS3) and
-recursive-indicator (WS4) implementation cut. Their shared history-start
-decision replaces Cut 9's temporary rule.
+14 are complete and accepted. Draft Cut 15 owns the remaining pre-history
+foundations: governance consolidation, feature-retention deletion, strict-TTR
+cleanup, fold-phase extraction and the current private-lake rebuild. Governance
+and product work start independently, then join for the post-schema contract
+pass. The WS3/WS4 history wave resumes only after both Cut 15 tracks close.
+Its shared history-start decision replaces Cut 9's temporary rule.
 
 **Date:** 2026-10-03
 
@@ -882,10 +882,10 @@ workstreams each carry one claim and one Type 1 close review:
 4. Records: synthesis status headers, the packet `README.md` trim and the
    evidence form for open tickets.
 
-The cut also decides whether the design tree moves out of `inst/` to a
-repository-level directory (maintainer, 2026-10-14). Cut 14 Workstream 31
-already excludes it from the package build, so this is a naming and
-location decision, about 900 path references, not a size fix.
+The design tree stays under `inst/design` (maintainer, 2026-10-14). Cut 14
+Workstream 31 already excludes it from the package build, so moving about 900
+path references would be naming churn rather than a size or product fix. Cut
+15 Workstream 34 records and verifies that boundary without relocating it.
 
 Two parts of the synthesis do not wait for this cut. M1 (the 0.5 gate is
 retired; the ratio of independent verdicts to completed tickets is recorded
@@ -1113,3 +1113,46 @@ linear R loops with large constants:
   WS4. It decides what a strict window means for TTR indicators: for SMA
   the difference is rounding, for recursive indicators such as EMA it is
   warm-up semantics.
+
+2026-10-14 feature-keeping spike result: red. The registered decision is in the
+[feature-keeping closeout](../spikes/feature_keeping_spike/closeout.md), with
+the runnable record in `dev/spikes/feature_keeping/`.
+The in-process cache saved 38.6 percent in its contrived best case (the second
+identical run in one process), but it silently reused stale feature values
+after a captured variable changed, provided no reuse across a repeated
+five-fold walk-forward, and retained 67.75 MB for one feature at the measured
+1,166-instrument by 7,213-session shape. Durable feature persistence wrote
+40,000 rows on the timing fixture, moved the median run from 3.52 s to 3.56 s,
+and has no named public result consumer. Both mechanisms therefore fail their
+predeclared retention conditions.
+
+The combined pre-history cut gets one deletion workstream for the feature
+cache, its telemetry, `persist_features` and the durable feature-row writes.
+Economic outputs remain byte-identical and removal detectors must prove the
+old retention paths are gone. Explicit precomputed-feature objects survive,
+however, and their current feature fingerprint ignores captured values. A
+review probe changed a captured dependency and silently reused stale values.
+Cut 15 LDG-3056 therefore binds deterministic captures in indicator and
+feature fingerprints, invalidates stale precomputed payloads and closes that
+WS5-B identity obligation. LFB-028 remains the later, separate question of an
+opt-in factor/prediction evidence surface after history panels exist; it does
+not preserve the current `features` table.
+
+2026-10-14 maintainer amendment, Cut 15 ownership and design-tree decision:
+the combined pre-history work is Cut 15 in `tickets.yml`, Workstreams 32 through
+39. Governance applies the accepted lifecycle through rules and a report-only
+guard, current contracts and bridges, planning front doors and horizon, then
+record normalization. Product work deletes both current feature-retention
+mechanisms under schema 120 and identity rule 3, binds deterministic captures
+in the surviving precomputed-feature identity, performs the bounded strict-TTR
+cleanup, extracts
+the named fold phases and rebuilds the private research lake from the final
+tree. Workstreams 32 and 36 open independently; the contract pass waits for
+schema 120 so it describes the final current product. The history wave resumes
+only after Workstreams 35 and 39 are accepted.
+
+The design tree stays under `inst/design`. Cut 14 already excludes it from
+built packages, so moving roughly 900 references would add repository churn
+without improving the package, governance model or next research result. The
+governance work records and tests that boundary; it does not relocate, copy or
+alias the tree.

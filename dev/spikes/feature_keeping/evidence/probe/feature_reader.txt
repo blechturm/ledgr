@@ -1,0 +1,1 @@
+ledgr_invalid_result_table: `ledgr_results()` does not support `what = "features"`. Feature values are pulse-time data; inspect them with `ledgr_pulse_snapshot()` and `ledgr_pulse_features()` or `ledgr_pulse_wide()`.
