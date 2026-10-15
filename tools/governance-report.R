@@ -975,6 +975,186 @@ governance_claim_warnings <- function(claims, source = "tests/claims.yml") {
   governance_bind_findings(rows)
 }
 
+governance_horizon_headings <- function(lines, section = NULL) {
+  first <- 1L
+  last <- length(lines)
+  if (!is.null(section)) {
+    start <- which(lines == paste0("## ", section))
+    if (length(start) != 1L) {
+      return(data.frame(
+        heading = character(), line = integer(), stringsAsFactors = FALSE
+      ))
+    }
+    first <- start + 1L
+    later <- which(seq_along(lines) > start & grepl("^## ", lines))
+    last <- if (length(later)) later[[1L]] - 1L else length(lines)
+  }
+  indexes <- seq.int(first, last)
+  keep <- grepl("^### [0-9]{4}-[0-9]{2}-[0-9]{2} ", lines[indexes])
+  data.frame(
+    heading = sub("^### ", "", lines[indexes[keep]]),
+    line = indexes[keep],
+    stringsAsFactors = FALSE
+  )
+}
+
+governance_horizon_archived_bodies <- function(lines) {
+  headings <- governance_horizon_headings(lines)
+  if (!nrow(headings)) {
+    headings$has_body <- logical()
+    return(headings)
+  }
+  headings$has_body <- vapply(seq_len(nrow(headings)), function(i) {
+    first <- headings$line[[i]] + 1L
+    later <- which(
+      seq_along(lines) >= first &
+        grepl(
+          paste0(
+            "^###[[:space:]]+|^##[[:space:]]+|^<a[[:space:]]|",
+            "^\\[Back to classification\\]"
+          ),
+          lines
+        )
+    )
+    last <- if (length(later)) later[[1L]] - 1L else length(lines)
+    if (first > last) {
+      return(FALSE)
+    }
+    body <- trimws(lines[seq.int(first, last)])
+    body <- body[
+      nzchar(body) &
+        !grepl("^<a[[:space:]]", body) &
+        !grepl("^#{1,6}[[:space:]]+", body) &
+        !grepl("^\\*\\*Disposition:\\*\\*", body) &
+        !grepl("^\\[Back to classification\\]", body)
+    ]
+    length(body) > 0L
+  }, logical(1L))
+  headings
+}
+
+governance_horizon_classification <- function(lines) {
+  indexes <- grep("^\\| H[0-9]{3} \\|", lines)
+  rows <- lapply(indexes, function(i) {
+    cells <- trimws(strsplit(lines[[i]], "|", fixed = TRUE)[[1L]])
+    if (length(cells) < 6L ||
+        !(cells[[4L]] %in% c("shipped", "superseded", "promoted", "genuine"))) {
+      return(NULL)
+    }
+    data.frame(
+      id = cells[[2L]],
+      heading = cells[[3L]],
+      class = cells[[4L]],
+      line = i,
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1L))]
+  if (!length(rows)) {
+    return(data.frame(
+      id = character(), heading = character(), class = character(),
+      line = integer(), stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
+}
+
+governance_scan_horizon <- function(root, sources, current_packet) {
+  horizon_source <- "inst/design/horizon.md"
+  archive_source <- "inst/design/horizon_archive.md"
+  classification_source <- paste0(
+    current_packet, "/horizon_open_classification.md"
+  )
+  relevant <- c(horizon_source, archive_source, classification_source)
+  if (!any(relevant %in% sources)) {
+    return(governance_empty_findings())
+  }
+  read_if_present <- function(source) {
+    if (source %in% sources) governance_read_lines(file.path(root, source)) else character()
+  }
+  horizon <- read_if_present(horizon_source)
+  archive <- read_if_present(archive_source)
+  classification_lines <- read_if_present(classification_source)
+  open <- governance_horizon_headings(horizon, "Open")
+  redirects <- governance_horizon_headings(horizon, "Historical redirects")
+  archived <- governance_horizon_archived_bodies(archive)
+  classification <- governance_horizon_classification(classification_lines)
+  findings <- list()
+
+  if (horizon_source %in% sources && sum(horizon == "## Open") != 1L) {
+    findings[[length(findings) + 1L]] <- governance_finding(
+      "structural", "missing_horizon_open_section",
+      horizon_source, 1L, "## Open",
+      "horizon.md must contain exactly one structural Open section"
+    )
+  }
+  classification_header <-
+    "| ID | Original heading | Class | Evidence | Destination |"
+  classification_delimiter <- "| --- | --- | --- | --- | --- |"
+  table_header <- which(classification_lines == classification_header)
+  table_ok <- length(table_header) == 1L &&
+    table_header[[1L]] < length(classification_lines) &&
+    identical(
+      classification_lines[[table_header[[1L]] + 1L]],
+      classification_delimiter
+    )
+  if (classification_source %in% sources && !table_ok) {
+    findings[[length(findings) + 1L]] <- governance_finding(
+      "structural", "missing_horizon_classification_table",
+      classification_source, 1L, classification_header,
+      "current packet must contain the exact horizon classification table"
+    )
+  }
+
+  duplicate <- duplicated(classification$heading) |
+    duplicated(classification$heading, fromLast = TRUE)
+  for (i in which(duplicate)) {
+    findings[[length(findings) + 1L]] <- governance_finding(
+      "structural", "duplicate_horizon_classification",
+      classification_source, classification$line[[i]],
+      classification$heading[[i]],
+      "classification table contains the same original Open heading more than once"
+    )
+  }
+  for (i in seq_len(nrow(open))) {
+    match <- which(classification$heading == open$heading[[i]])
+    if (!length(match)) {
+      findings[[length(findings) + 1L]] <- governance_finding(
+        "structural", "unclassified_horizon_open",
+        horizon_source, open$line[[i]], open$heading[[i]],
+        "dated Open entry has no row in the current packet classification table"
+      )
+    } else if (any(classification$class[match] != "genuine") ||
+               open$heading[[i]] %in% archived$heading) {
+      findings[[length(findings) + 1L]] <- governance_finding(
+        "structural", "archived_horizon_body_current",
+        horizon_source, open$line[[i]], open$heading[[i]],
+        "an archived or non-genuine entry is presented as current Open parking"
+      )
+    }
+  }
+  moved <- classification[classification$class != "genuine", , drop = FALSE]
+  for (i in seq_len(nrow(moved))) {
+    if (!(moved$heading[[i]] %in% redirects$heading)) {
+      findings[[length(findings) + 1L]] <- governance_finding(
+        "structural", "missing_horizon_redirect",
+        classification_source, moved$line[[i]], moved$heading[[i]],
+        "non-genuine Open entry has no exact-heading Historical redirects stub"
+      )
+    }
+    archived_match <- which(archived$heading == moved$heading[[i]])
+    if (!length(archived_match) ||
+        !any(archived$has_body[archived_match])) {
+      findings[[length(findings) + 1L]] <- governance_finding(
+        "structural", "missing_horizon_archive_body",
+        classification_source, moved$line[[i]], moved$heading[[i]],
+        "non-genuine Open entry has no preserved nonempty body in horizon_archive.md"
+      )
+    }
+  }
+  governance_bind_findings(findings)
+}
+
 governance_sha256_lines <- function(lines) {
   bytes <- charToRaw(enc2utf8(paste0(paste(lines, collapse = "\n"), "\n")))
   digest::digest(bytes, algo = "sha256", serialize = FALSE)
@@ -1120,6 +1300,7 @@ governance_report <- function(root, baseline_path, claims_path,
     governance_scan_headers(root, sources),
     governance_scan_mappings(root, sources),
     governance_scan_states_and_verdicts(root, sources),
+    governance_scan_horizon(root, sources, current_packet),
     governance_claim_warnings(claims, claims_input)
   ))
   findings <- governance_apply_baseline(findings, baseline)

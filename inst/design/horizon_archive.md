@@ -3031,6 +3031,315 @@ and the strategy callback are not the lead buckets on these shapes.
 This entry records direction, not committed work.
 
 
+## Workstream 34 classified Open bodies
+
+The following bodies moved from `horizon.md` during LDG-3046. Their
+[classification table](ledgr_v0_2_2_spec_packet/horizon_open_classification.md) records current
+navigation. The text below is historical evidence, not active parking.
+
+<a id="ws34-open-006"></a>
+
+**Disposition:** promoted. Current owner:
+[post-gate live routes](ledgr_v0_2_2_spec_packet/macro_plan.md#post-gate-live-routes).
+
+### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
+
+The Sharadar adapter in ledgr-research emits no corporate-action facts, so
+every Sharadar result states "dividends excluded" (audit G-016, LFB-013).
+The macro plan's 2026-10-12 routing amendment rebuilds the lake once, under
+hash rule 3 and with dividend facts, after Cut 13 and the WS3/WS4 cut and
+before WS7. This note records what that mapping needs, so it is not
+rediscovered then.
+
+1. Three vendor facts decide everything and are not recorded anywhere in
+   this repository: whether the actions table's `date` is the ex-date only,
+   with no declared or record date; whether a dividend `value` is per
+   as-traded share or already split-adjusted; and which action types are
+   cash (`dividend`, special dividends) rather than splits, spin-offs or
+   mergers. Write the answers into the adapter's build notes first.
+2. One row per cash dividend through `ledgr_facts_equity_corporate_actions()`:
+   `subtype = "ordinary_cash_dividend"`, `complete = TRUE`,
+   `gross_cash_validated = TRUE`, `gross_cash_per_parent_unit` in the lake's
+   unit basis, `parent_instrument_id` equal to the id the bars and lifetime
+   facts use, `entitlement_time` and `effective_time` both the ex-date's
+   session close in UTC, `payment_time` optional, `provenance_tier =
+   "upstream_vintage_bound"` with the adapter's `upstream_build_id` and a
+   `bar_vintage_id`, and a `fact_id` stable across rebuilds (ticker, ex-date,
+   amount). Splits are not mapped because the bars are split-adjusted.
+   Mergers and spin-offs stay out of the first mapping and are disclosed,
+   not entered as incomplete rows.
+3. `knowledge_time` must not be `NA`: cash is due at the later of the
+   posting pulse and the knowledge pulse (`R/corporate-action-settlement.R`,
+   `cash_due_idx`), and a missing knowledge index never posts (audit
+   S2-003). The vendor supplies no declaration date, so set it equal to
+   `entitlement_time`, the history wave's "known when effective, disclosed"
+   assumption (register D1-F7) applied by hand until ledgr binds it, and say
+   so in the build notes.
+4. The lake declares `split_adjusted`, so held quantities are in post-split
+   units. A dividend declared per share before a later split must be
+   divided by the cumulative later split factor unless the vendor already
+   does that. Check one name with a large split and dividends on both sides.
+5. Seal under rule 3 after Cut 13 lands; the builder refuses duplicates and
+   bad clocks.
+6. Run the G-025 buy-and-hold reconciliation against the vendor's
+   `closeadj` on a few tickers immediately after the rebuild, not as WS8's
+   last item. ledgr credits cash and does not reinvest, so compare the
+   implied dividend stream or a reinvesting strategy, not raw equity.
+
+This entry authorizes no adapter change, fact, ticket or release
+commitment; LFB-013 in ledgr-research remains the research-side home.
+
+
+[Back to classification](ledgr_v0_2_2_spec_packet/horizon_open_classification.md#classification-table).
+
+<a id="ws34-open-009"></a>
+
+**Disposition:** promoted. Current owner:
+[execution-core consolidation](ledgr_v0_2_2_spec_packet/macro_plan.md#execution-core-consolidation).
+
+### 2026-10-11 [execution] One execution mode: dense as a special case of availability
+
+ledgr runs in two modes that share the fold core but diverge at the edges. A
+dense run takes its pulses from the bars and requires every instrument on
+every pulse; an availability-aware run takes its pulses from a declared
+session calendar and handles missing bars, stale marks, membership, lifetime
+and typed stops. Cut 12 found most of its consistency defects on that
+boundary:
+
+- a dense run has no `INCOMPLETE` state or completion record, so a strict
+  corporate-action refusal still aborts there while an availability run stops
+  typed (LDG-2997);
+- an acquisition never acts in a dense run, because dispositions live on the
+  availability path (LDG-2996);
+- `ledgr_backtest()` runs dense on a point-in-time snapshot and uses bars the
+  availability path excludes (LDG-3001, LDG-3011);
+- run, sweep and window entry points differ in calendar and history-start
+  rules.
+
+Each new guarantee is built twice or carved out for dense. The observation: a
+dense experiment could be an availability-aware experiment with an implied
+calendar (the bars' own timestamps), full membership, no lifetime facts and a
+valuation policy that never needs a stale mark. ledgr would then have one
+calendar rule, one completion model, one stop vocabulary and one
+corporate-action path.
+
+Questions to settle before any design: whether dense identity survives (the
+asset-availability synthesis makes canonical omission the identity of dense
+mode, so config and snapshot hashes may move); the clock cost of the
+availability decision path on dense workloads and the peer benchmark; what an
+implied calendar means for irregular or intraday bars; and whether
+`ledgr_backtest()` stays as a convenience wrapper. A first spike would run the
+dense fixtures through the availability path with an implied calendar and
+compare outputs and clocks. This entry authorizes no API, schema, ticket or
+release commitment.
+
+**The probe, shaped under `spike_protocol.md` (maintainer, 2026-10-12).**
+The 2026-10-12 architecture entry above ranks this unification as the first
+of four levers that make the package lighter, and the maintainer agreed it
+is major but probably necessary. Before any charter, one probe decides
+whether it is a deletion or a redesign:
+
+- Question: do the registered dense fixtures produce byte-identical fills,
+  ledger, equity, positions and metrics when run through the availability
+  path with an implied calendar (the bars' own timestamps), full
+  membership, no lifetime or corporate-action facts and a valuation policy
+  that never needs a stale mark?
+- Cheaper prerequisite: can an implied session calendar be built from a
+  dense snapshot's bar timestamps without a sessions fact family, so that
+  no fact is sealed and the snapshot root does not move?
+- Runnable core first: `dev/spikes/one_execution_mode/probe.R` runs the
+  peer fixture and the long-window dense fixtures both ways and diffs the
+  result surfaces; expected rows and the checker come only after that run.
+  At most ten cases, generated by what the first run fails.
+- Kill conditions, either one: a dense result that cannot be reproduced
+  through the availability path without a dense-only branch inside the
+  fold, the context or the guard; or the dense peer fixture materially
+  slower on the availability path, because the fast prepared context
+  (`use_fast_context <- !availability_active`, `R/backtest-runner.R:977`)
+  cannot be made availability-aware at no material cost. The first means
+  the unification is a redesign and needs an RFC; the second means it would
+  make the common case slow, the drift the execution-gap entry describes
+  (review, 2026-10-12: the clock is a kill condition, not evidence).
+- One required case: a dense fixture with one missing bar. Dense refuses it
+  today; through an implied calendar it could quietly become a stale mark
+  or a skip. The strictness must survive as the explicit policy choice,
+  "never stale" meaning refuse, or dense results change meaning with no
+  visible error (review, 2026-10-12).
+- Supporting evidence: whether dense config and snapshot identity move.
+  After the pre-CRAN legacy-removal cut an identity move costs a version
+  and fingerprint bump plus a lake rebuild, so it is cheap if landed with
+  another format change.
+
+If green, the removal lands as parity-gated slices, each one workstream:
+the pulse calendar, the context, the guard and reconstruction, then
+`ledgr_backtest()` as a thin alias or deleted. Unification stays after the
+WS3/WS4 history wave, per the roadmap row "Post-v0.2.2 execution-core
+consolidation". Decided by the maintainer on 2026-10-12, after the review's
+proposal: the probe itself runs in v0.2.2, between the legacy-removal cut
+and the WS3/WS4 implementation cut, so that if it is green WS3/WS4 build
+history on the availability path only and leave dense to the unification,
+instead of building history for both modes and deleting half later, and if
+it is red the history cut knows it serves two modes and the unification
+becomes an RFC. The macro plan's change control records the order; the
+probe binds nothing and the unification decision stays post-v0.2.2.
+The probe binds nothing.
+
+[Back to classification](ledgr_v0_2_2_spec_packet/horizon_open_classification.md#classification-table).
+
+<a id="ws34-open-015"></a>
+
+**Disposition:** promoted. Current owner:
+[research findings index](research/ledgr-research-findings-index.md).
+
+### 2026-10-02 [research] Research-side findings index and the EXP-0003 handoff
+
+`inst/design/research/ledgr-research-findings-index.md` lists every ledgr
+finding from the research repository that is not yet closed, and the
+ledgr entry that owns it: the LFB register, synced at a fixed private
+commit. Read it before working in an area a finding touches.
+
+The loop has two halves:
+
+- a ticket that takes a finding cites its `LFB-###`;
+- the research side then records the ticket in the finding's register
+  entry.
+
+Each new handoff re-syncs the index.
+
+The 2026-10-02 handoff is
+`inst/design/research/Sharadar-Long-Window-Usability-Evidence.md`.
+EXP-0003 exercised the public surface on 30 years of point-in-time S&P 500
+data. It found the surface mechanically sound, and long-window research
+blocked three ways:
+
+1. **Terminal stops (LFB-011).** No run passed 6.2% of the window, and
+   sweep selection and walk-forward had no completed candidates.
+2. **Gap fragility (LFB-017).** One member without a current close
+   aborted the documented rebalance pipeline.
+3. **Availability-aware feature cost (LFB-024 to LFB-026).**
+
+The performance causes are already routed by
+`dev/bench/notes/long_window_scaling_findings.md`. The behavioural findings
+LFB-017 to LFB-023 have vendor-neutral reproducers on the research side.
+Four have no ledgr home yet: LFB-018, LFB-019, LFB-020 and LFB-021 (see
+the index). Whether they need one is the maintainer's call.
+
+This entry authorizes no implementation, spike or RFC.
+
+
+[Back to classification](ledgr_v0_2_2_spec_packet/horizon_open_classification.md#classification-table).
+
+<a id="ws34-open-022"></a>
+
+**Disposition:** shipped. Current evidence:
+[Cut 9 closeout](ledgr_v0_2_0_2_spec_packet/availability_accessors_closeout.md#what-shipped).
+
+### 2026-09-25 [ux] Availability evidence has no convenient reader
+
+Writing the missing-data article surfaced two accessor gaps. Both are
+convenience only: the evidence is already persisted and hash-bound, and the
+article works around each in one line. They are recorded here rather than
+solved with boilerplate in the vignette, per the styleguide rule that clutter
+in a worked example is the API asking for a helper.
+
+**Quarantined observations have no reader.** `invalid_observations =
+"quarantine"` sets rows aside with a reason into
+`snapshot_observation_quarantine`, but nothing exposes them. The article opens
+the store with `ledgr_db_init()` and issues SQL. A user who admits a panel
+this way cannot see what was excluded without knowing the table name. Shape:
+one reader taking a snapshot and returning the quarantined rows, alongside the
+existing `ledgr_snapshot_info()`.
+
+**`ledgr_run_explain()` answers one timestamp per call.** Its signature is
+`(bt, instrument_id, ts_utc)` and `ts_utc` is required, so "what happened to
+this instrument across the run" needs a loop over sessions. The article asks
+about two chosen sessions instead, which is fine for teaching and wrong for
+diagnosis. Shape: make `ts_utc` optional and return every decision row for the
+instrument, which is how the underlying evidence is already stored.
+
+**Completion evidence is assembled by hand.** A stopped run reports
+`status`, `completion_status`, `stop_reason` and `complete_performance` as
+four fields among the fifty-two that `ledgr_run_info()` returns. There is no
+summary object for "did this run cover the window I asked for, and if not
+why". The article prints three fields in sequence. Shape: one completion
+accessor, or a `summary()` section, that answers the question in one call.
+
+**Every strategy hand-rolls its own eligibility test.** An availability-aware
+strategy cannot set a single target before intersecting the `admissible` and
+`priced` planes and indexing `id` by the result. That is four lines of plumbing
+in front of every strategy, and it is the same four lines every time. Shape:
+`ctx$tradable()` beside the existing `ctx$flat()` and `ctx$hold()`, returning
+the identifiers the strategy may size at this pulse, and composing into
+`ledgr_weight_equal()` and `ledgr_target_rebalance()`.
+
+Route: cut 9, workstream 16, LDG-2826 through LDG-2830, cut 2026-09-25. None
+of the four changes a contract; each adds a reader or a selector over evidence
+that already exists.
+
+[Back to classification](ledgr_v0_2_2_spec_packet/horizon_open_classification.md#classification-table).
+
+<a id="ws34-open-044"></a>
+
+**Disposition:** shipped. Current evidence: `.Rbuildignore` and
+`tests/testthat/test-build-boundary.R`.
+
+### 2026-06-04 [infrastructure] Installed design-tree footprint review
+
+The v0.1.8.11 `inst/` audit kept `inst/design/architecture/` package-included
+as installed design authority and removed only reviewed dead placeholders under
+`inst/diagrams/`, `inst/examples/`, and `inst/schemas/`. A larger question
+remains uncommitted: how much of the full `inst/design/` governance tree should
+ship in installed packages, especially spec packets, RFCs, ADRs, audits, and
+contracts. The current package treats installed design material as part of the
+research-software evidence surface, but that may carry unnecessary install
+footprint for end users. Future work should audit the installed design tree as
+a whole, decide which documents are package authority versus source-repo
+provenance only, and update `.Rbuildignore` only with an explicit contract for
+what installed users can rely on.
+
+
+[Back to classification](ledgr_v0_2_2_spec_packet/horizon_open_classification.md#classification-table).
+
+<a id="ws34-open-049"></a>
+
+**Disposition:** superseded. Current owners: the accepted strategy-context
+and strategy-authoring syntheses cited by the body.
+
+### 2026-05-26 [ux] Tidy/vectorized strategy authoring layer
+
+Active parameterized feature aliases give strategies stable column names such
+as `fast` and `slow`. That may eventually support a tidy or vectorized
+strategy-authoring layer for stateless, cross-sectional pulse logic.
+
+Possible future shape:
+
+```r
+strategy <- ledgr_vector_strategy(function(features, ctx, params) {
+  transform(features, target = ifelse(fast > slow, params$qty, 0))
+})
+```
+
+or a more ledgr-native signal wrapper that maps row-wise feature predicates to
+a full named target vector.
+
+This should not replace the core `function(ctx, params)` strategy contract.
+It is only appropriate for strategies that read current pulse data, compute
+row-wise instrument targets, and do not require arbitrary per-instrument
+control flow, order-dependent allocation, or custom state mutation. Active
+aliases and grid helpers have since stabilized (v0.1.8.4); the 2026-06-01
+paired strategy callback contract + authoring helpers synthesis (this file)
+binds a different surface for the same authoring intent: the `ctx$vec`
+universe-aligned vector namespace plus the existing `signal_return` /
+`select_top_n` / `weight_equal` / `target_rebalance` exported pipeline.
+Treat this entry as a superseded earlier sketch of the same direction; the
+two RFC synthesis documents are the binding designs going forward.
+
+
+[Back to classification](ledgr_v0_2_2_spec_packet/horizon_open_classification.md#classification-table).
+
+
+## Open-entry bodies archived by Workstream 4 (continued)
+
 <a id="open-076"></a>
 
 ### 2026-05-31 [optimization] LDG-2476 peer-benchmark turnover cost decomposition

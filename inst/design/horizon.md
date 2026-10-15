@@ -301,52 +301,11 @@ rebuild, so land it in the same release as another format change to save a
 rebuild (review, 2026-10-12). This entry records a direction; it
 authorizes no API, schema, ticket or release commitment.
 
-### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
-
-The Sharadar adapter in ledgr-research emits no corporate-action facts, so
-every Sharadar result states "dividends excluded" (audit G-016, LFB-013).
-The macro plan's 2026-10-12 routing amendment rebuilds the lake once, under
-hash rule 3 and with dividend facts, after Cut 13 and the WS3/WS4 cut and
-before WS7. This note records what that mapping needs, so it is not
-rediscovered then.
-
-1. Three vendor facts decide everything and are not recorded anywhere in
-   this repository: whether the actions table's `date` is the ex-date only,
-   with no declared or record date; whether a dividend `value` is per
-   as-traded share or already split-adjusted; and which action types are
-   cash (`dividend`, special dividends) rather than splits, spin-offs or
-   mergers. Write the answers into the adapter's build notes first.
-2. One row per cash dividend through `ledgr_facts_equity_corporate_actions()`:
-   `subtype = "ordinary_cash_dividend"`, `complete = TRUE`,
-   `gross_cash_validated = TRUE`, `gross_cash_per_parent_unit` in the lake's
-   unit basis, `parent_instrument_id` equal to the id the bars and lifetime
-   facts use, `entitlement_time` and `effective_time` both the ex-date's
-   session close in UTC, `payment_time` optional, `provenance_tier =
-   "upstream_vintage_bound"` with the adapter's `upstream_build_id` and a
-   `bar_vintage_id`, and a `fact_id` stable across rebuilds (ticker, ex-date,
-   amount). Splits are not mapped because the bars are split-adjusted.
-   Mergers and spin-offs stay out of the first mapping and are disclosed,
-   not entered as incomplete rows.
-3. `knowledge_time` must not be `NA`: cash is due at the later of the
-   posting pulse and the knowledge pulse (`R/corporate-action-settlement.R`,
-   `cash_due_idx`), and a missing knowledge index never posts (audit
-   S2-003). The vendor supplies no declaration date, so set it equal to
-   `entitlement_time`, the history wave's "known when effective, disclosed"
-   assumption (register D1-F7) applied by hand until ledgr binds it, and say
-   so in the build notes.
-4. The lake declares `split_adjusted`, so held quantities are in post-split
-   units. A dividend declared per share before a later split must be
-   divided by the cumulative later split factor unless the vendor already
-   does that. Check one name with a large split and dividends on both sides.
-5. Seal under rule 3 after Cut 13 lands; the builder refuses duplicates and
-   bad clocks.
-6. Run the G-025 buy-and-hold reconciliation against the vendor's
-   `closeadj` on a few tickers immediately after the rebuild, not as WS8's
-   last item. ledgr credits cash and does not reinvest, so compare the
-   implied dividend stream or a reinvesting strategy, not raw equity.
-
-This entry authorizes no adapter change, fact, ticket or release
-commitment; LFB-013 in ledgr-research remains the research-side home.
+Current-state route (later accepted release-line authority `4397f58f`): lever
+1 is now committed before first CRAN and owned by
+[execution-core consolidation](ledgr_v0_2_2_spec_packet/macro_plan.md#execution-core-consolidation).
+The output-handler, result-reader and defensive-code questions remain parked
+here with their own triggers.
 
 ### 2026-10-12 [execution] Close the gap between the committed run and the ephemeral sweep
 
@@ -370,8 +329,9 @@ Three levers were visible on 2026-10-12, in order of least semantic risk:
    Workstream 6 fill-event flush
    (`ledgr_v0_2_2_spec_packet/writer_scaling_closeout.md`) shipped after the
    record, so the remaining gap must be re-measured on the v0.2.2 record
-   before any lever is sized. The roadmap's "one store connection per
-   composite call" row touches the same boundary.
+   before any lever is sized. [Macro-plan Section 5](ledgr_v0_2_2_spec_packet/macro_plan.md#5-explicit-non-goals)
+   retains one store connection per composite public call as non-gating work
+   on the same boundary.
 3. The compiled accounting model for committed runs. `ledgr_run()` refuses
    `compiled_accounting_model = "spot_fifo"`, so the 4x engine result exists
    only on the ephemeral sweep. Widening it is owned by the compiled-execution
@@ -405,93 +365,6 @@ checks. The open question is cost on large snapshots (the anti-join runs at
 read time) and whether the supplied row's extra columns, which only the stored
 record keeps, matter to anyone. This entry authorizes no API, schema, ticket
 or release commitment.
-
-### 2026-10-11 [execution] One execution mode: dense as a special case of availability
-
-ledgr runs in two modes that share the fold core but diverge at the edges. A
-dense run takes its pulses from the bars and requires every instrument on
-every pulse; an availability-aware run takes its pulses from a declared
-session calendar and handles missing bars, stale marks, membership, lifetime
-and typed stops. Cut 12 found most of its consistency defects on that
-boundary:
-
-- a dense run has no `INCOMPLETE` state or completion record, so a strict
-  corporate-action refusal still aborts there while an availability run stops
-  typed (LDG-2997);
-- an acquisition never acts in a dense run, because dispositions live on the
-  availability path (LDG-2996);
-- `ledgr_backtest()` runs dense on a point-in-time snapshot and uses bars the
-  availability path excludes (LDG-3001, LDG-3011);
-- run, sweep and window entry points differ in calendar and history-start
-  rules.
-
-Each new guarantee is built twice or carved out for dense. The observation: a
-dense experiment could be an availability-aware experiment with an implied
-calendar (the bars' own timestamps), full membership, no lifetime facts and a
-valuation policy that never needs a stale mark. ledgr would then have one
-calendar rule, one completion model, one stop vocabulary and one
-corporate-action path.
-
-Questions to settle before any design: whether dense identity survives (the
-asset-availability synthesis makes canonical omission the identity of dense
-mode, so config and snapshot hashes may move); the clock cost of the
-availability decision path on dense workloads and the peer benchmark; what an
-implied calendar means for irregular or intraday bars; and whether
-`ledgr_backtest()` stays as a convenience wrapper. A first spike would run the
-dense fixtures through the availability path with an implied calendar and
-compare outputs and clocks. This entry authorizes no API, schema, ticket or
-release commitment.
-
-**The probe, shaped under `spike_protocol.md` (maintainer, 2026-10-12).**
-The 2026-10-12 architecture entry above ranks this unification as the first
-of four levers that make the package lighter, and the maintainer agreed it
-is major but probably necessary. Before any charter, one probe decides
-whether it is a deletion or a redesign:
-
-- Question: do the registered dense fixtures produce byte-identical fills,
-  ledger, equity, positions and metrics when run through the availability
-  path with an implied calendar (the bars' own timestamps), full
-  membership, no lifetime or corporate-action facts and a valuation policy
-  that never needs a stale mark?
-- Cheaper prerequisite: can an implied session calendar be built from a
-  dense snapshot's bar timestamps without a sessions fact family, so that
-  no fact is sealed and the snapshot root does not move?
-- Runnable core first: `dev/spikes/one_execution_mode/probe.R` runs the
-  peer fixture and the long-window dense fixtures both ways and diffs the
-  result surfaces; expected rows and the checker come only after that run.
-  At most ten cases, generated by what the first run fails.
-- Kill conditions, either one: a dense result that cannot be reproduced
-  through the availability path without a dense-only branch inside the
-  fold, the context or the guard; or the dense peer fixture materially
-  slower on the availability path, because the fast prepared context
-  (`use_fast_context <- !availability_active`, `R/backtest-runner.R:977`)
-  cannot be made availability-aware at no material cost. The first means
-  the unification is a redesign and needs an RFC; the second means it would
-  make the common case slow, the drift the execution-gap entry describes
-  (review, 2026-10-12: the clock is a kill condition, not evidence).
-- One required case: a dense fixture with one missing bar. Dense refuses it
-  today; through an implied calendar it could quietly become a stale mark
-  or a skip. The strictness must survive as the explicit policy choice,
-  "never stale" meaning refuse, or dense results change meaning with no
-  visible error (review, 2026-10-12).
-- Supporting evidence: whether dense config and snapshot identity move.
-  After the pre-CRAN legacy-removal cut an identity move costs a version
-  and fingerprint bump plus a lake rebuild, so it is cheap if landed with
-  another format change.
-
-If green, the removal lands as parity-gated slices, each one workstream:
-the pulse calendar, the context, the guard and reconstruction, then
-`ledgr_backtest()` as a thin alias or deleted. Unification stays after the
-WS3/WS4 history wave, per the roadmap row "Post-v0.2.2 execution-core
-consolidation". Decided by the maintainer on 2026-10-12, after the review's
-proposal: the probe itself runs in v0.2.2, between the legacy-removal cut
-and the WS3/WS4 implementation cut, so that if it is green WS3/WS4 build
-history on the availability path only and leave dense to the unification,
-instead of building history for both modes and deleting half later, and if
-it is red the history cut knows it serves two modes and the unification
-becomes an RFC. The macro plan's change control records the order; the
-probe binds nothing and the unification decision stays post-v0.2.2.
-The probe binds nothing.
 
 ### 2026-10-10 [research] Durable factor and decision evidence
 
@@ -632,41 +505,6 @@ Open questions:
 The terminal-outcome seed must not block templates but does not design them.
 This entry authorizes no implementation.
 
-### 2026-10-02 [research] Research-side findings index and the EXP-0003 handoff
-
-`inst/design/research/ledgr-research-findings-index.md` lists every ledgr
-finding from the research repository that is not yet closed, and the
-ledgr entry that owns it: the LFB register, synced at a fixed private
-commit. Read it before working in an area a finding touches.
-
-The loop has two halves:
-
-- a ticket that takes a finding cites its `LFB-###`;
-- the research side then records the ticket in the finding's register
-  entry.
-
-Each new handoff re-syncs the index.
-
-The 2026-10-02 handoff is
-`inst/design/research/Sharadar-Long-Window-Usability-Evidence.md`.
-EXP-0003 exercised the public surface on 30 years of point-in-time S&P 500
-data. It found the surface mechanically sound, and long-window research
-blocked three ways:
-
-1. **Terminal stops (LFB-011).** No run passed 6.2% of the window, and
-   sweep selection and walk-forward had no completed candidates.
-2. **Gap fragility (LFB-017).** One member without a current close
-   aborted the documented rebalance pipeline.
-3. **Availability-aware feature cost (LFB-024 to LFB-026).**
-
-The performance causes are already routed by
-`dev/bench/notes/long_window_scaling_findings.md`. The behavioural findings
-LFB-017 to LFB-023 have vendor-neutral reproducers on the research side.
-Four have no ledgr home yet: LFB-018, LFB-019, LFB-020 and LFB-021 (see
-the index). Whether they need one is the maintainer's call.
-
-This entry authorizes no implementation, spike or RFC.
-
 ### 2026-10-01 [benchmark] A suite of peer workloads, not one
 
 The maintainer wants the peer benchmark to grow from one workload into a
@@ -713,10 +551,10 @@ memory separates engine architectures there. Full-array vectorized engines,
 event-driven engines that keep full per-feed history, and streaming engines
 that keep only lookback windows behave differently as history grows. That
 characterization is general knowledge, not a measurement; the suite is what
-would measure it. The motivation is the next release's memory work and its
-lofty goal of 2 GB peak at the EXP-0003 shape (`ledgr_roadmap.md`,
-"Post-v0.2.2 memory optimization release";
-`dev/spikes/ctx_frame_views/churn_findings.md`). The publication rule above
+would measure it. The motivation is the
+[next-release memory theme](ledgr_roadmap.md#next-release) and
+`dev/spikes/ctx_frame_views/churn_findings.md`; no 2 GB release promise is
+current. The publication rule above
 applies to memory as well: no comparative memory claim until the suite
 exists.
 
@@ -843,8 +681,8 @@ shown in the print, with the other setting taught.
 - always required: `snapshot`, `strategy`, `cost_model`;
 - required when the run is availability-aware: `valuation_policy`;
 - defaulted: `opening` (100,000 cash), `timing_model` (next open),
-  `risk_chain` (none), `corporate_action_policy` (research), `features`,
-  `persist_features` and `execution_mode`; `metric_context` and
+  `risk_chain` (none), `corporate_action_policy` (research), `features`
+  and `execution_mode`; `metric_context` and
   `risk_free_rate` resolve when omitted.
 
 The chore is a rule for deciding which choices get a default and which must be
@@ -859,7 +697,10 @@ departed-holding setting. Questions the rule has to answer:
 - could a currently required choice become a default with a visible note
   instead?
 
-This entry authorizes no implementation and no argument change.
+Schema 120 deleted `persist_features`; it is not part of this current default
+inventory. Route the surviving defaults rule through the next RFC that proposes
+changing an identity-bearing required argument or default. This entry
+authorizes no implementation and no argument change.
 
 ### 2026-09-28 [ux] Pilot runtime estimates for large experiments
 
@@ -1040,48 +881,6 @@ they are not deferred here. Any probe or comparative work follows
 `spike_protocol.md`; this entry records direction and authorizes neither a
 spike nor implementation.
 
-### 2026-09-25 [ux] Availability evidence has no convenient reader
-
-Writing the missing-data article surfaced two accessor gaps. Both are
-convenience only: the evidence is already persisted and hash-bound, and the
-article works around each in one line. They are recorded here rather than
-solved with boilerplate in the vignette, per the styleguide rule that clutter
-in a worked example is the API asking for a helper.
-
-**Quarantined observations have no reader.** `invalid_observations =
-"quarantine"` sets rows aside with a reason into
-`snapshot_observation_quarantine`, but nothing exposes them. The article opens
-the store with `ledgr_db_init()` and issues SQL. A user who admits a panel
-this way cannot see what was excluded without knowing the table name. Shape:
-one reader taking a snapshot and returning the quarantined rows, alongside the
-existing `ledgr_snapshot_info()`.
-
-**`ledgr_run_explain()` answers one timestamp per call.** Its signature is
-`(bt, instrument_id, ts_utc)` and `ts_utc` is required, so "what happened to
-this instrument across the run" needs a loop over sessions. The article asks
-about two chosen sessions instead, which is fine for teaching and wrong for
-diagnosis. Shape: make `ts_utc` optional and return every decision row for the
-instrument, which is how the underlying evidence is already stored.
-
-**Completion evidence is assembled by hand.** A stopped run reports
-`status`, `completion_status`, `stop_reason` and `complete_performance` as
-four fields among the fifty-two that `ledgr_run_info()` returns. There is no
-summary object for "did this run cover the window I asked for, and if not
-why". The article prints three fields in sequence. Shape: one completion
-accessor, or a `summary()` section, that answers the question in one call.
-
-**Every strategy hand-rolls its own eligibility test.** An availability-aware
-strategy cannot set a single target before intersecting the `admissible` and
-`priced` planes and indexing `id` by the result. That is four lines of plumbing
-in front of every strategy, and it is the same four lines every time. Shape:
-`ctx$tradable()` beside the existing `ctx$flat()` and `ctx$hold()`, returning
-the identifiers the strategy may size at this pulse, and composing into
-`ledgr_weight_equal()` and `ledgr_target_rebalance()`.
-
-Route: cut 9, workstream 16, LDG-2826 through LDG-2830, cut 2026-09-25. None
-of the four changes a contract; each adds a reader or a selector over evidence
-that already exists.
-
 ### 2026-09-18 [ux] Public single-evaluation memory surface
 
 The benchmark-boundary review exposed a product-level gap rather than a missing
@@ -1166,8 +965,9 @@ v0.2.0.1 closeout have been reviewed.
 ### 2026-09-14 [research] Spot-crypto readiness and Austrian tax handoff
 
 The old v0.1.9.x crypto-readiness plan was never executed and predates the
-v0.2.0.0 point-in-time availability surface. The roadmap places a refreshed
-spot-only readiness probe after v0.2.0.1. It asks whether the released
+v0.2.0.0 point-in-time availability surface. The
+[RFC pipeline route](rfc/README.md#spot-crypto-readiness) retains a refreshed
+spot-only readiness probe. It asks whether the released
 engine can support deterministic, unlevered, long-only spot-crypto research on
 one venue and in one quote currency. `inst/design/spike_protocol.md` requires
 an executable package probe and one-page findings record before any charter or
@@ -2036,10 +1836,10 @@ The earlier inline note in this file ("ML strategy artifact management
 depends on stable walk-forward windows, point-in-time feature tables, model
 artifact identity, prediction-table provenance, and selection diagnostics.
 Do not bolt it on as 'call `predict()` inside a strategy.'") stands; this
-entry names the concrete pieces that would operationalize it. The roadmap
-"Deferred Strategy And Integration Families" row for ML strategy artifact
-management already records the deferral; this entry stays in horizon until a
-v0.2.x packet promotes it.
+entry names the concrete pieces that would operationalize it. The current
+[ML-architecture pipeline row](rfc/README.md#ml-architecture) owns the accepted
+causality and model-lifecycle obligations. This entry remains non-binding
+parking until that row's causal-history and concrete-workflow trigger fires.
 
 Non-commitments:
 
@@ -2100,6 +1900,9 @@ Sequencing dependencies:
 Indicative slot: v0.1.9.x post-walk-forward, or rolled into the
 selection-integrity diagnostics packet when that lands. Could ship earlier
 if a focused doc-and-helper packet has bandwidth.
+
+Route: open a focused evaluation RFC only when a real selection workflow needs
+an effective-trial-count method and can supply retained-return evidence.
 
 Non-commitments:
 
@@ -2191,6 +1994,9 @@ Sequencing dependencies:
 
 Indicative slot: v0.2.x ML-first capability packet as a named workstream.
 Not earlier, not standalone.
+
+Route: the first concrete cross-sectional or ML workflow opens that packet
+after the history surface exists; this entry does not authorize an engine.
 
 Non-commitments:
 
@@ -2304,6 +2110,9 @@ coordinate at scoping time:
 - 2026-06-09 cross-sectional indicators are a v0.2.x capability cluster
   (cluster-as-risk-step is a downstream application of this family).
 
+Route: a real portfolio constraint selects one bounded member of this family
+for a portfolio/risk RFC; the family itself is not an implementation owner.
+
 Non-commitments:
 
 - this is not a roadmap commitment;
@@ -2387,6 +2196,9 @@ A 2026-06-09 conversation about strategy contract space (weights vs
 quantities) concluded ledgr should not flip its quantity-space strategy
 contract, but should add a `ledgr_weight_strategy()` wrapper constructor as
 an alternative authoring surface for users who prefer to think in weights.
+
+Route: repeated authoring boilerplate opens the staged strategy-schedule seed;
+weight-specific optimization and bands then belong in its portfolio follow-up.
 
 ### The question
 
@@ -2521,20 +2333,6 @@ identity-bytes change.
 - which packet this lands in (helpers, scaffolding, or its own cycle) is a
   v0.2.x scoping decision.
 
-### 2026-06-04 [infrastructure] Installed design-tree footprint review
-
-The v0.1.8.11 `inst/` audit kept `inst/design/architecture/` package-included
-as installed design authority and removed only reviewed dead placeholders under
-`inst/diagrams/`, `inst/examples/`, and `inst/schemas/`. A larger question
-remains uncommitted: how much of the full `inst/design/` governance tree should
-ship in installed packages, especially spec packets, RFCs, ADRs, audits, and
-contracts. The current package treats installed design material as part of the
-research-software evidence surface, but that may carry unnecessary install
-footprint for end users. Future work should audit the installed design tree as
-a whole, decide which documents are package authority versus source-repo
-provenance only, and update `.Rbuildignore` only with an explicit contract for
-what installed users can rely on.
-
 ### 2026-06-02 [verification] macOS parity gate for B2 spot-FIFO opt-in
 
 LDG-2526 can expose the scoped B2 spot-FIFO accelerator as a public
@@ -2598,35 +2396,6 @@ After `ledgr_sweep()` exists and the fold core is stable, revisit whether a
 convenience wrapper such as `ledgr_tune()` is useful. This should remain parked
 until sweep result shape, objective/ranking ownership, and candidate promotion
 are stable.
-
-### 2026-05-26 [ux] Tidy/vectorized strategy authoring layer
-
-Active parameterized feature aliases give strategies stable column names such
-as `fast` and `slow`. That may eventually support a tidy or vectorized
-strategy-authoring layer for stateless, cross-sectional pulse logic.
-
-Possible future shape:
-
-```r
-strategy <- ledgr_vector_strategy(function(features, ctx, params) {
-  transform(features, target = ifelse(fast > slow, params$qty, 0))
-})
-```
-
-or a more ledgr-native signal wrapper that maps row-wise feature predicates to
-a full named target vector.
-
-This should not replace the core `function(ctx, params)` strategy contract.
-It is only appropriate for strategies that read current pulse data, compute
-row-wise instrument targets, and do not require arbitrary per-instrument
-control flow, order-dependent allocation, or custom state mutation. Active
-aliases and grid helpers have since stabilized (v0.1.8.4); the 2026-06-01
-paired strategy callback contract + authoring helpers synthesis (this file)
-binds a different surface for the same authoring intent: the `ctx$vec`
-universe-aligned vector namespace plus the existing `signal_return` /
-`select_top_n` / `weight_equal` / `target_rebalance` exported pipeline.
-Treat this entry as a superseded earlier sketch of the same direction; the
-two RFC synthesis documents are the binding designs going forward.
 
 ### 2026-05-13 [ux] Research workflow scaffolds and companion templates
 
@@ -2858,8 +2627,8 @@ artifact management, or expanded asset-class support. Keep these families
 parked until the research-to-paper arc is stable enough for focused RFCs.
 
 Do not confuse full portfolio optimization with the existing helper pipeline
-(`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()`). The roadmap now
-names `v0.1.9.x Target Construction Helper Extensions` for small additions to
+(`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()`). The
+`Target construction helper extensions` horizon entry owns small additions to
 that helper surface. Full solver-style portfolio optimization remains deferred.
 
 ML strategy artifact management depends on stable walk-forward windows,
@@ -2962,7 +2731,9 @@ reopening the v1 wrapper-over-run/sweep architecture, and must not assume
 per-fold independence under the `carry_test_state` default (see synthesis
 Section 16.6 path-dependency obligation).
 
-Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
+Route: a study that needs randomized or blocked windows opens an evaluation
+RFC over the shipped walk-forward and PBO artifacts; no generic protocol is
+scheduled now.
 
 ### 2026-05-13 [infrastructure] Parallel interrupt and partial-result semantics
 
@@ -2977,12 +2748,18 @@ Evidence:
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `inst/design/manual/sweep.qmd`
 
+Route: any retained partial result requires a sweep output/identity RFC before
+the parallel collector changes.
+
 ### 2026-05-13 [cost] Broker and exchange cost templates
 
 Core ledgr should own stable cost primitives before any broker/exchange-like
 templates are considered. Real fee schedules are account-specific,
 jurisdiction-specific, and change over time. If templates are added later, they
 should likely live in adapter packages or be clearly labelled approximations.
+
+Route: the first real fee schedule is owned by its vendor adapter and opens a
+cost/adapter RFC if core primitives prove insufficient.
 
 ### 2026-05-25 [execution] Liquidity and capacity are not transaction cost
 
@@ -3001,7 +2778,8 @@ Possible future concepts:
 
 These policies require execution-bar data such as next-bar volume and may
 change quantities. They therefore belong in execution/liquidity policy, not in
-cost application. Promoted roadmap hook: `v0.2.x Liquidity And Capacity Policy`.
+cost application. Route the first strategy needing those bounds through a
+focused execution/liquidity RFC.
 
 ### 2026-05-14 [execution] Structured RNG preflight metadata
 
@@ -3038,12 +2816,13 @@ Potential additions:
 - small diagnostics that explain how weights became full target quantities.
 
 Keep this separate from target risk, liquidity/capacity, transaction cost, and
-full portfolio optimization. Promoted roadmap hook:
-`v0.1.9.x Target Construction Helper Extensions` (per the canonical roadmap
-entry; the paired-cycle synthesis in
-`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md` binds Pass 2 per-stage
-helper extensions to that window. See the 2026-06-01 post-synthesis horizon
-entry below.).
+full portfolio optimization. Cut 16 Workstream 23 shipped the context-first
+signal and selection entrances, kept-position sizing and strict missing/
+partial-selection policy recorded in the
+[strategy-helper closeout](ledgr_v0_2_0_2_spec_packet/strategy_authoring_helpers_closeout.md).
+The additions above did not all ship. They remain parked here and route through
+the [portfolio-construction pipeline row](rfc/README.md#portfolio-construction)
+after the public historical surface ships; there is no surviving roadmap row.
 
 ### 2026-05-24 [research] Beta as three distinct uses
 
@@ -3085,6 +2864,9 @@ constraint beta : after benchmark substrate, feature-alignment design, and
 Do not gate diagnostic beta on the risk chain; the dependency is
 benchmark-only.
 
+Route: a concrete diagnostic, feature, or constraint use starts from the
+benchmark substrate and opens only the RFC for that one use.
+
 ### 2026-05-24 [data] External benchmark first, universe-derived later
 
 Future benchmark reference-return support should start with explicit external
@@ -3106,7 +2888,12 @@ A future `ledgr_benchmark_from_universe()` may still be useful but should be
 designed after external benchmarks ship and after point-in-time universe
 semantics are explicit.
 
-Promoted roadmap hook: `v0.2.x Benchmark Context And Active Metrics`.
+Current route: no packet or RFC-pipeline row owns an aligned external
+benchmark provider. The accepted metric-context contract above remains the
+design input, and provider work is parked here until a concrete diagnostic or
+comparison workflow opens its focused RFC. The pipeline's
+[benchmark-methodology row](rfc/README.md#benchmark-methodology) governs public
+performance claims, not this provider implementation.
 
 ### 2026-06-28 [data] Cross-asset accounting-critical economic events
 
@@ -3214,6 +3001,9 @@ Per the accepted v0.1.8.2 metric-context synthesis, external adapters are
 deferred until the substrate they produce (`ledgr_metric_context` fields
 with aligned-provider contracts) is stable.
 
+Route: the first external provider owns acquisition and interpretation in an
+adapter RFC; ledgr records only the stable aligned-provider contract.
+
 ### 2026-05-25 [infrastructure] DuckDB-backed feature storage and out-of-core projection
 
 The v0.1.8.3 grid-level feature artifacts synthesis intentionally starts with
@@ -3250,6 +3040,11 @@ Dependencies before promotion:
   concrete-feature-union contract;
 - the post-v0.1.8.3 residual report shows memory scaling, repeated precompute,
   ML/export, or parallel-worker sharing as the next load-bearing bottleneck.
+
+Schema 120 deleted the `features` table and `persist_features`; this entry does
+not preserve either surface. Route any new feature store through the
+[persisted-data execution-placement RFC](rfc/README.md#persisted-data-execution-placement),
+with explicit new schema and identity decisions.
 
 ### 2026-05-26 [ui] Shiny research-store exploration UI (opt-in companion package)
 
@@ -3327,9 +3122,8 @@ invented under deployment pressure.
 
 ### 2026-05-27 [evaluation] Baseline strategies and opinionated comparison
 
-The roadmap (`inst/design/ledgr_roadmap.md`) lists "Reference strategy
-templates as executable contract demonstrations" at v0.2.x. This horizon entry
-refines that line into a concrete design direction so the eventual RFC author
+The current roadmap retains reference strategies only as a later direction.
+This horizon entry is the non-binding detailed owner so an eventual RFC author
 starts from a known shape.
 
 Two things already exist in v0.1.8.4: `ledgr_demo_sma_crossover_strategy()` as
@@ -3436,11 +3230,12 @@ The v0.2.x slot is the right window — after the prerequisites stabilize and
 before paper/live shifts the question from "does this beat the baseline" to
 "is this still working in production."
 
-Promoted roadmap hooks
+Current parked routes
 
-- baseline strategy library RFC (v0.2.x, after walk-forward and cost API
+- baseline strategy library RFC, parked here until a concrete comparison
+  workflow needs it after walk-forward and the cost API
   stabilize);
-- baseline-comparison API RFC (v0.2.x, coordinated with baseline library);
+- baseline-comparison API RFC, coordinated with the baseline library;
 - benchmark-return-series adapter RFC (later, if external-time-series
   comparison surfaces user demand — distinct from baseline strategies);
 - companion-package reference strategy library (out of core, when the
@@ -3596,10 +3391,12 @@ helpers deferred" entry. The work is now a v0.2.0-class RFC/spec cycle
 candidate, not a near-term v0.1.x slot. This entry stays the binding
 seed-shape input for whenever that cycle opens.
 
-Promoted roadmap hooks
+Current route and parked follow-ups
 
-- snapshot administration and ETL provenance metadata RFC: v0.2.0-class
-  cycle when revived; this entry is its seed-shape input.
+- snapshot administration and ETL provenance metadata RFC: the current
+  [instrument-master-data pipeline row](rfc/README.md#instrument-master-data)
+  owns the accepted provider and PIT boundaries when its trigger fires; this
+  entry is its seed-shape input.
 - `ledgr_snapshot_list()` filtering and listing API (coordinated with
   the metadata schema RFC).
 - `ledgr_snapshot_deprecate()` and `ledgr_snapshot_supersede()`
@@ -3693,14 +3490,19 @@ First-class intraday is a multi-cycle endeavor:
 4. **Intraday-aware metric context** (extends v0.1.8.2 metric context
    work) — annualization factor parameterized by cadence and sessions,
    not hardcoded.
-5. **Liquidity / capacity policy** (already v0.2.x roadmap) — execution
+5. **Liquidity / capacity policy** (current
+   [execution-policy route](rfc/README.md#execution-policy)) — execution
    feasibility separate from cost, with participation limits that mean
    something different intraday vs EOD.
 6. **Storage scale evidence** (extends v0.1.8.6 spike) — the spike's
    exit-decision changes once intraday workloads enter the comparison.
 
-The arc spans v0.2.x through v0.3.0 in the existing roadmap. The OMS
-synthesis is the entry point. Calendar infrastructure is the missing RFC.
+The arc is parked across the RFC pipeline's
+[OMS lifecycle](rfc/README.md#oms-order-lifecycle),
+[execution-policy](rfc/README.md#execution-policy), and
+[instrument-specific session-axis](rfc/README.md#instrument-specific-session-axis)
+routes. The accepted OMS synthesis is the entry point; calendar infrastructure
+still needs its focused RFC.
 
 #### Architectural footguns the v0.1.x cycles must avoid
 
@@ -3927,13 +3729,13 @@ specific clauses need updating in the existing synthesis), or **extend**
 audit output is itself an input for the v0.2.x intraday-arc cycle
 planning.
 
-#### Promoted roadmap hooks
+#### Current routes and parked follow-ups
 
-- intraday support arc (v0.2.x through v0.3.0, multi-cycle) — depends
+- intraday support arc (multi-cycle, not committed) — depends
   on OMS, session calendars, intraday fill timing, liquidity/capacity,
   intraday-aware metric context, and intraday storage scale evidence;
-- session calendar infrastructure RFC — new work, no current roadmap
-  line; cut after OMS lands;
+- session calendar infrastructure RFC — parked new work routed through the
+  instrument-specific session-axis row after OMS lands;
 - intraday metric context extension — extends v0.1.8.2 metric context
   work; same calendar surface, parameterized cadence;
 - intraday fill timing policy — extends v0.1.9.x/v0.2.0 cost API arc;
@@ -4095,9 +3897,10 @@ the chosen approach (B) so the eventual RFC starts from a known shape.
 
 ledgr's stable public result tables (equity, fills, trades, ledger) plus the
 stored metric context are the right substrate for thin, optional, output-only
-adapters into the established R quant ecosystem. **Committed for v0.2.x** (see
-the roadmap "External Package Adapters" entry); this horizon note records
-direction, and an RFC synthesis — not this entry — authorizes any public API.
+adapters into the established R quant ecosystem. No current packet, roadmap
+row or RFC-pipeline row commits this work; it remains parked here until a
+concrete output-consumer workflow triggers a focused RFC. An accepted RFC
+synthesis — not this entry — would authorize any public API.
 
 The first adapter is **PerformanceAnalytics**, scoped to its real strength — the
 drawdown/return tables and long-tail risk/return stats, not its charts. It is a
@@ -4160,6 +3963,31 @@ This entry records direction, not committed work.
 These exact headings preserve links into bodies moved to
 `horizon_archive.md`. Redirects are navigation, not active parking or
 authority.
+
+### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
+
+Promoted: [post-gate live routes](ledgr_v0_2_2_spec_packet/macro_plan.md#post-gate-live-routes) name the current adapter, lake-rebuild, WS7, WS8 and headline owners. [Historical body](horizon_archive.md#ws34-open-006).
+
+### 2026-10-11 [execution] One execution mode: dense as a special case of availability
+
+Promoted: [execution-core consolidation](ledgr_v0_2_2_spec_packet/macro_plan.md#execution-core-consolidation) records the later accepted owner and supersession. [Historical body](horizon_archive.md#ws34-open-009).
+
+### 2026-10-02 [research] Research-side findings index and the EXP-0003 handoff
+
+Promoted: [research findings index](research/ledgr-research-findings-index.md) is the one current owner. [Historical body](horizon_archive.md#ws34-open-015).
+
+### 2026-09-25 [ux] Availability evidence has no convenient reader
+
+Shipped: [Cut 9 closeout](ledgr_v0_2_0_2_spec_packet/availability_accessors_closeout.md#what-shipped) records LDG-2826 through LDG-2830 and the public readers/selectors. [Historical body](horizon_archive.md#ws34-open-022).
+
+### 2026-06-04 [infrastructure] Installed design-tree footprint review
+
+Shipped: Cut 14 excludes `inst/design` from built packages and Cut 15 keeps its source path. [Historical body](horizon_archive.md#ws34-open-044).
+
+### 2026-05-26 [ux] Tidy/vectorized strategy authoring layer
+
+Superseded by the accepted strategy-context and strategy-authoring designs named in the [historical body](horizon_archive.md#ws34-open-049).
+
 ### 2026-06-05 [planning] v0.1.9.4 walk-forward Section 17 gate-row obligations from the v0.1.9.x arc -- resolved by v0.1.9.4
 
 Promoted and archived: [historical body](horizon_archive.md#resolved-001). Durable authority: [v0.1.9.4 packet](ledgr_v0_1_9_4_spec_packet/README.md).
@@ -4218,7 +4046,7 @@ Promoted and archived: [historical body](horizon_archive.md#resolved-014). Durab
 
 ### 2026-09-29 [execution] Untradable holdings end the run instead of booking the loss
 
-Promoted and archived: [historical body](horizon_archive.md#open-004). Durable destination: [terminal-outcome pipeline row](rfc/README.md#terminal-outcome-policy).
+Promoted and archived: [historical body](horizon_archive.md#open-004). Durable destination: [terminal-outcomes synthesis](rfc/rfc_terminal_outcomes_v0_2_2_synthesis.md).
 
 ### 2026-09-28 [planning] Dependency order for the next version
 
@@ -4234,7 +4062,7 @@ Promoted and archived: [historical body](horizon_archive.md#open-008). Durable d
 
 ### 2026-09-28 [ux] Feature-map read surface RFC seeded
 
-Promoted and archived: [historical body](horizon_archive.md#open-009). Durable destination: [feature-map pipeline row](rfc/README.md#feature-map-read-surface).
+Promoted and archived: [historical body](horizon_archive.md#open-009). Durable destination: [feature-map decision](decisions.md#feature-map-read-surface).
 
 ### 2026-09-27 [ux] Strategy callback inspection boundary
 

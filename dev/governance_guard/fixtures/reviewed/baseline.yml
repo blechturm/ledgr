@@ -1,8 +1,8 @@
 version: 1
 baseline_commit: fixture-reviewed-v1
 population:
-  source_count: 8
-  source_sha256: 5eb49f6dbee7bb9f4a5e5915caf2f6bfc100bf39224bf6d33bd3f16361906429
+  source_count: 11
+  source_sha256: 6cdd40870e914b436decf529868aed93f5a42093fc746c392786af1f11bb5bd1
 entries:
   - source: inst/design/README.md
     target: missing.md
