@@ -1035,14 +1035,18 @@ governance_evidence_has_pointer <- function(value) {
   )
 }
 
-governance_evidence_has_result <- function(value) {
+governance_evidence_without_pointers <- function(value) {
   prose <- gsub("\\[[^]]+\\]\\([^)]+\\)", " ", value, perl = TRUE)
-  prose <- gsub(
+  gsub(
     governance_evidence_pointer_pattern(),
     " ",
     prose,
     perl = TRUE
   )
+}
+
+governance_evidence_has_result <- function(value) {
+  prose <- governance_evidence_without_pointers(value)
   words <- regmatches(prose, gregexpr("[A-Za-z]+", prose, perl = TRUE))[[1L]]
   length(words) >= 3L && grepl(
     paste0(
@@ -1050,10 +1054,15 @@ governance_evidence_has_result <- function(value) {
       "list|match|measure|name|own|pass|preserv|record|refus|report|",
       "remain|reproduc|return|route|run|show|verif)[A-Za-z]*\\b"
     ),
-    value,
+    prose,
     ignore.case = TRUE,
     perl = TRUE
   )
+}
+
+governance_evidence_is_complete <- function(value) {
+  governance_evidence_has_pointer(value) &&
+    governance_evidence_has_result(value)
 }
 
 governance_scan_ticket_evidence <- function(root, current_packet) {
@@ -1104,8 +1113,7 @@ governance_scan_ticket_evidence <- function(root, current_packet) {
     for (i in seq_along(evidence)) {
       value <- evidence[[i]]
       if (!nzchar(trimws(value)) ||
-          !governance_evidence_has_pointer(value) ||
-          !governance_evidence_has_result(value)) {
+          !governance_evidence_is_complete(value)) {
         findings[[length(findings) + 1L]] <- governance_finding(
           "structural", "malformed_ticket_evidence", source, line,
           paste0(ticket$id, ":evidence:", i),

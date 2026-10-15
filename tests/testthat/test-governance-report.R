@@ -451,6 +451,38 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     1L
   )
 
+  pointer_free_result <- copy_fixture()
+  on.exit(unlink(dirname(pointer_free_result), recursive = TRUE), add = TRUE)
+  replace_once(
+    pointer_free_result,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "The fixture result is recorded and verified."
+  )
+  testthat::expect_length(
+    finding_line(
+      run_fixture(pointer_free_result),
+      "malformed_ticket_evidence"
+    ),
+    1L
+  )
+
+  path_only_result_verb <- copy_fixture()
+  on.exit(unlink(dirname(path_only_result_verb), recursive = TRUE), add = TRUE)
+  replace_once(
+    path_only_result_verb,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "tools/governance-report.R with supporting context only."
+  )
+  testthat::expect_length(
+    finding_line(
+      run_fixture(path_only_result_verb),
+      "malformed_ticket_evidence"
+    ),
+    1L
+  )
+
   empty_evidence <- copy_fixture()
   on.exit(unlink(dirname(empty_evidence), recursive = TRUE), add = TRUE)
   replace_once(

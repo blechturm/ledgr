@@ -42,7 +42,8 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
 - [`close_review_33.md`](close_review_33.md);
 - [`close_review_34.md`](close_review_34.md) and
   [`close_review_34_rereview_1.md`](close_review_34_rereview_1.md);
-- [`close_review_35.md`](close_review_35.md);
+- [`close_review_35.md`](close_review_35.md) and
+  [`close_review_35_rereview_1.md`](close_review_35_rereview_1.md);
 - [`close_review_36.md`](close_review_36.md) and
   [`close_review_36_rereview_1.md`](close_review_36_rereview_1.md);
 - [`close_review_37.md`](close_review_37.md);
@@ -89,11 +90,13 @@ Each ticket acceptance item has one evidence item. That item contains:
    review artifact; and
 2. one sentence saying what the evidence established.
 
-Prefix observed runs, benchmarks and reviewed comparisons with `Empirical:`.
-Such evidence retains input identity, environment, source commit, reproduction
-command, reviewed range, result and clock where applicable. Preserve reviewed
-ranges exactly. A bare path, unsupported conclusion or mutable local-only
-result is not complete evidence.
+Prefix an evidence item with `Empirical:` when that item states an observed
+result inline. Such inline evidence retains input identity, environment,
+source commit, reproduction command, reviewed range, result and clock where
+applicable. A stable pointer to a durable record that itself retains all
+applicable Section 5 fields is sufficient and need not repeat the prefix or
+fields. Preserve reviewed ranges exactly. A bare path, unsupported conclusion
+or mutable local-only result is not complete evidence.
 
 ## Review records
 
