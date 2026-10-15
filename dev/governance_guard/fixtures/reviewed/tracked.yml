@@ -2,9 +2,12 @@ tracked:
   - inst/design/README.md
   - inst/design/contracts.md
   - inst/design/decisions.md
+  - inst/design/horizon.md
+  - inst/design/horizon_archive.md
   - inst/design/rfc/change.md
   - inst/design/rfc/pipeline.md
   - inst/design/rfc/review.md
   - inst/design/manual/guide.qmd
   - inst/design/current_packet/README.md
+  - inst/design/current_packet/horizon_open_classification.md
   - outside.md

@@ -301,53 +301,6 @@ rebuild, so land it in the same release as another format change to save a
 rebuild (review, 2026-10-12). This entry records a direction; it
 authorizes no API, schema, ticket or release commitment.
 
-### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
-
-The Sharadar adapter in ledgr-research emits no corporate-action facts, so
-every Sharadar result states "dividends excluded" (audit G-016, LFB-013).
-The macro plan's 2026-10-12 routing amendment rebuilds the lake once, under
-hash rule 3 and with dividend facts, after Cut 13 and the WS3/WS4 cut and
-before WS7. This note records what that mapping needs, so it is not
-rediscovered then.
-
-1. Three vendor facts decide everything and are not recorded anywhere in
-   this repository: whether the actions table's `date` is the ex-date only,
-   with no declared or record date; whether a dividend `value` is per
-   as-traded share or already split-adjusted; and which action types are
-   cash (`dividend`, special dividends) rather than splits, spin-offs or
-   mergers. Write the answers into the adapter's build notes first.
-2. One row per cash dividend through `ledgr_facts_equity_corporate_actions()`:
-   `subtype = "ordinary_cash_dividend"`, `complete = TRUE`,
-   `gross_cash_validated = TRUE`, `gross_cash_per_parent_unit` in the lake's
-   unit basis, `parent_instrument_id` equal to the id the bars and lifetime
-   facts use, `entitlement_time` and `effective_time` both the ex-date's
-   session close in UTC, `payment_time` optional, `provenance_tier =
-   "upstream_vintage_bound"` with the adapter's `upstream_build_id` and a
-   `bar_vintage_id`, and a `fact_id` stable across rebuilds (ticker, ex-date,
-   amount). Splits are not mapped because the bars are split-adjusted.
-   Mergers and spin-offs stay out of the first mapping and are disclosed,
-   not entered as incomplete rows.
-3. `knowledge_time` must not be `NA`: cash is due at the later of the
-   posting pulse and the knowledge pulse (`R/corporate-action-settlement.R`,
-   `cash_due_idx`), and a missing knowledge index never posts (audit
-   S2-003). The vendor supplies no declaration date, so set it equal to
-   `entitlement_time`, the history wave's "known when effective, disclosed"
-   assumption (register D1-F7) applied by hand until ledgr binds it, and say
-   so in the build notes.
-4. The lake declares `split_adjusted`, so held quantities are in post-split
-   units. A dividend declared per share before a later split must be
-   divided by the cumulative later split factor unless the vendor already
-   does that. Check one name with a large split and dividends on both sides.
-5. Seal under rule 3 after Cut 13 lands; the builder refuses duplicates and
-   bad clocks.
-6. Run the G-025 buy-and-hold reconciliation against the vendor's
-   `closeadj` on a few tickers immediately after the rebuild, not as WS8's
-   last item. ledgr credits cash and does not reinvest, so compare the
-   implied dividend stream or a reinvesting strategy, not raw equity.
-
-This entry authorizes no adapter change, fact, ticket or release
-commitment; LFB-013 in ledgr-research remains the research-side home.
-
 ### 2026-10-12 [execution] Close the gap between the committed run and the ephemeral sweep
 
 On the v0.2.1.0 peer record (500 instruments, 1,260 sessions, 630,000 bars)
@@ -631,41 +584,6 @@ Open questions:
 
 The terminal-outcome seed must not block templates but does not design them.
 This entry authorizes no implementation.
-
-### 2026-10-02 [research] Research-side findings index and the EXP-0003 handoff
-
-`inst/design/research/ledgr-research-findings-index.md` lists every ledgr
-finding from the research repository that is not yet closed, and the
-ledgr entry that owns it: the LFB register, synced at a fixed private
-commit. Read it before working in an area a finding touches.
-
-The loop has two halves:
-
-- a ticket that takes a finding cites its `LFB-###`;
-- the research side then records the ticket in the finding's register
-  entry.
-
-Each new handoff re-syncs the index.
-
-The 2026-10-02 handoff is
-`inst/design/research/Sharadar-Long-Window-Usability-Evidence.md`.
-EXP-0003 exercised the public surface on 30 years of point-in-time S&P 500
-data. It found the surface mechanically sound, and long-window research
-blocked three ways:
-
-1. **Terminal stops (LFB-011).** No run passed 6.2% of the window, and
-   sweep selection and walk-forward had no completed candidates.
-2. **Gap fragility (LFB-017).** One member without a current close
-   aborted the documented rebalance pipeline.
-3. **Availability-aware feature cost (LFB-024 to LFB-026).**
-
-The performance causes are already routed by
-`dev/bench/notes/long_window_scaling_findings.md`. The behavioural findings
-LFB-017 to LFB-023 have vendor-neutral reproducers on the research side.
-Four have no ledgr home yet: LFB-018, LFB-019, LFB-020 and LFB-021 (see
-the index). Whether they need one is the maintainer's call.
-
-This entry authorizes no implementation, spike or RFC.
 
 ### 2026-10-01 [benchmark] A suite of peer workloads, not one
 
@@ -2521,20 +2439,6 @@ identity-bytes change.
 - which packet this lands in (helpers, scaffolding, or its own cycle) is a
   v0.2.x scoping decision.
 
-### 2026-06-04 [infrastructure] Installed design-tree footprint review
-
-The v0.1.8.11 `inst/` audit kept `inst/design/architecture/` package-included
-as installed design authority and removed only reviewed dead placeholders under
-`inst/diagrams/`, `inst/examples/`, and `inst/schemas/`. A larger question
-remains uncommitted: how much of the full `inst/design/` governance tree should
-ship in installed packages, especially spec packets, RFCs, ADRs, audits, and
-contracts. The current package treats installed design material as part of the
-research-software evidence surface, but that may carry unnecessary install
-footprint for end users. Future work should audit the installed design tree as
-a whole, decide which documents are package authority versus source-repo
-provenance only, and update `.Rbuildignore` only with an explicit contract for
-what installed users can rely on.
-
 ### 2026-06-02 [verification] macOS parity gate for B2 spot-FIFO opt-in
 
 LDG-2526 can expose the scoped B2 spot-FIFO accelerator as a public
@@ -2598,35 +2502,6 @@ After `ledgr_sweep()` exists and the fold core is stable, revisit whether a
 convenience wrapper such as `ledgr_tune()` is useful. This should remain parked
 until sweep result shape, objective/ranking ownership, and candidate promotion
 are stable.
-
-### 2026-05-26 [ux] Tidy/vectorized strategy authoring layer
-
-Active parameterized feature aliases give strategies stable column names such
-as `fast` and `slow`. That may eventually support a tidy or vectorized
-strategy-authoring layer for stateless, cross-sectional pulse logic.
-
-Possible future shape:
-
-```r
-strategy <- ledgr_vector_strategy(function(features, ctx, params) {
-  transform(features, target = ifelse(fast > slow, params$qty, 0))
-})
-```
-
-or a more ledgr-native signal wrapper that maps row-wise feature predicates to
-a full named target vector.
-
-This should not replace the core `function(ctx, params)` strategy contract.
-It is only appropriate for strategies that read current pulse data, compute
-row-wise instrument targets, and do not require arbitrary per-instrument
-control flow, order-dependent allocation, or custom state mutation. Active
-aliases and grid helpers have since stabilized (v0.1.8.4); the 2026-06-01
-paired strategy callback contract + authoring helpers synthesis (this file)
-binds a different surface for the same authoring intent: the `ctx$vec`
-universe-aligned vector namespace plus the existing `signal_return` /
-`select_top_n` / `weight_equal` / `target_rebalance` exported pipeline.
-Treat this entry as a superseded earlier sketch of the same direction; the
-two RFC synthesis documents are the binding designs going forward.
 
 ### 2026-05-13 [ux] Research workflow scaffolds and companion templates
 
@@ -4156,6 +4031,22 @@ proposal.
 This entry records direction, not committed work.
 
 ## Historical redirects
+
+### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
+
+Promoted: [research findings index](research/ledgr-research-findings-index.md) is the one current owner (LFB-013). [Historical body](horizon_archive.md#ws34-open-006).
+
+### 2026-10-02 [research] Research-side findings index and the EXP-0003 handoff
+
+Promoted: [research findings index](research/ledgr-research-findings-index.md) is the one current owner. [Historical body](horizon_archive.md#ws34-open-015).
+
+### 2026-06-04 [infrastructure] Installed design-tree footprint review
+
+Shipped: Cut 14 excludes `inst/design` from built packages and Cut 15 keeps its source path. [Historical body](horizon_archive.md#ws34-open-044).
+
+### 2026-05-26 [ux] Tidy/vectorized strategy authoring layer
+
+Superseded by the accepted strategy-context and strategy-authoring designs named in the [historical body](horizon_archive.md#ws34-open-049).
 
 These exact headings preserve links into bodies moved to
 `horizon_archive.md`. Redirects are navigation, not active parking or

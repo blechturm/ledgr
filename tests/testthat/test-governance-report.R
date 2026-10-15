@@ -113,10 +113,10 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   second <- run_fixture(pristine)
   testthat::expect_identical(first, second)
   testthat::expect_true("MODE\treport-only" %in% first)
-  testthat::expect_true("BASELINE_SOURCE_COUNT\t8" %in% first)
+  testthat::expect_true("BASELINE_SOURCE_COUNT\t11" %in% first)
   testthat::expect_true(any(startsWith(first, "BASELINE_SOURCE_SHA256\t")))
   testthat::expect_true("BASELINE_POPULATION_MATCH\ttrue" %in% first)
-  testthat::expect_true("SCAN_SOURCE_COUNT\t8" %in% first)
+  testthat::expect_true("SCAN_SOURCE_COUNT\t11" %in% first)
   testthat::expect_true("CLAIMS_INPUT\tclaims.yml" %in% first)
   testthat::expect_true(paste0(
     "CLAIMS_SHA256\t",
@@ -678,4 +678,100 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   ))
   testthat::expect_null(attr(cli, "status"))
   testthat::expect_true(any(grepl("NEW_STRUCTURAL_COUNT", cli, fixed = TRUE)))
+})
+
+
+testthat::test_that("[LTB-0275] horizon classification drift stays report-only and mutation-sensitive", {
+  package_root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  tool <- file.path(package_root, "tools", "governance-report.R")
+  fixture <- file.path(package_root, "dev", "governance_guard", "fixtures", "reviewed")
+  testthat::skip_if_not(
+    file.exists(tool) && dir.exists(fixture),
+    "governance sources are intentionally absent from an installed package"
+  )
+
+  guard <- new.env(parent = globalenv())
+  sys.source(tool, envir = guard)
+  copy_fixture <- function() {
+    parent <- tempfile("ledgr-horizon-fixture-")
+    dir.create(parent)
+    destination <- file.path(parent, "reviewed")
+    dir.create(destination)
+    copied <- file.copy(
+      list.files(fixture, full.names = TRUE, all.files = TRUE, no.. = TRUE),
+      destination,
+      recursive = TRUE
+    )
+    testthat::expect_true(all(copied))
+    destination
+  }
+  run_fixture <- function(root) {
+    guard$governance_report(
+      root = root,
+      baseline_path = file.path(root, "baseline.yml"),
+      claims_path = file.path(root, "claims.yml"),
+      tracked_path = file.path(root, "tracked.yml"),
+      current_packet = "inst/design/current_packet"
+    )
+  }
+  finding_kind <- function(report, kind) {
+    report[
+      startsWith(report, "FINDING\t") &
+        grepl(paste0("kind=", kind, "\t"), report, fixed = TRUE)
+    ]
+  }
+  insert_before_redirects <- function(root, addition) {
+    path <- file.path(root, "inst", "design", "horizon.md")
+    lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+    before <- match("## Historical redirects", lines)
+    testthat::expect_false(is.na(before))
+    lines <- append(lines, addition, after = before - 1L)
+    writeLines(lines, path, useBytes = TRUE)
+  }
+
+  pristine <- copy_fixture()
+  on.exit(unlink(dirname(pristine), recursive = TRUE), add = TRUE)
+  pristine_report <- run_fixture(pristine)
+  for (kind in c(
+    "unclassified_horizon_open",
+    "missing_horizon_redirect",
+    "archived_horizon_body_current"
+  )) {
+    testthat::expect_length(finding_kind(pristine_report, kind), 0L)
+  }
+
+  unclassified <- copy_fixture()
+  on.exit(unlink(dirname(unclassified), recursive = TRUE), add = TRUE)
+  insert_before_redirects(
+    unclassified,
+    c("", "### 2026-10-16 [data] Unclassified fixture question", "", "Unowned.")
+  )
+  testthat::expect_length(
+    finding_kind(run_fixture(unclassified), "unclassified_horizon_open"),
+    1L
+  )
+
+  missing_redirect <- copy_fixture()
+  on.exit(unlink(dirname(missing_redirect), recursive = TRUE), add = TRUE)
+  redirect_path <- file.path(missing_redirect, "inst", "design", "horizon.md")
+  redirect_lines <- readLines(redirect_path, warn = FALSE, encoding = "UTF-8")
+  redirect_lines <- redirect_lines[
+    redirect_lines != "### 2026-10-14 [ux] Shipped fixture question"
+  ]
+  writeLines(redirect_lines, redirect_path, useBytes = TRUE)
+  testthat::expect_length(
+    finding_kind(run_fixture(missing_redirect), "missing_horizon_redirect"),
+    1L
+  )
+
+  archived_current <- copy_fixture()
+  on.exit(unlink(dirname(archived_current), recursive = TRUE), add = TRUE)
+  insert_before_redirects(
+    archived_current,
+    c("", "### 2026-10-14 [ux] Shipped fixture question", "", "Historical body.")
+  )
+  testthat::expect_length(
+    finding_kind(run_fixture(archived_current), "archived_horizon_body_current"),
+    1L
+  )
 })

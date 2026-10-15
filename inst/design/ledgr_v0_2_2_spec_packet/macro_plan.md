@@ -629,530 +629,59 @@ v0.2.2 is ready for its release gate only when:
     preregistered WS3 budget. A breach is either corrected before release or
     accepted explicitly with its user-visible limit and a durable follow-up;
     it is not hidden inside the integrated runtime record.
+## 7. Remaining order
 
-## 7. Change control
+Cut 15 has two coordinated tracks. Workstream 32 established the governance
+rules and report-only guard; Workstream 36 established the schema-120 and
+feature-identity product base. The remaining order is:
 
-This plan is intentionally easier to change than a specification. A scope or
-dependency change is recorded here and summarized in the roadmap until ticket
-cut. After ticket cut, changes to executable scope or ordering belong in
-`tickets.yml`, with this document updated only when the release-level story
-itself changes.
+1. **Governance planning — owner WS34:** restore the roadmap, this order, and
+   the horizon so later work has one planning front door.
+2. **Parallel contract and product work — owners WS33 and WS37:** WS33 starts
+   only after WS32 and WS36 so current contracts describe schema 120; WS37
+   follows WS36 because strict-feature cleanup uses the final feature identity.
+3. **Governance close and fold preparation — owners WS35 and WS38:** WS35
+   follows WS33 and WS34 to normalize records after both current contracts and
+   planning are stable; WS38 follows WS37 to extract phases on the final
+   pre-history engine.
+4. **Final product evidence — owner WS39:** rebuild the private research lake
+   after WS38, with WS34 also complete so the build is routed by the current
+   plan.
+5. **Joint gate — owners WS35 and WS39:** only after both workstreams are
+   accepted does the WS3/WS4 history wave resume, because it consumes the
+   normalized governance record, final fold structure, and current real-data
+   evidence.
 
-2026-10-03 maintainer amendment: WS5 explicitly consumes the existing DuckDB
-hashing evidence, permits a new hash rule, separates faster full verification
-from verification-policy changes, and binds public-operation measurements.
-Feature reuse depends on the WS3/WS4 semantics. This clarifies the existing
-workstream without adding release scope or authorizing implementation.
+Thus the governance track is WS32 -> WS34 and (after WS36) WS33 -> WS35; the
+product track is WS36 -> WS37 -> WS38 -> WS39. Workstreams 32 through 39 are
+Cut 15's complete pre-history boundary. `tickets.yml` is the sole authority
+for exact within-cut dependencies and status; this section states the readable
+release-level order and creates no competing sequence.
 
-2026-10-08 maintainer amendment: the WS2 remainder is finished before the
-WS3/WS4 cut. Cut 6 closed WS2's terminal-outcome half; the real-data stoppers
-LFB-017 (an eligible member without a price is skipped for that rebalance and
-recorded, not a run failure), LFB-023 (an explicit per-fold policy instead of
-aborting walk-forward) and LFB-018 (an early exit ends `FAILED`, not
-`CREATED`) are cut next. The WS3/WS4 design wave pauses in stage 2 of its
-[decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md), which holds
-every decision so far and resumes the wave. Two clarifications of existing
-scope, not new scope: WS4's exit means every supported built-in and TTR
-indicator works on ragged and dense universes; and the WS8 integrated record
-is an end-to-end Sharadar run over the full available S&P span, 1998-2026,
-with the adapter dropping carried zero-volume bars (LFB-027). The memory budget
-of decision 8 remains open in the register (Session E).
+<a id="7-change-control"></a>
 
-2026-10-08 maintainer amendment, after Cut 11 Workstream 21: a small
-maintenance cut follows Cut 11 Workstream 22, before the WS3/WS4 cut. It holds
-five unowned findings, each needing a ticket:
-(1) dense `ledgr_state_reconstruct()` builds its close map by scanning every
-bar once per pulse (`ledgr_derived_state_dense_close_map()`, moved verbatim by
-LDG-2978), quadratic in pulses, a sibling of Cut 11 finding F1;
-(2) the full local suite errors in "demo SMA crossover strategy fails through
-active alias classes" (`tests/testthat/test-demo-strategies.R`), unowned since
-Cut 10;
-(3) LTB-0164 intermittently takes about 13 s instead of 3 s in the fast lane,
-open since Cut 9; one stall nearly breaks the 112-second bound, so the cause
-is investigated rather than the block moved;
-(4) `tools/check-test-gate.R --records` refused three recorded ordinary runs
-with "Timing gate requires 1 run(s), received 3", so the tool or
-`tests/README.md` is wrong;
-(5) walk-forward `experiment_hash` and `session_id` include the snapshot's
-generated `snapshot_id`, so identical data sealed twice (same
-`snapshot_hash`) yields different session IDs, while contracts.md (identity
-layers) lists `snapshot_id` among locators that must not enter `session_id`;
-the store path is correctly excluded. The cut decides whether the identity or
-the contract wording changes.
-Two further findings are routed elsewhere: `ledgr_folds_rolling()` month
-arithmetic from the 31st and decision-trace diagnostic volume go to the
-[decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md) (Sessions B
-and E). Carry over overlapping test windows, first parked in `horizon.md`, was
-decided by the maintainer on 2026-10-09 (Type 2, after the Workstream 21 close
-review) and implemented in Workstream 21: `carry_test_state` requires ordered,
-contiguous test windows.
+## 8. Amendment redirects
 
-2026-10-09 maintainer amendment: a point-in-time universe audit runs before
-the WS3/WS4 history wave resumes
-([charter](../audits/v0_2_2_pit_universe_audit/charter.md)). It describes how
-ledgr handles point-in-time universes today, checks that behavior for internal
-consistency, and judges it against the accepted design and an external
-yardstick. Its preparation (yardstick brief, shared fixture, schema) runs
-alongside Cut 11 Workstream 22; its three stages run on one commit frozen
-after Workstream 22 closes, each ending at a maintainer gate. Findings route
-to tickets, the decision register, horizon or RFC questions; the audit itself
-binds nothing.
+The superseded sequencing narratives remain content-addressed in
+[macro-plan history](macro_plan_history.md). These dated lines are historical
+navigation, not a second current order.
 
-2026-10-09 maintainer amendment, sequencing after Cut 11: (1) the five-item
-maintenance cut recorded above is not cut on its own; it is held until the
-audit's Gate 2 and cut together with the audit's Stage 2 defects and contract
-corrections as one point-in-time consistency cut, one review cycle instead of
-two (the snapshot_id identity item is an audit topic anyway). (2) The WS5
-verification-policy design session (wave 2 of section 4) runs right after Cut 11
-Workstream 22, not alongside it (maintainer, same day: sequential); it decides
-when and what to verify, carrying the walk-forward
-rehash finding, while feature-persistence reuse keys stay after WS3/WS4 as
-WS5 already states. (3) The two unscheduled Due RFC items are placed:
-documentation roles and pin reset with the release documentation work and the
-non-gating plotting pass; context-frame retirement with the WS3 cut, which
-changes the same strategy surface. The resulting order is: Workstream 22, the
-WS5 verification session, Cut 11 close, audit Stages 1 to 3, the consistency
-cut, the WS3/WS4 history wave and cut, WS7, the WS6 probe, WS8.
-
-2026-10-10 maintainer amendment, after the point-in-time universe audit
-(`inst/design/audits/v0_2_2_pit_universe_audit/`, Gates 1 to 3): the
-consistency cut is Cut 12 "Point-in-time consistency" (Workstreams 23 to 26,
-LDG-2993 to LDG-3012), including the audit's Stage 3 disclosure and price-basis
-items. The history wave's scope widens by the register rows PIT-G-013 (v11
-price-input carry must not feed zero returns into return and volatility
-features), PIT-G-014 (whether a carry chain equals one continuous run) and
-PIT-G-015 (the history start covers mark history and dividend entitlement),
-and Session E trims the decision trace only where omitted rows are exactly
-reconstructible. WS7 acceptance adds three checks: the estimator's sample on
-carried inputs (G-013), the run's dividend status (G-016), and elapsed time
-plus peak RSS for the one rule-3 lake rebuild. The memory number is evidence
-for the persisted-data execution-placement RFC, not a WS7 optimization gate.
-WS8 adds one
-buy-and-hold reconciliation of the Sharadar build against the vendor's
-dividend-adjusted close (G-025). The Sharadar adapter emits no corporate-action
-facts, so every Sharadar result so far excludes dividends; emitting
-`ordinary_cash_dividend` facts is a ledgr-research adapter task (G-016,
-related LFB-013), and until it lands Sharadar results and the WS7 proof state
-"dividends excluded" in their headline. The WS5 verification session was
-moved after audit Stage 1 and is next after Cut 12's cut review.
-
-2026-10-12 maintainer amendment, after the Workstream 25 reviews: one
-pre-existing defect found by the Workstream 25 close review is routed to the
-next ticket cut after Cut 12, where it needs a ticket: `ledgr_sweep_save()`
-fails on a feature-map sweep whose candidates each resolve to a single feature
-fingerprint (for example `ledgr_feature_map(signal =
-ledgr_ind_sma(ledgr_param("n")))` with `ledgr_feature_grid(n = c(2L, 3L))`)
-with "canonical_json() received a character input that is not valid JSON"
-(`R/sweep-persistence-schema.R`); it reproduces on the pre-Cut-12 tree
-be3aaf0a. The `test-demo-strategies.R` failure is already owned by Cut 12
-LDG-3007.
-
-2026-10-12 maintainer amendment, routing the accepted WS5-A synthesis:
-(1) Cut 13 carries both ordered WS5-A tickets in one workstream and one Type 1
-close review: rule 3 first, with complete verification retained, then the
-PID-guarded verified set from a source-derived census of current consumers.
-Later WS3/WS4 readers join that census when introduced; they do not delay the
-accepted reuse mechanism. Cut 13 lands before the WS7 estimator proof and the
-WS8 integrated record so that Sharadar evidence is recorded once under the
-final snapshot identity, and the ledgr-research lake is rebuilt once under
-rule 3 together with the dividend-facts adapter change (G-016). The mapping
-that change needs (vendor facts to pin down, the exact fact-row fields, the
-non-missing knowledge-time assumption, the split-unit check and the G-025
-reconciliation) is parked, non-binding, in
-[`horizon.md`](../horizon.md#2026-10-12-adapters-sharadar-dividend-fact-mapping-before-the-ws7-lake-rebuild);
-the WS7 cut takes it up with LFB-013 when the rebuild is scheduled.
-(2) The `ledgr_sweep_save()` defect routed above also belongs to Cut 13, but
-in a separate workstream and close review because persistence correctness and
-snapshot verification make different claims. (3) WS5-B is unchanged and
-still follows WS3/WS4. The resulting order is: Cut 12 close, Cut 13, the
-WS3/WS4 history wave and implementation cut, the lake rebuild under rule 3
-with dividend facts, WS7, the WS6 probe, WS8.
-
-2026-10-12 maintainer amendment, pre-CRAN legacy removal: ledgr carries no
-backward compatibility before its first CRAN release, as the README already
-states ("stored artifacts, database schemas, and APIs may change without a
-deprecation cycle, so expect to rerun experiments after upgrading"). v0.2.2
-removes the compatibility code that contradicts this: the experiment-store
-migration and legacy schema path, the readers that tolerate unmigrated
-stores, the saved-sweep schema 1 to 3 readers, identity rule 1, schema-1
-valuation and corporate-action policy records, the legacy strategy-provenance
-markers, the `fill_model` refusal argument, the `as_tibble(type =)` alias and
-the unreachable metric-kernel fallback (an agent inventory on 2026-10-12
-counts about 950 R lines and 1,700 test lines). A store, saved sweep, policy
-record or identity whose version is not current is refused with one classed
-condition that says to recreate it. The current schema is today defined only
-inside the legacy path (the LDG-3016 template replays it), so removal starts
-with one current-schema definition used by fresh stores, the validator and
-the parity test. Route: a focused RFC, because it changes `contracts.md`
-promises (older stores, rule-1 sessions, migration, pre-provenance tolerance)
-and the accepted snapshot-verification synthesis's legacy-readability clause.
-The direction is decided, so the seed skips the research input and the cycle
-settles only the refusal gate, the schema authority and the contract text.
-The RFC runs alongside Cut 13, which proceeds as accepted and adds no
-compatibility beyond what its synthesis binds. The removal cut follows Cut 13
-and precedes the WS3/WS4 history wave, so new history code meets only current
-shapes. Maintainer, same day, on the RFC response: once no stored format is
-kept compatible, the ledgr-research lake is rebuilt after every store-format
-change, so the Cut 13 amendment's "rebuilt once" no longer holds. The first
-rebuild follows the removal cut, under rule 3 without dividends, so the WS3/WS4
-reviews keep their real-data lane. The rebuild is a scripted, timed step whose
-time is recorded by the cut that forces it. The resulting order is: Cut 13,
-the legacy-removal cut, an interim lake rebuild under rule 3, the WS3/WS4
-history wave and implementation cut, the lake rebuild with dividend facts,
-WS7, the WS6 probe, WS8.
-
-2026-10-12 maintainer amendment, codebase hygiene in the legacy-removal cut:
-the cut carries a third workstream, one claim and one Type 1 close review,
-because its instruments are the ones the removal already needs and because
-the WS3/WS4 code should land under gates rather than ahead of them.
-Measured on 2026-10-12: 421 distinct classes are raised by `rlang::abort()`
-and 131 are documented in `R/condition-reference.R`; 647 of 1,623 functions
-have exactly one call site; about a dozen non-exported, non-S3 functions
-have no caller (`ledgr_estimate_bars_per_year()` was cited as live by two
-reviews this week); no lint or style configuration exists; 248 of 1,096
-test blocks carry a registered claim. The workstream (1) adds
-`tools/check-codebase-contracts.R`, report-only at first, whose census of
-openers, version branches, uncalled functions and undocumented classes
-serves Workstreams A and B; (2) after those workstreams land, turns the
-first two checks into failing blocks of a `test-codebase-contracts.R` in
-the fast profile, registered as claims with a structural-detector oracle
-and a gut, following `test-documentation-contracts.R`: every non-exported,
-non-S3 function has a call site, and every class raised by `abort()` is
-documented in the condition reference or carries an internal prefix; (3)
-adds a `.lintr` and a separate lint job to the CI workflow, advisory for one
-cut and then blocking, and runs styler once in its own commit immediately
-after the removal lands, when the tree has already been touched everywhere;
-(4) adds one Verification Contract clause naming the structural detectors,
-with a small Type 1 review because it defines claims; and (5) adds the helper
-rule to `inst/design/manual/optimization_coding_style.qmd` as a review
-criterion beside the seven shapes: a function exists because it has a
-contract someone can name or a second caller. Deferred to the release after
-v0.2.2, report-only until then: enforcing the export census (168 exports
-and 84 S3 methods, those unused by any man example, vignette or article
-become internal) and the test-oracle rule for the 848 unregistered blocks,
-because both touch surfaces the execution-core consolidation changes.
-Parked in `horizon.md` under the 2026-10-12 infrastructure entry, which
-also holds one more item for this workstream: a documentation-generation
-entry point that pins `LC_COLLATE` to `C` before `roxygen2::roxygenise()`,
-after a regeneration from a differently collated shell reordered
-`NAMESPACE` and 27 unrelated Rd files without content change (`90a701d1`).
-
-2026-10-12 maintainer amendment, the one-execution-mode probe: the probe
-shaped in `horizon.md` (the 2026-10-11 execution entry's addendum) runs in
-v0.2.2, after the legacy-removal cut and its interim lake rebuild and before
-the WS3/WS4 history wave resumes its implementation cut. It is a probe under
-`spike_protocol.md` Section 1, not a spike with a charter: one script,
-`dev/spikes/one_execution_mode/probe.R`, runs the registered dense fixtures
-through the availability path with an implied calendar, full membership, no
-facts and a never-stale valuation policy, diffs fills, ledger, equity,
-positions and metrics against today's dense path, times the dense peer
-fixture on both paths, and includes a dense fixture with one missing bar;
-`probe_findings.md` is its one-page record. It binds nothing and changes no
-product code. Its result routes: green, with the dense peer fixture not
-materially slower, means the WS3/WS4 implementation cut builds history on
-the availability path only and the post-v0.2.2 consolidation is a deletion;
-a dense-only branch inside the fold, context or guard, or a material
-slowdown, means the history cut serves both modes and the consolidation
-opens as an RFC. The unification itself stays after v0.2.2 (roadmap row
-"Post-v0.2.2 execution-core consolidation"). The resulting order is: Cut
-13, the legacy-removal cut, the interim lake rebuild under rule 3, the
-one-execution-mode probe, the WS3/WS4 history wave and implementation cut,
-the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
-
-2026-10-13 maintainer amendment, planning-document cleanup after the probe:
-the roadmap no longer works as a planning document, and this plan's
-change-control log has become the only place the current order lives, restated
-by each amendment. One governance cut, after the one-execution-mode probe
-and before the WS3/WS4 implementation cut, rewrites both together, scans
-`horizon.md`, sweeps the central governance files, folds the probe result
-in, and applies the governance-lifecycle synthesis
-(`rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md`, accepted 2026-10-14;
-Sections 2 to 7 own the rules and Section 7 the wording). Its four
-workstreams each carry one claim and one Type 1 close review:
-
-1. Rules and guard: the accepted rules go into `rfc_cycle.md`, the design
-   index and `AGENTS.md`, and the governance guard lands in report mode with
-   its reviewed baseline. Check mode starts no earlier than the cut after
-   this one, and only once workstream 4's header normalization and the
-   reviewed baseline and fixtures exist (synthesis Section 6).
-2. `contracts.md`: the present-tense pass and rule-group addresses, and
-   reconciliation of the `decisions.md` bridge with its back-links.
-3. Planning documents: the roadmap and remaining-order rewrites and the
-   horizon scan.
-4. Records: synthesis status headers, the packet `README.md` trim and the
-   evidence form for open tickets.
-
-The design tree stays under `inst/design` (maintainer, 2026-10-14). Cut 14
-Workstream 31 already excludes it from the package build, so moving about 900
-path references would be naming churn rather than a size or product fix. Cut
-15 Workstream 34 records and verifies that boundary without relocating it.
-
-Two parts of the synthesis do not wait for this cut. M1 (the 0.5 gate is
-retired; the ratio of independent verdicts to completed tickets is recorded
-at cut close and as a packet total; a third correction round on one
-workstream goes to the maintainer) and M2 (a review that returns findings
-writes a file in the owning packet) apply from the first review after
-acceptance, so they govern the rest of Cut 14 (synthesis Section 5).
-Acceptance preceded the history-wave amendment to v11, so that amendment
-is the first supersession carrier under the synthesis's rules (Section 7);
-the history wave owns it. The bullets below are the scope the cut inherits.
-
-- Roadmap: the milestone table holds releases only, one row each, in release
-  order. Shipped releases keep date, a one-sentence goal and the packet link.
-  v0.2.2 gets one row with its goal and a link to this plan, without
-  cut-by-cut status. A short next-release list names the themes already
-  scheduled for it, and a few lines state later direction (paper trading,
-  operations, small-scale live trading). The roughly thirty topic rows leave:
-  done rows are deleted because their packets record them, parked rows move
-  to `horizon.md` or the RFC pipeline, and each generic "v0.2.x Planned" row
-  is checked (corporate actions shipped in v0.2.1.0 as equity corporate
-  actions). A row is at most two sentences and changes only when a release
-  opens or ships; a documentation-contract test may pin that.
-- This plan: one current "Remaining order" section, each step with a
-  one-line reason and its owner, becomes the only place the sequence lives.
-  Each change-control amendment shrinks to one dated line naming its source,
-  and the amendment narratives move to a history file, as
-  `roadmap_history.md` did for the roadmap.
-- Horizon scan (maintainer, 2026-10-13): every entry under `Open` in
-  `horizon.md` (85 entries over about 4,100 lines) is classified against the
-  shipped packets, `tickets.yml`, the RFC pipeline and `contracts.md` as
-  shipped, superseded, promoted (owned by a ticket, an RFC row or this plan)
-  or genuinely open, with the evidence for each class named. Shipped and
-  superseded entries move to `horizon_archive.md` behind a redirect stub, a
-  promoted entry keeps only a pointer to its owner, and the genuinely open
-  entries stay. The scan records the classification table, so the
-  maintainer can see in one page what has shipped and what is still open.
-- Governance-file sweep (maintainer, 2026-10-13): each `decisions.md` row is
-  checked against `contracts.md`, and a row whose rule a standing heading
-  already holds leaves with that heading cited, which is the exit its own
-  rule requires and which earlier closeouts skipped. Candidates include the
-  four v0.1.9.5 batch rows, equity corporate actions, accounting-core
-  consolidation, testing architecture and the feature-map read surface.
-  The packet `README.md` is trimmed to its role, the design index
-  `README.md` and `AGENTS.md` are checked for stale entry points, and the
-  sweep records what it removed and where each item now lives. Stale
-  synthesis status headers are corrected: historical-projection v10 still
-  reads "ACCEPTED" although v11 replaced it, and the snapshot-verification
-  synthesis does not show at its top that the accepted legacy-removal
-  synthesis (Section 5) amends its legacy-readability rule, which the Cut 14
-  ticket cut applies. The cut applies the accepted synthesis's header and
-  notice rules to these records.
-- Contracts present-tense pass (maintainer, 2026-10-13): after Cut 14 merges,
-  `contracts.md` states each current rule in the present tense and moves
-  release history out (41 lines cite release versions, plus schema-number
-  history and about 24 legacy or historical mentions); history belongs in
-  NEWS and the packets. Rewording can change a rule, so its workstream's
-  Type 1 close review compares old and new text clause by clause, and the
-  documentation-contract pins move with the sentences they pin.
-
-Not a package design change. The contracts pass and the guard define
-claims, so the work is a cut with close reviews, not a documentation chore
-(maintainer, 2026-10-13, changed from the chore first scheduled). The
-resulting order is: Cut 13, the legacy-removal cut, the interim lake rebuild
-under rule 3, the one-execution-mode probe, the governance cut, the WS3/WS4
-history wave and implementation cut, the lake rebuild with dividend facts,
-WS7, the WS6 probe, WS8.
-2026-10-14 maintainer amendment, unowned-debt routing: issues that no ticket
-owned were routed. The identity-hashing collation defect and the
-identity-type looseness go to Cut 14 LDG-3036 (`tickets.yml`). The store gate's
-per-open cost is accepted as a component miss: about 1.1 ms per store open,
-under 0.1 percent of any public call, with end-to-end clocks unchanged
-(maintainer, 2026-10-14; recorded in the WS29 decisions). Three review-found
-hot spots, CI cadence and fast-lane headroom go to WS8 (above), and the
-audit, fold split, adoption item and packet path to the next release
-(Section 5). Later the same day: the design tree ships inside the package
-(about 4.8 MB gzipped against 1.6 MB for the rest), so its build exclusion
-goes to Cut 14 Workstream 31, the decision to move it out of `inst/` to the
-governance cut, and the install floor to the next release. A further check
-of the code routed three items to Cut 14 Workstream 31: the run and fold
-change the user's global RNG without restoring it, 22 inline
-`schema_version = 1L` literals may sit outside the format fingerprint, and
-three test helpers are named after tickets. The documentation surface,
-NEWS and the complexity-audit items go to the next release (Section 5).
-
-2026-10-14 maintainer amendment, fold phase extraction: one workstream,
-after the one-execution-mode probe and before the WS3/WS4 implementation
-cut, extracts the pulse-loop body of `ledgr_execute_fold()` (about 880
-lines) into phase functions: inputs and corporate actions, availability
-decision, context build, strategy call and target validation, fill
-planning, accounting, event emission, and valuation and state update.
-- It is a pure refactor. Phases are top-level package functions passing
-  one fold-state object. Each phase is its own commit, byte-identical on
-  the fixture ladder and within the 1.05 rule on paired clocks. A defect
-  found on the way is routed, not fixed in passing.
-- One Type 1 close review.
-- Phase interfaces pass typed primitives (vectors, matrices, indices), and
-  no per-pulse data frame crosses a phase boundary, so a phase can later be
-  swapped for a compiled kernel without marshalling cost. Nothing is
-  compiled in this workstream.
-- The close records each phase's share of a profiled run, as input for
-  the compiled-execution envelope RFC
-  (`rfc/README.md#compiled-execution-envelope`).
-- The probe's findings decide which phases hold the dense-only branches.
-- `ledgr_run_fold_impl()` and the output handlers stay with the
-  post-v0.2.2 execution-core consolidation.
-- It may run alongside the governance cut, which edits only documents.
-
-Reason: every WS3/WS4 ticket edits this loop, and named phases make those
-edits local and reviewable. The resulting order is: Cut 14 (including the
-interim lake rebuild), the one-execution-mode probe, the fold phase
-extraction alongside the governance cut, the WS3/WS4 history wave and
-implementation cut, the lake rebuild with dividend facts, WS7, the WS6
-probe, WS8.
-
-2026-10-14 maintainer amendment, feature-keeping probe: the WS5 probe that
-decides whether ledgr keeps computed features at all (the in-process feature
-cache and `persist_features` writes) runs after the one-execution-mode
-probe, alongside the fold phase extraction and the governance cut, and
-before the WS3/WS4 implementation cut. Its question does not depend on
-history semantics, and the history wave should not be built around a
-mechanism the probe may delete. Deletion is the default; the conditions are
-in the WS5 section. WS5-B's reuse-key design stays after WS3/WS4 and covers
-only what survives.
-
-2026-10-14 maintainer amendment, one-execution-mode probe result: red. The
-probe (record in `dev/spikes/one_execution_mode/`, copied from branch
-`spike/one-execution-mode` at `bd0e1bd9` without the regenerable result
-tables) ran the dense fixtures through the availability path.
-
-**What matched.** The economic core is shared: equity, positions, metrics,
-prices, quantities, cash and P&L are byte-identical on the peer and
-long-window fixtures.
-
-**Why it is red.** Both pre-registered kill conditions hold:
-- Dense missing-bar strictness lives only in a dense-only guard branch
-  (`R/run-snapshot.R:104-123`), and no availability policy reproduces it.
-  On the availability path an unheld gap, or a missing execution bar, ends
-  DONE (the fill is dropped as `execution_bar_missing`).
-- The dense peer fixture is materially slower on the availability path:
-  8.07x with TTR SMA, 1.41x with the built-in SMA, and 1.7-1.9x in the fold
-  loop alone.
-
-**Consequence.** The WS3/WS4 implementation cut builds history for both
-modes. The post-v0.2.2 execution-core consolidation opens as an RFC that
-consumes the probe's findings:
-- an implied calendar needs sealed sessions (no calendar is derived from
-  bars, and midnight-UTC bars cannot be declared as UTC sessions);
-- fill timestamps follow two conventions: next bar in dense mode, next
-  session open on the availability path;
-- missing-bar strictness needs an explicit coverage policy;
-- the availability path's cost.
-
-**Superseded the same day (maintainer, 2026-10-14): one mode goes.**
-ledgr's design rests on one fold core. The fold is one function but
-carries two semantics: 29 `availability_active` branches in
-`R/fold-engine.R` and 128 across `R/`. So the history wave builds on the
-availability path only and does not serve dense mode.
-- Dense mode is frozen: fixes only, no new features and no new mode
-  branches.
-- The execution-core consolidation is a committed goal before the first
-  CRAN release, not an optional RFC. Dense becomes the availability path
-  with an implied calendar; the open decisions above stay its inputs, and
-  the branch-site count is its progress measure.
-- The availability core needs further optimization, because the history
-  wave and the consolidation both run on it: the fast prepared context,
-  the per-pulse diagnostic flush and canonical JSON, and the strict
-  feature path (`dev/spikes/one_execution_mode/probe_findings.md`). Its
-  placement relative to the WS3/WS4 implementation cut is decided at that
-  cut.
-- Register decision B's "ragged and dense universes" means universe shapes
-  on the availability path, not dense mode.
-- Cut 15 statements that history supports both modes are superseded.
-
-The fold phase extraction places the dense-only fold differences in named
-phases: the last-bar warning (`R/fold-engine.R:114`) and fill stamping
-(`:154`). The guard branch is outside the fold.
-
-**Two measured findings routed.**
-- The availability path's strict feature engine computes TTR indicators in
-  a per-window R loop that calls TTR twice per bar
-  (`R/features-engine.R:291-347`; no fast strict kind at `:351`), about
-  137x the dense preparation. It goes to WS4 (strict-feature
-  acceleration). Under the admission test it may be cut before the history
-  wave, which will run on that path; the maintainer decides at the WS3/WS4
-  cut.
-- The fast prepared context does not apply on the availability path
-  (`R/backtest-runner.R:988`). This is WS8's availability-aware fast-context
-  candidate, now measured.
-
-**Growth-shape matrix spike.** It started the same day (branch
-`spike/growth-shape-matrix` from `4b729300`) and sweeps feature kind
-(built-in, TTR, custom, none) by mode (dense, availability) by entry point
-(run, sweep, walk-forward, result readers) at two sizes per growth axis.
-Its findings feed WS8's internal regression suite and the ticket cuts that
-own each cell.
-
-2026-10-14 maintainer amendment, growth-shape matrix result: green. The
-record is in `dev/spikes/growth_shape_matrix/` (copied from branch
-`spike/growth-shape-matrix` at `3a539ca4`). No cell of feature kind by mode
-by entry point grows superlinearly up to 4,000 bars, 320 instruments and 32
-candidates; the largest exponent is 1.04. The antipattern family survives as
-linear R loops with large constants:
-- TTR SMA on the availability path hits the 60 s cap (preparation 130x
-  dense at T=1,000), in the per-window loop routed above.
-- A custom indicator in the documented `fn` form slices a data-frame window
-  per bar (`R/features-engine.R:253`, `:285-286`): preparation 17x the
-  built-in. Routed to WS8.
-- The fills and trades readers replay every event through R lot accounting
-  (`R/accounting-replay.R:294-322`): 2.1 s for about 40k fills against
-  0.06 s for the ledger reader. Routed to WS8, with the `print(bt)` replay.
-- The gut check (a planted quadratic step) was caught only by the
-  preparation-phase clock; run, sweep and walk-forward totals hid it. Phase
-  timing inside sweep and walk-forward is routed to WS8's regression suite.
-
-**TTR strict path, decided.** The per-window loop is split:
-- Before the WS3/WS4 implementation cut, alongside the fold phase
-  extraction, one small workstream removes two costs that change no value:
-  the per-window parity call for the TTR wrapper (its `fn` is the last value
-  of the same `series_fn` call, so the check compares a value with itself;
-  user indicators declaring both keep the check) and the per-window
-  completeness check, replaced by `ledgr_strict_complete_window_mask()`.
-  Byte-identical on the fixture ladder, measured on paired clocks, one
-  Type 1 close review.
-- Calling TTR once per gap-free segment instead of once per window stays in
-  WS4. It decides what a strict window means for TTR indicators: for SMA
-  the difference is rounding, for recursive indicators such as EMA it is
-  warm-up semantics.
-
-2026-10-14 feature-keeping spike result: red. The registered decision is in the
-[feature-keeping closeout](../spikes/feature_keeping_spike/closeout.md), with
-the runnable record in `dev/spikes/feature_keeping/`.
-The in-process cache saved 38.6 percent in its contrived best case (the second
-identical run in one process), but it silently reused stale feature values
-after a captured variable changed, provided no reuse across a repeated
-five-fold walk-forward, and retained 67.75 MB for one feature at the measured
-1,166-instrument by 7,213-session shape. Durable feature persistence wrote
-40,000 rows on the timing fixture, moved the median run from 3.52 s to 3.56 s,
-and has no named public result consumer. Both mechanisms therefore fail their
-predeclared retention conditions.
-
-The combined pre-history cut gets one deletion workstream for the feature
-cache, its telemetry, `persist_features` and the durable feature-row writes.
-Economic outputs remain byte-identical and removal detectors must prove the
-old retention paths are gone. Explicit precomputed-feature objects survive,
-however, and their current feature fingerprint ignores captured values. A
-review probe changed a captured dependency and silently reused stale values.
-Cut 15 LDG-3056 therefore binds deterministic captures in indicator and
-feature fingerprints, invalidates stale precomputed payloads and closes that
-WS5-B identity obligation. LFB-028 remains the later, separate question of an
-opt-in factor/prediction evidence surface after history panels exist; it does
-not preserve the current `features` table.
-
-2026-10-14 maintainer amendment, Cut 15 ownership and design-tree decision:
-the combined pre-history work is Cut 15 in `tickets.yml`, Workstreams 32 through
-39. Governance applies the accepted lifecycle through rules and a report-only
-guard, current contracts and bridges, planning front doors and horizon, then
-record normalization. Product work deletes both current feature-retention
-mechanisms under schema 120 and identity rule 3, binds deterministic captures
-in the surviving precomputed-feature identity, performs the bounded strict-TTR
-cleanup, extracts
-the named fold phases and rebuilds the private research lake from the final
-tree. Workstreams 32 and 36 open independently; the contract pass waits for
-schema 120 so it describes the final current product. The history wave resumes
-only after Workstreams 35 and 39 are accepted.
-
-The design tree stays under `inst/design`. Cut 14 already excludes it from
-built packages, so moving roughly 900 references would add repository churn
-without improving the package, governance model or next research result. The
-governance work records and tests that boundary; it does not relocate, copy or
-alias the tree.
+- 2026-10-03 — [WS5 consumes the DuckDB projection design](macro_plan_history.md#amendment-2026-10-03-1).
+- 2026-10-08 — [WS2 remainder precedes the history wave](macro_plan_history.md#amendment-2026-10-08-1).
+- 2026-10-08 — [post-Workstream-21 sequencing](macro_plan_history.md#amendment-2026-10-08-2).
+- 2026-10-09 — [point-in-time universe audit insertion](macro_plan_history.md#amendment-2026-10-09-1).
+- 2026-10-09 — [post-Cut-11 five-item sequence](macro_plan_history.md#amendment-2026-10-09-2).
+- 2026-10-10 — [post-audit correctness gate](macro_plan_history.md#amendment-2026-10-10-1).
+- 2026-10-12 — [Workstream-25 review routing](macro_plan_history.md#amendment-2026-10-12-1).
+- 2026-10-12 — [WS5-A synthesis routing](macro_plan_history.md#amendment-2026-10-12-2).
+- 2026-10-12 — [pre-CRAN legacy-removal cut](macro_plan_history.md#amendment-2026-10-12-3).
+- 2026-10-12 — [codebase hygiene](macro_plan_history.md#amendment-2026-10-12-4).
+- 2026-10-12 — [one-execution-mode probe placement](macro_plan_history.md#amendment-2026-10-12-5).
+- 2026-10-13 — [planning-document cleanup](macro_plan_history.md#amendment-2026-10-13-1).
+- 2026-10-14 — [unowned-debt routing](macro_plan_history.md#amendment-2026-10-14-1).
+- 2026-10-14 — [fold phase extraction](macro_plan_history.md#amendment-2026-10-14-2).
+- 2026-10-14 — [feature-keeping probe placement](macro_plan_history.md#amendment-2026-10-14-3).
+- 2026-10-14 — [one-execution-mode result](macro_plan_history.md#amendment-2026-10-14-4).
+- 2026-10-14 — [growth-shape matrix result](macro_plan_history.md#amendment-2026-10-14-5).
+- 2026-10-14 — [feature-keeping result](macro_plan_history.md#amendment-2026-10-14-6).
+- 2026-10-14 — [Cut 15 ownership and design-tree decision](macro_plan_history.md#amendment-2026-10-14-7).
