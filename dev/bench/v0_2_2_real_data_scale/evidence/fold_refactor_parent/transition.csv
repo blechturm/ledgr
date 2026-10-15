@@ -1,0 +1,10 @@
+family,status,explanation
+equal_weight_features,removed,"schema-120 deleted durable feature retention and its table"
+momentum_features,removed,"schema-120 deleted durable feature retention and its table"
+momentum_feature_plane,added,"the recorder now observes the real callback feature plane without product persistence"
+equal_weight_run_info,different,"schema version 119 to 120; persist_features and cache telemetry fields removed"
+momentum_run_info,different,"schema version 119 to 120; persist_features and cache telemetry fields removed"
+momentum_explain,different,"identity-rule-3 feature fingerprint and feature-set hash"
+wf_folds,different,"identity-rule-3 candidate and run identifiers; fold dates and statuses unchanged"
+wf_scores,different,"identity-rule-3 candidate keys and row order; metric-value and trade-count multisets exact"
+identity,different,"informational schema-120 config hashes, rule-3 feature/session identities, accepted strict-TTR digest and recorder-wrapper strategy identity"
