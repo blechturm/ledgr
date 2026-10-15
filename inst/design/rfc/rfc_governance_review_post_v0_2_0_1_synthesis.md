@@ -3,7 +3,7 @@
 Role: record; rejected RFC-cycle synthesis retained as history.
 Status: rejected
 Authority: non-binding historical record.
-Reason: The maintainer rejected this broad design and accepted the smaller v2 synthesis instead.
+Reason: The maintainer rejected the enforcement layer because it turned process judgment into form checks; Sections 4.1 through 4.8 remain preserved design guidance (see the [revision history](#revision-history)).
 
 **Status:** Rejected by the maintainer on 2026-09-21. Retained as history;
 binds nothing. Seed v2 remains the standing seed and stage 7 re-runs. See

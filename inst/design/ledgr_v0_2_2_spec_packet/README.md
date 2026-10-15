@@ -30,6 +30,10 @@ from that file remains in [`macro_plan_history.md`](macro_plan_history.md).
 
 Cut reviews and finding-bearing workstream reviews are durable packet records:
 
+- [`cut_review_7.md`](cut_review_7.md),
+  [`cut_review_9.md`](cut_review_9.md),
+  [`cut_review_13.md`](cut_review_13.md) and
+  [`cut_review_14.md`](cut_review_14.md);
 - [`cut_review_15.md`](cut_review_15.md),
   [`cut_review_15_rereview.md`](cut_review_15_rereview.md) and
   [`cut_review_15_rereview_2.md`](cut_review_15_rereview_2.md);
@@ -38,6 +42,7 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
 - [`close_review_33.md`](close_review_33.md);
 - [`close_review_34.md`](close_review_34.md) and
   [`close_review_34_rereview_1.md`](close_review_34_rereview_1.md);
+- [`close_review_35.md`](close_review_35.md);
 - [`close_review_36.md`](close_review_36.md) and
   [`close_review_36_rereview_1.md`](close_review_36_rereview_1.md);
 - [`close_review_37.md`](close_review_37.md).
@@ -80,10 +85,11 @@ Each ticket acceptance item has one evidence item. That item contains:
    review artifact; and
 2. one sentence saying what the evidence established.
 
-Empirical records additionally retain, where applicable, input identity,
-environment, source commit, reproduction command, result and clock. A bare
-path, an unsupported conclusion or a mutable local-only result is not complete
-evidence.
+Prefix observed runs, benchmarks and reviewed comparisons with `Empirical:`.
+Such evidence retains input identity, environment, source commit, reproduction
+command, reviewed range, result and clock where applicable. Preserve reviewed
+ranges exactly. A bare path, unsupported conclusion or mutable local-only
+result is not complete evidence.
 
 ## Review records
 
@@ -100,4 +106,6 @@ The packet follows M1 and M2 from the accepted governance-lifecycle synthesis:
 This README is a front door. `tickets.yml` is executable ticket authority,
 `macro_plan.md` is release planning, the RFC pipeline routes unfinished design
 work, contracts bind current behaviour, and closeouts preserve evidence. Keep
-those jobs separate when adding a packet artifact.
+those jobs separate when adding a packet artifact. The report-only guard's
+bounded role and reproduction path live in
+[`dev/governance_guard/README.md`](../../../dev/governance_guard/README.md).

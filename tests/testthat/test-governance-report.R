@@ -422,14 +422,75 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     1L
   )
 
+  bare_anchor <- copy_fixture()
+  on.exit(unlink(dirname(bare_anchor), recursive = TRUE), add = TRUE)
+  replace_once(
+    bare_anchor,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "tests/testthat/test-governance-report.R#LTB-0273"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(bare_anchor), "malformed_ticket_evidence"),
+    1L
+  )
+
+  path_words <- copy_fixture()
+  on.exit(unlink(dirname(path_words), recursive = TRUE), add = TRUE)
+  replace_once(
+    path_words,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    paste0(
+      "tools/governance-report.R and/or ",
+      "dev/spikes/feature_keeping/closeout.md"
+    )
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(path_words), "malformed_ticket_evidence"),
+    1L
+  )
+
+  empty_evidence <- copy_fixture()
+  on.exit(unlink(dirname(empty_evidence), recursive = TRUE), add = TRUE)
+  replace_once(
+    empty_evidence,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    ""
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(empty_evidence), "malformed_ticket_evidence"),
+    1L
+  )
+
+  evidence_count <- copy_fixture()
+  on.exit(unlink(dirname(evidence_count), recursive = TRUE), add = TRUE)
+  replace_once(
+    evidence_count,
+    "inst/design/current_packet/tickets.yml",
+    "      - \"the empirical fixture evidence is complete\"",
+    ""
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(evidence_count), "incomplete_ticket_evidence"),
+    1L
+  )
+
   empirical_evidence <- copy_fixture()
   on.exit(unlink(dirname(empirical_evidence), recursive = TRUE), add = TRUE)
   replace_once(
     empirical_evidence,
     "inst/design/current_packet/tickets.yml",
-    "inst/design/current_packet/README.md: The fixture result is recorded.",
     paste0(
-      "Empirical: input fixture; result passed; ",
+      "Empirical: input fixture; environment local; source commit 1234567; ",
+      "reproduction command Rscript fixture.R; reviewed range base..candidate; ",
+      "result passed with matching bytes; clock 0.01 seconds; ",
+      "inst/design/current_packet/README.md."
+    ),
+    paste0(
+      "Empirical: input fixture; environment local; source commit 1234567; ",
+      "reproduction command Rscript fixture.R; result passed; clock 0.01 seconds; ",
       "inst/design/current_packet/README.md."
     )
   )
@@ -439,6 +500,18 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
       "incomplete_empirical_evidence"
     ),
     1L
+  )
+
+  missing_tickets <- copy_fixture()
+  on.exit(unlink(dirname(missing_tickets), recursive = TRUE), add = TRUE)
+  unlink(file.path(
+    missing_tickets,
+    "inst", "design", "current_packet", "tickets.yml"
+  ))
+  testthat::expect_error(
+    run_fixture(missing_tickets),
+    "current packet tickets.yml is required",
+    class = "ledgr_governance_report_input"
   )
 
   type_2 <- copy_fixture()

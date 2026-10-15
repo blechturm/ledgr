@@ -2,21 +2,21 @@
 
 Role: living; current decision register for the paused WS3/WS4 history wave.
 Status: working
-Authority: accepted maintainer decisions recorded here bind the later v11
-amendment; undecided rows and recommendations remain non-binding.
+Authority: working register. Accepted maintainer decisions are inputs to the
+later v11 amendment; this register does not itself amend v11.
 
 Opened 2026-10-08. Records the maintainer's
 decision on every finding of the
 [Type 2 review](rfc_history_wave_v0_2_2_review.md) of the
-[proposal](rfc_history_wave_v0_2_2_proposal.md). Binds nothing until stage 3
-writes the accepted decisions into an amendment.
+[proposal](rfc_history_wave_v0_2_2_proposal.md). The register changes no
+accepted synthesis until stage 3 writes and accepts the amendment.
 **Owner:** maintainer decides; executor verifies and drafts.
 
 ## Resume here
 
-**Paused 2026-10-08 in stage 2** while the WS2 remainder (real-data stoppers
-LFB-017, LFB-023, LFB-018) is finished first (maintainer decision, recorded in
-the [macro plan change control](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-change-control)).
+**Paused in stage 2** until Cut 15 Workstreams 35 and 39 are accepted, as
+recorded by the
+[current macro-plan order](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-remaining-order).
 This register is the single place to resume WS3/WS4; everything needed is
 linked below.
 

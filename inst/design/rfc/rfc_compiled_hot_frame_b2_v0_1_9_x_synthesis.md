@@ -1,10 +1,14 @@
 # RFC Synthesis: Compiled Hot Frame B2 (v0.1.9.x)
 
-Role: record; RFC-cycle synthesis awaiting final review.
-Status: under review
-Authority: non-binding until maintainer acceptance.
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+Acceptance: approved by the
+[final review](rfc_compiled_hot_frame_b2_v0_1_9_x_final_review.md) and listed
+among the accepted RFC inputs in the
+[v0.1.8.10 spec](../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md) lines 45-52.
 
-**Status:** Synthesis. Binding artifact pending final review.
+**Status:** Accepted synthesis.
 **Cycle:** Architecture B2 measurement gate and v0.1.9.x promotion scoping.
 **Synthesizes:** seed v1, response, seed v2, seed-v2 review,
 maintainer decisions, seed v3.

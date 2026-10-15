@@ -1018,21 +1018,33 @@ governance_ticket_line <- function(lines, ticket_id) {
   if (length(match)) match[[1L]] else 1L
 }
 
+governance_evidence_pointer_pattern <- function() {
+  paste0(
+    "(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+[.]",
+    "(?:md|R|qmd|yml|yaml|csv|json|txt)",
+    "(?::[0-9]+|#[A-Za-z0-9_.-]+)?|",
+    "(?:LTB|LCL|LDG)-[0-9]+|\\b[0-9a-f]{7,40}\\b"
+  )
+}
+
 governance_evidence_has_pointer <- function(value) {
   grepl(
-    paste0(
-      "(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+|",
-      "[A-Za-z0-9_.-]+[.](?:md|R|qmd|yml|yaml|csv|json|txt)",
-      "(?::[0-9]+|#[A-Za-z0-9_.-]+)?|",
-      "(?:LTB|LCL|LDG)-[0-9]+|\\b[0-9a-f]{7,40}\\b"
-    ),
+    governance_evidence_pointer_pattern(),
     value,
     perl = TRUE
   )
 }
 
 governance_evidence_has_result <- function(value) {
-  grepl(
+  prose <- gsub("\\[[^]]+\\]\\([^)]+\\)", " ", value, perl = TRUE)
+  prose <- gsub(
+    governance_evidence_pointer_pattern(),
+    " ",
+    prose,
+    perl = TRUE
+  )
+  words <- regmatches(prose, gregexpr("[A-Za-z]+", prose, perl = TRUE))[[1L]]
+  length(words) >= 3L && grepl(
     paste0(
       "\\b(?:accept|add|classif|clos|confirm|detect|establish|exclud|fail|identical|",
       "list|match|measure|name|own|pass|preserv|record|refus|report|",
@@ -1052,7 +1064,7 @@ governance_scan_ticket_evidence <- function(root, current_packet) {
   )
   path <- file.path(root, source)
   if (!file.exists(path)) {
-    return(governance_bind_findings(list()))
+    governance_abort("current packet tickets.yml is required")
   }
   packet <- governance_read_yaml(path)
   if (!is.list(packet) || !is.list(packet$cuts) ||
@@ -1102,7 +1114,10 @@ governance_scan_ticket_evidence <- function(root, current_packet) {
       }
       if (startsWith(tolower(trimws(value)), "empirical:") &&
           !all(vapply(
-            c("input", "environment", "commit", "command", "result", "clock"),
+            c(
+              "input", "environment", "commit", "command", "reviewed range",
+              "result", "clock"
+            ),
             function(field) grepl(paste0("\\b", field, "\\b"), value, ignore.case = TRUE),
             logical(1L)
           ))) {

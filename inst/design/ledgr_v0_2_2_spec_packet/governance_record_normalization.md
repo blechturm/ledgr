@@ -21,11 +21,11 @@ canonical Role, Status and Authority block. The resulting states are:
 
 | State | Records | Meaning |
 | --- | ---: | --- |
-| accepted | 25 | operative within the record's stated scope |
+| accepted | 28 | operative within the record's stated scope |
 | amended | 4 | operative with a dated linked amendment |
 | superseded | 10 | historical only, with a dated linked replacement |
 | superseded in part | 2 | only the declared remainder stays operative |
-| under review | 3 | non-binding until maintainer acceptance |
+| under review | 0 | non-binding until maintainer acceptance |
 | draft | 2 | non-binding synthesis input |
 | rejected | 1 | historical only, with its rejection reason retained |
 
@@ -48,8 +48,9 @@ with the history wave.
 
 ## Packet front door and evidence form
 
-The packet README shrank from 582 lines (45,533 UTF-8 bytes at `07f91bcf`) to
-81 lines (4,957 bytes). It now links the macro plan, ticket authority, current
+The packet README shrank from 684 raw lines and 582 nonblank lines (45,534
+UTF-8 bytes at `07f91bcf`) to 111 raw lines and 89 nonblank lines (5,418
+bytes). It now links the macro plan, ticket authority, current and earlier cut
 review artifacts and durable closeouts without copying mutable ticket status,
 dependencies or acceptance text.
 
@@ -78,10 +79,12 @@ superseded CHANGES_REQUIRED state.
 LTB-0273 mutates each boundary independently. The reviewed fixture fails when
 an accepted record gains an amendment without changing state, when Active is
 paired with Paused prose, when Trigger is removed, when evidence is reduced to
-a bare path, and when an empirical item omits environment, commit, command and
-clock. The existing missing-replacement mutation continues to cover the
-superseded receiver rule. The pristine fixture remains byte-deterministic and
-the command still rejects `--check`.
+a bare path or test anchor, when path words are joined by `and/or`, when an
+acceptance/evidence count differs, when evidence is empty, when empirical
+evidence omits its reviewed range, and when the required tickets source is
+deleted. The existing missing-replacement mutation continues to cover the
+superseded receiver rule. The pristine fixture contains a valid empirical
+record, remains byte-deterministic and the command still rejects `--check`.
 
 ## Verification
 

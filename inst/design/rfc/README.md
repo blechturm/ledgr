@@ -31,6 +31,18 @@ Cut 13 completed WS5-A. Cut 15 LDG-3056 owns the remaining WS5-B identity
 obligation for surviving precomputed-feature objects. Historical authority
 remains in the [accepted synthesis, amended 2026-10-13](rfc_snapshot_verification_policy_v0_2_2_synthesis.md).
 
+<a id="terminal-outcome-policy"></a>**Terminal-outcome redirect:** the cycle is
+closed; current authority is the
+[Valuation And Terminal Outcomes](../contracts.md#valuation-and-terminal-outcomes), and
+the durable reasons remain in the
+[accepted synthesis](rfc_terminal_outcomes_v0_2_2_synthesis.md).
+
+<a id="feature-map-read-surface"></a>**Feature-map read-surface redirect:** the
+cycle is closed; current authority is the
+[Feature Maps](../contracts.md#feature-maps), and the durable
+reasons remain in the
+[accepted synthesis](rfc_feature_map_read_surface_v0_2_x_synthesis.md).
+
 ## RFC Pipeline
 
 | Cycle or obligation | State | Latest operative artifact | Next action or trigger |
