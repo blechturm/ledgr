@@ -1,12 +1,12 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-14 are complete and accepted. Draft Cut 15 owns the remaining pre-history
-foundations: governance consolidation, feature-retention deletion, strict-TTR
-cleanup, fold-phase extraction and the current private-lake rebuild. Governance
-and product work start independently, then join for the post-schema contract
-pass. The WS3/WS4 history wave resumes only after both Cut 15 tracks close.
-Its shared history-start decision replaces Cut 9's temporary rule.
+14 are complete and accepted. Accepted Cut 15 owns the pre-history foundation.
+Six of its eight workstreams are complete: governance rules, planning front
+doors, current contracts, feature-retention deletion, strict-TTR cleanup and
+fold-phase extraction. Governance normalization and the current private-lake
+rebuild remain. The WS3/WS4 history wave resumes only after both close. Its
+shared history-start decision replaces Cut 9's temporary rule.
 
 **Date:** 2026-10-03
 
@@ -632,14 +632,12 @@ v0.2.2 is ready for its release gate only when:
 
 ## 7. Remaining order
 
-Cut 15 has two concurrent tracks, not one serial list:
+Cut 15 now has one remaining workstream on each of its two tracks:
 
-- **Governance track:** WS32 is complete; WS34 restores the planning front
-  doors. After the schema-120 base in WS36, WS33 updates current contracts.
-  WS35 then closes only after both WS33 and WS34.
-- **Product track:** WS36 is complete; WS37 performs strict-TTR cleanup, WS38
-  extracts fold phases, and WS39 rebuilds the private research lake after
-  WS38 and WS34.
+- **Governance track:** WS32, WS33 and WS34 are complete and accepted. WS35
+  remains as the governance-record normalization gate.
+- **Product track:** WS36, WS37 and WS38 are complete and accepted. WS39 now
+  rebuilds the current private research lake from that final pre-history tree.
 
 The tracks meet at one gate: WS35 and WS39 must both be accepted before the
 WS3/WS4 history wave resumes. That wave consumes the normalized governance
