@@ -156,12 +156,10 @@ oem_arm <- function(fx, mode, work_dir, policy = NULL, membership = FALSE,
   snap <- oem_seal(bars, db, paste0("oem_", mode), facts)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
   args <- list(snapshot = snap, strategy = fx$strategy, features = fx$features,
-               opening = ledgr_opening(cash = fx$cash), cost_model = ledgr_cost_zero(),
-               persist_features = FALSE)
+               opening = ledgr_opening(cash = fx$cash), cost_model = ledgr_cost_zero())
   args$universe <- if (isTRUE(membership)) ledgr_universe_members("ALL") else ids
   if (!identical(mode, "dense")) args$valuation_policy <- policy
   exp <- do.call(ledgr_experiment, args)
-  ledgr_feature_cache_clear()
   warns <- character()
   t0 <- proc.time()[["elapsed"]]
   bt <- tryCatch(
