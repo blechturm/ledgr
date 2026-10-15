@@ -99,10 +99,11 @@ record, remains byte-deterministic and the command still rejects `--check`.
 
 ## Verification
 
-- `test-governance-report.R`: 182 expectations passed, with no failure,
+- `test-governance-report.R`: 197 expectations passed, with no failure,
   warning or skip.
-- `test-documentation-contracts.R` and `test-test-control-plane.R`: passed
-  with no failure, warning or skip.
+- `test-documentation-contracts.R`: 1,031 expectations passed; and
+  `test-test-control-plane.R`: 66 expectations passed, both with no failure,
+  warning or skip.
 - Canonical header scan: all 47 bounded syntheses passed with zero lifecycle
   findings; state counts match the table above.
 - Cut 15 evidence scan: zero findings after the WS34 current-state correction.
@@ -121,6 +122,16 @@ record, remains byte-deterministic and the command still rejects `--check`.
   reconciliation also retained WS38's accepted evidence while repairing its
   three records to the pointer-plus-result and one-evidence-per-acceptance
   form.
+- Empirical correction record: input was the tracked design and governance
+  population; environment was Windows x64 with R 4.6.1 ucrt; source commit
+  was `b16d269b`; reproduction command was `Rscript
+  tools/governance-report.R`; reviewed range was `d6c4c85d..b16d269b`;
+  result was a successful report-only scan of 340 sources with 1,031 visible
+  findings, zero RFC-index state/header findings and zero direct current-cut
+  evidence-form findings; clock was 72.401 seconds. The source count is one
+  above the reviewer's run because the required M2 focused-review artifact is
+  now tracked. This is informational evidence and changes no package, CI,
+  release or local gate result.
 - The new replacement, amendment and packet links resolve; pre-existing link
   debt remains visible in the report. YAML parsing and `git diff --check`
   passed.
