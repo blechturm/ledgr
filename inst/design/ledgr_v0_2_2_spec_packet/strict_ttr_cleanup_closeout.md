@@ -1,15 +1,22 @@
 # Workstream 37 Closeout: Strict TTR Constant-Factor Cleanup
 
-**Status:** Implementation complete; Type 1 review and maintainer acceptance pending.
+**Status:** Implementation and correction round 1 complete; maintainer acceptance pending.
 **Date:** 2026-10-15
-**Implementation commit:** `ee5fd7497e055debb4613036c8537cc3f11e70fd`
+**Corrected implementation commit:** `f7706c7e51871d82f2ea804f62b8421c67243f83`
+**Initial implementation commit:** `ee5fd7497e055debb4613036c8537cc3f11e70fd`
 **Accepted comparison commit:** `1cbc51661df5d7691aa5668e94d3d551513d2f41`
 **Ticket:** LDG-3051
 
+The independent Type 1 close review returned `PASS_AFTER_PATCHES`. Its faithful
+M2 artifact is [`close_review_37.md`](close_review_37.md). Correction round 1
+closes F1 through F4 without expanding the product scope; `accepted` remains
+null for the maintainer.
+
 ## Outcome And Necessity
 
-The availability strict-feature loop now computes
-`ledgr_strict_complete_window_mask()` once per instrument-feature series. It
+For any availability strict-feature series long enough to contain a window,
+the loop now computes `ledgr_strict_complete_window_mask()` once. A shorter
+series preserves the pre-cut all-NA return before attempting OHLC coercion. It
 skips the per-window `series_fn` self-comparison only for the exact
 constructor-shaped TTR SMA scalar and series wrappers: their body fingerprints
 match current `ledgr_ind_ttr()` templates, they share one environment, that
@@ -43,34 +50,46 @@ are unchanged. Segment execution remains later work. No public API or
    strict precompute callers. Warmup and eligibility masks are exact. TTR EMA,
    RSI and MACD still have no strict contract. Existing LTB-0074 passed through
    the supported installed-package worker path.
-2. **Certification boundary: PASS.** A TTR-labelled mismatched wrapper raises
-   `ledgr_indicator_gap_parity`; a body-identical wrapper in distinct
-   environments performs two calls per eligible window; and a shared
-   namespace-child environment locally binding `ledgr_ttr_call` also performs
-   two. Local bindings for `as.numeric` and `::` refuse certification. A genuine
-   package wrapper performs one call per eligible window.
-3. **One completeness mask: PASS.** The counter observes exactly one mask call
-   on empty, short, complete, leading/internal/trailing, all-missing and every
-   single-position-missing series. An independent copy of the pre-cut
-   per-window decision agrees on every fixture.
+2. **Certification boundary: PASS.** Independent hostile fixtures isolate the
+   exact-body and namespace-parent guards. With a shared namespace-child
+   environment, changing only the scalar body retains the parity error;
+   removing its guard makes both the classification and behavioral error
+   witnesses fail. With exact bodies in one shared environment whose parent is
+   not the namespace, the retained path makes 20 TTR calls; removing that guard
+   certifies the wrapper and reduces the count to 10. Distinct environments and
+   local bindings for `ledgr_ttr_call`, `as.numeric` and `::` also refuse. A
+   genuine package wrapper performs one call per eligible window.
+3. **One completeness mask: PASS.** The counter observes zero mask calls for
+   empty and short inputs and exactly one for every series that can contain a
+   window: complete, leading/internal/trailing, all-missing and every
+   single-position-missing. An invalid short OHLC list-column input returns the
+   exact all-NA result without coercion. An independent copy of the pre-cut
+   per-window decision agrees on every ordinary fixture.
 4. **Failure sensitivity: PASS.** Restoring parity produces three failures and
    doubles the observed TTR helper calls from five to ten. Restoring inline
-   completeness produces 21 failures. Adding one to the scalar result produces
-   nine failures across TTR/custom, runtime/precompute and provenance. The
+   completeness produces 19 failures. Adding one to the scalar result produces
+   nine failures across TTR/custom, runtime/precompute and provenance. Removing
+   either the body or namespace-parent certification guard produces three
+   failures with the independent behavioral witness. Adding a respelled
+   per-window `anyNA` scan while retaining the mask produces two failures via
+   the parsed call-symbol detector and provenance. Moving the short return
+   after mask construction triggers the exact invalid-list-column error. The
    machine-readable record is
    [`mutations.csv`](../../../dev/bench/v0_2_2_strict_ttr_cleanup/evidence/mutations.csv).
 5. **Paired clocks: PASS.** Five alternating fresh-process pairs at each of 250
    and 1,000 bars passed on the initial attempt. Strict-preparation median
-   candidate/baseline ratios are 0.5128 and 0.4928, improvements of 48.7 and
-   50.7 percent. Public `ledgr_run()` median ratios are 0.9231 and 1.0048, both
+   candidate/baseline ratios are 0.5000 and 0.4783, improvements of 50.0 and
+   52.2 percent. Public `ledgr_run()` median ratios are 0.9383 and 0.9694, both
    at or below 1.05. All ten strict hashes and all ten economic hashes are
    exact. The preregistered complete retry did not run.
 6. **Provenance and consumers: PASS.** The dense engine digest remains
    `80d1ae6d2165196044db3f0d1944d69f21b76e264d2df16df49e23f448a7c681`.
    The availability digest changes from
    `6bd61d705a94f2cd955b5eab2a526f65e36419393de0baef4d95c64718658a76`
-   to
-   `9ffede2b67d9ea4d1651eae7f2862ec2a819867e1588ac8069f449e73d5821dd`.
+   through the initial implementation digest
+   `9ffede2b67d9ea4d1651eae7f2862ec2a819867e1588ac8069f449e73d5821dd`
+   to corrected digest
+   `25d86252352ea2228c9b49cade9eb482e21adf41d01f1ec5ce4a8a7db5809281`.
    LTB-0276 pins the runtime projection caller in `ledgr_run_fold_impl()`, the
    strict payload caller in `ledgr_precompute_payload()`, and the sweep caller
    in `ledgr_sweep_impl()`. Walk-forward reuses the existing sweep and run
@@ -79,31 +98,43 @@ are unchanged. Segment execution remains later work. No public API or
 
 ## Paired Clock Record
 
-The record compares the accepted and candidate commits above, not two modes in
-one loaded namespace. Each row is a fresh R 4.6.1 process, processes run one at
-a time, odd/even pairs reverse arm order, and each process constructs the same
-seed-3051 availability fixture with one TTR SMA-20 feature. TTR is 0.24.4. The
-strict clock includes kind resolution plus strict series preparation. The
-end-to-end clock surrounds public `ledgr_run()` after snapshot construction.
+The correction record compares the accepted and corrected commits above, not
+two modes in one loaded namespace. Before measurement, the hardened harness
+resolved each supplied commit to its worktree HEAD, required empty
+`git status --porcelain=v1 --untracked-files=all`, and recorded the Git tree
+hash: baseline `fe79fb38c09fee5cab21cf6aa34a8f1933973f25`, candidate
+`1283f772e024fdfbd27e48c0bed85502558a2c80`. Each row is a fresh R 4.6.1
+process, processes run one at a time, odd/even pairs reverse arm order, and each
+process constructs the same seed-3051 availability fixture with one TTR SMA-20
+feature. TTR is 0.24.4. The strict clock includes kind resolution plus strict
+series preparation. The end-to-end clock surrounds public `ledgr_run()` after
+snapshot construction.
 
 | Bars | Pairs | Strict ratio | `ledgr_run()` ratio | Exact | Verdict |
 | ---: | ---: | ---: | ---: | --- | --- |
-| 250 | 5 | 0.5128 | 0.9231 | yes | PASS |
-| 1,000 | 5 | 0.4928 | 1.0048 | yes | PASS |
+| 250 | 5 | 0.5000 | 0.9383 | yes | PASS |
+| 1,000 | 5 | 0.4783 | 0.9694 | yes | PASS |
 
-The 1,000-bar third pair had a noisy end-to-end ratio of 1.110; its five-pair
-median is 1.0048 and is the preregistered decision denominator. No retry was
-triggered. Inputs, source commits, environment, every raw child row, pair
+Every individual end-to-end pair also remains below 1.05; the registered
+decision denominator is still the five-pair median. No retry was triggered.
+Inputs, source commits, tree hashes, environment, every raw child row, pair
 ratios and summaries are under
 [`evidence/`](../../../dev/bench/v0_2_2_strict_ttr_cleanup/evidence/).
 
-Reproduce from a source extraction of the accepted commit and this candidate:
+The initial record used the same seed, script and fresh-process pairing, and
+its exact outputs and gates were valid, but its `source_commit` column was a
+caller-supplied label: it did not verify worktree cleanliness or record a tree
+hash. F4 is preserved as that record-only limitation rather than rewritten.
+The corrected record above was rerun with the hardened preflight; no claim is
+made that the initial record performed checks it did not perform.
+
+Reproduce from clean Git worktrees at the accepted commit and this candidate:
 
 ```text
 Rscript dev/bench/v0_2_2_strict_ttr_cleanup/run_record.R \
   --baseline <accepted-tree> --candidate <candidate-tree> \
   --baseline-commit 1cbc51661df5d7691aa5668e94d3d551513d2f41 \
-  --candidate-commit ee5fd7497e055debb4613036c8537cc3f11e70fd \
+  --candidate-commit f7706c7e51871d82f2ea804f62b8421c67243f83 \
   --out dev/bench/v0_2_2_strict_ttr_cleanup/evidence \
   --lengths 250,1000 --pairs 5
 ```
@@ -150,7 +181,7 @@ contract is the safety boundary, and hostile direct tests exercise it.
 
 Focused verification on Windows x64 with R 4.6.1 and DuckDB 1.5.6.9000:
 
-- LTB-0276: 1 block, 70 expectations, zero failures or skips;
+- LTB-0276: 1 block, 76 expectations, zero failures or skips;
 - strict-feature acceleration: 3 blocks, 52 expectations, zero failures or
   skips;
 - test control plane: zero failures or skips;
@@ -166,5 +197,7 @@ parallel worker. It is not treated as a product result. Installing this exact
 tree into an isolated library and placing that library plus DuckDB 1.5.6.9000
 on `R_LIBS_USER` exercised the supported worker path and passed.
 
-No performance exception or design disposition is requested. The only open
-maintainer action is the planned Type 1 review and acceptance of Workstream 37.
+No performance exception or design disposition is requested. The independent
+Type 1 review is preserved with verdict `PASS_AFTER_PATCHES`, all four findings
+are corrected, and the only open maintainer action is acceptance of Workstream
+37.
