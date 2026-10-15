@@ -714,6 +714,14 @@ testthat::test_that("[LTB-0275] horizon classification drift stays report-only a
       current_packet = "inst/design/current_packet"
     )
   }
+  replace_once <- function(root, path, before, after) {
+    target <- file.path(root, path)
+    lines <- readLines(target, warn = FALSE, encoding = "UTF-8")
+    hit <- which(grepl(before, lines, fixed = TRUE))
+    testthat::expect_length(hit, 1L)
+    lines[[hit]] <- sub(before, after, lines[[hit]], fixed = TRUE)
+    writeLines(lines, target, useBytes = TRUE)
+  }
   finding_kind <- function(report, kind) {
     report[
       startsWith(report, "FINDING\t") &
@@ -733,12 +741,45 @@ testthat::test_that("[LTB-0275] horizon classification drift stays report-only a
   on.exit(unlink(dirname(pristine), recursive = TRUE), add = TRUE)
   pristine_report <- run_fixture(pristine)
   for (kind in c(
+    "missing_horizon_open_section",
+    "missing_horizon_classification_table",
+    "duplicate_horizon_classification",
     "unclassified_horizon_open",
     "missing_horizon_redirect",
+    "missing_horizon_archive_body",
     "archived_horizon_body_current"
   )) {
     testthat::expect_length(finding_kind(pristine_report, kind), 0L)
   }
+
+  missing_open <- copy_fixture()
+  on.exit(unlink(dirname(missing_open), recursive = TRUE), add = TRUE)
+  replace_once(
+    missing_open,
+    "inst/design/horizon.md",
+    "## Open",
+    "## Parking"
+  )
+  testthat::expect_length(
+    finding_kind(run_fixture(missing_open), "missing_horizon_open_section"),
+    1L
+  )
+
+  missing_table <- copy_fixture()
+  on.exit(unlink(dirname(missing_table), recursive = TRUE), add = TRUE)
+  replace_once(
+    missing_table,
+    "inst/design/current_packet/horizon_open_classification.md",
+    "| ID | Original heading | Class | Evidence | Destination |",
+    "Classification rows follow:"
+  )
+  testthat::expect_length(
+    finding_kind(
+      run_fixture(missing_table),
+      "missing_horizon_classification_table"
+    ),
+    1L
+  )
 
   unclassified <- copy_fixture()
   on.exit(unlink(dirname(unclassified), recursive = TRUE), add = TRUE)
@@ -762,6 +803,56 @@ testthat::test_that("[LTB-0275] horizon classification drift stays report-only a
   testthat::expect_length(
     finding_kind(run_fixture(missing_redirect), "missing_horizon_redirect"),
     1L
+  )
+
+  missing_archive_body <- copy_fixture()
+  on.exit(unlink(dirname(missing_archive_body), recursive = TRUE), add = TRUE)
+  archive_path <- file.path(
+    missing_archive_body,
+    "inst", "design", "horizon_archive.md"
+  )
+  archive_lines <- readLines(archive_path, warn = FALSE, encoding = "UTF-8")
+  archive_lines <- archive_lines[
+    archive_lines != "The preserved body is historical and has one redirect."
+  ]
+  writeLines(archive_lines, archive_path, useBytes = TRUE)
+  testthat::expect_length(
+    finding_kind(
+      run_fixture(missing_archive_body),
+      "missing_horizon_archive_body"
+    ),
+    1L
+  )
+
+  duplicate_classification <- copy_fixture()
+  on.exit(unlink(dirname(duplicate_classification), recursive = TRUE), add = TRUE)
+  classification_path <- file.path(
+    duplicate_classification,
+    "inst", "design", "current_packet", "horizon_open_classification.md"
+  )
+  classification_lines <- readLines(
+    classification_path,
+    warn = FALSE,
+    encoding = "UTF-8"
+  )
+  duplicate_row <- classification_lines[
+    startsWith(
+      classification_lines,
+      "| H001 | 2026-10-15 [research] Genuine fixture question |"
+    )
+  ]
+  testthat::expect_length(duplicate_row, 1L)
+  writeLines(
+    c(classification_lines, duplicate_row),
+    classification_path,
+    useBytes = TRUE
+  )
+  testthat::expect_length(
+    finding_kind(
+      run_fixture(duplicate_classification),
+      "duplicate_horizon_classification"
+    ),
+    2L
   )
 
   archived_current <- copy_fixture()

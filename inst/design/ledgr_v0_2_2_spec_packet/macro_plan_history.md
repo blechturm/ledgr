@@ -14,6 +14,7 @@ living document.
 
 | Amendment | Source lines | SHA-256 | Historical subject |
 | --- | ---: | --- | --- |
+| <a id="base-change-control-policy"></a>Base policy | 633-640 | `0e8c3e5517ada58fa400dae8cb3a762acf238a0b8fee21f55a66f4bad6b5ad11` | change-control scope before dated amendments |
 | <a id="amendment-2026-10-03-1"></a>2026-10-03 (1) | 641-646 | `c6a564870ba5882ee642a356df438ac2e4fe5d92a3212cb1b3dda059163cb88e` | WS5 consumes the DuckDB projection design |
 | <a id="amendment-2026-10-08-1"></a>2026-10-08 (1) | 647-660 | `4fec0c2e4f9b06bc357e7068105dadd9364baae00ca3ddf53525fb1e7936f489` | WS2 remainder before the history wave |
 | <a id="amendment-2026-10-08-2"></a>2026-10-08 (2) | 661-689 | `f575308882753156470da834d59de4dd247088a25522ef153bf7690bdebcc1e7` | post-Workstream-21 sequence |

@@ -589,8 +589,8 @@ The following do not gate v0.2.2:
     retry helper (50 attempts with `gc()`, now behind the gate) and the five
     test files over 1,000 lines besides the documentation-contract test.
 
-  The governance cut's roadmap rewrite lists them in the next-release
-  section.
+  The governance cut's roadmap rewrite groups them as deferred Section 5
+  inputs in the next-release section; this section remains their detail.
 
 These are not rejected capabilities. They stay visible in the roadmap or
 horizon and require their own evidence and design route.
@@ -629,34 +629,49 @@ v0.2.2 is ready for its release gate only when:
     preregistered WS3 budget. A breach is either corrected before release or
     accepted explicitly with its user-visible limit and a durable follow-up;
     it is not hidden inside the integrated runtime record.
+
 ## 7. Remaining order
 
-Cut 15 has two coordinated tracks. Workstream 32 established the governance
-rules and report-only guard; Workstream 36 established the schema-120 and
-feature-identity product base. The remaining order is:
+Cut 15 has two concurrent tracks, not one serial list:
 
-1. **Governance planning — owner WS34:** restore the roadmap, this order, and
-   the horizon so later work has one planning front door.
-2. **Parallel contract and product work — owners WS33 and WS37:** WS33 starts
-   only after WS32 and WS36 so current contracts describe schema 120; WS37
-   follows WS36 because strict-feature cleanup uses the final feature identity.
-3. **Governance close and fold preparation — owners WS35 and WS38:** WS35
-   follows WS33 and WS34 to normalize records after both current contracts and
-   planning are stable; WS38 follows WS37 to extract phases on the final
-   pre-history engine.
-4. **Final product evidence — owner WS39:** rebuild the private research lake
-   after WS38, with WS34 also complete so the build is routed by the current
-   plan.
-5. **Joint gate — owners WS35 and WS39:** only after both workstreams are
-   accepted does the WS3/WS4 history wave resume, because it consumes the
-   normalized governance record, final fold structure, and current real-data
-   evidence.
+- **Governance track:** WS32 is complete; WS34 restores the planning front
+  doors. After the schema-120 base in WS36, WS33 updates current contracts.
+  WS35 then closes only after both WS33 and WS34.
+- **Product track:** WS36 is complete; WS37 performs strict-TTR cleanup, WS38
+  extracts fold phases, and WS39 rebuilds the private research lake after
+  WS38 and WS34.
 
-Thus the governance track is WS32 -> WS34 and (after WS36) WS33 -> WS35; the
-product track is WS36 -> WS37 -> WS38 -> WS39. Workstreams 32 through 39 are
-Cut 15's complete pre-history boundary. `tickets.yml` is the sole authority
-for exact within-cut dependencies and status; this section states the readable
-release-level order and creates no competing sequence.
+The tracks meet at one gate: WS35 and WS39 must both be accepted before the
+WS3/WS4 history wave resumes. That wave consumes the normalized governance
+record, final fold structure, and current real-data evidence. Workstreams 32
+through 39 are Cut 15's complete pre-history boundary. `tickets.yml` alone
+binds exact dependencies and status; this section records track shape and
+concurrency only.
+
+<a id="execution-core-consolidation"></a>
+
+### Execution-core consolidation
+
+The later accepted release-line decision in commit `4397f58f` supersedes Cut
+15 decision 9's earlier both-modes wording for current planning. History is
+built on the availability path only; dense mode is frozen to fixes with no new
+features or branches; execution-core consolidation is committed before the
+first CRAN release. "Dense universes" in history design means full-membership
+shapes on the availability path. Historical probe evidence and the original
+Cut 15 decision remain unchanged as evidence of the decision sequence.
+
+<a id="post-gate-live-routes"></a>
+
+### Post-gate live routes
+
+- **Dividend facts:** LFB-013 supplies adapter interpretation; the later
+  dividend-facts lake rebuild and WS7 own carried-input G-013, dividend-status
+  G-016, build-time, and peak-RSS checks. WS8 owns G-025. Until those facts
+  pass end to end, the headline explicitly excludes dividends.
+- **Growth shape:** WS8 owns custom-function indicator slicing, result/trade/
+  print replay, and sweep/walk-forward phase timing in its regression suite.
+- **Availability core:** the WS3/WS4 cut decides optimization placement. WS4
+  owns strict TTR work per gap-bounded segment; it is not a generic TTR layer.
 
 <a id="7-change-control"></a>
 
@@ -666,6 +681,7 @@ The superseded sequencing narratives remain content-addressed in
 [macro-plan history](macro_plan_history.md). These dated lines are historical
 navigation, not a second current order.
 
+- Base policy — [change-control scope before dated amendments](macro_plan_history.md#base-change-control-policy).
 - 2026-10-03 — [WS5 consumes the DuckDB projection design](macro_plan_history.md#amendment-2026-10-03-1).
 - 2026-10-08 — [WS2 remainder precedes the history wave](macro_plan_history.md#amendment-2026-10-08-1).
 - 2026-10-08 — [post-Workstream-21 sequencing](macro_plan_history.md#amendment-2026-10-08-2).

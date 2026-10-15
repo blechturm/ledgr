@@ -56,19 +56,30 @@ obligations, or parked ideas. Historical planning prose is preserved in
 | v0.2.1.0 | Released | Accounting consolidation, equity events, strategy context, and release hardening. | [packet](ledgr_v0_2_0_2_spec_packet/) |
 | v0.2.2 | Active | Long-window point-in-time research, pre-history foundations, historical projection, recursive-indicator semantics, and release evidence. | [packet](ledgr_v0_2_2_spec_packet/); [tickets](ledgr_v0_2_2_spec_packet/tickets.yml) |
 
+<a id="next-release"></a>
+
 ## Next release
 
-After v0.2.2 closes, choose a bounded packet from measured evidence rather
-than treating this list as a sequence:
+After v0.2.2 closes, the next bounded packet is selected from these live
+themes; this list is not a within-release sequence:
 
-- finish the phase-level memory and parallel-worker budget work;
-- consolidate output handling, then reconsider one execution mode using the
-  RED probe and the history implementation as inputs;
-- simplify the ordinary conceptual surface only where the stable contracts
-  show a real teaching or usage cost.
+- **Committed before the first CRAN release:** consolidate the execution core
+  onto the availability path. Dense mode is frozen meanwhile. The later
+  accepted release-line decision in commit `4397f58f` supersedes Cut 15's
+  earlier both-modes wording; the current owner is
+  [macro-plan execution-core consolidation](ledgr_v0_2_2_spec_packet/macro_plan.md#execution-core-consolidation).
+- **Scheduled surface work:** retire context-frame views through the
+  [context-frame retirement RFC row](rfc/README.md#ctx-frame-retirement), and
+  decide persisted-data execution placement through its
+  [focused RFC row](rfc/README.md#persisted-data-execution-placement).
+- **Still-live chores:** phase-level memory and parallel-worker budgets, plus
+  the plotting, print/result-reader, and symbol-surface work retained by
+  [macro-plan Section 5](ledgr_v0_2_2_spec_packet/macro_plan.md#5-explicit-non-goals)
+  and the horizon. These remain scoped inputs, not an invented bundle.
+- **Explicitly deferred:** the remaining Section 5 items stay with their
+  named RFC or horizon route until a packet accepts them.
 
-Each item requires its own accepted owner before implementation. The
-[horizon](horizon.md) retains the full non-binding questions and the
+The [horizon](horizon.md) retains non-binding questions and the
 [RFC pipeline](rfc/README.md) retains accepted obligations.
 
 ## Later direction
@@ -76,9 +87,12 @@ Each item requires its own accepted owner before implementation. The
 Later releases may take exact equity quantity settlement, opt-in factor or
 prediction evidence (LFB-028), fitted-transform and ML lifecycle work,
 portfolio construction, external point-in-time regressors, liquidity and
-capacity, OMS/paper trading, and production observability. These are
-directions, not promises. Promotion starts in the RFC pipeline or an accepted
-packet; until then the horizon remains non-binding.
+capacity, OMS/paper trading, and production observability. The accepted
+[OMS synthesis sequencing](rfc/rfc_ledgr_oms_seed_synthesis.md#2-roadmap-sequencing)
+still places a paper adapter before a live adapter and small-scale live trading
+at v1.0.0; no calendar date is currently bound. These are directions, not
+promises. Promotion starts in the RFC pipeline or an accepted packet; until
+then the horizon remains non-binding.
 
 ## Boundary
 
