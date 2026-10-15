@@ -1,7 +1,7 @@
 # Workstream 38 closeout: fold phase extraction
 
-**Status:** Focused re-review cleared the product; record correction applied
-and awaiting maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-10-15 after the focused
+re-review cleared the product and the record mapping was corrected.
 **Date:** 2026-10-15
 **Authority:** accepted fold-execution phase synthesis, Sections 4 to 8
 
