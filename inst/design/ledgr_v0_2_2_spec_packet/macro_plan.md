@@ -672,6 +672,15 @@ Cut 15 decision remain unchanged as evidence of the decision sequence.
   print replay, and sweep/walk-forward phase timing in its regression suite.
 - **Availability core:** the WS3/WS4 cut decides optimization placement. WS4
   owns strict TTR work per gap-bounded segment; it is not a generic TTR layer.
+- **Run telemetry:** WS8 decides whether detailed per-pulse telemetry
+  (`ledgr_backtest_bench()`, `execution$telemetry_stride`, the session
+  registry) stays, becomes opt-in or goes, and how `t_pre`, `t_loop` and
+  `t_post` reach their consumers (maintainer, 2026-10-15). Inputs: the WS38
+  stage profile and the history wave's use of the components; consumers
+  include the compiled-accounting probe and the Sharadar stage bench.
+  Telemetry is unchanged until then, so history-wave baselines stay
+  comparable. A change to the contract or public surface is RFC work,
+  scheduled when WS8 opens.
 
 <a id="7-change-control"></a>
 
