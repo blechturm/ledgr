@@ -36,14 +36,15 @@ the execution contracts in `inst/design/contracts.md`.
   table, keep provenance in the product rather than the harness, and deliver
   a runner, a diff-based checker, and a gut demonstration. Size budgets in
   that document are stop signals, not targets.
-- Governance loop (accepted 2026-09-21 and applied since v0.2.1.0): the
-  maintainer writes every operative brief and names its mode. `Type 1`
-  verifies an accepted direction and always asks independently whether the
-  inputs are right; `Type 2` challenges the design; a design concern found
-  in Type 1 returns `NEEDS_TYPE_2`. Review is per workstream, not batch.
-  `tickets.yml` is the sole ticket authority; batches produce no evidence
-  essay; a decision-changing rejection gets a concise durable reason, which
-  Git does not hold. Details: `inst/design/rfc_cycle.md`.
+- Governance loop: the maintainer writes every operative brief and names its
+  mode. `Type 1` verifies accepted direction and independently asks whether
+  the inputs are right; `Type 2` challenges design; a Type 1 design concern
+  returns `NEEDS_TYPE_2`. Review is per workstream, not batch. Review ratios
+  are recorded, not gated; a third correction round goes to the maintainer.
+  Findings follow `inst/design/rfc_cycle.md`'s record rule. `tickets.yml` alone
+  sequences a cut; batches produce no evidence essay. Preserve consequential
+  rejection reasons, cite stable contract rule-group addresses, and do not
+  treat acceptance alone as a change to shipped behavior.
 - Contracts and specifications define semantics. Canonical R is the
   normative executable oracle for optimized or compiled paths; runtime
   default is a separate decision; divergence fails closed pending an RFC.
@@ -77,7 +78,7 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-10-13):
+Current planning context (2026-10-14):
 
 - v0.2.1.0 is published. Its packet retains the historical
   `ledgr_v0_2_0_2_spec_packet/` path and is release evidence, not current
@@ -86,12 +87,12 @@ Current planning context (2026-10-13):
   `inst/design/ledgr_v0_2_2_spec_packet/`; `tickets.yml` is the sole status and
   sequencing authority. Read that file for live workstream state; this file
   does not duplicate it.
-- `inst/design/contracts.md` is the normative current-behavior source. Cite its
-  stable topic headings, not line numbers. Accepted RFC syntheses bind pending
-  design; they do not override shipped behavior before implementation.
-- The roadmap is the compact committed sequence. Detailed v0.2.2 dependencies
-  live in the packet macro plan, parked ideas in `horizon.md`, and displaced
-  planning narrative in `roadmap_history.md` and
+- `inst/design/contracts.md` binds shipped behavior. Accepted sections bind
+  their stated pending scope; incorporated evidence binds only the promoted
+  rule. Acceptance does not claim implementation.
+- The roadmap owns release scope and sequence; the macro plan owns uncut
+  within-release order; `tickets.yml` alone sequences a cut. Parked ideas live
+  in `horizon.md`, and displaced narrative in `roadmap_history.md` and
   `planning_context_history.md`.
 - Reuse public capabilities and production semantics. Design only missing
   behavior; do not add research-specific manifests or parallel provenance.

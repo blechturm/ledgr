@@ -1,0 +1,4 @@
+claims:
+  - id: LCL-fixture
+    source: accepted synthesis Section 6
+    scope: governance report fixture

@@ -1,6 +1,10 @@
 # ledgr RFC Cycle
 
-**Status:** Current as of three completed cycles (OMS, walk-forward, public transaction-cost API). Revise after the next cycle if the pattern shifts. Not a binding methodology -- a reference card.
+Role: living; standing RFC and implementation-review process.
+Status: working
+Authority: accepted governance-lifecycle synthesis Sections 2, 5 and 7;
+earlier accepted process decisions remain in force where that synthesis leaves
+them unchanged.
 
 **Audience:** the maintainer and any LLM agent (Codex, Claude, future) about to start or continue an RFC cycle.
 
@@ -10,6 +14,14 @@ The cycle is deliberately Hegelian in shape: thesis, antithesis, synthesis. In
 LLM-assisted design this is an epistemic control mechanism, not ceremony. Each
 stage assigns a different model instance a different failure mode, preserves the
 disagreement trail, and only then binds decisions.
+
+This living document binds the RFC and review processes it governs. Historical
+examples explain them; a deviation names its reason and maintainer
+authorization. Authority attaches to accepted sections, not file kinds.
+Contracts state shipped rules, accepted sections bind their stated pending
+scope, the roadmap owns release scope and sequence, the current macro plan owns
+uncut within-release order, and `tickets.yml` alone sequences work inside a
+cut. Acceptance does not by itself claim implementation.
 
 ---
 
@@ -62,7 +74,12 @@ Patch the same file in place only for:
 - post-synthesis bug fixes caught during final review (with a clear revision note);
 - resolving in-line maintainer decisions where the file itself asked for the resolution (e.g., cost-API v2 Section 17 open questions Q1 and Q2 were resolved in v2 in-place because v2 escalated them).
 
-Otherwise: new file.
+Otherwise use a new version for contested major revisions, or an accepted
+dated appended amendment with the governance-lifecycle synthesis's
+supersession table and notices. A dated amendment is listed and linked in the
+record header with acceptance provenance; each affected section carries its
+notice. At a declared last-stage close, freeze the working register and its
+provenance.
 
 ---
 
@@ -250,8 +267,9 @@ document patches, none reopened design.
 ## Review modes, workstreams, and routes
 
 Accepted 2026-09-21 (`rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md`,
-D2, D3, D4, D6, D8). Binding as a pilot for the next implementation packet;
-the maintainer promotes, revises, or abandons it after that packet's closeout.
+D2, D3, D4, D6 and D8), as amended by the accepted governance-lifecycle
+synthesis Section 5. These are standing process rules, not a packet-only
+pilot.
 
 **Two modes.** `Type 2` asks whether the problem is framed correctly, the
 proposal is the best response, its incentives are sane, and its cost and
@@ -274,11 +292,40 @@ workstream gets one Type 1 review after implementation and before dependent
 work removes a fallback, freezes evidence, or makes reversal hard; a
 workstream gets Type 2 first when it chooses architecture, public semantics,
 an oracle, or an evidence boundary. Batches sequence work; they are not review
-units and produce no evidence essay. The packet closeout records what shipped,
-which claims are supported, what remains open, one line per rejected approach
-or record, and the pilot counters: review invocations per completed ticket
-(gate: at most 0.5), findings by mode and whether each changed an outcome,
-reruns and rejected records, and disputed classifications.
+units and produce no evidence essay.
+
+At packet closeout, record what shipped, which claims are supported, what
+remains open, and one line for each rejected approach or record. Retain the
+measurement counters for review invocations, reruns, rejected records and
+disputed classifications, together with findings by mode, whether they changed
+an outcome and maintainer decision turns. These are closeout evidence, not
+success gates.
+
+**Evidence and findings.** Ticket evidence gives every acceptance item a
+record pointer and one-line result. Empirical evidence also records input
+identity, environment, source commit, reproduction command, result and clock
+where applicable. Preserve reviewed ranges and consequential rejection
+reasons; neither all raw files nor summary-only evidence is a universal rule.
+A review with findings writes a file in the owning packet named for its review
+point. Its `tickets.yml` review result records verdict, link and one line on
+what changed. A finding-free `PASS` gets that one line and no file. Closed
+tickets and old review fields remain historical records.
+
+**Review measurement and escalation.** Review ratios are measured, not gated.
+One invocation is one independent verdict at cut review, workstream close,
+focused re-review or final review from a session other than the implementing
+agent; own-session reviews are labelled and counted separately. Completed
+tickets form the denominator, and dropped tickets enter neither count. Record
+the counts and ratio once at cut close and once for the packet, together with
+findings by mode, whether they changed an outcome, and maintainer decision
+turns. A third correction round on one workstream stops for maintainer
+disposition of whether the ticket, implementation or brief is wrong.
+
+The maintainer reassesses this measurement at v0.2.2 closeout using the
+M1-defined counts for every v0.2.2 cut and records one disposition here:
+keep, revise or drop. Unknown historical measures remain unknown rather than
+being estimated as zero. Every later pilot names its owner, exit trigger and
+possible dispositions before it starts.
 
 **Routes.** Full RFC when work changes a contract, public semantics,
 authority, or an evidence boundary; Type 2 mandatory, stages and rotation as
@@ -338,14 +385,17 @@ pre-authored expected rows, and closed inconclusive. The budgets in
 
 ## When to deviate
 
-This document captures what has worked. It is not a binding methodology. Reasons to deviate:
+This document binds the adopted process above. These narrow reasons may justify
+a visible, maintainer-authorized deviation without silently redesigning an
+accepted scope:
 
 - **Time pressure.** A small RFC with low blast radius can skip stages.
 - **Context-window limits.** If the LLM doing the synthesis can't fit the seed + response + review + code, split the synthesis or do it in passes.
 - **Single-author necessity.** If only one LLM is available, role rotation is impossible; record the loss of adversarial review and lean harder on maintainer review.
 - **Genuine novelty.** A cycle that establishes a new pattern (e.g., the first RFC to interact with a new external system) may need stages this document doesn't anticipate.
 
-Deviations should be visible. If a cycle deviates from this pattern, the synthesis or final-review note should say which stages were skipped and why.
+If a cycle deviates, its synthesis or final-review note states which stages
+were skipped, why, and who authorized the deviation.
 
 ---
 
@@ -356,3 +406,8 @@ Deviations should be visible. If a cycle deviates from this pattern, the synthes
 - **2026-06-04 (same day)** -- walk-forward RFC closure strengthened with Amendment 2 (synthesis Section 16) and Section 17 ticket-cut gates after a post-Amendment-1 review (Claude online, then Codex) identified that Amendment 1's Sections 14.2 and 14.3 bound procedural constraints ("must justify", "must address", "visually unavoidable") rather than substantive defaults, and that no ticket-cut enforcement mechanism gated the obligations. Amendment 2 replaced the four procedural routings with substantive defaults (carry_test_state, fail-closed metric classification, no-default extraction with rationale arg, operational print data contract). Section 17 added a two-gate enforcement matrix (packet-open and release-gate). Pattern refined: an amendment that routes findings to procedural constraints alone is insufficient closure. A post-synthesis amendment must either (a) bind a substantive default, operational contract, or forbidden-list; or (b) name a ticket-cut gate matrix that enforces the procedural constraint at named lifecycle points; or both. Procedural-only routings ("the spec-cut writer must justify X") fail closed at the cycle-discipline level because they delegate the substantive decision back to the moment the amendment was meant to constrain. The walk-forward closure is the first cycle to apply this refinement; future cycles' final-review patches should follow it.
 - **2026-09-08** -- added "Spikes inside a cycle" and the binding `spike_protocol.md` after the asset-availability spike (v0.1.9.8) closed inconclusive: probe before prose, runnable core before expected tables, size budgets as stop signals, provenance in the product not the harness, and a three-action review contract.
 - **2026-09-21** -- post-v0.2.0.1 governance review accepted (synthesis v2 at `78cef8c`). Replaced "Prompt-writing notes" with "Briefs": maintainer-owned, mode-named, question-first. Added "Review modes, workstreams, and routes" as a pilot for the next implementation packet. Stages and rotation unchanged. Lesson: agents reproduce the shape of their brief; the cycle's first synthesis was rejected for converting decisions into form checks after an over-specified brief, and its second was returned once for three unchallenged synthesis-only choices.
+- **2026-10-14** -- governance-lifecycle synthesis Sections 2, 5 and 7
+  applied: the adopted process is binding, the review-ratio gate is retired in
+  favor of M1 measurement and escalation, and M2 gives findings one packet
+  home. RFC stages, modes, rotation, briefs and narrow deviations are
+  unchanged.
