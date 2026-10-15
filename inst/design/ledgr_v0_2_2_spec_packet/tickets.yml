@@ -527,13 +527,13 @@ workstreams:
   - id: 34
     name: "Planning front doors and horizon"
     cut: 15
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 32
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "focused re-review 1 of workstream 34", verdict: "CHANGES_REQUIRED", artifact: "close_review_34_rereview_1.md", result: "Correction round 1 closed the authority, sequencing and most routing findings; the focused re-review required mechanical correction round 2 for stale routes, shipped release dates and the multi-entry archive-body boundary witness.", reason: "One claim: roadmap, current release order and horizon have distinct readable roles and every open item has one durable owner. Review samples both directions, confirms archived and promoted items remain discoverable and checks that the no-move decision avoids path churn without reopening package shipping."}
+    review: {mode: "Type 1", point: "final focused review of workstream 34", verdict: "PASS", result: "Finding-free PASS at 32d9080a: all correction-round findings are closed; residual very-low wording nits route to WS35 current metadata normalization and are non-gating. No new M2 artifact.", reason: "One claim: roadmap, current release order and horizon have distinct readable roles and every open item has one durable owner. Review samples both directions, confirms archived and promoted items remain discoverable and checks that the no-move decision avoids path churn without reopening package shipping."}
     integration_evidence:
       - "inst/design/ledgr_v0_2_2_spec_packet/close_review_34_rereview_1.md: focused Type 1 re-review verdict CHANGES_REQUIRED is preserved verbatim; its correction-round-2 findings are mechanical and require no maintainer decision."
-      - "Correction round 2 repoints every named stale route, restores the v0.2.1.0 publication date, and makes the report-only archive guard reject deletion of either body in a two-entry disposition-before-heading fixture; accepted remains null pending another focused re-review."
+      - "Correction round 2 repoints every named stale route, restores the v0.2.1.0 publication date, and makes the report-only archive guard reject deletion of either body in a two-entry disposition-before-heading fixture; accepted remains null pending maintainer acceptance."
     accepted: null
   - id: 35
     name: "Governance record normalization"
