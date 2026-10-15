@@ -1052,7 +1052,7 @@ governance_evidence_has_result <- function(value) {
     paste0(
       "\\b(?:accept|add|classif|clos|confirm|detect|establish|exclud|fail|identical|",
       "list|match|measure|name|own|pass|preserv|record|refus|report|",
-      "remain|reproduc|return|route|run|show|verif)[A-Za-z]*\\b"
+      "reconcil|remain|reproduc|return|route|run|show|verif)[A-Za-z]*\\b"
     ),
     prose,
     ignore.case = TRUE,
