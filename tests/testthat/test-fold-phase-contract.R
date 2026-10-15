@@ -25,8 +25,29 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
       cash = 100,
       positions = c(AAA = 1),
       lot_state = list(AAA = list()),
-      equity_facts = data.frame(value = 1)
+      state_prev = data.frame(value = 1)
     ),
+    class = "ledgr_internal_error"
+  )
+  scalar_state <- ledgr_fold_state_new(
+    cash = 100,
+    positions = c(AAA = 1),
+    lot_state = list(AAA = list()),
+    state_prev = 5
+  )
+  testthat::expect_identical(scalar_state$state_prev, 5)
+  facts <- ledgr_fold_equity_fact_accumulator(2L)
+  facts$append(list(ts_utc = 1, cash = 100))
+  facts$append(list(ts_utc = 2, cash = 101))
+  testthat::expect_identical(
+    facts$collect(),
+    list(
+      list(ts_utc = 1, cash = 100),
+      list(ts_utc = 2, cash = 101)
+    )
+  )
+  testthat::expect_error(
+    facts$append(list(ts_utc = 3, cash = 102)),
     class = "ledgr_internal_error"
   )
   testthat::expect_error(
@@ -92,6 +113,22 @@ testthat::test_that("[LTB-0279] fold phase ownership rejects structural boundary
     duplicated_inline_stage_body = c(
       base_stages,
       "ledgr_fold_envelope <- function(execution, output_handler) output_handler$write_fill_events(data.frame())"
+    ),
+    environment_vector_write =
+      "ledgr_fold_stage_apply <- function(fold_state, services) fold_state$positions[[1L]] <- 1",
+    returned_data_frame =
+      "ledgr_fold_stage_decide <- function(fold_state, services) list(value = data.frame(x = 1))",
+    stage_call_count = c(
+      base_stages,
+      "ledgr_fold_envelope <- function(execution, output_handler) { ledgr_fold_stage_observe_settle(); ledgr_fold_stage_decide(); ledgr_fold_stage_plan(); ledgr_fold_stage_apply() }"
+    ),
+    stage_call_order = c(
+      base_stages,
+      "ledgr_fold_envelope <- function(execution, output_handler) { ledgr_fold_stage_decide(); ledgr_fold_stage_observe_settle(); ledgr_fold_stage_plan(); ledgr_fold_stage_apply(); ledgr_fold_stage_commit() }"
+    ),
+    envelope_slot_owner = c(
+      base_stages,
+      "ledgr_fold_envelope <- function(execution, output_handler) { fold_state$cash <- 1; ledgr_fold_stage_observe_settle(); ledgr_fold_stage_decide(); ledgr_fold_stage_plan(); ledgr_fold_stage_apply(); ledgr_fold_stage_commit() }"
     )
   )
   for (kind in names(mutations)) {
@@ -101,4 +138,19 @@ testthat::test_that("[LTB-0279] fold phase ownership rejects structural boundary
       info = kind
     )
   }
+  duplicate_findings <- check_fixture(c(
+    base_stages,
+    paste0(
+      "ledgr_fold_envelope <- function(execution, output_handler) { ",
+      "ledgr_fold_stage_observe_settle(); ",
+      "ledgr_fold_stage_decide(); ledgr_fold_stage_decide(); ",
+      "ledgr_fold_stage_plan(); ledgr_fold_stage_apply(); ",
+      "ledgr_fold_stage_commit() }"
+    )
+  ))
+  testthat::expect_true(any(startsWith(
+    duplicate_findings,
+    "stage_call_count:"
+  )))
+
 })

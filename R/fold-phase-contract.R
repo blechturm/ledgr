@@ -10,7 +10,6 @@
   "affected_exposure",
   "processed",
   "full_run",
-  "equity_facts",
   "last_fully_valued",
   "last_executed",
   "frozen_set",
@@ -38,7 +37,6 @@ ledgr_fold_state_new <- function(
     ),
     processed = 0L,
     full_run = TRUE,
-    equity_facts = list(),
     last_fully_valued = as.POSIXct(NA, tz = "UTC"),
     last_executed = as.POSIXct(NA, tz = "UTC"),
     frozen_set = character(),
@@ -59,7 +57,6 @@ ledgr_fold_state_new <- function(
   out$affected_exposure <- affected_exposure
   out$processed <- processed
   out$full_run <- full_run
-  out$equity_facts <- equity_facts
   out$last_fully_valued <- last_fully_valued
   out$last_executed <- last_executed
   out$frozen_set <- frozen_set
@@ -95,7 +92,7 @@ ledgr_fold_state_validate <- function(x) {
       anyNA(names(x$positions)) || any(!nzchar(names(x$positions))) ||
       anyDuplicated(names(x$positions)) ||
       !is.list(x$lot_state) ||
-      !(is.null(x$state_prev) || is.list(x$state_prev)) ||
+      is.data.frame(x$state_prev) ||
       !(is.null(x$state_axis) || is.character(x$state_axis)) ||
       !is.integer(x$event_seq) || length(x$event_seq) != 1L ||
       is.na(x$event_seq) || x$event_seq < 1L ||
@@ -107,7 +104,6 @@ ledgr_fold_state_validate <- function(x) {
       is.na(x$processed) || x$processed < 0L ||
       !is.logical(x$full_run) || length(x$full_run) != 1L ||
       is.na(x$full_run) ||
-      !is.list(x$equity_facts) ||
       !inherits(x$last_fully_valued, "POSIXct") ||
       length(x$last_fully_valued) != 1L ||
       !inherits(x$last_executed, "POSIXct") || length(x$last_executed) != 1L ||
@@ -163,4 +159,32 @@ ledgr_fold_stop_result <- function(
 
 ledgr_is_fold_stop_result <- function(x) {
   inherits(x, "ledgr_fold_stop_result")
+}
+
+ledgr_fold_equity_fact_accumulator <- function(capacity) {
+  capacity <- as.integer(capacity)
+  if (length(capacity) != 1L || is.na(capacity) || capacity < 0L) {
+    rlang::abort(
+      "Invalid internal equity-fact accumulator capacity.",
+      class = "ledgr_internal_error"
+    )
+  }
+  values <- vector("list", capacity)
+  size <- 0L
+  append <- function(value) {
+    size <<- size + 1L
+    if (size > capacity) {
+      rlang::abort(
+        "Internal equity-fact accumulator exceeded its capacity.",
+        class = "ledgr_internal_error"
+      )
+    }
+    collapse::setv(values, size, list(value), vind1 = TRUE, xlist = TRUE)
+    invisible(NULL)
+  }
+  collect <- function() {
+    if (size == 0L) return(list())
+    values[seq_len(size)]
+  }
+  list(append = append, collect = collect)
 }

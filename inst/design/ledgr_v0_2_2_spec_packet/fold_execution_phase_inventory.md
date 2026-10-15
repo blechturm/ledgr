@@ -51,7 +51,7 @@ reference; no stage accepts or returns another mutable aggregate.
 | `cash` | numeric scalar | P1, P4 | E return |
 | `positions` | uniquely named numeric vector | P1, P4 | E return |
 | `lot_state` | list | P1, P4 | E return |
-| `state_prev` | `NULL` or list | P1, P5 | E return |
+| `state_prev` | any non-data-frame user value, including `NULL` | P1, P5 | E return |
 | `state_axis` | `NULL` or character vector | P1, P5 | P5 normalization |
 | `event_seq` | positive integer scalar | P1, P4 | E return |
 | `status` | nonempty character scalar | E applying a stop | E completion/return |
@@ -59,7 +59,6 @@ reference; no stage accepts or returns another mutable aggregate.
 | `affected_exposure` | list | E applying a stop | E completion |
 | `processed` | nonnegative integer scalar | P5; E applying counted stop | E telemetry/return |
 | `full_run` | logical scalar | P5 controls | E completion/return |
-| `equity_facts` | list of typed row lists | P1 | runner after an interrupted fold |
 | `last_fully_valued` | one UTC time, possibly missing | P1 | E completion |
 | `last_executed` | one UTC time, possibly missing | P4/P5 boundary | E completion |
 | `frozen_set` | character vector | P1 | P1 next pulse |
@@ -99,6 +98,7 @@ Section 5.5 exception; LDG-3052 does not change it.
 | fast context and scalar-access tracker | pulse index and accessor state | P2 |
 | feature-bundle accessors | last explicit-map memo | P2 |
 | diagnostic writer | `append_block`, `drain`, `release` | P5/E stop; E; E |
+| equity-fact accumulator | preallocated by E; `append`, `collect` | P1; E return |
 | output handler | `init_buffers`, `run_transaction`, `write_run_evidence`, `write_exception_diagnostic` | E |
 | output handler | `write_run_diagnostics` | E and diagnostic flush |
 | output handler | `append_event_rows`, `record_equity_fact` | P1 |
@@ -139,13 +139,15 @@ Cut 15 decision (11)'s eight phases are superseded by E plus P1-P5. Decision
 (7)'s pure-refactor rule remains binding except for the live return named in
 Section 5.5 and owned by LDG-3054. The structural detector must reject:
 
-1. a data-frame carrier slot or stage argument;
+1. a data-frame carrier slot, stage argument or directly constructed returned value;
 2. a second or copied mutable aggregate;
 3. public `ctx` retaining the carrier;
 4. a carrier-slot write outside its declared owner, including an E write that
    is not stop application;
 5. a service mutator called from an undeclared stage; and
-6. a stage body duplicated inline after extraction.
+6. a stage body duplicated inline after extraction;
+7. an omitted, duplicated or reordered stage call; and
+8. element-wise mutation of the environment-held positions vector.
 
 The detector is structural support for the byte oracle. It cannot replace the
 repaired full-family ladder, callback-context parity or fault injection.

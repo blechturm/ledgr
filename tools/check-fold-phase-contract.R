@@ -21,7 +21,8 @@ ledgr_fold_phase_stage_name <- function(function_name) {
     ledgr_fold_stage_plan = "plan",
     ledgr_fold_stage_apply = "apply",
     ledgr_fold_stage_commit = "commit",
-    ledgr_execute_fold = "envelope"
+    ledgr_execute_fold = "envelope",
+    ledgr_fold_envelope = "envelope"
   )
   unname(stages[[function_name]])
 }
@@ -32,6 +33,10 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "^ledgr_fold_stage_",
     names(definitions)
   )]
+  checked_names <- c(
+    stage_names,
+    intersect("ledgr_fold_envelope", names(definitions))
+  )
   findings <- character()
   forbidden_formals <- c("ctx", "bars", "feature_table", "features_wide")
   slot_owners <- list(
@@ -46,7 +51,6 @@ ledgr_fold_phase_source_findings <- function(paths) {
     affected_exposure = "envelope",
     processed = c("commit", "envelope"),
     full_run = "commit",
-    equity_facts = "observe",
     last_fully_valued = "observe",
     last_executed = "commit",
     frozen_set = "observe",
@@ -64,6 +68,7 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "(services\\$)?corporate_action_plan\\$bind_boundary\\s*\\(" = c("envelope", "apply"),
     "diagnostic_writer\\$append_block\\s*\\(" = c("commit", "envelope"),
     "diagnostic_writer\\$(drain|release)\\s*\\(" = "envelope",
+    "(services\\$)?equity_fact_accumulator\\$append\\s*\\(" = "observe",
     "(services\\$)?output_handler\\$(append_event_rows|record_equity_fact)\\s*\\(" = "observe",
     "output_handler\\$(write_fill_events|record_accounting_fact|append_compiled_spot_batch)\\s*\\(" = "apply",
     "output_handler\\$(flush_pulse_events|write_strategy_state|buffer_strategy_state)\\s*\\(" = "commit",
@@ -72,7 +77,21 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "output_handler\\$write_run_diagnostics\\s*\\(" = c("commit", "envelope")
   )
 
-  for (name in stage_names) {
+  call_contains_data_frame <- function(expr) {
+    if (!is.call(expr)) return(FALSE)
+    if (identical(expr[[1L]], as.name("data.frame"))) return(TRUE)
+    any(vapply(as.list(expr)[-1L], call_contains_data_frame, logical(1L)))
+  }
+  list_contains_data_frame <- function(expr) {
+    if (!is.call(expr)) return(FALSE)
+    if (identical(expr[[1L]], as.name("list")) &&
+        any(vapply(as.list(expr)[-1L], call_contains_data_frame, logical(1L)))) {
+      return(TRUE)
+    }
+    any(vapply(as.list(expr)[-1L], list_contains_data_frame, logical(1L)))
+  }
+
+  for (name in checked_names) {
     fn <- definitions[[name]]
     stage <- ledgr_fold_phase_stage_name(name)
     formal_names <- names(as.list(fn[[2L]]))
@@ -83,11 +102,22 @@ ledgr_fold_phase_source_findings <- function(paths) {
     if (grepl("fold_state\\$[A-Za-z0-9_]+[^\\n;]*<-\\s*data\\.frame\\s*\\(", body_text, perl = TRUE)) {
       findings <- c(findings, paste0("data_frame_slot:", name))
     }
-    if (grepl("new\\.env\\s*\\(", body_text, perl = TRUE) ||
-        grepl("\\b[A-Za-z][A-Za-z0-9_.]*\\s*<-\\s*fold_state\\b(?!\\$)", body_text, perl = TRUE)) {
-      findings <- c(findings, paste0("second_mutable_aggregate:", name))
+    if (list_contains_data_frame(fn[[3L]])) {
+      findings <- c(findings, paste0("returned_data_frame:", name))
     }
     if (grepl(
+      "fold_state\\$positions\\s*\\[+[^\\n;]*<-",
+      body_text,
+      perl = TRUE
+    )) {
+      findings <- c(findings, paste0("environment_vector_write:", name))
+    }
+    if (!identical(name, "ledgr_fold_envelope") &&
+        (grepl("new\\.env\\s*\\(", body_text, perl = TRUE) ||
+         grepl("\\b[A-Za-z][A-Za-z0-9_.]*\\s*<-\\s*fold_state\\b(?!\\$)", body_text, perl = TRUE))) {
+      findings <- c(findings, paste0("second_mutable_aggregate:", name))
+    }
+    if (!identical(name, "ledgr_fold_envelope") && grepl(
       "ctx\\$[A-Za-z0-9_.]+\\s*<-\\s*fold_state\\b(?!\\$)",
       body_text,
       perl = TRUE
@@ -101,7 +131,12 @@ ledgr_fold_phase_source_findings <- function(paths) {
         perl = TRUE
       )
       if (writes && !stage %in% slot_owners[[slot]]) {
-        findings <- c(findings, paste0("slot_owner:", name, ":", slot))
+        finding <- if (identical(name, "ledgr_fold_envelope")) {
+          "envelope_slot_owner"
+        } else {
+          "slot_owner"
+        }
+        findings <- c(findings, paste0(finding, ":", name, ":", slot))
       }
     }
     for (pattern in names(service_rules)) {
@@ -132,6 +167,24 @@ ledgr_fold_phase_source_findings <- function(paths) {
     )
     if (any(vapply(inline_sentinels, grepl, logical(1L), x = envelope, perl = TRUE))) {
       findings <- c(findings, "duplicated_inline_stage_body:ledgr_fold_envelope")
+    }
+    locations <- vapply(expected_stages, function(stage_name) {
+      hits <- gregexpr(
+        paste0(stage_name, "("),
+        envelope,
+        fixed = TRUE
+      )[[1L]]
+      if (length(hits) != 1L || hits[[1L]] == -1L) {
+        findings <<- c(
+          findings,
+          paste0("stage_call_count:ledgr_fold_envelope:", stage_name)
+        )
+        return(NA_integer_)
+      }
+      hits[[1L]]
+    }, integer(1L))
+    if (!anyNA(locations) && is.unsorted(locations, strictly = TRUE)) {
+      findings <- c(findings, "stage_call_order:ledgr_fold_envelope")
     }
   }
   unique(findings)

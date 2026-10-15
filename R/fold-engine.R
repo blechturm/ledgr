@@ -556,13 +556,13 @@ ledgr_fold_stage_observe_settle <- function(
   }
   if (services$availability_active) {
     fold_state$last_fully_valued <- ts
-    fold_state$equity_facts[[length(fold_state$equity_facts) + 1L]] <- list(
+    services$equity_fact_accumulator$append(list(
       ts_utc = ts,
       cash = fold_state$cash,
       positions_value = positions_value,
       realized_pnl = fold_state$lot_state$realized_pnl,
       cost_basis = fold_state$lot_state$total_cost_basis
-    )
+    ))
   }
   if (is.function(services$output_handler$record_equity_fact)) {
     services$output_handler$record_equity_fact(
@@ -616,7 +616,6 @@ ledgr_fold_stage_decide <- function(
     observation,
     sample_telemetry,
     sample_start) {
-  fold_state$current_stage <- "decision"
   pulse_idx <- observation$pulse_idx
   ts <- observation$ts
   ts_iso <- observation$ts_iso
@@ -1183,6 +1182,8 @@ ledgr_fold_stage_apply <- function(
   output_handler <- services$output_handler
   t_event <- 0
   t_state <- 0
+  positions <- fold_state$positions
+  cash <- fold_state$cash
 
   # Event emission and state mutation happen only after the private pulse plan
   # is complete. Event order still follows the validated target vector so
@@ -1208,11 +1209,11 @@ ledgr_fold_stage_apply <- function(
         instrument_ids = services$instrument_ids,
         event_seq_start = fold_state$event_seq
       )
-      fold_state$positions <- stats::setNames(
+      positions <- stats::setNames(
         as.numeric(batch$positions),
         services$instrument_ids
       )
-      fold_state$cash <- batch$cash
+      cash <- batch$cash
       fold_state$lot_state <- batch$lot_state
       fold_state$event_seq <- batch$next_event_seq
       if (sample_telemetry) {
@@ -1273,13 +1274,15 @@ ledgr_fold_stage_apply <- function(
       } else {
         fill$qty * fill$fill_price - fill$fee
       }
-      fold_state$positions[[inst_idx]] <- cur_qty + qty
-      fold_state$cash <- fold_state$cash + cash_delta
+      positions[[inst_idx]] <- cur_qty + qty
+      cash <- cash + cash_delta
       if (sample_telemetry) {
         t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
       }
     }
   }
+  fold_state$positions <- positions
+  fold_state$cash <- cash
   list(
     sample_start = sample_start,
     t_event = t_event,
@@ -1296,7 +1299,6 @@ ledgr_fold_stage_commit <- function(
     apply,
     sample_telemetry,
     pulse_start) {
-  fold_state$current_stage <- "commit"
   output_handler <- services$output_handler
   pulse_plan <- plan$pulse_plan
   ts <- observation$ts
@@ -1604,6 +1606,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     frozen_set = as.character(execution$frozen_at_resume %||% character()),
     telemetry_idx = as.integer(telemetry$telemetry_samples %||% 0L)
   )
+  equity_fact_accumulator <- ledgr_fold_equity_fact_accumulator(
+    if (availability_active) length(pulses_posix) else 0L
+  )
   diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler)
   # Each pulse accumulates typed diagnostic segments in emission order and
   # appends one bounded block through the production writer.
@@ -1705,6 +1710,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     use_compiled_spot_fifo = use_compiled_spot_fifo,
     event_mode = event_mode,
     diagnostic_writer = diagnostic_writer,
+    equity_fact_accumulator = equity_fact_accumulator,
     telemetry = telemetry,
     telemetry_stride = telemetry_stride,
     checkpoint_every = checkpoint_every,
@@ -1910,6 +1916,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     state = ledgr_fold_state_value(fold_state),
     state_prev = fold_state$state_prev,
     next_event_seq = fold_state$event_seq,
-    equity_facts = fold_state$equity_facts
+    equity_facts = equity_fact_accumulator$collect()
   )
 }
