@@ -1,12 +1,8 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-14 are complete and accepted. Accepted Cut 15 owns the pre-history foundation.
-Six of its eight workstreams are complete: governance rules, planning front
-doors, current contracts, feature-retention deletion, strict-TTR cleanup and
-fold-phase extraction. Governance normalization and the current private-lake
-rebuild remain. The WS3/WS4 history wave resumes only after both close. Its
-shared history-start decision replaces Cut 9's temporary rule.
+15 are complete and accepted. The WS3/WS4 history wave is the current work.
+Its shared history-start decision replaces Cut 9's temporary rule.
 
 **Date:** 2026-10-03
 
@@ -632,23 +628,20 @@ v0.2.2 is ready for its release gate only when:
 
 ## 7. Remaining order
 
-Cut 15 now has one remaining workstream on each of its two tracks:
+Cut 15 is closed: Workstreams 32 through 39 are complete and accepted. The
+WS35-plus-WS39 joint gate is satisfied, so the WS3/WS4 history wave is the
+current work. Resume from the decision register's **Resume here** section.
 
-- **Governance track:** WS32, WS33 and WS34 are complete and accepted. WS35
-  remains as the governance-record normalization gate.
-- **Product track:** WS36, WS37 and WS38 are complete and accepted. WS39 now
-  supplies the fresh schema-120, rule-3
-  [current real-data record](../../../dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md)
-  from that final pre-history tree; its public cold verification and the two
-  same-identity representative experiments pass.
+1. Finish history-wave stage 2 from Session D, write the one v11 amendment,
+   obtain its Type 1 final review, and cut WS3/WS4 implementation.
+2. Run WS7 product proof; WS6 proceeds independently only if its probe
+   promotes it.
+3. Finish WS8 residual performance work and integrated release evidence.
 
-The tracks meet at one gate: WS35 and WS39 must both be accepted before the
-WS3/WS4 history wave resumes. That wave consumes the normalized governance
-record, final fold structure, and the WS39 current real-data evidence. Old
-schema-119 stores remain unreachable evidence, not compatibility targets.
-Workstreams 32 through 39 are Cut 15's complete pre-history boundary.
-`tickets.yml` alone binds exact dependencies and status; this section records
-track shape and concurrency only.
+The history wave consumes the normalized governance record, final fold
+structure and WS39 schema-120/rule-3 real-data evidence. Old schema-119 stores
+remain unreachable evidence, not compatibility targets. `tickets.yml` alone
+binds exact dependencies and status.
 
 <a id="execution-core-consolidation"></a>
 

@@ -48,7 +48,8 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
   [`close_review_36_rereview_1.md`](close_review_36_rereview_1.md);
 - [`close_review_37.md`](close_review_37.md);
 - [`close_review_38.md`](close_review_38.md) and
-  [`close_review_38_rereview_1.md`](close_review_38_rereview_1.md).
+  [`close_review_38_rereview_1.md`](close_review_38_rereview_1.md);
+- [`close_review_39.md`](close_review_39.md).
 
 A finding-free `PASS` is recorded as one line in `tickets.yml` and has no
 separate file. The ticket authority says which reviews are operative.

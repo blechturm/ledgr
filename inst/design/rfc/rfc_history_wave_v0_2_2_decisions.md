@@ -1,6 +1,6 @@
 # Decision Register: WS3/WS4 History Wave
 
-Role: living; current decision register for the paused WS3/WS4 history wave.
+Role: living; current decision register for the active WS3/WS4 history wave.
 Status: working
 Authority: working register. Accepted maintainer decisions are inputs to the
 later v11 amendment; this register does not itself amend v11.
@@ -14,11 +14,10 @@ accepted synthesis until stage 3 writes and accepts the amendment.
 
 ## Resume here
 
-**Paused in stage 2** until Cut 15 Workstreams 35 and 39 are accepted, as
-recorded by the
-[current macro-plan order](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-remaining-order).
-This register is the single place to resume WS3/WS4; everything needed is
-linked below.
+**Current in stage 2.** Cut 15 is closed: Workstreams 35 and 39 are accepted,
+so the joint gate in the
+[current macro-plan order](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-remaining-order)
+is satisfied. Resume here at Session D; everything needed is linked below.
 
 The stage-3 amendment to
 [historical-projection v11](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
@@ -31,9 +30,8 @@ apply it early.
 [schema-120, rule-3 aggregate record](../../../dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md)
 is the pre-history Sharadar build. Its cold verification and full-membership
 plus dynamic-membership availability-path probes pass on one snapshot
-identity. It opens no schema-119 store and includes no dividend facts. Resume
-still waits for the macro plan's joint WS35-plus-WS39 acceptance gate; this
-implementation record does not open the wave by itself.
+identity. It opens no schema-119 store and includes no dividend facts. It is
+the current history-wave input now that the joint gate is satisfied.
 
 **Decided so far** (details in the rows):
 - Session 0: the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)
@@ -67,7 +65,7 @@ implementation record does not open the wave by itself.
 release's headline), Session F (after the Sharadar census), and the
 remaining consider-level rows (one batch).
 
-**Next steps when resuming:**
+**Next steps:**
 1. Sharadar track: start from the WS39 schema-120 snapshot record above, then
    extend its aggregate build evidence with the history census (fact refusals,
    gap lengths after dropping carried bars, delisting reasons, correction
@@ -96,7 +94,7 @@ remaining consider-level rows (one batch).
 | Stage | What | Exit | State |
 | --- | --- | --- | --- |
 | 1 | Verify | Every finding's premise rerun or read at `e38b0d7`; result in the Verified column | done 2026-10-08 |
-| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | paused 2026-10-08 after Sessions 0, A, B, C; resumes after the WS2 remainder |
+| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | current; paused 2026-10-08 after Sessions 0, A, B and C, then made resumable 2026-10-15 when the Cut 15 WS35-plus-WS39 gate cleared; resume at Session D |
 | 3 | Amend | One amendment to v11 (sections 3, 6, 7) carrying the accepted decisions under the amendment discipline in `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
 | 4 | Final review | Type 1 review of the amendment against this register | open |
 | 5 | Ticket cut | WS3/WS4 cut in `tickets.yml`; cut review; pipeline rows leave `README.md` | open |
