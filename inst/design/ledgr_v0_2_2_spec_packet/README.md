@@ -55,6 +55,7 @@ second status ledger:
   [`decision_catalogue_reconciliation.md`](decision_catalogue_reconciliation.md)
   and
   [`horizon_migration_reconciliation.md`](horizon_migration_reconciliation.md);
+- [`governance_record_normalization.md`](governance_record_normalization.md);
 - [`current_only_records_closeout.md`](current_only_records_closeout.md),
   [`current_store_format_closeout.md`](current_store_format_closeout.md),
   [`feature_map_read_surface_reconciliation.md`](feature_map_read_surface_reconciliation.md)

@@ -538,11 +538,12 @@ workstreams:
   - id: 35
     name: "Governance record normalization"
     cut: 15
-    status: "pending"
+    status: "review_pending"
     depends_on_workstream: 34
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 35", reason: "One claim: record headers, notices, packet summaries and open-ticket evidence consistently expose current state without erasing acceptance evidence, duties or rejection reasons. Review checks the lifecycle state machine and every receiver named by the synthesis."}
-    integration_evidence: []
+    integration_evidence:
+      - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md records the bounded lifecycle normalization, packet-front-door reduction, failure-sensitive guard extensions, verification results and relevant seven-shape walk."
     accepted: null
   - id: 36
     name: "Remove current feature retention"
@@ -1836,7 +1837,7 @@ tickets:
   - id: "LDG-3045"
     title: "Restore roadmap and macro-plan front doors"
     workstream: 34
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3042"]
@@ -1851,7 +1852,7 @@ tickets:
   - id: "LDG-3046"
     title: "Classify and reduce the open horizon"
     workstream: 34
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3045"]
@@ -1863,27 +1864,37 @@ tickets:
       - "inst/design/horizon.md#historical-redirects and inst/design/horizon_archive.md: all six non-genuine entries have exact-heading stubs and one preserved, nonempty historical body."
       - "inst/design/horizon.md#open: each of the 67 genuine entries remains readable; corrected rows name the concrete trigger and next RFC, packet, adapter or research route."
       - "tools/governance-report.R and tests/testthat/test-governance-report.R#LTB-0275: the report-only guard detects missing Open/table structure, duplicate classification, unclassified/current archived entries and missing redirects; its two-entry disposition-before-heading fixture proves that deleting either archived body reports missing_horizon_archive_body."
-      - "inst/design/ledgr_v0_2_2_spec_packet/close_review_34.md and close_review_34_rereview_1.md: both finding reports are preserved; correction round 2 closes the focused re-review's stale-route, release-date and archive-boundary findings while review remains CHANGES_REQUIRED pending independent confirmation."
+      - "inst/design/ledgr_v0_2_2_spec_packet/close_review_34.md and close_review_34_rereview_1.md preserve both finding reports; the final finding-free PASS recorded in Workstream 34 confirms the stale-route, release-date and archive-boundary corrections without another review file."
   - id: "LDG-3047"
     title: "Normalize RFC and synthesis lifecycle records"
     workstream: 35
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3044", "LDG-3046"]
     scope: "Apply the accepted lifecycle state definitions and notices to the current RFC pipeline and affected records. Correct stale accepted, superseded, rejected and obligation-open headers; add receiver and supersession notices without rewriting historical decisions; and route the later history-v11 transition rule required by synthesis Sections 4 and 7 to its actual history-wave owner. Preserve authorship, review independence disclosures, acceptance evidence and rejected alternatives."
     acceptance: ["every current pipeline row and affected synthesis header uses one accepted lifecycle state and names its next action or terminal receiver consistently; the paused history-wave row is labelled Paused rather than Active", "historical-projection v10 visibly points to v11, the snapshot-verification record states the accepted later amendment to legacy readability, and the history-wave pipeline row and decision register state that the later v11 amendment is the first application-specific supersession carrier under synthesis Sections 4 and 7", "the LDG-3042 guard reports stale current-state text, a superseded record without a receiver and an obligation-open record without an owner or trigger in report mode on reviewed fixtures; record normalization and close review establish the real-tree result", "no accepted decision, review result, rejection reason, authorship or independence disclosure is removed or silently rewritten", "the report-only guard from LDG-3042 runs against the normalized records and produces its reviewed debt baseline without being promoted to check mode"]
-    evidence: []
+    evidence:
+      - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md#lifecycle-normalization records canonical Role, Status and Authority blocks across all 47 bounded syntheses, the six exact pipeline states and the Paused history-wave route."
+      - "inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md, rfc_snapshot_verification_policy_v0_2_2_synthesis.md and rfc_history_wave_v0_2_2_decisions.md record the v10-to-v11 receiver, accepted legacy-readability amendment and first application-specific supersession owner."
+      - "tests/testthat/test-governance-report.R#LTB-0273 and tests/claims.yml#LCL-0271 independently detect stale accepted/active state, missing replacement provenance and missing Trigger/Route while the normalized 47-record header scan reports zero findings."
+      - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md#lifecycle-normalization records that synthesis changes are additions only, preserving accepted decisions, reviews, rejection reasons, authorship and independence disclosures verbatim."
+      - "inst/design/ledgr_v0_2_2_spec_packet/governance_record_normalization.md#verification records a successful 327-source report-only run with 996 visible findings and confirms that no check mode or package gate was introduced."
   - id: "LDG-3048"
     title: "Trim packet summaries and bind the open-ticket evidence form"
     workstream: 35
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3047"]
     scope: "Trim the v0.2.2 packet README to a front door rather than a second ticket ledger. State governance-synthesis Section 5's evidence form exactly: every acceptance item has a record pointer and one-line result; empirical evidence also retains input identity, environment, source commit, reproduction command, result and clock where applicable. Preserve closed records in tickets.yml and packet review files; do not restate ticket status or acceptance prose in README. Reconcile the governance synthesis Section 7 application record and the Cut 15 review instructions, which already require this form from the cut's first ticket."
     acceptance: ["README points to the macro plan, tickets.yml, current review artifacts and durable closeouts without repeating mutable ticket status, dependency or acceptance fields", "the open-ticket evidence form is stated once and every Cut 15 ticket uses it from its first acceptance item; evidence cannot consist only of a bare path, unsupported conclusion or empirical record missing an applicable Section 5 field", "closed review artifacts remain linked and discoverable, while finding-free PASS and finding-bearing review records follow M2 exactly", "the LDG-3042 guard reports malformed evidence metadata in report mode on reviewed fixtures; README reconciliation and close review establish that the packet remains a front door rather than a second ticket ledger", "the packet, design index, RFC pipeline and report-only guard agree on their distinct roles"]
-    evidence: []
+    evidence:
+      - "inst/design/ledgr_v0_2_2_spec_packet/README.md#start-here, #current-cut-review-records and #durable-closeouts-and-reconciliations provide the routing front door without repeating mutable ticket status, dependencies or acceptance prose; the closeout records the 582-to-81-line reduction."
+      - "inst/design/ledgr_v0_2_2_spec_packet/README.md#evidence-form states the pointer-plus-result and empirical metadata rule once; tools/governance-report.R reports zero malformed completed-ticket evidence or count mismatches for Cut 15."
+      - "inst/design/ledgr_v0_2_2_spec_packet/README.md#review-records links the finding-bearing artifacts and records M2's finding-free PASS rule; Workstream 34 and LDG-3046 now preserve both review artifacts plus the final one-line PASS."
+      - "tests/testthat/test-governance-report.R#LTB-0273 and tests/claims.yml#LCL-0271 detect a bare evidence path and explicitly empirical evidence missing environment, commit, command and clock; 177 focused expectations pass."
+      - "inst/design/ledgr_v0_2_2_spec_packet/README.md#document-roles, inst/design/README.md and inst/design/rfc/README.md record distinct packet-front-door, design-index, RFC-routing and report-only guard roles."
   - id: "LDG-3049"
     title: "Delete the unsound process-local feature cache"
     workstream: 36
