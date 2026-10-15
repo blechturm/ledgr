@@ -1,5 +1,9 @@
 # RFC Synthesis: Active Parameterized Feature Aliases
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding for v0.1.8.4 active-alias ticket cut.
 **Date:** 2026-05-25
 **Author:** Codex

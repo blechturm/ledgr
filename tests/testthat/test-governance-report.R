@@ -328,6 +328,48 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
     1L
   )
 
+  stale_status <- copy_fixture()
+  on.exit(unlink(dirname(stale_status), recursive = TRUE), add = TRUE)
+  replace_once(
+    stale_status,
+    "inst/design/current_packet/README.md",
+    "Authority: fixture ticket cut.",
+    paste0(
+      "Authority: fixture ticket cut.\n",
+      "Amendments: 2026-10-14 [fixture amendment](README.md)."
+    )
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(stale_status), "stale_current_state"),
+    1L
+  )
+
+  stale_pipeline <- copy_fixture()
+  on.exit(unlink(dirname(stale_pipeline), recursive = TRUE), add = TRUE)
+  replace_once(
+    stale_pipeline,
+    "inst/design/rfc/pipeline.md",
+    "| Header normalization | active | Current packet |",
+    "| Header normalization | active | Paused until the next cut |"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(stale_pipeline), "stale_current_state"),
+    1L
+  )
+
+  obligation_route <- copy_fixture()
+  on.exit(unlink(dirname(obligation_route), recursive = TRUE), add = TRUE)
+  replace_once(
+    obligation_route,
+    "inst/design/rfc/pipeline.md",
+    "**Trigger:** reviewed fixture milestone.",
+    "**When:** reviewed fixture milestone."
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(obligation_route), "missing_obligation_routing"),
+    1L
+  )
+
   receiver <- copy_fixture()
   on.exit(unlink(dirname(receiver), recursive = TRUE), add = TRUE)
   replace_once(
@@ -365,6 +407,143 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   testthat::expect_length(
     finding_line(run_fixture(rejected), "missing_rejection_reason"),
     1L
+  )
+
+  bare_evidence <- copy_fixture()
+  on.exit(unlink(dirname(bare_evidence), recursive = TRUE), add = TRUE)
+  replace_once(
+    bare_evidence,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "inst/design/current_packet/README.md"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(bare_evidence), "malformed_ticket_evidence"),
+    1L
+  )
+
+  bare_anchor <- copy_fixture()
+  on.exit(unlink(dirname(bare_anchor), recursive = TRUE), add = TRUE)
+  replace_once(
+    bare_anchor,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "tests/testthat/test-governance-report.R#LTB-0273"
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(bare_anchor), "malformed_ticket_evidence"),
+    1L
+  )
+
+  path_words <- copy_fixture()
+  on.exit(unlink(dirname(path_words), recursive = TRUE), add = TRUE)
+  replace_once(
+    path_words,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    paste0(
+      "tools/governance-report.R and/or ",
+      "dev/spikes/feature_keeping/closeout.md"
+    )
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(path_words), "malformed_ticket_evidence"),
+    1L
+  )
+
+  pointer_free_result <- copy_fixture()
+  on.exit(unlink(dirname(pointer_free_result), recursive = TRUE), add = TRUE)
+  replace_once(
+    pointer_free_result,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "The fixture result is recorded and verified."
+  )
+  testthat::expect_length(
+    finding_line(
+      run_fixture(pointer_free_result),
+      "malformed_ticket_evidence"
+    ),
+    1L
+  )
+
+  path_only_result_verb <- copy_fixture()
+  on.exit(unlink(dirname(path_only_result_verb), recursive = TRUE), add = TRUE)
+  replace_once(
+    path_only_result_verb,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    "tools/governance-report.R with supporting context only."
+  )
+  testthat::expect_length(
+    finding_line(
+      run_fixture(path_only_result_verb),
+      "malformed_ticket_evidence"
+    ),
+    1L
+  )
+
+  empty_evidence <- copy_fixture()
+  on.exit(unlink(dirname(empty_evidence), recursive = TRUE), add = TRUE)
+  replace_once(
+    empty_evidence,
+    "inst/design/current_packet/tickets.yml",
+    "inst/design/current_packet/README.md: The fixture result is recorded.",
+    ""
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(empty_evidence), "malformed_ticket_evidence"),
+    1L
+  )
+
+  evidence_count <- copy_fixture()
+  on.exit(unlink(dirname(evidence_count), recursive = TRUE), add = TRUE)
+  replace_once(
+    evidence_count,
+    "inst/design/current_packet/tickets.yml",
+    "      - \"the empirical fixture evidence is complete\"",
+    ""
+  )
+  testthat::expect_length(
+    finding_line(run_fixture(evidence_count), "incomplete_ticket_evidence"),
+    1L
+  )
+
+  empirical_evidence <- copy_fixture()
+  on.exit(unlink(dirname(empirical_evidence), recursive = TRUE), add = TRUE)
+  replace_once(
+    empirical_evidence,
+    "inst/design/current_packet/tickets.yml",
+    paste0(
+      "Empirical: input fixture; environment local; source commit 1234567; ",
+      "reproduction command Rscript fixture.R; reviewed range base..candidate; ",
+      "result passed with matching bytes; clock 0.01 seconds; ",
+      "inst/design/current_packet/README.md."
+    ),
+    paste0(
+      "Empirical: input fixture; environment local; source commit 1234567; ",
+      "reproduction command Rscript fixture.R; result passed; clock 0.01 seconds; ",
+      "inst/design/current_packet/README.md."
+    )
+  )
+  testthat::expect_length(
+    finding_line(
+      run_fixture(empirical_evidence),
+      "incomplete_empirical_evidence"
+    ),
+    1L
+  )
+
+  missing_tickets <- copy_fixture()
+  on.exit(unlink(dirname(missing_tickets), recursive = TRUE), add = TRUE)
+  unlink(file.path(
+    missing_tickets,
+    "inst", "design", "current_packet", "tickets.yml"
+  ))
+  testthat::expect_error(
+    run_fixture(missing_tickets),
+    "current packet tickets.yml is required",
+    class = "ledgr_governance_report_input"
   )
 
   type_2 <- copy_fixture()

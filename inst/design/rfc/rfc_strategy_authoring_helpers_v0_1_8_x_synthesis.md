@@ -1,6 +1,14 @@
 # RFC Synthesis: Strategy Authoring Helpers (v0.1.8.x)
 
-**Status:** Synthesis. Binding artifact pending final review.
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+Acceptance: approved by the
+[final review](rfc_strategy_authoring_helpers_v0_1_8_x_final_review.md) and
+listed among the accepted RFC inputs in the
+[v0.1.8.10 spec](../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md) lines 45-52.
+
+**Status:** Accepted synthesis.
 **Cycle:** v0.1.8.x ergonomics.
 **Synthesizes:** seed v1, response, seed v2.
 **Consumes:**

@@ -1,0 +1,20 @@
+packet: fixture
+cuts:
+  - id: 1
+    status: open
+    workstreams: [1]
+workstreams:
+  - id: 1
+    cut: 1
+    status: complete
+tickets:
+  - id: "LDG-0001"
+    title: "Fixture evidence"
+    workstream: 1
+    status: "complete"
+    acceptance:
+      - "the fixture evidence is complete"
+      - "the empirical fixture evidence is complete"
+    evidence:
+      - "inst/design/current_packet/README.md: The fixture result is recorded."
+      - "Empirical: input fixture; environment local; source commit 1234567; reproduction command Rscript fixture.R; reviewed range base..candidate; result passed with matching bytes; clock 0.01 seconds; inst/design/current_packet/README.md."

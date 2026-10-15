@@ -1,5 +1,10 @@
 # Synthesis: Sweep Candidate Promotion And Lineage Contract For v0.1.8
 
+Role: record; RFC-cycle synthesis draft.
+Status: draft
+Authority: non-binding synthesis input.
+Receiver: 2026-05-15 [v0.1.8 spec](../ledgr_v0_1_8_0_spec_packet/v0_1_8_spec.md).
+
 **Status:** Draft synthesis for review.
 **Date:** 2026-05-14
 **Author:** Codex

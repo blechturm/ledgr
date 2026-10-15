@@ -1,5 +1,9 @@
 # Synthesis: Feature-Map Read Surface
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-10-06 after Type 1 final review
 and the in-place review patches below. Binding for the implementation ticket
 cut.

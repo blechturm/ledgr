@@ -1,5 +1,9 @@
 # RFC Synthesis: Risk-Free-Rate Metric Context
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted design - binding for v0.1.8.2 ticket cut and implementation.
 **Date:** 2026-05-16
 **Source RFC:** `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1.md`

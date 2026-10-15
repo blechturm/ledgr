@@ -1,5 +1,9 @@
 # RFC Synthesis: Public Transaction-Cost Model API For ledgr
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis — binding for the v0.1.9.x / v0.2.0 public transaction-cost API ticket cut.
 **Date:** 2026-05-27
 **Source seed v1:** `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md`

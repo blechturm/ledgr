@@ -1,5 +1,9 @@
 # RFC Synthesis: Sweep Single-Core Optimization Routes
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted design — optimization arc accepted for v0.1.8.x; individual release assignments subject to ticket cut.
 **Date:** 2026-05-15  
 **Thread:**

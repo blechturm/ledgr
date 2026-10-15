@@ -481,6 +481,18 @@ governance_scan_headers <- function(root, sources) {
         "amended status lacks a dated linked amendment header"
       )
     }
+    if (identical(status_token, "accepted") &&
+        any(grepl(
+          "^[[:space:]]*(?:[*][*])?Amendments:(?:[*][*])?.*20[0-9]{2}-[0-9]{2}-[0-9]{2}.*\\[[^]]+\\]\\(",
+          head(lines, governance_header_end(lines)),
+          perl = TRUE
+        ))) {
+      findings[[length(findings) + 1L]] <- governance_finding(
+        "structural", "stale_current_state", source,
+        governance_header_line(lines, "Status"), "metadata:status",
+        "accepted status is stale because a dated linked amendment is present"
+      )
+    }
     if (identical(status_token, "consolidated") &&
         !any(grepl("^[[:space:]]*(?:[*][*])?Receiver:(?:[*][*])?.*\\[[^]]+\\]\\(", head(lines, governance_header_end(lines)), perl = TRUE))) {
       findings[[length(findings) + 1L]] <- governance_finding(
@@ -880,6 +892,10 @@ governance_scan_states_and_verdicts <- function(root, sources) {
     for (table in governance_tables(lines)) {
       header <- tolower(gsub("[*`]", "", table$header))
       state_i <- match("state", header)
+      action_i <- match("next action or trigger", header)
+      if (is.na(action_i)) {
+        action_i <- match("route", header)
+      }
       pipeline_table <- any(header %in% c("cycle", "cycle or obligation"))
       if (!is.na(state_i) && pipeline_table) {
         for (row in table$rows) {
@@ -888,6 +904,25 @@ governance_scan_states_and_verdicts <- function(root, sources) {
             findings[[length(findings) + 1L]] <- governance_finding(
               "structural", "invalid_row_state", source, row$line,
               "row-state", sprintf("invalid pipeline row state '%s'", state)
+            )
+          }
+          if (identical(state, "obligations open") && !is.na(action_i)) {
+            action <- row$cells[[action_i]]
+            if (!grepl("[*][*]Trigger:[*][*]", action) ||
+                !grepl("[*][*]Route:[*][*]", action)) {
+              findings[[length(findings) + 1L]] <- governance_finding(
+                "structural", "missing_obligation_routing", source,
+                row$line, "row-state",
+                "obligations-open row must name both Trigger and Route"
+              )
+            }
+          }
+          if (identical(state, "active") && !is.na(action_i) &&
+              grepl("\\bpaused\\b", row$cells[[action_i]], ignore.case = TRUE)) {
+            findings[[length(findings) + 1L]] <- governance_finding(
+              "structural", "stale_current_state", source,
+              row$line, "row-state",
+              "active pipeline row describes itself as paused"
             )
           }
         }
@@ -973,6 +1008,136 @@ governance_claim_warnings <- function(claims, source = "tests/claims.yml") {
     }
   }
   governance_bind_findings(rows)
+}
+
+governance_ticket_line <- function(lines, ticket_id) {
+  match <- grep(
+    sprintf("^[[:space:]]*-[[:space:]]+id:[[:space:]]+[\"']?%s[\"']?[[:space:]]*$", ticket_id),
+    lines
+  )
+  if (length(match)) match[[1L]] else 1L
+}
+
+governance_evidence_pointer_pattern <- function() {
+  paste0(
+    "(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+[.]",
+    "(?:md|R|qmd|yml|yaml|csv|json|txt)",
+    "(?::[0-9]+|#[A-Za-z0-9_.-]+)?|",
+    "(?:LTB|LCL|LDG)-[0-9]+|\\b[0-9a-f]{7,40}\\b"
+  )
+}
+
+governance_evidence_has_pointer <- function(value) {
+  grepl(
+    governance_evidence_pointer_pattern(),
+    value,
+    perl = TRUE
+  )
+}
+
+governance_evidence_without_pointers <- function(value) {
+  prose <- gsub("\\[[^]]+\\]\\([^)]+\\)", " ", value, perl = TRUE)
+  gsub(
+    governance_evidence_pointer_pattern(),
+    " ",
+    prose,
+    perl = TRUE
+  )
+}
+
+governance_evidence_has_result <- function(value) {
+  prose <- governance_evidence_without_pointers(value)
+  words <- regmatches(prose, gregexpr("[A-Za-z]+", prose, perl = TRUE))[[1L]]
+  length(words) >= 3L && grepl(
+    paste0(
+      "\\b(?:accept|add|classif|clos|confirm|detect|establish|exclud|fail|identical|",
+      "list|match|measure|name|own|pass|preserv|record|refus|report|",
+      "reconcil|remain|reproduc|return|route|run|show|verif)[A-Za-z]*\\b"
+    ),
+    prose,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
+}
+
+governance_evidence_is_complete <- function(value) {
+  governance_evidence_has_pointer(value) &&
+    governance_evidence_has_result(value)
+}
+
+governance_scan_ticket_evidence <- function(root, current_packet) {
+  source <- gsub(
+    "\\\\",
+    "/",
+    file.path(current_packet, "tickets.yml")
+  )
+  path <- file.path(root, source)
+  if (!file.exists(path)) {
+    governance_abort("current packet tickets.yml is required")
+  }
+  packet <- governance_read_yaml(path)
+  if (!is.list(packet) || !is.list(packet$cuts) ||
+      !is.list(packet$tickets)) {
+    governance_abort("current packet tickets.yml lacks cuts or tickets")
+  }
+  cut_ids <- vapply(packet$cuts, function(cut) {
+    if (is.null(cut$id)) NA_integer_ else as.integer(cut$id)
+  }, integer(1L))
+  if (!any(!is.na(cut_ids))) {
+    governance_abort("current packet tickets.yml has no numbered cut")
+  }
+  current_cut <- packet$cuts[[which.max(cut_ids)]]
+  workstreams <- as.integer(unlist(current_cut$workstreams))
+  lines <- governance_read_lines(path)
+  findings <- list()
+  for (ticket in packet$tickets) {
+    if (is.null(ticket$id) || is.null(ticket$workstream) ||
+        !(as.integer(ticket$workstream) %in% workstreams)) {
+      next
+    }
+    status <- tolower(as.character(if (is.null(ticket$status)) "" else ticket$status))
+    acceptance <- as.character(unlist(if (is.null(ticket$acceptance)) list() else ticket$acceptance))
+    evidence <- as.character(unlist(if (is.null(ticket$evidence)) list() else ticket$evidence))
+    line <- governance_ticket_line(lines, as.character(ticket$id))
+    if (status %in% c("complete", "review_pending") &&
+        length(evidence) != length(acceptance)) {
+      findings[[length(findings) + 1L]] <- governance_finding(
+        "structural", "incomplete_ticket_evidence", source, line,
+        as.character(ticket$id),
+        sprintf(
+          "completed ticket has %d evidence items for %d acceptance items",
+          length(evidence), length(acceptance)
+        )
+      )
+    }
+    for (i in seq_along(evidence)) {
+      value <- evidence[[i]]
+      if (!nzchar(trimws(value)) ||
+          !governance_evidence_is_complete(value)) {
+        findings[[length(findings) + 1L]] <- governance_finding(
+          "structural", "malformed_ticket_evidence", source, line,
+          paste0(ticket$id, ":evidence:", i),
+          "ticket evidence needs a stable pointer and one-line result"
+        )
+      }
+      if (startsWith(tolower(trimws(value)), "empirical:") &&
+          !all(vapply(
+            c(
+              "input", "environment", "commit", "command", "reviewed range",
+              "result", "clock"
+            ),
+            function(field) grepl(paste0("\\b", field, "\\b"), value, ignore.case = TRUE),
+            logical(1L)
+          ))) {
+        findings[[length(findings) + 1L]] <- governance_finding(
+          "structural", "incomplete_empirical_evidence", source, line,
+          paste0(ticket$id, ":evidence:", i),
+          "empirical evidence omits required applicable metadata"
+        )
+      }
+    }
+  }
+  governance_bind_findings(findings)
 }
 
 governance_horizon_headings <- function(lines, section = NULL) {
@@ -1300,6 +1465,7 @@ governance_report <- function(root, baseline_path, claims_path,
     governance_scan_headers(root, sources),
     governance_scan_mappings(root, sources),
     governance_scan_states_and_verdicts(root, sources),
+    governance_scan_ticket_evidence(root, current_packet),
     governance_scan_horizon(root, sources, current_packet),
     governance_claim_warnings(claims, claims_input)
   ))

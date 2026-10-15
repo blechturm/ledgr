@@ -1,5 +1,10 @@
 # Synthesis: Accounting-Core Consolidation For v0.2.0.2
 
+Role: record; amended RFC-cycle synthesis and durable decision record.
+Status: amended 2026-09-22
+Authority: accepted synthesis as amended; binds only its stated scope.
+Amendments: 2026-09-22 [maintainer decision binding the lot carrier and one preparer](#2-decision).
+
 **Status:** Accepted by the maintainer on 2026-09-22 after Type 1 final
 review passed with four patches. Binding for the accounting-core workstream
 of v0.2.0.2; implements as direct tickets; no further RFC.

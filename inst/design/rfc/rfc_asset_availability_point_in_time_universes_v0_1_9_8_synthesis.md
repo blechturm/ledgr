@@ -1,5 +1,9 @@
 # RFC Synthesis: Asset Availability And Point-In-Time Universes
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-08 after Codex final review
 and three in-place final-review patch sets. Binding for the first
 asset-availability implementation until superseded by a spec packet, contract,

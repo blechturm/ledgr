@@ -1,5 +1,9 @@
 # Synthesis: Pre-CRAN Legacy Removal For v0.2.2
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-10-12 after the Type 1 final
 review (`rfc_pre_cran_legacy_removal_v0_2_2_final_review.md`) returned
 PASS_AFTER_PATCHES and its three patches were applied in place (revision

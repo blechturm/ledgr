@@ -1,5 +1,11 @@
 # RFC Synthesis: Feature Projection Shape, Materialization Policy, And Lookback Access
 
+Role: record; partially superseded RFC-cycle synthesis retained as history.
+Status: superseded in part
+Authority: binding only for its operative remainder.
+Replacement: 2026-09-28 [historical-projection v11](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md).
+Operative remainder: feature-projection rules outside the v11 sections named below remain accepted.
+
 **Status:** Accepted synthesis - binding planning direction for v0.1.8.6
 feature-projection materialization work and later lookback/export/storage
 follow-ups. Final review accepted with no blocking issues.

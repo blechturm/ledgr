@@ -1,5 +1,9 @@
 # RFC Synthesis v2: A Smaller Governance Loop After v0.2.0.1
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-21 after Codex's Type 1
 re-verification at `78cef8c` returned `PASS_AFTER_PATCHES`. Binding as a
 pilot for the next implementation packet only; it becomes the default after

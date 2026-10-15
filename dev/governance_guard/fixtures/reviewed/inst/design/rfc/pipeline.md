@@ -7,4 +7,4 @@ Authority: fixture pipeline states.
 | Cycle | State | Route |
 | --- | --- | --- |
 | Header normalization | active | Current packet |
-| Later activation | obligations open | Later cut |
+| Later activation | obligations open | **Trigger:** reviewed fixture milestone. **Route:** later cut. |

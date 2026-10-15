@@ -1,5 +1,9 @@
 # Synthesis: Terminal Outcomes and Frozen Holdings for v0.2.2
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-10-05 after Type 1 final review
 returned `PASS_AFTER_PATCHES` and both patches were applied. Binding for the
 v0.2.2 terminal-outcomes ticket cut.

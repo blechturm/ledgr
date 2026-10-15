@@ -1,5 +1,9 @@
 # RFC Synthesis: Indicator Codebase Simplification
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding for v0.1.8.x ticket cut. Placement in
 v0.1.8.1 requires an explicit active spec-packet amendment.
 **Date:** 2026-05-22

@@ -1,5 +1,10 @@
 # Synthesis: Sweep Promotion Context For v0.1.8
 
+Role: record; RFC-cycle synthesis draft.
+Status: draft
+Authority: non-binding synthesis input.
+Receiver: 2026-05-14 [accepted promotion-context decision](rfc_sweep_promotion_context_v0_1_8_decision.md).
+
 **Status:** Draft synthesis for final review.
 **Date:** 2026-05-14
 **Author:** Codex

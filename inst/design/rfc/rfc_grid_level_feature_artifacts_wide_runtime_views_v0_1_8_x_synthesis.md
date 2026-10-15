@@ -1,5 +1,9 @@
 # RFC Synthesis: Grid-Level Feature Artifacts And Runtime Projection
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding amendment for the v0.1.8.3
 optimization packet and the v0.1.8.4 active-alias ticket cut.
 **Date:** 2026-05-25

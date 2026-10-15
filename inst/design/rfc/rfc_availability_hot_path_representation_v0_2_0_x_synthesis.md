@@ -1,5 +1,9 @@
 # RFC Synthesis: Availability Hot-Path Representation
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-15 after independent final
 review and focused verification. Binding for the v0.2.0.1 spec packet until
 superseded by that packet, a contract, ADR, or architecture note.

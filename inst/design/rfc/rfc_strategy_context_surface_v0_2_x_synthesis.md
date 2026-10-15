@@ -1,5 +1,9 @@
 # RFC Synthesis: Strategy Context Surface And Helper Composability
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-26.
 **Date:** 2026-09-26
 **Author:** ChatGPT, at the maintainer's request. This is also the response author;

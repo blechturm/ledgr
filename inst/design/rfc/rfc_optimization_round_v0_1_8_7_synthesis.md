@@ -1,5 +1,9 @@
 # RFC Synthesis: v0.1.8.7 Optimization Round - Single-Core R Hot Path
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Stage:** Synthesis (stage 7, binding artifact)  
 **Author:** Codex  
 **Date:** 2026-05-29  

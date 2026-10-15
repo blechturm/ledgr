@@ -1,5 +1,9 @@
 # Synthesis: Testing Architecture For v0.2.0.2 And After
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-21 after Type 1 final
 review passed with citation patches at `1ee0efa`. Binding for the v0.2.0.2
 cleanup workstreams; implements directly without a further RFC.

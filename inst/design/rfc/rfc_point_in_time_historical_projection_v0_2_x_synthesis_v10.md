@@ -1,5 +1,10 @@
 # RFC Synthesis v10: Point-in-Time Historical Projection With Missing Data
 
+Role: record; superseded RFC-cycle synthesis retained as history.
+Status: superseded
+Authority: non-binding after replacement.
+Replacement: 2026-09-28 [synthesis v11](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md).
+
 **Status: ACCEPTED by the maintainer 2026-09-27.** The section 1 policy table is
 accepted as written. The section 4 session-axis proposal is accepted with a
 direction: the documentation reports the engine's current behaviour, and

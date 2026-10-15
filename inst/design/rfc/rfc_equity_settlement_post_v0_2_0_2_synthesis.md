@@ -1,5 +1,9 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted by the maintainer on 2026-09-24. Binding for v0.2.0.2.
 Type 1 final review passed at `065f3a3` (Codex) after two rounds. Cut 6 in
 `ledgr_v0_2_0_2_spec_packet/tickets.yml` implements it, compiled envelope

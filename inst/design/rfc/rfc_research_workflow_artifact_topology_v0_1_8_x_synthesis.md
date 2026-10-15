@@ -1,5 +1,9 @@
 # RFC Synthesis: Research Workflow And Artifact Topology
 
+Role: record; RFC-cycle synthesis and durable decision record.
+Status: accepted
+Authority: accepted synthesis; binds only its stated scope.
+
 **Status:** Accepted synthesis - binding planning direction for v0.1.8.5 and
 future workflow/storage work. Does not amend the active v0.1.8.4 implementation
 packet.
