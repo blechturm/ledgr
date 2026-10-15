@@ -1,0 +1,4 @@
+pair,first_arm,base_seconds,candidate_seconds,candidate_base_ratio
+1,candidate,13.58,11.40,0.8395
+2,base,13.48,11.31,0.8390
+3,candidate,13.57,11.33,0.8350
