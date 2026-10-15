@@ -517,11 +517,11 @@ workstreams:
   - id: 33
     name: "Current contracts and decision bridge"
     cut: 15
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 36
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 33", reason: "One claim: contracts state only current behavior at stable rule-group addresses and every accepted pending change has an exact bridge and backlink. Review compares every changed clause before and after and rejects accidental semantic edits."}
-    integration_evidence: []
+    review: {mode: "Type 1", point: "focused re-review 1 of workstream 33", verdict: "PASS", result: "Finding-free PASS: F1 through F7 and both nits are resolved; seven exact bridge/backlink mutations are detected; six focused suites pass 1,712 expectations; the report scans 320 sources with 1,104 findings and no new broken anchor. No new finding or maintainer decision; close_review_33.md preserves the original finding history."}
+    integration_evidence: ["current_contract_reconciliation.md records the full clause-by-clause current-tense pass, all eighty-one stable rule-group addresses, every pre-change bridge-row disposition and the four retained source-owner-receiver triangles. The independent Type 1 CHANGES_REQUIRED review is preserved in close_review_33.md. Correction commit 2e87c6a9 aligns cost and zero-price disposition semantics, restores locator-only stubs and closeout timing, names the exact testing/accounting owners, adds an exact per-row backlink oracle and records that the report-only guard does not yet parse the real bridge. The corrected focused files pass 1,712 expectations, all seven exact backlink/row mutations fail as intended, and the tracked report has no WS33-introduced broken anchor. The focused independent re-review returned finding-free PASS with no maintainer decision. Status is complete and accepted remains null."]
     accepted: null
   - id: 34
     name: "Planning front doors and horizon"
@@ -1813,23 +1813,23 @@ tickets:
   - id: "LDG-3043"
     title: "Rewrite contracts in current tense with stable rule addresses"
     workstream: 33
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3042", "LDG-3056"]
     scope: "After Cut 14, rewrite contracts.md so each standing rule states current behavior in present tense under a stable rule-group address. Move release chronology and superseded schemas to NEWS or their accepted packets without deleting the evidence. Compare every changed clause before and after, and change a detector with its sentence. Do not use this prose pass to alter product behavior or settle an open RFC."
     acceptance: ["a checked-in clause reconciliation maps every changed paragraph to unchanged current meaning, moved history, an accepted pending-change bridge or a separately owned open question", "every standing contract rule has a stable rule-group address used by changed claims and review briefs; renumbering an unrelated paragraph does not break those links", "release-version narration, old schema chronology and historical implementation notes leave operative clauses while remaining discoverable in NEWS or accepted packet records", "a source-derived scan finds no operative current rule phrased as a superseded or legacy alternative unless the current product actually exposes that alternative", "documentation-contract tests and all product tests whose pinned sentence moved pass, and the Type 1 review compares old and new text clause by clause"]
-    evidence: []
+    evidence: ["Acceptance 1 PASS. current_contract_reconciliation.md#clause-reconciliation maps every changed paragraph or grouped span to unchanged current meaning, moved history, accepted consolidation or a retained pending bridge.", "Acceptance 2 PASS. current_contract_reconciliation.md#contract-rule-group-inventory records thirteen unchanged H2 routes and eighty-one unique explicit group IDs, one for every H3 group; the unrelated-paragraph witness leaves the sampled address stable.", "Acceptance 3 PASS. current_contract_reconciliation.md#clause-reconciliation records each removed version narrative and its NEWS, packet, migration-guide or Git-history receiver without deleting historical evidence.", "Acceptance 4 PASS. current_contract_reconciliation.md#source-derived-scans records the source-derived operative-prose scan and disposes all five retained matches as current exposed behavior, refusal, evidence location or detector language rather than a superseded alternative.", "Acceptance 5 PASS. current_contract_reconciliation.md#verification records the documentation-contract and focused product-pin suites, YAML/link checks and clean diff; no pinned semantic sentence changed without its detector remaining green."]
   - id: "LDG-3044"
     title: "Reconcile accepted-change bridges and contract backlinks"
     workstream: 33
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3043"]
     scope: "Reconcile every decisions.md row against current contract rule groups and the RFC pipeline. Remove a bridge row only when shipped behavior is fully stated by a standing contract heading or when ticket ownership legitimately supersedes the pending bridge; preserve accepted but unimplemented decisions with their accepting section and exact owner. Add reciprocal backlinks without copying obligation text. Record the row-by-row disposition."
     acceptance: ["the reconciliation table covers every pre-change bridge row exactly once as retained, removed-to-contract, transferred-to-ticket, transferred-to-pipeline or corrected, with a resolvable destination", "every removed row is recoverable from a named current contract rule group and accepted packet or NEWS history; no accepted unimplemented decision disappears", "every retained accepted-change row names the accepting section, current implementation owner and affected contract rule groups, and those rule groups link back", "the LDG-3042 guard reports orphan bridges, accepted pending changes without receivers and backlinks to missing rows in report mode on reviewed fixtures; the reconciliation table and close review establish the real-tree result", "contracts, decisions, the RFC pipeline and tickets.yml contain no duplicated editable copy of an obligation"]
-    evidence: []
+    evidence: ["Acceptance 1 PASS. current_contract_reconciliation.md#decision-bridge-reconciliation covers all fifteen pre-change rows exactly once: four retained and eleven removed or transferred, each with a resolvable destination; decisions.md keeps locator-only stubs for inbound removed addresses.", "Acceptance 2 PASS. current_contract_reconciliation.md#decision-bridge-reconciliation names addressed current receivers plus exact standing process/internal owners and packet, synthesis, NEWS or pipeline history for every removed row; no accepted unimplemented decision disappears.", "Acceptance 3 PASS. decisions.md retains four rows, each naming exact accepted sections, its current owner or explicit absence of an open ticket, affected stable contract groups and one pipeline route; every named group links back without restating the pending rule.", "Acceptance 4 PASS. The LDG-3042 reviewed fixtures remain the report-only guard evidence. current_contract_reconciliation.md#exact-retained-row-backlink-oracle and #verification record the independent real-tree per-row comparison: removing any one of OMS's three backlinks or the bridge row fails. close_review_33.md records the independent semantic review; Workstream 35 owns guard/table alignment.", "Acceptance 5 PASS. current_contract_reconciliation.md#decision-bridge-reconciliation records one owner for every obligation: current rules in contracts, four pending decisions in the bridge and unscheduled duties in the RFC pipeline; no editable obligation text is duplicated."]
   - id: "LDG-3045"
     title: "Restore roadmap and macro-plan front doors"
     workstream: 34

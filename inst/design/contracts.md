@@ -31,6 +31,9 @@ current contract merely because they are newer or nearby.
 
 ## Public Naming Contract
 
+<a id="contract-public-name-shapes"></a>
+### Export And Family Name Shapes
+
 - Exported user-facing helpers must use `ledgr_` prefixes. No unprefixed public
   helper exports remain. S3 method registrations such as `print.*`,
   `summary.*`, `close.*`, and `as_tibble.*` follow dispatch naming and are not
@@ -39,7 +42,7 @@ current contract merely because they are newer or nearby.
   run helpers use `ledgr_run_*`, snapshot helpers use `ledgr_snapshot_*`, sweep
   helpers use `ledgr_sweep_*`, and walk-forward helpers use
   `ledgr_walk_forward_*`.
-- Verb-first exports are allowed only for the closed v0.1.9.5 allowlist:
+- Verb-first exports are limited to:
   `ledgr_compute_metrics()`, `ledgr_precompute_features()`,
   `ledgr_validate_schema()`, `ledgr_backtest_bench()`, and
   `ledgr_promote()`. Execution entry points such as `ledgr_run()`,
@@ -50,6 +53,10 @@ current contract merely because they are newer or nearby.
 - Public evidence accessors must not use `extract_`, `get_`, or `fetch_` as
   their primary naming shape. Promotion-ready candidate extraction uses the
   `ledgr_candidate()` generic.
+
+<a id="contract-public-indicator-and-rule-names"></a>
+### Indicator And Rule Names
+
 - Public indicator names distinguish constructors from infrastructure:
   `ledgr_ind_*` names are indicator constructors, constructor bundles, or
   constructor-family support helpers such as `ledgr_ind_ttr_warmup_rules()`;
@@ -57,25 +64,23 @@ current contract merely because they are newer or nearby.
   infrastructure surfaces.
 - Candidate-selection rule constructors use the `ledgr_rule_*` family.
   `ledgr_rule_argmax()` and `ledgr_rule_argmin()` construct the unchanged
-  `ledgr_selection_rule` payload; the former `ledgr_select_argmax()` and
-  `ledgr_select_argmin()` spellings are not public aliases.
+  `ledgr_selection_rule` payload; `ledgr_select_argmax()` and
+  `ledgr_select_argmin()` are not public aliases.
+
+<a id="contract-public-internal-names"></a>
+### Internal Names
+
 - Internal helpers may keep implementation-oriented names, but they must not be
   exported merely to avoid writing a narrow public wrapper.
 
 ## Execution Contract
 
-Accepted change pending:
+<a id="contract-execution-entry-points"></a>
+### Entry Points And One Execution Path
 
-- [Execution-window minimum](decisions.md#execution-window-minimum)
-- [Fill-transition validity](decisions.md#fill-transition-validity)
-- [Cost rounding and fees](decisions.md#cost-rounding-and-fees)
-- [Walk-forward snapshot override](decisions.md#walk-forward-snapshot-override)
-- [Objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity)
-- [OMS order lifecycle](decisions.md#oms-order-lifecycle)
-- [Equity corporate actions](decisions.md#equity-corporate-actions)
-- [Accounting-core consolidation](decisions.md#accounting-core-consolidation)
+Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle).
 
-- v0.1.7 makes `ledgr_run()` the public single-run API over a
+- `ledgr_run()` is the public single-run API over a
   `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
   public workflow to a lower-level compatibility surface. It runs dense
   execution only: on a snapshot that declares point-in-time facts (sessions,
@@ -94,7 +99,11 @@ Accepted change pending:
   canonical execution path.
 - The runner owns pulse order, fills, strategy state, ledger events, features,
   and equity output.
-- The v0.1.8 fold-core/output-handler boundary is a required architecture
+
+<a id="contract-execution-fold-core"></a>
+### Fold Core And Output Handlers
+
+- The fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
   strategy invocation, target validation, target-risk transformation,
@@ -115,6 +124,10 @@ Accepted change pending:
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+
+<a id="contract-execution-window-start"></a>
+### Scoring And Feature Start
+
 - **Scoring start (Cut 9).** Every entry point evaluates the strategy, fills,
   writes equity and contributes metric input only from its scoring start: the
   experiment's opening date for `ledgr_run()`, `ledgr_sweep()`,
@@ -142,6 +155,10 @@ Accepted change pending:
   `ledgr_precomputed_hydration_mismatch`. When no candidate trades in a
   walk-forward training window, volatility-based selection metrics have no
   finite value and that fold has no selection; see No selection.
+
+<a id="contract-execution-walk-forward-folds"></a>
+### Walk-Forward Fold Lifecycle
+
 - No selection (Cut 10, LDG-2974). `ledgr_walk_forward(no_selection = )`
   decides what a fold does when no training candidate has a finite, `DONE`
   selection metric. Under the default `"previous"` the fold runs its test
@@ -195,6 +212,10 @@ Accepted change pending:
   a date outside the range refuses (`ledgr_walk_forward_invalid_fold_window`
   for windows, `ledgr_invalid_precompute_range` for precompute) with a
   message naming the requested window and the sealed first and last dates.
+
+<a id="contract-execution-event-staging"></a>
+### Event Staging And Parallel Sweeps
+
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
   may read a staged row before that flush except the handler-local
@@ -206,12 +227,16 @@ Accepted change pending:
   candidate ledgers, equity curves, feature panels, run telemetry, or promotion
   artifacts. The orchestrator owns row ordering, warning/error association,
   result binding, and any durable writes.
-- Parallel sweep interruption is discard-all in v0.1.8.8. If a worker-backed
+- Parallel sweep interruption is discard-all. If a worker-backed
   sweep is interrupted before all candidate results return, ledgr must stop the
   worker backend where possible and throw a structured
   `ledgr_parallel_sweep_interrupted` error. It must not return a partial sweep
   table or partially promotable candidate result; partial-result recovery
   requires a future explicit contract.
+
+<a id="contract-execution-snapshot-trust"></a>
+### Snapshot Trust Boundary
+
 - Production entry into the fold core must be guarded by the Snapshot Contract
   trust boundary. Production run and sweep setup must enforce the accepted
   sealed-snapshot guard before fold construction. Committed runs ensure a
@@ -221,6 +246,12 @@ Accepted change pending:
   read, before candidate or fold execution; inner guards reuse that entry.
   Compact candidate provenance still carries the stored root. Primitive fold
   hot paths may then rely on trusted normalized snapshot inputs.
+
+<a id="contract-execution-accounting-events"></a>
+### Cost Resolution And Accounting Events
+
+Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle).
+
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not compute, reinterpret, or rewrite fill prices,
   fees, cash deltas, or cost metadata.
@@ -238,7 +269,11 @@ Accepted change pending:
   `frozen_fallback` or `evidence`), policy identity, haircut fraction, mark
   provenance, cash delta and realized P&L. Replay rejects a disposition whose
   event fields disagree with that record.
-- Compiled accounting dispatch is closed by accounting model. In v0.1.8.10 the
+
+<a id="contract-execution-compiled-accounting"></a>
+### Compiled Accounting Dispatch
+
+- Compiled accounting dispatch is closed by accounting model. The
   only scoped public opt-in model is
   `compiled_accounting_model = "spot_fifo"` for memory-backed sweep execution;
   `NULL` means the canonical R fold path and remains the default. Unsupported
@@ -250,23 +285,43 @@ Accepted change pending:
   The `ledgr.internal.compiled_accounting_model` option is an internal legacy
   hook and must not influence public `compiled_accounting_model = NULL`
   execution.
+
+<a id="contract-execution-decision-and-fill-contexts"></a>
+### Decision And Fill Contexts
+
 - Strategy contexts carry decision-time information only. Future cost/fill
   contexts may carry execution-bar data for pricing, but those objects must
   remain separate so next-bar execution data cannot leak into strategy
   decisions.
 - Fill timing and cost application are separate execution-contract layers.
-  v0.1.9.1 exposes `timing_model = ledgr_timing_next_open()` and requires an
+  The public timing surface exposes `timing_model = ledgr_timing_next_open()`
+  and requires an
   explicit classed `cost_model`, such as `ledgr_cost_zero()` when the caller
   wants zero transaction costs.
+
+<a id="contract-execution-cost-model"></a>
+### Cost-Model Identity And Arithmetic
+
 - Cost-model identity is part of execution identity. `cost_plan_json` is the
   canonical serialized cost plan, and `cost_model_hash` is the SHA-256 hash of
   that plan. Sweep persistence and walk-forward candidate/session identity
   consume these fields. Cost-grid sweep composition remains separate future
   work.
+- Cost resolution applies price transforms first. Notional fees use the
+  spread-adjusted, unrounded execution price; the exposed `fill_price` is then
+  rounded separately to eight digits by default for ledger cash arithmetic.
+  Fill price, fee, cash delta and event metadata retain those distinct,
+  deterministic values.
+
+<a id="contract-execution-target-risk"></a>
+### Target-Risk Transformation
+
+Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle).
+
 - Target risk is a target-vector transformation layer. Strategies still return
   full named numeric target quantities. The fold applies the normalized
   `risk_chain` after strategy target validation and before fill timing, cost
-  resolution, and event emission. v0.1.9.3 exposes only classed ledgr risk
+  resolution, and event emission. The public surface exposes only classed ledgr risk
   objects: `ledgr_risk_none()`, `ledgr_risk_chain()`,
   `ledgr_risk_long_only()`, and `ledgr_risk_max_weight()`. Arbitrary
   user-supplied risk callbacks are not part of the public contract.
@@ -288,23 +343,35 @@ Accepted change pending:
   Promotion must preserve the selected candidate's risk identity and re-execute
   through `ledgr_run()`; retained return rows are not replayed as committed
   evidence.
+
+<a id="contract-execution-identity"></a>
+### Execution And Feature Identity
+
+Accepted change pending:
+[objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity).
+
 - Walk-forward evidence adds two identity layers over existing run and sweep
   identity. `candidate_key` identifies one fold/window/candidate evaluation and
   includes strategy, feature, alias, metric-context, cost, risk, seed, fold, and
   window-role inputs. `session_id` identifies the walk-forward session envelope
   and includes snapshot, experiment, grid, fold-list, selection-rule,
   metric-context, cost, risk, seed, and opening-state policy identity, plus
-  the no-selection policy when it is not `"fail"`, so `"fail"` sessions
-  keep their pre-Cut-10 identity.
+  the no-selection policy when it is not `"fail"`. A `"fail"` policy is
+  omitted from the identity payload; every other no-selection policy is
+  included.
   Locator attributes on `ledgr_walk_forward_results` objects (`db_path`,
   `snapshot_id`, and `snapshot_hash`) are recovery and resolve-at-call
   verification metadata. They are not identity bytes and must not enter
   `config_hash`, `candidate_key`, or `session_id`.
+- A caller-supplied snapshot override for a walk-forward candidate must match
+  both the recorded `snapshot_id` and `snapshot_hash`; `db_path` may differ.
+  A mismatch refuses with `ledgr_walk_forward_snapshot_override_mismatch`
+  before promotion or execution.
 - Config and feature identity fields must keep their layers distinct.
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
   declaration-order diagnostics. Every run records `identity_rule_version`.
-  Under identity rule 3 (Cut 15 LDG-3050 and LDG-3056) the config carries the sealed
+  Under identity rule 3 the config carries the sealed
   `data.snapshot_hash` and `config_hash` drops the store-local
   `data.snapshot_id`, so identical content sealed under two snapshot IDs gives
   equal identity and different content under one reused ID does not; the
@@ -320,15 +387,18 @@ Accepted change pending:
   identifies alias declarations and must not change solely because a
   parameterized feature declaration resolves to a different concrete parameter
   value; that concrete identity belongs in `feature_set_hash`.
+
+<a id="contract-execution-preflight"></a>
+### Strategy Preflight
+
 - Strategy preflight runs before entering the fold core. Sweep mode inherits
   the public preflight semantics: Tier 1 and Tier 2 strategies may execute, and
   Tier 3 strategies must stop before any fold execution or output handler side
   effects.
-- v0.1.7 is an intentional hard public API reset. It explicitly overrides the
-  earlier "deprecate where practical" posture for the research workflow because
-  carrying both old and new public surfaces into sweep mode would create
-  avoidable long-term complexity. Breaking changes must be documented in
-  `NEWS.md` and the v0.1.6-to-v0.1.7 migration guide.
+
+<a id="contract-execution-fills-and-lots"></a>
+### Fill And Lot Validity
+
 - The default fill model is `next_open` with zero spread and zero fixed
   commission. A target emitted at pulse `t` is filled at the next available bar;
   a target emitted on the final pulse has no next bar and is not filled.
@@ -338,10 +408,19 @@ Accepted change pending:
   arithmetic residue after matched close quantities; it is not a new
   affordability rule, quantity granularity, liquidity policy, or identity
   component.
+- `ledgr_lot_apply_fill()` accepts only a known side, finite positive quantity
+  and finite non-negative fee. Ordinary fills require a finite positive price.
+  A terminal `DISPOSITION` alone may close lots at a finite zero price through
+  the internal `allow_zero_price = TRUE` path; a negative or non-finite price
+  always fails. Invalid transitions fail closed with a classed condition
+  aligned with the compiled lot kernel on its supported fill subset.
 
 ## Sweep Promotion Contract
 
-- v0.1.8 sweep results are summary outputs, not committed run artifacts. They
+<a id="contract-promotion-candidate-evidence"></a>
+### Candidate Evidence
+
+- Sweep results are summary outputs, not committed run artifacts. They
   must still carry enough compact candidate identity for deliberate promotion:
   candidate label, params, status, standard summary metrics, warnings, error
   fields, candidate-specific feature fingerprints, row-level `execution_seed`,
@@ -352,7 +431,7 @@ Accepted change pending:
   promotion so stochastic candidates can be replayed exactly on the same
   snapshot and config.
 - Row-level `provenance` is compact lineage, not full durable run provenance.
-  Its v0.1.8 structure is versioned by
+  Its structure is versioned by
   `provenance_version = "ledgr_provenance_v1"` and includes snapshot hash,
   `strategy_hash`, feature-set hash, master seed, seed contract, and
   evaluation scope.
@@ -360,6 +439,10 @@ Accepted change pending:
   candidate. `ledgr_promote()` is the canonical commit helper and must call
   `ledgr_run()` with the candidate params and execution seed. Users should not
   need to manually extract `params[[1]]` or seed values from a sweep row.
+
+<a id="contract-promotion-commit"></a>
+### Promotion Commit And Audit
+
 - Runs created through `ledgr_promote()` store durable selection-audit metadata
   in `run_promotion_context` with
   `promotion_context_version = "ledgr_promotion_v2"`. Promotion context records
@@ -376,10 +459,12 @@ Accepted change pending:
   promotion-context write fails, ledgr warns and returns the committed run; it
   must not roll back a successful run.
 - Direct `ledgr_run()` calls have no promotion context. Promotion context is
-  distinct from full run provenance and from future full sweep artifact
-  persistence. v0.1.8 did not add durable sweep artifact helpers or full sweep
-  replay/verification helpers; v0.1.9.2 later added compact saved-sweep
-  persistence through the family-first sweep surfaces.
+  distinct from full run provenance and compact saved-sweep persistence through
+  the family-first sweep surfaces.
+
+<a id="contract-promotion-selection-status"></a>
+### Selection Status And Eligibility
+
 - Every selection surface reports attempted, done, incomplete and failed
   counts: run-list and comparison prints, sweep prints, `ledgr_sweep_review()`
   (as `counts`) and walk-forward prints, per window. Typed `stop_reason` and
@@ -398,12 +483,19 @@ Accepted change pending:
 
 ## Config Contract
 
-- `ledgr_config()` is an internal construction helper in v0.1.4. It returns an
+<a id="contract-config-construction"></a>
+### Construction And Validation
+
+- `ledgr_config()` is an internal construction helper. It returns an
   S3 object of class `ledgr_config`, validates the object before returning, and
   has a concise print method for diagnostics.
 - `validate_ledgr_config()` is the internal validator used by execution code.
-- Exporting direct config construction remains deferred. v0.1.7 public
-  workflows start with `ledgr_experiment()` and run with `ledgr_run()`.
+- Direct config construction is not exported. Public workflows start with
+  `ledgr_experiment()` and run with `ledgr_run()`.
+
+<a id="contract-config-policies"></a>
+### Corporate-Action And Valuation Policies
+
 - Corporate-action and valuation policies use schema 2 (terminal-outcomes
   synthesis, accepted 2026-10-05). `ledgr_corporate_actions()` takes
   `held_terminal_position` as one choice or as an ordered named map of exact
@@ -425,9 +517,8 @@ Accepted change pending:
 
 ## Snapshot Contract
 
-Accepted change pending:
-
-- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
+<a id="contract-snapshot-identity-and-verification"></a>
+### Identity And Verification
 
 - Backtests run against sealed snapshots.
 - Snapshot hash rule 3 is the sole executable content-identity rule. Its exact
@@ -457,6 +548,10 @@ Accepted change pending:
   check removes every entry for the matching snapshot store and snapshot ID,
   so restoring an older root cannot reactivate a stale proof. The entry is
   never serialized. In-memory or unresolved stores are never entered.
+
+<a id="contract-snapshot-off-session-bars"></a>
+### Off-Session Bars
+
 - A valid bar that falls on no declared open-session close is sealed in
   `snapshot_bars` and never becomes a pulse (every run on a snapshot with
   sessions is availability-aware; `ledgr_backtest()` refuses such snapshots,
@@ -470,6 +565,10 @@ Accepted change pending:
   bars and sessions, so it is outside the snapshot hash and the quarantine
   acknowledgement; rule 3 continues to exclude that derived record (Cut 12
   LDG-3011).
+
+<a id="contract-snapshot-bar-validation"></a>
+### Bar Validation
+
 - Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
@@ -481,6 +580,13 @@ Accepted change pending:
   `ohlc_non_positive` (refused, or quarantined under
   `invalid_observations = "quarantine"`), so no non-positive price becomes a
   mark. Zero volume with positive prices is valid (Cut 12 LDG-2999).
+
+<a id="contract-snapshot-point-in-time-facts"></a>
+### Point-In-Time Facts
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - Point-in-time fact intervals are half-open and knowledge-bounded. Session
   facts form a complete venue calendar with one open/closed row per civil date;
   daily vendor labels are mapped explicitly to declared session closes. The
@@ -503,6 +609,10 @@ Accepted change pending:
   reasons, original payloads, provenance, and the acknowledgement are hashed,
   reopenable audit evidence and never runtime bars. Structural duplicates,
   malformed facts, and an empty valid partition still fail closed.
+
+<a id="contract-snapshot-open-and-trust"></a>
+### Open, List And Trust Boundary
+
 - Split snapshot/run DB mode must ensure the source snapshot from the snapshot
   DB while writing run artifacts to the run DB. Any reusable entry is keyed by
   the snapshot store, never the run store.
@@ -516,8 +626,8 @@ Accepted change pending:
   pulses, timestamps, instruments, and universe membership as trusted normalized
   primitives. They should not repeatedly revalidate OHLC shape, POSIXct/UTC
   status, or sealed-snapshot invariants per pulse, feature, or instrument.
-- In the v0.1.7 snapshot-first workflow, `ledgr_snapshot_open()` is the normal
-  new-session resumption path. After loading a snapshot handle, ordinary
+- `ledgr_snapshot_open()` is the normal new-session resumption path. After
+  loading a snapshot handle, ordinary
   run-management APIs should use the snapshot object rather than a `db_path`
   argument.
 - `ledgr_snapshot_list()` accepts either a DBI connection or a DuckDB file path.
@@ -525,17 +635,14 @@ Accepted change pending:
 - Explicit custom snapshot IDs are allowed. The generated `snapshot_` pattern is
   a convention for generated IDs, not a ban on durable user names; warn only
   when a user-supplied ID starts with `snapshot_` but is malformed.
-- The legacy `ledgr_data_hash()` direct-`bars` helper is removed from the
-  modern API. Snapshot-backed workflows use sealed `snapshot_hash` values plus
+- Snapshot-backed workflows use sealed `snapshot_hash` values plus
   explicit selector bounds; run/resume and snapshot adapters must not rehash
   run-window bar values.
 
 ## Availability Contract
 
-Accepted change pending:
-
-- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
-- [Equity corporate actions](decisions.md#equity-corporate-actions)
+<a id="contract-availability-activation-and-calendar"></a>
+### Activation And Session Calendar
 
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
@@ -559,6 +666,10 @@ Accepted change pending:
   dense. `ledgr_experiment_plan()`, `ledgr_valuation_summary()`, `summary()`
   and `print()` of a result mark a horizon of 5 sessions as the default; the
   marker follows the value, as for every plan assumption (Cut 12 LDG-3014).
+
+<a id="contract-availability-units-and-universe"></a>
+### Units, Price Basis And Universe
+
 - ledgr accounts in split-adjusted share units: no split event acts on a
   position, so quantities, fills and marks are consistent only when bars are
   back-adjusted for splits. An availability-aware experiment on a snapshot
@@ -566,8 +677,8 @@ Accepted change pending:
   identity keeps the basis undeclared (`data_identity$price_basis` and the
   run config's `data.price_basis` stay `NULL`), so it stays distinguishable
   from a declared `split_adjusted`, while every disclosure surface shows
-  `split_adjusted` labeled as an assumed default (Cut 12 LDG-3013, superseding
-  the LDG-3012 refusal). `distribution_adjusted` stays refused for execution. Under
+  `split_adjusted` labeled as an assumed default. `distribution_adjusted` stays
+  refused for execution. Under
   `split_adjusted`, level rules and integer sizing read back-adjusted price
   levels, so a quantity or price threshold before a split is in post-split
   units, and as-traded bars across a split would book a phantom loss. The
@@ -585,6 +696,10 @@ Accepted change pending:
   instrument-time without an applicable status assertion is `status_unknown`:
   target-restricted, allowing hold or exit only (Cut 12 LDG-3009, audit
   S2-018).
+
+<a id="contract-availability-disclosure"></a>
+### Plan And Result Disclosure
+
 - `ledgr_experiment_plan()` is read-only disclosure of effective availability,
   universe, valuation, and fact-family checks. It distinguishes disabled,
   omitted, declared, and assumption-backed families without executing a
@@ -603,6 +718,10 @@ Accepted change pending:
   shows one `Point in time:` line and `summary()` lists the same fields with
   the valuation evidence. A run whose applied facts are all evidenced shows no
   assumption label (Cut 12 LDG-3010).
+
+<a id="contract-availability-fact-inspection"></a>
+### Fact Inspection And Calendar Adapters
+
 - `ledgr_facts_history()` is a retrospective audit of supplied membership or
   session assertions. `ledgr_facts_resolve()` is a separate decision-cutoff
   view using only evidence both effective and knowable at its required `at`.
@@ -632,6 +751,13 @@ Accepted change pending:
   provider and version, calendar ID, declared hours, canonical overrides, and
   provenance, but no generation time or external pointer. qlcal remains in
   `Suggests`; materialized snapshots run, reopen, and inspect without it.
+
+<a id="contract-availability-provider-and-timing"></a>
+### Provider, Knowledge And Timing
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - Availability-aware execution uses one internal provider with `facts`,
   `decision_view`, `execution_view`, `history`, and `identity` operations. Its
   decision axis preserves declared member order for character-vector universes.
@@ -658,6 +784,10 @@ Accepted change pending:
 - Every stored active config carries execution-timing version 2 and the
   `availability_open_v2` convention. A missing or different version is
   refused; no timing convention is inferred from stored rows.
+
+<a id="contract-availability-context-and-state"></a>
+### Context Planes And Strategy State
+
 - Availability-aware contexts expose `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
   `target_restriction_reason`, `admissible`, `priced`, `mark_age`, `risk_mark`
@@ -679,7 +809,11 @@ Accepted change pending:
   returned keys outside the current axis fail closed with
   `ledgr_invalid_strategy_state`, and non-asset portfolio state remains under
   the existing replacement semantics.
-- Availability-aware execution is canonical R only in v0.2.0.0. An explicit
+
+<a id="contract-availability-targets"></a>
+### Execution And Target Semantics
+
+- Availability-aware execution is canonical R only. An explicit
   compiled spot-FIFO request fails before execution with
   `ledgr_compiled_availability_unsupported`; dense compiled behavior is
   unchanged.
@@ -718,6 +852,10 @@ Accepted change pending:
   their in-memory diagnostics only. Dense runs keep the positive-weight
   warn-and-zero path, so dense and availability-aware runs now diverge on an
   unpriced member: dense targets zero with a warning, availability-aware skips.
+
+<a id="contract-availability-valuation"></a>
+### Valuation And Terminal Outcomes
+
 - Fresh and policy-permitted stale closes may value holdings and feed target
   risk through the separate risk-mark plane. Stale marks never become observed
   closes or execution prices. Held marks age on the declared venue-open-session
@@ -757,6 +895,10 @@ Accepted change pending:
   `refuse` choice applies directly, and `haircut` is never a frozen fallback.
   A choice whose mark does not exist stops `terminal_mark_unavailable` with the
   accepted prefix; it never aborts the run.
+
+<a id="contract-availability-affordability"></a>
+### Affordability And Reason Codes
+
 - Active affordability evaluates accepted cash-generating reductions first,
   then cash-consuming fills in C-locale stable-ID order against the fixed
   `1e-8` tolerance. Rejected sales fund nothing. Accepted fills remain emitted
@@ -801,6 +943,9 @@ Accepted change pending:
 
 ## Persistence Contract
 
+<a id="contract-persistence-connections"></a>
+### Connections And Cross-Connection Durability
+
 - ledgr-owned DuckDB drivers explicitly use session-local extension and secret
   storage when the installed DuckDB exposes that control. This avoids shared-home
   startup notices on affected versions without suppressing package messages,
@@ -813,6 +958,10 @@ Accepted change pending:
   runs and their `ledger_events` and `equity_curve` rows must be visible from a
   newly opened connection. Runtime feature values are ephemeral and are not a
   durable result table.
+
+<a id="contract-persistence-current-format"></a>
+### Current Store Format
+
 - Experiment-store schema 120 is the sole current store schema. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
@@ -830,6 +979,10 @@ Accepted change pending:
 - Current stores carry normalized point-in-time fact and quarantine evidence.
   Existing sealed snapshots retain their stored hashes and are never resealed
   in place.
+
+<a id="contract-persistence-fold-evidence"></a>
+### Fold Evidence And Early Exit
+
 - Availability-aware direct runs persist one decision trace row per invoked
   axis ID plus ordered risk, execution, reconciliation, and stop evidence.
   Expected valuation exhaustion, unavailable risk marks, unsupported terminal
@@ -875,6 +1028,10 @@ Accepted change pending:
   exception before or after a pulse flush rolls back all fill rows from that
   invocation, and a failed in-memory sweep candidate exposes none of its
   staged rows to another candidate.
+
+<a id="contract-persistence-completion-evidence"></a>
+### Completion And Resume Evidence
+
 - Sweep-candidate and walk-forward score evidence carries nullable canonical
   `completion_json` and admits `INCOMPLETE` on those rows. Saved-sweep schema 4
   and candidate, sweep, run, and walk-forward identity formats remain
@@ -896,6 +1053,10 @@ Accepted change pending:
   facts, policy identity and committed ledger events. Memory, durable reopen
   and an interrupted resume therefore agree on events, equity, diagnostics
   and summary fields.
+
+<a id="contract-persistence-durability"></a>
+### Constraint Metadata And Artifact Durability
+
 - DuckDB constraint metadata is an introspection contract. If a runtime
   validator or create-side compatibility check cannot interpret expected
   constraint metadata, it must fail loudly rather than mutate user rows or
@@ -917,15 +1078,22 @@ Accepted change pending:
 - Best-effort checkpointing is reserved for cleanup paths where a secondary
   checkpoint error would mask the primary run or cleanup error. It must not be
   used as the only durability mechanism for public mutating APIs.
+
+<a id="contract-persistence-snapshot-workflows"></a>
+### Snapshot Workflows
+
 - CSV snapshot workflows must survive close and reopen:
   `ledgr_snapshot_from_csv()` followed by `ledgr_snapshot_open(verify = TRUE)`
   must preserve hash verification, seal-time metadata, and subsequent
-  `ledgr_run()` execution. The connection-first create/import/seal lifecycle
-  this clause used to name was removed in v0.2.0.2 cut 3;
-  `ledgr_snapshot_create()` and `ledgr_snapshot_seal()` remain public and keep
-  their CREATED and SEALED status rules.
-- v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
+  `ledgr_run()` execution. `ledgr_snapshot_create()` and
+  `ledgr_snapshot_seal()` remain public and keep their CREATED and SEALED
+  status rules.
+- Public experiment-store APIs are snapshot-first. A `db_path` appears
   in normal workflows only at snapshot creation or snapshot loading.
+
+<a id="contract-persistence-run-discovery"></a>
+### Run Discovery And Summaries
+
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. In a current store, row absence for unfinished telemetry is
   missing/`NA`, not corruption.
@@ -962,7 +1130,11 @@ Accepted change pending:
   must not infer a plan, substitute current experiment state, add a top-level
   `risk_plan_json` field, execute recovered strategy code, or write persistent
   rows.
-- Completed and failed v0.1.5+ runs persist compact `run_telemetry`:
+
+<a id="contract-persistence-telemetry-and-recovery"></a>
+### Telemetry And Recovery
+
+- Completed and failed runs persist compact `run_telemetry`:
   `status`, `execution_mode`, elapsed seconds, and pulse count. Detailed per-component telemetry remains
   session-scoped through `ledgr_backtest_bench()`.
 - A failure after the fold has committed but before equity and `DONE`
@@ -975,6 +1147,10 @@ Accepted change pending:
 - Infrastructure-owned temporary names used by snapshot ingestion and eager
   result reads must preserve the caller's `.Random.seed`, including its
   absence, and must not change the caller's next random draw.
+
+<a id="contract-persistence-run-lifecycle"></a>
+### Run Open And Metadata Lifecycle
+
 - `ledgr_run_open()` returns a `ledgr_backtest` handle for terminal `DONE` and
   availability-aware `INCOMPLETE` runs. Opening validates incomplete bounds
   and must not execute strategy code, recompute fills, or mutate persistent
@@ -983,9 +1159,12 @@ Accepted change pending:
   They must never rename `run_id`, delete artifacts, or change experiment
   identity hashes. Archive is non-destructive and idempotent.
 - Run comparison, run tags, and strategy-source recovery are available. Hard
-  delete is not available in v0.1.x and must not be documented as such.
+  delete is not available and must not be documented as such.
 
 ## Canonical JSON Contract
+
+<a id="contract-json-durable-bytes"></a>
+### Durable Canonical Bytes
 
 - Canonical JSON is produced by `canonical_json()`.
 - Named vectors and named lists are sorted by key with radix ordering before
@@ -993,29 +1172,39 @@ Accepted change pending:
 - Serialization uses `yyjsonr::write_json_str()` with
   `yyjsonr::opts_write_json(pretty = FALSE, auto_unbox = TRUE,
   digits = -1L, null = "null", num_specials = "null")`.
-- v0.1.8.9 intentionally bumps the canonical JSON byte format to v2.
+- The canonical JSON byte format is version 2.
   Whole-number doubles serialize with a decimal suffix, full-precision doubles
   keep yyjsonr's shortest round-trippable representation, and exponent notation
-  may differ from the v1 jsonlite surface. Hashes that include canonical JSON
-  bytes are not expected to match pre-v0.1.8.9 values.
+  follows the current yyjsonr surface.
 - The current canonical-identity ordering rule is recorded by
   `ledgr_canonical_json_rule_version = 1L` in the store format fingerprint.
-  It replaces the former locale-sensitive key order without a compatibility
-  fallback; stores written without that rule marker are rebuilt.
+  Stores written without that rule marker are rebuilt; there is no
+  compatibility fallback.
 - Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
   `meta_json` must use this canonical path when deterministic identity matters.
+
+<a id="contract-json-session-local-keys"></a>
+### Session-Local Keys
+
 - Session-local, non-persisted lookup keys are not durable identity artifacts
   and are not required to use canonical JSON or cryptographic hashes. They must
   remain deterministic and unambiguous within the session, and this exemption
   must not weaken snapshot hashes, config hashes, strategy-state JSON,
   snapshot metadata JSON, ledger `meta_json`, or any other persisted provenance
   surface.
+
+<a id="contract-json-feature-map-objects"></a>
+### Feature-Map Authoring Objects
+
 - Feature-map authoring objects are wrappers around existing indicator
   definitions. Equivalent feature maps and plain feature lists must preserve
   feature-related config identity for equivalent indicator definitions unless a
   later contract deliberately changes run identity semantics.
 
 ## Strategy Contract
+
+<a id="contract-strategy-outputs"></a>
+### Strategy Outputs And Helper Values
 
 - Strategy output is a full named numeric target vector, a `ledgr_target`, or a
   list containing `targets`.
@@ -1050,10 +1239,10 @@ Accepted change pending:
   Zero-length numeric and logical values receive `character()` names, empty
   signals and targets retain their existing classes, and final target
   completeness remains strict whenever the allowed axis is nonempty.
-- v0.1.7.2 helper weights are public authoring helpers only. They do not alter
+- Helper weights are public authoring helpers only. They do not alter
   the execution contract, and target constructors must reject negative weights
   or leverage until explicit short-selling and leverage semantics are specified.
-- The v0.1.7.2 reference helper pipeline is deliberately small:
+- The reference helper pipeline is deliberately small:
   `ledgr_signal_return()` reads already-registered `return_<lookback>` features,
   `ledgr_select_top_n()` ignores missing signals and breaks ties by instrument ID
   in C-locale (radix) order, the provider's id order, whatever the session
@@ -1094,17 +1283,13 @@ Accepted change pending:
   its stable tie policy. A short ranking warns by default, counting eligible
   usable scores only; `partial = "allow"` explicitly accepts fewer than `n`
   usable scores without changing the selection.
+
+<a id="contract-strategy-decision-axis"></a>
 ### Decision Axis And Eligibility
 
-Decided by the maintainer on 2026-09-29 (Cut 22, LDG-2906), revised after
-two Type 2 reviews, and accepted by the maintainer on 2026-09-29. One decision
-axis and one eligibility plane hold in dense and availability-aware contexts
-alike, so a strategy written as named-vector manipulation, or as a helper
-pipeline, means the same thing in both. The executable statement of these
-rules is `dev/spikes/strategy-helper-axis/model.R`, which delegates every rule
-kept from before to the production code; `expected_delta.csv` in the same
-directory lists every observation the rules change and the ticket that
-changes it.
+One decision axis and one eligibility plane hold in dense and
+availability-aware contexts alike, so a strategy written as named-vector
+manipulation, or as a helper pipeline, means the same thing in both.
 
 - **Eligibility.** An ID is eligible when it is a member and not
   target-restricted. `ctx$vec$admissible` is that plane in every context:
@@ -1209,11 +1394,8 @@ and `AAA` a held nonmember, each holding 5:
 | raw targets, `ctx$flat()`, `ctx$hold()` | named numeric | Daxis | named | literal | `ctx$flat()` sells `AAA` at the next open |
 | value-mode signals, selections, weights | their class | their `universe` | named | none: every entry is eligible | unchanged |
 
-Audit findings closed (`inst/design/audits/v0_2_0_2_strategy_helper_axis_audit.md`):
-A1 by Signals; A2 by Eligibility; A3 by Selections and rankings and Target
-helpers; A4 by Target helpers and Empty axis; A5 by Signals and Selections and
-rankings; A6 by Warmup. A7 stays a representation inventory, answered by the
-domain table.
+<a id="contract-strategy-feature-maps"></a>
+### Feature Maps
 
 - Feature maps are authoring UX over the existing feature registry and pulse
   context. They may make feature registration and pulse-time lookup easier, but
@@ -1228,7 +1410,11 @@ domain table.
 - `ledgr_passed_warmup()` is a guard used inside strategy logic after feature values
   have been read. It is not a helper-pipeline transformation and must not imply
   a second signal/selection/weight/target execution path.
-- v0.1.x does not define a supported broker-style short-selling contract.
+
+<a id="contract-strategy-supported-surface"></a>
+### Supported Strategy Surface
+
+- ledgr does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
 - Raw signal strings such as `"LONG"` and `"FLAT"` are invalid core outputs.
@@ -1239,9 +1425,13 @@ domain table.
 - Functional strategies and configured strategy-list compatibility surfaces use
   the same target validator. Legacy R6 strategy objects are not reauthorized by
   this contract.
-- v0.1.7 public experiment workflows accept only functional strategies with
+- Public experiment workflows accept only functional strategies with
   signature `function(ctx, params)`. `params` defaults to `list()` and is passed
   as the second argument. `ctx$params` is not part of the public contract.
+
+<a id="contract-strategy-reproducibility"></a>
+### Reproducibility And Preflight
+
 - Strategy reproducibility is tiered:
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
@@ -1287,8 +1477,8 @@ domain table.
   `ambient_rng_symbols`, and `notes`, and has class
   `ledgr_strategy_preflight`. `allowed` is `TRUE` for
   `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
-- Strategy preflight may include additive worker-dependency metadata. In
-  v0.1.8.8, `qualified_package_dependencies` identifies packages used through
+- Strategy preflight may include additive worker-dependency metadata.
+  `qualified_package_dependencies` identifies packages used through
   `pkg::fn`, `attached_package_dependencies` identifies packages needed for
   unqualified package calls on workers, and `worker_dependencies` carries the
   `require_namespace` and `attach` sets consumed by parallel setup.
@@ -1301,6 +1491,10 @@ domain table.
 - Sweep mode inherits the public preflight semantics. Sweep may accept Tier 1
   and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.
+
+<a id="contract-strategy-provenance"></a>
+### Provenance And Recovery
+
 - Run provenance stores `strategy_source_hash`,
   `strategy_params_hash`, captured strategy source where available,
   dependency versions, R version, and reproducibility tier. Experiment
@@ -1318,10 +1512,11 @@ domain table.
 
 ## Context Contract
 
-Accepted change pending:
+<a id="contract-context-pulse-data"></a>
+### Pulse Data And Axis-Aligned Accessors
 
-- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
-- [Recursive-indicator history boundary](decisions.md#recursive-indicator-boundary)
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Runtime and interactive pulse contexts expose data-frame-compatible
   `ctx$bars` and long-table `ctx$feature_table`.
@@ -1353,6 +1548,10 @@ Accepted change pending:
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
   behavior is flat-unless-signal or hold-unless-signal.
+
+<a id="contract-context-feature-resolution"></a>
+### Feature Resolution And Explicit Maps
+
 - `ctx$feature(instrument_id, feature_id)` uses the same alias-first singular
   resolver as `ctx$vec$feature()`. It fails loudly for unknown names, including
   the requested feature, instrument, active aliases and concrete feature IDs.
@@ -1385,6 +1584,10 @@ Accepted change pending:
   reused by dense and availability reads. Resolution precedes decision-axis
   restriction. No package-global resolver cache or plural feature plane is
   part of this contract.
+
+<a id="contract-context-prepared-views"></a>
+### Prepared Views And Eligibility
+
 - `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` remain available.
   The long feature table may be a schema-only zero-row frame while registered
   feature accessors and the wide view carry current values. No equivalence is
@@ -1407,6 +1610,10 @@ Accepted change pending:
   The context-aware form `ledgr_passed_warmup(ctx, values)` reads a
   decision-axis vector and considers eligible IDs only; there, no eligible ID
   is a pass.
+
+<a id="contract-context-inspection"></a>
+### Inspection And Signal Views
+
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
   `ledgr_pulse_wide()` are read-only inspection views over declared features
   and pulse-known data. They must not precompute unavailable data, mutate
@@ -1429,12 +1636,19 @@ Accepted change pending:
   warn once per run when calls in one pulse reach the axis size. The warning
   names singular `ctx$vec$feature()` reads as the replacement. Explicit-map
   bundle loops remain unrecorded.
-- v0.1.7.4 feature maps do not add a new `ctx$features_wide()` contract; the
+- Feature maps do not add a new `ctx$features_wide()` contract; the
   public wide pulse inspection API is `ledgr_pulse_wide()`.
 - Strategy evaluation errors are wrapped with pulse context while preserving the
   original condition as the parent. The wrapper must name the run, timestamp,
   instruments, and available feature IDs so users can distinguish strategy
   logic failures from feature ID and warmup behavior.
+
+<a id="contract-context-indicator-computation"></a>
+### Indicator Computation And Identity
+
+Accepted change pending:
+[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
+
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.
@@ -1451,6 +1665,13 @@ Accepted change pending:
   including that function's own captures. The CSV adapter represents its
   constructor-owned captured values through `params$data_hash`; public source or
   adapter labels do not authorize that private route.
+
+<a id="contract-context-strict-features"></a>
+### Availability-Aware Strict Features
+
+Accepted change pending:
+[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
+
 - Availability-aware indicators declare `gap_contract = "strict_window"` on
   the existing indicator definition. The declaration commits the definition to
   a finite window with no internal carry or imputation. Omission fails with
@@ -1474,6 +1695,10 @@ Accepted change pending:
   history semantics. Future-known facts cannot rewrite earlier feature values.
   Dense indicator fingerprints and feature-engine
   identity omit the availability declaration and remain unchanged.
+
+<a id="contract-context-ttr-adapter"></a>
+### TTR Adapter
+
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
   params. Only `params$args` are forwarded to TTR; metadata fields are identity
@@ -1498,15 +1723,19 @@ Accepted change pending:
 - `ledgr_feature_id()` is a discovery helper over existing `ledgr_indicator`
   IDs. It must not generate aliases, rename indicators, or change fingerprint
   semantics; list input returns IDs in list order.
-- Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
+
+<a id="contract-context-feature-path"></a>
+### Feature Path And Intent Constructors
+
+- Fn-only indicators remain supported. The fallback uses bounded
   stable windows, not expanding full-history windows.
 - Feature computation follows one uncached production path. Explicit
   `ledgr_precomputed_features` payloads are validated against current feature
   identity before reuse; a mismatch refuses before candidate execution.
-- In v0.1.7 public workflows, `ctx$flat()` creates a full named target vector
+- In public workflows, `ctx$flat()` creates a full named target vector
   initialized to flat positions. It is appropriate when unspecified instruments
   should go flat.
-- In v0.1.7 public workflows, `ctx$hold()` creates a full named target vector
+- In public workflows, `ctx$hold()` creates a full named target vector
   initialized from current holdings. It is appropriate for hold-unless-signal
   strategies and rebalance throttling.
 - Interactive pulse and indicator tools are read-only against persistent ledgr
@@ -1514,11 +1743,11 @@ Accepted change pending:
 
 ## Result Contract
 
-Accepted change pending:
+<a id="contract-result-read-surfaces"></a>
+### Result Reads And Explanations
 
-- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
-- [Objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity)
-- [Equity corporate actions](decisions.md#equity-corporate-actions)
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
@@ -1556,6 +1785,10 @@ Accepted change pending:
   is `no_action` and `execution_reason` plus `execution_reasons` are
   `no_target_change`. Those values are explain-time defaults, not durable
   diagnostic reason codes, and are never persisted.
+
+<a id="contract-result-completion-and-valuation"></a>
+### Completion And Valuation Disclosure
+
 - `ledgr_run_info()` and `summary()` project existing terminal completion
   evidence read-only. Availability-aware runs expose requested and achieved
   windows, terminal status and stop reason, last fully valued and executed
@@ -1600,6 +1833,10 @@ Accepted change pending:
   run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
   stored artifacts, comparison semantics, or strategy provenance.
 - Metrics are descriptive only and must never feed back into strategy execution.
+
+<a id="contract-result-corporate-actions"></a>
+### Corporate Actions And Valuation
+
 - Terminal outcomes extend `ledgr_corporate_action_summary()` and
   `corporate_action_fidelity`; there is no separate terminal headline. Its
   `terminal_outcomes` table lists every scheduled and lifetime `DISPOSITION`
@@ -1639,6 +1876,10 @@ Accepted change pending:
   The warning has no materiality threshold. Refused exhaustion, settlement
   evidence alone and a clean run do not warn, and a dense run shows no
   valuation output.
+
+<a id="contract-result-reconstruction"></a>
+### State Reconstruction
+
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild
   path, which ensures snapshot-backed sources before rebuilding derived
@@ -1660,6 +1901,10 @@ Accepted change pending:
   may classify timing provenance and derive unambiguous pulse alignment, but
   must not write it back, replay strategy code, recompute fill eligibility, or
   restamp recorded events.
+
+<a id="contract-result-fills-and-sweep-restoration"></a>
+### Fills And Sweep Restoration
+
 - `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
   full fills-schema tibble for empty and populated runs. It has no public
   cursor, lazy-read, or row-threshold mode.
@@ -1678,6 +1923,10 @@ Accepted change pending:
   when present and preserves their absence on compatible plain input as `NULL`
   rather than
   synthesizing provenance.
+
+<a id="contract-result-standard-metrics"></a>
+### Standard Metrics
+
 - Public standard metrics use the equity rows returned by
   `ledgr_results(bt, what = "equity")` and the closed trade rows returned by
   `ledgr_results(bt, what = "trades")`.
@@ -1696,24 +1945,21 @@ Accepted change pending:
   `period_returns` are adjacent public equity-row returns
   `equity[t] / equity[t - 1] - 1`. If fewer than two period returns exist, the
   metric is `NA`.
-- v0.1.7.7 adds the first explicit risk-adjusted metric contract. The standard
-  metric set ships `sharpe_ratio` unless an implementation ticket records a
-  public deferral and an alternate v0.1.8 sweep-ranking path.
+- The standard metric set ships `sharpe_ratio`.
 - Sharpe-style metrics are computed from period excess returns:
   `excess_return[t] = equity_return[t] - rf_period_return[t]`. The annualized
   ratio is `mean(excess_return) / sd(excess_return) * sqrt(bars_per_year)`.
   The formula consumes a pulse-aligned per-period risk-free return vector; the
   source of that vector must not change the formula.
-- The first v0.1.7.7 risk-free-rate provider is a scalar annual rate expressed
+- The risk-free-rate provider is a scalar annual rate expressed
   as a decimal, so `0.02` means two percent per year. The default is `0`.
   Conversion to a per-period return is geometric:
   `(1 + rf_annual)^(1 / bars_per_year) - 1`. Non-finite rates, rates less than
   or equal to `-1`, or invalid `bars_per_year` values make the metric `NA`
   rather than producing misleading values.
 - Time-varying risk-free-rate series and real data providers such as FRED,
-  Treasury, ECB, or central-bank adapters are deferred. Future providers must
-  produce the same pulse-aligned `rf_period_return` vector consumed by the
-  v0.1.7.7 formula.
+  Treasury, ECB, or central-bank adapters are not supported. The metric formula
+  consumes only the pulse-aligned `rf_period_return` vector described above.
 - Risk-adjusted metrics must not silently assume daily bars. They reuse the
   documented `bars_per_year` cadence contract and must either snap known
   cadences, accept an explicit provider value, or fail/defer loudly when
@@ -1738,6 +1984,10 @@ Accepted change pending:
   must name the exact PerformanceAnalytics functions, annualization scale, and
   risk-free-rate units used for comparison, and they must not redefine ledgr's
   owned metric formulas or become a runtime dependency.
+
+<a id="contract-result-return-panels"></a>
+### Return Panels And Retained Evidence
+
 - `ledgr_return_panel()` constructs source-neutral return evidence from clean
   candidate period returns. `ledgr_sweep_returns_panel()` is the sweep-sourced
   accessor into the same `ledgr_return_panel` contract. Diagnostic panels must
@@ -1784,6 +2034,10 @@ Accepted change pending:
   with retained-trade condition classes when the evidence is unretained or
   missing. Retained trade evidence is not execution, candidate, run, config, or
   walk-forward identity.
+
+<a id="contract-result-validation-diagnostics"></a>
+### Validation Diagnostics
+
 - `ledgr_pbo()` is a native PBO/CSCV diagnostic over a `ledgr_return_panel` or
   retained sweep returns. It uses the same panel gates, reports
   completed/used/excluded candidate ids where available, prevalidates even `S`
@@ -1830,6 +2084,13 @@ Accepted change pending:
   identity. quantstrat may be used only as optional reference evidence through
   `dev/manual/verify-dsr-quantstrat.R`, never as an automated-test or runtime
   dependency.
+
+<a id="contract-result-business-objectives"></a>
+### Business Objectives
+
+Accepted change pending:
+[objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity).
+
 - `ledgr_business_objective()` composes an ordered, non-empty set of
   ledgr-owned `ledgr_objective_*()` criterion steps with one v1 rule: all
   criteria must pass. Criterion steps are classed, hashed, canonically
@@ -1897,6 +2158,10 @@ Accepted change pending:
   `-Inf` as determinate boundary evidence, while `NA` and `NaN` fail closed.
   PBO/CSCV is sweep-level evidence and is not an admissible candidate-level
   threshold criterion.
+
+<a id="contract-result-trade-statistics"></a>
+### Trade Statistics
+
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.
@@ -1908,6 +2173,9 @@ Accepted change pending:
   `positions_value > 1e-6`.
 
 ## Documentation Contract
+
+<a id="contract-documentation-example-style"></a>
+### Example Style And Article Placement
 
 - README and narrative vignettes use the base pipe `|>` in canonical examples.
 - README and narrative vignettes prefer `filter()` / `between()` over
@@ -1921,6 +2189,10 @@ Accepted change pending:
   ledgr is built in R" live under `vignettes/articles/` for pkgdown. They must
   not be installed vignettes, copied into `inst/doc/`, or mixed into the
   operational vignette set.
+
+<a id="contract-documentation-discovery"></a>
+### Installed Documentation Discovery
+
 - README must document noninteractive installed-documentation discovery for
   `Rscript` and agent workflows, including `vignette(package = "ledgr")` and
   `system.file("doc", package = "ledgr")`.
@@ -1935,6 +2207,10 @@ Accepted change pending:
   `system.file("doc", package = "ledgr")`, and direct paths for core installed
   articles such as `strategy-development`, `metrics-and-accounting`, and
   `experiment-store`.
+
+<a id="contract-documentation-indicators"></a>
+### Indicator Teaching
+
 - Indicator concepts must have one installed teaching article, `indicators`,
   covering built-in indicators, TTR-backed indicators, feature IDs, and warmup
   `NA`. `ttr-indicators` must not remain as a parallel installed teaching
@@ -1958,6 +2234,10 @@ Accepted change pending:
 - Installed documentation must not expose stale retired article paths such as
   `ttr-indicators` after `indicators` is the single installed indicator
   article, unless the contract explicitly documents why both are needed.
+
+<a id="contract-documentation-strategy-context"></a>
+### Strategy Context Teaching
+
 - `man/ledgr_strategy_context.Rd` owns one explicit reference table for every
   public runtime context member and plane. It records dense and availability
   applicability, shape, axis, units, missingness and counterpart, and
@@ -1972,24 +2252,26 @@ Accepted change pending:
   when held nonmembers are reserved, and that hold does not bypass risk or
   guarantee an absence of fills.
 
+<a id="contract-documentation-terminal-disclosure"></a>
+### Terminal And Release Disclosure
+
 - Public documentation distinguishes settlement evidence, a modeled terminal
   disposition, stale valuation, frozen valuation, refusal and the
   frozen-at-end bound, and never calls assumption-backed equity exact.
-- Release claim boundary (terminal-outcomes synthesis Section 6; v0.2.2
-  release definition of done item 9). Until accepted upstream untraded-bar
+- Release claim boundary (terminal-outcomes synthesis Section 6). Until
+  accepted upstream untraded-bar
   evidence (ledgr-research LFB-027) and a passing end-to-end record are
   linked, no release note, README, article or record may claim that the
   reference Sharadar workflow ages halted or untraded carried prices or
   prevents fills on them. The survivorship-bias and missing-data-and-sessions
-  articles and the v0.2.2 release notes state this boundary verbatim: "Halts and untraded sessions that a data source encodes as zero-volume bars carrying the previous close, as the reference Sharadar data does, are still read as observed prices: they can fill and they bypass valuation ageing and freezing." A documentation-contract
+  articles and the current release notes state this boundary verbatim: "Halts and untraded sessions that a data source encodes as zero-volume bars carrying the previous close, as the reference Sharadar data does, are still read as observed prices: they can fill and they bypass valuation ageing and freezing." A documentation-contract
   test pins the sentence. It is removed only together with linking that
   evidence.
 
 ## Verification Contract
 
-Accepted change pending:
-
-- [Testing architecture](decisions.md#testing-architecture)
+<a id="contract-verification-release-gates"></a>
+### Release Gates
 
 - Full regression tests must pass before release-ticket completion.
 - Package check target:
@@ -2006,6 +2288,10 @@ Accepted change pending:
 - Release-ticket execution should follow `inst/design/release_ci_playbook.md`.
   Main-branch CI and tag-triggered CI are separate gates; a release tag is not
   valid until the tag workflow is green.
+
+<a id="contract-verification-diagnostic-inputs"></a>
+### Diagnostic Input Gates
+
 - Effective-trial and DSR inputs remain completed comparable panels.
   Attempted, incomplete and failed counts never become trials, raw-trial
   counts or return columns, and naming an incomplete or failed candidate in a
@@ -2013,6 +2299,10 @@ Accepted change pending:
   `ledgr_sweep_returns_candidate_not_completed`. On a mixed sweep these
   diagnostics equal those of a sweep over its completed candidates only,
   apart from sweep identity and the excluded-ID disclosure.
+
+<a id="contract-verification-terminal-and-snapshot-gates"></a>
+### Terminal And Snapshot Gates
+
 - The terminal-outcomes gate is one registry. Each of the eight synthesis
   Section 7 cases has one owning ticket and one failure-sensitive block, as
   mapped in the v0.2.2 packet's `terminal_outcomes_reconciliation.md`. A
@@ -2027,6 +2317,10 @@ Accepted change pending:
   golden roots on both Windows and Ubuntu CI. Hosted-CI clocks are advisory;
   the registered one-thread local benchmark host owns the absolute cost and
   growth gates.
+
+<a id="contract-verification-store-and-codebase-gates"></a>
+### Store And Codebase Gates
+
 - Package code obtains a persistent store connection through
   `ledgr_store_open(path, mode)` or passes a borrowed, cached or
   caller-supplied connection through its one existing-connection check. The
