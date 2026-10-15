@@ -127,3 +127,33 @@ disappear.
 
 The report-only governance guard remains report-only. Its real-tree report is
 review evidence, not an implementation gate and not a second semantic oracle.
+
+## Verification
+
+Input identity was accepted Cut 15 baseline `1cbc5166`; the structural
+implementation source is `cfa7b969`. Verification ran on Windows x64 with R
+4.6.1 ucrt and the user library at
+`C:/Users/maxth/AppData/Local/R/win-library/4.6`.
+
+- `testthat::test_file("tests/testthat/test-documentation-contracts.R")`
+  passed 1,031 expectations in 10.2 seconds. The six focused metadata,
+  availability-feature, feature-retention-removal, release-claim-boundary,
+  control-plane and governance-report files passed 350 expectations in 30.7
+  seconds. There were no failures, errors, warnings or skips.
+- A source-derived R probe counted 13 H2 routes, 81 H3 rule groups and 81
+  unique explicit group IDs. It compared the four live bridge IDs with the
+  four unique contract backlinks. Removing one OMS backlink or its bridge row
+  independently failed that comparison; prepending an unrelated paragraph
+  left the sampled explicit address unchanged.
+- `Rscript tools/governance-report.R` exited zero in 69.941 seconds over 319
+  tracked sources. It reported 1,115 findings: 51 baseline structural, 883 new
+  structural and 181 advisory. Neither `decisions.md` nor this reconciliation
+  produced a finding. The three findings on `contracts.md` are its pre-existing
+  missing Role, Status and Authority headers, owned by Workstream 35 rather
+  than changed here. The tool remained report-only.
+- `yaml::read_yaml("inst/design/ledgr_v0_2_2_spec_packet/tickets.yml")`, the
+  local-target and fragment checks exercised by the documentation suite,
+  ASCII checks on all four changed files and `git diff --check` passed.
+
+No product code, public behavior, claim registration or RFC decision changed.
+The implementation introduces no unresolved decision for the maintainer.
