@@ -517,11 +517,11 @@ workstreams:
   - id: 33
     name: "Current contracts and decision bridge"
     cut: 15
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 36
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 33", verdict: "CHANGES_REQUIRED", artifact: "close_review_33.md", result: "The close review confirmed the address and population structure but found two inaccurate semantic clauses, missing redirect stubs, two overclaimed consolidation receivers, over-broad bridge-exit wording and a set-only real-tree backlink witness. Correction round 1 is implemented and awaits focused independent re-review."}
-    integration_evidence: ["current_contract_reconciliation.md records the full clause-by-clause current-tense pass, all eighty-one stable rule-group addresses, every pre-change bridge-row disposition and the four retained source-owner-receiver triangles. The independent Type 1 CHANGES_REQUIRED review is preserved in close_review_33.md. Correction commit 2e87c6a9 aligns cost and zero-price disposition semantics, restores locator-only stubs and closeout timing, names the exact testing/accounting owners, adds an exact per-row backlink oracle and records that the report-only guard does not yet parse the real bridge. The corrected focused files pass 1,712 expectations, all seven exact backlink/row mutations fail as intended, and the tracked report has no WS33-introduced broken anchor. Status is review_pending and accepted remains null."]
+    review: {mode: "Type 1", point: "focused re-review 1 of workstream 33", verdict: "PASS", result: "Finding-free PASS: F1 through F7 and both nits are resolved; seven exact bridge/backlink mutations are detected; six focused suites pass 1,712 expectations; the report scans 320 sources with 1,104 findings and no new broken anchor. No new finding or maintainer decision; close_review_33.md preserves the original finding history."}
+    integration_evidence: ["current_contract_reconciliation.md records the full clause-by-clause current-tense pass, all eighty-one stable rule-group addresses, every pre-change bridge-row disposition and the four retained source-owner-receiver triangles. The independent Type 1 CHANGES_REQUIRED review is preserved in close_review_33.md. Correction commit 2e87c6a9 aligns cost and zero-price disposition semantics, restores locator-only stubs and closeout timing, names the exact testing/accounting owners, adds an exact per-row backlink oracle and records that the report-only guard does not yet parse the real bridge. The corrected focused files pass 1,712 expectations, all seven exact backlink/row mutations fail as intended, and the tracked report has no WS33-introduced broken anchor. The focused independent re-review returned finding-free PASS with no maintainer decision. Status is complete and accepted remains null."]
     accepted: null
   - id: 34
     name: "Planning front doors and horizon"
