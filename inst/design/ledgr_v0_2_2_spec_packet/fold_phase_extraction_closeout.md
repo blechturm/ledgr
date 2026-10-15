@@ -1,7 +1,7 @@
 # Workstream 38 closeout: fold phase extraction
 
-**Status:** Close-review corrections complete; awaiting focused independent
-Type 1 re-review.
+**Status:** Focused re-review cleared the product; record correction applied
+and awaiting maintainer acceptance.
 **Date:** 2026-10-15
 **Authority:** accepted fold-execution phase synthesis, Sections 4 to 8
 
@@ -40,15 +40,16 @@ necessary live-return plumbing. No other behavior repair was admitted.
 | Boundary | Commit | Record directory | Exactness result |
 | --- | --- | --- | --- |
 | parent baseline | `61fd6774` | `.tmp/ws38-parent-baseline` | accepted starting record |
-| accepted carrier contract | `99d31f94` | `.tmp/ws38-envelope` | 50/50 gated families and identity exact |
-| envelope E | `e4c357ee` | `.tmp/ws38-p1` | 50/50 and identity exact |
-| P1 observe and settle | `4d3ef112` | `.tmp/ws38-p2` | 50/50 and identity exact |
-| clock-harness correction | `2b1717c6` | `.tmp/ws38-p2` | probe-only; product tree unchanged from P1 |
-| P2 decide | `388baab7` | `.tmp/ws38-p3` | 50/50 and identity exact |
-| P3 plan | `ebc19157` | `.tmp/ws38-p4` | 50/50 and identity exact |
-| P4 apply | `0f6bd974` | `.tmp/ws38-p5` | 50/50 and identity exact |
-| P5 commit | `57f1caab` | `.tmp/ws38-live-return` | 50/50 and identity exact |
-| final orchestration | `a56ef6e8` | `.tmp/ws38-final` | 50/50 and identity exact |
+| accepted carrier contract | `99d31f94` | none | contract-only commit; no fixture record |
+| envelope E | `e4c357ee` | `.tmp/ws38-envelope` | 50/50 gated families and identity exact |
+| P1 observe and settle | `4d3ef112` | `.tmp/ws38-p1` | 50/50 and identity exact |
+| clock-harness correction | `2b1717c6` | none | probe-only; product tree unchanged from P1 |
+| P2 decide | `388baab7` | `.tmp/ws38-p2` | 50/50 and identity exact |
+| P3 plan | `ebc19157` | `.tmp/ws38-p3` | 50/50 and identity exact |
+| P4 apply | `0f6bd974` | `.tmp/ws38-p4` | 50/50 and identity exact |
+| P5 commit | `57f1caab` | `.tmp/ws38-p5` | 50/50 and identity exact |
+| final orchestration, pre-commit | `a56ef6e8` | `.tmp/ws38-live-return` | 50/50 and identity exact |
+| final orchestration, post-commit | `a56ef6e8` | `.tmp/ws38-final` | 50/50 and identity exact |
 | close-review correction | `cfba0f8a` | `.tmp/ws38-correction-cfba0f8a` | 50/50 and identity exact |
 
 The fixture command was:
@@ -134,6 +135,11 @@ an environment-held position-element write fails LTB-0279 with
 LTB-0282 on both persisted stages; restoring list-only `state_prev` validation
 fails LTB-0283 during resumed execution. Each mutation was removed after its
 own focused run.
+
+The focused re-review additionally established that removing only the fold's
+own RNG restoration can be masked by the runner and `ledgr_sweep()`
+restorations. This is not an uncovered promise: narrowed LCL-0266 claims the
+public caller-state boundary that its detector observes.
 
 ## Final profile
 
