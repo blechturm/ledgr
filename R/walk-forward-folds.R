@@ -669,6 +669,23 @@ ledgr_experiment_window_from_fold <- function(exp,
   )
 }
 
+ledgr_walk_forward_fold_windows <- function(exp, fold, opening_state_policy) {
+  list(
+    train = ledgr_experiment_window_from_fold(
+      exp,
+      fold,
+      window = "train",
+      opening_state_policy = opening_state_policy
+    ),
+    test = ledgr_experiment_window_from_fold(
+      exp,
+      fold,
+      window = "test",
+      opening_state_policy = opening_state_policy
+    )
+  )
+}
+
 ledgr_experiment_window_validate_pulses <- function(exp, window) {
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
@@ -779,13 +796,17 @@ ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
 # two windows is never observed, so positions would cross it unvalued and any
 # terminal event inside it would go unsettled. Refuse before any training
 # sweep or store write and name the first offending pair.
-ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, folds) {
-  if (length(folds) < 2L) return(invisible(TRUE))
-  test_start <- as.POSIXct(vapply(folds, function(f) as.numeric(f$test_start_utc), numeric(1)),
+ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, fold_windows) {
+  if (length(fold_windows) < 2L) return(invisible(TRUE))
+  test_start <- as.POSIXct(vapply(fold_windows, function(x) {
+    as.numeric(x$test$scoring_start_utc)
+  }, numeric(1)),
                            origin = "1970-01-01", tz = "UTC")
-  test_end <- as.POSIXct(vapply(folds, function(f) as.numeric(f$test_end_utc), numeric(1)),
+  test_end <- as.POSIXct(vapply(fold_windows, function(x) {
+    as.numeric(x$test$scoring_end_utc)
+  }, numeric(1)),
                          origin = "1970-01-01", tz = "UTC")
-  n <- length(folds)
+  n <- length(fold_windows)
   unordered <- which(test_start[-1L] <= test_end[-n])
   if (length(unordered) > 0L) {
     k <- unordered[[1L]]

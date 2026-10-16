@@ -93,6 +93,22 @@ testthat::test_that("[LTB-0284] civil fact dates retain venue resolution evidenc
       as.numeric(row$effective_from[[1L]]),
       as.numeric(sessions$rows$session_open[[1L]])
     )
+    testthat::expect_identical(
+      as.numeric(row$effective_to[[1L]]),
+      as.numeric(sessions$rows$session_open[[5L]])
+    )
+    testthat::expect_identical(
+      as.numeric(row$knowledge_time[[1L]]),
+      as.numeric(sessions$rows$session_open[[1L]])
+    )
+    testthat::expect_identical(
+      evidence$effective_to$resolved_ts_utc,
+      ledgr:::ledgr_fact_time_token(sessions$rows$session_open[[5L]])
+    )
+    testthat::expect_identical(
+      evidence$knowledge_time$resolved_ts_utc,
+      ledgr:::ledgr_fact_time_token(sessions$rows$session_open[[1L]])
+    )
     testthat::expect_false(format(row$effective_from[[1L]], "%H:%M:%S", tz = "UTC") == "00:00:00")
   }
 
@@ -174,6 +190,79 @@ testthat::test_that("[LTB-0284] civil fact dates retain venue resolution evidenc
     as.numeric(fold_window$scoring_end_utc),
     as.numeric(fixture$sessions$rows$session_close[[4L]])
   )
+  precomputed <- ledgr_precompute_features(
+    dated,
+    ledgr_param_grid(list()),
+    start = as.Date("2020-01-03"),
+    end = as.Date("2020-01-06")
+  )
+  testthat::expect_identical(
+    precomputed$scoring_range$start,
+    ledgr_iso_utc(fixture$sessions$rows$session_open[[2L]])
+  )
+  testthat::expect_identical(
+    precomputed$scoring_range$end,
+    ledgr_iso_utc(fixture$sessions$rows$session_close[[5L]])
+  )
+
+  folds <- ledgr:::ledgr_fold_list(
+    list(
+      ledgr_fold(
+        as.Date("2020-01-02"), as.Date("2020-01-03"),
+        as.Date("2020-01-04"), as.Date("2020-01-05"),
+        fold_seq = 1L
+      ),
+      ledgr_fold(
+        as.Date("2020-01-03"), as.Date("2020-01-04"),
+        as.Date("2020-01-06"), as.Date("2020-01-07"),
+        fold_seq = 2L
+      )
+    ),
+    constructor = list(type_id = "explicit")
+  )
+  walk_forward_experiment <- ledgr_experiment(
+    fixture$snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 1),
+      cost_basis = c(AAA = 101)
+    ),
+    universe = ledgr_universe_members("research"),
+    cost_model = ledgr_cost_zero()
+  )
+  walk_forward <- ledgr_walk_forward(
+    walk_forward_experiment,
+    grid = ledgr_param_grid(list()),
+    folds = folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"),
+    seed = 47L
+  )
+  on.exit(invisible(lapply(walk_forward$test_runs, close)), add = TRUE)
+  expected_test_start <- fixture$sessions$rows$session_open[c(3L, 5L)]
+  expected_test_end <- fixture$sessions$rows$session_close[c(4L, 6L)]
+  testthat::expect_identical(
+    as.numeric(walk_forward$folds$test_start_utc),
+    as.numeric(expected_test_start)
+  )
+  testthat::expect_identical(
+    as.numeric(walk_forward$folds$test_end_utc),
+    as.numeric(expected_test_end)
+  )
+  reopened <- ledgr_walk_forward_open(fixture$snapshot, walk_forward$session_id)
+  testthat::expect_identical(
+    as.numeric(reopened$folds$test_start_utc),
+    as.numeric(expected_test_start)
+  )
+  candidate <- ledgr_candidate(reopened, fold_seq = 1L)
+  testthat::expect_identical(
+    as.numeric(candidate$sweep_meta$scoring_range$start),
+    as.numeric(fixture$sessions$rows$session_close[[1L]])
+  )
+  testthat::expect_identical(
+    as.numeric(candidate$sweep_meta$scoring_range$end),
+    as.numeric(fixture$sessions$rows$session_close[[2L]])
+  )
 
   testthat::expect_error(
     ledgr:::ledgr_snapshot_resolve_civil_boundary(
@@ -240,6 +329,15 @@ testthat::test_that("[LTB-0288] effective and knowledge clocks remain distinct",
   )
   testthat::expect_identical(unname(provider$facts(at(3), "AAA")$status), "unknown")
   testthat::expect_identical(unname(provider$facts(at(4), "AAA")$status), "halted")
+  segments <- ledgr:::ledgr_availability_prepared_segments(
+    family$rows,
+    key = "AAA",
+    n_planes = 1L,
+    default_codes = 0L,
+    resolve = function(index) 1L
+  )
+  testthat::expect_identical(segments$effective_start, as.numeric(at(2)))
+  testthat::expect_identical(segments$knowledge_start, as.numeric(at(4)))
 })
 
 testthat::test_that("[LTB-0289] civil metadata encoding is field-wise", {
@@ -256,11 +354,17 @@ testthat::test_that("[LTB-0289] civil metadata encoding is field-wise", {
     universe_id = "research"
   )
   writes <- 0L
+  tokens <- 0L
   writer <- ledgr:::ledgr_json_write_canonical_ndjson
+  token <- ledgr:::ledgr_fact_time_token
   testthat::local_mocked_bindings(
     ledgr_json_write_canonical_ndjson = function(frame) {
       writes <<- writes + 1L
       writer(frame)
+    },
+    ledgr_fact_time_token = function(value) {
+      tokens <<- tokens + 1L
+      token(value)
     },
     .package = "ledgr"
   )
@@ -268,6 +372,24 @@ testthat::test_that("[LTB-0289] civil metadata encoding is field-wise", {
   testthat::expect_s3_class(bundle, "ledgr_facts")
   testthat::expect_gt(writes, 0L)
   testthat::expect_lte(writes, 6L)
+  testthat::expect_lte(tokens, 12L)
+
+  posix_membership <- ledgr_facts_membership_intervals(
+    data.frame(
+      instrument_id = sprintf("I%03d", seq_along(dates)),
+      effective_from = as.POSIXct(dates, tz = "UTC"),
+      knowledge_time = as.POSIXct(dates, tz = "UTC"),
+      member = TRUE,
+      source = "fixture"
+    ),
+    universe_id = "research"
+  )
+  writes <- 0L
+  tokens <- 0L
+  posix_bundle <- ledgr_facts(sessions, posix_membership)
+  testthat::expect_s3_class(posix_bundle, "ledgr_facts")
+  testthat::expect_identical(writes, 0L)
+  testthat::expect_identical(tokens, 0L)
 })
 
 testthat::test_that("[LTB-0285] correction chains have one graph policy", {
@@ -468,6 +590,57 @@ testthat::test_that("[LTB-0286] corporate-action clocks distinguish three cases"
   testthat::expect_identical(error$knowledge_time, malformed$knowledge_time[[1L]])
   testthat::expect_true(is.na(error$entitlement_time))
   testthat::expect_true(is.na(error$effective_time))
+
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:2,
+    open = 100, high = 101, low = 99, close = 100, volume = 1000
+  )
+  clockless <- base
+  clockless$knowledge_time <- bars$ts_utc[[2L]]
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    facts = ledgr_facts(ledgr_facts_equity_corporate_actions(clockless)),
+    price_basis = "split_adjusted"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_error(
+    ledgr_run(experiment, run_id = "clockless-corporate-action"),
+    class = "ledgr_corporate_action_clock_missing"
+  )
+  sweep <- ledgr_sweep(experiment, ledgr_param_grid(list()))
+  testthat::expect_identical(sweep$status, "FAILED")
+  testthat::expect_identical(
+    sweep$error_class,
+    "ledgr_corporate_action_clock_missing"
+  )
+
+  dense_snapshot <- ledgr_snapshot_from_df(
+    bars,
+    facts = ledgr_facts(event_family),
+    price_basis = "split_adjusted"
+  )
+  on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
+  dense_experiment <- ledgr_experiment(
+    dense_snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 2),
+      cost_basis = c(AAA = 100)
+    ),
+    cost_model = ledgr_cost_zero()
+  )
+  dense_run <- ledgr_run(dense_experiment, run_id = "assumed-knowledge-dense")
+  on.exit(close(dense_run), add = TRUE)
+  dense_summary <- ledgr:::ledgr_corporate_action_summary(dense_run)
+  testthat::expect_identical(dense_summary$gross_cash_posted, 2)
+  testthat::expect_identical(dense_summary$choice_counts[["cash_amount.gross"]], 1L)
 })
 
 testthat::test_that("[LTB-0287] history policy is canonical identity input", {
@@ -479,6 +652,10 @@ testthat::test_that("[LTB-0287] history policy is canonical identity input", {
   testthat::expect_null(ledgr_history_policy()$output_carry)
   testthat::expect_error(
     ledgr_history_policy(output_carry = 0),
+    class = "ledgr_invalid_history_policy"
+  )
+  testthat::expect_error(
+    ledgr_history_policy(segment_limit = 1e10),
     class = "ledgr_invalid_history_policy"
   )
 
@@ -533,6 +710,16 @@ testthat::test_that("[LTB-0287] history policy is canonical identity input", {
   ))
   testthat::expect_false("workers" %in% names(default$config))
   testthat::expect_false("resources" %in% names(default$config))
+  for (policy in list(
+    ledgr_history_policy(output_carry = 2L),
+    ledgr_history_policy(segment_limit = 100L)
+  )) {
+    changed <- default$config
+    changed$history <- ledgr:::ledgr_history_policy_identity(policy)
+    testthat::expect_false(
+      identical(config_hash(default$config), config_hash(changed))
+    )
+  }
 })
 
 testthat::test_that("[LTB-0290] precomputed features bind causal history identity", {
@@ -554,6 +741,13 @@ testthat::test_that("[LTB-0290] precomputed features bind causal history identit
     cost_model = ledgr_cost_zero(),
     history_policy = ledgr_history_policy(price_carry = NULL)
   )
+  output <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = features,
+    cost_model = ledgr_cost_zero(),
+    history_policy = ledgr_history_policy(output_carry = 2L)
+  )
   grid <- ledgr_param_grid(list())
   precomputed <- ledgr_precompute_features(default, grid)
   candidate_calls <- 0L
@@ -569,6 +763,11 @@ testthat::test_that("[LTB-0290] precomputed features bind causal history identit
   )
   testthat::expect_error(
     ledgr_sweep(strict, grid, precomputed_features = precomputed),
+    class = "ledgr_precomputed_history_mismatch"
+  )
+  testthat::expect_identical(candidate_calls, 0L)
+  testthat::expect_error(
+    ledgr_sweep(output, grid, precomputed_features = precomputed),
     class = "ledgr_precomputed_history_mismatch"
   )
   testthat::expect_identical(candidate_calls, 0L)

@@ -29,3 +29,6 @@ shared by causal history, feature preparation, pulse inspection and explicit
 precomputation. The policy is part of experiment identity; worker and other
 resource controls are not.
 }
+\details{
+Supplied ages and limits must fit in an R integer.
+}

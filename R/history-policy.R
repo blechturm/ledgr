@@ -11,6 +11,7 @@
 #'   carry. `NULL` disables output carry.
 #' @param segment_limit Optional positive whole-number override for the causal
 #'   segment guard. `NULL` uses the implementation default.
+#' @details Supplied ages and limits must fit in an R integer.
 #'
 #' @return A `ledgr_history_policy` object.
 #' @export
@@ -20,9 +21,14 @@ ledgr_history_policy <- function(price_carry = 5L,
   normalize_age <- function(value, argument, nullable) {
     if (is.null(value) && isTRUE(nullable)) return(NULL)
     if (!is.numeric(value) || length(value) != 1L || is.na(value) ||
-        !is.finite(value) || value <= 0 || value != floor(value)) {
+        !is.finite(value) || value <= 0 || value != floor(value) ||
+        value > .Machine$integer.max) {
       rlang::abort(
-        sprintf("`%s` must be NULL or a finite positive whole number.", argument),
+        sprintf(
+          "`%s` must be NULL or a positive whole number no greater than %s.",
+          argument,
+          .Machine$integer.max
+        ),
         class = c("ledgr_invalid_history_policy", "ledgr_invalid_args")
       )
     }

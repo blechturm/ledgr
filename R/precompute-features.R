@@ -61,7 +61,8 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   range <- ledgr_precompute_scoring_range(
     meta,
     start = start %||% ledgr_experiment_scoring_start(exp, meta$start),
-    end = end
+    end = end,
+    exp = exp
   )
   ledgr_snapshot_ensure_handle(exp$snapshot)
   bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
@@ -142,13 +143,15 @@ ledgr_validate_precomputed_features <- function(precomputed,
     ledgr_precompute_scoring_range(
       meta,
       start = start %||% ledgr_experiment_scoring_start(exp, meta$start),
-      end = end
+      end = end,
+      exp = exp
     )
   } else {
     ledgr_precompute_scoring_range(
       meta,
       start = window$scoring_start_utc,
-      end = window$scoring_end_utc
+      end = window$scoring_end_utc,
+      exp = exp
     )
   }
   if (!identical(precomputed$snapshot_hash, meta$snapshot_hash)) {
@@ -385,7 +388,24 @@ ledgr_sealed_range_window <- function(start, end, snapshot_start, snapshot_end, 
   list(start = start, end = end)
 }
 
-ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {
+ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL,
+                                           exp = NULL) {
+  if (!is.null(exp) && isTRUE(exp$availability$active)) {
+    if (inherits(start, "Date") && !inherits(start, "POSIXt")) {
+      start <- ledgr_snapshot_resolve_civil_boundary(
+        exp$snapshot,
+        start,
+        edge = "open"
+      )
+    }
+    if (inherits(end, "Date") && !inherits(end, "POSIXt")) {
+      end <- ledgr_snapshot_resolve_civil_boundary(
+        exp$snapshot,
+        end,
+        edge = "close"
+      )
+    }
+  }
   scoring_start <- if (is.null(start)) meta$start else ledgr_iso_utc(start)
   scoring_end <- if (is.null(end)) meta$end else ledgr_iso_utc(end)
   start_posix <- as.POSIXct(scoring_start, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")

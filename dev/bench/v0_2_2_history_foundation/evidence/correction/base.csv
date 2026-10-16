@@ -1,0 +1,7 @@
+"variant","rows","repetition","elapsed_seconds"
+"posix",20000,1,0.25
+"posix",20000,2,0.170000000000002
+"posix",20000,3,0.149999999999999
+"civil",20000,1,1.47
+"civil",20000,2,1.5
+"civil",20000,3,1.5

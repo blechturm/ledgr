@@ -2,8 +2,9 @@
 
 Implementation commit: `80c86012`
 
-Status: ready for independent Type 1 close review, with the first hosted
-rule-4 Ubuntu golden-root result still to be observed after push.
+Status: accepted by the maintainer after the independent Type 1 review and
+its correction evidence. Hosted Ubuntu confirmation of the populated rule-4
+roots remains a post-push platform check and is not claimed locally.
 
 ## Necessity and scope
 
@@ -33,10 +34,12 @@ knowledge arrival. The two-clock fixture therefore fails a collapsed
 
 Date-backed fact fields retain the supplied civil date, the resolved instant,
 venue time zone and calendar identity in `civil_time_json`. A Date boundary in
-a run, sweep, experiment window or fold resolves through exactly one declared
-venue session and refuses zero or multiple matches. LCL-0282/LTB-0284 covers
-Sydney, Honolulu and New York and pins their session-derived instants rather
-than UTC midnight.
+a run, sweep, explicit precompute, experiment window or fold resolves through
+exactly one declared venue session and refuses zero or multiple matches.
+Walk-forward carry checks, persisted fold rows, reopened scoring ranges and
+candidate training ranges all use those resolved instants. LCL-0282/LTB-0284
+covers Sydney, Honolulu and New York and pins their session-derived instants
+rather than UTC midnight.
 
 ### Trading-status correction chains
 
@@ -50,16 +53,21 @@ between classification and runtime resolution.
 ### Corporate-action clocks
 
 LCL-0284/LTB-0286 distinguishes the three accepted cases. An event clock with
-no knowledge clock is known when effective; a row with no event or knowledge
-clock remains audit-only; and knowledge without an event clock raises
+no knowledge clock is known when effective in dense and availability
+execution; a row with no event or knowledge clock remains audit-only; and
+knowledge without an event clock raises
 `ledgr_corporate_action_clock_missing` only once that knowledge is available.
 The condition carries the fact and instrument IDs and all three clock fields.
+Public run and sweep witnesses pin the refusal, and a dense dividend witness
+pins the maintainer-accepted economic correction without a mode branch.
 
 ### Current sealed format
 
 Snapshot hash rule 4 covers the civil-time fact bytes and store format 121 is
 the sole current store. The rule-4 conformance corpus replaces the rule-3
-fixture and is pinned locally on Windows. Rule-3 snapshots and schema-120
+fixture and pins populated Sydney and New York civil-time roots locally on
+Windows. The record distinguishes the rule-4 domain-separator change from a
+civil-content change. Rule-3 snapshots and schema-120
 stores refuse through current-format conditions. Searches and current-only
 census check mode find no migration, fallback or legacy reader. The dedicated
 Ubuntu workflow step is present, but its first committed run remains a hosted
@@ -70,8 +78,10 @@ post-push evidence item.
 `ledgr_history_policy()` is the canonical experiment-level policy. Its default
 is a five-expected-session price-input carry, output carry off and no segment
 override. `NULL` disables input carry; output carry requires an explicitly
-finite positive age. LCL-0285/LTB-0287 checks default equivalence, independent
-input/output controls, invalid ages and config-identity sensitivity.
+finite positive age, and every supplied age or limit must fit in an R integer.
+LCL-0285/LTB-0287 checks default equivalence, independent input/output
+controls, overflowing ages and config-identity sensitivity for both
+`output_carry` and `segment_limit`.
 
 Identity advances to rule 4. The history payload binds axis and cutoff rules,
 policy, treatment implementation and declared-versus-assumed price basis. It
@@ -92,10 +102,10 @@ The registered blocks and claims are:
 |---|---|---|
 | LCL-0282 | LTB-0284 | civil dates and public Date boundaries |
 | LCL-0283 | LTB-0285 | correction-chain graph semantics |
-| LCL-0284 | LTB-0286 | corporate-action clock cases |
+| LCL-0284 | LTB-0286 | corporate-action clock cases and public refusal |
 | LCL-0285 | LTB-0287, LTB-0290 | policy/config and precompute identity |
-| LCL-0286 | LTB-0288 | distinct prepared clocks |
-| LCL-0287 | LTB-0289 | bounded field-wise civil metadata encoding |
+| LCL-0286 | LTB-0288 | literal distinct prepared clocks and cutoff behavior |
+| LCL-0287 | LTB-0289 | bounded field-wise civil encoding and POSIX bypass |
 
 The new history-foundation file passes 88 expectations. Its expected values
 come from literal civil/session instants, literal graph rows, direct normalized
@@ -111,13 +121,13 @@ The implementation was checked against the seven shapes in
    fixed field vocabulary and written once per field, not once per fact row.
 2. No full fact table is subset repeatedly by instrument on a production
    pulse path. Correction adjacency is prepared once at construction.
-3. Civil values and clocks are normalized by field; no per-row timestamp or
-   JSON formatter was introduced.
+3. Civil values and clocks are normalized by field with one vectorized
+   timestamp conversion; no per-row timestamp or JSON formatter remains.
 4. LTB-0289 counts the canonical NDJSON boundary on 120 rows and bounds calls
    by the fixed clock vocabulary, catching a row-wise JSON regression.
-5. Boundary resolution performs one bounded session query. History identity
-   is normalized once at experiment/config or precompute construction rather
-   than recomputed per candidate.
+5. POSIX-only bundles bypass civil re-resolution. Correction lineage is
+   recomputed only at bounded construction and provider-preparation
+   boundaries, not per pulse or per row.
 6. No new per-pulse operation walks the whole decision axis. The factual
    changes occur at construction, sealing or existing provider preparation.
 7. No second bars, features or history materialization was added. The shared
@@ -142,8 +152,19 @@ reports zero current-only or run-config violations.
 - Product tree: `80c86012`; durable profile files are under
   `dev/bench/v0_2_2_history_foundation/evidence/`.
 
-## Remaining review item
+## Close-review correction record
 
-The independent close review must inspect the accepted fact and identity
-semantics, failure sensitivity and the dense boundary. Once the branch is
-pushed, it must also confirm the dedicated Ubuntu rule-4 golden-root step.
+The independent review is preserved in `close_review_40.md`. Its correction
+round resolved Date leakage in explicit precompute and walk-forward carry,
+persistence and reopening; added public production refusals and literal
+prepared-clock oracles; pinned every policy identity field and integer bound;
+and replaced empty civil roots with populated Sydney and New York fixtures.
+The civil encoder now performs one vectorized timestamp conversion per field,
+one canonical write per field and no work for POSIX-only bundles. The bounded
+clock record under `dev/bench/v0_2_2_history_foundation/evidence/correction/`
+supports that shape claim without treating elapsed time as a product gate.
+
+The maintainer accepted the uniform event-without-knowledge rule as Cut 16
+decision (11). The still-undecided meaning of a Date-backed corporate-action
+event edge remains explicitly owned by LDG-3060; this workstream does not
+guess it.

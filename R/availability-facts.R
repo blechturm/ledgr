@@ -1093,8 +1093,11 @@ ledgr_fact_resolve_civil_families <- function(families) {
     logical(1)
   ))
   has_civil <- any(vapply(families, function(family) {
-    any(c("civil_time_json") %in% names(family$rows)) ||
-      (!is.null(family$headers) && "civil_time_json" %in% names(family$headers))
+    frame_has_civil <- function(frame) {
+      !is.null(frame) && "civil_time_json" %in% names(frame) &&
+        any(!is.na(frame$civil_time_json) & frame$civil_time_json != "{}")
+    }
+    frame_has_civil(family$rows) || frame_has_civil(family$headers)
   }, logical(1)))
   if (!has_civil) return(families)
   sessions <- lapply(session_index, function(i) {
@@ -1210,9 +1213,8 @@ ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
       session <- sessions[session_index, , drop = FALSE]
       dates[[field]][row_index] <- civil
       frame[[field]][row_index] <- session$session_open
-      detail$resolved_ts_utc[row_index] <- vapply(seq_len(nrow(session)), function(i) {
-        ledgr_fact_time_token(session$session_open[[i]])
-      }, character(1))
+      detail$resolved_ts_utc[row_index] <-
+        ledgr_fact_time_token(session$session_open)
       detail$venue_id[row_index] <- as.character(session$venue_id)
       detail$timezone[row_index] <- as.character(session$timezone)
       detail$calendar_id[row_index] <- as.character(session$calendar_id)

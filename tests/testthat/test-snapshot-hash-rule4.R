@@ -64,6 +64,49 @@ rule4_test_snapshot <- function(instruments, bars, callback,
   callback(con, id, root)
 }
 
+rule4_civil_snapshot_root <- function(timezone, venue_id, open, close) {
+  date <- as.Date("2020-01-02")
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = date,
+      status = "open",
+      session_open = open,
+      session_close = close
+    ),
+    venue_id = venue_id,
+    timezone = timezone,
+    knowledge = "assume_effective"
+  )
+  membership <- ledgr_facts_membership_intervals(
+    data.frame(
+      instrument_id = "AAA",
+      effective_from = date,
+      knowledge_time = date,
+      member = TRUE,
+      source = "fixture"
+    ),
+    universe_id = "u"
+  )
+  facts <- ledgr_facts(sessions, membership)
+  row <- ledgr:::ledgr_facts_family(facts, "membership")[[1L]]$rows
+  testthat::expect_true(any(row$civil_time_json != "{}"))
+  snapshot <- ledgr_snapshot_from_df(
+    data.frame(
+      instrument_id = "AAA",
+      ts_utc = sessions$rows$session_close,
+      open = 100,
+      high = 101,
+      low = 99,
+      close = 100,
+      volume = 1000
+    ),
+    facts = facts,
+    price_basis = "split_adjusted"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
+}
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0249] production rule 4 matches the registered corpus", {
   roots <- c(
@@ -73,6 +116,8 @@ testthat::test_that("[LTB-0249] production rule 4 matches the registered corpus"
     dst = "13604d26dfde93d715cdbbdcdb46e667d1cbd71748efaa1961367fdcb2ae185b",
     numeric = "2bdd5f74f6969e1b620119a02ceea9424c496978cff967eff2e1932b1e53d06e",
     facts = "def99ec0c09f0b733685c9f5ae714ff5317c99b23a8f7a69e39071d3b6c4a9e8",
+    civil_sydney = "3f26b87b1d2759c27127b4cadfa0593344493447cb2573e6b037ad5d6fcc193b",
+    civil_new_york = "47ec2b5d06895af6dd38f2cc12149e12733480afc77a8033c6695c582d7086c7",
     mutation = "ed03f6ea6d2c794df0bba6c902eaeaac52c95d6fbe8bc1797033156220954ed1"
   )
   times <- as.POSIXct("2020-01-01", tz = "UTC") + 0:2 * 86400
@@ -184,6 +229,19 @@ testthat::test_that("[LTB-0249] production rule 4 matches the registered corpus"
     fact_payload = fact_payload
   )
   testthat::expect_identical(facts, roots[["facts"]])
+
+  testthat::expect_identical(
+    rule4_civil_snapshot_root(
+      "Australia/Sydney", "XASX", "10:00:00", "16:00:00"
+    ),
+    roots[["civil_sydney"]]
+  )
+  testthat::expect_identical(
+    rule4_civil_snapshot_root(
+      "America/New_York", "XNYS", "09:30:00", "16:00:00"
+    ),
+    roots[["civil_new_york"]]
+  )
 
   fact_snapshot <- availability_runtime_fixture(days = 3L)
   on.exit(ledgr_snapshot_close(fact_snapshot), add = TRUE)

@@ -534,7 +534,8 @@ Accepted change pending:
 - `ledgr_history_policy()` is the canonical experiment-level history policy.
   It defaults to `price_carry = 5L`, `output_carry = NULL` and
   `segment_limit = NULL`. `NULL` disables each carry stage independently; a
-  supplied carry age or segment limit is a finite positive whole number.
+  supplied carry age or segment limit is a finite positive whole number that
+  fits in an R integer.
   Omission and an explicit default policy have identical behavior and identity.
 
 ## Snapshot Contract

@@ -94,8 +94,11 @@ ledgr_walk_forward <- function(exp,
   opening_state_policy <- match.arg(opening_state_policy)
   opening_state_policy <- ledgr_walk_forward_opening_state_policy(opening_state_policy)
   ledgr_snapshot_ensure_handle(exp$snapshot)
+  fold_windows <- lapply(folds, function(fold) {
+    ledgr_walk_forward_fold_windows(exp, fold, opening_state_policy)
+  })
   if (identical(opening_state_policy, "carry_test_state")) {
-    ledgr_walk_forward_refuse_noncontiguous_carry(exp, folds)
+    ledgr_walk_forward_refuse_noncontiguous_carry(exp, fold_windows)
   }
   if (identical(opening_state_policy, "flat_test_state")) {
     rlang::warn(
@@ -129,6 +132,7 @@ ledgr_walk_forward <- function(exp,
         exp = exp,
         grid = grid,
         fold = folds[[fold_idx]],
+        windows = fold_windows[[fold_idx]],
         selection_rule = selection_rule,
         seed = seed,
         opening_state_policy = opening_state_policy,
@@ -463,6 +467,7 @@ ledgr_walk_forward_score_wide <- function(sweep, identities) {
 ledgr_walk_forward_eval_fold <- function(exp,
                                          grid,
                                          fold,
+                                         windows,
                                          selection_rule,
                                          seed,
                                          opening_state_policy,
@@ -471,18 +476,8 @@ ledgr_walk_forward_eval_fold <- function(exp,
                                          no_selection = "fail",
                                          previous_params_hash = NULL) {
   fold <- ledgr_validate_fold(fold)
-  train_window <- ledgr_experiment_window_from_fold(
-    exp,
-    fold,
-    window = "train",
-    opening_state_policy = opening_state_policy
-  )
-  base_test_window <- ledgr_experiment_window_from_fold(
-    exp,
-    fold,
-    window = "test",
-    opening_state_policy = opening_state_policy
-  )
+  train_window <- windows$train
+  base_test_window <- windows$test
   train_identities <- NULL
   train_sweep <- tryCatch(
     ledgr_sweep_window(
@@ -586,12 +581,7 @@ ledgr_walk_forward_eval_fold <- function(exp,
   } else {
     exp
   }
-  test_window <- ledgr_experiment_window_from_fold(
-    test_exp,
-    fold,
-    window = "test",
-    opening_state_policy = opening_state_policy
-  )
+  test_window <- base_test_window
   test_identity <- ledgr_walk_forward_test_identity(
     train_identity = selected_train_identity,
     master_seed = seed,
@@ -938,10 +928,10 @@ ledgr_walk_forward_fold_row <- function(session_id,
     fold_id = fold$fold_id,
     fold_seq = as.integer(fold$fold_seq),
     scheme = fold$scheme,
-    train_start_utc = fold$train_start_utc,
-    train_end_utc = fold$train_end_utc,
-    test_start_utc = fold$test_start_utc,
-    test_end_utc = fold$test_end_utc,
+    train_start_utc = train_window$scoring_start_utc,
+    train_end_utc = train_window$scoring_end_utc,
+    test_start_utc = test_window$scoring_start_utc,
+    test_end_utc = test_window$scoring_end_utc,
     hydration_start_utc = train_window$hydration_start_utc,
     train_scoring_start_utc = train_window$scoring_start_utc,
     test_scoring_start_utc = test_window$scoring_start_utc,
