@@ -24,17 +24,19 @@ synthetic matrix over the existing public fact and run surfaces.
 
 ## 3. Runnable core
 
-The core has nine cases, below the protocol's ten-case cap:
+The core has ten cases, at the protocol's ten-case cap:
 
 1. one direct, full-coverage replacement;
 2. a monotone three-link chain;
 3. the same chain learned out of order;
 4. two competing descendants;
-5. a partial replacement that may revive its predecessor;
+5. a partial replacement whose revived predecessor disagrees with another
+   source;
 6. a replacement extending beyond its predecessor;
 7. a dangling reference;
 8. a cycle; and
-9. a chain plus a competing sibling.
+9. a chain plus a competing sibling; and
+10. an out-of-order chain with descending precedence.
 
 Each case first uses `ledgr_facts_trading_status()`. Cases accepted there use
 `ledgr_facts_validate()`, `ledgr_snapshot_from_df()`, `ledgr_experiment()`,
@@ -67,11 +69,12 @@ unexported status resolver or classifier and must be labelled as such.
 
 ## 6. Deliverables and gut
 
-The runner writes raw case, timeline and classifier CSVs plus one derived
-disagreement CSV. The checker reruns in scratch, diffs those files and guards
-package scope. The gut removes supersession edges before private resolution;
-the checker must reject the changed timeline. `inventory.md` records the gut,
-demotions and package findings. `closeout.md` is the one-page terminal record.
+The runner writes raw case, timeline and classifier CSVs, one derived
+disagreement CSV and the hostile perturbations added after review. The checker
+reruns in scratch, diffs those files and guards package scope. The gut removes
+supersession edges before private resolution; the checker must reject the
+changed timeline. `inventory.md` records the gut, demotions and package
+findings. `closeout.md` is the one-page terminal record.
 
 ## 7. Containment
 

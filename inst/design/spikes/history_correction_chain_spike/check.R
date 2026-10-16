@@ -65,7 +65,8 @@ run_spike(normal)
 run_spike(gutted, "drop_private_supersession")
 
 evidence_files <- c(
-  "case_results.csv", "timeline.csv", "classifier.csv", "derived_findings.csv"
+  "case_results.csv", "timeline.csv", "classifier.csv", "derived_findings.csv",
+  "hostile_variants.csv"
 )
 for (name in evidence_files) {
   if (!same_text(file.path(recorded, name), file.path(normal, name))) {
@@ -76,8 +77,9 @@ for (name in evidence_files) {
 cases <- utils::read.csv(file.path(normal, "case_results.csv"), stringsAsFactors = FALSE)
 expected_cases <- c(
   "direct_full", "linear_monotone", "linear_out_of_order",
-  "competing_descendants", "partial_coverage", "overextended_coverage",
-  "dangling_reference", "cycle", "ancestor_and_sibling"
+  "competing_descendants", "partial_cross_source", "overextended_coverage",
+  "dangling_reference", "cycle", "ancestor_and_sibling",
+  "out_of_order_precedence"
 )
 if (!identical(cases$case_id, expected_cases)) {
   fail("case matrix is missing or reordered")
@@ -102,8 +104,24 @@ if (!identical(public_cases, cases$case_id[accepted])) {
 }
 
 derived <- utils::read.csv(file.path(normal, "derived_findings.csv"), stringsAsFactors = FALSE)
-if (nrow(derived) != 11L || !all(derived$observed)) {
-  fail("the normal run does not reproduce all eleven derived observations")
+if (nrow(derived) != 13L || !all(derived$observed)) {
+  fail("the normal run does not reproduce all thirteen derived observations")
+}
+
+hostile <- utils::read.csv(file.path(normal, "hostile_variants.csv"), stringsAsFactors = FALSE)
+expected_hostile <- c(
+  same_status_oldest_newest = "active|active|active|active|active",
+  monotone_precedence_up = "halted|active|quotation_only|quotation_only|quotation_only",
+  monotone_precedence_down = "halted|active|quotation_only|quotation_only|quotation_only",
+  out_of_order_precedence_up = "halted|quotation_only|quotation_only|quotation_only|quotation_only",
+  sibling_precedence_split = "halted|active|active|active|active",
+  successor_known_before_predecessor = "active|active|active|active|active"
+)
+if (!identical(hostile$variant_id, names(expected_hostile)) ||
+    !all(hostile$constructor_outcome == "accepted") ||
+    !identical(hostile$timeline_days_2_6, unname(expected_hostile)) ||
+    !all(hostile$reversed_timeline_equal)) {
+  fail("hostile precedence, knowledge or row-order observations changed")
 }
 
 gut_timeline <- file.path(gutted, "timeline.csv")

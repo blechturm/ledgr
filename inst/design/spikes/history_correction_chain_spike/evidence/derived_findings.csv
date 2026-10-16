@@ -4,9 +4,11 @@
 "monotone_ancestor_pair_refused",TRUE
 "out_of_order_gap_conflicts",TRUE
 "competing_descendants_conflict",TRUE
-"partial_replacement_revives",TRUE
-"partial_classifier_misses_revival",TRUE
+"partial_revival_creates_public_conflict",TRUE
+"classifier_runtime_disagreement",TRUE
 "overextended_successor_survives",TRUE
 "dangling_reference_fails_closed",TRUE
 "cycle_fails_closed",TRUE
 "ancestor_sibling_fork_conflicts",TRUE
+"out_of_order_precedence_constructs",TRUE
+"middle_arrival_lets_correction_beat_precedence",TRUE

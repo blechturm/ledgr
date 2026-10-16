@@ -2,7 +2,8 @@
 
 ## Runnable surface
 
-- `run.R` contains nine synthetic trading-status shapes.
+- `run.R` contains ten registered synthetic trading-status shapes and six
+  review-time hostile perturbations over those same chain/fork boundaries.
 - Accepted shapes traverse the exported constructor, validator, snapshot,
   experiment, run and availability-result APIs.
 - Constructor-refused shapes use the private prepared status resolver only to
@@ -34,11 +35,21 @@ checker rejects it. No package function is mocked or modified.
 
 - Direct replacements, including partial and overextended intervals, construct,
   seal and run.
-- A monotone three-link chain is rejected by the constructor even though the
-  prepared resolver yields one state at every cutoff.
-- Missing middle knowledge, competing descendants and a mixed chain/fork can
-  produce `conflicting` inside the prepared resolver.
-- A partial replacement revives its predecessor after the replacement ends.
-  The ingest classifier reports no conflict because it shortens the
-  predecessor at the successor's start for its own overlap calculation.
+- The constructor's chain/fork refusal is narrower than "ancestor" or
+  "sibling": the non-direct pair must have the same instrument, source and
+  precedence, different statuses, and overlapping effective intervals. A
+  monotone three-link chain with all those properties is rejected even though
+  the prepared resolver yields one state at every cutoff.
+- Missing middle knowledge, competing descendants and a mixed chain/fork with
+  those tied properties can produce `conflicting` inside the prepared resolver.
+  Giving the rows different precedence makes the tested multi-link and sibling
+  shapes construct.
+- A partial same-source replacement revives its predecessor after the
+  replacement ends. With a different-source active fact over that remainder,
+  the public run reports `status_unknown_or_conflicting`, while the ingest
+  classifier reports no conflict because it shortens the predecessor at the
+  successor's start for its own overlap calculation.
+- Supersession removes an applicable predecessor before precedence is chosen.
+  In the tested descending-precedence chain, the lowest-precedence descendant
+  wins after the missing middle link becomes knowable.
 - Dangling references and cycles fail closed at construction.

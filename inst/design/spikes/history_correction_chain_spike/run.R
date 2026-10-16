@@ -67,9 +67,15 @@ cases <- list(
     c("f1", "f2", "f3"), day(2), day(7), day(c(2, 3, 4)),
     c("halted", "active", "quotation_only"), c(NA, "f1", "f1")
   ),
-  partial_coverage = status_rows(
-    c("f1", "f2"), c(day(2), day(3)), c(day(7), day(5)), day(c(2, 3)),
-    c("halted", "active"), c(NA, "f1")
+  partial_cross_source = rbind(
+    status_rows(
+      c("f1", "f2"), c(day(2), day(3)), c(day(7), day(5)), day(c(2, 3)),
+      c("halted", "active"), c(NA, "f1")
+    ),
+    transform(
+      status_rows("f3", day(5), day(7), day(5), "active", NA),
+      source = "other_source"
+    )
   ),
   overextended_coverage = status_rows(
     c("f1", "f2"), c(day(2), day(3)), c(day(5), day(7)), day(c(2, 3)),
@@ -86,6 +92,11 @@ cases <- list(
     c("f1", "f2", "f3", "f4"), day(2), day(7), day(c(2, 3, 4, 5)),
     c("halted", "active", "quotation_only", "active"),
     c(NA, "f1", "f2", "f1")
+  ),
+  out_of_order_precedence = status_rows(
+    c("f1", "f2", "f3"), day(2), day(7), day(c(2, 5, 3)),
+    c("halted", "active", "quotation_only"), c(NA, "f1", "f2"),
+    precedence = c(3L, 2L, 1L)
   )
 )
 
@@ -169,6 +180,58 @@ private_timeline <- function(rows) {
     unname(provider$facts(day(index, 16L), ids = "AAA")$status[[1L]])
   }, character(1))
 }
+
+# Review-time hostile perturbations. These are not extra registered cases;
+# they vary row order, precedence and knowledge over the same chain/fork
+# shapes after the runnable ten-case core exposed those boundaries.
+hostile_inputs <- list(
+  same_status_oldest_newest = status_rows(
+    c("f1", "f2"), day(2), day(7), day(c(2, 3)),
+    c("active", "active"), c(NA, "f1")
+  ),
+  monotone_precedence_up = status_rows(
+    c("f1", "f2", "f3"), day(2), day(7), day(c(2, 3, 4)),
+    c("halted", "active", "quotation_only"), c(NA, "f1", "f2"),
+    precedence = c(1L, 2L, 3L)
+  ),
+  monotone_precedence_down = status_rows(
+    c("f1", "f2", "f3"), day(2), day(7), day(c(2, 3, 4)),
+    c("halted", "active", "quotation_only"), c(NA, "f1", "f2"),
+    precedence = c(3L, 2L, 1L)
+  ),
+  out_of_order_precedence_up = status_rows(
+    c("f1", "f2", "f3"), day(2), day(7), day(c(2, 5, 3)),
+    c("halted", "active", "quotation_only"), c(NA, "f1", "f2"),
+    precedence = c(1L, 2L, 3L)
+  ),
+  sibling_precedence_split = status_rows(
+    c("f1", "f2", "f3"), day(2), day(7), day(c(2, 3, 4)),
+    c("halted", "active", "quotation_only"), c(NA, "f1", "f1"),
+    precedence = c(1L, 3L, 2L)
+  ),
+  successor_known_before_predecessor = status_rows(
+    c("f1", "f2"), day(2), day(7), day(c(5, 2)),
+    c("halted", "active"), c(NA, "f1"),
+    precedence = c(3L, 1L)
+  )
+)
+
+hostile_records <- lapply(names(hostile_inputs), function(variant_id) {
+  input <- hostile_inputs[[variant_id]]
+  constructed <- condition_record(ledgr_facts_trading_status(input))
+  forward <- private_timeline(private_rows(input))
+  reversed <- private_timeline(private_rows(input[rev(seq_len(nrow(input))), , drop = FALSE]))
+  data.frame(
+    variant_id = variant_id,
+    constructor_outcome = constructed$outcome,
+    constructor_class = constructed$condition_class,
+    timeline_days_2_6 = paste(forward[2:6], collapse = "|"),
+    reversed_timeline_equal = identical(forward, reversed),
+    stringsAsFactors = FALSE
+  )
+})
+hostile_out <- do.call(rbind, hostile_records)
+rownames(hostile_out) <- NULL
 
 public_runtime <- function(family, case_id) {
   facts <- ledgr_facts(session_family, family)
@@ -300,16 +363,21 @@ derived <- data.frame(
     "monotone_ancestor_pair_refused",
     "out_of_order_gap_conflicts",
     "competing_descendants_conflict",
-    "partial_replacement_revives",
-    "partial_classifier_misses_revival",
+    "partial_revival_creates_public_conflict",
+    "classifier_runtime_disagreement",
     "overextended_successor_survives",
     "dangling_reference_fails_closed",
     "cycle_fails_closed",
-    "ancestor_sibling_fork_conflicts"
+    "ancestor_sibling_fork_conflicts",
+    "out_of_order_precedence_constructs",
+    "middle_arrival_lets_correction_beat_precedence"
   ),
   observed = c(
     case_value("direct_full", "public_seal_run_outcome") == "accepted",
-    all(vapply(c("direct_full", "partial_coverage", "overextended_coverage"), function(case_id) {
+    all(vapply(c(
+      "direct_full", "partial_cross_source", "overextended_coverage",
+      "out_of_order_precedence"
+    ), function(case_id) {
       private <- timeline_out[
         timeline_out$case_id == case_id &
           timeline_out$observation_layer == "private_prepared_resolver",
@@ -322,7 +390,7 @@ derived <- data.frame(
       ]
       translated <- c(
         unknown = "status_unknown",
-        conflicting = "status_conflicting",
+        conflicting = "status_unknown_or_conflicting",
         active = "active",
         halted = "trading_halted",
         quotation_only = "quotation_only"
@@ -333,13 +401,20 @@ derived <- data.frame(
       state_at("linear_monotone", 4L) == "quotation_only",
     state_at("linear_out_of_order", 3L) == "conflicting",
     state_at("competing_descendants", 4L) == "conflicting",
-    state_at("partial_coverage", 6L) == "halted",
-    case_value("partial_coverage", "private_classifier_conflict_count") == 0L &&
-      state_at("partial_coverage", 6L) == "halted",
+    state_at("partial_cross_source", 6L) == "conflicting" &&
+      state_at("partial_cross_source", 6L, "public_run_availability") ==
+        "status_unknown_or_conflicting",
+    case_value("partial_cross_source", "private_classifier_conflict_count") == 0L &&
+      state_at("partial_cross_source", 6L) == "conflicting" &&
+      state_at("partial_cross_source", 6L, "public_run_availability") ==
+        "status_unknown_or_conflicting",
     state_at("overextended_coverage", 6L) == "active",
     case_value("dangling_reference", "constructor_class") == "ledgr_fact_invalid_supersession",
     case_value("cycle", "constructor_class") == "ledgr_fact_invalid_supersession",
-    state_at("ancestor_and_sibling", 5L) == "conflicting"
+    state_at("ancestor_and_sibling", 5L) == "conflicting",
+    case_value("out_of_order_precedence", "public_seal_run_outcome") == "accepted",
+    state_at("out_of_order_precedence", 4L) == "halted" &&
+      state_at("out_of_order_precedence", 5L) == "quotation_only"
   ),
   stringsAsFactors = FALSE
 )
@@ -348,6 +423,7 @@ utils::write.csv(cases_out, file.path(output_dir, "case_results.csv"), row.names
 utils::write.csv(timeline_out, file.path(output_dir, "timeline.csv"), row.names = FALSE, na = "")
 utils::write.csv(classifier_out, file.path(output_dir, "classifier.csv"), row.names = FALSE, na = "")
 utils::write.csv(derived, file.path(output_dir, "derived_findings.csv"), row.names = FALSE, na = "")
+utils::write.csv(hostile_out, file.path(output_dir, "hostile_variants.csv"), row.names = FALSE, na = "")
 
 cat(sprintf(
   "HISTORY_CORRECTION_CHAIN_SPIKE cases=%d derived=%d observed=%d gut=%s\n",

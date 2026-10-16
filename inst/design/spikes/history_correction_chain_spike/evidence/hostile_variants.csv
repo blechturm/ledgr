@@ -1,0 +1,7 @@
+"variant_id","constructor_outcome","constructor_class","timeline_days_2_6","reversed_timeline_equal"
+"same_status_oldest_newest","accepted","","active|active|active|active|active",TRUE
+"monotone_precedence_up","accepted","","halted|active|quotation_only|quotation_only|quotation_only",TRUE
+"monotone_precedence_down","accepted","","halted|active|quotation_only|quotation_only|quotation_only",TRUE
+"out_of_order_precedence_up","accepted","","halted|quotation_only|quotation_only|quotation_only|quotation_only",TRUE
+"sibling_precedence_split","accepted","","halted|active|active|active|active",TRUE
+"successor_known_before_predecessor","accepted","","active|active|active|active|active",TRUE

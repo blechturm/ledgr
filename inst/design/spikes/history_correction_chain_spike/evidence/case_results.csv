@@ -3,8 +3,9 @@
 "linear_monotone",3,"refused","ledgr_fact_structural_conflict","One trading-status source cannot assert conflicting tied statuses over the same interval.","not_reached","not_reached",0
 "linear_out_of_order",3,"refused","ledgr_fact_structural_conflict","One trading-status source cannot assert conflicting tied statuses over the same interval.","not_reached","not_reached",2
 "competing_descendants",3,"refused","ledgr_fact_structural_conflict","One trading-status source cannot assert conflicting tied statuses over the same interval.","not_reached","not_reached",2
-"partial_coverage",2,"accepted","","","accepted","accepted",0
+"partial_cross_source",3,"accepted","","","accepted","accepted",0
 "overextended_coverage",2,"accepted","","","accepted","accepted",0
 "dangling_reference",1,"refused","ledgr_fact_invalid_supersession","Trading-status supersession references an unknown fact.","not_reached","not_reached",0
 "cycle",2,"refused","ledgr_fact_invalid_supersession","Trading-status supersession must be acyclic.","not_reached","not_reached",0
 "ancestor_and_sibling",4,"refused","ledgr_fact_structural_conflict","One trading-status source cannot assert conflicting tied statuses over the same interval.","not_reached","not_reached",2
+"out_of_order_precedence",3,"accepted","","","accepted","accepted",0
