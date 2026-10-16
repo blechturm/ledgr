@@ -253,7 +253,7 @@ Accepted change pending:
   trust boundary. Production run and sweep setup must enforce the accepted
   sealed-snapshot guard before fold construction. Committed runs ensure a
   current-process verified entry for the snapshot; a miss recomputes the
-  complete rule-3 root and compares it with the stored root. Sweep and
+  complete current-rule root and compares it with the stored root. Sweep and
   walk-forward evaluation ensure once at their first content-dependent outer
   read, before candidate or fold execution; inner guards reuse that entry.
   Compact candidate provenance still carries the stored root. Primitive fold
@@ -349,7 +349,7 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   risk controls, cost estimation, or automatic candidate selection. Those
   remain separate future layers or RFC topics.
 - Risk-enabled sweep rows expose `risk_chain_hash`, and row-level provenance
-  carries `risk_plan_json`. Saved sweep schema 4 stores `risk_chain_hash` and
+  carries `risk_plan_json`. Saved sweep schema 5 stores `risk_chain_hash` and
   `risk_plan_json` on `sweeps` and `sweep_candidates`; any other saved-sweep
   schema value refuses with `ledgr_sweep_schema_incompatible`.
   Promotion must preserve the selected candidate's risk identity and re-execute
@@ -358,9 +358,6 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 <a id="contract-execution-identity"></a>
 ### Execution And Feature Identity
-
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 Accepted change pending:
 [objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity).
@@ -386,15 +383,17 @@ Accepted change pending:
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
   declaration-order diagnostics. Every run records `identity_rule_version`.
-  Under identity rule 3 the config carries the sealed
+  Under identity rule 4 the config carries the sealed
   `data.snapshot_hash` and `config_hash` drops the store-local
   `data.snapshot_id`, so identical content sealed under two snapshot IDs gives
   equal identity and different content under one reused ID does not; the
   walk-forward `experiment_hash` and `session_id` follow, and each session
-  records the rule in its `meta_json`. Rule 3 also removes the feature-retention
-  switch from config identity and binds deterministic direct captures of
-  indicator functions. Every config and session carries identity rule 3 as the
-  exact integer `3L`; a missing, differently typed or
+  records the rule in its `meta_json`. Rule 4 retains rule 3's removal of the
+  feature-retention switch and deterministic direct captures of indicator
+  functions. It additionally binds the causal-history policy, axis, cutoff and
+  treatment rule versions. Declared and assumed price bases remain distinct;
+  worker and resource controls are excluded. Every config and session carries
+  identity rule 4 as the exact integer `4L`; a missing, differently typed or
   different rule is refused rather than coerced, inferred or migrated.
   `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
@@ -501,21 +500,18 @@ Accepted change pending:
 <a id="contract-config-construction"></a>
 ### Construction And Validation
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_config()` is an internal construction helper. It returns an
   S3 object of class `ledgr_config`, validates the object before returning, and
   has a concise print method for diagnostics.
 - `validate_ledgr_config()` is the internal validator used by execution code.
 - Direct config construction is not exported. Public workflows start with
   `ledgr_experiment()` and run with `ledgr_run()`.
+- Every current config carries the canonical causal-history identity produced
+  by `ledgr_history_policy()`. Missing or non-current history identity refuses;
+  it is not inferred from other config fields.
 
 <a id="contract-config-policies"></a>
 ### Corporate-Action And Valuation Policies
-
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Corporate-action and valuation policies use schema 2 (terminal-outcomes
   synthesis, accepted 2026-10-05). `ledgr_corporate_actions()` takes
@@ -535,26 +531,29 @@ Accepted change pending:
 - Every executable or inspectable current config carries schema-2
   corporate-action and valuation policy records. Missing or different policy
   schemas are invalid rather than inferred, translated or migrated.
+- `ledgr_history_policy()` is the canonical experiment-level history policy.
+  It defaults to `price_carry = 5L`, `output_carry = NULL` and
+  `segment_limit = NULL`. `NULL` disables each carry stage independently; a
+  supplied carry age or segment limit is a finite positive whole number.
+  Omission and an explicit default policy have identical behavior and identity.
 
 ## Snapshot Contract
 
 <a id="contract-snapshot-identity-and-verification"></a>
 ### Identity And Verification
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Backtests run against sealed snapshots.
-- Snapshot hash rule 3 is the sole executable content-identity rule. Its exact
-  bytes are defined by
+- Snapshot hash rule 4 is the sole executable content-identity rule. It retains
+  the rule-3 bytes defined by
   `rfc/rfc_snapshot_verification_policy_v0_2_2_seed_v2.md`, Section 5:
   R-owned column-major binary blocks of 10,000 logical rows; bytewise UTF-8
   composite-key order asserted in R; little-endian typed payloads with a
-  presence byte per field; the existing exact fact projection with the three
-  accepted rule-3 changes; and domain-separated block, section and root
-  SHA-256. Snapshot IDs and envelope metadata remain excluded.
-- Every newly sealed snapshot records `hash_rule_version = 3`. In a current
-  store, a snapshot row whose marker is missing or is not 3 is invalid stored
+  presence byte per field; the exact fact projection; and domain-separated
+  block, section and root SHA-256. Rule 4 adds the hashed civil-time evidence
+  columns and its own block, section and root domains. Snapshot IDs and
+  envelope metadata remain excluded.
+- Every newly sealed snapshot records `hash_rule_version = 4`. In a current
+  store, a snapshot row whose marker is missing or is not 4 is invalid stored
   evidence and refuses with `ledgr_snapshot_hash_rule_unsupported`. No legacy
   root, fallback encoder or missing-marker default remains executable.
 - Snapshot content reads have three classes. Metadata-only reads may return
@@ -587,7 +586,7 @@ Accepted change pending:
   is none), and `summary()` of an availability-aware result reports the
   snapshot-wide count when it is not zero. The record is derived from hashed
   bars and sessions, so it is outside the snapshot hash and the quarantine
-  acknowledgement; rule 3 continues to exclude that derived record (Cut 12
+  acknowledgement; rule 4 continues to exclude that derived record (Cut 12
   LDG-3011).
 
 <a id="contract-snapshot-bar-validation"></a>
@@ -608,13 +607,27 @@ Accepted change pending:
 <a id="contract-snapshot-point-in-time-facts"></a>
 ### Point-In-Time Facts
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Point-in-time fact intervals are half-open and knowledge-bounded. Session
   facts form a complete venue calendar with one open/closed row per civil date;
   daily vendor labels are mapped explicitly to declared session closes. The
   expected-session clock is independent of observation presence.
+- Effective and knowledge clocks remain separate through construction,
+  persistence and preparation. A Date-backed fact stores its original civil
+  date together with the resolved UTC instant, venue zone and calendar
+  identity; it must resolve to exactly one declared open venue session.
+  Availability-aware Date boundaries resolve to session open for starts and
+  session close for ends. POSIXct boundaries remain exact instants.
+- Trading-status corrections form an acyclic supersession forest within one
+  source and instrument. A successor cannot become knowable before its
+  predecessor, may start earlier, and must cover the predecessor through its
+  end. Supersession removes every ancestor before precedence resolves the
+  remaining assertions. Tied contradictory siblings or unrelated descendants
+  refuse; same-assertion components and later revivals remain valid.
+- A corporate-action row with an event clock and no knowledge clock is known
+  when effective. A row with no event or knowledge clock is audit-only and is
+  never due. A row with knowledge time but neither entitlement nor effective
+  time refuses, at that knowledge cutoff and not before, with
+  `ledgr_corporate_action_clock_missing` carrying its fact and clock fields.
 - Local session wall times must resolve to exactly one UTC instant. Ambiguous
   fall-back and nonexistent spring-forward labels fail closed; an explicit
   POSIXct instant is already disambiguated and remains valid. An open
@@ -642,7 +655,7 @@ Accepted change pending:
   the snapshot store, never the run store.
 - `ledgr_snapshot_open(db_path, snapshot_id)` may reopen an existing sealed
   snapshot. It must never create, silently overwrite, or silently reseal a
-  snapshot. `verify = TRUE` always recomputes the complete rule-3 root before
+  snapshot. `verify = TRUE` always recomputes the complete rule-4 root before
   returning, even when the snapshot is already verified in the process.
 - Snapshot sealing, loading, and fold-entry guards form the trust boundary for
   normalized market data. After a production caller has accepted a sealed
@@ -668,9 +681,6 @@ Accepted change pending:
 <a id="contract-availability-activation-and-calendar"></a>
 ### Activation And Session Calendar
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
   valuation policy. There is no mode flag. Canonical omission preserves the
@@ -693,6 +703,10 @@ Accepted change pending:
   dense. `ledgr_experiment_plan()`, `ledgr_valuation_summary()`, `summary()`
   and `print()` of a result mark a horizon of 5 sessions as the default; the
   marker follows the value, as for every plan assumption (Cut 12 LDG-3014).
+- On availability-aware entry points a Date is a venue civil-session label,
+  not UTC midnight. Opening, run, sweep, window and fold starts resolve to the
+  unique declared session open; ends resolve to its close. Zero or multiple
+  matching open sessions refuse. POSIXct inputs retain their exact instants.
 
 <a id="contract-availability-units-and-universe"></a>
 ### Units, Price Basis And Universe
@@ -995,7 +1009,7 @@ Accepted change pending:
 Accepted change pending:
 [point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
-- Experiment-store schema 120 is the sole current store schema. One opener and
+- Experiment-store schema 121 is the sole current store schema. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
@@ -1066,7 +1080,7 @@ Accepted change pending:
 ### Completion And Resume Evidence
 
 - Sweep-candidate and walk-forward score evidence carries nullable canonical
-  `completion_json` and admits `INCOMPLETE` on those rows. Saved-sweep schema 4
+  `completion_json` and admits `INCOMPLETE` on those rows. Saved-sweep schema 5
   and candidate, sweep, run, and walk-forward identity formats remain
   distinct.
 - Availability-aware `DONE` and `INCOMPLETE` completion rows are terminal
@@ -2376,8 +2390,8 @@ Accepted change pending:
   public production run/sweep paths cannot reach fold execution without the
   accepted sealed-snapshot guard. The guard belongs at entry/setup boundaries,
   not inside per-cell, per-feature, or per-pulse hot loops.
-- The production rule-3 encoder must reproduce the conformance spike's ten
-  golden roots on both Windows and Ubuntu CI. Hosted-CI clocks are advisory;
+- The production rule-4 encoder must reproduce its re-derived conformance
+  roots on both Windows and Ubuntu CI. Hosted-CI clocks are advisory;
   the registered one-thread local benchmark host owns the absolute cost and
   growth gates.
 

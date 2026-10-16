@@ -1,6 +1,6 @@
 # ledgr-test-file-profile: review
 
-testthat::test_that("[LTB-0151] fresh and reopened facts retain rule-3 identity and detect timestamp tampering", {
+testthat::test_that("[LTB-0151] fresh and reopened facts retain rule-4 identity and detect timestamp tampering", {
   manifest <- ws10_read_oracle_manifest()
   snapshot_record <- manifest[
     manifest$record_type == "snapshot",

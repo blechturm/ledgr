@@ -22,10 +22,10 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     testthat::expect_no_match(source, token, fixed = TRUE)
   }
 
-  testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 3L)
+  testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 4L)
   testthat::expect_identical(
     ledgr:::ledgr_saved_sweep_schema_version,
-    4L
+    5L
   )
   testthat::expect_identical(
     ledgr:::ledgr_sweep_retention_schema_version,
@@ -33,13 +33,14 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   )
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_content_hash_rule_version,
-    3L
+    4L
   )
 
   current <- list(
-    identity_rule_version = 3L,
+    identity_rule_version = 4L,
     data = list(snapshot_id = "local-id", snapshot_hash = "content-hash"),
-    risk_chain = ledgr:::ledgr_config_risk_identity()
+    risk_chain = ledgr:::ledgr_config_risk_identity(),
+    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   )
   payload <- ledgr:::config_hash_payload(current)
   testthat::expect_null(payload$data$snapshot_id)
@@ -88,7 +89,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   round_trip <- ledgr:::ledgr_json_read_config(
     ledgr:::canonical_json(config)
   )
-  testthat::expect_identical(round_trip$identity_rule_version, 3L)
+  testthat::expect_identical(round_trip$identity_rule_version, 4L)
 
   invalid_configs <- list(
     missing_identity_rule = function(x) {
@@ -101,6 +102,10 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     },
     prior_identity_rule = function(x) {
       x$identity_rule_version <- 2L
+      x
+    },
+    preceding_identity_rule = function(x) {
+      x$identity_rule_version <- 3L
       x
     },
     double_identity_rule = function(x) {
@@ -121,6 +126,10 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     },
     missing_corporate_actions = function(x) {
       x$corporate_actions <- NULL
+      x
+    },
+    missing_history = function(x) {
+      x$history <- NULL
       x
     }
   )
@@ -155,8 +164,9 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
 
   con <- ledgr:::get_connection(snapshot)
   resume_cases <- invalid_configs[c(
-    "missing_identity_rule", "old_identity_rule", "double_identity_rule",
-    "character_identity_rule", "missing_snapshot_hash"
+    "missing_identity_rule", "old_identity_rule", "preceding_identity_rule",
+    "double_identity_rule", "character_identity_rule",
+    "missing_snapshot_hash", "missing_history"
   )]
   for (case_name in names(resume_cases)) {
     run_id <- paste0("current-only-", case_name)
@@ -180,7 +190,8 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     )
     testthat::expect_error(
       ledgr:::ledgr_run_config(config, run_id = run_id),
-      class = "ledgr_invalid_config"
+      class = "ledgr_invalid_config",
+      info = case_name
     )
   }
 

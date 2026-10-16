@@ -1,15 +1,35 @@
 # ledgr (development version)
 
+## Causal history foundation
+
+- `ledgr_history_policy()` now records the experiment-level causal-history
+  policy. Its defaults are five expected sessions of price-input carry, no
+  output carry and the default segment guard. The policy and its axis, cutoff
+  and treatment versions are part of identity rule 4.
+
+- Point-in-time facts preserve effective and knowledge clocks separately.
+  Date-backed facts retain their civil date plus resolved instant, venue zone
+  and calendar identity; availability-aware Date boundaries resolve to venue
+  session opens or closes instead of UTC midnight.
+
+- Trading-status corrections now use one acyclic supersession policy before
+  precedence. Corporate actions distinguish known-when-effective rows,
+  clockless audit-only rows and knowable rows missing an event clock.
+
+- Snapshot hash rule 4 and experiment-store schema 121 add the causal civil
+  time representation. Older snapshots, stores and identity-rule artifacts
+  refuse; no migration or compatibility reader is provided before CRAN.
+
 ## Current-only experiment stores
 
-- Experiment-store schema 120 is opened through one marker-pair gate. Every
+- Experiment-store schema 121 is opened through one marker-pair gate. Every
   package-owned persistent-store path refuses an older, newer, unmarked,
   malformed, or fingerprint-mismatched store with
   `ledgr_store_rebuild_required`; pre-CRAN migrations and tolerant readers
   have been removed.
 
 - Stored experiment records are current-only as well: run and walk-forward
-  identity rule 3, policy schema 2, saved-sweep schema 4, retention schema 2,
+  identity rule 4, policy schema 2, saved-sweep schema 5, retention schema 2,
   current provenance and execution timing version 2 are required. Older
   records are not inferred, translated or reopened; rebuild the research store
   from its source inputs with this ledgr version.
@@ -17,7 +37,7 @@
 - Canonical identity JSON now orders named keys with radix ordering, so config,
   strategy, feature, sweep and walk-forward hashes do not depend on process
   collation. The ordering rule is versioned in the current store fingerprint,
-  and `identity_rule_version` is accepted only as the exact integer `3L`.
+  and `identity_rule_version` is accepted only as the exact integer `4L`.
 
 ## Feature retention and identity
 
@@ -46,13 +66,13 @@
 
 ## Portable snapshot verification
 
-- New snapshots use snapshot hash rule 3, a portable R-owned binary identity
+- New snapshots use snapshot hash rule 4, a portable R-owned binary identity
   with fixed 10,000-row blocks and an explicit byte-order check. Snapshot
-  information reports the rule. Current stores require the rule-3 marker;
+  information reports the rule. Current stores require the rule-4 marker;
   missing or different markers are invalid stored evidence. ledgr does not
   migrate, reinterpret, or fall back to an older hash format.
 
-- Complete rule-3 verification is reused inside one process through a private,
+- Complete rule-4 verification is reused inside one process through a private,
   PID-bound set keyed by snapshot store, snapshot ID, stored root, and rule.
   Sealing or one successful complete recomputation establishes the proof;
   explicit validation and `ledgr_snapshot_open(verify = TRUE)` always

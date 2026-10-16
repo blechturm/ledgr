@@ -82,6 +82,7 @@ testthat::test_that("saved sweeps save, list, open, and inspect compact artifact
   testthat::expect_equal(reopened$total_return, sweep$total_return)
   testthat::expect_identical(attr(reopened, "snapshot_id"), attr(sweep, "snapshot_id"))
   testthat::expect_identical(attr(reopened, "snapshot_hash"), attr(sweep, "snapshot_hash"))
+  testthat::expect_identical(attr(reopened, "identity_rule_version"), 4L)
   testthat::expect_identical(attr(reopened, "cost_model_hash"), attr(sweep, "cost_model_hash"))
   testthat::expect_identical(attr(reopened, "metric_context_hash"), attr(sweep, "metric_context_hash"))
   testthat::expect_identical(attr(reopened, "sweep_retention"), ledgr_sweep_retention("completed"))
@@ -102,6 +103,15 @@ testthat::test_that("saved sweeps save, list, open, and inspect compact artifact
   testthat::expect_identical(info$retention_trades, "none")
   testthat::expect_true(isTRUE(info$saved_artifact$saved))
   testthat::expect_error(ledgr_sweep_info("saved_api"), class = "ledgr_invalid_args")
+
+  DBI::dbExecute(
+    con,
+    "UPDATE sweeps SET identity_rule_version = 3 WHERE sweep_id = 'saved_api'"
+  )
+  testthat::expect_error(
+    ledgr_sweep_open(snapshot, "saved_api"),
+    class = "ledgr_sweep_schema_incompatible"
+  )
 })
 
 testthat::test_that("saved sweep validation fails before partial writes", {

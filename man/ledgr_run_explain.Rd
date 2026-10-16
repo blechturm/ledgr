@@ -30,6 +30,7 @@ retained trace returns a zero-row tibble in history mode. Columns are:
 \item valuation evidence: \code{mark_source} and \code{mark_age}; and
 \item terminal evidence: \code{completion_status} and \code{complete_performance}.
 }
+
 When no execution diagnostic exists for an unchanged target,
 \code{execution_outcome} is \code{"no_action"} and the two execution-reason fields
 are \code{"no_target_change"}. These are explain-time values, not durable

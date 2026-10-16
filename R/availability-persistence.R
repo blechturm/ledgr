@@ -76,8 +76,8 @@ ledgr_snapshot_write_availability <- function(con,
 
   DBI::dbExecute(
     con,
-    "UPDATE snapshots SET hash_rule_version = 3 WHERE snapshot_id = ? AND status = 'CREATED'",
-    params = list(snapshot_id)
+    "UPDATE snapshots SET hash_rule_version = ? WHERE snapshot_id = ? AND status = 'CREATED'",
+    params = list(ledgr_snapshot_content_hash_rule_version, snapshot_id)
   )
   invisible(TRUE)
 }
@@ -90,7 +90,7 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       headers$snapshot_id <- snapshot_id
       headers <- headers[, c(
         "snapshot_id", "universe_id", "set_id", "effective_from",
-        "knowledge_time", "complete", "provenance_json"
+        "knowledge_time", "complete", "civil_time_json", "provenance_json"
       ), drop = FALSE]
       DBI::dbAppendTable(con, "snapshot_membership_sets", headers)
     }
@@ -98,7 +98,8 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       rows$snapshot_id <- snapshot_id
       rows <- rows[, c(
         "snapshot_id", "fact_id", "instrument_id", "universe_id", "set_id",
-        "effective_from", "effective_to", "knowledge_time", "member", "provenance_json"
+        "effective_from", "effective_to", "knowledge_time", "member",
+        "civil_time_json", "provenance_json"
       ), drop = FALSE]
       DBI::dbAppendTable(con, "snapshot_membership", rows)
     }
@@ -107,14 +108,15 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
     rows <- rows[, c(
       "snapshot_id", "fact_id", "instrument_id", "effective_from", "effective_to",
       "knowledge_time", "status", "source", "precedence", "revision_id",
-      "supersedes_fact_id", "provenance_json"
+      "supersedes_fact_id", "civil_time_json", "provenance_json"
     ), drop = FALSE]
     DBI::dbAppendTable(con, "snapshot_trading_status", rows)
   } else if (identical(family$family, "lifetime")) {
     rows$snapshot_id <- snapshot_id
     rows <- rows[, c(
       "snapshot_id", "fact_id", "instrument_id", "effective_from", "effective_to",
-      "knowledge_time", "assertion", "terminal_event", "provenance_json"
+      "knowledge_time", "assertion", "terminal_event", "civil_time_json",
+      "provenance_json"
     ), drop = FALSE]
     DBI::dbAppendTable(con, "snapshot_lifetime", rows)
   } else if (identical(family$family, "equity_corporate_actions")) {
@@ -127,7 +129,7 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       "gross_cash_per_parent_unit", "gross_cash_validated",
       "recipient_instrument_id", "recipient_identity_validated",
       "recipient_quantity_per_parent_unit",
-      "recipient_quantity_validated", "provenance_json"
+      "recipient_quantity_validated", "civil_time_json", "provenance_json"
     ), drop = FALSE]
     DBI::dbAppendTable(con, "snapshot_equity_corporate_actions", rows)
   } else if (identical(family$family, "sessions")) {
@@ -168,7 +170,7 @@ ledgr_snapshot_hash_rule_version <- function(con, snapshot_id) {
   value
 }
 
-ledgr_snapshot_require_hash_rule3 <- function(rule) {
+ledgr_snapshot_require_current_hash_rule <- function(rule) {
   if (length(rule) != 1L || is.na(rule) ||
       !identical(as.integer(rule), ledgr_snapshot_content_hash_rule_version)) {
     shown <- if (length(rule) != 1L || is.na(rule)) "missing" else
@@ -282,7 +284,7 @@ ledgr_snapshot_quarantine_parse_hashed_row <- function(value) {
   }
   keep <- intersect(ledgr_snapshot_quarantine_hashed_row_keys(), names(parsed))
   # These are already-parsed scalar bar fields. Encode the explicit radix
-  # order directly so the general config encoder's locale cannot enter rule 3.
+  # order directly so the general config encoder's locale cannot enter identity.
   keep <- keep[order(keep, method = "radix")]
   as.character(ledgr_json_write_canonical_v2(parsed[keep]))
 }
@@ -324,7 +326,7 @@ ledgr_snapshot_availability_presence_sql <- function() {
 
 ledgr_snapshot_availability_empty_hash_payload <- function() {
   out <- paste0(
-    '{"fact_schema_version":1,"schema":"ledgr_snapshot_hash_rule_3",',
+    '{"fact_schema_version":1,"schema":"ledgr_snapshot_hash_rule_4",',
     '"tables":{"snapshot_equity_corporate_actions":[],',
     '"snapshot_fact_families":[],"snapshot_lifetime":[],',
     '"snapshot_membership":[],"snapshot_membership_sets":[],',
@@ -337,7 +339,7 @@ ledgr_snapshot_availability_empty_hash_payload <- function() {
 
 ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id,
                                                      has_rows = NULL) {
-  # The empty projection has fixed rule-3 bytes. Hashing supplies the presence
+  # The empty projection has fixed current-rule bytes. Hashing supplies the presence
   # result from its envelope query, avoiding eight empty-table reads while
   # still detecting an orphaned row in any table after external tampering.
   if (!is.null(has_rows) && !isTRUE(has_rows)) {
@@ -374,7 +376,7 @@ ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id,
   normalized <- normalized[order(names(normalized), method = "radix")]
   payload <- list(
     fact_schema_version = ledgr_fact_schema_version,
-    schema = "ledgr_snapshot_hash_rule_3",
+    schema = "ledgr_snapshot_hash_rule_4",
     tables = normalized
   )
   out <- as.character(ledgr_json_write_canonical_v2_verbatim(payload))
@@ -541,6 +543,26 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     snapshot_equity_corporate_actions = "provenance_json",
     snapshot_sessions = "provenance_json",
     snapshot_observation_quarantine = c("original_row_json", "provenance_json")
+  )
+  json_columns$snapshot_membership_sets <- c(
+    json_columns$snapshot_membership_sets,
+    "civil_time_json"
+  )
+  json_columns$snapshot_membership <- c(
+    json_columns$snapshot_membership,
+    "civil_time_json"
+  )
+  json_columns$snapshot_trading_status <- c(
+    json_columns$snapshot_trading_status,
+    "civil_time_json"
+  )
+  json_columns$snapshot_lifetime <- c(
+    json_columns$snapshot_lifetime,
+    "civil_time_json"
+  )
+  json_columns$snapshot_equity_corporate_actions <- c(
+    json_columns$snapshot_equity_corporate_actions,
+    "civil_time_json"
   )
   for (table_name in names(json_columns)) {
     rows <- data[[table_name]]

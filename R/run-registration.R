@@ -107,6 +107,7 @@ ledgr_run_registration <- function(con,
     }
     ledgr_policy_schema_require_current(stored_cfg, run_id = run_id)
     ledgr_execution_timing_require_current(stored_cfg)
+    ledgr_history_identity_require_current(stored_cfg$history)
     stored_cfg_hash <- run_row$config_hash[[1]]
     if (!identical(stored_cfg_hash, cfg_hash)) {
       rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")

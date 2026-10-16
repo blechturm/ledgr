@@ -43,7 +43,8 @@ testthat::test_that("[LTB-0032] corporate-action policy is closed and versioned"
     list(
       corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(policy),
       data = list(source = "snapshot", snapshot_hash = "test-hash"),
-      identity_rule_version = 3L,
+      identity_rule_version = 4L,
+      history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy()),
       risk_chain = ledgr:::ledgr_config_risk_identity()
     )
   }

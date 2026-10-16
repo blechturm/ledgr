@@ -35,7 +35,10 @@ ledgr_folds_anchored(
 )
 }
 \arguments{
-\item{train_start, train_end, test_start, test_end}{Fold boundary timestamps.}
+\item{train_start, train_end, test_start, test_end}{Fold boundary timestamps or
+civil Dates. When applied to an availability-aware experiment, Date starts
+resolve to venue-session opens and Date ends to session closes; POSIXct
+values remain exact instants.}
 
 \item{fold_seq}{Positive integer fold sequence.}
 

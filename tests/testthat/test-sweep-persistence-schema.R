@@ -168,6 +168,7 @@ testthat::test_that("saved sweep storage projections use canonical JSON and vali
   testthat::expect_identical(candidates$cost_model_hash, rep(attr(sweep, "cost_model_hash"), 2L))
   testthat::expect_identical(candidates$metric_context_hash, rep(attr(sweep, "metric_context_hash"), 2L))
   testthat::expect_identical(parent$sweep_schema_version[[1]], ledgr:::ledgr_saved_sweep_schema_version)
+  testthat::expect_identical(parent$identity_rule_version[[1]], 4L)
   testthat::expect_identical(parent$risk_chain_hash[[1]], attr(sweep, "risk_chain_hash", exact = TRUE))
   testthat::expect_identical(parent$risk_plan_json[[1]], attr(sweep, "risk_plan_json", exact = TRUE))
   testthat::expect_identical(candidates$risk_chain_hash, rep(attr(sweep, "risk_chain_hash", exact = TRUE), 2L))

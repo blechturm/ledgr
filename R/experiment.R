@@ -5,11 +5,14 @@
 #' long positions and cost basis.
 #'
 #' @param cash Finite positive cash balance.
-#' @param date Optional opening timestamp. It is also the scoring start: runs,
+#' @param date Optional opening timestamp or civil Date. It is also the scoring start: runs,
 #'   sweeps, promotion and feature precompute evaluate the strategy and start
 #'   feature state from the first pulse at or after it, so indicators warm up
-#'   again from this date and earlier bars are not read. `NULL`, or a date
-#'   before the snapshot, starts at the snapshot start.
+#'   again from this date and earlier bars are not read. For an availability-
+#'   aware experiment a Date resolves to the unique declared venue-session
+#'   open and refuses if there is no unique match; POSIXct remains an exact
+#'   instant. `NULL`, or an exact instant before the snapshot, starts at the
+#'   snapshot start.
 #' @param positions Optional named numeric vector of starting long positions.
 #' @param cost_basis Optional named numeric vector with the same names as
 #'   `positions`.
@@ -34,7 +37,11 @@ ledgr_opening <- function(cash,
   }
 
   date_iso <- NULL
+  date_civil <- NULL
   if (!is.null(date)) {
+    if (inherits(date, "Date") && !inherits(date, "POSIXt")) {
+      date_civil <- as.character(date)
+    }
     date_iso <- tryCatch(
       ledgr_iso_utc(date),
       error = function(e) {
@@ -50,6 +57,7 @@ ledgr_opening <- function(cash,
     list(
       cash = as.numeric(cash),
       date = date_iso,
+      date_civil = date_civil,
       positions = positions,
       cost_basis = cost_basis
     ),
@@ -165,6 +173,9 @@ print.ledgr_opening <- function(x, ...) {
 #'   availability facts activates availability-aware execution.
 #' @param corporate_action_policy Corporate-action settlement policy. Defaults
 #'   to [ledgr_corporate_actions_research()].
+#' @param history_policy Causal history policy from [ledgr_history_policy()].
+#'   The default enables five expected sessions of price-input carry, no output
+#'   carry, and the default segment guard. It is part of execution identity.
 #' @param timing_model Timing model object. Defaults to
 #'   `ledgr_timing_next_open()`. The timing model proposes fills; cost models
 #'   resolve fill prices and explicit fees.
@@ -228,7 +239,8 @@ ledgr_experiment <- function(snapshot,
                              execution_mode = "audit_log",
                              metric_context = NULL,
                              risk_free_rate = NULL,
-                             corporate_action_policy = ledgr_corporate_actions_research()) {
+                             corporate_action_policy = ledgr_corporate_actions_research(),
+                             history_policy = ledgr_history_policy()) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_experiment")
   }
@@ -248,6 +260,7 @@ ledgr_experiment <- function(snapshot,
   sealed <- ledgr_experiment_validate_snapshot(snapshot)
   price_basis <- sealed$price_basis
   ledgr_validate_corporate_action_policy(corporate_action_policy)
+  history_policy <- ledgr_history_policy_normalize(history_policy)
 
   universe_all <- ledgr_experiment_snapshot_universe(snapshot)
   availability <- ledgr_availability_validate_experiment(
@@ -255,6 +268,13 @@ ledgr_experiment <- function(snapshot,
     universe,
     valuation_policy
   )
+  if (isTRUE(availability$active) && !is.null(opening$date_civil)) {
+    opening$date <- ledgr_snapshot_resolve_civil_boundary(
+      snapshot,
+      as.Date(opening$date_civil),
+      edge = "open"
+    )
+  }
   # Accounting assumes split-adjusted share units (no split event acts); an
   # undeclared basis runs on that model and is disclosed as an assumed default
   # (LDG-3013). data_identity keeps it undeclared.
@@ -315,6 +335,7 @@ ledgr_experiment <- function(snapshot,
       execution_mode = execution_mode,
       metric_context = metric_context,
       corporate_action_policy = corporate_action_policy,
+      history_policy = history_policy,
       data_identity = list(price_basis = price_basis),
       # Read once here so runs bind the content hash without reopening (LDG-3004).
       snapshot_hash = sealed$snapshot_hash
@@ -330,6 +351,49 @@ ledgr_experiment <- function(snapshot,
     out$valuation_policy <- availability$valuation_policy
   }
   structure(out, class = "ledgr_experiment")
+}
+
+ledgr_snapshot_resolve_civil_boundary <- function(snapshot,
+                                                  value,
+                                                  edge = c("open", "close")) {
+  edge <- match.arg(edge)
+  if (!inherits(value, "Date") || inherits(value, "POSIXt")) {
+    return(ledgr_iso_utc(value))
+  }
+  if (length(value) != 1L || is.na(value)) {
+    rlang::abort(
+      "A civil boundary must be one non-missing Date.",
+      class = c("ledgr_session_boundary_unresolved", "ledgr_invalid_args")
+    )
+  }
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
+  column <- if (identical(edge, "open")) "session_open" else "session_close"
+  rows <- DBI::dbGetQuery(
+    get_connection(snapshot),
+    sprintf(
+      paste(
+        "SELECT venue_id, %s AS boundary FROM snapshot_sessions",
+        "WHERE snapshot_id = ? AND session_date = ? AND status = 'open'",
+        "AND %s IS NOT NULL"
+      ),
+      column,
+      column
+    ),
+    params = list(snapshot$snapshot_id, value)
+  )
+  if (nrow(rows) != 1L) {
+    rlang::abort(
+      sprintf(
+        "Date %s must resolve to exactly one declared open session; found %d.",
+        as.character(value), nrow(rows)
+      ),
+      class = c("ledgr_session_boundary_unresolved", "ledgr_invalid_args"),
+      civil_date = as.character(value),
+      match_count = nrow(rows)
+    )
+  }
+  ledgr_iso_utc(as.POSIXct(rows$boundary[[1L]], tz = "UTC"))
 }
 
 ledgr_experiment_validate_snapshot <- function(snapshot) {

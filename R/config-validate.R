@@ -350,11 +350,16 @@ validate_ledgr_config <- function(config) {
       is.na(identity_rule) ||
       !identical(identity_rule, ledgr_identity_rule_version)) {
     rlang::abort(
-      "Config field identity_rule_version must be the integer 3L.",
+      sprintf(
+        "Config field identity_rule_version must be the integer %dL.",
+        ledgr_identity_rule_version
+      ),
       class = "ledgr_invalid_config"
     )
   }
   assert_scalar_chr(config$data$snapshot_hash, "data.snapshot_hash")
+
+  ledgr_history_identity_require_current(config$history)
 
   if (!is.null(config$features) && is.list(config$features) && isTRUE(config$features$enabled)) {
     defs <- config$features$defs

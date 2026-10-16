@@ -383,6 +383,16 @@ ledgr_sweep_assert_parent_schema_version <- function(parent) {
       class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
     )
   }
+  identity_rule <- as.integer(parent$identity_rule_version[[1]])
+  if (is.na(identity_rule) || !identical(identity_rule, ledgr_identity_rule_version)) {
+    rlang::abort(
+      sprintf(
+        "Saved sweep identity rule %s is incompatible with this ledgr version.",
+        as.character(parent$identity_rule_version[[1]])
+      ),
+      class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
+    )
+  }
   invisible(TRUE)
 }
 
@@ -525,6 +535,9 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
   attr(out, "sweep_id") <- as.character(parent$sweep_id[[1]])
   attr(out, "snapshot_id") <- as.character(parent$snapshot_id[[1]])
   attr(out, "snapshot_hash") <- as.character(parent$snapshot_hash[[1]])
+  attr(out, "identity_rule_version") <- as.integer(
+    parent$identity_rule_version[[1]]
+  )
   attr(out, "scoring_range") <- ledgr_sweep_reconstructed_scoring_range(returns)
   attr(out, "universe") <- as.character(universe)
   attr(out, "master_seed") <- first_provenance$master_seed
@@ -568,7 +581,7 @@ ledgr_sweep_reconstruct_risk_identity <- function(parent, candidates) {
   candidate_has_risk <- all(c("risk_chain_hash", "risk_plan_json") %in% names(candidates))
   if (!parent_has_risk || !candidate_has_risk) {
     rlang::abort(
-      "Saved sweep schema 4 requires risk_chain_hash and risk_plan_json columns.",
+      "Saved sweep schema 5 requires risk_chain_hash and risk_plan_json columns.",
       class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
     )
   }

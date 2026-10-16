@@ -600,6 +600,18 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   scores <- ledgr_walk_forward_scores(fx$snapshot, wf$session_id)
   folds <- ledgr_walk_forward_folds(fx$snapshot, wf$session_id)
 
+  opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
+  session_meta <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT meta_json FROM walk_forward_sessions WHERE session_id = ?",
+    params = list(wf$session_id)
+  )$meta_json[[1L]]
+  ledgr:::ledgr_run_store_close(opened)
+  testthat::expect_identical(
+    ledgr:::ledgr_json_read_nested(session_meta)$identity_rule_version,
+    4L
+  )
+
   testthat::expect_s3_class(reopened, "ledgr_walk_forward_results")
   testthat::expect_identical(attr(reopened, "db_path", exact = TRUE), fx$snapshot$db_path)
   testthat::expect_identical(attr(reopened, "snapshot_id", exact = TRUE), fx$snapshot$snapshot_id)
@@ -616,6 +628,27 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   testthat::expect_identical(reopened$selected$test_run_id, wf$selected$test_run_id)
   testthat::expect_equal(reopened$selected$sharpe_ratio, wf$selected$sharpe_ratio)
   testthat::expect_identical(unlist(reopened$test_runs, use.names = FALSE), wf$selected$test_run_id)
+
+  old_meta <- ledgr:::ledgr_json_read_nested(session_meta)
+  old_meta$identity_rule_version <- 3L
+  opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE walk_forward_sessions SET meta_json = ? WHERE session_id = ?",
+    params = list(as.character(ledgr:::canonical_json(old_meta)), wf$session_id)
+  )
+  ledgr:::ledgr_run_store_close(opened)
+  testthat::expect_error(
+    ledgr_walk_forward_open(fx$snapshot, wf$session_id),
+    class = "ledgr_walk_forward_invalid_session"
+  )
+  opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE walk_forward_sessions SET meta_json = ? WHERE session_id = ?",
+    params = list(session_meta, wf$session_id)
+  )
+  ledgr:::ledgr_run_store_close(opened)
 
   opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
   counts_after <- DBI::dbGetQuery(opened$con, "

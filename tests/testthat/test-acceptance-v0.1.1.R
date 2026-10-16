@@ -30,7 +30,7 @@ v011_make_runner_cfg <- function(db_path, snapshot_id, universe_ids, start_ts_ut
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "hold_zero", params = list())
   ))
-  cfg$identity_rule_version <- 3L
+  cfg$identity_rule_version <- 4L
   if (is.null(cfg$data$snapshot_hash)) {
     stop("test helper failed to obtain the current snapshot hash", call. = FALSE)
   }

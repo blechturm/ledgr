@@ -187,7 +187,7 @@ ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) 
     snapshot_db_path = snapshot$db_path,
     snapshot_hash = ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
   )
-  cfg$identity_rule_version <- 3L
+  cfg$identity_rule_version <- 4L
   ledgr_test_modernize_config(cfg)
 }
 
@@ -221,7 +221,8 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
   cfg$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
     ledgr_corporate_actions_research()
   )
-  cfg$identity_rule_version <- 3L
+  cfg$identity_rule_version <- 4L
+  cfg$history <- ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   if (is.list(cfg$strategy) && !is.list(cfg$strategy$provenance)) {
     strategy <- ledgr:::ledgr_strategy_spec(cfg$strategy)
     cfg$strategy$id <- strategy$id

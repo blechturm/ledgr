@@ -27,10 +27,9 @@ ledgr_availability_prepared_membership <- function(data, universe_id, key) {
   rows <- rows[as.character(rows$universe_id) == universe_id, , drop = FALSE]
   headers <- headers[order(headers$effective_from, headers$knowledge_time, headers$set_id), , drop = FALSE]
   n_headers <- nrow(headers)
-  h_from <- pmax(
-    ledgr_availability_prepared_seconds(headers$effective_from),
-    ledgr_availability_prepared_seconds(headers$knowledge_time)
-  )
+  h_effective <- ledgr_availability_prepared_seconds(headers$effective_from)
+  h_knowledge <- ledgr_availability_prepared_seconds(headers$knowledge_time)
+  h_from <- pmax(h_effective, h_knowledge)
   h_from[is.na(h_from)] <- Inf
   h_complete <- !is.na(headers$complete) & as.logical(headers$complete)
   set_rows <- rows[!is.na(rows$set_id), , drop = FALSE]
@@ -44,10 +43,9 @@ ledgr_availability_prepared_membership <- function(data, universe_id, key) {
 
   interval <- rows[is.na(rows$set_id), , drop = FALSE]
   interval <- interval[order(interval$effective_from, interval$knowledge_time, interval$fact_id), , drop = FALSE]
-  iv_start <- pmax(
-    ledgr_availability_prepared_seconds(interval$effective_from),
-    ledgr_availability_prepared_seconds(interval$knowledge_time)
-  )
+  iv_effective <- ledgr_availability_prepared_seconds(interval$effective_from)
+  iv_knowledge <- ledgr_availability_prepared_seconds(interval$knowledge_time)
+  iv_start <- pmax(iv_effective, iv_knowledge)
   iv_start[is.na(iv_start)] <- Inf
   iv_end <- ledgr_availability_prepared_seconds(interval$effective_to)
   iv_end[is.na(iv_end)] <- Inf
@@ -99,11 +97,10 @@ ledgr_availability_prepared_membership <- function(data, universe_id, key) {
 ledgr_availability_prepared_segments <- function(rows, key, n_planes, default_codes, resolve) {
   n_key <- length(key)
   inst <- match(as.character(rows$instrument_id), key)
-  start <- pmax(
-    ledgr_availability_prepared_seconds(rows$effective_from),
-    ledgr_availability_prepared_seconds(rows$knowledge_time)
-  )
-  start[is.na(start)] <- Inf
+  effective_start <- ledgr_availability_prepared_seconds(rows$effective_from)
+  knowledge_start <- ledgr_availability_prepared_seconds(rows$knowledge_time)
+  effective_start[is.na(effective_start)] <- Inf
+  knowledge_start[is.na(knowledge_start)] <- Inf
   end <- ledgr_availability_prepared_seconds(rows$effective_to)
   end[is.na(end)] <- Inf
   by_inst <- split(seq_len(nrow(rows)), factor(inst, levels = seq_len(n_key)))
@@ -111,12 +108,14 @@ ledgr_availability_prepared_segments <- function(rows, key, n_planes, default_co
   codes <- vector("list", n_key)
   for (i in seq_len(n_key)) {
     r <- by_inst[[i]]
-    b <- sort(unique(c(start[r], end[r])))
+    b <- sort(unique(c(effective_start[r], knowledge_start[r], end[r])))
     b <- b[is.finite(b)]
     seg_codes <- matrix(default_codes, nrow = n_planes, ncol = length(b) + 1L)
     for (j in seq_along(b)) {
       t <- b[[j]]
-      applicable <- r[start[r] <= t & t < end[r]]
+      applicable <- r[
+        effective_start[r] <= t & knowledge_start[r] <= t & t < end[r]
+      ]
       if (length(applicable) > 0L) seg_codes[, j + 1L] <- resolve(applicable)
     }
     bound[[i]] <- c(-Inf, b)
@@ -126,7 +125,9 @@ ledgr_availability_prepared_segments <- function(rows, key, n_planes, default_co
   off <- cumsum(c(1L, cnt[-n_key]))
   list(
     off = as.integer(off), cnt = as.integer(cnt), bound = unlist(bound, use.names = FALSE),
-    codes = do.call(cbind, codes), n_key = n_key
+    codes = do.call(cbind, codes), n_key = n_key,
+    effective_start = effective_start,
+    knowledge_start = knowledge_start
   )
 }
 
@@ -194,10 +195,12 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
     precedence <- as.integer(rows$precedence)
     fact_id <- as.character(rows$fact_id)
     supersedes <- as.character(rows$supersedes_fact_id)
+    lineage <- ledgr_status_lineage(rows)
     resolve_status <- function(applicable) {
-      superseded <- supersedes[applicable]
-      superseded <- superseded[!is.na(superseded) & nzchar(superseded)]
-      remaining <- applicable[!fact_id[applicable] %in% superseded]
+      superseded <- vapply(applicable, function(candidate) {
+        any(ledgr_status_is_ancestor(lineage, candidate, applicable))
+      }, logical(1))
+      remaining <- applicable[!superseded]
       if (length(remaining) == 0L) return(2L)
       top <- max(precedence[remaining])
       values <- unique(status_code[remaining][precedence[remaining] == top])

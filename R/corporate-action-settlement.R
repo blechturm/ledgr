@@ -204,6 +204,8 @@ ledgr_corporate_action_plan <- function(rows,
       class = c("ledgr_duplicate_corporate_action_fact", "ledgr_invalid_state")
     )
   }
+  clock_missing <- !is.na(rows$knowledge_time) &
+    is.na(rows$entitlement_time) & is.na(rows$effective_time)
   cash_eligible <- rows$subtype == "ordinary_cash_dividend" & rows$complete
   cash_eligible <- cash_eligible &
     if (all(c(
@@ -228,7 +230,8 @@ ledgr_corporate_action_plan <- function(rows,
   quantity_eligible <- (rows$subtype %in% c(
     "stock_acquisition", "mixed_acquisition", "spin_off"
   ) & rows$complete) | unmodeled
-  if (!any(cash_eligible | disposition_eligible | quantity_eligible)) {
+  if (!any(cash_eligible | disposition_eligible | quantity_eligible |
+      clock_missing)) {
     return(NULL)
   }
 
@@ -269,6 +272,11 @@ ledgr_corporate_action_plan <- function(rows,
   state$cash_due_idx <- as.integer(cash_due_idx)
   state$disposition_due_idx <- as.integer(disposition_due_idx)
   state$quantity_due_idx <- as.integer(quantity_due_idx)
+  state$clock_missing <- clock_missing
+  state$clock_missing_by_pulse <- split(
+    seq_len(nrow(rows))[clock_missing],
+    knowledge_idx[clock_missing]
+  )
   state$late <- as.logical(late)
   state$quantity <- rep(NA_real_, nrow(rows))
   state$bound <- rep(FALSE, nrow(rows))
@@ -361,6 +369,29 @@ ledgr_corporate_action_plan <- function(rows,
       state$bound <- replace(state$bound, selected, TRUE)
     }
     invisible(TRUE)
+  }
+
+  check_clocks <- function(index) {
+    selected <- state$clock_missing_by_pulse[[as.character(index)]] %||%
+      integer()
+    if (length(selected) == 0L) return(invisible(TRUE))
+    row <- state$rows[selected[[1L]], , drop = FALSE]
+    rlang::abort(
+      paste(
+        "A knowable corporate-action fact requires an entitlement or",
+        "effective event clock."
+      ),
+      class = c(
+        "ledgr_corporate_action_clock_missing",
+        "ledgr_invalid_corporate_action_event",
+        "ledgr_invalid_state"
+      ),
+      fact_id = as.character(row$fact_id[[1L]]),
+      parent_instrument_id = as.character(row$parent_instrument_id[[1L]]),
+      knowledge_time = row$knowledge_time[[1L]],
+      entitlement_time = row$entitlement_time[[1L]],
+      effective_time = row$effective_time[[1L]]
+    )
   }
 
   has_cashflow <- function() any(state$cash_eligible)
@@ -573,6 +604,7 @@ ledgr_corporate_action_plan <- function(rows,
   structure(
     list(
       bind_boundary = bind_boundary,
+      check_clocks = check_clocks,
       post = post_cash,
       post_cash = post_cash,
       post_disposition = post_disposition,

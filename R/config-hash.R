@@ -5,7 +5,7 @@ config_hash <- function(config) {
 config_hash_payload <- function(config) {
   if (!identical(config$identity_rule_version, ledgr_identity_rule_version)) {
     rlang::abort(
-      "Config identity_rule_version must equal 3.",
+      sprintf("Config identity_rule_version must equal %d.", ledgr_identity_rule_version),
       class = "ledgr_invalid_config"
     )
   }
@@ -32,7 +32,7 @@ config_hash_payload <- function(config) {
   payload$sweep_retention <- NULL
   if (is.list(payload$data)) {
     payload$data$snapshot_db_path <- NULL
-    # Identity rule 3 binds the sealed content hash, not the store-local ID.
+    # Identity rule 4 retains content-based snapshot identity from rule 3.
     payload$data$snapshot_id <- NULL
   }
   if (is.list(payload$sweep)) {
@@ -61,4 +61,4 @@ config_hash_payload <- function(config) {
 
 
 # Run and session identity bind the sealed snapshot content hash.
-ledgr_identity_rule_version <- 3L
+ledgr_identity_rule_version <- 4L

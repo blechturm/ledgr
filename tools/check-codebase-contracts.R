@@ -7,7 +7,10 @@ current_only_specs <- list(
   ),
   list(
     pattern = "corporate_schema|(?<!valuation_)policy_schema_version",
-    bindings = "ledgr_corporate_action_policy_schema_version"
+    bindings = c(
+      "ledgr_corporate_action_policy_schema_version",
+      "ledgr_history_policy_schema_version"
+    )
   ),
   list(
     pattern = "valuation_policy_record_version|valuation_schema",
@@ -102,14 +105,18 @@ if ("--self-test-current-only" %in% args) {
       "is.null(x$identity_rule_version)",
       "x$sweep_schema_version %in% 1:3",
       "identical(version, 'ledgr_promotion_v1')",
+      "identical(history$policy_schema_version, ledgr_history_policy_schema_version)",
       "schema_state$schema_version < ledgr_experiment_store_schema_version"
     ),
-    operator = c("identical", "identical", "is.null", "%in%", "identical", "<"),
+    operator = c(
+      "identical", "identical", "is.null", "%in%", "identical",
+      "identical", "<"
+    ),
     owner = c(
-      NA, NA, NA, NA, "ledgr_parse_promotion_context",
+      NA, NA, NA, NA, "ledgr_parse_promotion_context", NA,
       "ledgr_store_assert_current"
     ),
-    expected = c(FALSE, TRUE, TRUE, TRUE, TRUE, FALSE),
+    expected = c(FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE),
     stringsAsFactors = FALSE
   )
   actual <- mapply(
@@ -1352,9 +1359,6 @@ test_seam_contracts <- c(
   ),
   ledgr_experiment_materialize_features = paste(
     "Exercise feature-map materialization independently of a complete run."
-  ),
-  ledgr_feature_cache_key = paste(
-    "Pin feature-cache identity components without running a backtest."
   ),
   ledgr_check_no_lookahead = paste(
     "Inject hostile callbacks into the prefix-invariance causality oracle."

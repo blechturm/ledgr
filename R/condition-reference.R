@@ -43,7 +43,17 @@
 #' `ledgr_snapshot_hash_rule_unsupported` is raised when a snapshot does not
 #' carry the current content-hash rule.
 #' `ledgr_snapshot_hash_order_invalid` is raised when source rows are not in
-#' the bytewise order required by rule 3.
+#' the bytewise order required by the current snapshot-hash rule.
+#'
+#' `ledgr_fact_civil_date_unresolved` is raised when a fact Date does not map
+#' to exactly one declared open venue session. `ledgr_session_boundary_unresolved`
+#' applies the same refusal to an availability-aware execution boundary.
+#' `ledgr_corporate_action_clock_missing` is raised, at its knowledge cutoff,
+#' for a knowable corporate action with neither entitlement nor effective time.
+#' `ledgr_invalid_history_policy` is raised for malformed history-policy
+#' constructor arguments or a non-current policy object.
+#' `ledgr_history_identity_mismatch` and `ledgr_precomputed_history_mismatch`
+#' refuse non-current causal-history identity in configs and precomputed data.
 #'
 #' @section Store-format classes:
 #' `ledgr_store_rebuild_required` is raised when a persistent store is older,
@@ -960,6 +970,7 @@
 #' @aliases ledgr_config_non_finite
 #' @aliases ledgr_config_unsupported_type
 #' @aliases ledgr_corporate_action_clock_mismatch
+#' @aliases ledgr_corporate_action_clock_missing
 #' @aliases ledgr_corporate_action_double_credit
 #' @aliases ledgr_corporate_action_quantity_unsupported
 #' @aliases ledgr_corporate_action_unsupported
@@ -974,6 +985,7 @@
 #' @aliases ledgr_duplicate_param_grid_labels
 #' @aliases ledgr_empty_warmup_input
 #' @aliases ledgr_event_buffer_capacity_exceeded
+#' @aliases ledgr_fact_civil_date_unresolved
 #' @aliases ledgr_fact_identity_conflict
 #' @aliases ledgr_fact_invalid_clock_order
 #' @aliases ledgr_fact_invalid_complete
@@ -1000,6 +1012,7 @@
 #' @aliases ledgr_feature_factory_requires_params
 #' @aliases ledgr_feature_lookahead_detected
 #' @aliases ledgr_grid_filter_invalid
+#' @aliases ledgr_history_identity_mismatch
 #' @aliases ledgr_invalid_accounting_event
 #' @aliases ledgr_invalid_alias_map
 #' @aliases ledgr_invalid_args
@@ -1027,6 +1040,7 @@
 #' @aliases ledgr_invalid_fill_intent
 #' @aliases ledgr_invalid_fold_execution
 #' @aliases ledgr_invalid_grid
+#' @aliases ledgr_invalid_history_policy
 #' @aliases ledgr_invalid_indicator_bundle
 #' @aliases ledgr_invalid_ledger_event
 #' @aliases ledgr_invalid_ledger_meta
@@ -1102,6 +1116,7 @@
 #' @aliases ledgr_precomputed_engine_mismatch
 #' @aliases ledgr_precomputed_feature_mismatch
 #' @aliases ledgr_precomputed_grid_mismatch
+#' @aliases ledgr_precomputed_history_mismatch
 #' @aliases ledgr_precomputed_hydration_mismatch
 #' @aliases ledgr_precomputed_range_mismatch
 #' @aliases ledgr_precomputed_snapshot_mismatch
@@ -1121,6 +1136,7 @@
 #' @aliases ledgr_run_registration_failed
 #' @aliases ledgr_run_telemetry_failed
 #' @aliases ledgr_scalar_accessor_loop
+#' @aliases ledgr_session_boundary_unresolved
 #' @aliases ledgr_session_coverage_incomplete
 #' @aliases ledgr_session_instant_duplicate
 #' @aliases ledgr_session_instant_off_date

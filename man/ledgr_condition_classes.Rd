@@ -142,6 +142,7 @@
 \alias{ledgr_config_non_finite}
 \alias{ledgr_config_unsupported_type}
 \alias{ledgr_corporate_action_clock_mismatch}
+\alias{ledgr_corporate_action_clock_missing}
 \alias{ledgr_corporate_action_double_credit}
 \alias{ledgr_corporate_action_quantity_unsupported}
 \alias{ledgr_corporate_action_unsupported}
@@ -156,6 +157,7 @@
 \alias{ledgr_duplicate_param_grid_labels}
 \alias{ledgr_empty_warmup_input}
 \alias{ledgr_event_buffer_capacity_exceeded}
+\alias{ledgr_fact_civil_date_unresolved}
 \alias{ledgr_fact_identity_conflict}
 \alias{ledgr_fact_invalid_clock_order}
 \alias{ledgr_fact_invalid_complete}
@@ -182,6 +184,7 @@
 \alias{ledgr_feature_factory_requires_params}
 \alias{ledgr_feature_lookahead_detected}
 \alias{ledgr_grid_filter_invalid}
+\alias{ledgr_history_identity_mismatch}
 \alias{ledgr_invalid_accounting_event}
 \alias{ledgr_invalid_alias_map}
 \alias{ledgr_invalid_args}
@@ -209,6 +212,7 @@
 \alias{ledgr_invalid_fill_intent}
 \alias{ledgr_invalid_fold_execution}
 \alias{ledgr_invalid_grid}
+\alias{ledgr_invalid_history_policy}
 \alias{ledgr_invalid_indicator_bundle}
 \alias{ledgr_invalid_ledger_event}
 \alias{ledgr_invalid_ledger_meta}
@@ -284,6 +288,7 @@
 \alias{ledgr_precomputed_engine_mismatch}
 \alias{ledgr_precomputed_feature_mismatch}
 \alias{ledgr_precomputed_grid_mismatch}
+\alias{ledgr_precomputed_history_mismatch}
 \alias{ledgr_precomputed_hydration_mismatch}
 \alias{ledgr_precomputed_range_mismatch}
 \alias{ledgr_precomputed_snapshot_mismatch}
@@ -303,6 +308,7 @@
 \alias{ledgr_run_registration_failed}
 \alias{ledgr_run_telemetry_failed}
 \alias{ledgr_scalar_accessor_loop}
+\alias{ledgr_session_boundary_unresolved}
 \alias{ledgr_session_coverage_incomplete}
 \alias{ledgr_session_instant_duplicate}
 \alias{ledgr_session_instant_off_date}
@@ -426,7 +432,17 @@ timestamp representation drift instead of silently re-keying sealed data.
 \code{ledgr_snapshot_hash_rule_unsupported} is raised when a snapshot does not
 carry the current content-hash rule.
 \code{ledgr_snapshot_hash_order_invalid} is raised when source rows are not in
-the bytewise order required by rule 3.
+the bytewise order required by the current snapshot-hash rule.
+
+\code{ledgr_fact_civil_date_unresolved} is raised when a fact Date does not map
+to exactly one declared open venue session. \code{ledgr_session_boundary_unresolved}
+applies the same refusal to an availability-aware execution boundary.
+\code{ledgr_corporate_action_clock_missing} is raised, at its knowledge cutoff,
+for a knowable corporate action with neither entitlement nor effective time.
+\code{ledgr_invalid_history_policy} is raised for malformed history-policy
+constructor arguments or a non-current policy object.
+\code{ledgr_history_identity_mismatch} and \code{ledgr_precomputed_history_mismatch}
+refuse non-current causal-history identity in configs and precomputed data.
 }
 
 \section{Store-format classes}{

@@ -754,7 +754,7 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
 
   # Snapshot integration:
   # - verify snapshot status SEALED
-  # - ensure one PID-bound complete rule-3 verification
+  # - ensure one PID-bound complete current-rule verification
   # - enforce universe subset and inclusive start/end coverage
   # - create TEMP VIEW instruments/bars so the fold reads sealed snapshot data
   snapshot <- ledgr_run_snapshot_guard(

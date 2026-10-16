@@ -20,6 +20,8 @@ ledgr_test_cost_config <- function(cost_model = ledgr_cost_zero()) {
 }
 
 ledgr_test_current_config <- function(config) {
+  config$identity_rule_version <- 4L
+  config$history <- ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   config$risk_chain <- ledgr:::ledgr_config_risk_identity()
   config$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
     ledgr_corporate_actions_research()
@@ -234,7 +236,7 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "ea8085da468c23fd167bb9e8fe46a121d03b897185cec1f08f7ba8174245f8f9"
+    "a349248b2d7ca647b1cf661d9c37f584c8bd493f9788e558031fcf609cf0a4e4"
   )
 })
 

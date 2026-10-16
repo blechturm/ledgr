@@ -146,7 +146,7 @@ if (!identical(snapshot_hash, reopened_hash)) {
 
 records[[length(records) + 1L]] <- data.frame(
   record_type = "snapshot",
-  artifact_id = "rule2:fresh_and_reopened",
+  artifact_id = "rule4:fresh_and_reopened",
   family = "all",
   shape = "six_shapes_10_supplied_9_bars_1_quarantine",
   file = "",
@@ -158,7 +158,7 @@ records[[length(records) + 1L]] <- data.frame(
     "ledgr_facts_resolve()"
   ),
   oracle_independence = paste(
-    "The stored rule-2 hash is recomputed from persisted rows on each public",
+    "The stored rule-4 hash is recomputed from persisted rows on each public",
     "facts-resolution boundary; no stored component digest is trusted."
   ),
   r_version = environment_fields$r_version,

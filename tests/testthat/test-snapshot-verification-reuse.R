@@ -95,17 +95,17 @@ testthat::test_that("[LTB-0252] complete verification is PID-bound and truthful"
     snapshot_db_path = path
   )
   testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
-    ledgr:::ledgr_store_key(path), id, root, 3L
+    ledgr:::ledgr_store_key(path), id, root, 4L
   ))
   testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
-    ledgr:::ledgr_store_key(second_path), id, root, 3L
+    ledgr:::ledgr_store_key(second_path), id, root, 4L
   ))
   testthat::expect_false(identical(
     ledgr:::ledgr_snapshot_verified_key(
-      ledgr:::ledgr_store_key(path), id, root, 3L
+      ledgr:::ledgr_store_key(path), id, root, 4L
     ),
     ledgr:::ledgr_snapshot_verified_key(
-      ledgr:::ledgr_store_key(path), paste0(id, "-other"), root, 3L
+      ledgr:::ledgr_store_key(path), paste0(id, "-other"), root, 4L
     )
   ))
   DBI::dbDisconnect(run_con, shutdown = TRUE)
@@ -572,10 +572,10 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   snapshot_key <- ledgr:::ledgr_store_key(split_snapshot_path)
   run_key <- ledgr:::ledgr_store_key(split_run_path)
   testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
-    snapshot_key, split_snapshot$snapshot_id, split_root, 3L
+    snapshot_key, split_snapshot$snapshot_id, split_root, 4L
   ))
   testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
-    run_key, split_snapshot$snapshot_id, split_root, 3L
+    run_key, split_snapshot$snapshot_id, split_root, 4L
   ))
 
   ledgr:::ledgr_snapshot_verified_reset()
@@ -583,10 +583,10 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   on.exit(DBI::dbDisconnect(split_con, shutdown = TRUE), add = TRUE)
   ledgr_state_reconstruct(split_result$run_id, split_con)
   testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
-    snapshot_key, split_snapshot$snapshot_id, split_root, 3L
+    snapshot_key, split_snapshot$snapshot_id, split_root, 4L
   ))
   testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
-    run_key, split_snapshot$snapshot_id, split_root, 3L
+    run_key, split_snapshot$snapshot_id, split_root, 4L
   ))
 
   testthat::expect_output(print(split_result), "ledgr Backtest", fixed = TRUE)
@@ -595,9 +595,9 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   ledgr:::ledgr_snapshot_verified_reset()
   ledgr:::ledgr_backtest_ensure_snapshot(split_result)
   testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
-    snapshot_key, split_snapshot$snapshot_id, split_root, 3L
+    snapshot_key, split_snapshot$snapshot_id, split_root, 4L
   ))
   testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
-    run_key, split_snapshot$snapshot_id, split_root, 3L
+    run_key, split_snapshot$snapshot_id, split_root, 4L
   ))
 })

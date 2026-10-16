@@ -142,7 +142,7 @@ ledgr_snapshot_list <- function(con, status = NULL) {
 #' @param db_path Path to an existing DuckDB file.
 #' @param snapshot_id Snapshot id to load. The snapshot must exist and be
 #'   `SEALED`.
-#' @param verify Logical scalar. If `TRUE`, recompute the complete rule-3
+#' @param verify Logical scalar. If `TRUE`, recompute the complete current-rule
 #'   snapshot hash and compare it with the stored hash before returning, even
 #'   when this process already verified the same snapshot tuple. If `FALSE`,
 #'   opening is metadata-only; the first snapshot-dependent use verifies cold.

@@ -55,6 +55,9 @@ ledgr_sweep_storage_parent_row <- function(sweep,
     created_at_utc = as.POSIXct(created_at_utc, tz = "UTC"),
     engine_version = as.character(engine_version),
     sweep_schema_version = as.integer(ledgr_saved_sweep_schema_version),
+    identity_rule_version = as.integer(
+      attr(sweep, "identity_rule_version", exact = TRUE)
+    ),
     note = note %||% NA_character_,
     retention_json = ledgr_sweep_storage_json(attr(sweep, "sweep_retention", exact = TRUE)),
     metric_context_json = ledgr_sweep_storage_json(metric_context_record),
@@ -206,6 +209,13 @@ ledgr_sweep_storage_trade_rows <- function(sweep,
 ledgr_sweep_storage_assert_sweep <- function(sweep) {
   if (!inherits(sweep, "ledgr_sweep_results")) {
     rlang::abort("`sweep` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")
+  }
+  identity_rule <- attr(sweep, "identity_rule_version", exact = TRUE)
+  if (!identical(identity_rule, ledgr_identity_rule_version)) {
+    rlang::abort(
+      "Saved sweeps require the current execution identity rule.",
+      class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_args")
+    )
   }
   invisible(TRUE)
 }

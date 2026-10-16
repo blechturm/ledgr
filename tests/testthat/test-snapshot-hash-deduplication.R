@@ -13,7 +13,7 @@ stage_n_with_namespace_binding <- function(name, value, fn) {
 }
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0251] rule-3 blocks are fixed and order checked", {
+testthat::test_that("[LTB-0251] rule-4 blocks are fixed and order checked", {
   bars <- ledgr_test_make_bars(
     "AAA",
     as.Date("1990-01-01") + 0:10000
@@ -54,7 +54,7 @@ testthat::test_that("[LTB-0251] rule-3 blocks are fixed and order checked", {
     ),
     collapse = "\n"
   )
-  testthat::expect_match(source, "ledgr_snapshot_hash_rule3_block_rows")
+  testthat::expect_match(source, "ledgr_snapshot_hash_block_rows")
   testthat::expect_match(source, "max_chunks")
   testthat::expect_match(source, "vector\\(\"list\", max_chunks\\)")
   testthat::expect_no_match(source, "c\\(pending")
@@ -70,7 +70,7 @@ testthat::test_that("[LTB-0250] every content reader refuses a non-current hash 
     )
   }
 
-  for (rule in list(NA_integer_, 1L, 99L)) {
+  for (rule in list(NA_integer_, 1L, 3L, 99L)) {
     path <- tempfile(fileext = ".duckdb")
     snapshot <- ledgr_snapshot_from_df(
       ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2),
@@ -85,7 +85,7 @@ testthat::test_that("[LTB-0250] every content reader refuses a non-current hash 
     )
     completed <- ledgr_run(
       experiment,
-      run_id = paste0("rule3-completed-", ifelse(is.na(rule), "missing", rule))
+      run_id = paste0("rule4-completed-", ifelse(is.na(rule), "missing", rule))
     )
     initial_cash <- completed$config$backtest$initial_cash
     close(completed)
@@ -106,7 +106,7 @@ testthat::test_that("[LTB-0250] every content reader refuses a non-current hash 
     )
     incomplete <- ledgr_run(
       incomplete_experiment,
-      run_id = paste0("rule3-incomplete-", ifelse(is.na(rule), "missing", rule))
+      run_id = paste0("rule4-incomplete-", ifelse(is.na(rule), "missing", rule))
     )
     incomplete_run_id <- incomplete$run_id
     close(incomplete)
@@ -159,7 +159,7 @@ testthat::test_that("[LTB-0250] every content reader refuses a non-current hash 
     expect_unsupported(
       ledgr:::ledgr_rebuild_derived_state(
         con,
-        paste0("rule3-completed-", ifelse(is.na(rule), "missing", rule)),
+        paste0("rule4-completed-", ifelse(is.na(rule), "missing", rule)),
         initial_cash = initial_cash
       )
     )

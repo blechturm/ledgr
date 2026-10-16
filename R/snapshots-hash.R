@@ -1,5 +1,5 @@
-ledgr_snapshot_content_hash_rule_version <- 3L
-ledgr_snapshot_hash_rule3_block_rows <- 10000L
+ledgr_snapshot_content_hash_rule_version <- 4L
+ledgr_snapshot_hash_block_rows <- 10000L
 
 ledgr_snapshot_hash_u32_le <- function(x) {
   if (length(x) != 1L || is.na(x) || !is.finite(x) || x < 0 ||
@@ -231,7 +231,7 @@ ledgr_snapshot_hash_block <- function(frame, section_tag, block_index,
   payload <- if (length(columns) == 0L) raw() else
     do.call(c, unname(columns))
   bytes <- c(
-    charToRaw("LEDGR-R3-BLOCK"),
+    charToRaw("LEDGR-R4-BLOCK"),
     as.raw(section_tag),
     ledgr_snapshot_hash_u64_vec_le(block_index),
     ledgr_snapshot_hash_u64_vec_le(nrow(frame)),
@@ -248,7 +248,7 @@ ledgr_snapshot_hash_section_finish <- function(section_tag, total_rows,
                                                block_digests) {
   block_count <- length(block_digests) / 32L
   bytes <- c(
-    charToRaw("LEDGR-R3-SECTION"),
+    charToRaw("LEDGR-R4-SECTION"),
     as.raw(section_tag),
     ledgr_snapshot_hash_u64_vec_le(total_rows),
     ledgr_snapshot_hash_u64_vec_le(block_count),
@@ -269,7 +269,7 @@ ledgr_snapshot_hash_stream_section <- function(con, sql, params, total_rows,
       class = c("ledgr_snapshot_hash_encoding_invalid", "ledgr_invalid_state")
     )
   }
-  block_rows <- ledgr_snapshot_hash_rule3_block_rows
+  block_rows <- ledgr_snapshot_hash_block_rows
   expected_blocks <- if (total_rows == 0) 0L else
     as.integer(ceiling(total_rows / block_rows))
   block_digests <- raw(32L * expected_blocks)
@@ -416,7 +416,7 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
   if (chunk_size < 1L) {
     rlang::abort("`chunk_size` must be >= 1.", class = "ledgr_invalid_args")
   }
-  fetch_size <- min(chunk_size, ledgr_snapshot_hash_rule3_block_rows)
+  fetch_size <- min(chunk_size, ledgr_snapshot_hash_block_rows)
 
   envelope <- DBI::dbGetQuery(
     con,
@@ -444,7 +444,7 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
       class = "LEDGR_SNAPSHOT_NOT_FOUND"
     )
   }
-  ledgr_snapshot_require_hash_rule3(envelope$hash_rule_version[[1L]])
+  ledgr_snapshot_require_current_hash_rule(envelope$hash_rule_version[[1L]])
 
   instrument_fields <- c(
     instrument_id = "text",

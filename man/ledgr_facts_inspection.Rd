@@ -66,6 +66,7 @@ History may include future-effective, future-known, and audit-only evidence.
 Resolution excludes evidence not yet effective and knowable at \code{at}.
 Neither result is a strategy context or a selection surface.
 }
+
 \section{Errors}{
 
 Invalid argument combinations raise \code{ledgr_facts_inspection_invalid_args}.

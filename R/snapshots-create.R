@@ -79,9 +79,14 @@ ledgr_snapshot_create <- function(con, snapshot_id = NULL, meta = NULL) {
       hash_rule_version,
       meta_json,
       error_msg
-    ) VALUES (?, 'CREATED', ?, NULL, NULL, 3, ?, NULL)
+    ) VALUES (?, 'CREATED', ?, NULL, NULL, ?, ?, NULL)
     ",
-    params = list(snapshot_id, created_at_ts, meta_json)
+    params = list(
+      snapshot_id,
+      created_at_ts,
+      ledgr_snapshot_content_hash_rule_version,
+      meta_json
+    )
   )
 
   snapshot_id

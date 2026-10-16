@@ -337,6 +337,7 @@ ledgr_fold_stage_observe_settle <- function(
       as.numeric(services$bars_mat$close[, pulse_idx]),
       services$instrument_ids
     )
+    services$corporate_action_plan$check_clocks(pulse_idx)
     posted <- services$corporate_action_plan$post(
       index = pulse_idx,
       run_id = services$run_id,

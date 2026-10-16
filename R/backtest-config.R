@@ -92,6 +92,7 @@ ledgr_config <- function(snapshot,
                           universe_rule = NULL,
                           valuation_policy = NULL,
                           corporate_action_policy = ledgr_corporate_actions_research(),
+                          history_policy = ledgr_history_policy(),
                           price_basis = ledgr_snapshot_execution_price_basis(snapshot),
                           snapshot_hash = ledgr_snapshot_stored_hash(snapshot)) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
@@ -130,6 +131,7 @@ ledgr_config <- function(snapshot,
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   ledgr_validate_corporate_action_policy(corporate_action_policy)
+  history_policy <- ledgr_history_policy_normalize(history_policy)
   # Experiments pass the basis they already read, so the snapshot is not reopened.
   force(price_basis)
   force(snapshot_hash)
@@ -177,6 +179,7 @@ ledgr_config <- function(snapshot,
     db_path = db_path,
     engine = engine,
     universe = list(instrument_ids = universe),
+    history = ledgr_history_policy_identity(history_policy),
     backtest = list(
       start_ts_utc = backtest$start,
       end_ts_utc = backtest$end,

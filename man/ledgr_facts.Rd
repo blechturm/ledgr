@@ -64,7 +64,10 @@ These constructors normalize point-in-time membership, trading-status,
 session-calendar, lifetime, and equity corporate-action evidence before
 snapshot creation. Effective intervals are half-open: \code{effective_from} is
 included and \code{effective_to} is excluded. Missing knowledge time remains
-audit-only unless \code{knowledge = "assume_effective"} is declared.
+audit-only unless \code{knowledge = "assume_effective"} is declared. Date-backed
+fact clocks are civil labels: \code{\link[=ledgr_facts]{ledgr_facts()}} resolves each to exactly one
+declared open session and retains the civil date, UTC instant, venue zone
+and calendar identity in sealed evidence. POSIXct values remain exact.
 }
 \details{
 Membership intervals require \code{instrument_id}, \code{effective_from}, and
@@ -90,6 +93,10 @@ require one lower-snake-case \code{refusal_reason}. Provenance is either
 \code{snapshot_bound}, with no upstream identifiers, or
 \code{upstream_vintage_bound}, with both \code{upstream_build_id} and
 \code{bar_vintage_id}.
+An event clock without \code{knowledge_time} is known when effective. A row with
+no event or knowledge clock is audit-only. A knowable row with neither an
+entitlement nor effective clock refuses only once its knowledge cutoff is
+reached during execution.
 
 Session rows require \code{session_date}, \code{status}, \code{session_open}, and
 \code{session_close}; \code{knowledge_time} is required under evidenced knowledge and
@@ -108,6 +115,8 @@ classes are \code{ledgr_fact_invalid_shape}, \code{ledgr_fact_invalid_interval},
 \code{ledgr_fact_invalid_supersession}, \code{ledgr_fact_invalid_completeness},
 \code{ledgr_fact_unvalidated_term}, \code{ledgr_session_invalid},
 \code{ledgr_session_time_ambiguous}, and \code{ledgr_session_time_nonexistent}.
+Civil dates that do not match exactly one declared open session use
+\code{ledgr_fact_civil_date_unresolved}.
 }
 
 \section{Articles}{

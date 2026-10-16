@@ -99,11 +99,11 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       testthat::expect_identical(expected$engine_version, "0.2.0.1")
       actual$engine_version <- NULL
       expected$engine_version <- NULL
-      # Cut 15 deliberately replaces schema 118 with the current-only schema
-      # 120. The frozen evidence remains unchanged; all other persisted
+      # Cut 16 deliberately replaces schema 118 with the current-only schema
+      # 121. The frozen evidence remains unchanged; all other persisted
       # identity fields stay under exact comparison below.
       testthat::expect_identical(expected$schema_version, "118")
-      testthat::expect_identical(actual$schema_version, "120")
+      testthat::expect_identical(actual$schema_version, "121")
       actual$schema_version <- NULL
       expected$schema_version <- NULL
       # LDG-2851 renamed `ctx$vec$positions` to `ctx$vec$position` after the
@@ -157,17 +157,25 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       testthat::expect_null(expected_config$data$price_basis)
       testthat::expect_identical(actual_config$data$price_basis, "split_adjusted")
       actual_config$data["price_basis"] <- list(NULL)
-      # Identity rule 3 (LDG-3050/LDG-3056) records the rule, removes feature
+      # Identity rule 4 records the causal-history policy in addition to the
       # retention identity, binds function captures, and retains the sealed hash;
       # the frozen rule-1 run has neither.
       testthat::expect_null(expected_config$identity_rule_version)
-      testthat::expect_identical(as.integer(actual_config$identity_rule_version), 3L)
+      testthat::expect_identical(as.integer(actual_config$identity_rule_version), 4L)
+      testthat::expect_null(expected_config$history)
+      testthat::expect_identical(
+        actual_config$history,
+        ledgr:::ledgr_json_read_nested(canonical_json(
+          ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+        ))
+      )
       testthat::expect_null(expected_config$data$snapshot_hash)
       testthat::expect_true(is.character(actual_config$data$snapshot_hash) && nzchar(actual_config$data$snapshot_hash))
-      # Rule 3 intentionally removes the pre-CRAN feature-retention switch.
+      # Rule 4 retains the rule-3 removal of the feature-retention switch.
       testthat::expect_true(isTRUE(expected_config$features$persist))
       expected_config$features$persist <- NULL
       actual_config$identity_rule_version <- NULL
+      actual_config$history <- NULL
       actual_config$data <- actual_config$data[names(expected_config$data)]
       testthat::expect_identical(actual_config, expected_config)
       actual$config_json <- expected$config_json <- NULL

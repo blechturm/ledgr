@@ -166,7 +166,7 @@ ledgr_snapshot_ensure_verified <- function(con,
     )
   }
   tryCatch(
-    ledgr_snapshot_require_hash_rule3(rule),
+    ledgr_snapshot_require_current_hash_rule(rule),
     error = function(e) {
       ledgr_snapshot_verified_remove(store_key, snapshot_id)
       stop(e)

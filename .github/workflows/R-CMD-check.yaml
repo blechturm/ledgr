@@ -251,10 +251,10 @@ jobs:
         run: |
           Rscript -e "pkgload::load_all('.', quiet = TRUE); testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary', load_package = 'none')"
 
-      - name: Reproduce rule-3 roots on the full platform matrix
+      - name: Reproduce rule-4 roots on the full platform matrix
         if: needs.plan.outputs.tier == 'full'
         run: |
-          Rscript -e "pkgload::load_all('.', quiet = TRUE); testthat::test_file('tests/testthat/test-snapshot-hash-rule3.R', reporter = 'summary')"
+          Rscript -e "pkgload::load_all('.', quiet = TRUE); testthat::test_file('tests/testthat/test-snapshot-hash-rule4.R', reporter = 'summary')"
 
       - name: Run ordinary fast profile
         id: ordinary_fast_1

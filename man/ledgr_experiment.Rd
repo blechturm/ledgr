@@ -17,7 +17,8 @@ ledgr_experiment(
   execution_mode = "audit_log",
   metric_context = NULL,
   risk_free_rate = NULL,
-  corporate_action_policy = ledgr_corporate_actions_research()
+  corporate_action_policy = ledgr_corporate_actions_research(),
+  history_policy = ledgr_history_policy()
 )
 }
 \arguments{
@@ -66,6 +67,10 @@ Supply either \code{metric_context} or \code{risk_free_rate}, not both.}
 
 \item{corporate_action_policy}{Corporate-action settlement policy. Defaults
 to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
+
+\item{history_policy}{Causal history policy from \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}.
+The default enables five expected sessions of price-input carry, no output
+carry, and the default segment guard. It is part of execution identity.}
 }
 \value{
 A \code{ledgr_experiment} object. Its \code{data_identity$price_basis} field

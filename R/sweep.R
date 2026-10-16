@@ -384,6 +384,7 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "sweep_id") <- sweep_id
   attr(out, "snapshot_id") <- exp$snapshot$snapshot_id
   attr(out, "snapshot_hash") <- meta$snapshot_hash
+  attr(out, "identity_rule_version") <- ledgr_identity_rule_version
   # The pulses actually scored, as a reopened sweep reconstructs them.
   attr(out, "scoring_range") <- list(start = pulses_iso[[1L]], end = pulses_iso[[length(pulses_iso)]])
   attr(out, "universe") <- exp$universe
@@ -1224,7 +1225,8 @@ ledgr_sweep_exp_payload <- function(exp) {
     universe_rule = exp$universe_rule %||% NULL,
     valuation_policy = exp$valuation_policy %||% NULL,
     corporate_action_policy = exp$corporate_action_policy %||%
-      ledgr_corporate_actions_research()
+      ledgr_corporate_actions_research(),
+    history_policy = exp$history_policy
   )
 }
 

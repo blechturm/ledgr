@@ -309,7 +309,7 @@ ledgr_walk_forward_session_identity <- function(exp,
   cost_model_hash <- exp$cost_model_hash %||% ledgr_cost_model_hash(exp$cost_model)
   risk_chain <- exp$risk_chain %||% ledgr_risk_none()
   risk_chain_hash <- exp$risk_chain_hash %||% ledgr_risk_chain_hash(risk_chain)
-  # The experiment hash binds sealed snapshot content under identity rule 3.
+  # The experiment hash binds sealed content and causal history under rule 4.
   experiment_hash <- ledgr_walk_forward_experiment_hash(ledgr_walk_forward_base_config(exp, meta))
   param_grid_hash <- ledgr_walk_forward_param_grid_hash(grid)
   fold_list_hash <- ledgr_fold_list_hash(folds)
@@ -369,6 +369,7 @@ ledgr_walk_forward_base_config <- function(exp, meta) {
     universe_rule = exp$universe_rule,
     valuation_policy = exp$valuation_policy,
     corporate_action_policy = exp$corporate_action_policy,
+    history_policy = exp$history_policy,
     price_basis = exp$data_identity$price_basis
   )
 }

@@ -40,6 +40,12 @@ use \code{"custom"}.}
 \item{gap_contract}{Optional availability-aware gap contract. Version 1
 supports only \code{"strict_window"}.}
 }
+\value{
+A \code{ledgr_indicator} object.
+}
+\description{
+Construct a ledgr indicator
+}
 \details{
 Indicator fingerprints bind deterministic direct captures of \code{fn}
 and \code{series_fn}. Atomic values and deterministic lists are supported;
@@ -47,12 +53,6 @@ environments, connections, and other unsupported captures refuse as
 non-deterministic. A captured function contributes its function identity,
 but its own captures are not recursively included. Put explicitly varying
 research inputs in \code{params}.
-}
-\value{
-A \code{ledgr_indicator} object.
-}
-\description{
-Construct a ledgr indicator
 }
 \examples{
 last_close <- ledgr_indicator(

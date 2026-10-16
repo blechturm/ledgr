@@ -81,7 +81,7 @@ testthat::test_that("walk-forward fold constructor validates and hashes canonica
     names(payload),
     c(
       "scheme", "train_start_utc", "train_end_utc", "test_start_utc",
-      "test_end_utc", "gap_value", "gap_unit", "fold_seq",
+      "test_end_utc", "civil_boundaries", "gap_value", "gap_unit", "fold_seq",
       "fold_schema_version"
     )
   )

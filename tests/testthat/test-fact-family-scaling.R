@@ -2,15 +2,15 @@ test_that("[LTB-0042] fact preparation preserves frozen identity", {
   matrix <- ws14_fact_matrix()
   expected_hashes <- c(
     membership =
-      "6a7db910dd6274869b5f1bc9cc2c8bf5ba7097f92363962863d5957333ca4845",
+      "89b0466aa60184e5feae775b3752438521f7db098ffd8bb219322bd5f804d635",
     trading_status =
-      "5194c9d0f0d4d52e14b62ecddfa17a15c5de3b697fce28e3a87813b7b940ac8d",
+      "0e8e2289cb9a7c46a03fbde663fea733b693bed4a231f2b5a0da6d408b6ba807",
     lifetime =
-      "8667ce315441d7bb9ecfc20c3bfe25fa3ceb351cbf6669c3528eaeb486474cf4",
+      "80c9e88012b2e33da6e8d90a1fa822d90b9f9be634c93ecc60155ac679cd1f57",
     equity_corporate_actions =
-      "bf0c34930d7166ef0b6cfb837d057121e958cfff7a536f9b1864db4fa227da51",
+      "4e71cd7200024a15cd8b16d634579ea6a86b24ad34765e2c9912c39cbc2661ce",
     sessions =
-      "57f659aca780ba28f6f59afb2119e022f50f3ec2c5ef45f5d6814d4844b5f51a"
+      "8291dc7b34d38098cb8b812245b83148080d4a4a6d51af3e940f6f63c6c09b90"
   )
   actual_hashes <- vapply(
     matrix$families,
@@ -21,15 +21,15 @@ test_that("[LTB-0042] fact preparation preserves frozen identity", {
   expect_identical(actual_hashes, expected_hashes)
   expect_identical(
     matrix$facts$bundle_hash,
-    "6f514e58e04230366fb7aed2c9d209bf1d388f3f3f8326269f3aec419f2aaaa1"
+    "6e72cbbb01e0dbcf44c1d48c92650781bf5bfdc063dca86bb6024777e51147b4"
   )
   expect_identical(
     matrix$families$membership$rows$fact_id,
     c(
-      "fact_e57309813aca420a370d042e5e61e374",
-      "fact_6973cc57ea5d8c2df52e6b991a1bcefa",
-      "fact_bad890b12d6eb9babe8f8803b995c368",
-      "fact_150dbee2f738b5c1d21cde6430e2a1c0"
+      "fact_34276deeffd7053b87c31fb57cd253c0",
+      "fact_14aa5dcbeb1d5a7638a430d256f530de",
+      "fact_be9d663ab150fcce72cfe3f21874c357",
+      "fact_cebba8309beaef431572d9568328ce83"
     )
   )
 })
@@ -197,11 +197,11 @@ test_that("[LTB-0044] constructors retain validation precedence", {
 })
 
 # ledgr-test-profile: review
-test_that("[LTB-0045] rule-3 identity retains frozen hashes", {
+test_that("[LTB-0045] rule-4 identity retains frozen hashes", {
   expected <- c(
-    `0` = "e42f33b7173243b3111170eab139fe1d820aad87ff0e6ede89ca34f2113081c5",
-    `20000` = "a310d15f90620cf5b806e859b4197888deb76112663d0594a7f1ba260f8479e4",
-    `100000` = "ae0a425bbf7f0752156283e6f736b6bfffd6b6d2340be1b40a498054980987bf"
+    `0` = "19f4624c6663378370b95c07017ad61fcc99daf402e180a2358456ed11a35578",
+    `20000` = "a7c887d708005250818b3dd76a393d5ab22e3edff3cd4a349bddea281138ec59",
+    `100000` = "517d1d3a8a6acea099be666c4ffb08c347279d734fbac0cbfee04163dc361ace"
   )
   bars <- ws14_scale_bars()
   instruments <- ws14_scale_instruments()
@@ -222,7 +222,7 @@ test_that("[LTB-0045] rule-3 identity retains frozen hashes", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   expect_identical(
     ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]],
-    "c39b76f2c4dcbc6c7334c9f5d7a8b1dd5f8955e4a5652d9cda1400ee2f933314"
+    "36e8e18f4fded10c42153a42be3ecbed8bc0478968bbfe30f5e9f276506dca5d"
   )
 })
 

@@ -45,6 +45,7 @@ Constructor fields:
 \item \code{mar}: reserved for future minimum-acceptable-return providers and must be
 \code{NULL} in v0.1.8.
 }
+
 \code{ledgr_metric_context_hash()} hashes metric-context version, annual
 risk-free rate, risk-free source, risk-free \code{as_of}, and calendar
 annualization and source fields. Human display labels are stored for

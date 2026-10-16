@@ -67,7 +67,7 @@ runner_snapshot_config <- function(db_path, snapshot_id, universe_ids, snapshot_
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "hold_zero", params = list())
   ))
-  cfg$identity_rule_version <- 3L
+  cfg$identity_rule_version <- 4L
   if (!is.character(cfg$data$snapshot_hash) ||
       length(cfg$data$snapshot_hash) != 1L ||
       is.na(cfg$data$snapshot_hash) ||

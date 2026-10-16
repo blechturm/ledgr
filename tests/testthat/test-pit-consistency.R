@@ -353,8 +353,7 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   testthat::expect_identical(ledgr_run_info(snapshot, "covered_window")$status, "DONE")
 
   # A New York calendar whose civil days start at 05:00Z: an opening dated on
-  # the first session, or before the sealed bars, runs from the sealed start
-  # (the scoring-start rule), and the run and the sweep agree.
+  # the first session resolves to that session, and the run and sweep agree.
   ny_days <- as.Date("2021-03-01") + 0:4
   ny_close <- as.POSIXct(paste(ny_days, "16:00:00"), tz = "America/New_York")
   attr(ny_close, "tzone") <- "UTC"
@@ -367,16 +366,34 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
     ))
   )
   on.exit(ledgr_snapshot_close(ny), add = TRUE)
-  for (opening_date in list(ny_days[[1]], ny_days[[1]] - 10)) {
-    exp <- ledgr_experiment(ny, hold,
+  exp <- ledgr_experiment(ny, hold,
+    universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, date = ny_days[[1]])
+  )
+  close(ledgr_run(exp, run_id = "ny_opening_first"))
+  testthat::expect_identical(ledgr_run_info(ny, "ny_opening_first")$status, "DONE")
+  testthat::expect_identical(ledgr_sweep(exp, ledgr_param_grid(a = list()))$status[[1]], "DONE")
+  testthat::expect_error(
+    ledgr_experiment(ny, hold,
       universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
-      cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, date = opening_date)
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 1000, date = ny_days[[1]] - 10)
+    ),
+    class = "ledgr_session_boundary_unresolved"
+  )
+  before <- ledgr_experiment(ny, hold,
+    universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(
+      cash = 1000,
+      date = as.POSIXct(ny_days[[1]] - 10, tz = "UTC")
     )
-    run_id <- paste0("ny_opening_", as.character(opening_date))
-    close(ledgr_run(exp, run_id = run_id))
-    testthat::expect_identical(ledgr_run_info(ny, run_id)$status, "DONE")
-    testthat::expect_identical(ledgr_sweep(exp, ledgr_param_grid(a = list()))$status[[1]], "DONE")
-  }
+  )
+  close(ledgr_run(before, run_id = "ny_opening_before_exact"))
+  testthat::expect_identical(
+    ledgr_run_info(ny, "ny_opening_before_exact")$status,
+    "DONE"
+  )
 
   # Bars that start a day before the calendar: a request from the calendar's
   # first civil day covers every bar it asks for, so it runs.
@@ -1118,7 +1135,7 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
   }
 })
 
-testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 3", {
+testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 4", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   flat <- function(ctx, params) ctx$flat()
@@ -1127,7 +1144,7 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
     exp <- ledgr_experiment(snapshot, flat, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
     bt <- ledgr_run(exp, run_id = run_id)
     on.exit(close(bt))
-    testthat::expect_identical(bt$config$identity_rule_version, 3L)
+    testthat::expect_identical(bt$config$identity_rule_version, 4L)
     testthat::expect_identical(bt$config$data$snapshot_hash, ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]])
     ledgr_run_info(snapshot, run_id)$config_hash
   }
@@ -1168,7 +1185,7 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
 testthat::test_that("[LTB-0244] walk-forward sessions use current content identity", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  # A walk-forward session records rule 3 and reuses the same current identity.
+  # A walk-forward session records rule 4 and reuses the same current identity.
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(),
@@ -1185,7 +1202,7 @@ testthat::test_that("[LTB-0244] walk-forward sessions use current content identi
   wf_con <- ledgr:::get_connection(snapshot)
   session <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions")
   testthat::expect_identical(nrow(session), 1L)
-  testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 3L)
+  testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 4L)
 
   identity <- ledgr:::ledgr_walk_forward_session_identity(
     exp, wf_args$grid, folds, wf_args$selection_rule, NULL, "carry_test_state", "previous"

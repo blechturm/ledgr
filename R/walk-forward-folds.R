@@ -1,6 +1,6 @@
 ledgr_walk_forward_schema_version <- "v1"
-ledgr_fold_schema_version <- "v1"
-ledgr_fold_list_schema_version <- "v1"
+ledgr_fold_schema_version <- "v2"
+ledgr_fold_list_schema_version <- "v2"
 
 #' Walk-forward fold constructors
 #'
@@ -16,7 +16,10 @@ ledgr_fold_list_schema_version <- "v1"
 #' Duration-based constructors produce inclusive end timestamps one second
 #' before the next period boundary.
 #'
-#' @param train_start,train_end,test_start,test_end Fold boundary timestamps.
+#' @param train_start,train_end,test_start,test_end Fold boundary timestamps or
+#'   civil Dates. When applied to an availability-aware experiment, Date starts
+#'   resolve to venue-session opens and Date ends to session closes; POSIXct
+#'   values remain exact instants.
 #' @param fold_seq Positive integer fold sequence.
 #' @param scheme Fold scheme, currently `"rolling"` or `"anchored"`.
 #' @param gap Reserved. Must be `NULL` in v1.
@@ -59,6 +62,13 @@ ledgr_fold <- function(train_start,
   ledgr_walk_forward_validate_gap(gap)
   fold_seq <- ledgr_walk_forward_validate_positive_integer(fold_seq, "`fold_seq`")
 
+  civil_boundaries <- list(
+    train_start = if (inherits(train_start, "Date") && !inherits(train_start, "POSIXt")) as.character(train_start) else NULL,
+    train_end = if (inherits(train_end, "Date") && !inherits(train_end, "POSIXt")) as.character(train_end) else NULL,
+    test_start = if (inherits(test_start, "Date") && !inherits(test_start, "POSIXt")) as.character(test_start) else NULL,
+    test_end = if (inherits(test_end, "Date") && !inherits(test_end, "POSIXt")) as.character(test_end) else NULL
+  )
+
   train_start_utc <- ledgr_walk_forward_posix(train_start, "`train_start`")
   train_end_utc <- ledgr_walk_forward_posix(train_end, "`train_end`")
   test_start_utc <- ledgr_walk_forward_posix(test_start, "`test_start`")
@@ -80,6 +90,7 @@ ledgr_fold <- function(train_start,
       train_end_utc = train_end_utc,
       test_start_utc = test_start_utc,
       test_end_utc = test_end_utc,
+      civil_boundaries = civil_boundaries,
       gap_value = NULL,
       gap_unit = NULL,
       fold_schema_version = ledgr_fold_schema_version
@@ -413,6 +424,7 @@ ledgr_fold_payload <- function(fold) {
     train_end_utc = fold$train_end_utc,
     test_start_utc = fold$test_start_utc,
     test_end_utc = fold$test_end_utc,
+    civil_boundaries = fold$civil_boundaries,
     gap_value = fold$gap_value,
     gap_unit = fold$gap_unit,
     fold_seq = fold$fold_seq,
@@ -435,7 +447,7 @@ ledgr_validate_fold_shape <- function(fold, check_id = TRUE) {
   required <- c(
     "fold_id", "fold_seq", "scheme", "train_start_utc", "train_end_utc",
     "test_start_utc", "test_end_utc", "gap_value", "gap_unit",
-    "fold_schema_version"
+    "fold_schema_version", "civil_boundaries"
   )
   if (!all(required %in% names(fold))) {
     rlang::abort("`fold` has an invalid ledgr_fold shape.", class = "ledgr_walk_forward_invalid_fold")
@@ -532,6 +544,18 @@ ledgr_experiment_window <- function(exp,
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
+  if (isTRUE(exp$availability$active)) {
+    start_utc <- ledgr_snapshot_resolve_civil_boundary(
+      exp$snapshot,
+      start_utc,
+      edge = "open"
+    )
+    end_utc <- ledgr_snapshot_resolve_civil_boundary(
+      exp$snapshot,
+      end_utc,
+      edge = "close"
+    )
+  }
   scoring_start <- ledgr_walk_forward_posix(start_utc, "`start_utc`")
   scoring_end <- ledgr_walk_forward_posix(end_utc, "`end_utc`")
   # Until the joint WS3/WS4 history-start design, scoring_start is the sole
@@ -618,17 +642,29 @@ ledgr_experiment_window_from_fold <- function(exp,
   window <- match.arg(window)
   opening_state_policy <- match.arg(opening_state_policy)
   if (identical(window, "train")) {
+    train_start <- if (!is.null(fold$civil_boundaries$train_start)) {
+      as.Date(fold$civil_boundaries$train_start)
+    } else fold$train_start_utc
+    train_end <- if (!is.null(fold$civil_boundaries$train_end)) {
+      as.Date(fold$civil_boundaries$train_end)
+    } else fold$train_end_utc
     return(ledgr_experiment_window(
       exp = exp,
-      start_utc = fold$train_start_utc,
-      end_utc = fold$train_end_utc,
+      start_utc = train_start,
+      end_utc = train_end,
       opening_state_policy = opening_state_policy
     ))
   }
+  test_start <- if (!is.null(fold$civil_boundaries$test_start)) {
+    as.Date(fold$civil_boundaries$test_start)
+  } else fold$test_start_utc
+  test_end <- if (!is.null(fold$civil_boundaries$test_end)) {
+    as.Date(fold$civil_boundaries$test_end)
+  } else fold$test_end_utc
   ledgr_experiment_window(
     exp = exp,
-    start_utc = fold$test_start_utc,
-    end_utc = fold$test_end_utc,
+    start_utc = test_start,
+    end_utc = test_end,
     opening_state_policy = opening_state_policy
   )
 }

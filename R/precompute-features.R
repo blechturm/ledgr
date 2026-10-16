@@ -6,8 +6,8 @@
 #' future sweep execution.
 #'
 #' The payload is validated by `ledgr_sweep()` against the snapshot hash,
-#' universe, scoring range, feature engine version, grid labels, and resolved
-#' feature fingerprints. Use it for larger exploratory grids; `ledgr_sweep()`
+#' universe, scoring range, causal-history identity, feature engine version,
+#' grid labels, and resolved feature fingerprints. Use it for larger exploratory grids; `ledgr_sweep()`
 #' warns when more than 20 combinations run without precomputed features.
 #'
 #' Feature state starts at the scoring start, as in a run: bars before `start`
@@ -85,6 +85,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     snapshot_id = exp$snapshot$snapshot_id,
     snapshot_hash = meta$snapshot_hash,
     universe = exp$universe,
+    history_identity = ledgr_history_policy_identity(exp$history_policy),
     scoring_range = list(start = range$scoring_start, end = range$scoring_end),
     warmup_range = list(start = range$warmup_start, end = range$scoring_start),
     feature_engine_version = feature_engine_version,
@@ -155,6 +156,19 @@ ledgr_validate_precomputed_features <- function(precomputed,
   }
   if (!identical(precomputed$universe, exp$universe)) {
     rlang::abort("`precomputed_features` universe does not match the experiment universe.", class = "ledgr_precomputed_universe_mismatch")
+  }
+  expected_history <- ledgr_history_policy_identity(exp$history_policy)
+  if (!identical(precomputed$history_identity, expected_history)) {
+    rlang::abort(
+      paste(
+        "`precomputed_features` causal-history identity does not match the",
+        "experiment. Rerun ledgr_precompute_features()."
+      ),
+      class = c(
+        "ledgr_precomputed_history_mismatch",
+        "ledgr_precomputed_feature_mismatch"
+      )
+    )
   }
   ledgr_precompute_validate_window_coverage(precomputed, range, window)
   if (!identical(precomputed$grid_labels, param_grid$labels)) {

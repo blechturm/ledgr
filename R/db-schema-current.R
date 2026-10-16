@@ -120,7 +120,8 @@ ledgr_current_schema_definition <- function() {
         "sweep_id VARCHAR PRIMARY KEY, snapshot_id VARCHAR NOT NULL,",
         "snapshot_hash VARCHAR NOT NULL, created_at_utc TIMESTAMP NOT NULL,",
         "engine_version VARCHAR NOT NULL,",
-        "sweep_schema_version INTEGER NOT NULL, note VARCHAR,",
+        "sweep_schema_version INTEGER NOT NULL,",
+        "identity_rule_version INTEGER NOT NULL, note VARCHAR,",
         "retention_json VARCHAR NOT NULL, metric_context_json VARCHAR NOT NULL,",
         "metric_context_hash VARCHAR NOT NULL,",
         "metric_context_version INTEGER NOT NULL,",
@@ -224,7 +225,8 @@ ledgr_current_schema_definition <- function() {
         "CREATE TABLE snapshot_membership_sets(",
         "snapshot_id VARCHAR, universe_id VARCHAR, set_id VARCHAR,",
         "effective_from TIMESTAMP NOT NULL, knowledge_time TIMESTAMP,",
-        "complete BOOLEAN NOT NULL, provenance_json VARCHAR NOT NULL,",
+        "complete BOOLEAN NOT NULL, civil_time_json VARCHAR NOT NULL,",
+        "provenance_json VARCHAR NOT NULL,",
         "PRIMARY KEY(snapshot_id, universe_id, set_id))"
       ),
       snapshot_membership = sql(
@@ -233,6 +235,7 @@ ledgr_current_schema_definition <- function() {
         "universe_id VARCHAR NOT NULL, set_id VARCHAR,",
         "effective_from TIMESTAMP NOT NULL, effective_to TIMESTAMP,",
         "knowledge_time TIMESTAMP, member BOOLEAN NOT NULL,",
+        "civil_time_json VARCHAR NOT NULL,",
         "provenance_json VARCHAR NOT NULL, PRIMARY KEY(snapshot_id, fact_id))"
       ),
       snapshot_trading_status = sql(
@@ -242,6 +245,7 @@ ledgr_current_schema_definition <- function() {
         "knowledge_time TIMESTAMP, status VARCHAR NOT NULL,",
         "\"source\" VARCHAR NOT NULL, precedence INTEGER NOT NULL,",
         "revision_id VARCHAR, supersedes_fact_id VARCHAR,",
+        "civil_time_json VARCHAR NOT NULL,",
         "provenance_json VARCHAR NOT NULL,",
         "CHECK((status IN ('active', 'halted', 'quotation_only'))),",
         "PRIMARY KEY(snapshot_id, fact_id))"
@@ -251,7 +255,8 @@ ledgr_current_schema_definition <- function() {
         "snapshot_id VARCHAR, fact_id VARCHAR, instrument_id VARCHAR NOT NULL,",
         "effective_from TIMESTAMP NOT NULL, effective_to TIMESTAMP,",
         "knowledge_time TIMESTAMP, \"assertion\" VARCHAR NOT NULL,",
-        "terminal_event VARCHAR, provenance_json VARCHAR NOT NULL,",
+        "terminal_event VARCHAR, civil_time_json VARCHAR NOT NULL,",
+        "provenance_json VARCHAR NOT NULL,",
         "CHECK((\"assertion\" IN",
         "('known_active', 'known_inactive', 'unknown'))),",
         "PRIMARY KEY(snapshot_id, fact_id))"
@@ -270,6 +275,7 @@ ledgr_current_schema_definition <- function() {
         "recipient_identity_validated BOOLEAN NOT NULL,",
         "recipient_quantity_per_parent_unit DOUBLE,",
         "recipient_quantity_validated BOOLEAN NOT NULL,",
+        "civil_time_json VARCHAR NOT NULL,",
         "provenance_json VARCHAR NOT NULL,",
         "CHECK((provenance_tier IN",
         "('snapshot_bound', 'upstream_vintage_bound'))),",

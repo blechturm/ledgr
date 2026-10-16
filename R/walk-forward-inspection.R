@@ -413,6 +413,12 @@ ledgr_walk_forward_parse_session_meta <- function(meta_json) {
   if (!identical(meta$walk_forward_schema_version, ledgr_walk_forward_schema_version)) {
     rlang::abort("Walk-forward session schema version is not supported.", class = "ledgr_walk_forward_invalid_session")
   }
+  if (!identical(meta$identity_rule_version, ledgr_identity_rule_version)) {
+    rlang::abort(
+      "Walk-forward session identity rule is not supported.",
+      class = "ledgr_walk_forward_invalid_session"
+    )
+  }
   if (is.null(meta$no_selection)) meta$no_selection <- "fail"
   meta
 }
