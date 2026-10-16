@@ -1,0 +1,5 @@
+"candidate_id","candidate_status","error_class","error_message","result_serialized_bytes","envelope_object_bytes","daemon_private_before","daemon_private_after","daemon_wset_after"
+"candidate_01","DONE","","",3219,11936,312860672,439664640,418349056
+"candidate_02","DONE","","",3219,11936,312807424,433725440,412446720
+"candidate_03","DONE","","",3219,11936,439672832,437014528,415789056
+"candidate_04","DONE","","",3219,11936,433786880,436662272,415379456

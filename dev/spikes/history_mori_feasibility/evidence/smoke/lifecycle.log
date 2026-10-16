@@ -1,0 +1,4 @@
+[1] TRUE
+conhost.exe Rscript.exe Rscript.exe Rscript.exe 
+      37748       39580       40532       45572 
+HISTORY_E1_LIFECYCLE_OK success failure interrupt

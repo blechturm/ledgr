@@ -1,0 +1,4 @@
+"mode","exit_status","cleanup_completed","region_absent"
+"success",0,TRUE,TRUE
+"failure",0,TRUE,TRUE
+"interrupt",15,FALSE,TRUE

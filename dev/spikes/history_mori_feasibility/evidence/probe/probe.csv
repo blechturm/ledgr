@@ -1,0 +1,9 @@
+"field","regular_serialized_bytes","shared_serialized_bytes","root_is_shared","mapped_is_shared","value_identical","shared_name_nonempty"
+"bars_by_id",55435,285,TRUE,TRUE,TRUE,TRUE
+"bars_mat",36689,263,TRUE,TRUE,TRUE,TRUE
+"static_bars_views",84288,136,TRUE,TRUE,TRUE,TRUE
+"pulses_posix",829,234,TRUE,TRUE,TRUE,TRUE
+"runtime_projection",14700,390,TRUE,TRUE,TRUE,TRUE
+"availability_data",26773,268,TRUE,TRUE,TRUE,TRUE
+"execution_opportunities_posix",821,234,TRUE,TRUE,TRUE,TRUE
+"corporate_action_rows",1132,748,TRUE,TRUE,TRUE,TRUE
