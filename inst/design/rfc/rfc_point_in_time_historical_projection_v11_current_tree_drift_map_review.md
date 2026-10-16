@@ -1,8 +1,8 @@
 # V11 Current-Tree Drift Map Type 1 Review
 
 Role: record; Type 1 review of the history-wave H0 audit reconciliation.
-Status: working; `PASS_AFTER_PATCHES` findings are incorporated in the H0
-record, pending maintainer handling.
+Status: working; initial and focused `PASS_AFTER_PATCHES` findings are
+incorporated in the H0 record, pending maintainer handling.
 Authority: non-binding review record. It corrects audit facts and routing only;
 it does not decide history semantics or amend the history-wave register.
 
@@ -29,6 +29,20 @@ none authorizes v12 behavior.
 | R9 | Row 2.6 conflated ledgr liquidity ownership with the adapter transformation. | The ledgr-side zero-volume/liquidity claim is retained; the adapter's independent LFB-027 removal of vendor-carried zero-volume rows is recorded separately. |
 | R10 | Type 2 and drafting ownership was incomplete. | Q1-Q3 and availability-aware pulse inspection are explicit H2 Type 2 work. Shared-axis and row-set/held-nonmember representation go to H2/stage 3; identity stays with D3-F5. |
 | R11 | Register item D3-F5 cites deleted `R/feature-cache.R:82-94`. | The map flags the stale anchor and identifies current `ledgr_active_feature_fingerprint()` and `ledgr_feature_def_fingerprint()` definitions in `R/features-engine.R`. The register is intentionally unchanged. |
+
+## Focused re-review disposition
+
+The focused Opus/high re-review confirmed R1-R11 and returned
+`PASS_AFTER_PATCHES` for four remaining record omissions. This final pass
+incorporates them without changing the decision register or selecting
+semantics.
+
+| ID | Focused finding | Incorporated correction |
+| --- | --- | --- |
+| N1 | Row 8.3 over-superseded causal, empty-shape, scalar-parity, and empty-inspection requirements; row 3.8 dropped scalar reads. | Rows 8.3a/b now retain reads-within-axis, empty shape, scalar/frame/matrix parity, and empty-long-table inspection while superseding only early padding and `ctx$window()`-specific parity. Row 3.8 keeps scalar reads in the equal-cutoff agreement. |
+| N2 | Row 3.3b omitted the no-second-warm-up, `0 x lookback`, and declared-hydration carry-seed clauses. | Row 3.3b explicitly disposes of each old mechanism under Sessions A/B/0 and routes the shorter-lookback first-column carry-seed question to H2/stage 3. |
+| N3 | The narrowing route omitted observations inside inactive intervals. | Row 4.2 and Q2 require any bind option to define cutoff resolution, common-axis alignment, and inactive-interval observation treatment; no request window may choose silently. |
+| N4 | `hydration_start_utc fold field/formal` was ambiguous. | The seam is named precisely as the walk-forward fold-window field and constructor formal. |
 
 ## Necessity judgment
 
