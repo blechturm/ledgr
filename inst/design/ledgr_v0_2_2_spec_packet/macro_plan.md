@@ -632,8 +632,9 @@ Cut 15 is closed: Workstreams 32 through 39 are complete and accepted. The
 WS35-plus-WS39 joint gate is satisfied, so the WS3/WS4 history wave is the
 current work. Resume from the decision register's **Resume here** section.
 
-1. Finish history-wave stage 2 from Session D, write the one v11 amendment,
-   obtain its Type 1 final review, and cut WS3/WS4 implementation.
+1. Reconcile v11 with the post-Cut 15 tree, finish history-wave stage 2 from
+   Session D, write the consolidated v12 successor, obtain its Type 1 final
+   review, and cut WS3/WS4 implementation.
 2. Run WS7 product proof; WS6 proceeds independently only if its probe
    promotes it.
 3. Finish WS8 residual performance work and integrated release evidence.
@@ -642,6 +643,140 @@ The history wave consumes the normalized governance record, final fold
 structure and WS39 schema-120/rule-3 real-data evidence. Old schema-119 stores
 remain unreachable evidence, not compatibility targets. `tickets.yml` alone
 binds exact dependencies and status.
+
+<a id="history-wave-execution-plan"></a>
+
+### History-wave execution plan
+
+This section sequences the wave; it does not restate its semantic decisions.
+The [history-wave decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md)
+owns pending dispositions, the accepted v12 successor will own the resulting
+history semantics, and `tickets.yml` will own implementation. V11 remains the
+immutable historical synthesis until v12 is accepted.
+
+Maintainer decision, 2026-10-16: Cut 15 removed feature retention, froze dense
+mode, introduced schema 120 and identity rule 3, and replaced the old fold body
+with envelope E and stages P1 through P5. The stage-3 carrier is therefore a
+consolidated v12 synthesis rather than another narrow amendment layer over
+v11. This does not restart the RFC cycle: the existing Type 2 work and this
+register's stage-2 decisions remain its design inputs.
+
+#### H0. Reconcile the current tree with v11
+
+Produce one clause-level drift map with exactly four dispositions: retain,
+rewrite for the current architecture, supersede by an accepted history-wave
+decision, or retire because its mechanism was deleted. Cover at least:
+
+- the proposed `ledgr_history_frame()` surface and its matrix adapter versus
+  v11's `ctx$window()` contract;
+- availability-only history, with full membership represented on that path,
+  versus v11's two-mode assumptions;
+- deletion of the feature cache, `persist_features`, durable feature rows and
+  the features table;
+- the fold envelope and P1-P5 ownership, including P2-local public frames and
+  the prohibition on data-frame carrier state;
+- schema 120, identity rule 3, snapshot hash rule 3 and refusal of older
+  stored formats;
+- current price-basis defaults, availability policy and condition vocabulary;
+  and
+- obsolete implementation anchors, measurements and ticket references.
+
+The map changes no semantics. Any newly discovered semantic choice goes into
+the decision register before v12 is drafted. Exit: every load-bearing v11
+clause has one disposition and no deleted mechanism remains an operative
+dependency.
+
+#### H1. Complete the real-data inputs
+
+Use the accepted WS39 schema-120 snapshot; do not design another lake or copy
+private rows into package evidence. Extend its aggregate evidence with:
+
+- gap-length distributions after the adapter drops carried zero-volume bars;
+- fact refusals, delisting reasons and correction-chain shapes;
+- the current history-preparation inputs and fold-phase time/RSS baseline for
+  one run; and
+- a representative local-worker memory baseline, including parent and worker
+  RSS and materialization of immutable history inputs.
+
+This stage supplies evidence for gap thresholds, Session E's resource budget
+and Session F. It does not pretend to benchmark a public history API before
+that API exists. End-to-end history-surface measurements belong to H6.
+
+H0 and the non-private parts of H1 may proceed in parallel. The later
+dividend-facts rebuild remains with the adapter and WS7 owners.
+
+#### H2. Finish stage-2 decisions
+
+Decide Session D (bounded versus recursive indicator history, gap transitions,
+readiness, identity and tolerance), Session E (representation, size guard,
+single-run and worker memory budget, and decision-trace volume), and Session F
+(correction chains informed by H1). Dispose of the remaining consider-level
+rows in one final batch, including fold continuity, civil-date boundaries,
+carried-price return semantics and mark/entitlement history.
+
+Exit: every register row has an accepted decision, durable deferral with a
+trigger, rejection with a reason, or named downstream owner. No implementation
+choice is left to select history semantics accidentally.
+
+#### H3. Write the consolidated v12 synthesis
+
+V12 carries forward the still-valid two-clock, causality, missingness,
+barrier, disclosure and numerical-correctness rules from v11; incorporates
+the accepted register decisions; and describes the post-Cut 15 architecture
+directly. It binds the public history object, on-demand frame and matrix
+adapter, one history-start rule, indicator-history classes, preparation and
+fold-stage ownership, identity inputs, resource guards and detecting evidence.
+
+V12 must not recreate feature retention, promise dense-mode implementation,
+make factor/prediction capture part of WS3, or add model lifecycle, scheduling
+or optimizer catalogues. Acceptance makes v12 operative and leaves v11 as the
+derivation record.
+
+#### H4. Run the final design review
+
+Run one adversarial Type 1 review of v12 against the drift map, the completed
+decision register, current contracts and the current tree. A new product
+choice returns to the maintainer as Type 2; a fidelity or ownership defect is
+patched in place. Exit: every retained rule and implementation obligation has
+one owner and a failure-sensitive oracle.
+
+#### H5. Cut WS3/WS4 implementation
+
+The ticket cut starts with one shared substrate and then permits bounded
+parallel work:
+
+```text
+causal history, history start and fold/window corrections
+  |-- public history result, frame helper and matrix adapter
+  `-- bounded and recursive indicator execution
+        `-- integrated real-data, memory and performance proof
+```
+
+The common substrate owns the two clocks, cutoff, axis, missingness evidence,
+identity and inclusion/exclusion reasons. The public adapter is not a second
+reader. Indicator tickets may not invent another hydration rule. The cut also
+owns the already-routed rolling-month, carry-window, mark-history and
+entitlement fixes that depend on the common start boundary.
+
+#### H6. Close the history wave
+
+The implementation must demonstrate:
+
+- causal history on both changing- and full-membership availability paths;
+- parity across run, sweep, pulse inspection and walk-forward evaluation;
+- supported built-in, external and custom indicators under their declared
+  bounded or recursive contracts;
+- completion of the full 1998-2026 Sharadar workload without history-related
+  stops;
+- live size, temporary peak and representative worker multiplication within
+  the accepted budget, or an explicit maintainer exception and routed limit;
+  and
+- teaching of the final history-to-estimator-to-weights-to-target workflow.
+
+Durable factor evidence, trained-model lifecycle, scheduling, generic
+portfolio constructors, dividend-facts work, broad RAM restructuring and the
+execution-core consolidation keep their existing owners. They do not expand
+the history cut merely because they consume history later.
 
 <a id="execution-core-consolidation"></a>
 

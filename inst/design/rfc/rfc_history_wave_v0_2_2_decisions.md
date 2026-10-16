@@ -3,7 +3,7 @@
 Role: living; current decision register for the active WS3/WS4 history wave.
 Status: working
 Authority: working register. Accepted maintainer decisions are inputs to the
-later v11 amendment; this register does not itself amend v11.
+later v12 successor; this register does not itself supersede v11.
 
 Opened 2026-10-08. Records the maintainer's
 decision on every finding of the
@@ -19,12 +19,15 @@ so the joint gate in the
 [current macro-plan order](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-remaining-order)
 is satisfied. Resume here at Session D; everything needed is linked below.
 
-The stage-3 amendment to
+The stage-3 successor to
 [historical-projection v11](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
 is the first application-specific supersession carrier required by the
 [governance-lifecycle synthesis](rfc_governance_lifecycle_v0_2_2_synthesis.md)
-Sections 4 and 7. The history wave owns that amendment; this register does not
-apply it early.
+Sections 4 and 7. The history wave owns that consolidated v12 synthesis; this
+register does not apply it early. The detailed execution route and the
+maintainer's 2026-10-16 reason for using a successor rather than another
+amendment layer are in the
+[macro plan](../ledgr_v0_2_2_spec_packet/macro_plan.md#history-wave-execution-plan).
 
 **Current real-data input (2026-10-15):** the Cut 15 WS39
 [schema-120, rule-3 aggregate record](../../../dev/bench/v0_2_2_sharadar_run/evidence/ws39_schema120/README.md)
@@ -36,7 +39,7 @@ the current history-wave input now that the joint gate is satisfied.
 **Decided so far** (details in the rows):
 - Session 0: the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)
   is the WS3 history API direction (`ledgr_history_frame()`,
-  `ledgr_history_matrix()`, exclusions kept). The amendment must reconcile it
+  `ledgr_history_matrix()`, exclusions kept). V12 must reconcile it
   with v11's `ctx$window()`.
 - A: history reaches back to the start of the data; shorter lookbacks on
   request; every read strictly point-in-time (columns s <= t, facts knowable
@@ -51,7 +54,7 @@ the current history-wave input now that the joint gate is satisfied.
 - Sharadar goal: the full available S&P span, 1998-2026, runs without stops;
   the adapter drops carried zero-volume bars (LFB-027).
 - Durable factor and prediction evidence is routed downstream, not into WS3:
-  the amendment preserves the identity needed to join future decision evidence
+  v12 preserves the identity needed to join future decision evidence
   to history, while capture, retention and reopening remain a separate RFC.
 - Mode (maintainer, 2026-10-14; accepted release-line authority `4397f58f`):
   history is built on the availability path only. Dense mode is frozen and
@@ -72,8 +75,8 @@ remaining consider-level rows (one batch).
    chains) and end-to-end history runs with runtime and per-phase memory. Feeds
    B's gap thresholds, E's baseline, F. The later dividend-facts rebuild stays
    with its existing adapter/WS7 owner.
-2. Close stage 2, then stage 3 (one v11 amendment), 4 (Type 1 final review),
-   5 (WS3/WS4 cut).
+2. Complete the v11 current-tree drift map, close stage 2, then stage 3 (one
+   consolidated v12 successor), 4 (Type 1 final review), and 5 (WS3/WS4 cut).
 
 **Evidence index:**
 - Proposal, review: [proposal](rfc_history_wave_v0_2_2_proposal.md),
@@ -95,8 +98,8 @@ remaining consider-level rows (one batch).
 | --- | --- | --- | --- |
 | 1 | Verify | Every finding's premise rerun or read at `e38b0d7`; result in the Verified column | done 2026-10-08 |
 | 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | current; paused 2026-10-08 after Sessions 0, A, B and C, then made resumable 2026-10-15 when the Cut 15 WS35-plus-WS39 gate cleared; resume at Session D |
-| 3 | Amend | One amendment to v11 (sections 3, 6, 7) carrying the accepted decisions under the amendment discipline in `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
-| 4 | Final review | Type 1 review of the amendment against this register | open |
+| 3 | Supersede | One consolidated v12 synthesis carrying retained v11 rules, the accepted register decisions and the post-Cut 15 architecture under `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
+| 4 | Final review | Type 1 review of v12 against the drift map, this register, current contracts and the current tree | open |
 | 5 | Ticket cut | WS3/WS4 cut in `tickets.yml`; cut review; pipeline rows leave `README.md` | open |
 
 Values: Verified is `confirmed`, `corrected` (premise partly wrong; note says
