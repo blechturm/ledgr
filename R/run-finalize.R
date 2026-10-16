@@ -138,7 +138,9 @@ ledgr_run_terminal_recovery_equity <- function(con,
                                                bars_mat,
                                                instrument_ids,
                                                initial_cash,
-                                               availability_provider) {
+                                               availability_provider,
+                                               source_pulses_posix = calendar$pulses_posix,
+                                               pulse_columns = NULL) {
   achieved_end <- as.POSIXct(completion$achieved_end_utc[[1L]], tz = "UTC")
   if (is.na(achieved_end)) return(list())
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
@@ -146,9 +148,10 @@ ledgr_run_terminal_recovery_equity <- function(con,
   valuation_state <- ledgr_availability_valuation_state(
     bars_mat,
     instrument_ids,
-    pulses,
+    source_pulses_posix,
     as.integer(availability_provider$valuation_policy$max_sessions),
-    ledgr_availability_exhausted_choice(availability_provider$valuation_policy)
+    ledgr_availability_exhausted_choice(availability_provider$valuation_policy),
+    pulse_columns = pulse_columns
   )
   lapply(keep, function(i) {
     ts <- pulses[[i]]

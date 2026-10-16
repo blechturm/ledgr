@@ -20,7 +20,57 @@
 
 ledgr_availability_prepared_seconds <- function(x) as.numeric(as.POSIXct(x, tz = "UTC"))
 
-ledgr_availability_prepared_membership <- function(data, universe_id, key) {
+ledgr_membership_apply_prepared_header <- function(known,
+                                                    state,
+                                                    reason,
+                                                    winner,
+                                                    selected_knowledge,
+                                                    header,
+                                                    headers,
+                                                    header_complete,
+                                                    header_knowledge,
+                                                    set_index,
+                                                    key) {
+  header_ref <- paste0("set:", headers$set_id[[header]])
+  if (isTRUE(header_complete[[header]])) {
+    known[] <- TRUE
+    state[] <- FALSE
+    reason[] <- "omitted_from_complete_set"
+    winner[] <- header_ref
+    selected_knowledge[] <- header_knowledge[[header]]
+  }
+  selected_rows <- set_index$by_header[[header]]
+  if (length(selected_rows) > 0L) {
+    selected_rows <- selected_rows[
+      !duplicated(set_index$rows$instrument_id[selected_rows])
+    ]
+    selected <- match(
+      as.character(set_index$rows$instrument_id[selected_rows]),
+      key
+    )
+    keep <- !is.na(selected)
+    selected <- selected[keep]
+    selected_rows <- selected_rows[keep]
+    known[selected] <- TRUE
+    state[selected] <- TRUE
+    reason[selected] <- "member_asserted"
+    winner[selected] <- paste0(
+      header_ref,
+      "|fact:",
+      as.character(set_index$rows$fact_id[selected_rows])
+    )
+    selected_knowledge[selected] <- header_knowledge[[header]]
+  }
+  list(
+    known = known,
+    state = state,
+    reason = reason,
+    winner = winner,
+    knowledge = selected_knowledge
+  )
+}
+
+ledgr_availability_prepared_membership_plan <- function(data, universe_id, key) {
   headers <- data$membership_sets
   headers <- headers[as.character(headers$universe_id) == universe_id, , drop = FALSE]
   rows <- data$membership
@@ -32,12 +82,11 @@ ledgr_availability_prepared_membership <- function(data, universe_id, key) {
   h_from <- pmax(h_effective, h_knowledge)
   h_from[is.na(h_from)] <- Inf
   h_complete <- !is.na(headers$complete) & as.logical(headers$complete)
-  set_rows <- rows[!is.na(rows$set_id), , drop = FALSE]
-  h_sets <- split(
-    match(as.character(set_rows$instrument_id), key),
-    factor(as.character(set_rows$set_id), levels = as.character(headers$set_id))
+  set_index <- ledgr_membership_index_set_rows(
+    rows,
+    universe_id,
+    headers$set_id
   )
-  h_sets <- lapply(h_sets, function(x) x[!is.na(x)])
   elig_order <- order(h_from)
   elig_times <- h_from[elig_order]
 
@@ -53,13 +102,54 @@ ledgr_availability_prepared_membership <- function(data, universe_id, key) {
   iv_idx <- match(as.character(interval$instrument_id), key)
   n_interval <- nrow(interval)
 
+  list(
+    key = key,
+    headers = headers,
+    header_from = h_from,
+    header_complete = h_complete,
+    header_knowledge = h_knowledge,
+    set_index = set_index,
+    eligibility_order = elig_order,
+    eligibility_times = elig_times,
+    interval = interval,
+    interval_start = iv_start,
+    interval_end = iv_end,
+    interval_knowledge = iv_knowledge,
+    interval_member = iv_member,
+    interval_index = iv_idx,
+    n_headers = n_headers,
+    n_interval = n_interval
+  )
+}
+
+ledgr_availability_prepared_membership_from_plan <- function(plan) {
+  key <- plan$key
+  headers <- plan$headers
+  h_complete <- plan$header_complete
+  h_knowledge <- plan$header_knowledge
+  set_index <- plan$set_index
+  elig_order <- plan$eligibility_order
+  elig_times <- plan$eligibility_times
+  interval <- plan$interval
+  iv_start <- plan$interval_start
+  iv_end <- plan$interval_end
+  iv_knowledge <- plan$interval_knowledge
+  iv_member <- plan$interval_member
+  iv_idx <- plan$interval_index
+  n_headers <- plan$n_headers
+  n_interval <- plan$n_interval
+
   n_key <- length(key)
   eligible_count <- 0L
   eligible_cached <- -1L
   last_cutoff <- NA_real_
-  base <- logical(n_key)
+  base_known <- logical(n_key)
+  base_state <- logical(n_key)
+  base_reason <- rep("", n_key)
+  base_winner <- rep("", n_key)
+  base_knowledge <- rep(-Inf, n_key)
 
-  prepared_members_at <- function(cutoff) {
+  prepared_resolve_at <- function(cutoff) {
     if (is.na(last_cutoff) || cutoff < last_cutoff) {
       eligible_count <<- findInterval(cutoff, elig_times)
     } else {
@@ -71,24 +161,83 @@ ledgr_availability_prepared_membership <- function(data, universe_id, key) {
     if (eligible_count != eligible_cached) {
       eligible <- logical(n_headers)
       eligible[elig_order[seq_len(eligible_count)]] <- TRUE
-      complete_idx <- which(eligible & h_complete)
-      last_complete <- if (length(complete_idx) > 0L) max(complete_idx) else 0L
+      known <- logical(n_key)
       state <- logical(n_key)
-      for (h in which(eligible & seq_len(n_headers) >= last_complete)) state[h_sets[[h]]] <- TRUE
-      base <<- state
+      reason <- rep("", n_key)
+      winner <- rep("", n_key)
+      selected_knowledge <- rep(-Inf, n_key)
+      for (h in which(eligible)) {
+        applied <- ledgr_membership_apply_prepared_header(
+          known,
+          state,
+          reason,
+          winner,
+          selected_knowledge,
+          h,
+          headers,
+          h_complete,
+          h_knowledge,
+          set_index,
+          key
+        )
+        known <- applied$known
+        state <- applied$state
+        reason <- applied$reason
+        winner <- applied$winner
+        selected_knowledge <- applied$knowledge
+      }
+      base_known <<- known
+      base_state <<- state
+      base_reason <<- reason
+      base_winner <<- winner
+      base_knowledge <<- selected_knowledge
       eligible_cached <<- eligible_count
     }
-    state <- base
+    known <- base_known
+    state <- base_state
+    reason <- base_reason
+    winner <- base_winner
+    selected_knowledge <- base_knowledge
     if (n_interval > 0L) {
       applicable <- which(iv_start <= cutoff & cutoff < iv_end)
       if (length(applicable) > 0L) {
         keep <- !duplicated(iv_idx[applicable], fromLast = TRUE)
-        state[iv_idx[applicable][keep]] <- iv_member[applicable][keep]
+        applicable <- applicable[keep]
+        selected <- iv_idx[applicable]
+        valid <- !is.na(selected)
+        applicable <- applicable[valid]
+        selected <- selected[valid]
+        known[selected] <- TRUE
+        state[selected] <- iv_member[applicable]
+        reason[selected] <- ifelse(
+          iv_member[applicable], "member_asserted", "nonmember_asserted"
+        )
+        winner[selected] <- paste0(
+          "fact:", as.character(interval$fact_id[applicable])
+        )
+        selected_knowledge[selected] <- iv_knowledge[applicable]
       }
     }
-    key[state]
+    list(
+      known = known,
+      member = state,
+      reason = reason,
+      winner = winner,
+      knowledge = selected_knowledge
+    )
   }
+  prepared_members_at <- function(cutoff) {
+    resolved <- prepared_resolve_at(cutoff)
+    key[resolved$known & resolved$member]
+  }
+  attr(prepared_members_at, "resolve") <- prepared_resolve_at
   prepared_members_at
+}
+
+ledgr_availability_prepared_membership <- function(data, universe_id, key) {
+  ledgr_availability_prepared_membership_from_plan(
+    ledgr_availability_prepared_membership_plan(data, universe_id, key)
+  )
 }
 
 # Piecewise-constant segments per instrument for one fact family. `resolve`
@@ -163,7 +312,7 @@ ledgr_availability_prepared_cursor <- function(segments) {
   list(seek = prepared_seek, read = prepared_read)
 }
 
-ledgr_availability_provider_build_prepared <- function(data, config, snapshot_hash, history) {
+ledgr_availability_provider_prepare <- function(data, config) {
   family_order <- c("membership", "sessions", "trading_status", "lifetime")
   families <- family_order[family_order %in% as.character(data$families$family)]
   universe_rule <- config$availability$universe_rule
@@ -180,41 +329,45 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
     if (has_lifetime) as.character(data$lifetime$instrument_id)
   ))
 
-  members_at <- if (is.null(universe_rule)) {
-    function(cutoff) fixed_ids
+  membership_plan <- if (is.null(universe_rule)) {
+    NULL
   } else {
-    ledgr_availability_prepared_membership(data, as.character(universe_rule$universe_id), key)
+    ledgr_availability_prepared_membership_plan(
+      data,
+      as.character(universe_rule$universe_id),
+      key
+    )
   }
 
   status_levels <- c("unknown", "conflicting", "active", "halted", "quotation_only")
-  status_cursor <- NULL
+  status_segments <- NULL
   if (has_status) {
     rows <- data$status
     status_levels <- unique(c(status_levels, as.character(rows$status)))
-    status_code <- match(as.character(rows$status), status_levels)
+    status_value <- as.character(rows$status)
     precedence <- as.integer(rows$precedence)
     fact_id <- as.character(rows$fact_id)
     supersedes <- as.character(rows$supersedes_fact_id)
     lineage <- ledgr_status_lineage(rows)
     resolve_status <- function(applicable) {
-      superseded <- vapply(applicable, function(candidate) {
-        any(ledgr_status_is_ancestor(lineage, candidate, applicable))
-      }, logical(1))
-      remaining <- applicable[!superseded]
-      if (length(remaining) == 0L) return(2L)
-      top <- max(precedence[remaining])
-      values <- unique(status_code[remaining][precedence[remaining] == top])
-      if (length(values) == 1L) values else 2L
+      answer <- ledgr_history_status_resolve_applicable(
+        applicable,
+        status_value,
+        precedence,
+        fact_id,
+        lineage
+      )
+      match(answer$state, status_levels)
     }
-    status_cursor <- ledgr_availability_prepared_cursor(
-      ledgr_availability_prepared_segments(rows, key, 1L, 1L, resolve_status)
+    status_segments <- ledgr_availability_prepared_segments(
+      rows, key, 1L, 1L, resolve_status
     )
   }
 
   lifetime_levels <- c("unknown", "known_active", "known_inactive")
   terminal_levels <- ""
   lifetime_fact_ids <- character()
-  lifetime_cursor <- NULL
+  lifetime_segments <- NULL
   if (has_lifetime) {
     rows <- data$lifetime
     lifetime_levels <- unique(c(lifetime_levels, as.character(rows$assertion)))
@@ -230,12 +383,75 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
       seq_len(nrow(rows))
     ))
     resolve_lifetime <- function(applicable) {
-      winner <- applicable[[which.max(rank[applicable])]]
-      c(lifetime_code[[winner]], terminal_code[[winner]], winner)
+      answer <- ledgr_history_lifetime_resolve_applicable(
+        applicable,
+        as.character(rows$assertion),
+        terminal,
+        lifetime_fact_ids,
+        rank
+      )
+      winner <- match(answer$winner, lifetime_fact_ids)
+      c(
+        match(answer$state, lifetime_levels),
+        match(answer$terminal_event, terminal_levels),
+        winner
+      )
     }
-    lifetime_cursor <- ledgr_availability_prepared_cursor(
-      ledgr_availability_prepared_segments(rows, key, 3L, c(1L, 1L, 0L), resolve_lifetime)
+    lifetime_segments <- ledgr_availability_prepared_segments(
+      rows, key, 3L, c(1L, 1L, 0L), resolve_lifetime
     )
+  }
+
+  list(
+    families = families,
+    universe_rule = universe_rule,
+    status_declared = status_declared,
+    lifetime_declared = lifetime_declared,
+    fixed_ids = fixed_ids,
+    key = key,
+    has_status = has_status,
+    has_lifetime = has_lifetime,
+    membership = membership_plan,
+    status_segments = status_segments,
+    status_levels = status_levels,
+    lifetime_segments = lifetime_segments,
+    lifetime_levels = lifetime_levels,
+    terminal_levels = terminal_levels,
+    lifetime_fact_ids = lifetime_fact_ids,
+    sessions = data$sessions
+  )
+}
+
+ledgr_availability_provider_from_plan <- function(plan,
+                                                  config,
+                                                  snapshot_hash,
+                                                  history,
+                                                  history_substrate_version = NULL) {
+  families <- plan$families
+  status_declared <- plan$status_declared
+  lifetime_declared <- plan$lifetime_declared
+  fixed_ids <- plan$fixed_ids
+  key <- plan$key
+  has_status <- plan$has_status
+  has_lifetime <- plan$has_lifetime
+  status_levels <- plan$status_levels
+  lifetime_levels <- plan$lifetime_levels
+  terminal_levels <- plan$terminal_levels
+  lifetime_fact_ids <- plan$lifetime_fact_ids
+  members_at <- if (is.null(plan$membership)) {
+    function(cutoff) fixed_ids
+  } else {
+    ledgr_availability_prepared_membership_from_plan(plan$membership)
+  }
+  status_cursor <- if (has_status) {
+    ledgr_availability_prepared_cursor(plan$status_segments)
+  } else {
+    NULL
+  }
+  lifetime_cursor <- if (has_lifetime) {
+    ledgr_availability_prepared_cursor(plan$lifetime_segments)
+  } else {
+    NULL
   }
 
   prepared_facts <- function(cutoff, ids = config$universe$instrument_ids) {
@@ -312,12 +528,16 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
   }
 
   identity <- function() {
-    list(
+    out <- list(
       provider_version = ledgr_availability_provider_version(),
       execution_timing_version = config$availability$execution_timing_version %||% NULL,
       snapshot_hash = snapshot_hash,
       declared_families = families
     )
+    if (!is.null(history_substrate_version)) {
+      out$history_substrate_version <- as.integer(history_substrate_version)
+    }
+    out
   }
 
   structure(
@@ -327,9 +547,21 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
       execution_view = execution_view,
       history = history,
       identity = identity,
-      sessions = data$sessions,
+      sessions = plan$sessions,
       valuation_policy = config$availability$valuation_policy
     ),
     class = c("ledgr_availability_provider", "list")
+  )
+}
+
+ledgr_availability_provider_build_prepared <- function(data,
+                                                       config,
+                                                       snapshot_hash,
+                                                       history) {
+  ledgr_availability_provider_from_plan(
+    ledgr_availability_provider_prepare(data, config),
+    config,
+    snapshot_hash,
+    history
   )
 }

@@ -124,10 +124,10 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
 }
 
 # ledgr-test-profile: review
-testthat::test_that("production consumers build one prepared provider at each boundary", {
+testthat::test_that("production consumers build one prepared plan at each boundary", {
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
-  original <- ledgr:::ledgr_availability_provider_build_prepared
+  original <- ledgr:::ledgr_availability_provider_prepare
   snapshot <- availability_v201_membership_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   experiment <- ledgr_experiment(
@@ -140,7 +140,7 @@ testthat::test_that("production consumers build one prepared provider at each bo
 
   local({
     testthat::local_mocked_bindings(
-      ledgr_availability_provider_build_prepared = function(...) {
+      ledgr_availability_provider_prepare = function(...) {
         builds$n <- builds$n + 1L
         original(...)
       },
@@ -181,10 +181,10 @@ testthat::test_that("production consumers build one prepared provider at each bo
 })
 
 # ledgr-test-profile: review
-testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
+testthat::test_that("INCOMPLETE reopen builds one prepared provider plan", {
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
-  original <- ledgr:::ledgr_availability_provider_build_prepared
+  original <- ledgr:::ledgr_availability_provider_prepare
   snapshot <- availability_v201_membership_fixture(
     days = 4L,
     bar_days = c(1L, 2L, 4L)
@@ -204,7 +204,7 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
 
   local({
     testthat::local_mocked_bindings(
-      ledgr_availability_provider_build_prepared = function(...) {
+      ledgr_availability_provider_prepare = function(...) {
         builds$n <- builds$n + 1L
         original(...)
       },

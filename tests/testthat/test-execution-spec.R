@@ -72,6 +72,7 @@ ledgr_test_execution_spec <- function(...) {
       bars_by_id = bars_by_id,
       bars_mat = bars_mat,
       static_bars_views = NULL,
+      history_substrate = NULL,
       static_feature_views = NULL,
       feature_defs = list(),
       runtime_projection = ledgr:::ledgr_projection_from_feature_matrix(
@@ -95,6 +96,19 @@ ledgr_test_execution_spec <- function(...) {
     list(...),
     keep.null = TRUE
   )
+  if (!is.null(args$availability_provider) && is.null(args$history_substrate)) {
+    args$history_substrate <- structure(
+      list(
+        substrate_version = ledgr:::ledgr_history_substrate_version,
+        feature_projection = args$runtime_projection
+      ),
+      class = c("ledgr_history_substrate", "list")
+    )
+    args$bars_by_id <- list()
+    args["bars_mat"] <- list(NULL)
+    args["static_bars_views"] <- list(NULL)
+    args["runtime_projection"] <- list(NULL)
+  }
   do.call(ledgr:::ledgr_execution_spec, args)
 }
 
@@ -377,6 +391,7 @@ testthat::test_that("execution spec constructor preserves the former list payloa
       "bars_by_id",
       "bars_mat",
       "static_bars_views",
+      "history_substrate",
       "static_feature_views",
       "feature_defs",
       "runtime_projection",

@@ -54,6 +54,19 @@
 #' constructor arguments or a non-current policy object.
 #' `ledgr_history_identity_mismatch` and `ledgr_precomputed_history_mismatch`
 #' refuse non-current causal-history identity in configs and precomputed data.
+#' `ledgr_invalid_history_substrate` refuses a substrate owned by a different
+#' snapshot, policy, universe, range or representation version.
+#' `ledgr_history_duplicate_bar`, `ledgr_history_outside_axis` and
+#' `ledgr_history_unknown_instrument` refuse ambiguous or out-of-domain history
+#' preparation and reads. `ledgr_history_segment_missing` refuses an invalid
+#' internal segment plane rather than returning fabricated state.
+#' `ledgr_history_segment_limit_exceeded` reports an instrument, fact family,
+#' fact count, segment count, ratio and limit when causal preparation exceeds
+#' its declared bound. `ledgr_invalid_history_treatment` and
+#' `ledgr_invalid_history_field` refuse malformed treatment evidence or an
+#' unsupported bar field. `ledgr_staged_history_mismatch` refuses a worker task
+#' before candidate execution when its staged immutable input is absent or has
+#' a different identity.
 #'
 #' @section Store-format classes:
 #' `ledgr_store_rebuild_required` is raised when a persistent store is older,
@@ -1041,6 +1054,9 @@
 #' @aliases ledgr_invalid_fold_execution
 #' @aliases ledgr_invalid_grid
 #' @aliases ledgr_invalid_history_policy
+#' @aliases ledgr_invalid_history_substrate
+#' @aliases ledgr_invalid_history_treatment
+#' @aliases ledgr_invalid_history_field
 #' @aliases ledgr_invalid_indicator_bundle
 #' @aliases ledgr_invalid_ledger_event
 #' @aliases ledgr_invalid_ledger_meta
@@ -1206,6 +1222,12 @@
 #' @aliases ledgr_walk_forward_invalid_identity
 #' @aliases ledgr_walk_forward_invalid_opening_state
 #' @aliases ledgr_walk_forward_invalid_selection_rule
+#' @aliases ledgr_history_duplicate_bar
+#' @aliases ledgr_history_outside_axis
+#' @aliases ledgr_history_segment_limit_exceeded
+#' @aliases ledgr_history_segment_missing
+#' @aliases ledgr_history_unknown_instrument
+#' @aliases ledgr_staged_history_mismatch
 NULL
 
 #' LEDGR_LAST_BAR_NO_FILL warning code

@@ -38,7 +38,10 @@ ledgr_fold_phase_source_findings <- function(paths) {
     intersect("ledgr_fold_envelope", names(definitions))
   )
   findings <- character()
-  forbidden_formals <- c("ctx", "bars", "feature_table", "features_wide")
+  forbidden_formals <- c(
+    "ctx", "bars", "feature_table", "features_wide",
+    "history_frame", "history_substrate"
+  )
   slot_owners <- list(
     cash = c("observe", "apply"),
     positions = c("observe", "apply"),
@@ -64,6 +67,7 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "(services\\$)?valuation_state\\$advance\\s*\\(" = "observe",
     "(services\\$)?availability_provider\\$decision_view\\s*\\(" = "observe",
     "(services\\$)?availability_provider\\$execution_view\\s*\\(" = "plan",
+    "(services\\$)?history_reader\\$bars\\s*\\(" = "observe",
     "(services\\$)?corporate_action_plan\\$(post|post_disposition|check_quantity_effects)\\s*\\(" = "observe",
     "(services\\$)?corporate_action_plan\\$bind_boundary\\s*\\(" = c("envelope", "apply"),
     "diagnostic_writer\\$append_block\\s*\\(" = c("commit", "envelope"),
@@ -104,6 +108,9 @@ ledgr_fold_phase_source_findings <- function(paths) {
     }
     if (list_contains_data_frame(fn[[3L]])) {
       findings <- c(findings, paste0("returned_data_frame:", name))
+    }
+    if (grepl("services\\$history_substrate", body_text, perl = TRUE)) {
+      findings <- c(findings, paste0("substrate_reference:", name))
     }
     if (grepl(
       "fold_state\\$positions\\s*\\[+[^\\n;]*<-",

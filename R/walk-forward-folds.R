@@ -751,7 +751,8 @@ ledgr_run_window <- function(exp,
                              window,
                              run_id = NULL,
                              seed = NULL,
-                             compiled_accounting_model = NULL) {
+                             compiled_accounting_model = NULL,
+                             history_substrate = NULL) {
   window <- ledgr_experiment_window_resolve(exp, window)
   ledgr_run_experiment(
     exp = exp,
@@ -760,7 +761,8 @@ ledgr_run_window <- function(exp,
     run_id = run_id,
     seed = seed,
     compiled_accounting_model = compiled_accounting_model,
-    window = window
+    window = window,
+    history_substrate = history_substrate
   )
 }
 

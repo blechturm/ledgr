@@ -1,0 +1,3 @@
+arm,source_tree,instruments,sessions,members,phase_seconds,gated_families_identical,identity_family_identical,self_test_detected,self_test_total
+baseline,e3f822a53d51a4cd70e7c256428f32d2ffc3dec1,800,1260,300,139.611,50,TRUE,NA,NA
+candidate,precommit_worktree,800,1260,300,147.359,50,TRUE,51,51

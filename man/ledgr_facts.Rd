@@ -67,7 +67,9 @@ included and \code{effective_to} is excluded. Missing knowledge time remains
 audit-only unless \code{knowledge = "assume_effective"} is declared. Date-backed
 fact clocks are civil labels: \code{\link[=ledgr_facts]{ledgr_facts()}} resolves each to exactly one
 declared open session and retains the civil date, UTC instant, venue zone
-and calendar identity in sealed evidence. POSIXct values remain exact.
+and calendar identity in sealed evidence. Corporate-action entitlement,
+effective, and payment dates resolve to session close; their knowledge
+dates resolve to session open. POSIXct values remain exact.
 }
 \details{
 Membership intervals require \code{instrument_id}, \code{effective_from}, and

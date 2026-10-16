@@ -63,13 +63,11 @@ availability_validator_lifetime_rows <- function(n) {
 availability_validator_status_rows <- function(n) {
   interval <- availability_validator_intervals(n)
   fact_id <- sprintf("status-%03d", seq_len(n))
+  # This randomized oracle owns the grouped non-correction path. Correction
+  # ancestry is a different accepted rule with its own adversarial matrix
+  # below, so do not compare that newer semantics with the retained pairwise
+  # v0.2.0 reference.
   supersedes <- rep(NA_character_, n)
-  if (n > 1L) {
-    involved <- which(seq_len(n) > 1L & stats::runif(n) < 0.3)
-    for (i in involved) {
-      supersedes[[i]] <- fact_id[[sample.int(i - 1L, 1L)]]
-    }
-  }
   rows <- data.frame(
     fact_id = fact_id,
     instrument_id = sample(c("AAA", "BBB", "CCC"), n, replace = TRUE),

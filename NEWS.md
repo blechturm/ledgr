@@ -2,6 +2,22 @@
 
 ## Causal history foundation
 
+- Availability-aware runs, sweeps and walk-forward sessions now prepare one
+  immutable causal-history substrate from the snapshot's first session. It
+  owns the common venue axis, one bar representation, separate observation
+  and knowledge clocks, bounded fact segments and consumer-local cursors.
+  Dense execution is unchanged.
+
+- History treatment keeps raw missingness, expectedness, bounded price-input
+  carry, calculation validity, optional output carry, readiness and estimator
+  admission as separate evidence. Price carry is causal, field-local, never
+  applies to volume and cannot cross a lifetime or terminal barrier.
+
+- Availability sweep workers stage the immutable history input once per local
+  daemon. One- and two-worker execution is the measured support envelope;
+  larger local counts still run and are labelled unmeasured. Worker count is
+  not research identity.
+
 - `ledgr_history_policy()` now records the experiment-level causal-history
   policy. Its defaults are five expected sessions of price-input carry, no
   output carry and the default segment guard. The policy and its axis, cutoff
@@ -14,7 +30,9 @@
 
 - Trading-status corrections now use one acyclic supersession policy before
   precedence. Corporate actions distinguish known-when-effective rows,
-  clockless audit-only rows and knowable rows missing an event clock.
+  clockless audit-only rows and knowable rows missing an event clock. A
+  Date-valued entitlement, effective or payment event resolves to the venue
+  session close, while a Date-valued knowledge time resolves to session open.
 
 - Snapshot hash rule 4 and experiment-store schema 121 add the causal civil
   time representation. Older snapshots, stores and identity-rule artifacts

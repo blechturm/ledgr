@@ -344,3 +344,25 @@ ledgr_parallel_mirai_everywhere_expr <- function(expr, workers = 1L) {
   eval(substitute(FUN(EXPR, .min = WORKERS), list(FUN = everywhere, EXPR = expr, WORKERS = workers)))
   invisible(TRUE)
 }
+
+ledgr_parallel_mirai_stage_history <- function(invariant,
+                                               identity,
+                                               workers = 1L) {
+  workers <- ledgr_parallel_workers_normalize(workers)
+  everywhere <- getExportedValue("mirai", "everywhere")
+  everywhere(
+    {
+      get(
+        "ledgr_history_worker_stage",
+        envir = asNamespace("ledgr")
+      )(
+        get("staged_invariant", inherits = TRUE),
+        get("staged_identity", inherits = TRUE)
+      )
+    },
+    staged_invariant = invariant,
+    staged_identity = identity,
+    .min = workers
+  )
+  invisible(TRUE)
+}

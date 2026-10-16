@@ -9,7 +9,9 @@ ledgr_fact_schema_version <- 1L
 #' audit-only unless `knowledge = "assume_effective"` is declared. Date-backed
 #' fact clocks are civil labels: [ledgr_facts()] resolves each to exactly one
 #' declared open session and retains the civil date, UTC instant, venue zone
-#' and calendar identity in sealed evidence. POSIXct values remain exact.
+#' and calendar identity in sealed evidence. Corporate-action entitlement,
+#' effective, and payment dates resolve to session close; their knowledge
+#' dates resolve to session open. POSIXct values remain exact.
 #'
 #' @param df A data frame containing one fact row per assertion. See Details.
 #' @param universe_id A non-empty identifier for the membership universe.
@@ -1211,10 +1213,17 @@ ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
       session_index <- match(civil, session_dates)
       row_index <- which(has)
       session <- sessions[session_index, , drop = FALSE]
+      resolved_edge <- if (field %in% c(
+        "entitlement_time", "effective_time", "payment_time"
+      )) {
+        session$session_close
+      } else {
+        session$session_open
+      }
       dates[[field]][row_index] <- civil
-      frame[[field]][row_index] <- session$session_open
+      frame[[field]][row_index] <- resolved_edge
       detail$resolved_ts_utc[row_index] <-
-        ledgr_fact_time_token(session$session_open)
+        ledgr_fact_time_token(resolved_edge)
       detail$venue_id[row_index] <- as.character(session$venue_id)
       detail$timezone[row_index] <- as.character(session$timezone)
       detail$calendar_id[row_index] <- as.character(session$calendar_id)

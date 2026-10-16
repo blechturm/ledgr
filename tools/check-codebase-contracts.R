@@ -1390,6 +1390,27 @@ test_seam_contracts <- c(
   ledgr_event_row_df = paste(
     "Build typed event rows for writer and reconstruction test oracles."
   ),
+  ledgr_history_worker_clear = paste(
+    "Reset daemon-local staged history between worker identity and cleanup tests."
+  ),
+  ledgr_history_substrate_query_facts = paste(
+    "Probe literal two-clock fact answers independently of fold execution."
+  ),
+  ledgr_history_substrate_census = paste(
+    "Inspect the per-instrument segment guard record on controlled fixtures."
+  ),
+  ledgr_history_evidence_fields = paste(
+    "Pin the shared history-treatment evidence vocabulary before public views exist."
+  ),
+  ledgr_history_substrate_treated_field = paste(
+    "Exercise treatment against late-known expected-session masks before WS42 exposes frames."
+  ),
+  ledgr_history_output_carry = paste(
+    "Isolate optional output carry from input carry and readiness semantics."
+  ),
+  ledgr_history_estimator_admission = paste(
+    "Check post-treatment estimator inclusion without constructing a public history result."
+  ),
   ledgr_sweep_compute_feature_matrix = paste(
     "Exercise sweep feature-matrix preparation independently of execution."
   )

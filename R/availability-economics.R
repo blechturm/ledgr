@@ -4,7 +4,8 @@ ledgr_availability_valuation_state <- function(bars_mat,
                                                 instrument_ids,
                                                 pulses_posix,
                                                 max_sessions,
-                                                exhausted = "refuse") {
+                                                exhausted = "refuse",
+                                                pulse_columns = NULL) {
   instrument_ids <- as.character(instrument_ids)
   pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
   close <- bars_mat$close
@@ -34,6 +35,15 @@ ledgr_availability_valuation_state <- function(bars_mat,
     )
   }
   freeze <- identical(exhausted, "freeze")
+  if (is.null(pulse_columns)) pulse_columns <- seq_along(pulses_posix)
+  pulse_columns <- as.integer(pulse_columns)
+  if (anyNA(pulse_columns) || any(pulse_columns < 1L) ||
+      any(pulse_columns > ncol(close)) || is.unsorted(pulse_columns, strictly = TRUE)) {
+    rlang::abort(
+      "Availability valuation pulse columns must be a strictly increasing subset of the prepared calendar.",
+      class = "ledgr_invalid_fold_execution"
+    )
+  }
 
   n_source <- length(instrument_ids)
   row_index_builds <- 0L
@@ -52,7 +62,7 @@ ledgr_availability_valuation_state <- function(bars_mat,
   advance <- function(pulse_idx, axis, held = NULL) {
     pulse_idx <- as.integer(pulse_idx)
     if (length(pulse_idx) != 1L || is.na(pulse_idx) ||
-        pulse_idx < 1L || pulse_idx > ncol(close)) {
+        pulse_idx < 1L || pulse_idx > length(pulse_columns)) {
       rlang::abort(
         "Availability valuation pulse is outside the prepared calendar.",
         class = "ledgr_invalid_fold_execution"
@@ -77,8 +87,14 @@ ledgr_availability_valuation_state <- function(bars_mat,
       )
     }
 
+    target_column <- pulse_columns[[pulse_idx]]
+    current_column <- if (current_pulse == 0L) {
+      pulse_columns[[1L]] - 1L
+    } else {
+      pulse_columns[[current_pulse]]
+    }
     if (pulse_idx > current_pulse) {
-      for (j in seq.int(current_pulse + 1L, pulse_idx)) {
+      for (j in seq.int(current_column + 1L, target_column)) {
         current_close <- as.numeric(close[, j])
         close_cells_read <<- close_cells_read + length(current_close)
         observed <- is.finite(current_close)
@@ -90,7 +106,7 @@ ledgr_availability_valuation_state <- function(bars_mat,
 
     reference <- stats::setNames(last_close[source_row], axis)
     source_position <- last_pulse[source_row]
-    age <- stats::setNames(as.integer(pulse_idx - source_position), axis)
+    age <- stats::setNames(as.integer(target_column - source_position), axis)
     age[is.na(source_position)] <- NA_integer_
     permissible <- stats::setNames(!is.na(age) & age <= max_sessions, axis)
     mark <- reference
@@ -130,6 +146,7 @@ ledgr_availability_valuation_state <- function(bars_mat,
     list(
       source_instruments = n_source,
       current_pulse = current_pulse,
+      current_column = if (current_pulse == 0L) 0L else pulse_columns[[current_pulse]],
       row_index_builds = row_index_builds,
       row_index_cells = row_index_cells,
       close_cells_read = close_cells_read,
@@ -177,7 +194,9 @@ ledgr_availability_frozen_at <- function(con,
                                          bars_mat,
                                          instrument_ids,
                                          pulses_posix,
-                                         pulse_idx) {
+                                         pulse_idx,
+                                         source_pulses_posix = pulses_posix,
+                                         pulse_columns = NULL) {
   exhausted <- ledgr_availability_exhausted_choice(provider$valuation_policy)
   if (!identical(exhausted, "freeze")) return(character())
   ts <- pulses_posix[[pulse_idx]]
@@ -190,9 +209,10 @@ ledgr_availability_frozen_at <- function(con,
   valuation <- ledgr_availability_valuation_state(
     bars_mat,
     instrument_ids,
-    pulses_posix,
+    source_pulses_posix,
     as.integer(provider$valuation_policy$max_sessions),
-    exhausted
+    exhausted,
+    pulse_columns = pulse_columns
   )$advance(pulse_idx, ids, held = as.logical(view$held[ids]))
   ids[valuation$frozen[ids]]
 }
@@ -378,7 +398,8 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
                                                      ts_signal_utc,
                                                      provider,
                                                      decision_member,
-                                                     cash) {
+                                                     cash,
+                                                     next_bars = NULL) {
   # Accepted and rejected entries are written by index into lists sized for
   # every actionable target, then trimmed.
   entries <- vector("list", length(actionable_idx))
@@ -394,6 +415,16 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
   # independently, so it equals one view per target.
   execution_view <- if (!is.na(execution_ts) && length(actionable_idx) > 0L) {
     provider$execution_view(execution_ts, target_names[actionable_idx])
+  }
+  if (is.null(next_bars) && !is.null(bars_mat) &&
+      pulse_idx < ncol(bars_mat$open)) {
+    next_bars <- list(
+      open = as.numeric(bars_mat$open[, pulse_idx + 1L]),
+      high = as.numeric(bars_mat$high[, pulse_idx + 1L]),
+      low = as.numeric(bars_mat$low[, pulse_idx + 1L]),
+      close = as.numeric(bars_mat$close[, pulse_idx + 1L]),
+      volume = as.numeric(bars_mat$volume[, pulse_idx + 1L])
+    )
   }
 
   for (target_idx in actionable_idx) {
@@ -432,7 +463,7 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
       isTRUE(decision_member[[id]]),
       isTRUE(execution_view$member[[id]])
     )) "membership_changed_before_execution" else character()
-    open <- bars_mat$open[inst_idx, pulse_idx + 1L]
+    open <- if (is.null(next_bars)) NA_real_ else next_bars$open[[inst_idx]]
     if (!is.finite(open) || open <= 0) {
       reject(c(blocking_reasons, "execution_bar_missing"), informational_reasons)
       next
@@ -442,10 +473,10 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
       next_open_price = open,
       instrument_id = id,
       ts_utc = execution_ts,
-      high = bars_mat$high[inst_idx, pulse_idx + 1L],
-      low = bars_mat$low[inst_idx, pulse_idx + 1L],
-      close = bars_mat$close[inst_idx, pulse_idx + 1L],
-      volume = bars_mat$volume[inst_idx, pulse_idx + 1L]
+      high = next_bars$high[[inst_idx]],
+      low = next_bars$low[[inst_idx]],
+      close = next_bars$close[[inst_idx]],
+      volume = next_bars$volume[[inst_idx]]
     )
     fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
     if (inherits(fill, "ledgr_fill_none") || !is.finite(fill$fill_price) || fill$fill_price <= 0) {

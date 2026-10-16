@@ -93,6 +93,7 @@ Section 5.5 exception; LDG-3052 does not change it.
 | --- | --- | --- |
 | availability valuation state | `advance` | P1 |
 | prepared availability provider | `decision_view`; `execution_view` | P1; P3 |
+| causal history fold reader | current/next primitive bar packet | P1 |
 | corporate-action plan | `post`, `post_disposition`, `check_quantity_effects`; `bind_boundary` | P1; E and P4 |
 | pulse notes | reset, callback helper writes, read | P2 |
 | fast context and scalar-access tracker | pulse index and accessor state | P2 |

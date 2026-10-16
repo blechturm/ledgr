@@ -310,7 +310,10 @@ ledgr_infer_universe_from_snapshot <- function(snapshot) {
   universe
 }
 
-ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
+ledgr_run_config <- function(config,
+                             run_id = NULL,
+                             metric_context = NULL,
+                             history_substrate = NULL) {
   control <- list()
   if (is.list(config) &&
     is.list(config$engine) &&
@@ -321,7 +324,8 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
     config = config,
     run_id = run_id,
     control = control,
-    metric_context = metric_context
+    metric_context = metric_context,
+    history_substrate = history_substrate
   )
 }
 
@@ -417,7 +421,8 @@ ledgr_run_experiment <- function(exp,
                                  run_id = NULL,
                                  seed = NULL,
                                  compiled_accounting_model = NULL,
-                                 window = NULL) {
+                                 window = NULL,
+                                 history_substrate = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -493,7 +498,11 @@ ledgr_run_experiment <- function(exp,
     snapshot_hash = exp$snapshot_hash %||% ledgr_snapshot_stored_hash(exp$snapshot)
   )
 
-  result <- ledgr_run_config(config, metric_context = exp$metric_context)
+  result <- ledgr_run_config(
+    config,
+    metric_context = exp$metric_context,
+    history_substrate = history_substrate
+  )
   new_ledgr_backtest(
     run_id = result$run_id,
     db_path = result$db_path,

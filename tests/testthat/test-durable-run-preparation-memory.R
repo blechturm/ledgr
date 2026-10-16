@@ -23,7 +23,10 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
         bars_all = get0("bars_all", caller, inherits = FALSE),
         raw_bars_by_id = get0("raw_bars_by_id", caller, inherits = FALSE),
         bars_cols_by_id = get0("bars_cols_by_id", caller, inherits = FALSE),
-        bars_by_id = get0("bars_by_id", caller, inherits = FALSE)
+        bars_by_id = get0("bars_by_id", caller, inherits = FALSE),
+        history_substrate = get0(
+          "history_substrate", caller, inherits = FALSE
+        )
       )
       original_strict(...)
     },
@@ -50,8 +53,11 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
   testthat::expect_null(feature_boundary$bars_all)
   testthat::expect_null(feature_boundary$raw_bars_by_id)
   testthat::expect_null(feature_boundary$bars_cols_by_id)
-  testthat::expect_true(is.list(feature_boundary$bars_by_id))
-  testthat::expect_gt(length(feature_boundary$bars_by_id), 0L)
+  testthat::expect_null(feature_boundary$bars_by_id)
+  testthat::expect_s3_class(
+    feature_boundary$history_substrate,
+    "ledgr_history_substrate"
+  )
   testthat::expect_true(all(fold_boundary$released))
   testthat::expect_identical(fold_boundary$execution_bars_by_id, list())
   testthat::expect_identical(ledgr_run_info(snapshot, bt$run_id)$status, "DONE")

@@ -24,6 +24,12 @@
 #'   `ledgr_walk_forward_no_selection`. Each fold records its `selection_source`
 #'   (`"train"`, `"previous"` or `"none"`), and the policy is part of the
 #'   session identity.
+#' @param workers Whole-number worker count used by each fold's training
+#'   sweep. The default `1` is sequential; `2` uses the supported staged
+#'   local-worker path. Larger counts run but are not part of the measured
+#'   history-worker support claim. Worker count is not research identity.
+#' @param worker_packages Optional character vector of packages to attach on
+#'   parallel training workers for unqualified package calls in strategy code.
 #' @param ... Reserved for later walk-forward options.
 #' @return A `ledgr_walk_forward_results` list with `folds`, `scores`,
 #'   `selected`, `degradation`, and selected test-run handles.
@@ -56,16 +62,11 @@
 #' improvement or degradation depends on the selection rule direction.
 #'
 #' Every training and test window starts feature state at its own start:
-#' indicators warm up again inside each window and no window reads bars before
-#' it. A training window shorter than a candidate's indicator warmup therefore
-#' cannot trade. When no candidate trades in a training window, volatility-based
-#' metrics such as `sharpe_ratio` have no finite value and the fold has no
-#' selection; `no_selection` decides what happens then. Size training windows
-#' well beyond the longest warmup, or select on a metric that is defined
-#' without trades, to keep selections coming from training. This is
-#' separate from `cold_start_distorted`, which concerns opening positions, not
-#' features. Hydrating features from earlier history is planned with ledgr's
-#' point-in-time history design.
+#' indicators warm up again inside each window and no feature reads bars before
+#' it. Availability-aware sessions already share one causal preparation, but
+#' the public data-start and continuous-window behavior remains owned by the
+#' later history-surface workstream. This is separate from
+#' `cold_start_distorted`, which concerns opening positions, not features.
 #' @export
 ledgr_walk_forward <- function(exp,
                                grid,
@@ -74,8 +75,11 @@ ledgr_walk_forward <- function(exp,
                                seed = NULL,
                                opening_state_policy = c("carry_test_state", "flat_test_state"),
                                no_selection = c("previous", "fail"),
+                               workers = 1L,
+                               worker_packages = NULL,
                                ...) {
   no_selection <- match.arg(no_selection)
+  workers <- ledgr_parallel_workers_normalize(workers)
   dots <- list(...)
   if (length(dots) > 0L) {
     rlang::abort("`...` is reserved for future walk-forward options.", class = "ledgr_invalid_args")
@@ -85,6 +89,21 @@ ledgr_walk_forward <- function(exp,
   }
   if (!inherits(grid, "ledgr_param_grid")) {
     rlang::abort("`grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
+  }
+  if (!is.null(seed)) {
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    old_seed <- if (had_seed) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit({
+      if (had_seed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    }, add = TRUE)
   }
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
@@ -97,6 +116,17 @@ ledgr_walk_forward <- function(exp,
   fold_windows <- lapply(folds, function(fold) {
     ledgr_walk_forward_fold_windows(exp, fold, opening_state_policy)
   })
+  history_substrate <- if (isTRUE(exp$availability$active)) {
+    history_end <- max(as.POSIXct(vapply(fold_windows, function(windows) {
+      max(
+        as.numeric(windows$train$scoring_end_utc),
+        as.numeric(windows$test$scoring_end_utc)
+      )
+    }, numeric(1)), origin = "1970-01-01", tz = "UTC"))
+    ledgr_history_substrate_for_experiment(exp, end = history_end)
+  } else {
+    NULL
+  }
   if (identical(opening_state_policy, "carry_test_state")) {
     ledgr_walk_forward_refuse_noncontiguous_carry(exp, fold_windows)
   }
@@ -139,6 +169,9 @@ ledgr_walk_forward <- function(exp,
         session_id = session_id,
         carried_opening = carried_opening,
         no_selection = no_selection,
+        workers = workers,
+        worker_packages = worker_packages,
+        history_substrate = history_substrate,
         previous_params_hash = previous_params_hash
       ),
       interrupt = function(e) {
@@ -224,6 +257,14 @@ ledgr_walk_forward <- function(exp,
       status = terminal_status,
       opening_state_policy = opening_state_policy,
       no_selection = no_selection,
+      workers = workers,
+      history_worker_support = if (!isTRUE(exp$availability$active)) {
+        NA_character_
+      } else if (workers <= 2L) {
+        "measured"
+      } else {
+        "unmeasured"
+      },
       cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
       folds = fold_table,
       scores = ledgr_add_completion_columns(score_table),
@@ -474,6 +515,9 @@ ledgr_walk_forward_eval_fold <- function(exp,
                                          session_id,
                                          carried_opening,
                                          no_selection = "fail",
+                                         workers = 1L,
+                                         worker_packages = NULL,
+                                         history_substrate = NULL,
                                          previous_params_hash = NULL) {
   fold <- ledgr_validate_fold(fold)
   train_window <- windows$train
@@ -485,6 +529,9 @@ ledgr_walk_forward_eval_fold <- function(exp,
       grid,
       window = train_window,
       seed = seed,
+      workers = workers,
+      worker_packages = worker_packages,
+      history_substrate = history_substrate,
       execution_seed_resolver = function(param_grid,
                                          resolved,
                                          strategy_hash,
@@ -595,7 +642,8 @@ ledgr_walk_forward_eval_fold <- function(exp,
       feature_params = selected_row$feature_params[[1]],
       window = test_window,
       run_id = test_run_id,
-      seed = test_identity$execution_seed
+      seed = test_identity$execution_seed,
+      history_substrate = history_substrate
     ),
     error = function(e) e
   )
@@ -1024,7 +1072,8 @@ ledgr_walk_forward_run_or_open <- function(exp,
                                            feature_params,
                                            window,
                                            run_id,
-                                           seed) {
+                                           seed,
+                                           history_substrate = NULL) {
   # A finished test run (DONE or INCOMPLETE) is reused as recorded. Any other
   # existing row, such as an interrupted run left FAILED, resumes through the
   # ordinary run path with the same window, parameters and seed; that path
@@ -1038,7 +1087,8 @@ ledgr_walk_forward_run_or_open <- function(exp,
     feature_params = feature_params,
     window = window,
     run_id = run_id,
-    seed = seed
+    seed = seed,
+    history_substrate = history_substrate
   )
 }
 

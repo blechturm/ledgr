@@ -187,7 +187,10 @@ testthat::test_that("[LTB-0147] membership rows are indexed once", {
   )
   testthat::expect_identical(calls, 1L)
   testthat::expect_identical(rows_seen, nrow(data$membership))
-  source <- paste(deparse(body(ledgr:::ledgr_membership_resolve_at)), collapse = "\n")
+  source <- paste(
+    deparse(body(ledgr:::ledgr_membership_resolve_prepared)),
+    collapse = "\n"
+  )
   testthat::expect_match(source, "ledgr_membership_index_set_rows", fixed = TRUE)
   testthat::expect_no_match(source, "rows$set_id ==", fixed = TRUE)
 })

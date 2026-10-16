@@ -1,0 +1,5 @@
+"family","instrument_count","source_fact_rows","prepared_fact_count","segment_count","aggregate_ratio","maximum_ratio_bound","default_guard"
+"membership",1166,290811,967091,677446,0.70049871211706,1.00172413793103,"passes_by_bound"
+"trading_status",1166,0,0,1166,1,1,"passes_exactly"
+"lifetime",1166,829,,,,,"needs_full_census"
+"lifetime_terminal",1166,,,,,,"needs_full_census"

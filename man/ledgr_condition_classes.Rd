@@ -213,6 +213,9 @@
 \alias{ledgr_invalid_fold_execution}
 \alias{ledgr_invalid_grid}
 \alias{ledgr_invalid_history_policy}
+\alias{ledgr_invalid_history_substrate}
+\alias{ledgr_invalid_history_treatment}
+\alias{ledgr_invalid_history_field}
 \alias{ledgr_invalid_indicator_bundle}
 \alias{ledgr_invalid_ledger_event}
 \alias{ledgr_invalid_ledger_meta}
@@ -378,6 +381,12 @@
 \alias{ledgr_walk_forward_invalid_identity}
 \alias{ledgr_walk_forward_invalid_opening_state}
 \alias{ledgr_walk_forward_invalid_selection_rule}
+\alias{ledgr_history_duplicate_bar}
+\alias{ledgr_history_outside_axis}
+\alias{ledgr_history_segment_limit_exceeded}
+\alias{ledgr_history_segment_missing}
+\alias{ledgr_history_unknown_instrument}
+\alias{ledgr_staged_history_mismatch}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
@@ -443,6 +452,19 @@ for a knowable corporate action with neither entitlement nor effective time.
 constructor arguments or a non-current policy object.
 \code{ledgr_history_identity_mismatch} and \code{ledgr_precomputed_history_mismatch}
 refuse non-current causal-history identity in configs and precomputed data.
+\code{ledgr_invalid_history_substrate} refuses a substrate owned by a different
+snapshot, policy, universe, range or representation version.
+\code{ledgr_history_duplicate_bar}, \code{ledgr_history_outside_axis} and
+\code{ledgr_history_unknown_instrument} refuse ambiguous or out-of-domain history
+preparation and reads. \code{ledgr_history_segment_missing} refuses an invalid
+internal segment plane rather than returning fabricated state.
+\code{ledgr_history_segment_limit_exceeded} reports an instrument, fact family,
+fact count, segment count, ratio and limit when causal preparation exceeds
+its declared bound. \code{ledgr_invalid_history_treatment} and
+\code{ledgr_invalid_history_field} refuse malformed treatment evidence or an
+unsupported bar field. \code{ledgr_staged_history_mismatch} refuses a worker task
+before candidate execution when its staged immutable input is absent or has
+a different identity.
 }
 
 \section{Store-format classes}{

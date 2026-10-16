@@ -278,6 +278,11 @@ ledgr_fold_stage_observe_settle <- function(
     sample_telemetry,
     sample_start) {
   fold_state$current_stage <- "valuation"
+  history_bars <- if (services$availability_active) {
+    services$history_reader$bars(pulse_idx)
+  } else {
+    NULL
+  }
   add_segment <- function(segment) {
     fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
     invisible(NULL)
@@ -334,7 +339,11 @@ ledgr_fold_stage_observe_settle <- function(
 
   if (!is.null(services$corporate_action_plan)) {
     marks <- stats::setNames(
-      as.numeric(services$bars_mat$close[, pulse_idx]),
+      if (services$availability_active) {
+        as.numeric(history_bars$current$close)
+      } else {
+        as.numeric(services$bars_mat$close[, pulse_idx])
+      },
       services$instrument_ids
     )
     services$corporate_action_plan$check_clocks(pulse_idx)
@@ -605,6 +614,7 @@ ledgr_fold_stage_observe_settle <- function(
     } else {
       context_ids
     },
+    history_bars = history_bars,
     sample_start = sample_start,
     t_feats = t_feats,
     t_bars = t_bars
@@ -629,17 +639,40 @@ ledgr_fold_stage_decide <- function(
     invisible(NULL)
   }
 
-  bars_current <- services$bars_views[[pulse_idx]]
-  features_current <- services$feature_table_views[[pulse_idx]]
+  projection_idx <- services$projection_pulse_idx[[pulse_idx]]
+  bars_current <- if (services$availability_active) {
+    ledgr_history_bar_packet_frame(
+      observation$history_bars$current,
+      observation$context_position_idx
+    )
+  } else {
+    services$bars_views[[pulse_idx]]
+  }
+  features_current <- if (services$availability_active) {
+    ledgr_projection_feature_table(
+      services$runtime_projection,
+      projection_idx,
+      feature_ids = services$def_ids
+    )
+  } else {
+    services$feature_table_views[[pulse_idx]]
+  }
   if (!is.data.frame(features_current)) {
     features_current <- services$empty_feature_table
   }
-  features_wide_current <- services$features_wide_views[[pulse_idx]]
+  features_wide_current <- if (services$availability_active) {
+    ledgr_projection_features_wide(
+      services$runtime_projection,
+      projection_idx,
+      feature_ids = services$def_ids
+    )
+  } else {
+    services$features_wide_views[[pulse_idx]]
+  }
   if (!is.data.frame(features_wide_current)) {
     features_wide_current <- services$empty_df
   }
   if (services$availability_active) {
-    bars_current <- bars_current[valuation$source_row, , drop = FALSE]
     if (nrow(features_current) > 0L) {
       features_current <- features_current[
         as.character(features_current$instrument_id) %in% context_ids,
@@ -702,7 +735,7 @@ ledgr_fold_stage_decide <- function(
       positions = positions_snapshot,
       universe = context_ids,
       projection = services$runtime_projection,
-      pulse_idx = pulse_idx,
+      pulse_idx = if (services$availability_active) projection_idx else pulse_idx,
       feature_ids = services$def_ids,
       features_wide = features_wide_current,
       active_alias_map = services$active_alias_map,
@@ -975,12 +1008,13 @@ ledgr_fold_stage_plan <- function(
       actionable_idx = actionable_idx,
       pulse_idx = pulse_idx,
       execution_opportunities_posix = services$execution_opportunities_posix,
-      bars_mat = services$bars_mat,
+      bars_mat = NULL,
       cost_resolver = services$cost_resolver,
       ts_signal_utc = ts_iso,
       provider = services$availability_provider,
       decision_member = availability_view$member,
-      cash = fold_state$cash
+      cash = fold_state$cash,
+      next_bars = observation$history_bars$next_bar
     )
   } else {
     plan <- ledgr_fold_build_pulse_plan(
@@ -1475,8 +1509,13 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   state$positions <- stats::setNames(state$positions, instrument_ids)
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
+  history_substrate <- execution$history_substrate
   feature_defs <- execution$feature_defs
-  runtime_projection <- execution$runtime_projection
+  runtime_projection <- if (!is.null(execution$availability_provider)) {
+    history_substrate$feature_projection
+  } else {
+    execution$runtime_projection
+  }
   if (is.null(runtime_projection)) {
     rlang::abort("Fold execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
   }
@@ -1509,6 +1548,11 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   use_compiled_spot_fifo <- identical(compiled_accounting_model, "spot_fifo")
   availability_provider <- execution$availability_provider
   availability_active <- !is.null(availability_provider)
+  history_reader <- if (availability_active) {
+    ledgr_history_substrate_fold_reader(history_substrate, pulses_posix)
+  } else {
+    NULL
+  }
   execution_opportunities_posix <- execution$execution_opportunities_posix
   corporate_action_plan <- execution$corporate_action_plan
   max_stale_sessions <- if (availability_active) {
@@ -1518,11 +1562,12 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   }
   valuation_state <- if (availability_active) {
     ledgr_availability_valuation_state(
-      bars_mat,
+      history_substrate$bars,
       instrument_ids,
-      pulses_posix,
+      history_substrate$axis,
       max_stale_sessions,
-      ledgr_availability_exhausted_choice(availability_provider$valuation_policy)
+      ledgr_availability_exhausted_choice(availability_provider$valuation_policy),
+      pulse_columns = history_reader$pulse_columns
     )
   } else {
     NULL
@@ -1548,16 +1593,16 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   }
   n_inst <- length(instrument_ids)
 
-  bars_views <- execution$static_bars_views
-  if (is.null(bars_views)) {
+  bars_views <- if (availability_active) NULL else execution$static_bars_views
+  if (!availability_active && is.null(bars_views)) {
     bars_views <- ledgr_bars_pulse_views(
       bars_mat = bars_mat,
       instrument_ids = instrument_ids,
       pulses_posix = pulses_posix
     )
   }
-  feature_views <- execution$static_feature_views
-  if (is.null(feature_views)) {
+  feature_views <- if (availability_active) NULL else execution$static_feature_views
+  if (!availability_active && is.null(feature_views)) {
     feature_views <- ledgr_projection_pulse_views(
       runtime_projection,
       feature_ids = def_ids
@@ -1565,9 +1610,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   }
   feature_table_views <- feature_views$feature_table %||% vector("list", length(pulses_posix))
   features_wide_views <- feature_views$features_wide %||% vector("list", length(pulses_posix))
-  if (length(bars_views) != length(pulses_posix) ||
-      length(feature_table_views) != length(pulses_posix) ||
-      length(features_wide_views) != length(pulses_posix)) {
+  if ((!availability_active && length(bars_views) != length(pulses_posix)) ||
+      (!availability_active && length(feature_table_views) != length(pulses_posix)) ||
+      (!availability_active && length(features_wide_views) != length(pulses_posix))) {
     rlang::abort("Static pulse views must align with fold pulse timestamps.", class = "ledgr_invalid_fold_execution")
   }
 
@@ -1575,6 +1620,15 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     ledgr_projection_feature_table(runtime_projection, 1L, feature_ids = character())
   } else {
     empty_df
+  }
+  projection_pulse_idx <- unname(runtime_projection$pulse_index[
+    ledgr_projection_pulse_names(pulses_posix)
+  ])
+  if (anyNA(projection_pulse_idx)) {
+    rlang::abort(
+      "Runtime projection must cover every fold pulse.",
+      class = "ledgr_invalid_fold_execution"
+    )
   }
 
   last_fully_valued_ts <- as.POSIXct(NA, tz = "UTC")
@@ -1680,11 +1734,13 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     id_to_idx = id_to_idx,
     bars_mat = bars_mat,
     bars_views = bars_views,
+    history_reader = history_reader,
     feature_table_views = feature_table_views,
     features_wide_views = features_wide_views,
     empty_df = empty_df,
     empty_feature_table = empty_feature_table,
     runtime_projection = runtime_projection,
+    projection_pulse_idx = as.integer(projection_pulse_idx),
     def_ids = def_ids,
     active_alias_map = active_alias_map,
     risk_plan = risk_plan,

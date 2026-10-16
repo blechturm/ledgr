@@ -110,6 +110,10 @@ testthat::test_that("[LTB-0279] fold phase ownership rejects structural boundary
     ctx_references_carrier = "ledgr_fold_stage_decide <- function(fold_state, services) ctx$private <- fold_state",
     slot_owner = "ledgr_fold_stage_decide <- function(fold_state, services) fold_state$cash <- 1",
     service_owner = "ledgr_fold_stage_decide <- function(fold_state, services) valuation_state$advance(1)",
+    history_service_owner =
+      "ledgr_fold_stage_decide <- function(fold_state, services) services$history_reader$bars(1)",
+    substrate_reference =
+      "ledgr_fold_stage_decide <- function(fold_state, services) services$history_substrate$bars",
     duplicated_inline_stage_body = c(
       base_stages,
       "ledgr_fold_envelope <- function(execution, output_handler) output_handler$write_fill_events(data.frame())"
@@ -133,8 +137,13 @@ testthat::test_that("[LTB-0279] fold phase ownership rejects structural boundary
   )
   for (kind in names(mutations)) {
     findings <- check_fixture(mutations[[kind]])
+    expected_kind <- if (identical(kind, "history_service_owner")) {
+      "service_owner"
+    } else {
+      kind
+    }
     testthat::expect_true(
-      any(startsWith(findings, paste0(kind, ":"))),
+      any(startsWith(findings, paste0(expected_kind, ":"))),
       info = kind
     )
   }

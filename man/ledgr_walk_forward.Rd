@@ -12,6 +12,8 @@ ledgr_walk_forward(
   seed = NULL,
   opening_state_policy = c("carry_test_state", "flat_test_state"),
   no_selection = c("previous", "fail"),
+  workers = 1L,
+  worker_packages = NULL,
   ...
 )
 }
@@ -40,6 +42,14 @@ leaves the carried opening unchanged. \code{"fail"} stops the session with
 \code{ledgr_walk_forward_no_selection}. Each fold records its \code{selection_source}
 (\code{"train"}, \code{"previous"} or \code{"none"}), and the policy is part of the
 session identity.}
+
+\item{workers}{Whole-number worker count used by each fold's training
+sweep. The default \code{1} is sequential; \code{2} uses the supported staged
+local-worker path. Larger counts run but are not part of the measured
+history-worker support claim. Worker count is not research identity.}
+
+\item{worker_packages}{Optional character vector of packages to attach on
+parallel training workers for unqualified package calls in strategy code.}
 
 \item{...}{Reserved for later walk-forward options.}
 }
@@ -83,14 +93,9 @@ cost grows with later folds and larger candidate grids. \code{metric_diff_abs} i
 improvement or degradation depends on the selection rule direction.
 
 Every training and test window starts feature state at its own start:
-indicators warm up again inside each window and no window reads bars before
-it. A training window shorter than a candidate's indicator warmup therefore
-cannot trade. When no candidate trades in a training window, volatility-based
-metrics such as \code{sharpe_ratio} have no finite value and the fold has no
-selection; \code{no_selection} decides what happens then. Size training windows
-well beyond the longest warmup, or select on a metric that is defined
-without trades, to keep selections coming from training. This is
-separate from \code{cold_start_distorted}, which concerns opening positions, not
-features. Hydrating features from earlier history is planned with ledgr's
-point-in-time history design.
+indicators warm up again inside each window and no feature reads bars before
+it. Availability-aware sessions already share one causal preparation, but
+the public data-start and continuous-window behavior remains owned by the
+later history-surface workstream. This is separate from
+\code{cold_start_distorted}, which concerns opening positions, not features.
 }

@@ -59,6 +59,7 @@ ledgr_execution_spec <- function(run_id,
                                  bars_by_id,
                                  bars_mat,
                                  static_bars_views = NULL,
+                                 history_substrate = NULL,
                                  static_feature_views = NULL,
                                  feature_defs,
                                  runtime_projection,
@@ -105,6 +106,7 @@ ledgr_execution_spec <- function(run_id,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
     static_bars_views = static_bars_views,
+    history_substrate = history_substrate,
     static_feature_views = static_feature_views,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
@@ -223,12 +225,12 @@ ledgr_validate_execution_spec <- function(spec) {
     "`execution$bars_by_id` must be a list."
   )
   ledgr_execution_spec_check(
-    is.list(spec$bars_mat) && is.matrix(spec$bars_mat$close),
-    "`execution$bars_mat` must include a close matrix."
-  )
-  ledgr_execution_spec_check(
     is.null(spec$static_bars_views) || is.list(spec$static_bars_views),
     "`execution$static_bars_views` must be NULL or a list."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$history_substrate) || ledgr_history_substrate_is(spec$history_substrate),
+    "`execution$history_substrate` must be NULL or a current ledgr history substrate."
   )
   ledgr_execution_spec_check(
     is.null(spec$static_feature_views) || is.list(spec$static_feature_views),
@@ -241,6 +243,25 @@ ledgr_validate_execution_spec <- function(spec) {
   )
   if (!is.null(spec$availability_provider)) {
     ledgr_execution_spec_check(
+      ledgr_history_substrate_is(spec$history_substrate),
+      "Availability execution requires one current causal history substrate."
+    )
+    ledgr_execution_spec_check(
+      inherits(
+        spec$history_substrate$feature_projection,
+        "ledgr_runtime_projection"
+      ) && is.null(spec$runtime_projection),
+      paste(
+        "Availability execution requires the feature projection to be owned",
+        "only by its causal history substrate."
+      )
+    )
+    ledgr_execution_spec_check(
+      length(spec$bars_by_id) == 0L && is.null(spec$bars_mat) &&
+        is.null(spec$static_bars_views),
+      "Availability execution must own bars only through its causal history substrate."
+    )
+    ledgr_execution_spec_check(
       inherits(spec$execution_opportunities_posix, "POSIXct") &&
         length(spec$execution_opportunities_posix) == max(length(spec$pulses_posix) - 1L, 0L) &&
         !anyNA(spec$execution_opportunities_posix),
@@ -250,6 +271,10 @@ ledgr_validate_execution_spec <- function(spec) {
       )
     )
   } else {
+    ledgr_execution_spec_check(
+      is.list(spec$bars_mat) && is.matrix(spec$bars_mat$close),
+      "Dense `execution$bars_mat` must include a close matrix."
+    )
     ledgr_execution_spec_check(
       is.null(spec$execution_opportunities_posix),
       "Dense execution must not declare availability execution opportunities."
@@ -267,10 +292,12 @@ ledgr_validate_execution_spec <- function(spec) {
     is.list(spec$feature_defs),
     "`execution$feature_defs` must be a list."
   )
-  ledgr_execution_spec_check(
-    inherits(spec$runtime_projection, "ledgr_runtime_projection"),
-    "`execution$runtime_projection` must be a ledgr_runtime_projection object."
-  )
+  if (is.null(spec$availability_provider)) {
+    ledgr_execution_spec_check(
+      inherits(spec$runtime_projection, "ledgr_runtime_projection"),
+      "`execution$runtime_projection` must be a ledgr_runtime_projection object."
+    )
+  }
   ledgr_risk_validate_compiled_plan(spec$risk_plan)
   ledgr_execution_spec_check(
     is.function(spec$cost_resolver),

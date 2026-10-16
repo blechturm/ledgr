@@ -103,9 +103,6 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 <a id="contract-execution-fold-core"></a>
 ### Fold Core And Output Handlers
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - The fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
@@ -127,6 +124,18 @@ Accepted change pending:
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+- Availability-aware execution prepares one immutable causal-history
+  substrate from the first session of the experiment snapshot through the
+  requested end. That substrate alone owns the common venue axis, canonical
+  instrument index, bars, fact segments, expected-session masks and feature
+  inputs. It replaces `bars_by_id`, `bars_mat` and `static_bars_views` on that
+  path; dense execution retains its pre-cut representation.
+- P1 (observe and settle) is the sole fold-stage substrate reader. P2 (decide)
+  adapts the primitive packet returned by P1 into the strategy context and
+  feature views. P3 through P5 receive neither a history frame nor a substrate
+  reference. Cursor-bearing provider and history readers are declared fold
+  services and remain local to one consumer; they are not stored in or shared
+  through the immutable substrate.
 
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
@@ -225,9 +234,6 @@ Accepted change pending:
 <a id="contract-execution-event-staging"></a>
 ### Event Staging And Parallel Sweeps
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
   may read a staged row before that flush except the handler-local
@@ -245,6 +251,14 @@ Accepted change pending:
   `ledgr_parallel_sweep_interrupted` error. It must not return a partial sweep
   table or partially promotable candidate result; partial-result recovery
   requires a future explicit contract.
+- Availability-aware local sweeps stage the immutable causal-history input
+  once on each persistent daemon. Candidate tasks carry the exact staged
+  identity plus candidate-varying fields, and a missing or different identity
+  refuses with `ledgr_staged_history_mismatch` before strategy invocation,
+  fills or result writes. Daemons rebuild only consumer-local pulse text and
+  cursors. One and two local workers are the measured history envelope;
+  larger counts remain runnable but are labelled unmeasured. Worker count and
+  resource settings never enter experiment, candidate or run identity.
 
 <a id="contract-execution-snapshot-trust"></a>
 ### Snapshot Trust Boundary
@@ -617,7 +631,10 @@ Accepted change pending:
   date together with the resolved UTC instant, venue zone and calendar
   identity; it must resolve to exactly one declared open venue session.
   Availability-aware Date boundaries resolve to session open for starts and
-  session close for ends. POSIXct boundaries remain exact instants.
+  session close for ends. A Date-valued corporate-action entitlement,
+  effective or payment event resolves to that session's close, while its
+  Date-valued knowledge time resolves to session open. POSIXct boundaries
+  remain exact instants.
 - Trading-status corrections form an acyclic supersession forest within one
   source and instrument. A successor cannot become knowable before its
   predecessor, may start earlier, and must cover the predecessor through its
@@ -712,9 +729,6 @@ Accepted change pending:
 <a id="contract-availability-units-and-universe"></a>
 ### Units, Price Basis And Universe
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - ledgr accounts in split-adjusted share units: no split event acts on a
   position, so quantities, fills and marks are consistent only when bars are
   back-adjusted for splits. An availability-aware experiment on a snapshot
@@ -741,6 +755,20 @@ Accepted change pending:
   instrument-time without an applicable status assertion is `status_unknown`:
   target-restricted, allowing hold or exit only (Cut 12 LDG-3009, audit
   S2-018).
+- History treatment does not change the universe or execution planes. It keeps
+  structural expectedness, observed/raw missingness, input carry, calculation
+  validity, output carry, readiness and estimator admission as distinct
+  evidence. Estimator exclusion creates no target instruction: every
+  instrument on the decision axis still receives the strategy's explicit
+  target.
+- The default history policy carries an observed price level forward for at
+  most five later expected sessions. Carry is causal and field-local: it never
+  fills backward, never fabricates a leading value, never carries volume,
+  retains the original source timestamp and age, and stops at lifetime or
+  terminal barriers. Return and volatility families never consume a carried
+  price. Output carry is separately declared and disabled by default. A valid
+  declared carry may make an instrument complete enough for estimator
+  admission; ledgr imposes no carried-share threshold.
 
 <a id="contract-availability-disclosure"></a>
 ### Plan And Result Disclosure
@@ -800,9 +828,6 @@ Accepted change pending:
 <a id="contract-availability-provider-and-timing"></a>
 ### Provider, Knowledge And Timing
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Availability-aware execution uses one internal provider with `facts`,
   `decision_view`, `execution_view`, `history`, and `identity` operations. Its
   decision axis preserves declared member order for character-vector universes.
@@ -829,6 +854,20 @@ Accepted change pending:
 - Every stored active config carries execution-timing version 2 and the
   `availability_open_v2` convention. A missing or different version is
   refused; no timing convention is inferred from stored rows.
+- The provider and history preparation share the existing family resolvers as
+  the only precedence implementation. Prepared membership, trading-status and
+  lifetime state is stored as flat bitemporal segments over separate
+  observation and knowledge clocks. Adjacent segments merge only when state,
+  winning fact and reason all match; active, inactive, unknown and conflicting
+  membership remain distinct, while family declaration and set completeness
+  remain separate metadata.
+- Preparation counts segments for every instrument and family. The default
+  limit is `max(4 * fact_count, 16)`; a declared experiment-level
+  `segment_limit` replaces it and participates in config identity. Exceeding
+  the limit never truncates: it raises
+  `ledgr_history_segment_limit_exceeded` with the instrument, family, fact and
+  segment counts, ratio and limit. Reads may move forward, backward or out of
+  order without mutating shared storage or changing their answers.
 
 <a id="contract-availability-context-and-state"></a>
 ### Context Planes And Strategy State

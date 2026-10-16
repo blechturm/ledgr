@@ -47,23 +47,24 @@ ledgr_availability_provider_data <- function(con, snapshot_id) {
   )
 }
 
-ledgr_availability_applicable <- function(rows, cutoff) {
+ledgr_availability_applicable <- function(rows, cutoff, knowledge_cutoff = cutoff) {
   if (nrow(rows) == 0L) return(logical())
   effective <- !is.na(rows$effective_from) & rows$effective_from <= cutoff
-  knowable <- !is.na(rows$knowledge_time) & rows$knowledge_time <= cutoff
+  knowable <- !is.na(rows$knowledge_time) & rows$knowledge_time <= knowledge_cutoff
   before_end <- is.na(rows$effective_to) | cutoff < rows$effective_to
   effective & knowable & before_end
 }
 
-ledgr_membership_resolve_at <- function(data,
-                                        universe_id,
-                                        cutoff,
-                                        instruments = NULL) {
+ledgr_membership_resolve_prepared <- function(data,
+                                              universe_id,
+                                              cutoff,
+                                              instruments = NULL,
+                                              knowledge_cutoff = cutoff) {
   headers <- data$membership_sets
   headers <- headers[headers$universe_id == universe_id, , drop = FALSE]
   if (nrow(headers) > 0L) {
     eligible <- !is.na(headers$effective_from) & headers$effective_from <= cutoff &
-      !is.na(headers$knowledge_time) & headers$knowledge_time <= cutoff
+      !is.na(headers$knowledge_time) & headers$knowledge_time <= knowledge_cutoff
     headers <- headers[eligible, , drop = FALSE]
     header_order <- order(
       headers$effective_from,
@@ -84,7 +85,7 @@ ledgr_membership_resolve_at <- function(data,
     drop = FALSE
   ]
   interval_rows <- interval_rows[
-    ledgr_availability_applicable(interval_rows, cutoff),
+    ledgr_availability_applicable(interval_rows, cutoff, knowledge_cutoff),
     ,
     drop = FALSE
   ]
@@ -202,6 +203,20 @@ ledgr_membership_resolve_at <- function(data,
     rows = resolution_rows,
     applicable_headers = headers,
     applicable_rows = interval_rows
+  )
+}
+
+ledgr_membership_resolve_at <- function(data,
+                                        universe_id,
+                                        cutoff,
+                                        instruments = NULL,
+                                        knowledge_cutoff = cutoff) {
+  ledgr_membership_resolve_prepared(
+    data = data,
+    universe_id = universe_id,
+    cutoff = cutoff,
+    instruments = instruments,
+    knowledge_cutoff = knowledge_cutoff
   )
 }
 

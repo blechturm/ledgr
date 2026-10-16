@@ -555,17 +555,26 @@ testthat::test_that("[LTB-0286] corporate-action clocks distinguish three cases"
     civil_bundle,
     "equity_corporate_actions"
   )[[1L]]$rows
+  civil_sessions <- ledgr:::ledgr_facts_family(
+    civil_bundle,
+    "sessions"
+  )[[1L]]$rows
+  session_index <- match(as.Date("2020-01-03"), civil_sessions$session_date)
   testthat::expect_identical(
-    civil_row$knowledge_time,
-    civil_row$entitlement_time
+    as.numeric(civil_row$knowledge_time),
+    as.numeric(civil_sessions$session_open[[session_index]])
+  )
+  testthat::expect_identical(
+    as.numeric(civil_row$entitlement_time),
+    as.numeric(civil_sessions$session_close[[session_index]])
   )
   civil_evidence <- ledgr:::ledgr_json_read_nested(
     civil_row$civil_time_json[[1L]]
   )
-  testthat::expect_identical(
+  testthat::expect_false(identical(
     civil_evidence$knowledge_time$resolved_ts_utc,
     civil_evidence$entitlement_time$resolved_ts_utc
-  )
+  ))
   audit <- ledgr_facts_equity_corporate_actions(base)
   testthat::expect_true(is.na(audit$rows$knowledge_time[[1L]]))
 
