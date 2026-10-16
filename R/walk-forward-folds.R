@@ -797,6 +797,11 @@ ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
 # terminal event inside it would go unsettled. Refuse before any training
 # sweep or store write and name the first offending pair.
 ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, fold_windows) {
+  if (inherits(fold_windows, "ledgr_fold_list")) {
+    fold_windows <- lapply(fold_windows, function(fold) {
+      ledgr_walk_forward_fold_windows(exp, fold, "carry_test_state")
+    })
+  }
   if (length(fold_windows) < 2L) return(invisible(TRUE))
   test_start <- as.POSIXct(vapply(fold_windows, function(x) {
     as.numeric(x$test$scoring_start_utc)
