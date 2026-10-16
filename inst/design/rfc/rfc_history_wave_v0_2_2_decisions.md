@@ -14,10 +14,11 @@ accepted synthesis until stage 3 writes and accepts the amendment.
 
 ## Resume here
 
-**Current in stage 2.** Cut 15 is closed: Workstreams 35 and 39 are accepted,
-so the joint gate in the
+**Current in stage 2, H2.** Cut 15 is closed and the reviewed H0 drift map and
+H1 real-data input record are complete. Resume with Sessions D, E and F plus
+the H0 questions listed below. The joint gate in the
 [current macro-plan order](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-remaining-order)
-is satisfied. Resume here at Session D; everything needed is linked below.
+is satisfied; everything needed is linked below.
 
 The stage-3 successor to
 [historical-projection v11](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
@@ -35,6 +36,15 @@ is the pre-history Sharadar build. Its cold verification and full-membership
 plus dynamic-membership availability-path probes pass on one snapshot
 identity. It opens no schema-119 store and includes no dividend facts. It is
 the current history-wave input now that the joint gate is satisfied.
+
+H1 extends that record in `ledgr-research` commit
+`e07e89d5eb14237d6975170a7306fb56f7267cf2`,
+`experiments/history-wave-h1/` (final independent verdict: PASS). It records
+post-adapter gaps and fact coverage, current phase timings, a one-run
+whole-stage working-set peak, and a representative two-worker process-tree
+peak. The memory peaks are coarse lower bounds from one host and one run; H6
+must repeat the same measurement boundary before applying a percentage gate.
+Two source captures provide negative correction-chain evidence only.
 
 **Decided so far** (details in the rows):
 - Session 0: the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)
@@ -62,21 +72,17 @@ the current history-wave input now that the joint gate is satisfied.
   release. B's "dense universes" means full membership on the availability
   path. This later decision supersedes Cut 15's earlier both-modes wording.
 
-**Still open:** Session D (indicator labels, recommendations ready), Session E
-(memory budget: proposed no more than +10% peak from WS3/WS4, the real
-28-year baseline from the census, structural memory reduction as the next
-release's headline), Session F (after the Sharadar census), and the
-remaining consider-level rows (one batch).
+**Still open:** Session D (indicator labels and gap behavior), Session E
+(representation, size guard, memory budget and decision-trace volume),
+Session F (correction-chain policy), the H0 questions below, and the remaining
+consider-level rows. H1 is an input to these decisions, not their answer.
 
 **Next steps:**
-1. Sharadar track: start from the WS39 schema-120 snapshot record above, then
-   extend its aggregate build evidence with the history census (fact refusals,
-   gap lengths after dropping carried bars, delisting reasons, correction
-   chains) and end-to-end history runs with runtime and per-phase memory. Feeds
-   B's gap thresholds, E's baseline, F. The later dividend-facts rebuild stays
-   with its existing adapter/WS7 owner.
-2. Complete the v11 current-tree drift map, close stage 2, then stage 3 (one
-   consolidated v12 successor), 4 (Type 1 final review), and 5 (WS3/WS4 cut).
+1. Complete Sessions D, E and F, dispose of the H0 questions and remaining
+   consider-level rows, and close stage 2. The later dividend-facts rebuild
+   stays with its existing adapter/WS7 owner.
+2. Continue with stage 3 (one consolidated v12 successor), stage 4 (Type 1
+   final review), and stage 5 (WS3/WS4 cut).
 
 **Evidence index:**
 - Proposal, review: [proposal](rfc_history_wave_v0_2_2_proposal.md),
@@ -88,6 +94,11 @@ remaining consider-level rows (one batch).
 - Stage 1 checks: `dev/design-checks/history_wave_stage1/` (probes, TTR gap
   behavior, burn-in, speed).
 - Adapter and long-run state: [Sharadar adapter survey](../ledgr_v0_2_2_spec_packet/sharadar_adapter_survey.md).
+- H0 reconciliation: [v11 current-tree drift map](rfc_point_in_time_historical_projection_v11_current_tree_drift_map.md)
+  and its [independent review](rfc_point_in_time_historical_projection_v11_current_tree_drift_map_review.md)
+  (final focused verdict PASS at `16f415cd`).
+- H1 real-data inputs: `ledgr-research` commit `e07e89d`,
+  `experiments/history-wave-h1/README.md` and `review.md` (final verdict PASS).
 - Memory baseline: [long-window Cut 3 baseline](../ledgr_v0_2_2_spec_packet/long_window_cut3_baseline.md)
   (peak 512 MiB at 252 pulses to 3,832 MiB at 6,056 pulses, 600
   instruments); Cut 5 removed about 14%; EXP-0003 peaked at 7.0 GB on 0.2.1.0.
@@ -97,7 +108,7 @@ remaining consider-level rows (one batch).
 | Stage | What | Exit | State |
 | --- | --- | --- | --- |
 | 1 | Verify | Every finding's premise rerun or read at `e38b0d7`; result in the Verified column | done 2026-10-08 |
-| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | current; paused 2026-10-08 after Sessions 0, A, B and C, then made resumable 2026-10-15 when the Cut 15 WS35-plus-WS39 gate cleared; resume at Session D |
+| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | current at H2; H0 and H1 complete, resume with Sessions D, E and F plus the H0 questions |
 | 3 | Supersede | One consolidated v12 synthesis carrying retained v11 rules, the accepted register decisions and the post-Cut 15 architecture under `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
 | 4 | Final review | Type 1 review of v12 against the drift map, this register, current contracts and the current tree | open |
 | 5 | Ticket cut | WS3/WS4 cut in `tickets.yml`; cut review; pipeline rows leave `README.md` | open |
@@ -256,7 +267,34 @@ Maintainer, 2026-10-08, after the adapter survey:
 | X-F3 | should-fix | Carry barriers depend on lifetime and CA at t | confirmed: v11 s5 barriers use knowable `known_inactive`, corporate actions and terminal assertions | Name the dependency in the amendment | **accept** (maintainer, 2026-10-08, "be pragmatic"): the amendment names the dependency of carry barriers on lifetime and corporate actions at t |
 | X-F2 | should-fix | Feature-value revision (v11 7(d)) has no owner | corrected: the macro plan's WS3 owns "numerical correctness at the history boundary"; what is missing is the proposal's stance | WS3 stance: one prepared series per feature and policy; revision unexercised in this release; keep v11 section 8 fixtures as an obligation | **accept** (maintainer, 2026-10-08, "be pragmatic"): WS3 states the stance; revision is unexercised by Sharadar in this release; v11 s8 detecting fixtures stay an obligation |
 
+## H0 questions to close in H2
+
+The reviewed
+[v11 current-tree drift map](rfc_point_in_time_historical_projection_v11_current_tree_drift_map.md)
+exposed these choices. H0 deliberately did not answer them. H2 must decide,
+defer with a durable trigger, reject with a reason, or route each one before
+v12 is drafted.
+
+| ID | Sev | Question | Current evidence and owner | Decision |
+| --- | --- | --- | --- | --- |
+| H0-Q1 | should-fix | Does history carry treat an omitted price basis as the effective assumed `split_adjusted` model, or as an undeclared-basis conservative barrier, and what enters history identity? | The 2026-10-11 maintainer amendment makes omitted basis economically and visibly `split_adjusted` while identity remains `NULL`; on the availability path `NULL` reaches that assumed model. V11's carry-barrier rule predates the amendment. | pending |
+| H0-Q2 | should-fix | Are instrument-narrowed expected sessions rejected, deferred, or bound; if bound, how are they cutoff-resolved, aligned to the common axis, and how do they treat observations inside inactive intervals? | Owned today by the RFC pipeline `instrument-specific-session-axis` row and the WS3 macro-plan bullet. V11 says no request window may choose the inactive-interval treatment silently. H2 must dispose of both owners. | pending |
+| H0-Q3 | should-fix | Does history support a knowable corporate action with neither entitlement nor effective clock; if so, what class, parent, fields and timing refuse it? | Ingest currently permits both optional clocks to be absent; execution maps the missing clocks to `NA` and never posts the action. `ledgr_invalid_corporate_action_event` currently covers only a non-finite entitlement-recount delta. | pending |
+| H0-Q4 | blocking | How does pulse inspection satisfy availability-only history parity? | `ledgr_pulse_snapshot()` is a separate dense one-pulse helper outside the fold, with its own SQL and non-strict feature path. H2 must either bind an availability-aware inspection route or assign a different owner; it must not claim the current helper already shares the fold. | pending |
+| H0-Q5 | should-fix | What is the default estimator row set, including held nonmembers, and how are inclusion and exclusion represented? | V11 keeps held nonmembers on the decision axis and does not exclude a past observation merely because membership was inactive then. The UX brief proposes `instruments = "admissible"` but leaves selector vocabulary and exclusion representation open. | pending |
+| H0-Q6 | consider | What may seed the first column of a shorter lookback under the one data-start rule? | Sessions A and B supersede the old public-axis hydration mechanism, no-second-warmup rule and `0 x lookback` shape. V12 still needs an explicit shorter-lookback carry-seed statement without creating a second history start. | pending |
+
+History identity remains with D3-F5 rather than a duplicate H0 row. That row
+must decide whether history inputs and the hydration change require an
+identity-rule or store-format bump; rule 3 is current authority, not a promise
+that no bump is needed.
+
 ## Session D: indicator history class
+
+H1 threshold input: inside observed instrument spans there are 1,000 missing
+sessions in 746 runs: 612 one-session runs, 93 two-session runs, 33 runs of
+three to five sessions, three runs of six to ten, and five runs of eleven to
+twenty. This is one vendor/universe and chooses no tolerance or history class.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
@@ -264,11 +302,21 @@ Maintainer, 2026-10-08, after the adapter survey:
 | D3-F2 | should-fix | TTR class belongs in the warmup rules table, per function | confirmed for testable single-output rows: WMA, ROC, momentum, MFI, CMF, runMean/SD/Var/MAD gaps <= 1e-15, CCI 1.15e-11 (float noise); ATR, MACD, BBands, aroon, DonchianChannel need `output` (multi-column) | Bounded vs history-dependent per row; verify each against TTR source | pending |
 | D3-F3 | should-fix | Refutation belongs in the strict path, against the full series once | confirmed: strict scalar compares `fn(window)` with `tail(series_fn(window))` per window of `stable_after` (`R/features-engine.R:291-347`) | Compare `fn(window_i)` with `series_fn(full)[i]` | pending |
 | D3-F4 | consider | Refusal must name instrument, position and gap, with a product tolerance | confirmed (no premise) | Accept | pending |
-| D3-F5 | consider | Does `history_class` enter identity? | confirmed: `ledgr_active_feature_fingerprint` carries `gap_contract` (`R/feature-cache.R:82-94`) | Feature fingerprint beside `gap_contract` | pending |
+| D3-F5 | consider | Does `history_class` enter identity, and do history inputs or the hydration change require an identity-rule or store-format bump? | confirmed: current `ledgr_active_feature_fingerprint()` carries `gap_contract` (`R/features-engine.R:85-94`); `R/feature-cache.R` was deleted in Cut 15 | Feature fingerprint beside `gap_contract`; decide the current-format effect rather than presupposing rule 3 remains sufficient | pending |
 | D3-F6 | consider | Define bounded testably | confirmed (no premise) | A function of the last `stable_after` bars only | pending |
 | I-F3 | consider | Spike B's 1e-9 is a 120-bar fixture tolerance | confirmed: dense SMA(20) 2.91e-12 at 3,000 bars; TTR SMA 9.95e-14; BBands 1.14e-13 | State a basis for any product tolerance | pending |
 
 ## Session E: storage details and budget
+
+H1 resource input: the representative 7,213-pulse run records native phase
+times of 6.92 seconds pre, 38.55 seconds loop and 0.06 seconds post. The whole
+stage, including source loading, snapshot copy and cold verification/open,
+peaked at 3,106.50 MiB parent working set. A two-candidate/two-worker sweep
+peaked at 8,957.23 MiB in the parent and 14,945.56 MiB across the sampled
+process tree. These are coarse one-host lower bounds sampled about every 2.3
+seconds; summed working sets may double-count shared pages. They set an order
+of magnitude, not the budget or representation. H6 must repeat the same
+boundary before applying a percentage gate.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
@@ -284,6 +332,12 @@ Maintainer, 2026-10-08, after the adapter survey:
 | C11-F2 | consider | Decision-trace volume drives diagnostic memory: availability runs write one `decision_recorded` row per member per pulse, about 3.6 million (momentum) and 4.2 million (equal-weight) rows on the 1998-2026 Sharadar runs, including pulses where the strategy holds | measured in Cut 11 LDG-2976 (`dev/bench/v0_2_2_sharadar_run/evidence/run1`); Workstream 22 removes the sweep's quadratic copy (F4) but not the volume | Decide with the memory budget whether the default decision trace stays per member per pulse; changing it changes what `ledgr_results(bt, 'diagnostics')` and `ledgr_run_explain()` show, so it is a design decision, not an optimization; routed by the maintainer 2026-10-08 | pending |
 
 ## Session F: correction chains
+
+H1 supplies negative evidence only: two captures expose current-list redates,
+contraticker-only same-key changes and one hard-coded terminal replacement,
+not empirical correction chains. The source has no trading-status facts.
+Session F must decide from requirements or request more vintages; H1 cannot
+close the chain rules by absence.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |

@@ -661,6 +661,12 @@ consolidated v12 synthesis rather than another narrow amendment layer over
 v11. This does not restart the RFC cycle: the existing Type 2 work and this
 register's stage-2 decisions remain its design inputs.
 
+Progress, 2026-10-16: H0 and H1 are complete with final independent verdicts
+PASS. H0 is the reviewed v11 current-tree drift map at `16f415cd`; H1 is the
+reviewed `ledgr-research` aggregate evidence bundle at `e07e89d`. H2 is the
+current step. The decision register owns their open semantic questions and
+resource inputs; this plan keeps only the sequence.
+
 #### H0. Reconcile the current tree with v11
 
 Produce one clause-level drift map with exactly four dispositions: retain,
