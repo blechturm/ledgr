@@ -88,8 +88,32 @@ cow <- data.frame(
 )
 e0_write_csv(cow, file.path(out_dir, "copy_on_write.csv"))
 
+# A single-reference shared root list cannot accept the ordinary outer-list
+# replacement used by ledgr's evaluator. With an additional reference R may
+# duplicate to an ordinary list first, so this witness deliberately keeps one.
+root <- mori::share(list(x = 1:3))
+root_shared_before <- mori::is_shared(root)
+root_error <- tryCatch({
+  root[["x"]] <- 4:6
+  ""
+}, error = function(e) conditionMessage(e))
+root_update <- data.frame(
+  scenario = "single_reference_root_update",
+  root_shared_before = root_shared_before,
+  assignment_succeeded = !nzchar(root_error),
+  error_contains_set_elt = grepl("Set_elt", root_error, fixed = TRUE),
+  error_message = root_error,
+  stringsAsFactors = FALSE
+)
+e0_write_csv(root_update, file.path(out_dir, "root_list_update.csv"))
+stopifnot(
+  root_update$root_shared_before,
+  !root_update$assignment_succeeded,
+  root_update$error_contains_set_elt
+)
+
 cat(sprintf(
-  "HISTORY_E1_PROBE_OK fields=%d compact=%d exact=%d\n",
+  "HISTORY_E1_PROBE_OK fields=%d compact=%d exact=%d root_set_elt=1\n",
   nrow(rows), sum(rows$shared_serialized_bytes < rows$regular_serialized_bytes),
   sum(rows$value_identical)
 ))

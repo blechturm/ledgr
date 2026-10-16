@@ -143,7 +143,13 @@ summary_rows <- lapply(seq_along(measured), function(i) {
   s <- d$samples
   from <- meta$start_epoch[[1L]]
   to <- meta$end_epoch[[1L]]
-  epochs <- if (nrow(s)) sort(unique(s$epoch[s$epoch >= from & s$epoch <= to])) else numeric()
+  in_window <- if (nrow(s)) s$epoch >= from & s$epoch <= to else logical()
+  round_epochs <- if (any(in_window)) {
+    vapply(
+      split(s$epoch[in_window], s$sample_id[in_window]),
+      stats::median, numeric(1)
+    )
+  } else numeric()
   r <- d$retention
   data.frame(
     arm = run$arm, status = meta$status[[1L]], exit_status = run$status,
@@ -156,21 +162,20 @@ summary_rows <- lapply(seq_along(measured), function(i) {
     shared_regular_bytes = meta$shared_regular_bytes[[1L]],
     shared_wire_bytes = meta$shared_wire_bytes[[1L]],
     shared_region_count = meta$shared_region_count[[1L]],
-    effective_sample_interval_sec = if (length(epochs) > 1L) stats::median(diff(epochs)) else NA_real_,
-    max_sample_gap_sec = if (length(epochs) > 1L) max(diff(epochs)) else NA_real_,
+    sample_round_interval_sec = if (length(round_epochs) > 1L) stats::median(diff(round_epochs)) else NA_real_,
+    max_sample_gap_sec = if (length(round_epochs) > 1L) max(diff(round_epochs)) else NA_real_,
     parent_peak_wset = peak_sum(s, "wset_bytes", "parent", from, to),
     parent_peak_private_commit = peak_sum(s, "private_commit_bytes", "parent", from, to),
     daemon_peak_wset_sum = peak_sum(s, "wset_bytes", "daemon", from, to),
     daemon_peak_private_commit_sum = peak_sum(s, "private_commit_bytes", "daemon", from, to),
-    tree_peak_wset_sum = peak_sum(s, "wset_bytes", NULL, from, to),
-    tree_peak_private_commit_sum = peak_sum(s, "private_commit_bytes", NULL, from, to),
+    sampled_parent_daemons_peak_wset = peak_sum(s, "wset_bytes", NULL, from, to),
+    sampled_parent_daemons_peak_private_commit = peak_sum(s, "private_commit_bytes", NULL, from, to),
     in_process_parent_peak_wset = max(r$wset_bytes),
     in_process_parent_peak_private_commit = max(r$private_commit_bytes),
     after_stage_private = point(r, "after_stage", "private_commit_bytes"),
     after_submit_private = point(r, "after_submit", "private_commit_bytes"),
     after_collect_private = max(r$private_commit_bytes[grepl("^after_collect_", r$label)], na.rm = TRUE),
     after_drop_promises_private = point(r, "after_drop_promises_gc", "private_commit_bytes"),
-    peak_promise_handle_object_bytes = max(r$promise_handle_object_bytes),
     peak_collected_result_object_bytes = max(r$collected_result_object_bytes),
     stringsAsFactors = FALSE
   )
@@ -211,7 +216,7 @@ payload_summary <- utils::read.csv(
 )
 e0_write_csv(payload_summary, file.path(out_dir, "payload_summary.csv"))
 
-# Lifecycle runs are independent so deliberate interruption cannot contaminate
+# Lifecycle runs are independent so forced termination cannot contaminate
 # the binding arm processes.
 life_dir <- file.path(out_dir, "lifecycle")
 life <- processx::run(
@@ -234,8 +239,9 @@ environment <- data.frame(
     as.character(utils::packageVersion("mori")), as.character(utils::packageVersion("ps")),
     as.character(utils::packageVersion("processx")), sample_target,
     paste(
-      "Windows working-set sums may double-count shared pages; private commit",
-      "is not PSS or unique RSS; sampled peaks are lower bounds"
+      "Sampled population is the parent plus recorded mirai daemons, not the",
+      "dispatcher; working-set sums may double-count shared pages and private",
+      "commit is not PSS or unique RSS; sampled peaks are lower bounds"
     ), opt$gut
   ), stringsAsFactors = FALSE
 )

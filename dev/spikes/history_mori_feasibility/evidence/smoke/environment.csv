@@ -7,5 +7,5 @@
 "ps","1.9.3"
 "processx","3.9.0"
 "sample_target_sec","0.1"
-"memory_note","Windows working-set sums may double-count shared pages; private commit is not PSS or unique RSS; sampled peaks are lower bounds"
+"memory_note","Sampled population is the parent plus recorded mirai daemons, not the dispatcher; working-set sums may double-count shared pages and private commit is not PSS or unique RSS; sampled peaks are lower bounds"
 "gut","none"

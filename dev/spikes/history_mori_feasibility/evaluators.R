@@ -163,11 +163,13 @@ e1_parallel_eval_mori <- function(tasks, workers, capture, mode,
       )
       exact <- TRUE
       mismatched <- character()
+      fields_compared <- 0L
       if (verify) {
         mismatched <- expected_names[!vapply(expected_names, function(field) {
           identical(task[[field]], expected_task[[field]])
         }, logical(1))]
         exact <- identical(task, expected_task)
+        fields_compared <- length(expected_names)
       }
       if (!exact) {
         stop(
@@ -184,6 +186,8 @@ e1_parallel_eval_mori <- function(tasks, workers, capture, mode,
       list(
         result = result,
         exact = exact,
+        verified = verify,
+        fields_compared = fields_compared,
         mismatched = paste(mismatched, collapse = ";"),
         shared_state = rbind(shared_before, shared_after),
         result_serialized_bytes = length(serialize(
@@ -225,6 +229,8 @@ e1_parallel_eval_mori <- function(tasks, workers, capture, mode,
     reconstruction[[i]] <- data.frame(
       candidate_id = tasks[[i]]$candidate_id,
       exact = envelope$exact,
+      verified = envelope$verified,
+      fields_compared = envelope$fields_compared,
       mismatched_fields = envelope$mismatched,
       stringsAsFactors = FALSE
     )

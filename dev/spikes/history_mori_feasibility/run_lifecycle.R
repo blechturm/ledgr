@@ -20,6 +20,17 @@ region_absent <- function(path) {
   }, error = function(e) TRUE)
 }
 
+region_present <- function(path) {
+  name <- utils::read.csv(path, stringsAsFactors = FALSE)$name[[1L]]
+  tryCatch({
+    mapped <- mori::map_shared(name)
+    present <- mori::is_shared(mapped)
+    rm(mapped)
+    invisible(gc())
+    present
+  }, error = function(e) FALSE)
+}
+
 rows <- list()
 for (mode in c("success", "failure")) {
   mode_dir <- file.path(out_dir, mode)
@@ -32,12 +43,13 @@ for (mode in c("success", "failure")) {
   rows[[length(rows) + 1L]] <- data.frame(
     mode = mode, exit_status = run$status,
     cleanup_completed = file.exists(file.path(mode_dir, "result.csv")),
+    live_mapping_before_termination = NA,
     region_absent = region_absent(file.path(mode_dir, "shared_name.csv")),
     stringsAsFactors = FALSE
   )
 }
 
-mode <- "interrupt"
+mode <- "forced_termination"
 mode_dir <- file.path(out_dir, mode)
 dir.create(mode_dir, recursive = TRUE, showWarnings = FALSE)
 proc <- processx::process$new(
@@ -51,22 +63,28 @@ while (!file.exists(file.path(mode_dir, "ready")) && proc$is_alive() && Sys.time
 }
 if (!file.exists(file.path(mode_dir, "ready"))) {
   proc$kill_tree()
-  stop("Interrupt worker did not become ready.", call. = FALSE)
+  stop("Termination worker did not become ready.", call. = FALSE)
 }
-proc$interrupt()
-proc$wait(5000)
-if (proc$is_alive()) proc$kill_tree()
+live_mapping <- region_present(file.path(mode_dir, "shared_name.csv"))
+if (!live_mapping) {
+  proc$kill_tree()
+  stop("Shared mapping was not live before termination.", call. = FALSE)
+}
+proc$kill_tree()
 proc$wait()
 Sys.sleep(0.5)
 rows[[length(rows) + 1L]] <- data.frame(
   mode = mode, exit_status = proc$get_exit_status(),
   cleanup_completed = file.exists(file.path(mode_dir, "result.csv")),
+  live_mapping_before_termination = live_mapping,
   region_absent = region_absent(file.path(mode_dir, "shared_name.csv")),
   stringsAsFactors = FALSE
 )
 rows <- do.call(rbind, rows)
 e0_write_csv(rows, file.path(out_dir, "lifecycle.csv"))
-if (!all(rows$region_absent) || !all(rows$cleanup_completed[rows$mode != "interrupt"])) {
+if (!all(rows$region_absent) ||
+    !all(rows$cleanup_completed[rows$mode != "forced_termination"]) ||
+    !isTRUE(rows$live_mapping_before_termination[rows$mode == "forced_termination"])) {
   stop("Lifecycle cleanup check failed.", call. = FALSE)
 }
-cat("HISTORY_E1_LIFECYCLE_OK success failure interrupt\n")
+cat("HISTORY_E1_LIFECYCLE_OK success failure forced_termination\n")

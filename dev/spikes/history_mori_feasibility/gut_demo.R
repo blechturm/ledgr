@@ -16,12 +16,12 @@ status <- system2(e0_rscript(), c(
   "--preset", "smoke", "--package-root",
   normalizePath(opt$`package-root`, winslash = "/"), "--out-dir",
   file.path(gut, "gutted-arm"), "--verify", "true", "--gut",
-  "omit-runtime-projection"
+  "corrupt-runtime-projection"
 ), stdout = TRUE, stderr = TRUE)
 if (is.null(attr(status, "status")) || attr(status, "status") == 0L ||
-    !any(grepl("E1_TASK_RECONSTRUCTION_MISSING fields=runtime_projection", status,
+    !any(grepl("E1_TASK_RECONSTRUCTION_MISMATCH fields=runtime_projection", status,
                fixed = TRUE))) {
-  stop("Gutted runner did not fail at the exact omitted field.", call. = FALSE)
+  stop("Gutted runner did not fail at the corrupted field value.", call. = FALSE)
 }
 
 # The registered checker must also reject the corresponding evidence claim.
@@ -43,4 +43,4 @@ if (checker_status == 0L ||
     !any(grepl("reconstruction.csv differs", output, fixed = TRUE))) {
   stop("Checker missed the gutted reconstruction evidence.", call. = FALSE)
 }
-cat("HISTORY_E1_GUT_OK omitted=runtime_projection checker_status=", checker_status, "\n", sep = "")
+cat("HISTORY_E1_GUT_OK corrupted=runtime_projection checker_status=", checker_status, "\n", sep = "")

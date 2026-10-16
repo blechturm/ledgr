@@ -5,7 +5,7 @@ script_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 script_path <- normalizePath(sub("^--file=", "", script_arg[[1L]]), winslash = "/")
 source(file.path(dirname(script_path), "common.R"), local = globalenv())
 opt <- e0_parse_args(args, list(mode = "success", `out-dir` = tempfile("e1-life-")))
-if (!opt$mode %in% c("success", "failure", "interrupt")) stop("Bad lifecycle mode.")
+if (!opt$mode %in% c("success", "failure", "forced_termination")) stop("Bad lifecycle mode.")
 .libPaths(e0_lib_paths())
 dir.create(opt$`out-dir`, recursive = TRUE, showWarnings = FALSE)
 mirai::daemons(2L)
@@ -49,7 +49,7 @@ if (identical(opt$mode, "failure")) {
   }
 }
 
-if (identical(opt$mode, "interrupt")) {
+if (identical(opt$mode, "forced_termination")) {
   repeat Sys.sleep(1)
 }
 

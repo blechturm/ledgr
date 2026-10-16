@@ -37,14 +37,15 @@ e1_prepare_parts <- function(tasks, mode, gut = "none") {
   split <- e0_task_split(tasks)
   mori_fields <- intersect(e1_mori_fields(mode), names(split$shared))
   rebuild_fields <- intersect(e1_rebuilt_fields(mode), names(split$shared))
-  if (identical(gut, "omit-runtime-projection")) {
-    mori_fields <- setdiff(mori_fields, "runtime_projection")
-  }
   regular <- split$shared[setdiff(names(split$shared), c(mori_fields, rebuild_fields))]
-  if (identical(gut, "omit-runtime-projection")) {
-    regular$runtime_projection <- NULL
-  }
   mori_values <- split$shared[mori_fields]
+  if (identical(gut, "corrupt-runtime-projection")) {
+    projection <- mori_values$runtime_projection
+    projection$feature_engine_version <- paste0(
+      projection$feature_engine_version, "-E1-GUT"
+    )
+    mori_values$runtime_projection <- projection
+  }
   list(
     regular = regular,
     mori_values = mori_values,

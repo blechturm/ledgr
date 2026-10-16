@@ -1,0 +1,2 @@
+"scenario","root_shared_before","assignment_succeeded","error_contains_set_elt","error_message"
+"single_reference_root_update",TRUE,FALSE,TRUE,"ALTLIST classes must provide a Set_elt method [class: mori_list, pkg: mori]"

@@ -50,17 +50,18 @@ check(all(summary$status == "DONE") && all(summary$exit_status == 0L),
       "every smoke arm must finish DONE")
 positive <- c(
   "parent_peak_wset", "parent_peak_private_commit", "daemon_peak_wset_sum",
-  "daemon_peak_private_commit_sum", "tree_peak_wset_sum",
-  "tree_peak_private_commit_sum", "in_process_parent_peak_wset",
+  "daemon_peak_private_commit_sum", "sampled_parent_daemons_peak_wset",
+  "sampled_parent_daemons_peak_private_commit", "in_process_parent_peak_wset",
   "in_process_parent_peak_private_commit"
 )
 check(all(vapply(summary[positive], function(x) all(is.finite(x) & x > 0), logical(1))),
       "memory observations must be finite and positive")
-check(all(is.finite(summary$max_sample_gap_sec) & summary$max_sample_gap_sec > 0),
-      "sampling gaps must be disclosed")
-check(all(summary$peak_promise_handle_object_bytes > 0) &&
-        all(summary$peak_collected_result_object_bytes > 0),
-      "promise and result retention boundaries must be measured")
+check(all(is.finite(summary$sample_round_interval_sec) &
+          summary$sample_round_interval_sec > 0) &&
+        all(is.finite(summary$max_sample_gap_sec) & summary$max_sample_gap_sec > 0),
+      "sampling-round intervals and gaps must be disclosed")
+check(all(summary$peak_collected_result_object_bytes > 0),
+      "collected result boundaries must be measured")
 
 identity <- read_csv(actual, "result_identity.csv", "character")
 by_arm <- split(identity, identity$arm)
@@ -77,12 +78,14 @@ check(
 )
 check(all(identity$status == "DONE"), "all candidates must finish DONE")
 
+payload <- read_csv(actual, "payload_map.csv")
 reconstruction <- read_csv(actual, "reconstruction.csv")
 check(nrow(reconstruction) == 8L && all(reconstruction$exact) &&
+        all(reconstruction$verified) &&
+        all(reconstruction$fields_compared == nrow(payload)) &&
         all(is.na(reconstruction$mismatched_fields) | reconstruction$mismatched_fields == ""),
       "both mori modes must reconstruct all four tasks exactly")
 
-payload <- read_csv(actual, "payload_map.csv")
 expected_mori <- c(
   "bars_by_id", "bars_mat", "static_bars_views", "pulses_posix", "pulses_iso",
   "execution_opportunities_posix", "runtime_projection", "availability_data",
@@ -124,22 +127,38 @@ check(nrow(transfer_sum) == 3L &&
 for (arm in c("arm_c", "arm_d_share", "arm_d_rebuild")) {
   retention <- read_csv(actual, file.path(arm, "retention.csv"))
   dropped <- retention[retention$label == "after_drop_promises_gc", , drop = FALSE]
-  check(nrow(dropped) == 1L && dropped$promise_handle_object_bytes[[1L]] == 0L &&
-          dropped$collected_result_object_bytes[[1L]] > 0L,
-        paste(arm, "must distinguish dropped promises from retained results"))
+  expected_labels <- c(
+    "after_submit", paste0("after_collect_", seq_len(summary$n_candidates[[1L]])),
+    "after_drop_promises_gc"
+  )
+  check(nrow(dropped) == 1L &&
+          dropped$collected_result_object_bytes[[1L]] > 0L &&
+          all(expected_labels %in% retention$label),
+        paste(arm, "must record collection and retained-result boundaries"))
 }
 
 life <- read_csv(actual, "lifecycle.csv")
-check(identical(life$mode, c("success", "failure", "interrupt")) &&
+check(identical(life$mode, c("success", "failure", "forced_termination")) &&
         all(life$region_absent) &&
-        all(life$cleanup_completed[life$mode != "interrupt"]),
-      "shared regions must be absent after success, failure, and interruption")
+        all(life$cleanup_completed[life$mode != "forced_termination"]) &&
+        isTRUE(life$live_mapping_before_termination[
+          life$mode == "forced_termination"
+        ]),
+      paste(
+        "shared regions must be live before forced termination and absent",
+        "after success, failure, and forced termination"
+      ))
+
+root_update <- read_csv(
+  file.path(dirname(script_path), "evidence", "probe"), "root_list_update.csv"
+)
+check(nrow(root_update) == 1L && root_update$root_shared_before &&
+        !root_update$assignment_succeeded && root_update$error_contains_set_elt,
+      "single-reference shared root-list replacement must fail at Set_elt")
 
 allowed <- c(
   "dev/spikes/history_mori_feasibility",
-  "inst/design/spikes/history_mori_feasibility",
-  "dev/spikes/history_mirai_payload_attribution",
-  "inst/design/spikes/history_mirai_payload_attribution"
+  "inst/design/spikes/history_mori_feasibility"
 )
 old_home <- Sys.getenv("HOME", unset = "")
 on.exit(Sys.setenv(HOME = old_home), add = TRUE)
@@ -173,4 +192,4 @@ if (length(failures)) {
   cat(paste0("FAIL: ", failures, collapse = "\n"), "\n", sep = "")
   quit(status = 1L)
 }
-cat("HISTORY_E1_OK arms=3 candidates=4 shared=8 rebuilt=3 lifecycle=clean\n")
+cat("HISTORY_E1_OK arms=3 candidates=4 shared=8 rebuilt=3 os_cleanup=clean\n")

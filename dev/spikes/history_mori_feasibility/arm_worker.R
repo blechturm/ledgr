@@ -51,7 +51,8 @@ capture$retention <- data.frame()
 capture$transfer <- data.frame()
 capture$shared_state <- e1_empty_shared_state()
 capture$reconstruction <- data.frame(
-  candidate_id = character(), exact = logical(), mismatched_fields = character(),
+  candidate_id = character(), exact = logical(), verified = logical(),
+  fields_compared = integer(), mismatched_fields = character(),
   stringsAsFactors = FALSE
 )
 capture$shared_wire_bytes <- 0

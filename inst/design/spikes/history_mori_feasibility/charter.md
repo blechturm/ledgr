@@ -30,10 +30,11 @@ it. No executor, API, dependency, contract, ticket, or decision changes.
 ## Evidence
 
 A smoke run must precede one binding run at E0's record shape. Record base-R
-XDR proxies; parent, daemon, and process-tree working set and private commit;
-shared-region and materialization facts; promise/result retention boundaries;
+XDR proxies; parent and recorded mirai-daemon working set and private commit;
+shared-region and materialization facts; promise/result retention checkpoints;
 result-transfer proxies; result/identity parity; exact reconstructed task
-fields; and cleanup after success, interruption, and worker failure.
+fields; and cleanup after success, forced process termination, and worker
+failure. The dispatcher is not in the sampled population.
 
 Windows working-set sums can double-count shared pages and private commit is
 not PSS or unique RSS. Every sampled peak is a lower bound. mori's compact

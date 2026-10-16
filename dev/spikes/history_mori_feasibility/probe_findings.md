@@ -13,5 +13,13 @@ corporate-action frame and from 84,288 to 136 bytes for static bar views.
 A write to a mapped numeric bar vector produced a private ordinary vector;
 the mapped source stayed unchanged. The runner therefore must distinguish
 read-only task evaluation from any accidental materialization. This probe says
-nothing about process-tree memory, retained promises, returned results, or
-cleanup after failures; those belong to the binding runner.
+nothing about sampled parent-and-daemon memory, retained promises, returned
+results, or cleanup after failures; those belong to the binding runner.
+
+A deterministic single-reference shared root list refused an outer-list
+replacement with mori's `Set_elt` error. That is the shape ledgr uses when it
+inserts candidate variants. With an extra reference, R may instead duplicate
+the root into an ordinary list before assignment, as mori's copy-on-modify
+documentation permits; such a successful exploratory assignment is not a
+stable compatibility guarantee. The runner therefore reconstructs ordinary
+outer containers around shared atomic leaves.
