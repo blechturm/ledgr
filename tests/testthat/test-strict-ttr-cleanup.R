@@ -331,6 +331,9 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   runtime_source <- paste(deparse(
     body(ledgr:::ledgr_run_fold_impl)
   ), collapse = "\n")
+  history_source <- paste(deparse(
+    body(ledgr:::ledgr_history_compute_feature_series)
+  ), collapse = "\n")
   sweep_source <- paste(deparse(
     body(ledgr:::ledgr_sweep_impl)
   ), collapse = "\n")
@@ -353,8 +356,13 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   testthat::expect_match(strict_source, "check_series_parity = FALSE", fixed = TRUE)
   for (source in list(precompute_source, runtime_source)) {
     testthat::expect_match(source, "ledgr_strict_builtin_kind", fixed = TRUE)
+  }
+  for (source in list(precompute_source, history_source)) {
     testthat::expect_match(source, "ledgr_compute_feature_series_strict", fixed = TRUE)
   }
+  testthat::expect_match(
+    runtime_source, "ledgr_history_compute_feature_series", fixed = TRUE
+  )
   testthat::expect_match(sweep_source, "ledgr_precompute_payload", fixed = TRUE)
   testthat::expect_match(sweep_source, "feature_engine_version", fixed = TRUE)
 

@@ -744,6 +744,7 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
   )
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L
+  original_candidate_eval <- ledgr:::ledgr_sweep_eval_candidate_task
   testthat::local_mocked_bindings(
     ledgr_sweep_eval_candidate_task = function(...) {
       calls$n <- calls$n + 1L
@@ -816,6 +817,68 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
     ledgr:::ledgr_history_worker_take(identity),
     class = "ledgr_staged_history_mismatch"
   )
+
+  snapshot <- availability_runtime_fixture(days = 4L)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(one = list(n = 1L))
+  stops <- new.env(parent = emptyenv())
+  stops$n <- 0L
+  dispatch_without_daemon <- function(tasks, workers) {
+    lapply(
+      tasks,
+      original_candidate_eval,
+      stop_on_error = FALSE
+    )
+  }
+  stage_without_daemon <- function(tasks, owner_id) {
+    list(
+      tasks = tasks,
+      invariant = NULL,
+      identity = NULL,
+      bytes = 0,
+      census = ledgr:::ledgr_sweep_history_payload_census(tasks)
+    )
+  }
+  stop_daemon <- function() {
+    stops$n <- stops$n + 1L
+    invisible(NULL)
+  }
+  testthat::with_mocked_bindings(
+    testthat::expect_s3_class(
+      ledgr_sweep(experiment, grid, seed = 1L, workers = 2L),
+      "ledgr_sweep_results"
+    ),
+    ledgr_parallel_worker_setup = function(...) list(initialized = TRUE),
+    ledgr_sweep_stage_history_tasks = stage_without_daemon,
+    ledgr_parallel_mirai_stage_history = function(...) invisible(TRUE),
+    ledgr_sweep_eval_candidate_tasks_parallel = dispatch_without_daemon,
+    ledgr_parallel_mirai_stop = stop_daemon,
+    .package = "ledgr"
+  )
+  testthat::expect_identical(stops$n, 1L)
+  testthat::with_mocked_bindings(
+    testthat::expect_error(
+      ledgr_sweep(experiment, grid, seed = 1L, workers = 2L),
+      class = "ledgr_parallel_worker_failed"
+    ),
+    ledgr_parallel_worker_setup = function(...) list(initialized = TRUE),
+    ledgr_sweep_stage_history_tasks = stage_without_daemon,
+    ledgr_parallel_mirai_stage_history = function(...) invisible(TRUE),
+    ledgr_sweep_eval_candidate_tasks_parallel = function(...) {
+      rlang::abort(
+        "simulated worker failure",
+        class = c("ledgr_parallel_worker_failed", "ledgr_parallel_error")
+      )
+    },
+    ledgr_parallel_mirai_stop = stop_daemon,
+    .package = "ledgr"
+  )
+  testthat::expect_identical(stops$n, 2L)
 })
 
 # ledgr-test-profile: heavy_protocol

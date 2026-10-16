@@ -14,10 +14,10 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
   )
   feature_boundary <- NULL
   fold_boundary <- NULL
-  original_strict <- ledgr:::ledgr_compute_feature_series_strict
+  original_history_feature <- ledgr:::ledgr_history_compute_feature_series
   original_fold <- ledgr:::ledgr_execute_fold
   testthat::local_mocked_bindings(
-    ledgr_compute_feature_series_strict = function(...) {
+    ledgr_history_compute_feature_series = function(...) {
       caller <- parent.frame()
       feature_boundary <<- list(
         bars_all = get0("bars_all", caller, inherits = FALSE),
@@ -28,7 +28,7 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
           "history_substrate", caller, inherits = FALSE
         )
       )
-      original_strict(...)
+      original_history_feature(...)
     },
     ledgr_execute_fold = function(execution, output_handler) {
       caller <- parent.frame()
