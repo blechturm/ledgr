@@ -23,6 +23,18 @@ mirai 2.7.2 and mori 0.2.2.
   dev/spikes/history_mori_feasibility/evidence/record
 
 & "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
+  dev/spikes/history_mori_feasibility/run_lifecycle.R `
+  --out-dir dev/spikes/history_mori_feasibility/evidence/record/lifecycle `
+  --summary dev/spikes/history_mori_feasibility/evidence/record/lifecycle.csv `
+  --log dev/spikes/history_mori_feasibility/evidence/record/lifecycle.log
+
+& "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
+  dev/spikes/history_mori_feasibility/run_lifecycle.R `
+  --out-dir dev/spikes/history_mori_feasibility/evidence/smoke/lifecycle `
+  --summary dev/spikes/history_mori_feasibility/evidence/smoke/lifecycle.csv `
+  --log dev/spikes/history_mori_feasibility/evidence/smoke/lifecycle.log
+
+& "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
   dev/spikes/history_mori_feasibility/check_spike.R `
   --against dev/spikes/history_mori_feasibility/evidence/smoke `
   --package-root .
@@ -45,8 +57,9 @@ bound.
 
 `derive_record.R` is an idempotent postprocessor for reporting-schema changes:
 it derives sampling-round intervals, renamed population totals, and explicit
-reconstruction witnesses from committed raw CSVs. It neither runs a benchmark
-nor invents measurements. `root_list_update.csv` records the public probe's
+reconstruction witnesses from raw arm metadata and payload maps, stopping
+unless both source arms say `verify = TRUE`. It neither runs a benchmark nor
+invents measurements. `root_list_update.csv` records the public probe's
 single-reference `Set_elt` refusal. Reconstruction rows say whether comparison
 ran and how many named task fields it compared.
 

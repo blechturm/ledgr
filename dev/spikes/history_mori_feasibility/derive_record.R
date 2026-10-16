@@ -59,11 +59,27 @@ summary_order <- c(
 summary <- summary[c(summary_order, setdiff(names(summary), summary_order))]
 utils::write.csv(summary, file.path(record, "arm_summary.csv"), row.names = FALSE, na = "")
 
-fields_compared <- nrow(utils::read.csv(file.path(record, "payload_map.csv")))
+verify_dirs <- c(D_SHARE = "arm_d_share_verify", D_REBUILD = "arm_d_rebuild_verify")
+verify_input <- lapply(verify_dirs, function(dir) {
+  meta <- utils::read.csv(file.path(record, dir, "arm_meta.csv"))
+  if (nrow(meta) != 1L || !isTRUE(meta$verify[[1L]])) {
+    stop("Raw verification arm is not marked `verify = TRUE`: ", dir)
+  }
+  reconstruction <- utils::read.csv(file.path(record, dir, "reconstruction.csv"))
+  fields <- utils::read.csv(file.path(record, dir, "payload_map.csv"))$field
+  list(candidates = reconstruction$candidate_id, fields = fields)
+})
 path <- file.path(record, "reconstruction.csv")
 x <- utils::read.csv(path, stringsAsFactors = FALSE)
-x$verified <- TRUE
-x$fields_compared <- fields_compared
+x$verified <- vapply(seq_len(nrow(x)), function(i) {
+  arm <- x$arm[[i]]
+  arm %in% names(verify_input) &&
+    x$candidate_id[[i]] %in% verify_input[[arm]]$candidates
+}, logical(1))
+x$fields_compared <- vapply(seq_len(nrow(x)), function(i) {
+  length(verify_input[[x$arm[[i]]]]$fields)
+}, integer(1))
+if (!all(x$verified)) stop("Aggregate reconstruction lacks raw verified input.")
 x <- x[c(intersect(c("arm", "candidate_id", "exact"), names(x)),
          "verified", "fields_compared", "mismatched_fields")]
 utils::write.csv(x, path, row.names = FALSE, na = "")

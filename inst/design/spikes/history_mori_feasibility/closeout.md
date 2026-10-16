@@ -5,9 +5,11 @@ The integration is technically feasible and exact, and none of the charter's
 RED kill conditions fired. Adoption is rejected under the question's
 *materially* clause and the repository complexity gate. At two workers, the
 largest avoidable copy is about `(workers - 1) * 44.9 MB`, only 3--4% of the
-roughly 1.3 GB sampled total; the observed reduction was 42.0 MB (3.1%). No
-numerical materiality threshold was preregistered. Wall time is observational
-and does not decide the verdict.
+roughly 1.3 GB sampled total; the observed reduction was 42.0 MB (3.1%). That
+ceiling replaces one daemon copy with one shared region while the parent keeps
+its ordinary task list. No numerical threshold was preregistered. AMBER does
+not apply because this structural bound, not noisy sample ordering, resolves
+materiality. Wall time is observational and does not decide the verdict.
 
 ## What ran
 
@@ -24,10 +26,11 @@ verification runs reconstructed all four tasks in each mori arm, comparing all
 28 named fields. Every selected atomic leaf remained shared around evaluation.
 
 A deterministic single-reference probe confirmed that a shared root list
-refuses ledgr's outer-list replacement with mori's `Set_elt` error. Extra
-references may make R duplicate to an ordinary list first, so such success is
-not a stable guarantee. The working form uses one region and ordinary outer
-containers around shared leaves.
+refuses ledgr's outer-list replacement with mori's `Set_elt` error. This is a
+mori compatibility observation, not a ledgr defect. Extra references may make
+R duplicate to an ordinary list first, so such success is not a stable
+guarantee. The working form uses one region and ordinary outer containers
+around shared leaves.
 
 ## Binding observations
 
@@ -50,19 +53,18 @@ and paid to create and touch the region. Versus D-share, D-rebuild increased
 sampled parent-plus-daemon private commit 6.1% and daemon private commit 8.4%.
 If reconsidered, share both bar derivatives and rebuild only `pulses_iso`.
 
-Each returned result serialized to 3,219 bytes; collected result lists occupied
-44,208 bytes. In D-share, private commit after dropping promises was 0.02 MB
-higher, not measurably lower, than the largest collection checkpoint. The old
-2,128-byte number measured promise handles, not retained payload. Promise
-payload retention remains unmeasured.
+Each returned result serialized to 3,219 bytes. The old 2,128-byte number
+measured promise handles, not retained payload, while checkpoint variability
+was much larger. Promise payload retention remains unmeasured.
 
 ## Lifecycle and boundary
 
 Success and deliberate worker failure completed explicit cleanup. A live
 mapping positive control passed immediately before forced process-tree
-termination; after creator death, Windows removed the mapping although R
-cleanup did not run. This uses a toy payload. Production sweep interruption
-and POSIX orphan behavior remain untested.
+termination; after the creator and its mapping daemons died, Windows removed
+the mapping although R cleanup did not run. This uses a toy payload. A daemon
+outliving its parent on Windows, production sweep interruption and POSIX orphan
+behavior remain untested.
 
 The gut retained all field names but corrupted `runtime_projection`;
 daemon-side `identical()` named it and the checker rejected the evidence. The
@@ -71,7 +73,7 @@ isolation, exercised parity and Windows OS cleanup. It does not prove unique
 RSS, larger-worker scaling, a persistent lifecycle, Linux behavior or speed.
 
 Reopen only when `(workers - 1) * substrate bytes` is a material share of
-measured total private commit on the real H1/Sharadar workload, and/or when
-another platform permits unique-page measurement. Measurement capability
-alone creates no benefit. For this wave, retain staged mirai C and add no mori
-dependency or product abstraction.
+measured total private commit on the real H1/Sharadar workload. Unique-page
+measurement would then be useful evidence, but is not an independent benefit
+trigger. For this wave, retain staged mirai C and add no mori dependency or
+product abstraction.

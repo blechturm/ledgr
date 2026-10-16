@@ -4,7 +4,7 @@ script_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
 script_path <- normalizePath(sub("^--file=", "", script_arg[[1L]]), winslash = "/")
 source(file.path(dirname(script_path), "common.R"), local = globalenv())
 opt <- e0_parse_args(commandArgs(trailingOnly = TRUE), list(
-  `out-dir` = tempfile("e1-lifecycle-")
+  `out-dir` = tempfile("e1-lifecycle-"), summary = "", log = ""
 ))
 .libPaths(e0_lib_paths())
 out_dir <- normalizePath(opt$`out-dir`, winslash = "/", mustWork = FALSE)
@@ -34,6 +34,7 @@ region_present <- function(path) {
 rows <- list()
 for (mode in c("success", "failure")) {
   mode_dir <- file.path(out_dir, mode)
+  if (dir.exists(mode_dir)) unlink(mode_dir, recursive = TRUE, force = TRUE)
   dir.create(mode_dir, recursive = TRUE, showWarnings = FALSE)
   run <- processx::run(
     rscript, c(worker, "--mode", mode, "--out-dir", mode_dir),
@@ -51,6 +52,7 @@ for (mode in c("success", "failure")) {
 
 mode <- "forced_termination"
 mode_dir <- file.path(out_dir, mode)
+if (dir.exists(mode_dir)) unlink(mode_dir, recursive = TRUE, force = TRUE)
 dir.create(mode_dir, recursive = TRUE, showWarnings = FALSE)
 proc <- processx::process$new(
   rscript, c(worker, "--mode", mode, "--out-dir", mode_dir),
@@ -82,9 +84,12 @@ rows[[length(rows) + 1L]] <- data.frame(
 )
 rows <- do.call(rbind, rows)
 e0_write_csv(rows, file.path(out_dir, "lifecycle.csv"))
+if (nzchar(opt$summary)) e0_write_csv(rows, opt$summary)
 if (!all(rows$region_absent) ||
     !all(rows$cleanup_completed[rows$mode != "forced_termination"]) ||
     !isTRUE(rows$live_mapping_before_termination[rows$mode == "forced_termination"])) {
   stop("Lifecycle cleanup check failed.", call. = FALSE)
 }
-cat("HISTORY_E1_LIFECYCLE_OK success failure forced_termination\n")
+message <- "HISTORY_E1_LIFECYCLE_OK success failure forced_termination"
+if (nzchar(opt$log)) writeLines(message, opt$log, useBytes = TRUE)
+cat(message, "\n", sep = "")
