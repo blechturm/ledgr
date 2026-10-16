@@ -48,6 +48,15 @@ These are evidence counts, not fixed acceptance targets. The permanent gates
 derive their inventories from the current source and require the report and
 test scanners to agree.
 
+## Workstream 40 refresh
+
+The source census was regenerated in check mode at correction commit
+`88c5afc7` after the causal-fact and Date-boundary work. Check mode passed with
+70 connection entries, 154 version rows, 80 hand-built run-config rows, 1,648
+helpers and 2,272 condition call sites; `metadata.csv` names that commit.
+Changes in row locations and the added helper are source-derived consequences
+of the implementation, not new acceptance targets.
+
 The final correction removes `ledgr_compute_features`, its now-unused
 `ledgr_validate_feature_defs` helper and the three tests that exercised only
 that obsolete database-writing engine. The production feature-series paths

@@ -152,6 +152,13 @@ reports zero current-only or run-config violations.
 - Product tree: `80c86012`; durable profile files are under
   `dev/bench/v0_2_2_history_foundation/evidence/`.
 
+The accepted correction is `26885b4b`, followed by direct carry-validator
+repair `88c5afc7` after the first fast-profile attempt exposed that regression.
+The retry passes 565/565 fast blocks in 110.09 seconds against 112 seconds; the
+review profile passes 353/353 blocks in 304.90 seconds with one pre-existing
+optional-package skip. The current-only source census passes in check mode at
+`88c5afc7` with the commit recorded literally in its metadata.
+
 ## Close-review correction record
 
 The independent review is preserved in `close_review_40.md`. Its correction
