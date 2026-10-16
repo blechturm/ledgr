@@ -1,9 +1,9 @@
 # Decision Register: WS3/WS4 History Wave
 
 Role: living; current decision register for the active WS3/WS4 history wave.
-Status: working
+Status: stage 4 accepted; stage 5 ticket cut is current
 Authority: working register. Accepted maintainer decisions are inputs to the
-later v12 successor; this register does not itself supersede v11.
+accepted v12 successor; this register does not itself supersede v11.
 
 Opened 2026-10-08. Records the maintainer's
 decision on every finding of the
@@ -14,9 +14,15 @@ accepted synthesis until stage 3 writes and accepts the amendment.
 
 ## Resume here
 
-**Current in stage 2, H2.** Cut 15 is closed and the reviewed H0 drift map and
-H1 real-data input record are complete. Resume with Sessions D, E and F plus
-the H0 questions listed below. The joint gate in the
+**Stage 4 (H4) is accepted.** Cut 15, the reviewed H0 drift map, the H1
+real-data input record and the H2 evidence wave are complete. Sessions D, E
+and F, the H0 questions and every remaining consider row were decided on
+2026-10-16 after two focused peer-review passes. The consolidated
+[v12 synthesis](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md)
+now carries those decisions. Its H4 final review returned eight Type 1
+document findings and no Type 2 question; the focused confirmation returned
+`PASS_AFTER_PATCHES`, its two bounded corrections are applied, and the
+maintainer accepted v12 on 2026-10-16. Resume with the H5 ticket cut. The joint gate in the
 [current macro-plan order](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-remaining-order)
 is satisfied; everything needed is linked below.
 
@@ -71,18 +77,33 @@ Two source captures provide negative correction-chain evidence only.
   leaves through the execution-core consolidation before the first CRAN
   release. B's "dense universes" means full membership on the availability
   path. This later decision supersedes Cut 15's earlier both-modes wording.
+- E: one immutable prepared substrate replaces the three current bar copies;
+  fact-state families use provenance-preserving bitemporal segments; staged
+  ordinary-R inputs serve each sweep daemon; `mori` is not adopted; the
+  supported claim covers one and two local workers; and paired H6 records,
+  not the coarse H1 values, apply the 10% memory gate.
+- H0: availability-aware pulse inspection runs preparation plus P1 and P2;
+  history defaults to the admissible set with explicit inclusion evidence;
+  shorter lookbacks are suffixes of the single data-start preparation; venue
+  Dates, session narrowing, price-basis defaults and clockless actions are
+  bound below.
+- D: every supported indicator has a bounded or history-dependent class;
+  `requires_bars` is the bounded dependency width; recursive state restarts
+  over treated-input segments; return and volatility families never consume
+  carried prices; custom definitions receive exact sampled causality and
+  refutation checks.
+- F: correction chains use monotone knowledge, interval coverage, no revival,
+  ancestor-only exemptions and one rule across construction and runtime.
 
-**Still open:** Session D (indicator labels and gap behavior), Session E
-(representation, size guard, memory budget and decision-trace volume),
-Session F (correction-chain policy), the H0 questions below, and the remaining
-consider-level rows. H1 is an input to these decisions, not their answer.
+**Still open:** no H2 semantic decision. Accepted v12 expresses the decisions
+below without reopening them. H5 implementation and H6 measured resource and
+full-history acceptance evidence remain open under Cut 16.
 
 **Next steps:**
-1. Complete Sessions D, E and F, dispose of the H0 questions and remaining
-   consider-level rows, and close stage 2. The later dividend-facts rebuild
-   stays with its existing adapter/WS7 owner.
-2. Continue with stage 3 (one consolidated v12 successor), stage 4 (Type 1
-   final review), and stage 5 (WS3/WS4 cut).
+1. Complete the Cut 16 review and obtain maintainer acceptance of its H5
+   tickets.
+2. Implement stage 5 and close H6. The later dividend-facts rebuild stays
+   with its existing adapter/WS7 owner.
 
 **Evidence index:**
 - Proposal, review: [proposal](rfc_history_wave_v0_2_2_proposal.md),
@@ -108,10 +129,10 @@ consider-level rows. H1 is an input to these decisions, not their answer.
 | Stage | What | Exit | State |
 | --- | --- | --- | --- |
 | 1 | Verify | Every finding's premise rerun or read at `e38b0d7`; result in the Verified column | done 2026-10-08 |
-| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | current at H2; H0 and H1 complete, resume with Sessions D, E and F plus the H0 questions |
-| 3 | Supersede | One consolidated v12 synthesis carrying retained v11 rules, the accepted register decisions and the post-Cut 15 architecture under `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
-| 4 | Final review | Type 1 review of v12 against the drift map, this register, current contracts and the current tree | open |
-| 5 | Ticket cut | WS3/WS4 cut in `tickets.yml`; cut review; pipeline rows leave `README.md` | open |
+| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | done 2026-10-16; H0-H2 and Sessions A-F complete |
+| 3 | Supersede | One consolidated v12 synthesis carrying retained v11 rules, the accepted register decisions and the post-Cut 15 architecture under `../rfc_cycle.md`; the RFC index routes its review | accepted 2026-10-16 |
+| 4 | Final review | Type 1 review of v12 against the drift map, this register, current contracts and the current tree | done 2026-10-16; `PASS_AFTER_PATCHES`, bounded patches applied |
+| 5 | Ticket cut | Cut 16 in `tickets.yml`; cut review; pipeline obligations leave `README.md` | drafted 2026-10-16; cut-review corrections current |
 
 Values: Verified is `confirmed`, `corrected` (premise partly wrong; note says
 how) or `refuted`. Decision is `pending`, `accept`, `accept with change`
@@ -183,16 +204,16 @@ Decides everything after it. Amends v11 section 3.
 | D4-F1 | blocking | Two hydration rules create a per-feature clock identity and inspection cannot carry | confirmed: one `hydration_start_utc` per window (`R/walk-forward-folds.R:583-592`), one per fold row (`R/walk-forward.R:803`), one `warmup_range$start` per payload (`R/precompute-features.R:200-261`). New input: decaying indicators reach bit-exact parity after a finite burn-in | One rule: feature state starts at the snapshot start for every entry point and class; bounded shortcut only as a proven exact optimization | **accept** (maintainer, 2026-10-08): every indicator starts at the beginning of the data in every run, sweep, walk-forward window and inspection |
 | D4-F3 | should-fix | Cut 9 oracle must flip to the carried arms; dense bounded parity is about 1e-12 under two rules | confirmed: LTB-0196 asserts restart and documents the carried values (`tests/testthat/test-feature-start.R:28-35`); dense SMA(20) cross-start gap 2.91e-12, strict built-in identical | Flip LTB-0196 expectations under the single rule | **accept** (follows from D4-F1) |
 | X-F4 | consider | Pulse inspection reproduces hydration only under one rule | confirmed: `ledgr_pulse_snapshot()` computes each series over bars up to the cutoff (`R/pulse-snapshot.R:285-300`) | Follows from D4-F1 | **accept** (follows from D4-F1) |
-| X-F5 | consider | Sweep feature-matrix helper may take the dense path in availability mode | refuted: called only by `tests/testthat/test-sweep.R`; production uses `R/precompute-features.R:632` and `R/backtest-runner.R:1039`, both strict-branching | No decision needed; optionally delete the test-only helper | pending |
+| X-F5 | consider | Sweep feature-matrix helper may take the dense path in availability mode | refuted: called only by `tests/testthat/test-sweep.R`; production uses `R/precompute-features.R:632` and `R/backtest-runner.R:1039`, both strict-branching | No decision needed; optionally delete the test-only helper | **accept with change** (H2): delete `ledgr_sweep_compute_feature_matrix`; keep its three fold-projection oracles by moving their fixture construction to the production precompute path, without weakening their prebuilt-view or mutation-isolation assertions |
 | D4-F4 | should-fix | History-dependent indicators are refused in availability mode, so WS7 on a PIT universe has no EMA/RSI/ATR/MACD | confirmed and stronger: refusal is anything not `strict_window` (`R/availability-policy.R:246-269`); `ledgr_ind_ema` is not `strict_window`, nor are bounded TTR functions other than SMA | Decide: v0.2.2 scope statement, or WS4 decides the gap rule | **decided** (maintainer, 2026-10-08): every supported indicator, built-in and TTR, must work on both ragged (availability) and dense universes in v0.2.2. WS4 owns the gap rule and the remaining blockers (see "B blockers" below) |
-| D4-F5 | consider | `ledgr_check_no_lookahead` is never called; full-history hydration spreads a lookahead | confirmed: defined at `R/features-engine.R:487`, used only in `tests/testthat/test-features.R` | Sampled build-time causality check beside D3's refutation | pending |
-| D4-F6 | consider | Stance on convergence for readiness and structural completeness | confirmed (no premise); burn-in measurement above is relevant | `stable_after` stays first-valid; convergence undisclosed in v0.2.2 | pending |
-| C11-F1 | should-fix | `ledgr_folds_rolling()` started on the 31st of a month builds non-contiguous test windows: month arithmetic from day 31 overflows, so a one-month step from 2019-12-31 leaves 2020-05-01 between two test windows | confirmed by the Cut 11 LDG-2977 oracle (2026-10-08); since LDG-2979 `carry_test_state` refuses such a list, `flat_test_state` still runs it with the gap | Fix the constructor's month arithmetic (clamp to month end) in the WS3/WS4 cut, which owns window and history starts; routed by the maintainer 2026-10-08 | pending |
-| PIT-S2-007 | should-fix | Walk-forward `carry_test_state` boundaries are not state-continuous: a `next_open` dividend whose entitlement is a window's last pulse never posts, and carried holdings have no mark history, so one without a bar on the next window's first pulse stops the test run at once | confirmed by the point-in-time audit Stage 2 (S2-007, probes `S2_wf_dividend`, `I_walk_forward` W4) and its challenger; the dropped last decision is the stated per-window rule | Mark history and entitlement belong to the same history-start decision as feature hydration; routed by the maintainer at audit Gate 2, 2026-10-10 | pending |
-| PIT-S2-011 | consider | Fact Dates and date-only window boundaries mean UTC midnight, not the venue's civil date: one Date fact blocks an open fill in New York but not in Sydney, and Honolulu windows shift one session | confirmed by the point-in-time audit Stage 2 (S2-011, probe `S2_venue`) and its challenger | Decide venue civil dates (session open) or explicit UTC instants only, with the window and history-start rules; routed by the maintainer at audit Gate 2, 2026-10-10 | pending |
-| PIT-G-013 | should-fix | v11 price-input carry (on by default, five sessions) will feed repeated prices into return and volatility features, so carried sessions contribute zero returns; a minimum-variance estimator then understates the variance of exactly the halted names the adapter exposes (LFB-027) | point-in-time audit Stage 3 (gap_analysis.md G-013; yardstick U4.4, U7.2) | The stage 3 amendment binds how input carry meets return-family features: bridge last valid to next valid, or no carry for them by default; the carried share travels with the history result and WS7 consumes it; routed by the maintainer at audit Gate 3, 2026-10-10 | pending |
-| PIT-G-014 | should-fix | Widens PIT-S2-007: under `carry_test_state` the last decision of each test window is also dropped (`final_pulse_no_execution`); the chain is not one run with scheduled parameter switches | point-in-time audit Stage 3 (G-014; yardstick U8.4, S36), probe `I_walk_forward` W1 | Decide whether a continuous carry chain equals one run (handing the last decision to the next window's first open) or state the non-equivalence in the Execution Contract; take the window-dependent corporate-action clock refusal (G-012) with it; routed at audit Gate 3, 2026-10-10 | pending |
-| PIT-G-015 | should-fix | Decision A speaks of strategy reads; mark history and dividend entitlement also start at the window start, so carried holdings and new entrants lose pre-window marks | point-in-time audit Stage 3 (G-015; PIT-04-014, PIT-09-005) | The history-start decision names mark history and entitlement beside feature history; Session E trims the decision trace (C11-F2) only where omitted rows are exactly reconstructible and `ledgr_run_explain()` still answers; routed at audit Gate 3, 2026-10-10 | pending |
+| D4-F5 | consider | `ledgr_check_no_lookahead` is never called; full-history hydration spreads a lookahead | confirmed: defined at `R/features-engine.R:487`, used only in `tests/testthat/test-features.R` | Sampled build-time causality check beside D3's refutation | **accept with change** (H2): exact prefix invariance at fixed deterministic positions for every concrete definition before artifacts; the sample rule is fixed and reproducible and failure refuses with a classed condition before any store write. Experiment-data window refutation applies only to custom bounded definitions, as Session D specifies |
+| D4-F6 | consider | Stance on convergence for readiness and structural completeness | confirmed (no premise); burn-in measurement above is relevant | `stable_after` stays first-valid; convergence undisclosed in v0.2.2 | **accept with change** (H2): `stable_after` means first-valid, never converged; teach the distinction and the measured recovery ranges. Structural completeness is a separate finite-lookback plus minimum-instrument query, not readiness |
+| C11-F1 | should-fix | `ledgr_folds_rolling()` started on the 31st of a month builds non-contiguous test windows: month arithmetic from day 31 overflows, so a one-month step from 2019-12-31 leaves 2020-05-01 between two test windows | confirmed by the Cut 11 LDG-2977 oracle (2026-10-08); since LDG-2979 `carry_test_state` refuses such a list, `flat_test_state` still runs it with the gap | Fix the constructor's month arithmetic (clamp to month end) in the WS3/WS4 cut, which owns window and history starts; routed by the maintainer 2026-10-08 | **accept with change** (H2): compute every rolling and anchored boundary from the original anchor plus `k * step`, then clamp to that result month's last civil day; never shift the preceding clamped boundary |
+| PIT-S2-007 | should-fix | Walk-forward `carry_test_state` boundaries are not state-continuous: a `next_open` dividend whose entitlement is a window's last pulse never posts, and carried holdings have no mark history, so one without a bar on the next window's first pulse stops the test run at once | confirmed by the point-in-time audit Stage 2 (S2-007, probes `S2_wf_dividend`, `I_walk_forward` W4) and its challenger; the dropped last decision is the stated per-window rule | Mark history and entitlement belong to the same history-start decision as feature hydration; routed by the maintainer at audit Gate 2, 2026-10-10 | **accept with change** (H2): `carry_test_state` is one economic chain; the deciding run owns the following-open fill, economic state crosses the boundary, and feature, mark and entitlement history come from the shared substrate. Standalone and flat windows retain their terminal rule |
+| PIT-S2-011 | consider | Fact Dates and date-only window boundaries mean UTC midnight, not the venue's civil date: one Date fact blocks an open fill in New York but not in Sydney, and Honolulu windows shift one session | confirmed by the point-in-time audit Stage 2 (S2-011, probe `S2_venue`) and its challenger | Decide venue civil dates (session open) or explicit UTC instants only, with the window and history-start rules; routed by the maintainer at audit Gate 2, 2026-10-10 | **accept with change** (H2): availability-path Dates are venue civil-session labels: effective starts and exclusive ends resolve to that session's open, knowledge Dates to its open, and window starts/ends to session open/close. POSIXct remains exact; ambiguous Dates refuse. Stored facts preserve the original value, resolved instant, venue zone and calendar identity; D3-F5 owns identity. Dense UTC-midnight behavior stays frozen |
+| PIT-G-013 | should-fix | v11 price-input carry (on by default, five sessions) will feed repeated prices into return and volatility features, so carried sessions contribute zero returns; a minimum-variance estimator then understates the variance of exactly the halted names the adapter exposes (LFB-027) | point-in-time audit Stage 3 (gap_analysis.md G-013; yardstick U4.4, U7.2) | The stage 3 amendment binds how input carry meets return-family features: bridge last valid to next valid, or no carry for them by default; the carried share travels with the history result and WS7 consumes it; routed by the maintainer at audit Gate 3, 2026-10-10 | **accept with change** (H2 Session D): return and volatility families never consume carried prices and silently bridge nothing; affected outputs are missing, carried share remains disclosed and WS7 consumes it. A span-labelled bridged-return feature is parked with the Sharadar gap census as its reopening trigger |
+| PIT-G-014 | should-fix | Widens PIT-S2-007: under `carry_test_state` the last decision of each test window is also dropped (`final_pulse_no_execution`); the chain is not one run with scheduled parameter switches | point-in-time audit Stage 3 (G-014; yardstick U8.4, S36), probe `I_walk_forward` W1 | Decide whether a continuous carry chain equals one run (handing the last decision to the next window's first open) or state the non-equivalence in the Execution Contract; take the window-dependent corporate-action clock refusal (G-012) with it; routed at audit Gate 3, 2026-10-10 | **accept with change** (H2): continuous carry must equal one public `ledgr_run()` with parameter switches at the same decision pulses on events, equity and diagnostics; a boundary decision is terminal only at the end of the whole chain |
+| PIT-G-015 | should-fix | Decision A speaks of strategy reads; mark history and dividend entitlement also start at the window start, so carried holdings and new entrants lose pre-window marks | point-in-time audit Stage 3 (G-015; PIT-04-014, PIT-09-005) | The history-start decision names mark history and entitlement beside feature history; Session E trims the decision trace (C11-F2) only where omitted rows are exactly reconstructible and `ledgr_run_explain()` still answers; routed at audit Gate 3, 2026-10-10 | **accept with change** (H2): feature, mark and entitlement history all start at the single data start and are read from the common substrate; only cash, positions, lot state, pending entitlements and frozen or stale mark status carry as economic state |
 
 ### B blockers: every indicator on ragged and dense universes
 
@@ -267,27 +288,32 @@ Maintainer, 2026-10-08, after the adapter survey:
 | X-F3 | should-fix | Carry barriers depend on lifetime and CA at t | confirmed: v11 s5 barriers use knowable `known_inactive`, corporate actions and terminal assertions | Name the dependency in the amendment | **accept** (maintainer, 2026-10-08, "be pragmatic"): the amendment names the dependency of carry barriers on lifetime and corporate actions at t |
 | X-F2 | should-fix | Feature-value revision (v11 7(d)) has no owner | corrected: the macro plan's WS3 owns "numerical correctness at the history boundary"; what is missing is the proposal's stance | WS3 stance: one prepared series per feature and policy; revision unexercised in this release; keep v11 section 8 fixtures as an obligation | **accept** (maintainer, 2026-10-08, "be pragmatic"): WS3 states the stance; revision is unexercised by Sharadar in this release; v11 s8 detecting fixtures stay an obligation |
 
-## H0 questions to close in H2
+## H0 questions closed in H2
 
 The reviewed
 [v11 current-tree drift map](rfc_point_in_time_historical_projection_v11_current_tree_drift_map.md)
-exposed these choices. H0 deliberately did not answer them. H2 must decide,
-defer with a durable trigger, reject with a reason, or route each one before
-v12 is drafted.
+exposed these choices. H0 deliberately did not answer them; H2 disposed of
+each one after the evidence wave and focused peer review.
 
 | ID | Sev | Question | Current evidence and owner | Decision |
 | --- | --- | --- | --- | --- |
-| H0-Q1 | should-fix | Does history carry treat an omitted price basis as the effective assumed `split_adjusted` model, or as an undeclared-basis conservative barrier, and what enters history identity? | The 2026-10-11 maintainer amendment makes omitted basis economically and visibly `split_adjusted` while identity remains `NULL`; on the availability path `NULL` reaches that assumed model. V11's carry-barrier rule predates the amendment. | pending |
-| H0-Q2 | should-fix | Are instrument-narrowed expected sessions rejected, deferred, or bound; if bound, how are they cutoff-resolved, aligned to the common axis, and how do they treat observations inside inactive intervals? | Owned today by the RFC pipeline `instrument-specific-session-axis` row and the WS3 macro-plan bullet. V11 says no request window may choose the inactive-interval treatment silently. H2 must dispose of both owners. | pending |
-| H0-Q3 | should-fix | Does history support a knowable corporate action with neither entitlement nor effective clock; if so, what class, parent, fields and timing refuse it? | Ingest currently permits both optional clocks to be absent; execution maps the missing clocks to `NA` and never posts the action. `ledgr_invalid_corporate_action_event` currently covers only a non-finite entitlement-recount delta. | pending |
-| H0-Q4 | blocking | How does pulse inspection satisfy availability-only history parity? | `ledgr_pulse_snapshot()` is a separate dense one-pulse helper outside the fold, with its own SQL and non-strict feature path. H2 must either bind an availability-aware inspection route or assign a different owner; it must not claim the current helper already shares the fold. | pending |
-| H0-Q5 | should-fix | What is the default estimator row set, including held nonmembers, and how are inclusion and exclusion represented? | V11 keeps held nonmembers on the decision axis and does not exclude a past observation merely because membership was inactive then. The UX brief proposes `instruments = "admissible"` but leaves selector vocabulary and exclusion representation open. | pending |
-| H0-Q6 | consider | What may seed the first column of a shorter lookback under the one data-start rule? | Sessions A and B supersede the old public-axis hydration mechanism, no-second-warmup rule and `0 x lookback` shape. V12 still needs an explicit shorter-lookback carry-seed statement without creating a second history start. | pending |
+| H0-Q1 | should-fix | Does history carry treat an omitted price basis as the effective assumed `split_adjusted` model, or as an undeclared-basis conservative barrier, and what enters history identity? | The 2026-10-11 maintainer amendment makes omitted basis economically and visibly `split_adjusted` while identity remains `NULL`; on the availability path `NULL` reaches that assumed model. V11's carry-barrier rule predates the amendment. | **accept with change** (H2): omitted basis uses the disclosed assumed `split_adjusted` model and creates no barrier; identity retains `NULL`. The history-treatment implementation version enters identity under v11 Section 5 and D3-F5 owns the resulting rule advance |
+| H0-Q2 | should-fix | Are instrument-narrowed expected sessions rejected, deferred, or bound; if bound, how are they cutoff-resolved, aligned to the common axis, and how do they treat observations inside inactive intervals? | Owned today by the RFC pipeline `instrument-specific-session-axis` row and the WS3 macro-plan bullet. V11 says no request window may choose the inactive-interval treatment silently. H2 must dispose of both owners. | **accept with change** (H2): one common public axis plus a cutoff-resolved expected-session mask per instrument. Lifetime-inactive absence is structural, not missing; trading-status halts remain gaps. Prints inside knowable lifetime-inactive intervals remain readable with a structural flag and inclusion evidence but enter no computation segment and supply no mark. This closes the pipeline row |
+| H0-Q3 | should-fix | Does history support a knowable corporate action with neither entitlement nor effective clock; if so, what class, parent, fields and timing refuse it? | Ingest currently permits both optional clocks to be absent; execution maps the missing clocks to `NA` and never posts the action. `ledgr_invalid_corporate_action_event` currently covers only a non-finite entitlement-recount delta. | **accept with change** (H2): a row without knowledge time is audit-only and never due. A row with knowledge time but neither event clock refuses preparation at every cutoff on or after knowledge with `ledgr_corporate_action_clock_missing`, parent `ledgr_invalid_corporate_action_event`; fields name `fact_id`, `parent_instrument_id`, `knowledge_time`, `entitlement_time` and `effective_time`, and the message says to supply a clock or quarantine the row |
+| H0-Q4 | blocking | How does pulse inspection satisfy availability-only history parity? | `ledgr_pulse_snapshot()` is a separate dense one-pulse helper outside the fold, with its own SQL and non-strict feature path. H2 must either bind an availability-aware inspection route or assign a different owner; it must not claim the current helper already shares the fold. | **accept with change** (H2): availability-aware `ledgr_pulse_snapshot()` runs shared preparation, P1 observe-and-settle and P2 context construction at one cutoff, with no P3-P5, run row or store write. Its data planes equal a run's first pulse under the same inputs and opening. The frozen dense branch remains until execution-core consolidation; add no new dense-only path |
+| H0-Q5 | should-fix | What is the default estimator row set, including held nonmembers, and how are inclusion and exclusion represented? | V11 keeps held nonmembers on the decision axis and does not exclude a past observation merely because membership was inactive then. The UX brief proposes `instruments = "admissible"` but leaves selector vocabulary and exclusion representation open. | **accept with change** (H2): default `instruments = "admissible"`; also accept `"decision_axis"` and explicit known IDs. Unknown explicit IDs refuse. Results name requested, included and excluded IDs and every exclusion reason. Estimation exclusion never means liquidation; omitted holdings remain until a separate target says otherwise |
+| H0-Q6 | consider | What may seed the first column of a shorter lookback under the one data-start rule? | Sessions A and B supersede the old public-axis hydration mechanism, no-second-warmup rule and `0 x lookback` shape. V12 still needs an explicit shorter-lookback carry-seed statement without creating a second history start. | **accept with change** (H2): lookback counts expected venue sessions on Q2's common axis, oldest to cutoff. Return the suffix of the one data-start preparation; seed nothing independently. Record data start, window start, cutoff, requested and available span, and whether any bounded or history-dependent result used observations or state before the returned window |
 
 History identity remains with D3-F5 rather than a duplicate H0 row. That row
 must decide whether history inputs and the hydration change require an
 identity-rule or store-format bump; rule 3 is current authority, not a promise
 that no bump is needed.
+
+Three adjacent v12 clauses follow from these answers. Structural completeness
+is a finite requested lookback plus a minimum included-instrument count and is
+separate from feature readiness. One history call requests one feature; wider
+multi-feature projection stays outside this surface. The accepted Q2 rule
+closes the RFC pipeline row for instrument-specific expected sessions.
 
 ## Session D: indicator history class
 
@@ -304,18 +330,41 @@ earlier state, while EMA/SMA variants change the class of several families.
 Every sampled prefix was causal. Hostile level-shift fixtures show that small
 floating drift cannot define the class, and the observed Aroon witness needs
 eleven rows despite `n = 10`. Gap-recovery ranges vary by family and gap
-position. The spike supplies evidence only; the decisions below remain H2
-maintainer choices.
+position. The spike supplies evidence; H2 made the decisions below after
+focused peer review.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| D3-F1 | should-fix | `strict_window` already means bounded; the TTR default contradicts it | confirmed: contracts say the declaration "commits the definition to a finite window with no internal carry"; `ledgr_ind_ttr("SMA")` is `strict_window` | strict_window implies bounded; refuse the contradictory pair | pending |
-| D3-F2 | should-fix | TTR class belongs in the warmup rules table, per function | confirmed for testable single-output rows: WMA, ROC, momentum, MFI, CMF, runMean/SD/Var/MAD gaps <= 1e-15, CCI 1.15e-11 (float noise); ATR, MACD, BBands, aroon, DonchianChannel need `output` (multi-column) | Bounded vs history-dependent per row; verify each against TTR source | pending |
-| D3-F3 | should-fix | Refutation belongs in the strict path, against the full series once | confirmed: strict scalar compares `fn(window)` with `tail(series_fn(window))` per window of `stable_after` (`R/features-engine.R:291-347`) | Compare `fn(window_i)` with `series_fn(full)[i]` | pending |
-| D3-F4 | consider | Refusal must name instrument, position and gap, with a product tolerance | confirmed (no premise) | Accept | pending |
-| D3-F5 | consider | Does `history_class` enter identity, and do history inputs or the hydration change require an identity-rule or store-format bump? | confirmed: current `ledgr_active_feature_fingerprint()` carries `gap_contract` (`R/features-engine.R:85-94`); `R/feature-cache.R` was deleted in Cut 15 | Feature fingerprint beside `gap_contract`; decide the current-format effect rather than presupposing rule 3 remains sufficient | pending |
-| D3-F6 | consider | Define bounded testably | confirmed (no premise) | A function of the last `stable_after` bars only | pending |
-| I-F3 | consider | Spike B's 1e-9 is a 120-bar fixture tolerance | confirmed: dense SMA(20) 2.91e-12 at 3,000 bars; TTR SMA 9.95e-14; BBands 1.14e-13 | State a basis for any product tolerance | pending |
+| D3-F1 | should-fix | `strict_window` already means bounded; the TTR default contradicts it | confirmed: contracts say the declaration "commits the definition to a finite window with no internal carry"; `ledgr_ind_ttr("SMA")` is `strict_window` | strict_window implies bounded; refuse the contradictory pair | **accept with change** (H2): every supported definition is `bounded` or `history_dependent`; `strict_window` implies bounded and contradictions refuse. Undeclared custom definitions default to disclosed `history_dependent`; bounded is declared, never inferred |
+| D3-F2 | should-fix | TTR class belongs in the warmup rules table, per function | confirmed for testable single-output rows: WMA, ROC, momentum, MFI, CMF, runMean/SD/Var/MAD gaps <= 1e-15, CCI 1.15e-11 (float noise); ATR, MACD, BBands, aroon, DonchianChannel need `output` (multi-column) | Bounded vs history-dependent per row; verify each against TTR source | **accept with change** (H2): classify registered TTR forms per function, output and algorithm-changing argument in a package-tested catalogue; unregistered TTR forms follow the custom-definition rules |
+| D3-F3 | should-fix | Refutation belongs in the strict path, against the full series once | confirmed: strict scalar compares `fn(window)` with `tail(series_fn(window))` per window of `stable_after` (`R/features-engine.R:291-347`) | Compare `fn(window_i)` with `series_fn(full)[i]` | **accept with change** (H2): exact deterministic prefix invariance applies to every concrete definition; experiment-data window-versus-prefix refutation applies to custom bounded definitions only, using `requires_bars` as the window |
+| D3-F4 | consider | Refusal must name instrument, position and gap, with a product tolerance | confirmed (no premise) | Accept | **accept with change** (H2): custom checks are exact unless the definition declares a nonzero tolerance; refusal names instrument, position and gap. Bundled catalogue rows have no runtime product tolerance |
+| D3-F5 | consider | Does `history_class` enter identity, and do history inputs or the hydration change require an identity-rule or store-format bump? | confirmed: current `ledgr_active_feature_fingerprint()` carries `gap_contract` (`R/features-engine.R:85-94`); `R/feature-cache.R` was deleted in Cut 15 | Feature fingerprint beside `gap_contract`; decide the current-format effect rather than presupposing rule 3 remains sufficient | **accept with change** (H2): fingerprint history class, `requires_bars`, gap and restart behavior, readiness, custom tolerance, TTR version and algorithm-changing arguments; history treatment enters config identity. Advance run/config identity and refuse old resumptions. Keep snapshot hash rule 3 unless stored representation changes; H6 compares fresh builds and records the rebuild cost |
+| D3-F6 | consider | Define bounded testably | confirmed (no premise) | A function of the last `stable_after` bars only | **accept with change** (H2): a bounded output is a function only of the last `requires_bars` expected sessions on Q2's per-instrument mask. `requires_bars` is the existing dependency width and the window handed to `fn`; `stable_after >= requires_bars` remains the first-valid boundary. Add no third width field |
+| I-F3 | consider | Spike B's 1e-9 is a 120-bar fixture tolerance | confirmed: dense SMA(20) 2.91e-12 at 3,000 bars; TTR SMA 9.95e-14; BBands 1.14e-13 | State a basis for any product tolerance | **accept with change** (H2): promote no spike drift into a product tolerance. Built-ins are exact; bundled rows are certified by registered hostile-fixture package tests that record measured drift and TTR version; custom nonzero tolerance is explicit and fingerprinted |
+
+### H2-bound gap and certification rules
+
+- A bounded definition receives the last `requires_bars` expected sessions.
+  An incomplete required window produces missing output.
+- A history-dependent definition restarts on each contiguous segment of
+  treated input. Treated input includes observations plus values carried by
+  v11's declared price-input policy, except for the return and volatility
+  families below. Restart, rather than skip, is the disclosed v0.2.2 policy.
+  Lifetime-inactive intervals split segments structurally; halts and missing
+  observations beyond the carry horizon create gaps. Prints inside a knowable
+  lifetime-inactive interval enter no segment.
+- Return- and volatility-family definitions never consume carried prices.
+  Their output is missing wherever a required input is missing or carried.
+  V0.2.2 ships no silent multi-session bridge. Consequently one missing
+  session can exclude an instrument from a 252-session complete estimator
+  window for 252 sessions. A span-labelled bridged-return design reopens only
+  from the parked Sharadar gap census. History results retain carried-share
+  disclosure and WS7 must consume it.
+- Prefix invariance is exact, deterministic and checked before any artifact
+  write. User-data window refutation is for custom bounded definitions only.
+  Catalogue definitions are certified by package tests rather than re-derived
+  on every user's data.
 
 ## Session E: storage details and budget
 
@@ -344,26 +393,117 @@ sharing them; rebuilding `pulses_iso` stayed cheap. Promise-retained payload,
 unique RSS/PSS and POSIX orphan cleanup remain unmeasured. These results choose
 no budget or public representation by themselves.
 
+### Session E decisions
+
+Accepted by the maintainer on 2026-10-16 after a focused peer review of the
+evidence-backed proposals. The review accepted E2, E3 and E10 as proposed,
+relabeled E9 as current behavior, and narrowed E1 and E4--E8. It requested no
+further spike.
+
+1. **E1, canonical prepared substrate.** Build one immutable history substrate
+   once per snapshot identity and preparation policy before any fold, and
+   share it across the run, all sweep candidates and all walk-forward windows.
+   Fact-state families (trading status, membership and lifetime) use flat
+   bitemporal segment vectors per instrument and family. Bar and feature
+   panels are stored once as observation-time columns on the common axis, with
+   a knowledge-clock slot where the source supplies one; revised observations
+   remain unexercised in this release. Candidate and window cursors remain
+   outside the immutable object. This substrate replaces, rather than sits
+   beside, `bars_by_id`, `bars_mat` and `static_bars_views`. Reads are
+   vectorised across instruments. Public history frames and the matrix adapter
+   are temporary views over the substrate, not retained copies or independent
+   readers.
+2. **E2, provenance-preserving merge.** Adjacent fact-state segments merge
+   only when state, winning fact and reason all match. Equal visible states do
+   not erase the evidence that selected them.
+3. **E3, state and declaration.** Preserve active, inactive, unknown and
+   conflicting membership states. Family declaration and completeness travel
+   separately from fact rows; completeness is a property of the snapshot fact
+   set, not the presence of an individual row.
+4. **E4, segment guard.** During preparation, count segments per instrument
+   and fact family and refuse when the count exceeds
+   `max(4 * facts, 16)`. The refusal is classed and names the instrument,
+   family, fact count, segment count and ratio. Never truncate. A declared
+   experiment-level override exists; v12 decides its name and placement, and
+   D3-F5 owns whether it changes the identity rule. Like other declared
+   assumptions, it enters canonical config identity. Record aggregate and
+   maximum counts per family. A full Sharadar build census must confirm the
+   default before acceptance; refusal of that reference build is a defect in
+   the default. This guard protects preparation shape and is not the memory
+   budget.
+5. **E5, worker transport.** Prepare candidate-invariant inputs once in the
+   parent and stage them once on each persistent daemon of a sweep. Tasks carry
+   candidate-varying fields and the expected staged-invariant identity. A
+   daemon verifies that identity and refuses a missing or different invariant
+   with a classed condition. Per-sweep daemons stop on exit or interruption,
+   so staged state never outlives the sweep and discard-all interruption stays
+   unchanged. Sequential, current and staged arms must agree on final equity,
+   trade count, seed, snapshot, strategy and reproduction-key hashes. This is
+   private executor machinery: no public strategy API, executor abstraction
+   or new dependency.
+6. **E6, no `mori` adoption.** Add no `mori` dependency in v0.2.2. The E1
+   saving ceiling was measured at 160 instruments and is not an H1-scale
+   claim. After E1 removes the duplicate bar representations, H6 computes
+   `(workers - 1) * staged_invariant_bytes / total_private_commit` on the H1
+   Sharadar workload. Reopen shared memory only if that share is at least the
+   10% E8 ceiling. If reopened, share the bar substrate rather than rebuilding
+   it and rebuild only `pulses_iso`.
+7. **E7, supported parallel envelope.** Claim the availability-history
+   workload for one and two local workers, the shapes measured by H1 and H6.
+   Larger worker counts continue to run but are disclosed as unmeasured in the
+   sweep record. Worker count and resource settings never enter experiment,
+   candidate or run identity; they belong in run evidence and telemetry. Add
+   no override argument. Dense-mode and non-history sweeps are unchanged.
+8. **E8, paired memory gate.** A history-enabled build may not exceed the
+   current-tree baseline by more than 10% for any of: single-run parent peak,
+   two-worker parent peak, or the sum of parent and daemon peaks. H6 measures
+   both arms as paired runs on one host and the same H1 workload, using the
+   same approximately 0.2-second process sampler and the median of three
+   repeats. Parent gates use working set and private commit; the process-tree
+   gate uses private commit and discloses summed working set as a lower bound.
+   The H1 values record scale, not limits. Report preparation- and fold-phase
+   peaks separately, live substrate bytes, worker count, instruments, pulses,
+   bars, facts and segments. A breach is corrected or accepted explicitly by
+   the maintainer with a user-visible limitation and routed follow-up.
+9. **E9, decision trace.** Preserve the full logical trace. Its durable writer
+   continues to stream bounded typed chunks, and sweep workers continue to
+   return compact summaries rather than the trace. The trace is not part of
+   the history substrate or worker payload. Physical compression remains
+   deferred until omitted rows can be reconstructed exactly without changing
+   `ledgr_run_explain()` answers. H6 measures the read-side cost of loading the
+   full diagnostics trace and routes any material problem to WS8.
+10. **E10, evidence boundaries.** Interval membership remains single-clock;
+    complete snapshot fact sets remain the two-clock path, with no diagonal
+    carve-out. Earlier evidence covers status, membership, late-known starts
+    and lifetime, not sessions, corporate actions or end clocks. One Sharadar
+    acquisition plus synthetic lag is not evidence about rare restatement.
+
+The WS3 cut and H6 carry failure-sensitive oracles for the staged-identity
+check and the single-copy bar representation. H6 also owns the full Sharadar
+segment census, paired fine-sampler baseline, post-E1 `mori` trigger
+calculation and read-side decision-trace measurement. These obligations are
+acceptance evidence, not reasons to introduce another public resource API.
+
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| D1-F9 | should-fix | Memory budget must be set before the representation is accepted | confirmed: macro-plan decision 8 requires a phase baseline and a budget for one run and a representative parallel workload; the Cut 9 single-run baseline exists, a parallel baseline does not | Maintainer sets the WS3 budget in this session; record the missing parallel baseline as a WS3 ticket | pending |
-| D1-F1 | should-fix | Size guard must be named, overridable, with recorded counts | confirmed (design point) | Accept | pending |
-| D1-F2 | should-fix | Production build and read shape (spike shape is an antipattern) | confirmed: `spike_build` rebuilds the provider per global epoch, appends data-frame rows; `spike_query` scans all segments | Per-instrument epochs, flat vectors, cursor re-seek, vectorised reads | pending |
-| D1-F3 | should-fix | Merging equal states loses deciding-fact evidence | confirmed: the lifetime plane carries `lifetime_fact_id` and `terminal_event` per segment (`R/availability-provider-prepared.R:246-256`) | Merge on (state, winning fact, reason) | pending |
-| D1-F4 | should-fix | Membership has four states; parity oracle is the resolver plus `members_at` | confirmed: `members_at` returns `key[state]` only (`R/availability-provider-prepared.R:91`) | Accept | pending |
-| D1-F5 | should-fix | Family declaration travels apart from rows | confirmed: default keys on `has_status` (`R/availability-provider-prepared.R:243`) | Accept | pending |
-| D1-F8 | consider | Diagonal parity needs a carve-out if the end clock lands | confirmed; moot if D5-F1 chooses documentation | Follows from D5-F1 | pending |
-| I-F1 | should-fix | Evidence wording overclaims "no restatement" | confirmed: one acquisition; the only knowledge clock is a synthetic one-day lag | Guard exists because the shape is unmeasured | pending |
-| I-F4 | consider | State what spike A discharged | confirmed | Accept | pending |
-| C11-F2 | consider | Decision-trace volume drives diagnostic memory: availability runs write one `decision_recorded` row per member per pulse, about 3.6 million (momentum) and 4.2 million (equal-weight) rows on the 1998-2026 Sharadar runs, including pulses where the strategy holds | measured in Cut 11 LDG-2976 (`dev/bench/v0_2_2_sharadar_run/evidence/run1`); Workstream 22 removes the sweep's quadratic copy (F4) but not the volume | Decide with the memory budget whether the default decision trace stays per member per pulse; changing it changes what `ledgr_results(bt, 'diagnostics')` and `ledgr_run_explain()` show, so it is a design decision, not an optimization; routed by the maintainer 2026-10-08 | pending |
+| D1-F9 | should-fix | Memory budget must be set before the representation is accepted | confirmed: macro-plan decision 8 requires a phase baseline and a budget for one run and a representative parallel workload; the Cut 9 single-run baseline exists, a parallel baseline does not | Maintainer sets the WS3 budget in this session; record the missing parallel baseline as a WS3 ticket | **accept with change** (E8): paired H6 baseline and 10% gate; H1 values are scale only |
+| D1-F1 | should-fix | Size guard must be named, overridable, with recorded counts | confirmed (design point) | Accept | **accept with change** (E4): `max(4 * facts, 16)`, declared override, counts and full-build census |
+| D1-F2 | should-fix | Production build and read shape (spike shape is an antipattern) | confirmed: `spike_build` rebuilds the provider per global epoch, appends data-frame rows; `spike_query` scans all segments | Per-instrument epochs, flat vectors, cursor re-seek, vectorised reads | **accept with change** (E1): one immutable substrate replaces all three bar representations; cursors remain outside it |
+| D1-F3 | should-fix | Merging equal states loses deciding-fact evidence | confirmed: the lifetime plane carries `lifetime_fact_id` and `terminal_event` per segment (`R/availability-provider-prepared.R:246-256`) | Merge on (state, winning fact, reason) | **accept** (E2) |
+| D1-F4 | should-fix | Membership has four states; parity oracle is the resolver plus `members_at` | confirmed: `members_at` returns `key[state]` only (`R/availability-provider-prepared.R:91`) | Accept | **accept** (E3) |
+| D1-F5 | should-fix | Family declaration travels apart from rows | confirmed: default keys on `has_status` (`R/availability-provider-prepared.R:243`) | Accept | **accept** (E3) |
+| D1-F8 | consider | Diagonal parity needs a carve-out if the end clock lands | confirmed; moot if D5-F1 chooses documentation | Follows from D5-F1 | **accept with change** (E10): no carve-out; interval membership stays single-clock and complete snapshot sets stay two-clock |
+| I-F1 | should-fix | Evidence wording overclaims "no restatement" | confirmed: one acquisition; the only knowledge clock is a synthetic one-day lag | Guard exists because the shape is unmeasured | **accept with change** (E10): retain the evidence boundary; do not infer rare-restatement behavior |
+| I-F4 | consider | State what spike A discharged | confirmed | Accept | **accept** (E10): status, membership, late-known starts and lifetime only |
+| C11-F2 | consider | Decision-trace volume drives diagnostic memory: availability runs write one `decision_recorded` row per member per pulse, about 3.6 million (momentum) and 4.2 million (equal-weight) rows on the 1998-2026 Sharadar runs, including pulses where the strategy holds | measured in Cut 11 LDG-2976 (`dev/bench/v0_2_2_sharadar_run/evidence/run1`); Workstream 22 removes the sweep's quadratic copy (F4) but not the volume | Decide with the memory budget whether the default decision trace stays per member per pulse; changing it changes what `ledgr_results(bt, 'diagnostics')` and `ledgr_run_explain()` show, so it is a design decision, not an optimization; routed by the maintainer 2026-10-08 | **accept with change** (E9): retain the full trace and bounded streaming; measure read-side cost in H6 and route material cost to WS8 |
 
 ## Session F: correction chains
 
 H1 supplies negative evidence only: two captures expose current-list redates,
 contraticker-only same-key changes and one hard-coded terminal replacement,
 not empirical correction chains. The source has no trading-status facts.
-Session F must decide from requirements or request more vintages; H1 cannot
-close the chain rules by absence.
+Session F therefore decides from requirements and the vendor-neutral matrix;
+H1 cannot close the chain rules by absence.
 
 H2 evidence input (2026-10-16): the reviewed
 [correction-chain spike](../spikes/history_correction_chain_spike/closeout.md)
@@ -378,8 +518,14 @@ negative vendor evidence rather than a policy oracle.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| D2-F4 | consider | Route chains out of the WS3 wave | confirmed: Sharadar has no trading-status facts; the validator runs on the seal path (`R/availability-persistence.R:587`) | Small facts ticket under the Cut 3 exact-byte oracles | **conditional** (maintainer, 2026-10-08): not accepted until each rule is tested against the full Sharadar history and shown not to stop real data |
-| D2-F1 | blocking | Chain learned out of order: resolver says `conflicting` | confirmed: f1 known 3, f2 known 8, f3 known 5 answers `conflicting` on days 5-7 (the probe's "day 8.5 unknown" line is an artifact: `day(8.5)` lands on day 9, outside the interval) | Constructor rule: superseder knowledge >= predecessor knowledge | pending |
-| D2-F2 | should-fix | Exempt ancestor pairs, not whole components | confirmed: two facts superseding f1 and disagreeing are refused today and resolve `conflicting` | Accept | pending |
-| D2-F3 | should-fix | Resolver revives a predecessor; ingest helper truncates it | confirmed by reading: `resolve_status` revives (day 8 `halted`); `ledgr_status_runtime_conflicts` ends the predecessor at the superseder's start (`R/availability-facts.R:1891-1898`) and feeds ingest outcomes (`R/availability-ingest.R:282-286`). The probe's own D2-e line does not show the truncation | Superseder must cover its predecessor's interval; align the ingest helper | pending |
-| I-F2 | consider | "Matches the resolver" was read, not executed | confirmed; now executed by the probes | Covered by D2-F1..F3 | pending |
+| D2-F4 | consider | Route chains out of the WS3 wave | confirmed: Sharadar has no trading-status facts; the validator runs on the seal path (`R/availability-persistence.R:587`) | Small facts ticket under the Cut 3 exact-byte oracles | **route** (H2): a small prerequisite facts workstream before the history substrate, under the existing exact-byte oracles. The full-Sharadar condition is satisfied vacuously because that source contains no trading-status facts; the vendor-neutral ten-shape matrix is the semantic oracle |
+| D2-F1 | blocking | Chain learned out of order: resolver says `conflicting` | confirmed: f1 known 3, f2 known 8, f3 known 5 answers `conflicting` on days 5-7 (the probe's "day 8.5 unknown" line is an artifact: `day(8.5)` lands on day 9, outside the interval) | Constructor rule: superseder knowledge >= predecessor knowledge | **accept** (H2): every successor's knowledge time is at least its direct predecessor's; the constructor, validator, classifier and resolver enforce the same rule |
+| D2-F2 | should-fix | Exempt ancestor pairs, not whole components | confirmed: two facts superseding f1 and disagreeing are refused today and resolve `conflicting` | Accept | **accept with change** (H2): only direct and transitive ancestor/descendant pairs receive the supersession exemption. Siblings and unrelated descendants compete normally; tied contradiction refuses |
+| D2-F3 | should-fix | Resolver revives a predecessor; ingest helper truncates it | confirmed by reading: `resolve_status` revives (day 8 `halted`); `ledgr_status_runtime_conflicts` ends the predecessor at the superseder's start (`R/availability-facts.R:1891-1898`) and feeds ingest outcomes (`R/availability-ingest.R:282-286`). The probe's own D2-e line does not show the truncation | Superseder must cover its predecessor's interval; align the ingest helper | **accept with change** (H2): a successor may start before its predecessor, but must start no later than the predecessor's end and cover the predecessor from the successor start through the predecessor end; it may extend later. Before successor start the predecessor remains valid; afterwards it never revives. A successor ending early refuses |
+| I-F2 | consider | "Matches the resolver" was read, not executed | confirmed; now executed by the probes | Covered by D2-F1..F3 | **accept** (H2): the vendor-neutral matrix executes the rule through constructor, validator, classifier, resolver and public run where accepted |
+
+Supersession is applied before ordinary precedence. Cycles and dangling
+predecessor references refuse. The constructor's existing same-source lookup
+already makes cross-source references dangling, so v12 adds no second
+same-source rule. Sharadar remains regression evidence only, not the policy
+oracle.

@@ -632,9 +632,7 @@ Cut 15 is closed: Workstreams 32 through 39 are complete and accepted. The
 WS35-plus-WS39 joint gate is satisfied, so the WS3/WS4 history wave is the
 current work. Resume from the decision register's **Resume here** section.
 
-1. Reconcile v11 with the post-Cut 15 tree, finish history-wave stage 2 from
-   Session D, write the consolidated v12 successor, obtain its Type 1 final
-   review, and cut WS3/WS4 implementation.
+1. Cut and implement the accepted v12 successor through H5 and H6.
 2. Run WS7 product proof; WS6 proceeds independently only if its probe
    promotes it.
 3. Finish WS8 residual performance work and integrated release evidence.
@@ -650,9 +648,9 @@ binds exact dependencies and status.
 
 This section sequences the wave; it does not restate its semantic decisions.
 The [history-wave decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md)
-owns pending dispositions, the accepted v12 successor will own the resulting
-history semantics, and `tickets.yml` will own implementation. V11 remains the
-immutable historical synthesis until v12 is accepted.
+owns the completed H2 dispositions, the accepted v12 successor owns the
+resulting history semantics, and `tickets.yml` owns implementation. V11
+remains the immutable derivation record.
 
 Maintainer decision, 2026-10-16: Cut 15 removed feature retention, froze dense
 mode, introduced schema 120 and identity rule 3, and replaced the old fold body
@@ -663,9 +661,10 @@ register's stage-2 decisions remain its design inputs.
 
 Progress, 2026-10-16: H0 and H1 are complete with final independent verdicts
 PASS. H0 is the reviewed v11 current-tree drift map at `16f415cd`; H1 is the
-reviewed `ledgr-research` aggregate evidence bundle at `e07e89d`. H2 is the
-current step. The decision register owns their open semantic questions and
-resource inputs; this plan keeps only the sequence.
+reviewed `ledgr-research` aggregate evidence bundle at `e07e89d`. H2 is also
+complete after its evidence wave and two focused peer-review passes. H3 and H4
+are complete, and the maintainer accepted v12 on 2026-10-16. H5 is current.
+This plan keeps only the sequence.
 
 #### H0. Reconcile the current tree with v11
 
@@ -713,6 +712,11 @@ dividend-facts rebuild remains with the adapter and WS7 owners.
 
 #### H2. Finish stage-2 decisions
 
+**Complete 2026-10-16.** The H0 questions, Sessions D-F and every remaining
+consider row now have an accepted decision, durable deferral, rejection or
+named owner in the decision register. Two focused peer-review passes narrowed
+the proposals without requesting another spike.
+
 Decide Session D (bounded versus recursive indicator history, gap transitions,
 readiness, identity and tolerance), Session E (representation, size guard,
 single-run and worker memory budget, and decision-trace volume), and Session F
@@ -750,7 +754,7 @@ neither arm helps, the decision records the supported worker limit and routes
 the remaining executor-memory problem rather than hiding it in the history
 implementation.
 
-Evidence status (2026-10-16): Sessions D, E0, E1 and F have completed their
+Evidence status (2026-10-16): Sessions D, E0, E1 and F completed their
 registered probes and independent reviews. The indicator census binds no
 numeric class threshold; the correction-chain matrix exposes the exact
 constructor/runtime policy choices; staged ordinary-R daemon inputs reduced the
@@ -759,16 +763,33 @@ shape because its structural ceiling is only one avoidable 44.9 MB copy, about
 3--4% of the measured total. The closeouts are the durable evidence inputs in
 `inst/design/spikes/history_indicator_conformance_spike/`,
 `history_mirai_payload_attribution/`, `history_mori_feasibility/` and
-`history_correction_chain_spike/`. H2 is now a decision session: update every
-register row without reopening evidence work unless a proposed policy lacks an
-oracle. No product implementation starts from a spike verdict alone.
+`history_correction_chain_spike/`. Their proposals were adjudicated into the
+register; no product implementation starts from a spike verdict alone.
+
+Session E was decided on 2026-10-16 after focused peer review. One immutable
+prepared substrate replaces `bars_by_id`, `bars_mat` and
+`static_bars_views`; staged ordinary-R inputs serve each sweep daemon; `mori`
+is not adopted; and the supported availability-history claim covers one and
+two local workers without making worker count part of identity. The segment
+guard is `max(4 * facts, 16)`, subject to the full Sharadar census. The memory
+gate is a paired H6 comparison against the current tree, not a fixed limit
+copied from the coarse H1 record. The full logical decision trace remains;
+H6 measures its read-side cost.
 
 Exit: every register row has an accepted decision, durable deferral with a
 trigger, rejection with a reason, or named downstream owner. No implementation
-choice is left to select history semantics accidentally, and Session E cannot
-close before both spike verdicts and their consequences are recorded.
+choice is left to select history semantics accidentally. Session E closed only
+after both spike verdicts and their consequences were recorded.
 
 #### H3. Write the consolidated v12 synthesis
+
+**Accepted 2026-10-16.** The
+[v12 synthesis](../rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md)
+is the single proposed successor built from the completed register and drift
+map. Its formal H4 review returned eight Type 1 document findings; the focused
+confirmation returned `PASS_AFTER_PATCHES`, the two bounded patches are
+applied and the maintainer accepted the synthesis. It is the implementation
+authority for Cut 16.
 
 V12 carries forward the still-valid two-clock, causality, missingness,
 barrier, disclosure and numerical-correctness rules from v11; incorporates
@@ -784,6 +805,10 @@ derivation record.
 
 #### H4. Run the final design review
 
+**Complete 2026-10-16.** The formal review returned `CHANGES_REQUIRED` with
+eight Type 1 document findings and no Type 2 question. Focused confirmation
+returned `PASS_AFTER_PATCHES`; its two bounded patches are applied.
+
 Run one adversarial Type 1 review of v12 against the drift map, the completed
 decision register, current contracts and the current tree. A new product
 choice returns to the maintainer as Type 2; a fidelity or ownership defect is
@@ -792,15 +817,21 @@ one owner and a failure-sensitive oracle.
 
 #### H5. Cut WS3/WS4 implementation
 
-The ticket cut starts with one shared substrate and then permits bounded
-parallel work:
+**Cut 16 drafted 2026-10-16.** Workstreams 40 through 44 and LDG-3057 through
+LDG-3071 are the executable H5 plan. The cut starts with the factual and
+identity prerequisite, then one shared substrate, then permits bounded
+parallel product work:
 
 ```text
-causal history, history start and fold/window corrections
-  |-- public history result, frame helper and matrix adapter
-  `-- bounded and recursive indicator execution
-        `-- integrated real-data, memory and performance proof
+WS40 causal facts and rule-4 identity
+  `-- WS41 single causal substrate and staged worker inputs
+        |-- WS42 public history and continuous windows
+        `-- WS43 indicator history semantics
+              `-- WS44 integrated H6 proof and teaching
 ```
+
+WS44 also depends on WS42; ticket LDG-3068 names both branch-end
+dependencies. The diagram shows ownership, not permission to skip that join.
 
 The common substrate owns the two clocks, cutoff, axis, missingness evidence,
 identity and inclusion/exclusion reasons. The public adapter is not a second
@@ -818,9 +849,24 @@ The implementation must demonstrate:
   bounded or recursive contracts;
 - completion of the full 1998-2026 Sharadar workload without history-related
   stops;
-- live size, temporary peak and representative worker multiplication within
-  the accepted budget, or an explicit maintainer exception and routed limit;
-  and
+- a full-build segment census showing that the default guard accepts the
+  Sharadar reference build and reports aggregate and maximum counts by family;
+- a structural single-copy check showing that the prepared payload and worker
+  tasks do not retain parallel `bars_by_id`, `bars_mat` and
+  `static_bars_views` representations;
+- a fail-closed staged-identity check in which a missing or altered invariant
+  is refused by the daemon;
+- paired current-tree and history-enabled memory records on the same H1
+  workload, host and approximately 0.2-second sampler, with three repeats and
+  preparation and fold peaks separated. Single-run parent peak, two-worker
+  parent peak and summed parent-plus-daemon private commit must each stay
+  within 10%, or receive an explicit maintainer exception and routed limit;
+- the post-substrate `mori` trigger calculation,
+  `(workers - 1) * staged_invariant_bytes / total_private_commit`, with shared
+  memory reopened only at or above 10%;
+- read-side peak memory for `ledgr_results(bt, "diagnostics")` and
+  `ledgr_run_explain()` on the full logical decision trace, with a material
+  problem routed to WS8; and
 - teaching of the final history-to-estimator-to-weights-to-target workflow.
 
 Durable factor evidence, trained-model lifecycle, scheduling, generic

@@ -44,6 +44,13 @@ history <- ctx |>
   )
 ```
 
+`ledgr_pulse_snapshot()` is not part of this callback flow. It is an external
+development helper that constructs one pulse context so an author can invoke a
+strategy manually. For availability-aware inspection, the experiment supplies
+the snapshot, universe, features, history policy, data start and opening state;
+the strategy itself still reads history only from `ctx` through
+`ledgr_history_frame()`.
+
 `ledgr_history_frame()` is a proposed surface, not a bound name. Its owning
 history RFC must decide the exact arguments and semantics.
 
@@ -436,11 +443,11 @@ the original discussion:
 | Direction | State | Authority |
 | --- | --- | --- |
 | Singular alias-aware feature read | proposed | feature-map RFC cycle |
-| On-demand causal history frame | adopted as the WS3 direction, 2026-10-08 | WS3 history route; [history-wave register](../rfc/rfc_history_wave_v0_2_2_decisions.md) Session 0 |
-| Identity-preserving history and matrix bridge | adopted as the WS3 direction, 2026-10-08 | WS3 history route; [history-wave register](../rfc/rfc_history_wave_v0_2_2_decisions.md) Session 0 |
+| On-demand causal history frame | resolved by accepted v12, 2026-10-16 | [Historical-projection v12](../rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md) Sections 3 and 8 |
+| Identity-preserving history and matrix bridge | resolved by accepted v12, 2026-10-16 | [Historical-projection v12](../rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md) Sections 3 and 8 |
 | History-to-selection bridge | proposed | WS3 and WS7 |
 | Strategy schedule decorator | proposed, conditional | WS6 scheduler route |
-| Shared prepared inputs through `mori` | spike scheduled | v0.2.2 macro plan WS3 |
+| Shared prepared inputs through `mori` | resolved: rejected for v1 | [Historical-projection v12](../rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md) Sections 7 and 11 |
 | Estimation exclusion versus execution target | parked | portfolio-construction RFC |
 | Current weights, allocation result and model diagnostics | parked | portfolio-construction RFC |
 | Declared user strategy-helper bundle | parked | separate post-v0.2.2 RFC |

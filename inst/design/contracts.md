@@ -103,6 +103,9 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 <a id="contract-execution-fold-core"></a>
 ### Fold Core And Output Handlers
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - The fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
@@ -127,6 +130,9 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - **Scoring start (Cut 9).** Every entry point evaluates the strategy, fills,
   writes equity and contributes metric input only from its scoring start: the
@@ -158,6 +164,9 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 <a id="contract-execution-walk-forward-folds"></a>
 ### Walk-Forward Fold Lifecycle
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - No selection (Cut 10, LDG-2974). `ledgr_walk_forward(no_selection = )`
   decides what a fold does when no training candidate has a finite, `DONE`
@@ -215,6 +224,9 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 <a id="contract-execution-event-staging"></a>
 ### Event Staging And Parallel Sweeps
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
@@ -346,6 +358,9 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 <a id="contract-execution-identity"></a>
 ### Execution And Feature Identity
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 Accepted change pending:
 [objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity).
@@ -486,6 +501,9 @@ Accepted change pending:
 <a id="contract-config-construction"></a>
 ### Construction And Validation
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - `ledgr_config()` is an internal construction helper. It returns an
   S3 object of class `ledgr_config`, validates the object before returning, and
   has a concise print method for diagnostics.
@@ -495,6 +513,9 @@ Accepted change pending:
 
 <a id="contract-config-policies"></a>
 ### Corporate-Action And Valuation Policies
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Corporate-action and valuation policies use schema 2 (terminal-outcomes
   synthesis, accepted 2026-10-05). `ledgr_corporate_actions()` takes
@@ -519,6 +540,9 @@ Accepted change pending:
 
 <a id="contract-snapshot-identity-and-verification"></a>
 ### Identity And Verification
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Backtests run against sealed snapshots.
 - Snapshot hash rule 3 is the sole executable content-identity rule. Its exact
@@ -644,6 +668,9 @@ Accepted change pending:
 <a id="contract-availability-activation-and-calendar"></a>
 ### Activation And Session Calendar
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
   valuation policy. There is no mode flag. Canonical omission preserves the
@@ -669,6 +696,9 @@ Accepted change pending:
 
 <a id="contract-availability-units-and-universe"></a>
 ### Units, Price Basis And Universe
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - ledgr accounts in split-adjusted share units: no split event acts on a
   position, so quantities, fills and marks are consistent only when bars are
@@ -962,6 +992,9 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - Experiment-store schema 120 is the sole current store schema. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
@@ -1206,6 +1239,9 @@ Accepted change pending:
 <a id="contract-strategy-outputs"></a>
 ### Strategy Outputs And Helper Values
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - Strategy output is a full named numeric target vector, a `ledgr_target`, or a
   list containing `targets`.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
@@ -1286,6 +1322,9 @@ Accepted change pending:
 
 <a id="contract-strategy-decision-axis"></a>
 ### Decision Axis And Eligibility
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 One decision axis and one eligibility plane hold in dense and
 availability-aware contexts alike, so a strategy written as named-vector
@@ -1614,6 +1653,9 @@ Accepted change pending:
 <a id="contract-context-inspection"></a>
 ### Inspection And Signal Views
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
   `ledgr_pulse_wide()` are read-only inspection views over declared features
   and pulse-known data. They must not precompute unavailable data, mutate
@@ -1699,6 +1741,9 @@ Accepted change pending:
 <a id="contract-context-ttr-adapter"></a>
 ### TTR Adapter
 
+Accepted change pending:
+[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
+
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
   params. Only `params$args` are forwarded to TTR; metadata fields are identity
@@ -1726,6 +1771,9 @@ Accepted change pending:
 
 <a id="contract-context-feature-path"></a>
 ### Feature Path And Intent Constructors
+
+Accepted change pending:
+[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
 
 - Fn-only indicators remain supported. The fallback uses bounded
   stable windows, not expanding full-history windows.
@@ -1905,6 +1953,9 @@ Accepted change pending:
 <a id="contract-result-fills-and-sweep-restoration"></a>
 ### Fills And Sweep Restoration
 
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
+
 - `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
   full fills-schema tibble for empty and populated runs. It has no public
   cursor, lazy-read, or row-threshold mode.
@@ -1987,6 +2038,9 @@ Accepted change pending:
 
 <a id="contract-result-return-panels"></a>
 ### Return Panels And Retained Evidence
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - `ledgr_return_panel()` constructs source-neutral return evidence from clean
   candidate period returns. `ledgr_sweep_returns_panel()` is the sweep-sourced
@@ -2211,6 +2265,9 @@ Accepted change pending:
 <a id="contract-documentation-indicators"></a>
 ### Indicator Teaching
 
+Accepted change pending:
+[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
+
 - Indicator concepts must have one installed teaching article, `indicators`,
   covering built-in indicators, TTR-backed indicators, feature IDs, and warmup
   `NA`. `ttr-indicators` must not remain as a parallel installed teaching
@@ -2237,6 +2294,9 @@ Accepted change pending:
 
 <a id="contract-documentation-strategy-context"></a>
 ### Strategy Context Teaching
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - `man/ledgr_strategy_context.Rd` owns one explicit reference table for every
   public runtime context member and plane. It records dense and availability
@@ -2272,6 +2332,9 @@ Accepted change pending:
 
 <a id="contract-verification-release-gates"></a>
 ### Release Gates
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Full regression tests must pass before release-ticket completion.
 - Package check target:
@@ -2320,6 +2383,9 @@ Accepted change pending:
 
 <a id="contract-verification-store-and-codebase-gates"></a>
 ### Store And Codebase Gates
+
+Accepted change pending:
+[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - Package code obtains a persistent store connection through
   `ledgr_store_open(path, mode)` or passes a borrowed, cached or

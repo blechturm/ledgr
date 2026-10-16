@@ -4,6 +4,12 @@ Role: record; RFC-cycle synthesis and durable decision record.
 Status: accepted
 Authority: accepted synthesis; binds only its stated scope.
 
+> **Superseded in part, 2026-10-16.** The accepted
+> [v12 synthesis](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md)
+> is operative. This document remains the derivation record; the v12
+> [supersession map](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md#supersession-and-receiver-map)
+> identifies every retained, amended and superseded clause.
+
 **Status:** **Accepted by the maintainer 2026-09-28.** Operative synthesis; it
 replaces v10, which becomes part of the derivation and correction record. The
 simplification direction is authorized. This document still authorizes no
@@ -23,6 +29,8 @@ Original baselines: design `491c4ed`, implementation `ae040e7`. Current reading
 baseline: `d7c6d7f4c80c36d4f6b1c4ac88bfa9a4fe4afa80`. No package code was executed.
 
 ## 1. Decision and scope
+
+> **V12 marker:** see the supersession-map rows for v11 Sections 1-2.
 
 Ship historical prices and indicator values suitable for statistical and ML
 consumers, with simple declared carry-forward and aligned missingness evidence.
@@ -46,6 +54,8 @@ architecture and sequencing clauses do not add obligations to this document.
 The checkpoint disposition in section 7 is exhaustive.
 
 ## 2. Evidence and the decision it supports
+
+> **V12 marker:** see the supersession-map rows for v11 Sections 1-2.
 
 The committed [semantic spike][spike] exhibits a late-known barrier changing a
 feature value in a throwaway preparation path. Its finite-window fixtures
@@ -91,6 +101,8 @@ route, without becoming a historical-projection prerequisite.
 
 ## 3. Information, shape and ownership
 
+> **V12 marker:** see the supersession-map rows for v11 Section 3.
+
 For a request at simulated decision pulse `t`, each historical column `s <= t`
 uses evidence knowable at `t` and applicable at `s`. Seal time and wall-clock
 time are never substitutes. A later-known fact effective at `s` is included
@@ -125,6 +137,8 @@ earlier decision's value without rewriting that decision.
 
 ## 4. Session axis and independent release work
 
+> **V12 marker:** see the supersession-map rows for v11 Section 4.
+
 Current feature hydration uses venue open sessions. The current-release repair
 has owners, LDG-2866 and LDG-2867, in the existing packet. They document and
 pin that behavior without changing the engine. Their status must be read from
@@ -148,6 +162,8 @@ correctness remains required, but segmented or incremental storage is not a
 prerequisite for narrowing. The recorded axis reasoning remains available.
 
 ## 5. The simple missing-data policy
+
+> **V12 marker:** see the supersession-map rows for v11 Section 5.
 
 These retain the accepted product defaults. Preparation is explicit and occurs
 outside indicator callbacks and the execution fold. It never creates observed
@@ -230,6 +246,8 @@ store is required here. Fitted algorithm choice remains model/adapter-owned.
 
 ## 6. Preparation without mandatory revision machinery
 
+> **V12 marker:** see the supersession-map rows for v11 Section 6.
+
 The baseline is one ordinary prepared series wherever its values can be reused
 correctly. Filter and resolve historical evidence at `(s, t)` through prepared
 indexes under the existing fact authority. Keep both clocks available: the
@@ -273,6 +291,8 @@ affordability, and the earlier `2.11x` arithmetic is not a runtime estimate.
 
 ## 7. Checkpoint disposition and ticket-cut boundary
 
+> **V12 marker:** see the supersession-map rows for v11 Section 7.
+
 The old four-part checkpoint is no longer an instruction to commission a
 segmented-candidate measurement before ticket cut. Its obligations are:
 
@@ -306,6 +326,8 @@ to the maintainer; it does not silently weaken
 causality, omit carry, or authorize an optimization project.
 
 ## 8. Contract changes and detecting requirements
+
+> **V12 marker:** see the supersession-map rows for v11 Section 8.
 
 [contracts.md][contracts] remains authoritative for shipped behavior. The next
 packet must amend its strict-window-only wording to permit declared external
@@ -344,6 +366,8 @@ Existing release performance gates continue to apply independently.
 
 ## 9. Deferred work and reopening
 
+> **V12 marker:** see the supersession-map rows for v11 Section 9.
+
 The record for revision optimization is v10 sections 6 and 10, the committed
 semantic spike, and the exposure evidence described in section 2. Preserve it;
 do not translate every derived bound into an implementation ticket.
@@ -363,6 +387,8 @@ strengthening and general model lifecycle retain their own routes. None is a
 prerequisite for the simple declared treatment promised here.
 
 ## 10. Reading anchors and integration
+
+> **V12 marker:** see the supersession-map rows for v11 Section 10.
 
 Load-bearing implementation anchors at the reading baseline: provider raw
 clocks and construction in `R/availability-provider.R:28-47,211-246`;
