@@ -15,16 +15,28 @@ rscript <- e0_rscript()
 run_status <- system2(rscript, c(
   file.path(dirname(script_path), "run_spike.R"), "--preset", "smoke",
   "--package-root", normalizePath(opt$`package-root`, winslash = "/"),
-  "--out-dir", actual, "--gut", "omit-bars-by-id"
+  "--out-dir", actual, "--gut", "omit-runtime-projection"
 ))
-if (!run_status %in% c(0L, 1L)) stop("Gutted runner failed unexpectedly.", call. = FALSE)
-check_status <- system2(rscript, c(
+if (!identical(run_status, 0L)) stop("Gutted runner failed unexpectedly.", call. = FALSE)
+meta <- utils::read.csv(file.path(actual, "arm_c", "arm_meta.csv"), stringsAsFactors = FALSE)
+expected_error <- "E0_STAGED_RECONSTRUCTION_MISMATCH omitted=runtime_projection"
+if (!identical(meta$status[[1L]], "FAILED") ||
+    !identical(meta$error_message[[1L]], expected_error)) {
+  stop("Gut did not trigger the exact staged-reconstruction failure.", call. = FALSE)
+}
+check_output <- system2(rscript, c(
   file.path(dirname(script_path), "check_spike.R"),
   "--against", normalizePath(opt$against, winslash = "/"),
   "--actual", actual, "--package-root",
   normalizePath(opt$`package-root`, winslash = "/"), "--scratch-dir", scratch
-))
-if (identical(check_status, 0L)) {
-  stop("Checker accepted a staged payload without bars_by_id.", call. = FALSE)
+), stdout = TRUE, stderr = TRUE)
+check_status <- attr(check_output, "status")
+if (is.null(check_status)) check_status <- 0L
+if (identical(check_status, 0L) ||
+    !any(grepl("result_identity[.]csv differs", check_output, fixed = FALSE))) {
+  stop("Checker missed the staged runtime_projection omission.", call. = FALSE)
 }
-cat("HISTORY_E0_GUT_OK omitted=bars_by_id checker_status=", check_status, "\n", sep = "")
+cat(
+  "HISTORY_E0_GUT_OK omitted=runtime_projection checker_status=",
+  check_status, "\n", sep = ""
+)

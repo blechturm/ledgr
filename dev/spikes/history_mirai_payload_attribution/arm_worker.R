@@ -23,6 +23,22 @@ on.exit({
 }, add = TRUE)
 snapshot_info <- ledgr_snapshot_info(fixture$snapshot)
 
+warm_grid <- ledgr_param_grid(
+  warmup = list(
+    n = spec$candidate_n[[1L]], lookback = spec$lookback, invested = 0.95
+  )
+)
+warm_start <- proc.time()[["elapsed"]]
+warm_result <- ledgr_sweep(
+  fixture$experiment, warm_grid, seed = 1601L, workers = 1L
+)
+warmup_sec <- proc.time()[["elapsed"]] - warm_start
+if (!identical(warm_result$status, "DONE")) {
+  stop("Common warm-up sweep failed.", call. = FALSE)
+}
+rm(warm_result)
+invisible(gc())
+
 capture <- new.env(parent = emptyenv())
 capture$stage_sec <- 0
 capture$stage_cleanup_sec <- 0
@@ -32,6 +48,11 @@ capture$collect_sec <- 0
 capture$daemon_pids <- integer()
 capture$daemon_pid_path <- file.path(out_dir, "daemon_pids.csv")
 capture$retention <- list()
+capture$reconstruction <- data.frame(
+  candidate_id = character(), exact = logical(), field_order_exact = logical(),
+  missing_fields = character(), extra_fields = character(),
+  stringsAsFactors = FALSE
+)
 
 ns <- asNamespace("ledgr")
 task_name <- "ledgr_sweep_candidate_tasks"
@@ -93,7 +114,9 @@ post_point <- e0_memory_point("after_sweep")
 tasks <- capture$tasks
 if (!is.null(tasks)) {
   e0_write_csv(e0_payload_map(tasks), file.path(out_dir, "payload_map.csv"))
-  e0_write_csv(e0_payload_summary(tasks), file.path(out_dir, "payload_summary.csv"))
+  e0_write_csv(
+    e0_payload_summary(tasks, workers), file.path(out_dir, "payload_summary.csv")
+  )
 }
 retention <- if (is.data.frame(capture$retention)) {
   rbind(pre_point, capture$retention, post_point)
@@ -105,6 +128,7 @@ e0_write_csv(
   data.frame(pid = as.integer(capture$daemon_pids)),
   file.path(out_dir, "daemon_pids.csv")
 )
+e0_write_csv(capture$reconstruction, file.path(out_dir, "reconstruction.csv"))
 
 if (!is.null(out)) {
   identity <- e0_result_identity(out, arm)
@@ -132,6 +156,7 @@ meta <- data.frame(
   start_epoch = start_epoch,
   end_epoch = end_epoch,
   sweep_wall_sec = end_elapsed - start_elapsed,
+  warmup_sec = warmup_sec,
   stage_sec = capture$stage_sec,
   pid_probe_sec = capture$pid_probe_sec,
   submit_sec = capture$submit_sec,

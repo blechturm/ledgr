@@ -1,2 +1,2 @@
-"arm","preset","process_id","workers","n_instruments","n_bars","n_pulses","n_candidates","lookback","start_epoch","end_epoch","sweep_wall_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","snapshot_hash","status","error_class","error_message","gut"
-"B","smoke",38524,2,8,693,87,4,20,1792139519.14387,1792139527.30481,8.16,0,5.1,0,2.14,0,"27543da63e1eaaf738b1a66930fe92119fd34f802cbe364d03bf85630ada0d2b","DONE","","","none"
+"arm","preset","process_id","workers","n_instruments","n_bars","n_pulses","n_candidates","lookback","start_epoch","end_epoch","sweep_wall_sec","warmup_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","snapshot_hash","status","error_class","error_message","gut"
+"B","smoke",41436,2,8,693,87,4,20,1792142135.08045,1792142142.72365,7.65,1.32,0,5.03,0.0200000000000014,1.8,0,"27543da63e1eaaf738b1a66930fe92119fd34f802cbe364d03bf85630ada0d2b","DONE","","","none"

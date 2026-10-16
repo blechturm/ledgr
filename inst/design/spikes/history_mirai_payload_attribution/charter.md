@@ -1,6 +1,6 @@
 # History worker payload attribution spike
 
-**Status:** Executing. No product change.
+**Status:** Closed GREEN. No product change.
 
 ## Question
 
@@ -34,13 +34,16 @@ the package API, executor, tests or dependencies.
 The runner records the task-field inventory, R object size and base-R XDR
 serialization proxies; dispatch, collection and staging clocks; parent,
 daemon and sampled process-tree working set and private committed bytes; and
-retained task, promise and result object sizes. Working-set sums may
-double-count shared pages, and Windows private commit is not PSS or unique RSS.
+parent-side task-list, promise-handle and collected-result-list object sizes.
+Those object sizes do not measure promise retention or result-transfer bytes.
+Working-set sums may double-count shared pages, and Windows private commit is
+not PSS or unique RSS.
 
 Candidate result rows and normalized reproduction-key hashes must be identical
 in A, B and C. The checker reruns the smoke fixture, diffs deterministic CSVs,
 checks the observed task inventory and guards repository scope. The gut demo
-removes `bars_by_id` from C's staged payload and requires the checker to fail.
+removes `runtime_projection` from C's staged payload and requires the exact
+task-reconstruction assertion and result-identity check to fail.
 
 The binding local record uses the larger `record` fixture only while no other
 measurement agent is active. The small smoke record proves the harness, not a

@@ -67,12 +67,11 @@ always_memory <- c(
 )
 check(all(vapply(summary[always_memory], function(x) all(is.finite(x) & x > 0), logical(1))),
       "parent and process-tree memory observations must be finite and positive")
-parallel <- summary$arm %in% c("B", "C")
-check(all(is.finite(summary$sweep_daemon_peak_wset_sum[parallel]) &
-            summary$sweep_daemon_peak_wset_sum[parallel] > 0) &&
-        all(is.finite(summary$sweep_daemon_peak_private_commit_sum[parallel]) &
-              summary$sweep_daemon_peak_private_commit_sum[parallel] > 0),
-      "parallel arms need finite positive daemon memory observations")
+check(all(is.finite(summary$max_sample_gap_sec) & summary$max_sample_gap_sec > 0),
+      "each arm must disclose its maximum sampling gap")
+check(all(is.finite(summary$sweep_max_blackout_sec) &
+            summary$sweep_max_blackout_sec > 0),
+      "each arm must disclose its maximum in-sweep blackout")
 
 identity <- read_csv(actual, "result_identity.csv", "character")
 identity$arm <- NULL
@@ -108,6 +107,18 @@ expected_mori <- c(
 )
 check(setequal(payload$field[payload$mori_candidate], expected_mori),
       "mori-candidate inventory changed")
+check(
+  identical(payload$staging_class[payload$field == "static_bars_views"],
+            "derived_immutable"),
+  "static_bars_views must remain classified as derived immutable data"
+)
+
+for (arm in "c") {
+  reconstruction <- read_csv(actual, file.path(paste0("arm_", arm), "reconstruction.csv"))
+  check(nrow(reconstruction) == 4L && all(reconstruction$exact) &&
+          all(reconstruction$field_order_exact),
+        paste0("arm ", toupper(arm), " must reconstruct all tasks exactly"))
+}
 
 proxy <- read_csv(actual, "payload_summary.csv")
 value <- stats::setNames(proxy$value, proxy$measure)

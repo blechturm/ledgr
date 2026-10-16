@@ -8,5 +8,5 @@
 "shared_serialized_bytes",44959221,"base R XDR serialization proxy"
 "variant_serialized_sum",410308,"candidate-varying lists"
 "repeated_shared_wire_proxy",179836884,"shared proxy repeated per current task"
-"staged_shared_wire_proxy",90328750,"shared proxy once per two daemons plus variants"
-"current_minus_staged_wire_proxy",89917722,"positive means staged transport proxy is smaller"
+"staged_shared_wire_proxy",45369529,"workers * shared_serialized_bytes + variant_serialized_sum"
+"current_minus_staged_wire_proxy",134876943,"full_task_serialized_sum - staged_shared_wire_proxy"

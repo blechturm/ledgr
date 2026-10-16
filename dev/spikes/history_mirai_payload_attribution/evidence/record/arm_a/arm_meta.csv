@@ -1,2 +1,2 @@
-"arm","preset","process_id","workers","n_instruments","n_bars","n_pulses","n_candidates","lookback","start_epoch","end_epoch","sweep_wall_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","snapshot_hash","status","error_class","error_message","gut"
-"A","record",46968,1,160,208797,1305,4,252,1792141117.81736,1792141132.39188,14.58,0,0,0,0,0,"793de8f3ca2428314beadd57e46a319850d25d0df9bb19196ddc9ed602299b91","DONE","","","none"
+"arm","preset","process_id","workers","n_instruments","n_bars","n_pulses","n_candidates","lookback","start_epoch","end_epoch","sweep_wall_sec","warmup_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","snapshot_hash","status","error_class","error_message","gut"
+"A","record",11972,1,160,208797,1305,4,252,1792142191.46649,1792142205.01171,13.53,4.52,0,0,0,0,0,"793de8f3ca2428314beadd57e46a319850d25d0df9bb19196ddc9ed602299b91","DONE","","","none"

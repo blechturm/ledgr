@@ -168,6 +168,12 @@ e0_mori_candidate <- function(name) {
   )
 }
 
+e0_staging_class <- function(name, invariant) {
+  if (!isTRUE(invariant)) return("candidate_varying")
+  if (identical(name, "static_bars_views")) return("derived_immutable")
+  "immutable_task_input"
+}
+
 e0_task_split <- function(tasks) {
   fields <- names(tasks[[1L]])
   invariant <- vapply(fields, function(field) {
@@ -198,13 +204,14 @@ e0_payload_map <- function(tasks) {
       serialized_bytes = e0_serialized_bytes(x),
       contains_data_frame = e0_contains_data_frame(x),
       mori_candidate = split$invariant[[field]] && e0_mori_candidate(field),
+      staging_class = e0_staging_class(field, split$invariant[[field]]),
       stringsAsFactors = FALSE
     )
   })
   do.call(rbind, rows)
 }
 
-e0_payload_summary <- function(tasks) {
+e0_payload_summary <- function(tasks, workers) {
   split <- e0_task_split(tasks)
   task_serialized <- vapply(tasks, e0_serialized_bytes, numeric(1))
   variant_serialized <- vapply(split$variants, e0_serialized_bytes, numeric(1))
@@ -222,9 +229,9 @@ e0_payload_summary <- function(tasks) {
       as.numeric(object.size(split$shared)), e0_serialized_bytes(split$shared),
       sum(variant_serialized),
       e0_serialized_bytes(split$shared) * length(tasks),
-      e0_serialized_bytes(split$shared) * 2 + sum(variant_serialized),
+      e0_serialized_bytes(split$shared) * workers + sum(variant_serialized),
       sum(task_serialized) -
-        (e0_serialized_bytes(split$shared) * 2 + sum(variant_serialized))
+        (e0_serialized_bytes(split$shared) * workers + sum(variant_serialized))
     ),
     note = c(
       "actual candidate tasks", "R object.size; shared references are not additive",
@@ -232,8 +239,8 @@ e0_payload_summary <- function(tasks) {
       rep("base R XDR serialization proxy", 2L),
       "invariant list once", "base R XDR serialization proxy",
       "candidate-varying lists", "shared proxy repeated per current task",
-      "shared proxy once per two daemons plus variants",
-      "positive means staged transport proxy is smaller"
+      "workers * shared_serialized_bytes + variant_serialized_sum",
+      "full_task_serialized_sum - staged_shared_wire_proxy"
     ),
     stringsAsFactors = FALSE
   )
@@ -247,8 +254,8 @@ e0_memory_point <- function(label, tasks = NULL, promises = NULL, results = NULL
     wset_bytes = unname(info[["wset"]]),
     private_commit_bytes = unname(info[["mem_private"]]),
     tasks_object_bytes = if (is.null(tasks)) 0 else as.numeric(object.size(tasks)),
-    promises_object_bytes = if (is.null(promises)) 0 else as.numeric(object.size(promises)),
-    results_object_bytes = if (is.null(results)) 0 else as.numeric(object.size(results)),
+    promise_handle_object_bytes = if (is.null(promises)) 0 else as.numeric(object.size(promises)),
+    collected_result_object_bytes = if (is.null(results)) 0 else as.numeric(object.size(results)),
     stringsAsFactors = FALSE
   )
 }
@@ -306,7 +313,33 @@ e0_parallel_eval_current <- function(tasks, workers, capture) {
 
 e0_parallel_eval_staged <- function(tasks, workers, capture, gut = "none") {
   split <- e0_task_split(tasks)
-  if (identical(gut, "omit-bars-by-id")) split$shared$bars_by_id <- NULL
+  omitted <- if (identical(gut, "omit-runtime-projection")) {
+    "runtime_projection"
+  } else {
+    character()
+  }
+  if (length(omitted)) split$shared[omitted] <- NULL
+  reconstruction <- lapply(seq_along(split$variants), function(i) {
+    rebuilt <- split$shared
+    rebuilt[names(split$variants[[i]])] <- split$variants[[i]]
+    rebuilt <- rebuilt[names(tasks[[i]])]
+    data.frame(
+      candidate_id = tasks[[i]]$candidate_id,
+      exact = identical(rebuilt, tasks[[i]]),
+      field_order_exact = identical(names(rebuilt), names(tasks[[i]])),
+      missing_fields = paste(setdiff(names(tasks[[i]]), names(rebuilt)), collapse = ";"),
+      extra_fields = paste(setdiff(names(rebuilt), names(tasks[[i]])), collapse = ";"),
+      stringsAsFactors = FALSE
+    )
+  })
+  capture$reconstruction <- do.call(rbind, reconstruction)
+  if (!all(capture$reconstruction$exact)) {
+    stop(
+      "E0_STAGED_RECONSTRUCTION_MISMATCH omitted=",
+      paste(omitted, collapse = ";"),
+      call. = FALSE
+    )
+  }
   stage_start <- proc.time()[["elapsed"]]
   stage_map <- do.call(
     mirai::everywhere,

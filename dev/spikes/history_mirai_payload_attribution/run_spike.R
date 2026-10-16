@@ -66,7 +66,6 @@ run_arm <- function(arm) {
   samples <- list()
   sample_id <- 0L
   known_pids <- root_pid
-  discovered_tree <- FALSE
   live_pid_file <- file.path(arm_dir, "daemon_pids.csv")
   while (proc$is_alive()) {
     if (file.exists(live_pid_file)) {
@@ -75,18 +74,6 @@ run_arm <- function(arm) {
         integer()
       )
       known_pids <- unique(c(known_pids, daemon_pids))
-      if (!discovered_tree) {
-        root_handle <- safe(ps::ps_handle(root_pid), NULL)
-        children <- if (is.null(root_handle)) list() else {
-          safe(ps::ps_children(root_handle, recursive = TRUE), list())
-        }
-        known_pids <- unique(c(
-          known_pids,
-          vapply(children, function(x) safe(ps::ps_pid(x), NA_integer_), integer(1))
-        ))
-        known_pids <- known_pids[!is.na(known_pids)]
-        discovered_tree <- TRUE
-      }
     }
     sample_id <- sample_id + 1L
     samples[[sample_id]] <- sample_pids(known_pids, root_pid, sample_id, arm)
@@ -126,7 +113,10 @@ read_arm <- function(run) {
       ifelse(samples$pid %in% daemon_pids, "daemon", "dispatcher_or_other")
     )
   }
-  list(meta = meta, samples = samples, daemon_pids = daemon_pids)
+  retention <- utils::read.csv(
+    file.path(run$arm_dir, "retention.csv"), stringsAsFactors = FALSE
+  )
+  list(meta = meta, samples = samples, daemon_pids = daemon_pids, retention = retention)
 }
 arm_data <- lapply(runs, read_arm)
 
@@ -162,6 +152,16 @@ summaries <- lapply(seq_along(runs), function(i) {
   interval <- if (length(sample_epochs) > 1L) {
     stats::median(diff(sample_epochs))
   } else NA_real_
+  sweep_epochs <- sample_epochs[sample_epochs >= from & sample_epochs <= to]
+  sweep_blackout <- if (length(sweep_epochs)) {
+    max(diff(c(from, sweep_epochs, to)))
+  } else {
+    to - from
+  }
+  retention <- data$retention
+  before_label <- if (run$arm == "C") "after_stage" else "before_submit"
+  before_private <- retention$private_commit_bytes[retention$label == before_label]
+  after_private <- retention$private_commit_bytes[retention$label == "after_submit"]
   data.frame(
     arm = run$arm,
     status = meta$status[[1L]],
@@ -172,6 +172,7 @@ summaries <- lapply(seq_along(runs), function(i) {
     n_candidates = meta$n_candidates[[1L]],
     workers = meta$workers[[1L]],
     sweep_wall_sec = meta$sweep_wall_sec[[1L]],
+    warmup_sec = meta$warmup_sec[[1L]],
     process_elapsed_sec = run$process_elapsed_sec,
     stage_sec = meta$stage_sec[[1L]],
     pid_probe_sec = meta$pid_probe_sec[[1L]],
@@ -180,6 +181,15 @@ summaries <- lapply(seq_along(runs), function(i) {
     stage_cleanup_sec = meta$stage_cleanup_sec[[1L]],
     sample_count = length(unique(s$sample_id)),
     effective_sample_interval_sec = interval,
+    max_sample_gap_sec = if (length(sample_epochs) > 1L) max(diff(sample_epochs)) else NA_real_,
+    sweep_max_blackout_sec = sweep_blackout,
+    in_process_parent_peak_wset = max(retention$wset_bytes),
+    in_process_parent_peak_private_commit = max(retention$private_commit_bytes),
+    parent_after_submit_private_delta = if (length(before_private) && length(after_private)) {
+      after_private[[1L]] - before_private[[1L]]
+    } else {
+      NA_real_
+    },
     sweep_parent_peak_wset = peak_one(s, "wset_bytes", "parent", from, to),
     sweep_parent_peak_private_commit = peak_one(
       s, "private_commit_bytes", "parent", from, to
@@ -217,8 +227,11 @@ payload_by_arm <- do.call(rbind, lapply(runs, function(run) {
 }))
 b_map <- payload_by_arm[payload_by_arm$arm == "B", names(payload_by_arm) != "arm"]
 c_map <- payload_by_arm[payload_by_arm$arm == "C", names(payload_by_arm) != "arm"]
+a_map <- payload_by_arm[payload_by_arm$arm == "A", names(payload_by_arm) != "arm"]
+rownames(a_map) <- NULL
 rownames(b_map) <- NULL
 rownames(c_map) <- NULL
+if (!identical(a_map, b_map)) stop("Sequential and current payload maps differ.")
 if (!identical(b_map, c_map)) stop("Current and staged payload maps differ.")
 e0_write_csv(payload_by_arm, file.path(out_dir, "payload_map_by_arm.csv"))
 e0_write_csv(b_map, file.path(out_dir, "payload_map.csv"))
