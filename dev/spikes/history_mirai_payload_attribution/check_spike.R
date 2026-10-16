@@ -11,6 +11,10 @@ opt <- e0_parse_args(commandArgs(trailingOnly = TRUE), list(
 
 against <- normalizePath(opt$against, winslash = "/", mustWork = TRUE)
 package_root <- normalizePath(opt$`package-root`, winslash = "/", mustWork = TRUE)
+preset <- utils::read.csv(
+  file.path(against, "fixture_shape.csv"), stringsAsFactors = FALSE
+)$preset[[1L]]
+if (!preset %in% c("smoke", "record")) stop("Unknown recorded preset.", call. = FALSE)
 if (!nzchar(opt$actual)) {
   actual <- file.path(
     normalizePath(opt$`scratch-dir`, winslash = "/", mustWork = TRUE),
@@ -20,7 +24,7 @@ if (!nzchar(opt$actual)) {
     e0_rscript(),
     c(
       file.path(dirname(script_path), "run_spike.R"),
-      "--preset", "smoke", "--package-root", package_root,
+      "--preset", preset, "--package-root", package_root,
       "--out-dir", actual, "--gut", "none"
     )
   )
@@ -107,7 +111,7 @@ check(setequal(payload$field[payload$mori_candidate], expected_mori),
 
 proxy <- read_csv(actual, "payload_summary.csv")
 value <- stats::setNames(proxy$value, proxy$measure)
-check(value[["task_count"]] == 4, "smoke record must contain four tasks")
+check(value[["task_count"]] == 4, "record must contain four tasks")
 check(value[["current_minus_staged_wire_proxy"]] > 0,
       "staging must reduce the base-R wire-size proxy")
 
