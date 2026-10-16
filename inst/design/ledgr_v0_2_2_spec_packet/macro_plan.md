@@ -720,9 +720,40 @@ single-run and worker memory budget, and decision-trace volume), and Session F
 rows in one final batch, including fold continuity, civil-date boundaries,
 carried-price return semantics and mark/entitlement history.
 
+Session E starts with two ordered, no-product-change spikes. The H1
+two-candidate/two-worker measurement is already the current `mirai` baseline;
+the first spike does not ask whether ledgr should adopt `mirai` again. It
+attributes the existing executor's parent and worker cost by measuring task
+size, serialized bytes, candidate-invariant payloads, promise retention,
+dispatch and result transfer, and parent, daemon and process-tree memory. It
+compares sequential execution, current `mirai` dispatch and an experimental
+arm that stages immutable inputs once per persistent daemon.
+
+The second spike uses that payload inventory to test `mori` only for the real
+immutable ledgr substrate: bars, feature projection, availability facts and
+pulse axes. It compares current `mirai`, staged-daemon `mirai` and
+`mirai` plus `mori` on identical candidates. It records result and identity
+parity, wall time, parent and per-worker memory, process-tree memory, private or
+unique bytes where the host exposes them, materialization and copy-on-write,
+and cleanup after success, interruption and worker failure. A Windows record
+is binding for the observed H1 problem; a portable smoke record checks that a
+candidate is not Windows-only.
+
+Both spikes use private experimental hooks and add no public API, executor
+abstraction or package dependency. The first closes with an attributable
+payload map; the second closes with an adopt, reject or narrow verdict. A
+shared-memory design is eligible only if it materially reduces unique peak
+memory without changing results, identity or failure behavior and without
+requiring disproportionate machinery. Session E then chooses the history
+representation, size guard and worker-memory budget from those results. If
+neither arm helps, the decision records the supported worker limit and routes
+the remaining executor-memory problem rather than hiding it in the history
+implementation.
+
 Exit: every register row has an accepted decision, durable deferral with a
 trigger, rejection with a reason, or named downstream owner. No implementation
-choice is left to select history semantics accidentally.
+choice is left to select history semantics accidentally, and Session E cannot
+close before both spike verdicts and their consequences are recorded.
 
 #### H3. Write the consolidated v12 synthesis
 
