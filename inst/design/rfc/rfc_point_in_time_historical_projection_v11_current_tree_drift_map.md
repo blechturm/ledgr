@@ -1,7 +1,7 @@
 # V11 Current-Tree Drift Map
 
-Role: audit record for history-wave H0.
-Status: complete at `0b2dd644f89771fca0a741852887eefb9f8cb38d`.
+Role: record; history-wave H0 audit reconciliation.
+Status: working; Type 1 review returned `PASS_AFTER_PATCHES` on the H0 record.
 Authority: non-designing reconciliation input to history-wave stage 2 and the
 later v12 synthesis. This record changes no semantics, contract, ticket, or
 implementation.
@@ -86,6 +86,13 @@ These are the controlling facts used throughout the map.
   pulses. See [Scoring And Feature Start](../contracts.md#contract-execution-window-start),
   [Session A](rfc_history_wave_v0_2_2_decisions.md#session-a-what-history-a-strategy-sees),
   and [Session B](rfc_history_wave_v0_2_2_decisions.md#session-b-one-hydration-rule).
+- Implementing Sessions A/B must retire or replace the current scoring-start
+  hydration seams: the `hydration_start_utc` fold field/formal, the stored
+  `walk_forward_folds.hydration_start_utc` column,
+  `ledgr_unsupported_hydration_start`,
+  `ledgr_precomputed_hydration_mismatch`, and
+  `ledgr_precomputed_features$warmup_range$start`. This is an inventory of
+  current seams, not a choice of their replacement representation.
 - Availability has no public mode flag. Declared availability fact families or
   a valuation policy activate it; a complete session calendar is mandatory;
   and omitted valuation policy defaults to
@@ -121,7 +128,7 @@ These are the controlling facts used throughout the map.
 | 2.3 | The exposure report, scripts, CSVs, and provenance must be preserved before integration. | rewrite for current architecture | The preservation obligation is discharged at v11 commit `412f600`; it is provenance, not an open gate. The current H1 evidence extends WS39 rather than rerunning or replacing that historical investigation. |
 | 2.4 | Zero affected requests does not prove zero late arrival; `assume_effective` is an assumption and a capture interval is not first market knowledge. | retain | Accepted Session C makes the pragmatic rule explicit: facts without a knowledge clock are known when effective and disclosed; real knowledge clocks remain representable. |
 | 2.5 | Zero volume is a separate execution-policy question; admission, execution permission, and valuation are distinct authorities, and repeated prices alone do not prove vendor carry. | retain | Those ownership distinctions remain valid and history treatment must not create an execution or valuation permission. |
-| 2.6 | The existing liquidity/capacity route is sufficient and zero-volume handling needs no history-wave action. | supersede by an accepted history-wave decision | The accepted Sharadar goal has the adapter drop vendor-carried zero-volume bars so they enter ledgr as missing observations. LFB-027 is adapter-owned, and H1 measures gaps after that drop; the history wave still does not redesign liquidity/capacity policy. |
+| 2.6 | The existing liquidity/capacity route is sufficient and zero-volume handling needs no history-wave action. | retain | The ledgr-side ownership claim stands: history does not redesign liquidity or capacity policy. Independently, the research adapter drops vendor-carried zero-volume rows under LFB-027 so ledgr receives missing observations, and H1 measures gaps after that adapter transformation. |
 
 ### V11 Section 3: information, shape, and ownership
 
@@ -129,8 +136,11 @@ These are the controlling facts used throughout the map.
 | --- | --- | --- | --- |
 | 3.1 | For a request at decision pulse `t`, every historical column `s <= t` uses evidence knowable at `t` and applicable at `s`; seal and wall time never substitute, future-known facts are excluded, and the existing family resolver remains authoritative. | retain | This is the still-valid two-clock causality rule. Session A separately forbids `s > t`, and Session C states how absent knowledge clocks are disclosed. |
 | 3.2 | `ctx$window()` is the public one-feature reader returning an instruments-by-lookback numeric matrix in `ctx$universe` order. | supersede by an accepted history-wave decision | Session 0 adopts `ctx |> ledgr_history_frame(...)` as the history reader and `ledgr_history_matrix()` as an identity-preserving adapter over that result. Neither function exists yet; `ctx$window()` must not be reintroduced as the operative surface. |
-| 3.3 | Columns count prepared decision pulses, early requests have leading `NA`, and no history before the scoring/run range is exposed. | supersede by an accepted history-wave decision | Session A says history reaches the beginning of the data and permits any shorter lookback, while decisions occur only on scoring pulses. Session B applies that one start to every indicator and entry point. |
-| 3.4 | One call returns one feature, not a list or multi-feature tensor; raw prices and companion evidence share the same aligned history semantics. | supersede by an accepted history-wave decision | The adopted UX reads exactly one sealed bar field or one resolved feature per `ledgr_history_frame()` call. It returns a classed research object with axis, cutoff, missingness treatment, included IDs, and exclusions; the matrix adapter only projects that object. A held nonmember may remain on the current context decision axis yet be excluded from the estimator sample with a reason. Exact argument and selector vocabulary remains stage-3 drafting work, not H0. |
+| 3.3a | Columns use one shared prepared/session-axis unit, not each asset's last `N` non-missing observations. | retain | A common time axis remains necessary for aligned history. Its exact unit, including the relationship to instrument narrowing, is routed to H2 and stage-3 drafting rather than selected here. |
+| 3.3b | Early requests have leading `NA`, and no history before the scoring/run range is exposed. | supersede by an accepted history-wave decision | Session A says history reaches the beginning of the data and permits any shorter lookback, while decisions occur only on scoring pulses. Session B applies that one start to every indicator and entry point. Those decisions supersede both the leading-padding and no-pre-range clauses. |
+| 3.4a | One call returns one numeric feature/series, not a list or multi-feature tensor. | retain | The adopted UX brief agrees: one call reads exactly one sealed bar field or one resolved feature. The new classed result changes the container, not this call cardinality. |
+| 3.4b | Raw prices and companion evidence share the same aligned history semantics. | rewrite for current architecture | The classed history result carries axis, cutoff, missingness treatment, included IDs, exclusions, and aligned evidence; `ledgr_history_matrix()` only projects that already-constructed result. Exact evidence columns remain stage-3 drafting work. |
+| 3.4c | The current decision axis includes held nonmembers, and membership at a past column does not by itself exclude an otherwise admissible observation. | rewrite for current architecture | The held-nonmember and past-membership semantics remain inputs. The default requested row set, the included/excluded representation, and how a held nonmember appears in an estimation request are not settled by the UX brief's proposed `instruments = "admissible"`; H2 and stage 3 must bind them without converting estimation exclusion into an execution target. |
 | 3.5 | The engine may keep complete prepared backing, but supported reads enforce cutoff/axis and returned windows do not expose mutable engine state; a maximum lookback is not itself a causality boundary and reflection is outside the guarantee. | rewrite for current architecture | Complete backing may be run-local and ephemeral only. It is not a feature cache or durable feature table. E owns preparation, P1 reads typed history-derived values, P2 materializes a fresh public frame, and `ctx` must not reference the fold carrier. |
 | 3.6 | The projection is the sole numerical owner; no lower projector or automatic full-panel long materialization is introduced, and the context surface owns supported access. | rewrite for current architecture | P1 is the sole history-derived reader and P2 the sole public adapter. The classed frame is constructed only on request; wide/long/matrix forms are not retained together. The history wave must amend the fold service census if it adds an incremental service. |
 | 3.7 | History is for estimation, not replay of historical `held`, `priced`, `mark_age`, or trading state; explain owns retained run evidence. | retain | No public portfolio replay mode is authorized. The pending PIT-G-015/PIT-S2-007 need for pre-window mark and entitlement inputs is fold-continuity substrate, not permission to add those planes to the public estimator frame. |
@@ -141,7 +151,7 @@ These are the controlling facts used throughout the map.
 | ID | V11 load-bearing claim | Disposition | Current-tree reconciliation |
 | --- | --- | --- | --- |
 | 4.1 | Current feature hydration uses venue open sessions, with LDG-2866/2867 and old availability gate 21 as the current repair route. | rewrite for current architecture | The stable current rule is in [Availability-Aware Strict Features](../contracts.md#contract-context-strict-features): strict windows count venue open sessions on the shared pulse axis, `known_inactive` does not remove sessions, and real observations inside inactive intervals remain inputs. LDG-2866/2867 and gate 21 are historical anchors; the temporary feature-start rule is in the Execution contract. |
-| 4.2 | Instrument-narrowed expected sessions remain separately scheduled; if shipped, narrowing is cutoff-resolved and aligned back to the common column axis. | rewrite for current architecture | No current ticket or pipeline row owns the old narrowing route, while the shipped contract binds the shared venue-session axis and accepted Session A/B bind data-start history. Whether v12 explicitly rejects narrowing or preserves it as a later optional semantic is a design question routed in Section 6 below; H0 does not decide it. |
+| 4.2 | Instrument-narrowed expected sessions remain separately scheduled; if shipped, narrowing is cutoff-resolved and aligned back to the common column axis. | rewrite for current architecture | The route is still live: the RFC pipeline's [instrument-specific session-axis row](README.md#instrument-specific-session-axis) is `Obligations open`, WS3 says to [narrow expected sessions where evidence requires it](../ledgr_v0_2_2_spec_packet/macro_plan.md#ws3-point-in-time-history-and-feature-map-addressing), and the [horizon migration reconciliation](../ledgr_v0_2_2_spec_packet/horizon_migration_reconciliation.md) routes v11 Section 4 to that pipeline row. The shared venue-session contract and Sessions A/B do not silently dispose of these owners. H2 must require v12 to reject, defer, or bind narrowing and then reconcile both the WS3 and pipeline obligations. |
 | 4.3 | Strict values are cutoff-invariant only for fixed observations, axis, and treatment; numerical correctness is required, but segmentation/partial storage is not. | retain | The qualification and detecting obligation still apply, including any later accepted axis choice. |
 
 ### V11 Section 5: missing-data policy, barriers, and disclosure
@@ -161,7 +171,7 @@ These are the controlling facts used throughout the map.
 | 5.11 | A knowable corporate action lacking both event clocks fails only when basis is undeclared and carry is enabled; strict policy or a declared basis does not trigger it. | rewrite for current architecture | Session C now distinguishes absent knowledge clocks (`assume_effective`, disclosed) from absent event clocks. Current public conditions include `ledgr_corporate_action_clock_mismatch` for supplied off-axis clocks and `ledgr_invalid_corporate_action_event` for invalid execution events, but no accepted condition specifically names this history-preparation case. The class and parent are routed in Section 6 rather than invented here. |
 | 5.12 | After a nonterminal barrier, a new real observation may seed later carry; later boundaries remain, and actual admitted observations are never quarantined merely because carry is blocked. | retain | This continues to separate source observations from treatment. |
 | 5.13 | History discloses aligned original/remaining missingness, carry/calculation provenance, source time/age, warm-up/later gaps, reasons, and carried-input counts/shares without a universal usability flag. | retain | The exact classed-frame columns remain stage-3 vocabulary, but the evidence distinctions are still required. |
-| 5.14 | Source, transformation, and consumption are separate; treatment, policy, implementation version, cutoff, and axis enter identity; strict and padded requests cannot share identity and later views cannot mutate earlier results. | rewrite for current architecture | Identity must be expressed under config identity rule 3 and feature fingerprints, including accepted future history policy/class inputs. Snapshot hash rule 3 supplies source-content identity. Runtime history results are immutable values, not durable feature rows, and no cache key or persisted feature artifact exists. |
+| 5.14 | Source, transformation, and consumption are separate; treatment, policy, implementation version, cutoff, and axis enter identity; strict and padded requests cannot share identity and later views cannot mutate earlier results. | rewrite for current architecture | Config identity rule 3 and snapshot hash rule 3 are current as v12 drafting begins; H0 does not presume rule 3 remains the final history identity rule. The register's existing D3-F5 history-identity work decides whether accepted history-class or policy inputs require an identity advance. Runtime history results are immutable values, not durable feature rows, and no cache key or persisted feature artifact exists. |
 | 5.15 | Existing cache machinery owns treatment identity and prevents wrong reuse. | retire because its mechanism was deleted | The process-local cache, clear API, cache keys, hit/miss telemetry, `persist_features`, feature-row persistence, resume handling, and `features` table were deleted by LDG-3049/3050. Do not recreate them for history. Explicit precompute validation is the only existing reusable-payload seam. |
 | 5.16 | Future fitted transforms may consume original missingness under training-only scope, but no DAG, registry, or fitted-model store is required. | retain | Model lifecycle remains a later RFC and does not expand WS3. |
 
@@ -171,7 +181,7 @@ These are the controlling facts used throughout the map.
 | --- | --- | --- | --- |
 | 6.1 | Use one ordinary prepared numerical series where correct; resolve evidence at `(s, t)` with both clocks because the diagonal `pmax(effective, knowledge)` representation alone cannot answer history. | retain | The current prepared provider still uses diagonal segments for decision/execution views. It is evidence of why the history representation needs both clocks, not the historical answer itself. |
 | 6.2 | When supported policies make history cutoff-dependent, compute correct answers by the simplest adequate method; whole-series recalculation is allowed and fact arrival need not create a numerical copy. | retain | Session E decides production representation and size guard after H1; no segmentation or incremental algorithm is preselected. |
-| 6.3 | Preparation precedes the fold; retrieval cannot perform callback SQL, rebuild fact segments, or recompute a whole panel per pulse; run and sweep share one fold. | rewrite for current architecture | E prepares the run-scoped substrate, P1 is its sole history reader, and P2 builds a requested frame. The current private `provider$history()` raw-bar closure performs per-call SQL in the persistent provider, is exercised as an internal/test helper, and is not the public history design. It cannot become the P2 reader unchanged. Availability-only history still uses the same fold invoked by run, sweep, inspection, and walk-forward routes. |
+| 6.3 | Preparation precedes the fold; retrieval cannot perform callback SQL, rebuild fact segments, or recompute a whole panel per pulse; run and sweep share one fold. | rewrite for current architecture | E prepares the run-scoped substrate, P1 is its sole history reader, and P2 builds a requested frame. The current private `provider$history()` raw-bar closure performs per-call SQL and cannot become the P2 reader unchanged. Run and sweep share `ledgr_fold_envelope()`, and walk-forward invokes that same run path. `ledgr_pulse_snapshot()` is a separate dense one-pulse helper with its own snapshot SQL and feature computation; it makes every requested instrument a member and does not simulate availability-aware state. Inspection parity is therefore an H2 question, not a current shared-fold fact. |
 | 6.4 | Prepared data are reusable while cursors are consumer-local, may re-seek backward, and returned windows remain immutable; sweeps, inspection, and reopened runs have independent consumers. | rewrite for current architecture | Any cursor-bearing history service must be run/candidate-local, declared in the fold synthesis Section 5.2 census by amendment, called by P1 only, and absent from the carrier/public context. P2 returns a new classed object. |
 | 6.5 | Numerical segmentation, trigger tables, exact invalidation bands, and partial updates are deferred; finite-window locality does not certify recursive, cross-sectional, fitted, or narrowed-axis dependencies. | retain | This is still the correct boundary for open Session D/E work. |
 | 6.6 | Existing prepared fact segments remain; measure ordinary preparation, delivered evidence, storage, and worker copies, then optimize only an observed bottleneck. | rewrite for current architecture | Prepared provider segments remain for current fact views, but they are not a selected history representation. H1 extends the WS39 baseline; Session E sets the one-run and representative-worker memory budget and size guard. The old `2.11x` arithmetic remains non-runtime history. |
@@ -208,7 +218,7 @@ These are the controlling facts used throughout the map.
 | 9.1 | Reopen revision optimization only when supported point-in-time behavior changes an intended request and simple correct preparation has a material cost/maintenance problem; record affected instruments/cells/requests, the consequence of a named shortcut, and correction cost; synthetic cases prove correctness and real requests prove need. | retain | This remains the complexity gate. H1/H6 provide the real workload evidence. |
 | 9.2 | A new source with real knowledge clocks triggers exposure assessment, not automatic segmentation; causal approximation requires an explicit decision. | retain | Session C preserves slots for real knowledge clocks and does not authorize approximation. |
 | 9.3 | Fitted imputers, liquidity, corporate-action clock vocabulary, and model lifecycle are separate routes and are not prerequisites. | rewrite for current architecture | Fitted/model lifecycle stays later; adapter-carried zero-volume bars are already handled by LFB-027; current corporate-action/session clock rules are in the Availability contract and Session C; dividend-fact mapping stays with the later adapter/WS7 rebuild. None expands WS3 automatically. |
-| 10.1 | The listed 2026-09 code-line anchors are the implementation reading baseline. | rewrite for current architecture | Replace line-only anchors with current functions and contracts: `ledgr_availability_provider()` and `ledgr_availability_provider_build_prepared()` for the current provider; `ledgr_run_prepare_config()` plus the feature hydration in the current runner; `ledgr_compute_feature_series_strict()` and `ledgr_compute_feature_series()` for indicator paths; `ledgr_precompute_features()` for explicit payloads; `ledgr_fold_envelope()` and P1-P5 for execution; and `ledgr_pulse_snapshot()` for inspection. `ledgr_sweep_compute_feature_matrix()` remains test-only and is not a production history anchor. |
+| 10.1 | The listed 2026-09 code-line anchors are the implementation reading baseline. | rewrite for current architecture | Replace line-only anchors with current functions and contracts: `ledgr_availability_provider()` and `ledgr_availability_provider_build_prepared()` for the current provider; `ledgr_run_prepare_config()` plus the feature hydration in the current runner; `ledgr_compute_feature_series_strict()` and `ledgr_compute_feature_series()` for indicator paths; `ledgr_precompute_features()` for explicit payloads; and `ledgr_fold_envelope()` plus P1-P5 for run, sweep, and walk-forward execution. Treat `ledgr_pulse_snapshot()` as the separate dense inspection helper it currently is, not as a shared-fold anchor. `ledgr_sweep_compute_feature_matrix()` remains test-only and is not a production history anchor. |
 | 10.2 | The original projection probe requires complete runtime backing in both dense and availability modes. | supersede by an accepted history-wave decision | History is availability-only. Full membership is expressed on the availability path; dense receives no history branch and leaves in the later execution-core consolidation. |
 | 10.3 | Section 7 is the next ticket-cut route; the exposure files are the current integration input and no fresh RFC cycle is needed. | rewrite for current architecture | The current route is H0 drift map, H1 evidence, completion of register Sessions D-F, consolidated v12, Type 1 review, then WS3/WS4 cut. Existing Type 2 work is reused; H0 does not restart the cycle or draft v12. |
 
@@ -227,8 +237,10 @@ The following changes require no new product choice in v12:
    `persist_features`, durable feature rows, feature telemetry, and the
    `features` table.
 5. State schema 120, identity rule 3, snapshot hash rule 3, and refusal of all
-   non-current stored formats. Do not add a compatibility argument, old-format
-   reader, inference, migration, or fallback.
+   non-current stored formats as current-tree facts. Do not add a compatibility
+   argument, old-format reader, inference, migration, or fallback. Whether
+   history inputs advance the identity rule remains with the existing
+   history-identity item.
 6. Replace old line and ticket anchors with the stable contract headings,
    accepted RFC sections, and current function names listed above.
 7. Treat the v11 exposure figures as historical provenance and WS39 plus H1 as
@@ -252,7 +264,9 @@ They are not current-tree drift to repair mechanically.
 | `R/backtest-runner.R:873-907` venue alignment | rewrite for current architecture | Use current runner preparation plus the Scoring/Feature Start and Availability-Aware Strict Features contract groups. The old LDG-2866/2867 route is historical. |
 | `R/features-engine.R:235-246,286-328` strict calculation/all-OHLC gate | rewrite for current architecture | Use `ledgr_compute_feature_series_strict()`, `ledgr_compute_feature_series()`, `ledgr_strict_complete_window_mask()`, and current required-field/gap-contract rules. Session D still decides the future class system. |
 | `R/sweep.R:1068,1276-1292,1413` projection/worker/restart anchors | rewrite for current architecture | Production sweep uses the shared runner/fold and explicit `ledgr_precompute_features()` payloads; `ledgr_sweep_compute_feature_matrix()` is test-only. History work must not add a second sweep path. |
-| `R/pulse-snapshot.R:35-41` arbitrary inspection cutoff | rewrite for current architecture | Use current `ledgr_pulse_snapshot()` and the accepted Session B common history start; inspection must consume the same causal history substrate. |
+| `R/pulse-snapshot.R:35-41` arbitrary inspection cutoff | rewrite for current architecture | Current `ledgr_pulse_snapshot()` is a separate dense one-pulse helper: it issues its own snapshot SQL, computes features from bars through the cutoff, treats all requested instruments as members, and explicitly does not simulate availability-aware state normalization. H2 must decide whether this helper becomes availability-aware or inspection parity is owned by another route. |
+| Session B scoring-start hydration seams | rewrite for current architecture | Retire or replace `hydration_start_utc`, the stored `walk_forward_folds.hydration_start_utc` column, `ledgr_unsupported_hydration_start`, `ledgr_precomputed_hydration_mismatch`, and `ledgr_precomputed_features$warmup_range$start` when the accepted data-start rule is implemented. |
+| Register D3-F5 citation to deleted `R/feature-cache.R:82-94` | rewrite for current architecture | The identity question remains pending, but its implementation anchor is stale after Cut 15. H2 should cite the current `ledgr_active_feature_fingerprint()` and `ledgr_feature_def_fingerprint()` definitions in `R/features-engine.R`; H0 does not edit the register. |
 | Cut 13 context-surface ticket and v0.2.0.0 LDG-2866/2867/gate-21 status references | rewrite for current architecture | Use current Contracts headings and accepted history decisions. Prior packets remain evidence, not current implementation authority. |
 | V11's cache and retained-feature-artifact language | retire because its mechanism was deleted | LDG-3049/3050 and schema 120 removed the complete mechanism; the structural deletion detector is `tests/testthat/test-feature-retention-removal.R`, and the schema catalogue proves no `features` table. |
 | V11's two-mode projection-probe conclusion | supersede by an accepted history-wave decision | The release-line mode decision is availability-only history with full membership represented on that path. |
@@ -261,30 +275,45 @@ They are not current-tree drift to repair mechanically.
 ## 6. Newly exposed semantic questions to route before v12
 
 These questions arise from reconciling v11 with current contracts. This audit
-does not answer them. The maintainer should add or attach them to the
-history-wave decision register before stage 3.
+does not answer them. H2 must carry them as explicit Type 2 work before stage
+3; H0 neither answers them nor edits the decision register.
 
 1. **Assumed-default price basis and carry barriers.** V11 gives an
    undeclared basis the conservative corporate-action barrier rule. Current
    availability execution keeps `data.price_basis = NULL` for identity but
    economically runs and discloses `split_adjusted` as an assumed default.
+   The [Cut 12 decision 8 amendment and LDG-3013](../ledgr_v0_2_2_spec_packet/tickets.yml)
+   record that exact split: the basis remains `NULL` in identity while the
+   availability path always applies the assumed `split_adjusted` model.
    Should history carry follow the effective assumed split-adjusted model or
    the conservative undeclared-identity rule? The answer must also state what
    enters rule-3 config/history identity and the detecting fixture.
 2. **Instrument-narrowed expected sessions.** V11 preserves a separately
-   scheduled narrowing route, but the current tree has no live owner for it,
-   the contract binds one shared venue-session axis, and accepted Session A/B
-   bind data-start history. V12 must explicitly reject narrowing, defer it with
-   a trigger and owner, or define how it coexists with the common public time
-   axis; silence would leave an old accepted clause apparently operative.
+   scheduled narrowing route, and current WS3 plus the RFC pipeline still own
+   it. V12 must explicitly reject narrowing, defer it with a trigger and owner,
+   or bind its cutoff resolution and alignment to the common public time axis.
+   It must then dispose both live owners coherently; silence would leave the
+   WS3 bullet and `instrument-specific-session-axis` obligation operative.
 3. **Unlocatable corporate-action condition.** V11 promises a carry-specific
    classed refusal when a knowable action has neither entitlement nor effective
-   clock. Current vocabulary has `ledgr_corporate_action_clock_mismatch` for a
-   supplied clock that does not match the session axis and
-   `ledgr_invalid_corporate_action_event` for invalid execution events, but no
-   accepted history-preparation class for the v11 case. The register must
-   decide whether the case remains supported and, if so, its class, parent,
-   fields, timing, and relationship to Session C's `assume_effective` rule.
+   clock. Current ingest permits both event clocks to be absent. Execution maps
+   each absent clock to `NA`, so the row silently receives no posting pulse;
+   `ledgr_invalid_corporate_action_event` covers a non-finite entitlement
+   recount delta, not missing event clocks. The register must decide whether
+   the v11 case remains supported and, if so, its class, parent, fields,
+   timing, and relationship to Session C's `assume_effective` rule.
+4. **Availability-aware pulse inspection parity.** Run, sweep, and
+   walk-forward share the fold, but `ledgr_pulse_snapshot()` is a separate
+   dense helper with its own SQL and non-availability state. H2 must decide
+   whether to make that helper availability-aware for causal history or route
+   inspection parity to another owner/surface.
+
+H2 and stage 3 must also bind the shared history-axis unit and the default row
+set, including held nonmembers, past-membership observations, and the
+representation of included/excluded instruments. The UX brief's proposed
+`instruments = "admissible"` is input, not an accepted default. The register's
+existing D3-F5 item, after its deleted-file anchor is corrected, owns the
+history-identity question; H0 creates no duplicate decision.
 
 ## 7. H0 exit check
 
@@ -292,8 +321,9 @@ history-wave decision register before stage 3.
   separately maps every obsolete implementation, measurement, and ticket
   anchor.
 - No deleted feature-retention mechanism remains an operative dependency.
-- No history semantic is selected here. The three newly exposed choices are
-  routed above, and all previously open choices remain in Sessions D-F and the
+- No history semantic is selected here. The four explicit Type 2 questions and
+  the stage-3 row-set/axis drafting work are routed above; identity remains
+  with D3-F5, and all previously open choices remain in Sessions D-F and the
   register's consider rows.
 - The map uses current contract headings, accepted RFC sections, and current
   function names in preference to line-only anchors.
