@@ -17,37 +17,44 @@ a readiness policy, a product tolerance, or identity/version consequences.
 
 ## Cheaper prerequisite
 
-Does `ledgr_compute_feature_series()` reproduce the feature values seen by one
-ordinary public `ledgr_run()` when both consume the same stored bars? If not,
-the probe stops: an internal engine cannot be the evidence oracle.
+Does `ledgr_compute_feature_series()` reproduce the feature values seen through
+one ordinary public dense `ledgr_run()` when both consume the same stored bars?
+If not, the probe stops. This is a plumbing prerequisite, not independent
+validation of an engine against itself.
 
-Dense execution is used only for that parity oracle. History remains targeted
-at full-membership and changing-membership shapes on the availability path.
+The same plumbing comparison is recorded for the three currently admitted
+outputs on a complete-membership, full-observation availability run. History
+remains targeted at full-membership and changing-membership shapes on the
+availability path.
 
 ## Runnable core and cases
 
 The runner constructs indicators only through exported constructors and uses
-the real feature engine. It runs five cases, below the protocol cap:
+the real feature engine. It runs ten cases, at the protocol cap:
 
 1. a smooth trend/oscillation path;
 2. a seeded volatile path;
 3. a large-scale path exposing floating-point cancellation;
-4. one missing expected session; and
-5. five missing expected sessions.
+4. a hostile level shift from about `1e6` to about `1`; and
+5. one and five missing expected sessions at each of three positions.
 
 For complete paths it compares the full series with every sampled prefix and
-with the indicator restarted on its finite candidate window. For gaps it keeps
-the expected-session rows, records current availability admission, and compares
-the uninterrupted series with per-segment restart. Multi-output TTR families
-are expanded through `ledgr_ind_ttr_outputs()`.
+with the indicator restarted at both `stable_after` and `stable_after + 1`
+widths. For gaps it keeps the expected-session rows, records current
+availability admission, and compares a segment restart that omits gap
+observations with an uninterrupted full series that retains them. Multi-output
+TTR families are expanded through `ledgr_ind_ttr_outputs()`.
 
 The source classification is deliberately factual and release-local:
 
-- finite built-in formulas and finite TTR rolling/window functions are
-  `bounded` candidates;
-- TTR RSI, EMA, ATR's `atr`, and all MACD outputs are
-  `history_dependent` candidates because their current implementations carry
-  recursive state; and
+- the 34 default-argument outputs comprise 28 `bounded` and six
+  `history_dependent` outputs;
+- six algorithm-changing variants test that classification belongs to the
+  family, output and arguments rather than the function name alone; their
+  multi-output expansion produces eight additional output rows;
+- BBands `mavg` and CCI become history-dependent with `maType = "EMA"`;
+  RSI, ATR `atr`, and MACD become bounded with `maType = "SMA"`; and EMA with
+  `wilder = TRUE` remains history-dependent; and
 - unsupported TTR functions that require a caller-supplied warmup, custom
   indicators, and fitted/cross-sectional functions are outside this census.
 
@@ -58,10 +65,11 @@ do not prove arbitrary custom code bounded.
 
 The runner writes:
 
-- package/dependency metadata and a 34-output inventory;
-- raw prefix/window samples and derived conformance summaries;
-- raw gap samples and first-valid/convergence summaries; and
-- public-run/internal-engine parity.
+- package/dependency metadata and a 42-row default-plus-variant inventory;
+- raw prefix/window samples, numerical conformance and width witnesses;
+- raw backend first-finite rows beside ledgr's declared/masked boundaries;
+- raw gap samples and fixture-local first-valid/convergence summaries; and
+- dense and full-membership availability path-plumbing comparisons.
 
 `check.R` reruns into scratch, diffs every CSV, checks the literal output
 census, exercises the findings, and guards product scope. `gut.R` replaces the
@@ -82,12 +90,12 @@ Stop and return to the maintainer if:
 - the harness would need product code, a public API, or more than 1,500 R
   lines.
 
-Numerical thresholds in the checker describe this fixed evidence corpus only.
-Session D must justify any product tolerance independently.
+No numerical delta threshold classifies an output. Session D must justify any
+product tolerance independently from the recorded drift distribution.
 
 ## Non-goals
 
 No product file, test, contract, ticket, decision register, or macro-plan entry
 changes. The spike does not certify arbitrary custom indicators, implement
-segment execution, make TTR available under gaps, establish convergence as a
-readiness gate, or create a dense history feature.
+segment execution, measure skip-gap recursion, make TTR available under gaps,
+establish convergence as a readiness gate, or create a dense history feature.

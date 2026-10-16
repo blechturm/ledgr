@@ -1,78 +1,89 @@
 # Closeout: H2 Indicator-History Conformance Evidence
 
-**Verdict:** GREEN for the chartered evidence question. The harness separates
-the current finite and history-dependent implementations without changing the
-package, and the public-run prerequisite, prefix-causality check, fixed census,
-gut and scope guard all pass. GREEN binds no product semantics.
+**Verdict:** GREEN for the chartered evidence question. The harness records a
+default and algorithm-variant census without changing the package, and the
+path prerequisite, prefix check, fixed census, gut and scope guard pass. GREEN
+binds no product semantics.
 
 ## What ran
 
 At package commit `a4fdce08a3269c75da11792754560055f5d6de9b`, the runner
-constructed all four built-in indicators and every family in the current TTR
-warmup table. Multi-output families were expanded, yielding 34 outputs. It ran
-three complete fixtures (smooth, volatile and large-scale) and two expected-
-session gap cases (one and five missing sessions).
+constructed the 34 default-argument outputs from all four built-ins and every
+family in the TTR warmup table. It added six algorithm variants, expanded to
+eight output rows, for 42 rows total. Four complete fixtures covered smooth,
+volatile, large-scale and hostile `1e6`-to-`1` level-shift paths. One- and
+five-session gaps ran at three positions, making ten cases overall.
 
-The complete-path evidence contains 2,448 sampled full-series, prefix and
-finite-restart comparisons. Every sampled prefix was byte-identical to the
-same prefix of the full calculation. A public `ledgr_run()` using the exact
-bars read back from its sealed snapshot matched the internal feature engine
-for values and missingness on all 34 outputs.
+Every sampled prefix was byte-identical to the same prefix of the full
+calculation. The public dense path matched the current engine exactly for all
+42 outputs over exact stored bars. A complete-membership, full-observation
+availability run also completed for built-in SMA, built-in returns and exact
+TTR SMA. Its missingness
+matched; returns were byte-identical and the two strict SMA paths differed by
+about `1e-15` scaled. These are plumbing comparisons, not independent engine
+validation.
 
-The checker reran the ordinary evidence byte for byte, ran the deliberate gut,
-checked the literal 34-output census and guarded product paths. It reports:
+The checker reruns and diffs all eight CSVs, runs the gut, freezes the census
+and findings, and guards product paths. It reports:
 
 ```text
-H2_D_CHECK_PASS outputs=34 prefix=causal dense=identical gut=detected scope=clean
+H2_D_CHECK_PASS defaults=34 variants=8 prefix=causal paths=recorded gut=detected scope=clean
 ```
 
-The recorded environment is R 4.6.1, ledgr 0.2.1.0, TTR 0.24.4, duckdb
-1.5.6.9000, DBI 1.3.0 and pkgload 1.5.3 on Windows x86-64.
+The environment is R 4.6.1, ledgr 0.2.1.0, TTR 0.24.4, duckdb 1.5.6.9000,
+DBI 1.3.0 and pkgload 1.5.3 on Windows x86-64.
 
 ## What was learned
 
-The release-local source classification and the executable evidence agree:
-28 outputs have a finite dependency on these fixtures; six retain material
-earlier-history state: TTR RSI, TTR EMA, ATR's `atr`, and MACD's `macd`,
-`signal` and `histogram` outputs. Their maximum scaled finite-restart deltas
-range from `4.06e-6` to `85.83`, depending on output and fixture. The largest
-bounded delta was TTR CCI on the large-scale fixture: absolute `2.36e-8`,
-scaled `5.17e-9`. These numbers describe the corpus; they do not set a product
-tolerance.
+The default-argument census is 28 bounded and six history-dependent outputs:
+TTR RSI, TTR EMA, ATR `atr`, and MACD `macd`, `signal` and `histogram` retain
+earlier state. That ratio does not classify whole functions. BBands `mavg` and
+CCI become history-dependent with `maType = "EMA"`; RSI, ATR `atr` and all
+three MACD outputs become bounded with `maType = "SMA"`; EMA with
+`wilder = TRUE` remains history-dependent. The classification key is therefore
+family plus output plus algorithm-changing arguments.
 
-First-valid and convergence are different facts. After a one-session gap,
-the recursive outputs first become finite after 10 to 15 observations, matching
-their declared `stable_after` values. Reaching a scaled delta below `1e-6`
-took 51 observations for TTR EMA, 113 for ATR, 70 to 76 for the three MACD
-outputs, and 205 for TTR RSI. RSI had not reached `1e-9` by the end of the
-fixture. A first finite value therefore cannot stand in for convergence.
+No numerical threshold assigns those classes. The hostile level shift records
+bounded scaled restart drift of `7.64e-6` for CCI, `1.22e-7` for BBands
+`pctB`, and `2.07e-9` for built-in SMA. The earlier smooth/large-scale corpus
+understated this boundary. These values remain fixture-local; choosing a
+product tolerance needs an independent numerical basis.
 
-TTR Aroon exposes a separate boundary: with `n = 10`, it declares
-`stable_after = 10`, but exact current finite-window parity requires 11
-observations. This is evidence that first-valid warmup and dependency width
-must be represented separately if Session D needs both.
+Warmup has three distinct meanings. TTR Aroon with `n = 10` differs when
+executed on 10 rows (up to 80 points) but is exact on 11 rows across all four
+fixtures. Eleven is an observed upper-bound witness, not a proven minimum.
+Raw TTR ATR `tr`, `trueHigh` and `trueLow` first become finite at row 2 while
+ledgr declares and masks to row 11. Raw MACD `macd` first becomes finite at row
+10 while ledgr masks it to row 13; raw `signal` and `histogram` first become
+finite at row 13. The engine's first finite row matching `stable_after` is by
+normalization, not independent confirmation.
 
-Current gap behavior is narrow. Across the two gap cases, availability admits
-only built-in SMA, built-in returns and exact TTR SMA (six admitted rows); it
-refuses the other 62 rows with `ledgr_indicator_gap_unsupported`. Directly
-passing aligned missing-session input does not supply a general alternative:
-all 68 attempts fail, 12 with `ledgr_invalid_feature_output` and 56 with an
-underlying error. The history design therefore needs an explicit execution
-rule rather than treating current function behavior as that rule.
+First-valid also differs from convergence. Across three gap positions, the
+one-gap scaled-`1e-6` recovery ranges were 40-47 observations for TTR EMA,
+101-109 for ATR, 59-72 across MACD outputs, and 157-190 for RSI. Five-gap
+ranges were 48-50, 106-114, 68-75 and 181-207 respectively. Variant recovery
+is retained in the CSV. The precise counterfactual is segment restart omitting
+gap observations versus an uninterrupted full series retaining them; skip-gap
+recursive behavior remains unmeasured.
+
+Current admission remains narrow. Across six gap cases, availability admits
+only built-in SMA, built-in returns and exact TTR SMA (18 admitted rows) and
+refuses the other 234 with `ledgr_indicator_gap_unsupported`. Passing aligned
+missing-session input directly to current functions does not define a general
+gap rule; all 252 attempts fail through ledgr validation or the backend.
 
 ## What the spec may consume
 
-Session D may consume the 34-output census, the 28/6 release-local
-classification, prefix-causality and dense-oracle results, numerical delta
-distributions, first-valid/convergence measurements, the Aroon boundary, and
-the observed current availability admission matrix. The evidence supports a
-distinction among dependency width, first-valid readiness and convergence; it
-does not choose their public names or policies.
+Session D may consume the 34-default and eight-variant census, prefix and path
+results, drift distribution, raw/declaration/masked warmup distinctions, the
+Aroon width witness, fixture-local restart convergence, and current admission
+matrix. It may not promote the observed deltas into a tolerance or treat the
+restart counterfactual as a chosen gap policy.
 
 ## What remains open
 
-The spike does not choose gap/reset semantics, a readiness policy, numerical
-tolerances, identity consequences, or support for arbitrary custom, fitted or
-cross-sectional functions. It does not make recursive indicators availability-
-safe and does not implement history panels. Those remain for H2 Session D and
-the consolidated history-wave synthesis.
+The spike does not choose gap reset or skip semantics, readiness, tolerances,
+minimal dependency widths, identity consequences, or support for arbitrary
+custom, fitted or cross-sectional functions. It does not make recursive
+indicators availability-safe and does not implement history panels. Those
+remain for H2 Session D and the consolidated synthesis.

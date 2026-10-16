@@ -1,79 +1,93 @@
 # H2 Indicator-History Evidence Inventory
 
 **Baseline:** `a4fdce08a3269c75da11792754560055f5d6de9b`
-**Question:** classify the current built-in and TTR outputs by observed history
-dependence, prefix causality, gap behavior, and first-valid/convergence behavior.
+**Question:** classify current built-in and TTR outputs by family, output and
+algorithm-changing arguments, then record causality, restart, gap and warmup
+evidence without choosing product semantics.
 **Product changes:** none.
 
 ## Runnable artifacts
 
-- `runner.R` constructs the supported indicator census, runs three complete
-  paths and two gap cases, and writes seven CSVs.
-- `check.R` reruns the ordinary and gutted paths in temporary directories,
-  diffs the ordinary evidence byte for byte, checks the frozen census and
-  findings, and guards package scope.
-- `gut.R` supplies the only deliberate fault: it substitutes the full-history
-  value for the finite-restart value. This erases the measured evidence that
-  distinguishes recursive outputs; `check.R` rejects that result.
+- `runner.R` builds the 34 default outputs and eight outputs from six
+  algorithm variants. It runs four complete fixtures and one/five-session
+  gaps at three positions, for ten cases total.
+- `check.R` reruns ordinary and gutted paths in temporary directories, diffs
+  the ordinary evidence byte for byte, checks the literal census and findings,
+  and guards package scope.
+- `gut.R` supplies the deliberate fault: it substitutes the full-history value
+  for each finite-restart value. The checker rejects the erased recursive-state
+  evidence.
 
 ## Recorded evidence
 
 | File | Derived content |
 | --- | --- |
 | `metadata.csv` | baseline and package/runtime versions |
-| `inventory.csv` | 34 current outputs, constructors, declared warmup and source classification |
-| `raw_samples.csv` | 2,448 full, prefix and finite-restart comparisons |
-| `conformance.csv` | output-by-fixture causality and restart summaries |
-| `gap_samples.csv` | uninterrupted versus per-segment restart observations |
-| `gap_recovery.csv` | admission, first-valid and convergence boundaries |
-| `dense_oracle.csv` | public dense-run versus internal-engine parity |
+| `inventory.csv` | 34 defaults plus eight variant outputs, raw first-finite and width witness |
+| `raw_samples.csv` | full, prefix and two finite-restart widths |
+| `conformance.csv` | causality, numerical drift and masked first-valid summaries |
+| `width_witness.csv` | attempted two-row ATR range-output witness |
+| `gap_samples.csv` | uninterrupted-retained-gap versus segment-restart observations |
+| `gap_recovery.csv` | admission and fixture-local convergence boundaries |
+| `path_plumbing.csv` | dense and full-membership availability integration parity |
 
-The 34 outputs cover all four built-ins and every output of every family in
-the current TTR warmup table. Multi-output families are expanded rather than
-represented by one convenient column.
+The default 34 outputs cover all four built-ins and every output of every
+family in the current TTR warmup table. The variant rows demonstrate that a
+function name is not a history class:
+
+- BBands `mavg` and CCI with `maType = "EMA"`, and EMA with
+  `wilder = TRUE`, are history-dependent on this implementation;
+- RSI and ATR `atr` with `maType = "SMA"` are bounded; and
+- MACD with `maType = "SMA"` is bounded for its three expanded outputs.
 
 ## Fork and gut
 
-The first runnable fork showed that comparing the internal engine with the
-caller's pre-seal data is not a valid parity oracle: the public run consumes
-the stored snapshot representation. The retained fork queries the exact
-stored bars and then obtains identical values and missingness for all 34
-outputs.
+The first fork compared the internal engine with caller-side pre-seal data.
+That is the wrong plumbing oracle because the public run consumes stored bars.
+The retained comparison uses exact stored bars. Dense values and missingness
+are byte-identical for all 42 rows. The complete-membership availability path
+runs the three currently admitted outputs successfully with identical
+missingness; its SMA paths differ from the ordinary engine by about `1e-15`
+scaled because they use the strict implementation. This is recorded
+integration behavior, not an independent algorithm oracle.
 
-In the ordinary evidence, each of the six source-classified
-history-dependent outputs has a finite-restart scaled delta above `1e-7` on
-at least one fixture. In the gutted evidence all six have a maximum delta of
-zero. The checker therefore fails the gutted path for the intended reason.
+Every history-dependent default and variant has a nonzero finite-restart
+delta. The gut makes all those deltas zero, so the checker fails it for the
+intended reason. No delta threshold assigns either class.
 
 ## Demoted, deleted, and learned
 
-- **Demoted:** source reading is a candidate classification, not an expected
-  answer. The executable comparisons must corroborate it. The observed
-  `1e-7` separator belongs only to this fixed corpus and is not a proposed
-  product tolerance.
-- **Demoted:** current availability admission is evidence about v0.2.2, not a
-  design recommendation for the history surface.
-- **Deleted:** no product machinery. Early scratch records that compared
-  against pre-seal input were discarded because they used the wrong oracle.
-- **Learned:** 28 outputs behave as finite dependencies and six retain
-  material earlier-history state on these fixtures.
+- **Demoted:** `28/6` describes default-argument outputs, not whole function
+  families. Algorithm-changing arguments can reverse a classification.
+- **Demoted:** numerical differences are a distribution to design against,
+  not a classifier. The level-shift fixture raises bounded drift materially;
+  a product tolerance still needs an independent basis.
+- **Demoted:** `stable_after` is neither a general dependency width nor a raw
+  backend first-finite oracle. ledgr masks the engine series before that row.
+- **Demoted:** current availability admission is v0.2.2 evidence, not a design
+  recommendation.
+- **Deleted:** no product machinery. Pre-seal path comparisons and the earlier
+  hard-coded Aroon dependency-width claim were discarded.
 - **Learned:** every sampled prefix is byte-identical to the corresponding
-  full-series prefix, and the public dense run is byte-identical to the
-  internal engine over the stored bars.
-- **Learned:** TTR Aroon's current `stable_after = 10` is a first-valid
-  boundary, while exact finite dependency needs 11 observations on the
-  sampled configuration. Warmup and dependency width are not interchangeable.
-- **Learned:** all outputs become finite at their declared first-valid
-  boundary after a reset, but recursive outputs can take tens or hundreds of
-  additional observations to approach the uninterrupted result.
-- **Learned:** feeding an aligned series containing missing expected sessions
-  directly to current functions does not provide a general gap rule; all 68
-  such attempts fail, through either ledgr validation or the underlying
-  function.
+  full-series prefix.
+- **Learned:** executing Aroon at `stable_after = 10` differs from the full
+  series, while `stable_after + 1 = 11` is exact on all four fixtures. Eleven
+  is an observed upper-bound witness, not a proven minimum.
+- **Learned:** raw TTR ATR `tr`, `trueHigh` and `trueLow` first become finite
+  at row 2 despite ledgr's declared 11. A two-row scalar call through the ATR
+  wrapper fails because the wrapper also computes the 10-row `atr`; a smaller
+  output dependency therefore cannot be claimed through that wrapper.
+- **Learned:** raw MACD `macd` first becomes finite at row 10 while ledgr masks
+  it to row 13; raw `signal` and `histogram` first become finite at row 13.
+- **Learned:** recursive first-valid and convergence are separate. Recovery
+  varies with gap position and length, and the recorded comparison is exactly
+  segment restart omitting the gap versus an uninterrupted series retaining
+  the gap observations.
 
 ## Explicitly unsupported
 
-This evidence does not certify custom functions, unsupported TTR functions,
-fitted or cross-sectional methods, a gap execution policy, convergence as a
-readiness rule, or a product tolerance. Those remain design inputs for H2
-Session D and the consolidated synthesis.
+The spike does not certify custom functions, unsupported TTR functions,
+fitted or cross-sectional methods, minimal dependency widths, a gap/reset or
+skip-gap execution policy, convergence as readiness, identity consequences,
+or a numerical tolerance. Those remain inputs for H2 Session D and the
+consolidated synthesis.
