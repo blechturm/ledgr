@@ -14,4 +14,3 @@ summary$in_process_parent_peak_private_commit <- vapply(summary$arm, function(ar
   max(x$private_commit_bytes)
 }, numeric(1))
 utils::write.csv(summary, file.path(record, "arm_summary.csv"), row.names = FALSE, na = "")
-

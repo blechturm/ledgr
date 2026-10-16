@@ -15,4 +15,3 @@ the mapped source stayed unchanged. The runner therefore must distinguish
 read-only task evaluation from any accidental materialization. This probe says
 nothing about process-tree memory, retained promises, returned results, or
 cleanup after failures; those belong to the binding runner.
-

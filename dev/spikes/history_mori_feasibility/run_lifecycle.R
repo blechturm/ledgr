@@ -70,4 +70,3 @@ if (!all(rows$region_absent) || !all(rows$cleanup_completed[rows$mode != "interr
   stop("Lifecycle cleanup check failed.", call. = FALSE)
 }
 cat("HISTORY_E1_LIFECYCLE_OK success failure interrupt\n")
-

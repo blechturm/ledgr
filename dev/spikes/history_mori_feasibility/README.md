@@ -42,4 +42,3 @@ The eight shared fields reconcile with E0's nine mori candidates because
 rebuilds `bars_mat` and `static_bars_views`. Exact reconstruction runs are
 separate from the measured arms so sending full expected tasks to the daemons
 cannot contaminate the memory comparison.
-

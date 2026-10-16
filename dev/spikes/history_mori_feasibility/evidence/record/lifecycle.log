@@ -1,4 +1,4 @@
 [1] TRUE
-Rscript.exe Rscript.exe Rscript.exe conhost.exe 
-       9296       15652       43864       44384 
+Rscript.exe Rscript.exe Rscript.exe conhost.exe
+       9296       15652       43864       44384
 HISTORY_E1_LIFECYCLE_OK success failure interrupt

@@ -68,4 +68,3 @@ Linux behavior, or a speed benefit. Reconsider only if the design grows beyond
 two local workers or a platform can measure unique shared-page attribution.
 For the current history wave, retain corrected staged mirai C and add no mori
 dependency or product abstraction.
-
