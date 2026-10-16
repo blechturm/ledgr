@@ -24,6 +24,14 @@ if (!identical(meta$status[[1L]], "FAILED") ||
     !identical(meta$error_message[[1L]], expected_error)) {
   stop("Gut did not trigger the exact staged-reconstruction failure.", call. = FALSE)
 }
+reconstruction <- utils::read.csv(
+  file.path(actual, "arm_c", "reconstruction.csv"), stringsAsFactors = FALSE
+)
+if (any(reconstruction$exact) ||
+    !all(reconstruction$missing_fields == "runtime_projection") ||
+    !all(is.na(reconstruction$extra_fields) | reconstruction$extra_fields == "")) {
+  stop("Gut reconstruction inventory did not name the omitted field.", call. = FALSE)
+}
 check_output <- system2(rscript, c(
   file.path(dirname(script_path), "check_spike.R"),
   "--against", normalizePath(opt$against, winslash = "/"),

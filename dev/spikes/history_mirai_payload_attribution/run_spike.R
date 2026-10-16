@@ -18,8 +18,31 @@ if (dir.exists(out_dir) && length(list.files(out_dir, all.files = TRUE, no.. = T
 }
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 worker <- file.path(dirname(script_path), "arm_worker.R")
+preflight_worker <- file.path(dirname(script_path), "preflight_worker.R")
 rscript <- e0_rscript()
 sample_target <- if (identical(opt$preset, "record")) 0.20 else 0.10
+
+preflight_dir <- file.path(out_dir, "preflight")
+dir.create(preflight_dir, recursive = TRUE, showWarnings = FALSE)
+preflight_log <- file.path(preflight_dir, "worker.log")
+preflight_started <- as.numeric(Sys.time())
+preflight <- processx::run(
+  rscript,
+  c(
+    preflight_worker, "--package-root", package_root,
+    "--out-dir", preflight_dir
+  ),
+  stdout = preflight_log, stderr = "2>&1", error_on_status = FALSE
+)
+preflight_ended <- as.numeric(Sys.time())
+if (!identical(preflight$status, 0L)) {
+  stop("Compiled-DLL preflight failed; see ", preflight_log, call. = FALSE)
+}
+preflight_meta <- utils::read.csv(
+  file.path(preflight_dir, "preflight.csv"), stringsAsFactors = FALSE
+)
+preflight_meta$process_elapsed_sec <- preflight_ended - preflight_started
+e0_write_csv(preflight_meta, file.path(out_dir, "preflight.csv"))
 
 safe <- function(expr, default) tryCatch(expr, error = function(e) default)
 
@@ -158,10 +181,23 @@ summaries <- lapply(seq_along(runs), function(i) {
   } else {
     to - from
   }
+  daemon_epochs <- if (nrow(s)) {
+    unique(s$epoch[s$role == "daemon" & s$epoch >= from & s$epoch <= to])
+  } else {
+    numeric()
+  }
+  daemon_blackout <- if (length(daemon_epochs)) {
+    max(diff(c(from, sort(daemon_epochs), to)))
+  } else {
+    NA_real_
+  }
   retention <- data$retention
-  before_label <- if (run$arm == "C") "after_stage" else "before_submit"
-  before_private <- retention$private_commit_bytes[retention$label == before_label]
-  after_private <- retention$private_commit_bytes[retention$label == "after_submit"]
+  point <- function(label, column = "private_commit_bytes") {
+    value <- retention[[column]][retention$label == label]
+    if (length(value)) value[[1L]] else NA_real_
+  }
+  phase_baseline <- if (run$arm == "C") point("after_stage") else point("before_submit")
+  after_submit <- point("after_submit")
   data.frame(
     arm = run$arm,
     status = meta$status[[1L]],
@@ -183,13 +219,16 @@ summaries <- lapply(seq_along(runs), function(i) {
     effective_sample_interval_sec = interval,
     max_sample_gap_sec = if (length(sample_epochs) > 1L) max(diff(sample_epochs)) else NA_real_,
     sweep_max_blackout_sec = sweep_blackout,
+    daemon_max_blackout_sec = daemon_blackout,
     in_process_parent_peak_wset = max(retention$wset_bytes),
     in_process_parent_peak_private_commit = max(retention$private_commit_bytes),
-    parent_after_submit_private_delta = if (length(before_private) && length(after_private)) {
-      after_private[[1L]] - before_private[[1L]]
-    } else {
-      NA_real_
-    },
+    parent_before_sweep_private = point("before_sweep"),
+    parent_before_stage_private = point("before_stage"),
+    parent_after_stage_private = point("after_stage"),
+    parent_after_submit_private = after_submit,
+    parent_stage_private_delta = point("after_stage") - point("before_stage"),
+    parent_submit_private_delta = after_submit - phase_baseline,
+    parent_total_to_after_submit_private_delta = after_submit - point("before_sweep"),
     sweep_parent_peak_wset = peak_one(s, "wset_bytes", "parent", from, to),
     sweep_parent_peak_private_commit = peak_one(
       s, "private_commit_bytes", "parent", from, to

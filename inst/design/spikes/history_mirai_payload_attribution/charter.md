@@ -39,8 +39,8 @@ Those object sizes do not measure promise retention or result-transfer bytes.
 Working-set sums may double-count shared pages, and Windows private commit is
 not PSS or unique RSS.
 
-Candidate result rows and normalized reproduction-key hashes must be identical
-in A, B and C. The checker reruns the smoke fixture, diffs deterministic CSVs,
+Candidate final equity, return, trade count, execution seed and identity hashes
+must be identical in A, B and C. The checker reruns the smoke fixture, diffs deterministic CSVs,
 checks the observed task inventory and guards repository scope. The gut demo
 removes `runtime_projection` from C's staged payload and requires the exact
 task-reconstruction assertion and result-identity check to fail.
@@ -48,6 +48,9 @@ task-reconstruction assertion and result-identity check to fail.
 The binding local record uses the larger `record` fixture only while no other
 measurement agent is active. The small smoke record proves the harness, not a
 performance ranking.
+
+Promise retention and result-transfer byte measurement is explicitly assigned
+to E1; E0 records only parent-side R handle and collected-list object sizes.
 
 ## Kill condition
 

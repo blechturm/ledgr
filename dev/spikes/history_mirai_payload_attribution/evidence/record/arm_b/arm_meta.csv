@@ -1,2 +1,2 @@
 "arm","preset","process_id","workers","n_instruments","n_bars","n_pulses","n_candidates","lookback","start_epoch","end_epoch","sweep_wall_sec","warmup_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","snapshot_hash","status","error_class","error_message","gut"
-"B","record",38860,2,160,208797,1305,4,252,1792142214.56575,1792142224.75864,10.18,4.58,0,0.710000000000001,0.170000000000002,8.07,0,"793de8f3ca2428314beadd57e46a319850d25d0df9bb19196ddc9ed602299b91","DONE","","","none"
+"B","record",6540,2,160,208797,1305,4,252,1792143283.05486,1792143293.18512,10.12,4.5,0,0.710000000000001,0.17,8.01,0,"793de8f3ca2428314beadd57e46a319850d25d0df9bb19196ddc9ed602299b91","DONE","","","none"

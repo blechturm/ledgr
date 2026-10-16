@@ -53,6 +53,9 @@ capture$reconstruction <- data.frame(
   missing_fields = character(), extra_fields = character(),
   stringsAsFactors = FALSE
 )
+capture$daemon_reconstruction <- data.frame(
+  candidate_id = character(), exact = logical(), stringsAsFactors = FALSE
+)
 
 ns <- asNamespace("ledgr")
 task_name <- "ledgr_sweep_candidate_tasks"
@@ -129,6 +132,10 @@ e0_write_csv(
   file.path(out_dir, "daemon_pids.csv")
 )
 e0_write_csv(capture$reconstruction, file.path(out_dir, "reconstruction.csv"))
+e0_write_csv(
+  capture$daemon_reconstruction,
+  file.path(out_dir, "daemon_reconstruction.csv")
+)
 
 if (!is.null(out)) {
   identity <- e0_result_identity(out, arm)

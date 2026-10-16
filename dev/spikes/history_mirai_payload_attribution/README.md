@@ -30,6 +30,12 @@ Use `--preset record` only in an exclusive measurement lane. Timing and memory
 rows are observations, not checker oracles. The checker diffs only deterministic
 fixture, payload and result-identity CSVs.
 
+The default `--exact-bytes true` comparison is intentionally limited to the
+registered Windows checkout: actual task serialization can contain path-sized
+state. Use `--exact-bytes false` for a portable rerun; it keeps result identity,
+fixture shape, task relationships, reconstruction and structural payload checks
+but does not require identical object/serialization byte counts.
+
 On Windows, package loading can leave line-ending-only changes in generated
 `R/cpp11.R` and `src/cpp11.cpp`; restore those generated artifacts before
 recording or committing evidence.

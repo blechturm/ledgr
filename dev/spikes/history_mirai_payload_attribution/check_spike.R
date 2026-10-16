@@ -5,7 +5,8 @@ script_path <- normalizePath(sub("^--file=", "", script_arg[[1L]]), winslash = "
 source(file.path(dirname(script_path), "common.R"), local = globalenv())
 opt <- e0_parse_args(commandArgs(trailingOnly = TRUE), list(
   against = file.path(dirname(script_path), "evidence", "smoke"),
-  actual = "", `package-root` = ".", `scratch-dir` = tempdir()
+  actual = "", `package-root` = ".", `scratch-dir` = tempdir(),
+  `exact-bytes` = "true"
 ))
 .libPaths(e0_lib_paths())
 
@@ -44,10 +45,12 @@ read_csv <- function(root, file, col_classes = NA) {
     colClasses = col_classes, check.names = FALSE
   )
 }
-exact_files <- c(
-  "fixture_shape.csv", "payload_map.csv", "payload_summary.csv",
-  "result_identity.csv"
-)
+exact_files <- c("fixture_shape.csv", "result_identity.csv")
+if (identical(opt$`exact-bytes`, "true")) {
+  exact_files <- c(exact_files, "payload_map.csv", "payload_summary.csv")
+} else if (!identical(opt$`exact-bytes`, "false")) {
+  stop("`exact-bytes` must be true or false.", call. = FALSE)
+}
 for (file in exact_files) {
   expected <- read_csv(against, file, "character")
   observed <- read_csv(actual, file, "character")
@@ -55,6 +58,12 @@ for (file in exact_files) {
 }
 
 summary <- read_csv(actual, "arm_summary.csv")
+preflight <- read_csv(actual, "preflight.csv")
+check(
+  identical(preflight$preflight, "clean_process_pkgload_compile_true") &&
+    isTRUE(preflight$dll_exists[[1L]]) && preflight$dll_bytes[[1L]] > 0,
+  "clean-process compiled-DLL preflight must succeed before all arms"
+)
 check(identical(summary$arm, c("A", "B", "C")), "arm order must be A, B, C")
 check(all(summary$status == "DONE"), "all three arms must finish DONE")
 check(all(summary$exit_status == 0L), "all three worker processes must exit zero")
@@ -72,6 +81,15 @@ check(all(is.finite(summary$max_sample_gap_sec) & summary$max_sample_gap_sec > 0
 check(all(is.finite(summary$sweep_max_blackout_sec) &
             summary$sweep_max_blackout_sec > 0),
       "each arm must disclose its maximum in-sweep blackout")
+parallel <- summary$arm %in% c("B", "C")
+check(all(is.finite(summary$sweep_daemon_peak_wset_sum[parallel]) &
+            summary$sweep_daemon_peak_wset_sum[parallel] > 0) &&
+        all(is.finite(summary$sweep_daemon_peak_private_commit_sum[parallel]) &
+              summary$sweep_daemon_peak_private_commit_sum[parallel] > 0),
+      "parallel arms require positive daemon memory observations")
+check(all(is.finite(summary$daemon_max_blackout_sec[parallel]) &
+            summary$daemon_max_blackout_sec[parallel] > 0),
+      "parallel arms must disclose daemon-specific sampling blackouts")
 
 identity <- read_csv(actual, "result_identity.csv", "character")
 identity$arm <- NULL
@@ -86,6 +104,17 @@ check(length(by_arm) == 3L && identical(by_arm$A, by_arm$B) && identical(by_arm$
       "candidate results and reproduction identities must match across arms")
 
 payload <- read_csv(actual, "payload_map.csv")
+if (identical(opt$`exact-bytes`, "false")) {
+  expected_payload <- read_csv(against, "payload_map.csv")
+  portable_columns <- c(
+    "field", "group", "invariant", "type", "class", "length", "nrow", "ncol",
+    "contains_data_frame", "mori_candidate", "staging_class"
+  )
+  check(
+    identical(payload[portable_columns], expected_payload[portable_columns]),
+    "portable payload structure differs from recorded evidence"
+  )
+}
 expected_fields <- c(
   "exp", "bars_by_id", "bars_mat", "static_bars_views", "pulses_posix",
   "pulses_iso", "metric_kernel", "retain", "precomputed_features",
@@ -107,17 +136,20 @@ expected_mori <- c(
 )
 check(setequal(payload$field[payload$mori_candidate], expected_mori),
       "mori-candidate inventory changed")
-check(
-  identical(payload$staging_class[payload$field == "static_bars_views"],
-            "derived_immutable"),
-  "static_bars_views must remain classified as derived immutable data"
-)
+derived <- c("bars_mat", "static_bars_views", "pulses_iso")
+check(all(payload$staging_class[match(derived, payload$field)] == "derived_immutable"),
+      "bars_mat, static_bars_views and pulses_iso must stay derived")
 
 for (arm in "c") {
   reconstruction <- read_csv(actual, file.path(paste0("arm_", arm), "reconstruction.csv"))
   check(nrow(reconstruction) == 4L && all(reconstruction$exact) &&
           all(reconstruction$field_order_exact),
         paste0("arm ", toupper(arm), " must reconstruct all tasks exactly"))
+  daemon_reconstruction <- read_csv(
+    actual, file.path(paste0("arm_", arm), "daemon_reconstruction.csv")
+  )
+  check(nrow(daemon_reconstruction) == 4L && all(daemon_reconstruction$exact),
+        "arm C daemons must construct the exact task bytes")
 }
 
 proxy <- read_csv(actual, "payload_summary.csv")

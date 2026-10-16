@@ -1,2 +1,2 @@
 "arm","preset","process_id","workers","n_instruments","n_bars","n_pulses","n_candidates","lookback","start_epoch","end_epoch","sweep_wall_sec","warmup_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","snapshot_hash","status","error_class","error_message","gut"
-"B","smoke",41436,2,8,693,87,4,20,1792142135.08045,1792142142.72365,7.65,1.32,0,5.03,0.0200000000000014,1.8,0,"27543da63e1eaaf738b1a66930fe92119fd34f802cbe364d03bf85630ada0d2b","DONE","","","none"
+"B","smoke",51760,2,8,693,87,4,20,1792143190.01266,1792143193.62915,3.63,1.35,0,1.01,0,1.8,0,"27543da63e1eaaf738b1a66930fe92119fd34f802cbe364d03bf85630ada0d2b","DONE","","","none"
