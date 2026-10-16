@@ -1,0 +1,4 @@
+"arm","status","exit_status","n_bars","n_instruments","n_pulses","n_candidates","workers","sweep_wall_sec","process_elapsed_sec","stage_sec","pid_probe_sec","submit_sec","collect_sec","stage_cleanup_sec","sample_count","effective_sample_interval_sec","sweep_parent_peak_wset","sweep_parent_peak_private_commit","sweep_daemon_peak_wset_sum","sweep_daemon_peak_private_commit_sum","sweep_tree_peak_wset_sum","sweep_tree_peak_private_commit_sum","whole_tree_peak_wset_sum","whole_tree_peak_private_commit_sum"
+"A","DONE",0,693,8,87,4,1,2.64,4.91703200340271,0,0,0,0,0,44,0.109861850738525,333819904,346394624,,,333819904,346394624,339968000,352182272
+"B","DONE",0,693,8,87,4,2,8.16,10.4102058410645,0,5.1,0,2.14,0,77,0.110143542289734,302444544,322134016,631123968,674168832,928182272,977219584,928182272,977219584
+"C","DONE",0,693,8,87,4,2,3.92,6.30577993392944,1,0,0,1.97,0,41,0.110282421112061,302444544,318980096,605691904,648065024,901001216,949583872,901001216,949583872

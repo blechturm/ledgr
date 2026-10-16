@@ -1,0 +1,3 @@
+"label","epoch","wset_bytes","private_commit_bytes","tasks_object_bytes","promises_object_bytes","results_object_bytes"
+"before_sweep",1792139514.22085,291975168,310448128,0,0,0
+"after_sweep",1792139516.8816,339894272,352108544,0,0,0
