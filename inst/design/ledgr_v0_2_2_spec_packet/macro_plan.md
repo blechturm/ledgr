@@ -750,6 +750,19 @@ neither arm helps, the decision records the supported worker limit and routes
 the remaining executor-memory problem rather than hiding it in the history
 implementation.
 
+Evidence status (2026-10-16): Sessions D, E0, E1 and F have completed their
+registered probes and independent reviews. The indicator census binds no
+numeric class threshold; the correction-chain matrix exposes the exact
+constructor/runtime policy choices; staged ordinary-R daemon inputs reduced the
+sampled two-worker burden; and mori was rejected for the current two-worker
+shape because its structural ceiling is only one avoidable 44.9 MB copy, about
+3--4% of the measured total. The closeouts are the durable evidence inputs in
+`inst/design/spikes/history_indicator_conformance_spike/`,
+`history_mirai_payload_attribution/`, `history_mori_feasibility/` and
+`history_correction_chain_spike/`. H2 is now a decision session: update every
+register row without reopening evidence work unless a proposed policy lacks an
+oracle. No product implementation starts from a spike verdict alone.
+
 Exit: every register row has an accepted decision, durable deferral with a
 trigger, rejection with a reason, or named downstream owner. No implementation
 choice is left to select history semantics accidentally, and Session E cannot

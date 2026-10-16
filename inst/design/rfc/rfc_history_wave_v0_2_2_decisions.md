@@ -296,6 +296,17 @@ sessions in 746 runs: 612 one-session runs, 93 two-session runs, 33 runs of
 three to five sessions, three runs of six to ten, and five runs of eleven to
 twenty. This is one vendor/universe and chooses no tolerance or history class.
 
+H2 evidence input (2026-10-16): the reviewed
+[indicator-history conformance spike](../spikes/history_indicator_conformance_spike/closeout.md)
+records 34 default outputs and eight algorithm variants. Classification is per
+family, output and algorithm-changing argument: six default outputs retain
+earlier state, while EMA/SMA variants change the class of several families.
+Every sampled prefix was causal. Hostile level-shift fixtures show that small
+floating drift cannot define the class, and the observed Aroon witness needs
+eleven rows despite `n = 10`. Gap-recovery ranges vary by family and gap
+position. The spike supplies evidence only; the decisions below remain H2
+maintainer choices.
+
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
 | D3-F1 | should-fix | `strict_window` already means bounded; the TTR default contradicts it | confirmed: contracts say the declaration "commits the definition to a finite window with no internal carry"; `ledgr_ind_ttr("SMA")` is `strict_window` | strict_window implies bounded; refuse the contradictory pair | pending |
@@ -318,6 +329,21 @@ seconds; summed working sets may double-count shared pages. They set an order
 of magnitude, not the budget or representation. H6 must repeat the same
 boundary before applying a percentage gate.
 
+H2 evidence input (2026-10-16): the reviewed
+[mirai attribution spike](../spikes/history_mirai_payload_attribution/closeout.md)
+finds that current candidate tasks repeat about 45 MB of immutable input at the
+registered synthetic shape. Staging that input once per persistent daemon
+reduced sampled parent-plus-daemon working set 10.6% and private commit 15.0%,
+with no speed claim. The reviewed
+[mori feasibility spike](../spikes/history_mori_feasibility/closeout.md) proves
+exact atomic-leaf sharing and Windows cleanup, but rejects adoption for the
+current two-worker design: the structural saving ceiling is only one extra
+44.9 MB copy, about 3--4% of the roughly 1.3 GB sampled total, matching the
+observed 3.1%. Rebuilding `bars_mat` and `static_bars_views` was worse than
+sharing them; rebuilding `pulses_iso` stayed cheap. Promise-retained payload,
+unique RSS/PSS and POSIX orphan cleanup remain unmeasured. These results choose
+no budget or public representation by themselves.
+
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
 | D1-F9 | should-fix | Memory budget must be set before the representation is accepted | confirmed: macro-plan decision 8 requires a phase baseline and a budget for one run and a representative parallel workload; the Cut 9 single-run baseline exists, a parallel baseline does not | Maintainer sets the WS3 budget in this session; record the missing parallel baseline as a WS3 ticket | pending |
@@ -338,6 +364,17 @@ contraticker-only same-key changes and one hard-coded terminal replacement,
 not empirical correction chains. The source has no trading-status facts.
 Session F must decide from requirements or request more vintages; H1 cannot
 close the chain rules by absence.
+
+H2 evidence input (2026-10-16): the reviewed
+[correction-chain spike](../spikes/history_correction_chain_spike/closeout.md)
+executes ten vendor-neutral chain shapes through the constructor, validator,
+prepared resolver, ingest classifier and, where accepted, public run. It
+confirms that direct full and partial replacements run; a monotone three-link
+chain can be refused despite deterministic resolution; precedence is applied
+after supersession; a partial successor can revive its predecessor; and the
+ingest classifier can truncate that revival and disagree with runtime. The H1
+Sharadar captures still contain no real trading-status chain, so they remain
+negative vendor evidence rather than a policy oracle.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
