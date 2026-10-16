@@ -1,4 +1,4 @@
 "profile","mode","elapsed_seconds","expected_blocks","executed_blocks","skipped_blocks","failed_blocks","r_version","testthat_version","bound_seconds","median_seconds","gate_passed"
-"fast","ordinary",110.16,565,565,0,0,"4.6.1","3.3.2",112,110.48,TRUE
-"fast","ordinary",110.61,565,565,0,0,"4.6.1","3.3.2",112,110.48,TRUE
-"fast","ordinary",110.48,565,565,0,0,"4.6.1","3.3.2",112,110.48,TRUE
+"fast","ordinary",110.49,565,565,0,0,"4.6.1","3.3.2",112,110.22,TRUE
+"fast","ordinary",110.22,565,565,0,0,"4.6.1","3.3.2",112,110.22,TRUE
+"fast","ordinary",109.98,565,565,0,0,"4.6.1","3.3.2",112,110.22,TRUE

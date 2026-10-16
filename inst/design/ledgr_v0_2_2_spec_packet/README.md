@@ -80,7 +80,10 @@ second status ledger:
   [`availability_fact_scaling_closeout.md`](availability_fact_scaling_closeout.md),
   [`fact_integrity_verification_closeout.md`](fact_integrity_verification_closeout.md),
   [`strict_feature_acceleration_closeout.md`](strict_feature_acceleration_closeout.md)
-  and [`strict_ttr_cleanup_closeout.md`](strict_ttr_cleanup_closeout.md).
+  and [`strict_ttr_cleanup_closeout.md`](strict_ttr_cleanup_closeout.md);
+- [`causal_facts_history_identity_closeout.md`](causal_facts_history_identity_closeout.md)
+  and
+  [`causal_history_substrate_closeout.md`](causal_history_substrate_closeout.md).
 
 Other packet files remain historical evidence at their existing paths. Use
 `tickets.yml`, not this index, to decide whether a record is current.
