@@ -166,7 +166,14 @@ ledgr_availability_prepared_membership_from_plan <- function(plan) {
       reason <- rep("", n_key)
       winner <- rep("", n_key)
       selected_knowledge <- rep(-Inf, n_key)
-      for (h in which(eligible)) {
+      complete_idx <- which(eligible & h_complete)
+      replay_start <- if (length(complete_idx) > 0L) {
+        max(complete_idx)
+      } else {
+        0L
+      }
+      replay_headers <- which(eligible & seq_len(n_headers) >= replay_start)
+      for (h in replay_headers) {
         applied <- ledgr_membership_apply_prepared_header(
           known,
           state,

@@ -50,14 +50,21 @@ original <- ledgr:::ledgr_sweep_stage_history_tasks
 parallel <- testthat::with_mocked_bindings(
   ledgr_sweep(experiment, grid, seed = 41L, workers = 2L),
   ledgr_sweep_stage_history_tasks = function(tasks, owner_id) {
-    captured$unstaged_task_bytes <- as.numeric(utils::object.size(tasks))
+    captured$unstaged_task_object_bytes <-
+      as.numeric(utils::object.size(tasks))
+    captured$unstaged_task_serialized_bytes <-
+      length(serialize(tasks, NULL, version = 3L))
     staged <- original(tasks, owner_id)
-    captured$compact_task_bytes <- as.numeric(
+    captured$compact_task_object_bytes <- as.numeric(
       utils::object.size(staged$tasks)
     )
-    captured$invariant_bytes <- as.numeric(
+    captured$compact_task_serialized_bytes <-
+      length(serialize(staged$tasks, NULL, version = 3L))
+    captured$invariant_object_bytes <- as.numeric(
       utils::object.size(staged$invariant)
     )
+    captured$invariant_serialized_bytes <-
+      length(serialize(staged$invariant, NULL, version = 3L))
     staged
   },
   .package = "ledgr"
@@ -73,19 +80,31 @@ parity <- isTRUE(all.equal(
   tolerance = 0,
   check.attributes = FALSE
 ))
-staged_total <- captured$compact_task_bytes + captured$invariant_bytes
+worker_count <- 2L
+staged_invariant_total_serialized_bytes <-
+  worker_count * captured$invariant_serialized_bytes
+staged_total_serialized_bytes <-
+  captured$compact_task_serialized_bytes +
+  staged_invariant_total_serialized_bytes
 record <- data.frame(
   recorded_at_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
   package_head = package_head,
   r_version = R.version.string,
   platform = paste(Sys.info()[c("sysname", "release", "machine")], collapse = " "),
   candidate_count = nrow(parallel),
-  worker_count = 2L,
-  unstaged_task_bytes = captured$unstaged_task_bytes,
-  staged_invariant_bytes = captured$invariant_bytes,
-  compact_task_bytes = captured$compact_task_bytes,
-  staged_total_bytes = staged_total,
-  staged_to_unstaged_ratio = staged_total / captured$unstaged_task_bytes,
+  worker_count = worker_count,
+  unstaged_task_object_bytes = captured$unstaged_task_object_bytes,
+  staged_invariant_object_bytes = captured$invariant_object_bytes,
+  compact_task_object_bytes = captured$compact_task_object_bytes,
+  unstaged_task_serialized_bytes = captured$unstaged_task_serialized_bytes,
+  staged_invariant_serialized_bytes =
+    captured$invariant_serialized_bytes,
+  staged_invariant_total_serialized_bytes =
+    staged_invariant_total_serialized_bytes,
+  compact_task_serialized_bytes = captured$compact_task_serialized_bytes,
+  staged_total_serialized_bytes = staged_total_serialized_bytes,
+  staged_to_unstaged_ratio = staged_total_serialized_bytes /
+    captured$unstaged_task_serialized_bytes,
   history_worker_support = attr(parallel, "history_worker_support"),
   result_parity = parity,
   stringsAsFactors = FALSE

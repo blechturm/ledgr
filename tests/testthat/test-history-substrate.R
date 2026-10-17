@@ -233,14 +233,14 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
     fact_id = paste0("lifetime-", sparse_ids),
     stringsAsFactors = FALSE
   )
-  testthat::local_mocked_bindings(
+  sparse <- testthat::with_mocked_bindings(
+    ledgr:::ledgr_history_lifetime_segments(
+      list(lifetime = sparse_rows), sparse_ids, axis, NULL
+    ),
     ledgr_history_segments_build = function(...) {
       stop("sparse facts must not enter the global epoch compiler")
     },
     .package = "ledgr"
-  )
-  sparse <- ledgr:::ledgr_history_lifetime_segments(
-    list(lifetime = sparse_rows), sparse_ids, axis, NULL
   )
   testthat::expect_identical(sparse$segment_count, rep(2L, 128L))
   testthat::expect_identical(sparse$fact_count, rep(1L, 128L))
@@ -295,6 +295,111 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
       )
     }
   }
+
+  scaling_n <- 40L
+  scaling_axis <- as.POSIXct("2021-01-01", tz = "UTC") +
+    seq_len(scaling_n) * 86400
+  scaling_ids <- sprintf("S%02d", seq_len(10L))
+  scaling_sets <- ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = scaling_axis,
+      knowledge_time = scaling_axis,
+      set_id = sprintf("set-%02d", seq_len(scaling_n)),
+      members = I(lapply(seq_len(scaling_n), function(i) {
+        scaling_ids[seq_len(1L + i %% length(scaling_ids))]
+      })),
+      source = "test",
+      stringsAsFactors = FALSE
+    ),
+    universe_id = "SCALE",
+    complete = TRUE
+  )
+  scaling_plan <- ledgr:::ledgr_availability_prepared_membership_plan(
+    list(
+      membership_sets = scaling_sets$headers,
+      membership = scaling_sets$rows
+    ),
+    "SCALE",
+    scaling_ids
+  )
+  membership_calls <- new.env(parent = emptyenv())
+  membership_calls$n <- 0L
+  original_apply_header <- ledgr:::ledgr_membership_apply_prepared_header
+  testthat::with_mocked_bindings(
+    {
+      scaling_resolver <-
+        ledgr:::ledgr_availability_prepared_membership_from_plan(scaling_plan)
+      invisible(lapply(scaling_axis, scaling_resolver))
+    },
+    ledgr_membership_apply_prepared_header = function(...) {
+      membership_calls$n <- membership_calls$n + 1L
+      original_apply_header(...)
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_lte(membership_calls$n, 2L * scaling_n)
+
+  path_dates <- as.Date("2022-01-03") + 0:3
+  path_sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = path_dates,
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = as.POSIXct(path_dates, tz = "UTC") - 1,
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  path_axis <- path_sessions$rows$session_close
+  path_lifetime <- ledgr_facts_lifetime(data.frame(
+    instrument_id = c("AAA", "AAA", "BBB"),
+    effective_from = path_axis[c(1L, 4L, 1L)],
+    effective_to = as.POSIXct(c(path_axis[[4L]], NA, NA),
+      origin = "1970-01-01", tz = "UTC"
+    ),
+    knowledge_time = path_axis[c(1L, 4L, 1L)],
+    assertion = c("known_active", "known_inactive", "known_active"),
+    terminal_event = NA_character_,
+    source = "test",
+    stringsAsFactors = FALSE
+  ))
+  path_rows <- rbind(
+    data.frame(instrument_id = "AAA", ts_utc = path_axis[c(1L, 3L)]),
+    data.frame(instrument_id = "BBB", ts_utc = path_axis)
+  )
+  path_rows$open <- path_rows$high <- path_rows$low <- path_rows$close <-
+    seq_len(nrow(path_rows)) + 100
+  path_rows$volume <- 1000
+  path_snapshot <- ledgr_snapshot_from_df(
+    path_rows,
+    instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
+    facts = ledgr_facts(path_sessions, path_lifetime),
+    price_basis = "split_adjusted"
+  )
+  withr::defer(ledgr_snapshot_close(path_snapshot))
+  path_experiment <- ledgr_experiment(
+    path_snapshot,
+    function(ctx, params) ctx$hold(),
+    universe = c("AAA", "BBB"),
+    cost_model = ledgr_cost_zero()
+  )
+  path_substrate <- ledgr:::ledgr_history_substrate_for_experiment(
+    path_experiment
+  )
+  testthat::expect_identical(
+    unname(path_substrate$bars$observed[1L, ]),
+    c(TRUE, FALSE, TRUE, FALSE)
+  )
+  testthat::expect_identical(
+    unname(path_substrate$expected[1L, ]),
+    c(TRUE, TRUE, TRUE, FALSE)
+  )
+  testthat::expect_identical(
+    unname(path_substrate$missing_expected_bar[1L, ]),
+    c(FALSE, TRUE, FALSE, FALSE)
+  )
+  testthat::expect_false(any(path_substrate$inactive_print[1L, ]))
 })
 
 # ledgr-test-profile: review
@@ -324,6 +429,16 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   )
   testthat::expect_true(is.na(short$value[[4L]]))
   testthat::expect_identical(short$missing_reason[[4L]], "carry_expired")
+  boundary <- ledgr:::ledgr_history_input_carry_matrix(
+    matrix(c(1, rep(NA_real_, 6L)), nrow = 1L),
+    matrix(TRUE, nrow = 1L, ncol = 7L),
+    axis,
+    max_sessions = 5L
+  )
+  testthat::expect_equal(boundary$value[1L, ], c(rep(1, 6L), NA))
+  testthat::expect_identical(
+    boundary$missing_reason[1L, 7L], "carry_expired"
+  )
   strict <- ledgr:::ledgr_history_input_carry(
     value, expected, axis, max_sessions = NULL
   )
@@ -353,6 +468,19 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   testthat::expect_identical(
     terminal$barrier_reason,
     c("", "terminal", "terminal", "terminal")
+  )
+  terminal_matrix <- ledgr:::ledgr_history_input_carry_matrix(
+    matrix(c(1, NA, NA, 4), nrow = 1L),
+    matrix(TRUE, nrow = 1L, ncol = 4L),
+    axis[1:4],
+    max_sessions = 5L,
+    terminal_barrier = matrix(
+      c(FALSE, TRUE, FALSE, FALSE), nrow = 1L
+    )
+  )
+  testthat::expect_equal(terminal_matrix$value[1L, ], c(1, NA, NA, 4))
+  testthat::expect_identical(
+    terminal_matrix$barrier_reason[1L, 2L], "terminal"
   )
   matrix_treatment <- ledgr:::ledgr_history_input_carry_matrix(
     rbind(value, c(1, NA, NA, 4, NA, 6, NA)),
@@ -460,6 +588,20 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   )
   testthat::expect_true(is.na(warmup$value[[2L]]))
   testthat::expect_false(warmup$output_carried[[2L]])
+  expired_output <- ledgr:::ledgr_history_output_carry(
+    value = c(1, NA, NA),
+    eligible_gap = c(FALSE, TRUE, TRUE),
+    expected = rep(TRUE, 3L),
+    axis = axis[1:3],
+    max_sessions = 1L
+  )
+  testthat::expect_equal(expired_output$value, c(1, 1, NA))
+  testthat::expect_identical(
+    expired_output$missing_reason,
+    c("", "output_carried", "output_carry_expired")
+  )
+  testthat::expect_true(is.na(expired_output$source_ts_utc[[3L]]))
+  testthat::expect_true(is.na(expired_output$carry_age_sessions[[3L]]))
 
   late_known_early <- ledgr:::ledgr_history_substrate_treated_field(
     fixture$substrate,
@@ -513,6 +655,60 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
     c("", "output_carried", "", "not_expected")
   )
   testthat::expect_identical(late_known_early, late_known_early_copy)
+
+  window_treatment <- ledgr:::ledgr_history_substrate_treated_field(
+    fixture$substrate,
+    "close",
+    cutoff = fixture$axis[[4L]],
+    observation_idx = 2:4
+  )
+  testthat::expect_true(window_treatment$input_carried[1L, 1L])
+  testthat::expect_identical(
+    as.numeric(window_treatment$source_ts_utc[1L, 1L]),
+    as.numeric(fixture$axis[[1L]])
+  )
+  cutoff_treatment <- ledgr:::ledgr_history_substrate_treated_field(
+    fixture$substrate,
+    "close",
+    cutoff = fixture$axis[[3L]]
+  )
+  testthat::expect_identical(ncol(cutoff_treatment$value), 3L)
+  volume_treatment <- ledgr:::ledgr_history_substrate_treated_field(
+    fixture$substrate,
+    "volume",
+    cutoff = fixture$axis[[3L]]
+  )
+  testthat::expect_false(any(volume_treatment$input_carried))
+  testthat::expect_true(is.na(volume_treatment$value[1L, 2L]))
+
+  nondefault <- fixture
+  nondefault$config$history_policy <- ledgr_history_policy(price_carry = 1L)
+  nondefault$substrate <- ledgr:::ledgr_history_substrate(
+    bars = fixture$bars,
+    instrument_ids = c("AAA", "BBB"),
+    axis = fixture$axis,
+    availability_data = fixture$data,
+    availability_config = nondefault$config,
+    snapshot_hash = "nondefault"
+  )
+  nondefault_treatment <- ledgr:::ledgr_history_substrate_treated_field(
+    nondefault$substrate,
+    "close",
+    cutoff = fixture$axis[[3L]]
+  )
+  testthat::expect_true(nondefault_treatment$input_carried[1L, 2L])
+  testthat::expect_false(nondefault_treatment$input_carried[1L, 3L])
+
+  admission_reasons <- ledgr:::ledgr_history_estimator_admission(list(
+    calculation_valid = rbind(c(FALSE, TRUE), c(FALSE, TRUE)),
+    input_carried = matrix(FALSE, nrow = 2L, ncol = 2L),
+    missing_reason = rbind(c("raw_missing", ""), c("carry_expired", "")),
+    barrier_reason = rbind(c("terminal", ""), c("", ""))
+  ))
+  testthat::expect_identical(
+    admission_reasons$exclusion_reason,
+    c("structural_exclusion", "carry_expired")
+  )
 
   action_data <- fixture$data
   action_data$families <- rbind(
@@ -765,6 +961,63 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
     ledgr:::ledgr_history_worker_stage(altered, identity),
     class = "ledgr_staged_history_mismatch"
   )
+  identity_mutations <- list(
+    policy = function(x) {
+      x$history_substrate$policy_identity <- "different-policy"
+      x
+    },
+    source_start = function(x) {
+      x$history_substrate$source_start_utc <-
+        x$history_substrate$source_start_utc + 1
+      x
+    },
+    data_start = function(x) {
+      x$history_substrate$data_start_utc <-
+        x$history_substrate$data_start_utc + 1
+      x
+    },
+    instruments = function(x) {
+      x$history_substrate$instrument_ids <-
+        rev(x$history_substrate$instrument_ids)
+      x
+    },
+    axis = function(x) {
+      x$history_substrate$axis[[1L]] <- x$history_substrate$axis[[1L]] + 1
+      x
+    },
+    feature_engine = function(x) {
+      x$history_substrate$feature_projection$feature_engine_version <-
+        "different-engine"
+      x
+    },
+    feature_ids = function(x) {
+      x$history_substrate$feature_projection$feature_values$extra <-
+        matrix(NA_real_, nrow = 2L, ncol = length(x$history_substrate$axis))
+      x
+    }
+  )
+  for (name in names(identity_mutations)) {
+    testthat::expect_error(
+      ledgr:::ledgr_history_worker_stage(
+        identity_mutations[[name]](invariant), identity
+      ),
+      class = "ledgr_staged_history_mismatch",
+      info = name
+    )
+  }
+  other_owner <- invariant
+  other_owner$staged_owner_id <- "other-owner"
+  testthat::expect_error(
+    ledgr:::ledgr_history_worker_stage(other_owner, identity),
+    class = "ledgr_staged_history_mismatch"
+  )
+  invalid_version <- invariant
+  invalid_version$history_substrate$substrate_version <-
+    invalid_version$history_substrate$substrate_version + 1L
+  testthat::expect_error(
+    ledgr:::ledgr_history_worker_stage(invalid_version, identity),
+    class = "ledgr_staged_history_mismatch"
+  )
 
   tasks <- list(
     c(list(
@@ -907,7 +1160,19 @@ testthat::test_that("[LTB-0295] availability sweeps stage history without semant
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
   builds$result <- NULL
+  compact_fields <- new.env(parent = emptyenv())
+  compact_fields$sets <- list()
   original_prepare <- ledgr:::ledgr_availability_provider_prepare
+  original_stage_tasks <- ledgr:::ledgr_sweep_stage_history_tasks
+  testthat::local_mocked_bindings(
+    ledgr_sweep_stage_history_tasks = function(tasks, owner_id) {
+      staged <- original_stage_tasks(tasks, owner_id)
+      compact_fields$sets[[length(compact_fields$sets) + 1L]] <-
+        names(staged$tasks[[1L]])
+      staged
+    },
+    .package = "ledgr"
+  )
   local({
     testthat::local_mocked_bindings(
       ledgr_availability_provider_prepare = function(...) {
@@ -969,6 +1234,15 @@ testthat::test_that("[LTB-0295] availability sweeps stage history without semant
   testthat::expect_identical(
     attr(parallel_three, "history_worker_support"), "unmeasured"
   )
+  expected_compact_fields <- c(
+    "index", "run_id", "candidate_id", "candidate_row", "raw_params",
+    "params", "feature_params", "execution_seed", "candidate",
+    "candidate_feature_row", "staged_invariant_identity"
+  )
+  testthat::expect_true(length(compact_fields$sets) >= 2L)
+  for (fields in compact_fields$sets) {
+    testthat::expect_identical(fields, expected_compact_fields)
+  }
   testthat::expect_false(
     "availability_data" %in% attr(parallel_two, "staged_payload_census")$field
   )
@@ -1021,6 +1295,36 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(one = list(qty = 1), two = list(qty = 2))
+  dated_experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = list(ledgr_ind_returns(2L)),
+    opening = ledgr_opening(
+      cash = 100000,
+      date = "2020-01-05T16:00:00Z"
+    ),
+    cost_model = ledgr_cost_zero()
+  )
+  dated_run <- ledgr_run(dated_experiment, list(qty = 1), seed = 7L)
+  withr::defer(close(dated_run))
+  dated_fills <- ledgr_results(dated_run, "fills")
+  testthat::expect_identical(nrow(dated_fills), 1L)
+  testthat::expect_identical(
+    as.numeric(dated_fills$ts_utc),
+    as.numeric(as.POSIXct("2020-01-08 09:30:00", tz = "UTC"))
+  )
+  dated_equity <- ledgr_results(dated_run, "equity")
+  testthat::expect_equal(
+    dated_equity$equity[[nrow(dated_equity)]],
+    100005
+  )
+  dated_sweep <- ledgr_sweep(
+    dated_experiment,
+    ledgr_param_grid(one = list(qty = 1)),
+    seed = 7L,
+    workers = 1L
+  )
+  testthat::expect_equal(dated_sweep$final_equity, 100005)
   folds <- ledgr:::ledgr_fold_list(
     list(
       ledgr:::ledgr_fold(
@@ -1040,11 +1344,18 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
   caller_rng <- .Random.seed
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
+  stages <- new.env(parent = emptyenv())
+  stages$n <- 0L
   original_prepare <- ledgr:::ledgr_history_substrate_for_experiment
+  original_stage_tasks <- ledgr:::ledgr_sweep_stage_history_tasks
   testthat::local_mocked_bindings(
     ledgr_history_substrate_for_experiment = function(...) {
       builds$n <- builds$n + 1L
       original_prepare(...)
+    },
+    ledgr_sweep_stage_history_tasks = function(...) {
+      stages$n <- stages$n + 1L
+      original_stage_tasks(...)
     },
     .package = "ledgr"
   )
@@ -1057,6 +1368,23 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     sequential$test_runs,
     function(run) nrow(ledgr_results(run, "fills")) > 0L,
     logical(1)
+  )
+  sequential_fill_times <- lapply(
+    sequential$test_runs,
+    function(run) ledgr_results(run, "fills")$ts_utc
+  )
+  train_final_equity <- sequential$scores[
+    sequential$scores$fold_seq == 2L &
+      sequential$scores$window == "train" &
+      sequential$scores$candidate_label == "one" &
+      sequential$scores$metric_name == "final_equity",
+    "metric_value",
+    drop = TRUE
+  ]
+  testthat::expect_equal(train_final_equity, 100002)
+  testthat::expect_identical(
+    as.numeric(sequential_fill_times[[1L]]),
+    as.numeric(as.POSIXct("2020-01-12 09:30:00", tz = "UTC"))
   )
   lapply(sequential$test_runs, close)
   parallel <- ledgr_walk_forward(
@@ -1080,6 +1408,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
   on.exit(lapply(parallel_three$test_runs, close), add = TRUE)
   testthat::expect_identical(.Random.seed, caller_rng)
   testthat::expect_identical(builds$n, 3L)
+  testthat::expect_identical(stages$n, 4L)
   testthat::expect_true(all(sequential_test_has_fills))
   testthat::expect_identical(sequential$history_worker_support, "measured")
   testthat::expect_identical(parallel$history_worker_support, "measured")

@@ -134,8 +134,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   adapts the primitive packet returned by P1 into the strategy context and
   feature views. P3 through P5 receive neither a history frame nor a substrate
   reference. Cursor-bearing provider and history readers are declared fold
-  services and remain local to one consumer; they are not stored in or shared
-  through the immutable substrate.
+  services and remain local to one daemon/consumer; they are not stored in or
+  shared through the immutable substrate.
 
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
@@ -252,11 +252,12 @@ Accepted change pending:
   table or partially promotable candidate result; partial-result recovery
   requires a future explicit contract.
 - Availability-aware local sweeps stage the immutable causal-history input
-  once on each persistent daemon. Candidate tasks carry the exact staged
-  identity plus candidate-varying fields, and a missing or different identity
-  refuses with `ledgr_staged_history_mismatch` before strategy invocation,
-  fills or result writes. Daemons rebuild only consumer-local pulse text and
-  cursors. One and two local workers are the measured history envelope;
+  once on each persistent daemon. Candidate tasks carry an owner-scoped
+  descriptor key for the staged substrate plus candidate-varying fields. A
+  missing or different descriptor refuses with `ledgr_staged_history_mismatch`
+  before strategy invocation, fills or result writes. Daemons rebuild only
+  consumer-local pulse text and cursors. One and two local workers are the
+  measured history envelope;
   larger counts remain runnable but are labelled unmeasured. Worker count and
   resource settings never enter experiment, candidate or run identity.
 
@@ -755,20 +756,21 @@ Accepted change pending:
   instrument-time without an applicable status assertion is `status_unknown`:
   target-restricted, allowing hold or exit only (Cut 12 LDG-3009, audit
   S2-018).
-- History treatment does not change the universe or execution planes. It keeps
-  structural expectedness, observed/raw missingness, input carry, calculation
-  validity, output carry, readiness and estimator admission as distinct
-  evidence. Estimator exclusion creates no target instruction: every
-  instrument on the decision axis still receives the strategy's explicit
-  target.
-- The default history policy carries an observed price level forward for at
-  most five later expected sessions. Carry is causal and field-local: it never
-  fills backward, never fabricates a leading value, never carries volume,
-  retains the original source timestamp and age, and stops at lifetime or
-  terminal barriers. Return and volatility families never consume a carried
-  price. Output carry is separately declared and disabled by default. A valid
-  declared carry may make an instrument complete enough for estimator
-  admission; ledgr imposes no carried-share threshold.
+- The history-treatment primitive does not change the universe or execution
+  planes. It keeps structural expectedness, observed/raw missingness, input
+  carry, calculation validity, output carry, readiness and estimator admission
+  as distinct evidence. The public selectors and target-intent boundary remain
+  pending under LDG-3062 and LDG-3063.
+- Under the default history policy the treatment primitive carries an observed
+  price level forward for at most five later expected sessions. Carry is causal
+  and field-local: it never fills backward, never fabricates a leading value,
+  never carries volume, retains the original source timestamp and age, and
+  stops at lifetime or terminal barriers. It exposes raw missingness and
+  carried price levels separately; LDG-3066 owns the feature-family rule that
+  returns and volatility consume no carried price. Output carry is separately
+  declared and disabled by default. A valid declared carry may make an
+  instrument complete enough for the admission primitive; ledgr imposes no
+  carried-share threshold.
 
 <a id="contract-availability-disclosure"></a>
 ### Plan And Result Disclosure

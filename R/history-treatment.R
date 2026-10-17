@@ -279,27 +279,41 @@ ledgr_history_substrate_treated_field <- function(
   }
   observation_idx <- as.integer(observation_idx)
   instrument_idx <- as.integer(instrument_idx)
+  cutoff_idx <- findInterval(
+    as.numeric(ledgr_history_utc(cutoff)),
+    as.numeric(substrate$axis)
+  )
+  selected_idx <- observation_idx[observation_idx <= cutoff_idx]
+  prefix_idx <- if (length(selected_idx) > 0L) {
+    seq_len(max(selected_idx))
+  } else {
+    integer()
+  }
   expected <- ledgr_history_substrate_expected_at(
     substrate,
     cutoff,
-    observation_idx,
+    prefix_idx,
     instrument_idx
   )
   terminal_barrier <- ledgr_history_substrate_terminal_at(
     substrate,
     cutoff,
-    observation_idx,
+    prefix_idx,
     instrument_idx
   )
-  raw <- substrate$bars[[field]][instrument_idx, observation_idx, drop = FALSE]
-  ledgr_history_input_carry_matrix(
+  raw <- substrate$bars[[field]][instrument_idx, prefix_idx, drop = FALSE]
+  treated <- ledgr_history_input_carry_matrix(
     value = raw,
     expected = expected,
-    axis = substrate$axis[observation_idx],
+    axis = substrate$axis[prefix_idx],
     max_sessions = substrate$history_policy$price_carry,
     carry_allowed = isTRUE(carry_allowed) && !identical(field, "volume"),
     terminal_barrier = terminal_barrier
   )
+  take <- match(selected_idx, prefix_idx)
+  lapply(treated, function(x) {
+    x[, take, drop = FALSE]
+  })
 }
 
 ledgr_history_output_carry <- function(value,
@@ -327,15 +341,26 @@ ledgr_history_output_carry <- function(value,
     terminal_barrier = terminal_barrier
   )
   permitted <- as.logical(eligible_gap) & base$input_carried
+  carry_reason <- base$missing_reason
   base$value[base$input_carried & !permitted] <- NA_real_
   base$output_carried <- permitted
   base$input_carried[] <- FALSE
   base$calculated <- is.finite(value) & source_eligible
   base$calculation_valid <- is.finite(value) & source_eligible
   base$ready <- base$calculation_valid | permitted
+  clear_source <- !base$calculation_valid & !permitted
+  base$source_ts_utc[clear_source] <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+  base$carry_age_sessions[clear_source] <- NA_integer_
   base$missing_reason[permitted] <- "output_carried"
-  base$missing_reason[!is.finite(value) & !permitted & expected] <-
-    "output_not_carry_eligible"
+  missing_output <- !is.finite(value) & !permitted & expected
+  base$missing_reason[missing_output & carry_reason == "carry_expired"] <-
+    "output_carry_expired"
+  base$missing_reason[
+    missing_output & carry_reason != "carry_expired" & as.logical(eligible_gap)
+  ] <- "output_source_unavailable"
+  base$missing_reason[
+    missing_output & carry_reason != "carry_expired" & !as.logical(eligible_gap)
+  ] <- "output_not_carry_eligible"
   base
 }
 
@@ -349,7 +374,23 @@ ledgr_history_estimator_admission <- function(evidence,
   if (is.null(dim(input_carried))) {
     input_carried <- matrix(as.logical(input_carried), nrow = 1L)
   }
+  barrier_reason <- evidence$barrier_reason
+  if (is.null(barrier_reason)) {
+    barrier_reason <- matrix("", nrow = nrow(calculation_valid),
+                             ncol = ncol(calculation_valid))
+  } else if (is.null(dim(barrier_reason))) {
+    barrier_reason <- matrix(as.character(barrier_reason), nrow = 1L)
+  }
+  missing_reason <- evidence$missing_reason
+  if (is.null(missing_reason)) {
+    missing_reason <- matrix("", nrow = nrow(calculation_valid),
+                             ncol = ncol(calculation_valid))
+  } else if (is.null(dim(missing_reason))) {
+    missing_reason <- matrix(as.character(missing_reason), nrow = 1L)
+  }
   if (!identical(dim(calculation_valid), dim(input_carried)) ||
+      !identical(dim(calculation_valid), dim(barrier_reason)) ||
+      !identical(dim(calculation_valid), dim(missing_reason)) ||
       anyNA(calculation_valid) || anyNA(input_carried)) {
     rlang::abort(
       "History estimator evidence must be complete and shape-aligned.",
@@ -373,7 +414,15 @@ ledgr_history_estimator_admission <- function(evidence,
   included <- requested & rowSums(!calculation_valid) == 0L
   exclusion_reason <- rep("", n_instruments)
   exclusion_reason[!requested] <- "not_requested"
-  exclusion_reason[requested & !included] <- "missing_required_input"
+  excluded <- requested & !included
+  structural <- rowSums(!calculation_valid & nzchar(barrier_reason)) > 0L
+  expired <- rowSums(
+    !calculation_valid & missing_reason %in%
+      c("carry_expired", "output_carry_expired")
+  ) > 0L
+  exclusion_reason[excluded] <- "missing_required_input"
+  exclusion_reason[excluded & expired] <- "carry_expired"
+  exclusion_reason[excluded & structural] <- "structural_exclusion"
   list(
     requested = requested,
     included = included,

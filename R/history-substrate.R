@@ -193,13 +193,11 @@ ledgr_history_substrate_for_experiment <- function(exp,
   calendar <- ledgr_availability_calendar(
     list(sessions = data$sessions), meta$start, end
   )
-  bars <- ledgr_precompute_fetch_bars(
+  bars_by_id <- ledgr_precompute_fetch_bars(
     exp$snapshot, exp$universe, meta$start, end
   )
-  bars <- ledgr_sweep_normalize_bars_by_id(bars, exp$universe)
-  bars <- ledgr_sweep_align_availability_bars(
-    bars, exp$universe, calendar$pulses_posix
-  )
+  bars <- do.call(rbind, unname(bars_by_id))
+  rownames(bars) <- NULL
   ledgr_history_substrate(
     bars = bars,
     instrument_ids = exp$universe,
@@ -215,8 +213,11 @@ ledgr_history_compute_feature_series <- function(substrate,
                                                  instrument_id,
                                                  definition,
                                                  kind = NULL,
-                                                 calculation_start = NULL) {
-  rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
+                                                 calculation_start = NULL,
+                                                 rows = NULL) {
+  if (is.null(rows)) {
+    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
+  }
   keep <- rep.int(TRUE, nrow(rows))
   if (!is.null(calculation_start)) {
     keep <- as.POSIXct(rows$ts_utc, tz = "UTC") >=
@@ -235,25 +236,31 @@ ledgr_history_precompute_payload <- function(unique_defs,
                                              substrate,
                                              calculation_start = NULL) {
   ledgr_history_substrate_require(substrate)
-  out <- list()
-  for (fingerprint in names(unique_defs)) {
-    def <- unique_defs[[fingerprint]]
-    kind <- ledgr_strict_builtin_kind(def)
-    values <- lapply(substrate$instrument_ids, function(instrument_id) {
-      ledgr_history_compute_feature_series(
+  fingerprints <- names(unique_defs)
+  out <- lapply(fingerprints, function(fingerprint) {
+    list(
+      feature_id = unique_defs[[fingerprint]]$id,
+      fingerprint = fingerprint,
+      values = stats::setNames(vector("list", length(substrate$instrument_ids)),
+                               substrate$instrument_ids)
+    )
+  })
+  names(out) <- fingerprints
+  kinds <- lapply(unique_defs, ledgr_strict_builtin_kind)
+  for (instrument_id in substrate$instrument_ids) {
+    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
+    for (fingerprint in fingerprints) {
+      def <- unique_defs[[fingerprint]]
+      out[[fingerprint]]$values[[instrument_id]] <-
+        ledgr_history_compute_feature_series(
         substrate = substrate,
         instrument_id = instrument_id,
         definition = def,
-        kind = kind,
-        calculation_start = calculation_start
+        kind = kinds[[fingerprint]],
+        calculation_start = calculation_start,
+        rows = rows
       )
-    })
-    names(values) <- substrate$instrument_ids
-    out[[fingerprint]] <- list(
-      feature_id = def$id,
-      fingerprint = fingerprint,
-      values = values
-    )
+    }
   }
   out
 }
@@ -323,54 +330,6 @@ ledgr_history_substrate_bar_matrices <- function(bars,
     out$is_synthetic[linear] <- value
   }
   out$observed[linear] <- TRUE
-  out
-}
-
-ledgr_history_substrate_bar_matrices_from_list <- function(bars,
-                                                           instrument_ids,
-                                                           axis) {
-  n_inst <- length(instrument_ids)
-  n_axis <- length(axis)
-  numeric_matrix <- function() matrix(NA_real_, nrow = n_inst, ncol = n_axis)
-  out <- list(
-    open = numeric_matrix(), high = numeric_matrix(), low = numeric_matrix(),
-    close = numeric_matrix(), volume = numeric_matrix(),
-    gap_type = matrix("MISSING_EXPECTED_SESSION", nrow = n_inst, ncol = n_axis),
-    is_synthetic = matrix(FALSE, nrow = n_inst, ncol = n_axis),
-    observed = matrix(FALSE, nrow = n_inst, ncol = n_axis)
-  )
-  for (i in seq_along(instrument_ids)) {
-    rows <- bars[[instrument_ids[[i]]]]
-    if (!is.data.frame(rows) || nrow(rows) == 0L) next
-    col <- match(
-      as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC")),
-      as.numeric(axis)
-    )
-    keep <- !is.na(col)
-    col <- col[keep]
-    if (anyDuplicated(col)) {
-      rlang::abort(
-        "History preparation found duplicate instrument/session bars.",
-        class = c("ledgr_history_duplicate_bar", "ledgr_invalid_snapshot")
-      )
-    }
-    for (name in c("open", "high", "low", "close", "volume")) {
-      if (name %in% names(rows)) out[[name]][i, col] <- as.numeric(rows[[name]][keep])
-    }
-    out$gap_type[i, col] <- if ("gap_type" %in% names(rows)) {
-      value <- as.character(rows$gap_type[keep])
-      value[is.na(value) | !nzchar(value)] <- "NONE"
-      value
-    } else {
-      "NONE"
-    }
-    if ("is_synthetic" %in% names(rows)) {
-      value <- as.logical(rows$is_synthetic[keep])
-      value[is.na(value)] <- FALSE
-      out$is_synthetic[i, col] <- value
-    }
-    out$observed[i, col] <- TRUE
-  }
   out
 }
 
@@ -1784,11 +1743,9 @@ ledgr_history_substrate <- function(bars,
     lifetime_terminal = terminal
   )
   if (!is.null(membership)) segments$membership <- membership
-  bars_matrix <- if (is.list(bars) && !is.data.frame(bars)) {
-    ledgr_history_substrate_bar_matrices_from_list(bars, instrument_ids, axis)
-  } else {
-    ledgr_history_substrate_bar_matrices(bars, instrument_ids, axis)
-  }
+  bars_matrix <- ledgr_history_substrate_bar_matrices(
+    bars, instrument_ids, axis
+  )
   out <- structure(
     list(
       substrate_version = ledgr_history_substrate_version,

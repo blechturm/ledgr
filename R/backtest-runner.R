@@ -1129,43 +1129,48 @@ ledgr_run_fold_impl <- function(config,
 
   feature_engine_version <- ledgr_feature_engine_version(availability_active)
   if (length(feature_defs) > 0) {
-    run_feature_series <- list()
-    for (def_idx in seq_along(feature_defs)) {
-      def <- feature_defs[[def_idx]]
-      strict_kind <- if (availability_active) {
-        ledgr_strict_builtin_kind(def)
-      } else {
-        NULL
-      }
-      per_inst <- list()
+    def_ids <- vapply(feature_defs, function(d) d$id, character(1))
+    run_feature_series <- stats::setNames(
+      lapply(feature_defs, function(...) list()),
+      def_ids
+    )
+    if (availability_active) {
+      strict_kinds <- stats::setNames(
+        lapply(feature_defs, ledgr_strict_builtin_kind),
+        def_ids
+      )
       for (instrument_id in instrument_ids) {
-        b <- if (availability_active) {
-          ledgr_history_substrate_instrument_frame(
-            history_substrate, instrument_id
-          )
-        } else {
-          bars_by_id[[instrument_id]]
-        }
-        values <- if (availability_active) {
-          ledgr_history_compute_feature_series(
+        b <- ledgr_history_substrate_instrument_frame(
+          history_substrate, instrument_id
+        )
+        for (def in feature_defs) {
+          values <- ledgr_history_compute_feature_series(
             substrate = history_substrate,
             instrument_id = instrument_id,
             definition = def,
-            kind = strict_kind,
-            calculation_start = start_ts_utc
+            kind = strict_kinds[[def$id]],
+            calculation_start = start_ts_utc,
+            rows = b
           )
-        } else {
-          ledgr_compute_feature_series(b, def)
+          if (length(values) != nrow(b)) {
+            fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
+          }
+          run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
         }
-        if (length(values) != nrow(b)) {
-          fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
-        }
-        per_inst[[instrument_id]] <- as.numeric(values)
       }
-      run_feature_series[[def$id]] <- per_inst
+    } else {
+      for (def in feature_defs) {
+        for (instrument_id in instrument_ids) {
+          b <- bars_by_id[[instrument_id]]
+          values <- ledgr_compute_feature_series(b, def)
+          if (length(values) != nrow(b)) {
+            fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
+          }
+          run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
+        }
+      }
     }
     bars_by_id <- NULL
-    def_ids <- vapply(feature_defs, function(d) d$id, character(1))
     n_inst <- length(instrument_ids)
     n_def <- length(def_ids)
     run_feature_matrix <- vector("list", n_def)

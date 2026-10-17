@@ -3,11 +3,11 @@
 This record measures serialized task shape, not process RSS. The runner builds
 one eight-session availability fixture and a six-candidate public sweep, then
 captures the real task list immediately before and after the production
-history-staging boundary. `package_head` is the committed parent from which
-the candidate working tree was built; the eventual implementation commit is
-recorded in the ticket and closeout. The staged total is the compact candidate-task list
-plus one immutable invariant. R object-size accounting is the same in both
-arms and is used only as a payload-shape estimate.
+history-staging boundary. `package_head` is the exact committed package tree
+that the runner loads. The staged total is the compact candidate-task list
+plus one serialized invariant copy for each worker. The record also reports R
+object sizes as descriptive diagnostics, with columns explicitly labelled
+`object_bytes`; its comparison ratio uses `serialize(..., version = 3)` bytes.
 
 Reproduce from the package root with:
 
