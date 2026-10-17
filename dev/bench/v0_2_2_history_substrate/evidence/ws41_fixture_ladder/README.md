@@ -18,6 +18,21 @@ the informational identity family identical. The checker's self-test perturbs
 each family independently and detects 51 of 51. This proves that WS41 does not
 prematurely adopt LDG-3064's later continuous-window start rule.
 
+Focused re-review 1 found that the corrections had changed ladder-gated code
+without a rerun. The ladder was therefore rerun on the second-correction tree
+(`baseline_rerun` and `candidate_second_correction` rows). The baseline arm
+ran from a temporary detached worktree at `e3f822a5`, because the recorder
+needs a Git checkout. The candidate was the uncommitted working tree on
+`38219a66`, identified by the SHA-256 prefix of `git diff 38219a66 -- R tests`;
+the label identifies exactly the tree that was measured. That tree preceded
+the third correction round from re-review 2, whose only product change makes
+the runner's stored-policy check unconditional (behavior-identical, because
+config validation already requires a current history identity); the rest of
+that round changed tests and records. Again 50 of 50
+gated families and the identity family are identical, and the self-test
+detects 51 of 51. Phase totals of 144.613 and 148.273 seconds are disclosure
+only.
+
 Reproduction commands:
 
 ```text

@@ -1,9 +1,14 @@
 # Cut 16 Workstream 41 closeout: shared causal history substrate
 
-Implementation commits: `7dcd9968`, `7d8e595f` and correction `9c1e352e`
+Implementation commits: `7dcd9968`, `7d8e595f`, correction `9c1e352e` and
+correction `1db8b675` (second and third rounds)
 
-Status: close review returned `CHANGES_REQUIRED`; product and detector
-corrections are complete and await focused Type 1 confirmation.
+Status: the close review and focused re-reviews 1 and 2 returned
+`CHANGES_REQUIRED`. Re-review 2 found no product defect; its detector and
+branch findings were corrected in a third round that the maintainer directed
+("iterate until green"), and the reviewer's confirmation returned `PASS`.
+Maintainer acceptance remains open, together with the fast-profile timing gate
+(see the verification record).
 
 ## Necessity and scope
 
@@ -29,15 +34,31 @@ window or walk-forward operation. Queries use consumer-local positions; the
 stored object has no monotone mutable cursor, so reordered cutoffs return the
 same values.
 
-Complete membership snapshots restart resolution from the latest eligible
-complete header rather than replaying its whole prefix. A correction probe at
-the reviewed Sharadar shape (580 complete sets, 1,200 instruments and 6,961
-pulses) takes 0.37 seconds for the full query pass. Restoring prefix replay
-makes LTB-0291 count 820 header applications for 40 successive sets against
-the linear bound of 80. Run, sweep, window and walk-forward substrate creation
-now all build observation planes from fetched rows, never aligned placeholder
-rows. LTB-0291 names one missing expected bar and one inactive no-print
-session; restoring placeholder alignment fails three literal planes.
+The prepared membership cursor applies each newly eligible complete or
+incomplete header once and caches the header-derived planes until another
+header arrives or the cursor rewinds. At the reviewed Sharadar shape (580
+complete sets, 1,200 instruments and 6,961 pulses) the full decision pass takes
+0.26 seconds, and a 300-set incomplete pass 0.14 seconds, against 0.23 and
+0.12 seconds on the pre-cut tree. LTB-0291 counts one header advance per
+eligible header. Run, sweep, window and walk-forward substrate creation all
+build observation planes from one unsplit fetched bars frame, never aligned
+placeholder rows or a split-and-rebound copy. LTB-0291 names one missing
+expected bar and one inactive no-print session, and fails if sweep preparation
+calls the split-bars helper.
+
+Segments for trading status, lifetime, terminal state and interval-only
+membership compile per instrument over that instrument's own knowledge epochs
+and observation breaks, through the shared resolvers. One corrected instrument
+no longer forces every instrument through a family-wide cross-product: three
+status facts per instrument at 150 instruments by 750 sessions fall from 91.4
+to 0.1 seconds, and lagged membership intervals at 200 by 1,000 from 215 to
+1.0 seconds. LTB-0291 checks the lagged interval-only family against the
+canonical resolver at every observation and knowledge pair. Complete set
+headers keep their linear complete-set compiler and same-clock sets the
+prepared cursor. Incomplete set headers whose knowledge lags their effective
+time still use the family-wide compiler: 0.8, 3.9 and 23.9 seconds at 20, 40
+and 80 sets by 300 instruments. That residual is measured rather than hidden
+and is routed below.
 
 The existing availability resolver remains the precedence oracle. Segment
 rows preserve the resolved state, winning fact and reason. Active, inactive,
@@ -46,6 +67,13 @@ declaration and family completeness. The guard defaults to
 `max(4 * fact_rows, 16)` and reports the instrument, family and counts through
 a classed refusal. A declared override is already part of history-policy
 identity from Workstream 40.
+
+A supplied substrate is validated against the history identity stored in the
+run's config. `ledgr_history_policy_normalize()` refuses `NULL` instead of
+defaulting, which had made a non-default-policy walk-forward refuse and let a
+strict experiment run on a carry-5 substrate. LTB-0287's internal-NULL
+assertion changed from default equality to refusal for that reason; a run
+that omits `history_policy` now witnesses public default equality directly.
 
 P1 is the only fold stage that reads the substrate. P2 receives values adapted
 by P1; P3 through P5 receive neither a substrate nor a history frame. The
@@ -79,6 +107,20 @@ Estimator admission distinguishes structural barriers, expired carry and
 other missing required input. LTB-0292 pins those boundaries together with
 the five-versus-six carry edge, terminal knowledge, non-default policy, volume
 guard and original chained source time.
+
+Terminal handling follows the maintainer decision of 2026-10-17. The terminal
+state comes from the shared lifetime resolver, so a relisting clears it, but
+the carry barrier is sticky from the first knowable terminal column onward,
+as v12 Section 5 requires. An intermediate uncommitted correction had
+released the barrier after relisting and rewritten LTB-0292's `terminal`
+oracle to `lifetime_restart`; that oracle is restored and the state and
+barrier are now pinned separately.
+
+Feature calculation is bounded by the window's scoring start and end, parsed
+as exact instants whether they arrive as ISO strings or POSIXct. An ISO end
+truncated to its calendar date had dropped the last scored pulse's feature
+value, which six registered blocks detected; LTB-0292 now pins the ISO and
+POSIXct bounds to the same result.
 
 The remaining civil-time decision is bound literally. A Date-valued
 corporate-action entitlement, effective or payment date resolves to the
@@ -166,21 +208,54 @@ The changed preparation, fold and transport functions were checked against
 the seven shapes in `optimization_coding_style.qmd`.
 
 1. Segments and payload rows are accumulated in bounded lists and bound once;
-   no data frame grows a row at a time.
-2. Bars and facts are indexed during preparation. Complete membership sets
-   replay from the latest eligible complete header, and the pulse loop does
-   not repeatedly subset a full table by instrument.
+   no data frame grows a row at a time, and bars are fetched as one frame
+   rather than split per instrument and rebound.
+2. Bars and facts are indexed during preparation. Multi-fact segment families
+   compile per instrument over that instrument's own facts, and the pulse loop
+   does not repeatedly subset a full table by instrument. Incomplete lagged set
+   headers remain the measured exception noted above.
 3. Matrix and `collapse::na_locf()` operations handle column work; timestamp
    and fact normalization are not repeated per cell.
 4. No row-wise JSON or hashing was added. Feature preparation constructs one
    frame per instrument and reuses it across definitions.
 5. Candidate-invariant preparation and worker staging occur once per owning
-   operation or daemon, not once per candidate or pulse; walk-forward's
-   deliberate per-fold restaging remains an LDG-3069 measurement input.
+   operation or daemon, not once per candidate or pulse. Each membership
+   header is applied once, and its derived planes are cached between header
+   changes rather than rebuilt every pulse. Features are calculated only
+   inside their window. Walk-forward's deliberate per-fold restaging remains
+   an LDG-3069 measurement input.
 6. No new pulse operation scans the complete historical axis. P1 queries the
    prepared packet and P2 adapts it.
 7. Availability owns one bars/facts/feature substrate. Dense keeps its old
    representation, and public history results remain owned by Workstream 42.
+
+## Routed, not fixed here
+
+The Cut 16 antipattern review also found shape problems that this correction
+does not attempt. Each is recorded with its proposed owner, pending maintainer
+confirmation; none changes a WS41 result.
+
+- Incomplete membership set headers with lagged knowledge still use the
+  family-wide compiler (measured above): LDG-3069 for the bound, with
+  LDG-3070's private census establishing whether the Sharadar lake has that
+  shape.
+- About 41 percent of the lake-scale substrate is dead or duplicated: facts
+  held as both segments and provider plan, four packet planes nobody reads,
+  and `gap_type`/`is_synthetic` restating `observed`. LDG-3069 owns staged
+  memory; WS42 decides which planes its public reads consume.
+- Availability P2 materializes the full `ctx$feature_table` every pulse where
+  the pre-cut path used the schema-only frame the contract allows; and the
+  cut adds execution-mode branches in fold, runner, sweep and walk-forward, a
+  few provably redundant. WS42 owns the strategy-context surface.
+- `ledgr_history_substrate_treated_field()` rematerializes and re-treats the
+  whole prefix per call, which WS42 must not call per pulse.
+- WS40-area costs (correction-chain lineage recomputation, civil JSON
+  formatting and size, tamper detection that depends on bundle composition,
+  the duplicated known-when-effective rule, and constructors validating on
+  UTC-midnight placeholders) belong to a WS40 follow-up ticket; the
+  known-when-effective timing for Date input needs a maintainer decision.
+- Output carry can leak the input-carried flag without failing LTB-0292
+  (record-only; the primitive has no product consumer yet).
 
 ## Verification record
 
@@ -216,6 +291,42 @@ The correction evidence is separate:
   recorded as host variability; the retry median of 127.21 seconds remains a
   miss and is not substituted for the first record.
 - Codebase census, fold-phase checker, YAML and `git diff --check`: pass.
+
+The second-correction evidence is separate again:
+
+- Full test suite: 1,114 blocks, no failures, one optional-package skip.
+- Source-copy mutations each fail their registered block: restoring the
+  split-and-rebind bars, the internal-NULL policy default, the re-bundle
+  overwrite, ISO date truncation, a released terminal barrier or the
+  family-wide interval compiler, and the four re-review treatment survivors.
+  Output carry leaking the input-carried flag is the one record-only survivor.
+- The randomized resolver differential (121 membership, 65 status and 48
+  lifetime fact sets at every observation and knowledge pair) still shows no
+  mismatch.
+- Fixture ladder rerun on this tree: 50/50 gated families and identity exact,
+  51/51 self-test; phase totals 144.613 and 148.273 seconds are disclosure.
+- Profiles were measured on a host the maintainer reported as busy, so their
+  timings are not gate evidence (see
+  `ws41_second_correction_fast/README.md`). Review 357/357 and heavy 192/192
+  pass. The three fast runs execute 565/565 but each records two warning
+  blocks (LTB-0154 and LTB-0182, source-scan blocks unrelated to the change);
+  a captured diagnostic fast pass is 565/565 clean. The fast-profile gate needs
+  a rerun on a quiet host.
+
+Re-review 2 (`close_review_41_rereview_2.md`) found no product defect. Its
+third-round corrections:
+
+- LTB-0296 parses every recorded calculation end exactly and requires it to
+  be a fold window end, with every training end present.
+- LTB-0291 adds a lagged mixed membership family queried forward, backward
+  and forward again on one cursor, and counts header advances exactly.
+- The runner's stored-policy check is unconditional instead of a new
+  `availability_active` branch.
+
+Mutations calculating a training window to the snapshot end, removing the
+complete-header guard or re-advancing every header each fail LTB-0296 or
+LTB-0291. N5 (defensive mixed civil-frame refusal) and N6 (about 6 ms per
+instrument for interval-only membership, linear) are record-only.
 
 Durable evidence is under
 `dev/bench/v0_2_2_history_substrate/evidence/`. Scratch fixture stores and
