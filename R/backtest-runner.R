@@ -1569,10 +1569,34 @@ ledgr_feature_defs_from_config <- function(cfg) {
   }
 
   availability_active <- ledgr_availability_config_active(cfg)
+  stored_fingerprint <- function(ind) {
+    fingerprint <- ledgr_indicator_fingerprint(ind)
+    if (availability_active) {
+      fingerprint <- ledgr_active_feature_fingerprint(
+        ledgr_precompute_feature_def_from_indicator(ind)
+      )
+    }
+    fingerprint
+  }
   add_def <- function(def, stored) {
-    def$gap_contract <- stored$gap_contract %||% def$gap_contract
+    for (field in c("gap_contract", "history_class", "required_fields",
+                    "input_carry", "tolerance")) {
+      if (!is.null(stored[[field]])) def[[field]] <- stored[[field]]
+    }
     def$fingerprint <- stored$fingerprint %||% ledgr_feature_def_fingerprint(def)
     def
+  }
+  registered <- function(id) {
+    if (!exists("ledgr_indicator_get", mode = "function")) return(NULL)
+    ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
+    if (inherits(ind, "ledgr_indicator")) ind else NULL
+  }
+  # A stored fingerprint that is not the package built-in's identity names a
+  # registered user indicator whose id matches a built-in id pattern.
+  shadowed <- function(d, builtin) {
+    !is.null(d$fingerprint) &&
+      !identical(d$fingerprint, stored_fingerprint(builtin)) &&
+      !is.null(registered(d$id))
   }
   out <- list()
     for (d in defs) {
@@ -1586,12 +1610,13 @@ ledgr_feature_defs_from_config <- function(cfg) {
       rlang::abort("Each feature def must include `id` (or `name`) as a non-empty string.", class = "ledgr_invalid_config")
     }
 
-    if (identical(id, "return_1")) {
+    if (identical(id, "return_1") && !shadowed(d, ledgr_ind_returns(1L))) {
       out[[length(out) + 1L]] <- add_def(ledgr_feature_return_1(), d)
       next
     }
 
-    if (grepl("^sma_\\d+$", id)) {
+    if (grepl("^sma_\\d+$", id) &&
+        !shadowed(d, ledgr_ind_sma(as.integer(sub("^sma_", "", id))))) {
       n <- as.integer(sub("^sma_", "", id))
       out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(n), d)
       next
@@ -1606,34 +1631,22 @@ ledgr_feature_defs_from_config <- function(cfg) {
       next
     }
 
-    if (exists("ledgr_indicator_get", mode = "function")) {
-      ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
-      if (inherits(ind, "ledgr_indicator")) {
-        current_fingerprint <- ledgr_indicator_fingerprint(ind)
-        if (availability_active) {
-          current_fingerprint <- ledgr_active_feature_fingerprint(list(
-            fingerprint = current_fingerprint,
-            gap_contract = ind$gap_contract
-          ))
-        }
-        if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {
-          rlang::abort(
-            sprintf("Registered indicator '%s' no longer matches the fingerprint stored in the run config.", id),
-            class = "ledgr_run_hash_mismatch"
-          )
-        }
-        out[[length(out) + 1L]] <- list(
-          id = ind$id,
-          fn = ind$fn,
-          series_fn = ind$series_fn,
-          requires_bars = ind$requires_bars,
-          stable_after = if (is.null(d$stable_after)) ind$stable_after else d$stable_after,
-          params = if (is.null(d$params)) ind$params else d$params,
-          fingerprint = current_fingerprint,
-          gap_contract = d$gap_contract %||% ind$gap_contract
+    ind <- registered(id)
+    if (!is.null(ind)) {
+      current_fingerprint <- stored_fingerprint(ind)
+      if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {
+        rlang::abort(
+          sprintf("Registered indicator '%s' no longer matches the fingerprint stored in the run config.", id),
+          class = "ledgr_run_hash_mismatch"
         )
-        next
       }
+      def <- ledgr_precompute_feature_def_from_indicator(ind)
+      if (!is.null(d$stable_after)) def$stable_after <- d$stable_after
+      if (!is.null(d$params)) def$params <- d$params
+      def$fingerprint <- current_fingerprint
+      if (!is.null(d$gap_contract)) def$gap_contract <- d$gap_contract
+      out[[length(out) + 1L]] <- def
+      next
     }
 
       rlang::abort(sprintf("Unknown feature id in config: %s", id), class = "ledgr_invalid_config")

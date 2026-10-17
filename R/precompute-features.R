@@ -668,6 +668,7 @@ ledgr_precompute_feature_defs_from_indicators <- function(indicators) {
 }
 
 ledgr_precompute_feature_def_from_indicator <- function(indicator) {
+  declarations <- ledgr_feature_def_declarations(indicator)
   list(
     id = indicator$id,
     fn = indicator$fn,
@@ -677,7 +678,13 @@ ledgr_precompute_feature_def_from_indicator <- function(indicator) {
     source = ledgr_indicator_source(indicator),
     params = indicator$params,
     fingerprint = ledgr_indicator_fingerprint(indicator),
-    gap_contract = indicator$gap_contract
+    gap_contract = declarations$gap_contract,
+    history_class = declarations$history_class,
+    history_source = declarations$history_source,
+    required_fields = declarations$required_fields,
+    required_fields_source = declarations$required_fields_source,
+    tolerance = declarations$tolerance,
+    input_carry = declarations$input_carry
   )
 }
 

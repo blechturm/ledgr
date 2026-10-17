@@ -1748,9 +1748,31 @@ Accepted change pending:
 <a id="contract-context-indicator-computation"></a>
 ### Indicator Computation And Identity
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
+- Every indicator definition is `bounded` or `history_dependent`.
+  `gap_contract = "strict_window"` declares a bounded window; combined with
+  `history_class = "history_dependent"` it refuses with
+  `ledgr_indicator_history_contradiction`. A custom definition without a
+  history declaration is disclosed as `history_dependent`; bounded is
+  declared, never inferred.
+- A definition declares the bar fields it requires (`required_fields`, from
+  `open`, `high`, `low`, `close` and `volume`); an undeclared custom
+  definition requires the four price fields. Required-field admission tests
+  exactly those fields and records every field that blocks a calculation.
+  Invalid declarations refuse with `ledgr_invalid_indicator_declaration`.
+- For a bounded definition `requires_bars` is the dependency width and the
+  window handed to `fn`; `stable_after`, at least `requires_bars`, is the
+  first-valid boundary and implies no convergence. No other width field
+  exists.
+- Package built-ins and registered TTR forms take exact declarations from one
+  package catalogue keyed by function, selected output and algorithm-changing
+  argument. Registered package tests certify every row on fixed hostile
+  fixtures; rows carry no runtime tolerance. A TTR form outside the catalogue,
+  including a known function with an unregistered argument or a different
+  `requires_bars`, follows the custom rules. Catalogue rows also mark the
+  return and volatility families.
+- A custom bounded definition that supplies both `fn` and `series_fn` is
+  compared exactly unless it declares a nonzero scaled `tolerance`; a
+  tolerance on any other definition refuses as a contradiction.
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.
@@ -1767,6 +1789,14 @@ Accepted change pending:
   including that function's own captures. The CSV adapter represents its
   constructor-owned captured values through `params$data_hash`; public source or
   adapter labels do not authorize that private route.
+- Dense indicator fingerprints omit the history declarations. Under identity
+  rule 4 an availability-aware feature fingerprint binds the dense
+  fingerprint (functions, captures, `id`, `requires_bars`, `stable_after` and
+  `params`, which carry the TTR version and algorithm arguments) together with
+  the history class, gap behavior, required fields, input-carry family,
+  tolerance and the feature-history rule version. The stored availability
+  config definition carries the same declarations, so each changes config
+  identity. Declaration provenance and display labels do not enter identity.
 
 <a id="contract-context-strict-features"></a>
 ### Availability-Aware Strict Features

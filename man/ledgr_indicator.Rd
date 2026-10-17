@@ -12,7 +12,10 @@ ledgr_indicator(
   stable_after = requires_bars,
   series_fn = NULL,
   source = "custom",
-  gap_contract = NULL
+  gap_contract = NULL,
+  history_class = NULL,
+  required_fields = NULL,
+  tolerance = NULL
 )
 }
 \arguments{
@@ -37,8 +40,22 @@ function(bars, params) -> numeric vector aligned to \code{bars}.}
 \code{"ledgr"}, TTR-backed indicators use \code{"TTR"}, and user/adapted indicators
 use \code{"custom"}.}
 
-\item{gap_contract}{Optional availability-aware gap contract. Version 1
-supports only \code{"strict_window"}.}
+\item{gap_contract}{Optional gap declaration. \code{"strict_window"} declares a
+bounded window and is equivalent to \code{history_class = "bounded"}; it
+contradicts \code{history_class = "history_dependent"}.}
+
+\item{history_class}{Optional history class: \code{"bounded"} or
+\code{"history_dependent"}. \code{NULL} with no \code{gap_contract} is disclosed as
+\code{"history_dependent"}: ledgr never infers that a definition is bounded.}
+
+\item{required_fields}{Optional character vector of the bar fields the
+calculation requires, from \code{"open"}, \code{"high"}, \code{"low"}, \code{"close"} and
+\code{"volume"}. \code{NULL} requires the four price fields.}
+
+\item{tolerance}{Optional comparison tolerance for a bounded definition that
+supplies both \code{fn} and \code{series_fn}. \code{NULL} (the default) means exact. A
+nonzero tolerance is a scaled bound, \code{abs(a - b) / max(1, abs(b))}, and
+enters the definition's availability-aware identity.}
 }
 \value{
 A \code{ledgr_indicator} object.
@@ -53,6 +70,15 @@ environments, connections, and other unsupported captures refuse as
 non-deterministic. A captured function contributes its function identity,
 but its own captures are not recursively included. Put explicitly varying
 research inputs in \code{params}.
+
+On availability-aware experiments the history declarations decide how
+the indicator is calculated. A bounded definition depends only on its
+last \code{requires_bars} expected sessions: \code{fn} receives exactly that window
+and an incomplete window is missing. A history-dependent definition is
+calculated once per contiguous segment of available input and restarts
+after a gap. \code{stable_after} is the first-valid boundary after each start
+or restart; it does not promise convergence. The declarations enter the
+availability-aware feature identity; dense execution ignores them.
 }
 \examples{
 last_close <- ledgr_indicator(

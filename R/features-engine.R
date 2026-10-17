@@ -82,14 +82,24 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
   digest::digest(canonical_json(payload), algo = "sha256")
 }
 
+# Availability-aware feature identity under rule 4: the dense fingerprint
+# (functions, captures, id, requires_bars, stable_after and params, which
+# carry the TTR version and algorithm arguments) plus every calculation-
+# affecting history declaration. Declaration provenance is display-only.
 ledgr_active_feature_fingerprint <- function(feature_def) {
   base <- feature_def$fingerprint
   if (is.null(base)) base <- ledgr_feature_def_fingerprint(feature_def)
+  declarations <- ledgr_feature_def_declarations(feature_def)
   digest::digest(
     canonical_json(list(
-      schema = "ledgr_active_feature_v1",
+      schema = "ledgr_active_feature_v2",
       base_fingerprint = as.character(base),
-      gap_contract = feature_def$gap_contract %||% NULL,
+      history_rule_version = ledgr_feature_history_rule_version,
+      history_class = declarations$history_class,
+      gap_behavior = declarations$gap_behavior,
+      required_fields = declarations$required_fields,
+      input_carry = declarations$input_carry,
+      tolerance = declarations$tolerance,
       history_semantics = "expected_sessions_cutoff_causal"
     )),
     algo = "sha256"
@@ -470,15 +480,16 @@ ledgr_strict_ttr_template_match <- function(feature_def) {
       !is.function(feature_def$series_fn)) {
     return(FALSE)
   }
-  certified <- ledgr_ttr_strict_window_certified(
-    ttr_fn = params$ttr_fn,
-    input = params$input,
-    output = params$output,
-    args = params$args,
-    requires_bars = feature_def$requires_bars,
-    stable_after = feature_def$stable_after
-  )
-  if (!isTRUE(certified) || !requireNamespace("TTR", quietly = TRUE)) {
+  row <- if (identical(params$ttr_fn, "SMA") && identical(params$input, "close") &&
+             is.null(params$output) && is.list(params$args) &&
+             identical(feature_def$stable_after, feature_def$requires_bars)) {
+    ledgr_ttr_catalogue_row(
+      "SMA", "close", NULL, params$args, feature_def$requires_bars
+    )
+  } else {
+    NULL
+  }
+  if (is.null(row) || !requireNamespace("TTR", quietly = TRUE)) {
     return(FALSE)
   }
 

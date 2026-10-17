@@ -656,10 +656,10 @@ equivalence, not a claim that different formulas are numerically identical.
 | Built-in returns | `ledgr_ind_returns(n)` | Supported |
 | Custom bounded window | `ledgr_indicator(..., gap_contract = "strict_window")` | Supported when the declaration is truthful |
 | Public TTR SMA | `ledgr_ind_ttr("SMA", input = "close", n = n)` | Supported for this exact single-output shape |
-| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Unsupported |
-| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported |
-| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Unsupported |
-| Other TTR signatures | any shape not matching the public TTR SMA row | Unsupported |
+| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Supported as bounded catalogue rows |
+| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported: the default forms are history-dependent |
+| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Supported when every output is a bounded catalogue row |
+| Other TTR signatures | any other registered or unregistered TTR form | Supported for bounded catalogue rows; history-dependent and unregistered forms are unsupported |
 <!-- strict-gap-support:end -->
 
 Unsupported declarations fail with `ledgr_indicator_gap_unsupported` before

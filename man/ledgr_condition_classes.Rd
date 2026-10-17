@@ -39,6 +39,8 @@
 \alias{ledgr_session_override_invalid}
 \alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
+\alias{ledgr_invalid_indicator_declaration}
+\alias{ledgr_indicator_history_contradiction}
 \alias{ledgr_invalid_strategy_state}
 \alias{ledgr_strategy_error}
 \alias{ledgr_target_sizing_unavailable}
@@ -535,6 +537,13 @@ raised for malformed qlcal adapter inputs or replacement rows.
 availability-aware feature does not declare the supported strict-window gap
 contract. \code{ledgr_indicator_gap_parity} is raised when the scalar and series
 implementations disagree at the end of a finite strict window.
+
+\code{ledgr_invalid_indicator_declaration} (parent \code{ledgr_invalid_args}) is
+raised for an invalid indicator history class, required-field set or
+tolerance. \code{ledgr_indicator_history_contradiction} is its subclass for
+contradictory declarations: a strict window declared history-dependent, a
+tolerance without a bounded \code{fn}/\code{series_fn} pair, or a registered TTR form
+declared against its catalogue row.
 
 \code{ledgr_invalid_strategy_state} is raised when availability-aware asset state
 is not a named list keyed only by instruments on the current public axis.

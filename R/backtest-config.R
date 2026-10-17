@@ -230,7 +230,16 @@ ledgr_config <- function(snapshot,
             fingerprint = ledgr_indicator_fingerprint(feat)
           )
           if (isTRUE(availability$active)) {
-            if (!is.null(feat$gap_contract)) def$gap_contract <- feat$gap_contract
+            # Only calculation-affecting declarations enter the stored
+            # definition and therefore config identity.
+            declarations <- ledgr_feature_def_declarations(feat)
+            if (!is.null(declarations$gap_contract)) {
+              def$gap_contract <- declarations$gap_contract
+            }
+            def$history_class <- declarations$history_class
+            def$required_fields <- declarations$required_fields
+            def$input_carry <- declarations$input_carry
+            def$tolerance <- declarations$tolerance
             def$fingerprint <- ledgr_active_feature_fingerprint(def)
           }
           return(def)

@@ -372,6 +372,6 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   )
   testthat::expect_identical(
     availability_engine_version,
-    "25d86252352ea2228c9b49cade9eb482e21adf41d01f1ec5ce4a8a7db5809281"
+    "a30b7814b181e239858cc2e315c121dc3d91a21d5fcd231b967f1575d0a491f8"
   )
 })

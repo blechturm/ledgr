@@ -134,6 +134,13 @@
 #' contract. `ledgr_indicator_gap_parity` is raised when the scalar and series
 #' implementations disagree at the end of a finite strict window.
 #'
+#' `ledgr_invalid_indicator_declaration` (parent `ledgr_invalid_args`) is
+#' raised for an invalid indicator history class, required-field set or
+#' tolerance. `ledgr_indicator_history_contradiction` is its subclass for
+#' contradictory declarations: a strict window declared history-dependent, a
+#' tolerance without a bounded `fn`/`series_fn` pair, or a registered TTR form
+#' declared against its catalogue row.
+#'
 #' `ledgr_invalid_strategy_state` is raised when availability-aware asset state
 #' is not a named list keyed only by instruments on the current public axis.
 #'
@@ -524,6 +531,7 @@
 #' @aliases ledgr_facts_snapshot_not_sealed ledgr_facts_snapshot_hash_mismatch
 #' @aliases ledgr_session_adapter_invalid ledgr_session_override_invalid
 #' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
+#' @aliases ledgr_invalid_indicator_declaration ledgr_indicator_history_contradiction
 #' @aliases ledgr_invalid_strategy_state ledgr_strategy_error
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target
 #' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible

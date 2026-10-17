@@ -450,24 +450,27 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     ledgr:::ledgr_compute_feature_series(dense_bars, dense_ttr)
   )
 
-  predicate_cases <- list(
-    certified = list("SMA", "close", NULL, list(n = 2L), 2L, 2L, TRUE),
-    wrong_function = list("EMA", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
-    wrong_rsi_function = list("RSI", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
-    wrong_input = list("SMA", "hl", NULL, list(n = 2L), 2L, 2L, FALSE),
-    selected_output = list("SMA", "close", "value", list(n = 2L), 2L, 2L, FALSE),
-    extra_argument = list("SMA", "close", NULL, list(n = 2L, extra = TRUE), 2L, 2L, FALSE),
-    wrong_requires = list("SMA", "close", NULL, list(n = 2L), 3L, 3L, FALSE),
-    wrong_stability = list("SMA", "close", NULL, list(n = 2L), 2L, 3L, FALSE)
+  # The strict-window certification of TTR forms is the bounded rows of the
+  # package catalogue (v12 Section 6); every other form follows the custom
+  # rules and is not a strict window.
+  catalogue_cases <- list(
+    certified = list("SMA", "close", NULL, list(n = 2L), 2L, "bounded"),
+    history_dependent_ema = list("EMA", "close", NULL, list(n = 2L), 2L, "history_dependent"),
+    history_dependent_rsi = list("RSI", "close", NULL, list(n = 2L), 3L, "history_dependent"),
+    wrong_input = list("SMA", "hl", NULL, list(n = 2L), 2L, NA_character_),
+    selected_output = list("SMA", "close", "value", list(n = 2L), 2L, NA_character_),
+    extra_argument = list("SMA", "close", NULL, list(n = 2L, extra = TRUE), 2L, NA_character_),
+    wrong_requires = list("SMA", "close", NULL, list(n = 2L), 3L, NA_character_)
   )
-  for (case in predicate_cases) {
-    actual <- do.call(
-      ledgr:::ledgr_ttr_strict_window_certified,
-      stats::setNames(case[1:6], c(
-        "ttr_fn", "input", "output", "args", "requires_bars", "stable_after"
+  for (case in catalogue_cases) {
+    row <- do.call(
+      ledgr:::ledgr_ttr_catalogue_row,
+      stats::setNames(case[1:5], c(
+        "ttr_fn", "input", "output", "args", "requires_bars"
       ))
     )
-    testthat::expect_identical(actual, case[[7L]])
+    actual <- if (is.null(row)) NA_character_ else row$history_class[[1L]]
+    testthat::expect_identical(actual, case[[6L]])
   }
   testthat::expect_null(ledgr_ind_ttr("EMA", input = "close", n = 2L)$gap_contract)
   testthat::expect_null(ledgr_ind_ttr("RSI", input = "close", n = 2L)$gap_contract)
@@ -480,7 +483,7 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   testthat::expect_s3_class(bbands_bundle, "ledgr_indicator_bundle")
   testthat::expect_true(all(vapply(
     ledgr:::ledgr_indicator_bundle_indicators(bbands_bundle),
-    function(indicator) is.null(indicator$gap_contract),
+    function(indicator) identical(indicator$gap_contract, "strict_window"),
     logical(1)
   )))
   root <- ledgr_test_source_root()
@@ -694,8 +697,6 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   )
 
   for (unsupported in list(
-    ledgr_ind_ema(2L),
-    ledgr_ind_rsi(2L),
     ledgr_ind_ttr("EMA", input = "close", n = 2L),
     ledgr_ind_ttr("RSI", input = "close", n = 2L)
   )) {
@@ -714,11 +715,18 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     testthat::expect_match(conditionMessage(error), "strict_window", fixed = TRUE)
   }
 
+  history_bundle <- ledgr_ind_ttr_outputs(
+    "MACD",
+    input = "close",
+    nFast = 2L,
+    nSlow = 3L,
+    nSig = 2L
+  )
   bundle_error <- tryCatch(
     ledgr_experiment(
       snapshot,
       function(ctx, params) stop("strategy must not execute"),
-      features = list(bundle),
+      features = list(history_bundle),
       valuation_policy = ledgr_valuation_stale(1),
       cost_model = ledgr_cost_zero()
     ),
