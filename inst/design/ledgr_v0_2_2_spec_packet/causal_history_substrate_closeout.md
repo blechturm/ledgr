@@ -7,8 +7,8 @@ Status: the close review and focused re-reviews 1 and 2 returned
 `CHANGES_REQUIRED`. Re-review 2 found no product defect; its detector and
 branch findings were corrected in a third round that the maintainer directed
 ("iterate until green"), and the reviewer's confirmation returned `PASS`.
-Maintainer acceptance remains open, together with the fast-profile timing gate
-(see the verification record).
+The quiet-host fast profile passed at a 106.53-second median, and the
+maintainer accepted Workstream 41 on 2026-10-17.
 
 ## Necessity and scope
 
@@ -327,6 +327,12 @@ Mutations calculating a training window to the snapshot end, removing the
 complete-header guard or re-advancing every header each fail LTB-0296 or
 LTB-0291. N5 (defensive mixed civil-frame refusal) and N6 (about 6 ms per
 instrument for interval-only membership, linear) are record-only.
+
+With the DAW session that dominated Defender scanning closed, the quiet-host
+fast profile (`ws41_quiet_fast/`) passes all 565 blocks in three runs at
+107.02, 105.61 and 106.53 seconds: a 106.53-second median against the
+112-second bound, with no warnings. This closes the timing gate and shows the
+earlier misses were host load.
 
 Durable evidence is under
 `dev/bench/v0_2_2_history_substrate/evidence/`. Scratch fixture stores and
