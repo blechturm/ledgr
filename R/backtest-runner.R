@@ -1152,7 +1152,9 @@ ledgr_run_fold_impl <- function(config,
             instrument_id = instrument_id,
             definition = def,
             kind = strict_kinds[[def$id]],
-            calculation_start = start_ts_utc,
+            calculation_start = ledgr_history_calculation_start(
+              history_substrate, start_ts_utc
+            ),
             calculation_end = end_ts_utc,
             rows = b
           )

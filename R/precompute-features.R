@@ -17,6 +17,15 @@
 #' ledgr defines causal hydration from earlier history, this is the only
 #' supported feature start.
 #'
+#' For an availability-aware experiment the payload is computed through the
+#' same causal history substrate, history policy and calculation bounds as the
+#' experiment's runs and sweeps, and records its causal axis (data start,
+#' first calculated session, cutoff and session stamps). A sweep reuses it only
+#' when that axis, the cutoff, the history policy, the snapshot and every
+#' candidate's feature identity match exactly; otherwise it refuses before any
+#' candidate runs. A dense payload never serves an availability sweep, nor the
+#' reverse.
+#'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -65,14 +74,43 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     exp = exp
   )
   ledgr_snapshot_ensure_handle(exp$snapshot)
-  bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
-  ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
-
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)
   unique_defs <- ledgr_precompute_unique_feature_defs(resolved$candidates)
-  feature_engine_version <- ledgr_feature_engine_version()
-  payload <- ledgr_precompute_payload(unique_defs, bars_by_id)
-  pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
+  availability_active <- isTRUE(exp$availability$active)
+  feature_engine_version <- ledgr_feature_engine_version(availability_active)
+  history_axis <- NULL
+  if (availability_active) {
+    # Availability experiments precompute through the same causal substrate,
+    # policy and calculation bounds as their runs and sweeps.
+    substrate <- ledgr_history_substrate_for_experiment(
+      exp, meta, end = range$scoring_end
+    )
+    calculation_start <- ledgr_history_calculation_start(
+      substrate, range$scoring_start
+    )
+    payload <- ledgr_history_precompute_payload(
+      unique_defs,
+      substrate,
+      calculation_start = calculation_start,
+      calculation_end = range$scoring_end
+    )
+    pulses_posix <- substrate$axis
+    history_axis <- ledgr_precompute_history_axis(
+      substrate, calculation_start, range$scoring_end
+    )
+    available <- ledgr_precompute_available_counts(
+      substrate$instrument_ids,
+      substrate$bars$observed,
+      substrate$axis,
+      range$scoring_start
+    )
+  } else {
+    bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
+    ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
+    payload <- ledgr_precompute_payload(unique_defs, bars_by_id)
+    pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
+    available <- ledgr_precompute_available_counts_dense(bars_by_id, range$scoring_start)
+  }
   projection <- ledgr_projection_from_payload(
     payload = payload,
     universe = exp$universe,
@@ -80,7 +118,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     feature_engine_version = feature_engine_version,
     alias_index = NULL
   )
-  warmup <- ledgr_precompute_warmup_table(resolved$candidates, bars_by_id, range$scoring_start)
+  warmup <- ledgr_precompute_warmup_table(resolved$candidates, available)
 
   out <- list(
     snapshot_id = exp$snapshot$snapshot_id,
@@ -95,7 +133,8 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     candidate_features = resolved$candidate_features,
     warmup = warmup,
     projection = projection,
-    payload = payload
+    payload = payload,
+    history_axis = history_axis
   )
   structure(out, class = c("ledgr_precomputed_features", "list"))
 }
@@ -177,7 +216,10 @@ ledgr_validate_precomputed_features <- function(precomputed,
   if (!identical(precomputed$grid_labels, param_grid$labels)) {
     rlang::abort("`precomputed_features` candidate labels do not match `param_grid`.", class = "ledgr_precomputed_grid_mismatch")
   }
-  if (!identical(precomputed$feature_engine_version, ledgr_feature_engine_version())) {
+  if (!identical(
+    precomputed$feature_engine_version,
+    ledgr_feature_engine_version(isTRUE(exp$availability$active))
+  )) {
     rlang::abort(
       "`precomputed_features` was built with a different feature engine version. Rerun ledgr_precompute_features().",
       class = "ledgr_precomputed_engine_mismatch"
@@ -249,7 +291,38 @@ ledgr_validate_precomputed_features <- function(precomputed,
   invisible(TRUE)
 }
 
+ledgr_precompute_validate_history_axis <- function(precomputed, expected) {
+  stored <- precomputed$history_axis
+  fields <- c("data_start_utc", "calculation_start_utc", "cutoff_utc", "sessions", "axis_hash")
+  same <- vapply(fields, function(field) identical(stored[[field]], expected[[field]]), logical(1))
+  if (!all(same)) {
+    changed <- fields[!same]
+    rlang::abort(
+      sprintf(
+        paste(
+          "`precomputed_features` was prepared on a different causal axis",
+          "(%s). Rerun ledgr_precompute_features() for this range."
+        ),
+        paste(changed, collapse = ", ")
+      ),
+      class = if (any(changed %in% c("calculation_start_utc", "cutoff_utc"))) {
+        c("ledgr_precomputed_range_mismatch", "ledgr_precomputed_feature_mismatch")
+      } else {
+        c("ledgr_precomputed_history_mismatch", "ledgr_precomputed_feature_mismatch")
+      },
+      changed_fields = changed
+    )
+  }
+  invisible(TRUE)
+}
+
 ledgr_precompute_validate_window_coverage <- function(precomputed, range, window = NULL) {
+  if (!is.null(precomputed$history_axis)) {
+    # Availability payloads carry their exact cutoff and calculation start;
+    # the sweep checks them against its own prepared axis before any
+    # candidate runs.
+    return(invisible(TRUE))
+  }
   if (is.null(window)) {
     if (!identical(precomputed$scoring_range$start, range$scoring_start) ||
         !identical(precomputed$scoring_range$end, range$scoring_end)) {
@@ -742,31 +815,29 @@ ledgr_precompute_payload <- function(unique_defs, bars_by_id, availability_activ
   out
 }
 
-ledgr_precompute_warmup_table <- function(candidates, bars_by_id, scoring_start) {
-  rows <- list()
-  row_idx <- 1L
+# Bars observed at or before the scoring start, per instrument.
+ledgr_precompute_available_counts_dense <- function(bars_by_id, scoring_start) {
   scoring_start_posix <- as.POSIXct(scoring_start, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  for (candidate in candidates) {
-    for (def in candidate$feature_defs) {
-      fingerprint <- ledgr_feature_def_fingerprint(def)
-      for (instrument_id in names(bars_by_id)) {
-        bars <- bars_by_id[[instrument_id]]
-        available <- sum(as.POSIXct(bars$ts_utc, tz = "UTC") <= scoring_start_posix)
-        rows[[row_idx]] <- data.frame(
-          candidate_label = candidate$label,
-          instrument_id = instrument_id,
-          feature_id = def$id,
-          fingerprint = fingerprint,
-          stable_after = as.integer(def$stable_after),
-          available_bars_at_scoring_start = as.integer(available),
-          warmup_achievable = isTRUE(available >= as.integer(def$stable_after)),
-          stringsAsFactors = FALSE
-        )
-        row_idx <- row_idx + 1L
-      }
-    }
-  }
-  if (length(rows) == 0L) {
+  vapply(
+    bars_by_id,
+    function(bars) as.integer(sum(as.POSIXct(bars$ts_utc, tz = "UTC") <= scoring_start_posix)),
+    integer(1)
+  )
+}
+
+ledgr_precompute_available_counts <- function(instrument_ids, observed, axis, scoring_start) {
+  keep <- as.numeric(axis) <= as.numeric(ledgr_history_utc(scoring_start))
+  stats::setNames(
+    as.integer(rowSums(observed[, keep, drop = FALSE])),
+    instrument_ids
+  )
+}
+
+ledgr_precompute_warmup_table <- function(candidates, available) {
+  defs <- unlist(lapply(candidates, function(candidate) {
+    lapply(candidate$feature_defs, function(def) list(label = candidate$label, def = def))
+  }), recursive = FALSE)
+  if (length(defs) == 0L || length(available) == 0L) {
     return(tibble::tibble(
       candidate_label = character(),
       instrument_id = character(),
@@ -777,5 +848,45 @@ ledgr_precompute_warmup_table <- function(candidates, bars_by_id, scoring_start)
       warmup_achievable = logical()
     ))
   }
-  tibble::as_tibble(do.call(rbind, rows))
+  n_inst <- length(available)
+  label <- vapply(defs, function(x) as.character(x$label %||% NA_character_), character(1))
+  feature_id <- vapply(defs, function(x) x$def$id, character(1))
+  fingerprint <- vapply(defs, function(x) ledgr_feature_def_fingerprint(x$def), character(1))
+  stable_after <- vapply(defs, function(x) as.integer(x$def$stable_after), integer(1))
+  each <- function(x) rep(x, each = n_inst)
+  counts <- rep(as.integer(available), times = length(defs))
+  required <- each(stable_after)
+  tibble::tibble(
+    candidate_label = each(label),
+    instrument_id = rep(names(available), times = length(defs)),
+    feature_id = each(feature_id),
+    fingerprint = each(fingerprint),
+    stable_after = required,
+    available_bars_at_scoring_start = counts,
+    warmup_achievable = counts >= required
+  )
+}
+
+# The causal axis an availability payload was prepared on: its data start,
+# feature calculation start, cutoff and the exact session stamps between.
+ledgr_precompute_history_axis <- function(substrate, calculation_start, cutoff) {
+  cutoff <- ledgr_history_utc(cutoff)
+  sessions <- substrate$axis[as.numeric(substrate$axis) <= as.numeric(cutoff)]
+  # Equivalent bounds name the same first calculated session.
+  first <- sessions[as.numeric(sessions) >= as.numeric(ledgr_history_utc(calculation_start))]
+  list(
+    data_start_utc = ledgr_normalize_ts_utc(substrate$data_start_utc),
+    calculation_start_utc = if (length(first) > 0L) {
+      ledgr_normalize_ts_utc(first[[1L]])
+    } else {
+      NA_character_
+    },
+    cutoff_utc = if (length(sessions) > 0L) {
+      ledgr_normalize_ts_utc(sessions[[length(sessions)]])
+    } else {
+      NA_character_
+    },
+    sessions = length(sessions),
+    axis_hash = digest::digest(ledgr_projection_pulse_names(sessions), algo = "sha256")
+  )
 }

@@ -37,6 +37,15 @@ range. \code{warmup_range$start} therefore equals the scoring start, and a sweep
 refuses a payload whose features start before its own scoring start. Until
 ledgr defines causal hydration from earlier history, this is the only
 supported feature start.
+
+For an availability-aware experiment the payload is computed through the
+same causal history substrate, history policy and calculation bounds as the
+experiment's runs and sweeps, and records its causal axis (data start,
+first calculated session, cutoff and session stamps). A sweep reuses it only
+when that axis, the cutoff, the history policy, the snapshot and every
+candidate's feature identity match exactly; otherwise it refuses before any
+candidate runs. A dense payload never serves an availability sweep, nor the
+reverse.
 }
 \section{Articles}{
 

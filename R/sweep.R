@@ -190,9 +190,14 @@ ledgr_sweep_impl <- function(exp,
       class = c("ledgr_compiled_availability_unsupported", "ledgr_invalid_args")
     )
   }
-  if (availability_active && !is.null(precomputed_features)) {
+  if (!is.null(precomputed_features) &&
+      !identical(availability_active, !is.null(precomputed_features$history_axis))) {
     rlang::abort(
-      "Availability-aware sweeps do not accept a dense precomputed feature payload.",
+      if (availability_active) {
+        "Availability-aware sweeps do not accept a dense precomputed feature payload."
+      } else {
+        "Dense sweeps do not accept an availability-aware precomputed feature payload."
+      },
       class = c("ledgr_precomputed_feature_mismatch", "ledgr_invalid_args")
     )
   }
@@ -307,7 +312,9 @@ ledgr_sweep_impl <- function(exp,
       ledgr_history_precompute_payload(
         unique_defs,
         history_substrate,
-        calculation_start = range$scoring_start,
+        calculation_start = ledgr_history_calculation_start(
+          history_substrate, range$scoring_start
+        ),
         calculation_end = range$scoring_end
       )
     } else {
@@ -319,6 +326,23 @@ ledgr_sweep_impl <- function(exp,
       pulses_posix = if (availability_active) history_axis else pulses_posix,
       feature_engine_version = ledgr_feature_engine_version(availability_active),
       alias_index = NULL
+    )
+  } else if (availability_active) {
+    # An availability payload is reused only on the exact causal axis, cutoff,
+    # calculation start and policy this sweep prepares; candidates keep their
+    # full resolved definitions.
+    ledgr_precompute_validate_history_axis(
+      precomputed_features,
+      ledgr_precompute_history_axis(
+        history_substrate,
+        ledgr_history_calculation_start(history_substrate, range$scoring_start),
+        range$scoring_end
+      )
+    )
+    resolved <- ledgr_resolve_feature_candidates(exp, param_grid, stop_on_error = FALSE)
+    runtime_projection <- ledgr_projection_slice(
+      precomputed_features$projection,
+      history_axis
     )
   } else {
     resolved <- ledgr_sweep_resolved_from_precomputed(precomputed_features, param_grid)
@@ -1551,33 +1575,33 @@ ledgr_sweep_worker_eval_candidate_task <- function(task) {
   ledgr_sweep_eval_candidate_task(task, stop_on_error = FALSE)
 }
 
-ledgr_sweep_run_candidate <- function(exp,
-                                      run_id,
-                                      params,
-                                      feature_params,
-                                      execution_seed,
-                                      bars_by_id,
-                                      bars_mat,
-                                      static_bars_views,
-                                      pulses_posix,
-                                      pulses_iso,
-                                      metric_kernel,
-                                      candidate,
-                                      candidate_feature_row,
-                                      precomputed_features,
-                                      runtime_projection,
-                                      snapshot_hash,
-                                      strategy_hash,
-                                      master_seed,
-                                      candidate_id,
-                                      candidate_row,
-                                      retain,
-                                      history_substrate = NULL,
-                                      availability_provider = NULL,
-                                      compiled_accounting_model = NULL,
-                                      availability_config = NULL,
-                                      execution_opportunities_posix = NULL,
-                                      corporate_action_rows = NULL) {
+ledgr_sweep_candidate_execution <- function(exp,
+                                            run_id,
+                                            params,
+                                            feature_params,
+                                            execution_seed,
+                                            bars_by_id,
+                                            bars_mat,
+                                            static_bars_views,
+                                            pulses_posix,
+                                            pulses_iso,
+                                            metric_kernel,
+                                            candidate,
+                                            candidate_feature_row,
+                                            precomputed_features,
+                                            runtime_projection,
+                                            snapshot_hash,
+                                            strategy_hash,
+                                            master_seed,
+                                            candidate_id,
+                                            candidate_row,
+                                            retain,
+                                            history_substrate = NULL,
+                                            availability_provider = NULL,
+                                            compiled_accounting_model = NULL,
+                                            availability_config = NULL,
+                                            execution_opportunities_posix = NULL,
+                                            corporate_action_rows = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
   if (isTRUE(exp$availability$active)) {
@@ -1675,6 +1699,74 @@ ledgr_sweep_run_candidate <- function(exp,
     corporate_action_plan = corporate_action_plan,
     corporate_action_policy = exp$corporate_action_policy
   )
+  list(
+    execution = execution,
+    output_handler = output_handler,
+    feature_fingerprints = feature_fingerprints,
+    telemetry = telemetry
+  )
+}
+
+ledgr_sweep_run_candidate <- function(exp,
+                                      run_id,
+                                      params,
+                                      feature_params,
+                                      execution_seed,
+                                      bars_by_id,
+                                      bars_mat,
+                                      static_bars_views,
+                                      pulses_posix,
+                                      pulses_iso,
+                                      metric_kernel,
+                                      candidate,
+                                      candidate_feature_row,
+                                      precomputed_features,
+                                      runtime_projection,
+                                      snapshot_hash,
+                                      strategy_hash,
+                                      master_seed,
+                                      candidate_id,
+                                      candidate_row,
+                                      retain,
+                                      history_substrate = NULL,
+                                      availability_provider = NULL,
+                                      compiled_accounting_model = NULL,
+                                      availability_config = NULL,
+                                      execution_opportunities_posix = NULL,
+                                      corporate_action_rows = NULL) {
+  prepared <- ledgr_sweep_candidate_execution(
+    exp = exp,
+    run_id = run_id,
+    params = params,
+    feature_params = feature_params,
+    execution_seed = execution_seed,
+    bars_by_id = bars_by_id,
+    bars_mat = bars_mat,
+    static_bars_views = static_bars_views,
+    pulses_posix = pulses_posix,
+    pulses_iso = pulses_iso,
+    metric_kernel = metric_kernel,
+    candidate = candidate,
+    candidate_feature_row = candidate_feature_row,
+    precomputed_features = precomputed_features,
+    runtime_projection = runtime_projection,
+    snapshot_hash = snapshot_hash,
+    strategy_hash = strategy_hash,
+    master_seed = master_seed,
+    candidate_id = candidate_id,
+    candidate_row = candidate_row,
+    retain = retain,
+    history_substrate = history_substrate,
+    availability_provider = availability_provider,
+    compiled_accounting_model = compiled_accounting_model,
+    availability_config = availability_config,
+    execution_opportunities_posix = execution_opportunities_posix,
+    corporate_action_rows = corporate_action_rows
+  )
+  execution <- prepared$execution
+  output_handler <- prepared$output_handler
+  feature_fingerprints <- prepared$feature_fingerprints
+  telemetry <- prepared$telemetry
   engine_start <- ledgr_time_now()
   fold_result <- ledgr_execute_fold(execution, output_handler)
   telemetry$t_engine <- ledgr_time_elapsed(engine_start, ledgr_time_now())

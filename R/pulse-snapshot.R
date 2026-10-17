@@ -1,11 +1,36 @@
-#' Freeze a pulse snapshot for interactive strategy development
+#' Freeze a pulse snapshot for strategy development
 #'
-#' @param snapshot A `ledgr_snapshot` object.
-#' @param universe Character vector of instruments.
-#' @param ts_utc Timestamp to freeze at.
+#' `ledgr_pulse_snapshot()` constructs one strategy context outside execution
+#' so that an author can inspect it or call a strategy manually. It is an
+#' external development and inspection helper: a strategy never calls it.
+#'
+#' Called with an availability-aware `ledgr_experiment`, it derives everything
+#' from that experiment and its concrete parameters: snapshot, universe,
+#' features, history policy, data start and opening state. It returns the
+#' context that a run of the experiment starting at `ts_utc` passes to its
+#' strategy on that first pulse, built by the same observe-and-settle and
+#' context stages over the same shared preparation. It calls no strategy and
+#' creates no fills, events, run rows or other durable state. The context
+#' supports [ledgr_history_frame()].
+#'
+#' Called with a `ledgr_snapshot`, the snapshot-and-universe form builds a
+#' dense context from the given universe, features and positions. That form
+#' has no causal history: [ledgr_history_frame()] refuses it.
+#'
+#' @param snapshot A `ledgr_snapshot`, or an availability-aware
+#'   `ledgr_experiment` for experiment-derived inspection. With an experiment,
+#'   supply only `ts_utc` (by name), `params` and `feature_params`.
+#' @param universe Character vector of instruments (snapshot form only).
+#' @param ts_utc Timestamp to freeze at. For an experiment it must name one
+#'   session close of the declared venue; a `Date` selects that session's
+#'   close.
 #' @param features List of `ledgr_indicator` objects to compute.
 #' @param feature_params JSON-safe list used to resolve parameterized feature
-#'   declarations when `features` is a feature map.
+#'   declarations when `features` (or the experiment's features) is a feature
+#'   map.
+#' @param params JSON-safe strategy parameters used to resolve the experiment's
+#'   feature factory and risk plan, as in [ledgr_run()] (experiment form
+#'   only).
 #' @param cash Cash held alongside `positions`. It is not total account value;
 #'   pulse equity is `cash + sum(positions * current close)`.
 #' @param positions Named numeric vector of positions (NULL = flat).
@@ -14,8 +39,8 @@
 #'   not simulated.
 #'
 #' @return A `ledgr_pulse_context` object with the accessors and planes of the
-#'   strategy context (see `?ledgr_strategy_context`), including `ctx$members`
-#'   and the eligibility planes, with every instrument a member.
+#'   strategy context (see `?ledgr_strategy_context`). The snapshot form makes
+#'   every instrument a member.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -48,9 +73,58 @@ ledgr_pulse_snapshot <- function(snapshot,
                                  feature_params = list(),
                                  cash = 100000,
                                  positions = NULL,
-                                 state_prev = NULL) {
+                                 state_prev = NULL,
+                                 params = NULL) {
+  if (inherits(snapshot, "ledgr_experiment")) {
+    supplied <- c(
+      universe = !missing(universe),
+      features = !missing(features),
+      cash = !missing(cash),
+      positions = !missing(positions),
+      state_prev = !missing(state_prev)
+    )
+    if (any(supplied)) {
+      rlang::abort(
+        sprintf(
+          paste(
+            "An experiment is the configuration authority for pulse inspection;",
+            "supply only `ts_utc`, `params` and `feature_params`, not %s."
+          ),
+          paste(sprintf("`%s`", names(supplied)[supplied]), collapse = ", ")
+        ),
+        class = "ledgr_invalid_args"
+      )
+    }
+    if (!isTRUE(snapshot$availability$active)) {
+      rlang::abort(
+        paste(
+          "Experiment-derived pulse inspection requires an availability-aware",
+          "experiment. Use ledgr_pulse_snapshot(snapshot, universe, ts_utc) for",
+          "a dense inspection context."
+        ),
+        class = c("ledgr_pulse_snapshot_availability_required", "ledgr_invalid_args")
+      )
+    }
+    if (is.null(params)) params <- list()
+    if (!is.list(params) || is.data.frame(params)) {
+      rlang::abort("`params` must be a list. Use `params = list()` when the strategy has no parameters.", class = "ledgr_invalid_args")
+    }
+    if (!is.list(feature_params) || is.data.frame(feature_params)) {
+      rlang::abort("`feature_params` must be a list. Use `feature_params = list()` when features have no parameters.", class = "ledgr_invalid_args")
+    }
+    return(ledgr_pulse_inspection(snapshot, ts_utc, params, feature_params))
+  }
   if (!inherits(snapshot, "ledgr_snapshot")) {
-    rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
+    rlang::abort(
+      "`snapshot` must be a ledgr_snapshot object or an availability-aware ledgr_experiment.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  if (!is.null(params)) {
+    rlang::abort(
+      "`params` applies only to experiment-derived pulse inspection.",
+      class = "ledgr_invalid_args"
+    )
   }
   if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
     rlang::abort("`universe` must be a non-empty character vector.", class = "ledgr_invalid_args")
@@ -330,4 +404,131 @@ ledgr_simplify_indicator_values <- function(values) {
   }
 
   unlist(values, recursive = FALSE, use.names = FALSE)
+}
+
+# Experiment-derived pulse inspection (v12 Section 8, Cut 16 decision 10).
+# It prepares exactly what a run of `exp` starting at the cutoff prepares, runs
+# the shared fold core for that first pulse and stops when P2 hands the
+# context to the strategy: P1 observe-and-settle and P2 context construction
+# run, no strategy is called and P3 through P5 never run. The memory output
+# handler is discarded, so no event, fill or run row is kept.
+ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
+  meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
+  params_info <- ledgr_strategy_params_info(params)
+  feature_params_info <- ledgr_strategy_params_info(feature_params)
+  feature_result <- ledgr_experiment_materialize_feature_result(
+    exp,
+    params = params_info$value,
+    feature_params = feature_params_info$value
+  )
+  cutoff <- ledgr_history_utc(
+    ledgr_snapshot_resolve_civil_boundary(exp$snapshot, ts_utc, edge = "close")
+  )
+  substrate <- ledgr_history_substrate_for_experiment(exp, meta, end = meta$end)
+  calendar <- ledgr_availability_calendar(
+    list(sessions = substrate$sessions), meta$start, meta$end
+  )
+  first <- match(as.numeric(cutoff), as.numeric(calendar$pulses_posix))
+  if (length(cutoff) != 1L || is.na(first)) {
+    rlang::abort(
+      sprintf(
+        "Pulse inspection cutoff %s is not a session close on the experiment's prepared venue axis.",
+        if (length(cutoff) == 1L && !is.na(cutoff)) ledgr_normalize_ts_utc(cutoff) else "NA"
+      ),
+      class = c("ledgr_history_outside_axis", "ledgr_invalid_args")
+    )
+  }
+  n_pulses <- length(calendar$pulses_posix)
+  pulses_posix <- calendar$pulses_posix[seq.int(first, n_pulses)]
+  opportunities <- calendar$execution_opportunities_posix
+  opportunities <- if (first < n_pulses) {
+    opportunities[seq.int(first, n_pulses - 1L)]
+  } else {
+    opportunities[0L]
+  }
+  unique_defs <- ledgr_precompute_unique_feature_defs(
+    list(list(feature_defs = feature_result$features))
+  )
+  payload <- ledgr_history_precompute_payload(
+    unique_defs,
+    substrate,
+    calculation_start = ledgr_history_calculation_start(substrate, cutoff),
+    calculation_end = cutoff
+  )
+  projection <- ledgr_projection_from_payload(
+    payload = payload,
+    universe = exp$universe,
+    pulses_posix = substrate$axis,
+    feature_engine_version = ledgr_feature_engine_version(TRUE),
+    alias_index = NULL
+  )
+  substrate <- ledgr_history_substrate_bind_features(substrate, projection)
+  exp_payload <- ledgr_sweep_exp_payload(exp)
+  exp_payload$strategy <- ledgr_pulse_inspection_capture
+  prepared <- ledgr_sweep_candidate_execution(
+    exp = exp_payload,
+    run_id = "pulse_inspection",
+    params = params_info$value,
+    feature_params = feature_params_info$value,
+    execution_seed = NA_integer_,
+    bars_by_id = list(),
+    bars_mat = NULL,
+    static_bars_views = NULL,
+    pulses_posix = pulses_posix,
+    pulses_iso = ledgr_projection_pulse_names(pulses_posix),
+    metric_kernel = NULL,
+    candidate = list(
+      feature_defs = feature_result$features,
+      alias_map = feature_result$alias_map
+    ),
+    candidate_feature_row = NULL,
+    precomputed_features = NULL,
+    runtime_projection = NULL,
+    snapshot_hash = meta$snapshot_hash,
+    strategy_hash = NA_character_,
+    master_seed = NULL,
+    candidate_id = "pulse_inspection",
+    candidate_row = 1L,
+    retain = ledgr_sweep_retention(),
+    history_substrate = substrate,
+    availability_config = ledgr_sweep_availability_config(exp),
+    execution_opportunities_posix = opportunities,
+    corporate_action_rows = ledgr_corporate_action_rows(
+      get_connection(exp$snapshot),
+      exp$snapshot$snapshot_id
+    )
+  )
+  captured <- tryCatch(
+    {
+      ledgr_execute_fold(prepared$execution, prepared$output_handler)
+      NULL
+    },
+    ledgr_internal_pulse_inspection_capture = function(cnd) cnd$ctx
+  )
+  if (!inherits(captured, "ledgr_pulse_context")) {
+    completion <- prepared$output_handler$completion()
+    rlang::abort(
+      sprintf(
+        "Pulse inspection stopped in observe-and-settle at %s (%s) before the context was built.",
+        ledgr_normalize_ts_utc(cutoff),
+        as.character(completion$stop_reason %||% "no stop reason")
+      ),
+      class = c("ledgr_pulse_inspection_stopped", "ledgr_invalid_args")
+    )
+  }
+  captured
+}
+
+ledgr_pulse_inspection_capture <- function(ctx, params) {
+  signalCondition(structure(
+    class = c("ledgr_internal_pulse_inspection_capture", "condition"),
+    list(message = "pulse inspection capture", call = NULL, ctx = ctx)
+  ))
+  rlang::abort(
+    "Pulse inspection capture was not handled.",
+    class = "ledgr_invalid_fold_execution"
+  )
 }

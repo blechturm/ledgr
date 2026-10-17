@@ -1778,9 +1778,6 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-inspection"></a>
 ### Inspection And Signal Views
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
   `ledgr_pulse_wide()` are read-only inspection views over declared features
   and pulse-known data. They must not precompute unavailable data, mutate
@@ -1805,6 +1802,25 @@ Accepted change pending:
   bundle loops remain unrecorded.
 - Feature maps do not add a new `ctx$features_wide()` contract; the
   public wide pulse inspection API is `ledgr_pulse_wide()`.
+- `ledgr_pulse_snapshot()` is an external development and inspection helper;
+  no strategy callback calls it, receives an experiment or supplies a history
+  policy. Called with an availability-aware `ledgr_experiment`, its concrete
+  `params` and `feature_params`, and a cutoff `ts_utc` naming one session
+  close (a `Date` names that session's close), it takes snapshot, universe,
+  features, history policy, data start and opening state from that experiment
+  alone and accepts no other configuration argument. It prepares what a run of
+  the experiment starting at the cutoff prepares and drives the shared fold
+  core through P1 observe-and-settle and P2 context construction for that
+  first pulse only: due facts settle exactly as in execution, no strategy is
+  called, P3 through P5 never run, and no fill, event, run row or other
+  durable state is written. The returned context is the one that run passes
+  to its strategy, so its data-dependent planes and `ledgr_history_frame()`
+  reads equal that run's first pulse. A cutoff off the prepared venue axis
+  refuses with `ledgr_history_outside_axis`, a pulse whose P1 stops before the
+  context is built refuses with `ledgr_pulse_inspection_stopped`, and a dense
+  experiment refuses with `ledgr_pulse_snapshot_availability_required`. The
+  snapshot-and-universe form remains the dense inspection branch until the
+  execution-core consolidation and carries no history.
 - Strategy evaluation errors are wrapped with pulse context while preserving the
   original condition as the parent. The wrapper must name the run, timestamp,
   instruments, and available feature IDs so users can distinguish strategy

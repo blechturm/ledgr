@@ -1125,6 +1125,21 @@ testthat::test_that("[LTB-0293] availability fold ownership has one history read
     perl = TRUE
   ))
   testthat::expect_match(sweep, "ledgr_sweep_stage_history_tasks", fixed = TRUE)
+
+  # LDG-3063: experiment-derived pulse inspection reaches the substrate only
+  # through the shared fold core, so P1 stays the sole substrate reader there.
+  inspection <- paste(deparse(ledgr:::ledgr_pulse_inspection), collapse = "
+")
+  testthat::expect_length(gregexpr(
+    "ledgr_execute_fold(", inspection, fixed = TRUE
+  )[[1L]], 1L)
+  for (reader in c(
+    "ledgr_history_substrate_bar_packet", "ledgr_history_substrate_fold_reader",
+    "ledgr_history_substrate_bar_frame", "history_reader", "ledgr_history_read(",
+    "ledgr_fold_stage_"
+  )) {
+    testthat::expect_false(grepl(reader, inspection, fixed = TRUE), info = reader)
+  }
 })
 
 # ledgr-test-profile: review

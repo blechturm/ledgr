@@ -207,6 +207,14 @@ ledgr_history_substrate_for_experiment <- function(exp,
   )
 }
 
+# The instant from which every availability entry point calculates feature
+# state: one rule shared by runs, sweeps, windows, explicit precompute and
+# pulse inspection.
+ledgr_history_calculation_start <- function(substrate, scoring_start) {
+  ledgr_history_substrate_require(substrate)
+  scoring_start
+}
+
 ledgr_history_compute_feature_series <- function(substrate,
                                                  instrument_id,
                                                  definition,

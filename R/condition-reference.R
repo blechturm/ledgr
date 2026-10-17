@@ -70,6 +70,10 @@
 #' [ledgr_history_frame()] and [ledgr_history_sufficient()] arguments, and
 #' `ledgr_invalid_history_result` refuses a matrix or sufficiency query on a
 #' value that is not, or no longer matches, a `ledgr_history` result.
+#' `ledgr_pulse_snapshot_availability_required` refuses experiment-derived
+#' [ledgr_pulse_snapshot()] inspection of a dense experiment, and
+#' `ledgr_pulse_inspection_stopped` refuses an inspection cutoff whose
+#' observe-and-settle stage stops before the strategy context is built.
 #' `ledgr_staged_history_mismatch` refuses a worker task
 #' before candidate execution when its staged immutable input is absent or has
 #' a different identity.
@@ -1233,6 +1237,8 @@
 #' @aliases ledgr_history_duplicate_bar
 #' @aliases ledgr_history_outside_axis
 #' @aliases ledgr_history_unavailable
+#' @aliases ledgr_pulse_snapshot_availability_required
+#' @aliases ledgr_pulse_inspection_stopped
 #' @aliases ledgr_history_segment_limit_exceeded
 #' @aliases ledgr_history_segment_missing
 #' @aliases ledgr_history_unknown_instrument
