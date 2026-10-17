@@ -64,6 +64,16 @@ remain covered by their existing tests. The source-derived census therefore
 drops one R-referenced private helper and one test-only seam without adding an
 allowlist or weakening a detector.
 
+## Workstream 41 refresh
+
+The census was regenerated in check mode at correction commit `9c1e352e`
+after the causal history substrate correction. Check mode passes with 71
+connection entries, 158 version rows, 80 hand-built run-config rows, 1,712
+helpers and 2,333 condition call sites. The two history-substrate connections,
+new treatment seams and shifted source locations are source-derived results of
+the implementation. `metadata.csv` names the correction commit; no current-only
+or run-config gate was relaxed.
+
 ## Failure sensitivity
 
 A typed zero-row instance of all six summary families produces six zero row
