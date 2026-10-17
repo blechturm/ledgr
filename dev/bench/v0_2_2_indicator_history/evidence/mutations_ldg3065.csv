@@ -1,0 +1,15 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"m01_default_bounded",TRUE,1,"LTB-0297","[LTB-0297] indicator history declarations are exact and refuse contradictions || [LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m02_no_contradiction",TRUE,1,"LTB-0297","[LTB-0297] indicator history declarations are exact and refuse contradictions",TRUE
+"m03_admission_all_fields",TRUE,1,"LTB-0297","[LTB-0297] indicator history declarations are exact and refuse contradictions",TRUE
+"m04_unregistered_inherits",TRUE,1,"LTB-0297","[LTB-0297] indicator history declarations are exact and refuse contradictions",TRUE
+"m05_tolerance_unchecked",TRUE,1,"LTB-0297","[LTB-0297] indicator history declarations are exact and refuse contradictions",TRUE
+"m06_aroon_width_n",TRUE,1,"LTB-0298","[LTB-0297] indicator history declarations are exact and refuse contradictions || [LTB-0298] catalogue rows are certified on hostile fixtures",TRUE
+"m07_ema_declared_bounded",TRUE,1,"LTB-0298","[LTB-0297] indicator history declarations are exact and refuse contradictions || [LTB-0298] catalogue rows are certified on hostile fixtures || [LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m08_sma_declared_history",TRUE,1,"LTB-0298","[LTB-0297] indicator history declarations are exact and refuse contradictions || [LTB-0298] catalogue rows are certified on hostile fixtures",TRUE
+"m09_fp_drop_required",TRUE,1,"LTB-0299","[LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m10_fp_drop_tolerance",TRUE,1,"LTB-0299","[LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m11_fp_drop_carry",TRUE,1,"LTB-0299","[LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m12_fp_drop_class",TRUE,1,"LTB-0299","[LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m13_fp_display_source",TRUE,1,"LTB-0299","[LTB-0299] rule-4 feature identity binds every history declaration",TRUE
+"m14_config_drop_declarations",TRUE,1,"LTB-0299","[LTB-0299] rule-4 feature identity binds every history declaration",TRUE
