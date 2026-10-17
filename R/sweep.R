@@ -307,7 +307,8 @@ ledgr_sweep_impl <- function(exp,
       ledgr_history_precompute_payload(
         unique_defs,
         history_substrate,
-        calculation_start = range$scoring_start
+        calculation_start = range$scoring_start,
+        calculation_end = range$scoring_end
       )
     } else {
       ledgr_precompute_payload(unique_defs, bars_by_id)

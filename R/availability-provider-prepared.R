@@ -70,6 +70,37 @@ ledgr_membership_apply_prepared_header <- function(known,
   )
 }
 
+ledgr_membership_advance_prepared_header <- function(state,
+                                                      header,
+                                                      headers,
+                                                      header_complete,
+                                                      header_knowledge,
+                                                      set_index,
+                                                      key) {
+  if (isTRUE(header_complete[[header]]) &&
+      header > state$latest_complete) {
+    state$latest_complete <- header
+  }
+  selected_rows <- set_index$by_header[[header]]
+  if (length(selected_rows) == 0L) return(invisible(NULL))
+  selected_rows <- selected_rows[
+    !duplicated(set_index$rows$instrument_id[selected_rows])
+  ]
+  selected <- match(
+    as.character(set_index$rows$instrument_id[selected_rows]), key
+  )
+  keep <- !is.na(selected) & header > state$member_header[selected]
+  if (!any(keep)) return(invisible(NULL))
+  selected <- selected[keep]
+  selected_rows <- selected_rows[keep]
+  state$member_header[selected] <- header
+  state$member_fact[selected] <- as.character(
+    set_index$rows$fact_id[selected_rows]
+  )
+  state$member_knowledge[selected] <- header_knowledge[[header]]
+  invisible(NULL)
+}
+
 ledgr_availability_prepared_membership_plan <- function(data, universe_id, key) {
   headers <- data$membership_sets
   headers <- headers[as.character(headers$universe_id) == universe_id, , drop = FALSE]
@@ -141,89 +172,117 @@ ledgr_availability_prepared_membership_from_plan <- function(plan) {
 
   n_key <- length(key)
   eligible_count <- 0L
-  eligible_cached <- -1L
   last_cutoff <- NA_real_
-  base_known <- logical(n_key)
-  base_state <- logical(n_key)
-  base_reason <- rep("", n_key)
-  base_winner <- rep("", n_key)
-  base_knowledge <- rep(-Inf, n_key)
+  header_state <- new.env(parent = emptyenv())
+  header_state$latest_complete <- 0L
+  header_state$member_header <- integer(n_key)
+  header_state$member_fact <- rep("", n_key)
+  header_state$member_knowledge <- rep(-Inf, n_key)
 
-  prepared_resolve_at <- function(cutoff) {
+  # Header-derived planes change only when a header becomes eligible or the
+  # cursor rewinds. Cache them between those events so a pulse that admits no
+  # new header does no per-instrument work beyond the interval overlay.
+  cached_known <- logical(n_key)
+  cached_member <- logical(n_key)
+  cached_detail <- NULL
+
+  reset_headers <- function() {
+    eligible_count <<- 0L
+    header_state$latest_complete <- 0L
+    header_state$member_header[] <- 0L
+    header_state$member_fact[] <- ""
+    header_state$member_knowledge[] <- -Inf
+    cached_known[] <<- FALSE
+    cached_member[] <<- FALSE
+    cached_detail <<- NULL
+  }
+
+  advance_headers <- function(cutoff) {
     if (is.na(last_cutoff) || cutoff < last_cutoff) {
-      eligible_count <<- findInterval(cutoff, elig_times)
-    } else {
-      while (eligible_count < n_headers && elig_times[[eligible_count + 1L]] <= cutoff) {
-        eligible_count <<- eligible_count + 1L
-      }
+      reset_headers()
     }
     last_cutoff <<- cutoff
-    if (eligible_count != eligible_cached) {
-      eligible <- logical(n_headers)
-      eligible[elig_order[seq_len(eligible_count)]] <- TRUE
-      known <- logical(n_key)
-      state <- logical(n_key)
-      reason <- rep("", n_key)
-      winner <- rep("", n_key)
-      selected_knowledge <- rep(-Inf, n_key)
-      complete_idx <- which(eligible & h_complete)
-      replay_start <- if (length(complete_idx) > 0L) {
-        max(complete_idx)
-      } else {
-        0L
-      }
-      replay_headers <- which(eligible & seq_len(n_headers) >= replay_start)
-      for (h in replay_headers) {
-        applied <- ledgr_membership_apply_prepared_header(
-          known,
-          state,
-          reason,
-          winner,
-          selected_knowledge,
-          h,
-          headers,
-          h_complete,
-          h_knowledge,
-          set_index,
-          key
-        )
-        known <- applied$known
-        state <- applied$state
-        reason <- applied$reason
-        winner <- applied$winner
-        selected_knowledge <- applied$knowledge
-      }
-      base_known <<- known
-      base_state <<- state
-      base_reason <<- reason
-      base_winner <<- winner
-      base_knowledge <<- selected_knowledge
-      eligible_cached <<- eligible_count
+    target_count <- findInterval(cutoff, elig_times)
+    if (target_count <= eligible_count) return(invisible(NULL))
+    for (position in seq.int(eligible_count + 1L, target_count)) {
+      ledgr_membership_advance_prepared_header(
+        header_state,
+        elig_order[[position]],
+        headers,
+        h_complete,
+        h_knowledge,
+        set_index,
+        key
+      )
     }
-    known <- base_known
-    state <- base_state
-    reason <- base_reason
-    winner <- base_winner
-    selected_knowledge <- base_knowledge
-    if (n_interval > 0L) {
-      applicable <- which(iv_start <= cutoff & cutoff < iv_end)
-      if (length(applicable) > 0L) {
-        keep <- !duplicated(iv_idx[applicable], fromLast = TRUE)
-        applicable <- applicable[keep]
-        selected <- iv_idx[applicable]
-        valid <- !is.na(selected)
-        applicable <- applicable[valid]
-        selected <- selected[valid]
-        known[selected] <- TRUE
-        state[selected] <- iv_member[applicable]
-        reason[selected] <- ifelse(
-          iv_member[applicable], "member_asserted", "nonmember_asserted"
-        )
-        winner[selected] <- paste0(
-          "fact:", as.character(interval$fact_id[applicable])
-        )
-        selected_knowledge[selected] <- iv_knowledge[applicable]
-      }
+    eligible_count <<- target_count
+    latest_complete <- header_state$latest_complete
+    member_header <- header_state$member_header
+    cached_member <<- member_header > 0L & member_header >= latest_complete
+    cached_known <<- member_header > 0L | latest_complete > 0L
+    cached_detail <<- NULL
+    invisible(NULL)
+  }
+
+  header_detail <- function() {
+    if (!is.null(cached_detail)) return(cached_detail)
+    latest_complete <- header_state$latest_complete
+    member_header <- header_state$member_header
+    known <- cached_known
+    member <- cached_member
+    reason <- rep("", n_key)
+    reason[known & !member] <- "omitted_from_complete_set"
+    reason[member] <- "member_asserted"
+    winner <- rep("", n_key)
+    selected_knowledge <- rep(-Inf, n_key)
+    if (latest_complete > 0L) {
+      omitted <- known & !member
+      winner[omitted] <- paste0("set:", headers$set_id[[latest_complete]])
+      selected_knowledge[omitted] <- h_knowledge[[latest_complete]]
+    }
+    if (any(member)) {
+      winner[member] <- paste0(
+        "set:", headers$set_id[member_header[member]],
+        "|fact:", header_state$member_fact[member]
+      )
+      selected_knowledge[member] <- header_state$member_knowledge[member]
+    }
+    cached_detail <<- list(
+      reason = reason,
+      winner = winner,
+      knowledge = selected_knowledge
+    )
+    cached_detail
+  }
+
+  interval_applicable <- function(cutoff) {
+    if (n_interval == 0L) return(integer())
+    applicable <- which(iv_start <= cutoff & cutoff < iv_end)
+    if (length(applicable) == 0L) return(integer())
+    applicable <- applicable[!duplicated(iv_idx[applicable], fromLast = TRUE)]
+    applicable[!is.na(iv_idx[applicable])]
+  }
+
+  prepared_resolve_at <- function(cutoff) {
+    advance_headers(cutoff)
+    detail <- header_detail()
+    known <- cached_known
+    state <- cached_member
+    reason <- detail$reason
+    winner <- detail$winner
+    selected_knowledge <- detail$knowledge
+    applicable <- interval_applicable(cutoff)
+    if (length(applicable) > 0L) {
+      selected <- iv_idx[applicable]
+      known[selected] <- TRUE
+      state[selected] <- iv_member[applicable]
+      reason[selected] <- ifelse(
+        iv_member[applicable], "member_asserted", "nonmember_asserted"
+      )
+      winner[selected] <- paste0(
+        "fact:", as.character(interval$fact_id[applicable])
+      )
+      selected_knowledge[selected] <- iv_knowledge[applicable]
     }
     list(
       known = known,
@@ -234,8 +293,16 @@ ledgr_availability_prepared_membership_from_plan <- function(plan) {
     )
   }
   prepared_members_at <- function(cutoff) {
-    resolved <- prepared_resolve_at(cutoff)
-    key[resolved$known & resolved$member]
+    advance_headers(cutoff)
+    known <- cached_known
+    member <- cached_member
+    applicable <- interval_applicable(cutoff)
+    if (length(applicable) > 0L) {
+      selected <- iv_idx[applicable]
+      known[selected] <- TRUE
+      member[selected] <- iv_member[applicable]
+    }
+    key[known & member]
   }
   attr(prepared_members_at, "resolve") <- prepared_resolve_at
   prepared_members_at

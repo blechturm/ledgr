@@ -16,7 +16,7 @@
 "R/feature-inspection.R",176,"ledgr_snapshot_bar_counts","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/history-substrate.R",190,"ledgr_history_substrate_for_experiment","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/indicator-dev.R",102,"ledgr_indicator_dev","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
-"R/precompute-features.R",432,"ledgr_precompute_fetch_bars","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
+"R/precompute-features.R",432,"ledgr_precompute_fetch_bars_frame","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/promotion-context.R",303,"ledgr_run_promotion_context","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/promotion-context.R",64,"ledgr_write_promotion_context","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/public-api.R",156,"ledgr_state_reconstruct","exported_caller_connection","con",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current"

@@ -426,7 +426,7 @@ ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL,
   list(scoring_start = scoring_start, scoring_end = scoring_end, warmup_start = scoring_start)
 }
 
-ledgr_precompute_fetch_bars <- function(snapshot, universe, start, end) {
+ledgr_precompute_fetch_bars_frame <- function(snapshot, universe, start, end) {
   release <- ledgr_snapshot_hold(snapshot)
   on.exit(release(), add = TRUE)
   con <- get_connection(snapshot)
@@ -452,6 +452,11 @@ ledgr_precompute_fetch_bars <- function(snapshot, universe, start, end) {
   }
   rows$instrument_id <- as.character(rows$instrument_id)
   rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+  rows
+}
+
+ledgr_precompute_fetch_bars <- function(snapshot, universe, start, end) {
+  rows <- ledgr_precompute_fetch_bars_frame(snapshot, universe, start, end)
   split(rows, rows$instrument_id)
 }
 

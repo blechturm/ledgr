@@ -52,7 +52,6 @@ ledgr_history_cutoff_rule_version <- 1L
 ledgr_history_treatment_rule_version <- 1L
 
 ledgr_history_policy_normalize <- function(policy) {
-  if (is.null(policy)) policy <- ledgr_history_policy()
   if (!inherits(policy, "ledgr_history_policy") || !is.list(policy) ||
       !identical(policy$schema_version, ledgr_history_policy_schema_version)) {
     rlang::abort(

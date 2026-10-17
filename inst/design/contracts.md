@@ -765,7 +765,11 @@ Accepted change pending:
   price level forward for at most five later expected sessions. Carry is causal
   and field-local: it never fills backward, never fabricates a leading value,
   never carries volume, retains the original source timestamp and age, and
-  stops at lifetime or terminal barriers. It exposes raw missingness and
+  stops at lifetime or terminal barriers. The terminal state follows the shared
+  lifetime resolver, so a later relisting clears it, but the carry barrier is
+  sticky: once a terminal assertion is knowable at the cutoff, carry stays
+  blocked from its boundary onward, even after a relisting (maintainer,
+  2026-10-17). It exposes raw missingness and
   carried price levels separately; LDG-3066 owns the feature-family rule that
   returns and volatility consume no carried price. Output carry is separately
   declared and disabled by default. A valid declared carry may make an

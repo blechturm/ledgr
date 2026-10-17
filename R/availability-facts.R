@@ -1155,6 +1155,19 @@ ledgr_fact_resolve_civil_families <- function(families) {
 ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
   if (is.null(frame) || nrow(frame) == 0L ||
       !"civil_time_json" %in% names(frame)) return(frame)
+  populated <- !is.na(frame$civil_time_json) & frame$civil_time_json != "{}"
+  resolved <- populated & grepl(
+    '"resolved_ts_utc"', frame$civil_time_json, fixed = TRUE
+  )
+  if (any(resolved)) {
+    if (any(populated & !resolved)) {
+      rlang::abort(
+        "Civil-time evidence cannot mix resolved and unresolved rows in one fact frame.",
+        class = c("ledgr_invalid_facts", "ledgr_invalid_args")
+      )
+    }
+    return(frame)
+  }
   candidate_fields <- intersect(
     c(
       "effective_from", "effective_to", "knowledge_time",

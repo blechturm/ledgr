@@ -193,11 +193,9 @@ ledgr_history_substrate_for_experiment <- function(exp,
   calendar <- ledgr_availability_calendar(
     list(sessions = data$sessions), meta$start, end
   )
-  bars_by_id <- ledgr_precompute_fetch_bars(
+  bars <- ledgr_precompute_fetch_bars_frame(
     exp$snapshot, exp$universe, meta$start, end
   )
-  bars <- do.call(rbind, unname(bars_by_id))
-  rownames(bars) <- NULL
   ledgr_history_substrate(
     bars = bars,
     instrument_ids = exp$universe,
@@ -214,14 +212,20 @@ ledgr_history_compute_feature_series <- function(substrate,
                                                  definition,
                                                  kind = NULL,
                                                  calculation_start = NULL,
+                                                 calculation_end = NULL,
                                                  rows = NULL) {
   if (is.null(rows)) {
     rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
   }
   keep <- rep.int(TRUE, nrow(rows))
+  # Bounds arrive as ISO strings or POSIXct; parse both through the exact
+  # instant reader so an ISO time is never truncated to its calendar date.
+  ts <- as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC"))
   if (!is.null(calculation_start)) {
-    keep <- as.POSIXct(rows$ts_utc, tz = "UTC") >=
-      as.POSIXct(calculation_start, tz = "UTC")
+    keep <- keep & ts >= as.numeric(ledgr_history_utc(calculation_start))
+  }
+  if (!is.null(calculation_end)) {
+    keep <- keep & ts <= as.numeric(ledgr_history_utc(calculation_end))
   }
   calculated <- ledgr_compute_feature_series_strict(
     rows[keep, , drop = FALSE], definition, kind = kind
@@ -234,7 +238,8 @@ ledgr_history_compute_feature_series <- function(substrate,
 
 ledgr_history_precompute_payload <- function(unique_defs,
                                              substrate,
-                                             calculation_start = NULL) {
+                                             calculation_start = NULL,
+                                             calculation_end = NULL) {
   ledgr_history_substrate_require(substrate)
   fingerprints <- names(unique_defs)
   out <- lapply(fingerprints, function(fingerprint) {
@@ -258,6 +263,7 @@ ledgr_history_precompute_payload <- function(unique_defs,
         definition = def,
         kind = kinds[[fingerprint]],
         calculation_start = calculation_start,
+        calculation_end = calculation_end,
         rows = rows
       )
     }
@@ -906,6 +912,128 @@ ledgr_history_sparse_fact_segments <- function(rows,
   out
 }
 
+ledgr_history_fact_segments_by_instrument <- function(rows,
+                                                       instrument_ids,
+                                                       axis,
+                                                       initial,
+                                                       family,
+                                                       segment_limit,
+                                                       resolve_one) {
+  n_inst <- length(instrument_ids)
+  row_instrument <- match(as.character(rows$instrument_id), instrument_ids)
+  fact_count <- tabulate(row_instrument, nbins = n_inst)
+  by_instrument <- split(
+    seq_len(nrow(rows)),
+    factor(row_instrument, levels = seq_len(n_inst)),
+    drop = FALSE
+  )
+  dictionaries <- list(
+    state = ledgr_history_segment_dictionary(),
+    winner = ledgr_history_segment_dictionary(),
+    reason = ledgr_history_segment_dictionary()
+  )
+  chunks <- vector("list", nrow(rows) + 1L)
+  chunk_count <- 1L
+  chunks[[chunk_count]] <- list(
+    instrument = as.integer(seq_len(n_inst)),
+    observation_from = rep(1L, n_inst),
+    observation_to = rep(as.integer(length(axis) + 1L), n_inst),
+    knowledge_from = rep(-Inf, n_inst),
+    state = dictionaries$state$encode(rep(initial$state, n_inst)),
+    winner = dictionaries$winner$encode(rep(initial$winner, n_inst)),
+    reason = dictionaries$reason$encode(rep(initial$reason, n_inst))
+  )
+  if (length(axis) > 0L) {
+    for (instrument in which(fact_count > 0L)) {
+      indices <- by_instrument[[instrument]]
+      knowledge <- as.numeric(as.POSIXct(
+        rows$knowledge_time[indices], tz = "UTC"
+      ))
+      epochs <- sort(unique(knowledge[is.finite(knowledge)]))
+      breaks <- ledgr_history_observation_breaks(
+        axis,
+        rows$effective_from[indices],
+        rows$effective_to[indices]
+      )
+      ends <- c(breaks[-1L], length(axis) + 1L)
+      current_state <- rep(initial$state, length(breaks))
+      current_winner <- rep(initial$winner, length(breaks))
+      current_reason <- rep(initial$reason, length(breaks))
+      for (epoch in epochs) {
+        newly_known <- indices[knowledge == epoch]
+        start <- ledgr_history_epoch_start(
+          axis, rows$effective_from[newly_known]
+        )
+        start_pos <- match(TRUE, breaks >= start, nomatch = length(breaks) + 1L)
+        if (start_pos > length(breaks)) next
+        changed_at <- integer(length(breaks))
+        changed_state <- changed_winner <- changed_reason <-
+          character(length(breaks))
+        changed_count <- 0L
+        for (break_pos in seq.int(start_pos, length(breaks))) {
+          answer <- resolve_one(indices, axis[[breaks[[break_pos]]]], epoch)
+          changed <- !identical(answer$state, current_state[[break_pos]]) ||
+            !identical(answer$winner, current_winner[[break_pos]]) ||
+            !identical(answer$reason, current_reason[[break_pos]])
+          if (!changed) next
+          changed_count <- changed_count + 1L
+          changed_at[[changed_count]] <- break_pos
+          changed_state[[changed_count]] <- answer$state
+          changed_winner[[changed_count]] <- answer$winner
+          changed_reason[[changed_count]] <- answer$reason
+          current_state[[break_pos]] <- answer$state
+          current_winner[[break_pos]] <- answer$winner
+          current_reason[[break_pos]] <- answer$reason
+        }
+        if (changed_count == 0L) next
+        selected <- seq_len(changed_count)
+        chunk_count <- chunk_count + 1L
+        chunks[[chunk_count]] <- ledgr_history_segment_epoch_cells(
+          inst = rep.int(instrument, changed_count),
+          obs = breaks[changed_at[selected]],
+          obs_to = ends[changed_at[selected]],
+          knowledge = epoch,
+          state = dictionaries$state$encode(changed_state[selected]),
+          winner = dictionaries$winner$encode(changed_winner[selected]),
+          reason = dictionaries$reason$encode(changed_reason[selected])
+        )
+      }
+    }
+  }
+  out <- ledgr_history_segment_bind(
+    chunks[seq_len(chunk_count)], dictionaries, n_inst
+  )
+  out$family <- family
+  out$fact_count <- as.integer(fact_count)
+  out$segment_count <- as.integer(out$count)
+  out$segment_ratio <- out$segment_count / pmax(out$fact_count, 1L)
+  limit <- if (is.null(segment_limit)) {
+    pmax(4L * out$fact_count, 16L)
+  } else {
+    rep(as.integer(segment_limit), n_inst)
+  }
+  exceeded <- which(out$segment_count > limit)
+  if (length(exceeded) > 0L) {
+    i <- exceeded[[1L]]
+    rlang::abort(
+      sprintf(
+        "History segment limit exceeded for instrument `%s`, family `%s`: %d segments for %d facts (ratio %.3f; limit %d).",
+        instrument_ids[[i]], family, out$segment_count[[i]],
+        out$fact_count[[i]], out$segment_ratio[[i]], limit[[i]]
+      ),
+      class = c("ledgr_history_segment_limit_exceeded", "ledgr_invalid_config"),
+      instrument_id = instrument_ids[[i]],
+      family = family,
+      fact_count = out$fact_count[[i]],
+      segment_count = out$segment_count[[i]],
+      segment_ratio = out$segment_ratio[[i]],
+      segment_limit = limit[[i]]
+    )
+  }
+  out$limit <- as.integer(limit)
+  out
+}
+
 ledgr_history_membership_is_diagonal <- function(headers, interval) {
   same_clock <- function(effective, knowledge) {
     if (length(effective) == 0L) return(TRUE)
@@ -1227,6 +1355,37 @@ ledgr_history_membership_segments <- function(data,
       segment_limit
     ))
   }
+  if (nrow(headers) == 0L && nrow(interval) > 0L) {
+    # Without set headers an instrument's membership depends only on its own
+    # interval rows, so compile each instrument over its own epochs and breaks
+    # with the canonical resolver applied to that instrument's rows.
+    interval_data <- list(membership_sets = headers)
+    return(ledgr_history_fact_segments_by_instrument(
+      rows = interval,
+      instrument_ids = instrument_ids,
+      axis = axis,
+      initial = list(
+        state = "unknown", winner = "", reason = "unknown_no_usable_evidence"
+      ),
+      family = "membership",
+      segment_limit = segment_limit,
+      resolve_one = function(indices, observation, cutoff) {
+        interval_data$membership <- interval[indices, , drop = FALSE]
+        answer <- ledgr_membership_resolve_prepared(
+          interval_data,
+          universe_id,
+          observation,
+          instruments = as.character(interval$instrument_id[[indices[[1L]]]]),
+          knowledge_cutoff = as.POSIXct(cutoff, origin = "1970-01-01", tz = "UTC")
+        )$rows
+        list(
+          state = ledgr_history_membership_state(answer$member, answer$reason),
+          winner = as.character(answer$evidence_ids),
+          reason = as.character(answer$reason)
+        )
+      }
+    ))
+  }
   if (ledgr_history_membership_is_diagonal(headers, interval)) {
     return(ledgr_history_membership_diagonal_segments(
       data,
@@ -1283,58 +1442,36 @@ ledgr_history_status_segments <- function(data,
   )
   if (!is.null(sparse)) return(sparse)
   knowledge <- if (nrow(rows) > 0L) as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC")) else numeric()
-  epochs <- sort(unique(knowledge[is.finite(knowledge)]))
-  epoch_start <- vapply(epochs, function(epoch) {
-    ledgr_history_epoch_start(axis, rows$effective_from[knowledge == epoch])
-  }, integer(1))
   status <- as.character(rows$status)
   precedence <- as.integer(rows$precedence)
   fact_id <- as.character(rows$fact_id)
   lineage <- if (nrow(rows) > 0L) ledgr_status_lineage(rows) else list()
-  inst <- as.character(rows$instrument_id)
-  by_instrument <- split(
-    seq_len(nrow(rows)),
-    factor(match(inst, instrument_ids), levels = seq_along(instrument_ids))
-  )
-  active_instrument <- which(lengths(by_instrument) > 0L)
   effective <- if (nrow(rows) > 0L) as.numeric(as.POSIXct(rows$effective_from, tz = "UTC")) else numeric()
   end <- if (nrow(rows) > 0L) as.numeric(as.POSIXct(rows$effective_to, tz = "UTC")) else numeric()
   end[is.na(end)] <- Inf
-  resolver <- function(observation, cutoff) {
-    s <- as.numeric(observation)
-    out_state <- rep(if (isTRUE(declared)) "unknown" else "active", length(instrument_ids))
-    out_winner <- rep("", length(instrument_ids))
-    out_reason <- rep(if (isTRUE(declared)) "status_unknown" else "status_undeclared_active", length(instrument_ids))
-    known <- knowledge <= cutoff & effective <= s & s < end
-    for (i in active_instrument) {
-      candidate <- by_instrument[[i]]
-      applicable <- candidate[known[candidate]]
-      if (length(applicable) == 0L) next
-      answer <- ledgr_history_status_resolve_applicable(
-        applicable, status, precedence, fact_id, lineage
-      )
-      out_state[[i]] <- answer$state
-      out_winner[[i]] <- answer$winner
-      out_reason[[i]] <- answer$reason
-    }
-    list(state = out_state, winner = out_winner, reason = out_reason)
-  }
-  fact_count <- tabulate(match(inst, instrument_ids), nbins = length(instrument_ids))
-  observation_breaks <- ledgr_history_observation_breaks(
-    axis, rows$effective_from, rows$effective_to
+  initial <- list(
+    state = if (isTRUE(declared)) "unknown" else "active",
+    winner = "",
+    reason = if (isTRUE(declared)) "status_unknown" else "status_undeclared_active"
   )
-  ledgr_history_segments_build(
-    axis, instrument_ids, epochs, epoch_start,
-    initial = list(
-      state = if (isTRUE(declared)) "unknown" else "active",
-      winner = "",
-      reason = if (isTRUE(declared)) "status_unknown" else "status_undeclared_active"
-    ),
-    resolve = resolver,
-    fact_count = fact_count,
+  resolve_one <- function(indices, observation, cutoff) {
+    s <- as.numeric(observation)
+    applicable <- indices[
+      knowledge[indices] <= cutoff & effective[indices] <= s & s < end[indices]
+    ]
+    if (length(applicable) == 0L) return(initial)
+    ledgr_history_status_resolve_applicable(
+      applicable, status, precedence, fact_id, lineage
+    )
+  }
+  ledgr_history_fact_segments_by_instrument(
+    rows = rows,
+    instrument_ids = instrument_ids,
+    axis = axis,
+    initial = initial,
     family = "trading_status",
     segment_limit = segment_limit,
-    observation_breaks = observation_breaks
+    resolve_one = resolve_one
   )
 }
 
@@ -1358,55 +1495,35 @@ ledgr_history_lifetime_segments <- function(data,
   )
   if (!is.null(sparse)) return(sparse)
   knowledge <- if (nrow(rows) > 0L) as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC")) else numeric()
-  epochs <- sort(unique(knowledge[is.finite(knowledge)]))
-  epoch_start <- vapply(epochs, function(epoch) {
-    ledgr_history_epoch_start(axis, rows$effective_from[knowledge == epoch])
-  }, integer(1))
   assertion <- as.character(rows$assertion)
   terminal <- as.character(rows$terminal_event)
   terminal[is.na(terminal)] <- ""
   fact_id <- as.character(rows$fact_id)
-  inst <- as.character(rows$instrument_id)
-  by_instrument <- split(
-    seq_len(nrow(rows)),
-    factor(match(inst, instrument_ids), levels = seq_along(instrument_ids))
-  )
-  active_instrument <- which(lengths(by_instrument) > 0L)
   effective <- if (nrow(rows) > 0L) as.numeric(as.POSIXct(rows$effective_from, tz = "UTC")) else numeric()
   end <- if (nrow(rows) > 0L) as.numeric(as.POSIXct(rows$effective_to, tz = "UTC")) else numeric()
   end[is.na(end)] <- Inf
   rank <- if (nrow(rows) > 0L) order(order(effective, knowledge, seq_len(nrow(rows)))) else integer()
-  resolver <- function(observation, cutoff) {
-    s <- as.numeric(observation)
-    out_state <- rep("unknown", length(instrument_ids))
-    out_winner <- rep("", length(instrument_ids))
-    out_reason <- rep("lifetime_unknown", length(instrument_ids))
-    known <- knowledge <= cutoff & effective <= s & s < end
-    for (i in active_instrument) {
-      candidate <- by_instrument[[i]]
-      applicable <- candidate[known[candidate]]
-      if (length(applicable) == 0L) next
-      answer <- ledgr_history_lifetime_resolve_applicable(
-        applicable, assertion, terminal, fact_id, rank
-      )
-      out_state[[i]] <- answer$state
-      out_winner[[i]] <- answer$winner
-      out_reason[[i]] <- answer$reason
-    }
-    list(state = out_state, winner = out_winner, reason = out_reason)
-  }
-  fact_count <- tabulate(match(inst, instrument_ids), nbins = length(instrument_ids))
-  observation_breaks <- ledgr_history_observation_breaks(
-    axis, rows$effective_from, rows$effective_to
+  initial <- list(
+    state = "unknown", winner = "", reason = "lifetime_unknown"
   )
-  ledgr_history_segments_build(
-    axis, instrument_ids, epochs, epoch_start,
-    initial = list(state = "unknown", winner = "", reason = "lifetime_unknown"),
-    resolve = resolver,
-    fact_count = fact_count,
+  resolve_one <- function(indices, observation, cutoff) {
+    s <- as.numeric(observation)
+    applicable <- indices[
+      knowledge[indices] <= cutoff & effective[indices] <= s & s < end[indices]
+    ]
+    if (length(applicable) == 0L) return(initial)
+    ledgr_history_lifetime_resolve_applicable(
+      applicable, assertion, terminal, fact_id, rank
+    )
+  }
+  ledgr_history_fact_segments_by_instrument(
+    rows = rows,
+    instrument_ids = instrument_ids,
+    axis = axis,
+    initial = initial,
     family = "lifetime",
     segment_limit = segment_limit,
-    observation_breaks = observation_breaks
+    resolve_one = resolve_one
   )
 }
 
@@ -1416,79 +1533,62 @@ ledgr_history_terminal_segments <- function(data,
                                              segment_limit) {
   rows <- data$lifetime
   if (!is.data.frame(rows)) rows <- data.frame()
-  terminal <- if (nrow(rows) > 0L) {
-    as.character(rows$terminal_event)
+  knowledge <- if (nrow(rows) > 0L) {
+    as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC"))
   } else {
-    character()
+    numeric()
   }
-  keep <- !is.na(terminal) & nzchar(terminal)
-  rows <- rows[keep, , drop = FALSE]
-  terminal <- terminal[keep]
-  if (nrow(rows) > 0L) {
-    rows$effective_to <- as.POSIXct(
-      rep(NA_real_, nrow(rows)), origin = "1970-01-01", tz = "UTC"
+  effective <- if (nrow(rows) > 0L) {
+    as.numeric(as.POSIXct(rows$effective_from, tz = "UTC"))
+  } else {
+    numeric()
+  }
+  end <- if (nrow(rows) > 0L) {
+    as.numeric(as.POSIXct(rows$effective_to, tz = "UTC"))
+  } else {
+    numeric()
+  }
+  end[is.na(end)] <- Inf
+  assertion <- as.character(rows$assertion)
+  terminal <- as.character(rows$terminal_event)
+  terminal[is.na(terminal)] <- ""
+  fact_id <- as.character(rows$fact_id)
+  rank <- if (nrow(rows) > 0L) {
+    order(order(effective, knowledge, seq_len(nrow(rows))))
+  } else {
+    integer()
+  }
+  initial <- list(
+    state = "", winner = "", reason = "terminal_not_asserted"
+  )
+  resolve_one <- function(indices, observation, cutoff) {
+    observation <- as.numeric(observation)
+    applicable <- indices[
+      knowledge[indices] <= cutoff & effective[indices] <= observation &
+        observation < end[indices]
+    ]
+    if (length(applicable) == 0L) return(initial)
+    answer <- ledgr_history_lifetime_resolve_applicable(
+      applicable, assertion, terminal, fact_id, rank
+    )
+    list(
+      state = answer$terminal_event,
+      winner = answer$winner,
+      reason = if (nzchar(answer$terminal_event)) {
+        "terminal_asserted"
+      } else {
+        "terminal_not_asserted"
+      }
     )
   }
-  sparse <- ledgr_history_sparse_fact_segments(
+  ledgr_history_fact_segments_by_instrument(
     rows = rows,
     instrument_ids = instrument_ids,
     axis = axis,
-    state = terminal,
-    initial = list(
-      state = "", winner = "", reason = "terminal_not_asserted"
-    ),
-    reason = "terminal_asserted",
-    family = "lifetime_terminal",
-    segment_limit = segment_limit
-  )
-  if (!is.null(sparse)) return(sparse)
-
-  knowledge <- as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC"))
-  epochs <- sort(unique(knowledge[is.finite(knowledge)]))
-  epoch_start <- vapply(epochs, function(epoch) {
-    ledgr_history_epoch_start(axis, rows$effective_from[knowledge == epoch])
-  }, integer(1))
-  effective <- as.numeric(as.POSIXct(rows$effective_from, tz = "UTC"))
-  fact_id <- as.character(rows$fact_id)
-  instrument <- as.character(rows$instrument_id)
-  by_instrument <- split(
-    seq_len(nrow(rows)),
-    factor(match(instrument, instrument_ids), levels = seq_along(instrument_ids))
-  )
-  active_instrument <- which(lengths(by_instrument) > 0L)
-  rank <- order(order(effective, knowledge, seq_len(nrow(rows))))
-  resolve <- function(observation, cutoff) {
-    observation <- as.numeric(observation)
-    out_state <- rep("", length(instrument_ids))
-    out_winner <- rep("", length(instrument_ids))
-    out_reason <- rep("terminal_not_asserted", length(instrument_ids))
-    known <- knowledge <= cutoff & effective <= observation
-    for (i in active_instrument) {
-      candidate <- by_instrument[[i]]
-      applicable <- candidate[known[candidate]]
-      if (length(applicable) == 0L) next
-      winner <- applicable[[which.max(rank[applicable])]]
-      out_state[[i]] <- terminal[[winner]]
-      out_winner[[i]] <- fact_id[[winner]]
-      out_reason[[i]] <- "terminal_asserted"
-    }
-    list(state = out_state, winner = out_winner, reason = out_reason)
-  }
-  fact_count <- tabulate(
-    match(instrument, instrument_ids), nbins = length(instrument_ids)
-  )
-  ledgr_history_segments_build(
-    axis, instrument_ids, epochs, epoch_start,
-    initial = list(
-      state = "", winner = "", reason = "terminal_not_asserted"
-    ),
-    resolve = resolve,
-    fact_count = fact_count,
+    initial = initial,
     family = "lifetime_terminal",
     segment_limit = segment_limit,
-    observation_breaks = ledgr_history_observation_breaks(
-      axis, rows$effective_from
-    )
+    resolve_one = resolve_one
   )
 }
 
@@ -1600,18 +1700,37 @@ ledgr_history_substrate_terminal_at <- function(
     cutoff,
     observation_idx = seq_along(substrate$axis),
     instrument_idx = seq_along(substrate$instrument_ids)) {
+  # The terminal state follows the shared lifetime resolver, but the carry
+  # barrier it implies is sticky (v12 Section 5): once a terminal assertion is
+  # knowable at the cutoff, every later column stays blocked, even after a
+  # relisting. Resolve over the whole prefix so a later window still sees an
+  # earlier terminal, then keep the requested columns.
+  observation_idx <- as.integer(observation_idx)
+  instrument_idx <- as.integer(instrument_idx)
+  if (length(observation_idx) == 0L) {
+    return(matrix(FALSE, nrow = length(instrument_idx), ncol = 0L))
+  }
+  prefix_idx <- seq_len(max(observation_idx))
   terminal <- ledgr_history_substrate_fact_plane(
     substrate,
     "lifetime_terminal",
     cutoff,
-    observation_idx,
+    prefix_idx,
     instrument_idx
   )
-  matrix(
+  asserted <- matrix(
     nzchar(terminal$state),
     nrow = nrow(terminal$state),
     ncol = ncol(terminal$state)
   )
+  first <- rep.int(length(prefix_idx) + 1L, length(instrument_idx))
+  hit <- which(asserted, arr.ind = TRUE)
+  if (nrow(hit) > 0L) {
+    hit <- hit[order(hit[, 1L], hit[, 2L]), , drop = FALSE]
+    hit <- hit[!duplicated(hit[, 1L]), , drop = FALSE]
+    first[hit[, 1L]] <- hit[, 2L]
+  }
+  outer(first, observation_idx, "<=")
 }
 
 ledgr_history_segments_diagonal_state <- function(segments, axis) {

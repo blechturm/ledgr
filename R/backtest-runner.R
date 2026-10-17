@@ -794,6 +794,7 @@ ledgr_run_fold_impl <- function(config,
     availability_active = availability_active
   )
   snapshot_hash_for_features <- snapshot$snapshot_hash
+  history_policy <- ledgr_history_identity_require_current(cfg$history)
   corporate_action_rows <- ledgr_corporate_action_rows(con, snapshot_id)
   availability_data <- if (availability_active && is.null(history_substrate)) {
     ledgr_availability_provider_data(con, snapshot_id)
@@ -809,7 +810,7 @@ ledgr_run_fold_impl <- function(config,
       ledgr_history_substrate_validate_owner(
         history_substrate,
         snapshot_hash = snapshot_hash_for_features,
-        history_policy = cfg$history_policy,
+        history_policy = history_policy,
         instrument_ids = instrument_ids,
         required_start = as.POSIXct(history_start, tz = "UTC"),
         required_end = end_ts_utc
@@ -1050,12 +1051,14 @@ ledgr_run_fold_impl <- function(config,
 
     if (availability_active) {
       if (is.null(history_substrate)) {
+        availability_config <- cfg
+        availability_config$history_policy <- history_policy
         history_substrate <- ledgr_history_substrate(
           bars = bars_all,
           instrument_ids = instrument_ids,
           axis = history_axis,
           availability_data = availability_data,
-          availability_config = cfg,
+          availability_config = availability_config,
           snapshot_hash = snapshot_hash_for_features,
           source_start_utc = as.POSIXct(history_start, tz = "UTC")
         )
@@ -1150,6 +1153,7 @@ ledgr_run_fold_impl <- function(config,
             definition = def,
             kind = strict_kinds[[def$id]],
             calculation_start = start_ts_utc,
+            calculation_end = end_ts_utc,
             rows = b
           )
           if (length(values) != nrow(b)) {

@@ -575,6 +575,14 @@ testthat::test_that("[LTB-0286] corporate-action clocks distinguish three cases"
     civil_evidence$knowledge_time$resolved_ts_utc,
     civil_evidence$entitlement_time$resolved_ts_utc
   ))
+  rebundled <- do.call(ledgr_facts, civil_bundle$families)
+  testthat::expect_identical(rebundled, civil_bundle)
+  testthat::expect_identical(
+    ledgr:::ledgr_facts_family(
+      rebundled, "equity_corporate_actions"
+    )[[1L]]$rows$civil_time_json,
+    civil_row$civil_time_json
+  )
   audit <- ledgr_facts_equity_corporate_actions(base)
   testthat::expect_true(is.na(audit$rows$knowledge_time[[1L]]))
 
@@ -653,9 +661,9 @@ testthat::test_that("[LTB-0286] corporate-action clocks distinguish three cases"
 })
 
 testthat::test_that("[LTB-0287] history policy is canonical identity input", {
-  testthat::expect_identical(
+  testthat::expect_error(
     ledgr:::ledgr_history_policy_identity(NULL),
-    ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+    class = "ledgr_invalid_history_policy"
   )
   testthat::expect_null(ledgr_history_policy(price_carry = NULL)$price_carry)
   testthat::expect_null(ledgr_history_policy()$output_carry)
@@ -686,6 +694,16 @@ testthat::test_that("[LTB-0287] history policy is canonical identity input", {
   repeated <- ledgr_run(fixture$experiment, run_id = "history-default-2")
   on.exit(close(repeated), add = TRUE)
   testthat::expect_identical(config_hash(default$config), config_hash(repeated$config))
+  # Public omission uses the documented default; only an internal NULL refuses.
+  omitted_exp <- ledgr_experiment(
+    fixture$snapshot,
+    fixture$experiment$strategy,
+    universe = ledgr_universe_members("research"),
+    cost_model = ledgr_cost_zero()
+  )
+  omitted <- ledgr_run(omitted_exp, run_id = "history-omitted")
+  on.exit(close(omitted), add = TRUE)
+  testthat::expect_identical(config_hash(default$config), config_hash(omitted$config))
 
   for (field in c(
     "axis_rule_version", "cutoff_rule_version", "treatment_rule_version"
