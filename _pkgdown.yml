@@ -225,6 +225,10 @@ reference:
       - ledgr_pulse_snapshot
       - print.ledgr_pulse_context
       - close.ledgr_pulse_context
+      - ledgr_history_frame
+      - ledgr_history_matrix
+      - ledgr_history_sufficient
+      - ledgr_history_policy
       - ledgr_feature_map
       - print.ledgr_feature_map
       - ledgr_passed_warmup

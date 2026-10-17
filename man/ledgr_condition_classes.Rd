@@ -216,6 +216,8 @@
 \alias{ledgr_invalid_history_substrate}
 \alias{ledgr_invalid_history_treatment}
 \alias{ledgr_invalid_history_field}
+\alias{ledgr_invalid_history_request}
+\alias{ledgr_invalid_history_result}
 \alias{ledgr_invalid_indicator_bundle}
 \alias{ledgr_invalid_ledger_event}
 \alias{ledgr_invalid_ledger_meta}
@@ -383,6 +385,7 @@
 \alias{ledgr_walk_forward_invalid_selection_rule}
 \alias{ledgr_history_duplicate_bar}
 \alias{ledgr_history_outside_axis}
+\alias{ledgr_history_unavailable}
 \alias{ledgr_history_segment_limit_exceeded}
 \alias{ledgr_history_segment_missing}
 \alias{ledgr_history_unknown_instrument}
@@ -462,7 +465,13 @@ internal segment plane rather than returning fabricated state.
 fact count, segment count, ratio and limit when causal preparation exceeds
 its declared bound. \code{ledgr_invalid_history_treatment} and
 \code{ledgr_invalid_history_field} refuse malformed treatment evidence or an
-unsupported bar field. \code{ledgr_staged_history_mismatch} refuses a worker task
+unsupported bar field. \code{ledgr_history_unavailable} refuses a history read
+from a dense or snapshot-and-universe pulse context, which has no causal
+history. \code{ledgr_invalid_history_request} refuses malformed
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and \code{\link[=ledgr_history_sufficient]{ledgr_history_sufficient()}} arguments, and
+\code{ledgr_invalid_history_result} refuses a matrix or sufficiency query on a
+value that is not, or no longer matches, a \code{ledgr_history} result.
+\code{ledgr_staged_history_mismatch} refuses a worker task
 before candidate execution when its staged immutable input is absent or has
 a different identity.
 }

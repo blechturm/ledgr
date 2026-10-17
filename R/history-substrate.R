@@ -429,8 +429,16 @@ ledgr_history_bar_packet_frame <- function(packet, instrument_idx = NULL) {
   )
 }
 
-ledgr_history_substrate_fold_reader <- function(substrate, pulses_posix) {
+ledgr_history_substrate_fold_reader <- function(substrate,
+                                                pulses_posix,
+                                                feature_defs = list(),
+                                                active_alias_map = NULL) {
   ledgr_history_substrate_require(substrate)
+  service <- ledgr_history_read_service(
+    substrate,
+    feature_defs = feature_defs,
+    active_alias_map = active_alias_map
+  )
   pulse_columns <- unname(substrate$pulse_index[
     ledgr_projection_pulse_names(as.POSIXct(pulses_posix, tz = "UTC"))
   ])
@@ -457,6 +465,11 @@ ledgr_history_substrate_fold_reader <- function(substrate, pulses_posix) {
         NULL
       }
       list(current = current, next_bar = next_packet)
+    },
+    # The cutoff-bound history view P2 places on the strategy context. It
+    # records only the pulse column; values are read when a strategy asks.
+    view = function(pulse_idx) {
+      ledgr_history_view(service, pulse_columns[[as.integer(pulse_idx)]])
     },
     stats = function() list(reads = reads)
   )
@@ -1893,7 +1906,11 @@ ledgr_history_substrate <- function(bars,
       provider_plan = ledgr_availability_provider_prepare(
         availability_data,
         availability_config
-      )
+      ),
+      # Derived treatment planes are prepared lazily, once per substrate, by
+      # the public history reader. The memo holds only values derived from
+      # this immutable substrate and its policy and is never staged.
+      history_memo = new.env(parent = emptyenv())
     ),
     class = c("ledgr_history_substrate", "list")
   )

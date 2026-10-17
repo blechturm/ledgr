@@ -160,8 +160,8 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
     observe = c(
       "pulse_idx", "ts", "ts_iso", "context_ids", "context_position_idx",
       "positions_snapshot", "positions_value", "availability_view",
-      "valuation", "members", "history_bars", "sample_start", "t_feats",
-      "t_bars"
+      "valuation", "members", "history_bars", "history_view",
+      "sample_start", "t_feats", "t_bars"
     ),
     decide = c(
       "strategy_targets", "targets", "state_update", "sample_start",

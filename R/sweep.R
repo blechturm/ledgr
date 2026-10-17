@@ -1268,6 +1268,9 @@ ledgr_sweep_stage_history_tasks <- function(tasks, owner_id) {
   census <- ledgr_sweep_history_payload_census(tasks)
   invariant <- tasks[[1L]][invariant_names]
   invariant$pulses_iso <- NULL
+  # Each daemon prepares its own derived history planes; a parent memo is
+  # never serialized into the staged invariant.
+  invariant$history_substrate$history_memo <- new.env(parent = emptyenv())
   identity <- ledgr_history_stage_identity(invariant$history_substrate, owner_id)
   invariant$staged_owner_id <- as.character(owner_id)
   invariant$staged_invariant_identity <- identity

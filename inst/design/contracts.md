@@ -1299,11 +1299,14 @@ Accepted change pending:
 <a id="contract-strategy-outputs"></a>
 ### Strategy Outputs And Helper Values
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Strategy output is a full named numeric target vector, a `ledgr_target`, or a
   list containing `targets`.
+- History estimation exclusion is not a target. An instrument that
+  `ledgr_history_frame(na_action = "drop_instruments")` excludes from an
+  estimator sample still receives a target like every decision-axis
+  instrument; the exclusion alone creates no zero target, liquidation,
+  position change or fill. Keeping, exiting or refusing a held excluded
+  instrument is the strategy's separate target choice.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
   or non-finite targets fail with `ledgr_invalid_strategy_result`.
 - Target values are desired instrument quantities after the next fill, not
@@ -1382,9 +1385,6 @@ Accepted change pending:
 
 <a id="contract-strategy-decision-axis"></a>
 ### Decision Axis And Eligibility
-
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 One decision axis and one eligibility plane hold in dense and
 availability-aware contexts alike, so a strategy written as named-vector
@@ -1477,6 +1477,15 @@ manipulation, or as a helper pipeline, means the same thing in both.
   one-argument form is unchanged, including its zero-length failure.
 - **Dense results.** Every dense ID is eligible, so dense results of the
   existing helper pipelines do not change.
+- **History selection.** `ledgr_history_frame()` selects from this plane at
+  its cutoff. `instruments = "admissible"` requests the `ctx$universe` IDs
+  whose `ctx$vec$admissible` is `TRUE`, `"decision_axis"` requests every
+  `ctx$universe` ID, and an explicit vector requests known instrument IDs in
+  its own order. An explicit ID is never dropped for current
+  inadmissibility; its selection row records `admissible` and an
+  `admissibility_reason` (the target-restriction reason, `not_member` or
+  `not_on_decision_axis`). Membership at a past session does not by itself
+  remove an otherwise admissible observation from the returned history.
 
 Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
 and `AAA` a held nonmember, each holding 5:
@@ -1614,9 +1623,6 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-pulse-data"></a>
 ### Pulse Data And Axis-Aligned Accessors
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Runtime and interactive pulse contexts expose data-frame-compatible
   `ctx$bars` and long-table `ctx$feature_table`.
 - Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, `ctx$idx()`,
@@ -1647,6 +1653,65 @@ Accepted change pending:
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
   behavior is flat-unless-signal or hold-unless-signal.
+- Availability-aware pulse contexts carry the causal history of their pulse.
+  `ledgr_history_frame(ctx, feature = NULL, bar = NULL, lookback = Inf,
+  instruments = "admissible", na_action = "keep", layout = "wide")` reads
+  exactly one numeric series, a sealed bar field (`open`, `high`, `low`,
+  `close`, `volume`) or one feature resolved active-alias-first then by
+  concrete ID, and returns a fresh classed `ledgr_history` data frame. Every
+  returned value is observed at or before the pulse, with facts knowable at
+  it; later-known facts change only later reads and never an earlier
+  returned object. Dense contexts and the snapshot-and-universe
+  `ledgr_pulse_snapshot()` form have no history and refuse with
+  `ledgr_history_unavailable`; malformed requests refuse with
+  `ledgr_invalid_history_request`, `ledgr_invalid_history_field`,
+  `ledgr_unknown_feature_id` or `ledgr_history_unknown_instrument`, and a
+  cutoff outside the prepared axis with `ledgr_history_outside_axis`.
+- The history axis is the declared venue's expected sessions from the data
+  start (the first session of the experiment's snapshot) through the cutoff,
+  with one cutoff-resolved expected-session mask per instrument. `lookback =
+  Inf` returns the whole axis; a finite lookback returns the last `lookback`
+  sessions and is the exact values-and-evidence suffix of the `Inf` result.
+  `lookback = 0` returns the empty axis. Bar values follow the experiment's
+  history policy: open, high, low and close carry forward within the declared
+  expected-session horizon from their original source, volume never carries,
+  nothing fills backward or across a lifetime or terminal barrier, and a
+  print inside a knowable lifetime-inactive interval stays readable with its
+  structural flag. Feature values are the shared feature preparation's values
+  on the same axis.
+- Wide results have `ts_utc` plus one numeric column per included
+  instrument; long results have `ts_utc`, `instrument_id`, `source`
+  (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
+  The `ledgr_history` attribute records the data start, returned-window start,
+  cutoff, requested and available lookback, source and policy identity, the
+  selection table, `used_before_window` (whether any returned value used an
+  observation or calculation state before the returned window) and, for the
+  wide layout, the cell evidence as sessions-by-instruments matrices. Cell
+  evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
+  `calculated`, `output_carried`, `source_ts_utc`, `carry_age_sessions`,
+  `ready`, `calculation_valid`, `missing_reason` and `barrier_reason`;
+  selection evidence uses `requested`, `included`, `exclusion_reason`,
+  `required_input_count`, `carried_input_count` and `carried_input_share`
+  plus the cutoff admissibility of each instrument. Empty results keep their
+  typed columns: an empty wide axis has zero rows and one numeric column per
+  included instrument, a zero-instrument wide result keeps its sessions with
+  only `ts_utc`, and an empty long result keeps all typed columns.
+- `ledgr_history_matrix()` adapts an existing result to a sessions-by-
+  instruments numeric matrix whose row names are the result's ISO 8601 UTC
+  session stamps and whose column names are its included instrument IDs (R
+  stores a zero-length dimension's names as `NULL`). It owns no cutoff, axis,
+  treatment or missingness logic and refuses a value that no longer matches
+  its recorded axis with `ledgr_invalid_history_result`.
+  `ledgr_history_sufficient(x, lookback, min_instruments)` is the structural
+  completeness query: at least `lookback` returned sessions and at least
+  `min_instruments` included instruments. It is not indicator readiness,
+  warm-up or convergence and inspects no value.
+- History reads add no context field, durable artifact or snapshot row. P1
+  issues the cutoff-bound history view; P2 places it on the context, and the
+  strategy's `ledgr_history_frame()` call reads prepared planes shared by the
+  owning run, sweep or walk-forward session. Treatment planes are prepared
+  once per substrate and history policy; no read rematerializes the causal
+  prefix.
 
 <a id="contract-context-feature-resolution"></a>
 ### Feature Resolution And Explicit Maps
