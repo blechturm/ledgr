@@ -628,10 +628,13 @@ warmup value.
 
 The dense lifecycle above is the entrance. Availability-aware research
 adds a stricter question: which sessions should have contained an
-observation? A missing observation on a declared open session
-invalidates every bounded window that contains it. ledgr does not
-compress the window, carry a stale value into it, or call the gap
-ordinary startup warmup.
+observation? A missing observation on a declared open session is a gap.
+By default the experiment's history policy carries each price field for
+up to five expected sessions; `ledgr_history_policy(price_carry = NULL)`
+keeps the strict rule, under which the gap invalidates every bounded
+window that contains it. Return- and volatility-family indicators never
+use a carried price, and ledgr never calls a gap ordinary startup
+warmup.
 
 ``` r
 strict_smas <- ledgr_feature_map(
@@ -655,29 +658,28 @@ ledgr_feature_contracts(strict_smas)
 ```
 
 In the strict-gap table in
-`vignette("missing-data-and-sessions", package = "ledgr")`, all three
-follow the same `NA, 11, NA, NA, 15, 17` availability path. That is
-session equivalence, not a claim that different formulas are numerically
-identical.
+`vignette("missing-data-and-sessions", package = "ledgr")`, which
+disables price carry, all three follow the same `NA, 11, NA, NA, 15, 17`
+availability path. That is session equivalence, not a claim that
+different formulas are numerically identical.
 
 <!-- strict-gap-support:start -->
 
-| Form | Declaration | Availability-aware status |
+| Form | Declaration | Availability-aware calculation |
 |----|----|----|
-| Built-in SMA | `ledgr_ind_sma(n)` | Supported |
-| Built-in returns | `ledgr_ind_returns(n)` | Supported |
-| Custom bounded window | `ledgr_indicator(..., gap_contract = "strict_window")` | Supported when the declaration is truthful |
-| Public TTR SMA | `ledgr_ind_ttr("SMA", input = "close", n = n)` | Supported for this exact single-output shape |
-| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Supported as bounded catalogue rows |
-| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported: the default forms are history-dependent |
-| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Supported when every output is a bounded catalogue row |
-| Other TTR signatures | any other registered or unregistered TTR form | Supported for bounded catalogue rows; history-dependent and unregistered forms are unsupported |
+| Built-in SMA, EMA, RSI or returns | `ledgr_ind_sma(n)`, `ledgr_ind_ema(n)`, `ledgr_ind_rsi(n)`, `ledgr_ind_returns(n)` | Supported: bounded |
+| Registered TTR form | `ledgr_ind_ttr()` on a catalogued function, output and argument form | Supported: per catalogue row |
+| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Supported: per catalogue row |
+| Custom bounded declaration | `ledgr_indicator(..., history_class = "bounded")` or `gap_contract = "strict_window"` | Supported: bounded |
+| Undeclared custom or unregistered TTR form | `ledgr_indicator(...)` without a history declaration, or an uncatalogued TTR form | Supported: history-dependent |
 
 <!-- strict-gap-support:end -->
 
-Unsupported declarations fail with `ledgr_indicator_gap_unsupported`
-before the strategy executes. They are never silently evaluated under
-dense semantics.
+A bounded indicator uses the last `requires_bars` expected sessions and
+is missing while that window is incomplete. A history-dependent
+indicator runs once per contiguous segment of available input and
+restarts, and warms up again, after a gap. Contradictory declarations
+refuse with `ledgr_indicator_history_contradiction`.
 
 For result-table interpretation after a zero-trade run, read
 `vignette("metrics-and-accounting", package = "ledgr")`.

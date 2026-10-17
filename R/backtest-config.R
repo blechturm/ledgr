@@ -204,24 +204,6 @@ ledgr_config <- function(snapshot,
       defs <- lapply(features, function(feat) {
         if (inherits(feat, "ledgr_indicator")) {
           ledgr_indicator_register(feat)
-          if (isTRUE(availability$active) &&
-              !identical(feat$gap_contract, "strict_window")) {
-            rlang::abort(
-              sprintf(
-                paste0(
-                  "Availability-aware execution does not support indicator '%s' ",
-                  "without `gap_contract = \"strict_window\"`."
-                ),
-                feat$id
-              ),
-              class = c(
-                "ledgr_indicator_gap_unsupported",
-                "ledgr_invalid_experiment_features",
-                "ledgr_invalid_experiment"
-              ),
-              indicator_ids = feat$id
-            )
-          }
           def <- list(
             id = feat$id,
             params = feat$params,

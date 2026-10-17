@@ -1133,36 +1133,20 @@ ledgr_run_fold_impl <- function(config,
   feature_engine_version <- ledgr_feature_engine_version(availability_active)
   if (length(feature_defs) > 0) {
     def_ids <- vapply(feature_defs, function(d) d$id, character(1))
-    run_feature_series <- stats::setNames(
-      lapply(feature_defs, function(...) list()),
-      def_ids
-    )
     if (availability_active) {
-      strict_kinds <- stats::setNames(
-        lapply(feature_defs, ledgr_strict_builtin_kind),
+      # One preparation treats each instrument's inputs once and calculates
+      # every definition on the substrate axis.
+      run_feature_matrix <- ledgr_history_compute_feature_series(
+        substrate = history_substrate,
+        definitions = stats::setNames(feature_defs, def_ids),
+        calculation_start = start_ts_utc,
+        calculation_end = end_ts_utc
+      )
+    } else {
+      run_feature_series <- stats::setNames(
+        lapply(feature_defs, function(...) list()),
         def_ids
       )
-      for (instrument_id in instrument_ids) {
-        b <- ledgr_history_substrate_instrument_frame(
-          history_substrate, instrument_id
-        )
-        for (def in feature_defs) {
-          values <- ledgr_history_compute_feature_series(
-            substrate = history_substrate,
-            instrument_id = instrument_id,
-            definition = def,
-            kind = strict_kinds[[def$id]],
-            calculation_start = start_ts_utc,
-            calculation_end = end_ts_utc,
-            rows = b
-          )
-          if (length(values) != nrow(b)) {
-            fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
-          }
-          run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
-        }
-      }
-    } else {
       for (def in feature_defs) {
         for (instrument_id in instrument_ids) {
           b <- bars_by_id[[instrument_id]]
@@ -1173,22 +1157,21 @@ ledgr_run_fold_impl <- function(config,
           run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
         }
       }
+      n_inst <- length(instrument_ids)
+      n_def <- length(def_ids)
+      run_feature_matrix <- vector("list", n_def)
+      for (d in seq_len(n_def)) {
+        id <- def_ids[[d]]
+        mat <- matrix(NA_real_, nrow = n_inst, ncol = length(pulses_posix))
+        for (j in seq_along(instrument_ids)) {
+          mat[j, ] <- as.numeric(run_feature_series[[id]][[instrument_ids[[j]]]])
+        }
+        run_feature_matrix[[d]] <- mat
+      }
+      names(run_feature_matrix) <- def_ids
+      run_feature_series <- NULL
     }
     bars_by_id <- NULL
-    n_inst <- length(instrument_ids)
-    n_def <- length(def_ids)
-    run_feature_matrix <- vector("list", n_def)
-    for (d in seq_len(n_def)) {
-      id <- def_ids[[d]]
-      feature_axis <- if (availability_active) history_axis else pulses_posix
-      mat <- matrix(NA_real_, nrow = n_inst, ncol = length(feature_axis))
-      for (j in seq_along(instrument_ids)) {
-        mat[j, ] <- as.numeric(run_feature_series[[id]][[instrument_ids[[j]]]])
-      }
-      run_feature_matrix[[d]] <- mat
-    }
-    names(run_feature_matrix) <- def_ids
-    run_feature_series <- NULL
   } else {
     bars_by_id <- NULL
   }

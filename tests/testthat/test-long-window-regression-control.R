@@ -1,15 +1,13 @@
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
-  original <- ledgr:::ledgr_compute_feature_series_strict_builtin
+  original <- ledgr:::ledgr_history_feature_segment
   work <- 0L
   calls <- 0L
   testthat::local_mocked_bindings(
-    ledgr_compute_feature_series_strict_builtin = function(
-      bars_df, feature_def, kind
-    ) {
-      work <<- work + nrow(bars_df)
+    ledgr_history_feature_segment = function(cert, inputs, fields, rows, ...) {
+      work <<- work + length(rows)
       calls <<- calls + 1L
-      original(bars_df, feature_def, kind)
+      original(cert, inputs, fields, rows, ...)
     },
     .package = "ledgr"
   )

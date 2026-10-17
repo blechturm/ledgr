@@ -37,7 +37,6 @@
 \alias{ledgr_facts_snapshot_hash_mismatch}
 \alias{ledgr_session_adapter_invalid}
 \alias{ledgr_session_override_invalid}
-\alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
 \alias{ledgr_invalid_indicator_declaration}
 \alias{ledgr_indicator_history_contradiction}
@@ -533,10 +532,9 @@ unsealed or corrupted artifact.
 \code{ledgr_session_adapter_invalid} and \code{ledgr_session_override_invalid} are
 raised for malformed qlcal adapter inputs or replacement rows.
 
-\code{ledgr_indicator_gap_unsupported} is raised before strategy use when an
-availability-aware feature does not declare the supported strict-window gap
-contract. \code{ledgr_indicator_gap_parity} is raised when the scalar and series
-implementations disagree at the end of a finite strict window.
+\code{ledgr_indicator_gap_parity} is raised when a custom bounded indicator's
+\code{fn} on its window disagrees with its \code{series_fn} value beyond the declared
+tolerance; its fields name the feature, instrument and session.
 
 \code{ledgr_invalid_indicator_declaration} (parent \code{ledgr_invalid_args}) is
 raised for an invalid indicator history class, required-field set or

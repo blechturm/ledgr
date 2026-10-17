@@ -210,7 +210,10 @@ instrument lacks an observation.
 The small matrix below is an illustrative calendar, separate from the NYSE
 window above. It has one closed date, one missing open-session observation for
 `AAA`, and a `BBB` series that starts late. Both moving averages use a
-two-session window.
+two-session window, and price carry is disabled with
+`ledgr_history_policy(price_carry = NULL)`. Under the default policy,
+`AAA`'s 4 January close would be carried from 2 January for up to five
+expected sessions, giving 12 on 4 January and 13 on 5 January.
 
 <!-- strict-gap-table:start -->
 | Date | Session | AAA bar | AAA SMA(2) | BBB bar | BBB SMA(2) | Interpretation |
@@ -260,8 +263,8 @@ whole-universe accessor.
 
 This is stricter than a generic warmup check in one useful way: it says what
 the strategy actually needs at this pulse. See
-`vignette("indicators", package = "ledgr")` for the built-in, public TTR, and
-custom indicator forms that are certified for this strict-window behavior.
+`vignette("indicators", package = "ledgr")` for how bounded and
+history-dependent built-in, TTR and custom indicators treat gaps.
 
 ## Step 3: Say Which Instruments Were Tradable
 

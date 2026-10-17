@@ -35,47 +35,50 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
     )
   )
   if (isTRUE(availability_active)) {
+    helper <- function(fn, name) {
+      ledgr_function_fingerprint(
+        fn,
+        include_captures = FALSE,
+        label = sprintf("`%s()`", name)
+      )
+    }
     payload$availability <- list(
-      semantics = "strict_expected_session_window_v1",
-      compute = ledgr_function_fingerprint(
-        ledgr_compute_feature_series_strict,
-        include_captures = FALSE,
-        label = "`ledgr_compute_feature_series_strict()`"
+      semantics = "history_segments_v1",
+      history_rule_version = ledgr_feature_history_rule_version,
+      compute = helper(
+        ledgr_history_compute_feature_series,
+        "ledgr_history_compute_feature_series"
       ),
-      scalar_reference = ledgr_function_fingerprint(
-        ledgr_compute_feature_series_strict_scalar,
-        include_captures = FALSE,
-        label = "`ledgr_compute_feature_series_strict_scalar()`"
+      certify = helper(ledgr_feature_certify, "ledgr_feature_certify"),
+      candidates = helper(
+        ledgr_feature_catalogue_candidates,
+        "ledgr_feature_catalogue_candidates"
       ),
-      builtin_kind = ledgr_function_fingerprint(
-        ledgr_strict_builtin_kind,
-        include_captures = FALSE,
-        label = "`ledgr_strict_builtin_kind()`"
+      catalogue = helper(
+        ledgr_indicator_history_catalogue,
+        "ledgr_indicator_history_catalogue"
       ),
-      ttr_template = ledgr_function_fingerprint(
-        ledgr_strict_ttr_template_match,
-        include_captures = FALSE,
-        label = "`ledgr_strict_ttr_template_match()`"
+      declarations = helper(ledgr_indicator_declare, "ledgr_indicator_declare"),
+      admission = helper(
+        ledgr_history_required_field_admission,
+        "ledgr_history_required_field_admission"
       ),
-      completeness = ledgr_function_fingerprint(
-        ledgr_strict_complete_window_mask,
-        include_captures = FALSE,
-        label = "`ledgr_strict_complete_window_mask()`"
+      inputs = helper(ledgr_history_feature_inputs, "ledgr_history_feature_inputs"),
+      input_carry = helper(ledgr_history_input_carry, "ledgr_history_input_carry"),
+      output_carry = helper(ledgr_history_output_carry, "ledgr_history_output_carry"),
+      ranges = helper(ledgr_history_feature_ranges, "ledgr_history_feature_ranges"),
+      runs = helper(ledgr_history_feature_runs, "ledgr_history_feature_runs"),
+      calculate = helper(
+        ledgr_history_feature_calculate,
+        "ledgr_history_feature_calculate"
       ),
-      strict_sma = ledgr_function_fingerprint(
-        ledgr_strict_sma_series,
-        include_captures = FALSE,
-        label = "`ledgr_strict_sma_series()`"
-      ),
-      builtin_compute = ledgr_function_fingerprint(
-        ledgr_compute_feature_series_strict_builtin,
-        include_captures = FALSE,
-        label = "`ledgr_compute_feature_series_strict_builtin()`"
-      ),
-      fingerprint = ledgr_function_fingerprint(
+      segment = helper(ledgr_history_feature_segment, "ledgr_history_feature_segment"),
+      frame = helper(ledgr_history_feature_frame, "ledgr_history_feature_frame"),
+      window = helper(ledgr_history_feature_window, "ledgr_history_feature_window"),
+      strict_sma = helper(ledgr_strict_sma_series, "ledgr_strict_sma_series"),
+      fingerprint = helper(
         ledgr_active_feature_fingerprint,
-        include_captures = FALSE,
-        label = "`ledgr_active_feature_fingerprint()`"
+        "ledgr_active_feature_fingerprint"
       )
     )
   }
@@ -416,182 +419,6 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
   out
 }
 
-ledgr_compute_feature_series_strict_scalar <- function(bars_df,
-                                                       feature_def,
-                                                       check_series_parity = TRUE) {
-  ledgr_validate_feature_def(feature_def)
-  if (!identical(feature_def$gap_contract, "strict_window")) {
-    rlang::abort(
-      sprintf(
-        "Indicator '%s' does not declare the availability gap contract `strict_window`.",
-        feature_def$id
-      ),
-      class = c("ledgr_indicator_gap_unsupported", "ledgr_invalid_feature_def")
-    )
-  }
-  if (!is.data.frame(bars_df) || !all(c("ts_utc", "close") %in% names(bars_df))) {
-    rlang::abort(
-      "Strict feature input must be an expected-session-aligned data frame.",
-      class = "ledgr_invalid_feature_input"
-    )
-  }
-  n <- nrow(bars_df)
-  width <- as.integer(feature_def$stable_after)
-  out <- rep(NA_real_, n)
-  if (n < width) return(out)
-  complete <- ledgr_strict_complete_window_mask(bars_df, width)
-  for (i in seq.int(width, n)) {
-    if (!complete[[i]]) next
-    window <- bars_df[seq.int(i - width + 1L, i), , drop = FALSE]
-    scalar <- ledgr_normalize_feature_scalar_output(
-      ledgr_call_feature_fn(feature_def$fn, window, feature_def$params %||% list()),
-      feature_def$id
-    )
-    if (isTRUE(check_series_parity) && !is.null(feature_def$series_fn)) {
-      series <- ledgr_call_feature_series_fn(
-        feature_def$series_fn,
-        window,
-        feature_def$params %||% list()
-      )
-      terminal <- ledgr_normalize_feature_scalar_output(
-        utils::tail(series, 1L),
-        feature_def$id
-      )
-      same <- (is.na(scalar) && is.na(terminal)) ||
-        isTRUE(all.equal(scalar, terminal, tolerance = sqrt(.Machine$double.eps)))
-      if (!same) {
-        rlang::abort(
-          sprintf(
-            "Indicator '%s' scalar and series functions disagree on a strict window.",
-            feature_def$id
-          ),
-          class = c("ledgr_indicator_gap_parity", "ledgr_invalid_feature_output")
-        )
-      }
-    }
-    out[[i]] <- scalar
-  }
-  out
-}
-
-ledgr_strict_ttr_template_match <- function(feature_def) {
-  params <- feature_def$params
-  if (!is.list(params) || !is.function(feature_def$fn) ||
-      !is.function(feature_def$series_fn)) {
-    return(FALSE)
-  }
-  row <- if (identical(params$ttr_fn, "SMA") && identical(params$input, "close") &&
-             is.null(params$output) && is.list(params$args) &&
-             identical(feature_def$stable_after, feature_def$requires_bars)) {
-    ledgr_ttr_catalogue_row(
-      "SMA", "close", NULL, params$args, feature_def$requires_bars
-    )
-  } else {
-    NULL
-  }
-  if (is.null(row) || !requireNamespace("TTR", quietly = TRUE)) {
-    return(FALSE)
-  }
-
-  template <- ledgr_ind_ttr(
-    "SMA",
-    input = "close",
-    n = params$args$n
-  )
-  if (!identical(params, template$params)) return(FALSE)
-
-  fn_env <- environment(feature_def$fn)
-  series_env <- environment(feature_def$series_fn)
-  if (!is.environment(fn_env) || !is.environment(series_env) ||
-      !identical(fn_env, series_env) ||
-      !identical(parent.env(fn_env), asNamespace("ledgr"))) {
-    return(FALSE)
-  }
-
-  body_fingerprints <- tryCatch(
-    c(
-      scalar = ledgr_function_fingerprint(
-        feature_def$fn,
-        include_captures = FALSE,
-        label = "strict TTR scalar function"
-      ),
-      scalar_template = ledgr_function_fingerprint(
-        template$fn,
-        include_captures = FALSE,
-        label = "strict TTR scalar template"
-      ),
-      series = ledgr_function_fingerprint(
-        feature_def$series_fn,
-        include_captures = FALSE,
-        label = "strict TTR series function"
-      ),
-      series_template = ledgr_function_fingerprint(
-        template$series_fn,
-        include_captures = FALSE,
-        label = "strict TTR series template"
-      )
-    ),
-    error = function(cnd) NULL
-  )
-  if (is.null(body_fingerprints) ||
-      !identical(body_fingerprints[["scalar"]], body_fingerprints[["scalar_template"]]) ||
-      !identical(body_fingerprints[["series"]], body_fingerprints[["series_template"]])) {
-    return(FALSE)
-  }
-
-  call_symbols <- sort(unique(c(
-    codetools::findGlobals(template$fn, merge = FALSE)$functions,
-    codetools::findGlobals(template$series_fn, merge = FALSE)$functions
-  )), method = "radix")
-  !any(vapply(call_symbols, exists, logical(1), envir = fn_env, inherits = FALSE))
-}
-
-ledgr_strict_builtin_kind <- function(feature_def) {
-  if (ledgr_strict_ttr_template_match(feature_def)) {
-    return("ttr_sma_scalar")
-  }
-  params <- feature_def$params
-  width <- if (is.list(params)) params$n else NULL
-  if (!is.numeric(width) || length(width) != 1L || is.na(width) ||
-      !is.finite(width) || width < 1 || width %% 1 != 0) {
-    return(NULL)
-  }
-  width <- as.integer(width)
-  fingerprint <- ledgr_feature_def_fingerprint(feature_def)
-  sma <- ledgr_precompute_feature_def_from_indicator(ledgr_ind_sma(width))
-  sma_fingerprints <- c(
-    ledgr_feature_def_fingerprint(sma),
-    ledgr_active_feature_fingerprint(sma)
-  )
-  if (fingerprint %in% sma_fingerprints) {
-    return("sma")
-  }
-  returns <- ledgr_precompute_feature_def_from_indicator(
-    ledgr_ind_returns(width)
-  )
-  returns_fingerprints <- c(
-    ledgr_feature_def_fingerprint(returns),
-    ledgr_active_feature_fingerprint(returns)
-  )
-  if (fingerprint %in% returns_fingerprints) {
-    return("returns")
-  }
-  NULL
-}
-
-ledgr_strict_complete_window_mask <- function(bars_df, width) {
-  columns <- intersect(c("open", "high", "low", "close"), names(bars_df))
-  values <- do.call(cbind, lapply(bars_df[columns], function(x) {
-    suppressWarnings(as.numeric(x))
-  }))
-  if (is.null(dim(values))) values <- matrix(values, ncol = 1L)
-  complete <- stats::complete.cases(values) &
-    rowSums(is.finite(values)) == ncol(values)
-  cumulative <- cumsum(!complete)
-  previous <- c(rep(0, width), cumulative)[seq_along(cumulative)]
-  seq_along(cumulative) >= width & cumulative - previous == 0
-}
-
 ledgr_strict_sma_series <- function(values, width) {
   values <- as.numeric(values)
   width <- as.integer(width)
@@ -606,77 +433,6 @@ ledgr_strict_sma_series <- function(values, width) {
     mean(values[seq.int(i - width + 1L, i)])
   }, numeric(1))
   out
-}
-
-ledgr_compute_feature_series_strict_builtin <- function(bars_df,
-                                                        feature_def,
-                                                        kind) {
-  n <- nrow(bars_df)
-  width <- as.integer(feature_def$stable_after)
-  if (n < width) return(rep(NA_real_, n))
-  value <- if (identical(kind, "sma")) {
-    ledgr_strict_sma_series(bars_df$close, width)
-  } else {
-    ledgr_call_feature_series_fn(
-      feature_def$series_fn,
-      bars_df,
-      feature_def$params %||% list()
-    )
-  }
-  if (!is.numeric(value) || !is.atomic(value) || !is.null(dim(value))) {
-    rlang::abort(
-      sprintf(
-        "Feature %s returned a non-numeric or non-vector series.",
-        feature_def$id
-      ),
-      class = "ledgr_invalid_feature_output"
-    )
-  }
-  if (length(value) != n) {
-    rlang::abort(
-      sprintf(
-        "Feature %s returned %d values; expected %d.",
-        feature_def$id,
-        length(value),
-        n
-      ),
-      class = "ledgr_invalid_feature_output"
-    )
-  }
-  value <- as.numeric(value)
-  complete <- ledgr_strict_complete_window_mask(bars_df, width)
-  if (any(is.nan(value[complete])) || any(is.infinite(value[complete]))) {
-    rlang::abort(
-      sprintf("Feature %s returned a non-finite value.", feature_def$id),
-      class = "ledgr_invalid_feature_output"
-    )
-  }
-  value[!complete] <- NA_real_
-  value
-}
-
-ledgr_compute_feature_series_strict <- function(
-  bars_df,
-  feature_def,
-  kind = ledgr_strict_builtin_kind(feature_def)
-) {
-  ledgr_validate_feature_def(feature_def)
-  if (!identical(feature_def$gap_contract, "strict_window") ||
-      !is.data.frame(bars_df) ||
-      !all(c("ts_utc", "close") %in% names(bars_df))) {
-    return(ledgr_compute_feature_series_strict_scalar(bars_df, feature_def))
-  }
-  if (is.null(kind)) {
-    return(ledgr_compute_feature_series_strict_scalar(bars_df, feature_def))
-  }
-  if (identical(kind, "ttr_sma_scalar")) {
-    return(ledgr_compute_feature_series_strict_scalar(
-      bars_df,
-      feature_def,
-      check_series_parity = FALSE
-    ))
-  }
-  ledgr_compute_feature_series_strict_builtin(bars_df, feature_def, kind)
 }
 
 ledgr_compute_feature_latest <- function(bars_df, feature_def) {

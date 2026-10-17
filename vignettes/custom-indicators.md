@@ -77,12 +77,14 @@ This path is easy to reason about because the function receives only
 historical rows up to the current decision point. It is the right first
 implementation for most custom features.
 
-`gap_contract = "strict_window"` is a substantive claim: on an
-availability-aware run, the bounded function is valid only when every
-expected session in its window has an observation. Omit it for a
-dense-only custom indicator. ledgr then refuses that indicator in an
-availability-aware experiment instead of guessing that it tolerates
-gaps.
+`gap_contract = "strict_window"` (or `history_class = "bounded"`) is
+a substantive claim: on an availability-aware run, the function receives
+its last `requires_bars` expected sessions and is valid only when each
+of them has an observation, possibly carried by the history policy.
+Without a history declaration ledgr treats a custom indicator as
+history-dependent: it runs once per contiguous segment of available
+input and restarts after a gap. ledgr never infers that a definition is
+bounded.
 
 ## Vectorized Indicators
 

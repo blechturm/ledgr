@@ -724,21 +724,14 @@ ledgr_precompute_feature_union <- function(unique_defs) {
   out[order(out$feature_id, out$fingerprint, method = "radix"), , drop = FALSE]
 }
 
-ledgr_precompute_payload <- function(unique_defs, bars_by_id, availability_active = FALSE) {
+# Dense payload. Availability-aware features are calculated over the shared
+# history substrate by ledgr_history_precompute_payload().
+ledgr_precompute_payload <- function(unique_defs, bars_by_id) {
   out <- list()
   for (fingerprint in names(unique_defs)) {
     def <- unique_defs[[fingerprint]]
-    strict_kind <- if (isTRUE(availability_active)) {
-      ledgr_strict_builtin_kind(def)
-    } else {
-      NULL
-    }
     values <- lapply(bars_by_id, function(bars) {
-      if (isTRUE(availability_active)) {
-        ledgr_compute_feature_series_strict(bars, def, kind = strict_kind)
-      } else {
-        ledgr_compute_feature_series(bars, def)
-      }
+      ledgr_compute_feature_series(bars, def)
     })
     out[[fingerprint]] <- list(
       feature_id = def$id,

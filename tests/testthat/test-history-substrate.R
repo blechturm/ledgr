@@ -923,23 +923,22 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   testthat::expect_true(nondefault_treatment$input_carried[1L, 2L])
   testthat::expect_false(nondefault_treatment$input_carried[1L, 3L])
 
+  bbb <- match("BBB", fixture$substrate$instrument_ids)
   bounded_feature <- ledgr:::ledgr_history_compute_feature_series(
     fixture$substrate,
-    "BBB",
-    ledgr_ind_returns(2L),
+    list(ledgr_ind_returns(2L)),
     calculation_start = fixture$axis[[2L]],
     calculation_end = fixture$axis[[4L]]
-  )
+  )[[1L]][bbb, ]
   testthat::expect_true(all(is.na(bounded_feature[c(1L, 5:7)])))
   testthat::expect_true(any(is.finite(bounded_feature[2:4])))
   # Runs and sweeps pass ISO strings; the bound must keep its time of day.
   iso_bounded_feature <- ledgr:::ledgr_history_compute_feature_series(
     fixture$substrate,
-    "BBB",
-    ledgr_ind_returns(2L),
+    list(ledgr_ind_returns(2L)),
     calculation_start = ledgr_iso_utc(fixture$axis[[2L]]),
     calculation_end = ledgr_iso_utc(fixture$axis[[4L]])
-  )
+  )[[1L]][bbb, ]
   testthat::expect_identical(iso_bounded_feature, bounded_feature)
 
   admission_reasons <- ledgr:::ledgr_history_estimator_admission(list(

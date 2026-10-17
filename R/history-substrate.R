@@ -207,67 +207,34 @@ ledgr_history_substrate_for_experiment <- function(exp,
   )
 }
 
-ledgr_history_compute_feature_series <- function(substrate,
-                                                 instrument_id,
-                                                 definition,
-                                                 kind = NULL,
-                                                 calculation_start = NULL,
-                                                 calculation_end = NULL,
-                                                 rows = NULL) {
-  if (is.null(rows)) {
-    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
-  }
-  keep <- rep.int(TRUE, nrow(rows))
-  # Bounds arrive as ISO strings or POSIXct; parse both through the exact
-  # instant reader so an ISO time is never truncated to its calendar date.
-  ts <- as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC"))
-  if (!is.null(calculation_start)) {
-    keep <- keep & ts >= as.numeric(ledgr_history_utc(calculation_start))
-  }
-  if (!is.null(calculation_end)) {
-    keep <- keep & ts <= as.numeric(ledgr_history_utc(calculation_end))
-  }
-  calculated <- ledgr_compute_feature_series_strict(
-    rows[keep, , drop = FALSE], definition, kind = kind
-  )
-  if (all(keep)) return(as.numeric(calculated))
-  out <- rep.int(NA_real_, nrow(rows))
-  out[keep] <- as.numeric(calculated)
-  out
-}
-
 ledgr_history_precompute_payload <- function(unique_defs,
                                              substrate,
                                              calculation_start = NULL,
                                              calculation_end = NULL) {
   ledgr_history_substrate_require(substrate)
+  values <- ledgr_history_compute_feature_series(
+    substrate = substrate,
+    definitions = unique_defs,
+    calculation_start = calculation_start,
+    calculation_end = calculation_end
+  )
   fingerprints <- names(unique_defs)
-  out <- lapply(fingerprints, function(fingerprint) {
-    list(
-      feature_id = unique_defs[[fingerprint]]$id,
-      fingerprint = fingerprint,
-      values = stats::setNames(vector("list", length(substrate$instrument_ids)),
-                               substrate$instrument_ids)
-    )
-  })
-  names(out) <- fingerprints
-  kinds <- lapply(unique_defs, ledgr_strict_builtin_kind)
-  for (instrument_id in substrate$instrument_ids) {
-    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
-    for (fingerprint in fingerprints) {
-      def <- unique_defs[[fingerprint]]
-      out[[fingerprint]]$values[[instrument_id]] <-
-        ledgr_history_compute_feature_series(
-        substrate = substrate,
-        instrument_id = instrument_id,
-        definition = def,
-        kind = kinds[[fingerprint]],
-        calculation_start = calculation_start,
-        calculation_end = calculation_end,
-        rows = rows
+  out <- vector("list", length(fingerprints))
+  for (d in seq_along(fingerprints)) {
+    matrix_values <- values[[d]]
+    # Release each matrix once it is split so the payload and the matrices
+    # are never both held in full.
+    values[d] <- list(NULL)
+    out[[d]] <- list(
+      feature_id = unique_defs[[d]]$id,
+      fingerprint = fingerprints[[d]],
+      values = stats::setNames(
+        lapply(seq_along(substrate$instrument_ids), function(i) matrix_values[i, ]),
+        substrate$instrument_ids
       )
-    }
+    )
   }
+  names(out) <- fingerprints
   out
 }
 

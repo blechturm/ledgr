@@ -1801,38 +1801,49 @@ Accepted change pending:
 <a id="contract-context-strict-features"></a>
 ### Availability-Aware Strict Features
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
-- Availability-aware indicators declare `gap_contract = "strict_window"` on
-  the existing indicator definition. The declaration commits the definition to
-  a finite window with no internal carry or imputation. Omission fails with
-  `ledgr_indicator_gap_unsupported` before strategy execution. The certified
-  set is built-in SMA and returns, custom indicators that explicitly accept the
-  contract, and single-output `ledgr_ind_ttr("SMA", input = "close", n = ...)`
-  definitions whose only forwarded argument is one positive integer `n` and
-  whose `requires_bars` and `stable_after` both equal `n`. TTR bundles and all
-  other TTR families remain uncertified until separately evidenced.
-- Strict feature windows count venue open sessions on the shared pulse axis.
-  Accepted lifetime facts, including `known_inactive`, do not remove sessions
-  from that feature axis. Any missing required observation on that axis makes
-  the affected window `NA_real_`; an inactive interval is one instance of the
-  general rule and is never bridged. A real observation inside an inactive
-  interval remains a feature input even though the availability plane may
-  restrict target changes for that instrument. Valuation marks never enter
-  feature computation. Scalar `fn` and the terminal value from `series_fn`
-  receive the same bounded fully observed window and must agree on
-  certification fixtures.
-- Active feature fingerprints include strict expected-session and cutoff-causal
-  history semantics. Future-known facts cannot rewrite earlier feature values.
-  Dense indicator fingerprints and feature-engine
-  identity omit the availability declaration and remain unchanged.
+- Availability-aware features are calculated over the shared causal-history
+  substrate. Every bounded and history-dependent definition runs; no
+  declaration is refused for its class. Each instrument's price fields are
+  treated once per preparation under the experiment's history policy: by
+  default each open, high, low and close field is carried for at most five
+  expected sessions, volume is never carried and
+  `ledgr_history_policy(price_carry = NULL)` keeps raw inputs.
+- Admission tests only a definition's required fields after treatment. A
+  bounded definition's value at a session is a function of its last
+  `requires_bars` expected sessions on the instrument's mask; sessions on which
+  the instrument is lifetime-inactive are not counted. `fn` receives exactly
+  that window and an incomplete window is `NA_real_`.
+- A history-dependent definition runs once per contiguous segment of available
+  input on the common axis. A missing input beyond the carry horizon or a
+  lifetime-inactive interval ends the segment; the next segment restarts and
+  warms up again. Restart, not skip, is the gap policy. `stable_after` is the
+  first-valid position after each start or restart.
+- Return- and volatility-family catalogue rows never consume a carried price:
+  their output is `NA_real_` wherever a required input is missing or carried.
+  Custom definitions consume the policy-treated input.
+- A real print inside a knowable lifetime-inactive interval enters no
+  calculation. Valuation marks never enter feature computation. Each pulse's
+  value uses the lifetime and terminal facts knowable at that pulse; a
+  later-known fact changes only later pulses. Features are calculated only
+  inside each window's scoring start and end.
+- Raw missingness, input carry, required-field admission, readiness,
+  calculation validity and optional output carry remain separate planes.
+  Output carry fills only a session whose own required input is unavailable,
+  from an earlier valid output and within the policy's output age; warm-up and
+  re-warming sessions are never filled.
+- Built-ins and catalogue rows are computed with the package constructor's own
+  functions, so a definition that claims their identity cannot execute other
+  code. A custom bounded definition that supplies `fn` and `series_fn` takes
+  its values from `series_fn` per segment and refuses with
+  `ledgr_indicator_gap_parity`, naming the definition, instrument and session,
+  where `fn` on its window disagrees beyond the declared tolerance. A
+  history-dependent pair is not refuted.
+- Dense indicator fingerprints and feature-engine identity omit the
+  availability declarations and remain unchanged; the availability
+  feature-engine identity binds every helper of this calculation.
 
 <a id="contract-context-ttr-adapter"></a>
 ### TTR Adapter
-
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
 
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
@@ -1840,7 +1851,14 @@ Accepted change pending:
   fields for fingerprints and diagnostics.
 - TTR warmup inference is allowed only for functions listed by
   `ledgr_ind_ttr_warmup_rules()`. Each listed rule must be deterministic from
-  explicit arguments alone and verified against direct TTR output in tests.
+  explicit arguments alone and is the catalogue dependency width. Aroon depends
+  on `n + 1` rows even though TTR returns a partial-window value at row `n`.
+- Registered TTR forms are package catalogue rows keyed by function, output and
+  algorithm-changing argument (`maType`, `wilder`); each row declares its
+  history class, required fields and input-carry family and is certified by
+  package tests. Any other argument combination or a different
+  `requires_bars` follows the custom rules. Multi-output bundles flatten to
+  ordinary catalogue rows, one per output.
 - TTR adapter parity tests must cover every listed warmup rule and every
   documented multi-output column. Derived outputs such as MACD `histogram` are
   verified against the documented derivation applied to direct TTR output, not
@@ -1850,7 +1868,8 @@ Accepted change pending:
   than leaking low-level TTR errors from ordinary feature precomputation.
 - TTR input mappings are adapter contracts: `close` maps to `bars$close`, `hl`
   maps to `High/Low`, `hlc` maps to `High/Low/Close`, `ohlc` maps to
-  `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`.
+  `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`. The
+  mapped fields are the definition's required fields.
 - TTR-backed generated IDs use rules-table `id_args` first and then any other
   supplied scalar arguments in sorted order before the optional output suffix.
   Users must provide `id` explicitly when non-scalar TTR arguments would make a
