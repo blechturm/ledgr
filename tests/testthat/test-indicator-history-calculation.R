@@ -490,3 +490,86 @@ testthat::test_that("[LTB-0302] feature bytes and failure classes match across r
     )
   }
 })
+
+testthat::test_that("[LTB-0304] a custom input_carry declaration excludes carried prices", {
+  # Cut 16 decision (13): a custom definition may declare itself a return or
+  # volatility definition with input_carry = "excluded".
+  ratio <- function(window) window$close[[2L]] / window$close[[1L]] - 1
+  make <- function(...) {
+    ledgr_indicator(
+      "custom_ratio", ratio, requires_bars = 2L,
+      history_class = "bounded", required_fields = "close", ...
+    )
+  }
+  undeclared <- make()
+  declared <- make(input_carry = "excluded")
+  testthat::expect_identical(undeclared$input_carry, "eligible")
+  testthat::expect_identical(undeclared$input_carry_source, "default")
+  testthat::expect_true(any(grepl(
+    "Input carry:   eligible (default for an undeclared definition)",
+    utils::capture.output(print(undeclared)),
+    fixed = TRUE
+  )))
+  testthat::expect_identical(declared$input_carry_source, "declared")
+
+  substrate <- ws43_history_substrate(c(10, 11, 12, NA, 14, 15))
+  testthat::expect_identical(
+    ws43_feature_values(substrate, undeclared),
+    c(NA, 11 / 10 - 1, 12 / 11 - 1, 12 / 12 - 1, 14 / 12 - 1, 15 / 14 - 1)
+  )
+  testthat::expect_identical(
+    ws43_feature_values(substrate, declared),
+    c(NA, 11 / 10 - 1, 12 / 11 - 1, NA, NA, 15 / 14 - 1)
+  )
+  evidence <- ledgr:::ledgr_history_feature_evidence(substrate, "AAA", declared)
+  testthat::expect_identical(evidence$missing_reason[[4L]], "carried_input_excluded")
+  testthat::expect_false(evidence$input_carried[[4L]])
+
+  # The declaration is calculation-affecting identity; spelling out the
+  # default is not.
+  active <- function(indicator) {
+    ledgr:::ledgr_active_feature_fingerprint(
+      ledgr:::ledgr_precompute_feature_def_from_indicator(indicator)
+    )
+  }
+  testthat::expect_false(identical(active(declared), active(undeclared)))
+  testthat::expect_identical(active(make(input_carry = "eligible")), active(undeclared))
+  testthat::expect_identical(
+    ledgr:::ledgr_indicator_fingerprint(declared),
+    ledgr:::ledgr_indicator_fingerprint(undeclared)
+  )
+
+  # Built-ins and registered TTR rows take the family from the catalogue.
+  testthat::expect_error(
+    make(input_carry = "sometimes"),
+    class = "ledgr_invalid_indicator_declaration"
+  )
+  testthat::skip_if_not_installed("TTR")
+  testthat::expect_error(
+    ledgr_ind_ttr("ROC", input = "close", n = 2L, input_carry = "excluded"),
+    class = "ledgr_indicator_history_contradiction"
+  )
+  testthat::expect_identical(
+    ledgr_ind_ttr("ROC", input = "close", n = 2L, na.pad = TRUE,
+      input_carry = "excluded")$input_carry_source,
+    "declared"
+  )
+  relabelled <- ledgr_ind_sma(2L)
+  relabelled$input_carry <- "excluded"
+  relabelled$input_carry_source <- "declared"
+  testthat::expect_error(
+    ws43_feature_values(substrate, relabelled),
+    class = "ledgr_indicator_history_contradiction"
+  )
+  snapshot <- availability_runtime_fixture(days = 4L)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  testthat::expect_error(
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) stop("strategy must not run"),
+      features = list(relabelled),
+      cost_model = ledgr_cost_zero()
+    ),
+    class = "ledgr_indicator_history_contradiction"
+  )
+})

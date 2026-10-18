@@ -74,6 +74,9 @@ ledgr_ind_ttr_warmup_rules <- function() {
 #' @param tolerance Optional comparison tolerance for an unregistered form
 #'   declared `"bounded"`; see [ledgr_indicator()]. Registered rows have no
 #'   runtime tolerance.
+#' @param input_carry Optional input-carry declaration for an unregistered
+#'   form; see [ledgr_indicator()]. Registered rows take it from the catalogue
+#'   and refuse a declaration.
 #' @param ... Explicit arguments forwarded to the TTR function.
 #'
 #' @details Registered TTR forms are catalogued per function, selected output
@@ -129,6 +132,7 @@ ledgr_ind_ttr <- function(ttr_fn,
                           stable_after = requires_bars,
                           history_class = NULL,
                           tolerance = NULL,
+                          input_carry = NULL,
                           ...) {
   ledgr_assert_no_param_refs(
     list(
@@ -139,7 +143,8 @@ ledgr_ind_ttr <- function(ttr_fn,
       requires_bars = requires_bars,
       stable_after = stable_after,
       history_class = history_class,
-      tolerance = tolerance
+      tolerance = tolerance,
+      input_carry = input_carry
     ),
     "ledgr_ind_ttr()"
   )
@@ -165,7 +170,7 @@ ledgr_ind_ttr <- function(ttr_fn,
       "ledgr_ind_ttr",
       c(
         list(ttr_fn = ttr_fn, input = input, output = output),
-        ledgr_ttr_declaration_args(history_class, tolerance),
+        ledgr_ttr_declaration_args(history_class, tolerance, input_carry),
         args
       ),
       names(args)
@@ -267,6 +272,15 @@ ledgr_ind_ttr <- function(ttr_fn,
         contradiction = TRUE
       )
     }
+    if (!is.null(input_carry)) {
+      ledgr_indicator_abort_declaration(
+        sprintf(
+          "Registered TTR form `%s` takes its input-carry family from the package catalogue; it cannot declare `input_carry`.",
+          id
+        ),
+        contradiction = TRUE
+      )
+    }
     history_class <- NULL
     tolerance <- NULL
   }
@@ -286,7 +300,8 @@ ledgr_ind_ttr <- function(ttr_fn,
     source = "TTR",
     history_class = history_class,
     required_fields = ledgr_ttr_required_fields(input),
-    tolerance = tolerance
+    tolerance = tolerance,
+    input_carry = input_carry
   )
   if (is.null(catalogue_row)) {
     return(indicator)
@@ -294,8 +309,8 @@ ledgr_ind_ttr <- function(ttr_fn,
   ledgr_indicator_apply_catalogue(indicator, catalogue_row)
 }
 
-ledgr_ttr_declaration_args <- function(history_class, tolerance) {
-  out <- list(history_class = history_class, tolerance = tolerance)
+ledgr_ttr_declaration_args <- function(history_class, tolerance, input_carry = NULL) {
+  out <- list(history_class = history_class, tolerance = tolerance, input_carry = input_carry)
   out[!vapply(out, is.null, logical(1))]
 }
 
@@ -424,7 +439,7 @@ ledgr_ttr_catalogue_row <- function(ttr_fn, input, output, args, requires_bars) 
 #' @param requires_bars Explicit warmup length. Required for unknown TTR
 #'   functions. For known functions this is inferred from explicit arguments.
 #' @param stable_after First stable row. Defaults to `requires_bars`.
-#' @param history_class,tolerance Optional declarations for unregistered TTR
+#' @param history_class,tolerance,input_carry Optional declarations for unregistered TTR
 #'   forms, forwarded to [ledgr_ind_ttr()] for every output.
 #' @param ... Explicit arguments forwarded to the TTR function.
 #'
@@ -458,7 +473,8 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
                                   requires_bars = NULL,
                                   stable_after = requires_bars,
                                   history_class = NULL,
-                                  tolerance = NULL) {
+                                  tolerance = NULL,
+                                  input_carry = NULL) {
   ledgr_assert_no_param_refs(
     list(
       ttr_fn = ttr_fn,
@@ -469,7 +485,8 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
       requires_bars = requires_bars,
       stable_after = stable_after,
       history_class = history_class,
-      tolerance = tolerance
+      tolerance = tolerance,
+      input_carry = input_carry
     ),
     "ledgr_ind_ttr_outputs()"
   )
@@ -508,7 +525,7 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
           prefix = prefix,
           naming = naming
         ),
-        ledgr_ttr_declaration_args(history_class, tolerance),
+        ledgr_ttr_declaration_args(history_class, tolerance, input_carry),
         args
       ),
       names(args),
@@ -600,7 +617,8 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
           requires_bars = requires_bars,
           stable_after = stable_after,
           history_class = history_class,
-          tolerance = tolerance
+          tolerance = tolerance,
+          input_carry = input_carry
         ),
         args
       )

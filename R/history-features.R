@@ -22,6 +22,11 @@ ledgr_feature_certify <- function(def) {
   }
   declarations <- ledgr_feature_def_declarations(def)
   claimed <- ledgr_feature_def_fingerprint(def)
+  content <- if (is.function(def$fn)) {
+    ledgr_feature_def_fingerprint(def[setdiff(names(def), "fingerprint")])
+  } else {
+    NULL
+  }
   for (candidate in ledgr_feature_catalogue_candidates(def)) {
     indicator <- candidate$indicator
     indicator$id <- def$id
@@ -30,6 +35,26 @@ ledgr_feature_certify <- function(def) {
       canonical$fingerprint,
       ledgr_active_feature_fingerprint(canonical)
     )
+    # A built-in or catalogue row takes its input-carry family from the
+    # catalogue (Cut 16 decision 13); a copy of its functions that declares
+    # another family refuses instead of silently running either way.
+    same_functions <- identical(claimed, canonical$fingerprint) ||
+      (!is.null(content) && identical(content, canonical$fingerprint))
+    if (same_functions &&
+        !identical(declarations$input_carry, canonical$input_carry)) {
+      ledgr_indicator_abort_declaration(
+        sprintf(
+          paste0(
+            "Indicator `%s` is a package catalogue row; its input-carry ",
+            "family is `%s` and cannot be declared `%s`."
+          ),
+          def$id,
+          canonical$input_carry,
+          declarations$input_carry
+        ),
+        contradiction = TRUE
+      )
+    }
     if (claimed %in% identities) {
       canonical$fingerprint <- claimed
       canonical_declarations <- ledgr_feature_def_declarations(canonical)

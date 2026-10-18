@@ -55,11 +55,12 @@ ledgr_indicator_declare <- function(history_class = NULL,
                                     gap_contract = NULL,
                                     required_fields = NULL,
                                     tolerance = NULL,
-                                    input_carry = "eligible",
+                                    input_carry = NULL,
                                     has_series_fn = FALSE,
                                     id = NULL,
                                     history_source = NULL,
-                                    required_fields_source = NULL) {
+                                    required_fields_source = NULL,
+                                    input_carry_source = NULL) {
   label <- if (is.null(id)) "" else sprintf(" (indicator `%s`)", id)
   if (!is.null(gap_contract) &&
       (!is.character(gap_contract) || length(gap_contract) != 1L ||
@@ -131,11 +132,19 @@ ledgr_indicator_declare <- function(history_class = NULL,
       contradiction = TRUE
     )
   }
+  # `input_carry = "excluded"` marks a return or volatility definition: it
+  # never consumes a policy-carried price. Undeclared definitions consume the
+  # policy-treated input, and that default is disclosed.
+  if (is.null(input_carry)) {
+    input_carry <- "eligible"
+    if (is.null(input_carry_source)) input_carry_source <- "default"
+  } else if (is.null(input_carry_source)) {
+    input_carry_source <- "declared"
+  }
   if (!is.character(input_carry) || length(input_carry) != 1L ||
       is.na(input_carry) || !input_carry %in% c("eligible", "excluded")) {
-    rlang::abort(
-      "Indicator input carry must be \"eligible\" or \"excluded\".",
-      class = "ledgr_internal_error"
+    ledgr_indicator_abort_declaration(
+      sprintf("`input_carry` must be NULL, \"eligible\" or \"excluded\"%s.", label)
     )
   }
   list(
@@ -150,7 +159,8 @@ ledgr_indicator_declare <- function(history_class = NULL,
     required_fields = required_fields,
     required_fields_source = required_fields_source,
     tolerance = tolerance,
-    input_carry = input_carry
+    input_carry = input_carry,
+    input_carry_source = input_carry_source
   )
 }
 
@@ -162,13 +172,14 @@ ledgr_feature_def_declarations <- function(def) {
     gap_contract = def$gap_contract,
     required_fields = def$required_fields,
     tolerance = def$tolerance,
-    input_carry = def$input_carry %||% "eligible",
+    input_carry = def$input_carry,
     # A stored config definition carries no functions; its tolerance was
     # validated against `series_fn` when the indicator was constructed.
     has_series_fn = if (is.function(def$fn)) is.function(def$series_fn) else TRUE,
     id = def$id,
     history_source = def$history_source,
-    required_fields_source = def$required_fields_source
+    required_fields_source = def$required_fields_source,
+    input_carry_source = def$input_carry_source
   )
 }
 
@@ -180,6 +191,7 @@ ledgr_indicator_apply_declarations <- function(indicator, declarations) {
   indicator$required_fields_source <- declarations$required_fields_source
   indicator$tolerance <- declarations$tolerance
   indicator$input_carry <- declarations$input_carry
+  indicator$input_carry_source <- declarations$input_carry_source
   indicator
 }
 
@@ -284,7 +296,8 @@ ledgr_indicator_apply_catalogue <- function(indicator, row) {
     has_series_fn = is.function(indicator$series_fn),
     id = indicator$id,
     history_source = "catalogue",
-    required_fields_source = "catalogue"
+    required_fields_source = "catalogue",
+    input_carry_source = "catalogue"
   )
   ledgr_indicator_apply_declarations(indicator, declarations)
 }

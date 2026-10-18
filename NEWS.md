@@ -48,7 +48,8 @@
   lifetime mask; history-dependent indicators run once per contiguous segment
   of available input and restart after a gap. Default price carry now fills
   eligible feature inputs for up to five expected sessions, while return and
-  volatility catalogue rows never use a carried price.
+  volatility catalogue rows never use a carried price; a custom indicator
+  can declare `input_carry = "excluded"` to do the same.
   `ledgr_history_policy(price_carry = NULL)` keeps the previous strict values.
   `ledgr_indicator_gap_unsupported` is retired. A custom indicator whose
   `stable_after` exceeds `requires_bars` now receives exactly `requires_bars`

@@ -15,7 +15,8 @@ ledgr_indicator(
   gap_contract = NULL,
   history_class = NULL,
   required_fields = NULL,
-  tolerance = NULL
+  tolerance = NULL,
+  input_carry = NULL
 )
 }
 \arguments{
@@ -56,6 +57,13 @@ calculation requires, from \code{"open"}, \code{"high"}, \code{"low"}, \code{"cl
 supplies both \code{fn} and \code{series_fn}. \code{NULL} (the default) means exact. A
 nonzero tolerance is a scaled bound, \code{abs(a - b) / max(1, abs(b))}, and
 enters the definition's availability-aware identity.}
+
+\item{input_carry}{Optional input-carry declaration. \code{"excluded"} marks a
+return or volatility indicator: it never consumes a price carried by the
+experiment's history policy, so a gap leaves its inputs missing. \code{NULL}
+(disclosed as the default) and \code{"eligible"} consume the policy-treated
+input. Package built-ins and registered TTR forms take this from the
+package catalogue.}
 }
 \value{
 A \code{ledgr_indicator} object.

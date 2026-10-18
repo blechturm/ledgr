@@ -1769,7 +1769,16 @@ Accepted change pending:
   fixtures; rows carry no runtime tolerance. A TTR form outside the catalogue,
   including a known function with an unregistered argument or a different
   `requires_bars`, follows the custom rules. Catalogue rows also mark the
-  return and volatility families.
+  return and volatility families: a row whose value depends on
+  session-to-session price changes or price dispersion has
+  `input_carry = "excluded"`; a level row is eligible. TTR `aroon` declares
+  its `n + 1` dependency width in every execution mode.
+- A custom definition may declare `input_carry = "excluded"` to mark itself a
+  return or volatility definition; an undeclared one consumes the
+  policy-treated input, disclosed as the default. The declaration enters
+  rule-4 feature identity. A built-in or registered TTR row takes its family
+  from the catalogue, and declaring another family on it refuses with
+  `ledgr_indicator_history_contradiction`.
 - A custom bounded definition that supplies both `fn` and `series_fn` is
   compared exactly unless it declares a nonzero scaled `tolerance`; a
   tolerance on any other definition refuses as a contradiction.
@@ -1820,7 +1829,8 @@ Accepted change pending:
   first-valid position after each start or restart.
 - Return- and volatility-family catalogue rows never consume a carried price:
   their output is `NA_real_` wherever a required input is missing or carried.
-  Custom definitions consume the policy-treated input.
+  A custom definition declaring `input_carry = "excluded"` follows the same
+  rule; an undeclared custom definition consumes the policy-treated input.
 - A real print inside a knowable lifetime-inactive interval enters no
   calculation. Valuation marks never enter feature computation. Each pulse's
   value uses the lifetime and terminal facts knowable at that pulse; a

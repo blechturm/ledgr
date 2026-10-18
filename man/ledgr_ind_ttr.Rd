@@ -13,6 +13,7 @@ ledgr_ind_ttr(
   stable_after = requires_bars,
   history_class = NULL,
   tolerance = NULL,
+  input_carry = NULL,
   ...
 )
 }
@@ -43,6 +44,10 @@ unregistered form is disclosed as \code{"history_dependent"}.}
 \item{tolerance}{Optional comparison tolerance for an unregistered form
 declared \code{"bounded"}; see \code{\link[=ledgr_indicator]{ledgr_indicator()}}. Registered rows have no
 runtime tolerance.}
+
+\item{input_carry}{Optional input-carry declaration for an unregistered
+form; see \code{\link[=ledgr_indicator]{ledgr_indicator()}}. Registered rows take it from the catalogue
+and refuse a declaration.}
 
 \item{...}{Explicit arguments forwarded to the TTR function.}
 }

@@ -1,0 +1,5 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"d1_ignore_declared_input_carry",TRUE,1,"LTB-0304","[LTB-0304] a custom input_carry declaration excludes carried prices",TRUE
+"d2_fingerprint_drops_input_carry",TRUE,1,"LTB-0304","[LTB-0304] a custom input_carry declaration excludes carried prices",TRUE
+"d3_registered_ttr_accepts_declaration",TRUE,1,"LTB-0304","[LTB-0304] a custom input_carry declaration excludes carried prices",TRUE
+"d4_redeclared_builtin_certified",TRUE,1,"LTB-0304","[LTB-0304] a custom input_carry declaration excludes carried prices",TRUE

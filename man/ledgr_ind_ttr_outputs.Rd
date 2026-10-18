@@ -14,7 +14,8 @@ ledgr_ind_ttr_outputs(
   requires_bars = NULL,
   stable_after = requires_bars,
   history_class = NULL,
-  tolerance = NULL
+  tolerance = NULL,
+  input_carry = NULL
 )
 }
 \arguments{
@@ -43,7 +44,7 @@ functions. For known functions this is inferred from explicit arguments.}
 
 \item{stable_after}{First stable row. Defaults to \code{requires_bars}.}
 
-\item{history_class, tolerance}{Optional declarations for unregistered TTR
+\item{history_class, tolerance, input_carry}{Optional declarations for unregistered TTR
 forms, forwarded to \code{\link[=ledgr_ind_ttr]{ledgr_ind_ttr()}} for every output.}
 }
 \value{

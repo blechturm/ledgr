@@ -27,6 +27,12 @@
 #'   supplies both `fn` and `series_fn`. `NULL` (the default) means exact. A
 #'   nonzero tolerance is a scaled bound, `abs(a - b) / max(1, abs(b))`, and
 #'   enters the definition's availability-aware identity.
+#' @param input_carry Optional input-carry declaration. `"excluded"` marks a
+#'   return or volatility indicator: it never consumes a price carried by the
+#'   experiment's history policy, so a gap leaves its inputs missing. `NULL`
+#'   (disclosed as the default) and `"eligible"` consume the policy-treated
+#'   input. Package built-ins and registered TTR forms take this from the
+#'   package catalogue.
 #'
 #' @details Indicator fingerprints bind deterministic direct captures of `fn`
 #'   and `series_fn`. Atomic values and deterministic lists are supported;
@@ -71,12 +77,14 @@ ledgr_indicator <- function(id,
                             gap_contract = NULL,
                             history_class = NULL,
                             required_fields = NULL,
-                            tolerance = NULL) {
+                            tolerance = NULL,
+                            input_carry = NULL) {
   ledgr_assert_no_param_refs(
     list(
       id = id, requires_bars = requires_bars, params = params,
       stable_after = stable_after, history_class = history_class,
-      required_fields = required_fields, tolerance = tolerance
+      required_fields = required_fields, tolerance = tolerance,
+      input_carry = input_carry
     ),
     "ledgr_indicator()"
   )
@@ -118,6 +126,7 @@ ledgr_indicator <- function(id,
     gap_contract = gap_contract,
     required_fields = required_fields,
     tolerance = tolerance,
+    input_carry = input_carry,
     has_series_fn = !is.null(series_fn),
     id = id
   )
@@ -232,9 +241,18 @@ print.ledgr_indicator <- function(x, ...) {
   )
   cat("  History class: ", declarations$history_class, " (", source_label, ")\n", sep = "")
   cat("  Required:      ", paste(declarations$required_fields, collapse = ", "), "\n", sep = "")
-  if (identical(declarations$input_carry, "excluded")) {
-    cat("  Input carry:   excluded (return or volatility family)\n")
+  carry_label <- if (identical(declarations$input_carry, "excluded")) {
+    "excluded (return or volatility family)"
+  } else {
+    "eligible"
   }
+  carry_source <- switch(
+    declarations$input_carry_source,
+    catalogue = "package catalogue",
+    declared = "declared",
+    default = "default for an undeclared definition"
+  )
+  cat("  Input carry:   ", carry_label, " (", carry_source, ")\n", sep = "")
   if (declarations$tolerance > 0) {
     cat("  Tolerance:     ", format(declarations$tolerance), "\n", sep = "")
   }

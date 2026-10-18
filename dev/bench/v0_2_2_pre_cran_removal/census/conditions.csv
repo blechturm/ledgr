@@ -958,10 +958,12 @@
 "R/fold-phase-contract.R",177,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
 "R/fold-phase-contract.R",75,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
 "R/fold-reconstruction.R",178,"abort_class","ledgr_invalid_event_order",TRUE,"""ledgr_invalid_event_order""",TRUE,TRUE,FALSE
-"R/history-features.R",213,"abort_class","ledgr_indicator_gap_parity",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
-"R/history-features.R",213,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
-"R/history-features.R",458,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-features.R",458,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-features.R",238,"abort_class","ledgr_indicator_gap_parity",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
+"R/history-features.R",238,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
+"R/history-features.R",45,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""Indicator `%s` is a package catalogue row; its input-carry "", ""family is `%s` and cannot be declared `%s`.""), def$id, canonical$input_carry, declarations$input_carry), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/history-features.R",45,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""Indicator `%s` is a package catalogue row; its input-carry "", ""family is `%s` and cannot be declared `%s`.""), def$id, canonical$input_carry, declarations$input_carry), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/history-features.R",483,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-features.R",483,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-policy.R",26,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_policy"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-policy.R",26,"abort_class","ledgr_invalid_history_policy",TRUE,"c(""ledgr_invalid_history_policy"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-policy.R",57,"abort_class","ledgr_invalid_experiment",TRUE,"c(""ledgr_invalid_history_policy"", ""ledgr_invalid_experiment"")",TRUE,TRUE,FALSE
@@ -1071,95 +1073,98 @@
 "R/indicator-dev.R",85,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/indicator-dev.R",94,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/indicator-dev.R",97,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-history.R",116,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`tolerance` must be NULL or one finite number >= 0%s."", label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",116,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`tolerance` must be NULL or one finite number >= 0%s."", label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",123,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""A nonzero `tolerance` applies only to a bounded definition that "", ""supplies `series_fn`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-history.R",123,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""A nonzero `tolerance` applies only to a bounded definition that "", ""supplies `series_fn`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-history.R",136,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
+"R/indicator-history.R",117,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`tolerance` must be NULL or one finite number >= 0%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",117,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`tolerance` must be NULL or one finite number >= 0%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",124,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""A nonzero `tolerance` applies only to a bounded definition that "", ""supplies `series_fn`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-history.R",124,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""A nonzero `tolerance` applies only to a bounded definition that "", ""supplies `series_fn`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-history.R",146,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`input_carry` must be NULL, \""eligible\"" or \""excluded\""%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",146,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`input_carry` must be NULL, \""eligible\"" or \""excluded\""%s."", label))",TRUE,TRUE,FALSE
 "R/indicator-history.R",25,"abort_class","ledgr_invalid_args",TRUE,"c(if (isTRUE(contradiction)) ""ledgr_indicator_history_contradiction"", ""ledgr_invalid_indicator_declaration"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/indicator-history.R",25,"abort_class","ledgr_invalid_indicator_declaration",TRUE,"c(if (isTRUE(contradiction)) ""ledgr_indicator_history_contradiction"", ""ledgr_invalid_indicator_declaration"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/indicator-history.R",25,"abort_dynamic","",FALSE,"c(if (isTRUE(contradiction)) ""ledgr_indicator_history_contradiction"", ""ledgr_invalid_indicator_declaration"", ""ledgr_invalid_args"")",FALSE,FALSE,FALSE
-"R/indicator-history.R",299,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-history.R",299,"abort_class","ledgr_invalid_feature_input",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-history.R",313,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-history.R",313,"abort_class","ledgr_invalid_feature_input",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-history.R",312,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-history.R",312,"abort_class","ledgr_invalid_feature_input",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-history.R",326,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-history.R",326,"abort_class","ledgr_invalid_feature_input",TRUE,"c(""ledgr_invalid_feature_input"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/indicator-history.R",43,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`required_fields` must be a non-empty set of unique bar fields from %s%s."", paste(allowed, collapse = "", ""), label))",TRUE,TRUE,FALSE
 "R/indicator-history.R",43,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`required_fields` must be a non-empty set of unique bar fields from %s%s."", paste(allowed, collapse = "", ""), label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",67,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`gap_contract` must be NULL or \""strict_window\""%s."", label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",67,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`gap_contract` must be NULL or \""strict_window\""%s."", label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",75,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`history_class` must be NULL, \""bounded\"" or \""history_dependent\""%s."", label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",75,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`history_class` must be NULL, \""bounded\"" or \""history_dependent\""%s."", label))",TRUE,TRUE,FALSE
-"R/indicator-history.R",84,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""`gap_contract = \""strict_window\""` declares a bounded window and "", ""contradicts `history_class = \""history_dependent\""`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-history.R",84,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""`gap_contract = \""strict_window\""` declares a bounded window and "", ""contradicts `history_class = \""history_dependent\""`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",147,"abort_class","ledgr_missing_optional_dependency",TRUE,"""ledgr_missing_optional_dependency""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",159,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",159,"abort_class","ledgr_unsupported_param_placement",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",179,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",194,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",205,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",231,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",251,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is catalogued as `%s`; it cannot be declared `%s`."", id, catalogue_row$history_class[[1L]], as.character(history_class)[[1L]]), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",251,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is catalogued as `%s`; it cannot be declared `%s`."", id, catalogue_row$history_class[[1L]], as.character(history_class)[[1L]]), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",262,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is certified by package tests and takes no runtime tolerance."", id), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",262,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is certified by package tests and takes no runtime tolerance."", id), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",477,"abort_class","ledgr_missing_optional_dependency",TRUE,"""ledgr_missing_optional_dependency""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",488,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",488,"abort_class","ledgr_unsupported_param_placement",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",523,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",537,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",548,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",572,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",624,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",631,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",637,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",641,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-history.R",68,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`gap_contract` must be NULL or \""strict_window\""%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",68,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`gap_contract` must be NULL or \""strict_window\""%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",76,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`history_class` must be NULL, \""bounded\"" or \""history_dependent\""%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",76,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""`history_class` must be NULL, \""bounded\"" or \""history_dependent\""%s."", label))",TRUE,TRUE,FALSE
+"R/indicator-history.R",85,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""`gap_contract = \""strict_window\""` declares a bounded window and "", ""contradicts `history_class = \""history_dependent\""`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-history.R",85,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""`gap_contract = \""strict_window\""` declares a bounded window and "", ""contradicts `history_class = \""history_dependent\""`%s.""), label), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",1000,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",152,"abort_class","ledgr_missing_optional_dependency",TRUE,"""ledgr_missing_optional_dependency""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",164,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",164,"abort_class","ledgr_unsupported_param_placement",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",184,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",199,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",210,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",236,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",256,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is catalogued as `%s`; it cannot be declared `%s`."", id, catalogue_row$history_class[[1L]], as.character(history_class)[[1L]]), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",256,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is catalogued as `%s`; it cannot be declared `%s`."", id, catalogue_row$history_class[[1L]], as.character(history_class)[[1L]]), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",267,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is certified by package tests and takes no runtime tolerance."", id), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",267,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` is certified by package tests and takes no runtime tolerance."", id), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",276,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` takes its input-carry family from the package catalogue; it cannot declare `input_carry`."", id), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",276,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(""Registered TTR form `%s` takes its input-carry family from the package catalogue; it cannot declare `input_carry`."", id), contradiction = TRUE)",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",494,"abort_class","ledgr_missing_optional_dependency",TRUE,"""ledgr_missing_optional_dependency""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",505,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",505,"abort_class","ledgr_unsupported_param_placement",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",540,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",554,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",565,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",589,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",642,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/indicator-ttr.R",649,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",656,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",661,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",689,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",689,"abort_class","ledgr_unsupported_param_placement",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",724,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",730,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",767,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",771,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",790,"abort_class","ledgr_invalid_feature_input",TRUE,"""ledgr_invalid_feature_input""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",802,"abort_class","ledgr_invalid_feature_input",TRUE,"""ledgr_invalid_feature_input""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",836,"abort_class","ledgr_missing_optional_dependency",TRUE,"""ledgr_missing_optional_dependency""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",871,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",892,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",896,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",900,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",916,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",920,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",924,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",951,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",965,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator-ttr.R",982,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",102,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",105,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",108,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",114,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",128,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",205,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",246,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",280,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
-"R/indicator.R",285,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
-"R/indicator.R",318,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",324,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",327,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",340,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",378,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",381,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",388,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",423,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",439,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",470,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",84,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",87,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",90,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",93,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",96,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",99,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",655,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",659,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",667,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",674,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",679,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",707,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",707,"abort_class","ledgr_unsupported_param_placement",TRUE,"c(""ledgr_unsupported_param_placement"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",742,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",748,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",785,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",789,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",808,"abort_class","ledgr_invalid_feature_input",TRUE,"""ledgr_invalid_feature_input""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",820,"abort_class","ledgr_invalid_feature_input",TRUE,"""ledgr_invalid_feature_input""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",854,"abort_class","ledgr_missing_optional_dependency",TRUE,"""ledgr_missing_optional_dependency""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",889,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",910,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",914,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",918,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",934,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",938,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",942,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",969,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator-ttr.R",983,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",101,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",104,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",107,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",110,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",113,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",116,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",122,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",137,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",214,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",264,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",298,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
+"R/indicator.R",303,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
+"R/indicator.R",336,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",342,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",345,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",358,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",396,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",399,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",406,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",441,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",457,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",488,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",92,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",95,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",98,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/ledger-writer.R",20,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/ledger-writer.R",24,"abort_class","ledgr_invalid_fill_intent",TRUE,"""ledgr_invalid_fill_intent""",TRUE,TRUE,FALSE
 "R/ledger-writer.R",3,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",TRUE,TRUE,FALSE

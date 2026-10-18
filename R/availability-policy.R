@@ -275,7 +275,7 @@ ledgr_availability_validate_features <- function(features, features_mode) {
   # still validated here so a malformed object refuses before execution.
   for (indicator in indicators) {
     if (inherits(indicator, "ledgr_unresolved_feature_declaration")) next
-    ledgr_feature_def_declarations(indicator)
+    ledgr_feature_certify(indicator)
   }
   invisible(TRUE)
 }

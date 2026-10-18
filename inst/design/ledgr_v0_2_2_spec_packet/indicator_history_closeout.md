@@ -60,8 +60,9 @@ dense fingerprint (which already carries functions, `id`, `requires_bars`,
 class, gap behavior, required fields, input-carry family, tolerance and a new
 feature-history rule version. Declaration provenance and labels are
 display-only. The stored availability config definition carries the same
-declarations. Dense fingerprints are unchanged (pinned literals in LTB-0144
-still hold). LTB-0299 pins the final rule-4 feature and config golden
+declarations. Dense fingerprints are unchanged except TTR aroon, whose
+width change decision (14) accepts (the LTB-0144 literals still hold).
+LTB-0299 pins the final rule-4 feature and config golden
 fixtures. Because `ledgr_feature_history_rule_version` is a `*_rule_version`
 binding, it joins the store-format fingerprint, so stores written before this
 commit refuse at open rather than resuming under changed feature semantics;
@@ -110,7 +111,7 @@ output carried with source and age, missing and barrier reasons, and the
 carried-input count and share of bounded windows. Preparation stores values
 only.
 
-Recorded behavior changes (v12 Sections 4-6):
+Recorded behavior changes (v12 Sections 4-6; decisions 13-15):
 
 - Default carry changes eligible built-in outputs across gaps of five expected
   sessions or fewer; `ledgr_history_policy(price_carry = NULL)` reproduces the
@@ -130,31 +131,42 @@ returned `NULL` and the run took the per-window scalar path while sweeps used
 the vector path. Certification now recognises the stored built-in
 fingerprint and computes the canonical constructor's functions. Measured below under Scale.
 
-## Interpretations for the close review
+## Maintainer decisions (Cut 16 decisions 13 to 15)
 
-These follow the accepted text as read here; each is isolated so a different
-maintainer reading changes one place.
+The phase-1 handoff raised four readings as NEEDS_TYPE_2. The maintainer
+decided them on 2026-10-18; they are recorded in the Cut 16 `decisions`
+field of `tickets.yml`.
 
-1. Bounded windows across lifetime-inactive intervals. V12 Section 6 says the
-   window "counts expected sessions on the instrument's Section 4 mask"; read
-   literally, a bounded window after an inactive interval spans it, while
-   history-dependent segments restart (Section 6 says so explicitly). This
-   reverses LCL-0093's former oracle. Change point: `rows` in
-   `ledgr_history_feature_calculate()`.
-2. Return and volatility family membership. V12 names the families but not
-   their members. The catalogue marks a row `excluded` when its value depends
-   on session-to-session price changes or price dispersion: built-in returns
-   and RSI; TTR RSI, ROC, momentum, ATR (all outputs), CCI, BBands `dn`, `up`
-   and `pctB`, MFI, runSD, runVar and runMAD. SMA, EMA, WMA, MACD, BBands
-   `mavg`, aroon, DonchianChannel, CMF and runMean stay eligible. Custom
-   definitions have no family declaration in the accepted declaration list,
-   so they consume policy-treated input; a user can disable carry by policy.
-   Change point: the catalogue's `input_carry` column.
-3. Readiness after a gap for a bounded definition with `stable_after >
-   requires_bars` restarts at the segment start, which keeps the pre-cut
-   missingness mask exactly.
-4. Output-carry eligibility is the session's own unavailable required input.
-   Warm-up and re-warming sessions are not filled.
+- Decision (13): the return and volatility membership rule is accepted as
+  implemented. A catalogue row whose value depends on session-to-session
+  price changes or price dispersion has `input_carry = "excluded"`: built-in
+  returns and RSI; TTR RSI, ROC, momentum, ATR (all outputs), CCI, BBands
+  `dn`, `up` and `pctB`, MFI, runSD, runVar and runMAD. Level rows (SMA, EMA,
+  WMA, MACD, BBands `mavg`, aroon, DonchianChannel, CMF, runMean) are
+  eligible. The decision added a custom declaration: `ledgr_indicator()`,
+  and `ledgr_ind_ttr()` for unregistered forms, accept
+  `input_carry = "excluded"`. Undeclared definitions consume the
+  policy-treated input and `print()` discloses that default. The declaration
+  is already part of the rule-4 feature fingerprint and stored config
+  definition; a registered TTR row refuses a declaration, and a copy of a
+  built-in or catalogue row that declares another family refuses at
+  experiment validation and at calculation with
+  `ledgr_indicator_history_contradiction` (LTB-0304).
+- Decision (14): the TTR aroon width of `n + 1` applies in dense and
+  availability modes. The dense aroon output (one more warm-up row) and
+  fingerprint change is an accepted catalogue bug fix, not a dense
+  regression; a mode-specific width would need a forbidden mode branch.
+- Decision (15): a bounded window counts the instrument's expected sessions
+  and so spans a lifetime-inactive interval, while history-dependent rows
+  restart; this is the stated reason for the LTB-0093 oracle reversal.
+  Readiness restarts per segment when `stable_after` exceeds
+  `requires_bars`, and output carry is eligible only where the session's own
+  required input is missing.
+
+Decision (13) is implemented in the commit that records these decisions.
+LCL-0297/LTB-0304 is the
+registered detector; its mutation results are in
+`dev/bench/v0_2_2_indicator_history/evidence/mutations_decision13.csv`.
 
 ## Detecting evidence
 
@@ -165,6 +177,7 @@ maintainer reading changes one place.
 | LCL-0294 | LTB-0300, LTB-0303 | bounded and history-dependent calculation, gaps, carry, restart, readiness, families, inactive prints, late-known masks |
 | LCL-0295 | LTB-0301 | separate evidence planes, output carry |
 | LCL-0296 | LTB-0302 | run, sweep and two-worker byte parity and refusal class |
+| LCL-0297 | LTB-0304 | custom `input_carry` declaration, identity and catalogue refusal (decision 13) |
 
 Registered blocks changed, each for the stated v12 reason (Sections 4-6
 unless noted):
@@ -183,7 +196,7 @@ unless noted):
   literal is added on the direct and sweep routes.
 - LTB-0074 (LCL-0074): the support matrix now records each form's history
   class; history-dependent TTR forms and bundles run instead of refusing.
-- LTB-0093 (LCL-0093): Sections 4 and 6 replace the oracle (interpretation 1).
+- LTB-0093 (LCL-0093): Sections 4 and 6 and decision (15) replace the oracle.
 - LTB-0153 and LTB-0157: only the observed internal boundary moves (segment
   calculation, certification); expected counts are unchanged.
 - LTB-0292: only the call shape of the feature boundary changes.
@@ -342,8 +355,6 @@ reasons above; scaling is measured in the previous section.
   made only minimal factual edits to the indicators, custom-indicators,
   ttr-indicators and missing-data articles so no text describes removed
   behavior.
-- Maintainer: interpretations 1 and 2 above, including whether custom
-  definitions should be able to declare a return or volatility family.
 - WS42 / LDG-3063 / LDG-3068: public history results may consume
   `ledgr_history_feature_evidence()`; experiment-derived pulse parity for
   these features and the "supplies no mark" half of the inactive-print

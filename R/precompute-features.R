@@ -684,7 +684,8 @@ ledgr_precompute_feature_def_from_indicator <- function(indicator) {
     required_fields = declarations$required_fields,
     required_fields_source = declarations$required_fields_source,
     tolerance = declarations$tolerance,
-    input_carry = declarations$input_carry
+    input_carry = declarations$input_carry,
+    input_carry_source = declarations$input_carry_source
   )
 }
 
