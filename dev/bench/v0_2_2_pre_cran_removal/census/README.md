@@ -74,6 +74,50 @@ new treatment seams and shifted source locations are source-derived results of
 the implementation. `metadata.csv` names the correction commit; no current-only
 or run-config gate was relaxed.
 
+## Workstream 46 execution-mode branch census
+
+LDG-3074 (Cut 16 decision 17) adds two tables. `mode_branches.csv` has one
+row per execution-mode switch site in `R/`, keyed by file, top-level
+function, kind (`branch` for an `if`/`ifelse` whose condition holds a switch,
+`flow` for a switch passed on or assigned), switch and context text, with an
+occurrence number for repeated keys and no line numbers, so unrelated edits
+do not churn it. `mode_branch_counts.csv` totals functions, branch sites and
+flow sites per file. The switch forms and the alias rule are documented above
+`ledgr_mode_branch_scan()` in `tools/codebase-structure.R`.
+
+Check mode reads the committed `mode_branches.csv` before writing any table
+and stops with `LEDGR_MODE_BRANCH_CENSUS_FAILED` when the source has a site
+the record lacks or the record keeps a site the source no longer has. A
+branch is therefore added or removed only by regenerating this record in
+report mode, which shows in review. Because keys carry no line, a site added
+beside equal sites is reported as that key's last occurrence. Adding
+`if (availability_active)` to `ledgr_sweep_impl()` without regenerating the
+record makes check mode stop with `unrecorded=1 stale=0` before any table is
+written. `--self-test-mode-branches` proves the
+check refuses one added branch, and LTB-0331 runs the same comparison in the
+fast profile.
+
+Regenerated on branch `ws46/history-simplification` from `9b0b304d`: report
+mode wrote the new tables, then check mode passed with 74 connection entries,
+158 version rows, 80 hand-built run-config rows, 1,768 helpers, 2,381
+condition call sites and 217 mode-branch sites (162 branch, 55 flow) in 56
+functions across 29 files. The six existing tables are unchanged;
+`metadata.csv` records check mode.
+
+Mutations, each applied to the working tree, run against
+`test-codebase-contracts.R` in one `pkgload::load_all()` session (R 4.6.1,
+Windows) and restored byte for byte (checked by MD5):
+
+| Mutation | LTB-0331 |
+| --- | --- |
+| Add `if (availability_active) invisible(NULL)` to `ledgr_sweep_impl()` without regenerating the record | errors (check refuses `unrecorded=1`) |
+| Stop recognising `availability$active` in `ledgr_mode_branch_switch_at()` | errors (stale rows) |
+| Return no stale rows from `ledgr_mode_branch_compare()` | fails (removed-site expectation) |
+| Replace the check-mode comparison with a no-op | fails (structural order assertion) |
+| Drop function-local alias detection | errors (stale alias rows) |
+
+The unmutated block passes 11 expectations before and after the run.
+
 ## Failure sensitivity
 
 A typed zero-row instance of all six summary families produces six zero row
