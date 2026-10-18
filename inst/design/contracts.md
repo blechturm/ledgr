@@ -140,9 +140,6 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - **Scoring start (Cut 9).** Every entry point evaluates the strategy, fills,
   writes equity and contributes metric input only from its scoring start: the
   experiment's opening date for `ledgr_run()`, `ledgr_sweep()`,
@@ -155,27 +152,33 @@ Accepted change pending:
   `ledgr_run_window_too_short` in runs and sweeps alike. A sweep's
   `scoring_range` names the first and last pulse it scored, in memory and
   after reopening.
-- **Feature start (temporary, Cut 9).** Until the joint WS3/WS4 history-start
-  design replaces it, every run, backtest, sweep, promotion, explicit window,
-  walk-forward training and test window, and public feature precompute starts
-  feature state at its scoring start. Fixed-window and recursive features
-  re-warm in every scoring window, and no entry point reads a bar before its
-  scoring start; a training window shorter than an indicator's warmup cannot
-  trade. `hydration_start_utc` is kept as an identity seam: when omitted it is
-  stored equal to `scoring_start_utc`, and any other value refuses before
-  execution with `ledgr_unsupported_hydration_start`.
-  `ledgr_precompute_features()` records `warmup_range$start` equal to its
-  scoring start, and a sweep, windowed or not, refuses a precomputed payload
-  whose feature state starts at any other time with
-  `ledgr_precomputed_hydration_mismatch`. When no candidate trades in a
+- **History start (Cut 16, LDG-3064).** History has one start, the data
+  start: the first session of the experiment's snapshot. Every
+  availability-aware run, sweep, promotion, run or sweep window, walk-forward
+  training and test window, explicit precompute and experiment-derived pulse
+  inspection reads feature, mark and entitlement history from it through one
+  shared causal preparation; the scoring start bounds decisions, fills, equity
+  and metric input only. A window, stored fold row, precomputed payload or
+  condition carries no second history start: `hydration_start_utc`,
+  `ledgr_unsupported_hydration_start`, `ledgr_precomputed_hydration_mismatch`
+  and the payload `warmup_range` no longer exist. An availability payload
+  records its causal axis (data start, first calculated session, cutoff and
+  session stamps) and a sweep or sweep window reuses it only when that axis,
+  the cutoff, the history policy, the snapshot and every candidate's feature
+  identity match exactly; otherwise it refuses before any candidate runs with
+  `ledgr_precomputed_range_mismatch` (cutoff or calculation start),
+  `ledgr_precomputed_history_mismatch` (policy or axis),
+  `ledgr_precomputed_snapshot_mismatch` or
+  `ledgr_precomputed_feature_mismatch`, and a dense payload never serves an
+  availability sweep nor the reverse. Dense experiments keep the frozen dense
+  rule: their feature state starts at the scoring start, and a dense payload
+  serves only a range or window scoring from its own start
+  (`ledgr_precomputed_range_mismatch`). When no candidate trades in a
   walk-forward training window, volatility-based selection metrics have no
   finite value and that fold has no selection; see No selection.
 
 <a id="contract-execution-walk-forward-folds"></a>
 ### Walk-Forward Fold Lifecycle
-
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - No selection (Cut 10, LDG-2974). `ledgr_walk_forward(no_selection = )`
   decides what a fold does when no training candidate has a finite, `DONE`
@@ -213,6 +216,31 @@ Accepted change pending:
   `"flat_test_state"` accepts gapped, overlapping and reverse-ordered fold
   lists, because no state crosses fold boundaries. Reconstructing carried
   state at an overlapping window's start is not supported.
+- Continuous carry (Cut 16, LDG-3064). In an availability-aware session
+  under `"carry_test_state"`, the test windows are one economic chain. Every
+  test window except the last executes its final decision in the same run at
+  the following session's open, preserving the decision-to-fill join; the run
+  records that instant as its final execution and its completion may report
+  it as the last execution. The next window opens from the resulting cash and
+  positions, its FIFO lots (one opening row per lot), cash entitlements the
+  chain bound but had not settled (posted at their original posting session
+  with the bound quantity), and the holdings frozen at the previous window's
+  last pulse. Feature, mark and entitlement history come from the shared
+  data-start preparation and are never window-local. Strategy state does not
+  cross a window. The concatenated test runs equal one public run whose
+  strategy switches parameters at the same decision pulses on fills,
+  corporate-action postings, marks, equity and decision diagnostics; each run
+  reports realized profit and loss from its own opening lots. The last window,
+  `"flat_test_state"` windows and standalone runs keep the terminal rule: the
+  final decision is recorded as `final_pulse_no_execution` and nothing
+  crosses. Dense sessions keep their per-window behavior.
+- Calendar-month folds (Cut 16, LDG-3064). `ledgr_folds_rolling()` and
+  `ledgr_folds_anchored()` derive every boundary from the original anchor plus
+  whole multiples of the train, test and step periods. Months and years apply
+  to the anchor's civil date and clamp to the last day of the result month;
+  fixed durations are then added exactly. No boundary is derived from a
+  preceding clamped boundary, so a monthly chain anchored on 2019-12-31 has
+  neither day drift nor a pulse gap.
 - Test-run resume (Cut 11, LDG-2980). When a walk-forward session is rerun, a
   test run that already exists with status `DONE` or `INCOMPLETE` is opened as
   recorded and not re-executed. Any other existing test run, such as one an
@@ -1052,10 +1080,9 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
-- Experiment-store schema 121 is the sole current store schema. One opener and
+- Experiment-store schema 122 is the sole current store schema; LDG-3064
+  removed the stored `walk_forward_folds.hydration_start_utc` column, so
+  schema-120 and schema-121 stores are older stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
@@ -1935,9 +1962,6 @@ Accepted change pending:
 <a id="contract-result-read-surfaces"></a>
 ### Result Reads And Explanations
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
   backtest object or persistent run state.
@@ -1961,6 +1985,12 @@ Accepted change pending:
   from sealed facts, the stored effective plan, and ledger holdings. Neither
   view executes strategy code, reconstructs a strategy target, writes durable
   rows, or changes run identity.
+- Availability result reads derive marks from history starting at the data
+  start, as the fold does, so a run's first pulse may report a stale mark from
+  before its scoring start. A continued carry window's final decision is
+  executed and recorded by that run at the following session's open; its
+  results, explanations and completion evidence read that execution from the
+  run's own configured final execution instant.
 - `ledgr_run_explain(bt, instrument_id, ts_utc)` joins one retained decision
   trace to its availability, execution, valuation, feature-identity, position,
   and terminal evidence. It consumes `diagnostics` and `availability` through
@@ -2094,12 +2124,12 @@ Accepted change pending:
 <a id="contract-result-fills-and-sweep-restoration"></a>
 ### Fills And Sweep Restoration
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
   full fills-schema tibble for empty and populated runs. It has no public
-  cursor, lazy-read, or row-threshold mode.
+  cursor, lazy-read, or row-threshold mode. A continued carry window's
+  boundary fill belongs to the deciding run and is returned by it with its
+  next-session execution timestamp; the next window's run does not repeat it.
+  Training sweeps never continue a window.
 - When one source fill reverses a position and projects to derived CLOSE and
   OPEN rows, its fee is allocated pro rata by the non-negative absolute leg
   quantities. The derived fees for that event must sum to its source fee in
@@ -2180,9 +2210,6 @@ Accepted change pending:
 <a id="contract-result-return-panels"></a>
 ### Return Panels And Retained Evidence
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_return_panel()` constructs source-neutral return evidence from clean
   candidate period returns. `ledgr_sweep_returns_panel()` is the sweep-sourced
   accessor into the same `ledgr_return_panel` contract. Diagnostic panels must
@@ -2206,6 +2233,9 @@ Accepted change pending:
   promotion fails with `ledgr_promote_incomplete_candidate`.
   Sequential and parallel sweeps carry the same canonical completion payload;
   the parent remains the only parallel persistence owner.
+- A continued carry window's equity rows cover only its own scoring pulses;
+  the cash and position effect of its boundary fill first appears in the next
+  window's first equity row, exactly where one continuous run records it.
 - Walk-forward training selection admits only `DONE` candidates. An
   `INCOMPLETE` selected test run records its canonical completion payload,
   marks the fold and session `PARTIAL`, preserves the achieved evidence, and

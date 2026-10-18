@@ -76,8 +76,16 @@ ledgr_run_completion_validate <- function(completion, run_id, calendar, stored_s
     ledgr_run_terminal_evidence_abort("Terminal completion last-valued timestamp disagrees with its achieved end.")
   }
   last_executed <- as.POSIXct(completion$last_executed_ts_utc[[1L]], tz = "UTC")
+  # A continued carry window executes its final decision at the next session
+  # open, after its last pulse.
+  executed_end <- calendar$final_execution_posix
+  executed_end <- if (length(executed_end) == 1L && !is.na(executed_end)) {
+    executed_end
+  } else {
+    intended_end
+  }
   if (!is.na(last_executed) &&
-      (last_executed < intended_start || last_executed > intended_end)) {
+      (last_executed < intended_start || last_executed > executed_end)) {
     ledgr_run_terminal_evidence_abort("Terminal completion last-executed timestamp is outside the run calendar.")
   }
 

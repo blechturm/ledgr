@@ -1,5 +1,5 @@
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0258] current schema definition matches the schema-121 catalogue", {
+testthat::test_that("[LTB-0258] current schema definition matches the schema-122 catalogue", {
   connect <- function(path = ":memory:") {
     DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), dbdir = path)
   }
@@ -18,7 +18,7 @@ testthat::test_that("[LTB-0258] current schema definition matches the schema-121
     file.path(root, "tests", "testthat", "fixtures", "schema-current-golden.csv"),
     stringsAsFactors = FALSE
   )
-  testthat::expect_identical(unique(golden$schema_version), 121L)
+  testthat::expect_identical(unique(golden$schema_version), 122L)
   testthat::expect_identical(
     unique(golden$duckdb_version),
     as.character(utils::packageVersion("duckdb"))
@@ -31,7 +31,7 @@ testthat::test_that("[LTB-0258] current schema definition matches the schema-121
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-  testthat::expect_identical(unique(golden_rows$schema_version), 121L)
+  testthat::expect_identical(unique(golden_rows$schema_version), 122L)
   testthat::expect_identical(
     unique(golden_rows$duckdb_version),
     as.character(utils::packageVersion("duckdb"))
@@ -56,7 +56,7 @@ testthat::test_that("[LTB-0258] current schema definition matches the schema-121
     nrow(missing),
     0L,
     info = paste(
-      "missing schema-121 catalogue rows:",
+      "missing schema-122 catalogue rows:",
       paste(paste(missing$dimension, missing$object), collapse = ", ")
     )
   )

@@ -587,6 +587,14 @@ ledgr_config_opening_positions <- function(cfg) {
   positions[positions != 0]
 }
 
+# The economic state a carried test window inherits beyond positions and
+# cash: FIFO lots, corporate-action entitlements its predecessor bound but did
+# not settle, and holdings its predecessor left frozen. NULL fields when the
+# opening is not carried.
+ledgr_config_opening_carried <- function(cfg) {
+  ledgr_opening_carried_normalize(cfg$opening$carried)
+}
+
 ledgr_config_opening_cost_basis <- function(cfg, positions) {
   basis <- ledgr_config_named_numeric(cfg$opening$cost_basis)
   if (length(positions) < 1L || length(basis) < 1L) {
@@ -603,13 +611,15 @@ ledgr_write_opening_position_events <- function(con,
                                                 ts_utc,
                                                 positions,
                                                 cost_basis,
-                                                event_seq_start) {
+                                                event_seq_start,
+                                                lots = NULL) {
   rows <- ledgr_opening_position_event_rows(
     run_id = run_id,
     ts_utc = ts_utc,
     positions = positions,
     cost_basis = cost_basis,
-    event_seq_start = event_seq_start
+    event_seq_start = event_seq_start,
+    lots = lots
   )
   if (nrow(rows) > 0L) {
     DBI::dbAppendTable(con, "ledger_events", rows)
@@ -702,6 +712,8 @@ ledgr_run_fold_impl <- function(config,
   initial_cash <- prepared$initial_cash
   opening_positions <- prepared$opening_positions
   opening_cost_basis <- prepared$opening_cost_basis
+  opening_carried <- prepared$opening_carried
+  final_execution_ts_utc <- prepared$final_execution_ts_utc
   seed <- prepared$seed
   compiled_accounting_model <- prepared$compiled_accounting_model
   availability_active <- ledgr_availability_config_active(cfg)
@@ -802,10 +814,19 @@ ledgr_run_fold_impl <- function(config,
     NULL
   }
   availability_provider <- NULL
+  # A continued carry window executes its final decision at the next session
+  # open, so its history reaches that session's close.
+  continuation <- NULL
+  history_end_ts_utc <- end_ts_utc
   availability_sessions <- if (availability_active) {
-    if (is.null(history_substrate)) {
+    sessions <- if (is.null(history_substrate)) {
       availability_data$sessions
     } else {
+      history_substrate$sessions
+    }
+    continuation <- ledgr_availability_continuation(sessions, final_execution_ts_utc)
+    if (!is.null(continuation)) history_end_ts_utc <- continuation$close
+    if (!is.null(history_substrate)) {
       history_start <- ledgr_run_snapshot_history_start(con, snapshot_id)
       ledgr_history_substrate_validate_owner(
         history_substrate,
@@ -813,10 +834,10 @@ ledgr_run_fold_impl <- function(config,
         history_policy = history_policy,
         instrument_ids = instrument_ids,
         required_start = as.POSIXct(history_start, tz = "UTC"),
-        required_end = end_ts_utc
+        required_end = history_end_ts_utc
       )
-      history_substrate$sessions
     }
+    sessions
   } else {
     NULL
   }
@@ -828,10 +849,11 @@ ledgr_run_fold_impl <- function(config,
     )
   }
   calendar <- if (availability_active) {
-    ledgr_availability_calendar(
+    ledgr_availability_run_calendar(
       list(sessions = availability_sessions),
       start_ts_utc,
-      end_ts_utc
+      end_ts_utc,
+      final_execution_ts_utc
     )
   } else {
     ledgr_run_snapshot_calendar(
@@ -851,7 +873,7 @@ ledgr_run_fold_impl <- function(config,
       ledgr_availability_calendar(
         list(sessions = availability_sessions),
         as.POSIXct(history_start, tz = "UTC"),
-        end_ts_utc
+        history_end_ts_utc
       )$pulses_posix
     } else {
       history_substrate$axis
@@ -921,7 +943,8 @@ ledgr_run_fold_impl <- function(config,
       calendar = calendar,
       start_ts_utc = start_ts_utc,
       opening_positions = opening_positions,
-      opening_cost_basis = opening_cost_basis
+      opening_cost_basis = opening_cost_basis,
+      opening_lots = opening_carried$lots
     )
   }
   resume_posix <- resume$resume_posix
@@ -969,7 +992,8 @@ ledgr_run_fold_impl <- function(config,
   initial_lot_state <- ledgr_lot_state_from_opening(
     instrument_ids = instrument_ids,
     positions = opening_positions,
-    cost_basis = opening_cost_basis
+    cost_basis = opening_cost_basis,
+    lots = opening_carried$lots
   )
   if (identical(execution_mode, "audit_log")) {
     initial_positions <- rep(0, length(instrument_ids))
@@ -1025,8 +1049,13 @@ ledgr_run_fold_impl <- function(config,
     bars_all <- NULL
     if (!availability_active || is.null(history_substrate)) {
       preparation_start <- if (availability_active) history_axis[[1L]] else start_ts_utc
+      preparation_end <- if (availability_active) {
+        history_axis[[length(history_axis)]]
+      } else {
+        end_ts_utc
+      }
       start_iso <- ledgr_normalize_ts_utc(preparation_start)
-      end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
+      end_iso <- ledgr_normalize_ts_utc(preparation_end)
       start_ts <- as.POSIXct(start_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
       end_ts <- as.POSIXct(end_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
       ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
@@ -1152,9 +1181,7 @@ ledgr_run_fold_impl <- function(config,
             instrument_id = instrument_id,
             definition = def,
             kind = strict_kinds[[def$id]],
-            calculation_start = ledgr_history_calculation_start(
-              history_substrate, start_ts_utc
-            ),
+            calculation_start = ledgr_history_calculation_start(history_substrate),
             calculation_end = end_ts_utc,
             rows = b
           )
@@ -1289,7 +1316,8 @@ ledgr_run_fold_impl <- function(config,
     instrument_ids = instrument_ids,
     existing_events = ledgr_corporate_action_existing_events(con, run_id),
     start_idx = start_idx,
-    dispositions_active = availability_active
+    dispositions_active = availability_active,
+    carried = opening_carried$pending
   )
 
   fold_execution <- ledgr_execution_spec(
@@ -1345,9 +1373,14 @@ ledgr_run_fold_impl <- function(config,
           ledgr_projection_pulse_names(pulses_posix)
         ])
       )
+    } else if (length(opening_carried$frozen) > 0L) {
+      # A carried test window opens with the holdings its predecessor left
+      # frozen, so freeze entry is not recorded twice across the boundary.
+      as.character(opening_carried$frozen)
     } else {
       NULL
     },
+    final_execution_posix = if (availability_active) calendar$final_execution_posix else NULL,
     last_executed_at_resume = if (availability_active && is_resume && start_idx > 1L) {
       DBI::dbGetQuery(
         con,

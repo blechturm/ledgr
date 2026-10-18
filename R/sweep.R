@@ -283,7 +283,7 @@ ledgr_sweep_impl <- function(exp,
     bars_by_id <- ledgr_precompute_fetch_bars(
       exp$snapshot,
       exp$universe,
-      range$warmup_start,
+      range$scoring_start,
       range$scoring_end
     )
     bars_by_id <- ledgr_sweep_normalize_bars_by_id(
@@ -312,9 +312,7 @@ ledgr_sweep_impl <- function(exp,
       ledgr_history_precompute_payload(
         unique_defs,
         history_substrate,
-        calculation_start = ledgr_history_calculation_start(
-          history_substrate, range$scoring_start
-        ),
+        calculation_start = ledgr_history_calculation_start(history_substrate),
         calculation_end = range$scoring_end
       )
     } else {
@@ -335,7 +333,7 @@ ledgr_sweep_impl <- function(exp,
       precomputed_features,
       ledgr_precompute_history_axis(
         history_substrate,
-        ledgr_history_calculation_start(history_substrate, range$scoring_start),
+        ledgr_history_calculation_start(history_substrate),
         range$scoring_end
       )
     )

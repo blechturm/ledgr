@@ -209,10 +209,12 @@ ledgr_history_substrate_for_experiment <- function(exp,
 
 # The instant from which every availability entry point calculates feature
 # state: one rule shared by runs, sweeps, windows, explicit precompute and
-# pulse inspection.
-ledgr_history_calculation_start <- function(substrate, scoring_start) {
+# pulse inspection. History has a single start, the data start (the first
+# session of the experiment's snapshot); the scoring start bounds decisions
+# only (v12 Section 2).
+ledgr_history_calculation_start <- function(substrate) {
   ledgr_history_substrate_require(substrate)
-  scoring_start
+  substrate$data_start_utc
 }
 
 ledgr_history_compute_feature_series <- function(substrate,
@@ -465,10 +467,15 @@ ledgr_history_substrate_fold_reader <- function(substrate,
       current <- ledgr_history_substrate_bar_packet(
         substrate, pulse_columns[[pulse_idx]]
       )
-      next_packet <- if (pulse_idx < length(pulse_columns)) {
-        ledgr_history_substrate_bar_packet(
-          substrate, pulse_columns[[pulse_idx + 1L]]
-        )
+      # The final pulse of a continued carry window executes at the next
+      # prepared session's open, which lies beyond the fold's own pulses.
+      next_column <- if (pulse_idx < length(pulse_columns)) {
+        pulse_columns[[pulse_idx + 1L]]
+      } else {
+        pulse_columns[[pulse_idx]] + 1L
+      }
+      next_packet <- if (next_column <= length(substrate$axis)) {
+        ledgr_history_substrate_bar_packet(substrate, next_column)
       } else {
         NULL
       }

@@ -1132,10 +1132,11 @@ ledgr_run_open <- function(snapshot, run_id) {
       cfg,
       as.character(snapshot_hash)
     )
-    calendar <- ledgr_availability_calendar(
+    calendar <- ledgr_availability_run_calendar(
       provider,
       cfg$backtest$start_ts_utc,
-      cfg$backtest$end_ts_utc
+      cfg$backtest$end_ts_utc,
+      cfg$backtest$final_execution_ts_utc
     )
     completion <- ledgr_run_completion_read(opened$con, run_id, required = TRUE)
     completion <- ledgr_run_completion_validate(

@@ -10,13 +10,16 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
                                  features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
                                  availability = TRUE,
                                  dividend = NULL,
-                                 ccc_known = 7L) {
+                                 ccc_known = 7L,
+                                 bbb_gaps = c(3L, 4L),
+                                 valuation_policy = ledgr_valuation_stale(3),
+                                 corporate_action_policy = ledgr_corporate_actions_research()) {
   days <- as.Date("2021-01-04") + c(0:4, 7:9)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   k <- seq_along(days)
   bars <- rbind(
     data.frame(instrument_id = "AAA", ts_utc = utc(days), close = 10 + k),
-    data.frame(instrument_id = "BBB", ts_utc = utc(days[-c(3, 4)]), close = 20 + k[-c(3, 4)]),
+    data.frame(instrument_id = "BBB", ts_utc = utc(days[-bbb_gaps]), close = 20 + k[-bbb_gaps]),
     data.frame(instrument_id = "CCC", ts_utc = utc(days[1:5]), close = 30 + k[1:5])
   )
   bars$open <- bars$high <- bars$low <- bars$close
@@ -74,8 +77,9 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
   exp <- if (isTRUE(availability)) {
     ledgr_experiment(
       snapshot, strategy, universe = ledgr_universe_members("u"),
-      features = features, valuation_policy = ledgr_valuation_stale(3),
-      cost_model = ledgr_cost_zero(), opening = opening, history_policy = policy
+      features = features, valuation_policy = valuation_policy,
+      cost_model = ledgr_cost_zero(), opening = opening, history_policy = policy,
+      corporate_action_policy = corporate_action_policy
     )
   } else {
     NULL

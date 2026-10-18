@@ -61,11 +61,18 @@
 #' `test_metric_value - train_metric_value`; whether a positive value indicates
 #' improvement or degradation depends on the selection rule direction.
 #'
-#' Every training and test window starts feature state at its own start:
-#' indicators warm up again inside each window and no feature reads bars before
-#' it. Availability-aware sessions already share one causal preparation, but
-#' the public data-start and continuous-window behavior remains owned by the
-#' later history-surface workstream. This is separate from
+#' In an availability-aware session every training and test window reads
+#' feature, mark and entitlement history from the data start (the first
+#' session of the snapshot) through one shared causal preparation; windows only
+#' bound decisions. Under `"carry_test_state"` the test windows form one
+#' economic chain: each window except the last executes its final decision at
+#' the following session's open, and the next window opens from the resulting
+#' cash, positions, FIFO lots, unsettled corporate-action entitlements and
+#' frozen holdings. Strategy state does not cross a window. The chain equals one
+#' run with the selected parameters switching at the same decision pulses.
+#' The last window, `"flat_test_state"` windows and standalone runs keep the
+#' terminal rule: a final decision is recorded but not executed. Dense sessions
+#' keep their per-window feature start. This is separate from
 #' `cold_start_distorted`, which concerns opening positions, not features.
 #' @export
 ledgr_walk_forward <- function(exp,
@@ -129,6 +136,7 @@ ledgr_walk_forward <- function(exp,
   }
   if (identical(opening_state_policy, "carry_test_state")) {
     ledgr_walk_forward_refuse_noncontiguous_carry(exp, fold_windows)
+    fold_windows <- ledgr_walk_forward_continue_windows(fold_windows, history_substrate)
   }
   if (identical(opening_state_policy, "flat_test_state")) {
     rlang::warn(
@@ -724,7 +732,16 @@ ledgr_walk_forward_eval_fold <- function(exp,
 
   next_opening <- carried_opening
   if (identical(opening_state_policy, "carry_test_state")) {
-    next_opening <- ledgr_walk_forward_opening_from_run(test_exp, test_run$run_id)
+    next_opening <- if (is.null(history_substrate)) {
+      ledgr_walk_forward_opening_from_run(test_exp, test_run$run_id)
+    } else {
+      ledgr_walk_forward_carried_opening(
+        test_exp,
+        test_run$run_id,
+        test_window,
+        history_substrate
+      )
+    }
   }
   list(
     status = "DONE",
@@ -980,7 +997,6 @@ ledgr_walk_forward_fold_row <- function(session_id,
     train_end_utc = train_window$scoring_end_utc,
     test_start_utc = test_window$scoring_start_utc,
     test_end_utc = test_window$scoring_end_utc,
-    hydration_start_utc = train_window$hydration_start_utc,
     train_scoring_start_utc = train_window$scoring_start_utc,
     test_scoring_start_utc = test_window$scoring_start_utc,
     opening_state_policy = opening_state_policy,
@@ -1140,4 +1156,172 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
   cost_basis <- as.numeric(total_basis) / as.numeric(held)
   names(cost_basis) <- names(held)
   ledgr_opening(cash = final_cash, positions = held, cost_basis = cost_basis)
+}
+
+# carry_test_state is one economic chain (v12 Section 8, LDG-3064). Every test
+# window except the last executes its final decision at the following
+# session's open; the last keeps the terminal rule. Windows are already
+# contiguous here, so that open is the next window's first session open.
+ledgr_walk_forward_continue_windows <- function(fold_windows, history_substrate) {
+  if (is.null(history_substrate) || length(fold_windows) < 2L) return(fold_windows)
+  sessions <- history_substrate$sessions
+  open <- sessions[sessions$status == "open" & !is.na(sessions$session_close), , drop = FALSE]
+  closes <- as.numeric(as.POSIXct(open$session_close, tz = "UTC"))
+  ends <- vapply(
+    fold_windows[-length(fold_windows)],
+    function(windows) as.numeric(as.POSIXct(windows$test$scoring_end_utc, tz = "UTC")),
+    numeric(1)
+  )
+  next_session <- findInterval(ends, sort(closes)) + 1L
+  ordered <- open[order(closes), , drop = FALSE]
+  for (k in seq_along(ends)) {
+    if (next_session[[k]] > nrow(ordered)) next
+    fold_windows[[k]]$test$final_execution_ts_utc <- ledgr_normalize_ts_utc(
+      as.POSIXct(ordered$session_open[[next_session[[k]]]], tz = "UTC")
+    )
+  }
+  fold_windows
+}
+
+# The economic state a continued test run hands to the next window: cash and
+# positions after every event, including its boundary fill; FIFO lots;
+# corporate-action entitlements bound in the chain but not yet settled; and
+# holdings frozen at its last pulse. Strategy state does not cross.
+ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_substrate) {
+  opened <- ledgr_run_store_open(exp$snapshot$db_path)
+  on.exit(ledgr_run_store_close(opened), add = TRUE)
+  events <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty,",
+      "price, fee, meta_json, event_seq FROM ledger_events WHERE run_id = ?",
+      "ORDER BY event_seq"
+    ),
+    params = list(run_id)
+  )
+  universe <- as.character(exp$universe)
+  replay <- ledgr_replay_accounting_events(
+    ledgr_prepare_accounting_events(events, universe),
+    initial_cash = as.numeric(exp$opening$cash)
+  )
+  positions <- replay$positions
+  held <- positions[is.finite(positions) & abs(positions) > 1e-12]
+  if (any(held < 0)) {
+    rlang::abort(
+      "Carry-test-state opening cannot represent short terminal positions in v1.",
+      class = "ledgr_walk_forward_invalid_opening_state"
+    )
+  }
+  calendar <- ledgr_availability_calendar(
+    list(sessions = history_substrate$sessions),
+    window$scoring_start_utc,
+    window$scoring_end_utc
+  )
+  pending <- ledgr_walk_forward_pending_entitlements(
+    exp, events, calendar$pulses_posix, history_substrate
+  )
+  frozen <- ledgr_walk_forward_frozen_at_end(
+    exp, opened$con, run_id, calendar$pulses_posix, history_substrate
+  )
+  if (length(held) == 0L) {
+    opening <- ledgr_opening(cash = replay$cash)
+    opening$carried <- list(lots = NULL, pending = pending, frozen = frozen)
+    return(opening)
+  }
+  lot_state <- replay$lot_state
+  ids <- universe[universe %in% names(held)]
+  lots <- lapply(ids, function(id) {
+    idx <- unname(lot_state$instrument_index[[id]])
+    keep <- seq.int(lot_state$lot_head[[idx]], length.out = max(0L, lot_state$lot_tail[[idx]] - lot_state$lot_head[[idx]] + 1L))
+    list(
+      instrument_id = rep(id, length(keep)),
+      qty = as.numeric(lot_state$lot_qty[[idx]][keep]),
+      price = as.numeric(lot_state$lot_price[[idx]][keep])
+    )
+  })
+  lots <- list(
+    instrument_id = unlist(lapply(lots, `[[`, "instrument_id"), use.names = FALSE),
+    qty = unlist(lapply(lots, `[[`, "qty"), use.names = FALSE),
+    price = unlist(lapply(lots, `[[`, "price"), use.names = FALSE)
+  )
+  held <- held[ids]
+  basis <- as.numeric(lot_state$cost_basis_by_inst[ids]) / as.numeric(held)
+  opening <- ledgr_opening(
+    cash = replay$cash,
+    positions = held,
+    cost_basis = stats::setNames(basis, ids)
+  )
+  opening$carried <- list(lots = lots, pending = pending, frozen = frozen)
+  opening
+}
+
+# Cash entitlements bound inside the deciding window (or at the next window's
+# first pulse, which the chain binds while processing this window's last
+# pulse) whose posting falls after this window. Quantities are the holdings
+# the fold binds: positions after every event at or before the previous
+# session close (the opening positions for an entitlement on the window's
+# first pulse).
+ledgr_walk_forward_pending_entitlements <- function(exp, events, pulses, history_substrate) {
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
+  rows <- ledgr_corporate_action_rows(get_connection(exp$snapshot), exp$snapshot$snapshot_id)
+  if (is.null(rows) || nrow(rows) == 0L) return(NULL)
+  axis <- as.numeric(history_substrate$axis)
+  pulses <- as.numeric(as.POSIXct(pulses, tz = "UTC"))
+  first <- match(pulses[[1L]], axis)
+  last <- match(pulses[[length(pulses)]], axis)
+  cash_eligible <- rows$subtype == "ordinary_cash_dividend" & rows$complete &
+    if (all(c("gross_cash_validated", "gross_cash_per_parent_unit") %in% names(rows))) {
+      rows$gross_cash_validated & is.finite(rows$gross_cash_per_parent_unit)
+    } else {
+      FALSE
+    }
+  entitlement <- match(as.numeric(as.POSIXct(rows$entitlement_time, tz = "UTC")), axis)
+  settings <- ledgr_corporate_action_policy_settings(
+    ledgr_corporate_action_policy_identity(exp$corporate_action_policy)
+  )
+  posting <- entitlement + as.integer(identical(settings[["cash_posting"]], "next_open"))
+  knowledge <- findInterval(as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC")), axis)
+  knowledge_exact <- knowledge > 0L & axis[pmax(knowledge, 1L)] == as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC"))
+  knowledge <- knowledge + as.integer(!knowledge_exact)
+  due <- pmax(posting, knowledge)
+  meta <- ledgr_corporate_action_event_meta(events)
+  posted <- vapply(meta, function(x) {
+    if (identical(x$source, "corporate_action_cash")) as.character(x$source_fact_id %||% "") else ""
+  }, character(1))
+  selected <- which(
+    cash_eligible & !is.na(entitlement) & entitlement >= first & entitlement <= last + 1L &
+      !is.na(due) & due > last & posting <= length(axis) &
+      !as.character(rows$fact_id) %in% posted
+  )
+  if (length(selected) == 0L) return(NULL)
+  boundary <- entitlement[selected] - 1L
+  cum <- .POSIXct(ifelse(boundary >= first, axis[pmax(boundary, 1L)], NA_real_), tz = "UTC")
+  quantity <- ledgr_corporate_action_past_quantities(
+    events, meta, rows, selected, as.character(exp$universe), cum
+  )
+  list(
+    fact_id = as.character(rows$fact_id[selected]),
+    quantity = as.numeric(quantity),
+    posting_ts_utc = ledgr_normalize_ts_utc(.POSIXct(axis[posting[selected]], tz = "UTC"))
+  )
+}
+
+ledgr_walk_forward_frozen_at_end <- function(exp, con, run_id, pulses, history_substrate) {
+  exhausted <- ledgr_availability_exhausted_choice(exp$valuation_policy)
+  if (!identical(exhausted, "freeze")) return(character())
+  snapshot_hash <- history_substrate$snapshot_hash
+  provider <- ledgr_availability_provider_from_substrate(
+    history_substrate,
+    ledgr_sweep_availability_config(exp),
+    snapshot_hash
+  )
+  pulses <- as.POSIXct(pulses, tz = "UTC")
+  ledgr_availability_frozen_at(
+    con, run_id, as.numeric(exp$opening$cash), provider,
+    history_substrate$bars,
+    as.character(exp$universe), pulses, length(pulses),
+    source_pulses_posix = history_substrate$axis,
+    pulse_columns = unname(history_substrate$pulse_index[ledgr_projection_pulse_names(pulses)])
+  )
 }

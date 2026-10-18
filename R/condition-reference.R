@@ -849,8 +849,6 @@
 #'   mismatch boundary.
 #' - `ledgr_precomputed_grid_mismatch` reports the precomputed grid mismatch
 #'   boundary.
-#' - `ledgr_precomputed_hydration_mismatch` reports the precomputed hydration
-#'   mismatch boundary.
 #' - `ledgr_precomputed_range_mismatch` reports the precomputed range
 #'   mismatch boundary.
 #' - `ledgr_precomputed_snapshot_mismatch` reports the precomputed snapshot
@@ -959,8 +957,6 @@
 #' - `ledgr_unsupported_accounting_model` reports unsupported accounting
 #'   model use.
 #' - `ledgr_unsupported_execution_start` reports unsupported execution start
-#'   use.
-#' - `ledgr_unsupported_hydration_start` reports unsupported hydration start
 #'   use.
 #' - `ledgr_unsupported_param_placement` reports unsupported param placement
 #'   use.
@@ -1145,7 +1141,6 @@
 #' @aliases ledgr_precomputed_feature_mismatch
 #' @aliases ledgr_precomputed_grid_mismatch
 #' @aliases ledgr_precomputed_history_mismatch
-#' @aliases ledgr_precomputed_hydration_mismatch
 #' @aliases ledgr_precomputed_range_mismatch
 #' @aliases ledgr_precomputed_snapshot_mismatch
 #' @aliases ledgr_precomputed_universe_mismatch
@@ -1210,7 +1205,6 @@
 #' @aliases ledgr_unknown_feature_id
 #' @aliases ledgr_unsupported_accounting_model
 #' @aliases ledgr_unsupported_execution_start
-#' @aliases ledgr_unsupported_hydration_start
 #' @aliases ledgr_unsupported_param_placement
 #' @aliases ledgr_unsupported_risk_step
 #' @aliases ledgr_validation_cluster_invalid_returns

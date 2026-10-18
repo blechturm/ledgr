@@ -496,19 +496,27 @@ ledgr_backtest_availability_active <- function(bt, con) {
   # the fold; everything else is read once.
   views <- lapply(seq_along(times), function(i) provider$decision_view(times[[i]], positions_at(i)))
   axes <- lapply(views, function(view) as.character(view$axis))
+  # Mark history starts at the data start, as in the fold: the marks state
+  # runs on the session calendar from the snapshot's first bar.
+  history_calendar <- ledgr_availability_calendar(
+    provider,
+    ledgr_run_snapshot_history_start(snapshot$con, snapshot_id),
+    bt$config$backtest$end_ts_utc
+  )
+  history_idx <- match(as.numeric(times), as.numeric(history_calendar$pulses_posix))
   valuation_state <- ledgr_availability_marks_state(
     snapshot$con,
     snapshot_id,
     unlist(axes, use.names = FALSE),
-    calendar,
-    max(pulse_idx),
+    history_calendar,
+    max(history_idx),
     provider$valuation_policy$max_sessions,
     ledgr_availability_exhausted_choice(provider$valuation_policy)
   )
   parts <- lapply(seq_along(times), function(i) {
     ids <- axes[[i]]
     view <- views[[i]]
-    valuation <- valuation_state$advance(pulse_idx[[i]], ids, held = as.logical(view$held[ids]))
+    valuation <- valuation_state$advance(history_idx[[i]], ids, held = as.logical(view$held[ids]))
     view <- ledgr_availability_restrict_frozen(view, valuation)
     list(
       member = as.logical(view$member[ids]),

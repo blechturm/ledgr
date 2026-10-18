@@ -12,7 +12,8 @@ ledgr_run_resume <- function(con,
                              calendar,
                              start_ts_utc,
                              opening_positions,
-                             opening_cost_basis) {
+                             opening_cost_basis,
+                             opening_lots = NULL) {
   fail_run <- output_handler$abort_run
   pulses <- calendar$pulses
   pulses_posix <- calendar$pulses_posix
@@ -95,7 +96,8 @@ ledgr_run_resume <- function(con,
       ts_utc = start_ts_utc,
       positions = opening_positions,
       cost_basis = opening_cost_basis,
-      event_seq_start = next_event_seq
+      event_seq_start = next_event_seq,
+      lots = opening_lots
     )
   }
 

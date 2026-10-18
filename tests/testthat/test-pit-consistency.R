@@ -46,10 +46,13 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
 
   # An opening dated on the session where its holding has no bar stops on the
   # run's first pulse: no NA equity rows, and the run opens and reruns.
+  # LDG-3064 reads marks from the data start, so BBB's session-5 close would
+  # value it on session 6 under a two-session horizon; a zero-session horizon
+  # that refuses keeps this first pulse unvalued.
   first <- ledgr_experiment(
     snapshot, function(ctx, params) ctx$hold(),
     universe = ledgr_universe_members("u"),
-    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000, date = days[[6]], positions = c(BBB = 1), cost_basis = c(BBB = 20))
   )
   close(ledgr_run(first, run_id = "first_pulse_stop"))

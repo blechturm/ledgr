@@ -294,7 +294,6 @@
 \alias{ledgr_precomputed_feature_mismatch}
 \alias{ledgr_precomputed_grid_mismatch}
 \alias{ledgr_precomputed_history_mismatch}
-\alias{ledgr_precomputed_hydration_mismatch}
 \alias{ledgr_precomputed_range_mismatch}
 \alias{ledgr_precomputed_snapshot_mismatch}
 \alias{ledgr_precomputed_universe_mismatch}
@@ -359,7 +358,6 @@
 \alias{ledgr_unknown_feature_id}
 \alias{ledgr_unsupported_accounting_model}
 \alias{ledgr_unsupported_execution_start}
-\alias{ledgr_unsupported_hydration_start}
 \alias{ledgr_unsupported_param_placement}
 \alias{ledgr_unsupported_risk_step}
 \alias{ledgr_validation_cluster_invalid_returns}
@@ -1160,8 +1158,6 @@ mismatch boundary.
 mismatch boundary.
 \item \code{ledgr_precomputed_grid_mismatch} reports the precomputed grid mismatch
 boundary.
-\item \code{ledgr_precomputed_hydration_mismatch} reports the precomputed hydration
-mismatch boundary.
 \item \code{ledgr_precomputed_range_mismatch} reports the precomputed range
 mismatch boundary.
 \item \code{ledgr_precomputed_snapshot_mismatch} reports the precomputed snapshot
@@ -1270,8 +1266,6 @@ boundary.
 \item \code{ledgr_unsupported_accounting_model} reports unsupported accounting
 model use.
 \item \code{ledgr_unsupported_execution_start} reports unsupported execution start
-use.
-\item \code{ledgr_unsupported_hydration_start} reports unsupported hydration start
 use.
 \item \code{ledgr_unsupported_param_placement} reports unsupported param placement
 use.

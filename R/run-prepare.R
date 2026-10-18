@@ -16,6 +16,7 @@ ledgr_run_prepare_config <- function(config) {
   ledgr_policy_schema_require_current(cfg)
 
   opening_positions <- ledgr_config_opening_positions(cfg)
+  carried <- ledgr_config_opening_carried(cfg)
   list(
     config = cfg,
     db_path = cfg$db_path,
@@ -28,6 +29,8 @@ ledgr_run_prepare_config <- function(config) {
       cfg,
       opening_positions
     ),
+    opening_carried = carried,
+    final_execution_ts_utc = cfg$backtest$final_execution_ts_utc,
     seed = cfg$engine$seed,
     compiled_accounting_model = ledgr_public_compiled_accounting_model(
       cfg$engine$compiled_accounting_model

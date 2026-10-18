@@ -38,6 +38,42 @@
   time representation. Older snapshots, stores and identity-rule artifacts
   refuse; no migration or compatibility reader is provided before CRAN.
 
+## Public causal history
+
+- `ledgr_history_frame()` reads one bar field or one feature as causal
+  history from an availability-aware strategy context: full or finite
+  lookback, admissible, decision-axis or explicit instruments, `"keep"` or
+  `"drop_instruments"` and wide or long layout. The result records its data
+  start, window, cutoff, source and policy identity, the selection table and
+  the missingness and carry evidence. `ledgr_history_matrix()` adapts it to an
+  identified sessions-by-instruments matrix and `ledgr_history_sufficient()`
+  answers structural sufficiency. Estimation exclusion never changes a target.
+
+- `ledgr_pulse_snapshot()` accepts an availability-aware `ledgr_experiment`
+  with `ts_utc`, `params` and `feature_params` and returns the context the
+  experiment's run starting at that cutoff passes to its strategy, without
+  calling the strategy or writing anything. The snapshot-and-universe form is
+  unchanged.
+
+- `ledgr_precompute_features()` prepares availability-aware payloads through
+  the causal substrate; a sweep reuses one only on its exact causal axis,
+  cutoff, policy, snapshot and feature identity.
+
+- Availability-aware history has one start, the data start: every run,
+  sweep, window, promotion, walk-forward window, explicit precompute and pulse
+  inspection reads feature, mark and entitlement history from the snapshot's
+  first session. `hydration_start_utc`, `ledgr_unsupported_hydration_start`,
+  `ledgr_precomputed_hydration_mismatch` and the payload `warmup_range` are
+  removed, and experiment-store schema 122 drops the stored fold column;
+  schema-121 stores refuse.
+
+- Under `carry_test_state`, availability walk-forward test windows form one
+  economic chain that equals one run with the same parameter switches: each
+  window except the last executes its final decision at the next session
+  open, and the next window opens from the resulting cash, positions, FIFO
+  lots, unsettled cash entitlements and frozen holdings. Monthly rolling and
+  anchored folds derive every boundary from the anchor and clamp to month end.
+
 ## Current-only experiment stores
 
 - Experiment-store schema 121 is opened through one marker-pair gate. Every

@@ -176,8 +176,20 @@ ledgr_lot_apply_opening <- function(state, instrument_id, qty, cost_basis) {
 
 ledgr_lot_state_from_opening <- function(instrument_ids,
                                          positions = numeric(0),
-                                         cost_basis = numeric(0)) {
+                                         cost_basis = numeric(0),
+                                         lots = NULL) {
   state <- ledgr_lot_state(instrument_ids)
+  if (!is.null(lots) && length(lots$instrument_id) > 0L) {
+    for (k in seq_along(lots$instrument_id)) {
+      state <- ledgr_lot_apply_opening(
+        state,
+        as.character(lots$instrument_id[[k]]),
+        as.numeric(lots$qty[[k]]),
+        as.numeric(lots$price[[k]])
+      )
+    }
+    return(state)
+  }
   if (is.null(positions) || length(positions) == 0L) {
     return(state)
   }

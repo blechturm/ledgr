@@ -1,5 +1,7 @@
-# Cut 9 Workstream 19: until the joint history-start design binds causal
-# hydration, every entry point starts feature state at its scoring start.
+# Cut 9 Workstream 19 pinned per-window feature restart. Cut 16 LDG-3064 moves
+# availability-aware entry points to one data start (test-history-continuity.R);
+# these dense fixtures keep the frozen dense rule, under which every dense
+# entry point starts feature state at its scoring start.
 
 feature_start_day <- function(d) {
   as.POSIXct(paste(as.Date("2020-01-01") + d - 1L, "00:00:00"), tz = "UTC")
@@ -92,7 +94,9 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
     window_sweep = window_sweep$final_equity[[1L]]
   )
   testthat::expect_identical(finals, stats::setNames(rep(restart_final, 7L), names(finals)))
-  testthat::expect_identical(precomputed$warmup_range$start, feature_start_iso(6L))
+  # LDG-3064 retired the payload's separate warm-up start; the dense payload
+  # scores, and starts feature state, at its scoring start.
+  testthat::expect_identical(precomputed$scoring_range$start, feature_start_iso(6L))
 
   # Training on days 6-8 restarts too: its EMA first exists on day 8, so it
   # cannot fill inside the window, exactly like a test window restarting on 9.
@@ -109,10 +113,8 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
   scores <- walk_forward$scores
   train_final <- scores$metric_value[scores$window == "train" & scores$metric_name == "final_equity"][[1L]]
   testthat::expect_identical(train_final, 1000)
-  testthat::expect_identical(
-    ledgr:::ledgr_walk_forward_iso(walk_forward$folds$hydration_start_utc[[1L]]),
-    feature_start_iso(6L)
-  )
+  # LDG-3064 retired the stored fold hydration column.
+  testthat::expect_false("hydration_start_utc" %in% names(walk_forward$folds))
   testthat::expect_identical(final(walk_forward$test_runs[[1L]]), 1000)
 
   # Fixed-window witness: hold one share once SMA(3) exists. Restarted on day
@@ -152,14 +154,14 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
     )$final_equity[[1L]]
   )
   testthat::expect_identical(sma_finals, stats::setNames(rep(1001, 4L), names(sma_finals)))
-  # A payload whose scoring range matches but whose feature state starts on
-  # day 1, as one built before Cut 9 would, is refused by the sweep itself.
+  # A dense payload whose feature state starts on day 1 (its scoring start)
+  # is refused by a sweep scoring from day 6.
   stale <- sma_precomputed
-  stale$warmup_range$start <- feature_start_iso(1L)
+  stale$scoring_range$start <- feature_start_iso(1L)
   testthat::expect_error(
     ledgr_sweep(sma_dated, grid, precomputed_features = stale, workers = 1L, seed = 1L),
-    "`precomputed_features` feature state starts at 2020-01-01T00:00:00Z",
-    class = "ledgr_precomputed_hydration_mismatch",
+    "`precomputed_features` scoring range does not match the requested sweep range.",
+    class = "ledgr_precomputed_range_mismatch",
     fixed = TRUE
   )
   sma_walk_forward <- suppressWarnings(ledgr_walk_forward(
@@ -174,7 +176,10 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
   )
 })
 
-testthat::test_that("[LTB-0197] hydration is stored as the scoring start and earlier starts refuse", {
+# LDG-3064 (v12 Section 2) retires the Cut 9 hydration seam: history has one
+# start, the data start, and no window, fold row, payload, condition or
+# argument carries a second one.
+testthat::test_that("[LTB-0197] history has one start and no hydration seam remains", {
   snapshot <- feature_start_snapshot(as.numeric(1:10))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   experiment <- ledgr_experiment(
@@ -187,56 +192,43 @@ testthat::test_that("[LTB-0197] hydration is stored as the scoring start and ear
   grid <- ledgr_param_grid(only = list())
 
   window <- ledgr:::ledgr_experiment_window(experiment, feature_start_iso(6L), feature_start_iso(10L))
-  testthat::expect_identical(window$hydration_start_utc, window$scoring_start_utc)
+  testthat::expect_false("hydration_start_utc" %in% names(window))
+  testthat::expect_false("hydration_start_utc" %in% names(formals(ledgr:::ledgr_experiment_window)))
   fold <- ledgr_fold(feature_start_iso(4L), feature_start_iso(6L), feature_start_iso(7L), feature_start_iso(9L))
   train <- ledgr:::ledgr_experiment_window_from_fold(experiment, fold, window = "train")
-  testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(train$hydration_start_utc), feature_start_iso(4L))
+  testthat::expect_false("hydration_start_utc" %in% names(train))
+  testthat::expect_null(ledgr_precompute_features(experiment, grid)$warmup_range)
 
-  testthat::expect_error(
-    ledgr:::ledgr_experiment_window(
-      experiment, feature_start_iso(6L), feature_start_iso(10L),
-      hydration_start_utc = feature_start_iso(1L)
-    ),
-    paste(
-      "`hydration_start_utc` (2020-01-01T00:00:00Z) differs from the scoring start",
-      "(2020-01-06T00:00:00Z). Feature state starts at the scoring start; hydration",
-      "from earlier history is planned with the point-in-time history design. Omit",
-      "`hydration_start_utc` or set it equal to `start_utc`."
-    ),
-    class = "ledgr_unsupported_hydration_start",
-    fixed = TRUE
-  )
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  testthat::expect_false("hydration_start_utc" %in% ledgr_test_store_columns(con, "walk_forward_folds"))
 
-  # Precompute never reads before its start, and a window refuses a payload
-  # whose feature state starts earlier than its own.
-  explicit <- ledgr_precompute_features(experiment, grid, start = feature_start_iso(6L))
-  testthat::expect_identical(explicit$warmup_range$start, feature_start_iso(6L))
-  full <- ledgr_precompute_features(experiment, grid)
-  testthat::expect_identical(full$warmup_range$start, feature_start_iso(1L))
-  testthat::expect_error(
-    ledgr:::ledgr_validate_precomputed_features(full, experiment, grid, window = window),
-    "`precomputed_features` feature state starts at 2020-01-01T00:00:00Z",
-    class = "ledgr_precomputed_hydration_mismatch",
-    fixed = TRUE
+  repository <- ledgr_test_source_root()
+  sources <- c(
+    list.files(file.path(repository, "R"), pattern = "[.]R$", full.names = TRUE),
+    list.files(file.path(repository, "man"), pattern = "[.]Rd$", full.names = TRUE)
   )
-  testthat::expect_true(ledgr:::ledgr_validate_precomputed_features(explicit, experiment, grid, window = window))
+  text <- unlist(lapply(sources, readLines, warn = FALSE), use.names = FALSE)
+  for (retired in c(
+    "hydration_start_utc", "ledgr_unsupported_hydration_start",
+    "ledgr_precomputed_hydration_mismatch", "warmup_range"
+  )) {
+    testthat::expect_false(any(grepl(retired, text, fixed = TRUE)), info = retired)
+  }
 
-  # An ordinary sweep validates a payload whose scoring range matches but
-  # whose feature state starts earlier, as one built before Cut 9 would, with
-  # this check; LTB-0196 asserts the same refusal through ledgr_sweep().
-  dated <- ledgr_experiment(
-    snapshot,
-    function(ctx, params) ctx$flat(),
-    features = list(ledgr_ind_sma(3L)),
-    opening = ledgr_opening(cash = 1000, date = feature_start_iso(6L)),
-    cost_model = ledgr_cost_zero()
+  # Availability history starts at the data start for every entry point: an
+  # inspected second session reads SMA(2) of sessions 1-2 (11.5), and a
+  # payload for a window scoring from session 6 calculates from session 1.
+  fixture <- ws42_history_fixture()
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  pulse <- ledgr_pulse_snapshot(fixture$exp, ts_utc = fixture$axis[[2L]])
+  testthat::expect_identical(pulse$feature("AAA", "fast"), 11.5)
+  windowed <- ledgr_precompute_features(
+    fixture$exp, ledgr_param_grid(only = list()), start = fixture$days[[6L]]
   )
-  stale <- ledgr_precompute_features(dated, grid)
-  stale$warmup_range$start <- feature_start_iso(1L)
-  testthat::expect_error(
-    ledgr:::ledgr_validate_precomputed_features(stale, dated, grid),
-    "`precomputed_features` feature state starts at 2020-01-01T00:00:00Z",
-    class = "ledgr_precomputed_hydration_mismatch",
-    fixed = TRUE
+  testthat::expect_identical(
+    windowed$history_axis$calculation_start_utc,
+    format(fixture$axis[[1L]], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   )
 })

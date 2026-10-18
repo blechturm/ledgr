@@ -10,21 +10,19 @@
 #' grid labels, and resolved feature fingerprints. Use it for larger exploratory grids; `ledgr_sweep()`
 #' warns when more than 20 combinations run without precomputed features.
 #'
-#' Feature state starts at the scoring start, as in a run: bars before `start`
-#' are not read, so warmup `NA` values repeat at the start of every scoring
-#' range. `warmup_range$start` therefore equals the scoring start, and a sweep
-#' refuses a payload whose features start before its own scoring start. Until
-#' ledgr defines causal hydration from earlier history, this is the only
-#' supported feature start.
-#'
 #' For an availability-aware experiment the payload is computed through the
 #' same causal history substrate, history policy and calculation bounds as the
-#' experiment's runs and sweeps, and records its causal axis (data start,
-#' first calculated session, cutoff and session stamps). A sweep reuses it only
-#' when that axis, the cutoff, the history policy, the snapshot and every
-#' candidate's feature identity match exactly; otherwise it refuses before any
-#' candidate runs. A dense payload never serves an availability sweep, nor the
-#' reverse.
+#' experiment's runs and sweeps: feature state starts at the data start (the
+#' first session of the snapshot), whatever the scoring start. The payload
+#' records its causal axis (data start, first calculated session, cutoff and
+#' session stamps). A sweep reuses it only when that axis, the cutoff, the
+#' history policy, the snapshot and every candidate's feature identity match
+#' exactly; otherwise it refuses before any candidate runs. A dense payload
+#' never serves an availability sweep, nor the reverse.
+#'
+#' Dense experiments are unchanged: their feature state starts at the scoring
+#' start, bars before `start` are not read, and a sweep refuses a dense payload
+#' whose scoring start differs from its own.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -85,9 +83,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     substrate <- ledgr_history_substrate_for_experiment(
       exp, meta, end = range$scoring_end
     )
-    calculation_start <- ledgr_history_calculation_start(
-      substrate, range$scoring_start
-    )
+    calculation_start <- ledgr_history_calculation_start(substrate)
     payload <- ledgr_history_precompute_payload(
       unique_defs,
       substrate,
@@ -105,7 +101,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
       range$scoring_start
     )
   } else {
-    bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
+    bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$scoring_start, range$scoring_end)
     ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
     payload <- ledgr_precompute_payload(unique_defs, bars_by_id)
     pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
@@ -126,7 +122,6 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     universe = exp$universe,
     history_identity = ledgr_history_policy_identity(exp$history_policy),
     scoring_range = list(start = range$scoring_start, end = range$scoring_end),
-    warmup_range = list(start = range$warmup_start, end = range$scoring_start),
     feature_engine_version = feature_engine_version,
     grid_labels = param_grid$labels,
     feature_union = ledgr_precompute_feature_union(unique_defs),
@@ -328,21 +323,6 @@ ledgr_precompute_validate_window_coverage <- function(precomputed, range, window
         !identical(precomputed$scoring_range$end, range$scoring_end)) {
       rlang::abort("`precomputed_features` scoring range does not match the requested sweep range.", class = "ledgr_precomputed_range_mismatch")
     }
-    # A payload built before Cut 9 can match the scoring range while its
-    # feature state starts at the snapshot start; it must not be reused.
-    if (!identical(precomputed$warmup_range$start, range$scoring_start)) {
-      rlang::abort(
-        sprintf(
-          paste(
-            "`precomputed_features` feature state starts at %s, but the sweep's",
-            "feature state starts at %s. Rerun ledgr_precompute_features()."
-          ),
-          as.character(precomputed$warmup_range$start %||% "an unrecorded time"),
-          range$scoring_start
-        ),
-        class = "ledgr_precomputed_hydration_mismatch"
-      )
-    }
     return(invisible(TRUE))
   }
 
@@ -356,30 +336,20 @@ ledgr_precompute_validate_window_coverage <- function(precomputed, range, window
       class = "ledgr_precomputed_range_mismatch"
     )
   }
-
-  warmup_start <- precomputed$warmup_range$start
-  if (!is.character(warmup_start) || length(warmup_start) != 1L || is.na(warmup_start)) {
-    rlang::abort(
-      "`precomputed_features` does not record hydration range coverage.",
-      class = "ledgr_precomputed_hydration_mismatch"
-    )
-  }
-  # Feature state must start where the window's does. A payload that starts
-  # earlier would carry state from bars before the scoring start.
-  pre_warmup_start <- ledgr_precompute_posix(warmup_start)
-  req_hydration_start <- as.POSIXct(window$hydration_start_utc, tz = "UTC")
-  if (!identical(as.numeric(req_hydration_start), as.numeric(pre_warmup_start))) {
+  # Dense feature state starts at the scoring start, so a dense payload serves
+  # only windows that score from its own start.
+  if (!identical(as.numeric(req_scoring_start), as.numeric(pre_scoring_start))) {
     rlang::abort(
       sprintf(
         paste(
-          "`precomputed_features` feature state starts at %s, but the window's",
-          "feature state starts at %s. Precompute with `start` equal to the",
+          "`precomputed_features` starts dense feature state at %s, but the",
+          "window scores from %s. Precompute with `start` equal to the",
           "window's scoring start."
         ),
-        ledgr_walk_forward_iso(pre_warmup_start),
-        ledgr_walk_forward_iso(req_hydration_start)
+        ledgr_walk_forward_iso(pre_scoring_start),
+        ledgr_walk_forward_iso(req_scoring_start)
       ),
-      class = "ledgr_precomputed_hydration_mismatch"
+      class = "ledgr_precomputed_range_mismatch"
     )
   }
   invisible(TRUE)
@@ -494,9 +464,7 @@ ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL,
   )
   if (!identical(as.numeric(sealed$start), as.numeric(start_posix))) scoring_start <- meta$start
   if (!identical(as.numeric(sealed$end), as.numeric(end_posix))) scoring_end <- meta$end
-  # Feature state starts at the scoring start until the joint history-start
-  # design defines causal hydration from earlier bars (Cut 9).
-  list(scoring_start = scoring_start, scoring_end = scoring_end, warmup_start = scoring_start)
+  list(scoring_start = scoring_start, scoring_end = scoring_end)
 }
 
 ledgr_precompute_fetch_bars_frame <- function(snapshot, universe, start, end) {

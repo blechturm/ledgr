@@ -455,6 +455,7 @@ ledgr_run_experiment <- function(exp,
     feature_params = feature_params_info$value
   )
   window <- ledgr_experiment_window_resolve(exp, window)
+  final_execution <- window$final_execution_ts_utc
   if (is.null(window)) {
     # The recorded start is the clamped scoring start (LDG-3004): an opening
     # dated before the sealed start begins at the sealed start.
@@ -474,7 +475,12 @@ ledgr_run_experiment <- function(exp,
     strategy = exp$strategy,
     strategy_params = params_info$value,
     feature_params = feature_params_info$value,
-    backtest = ledgr_backtest_config(start = start, end = end, initial_cash = exp$opening$cash),
+    backtest = ledgr_backtest_config(
+      start = start,
+      end = end,
+      initial_cash = exp$opening$cash,
+      final_execution = final_execution
+    ),
     features = feature_result$features,
     alias_map = feature_result$alias_map,
     alias_identity_map = feature_result$alias_identity_map,

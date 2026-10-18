@@ -77,7 +77,8 @@ ledgr_execution_spec <- function(run_id,
                                  corporate_action_plan = NULL,
                                  corporate_action_policy = NULL,
                                  frozen_at_resume = NULL,
-                                 last_executed_at_resume = NULL) {
+                                 last_executed_at_resume = NULL,
+                                 final_execution_posix = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
@@ -135,6 +136,9 @@ ledgr_execution_spec <- function(run_id,
   if (!is.null(availability_provider)) {
     spec$availability_provider <- availability_provider
     spec$execution_opportunities_posix <- execution_opportunities_posix
+    if (length(final_execution_posix) == 1L && !is.na(final_execution_posix)) {
+      spec$final_execution_posix <- as.POSIXct(final_execution_posix, tz = "UTC")
+    }
   }
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
@@ -263,11 +267,19 @@ ledgr_validate_execution_spec <- function(spec) {
     )
     ledgr_execution_spec_check(
       inherits(spec$execution_opportunities_posix, "POSIXct") &&
-        length(spec$execution_opportunities_posix) == max(length(spec$pulses_posix) - 1L, 0L) &&
+        length(spec$execution_opportunities_posix) ==
+          max(length(spec$pulses_posix) - 1L, 0L) +
+            as.integer(!is.null(spec$final_execution_posix)) &&
+        (is.null(spec$final_execution_posix) ||
+          identical(
+            as.numeric(spec$execution_opportunities_posix[[length(spec$execution_opportunities_posix)]]),
+            as.numeric(spec$final_execution_posix)
+          )) &&
         !anyNA(spec$execution_opportunities_posix),
       paste(
         "`execution$execution_opportunities_posix` must contain one declared",
-        "next-session opening for every non-terminal availability pulse."
+        "next-session opening for every non-terminal availability pulse, plus",
+        "the declared final execution of a continued carry window."
       )
     )
   } else {

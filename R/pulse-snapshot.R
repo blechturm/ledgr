@@ -455,7 +455,7 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
   payload <- ledgr_history_precompute_payload(
     unique_defs,
     substrate,
-    calculation_start = ledgr_history_calculation_start(substrate, cutoff),
+    calculation_start = ledgr_history_calculation_start(substrate),
     calculation_end = cutoff
   )
   projection <- ledgr_projection_from_payload(

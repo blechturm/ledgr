@@ -193,7 +193,8 @@ ledgr_corporate_action_plan <- function(rows,
                                         instrument_ids,
                                         existing_events = data.frame(),
                                         start_idx = 1L,
-                                        dispositions_active = TRUE) {
+                                        dispositions_active = TRUE,
+                                        carried = NULL) {
   if (is.null(rows) || nrow(rows) == 0L) {
     return(NULL)
   }
@@ -253,6 +254,24 @@ ledgr_corporate_action_plan <- function(rows,
   if (identical(settings[["cash_posting"]], "next_open")) {
     posting_idx <- posting_idx + 1L
     posting_idx[posting_idx > length(pulses_posix)] <- NA_integer_
+  }
+  # A carried test window settles the entitlements its predecessor bound but
+  # did not settle: each posts on the first pulse at or after its original
+  # posting instant, with the quantity bound in the predecessor (LDG-3064).
+  carried_rows <- integer()
+  carried_quantity <- numeric()
+  if (is.data.frame(carried) && nrow(carried) > 0L) {
+    hit <- match(as.character(carried$fact_id), as.character(rows$fact_id))
+    carried_rows <- hit[!is.na(hit)]
+    carried_quantity <- as.numeric(carried$quantity[!is.na(hit)])
+    posting_number <- as.numeric(ledgr_history_utc(carried$posting_ts_utc[!is.na(hit)]))
+    carried_posting <- ledgr_corporate_action_knowledge_index(
+      .POSIXct(posting_number, tz = "UTC"),
+      pulses_posix
+    )
+    carried_posting[posting_number < as.numeric(pulses_posix[[1L]])] <- 1L
+    posting_idx[carried_rows] <- as.integer(carried_posting)
+    entitlement_idx[carried_rows] <- NA_integer_
   }
   cash_due_idx <- pmax(posting_idx, knowledge_idx, na.rm = FALSE)
   cash_due_idx[!cash_eligible] <- NA_integer_
@@ -334,6 +353,10 @@ ledgr_corporate_action_plan <- function(rows,
   }
   state$cash_posted <- rows$fact_id %in% cash_fact_ids
   state$disposition_posted <- rows$fact_id %in% disposition_fact_ids
+  if (length(carried_rows) > 0L) {
+    state$quantity <- replace(state$quantity, carried_rows, carried_quantity)
+    state$bound <- replace(state$bound, carried_rows, TRUE)
+  }
 
   past <- which(
     !is.na(entitlement_idx) &
