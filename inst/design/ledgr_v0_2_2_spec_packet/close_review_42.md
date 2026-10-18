@@ -272,3 +272,72 @@ unchanged Cut 9 values.
   with their v12 pending links removed. The remaining links (Strategy
   Context Teaching, Release Gates, Store And Codebase Gates, WS43 groups)
   belong to other owners.
+
+## Confirmation (correction commit `1ac64ecf`)
+
+Verdict: PASS.
+
+F1 is fixed. `ledgr_walk_forward_pending_entitlements()` now rebuilds the
+previous window's own `ledgr_corporate_action_plan()` from its ledger. The
+rebuild covers the window's pulses plus the next window's first pulse and
+runs as a resume past the last pulse. The rows to carry come from the plan's
+own state (bound, posted and due indices) through `carry_out()`. The driver
+no longer re-derives posting or knowledge timing, so this is not a second
+settlement path.
+
+The rebuild and `carry_out()` run once per fold boundary. `carry_out()` is
+vectorized over corporate-action rows. The binding reuses the existing
+resume helper (`ledgr_corporate_action_past_quantities()`, paired position
+lookup). Nothing runs per pulse, and nothing grows quadratically across
+folds.
+
+Re-run against `1ac64ecf`:
+- Chain probes, one run against the concatenated carried chain (non-opening
+  ledger, equity and non-routine diagnostics):
+
+  | Probe | Result |
+  | --- | --- |
+  | `cash_acquisition` effective 4, known 7 | disposition at 27 on 2021-01-12 in both; final 1063 |
+  | `ordinary_cash_dividend` effective 4, known 7 | identical; final 1064.5 |
+  | `ordinary_cash_dividend` effective 5, known 6 | identical; final 1064.5 |
+  | `spin_off` 4/7 under `unsupported_quantity = "refuse"` | both stop at 2021-01-12 with `corporate_action_quantity_refused`; final 1058; chain `PARTIAL` |
+  | `spin_off` 6/8 under the same policy | both stop at 2021-01-13; final 1061 |
+  | entitlement-free acquisition and spin-off variants | identical (see the observation below) |
+- Mutations on a fresh source copy; LTB-0303 fails under each:
+  - carry only cash rows;
+  - carry nothing;
+  - rebuild without the next window's first pulse;
+  - leave a passed effective clock unreached;
+  - do not recompute the late flag;
+  - ignore a later knowledge clock.
+- The removed runner branch is behavior-identical. The dense calendar
+  (`ledgr_run_snapshot_calendar()`) has no `final_execution_posix` element,
+  and `ledgr_execution_spec()` reads the argument only when an availability
+  provider is present.
+- Record text for F2-F5 is present:
+  - full-lookback allocation and its quadratic consequence;
+  - overlay-loop counts;
+  - routes to LDG-3071, LDG-3069 and LDG-3070, plus a proposed preflight
+    follow-up;
+  - the private `ctx$.history` carrier in the contract;
+  - corrected refusal classes;
+  - stated reasons for LTB-0281, LTB-0200 and LTB-0206;
+  - selectors no longer pending in `contracts.md`;
+  - the walk-forward split listed for consolidation.
+
+  The routed owners remain proposals pending maintainer confirmation, as
+  disclosed.
+- Full suite once after `load_all()`: 1,124 blocks, 0 failures, 0 errors and
+  one optional skip. No `_problems` artifacts were left.
+- `tools/check-fold-phase-contract.R`: `LEDGR_FOLD_PHASE_CONTRACT_OK`.
+- Census `--mode=check`: equal to the committed CSVs except `metadata.csv`.
+- `tickets.yml` and `tests/claims.yml` parse.
+- `git diff --check a915ba66..HEAD` is clean.
+
+Observation, not a WS42 finding: a `cash_acquisition` or `spin_off` row with
+an effective clock but no entitlement clock is neither disposed of nor
+refused in a single run, even when known early. The chain matches the run,
+so continuity holds. Whether such rows should act belongs to the
+corporate-action settlement owner.
+
+No timing conclusion is drawn: the host carried audio load.
