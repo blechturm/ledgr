@@ -222,10 +222,15 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   the following session's open, preserving the decision-to-fill join; the run
   records that instant as its final execution and its completion may report
   it as the last execution. The next window opens from the resulting cash and
-  positions, its FIFO lots (one opening row per lot), cash entitlements the
-  chain bound but had not settled (posted at their original posting session
-  with the bound quantity), and the holdings frozen at the previous window's
-  last pulse. Feature, mark and entitlement history come from the shared
+  positions, its FIFO lots (one opening row per lot), every corporate-action
+  row the previous window bound but one run would settle later (cash
+  entitlements, dispositions and quantity effects, with the bound quantity),
+  and the holdings frozen at the previous window's last pulse. The carried
+  rows come from the previous window's own settlement plan, rebuilt from its
+  ledger over its pulses and the next window's first pulse; in the next
+  window a passed posting or effective clock counts as reached on its first
+  pulse and the knowledge clock is resolved as in one run, so each row
+  becomes due on the pulse one run uses. Feature, mark and entitlement history come from the shared
   data-start preparation and are never window-local. Strategy state does not
   cross a window. The concatenated test runs equal one public run whose
   strategy switches parameters at the same decision pulses on fills,
@@ -787,8 +792,10 @@ Accepted change pending:
 - The history-treatment primitive does not change the universe or execution
   planes. It keeps structural expectedness, observed/raw missingness, input
   carry, calculation validity, output carry, readiness and estimator admission
-  as distinct evidence. The public selectors and target-intent boundary remain
-  pending under LDG-3062 and LDG-3063.
+  as distinct evidence. The public selectors (`instruments`, `na_action =
+  "drop_instruments"`) and the boundary between estimation exclusion and
+  target intent are bound under Pulse Data And Axis-Aligned Accessors and
+  Strategy Outputs And Helper Values.
 - Under the default history policy the treatment primitive carries an observed
   price level forward for at most five later expected sessions. Carry is causal
   and field-local: it never fills backward, never fabricates a leading value,
@@ -1733,7 +1740,12 @@ and `AAA` a held nonmember, each holding 5:
   completeness query: at least `lookback` returned sessions and at least
   `min_instruments` included instruments. It is not indicator readiness,
   warm-up or convergence and inspects no value.
-- History reads add no context field, durable artifact or snapshot row. P1
+- History reads add no public context field, durable artifact or snapshot
+  row. The history view is a private carrier, `ctx$.history`, that holds the
+  read service and therefore the whole substrate; strategies read history
+  only through `ledgr_history_frame()`, and the strategy preflight does not
+  yet reject direct access to dot-prefixed context internals (routed by the
+  Workstream 42 close review, F4). P1
   issues the cutoff-bound history view; P2 places it on the context, and the
   strategy's `ledgr_history_frame()` call reads prepared planes shared by the
   owning run, sweep or walk-forward session. Treatment planes are prepared

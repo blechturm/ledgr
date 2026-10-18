@@ -72,4 +72,4 @@
 "R/walk-forward.R",1112,"ledgr_walk_forward_run_status","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
 "R/walk-forward.R",1123,"ledgr_walk_forward_opening_from_run","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/walk-forward.R",1191,"ledgr_walk_forward_carried_opening","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
-"R/walk-forward.R",1267,"ledgr_walk_forward_pending_entitlements","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
+"R/walk-forward.R",1268,"ledgr_walk_forward_pending_entitlements","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"

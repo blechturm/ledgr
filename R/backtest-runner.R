@@ -1380,7 +1380,7 @@ ledgr_run_fold_impl <- function(config,
     } else {
       NULL
     },
-    final_execution_posix = if (availability_active) calendar$final_execution_posix else NULL,
+    final_execution_posix = calendar$final_execution_posix,
     last_executed_at_resume = if (availability_active && is_resume && start_idx > 1L) {
       DBI::dbGetQuery(
         con,

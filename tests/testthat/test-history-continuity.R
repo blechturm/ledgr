@@ -45,6 +45,81 @@ ws42_rows <- function(runs, what, drop) {
   out
 }
 
+# AAA and BBB close at 10 + k and 20 + k on the eight fixture sessions; the
+# holdings open with AAA 2 and BBB 1. One BBB corporate action has its
+# entitlement and effective clocks at session `effective` and becomes known
+# at session `known`'s open (LDG-3064 close review F1).
+ws42_late_action_fixture <- function(subtype, policy, effective = 4L, known = 7L, buy_bbb = 0) {
+  days <- as.Date("2021-01-04") + c(0:4, 7:9)
+  utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  k <- seq_along(days)
+  bars <- rbind(
+    data.frame(instrument_id = "AAA", ts_utc = utc(days), close = 10 + k),
+    data.frame(instrument_id = "BBB", ts_utc = utc(days), close = 20 + k)
+  )
+  bars$open <- bars$high <- bars$low <- bars$close
+  bars$volume <- 100
+  calendar <- seq(min(days), max(days), by = "day")
+  open <- calendar %in% days
+  sessions <- data.frame(
+    session_date = calendar, status = ifelse(open, "open", "closed"),
+    session_open = ifelse(open, "14:30:00", NA), session_close = ifelse(open, "21:00:00", NA)
+  )
+  membership <- data.frame(
+    effective_from = utc(days[[1]] - 1), knowledge_time = utc(days[[1]] - 1), source = "t"
+  )
+  membership$members <- I(list(c("AAA", "BBB")))
+  action <- data.frame(
+    fact_id = "ca-1", subtype = subtype, parent_instrument_id = "BBB",
+    entitlement_time = utc(days[[effective]]), effective_time = utc(days[[effective]]),
+    knowledge_time = utc(days[[known]]) - 6.5 * 3600,
+    complete = TRUE, provenance_tier = "snapshot_bound",
+    gross_cash_per_parent_unit = if (identical(subtype, "ordinary_cash_dividend")) 0.5 else NA_real_,
+    gross_cash_validated = identical(subtype, "ordinary_cash_dividend"),
+    recipient_identity_validated = FALSE, recipient_quantity_validated = FALSE,
+    source = "ws42", stringsAsFactors = FALSE
+  )
+  facts <- ledgr_facts(
+    ledgr_facts_equity_corporate_actions(action),
+    ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
+    ledgr_facts_membership_snapshots(
+      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+    )
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    bars, data.frame(instrument_id = c("AAA", "BBB")),
+    db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
+  )
+  # Buys `params$bbb` BBB shares on session 5, the first window's last pulse.
+  strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(substr(ctx$ts_utc, 1L, 10L), "2021-01-08")) {
+      target[["BBB"]] <- target[["BBB"]] + params$bbb
+    }
+    target
+  }
+  exp <- ledgr_experiment(
+    snapshot, strategy, universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000, positions = c(AAA = 2, BBB = 1), cost_basis = c(AAA = 10, BBB = 21)),
+    corporate_action_policy = policy
+  )
+  list(snapshot = snapshot, exp = exp, days = days, params = list(bbb = buy_bbb))
+}
+
+# Non-opening ledger rows, equity and diagnostics of one run, or of a chain's
+# test runs concatenated.
+ws42_chain_record <- function(runs) {
+  events <- ws42_rows(runs, "ledger", c("event_id", "run_id", "event_seq"))
+  events <- events[!grepl("opening", events$meta_json, fixed = TRUE), ]
+  rownames(events) <- NULL
+  list(
+    events = events,
+    equity = ws42_rows(runs, "equity", character())[, c("ts_utc", "cash", "positions_value", "equity")],
+    diagnostics = ws42_rows(runs, "diagnostics", c("run_id", "diagnostic_seq"))
+  )
+}
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain equal to one run", {
   fixture <- ws42_continuity_fixture()
@@ -164,6 +239,83 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
   testthat::expect_identical(flat_second$cash[[1L]], 1000)
   testthat::expect_identical(flat_second$equity[[1L]], 1000 + 2 * 16 + 23)
   testthat::expect_identical(nrow(dividend(flat$test_runs[[2L]])), 0L)
+
+  # Corporate actions that one run settles after the first window carry over
+  # (close review F1): every row the first window bound but would settle
+  # later, cash entitlement, disposition or quantity effect, becomes due in
+  # the second window on the pulse one run uses. Folds as above; BBB closes
+  # at 20 + k.
+  cases <- list(
+    # Effective at session 4, known at 7: one run posts 0.5 on one share at
+    # session 7 as a late arrival.
+    late_dividend = list(
+      args = list("ordinary_cash_dividend", ledgr_corporate_actions_research()),
+      event = "CASHFLOW", ts = "2021-01-12 21:00:00", final = 1064.5, status = "DONE"
+    ),
+    # Effective at session 4, known at 7: one run disposes of the BBB share at
+    # session 7's close of 27.
+    late_acquisition = list(
+      args = list("cash_acquisition", ledgr_corporate_actions_research()),
+      event = "DISPOSITION", ts = "2021-01-12 21:00:00", final = 1063, status = "DONE"
+    ),
+    # A refused spin-off and a refused disposition stop one run at session 7,
+    # after valuing session 6; the chain stops there too.
+    refused_spin_off = list(
+      args = list("spin_off", ledgr_corporate_actions(unsupported_quantity = "refuse")),
+      event = NULL, final = 1058, status = "PARTIAL",
+      reason = "corporate_action_quantity_refused"
+    ),
+    strict_acquisition = list(
+      args = list("cash_acquisition", ledgr_corporate_actions_strict()),
+      event = NULL, final = 1058, status = "PARTIAL",
+      reason = "terminal_settlement_unsupported"
+    ),
+    # Entitled at the second window's first pulse (session 6) and paid at the
+    # next open: the entitlement binds the one share held before the boundary
+    # fill of three more at 26, and posts 0.5 at session 7.
+    next_pulse_dividend = list(
+      args = list("ordinary_cash_dividend", ledgr_corporate_actions(cash_posting = "next_open"),
+                  effective = 6L, known = 1L, buy_bbb = 3),
+      event = "CASHFLOW", ts = "2021-01-12 21:00:00", final = 1070.5, status = "DONE"
+    ),
+    # Effective at session 6, known at 8: one run disposes of all four shares
+    # at session 8's close of 28.
+    next_pulse_acquisition = list(
+      args = list("cash_acquisition", ledgr_corporate_actions_research(),
+                  effective = 6L, known = 8L, buy_bbb = 3),
+      event = "DISPOSITION", ts = "2021-01-13 21:00:00", final = 1070, status = "DONE"
+    )
+  )
+  for (name in names(cases)) {
+    case <- cases[[name]]
+    late <- do.call(ws42_late_action_fixture, case$args)
+    one <- ledgr:::ledgr_run_window(
+      late$exp, params = late$params,
+      window = ledgr:::ledgr_experiment_window(late$exp, late$days[[3L]], late$days[[8L]]),
+      run_id = paste0("late-single-", name)
+    )
+    late_chain <- suppressWarnings(ledgr_walk_forward(
+      late$exp, ledgr_param_grid(late$params), ws42_continuity_folds(late$days),
+      selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
+    ))
+    expected <- ws42_chain_record(list(one))
+    testthat::expect_identical(late_chain$status, case$status, info = name)
+    testthat::expect_identical(ws42_chain_record(late_chain$test_runs), expected, info = name)
+    testthat::expect_identical(expected$equity$equity[[nrow(expected$equity)]], case$final, info = name)
+    action <- expected$events[grepl("corporate_action", expected$events$meta_json, fixed = TRUE), ]
+    if (is.null(case$event)) {
+      testthat::expect_identical(nrow(action), 0L, info = name)
+      testthat::expect_true(case$reason %in% expected$diagnostics$reason_code, info = name)
+    } else {
+      testthat::expect_identical(action$event_type, case$event, info = name)
+      testthat::expect_identical(
+        as.numeric(action$ts_utc), as.numeric(as.POSIXct(case$ts, tz = "UTC")), info = name
+      )
+    }
+    close(one)
+    lapply(late_chain$test_runs, close)
+    ledgr_snapshot_close(late$snapshot)
+  }
 })
 
 # ledgr-test-profile: review

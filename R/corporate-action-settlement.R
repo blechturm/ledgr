@@ -255,22 +255,40 @@ ledgr_corporate_action_plan <- function(rows,
     posting_idx <- posting_idx + 1L
     posting_idx[posting_idx > length(pulses_posix)] <- NA_integer_
   }
-  # A carried test window settles the entitlements its predecessor bound but
-  # did not settle: each posts on the first pulse at or after its original
-  # posting instant, with the quantity bound in the predecessor (LDG-3064).
+  late <- !is.na(posting_idx) & !is.na(knowledge_idx) & knowledge_idx > posting_idx
+  # A carried test window continues the rows its predecessor bound but did
+  # not settle (`carry_out()` below), with the quantity bound there
+  # (LDG-3064). An event clock that passed before this window counts as
+  # reached on its first pulse, a cash posting instant that passed maps to
+  # the first pulse at or after it, and the knowledge clock is resolved here
+  # as in one run, so each row becomes due on the pulse one run would use.
   carried_rows <- integer()
   carried_quantity <- numeric()
   if (is.data.frame(carried) && nrow(carried) > 0L) {
     hit <- match(as.character(carried$fact_id), as.character(rows$fact_id))
     carried_rows <- hit[!is.na(hit)]
     carried_quantity <- as.numeric(carried$quantity[!is.na(hit)])
-    posting_number <- as.numeric(ledgr_history_utc(carried$posting_ts_utc[!is.na(hit)]))
+    first_number <- as.numeric(pulses_posix[[1L]])
+    posting_text <- as.character(carried$posting_ts_utc[!is.na(hit)])
+    posting_number <- rep(NA_real_, length(posting_text))
+    has_posting <- !is.na(posting_text) & nzchar(posting_text)
+    if (any(has_posting)) {
+      posting_number[has_posting] <- as.numeric(ledgr_history_utc(posting_text[has_posting]))
+    }
+    passed_posting <- is.na(entitlement_idx[carried_rows]) & !is.na(posting_number)
     carried_posting <- ledgr_corporate_action_knowledge_index(
       .POSIXct(posting_number, tz = "UTC"),
       pulses_posix
     )
-    carried_posting[posting_number < as.numeric(pulses_posix[[1L]])] <- 1L
-    posting_idx[carried_rows] <- as.integer(carried_posting)
+    carried_posting[!is.na(posting_number) & posting_number < first_number] <- 1L
+    posting_idx[carried_rows[passed_posting]] <- as.integer(carried_posting[passed_posting])
+    knowledge_number <- as.numeric(as.POSIXct(rows$knowledge_time[carried_rows], tz = "UTC"))
+    late[carried_rows[passed_posting]] <- !is.na(knowledge_number[passed_posting]) &
+      knowledge_number[passed_posting] > posting_number[passed_posting]
+    effective_number <- as.numeric(as.POSIXct(rows$effective_time[carried_rows], tz = "UTC"))
+    passed_effective <- is.na(effective_idx[carried_rows]) & !is.na(effective_number) &
+      effective_number < first_number
+    effective_idx[carried_rows[passed_effective]] <- 1L
     entitlement_idx[carried_rows] <- NA_integer_
   }
   cash_due_idx <- pmax(posting_idx, knowledge_idx, na.rm = FALSE)
@@ -279,12 +297,13 @@ ledgr_corporate_action_plan <- function(rows,
   disposition_due_idx[!disposition_eligible] <- NA_integer_
   quantity_due_idx <- pmax(effective_idx, knowledge_idx, na.rm = FALSE)
   quantity_due_idx[!quantity_eligible] <- NA_integer_
-  late <- !is.na(posting_idx) & !is.na(knowledge_idx) & knowledge_idx > posting_idx
 
   state <- new.env(parent = emptyenv())
   state$rows <- rows
   state$entitlement_idx <- as.integer(entitlement_idx)
   state$posting_idx <- as.integer(posting_idx)
+  state$effective_idx <- as.integer(effective_idx)
+  state$knowledge_idx <- as.integer(knowledge_idx)
   state$cash_eligible <- cash_eligible
   state$disposition_eligible <- disposition_eligible
   state$quantity_eligible <- quantity_eligible
@@ -624,8 +643,46 @@ ledgr_corporate_action_plan <- function(rows,
     )
   }
 
+  # The rows a carried successor window continues (LDG-3064): bound by pulse
+  # `last_idx + 1` and eligible, but with a posting, effective or knowledge
+  # clock after `last_idx`, so one run would settle them later. A clock
+  # before this plan's first pulse that no predecessor carried means one run
+  # never settles the row, and it is not carried. Called on a plan rebuilt
+  # from the predecessor's ledger (`start_idx` past its last pulse), whose
+  # pulses end with the successor's first pulse.
+  carry_out <- function(last_idx) {
+    last_number <- as.numeric(pulses_posix[[last_idx]])
+    after <- function(idx, clock) {
+      (!is.na(idx) & idx > last_idx) | (is.na(idx) & !is.na(clock) & clock > last_number)
+    }
+    rows <- state$rows
+    effective <- as.numeric(as.POSIXct(rows$effective_time, tz = "UTC"))
+    knowledge <- as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC"))
+    known_later <- after(state$knowledge_idx, knowledge)
+    effective_later <- after(state$effective_idx, effective)
+    effective_reached <- !is.na(state$effective_idx) | effective_later
+    cash <- state$cash_eligible & !state$cash_posted &
+      (is.na(state$posting_idx) | state$posting_idx > last_idx | known_later)
+    effect <- (state$disposition_eligible & !state$disposition_posted) |
+      state$quantity_eligible
+    effect <- effect & effective_reached & (effective_later | known_later)
+    selected <- which(state$bound & (cash | effect))
+    if (length(selected) == 0L) return(NULL)
+    posting <- state$posting_idx[selected]
+    posting_ts <- rep("", length(selected))
+    inside <- !is.na(posting) & posting <= length(pulses_posix)
+    posting_ts[inside] <- format(pulses_posix[posting[inside]], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    data.frame(
+      fact_id = as.character(rows$fact_id[selected]),
+      quantity = as.numeric(state$quantity[selected]),
+      posting_ts_utc = posting_ts,
+      stringsAsFactors = FALSE
+    )
+  }
+
   structure(
     list(
+      carry_out = carry_out,
       bind_boundary = bind_boundary,
       check_clocks = check_clocks,
       post = post_cash,

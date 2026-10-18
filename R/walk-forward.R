@@ -1255,55 +1255,40 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
   opening
 }
 
-# Cash entitlements bound inside the deciding window (or at the next window's
-# first pulse, which the chain binds while processing this window's last
-# pulse) whose posting falls after this window. Quantities are the holdings
-# the fold binds: positions after every event at or before the previous
-# session close (the opening positions for an entitlement on the window's
-# first pulse).
+# The corporate-action rows the deciding window bound but did not settle
+# (LDG-3064). The window's own settlement plan is rebuilt from its ledger as
+# a resume past its last pulse would rebuild it: over the window's pulses plus
+# the next window's first pulse, with the window's own carried rows. Its
+# carry_out() then names every cash entitlement, disposition and quantity
+# effect that one run would settle after this window, with the bound
+# quantity. No settlement timing is decided here.
 ledgr_walk_forward_pending_entitlements <- function(exp, events, pulses, history_substrate) {
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   rows <- ledgr_corporate_action_rows(get_connection(exp$snapshot), exp$snapshot$snapshot_id)
   if (is.null(rows) || nrow(rows) == 0L) return(NULL)
-  axis <- as.numeric(history_substrate$axis)
-  pulses <- as.numeric(as.POSIXct(pulses, tz = "UTC"))
-  first <- match(pulses[[1L]], axis)
-  last <- match(pulses[[length(pulses)]], axis)
-  cash_eligible <- rows$subtype == "ordinary_cash_dividend" & rows$complete &
-    if (all(c("gross_cash_validated", "gross_cash_per_parent_unit") %in% names(rows))) {
-      rows$gross_cash_validated & is.finite(rows$gross_cash_per_parent_unit)
-    } else {
-      FALSE
-    }
-  entitlement <- match(as.numeric(as.POSIXct(rows$entitlement_time, tz = "UTC")), axis)
-  settings <- ledgr_corporate_action_policy_settings(
-    ledgr_corporate_action_policy_identity(exp$corporate_action_policy)
+  pulses <- as.POSIXct(pulses, tz = "UTC")
+  axis <- history_substrate$axis
+  last <- match(as.numeric(pulses[[length(pulses)]]), as.numeric(axis))
+  extended <- if (!is.na(last) && last < length(axis)) c(pulses, axis[[last + 1L]]) else pulses
+  carried <- exp$opening$carried$pending
+  plan <- ledgr_corporate_action_plan(
+    rows = rows,
+    policy_identity = ledgr_corporate_action_policy_identity(exp$corporate_action_policy),
+    pulses_posix = extended,
+    instrument_ids = as.character(exp$universe),
+    existing_events = events,
+    start_idx = length(extended),
+    dispositions_active = TRUE,
+    carried = if (is.null(carried)) NULL else as.data.frame(carried, stringsAsFactors = FALSE)
   )
-  posting <- entitlement + as.integer(identical(settings[["cash_posting"]], "next_open"))
-  knowledge <- findInterval(as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC")), axis)
-  knowledge_exact <- knowledge > 0L & axis[pmax(knowledge, 1L)] == as.numeric(as.POSIXct(rows$knowledge_time, tz = "UTC"))
-  knowledge <- knowledge + as.integer(!knowledge_exact)
-  due <- pmax(posting, knowledge)
-  meta <- ledgr_corporate_action_event_meta(events)
-  posted <- vapply(meta, function(x) {
-    if (identical(x$source, "corporate_action_cash")) as.character(x$source_fact_id %||% "") else ""
-  }, character(1))
-  selected <- which(
-    cash_eligible & !is.na(entitlement) & entitlement >= first & entitlement <= last + 1L &
-      !is.na(due) & due > last & posting <= length(axis) &
-      !as.character(rows$fact_id) %in% posted
-  )
-  if (length(selected) == 0L) return(NULL)
-  boundary <- entitlement[selected] - 1L
-  cum <- .POSIXct(ifelse(boundary >= first, axis[pmax(boundary, 1L)], NA_real_), tz = "UTC")
-  quantity <- ledgr_corporate_action_past_quantities(
-    events, meta, rows, selected, as.character(exp$universe), cum
-  )
+  if (is.null(plan)) return(NULL)
+  pending <- plan$carry_out(length(pulses))
+  if (is.null(pending)) return(NULL)
   list(
-    fact_id = as.character(rows$fact_id[selected]),
-    quantity = as.numeric(quantity),
-    posting_ts_utc = ledgr_normalize_ts_utc(.POSIXct(axis[posting[selected]], tz = "UTC"))
+    fact_id = pending$fact_id,
+    quantity = pending$quantity,
+    posting_ts_utc = pending$posting_ts_utc
   )
 }
 

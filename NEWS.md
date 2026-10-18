@@ -71,7 +71,8 @@
   economic chain that equals one run with the same parameter switches: each
   window except the last executes its final decision at the next session
   open, and the next window opens from the resulting cash, positions, FIFO
-  lots, unsettled cash entitlements and frozen holdings. Monthly rolling and
+  lots, corporate-action entitlements, dispositions and quantity effects
+  bound but not yet settled, and frozen holdings. Monthly rolling and
   anchored folds derive every boundary from the anchor and clamp to month end.
 
 ## Current-only experiment stores

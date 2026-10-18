@@ -367,12 +367,12 @@
 "R/backtest-config.R",347,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/backtest-config.R",365,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/backtest-config.R",368,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/backtest-config.R",425,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
-"R/backtest-config.R",425,"abort_class","ledgr_invalid_opening",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
-"R/backtest-config.R",442,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
-"R/backtest-config.R",442,"abort_class","ledgr_invalid_opening",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
-"R/backtest-config.R",460,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
-"R/backtest-config.R",460,"abort_class","ledgr_invalid_opening",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/backtest-config.R",426,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/backtest-config.R",426,"abort_class","ledgr_invalid_opening",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/backtest-config.R",443,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/backtest-config.R",443,"abort_class","ledgr_invalid_opening",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/backtest-config.R",467,"abort_class","ledgr_invalid_config",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
+"R/backtest-config.R",467,"abort_class","ledgr_invalid_opening",TRUE,"c(""ledgr_invalid_opening"", ""ledgr_invalid_config"")",TRUE,TRUE,FALSE
 "R/backtest-config.R",59,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/backtest-config.R",74,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/backtest-config.R",8,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
@@ -669,13 +669,13 @@
 "R/corporate-action-settlement.R",168,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_corporate_action_clock_mismatch"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/corporate-action-settlement.R",203,"abort_class","ledgr_duplicate_corporate_action_fact",TRUE,"c(""ledgr_duplicate_corporate_action_fact"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/corporate-action-settlement.R",203,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_duplicate_corporate_action_fact"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",336,"abort_class","ledgr_corporate_action_double_credit",TRUE,"c(""ledgr_corporate_action_double_credit"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",336,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_corporate_action_double_credit"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",349,"abort_class","ledgr_duplicate_corporate_action_event",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",349,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",402,"abort_class","ledgr_corporate_action_clock_missing",TRUE,"c(""ledgr_corporate_action_clock_missing"", ""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",402,"abort_class","ledgr_invalid_corporate_action_event",TRUE,"c(""ledgr_corporate_action_clock_missing"", ""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
-"R/corporate-action-settlement.R",402,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_corporate_action_clock_missing"", ""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",355,"abort_class","ledgr_corporate_action_double_credit",TRUE,"c(""ledgr_corporate_action_double_credit"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",355,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_corporate_action_double_credit"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",368,"abort_class","ledgr_duplicate_corporate_action_event",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",368,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_duplicate_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",421,"abort_class","ledgr_corporate_action_clock_missing",TRUE,"c(""ledgr_corporate_action_clock_missing"", ""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",421,"abort_class","ledgr_invalid_corporate_action_event",TRUE,"c(""ledgr_corporate_action_clock_missing"", ""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
+"R/corporate-action-settlement.R",421,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_corporate_action_clock_missing"", ""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/corporate-action-settlement.R",78,"abort_class","ledgr_invalid_corporate_action_event",TRUE,"c(""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/corporate-action-settlement.R",78,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_invalid_corporate_action_event"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/cost-model.R",200,"abort_class","ledgr_invalid_cost_model",TRUE,"""ledgr_invalid_cost_model""",TRUE,TRUE,FALSE

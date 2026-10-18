@@ -414,8 +414,9 @@ print.ledgr_config <- function(x, ...) {
 }
 
 # Normalize the carried part of a walk-forward opening (LDG-3064). It holds
-# only economic state: FIFO lots, settled-later corporate-action entitlements
-# and frozen holdings. JSON round trips may turn vectors into lists, so every
+# only economic state: FIFO lots, corporate-action rows bound but settled
+# later (cash entitlements, dispositions and quantity effects) and frozen
+# holdings. JSON round trips may turn vectors into lists, so every
 # field is coerced to its atomic type.
 ledgr_opening_carried_normalize <- function(carried) {
   if (is.null(carried)) {
@@ -455,10 +456,16 @@ ledgr_opening_carried_normalize <- function(carried) {
       stringsAsFactors = FALSE
     )
   }
+  # A posting instant is recorded for a cash row whose posting already has a
+  # pulse; "" marks a row settled by its effective or knowledge clock.
+  if (!is.null(pending)) {
+    pending$posting_ts_utc[is.na(pending$posting_ts_utc)] <- ""
+  }
   if (!is.null(pending) && (anyNA(pending$fact_id) || any(!is.finite(pending$quantity)) ||
-      anyNA(ledgr_history_utc(pending$posting_ts_utc)))) {
+      (any(nzchar(pending$posting_ts_utc)) &&
+        anyNA(ledgr_history_utc(pending$posting_ts_utc[nzchar(pending$posting_ts_utc)]))))) {
     rlang::abort(
-      "A carried opening's pending entitlements must name facts, finite quantities and posting instants.",
+      "A carried opening's pending rows must name facts, finite quantities and valid posting instants.",
       class = c("ledgr_invalid_opening", "ledgr_invalid_config")
     )
   }
