@@ -55,7 +55,10 @@ base or overlay columns and slices its window; it never re-treats the prefix.
 Inactive-interval prints are shown raw with their inactive flag (v12
 Section 4). Feature cells use the Workstream 43 seam: `calculated` equals
 non-missing, input and output carry are false, and the reasons are
-`not_calculated` or `not_expected`.
+`not_calculated` or `not_expected`. (Superseded 2026-10-18 by Workstream 43
+LDG-3067, on the maintainer's instruction: feature cells now read the input-
+and output-carry planes that feature preparation retains, and output-carried
+cells are no longer `calculated`; see `indicator_history_closeout.md`.)
 
 The result carries `data_start_utc`, `window_start_utc`, `cutoff_utc`,
 requested and available lookback, source and policy identity, the selection
@@ -403,6 +406,8 @@ Proposed owners pending maintainer confirmation; none changes a WS42 result.
   or reuse them.
 - Feature-cell evidence is the Workstream 43 seam (LDG-3065/LDG-3066):
   readiness, output carry and calculation validity replace the placeholders.
+  (Closed 2026-10-18 by Workstream 43 LDG-3067; registered detector
+  LTB-0318.)
 - Realized PnL remains per run (each window's result reports its own
   realized trades); the chain equality is on events, equity, cash, lots and
   diagnostics. (The earlier cash-only carry route is superseded by the F1

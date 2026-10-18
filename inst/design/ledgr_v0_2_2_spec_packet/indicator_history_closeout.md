@@ -1,17 +1,16 @@
 # Cut 16 Workstream 43 closeout: indicator history semantics
 
 Implementation commits: `0602a93d` (LDG-3065), `73eec63e` (LDG-3066),
-`6bed3dff` (decisions 13-15), merge `806897fc`, renumbering `22324f3f` and
-the LDG-3067 commit that records this section.
+`6bed3dff` (decisions 13-15), merge `806897fc`, renumbering `22324f3f`,
+LDG-3067 `603966ec`, merge `9b5b17c4` and the follow-up commit that records
+decision (18) and the feature-evidence fix.
 
 Role: record; Workstream 43 implementation evidence.
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behavior.
-Status: under review. LDG-3065 and LDG-3066 are complete. LDG-3067 is
-implemented, evidenced and green on the full suite and is `review_pending`
-on one open question (NEEDS_TYPE_2, below): a durable `ledgr_run()` refuses
-a look-ahead definition only after it has registered the run. Workstream 43
-is `review_pending` for its independent Type 1 close review.
+Status: under review. LDG-3065, LDG-3066 and LDG-3067 are complete; the
+LDG-3067 run-path question was decided as Cut 16 decision (18). Workstream
+43 is `review_pending` for its independent Type 1 close review.
 
 ## Necessity and scope
 
@@ -205,23 +204,73 @@ causality check adds a fixed, history-independent number of calls:
 - LTB-0144 and LTB-0276: the availability feature-engine literal changes
   because the hashed `compute`, `calculate` and `segment` helpers changed;
   dense literals are unchanged. The checker helpers are not hashed: they
-  refuse but never change a value.
+  refuse but never change a value. The follow-up changes the literal once
+  more (`50b8f783...`) because `compute` now also retains the evidence
+  exceptions; values are unchanged.
+- LTB-0315 (this workstream's block) gained the decision (18) assertions:
+  zero store rows after the refused sweep and precompute, then one `FAILED`
+  run row with no ledger or equity row.
 
-NEEDS_TYPE_2 (open): the acceptance says a future-looking definition
-"refuses before run, sweep or precompute side effects". Sweep and precompute
-refuse with nothing written. A durable `ledgr_run()` registers its run and
-provenance rows before it verifies the snapshot and prepares features, so the
-refusal leaves the run recorded `FAILED` (one `runs` row, one
-`run_provenance` row) with no strategy call, ledger event or equity row;
-this matches every other data-dependent run refusal (missing bars, snapshot
-checks). Removing that row means preparing the substrate and features before
-registration, which reorders the run prelude; adding a pre-registration
-availability check instead would be a new execution-mode branch in run code,
-which AGENTS.md forbids. The maintainer chooses: (a) accept the recorded
-`FAILED` run as the run-path boundary (the contract currently states this);
-(b) reorder the run prelude; or (c) another rule. LTB-0315 asserts the
-strategy, ledger and equity boundary and deliberately does not assert the
-runs row either way.
+Run-path boundary, Cut 16 decision (18) (maintainer, 2026-10-18): a
+durable `ledgr_run()` registers its run and provenance rows before it
+verifies the snapshot and prepares features, so a refused definition leaves
+that run recorded `FAILED` with no strategy call, ledger event or equity row,
+like other data-dependent run refusals; sweep and precompute refusals write
+nothing. The ticket's first acceptance item was reworded to match, the
+Feature Path contract cites the decision, and LTB-0315 now pins it: no store
+row after the refused sweep and precompute, then exactly one `runs` row,
+status `FAILED`, with no ledger or equity row. A mutation that leaves the
+refused run unmarked fails LTB-0315.
+
+### Feature evidence on history frames
+
+On the maintainer's instruction (2026-10-18) this workstream also fixed
+`ledgr_history_feature_evidence()`, WS42's frame reader, which had reported
+placeholder planes (input and output carry always false, `calculated` meaning
+any finite value, so output-carried values counted as calculated). Feature
+preparation already computes every plane; it now retains the exceptions
+sparsely. For each definition `ledgr_history_compute_feature_series()`
+records, per instrument slot, the columns whose own required input was
+policy-carried (never for an `input_carry = "excluded"` family) and the
+columns whose value was output-carried, with that value's source time and
+age (`ledgr_feature_plane_exceptions()`, `ledgr_feature_plane_records()`).
+The sweep payload carries the record per definition; the runtime projection
+indexes it once into sorted linear cell indices
+(`ledgr_projection_index_planes()`), and a pulse-column slice re-indexes it.
+A frame read locates its cells by binary search (`findInterval`) and
+derives: `calculated` = finite and not output-carried, `calculation_valid` =
+`calculated`, `ready` = calculated or output-carried, `source_ts_utc` and
+`carry_age_sessions` from the record for carried cells, and reason
+`output_carried`. Nothing is recomputed per read. A projection without
+retained planes refuses the read (`ledgr_invalid_history_substrate`) rather
+than reporting placeholders. The eager-versus-lazy representation question
+stays with LDG-3069.
+
+LTB-0318 (LCL-0310) pins literal planes for an SMA over BBB's carried
+two-session gap and a return carried as output for two sessions
+(`output_carry = 2`), identical across run, sweep and explicit-precompute
+routes. No WS42 registered oracle changed: its blocks read bar evidence or
+feature values only.
+
+Retention cost (`evidence/planes_scale.csv`, `scripts/planes_scale.R`,
+realistic panel, fourteen definitions, single runs on a shared host):
+
+| Shape and policy | Preparation s | Input-carried cells | Output-carried cells | Planes MB | Values MB | Indexing s |
+|---|---:|---:|---:|---:|---:|---:|
+| 1,166 x 1,803 default | 40.36 | 247,877 | 0 | 0.96 | 227.67 | 0.17 |
+| 1,166 x 1,803 output carry 5 | 48.25 | 247,877 | 278,556 | 5.21 | 227.67 | 0.18 |
+| 1,166 x 7,213 default | 154.76 | 1,001,273 | 0 | 3.83 | 907.80 | 0.65 |
+| 1,166 x 7,213 output carry 5 | 185.14 | 1,001,273 | 1,131,879 | 21.10 | 907.80 | 0.72 |
+
+The retained planes are 0.4 percent of the value matrices under the
+default policy and 2.3 percent with five sessions of output carry. The
+default-policy preparation (154.76 s) is within noise of the LDG-3067
+measurement at the same shape (152.58 s); the output-carry rows have no
+earlier baseline and include output carry's own cost. One full-window
+evidence read of all fourteen definitions over every instrument and session
+takes 9.2 s (12.4 s with output carry), about 0.7 s per definition for 8.4
+million cells; pulse reads are normally lookback-bounded. The Inspection contract, `?ledgr_history_frame` and the
+WS42 closeout notes that described the placeholder now state the real planes.
 
 ## Maintainer decisions (Cut 16 decisions 13 to 15)
 
@@ -309,6 +358,7 @@ failures and the one optional-package skip.
 | LCL-0307 | LTB-0315 | sampled prefix invariance for `series_fn` and fn-only definitions, exact fn windows, refusal before run, sweep and precompute side effects (LDG-3067) |
 | LCL-0308 | LTB-0316 | fixed four-position sample, history-length independent, catalogue rows probed (LDG-3067) |
 | LCL-0309 | LTB-0317 | custom bounded pair refutation, tolerance, no history-dependent or catalogue refutation (LDG-3067) |
+| LCL-0310 | LTB-0318 | frame feature evidence reads the retained input- and output-carry planes; output-carried cells are not calculated (LDG-3067 follow-up) |
 
 Registered blocks changed, each for the stated v12 reason (Sections 4-6
 unless noted):
@@ -360,6 +410,20 @@ list every block that failed; `scripts/mutate.R` runs a specification).
 | Declared tolerance ignored | LTB-0317 |
 | fn-only window one row wider than `requires_bars` | LTB-0315 |
 | fn handed the next (future) row | LTB-0315 (LTB-0316) |
+
+Follow-up mutations after decision (18) and the feature-evidence fix, 8 of 8
+detected (`evidence/mutations_ldg3067b.csv`, `scripts/mut3067b.R`):
+
+| Mutation | Detector |
+|---|---|
+| Causality call removed (rerun on the amended block) | LTB-0315, LTB-0316, LTB-0317 |
+| Refused run left `RUNNING` instead of `FAILED` | LTB-0315 |
+| Frame input carry constant FALSE | LTB-0318 |
+| Frame output carry constant FALSE | LTB-0318 |
+| Output-carried cells counted as calculated | LTB-0318 |
+| Preparation drops input-carry exceptions | LTB-0318 |
+| Preparation drops output-carry exceptions | LTB-0318 |
+| Projection slice drops the planes (explicit-precompute route) | LTB-0318 |
 
 | Mutation (LDG-3065) | Detector |
 |---|---|
@@ -527,16 +591,6 @@ reasons above; scaling is measured in the previous section.
 
 ## Routed, not fixed here
 
-- LDG-3067 run-path boundary: NEEDS_TYPE_2 above (a refused durable run
-  stays recorded `FAILED`).
-- WS42's public frame feature evidence (`ledgr_history_frame()` on a
-  feature source) still reports the placeholder planes it had before this
-  workstream: it does not read `ledgr_history_feature_planes()`, so its
-  input-carry and output-carry evidence for a feature is not the evidence
-  this calculation produces (values are the prepared ones). Routed to
-  WS46 / LDG-3069 as an integration decision (eager evidence at preparation
-  versus lazy recomputation on read); not changed here because WS42 owns the
-  reader.
 - Dense execution is frozen: it runs neither causality check, and the
   test-only all-prefix `ledgr_check_no_lookahead()` (LTB-0003) remains a
   dense oracle seam only. Retiring it with the dense path is left to the
@@ -571,6 +625,10 @@ reasons above; scaling is measured in the previous section.
   `git diff --check` is clean.
 - Merged, renumbered tree (`22324f3f`): full suite 1,132 blocks, no
   failures, the same skip.
+- LDG-3067 follow-up (decision 18, feature evidence, merge `9b5b17c4`):
+  full suite 1,136 blocks, no failures, the same skip (702 seconds); census
+  report and check (`ws43-ldg-3067-followup`), fold-phase checker, YAML
+  parse and `git diff --check` pass; 8 of 8 follow-up mutations detected.
 - LDG-3067: full suite 1,135 blocks, no failures, the same skip (source
   copy, 702 seconds on a shared host). The first run failed only LTB-0153,
   whose segment-work oracle did not separate the new check's work; the

@@ -64,7 +64,11 @@ with that structural flag.
 
 Bar values follow the experiment's \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}: open, high,
 low and close carry forward within the declared expected-session horizon;
-volume never carries. Carried cells are disclosed in the evidence.
+volume never carries. Carried cells are disclosed in the evidence. Feature
+evidence is the evidence the feature preparation produced: a cell whose own
+required input was carried is \code{input_carried}, a value carried from an
+earlier calculated cell is \code{output_carried} with that cell's source time
+and age, and only genuinely calculated cells are \code{calculated}.
 
 \code{instruments = "admissible"} selects the decision-axis instruments that are
 admissible at the cutoff, \code{"decision_axis"} adds held nonmembers and

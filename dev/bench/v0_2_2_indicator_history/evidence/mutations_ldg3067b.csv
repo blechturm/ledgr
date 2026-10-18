@@ -1,0 +1,9 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"c1_remove_prefix_check",TRUE,"1","LTB-0315 LTB-0316 LTB-0317","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects || [LTB-0316] the causality checker samples a fixed bounded set of positions || [LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions",TRUE
+"d18_refused_run_not_failed",TRUE,"1","LTB-0315","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects",TRUE
+"e1_input_carry_constant_false",TRUE,"1","LTB-0318","[LTB-0318] history frames report the prepared feature carry planes",TRUE
+"e2_output_carry_constant_false",TRUE,"1","LTB-0318","[LTB-0318] history frames report the prepared feature carry planes",TRUE
+"e3_output_carried_counts_as_calculated",TRUE,"1","LTB-0318","[LTB-0318] history frames report the prepared feature carry planes",TRUE
+"e4_preparation_drops_input_carry",TRUE,"1","LTB-0318","[LTB-0318] history frames report the prepared feature carry planes",TRUE
+"e5_preparation_drops_output_carry",TRUE,"1","LTB-0318","[LTB-0318] history frames report the prepared feature carry planes",TRUE
+"e6_slice_drops_planes",TRUE,"1","LTB-0318","[LTB-0318] history frames report the prepared feature carry planes",TRUE

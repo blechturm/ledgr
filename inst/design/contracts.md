@@ -1712,7 +1712,15 @@ and `AAA` a held nonmember, each holding 5:
   nothing fills backward or across a lifetime or terminal barrier, and a
   print inside a knowable lifetime-inactive interval stays readable with its
   structural flag. Feature values are the shared feature preparation's values
-  on the same axis.
+  on the same axis, and feature cell evidence is the evidence that
+  preparation produced: `input_carried` marks a cell whose own required input
+  was policy-carried (never for a definition excluded from input carry),
+  `output_carried` marks a value carried from an earlier calculated cell with
+  that cell's `source_ts_utc` and `carry_age_sessions`, `calculated` and
+  `calculation_valid` mark only genuinely calculated cells, never
+  output-carried ones, and `ready` is calculated or output-carried.
+  Preparation retains only the carried exceptions and a read locates its
+  cells by index; nothing is recomputed per read.
 - Wide results have `ts_utc` plus one numeric column per included
   instrument; long results have `ts_utc`, `instrument_id`, `source`
   (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
@@ -2034,8 +2042,9 @@ and `AAA` a held nonmember, each holding 5:
   Passing them does not prove a definition causal.
 - A durable `ledgr_run()` prepares features after it registers the run, so a
   refused definition leaves that run recorded `FAILED` with no strategy call,
-  ledger event or equity row. Dense execution is frozen and runs no causality
-  check.
+  ledger event or equity row (Cut 16 decision (18) in the v0.2.2 packet's
+  `tickets.yml`); sweep and precompute refusals write nothing. Dense
+  execution is frozen and runs no causality check.
 - Feature computation follows one uncached production path. Explicit
   `ledgr_precomputed_features` payloads are validated against current feature
   identity before reuse; a mismatch refuses before candidate execution.

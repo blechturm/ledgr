@@ -109,8 +109,10 @@ testthat::test_that("[LTB-0315] sampled prefix invariance refuses look-ahead bef
   testthat::expect_identical(refusal$full_value, close[[1L]])
   testthat::expect_identical(refusal$prefix_value, max(close))
 
-  # The refusal precedes every run, sweep and precompute side effect: the
-  # strategy never runs and no ledger, equity or payload is produced.
+  # The refusal precedes every strategy call and every ledger, equity or
+  # sweep/precompute artifact. Sweep and precompute write nothing; a durable
+  # run registers before it prepares features, so it is recorded FAILED with
+  # no ledger or equity row (Cut 16 decision 18).
   snapshot <- availability_runtime_fixture(days = 8L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   ran <- new.env(parent = emptyenv())
@@ -125,6 +127,13 @@ testthat::test_that("[LTB-0315] sampled prefix invariance refuses look-ahead bef
     valuation_policy = ledgr_valuation_stale(1L),
     cost_model = ledgr_cost_zero()
   )
+  con <- get_connection(snapshot)
+  store_rows <- function(table, run_id = NULL) {
+    if (!DBI::dbExistsTable(con, table)) return(0)
+    sql <- sprintf("SELECT COUNT(*) AS n FROM %s", table)
+    if (!is.null(run_id)) sql <- paste0(sql, sprintf(" WHERE run_id = '%s'", run_id))
+    DBI::dbGetQuery(con, sql)$n
+  }
   grid <- ledgr_param_grid(one = list())
   testthat::expect_error(
     ledgr_precompute_features(experiment, grid),
@@ -134,22 +143,19 @@ testthat::test_that("[LTB-0315] sampled prefix invariance refuses look-ahead bef
     ledgr_sweep(experiment, grid, stop_on_error = TRUE),
     class = "ledgr_feature_lookahead_detected"
   )
+  for (table in c("runs", "ledger_events", "equity_curve")) {
+    testthat::expect_identical(store_rows(table), 0, info = table)
+  }
   testthat::expect_error(
     ledgr_run(experiment, run_id = "ws43-lookahead"),
     class = "ledgr_feature_lookahead_detected"
   )
   testthat::expect_identical(ran$n, 0L)
-  con <- get_connection(snapshot)
+  testthat::expect_identical(store_rows("runs"), 1)
+  testthat::expect_identical(ledgr_run_info(snapshot, "ws43-lookahead")$status, "FAILED")
   for (table in c("ledger_events", "equity_curve")) {
-    if (DBI::dbExistsTable(con, table)) {
-      testthat::expect_identical(
-        DBI::dbGetQuery(
-          con,
-          sprintf("SELECT COUNT(*) AS n FROM %s WHERE run_id = 'ws43-lookahead'", table)
-        )$n,
-        0
-      )
-    }
+    testthat::expect_true(DBI::dbExistsTable(con, table), info = table)
+    testthat::expect_identical(store_rows(table, "ws43-lookahead"), 0, info = table)
   }
 })
 
@@ -286,4 +292,65 @@ testthat::test_that("[LTB-0317] custom bounded fn/series_fn pairs are refuted at
     ),
     0L
   )
+})
+
+testthat::test_that("[LTB-0318] history frames report the prepared feature carry planes", {
+  # BBB has no print on sessions 3 and 4. Default price carry fills the SMA's
+  # close there (input carry); the return never consumes a carried price, so
+  # its value on sessions 3 and 4 is the session-2 return carried as output
+  # (output_carry = 2) and session 5 is past that age.
+  seen <- new.env()
+  reader <- function(ctx) {
+    list(
+      level = attr(ledgr_history_frame(ctx, feature = "level"), "ledgr_history")$evidence,
+      ret = attr(ledgr_history_frame(ctx, feature = "ret"), "ledgr_history")$evidence,
+      values = ledgr_history_frame(ctx, feature = "ret")
+    )
+  }
+  fixture <- ws42_history_fixture(
+    strategy = ws42_spy(seen, reader),
+    policy = ledgr_history_policy(output_carry = 2L),
+    features = ledgr_feature_map(level = ledgr_ind_sma(2L), ret = ledgr_ind_returns(1L))
+  )
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  axis <- fixture$axis
+  close(ledgr_run(fixture$exp, params = list(tag = "run"), run_id = "planes"))
+  ledgr_sweep(fixture$exp, ledgr_param_grid(list(tag = "sweep")))
+  grid <- ledgr_param_grid(list(tag = "precompute"))
+  ledgr_sweep(
+    fixture$exp, grid,
+    precomputed_features = ledgr_precompute_features(fixture$exp, grid)
+  )
+  at <- function(tag) seen[[paste(tag, ws42_iso(axis[[5L]]))]]
+  run <- at("run")
+  plane <- function(evidence, field, id = "BBB") unname(evidence[[field]][, id])
+
+  testthat::expect_identical(plane(run$level, "input_carried"), c(FALSE, FALSE, TRUE, TRUE, FALSE))
+  testthat::expect_identical(plane(run$level, "calculated"), c(FALSE, TRUE, TRUE, TRUE, TRUE))
+  testthat::expect_identical(plane(run$level, "output_carried"), rep(FALSE, 5L))
+  testthat::expect_identical(plane(run$level, "input_carried", "AAA"), rep(FALSE, 5L))
+
+  ret_2 <- (22 - 21) / 21
+  testthat::expect_identical(run$values$BBB, c(NA, ret_2, ret_2, ret_2, NA))
+  testthat::expect_identical(plane(run$ret, "input_carried"), rep(FALSE, 5L))
+  testthat::expect_identical(plane(run$ret, "output_carried"), c(FALSE, FALSE, TRUE, TRUE, FALSE))
+  testthat::expect_identical(plane(run$ret, "calculated"), c(FALSE, TRUE, FALSE, FALSE, FALSE))
+  testthat::expect_identical(plane(run$ret, "calculation_valid"), c(FALSE, TRUE, FALSE, FALSE, FALSE))
+  testthat::expect_identical(plane(run$ret, "ready"), c(FALSE, TRUE, TRUE, TRUE, FALSE))
+  testthat::expect_identical(
+    plane(run$ret, "source_ts_utc"),
+    c(NA, rep(as.numeric(axis[[2L]]), 3L), NA)
+  )
+  testthat::expect_identical(plane(run$ret, "carry_age_sessions"), c(NA, 0L, 1L, 2L, NA))
+  testthat::expect_identical(
+    plane(run$ret, "missing_reason"),
+    c("not_calculated", "", "output_carried", "output_carried", "not_calculated")
+  )
+  testthat::expect_identical(plane(run$ret, "calculated", "AAA"), c(FALSE, rep(TRUE, 4L)))
+
+  # The sweep and explicit-precompute routes read the same retained planes.
+  for (tag in c("sweep", "precompute")) {
+    testthat::expect_identical(at(tag)$level, run$level, info = tag)
+    testthat::expect_identical(at(tag)$ret, run$ret, info = tag)
+  }
 })

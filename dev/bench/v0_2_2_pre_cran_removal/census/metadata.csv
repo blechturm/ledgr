@@ -1,5 +1,5 @@
 "key","value"
 "fingerprint_members","22"
-"mode","report"
+"mode","check"
 "root","."
-"source_commit","ws43-ldg-3067"
+"source_commit","working-tree"

@@ -426,7 +426,11 @@ ledgr_history_compute_feature_series <- function(substrate,
   })
   names(out) <- names(definitions)
   bounds <- ledgr_history_feature_bounds(substrate, calculation_start, calculation_end)
-  if (length(definitions) == 0L || bounds$from > bounds$to) return(out)
+  planes <- lapply(certified, function(cert) ledgr_feature_plane_chunks(n_inst))
+  if (length(definitions) == 0L || bounds$from > bounds$to) {
+    attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(planes, substrate$instrument_ids)
+    return(out)
+  }
   output_carry <- substrate$history_policy$output_carry
   # Calculated (not carried) cells per definition and instrument choose each
   # definition's causality probe.
@@ -446,11 +450,82 @@ ledgr_history_compute_feature_series <- function(substrate,
         )
         out[[d]][i, keep] <- calculated$value[keep]
         calculated_count[d, i] <- calculated_count[d, i] + sum(calculated$calculated[keep])
+        exceptions <- ledgr_feature_plane_exceptions(
+          certified[[d]], inputs, calculated, ranges$start[[r]], keep
+        )
+        if (!is.null(exceptions$input)) {
+          planes[[d]]$input[[i]] <- c(planes[[d]]$input[[i]], exceptions$input)
+        }
+        if (!is.null(exceptions$output)) {
+          planes[[d]]$output_col[[i]] <- c(planes[[d]]$output_col[[i]], exceptions$output$col)
+          planes[[d]]$output_source[[i]] <- c(planes[[d]]$output_source[[i]], exceptions$output$source)
+          planes[[d]]$output_age[[i]] <- c(planes[[d]]$output_age[[i]], exceptions$output$age)
+        }
       }
     }
   }
   ledgr_history_feature_causality(substrate, certified, bounds, calculated_count, out)
+  attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(planes, substrate$instrument_ids)
   out
+}
+
+# Sparse evidence planes retained by preparation for history reads (v12
+# Section 5). Most cells are calculated and uncarried, so preparation keeps
+# only the exceptions: cells whose own required input was policy-carried
+# and cells whose value is an output-carried earlier value, with that
+# value's source time and age. A read derives every feature plane from these
+# and the prepared values by index; nothing is recomputed per read.
+ledgr_feature_plane_chunks <- function(n_inst) {
+  # One slot per instrument, filled in place; an instrument with several
+  # knowledge ranges appends to its own slot.
+  list(
+    input = vector("list", n_inst),
+    output_col = vector("list", n_inst),
+    output_source = vector("list", n_inst),
+    output_age = vector("list", n_inst)
+  )
+}
+
+# The exceptions one definition produced for one instrument and knowledge
+# range; the caller stores them by instrument index.
+ledgr_feature_plane_exceptions <- function(cert, inputs, calculated, range_start, keep) {
+  declarations <- cert$declarations
+  input <- NULL
+  if (!identical(declarations$input_carry, "excluded")) {
+    carried <- Reduce(`|`, lapply(declarations$required_fields, function(field) {
+      inputs$carried[[field]][keep]
+    }))
+    if (any(carried)) input <- keep[carried]
+  }
+  output <- NULL
+  carry <- calculated$output_carry
+  if (!is.null(carry) && any(carry$output_carried)) {
+    flagged <- which(carry$output_carried)
+    col <- calculated$calc[flagged]
+    take <- col >= range_start
+    if (any(take)) {
+      output <- list(
+        col = col[take],
+        source = as.numeric(carry$source_ts_utc)[flagged][take],
+        age = as.integer(carry$carry_age_sessions)[flagged][take]
+      )
+    }
+  }
+  list(input = input, output = output)
+}
+
+ledgr_feature_plane_records <- function(planes, instrument_ids) {
+  lapply(planes, function(chunks) {
+    list(
+      instrument_ids = as.character(instrument_ids),
+      input_row = rep(seq_along(chunks$input), lengths(chunks$input)),
+      input_col = as.integer(unlist(chunks$input, use.names = FALSE)),
+      output_row = rep(seq_along(chunks$output_col), lengths(chunks$output_col)),
+      output_col = as.integer(unlist(chunks$output_col, use.names = FALSE)),
+      output_source_ts = as.numeric(unlist(chunks$output_source, use.names = FALSE)),
+      output_age = as.integer(unlist(chunks$output_age, use.names = FALSE))
+    )
+  })
 }
 
 # Sampled causality checks (v12 Section 6). They run inside preparation, so

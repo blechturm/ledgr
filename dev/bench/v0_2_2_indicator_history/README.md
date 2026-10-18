@@ -36,6 +36,13 @@ x86-64, 24 logical cores, 64 GB RAM.
   <config> <instruments> <sessions> <out.csv>`, the `realistic` panel and
   fourteen definitions of `scale.R`), for one instrument over 252 to 16,128
   sessions and for 1,166 instruments over 252 to 7,213 sessions.
+- `evidence/mutations_ldg3067b.csv`: follow-up mutations for Cut 16
+  decision (18) and the history-frame feature evidence
+  (`scripts/mut3067b.R`).
+- `evidence/planes_scale.csv`: retained feature evidence planes for one
+  preparation (`scripts/planes_scale.R <tree> <label> <realistic|realistic_output>
+  <instruments> <sessions> <out.csv>`): exception counts and bytes against
+  the value matrices, projection indexing and a full-window read.
 - `evidence/return1_run.csv`: a public availability run of `return_1`
   (`scripts/return1_run.R`), with the number of per-window `fn` calls.
 

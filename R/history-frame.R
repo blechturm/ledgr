@@ -244,47 +244,71 @@ ledgr_history_bar_evidence <- function(substrate, field, rows, columns, cutoff_c
   evidence
 }
 
-# Feature cells read the shared feature projection. Until the indicator
-# history semantics land (Workstream 43), feature values carry no input or
-# output carry and readiness equals calculation; masks still come from the
-# cutoff-resolved lifetime and terminal planes.
+# Feature cells read the shared feature projection and the sparse evidence
+# planes its preparation retained (ledgr_feature_plane_records()): a cell is
+# calculated when its prepared value is finite and not output-carried; input
+# and output carry, the carried value's source time and age come from the
+# retained exceptions, located by binary search over sorted linear indices.
+# Nothing is recomputed per read. Masks come from the cutoff-resolved
+# lifetime and terminal planes.
+ledgr_history_plane_lookup <- function(table, linear) {
+  if (length(table) == 0L) return(integer(length(linear)))
+  position <- findInterval(linear, table)
+  hit <- position > 0L
+  hit[hit] <- table[position[hit]] == linear[hit]
+  position[!hit] <- 0L
+  position
+}
+
 ledgr_history_feature_evidence <- function(substrate, feature_id, rows, columns, cutoff_col) {
   planes <- ledgr_history_cutoff_planes(substrate, NULL, rows, columns, cutoff_col)
-  values <- substrate$feature_projection$feature_values[[feature_id]]
+  projection <- substrate$feature_projection
+  values <- projection$feature_values[[feature_id]]
+  retained <- projection$feature_planes[[feature_id]]
+  if (is.null(retained)) {
+    rlang::abort(
+      sprintf("Feature `%s` has no prepared evidence planes.", feature_id),
+      class = c("ledgr_invalid_history_substrate", "ledgr_invalid_fold_execution")
+    )
+  }
   value <- values[rows, columns, drop = FALSE]
   dimnames(value) <- NULL
   n_rows <- length(rows)
   n_cols <- length(columns)
-  calculated <- is.finite(value)
+  shape <- function(x) matrix(x, nrow = n_rows, ncol = n_cols)
+  linear <- rep(as.integer(rows), times = n_cols) +
+    (rep(as.integer(columns), each = n_rows) - 1L) * nrow(values)
+  input_carried <- shape(ledgr_history_plane_lookup(retained$input_carried, linear) > 0L)
+  carried_at <- ledgr_history_plane_lookup(retained$output_carried, linear)
+  output_carried <- shape(carried_at > 0L)
+  calculated <- is.finite(value) & !output_carried
   observed <- substrate$bars$observed[rows, columns, drop = FALSE]
   expected <- planes$expected
-  axis_value <- matrix(
-    rep(as.numeric(substrate$axis)[columns], each = n_rows),
-    nrow = n_rows,
-    ncol = n_cols
-  )
-  source_time <- axis_value
+  source_time <- shape(rep(as.numeric(substrate$axis)[columns], each = n_rows))
   source_time[!calculated] <- NA_real_
-  age <- matrix(0L, nrow = n_rows, ncol = n_cols)
+  age <- shape(0L)
   age[!calculated] <- NA_integer_
-  reason <- matrix("", nrow = n_rows, ncol = n_cols)
+  carried_cells <- which(carried_at > 0L)
+  source_time[carried_cells] <- retained$output_source_ts[carried_at[carried_cells]]
+  age[carried_cells] <- retained$output_age[carried_at[carried_cells]]
+  reason <- shape("")
   reason[!calculated & expected] <- "not_calculated"
   reason[!calculated & !expected] <- "not_expected"
-  barrier_reason <- matrix("", nrow = n_rows, ncol = n_cols)
+  reason[output_carried] <- "output_carried"
+  barrier_reason <- shape("")
   barrier_reason[!expected] <- "lifetime_inactive"
   barrier_reason[planes$terminal] <- "terminal"
-  no <- matrix(FALSE, nrow = n_rows, ncol = n_cols)
   list(
     value = value,
     expected = expected,
     observed = observed,
     is_missing = expected & !observed,
-    input_carried = no,
+    input_carried = input_carried,
     calculated = calculated,
-    output_carried = no,
+    output_carried = output_carried,
     source_ts_utc = source_time,
     carry_age_sessions = age,
-    ready = calculated,
+    ready = calculated | output_carried,
     calculation_valid = calculated,
     missing_reason = reason,
     barrier_reason = barrier_reason,
@@ -412,7 +436,11 @@ ledgr_history_context_view <- function(ctx) {
 #'
 #' Bar values follow the experiment's [ledgr_history_policy()]: open, high,
 #' low and close carry forward within the declared expected-session horizon;
-#' volume never carries. Carried cells are disclosed in the evidence.
+#' volume never carries. Carried cells are disclosed in the evidence. Feature
+#' evidence is the evidence the feature preparation produced: a cell whose own
+#' required input was carried is `input_carried`, a value carried from an
+#' earlier calculated cell is `output_carried` with that cell's source time
+#' and age, and only genuinely calculated cells are `calculated`.
 #'
 #' `instruments = "admissible"` selects the decision-axis instruments that are
 #' admissible at the cutoff, `"decision_axis"` adds held nonmembers and

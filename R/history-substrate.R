@@ -229,6 +229,7 @@ ledgr_history_precompute_payload <- function(unique_defs,
     calculation_end = calculation_end
   )
   fingerprints <- names(unique_defs)
+  planes <- attr(values, "ledgr_feature_planes")
   out <- vector("list", length(fingerprints))
   for (d in seq_along(fingerprints)) {
     matrix_values <- values[[d]]
@@ -241,7 +242,8 @@ ledgr_history_precompute_payload <- function(unique_defs,
       values = stats::setNames(
         lapply(seq_along(substrate$instrument_ids), function(i) matrix_values[i, ]),
         substrate$instrument_ids
-      )
+      ),
+      planes = planes[[d]]
     )
   }
   names(out) <- fingerprints

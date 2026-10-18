@@ -41,7 +41,7 @@
 "R/public-api.R",32,"stop","stop(last_err)","base_condition","Base R condition without a ledgr public class-vector element."
 "R/pulse-snapshot.R",212,"stop","stop(err)","base_condition","Base R condition without a ledgr public class-vector element."
 "R/pulse-snapshot.R",221,"stop","stop(err)","base_condition","Base R condition without a ledgr public class-vector element."
-"R/runtime-projection.R",291,"stop","stop(""'arg' should be one of \""schema\"", \""full\"""", call. = FALSE)","base_condition","Base R condition without a ledgr public class-vector element."
+"R/runtime-projection.R",366,"stop","stop(""'arg' should be one of \""schema\"", \""full\"""", call. = FALSE)","base_condition","Base R condition without a ledgr public class-vector element."
 "R/snapshot-verification.R",146,"stop","stop(e)","base_condition","Base R condition without a ledgr public class-vector element."
 "R/snapshot-verification.R",172,"stop","stop(e)","base_condition","Base R condition without a ledgr public class-vector element."
 "R/snapshot-verification.R",183,"stop","stop(e)","base_condition","Base R condition without a ledgr public class-vector element."
