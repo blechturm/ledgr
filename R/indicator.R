@@ -52,7 +52,8 @@
 #'   restarts. The declarations enter the availability-aware feature
 #'   identity; dense execution ignores them. An indicator whose `id` matches a
 #'   built-in pattern (`sma_<n>`, `return_1`) still runs its own `fn` in both
-#'   modes, also over the package's load-time default for that id.
+#'   modes, in any session; running an experiment never writes the
+#'   indicator registry.
 #'
 #'   Availability-aware preparation also checks every definition for
 #'   look-ahead before any run, sweep candidate or precompute payload uses
@@ -321,35 +322,32 @@ ledgr_indicator_capture_overrides <- function(indicator, member) {
 }
 
 .ledgr_indicator_registry <- new.env(parent = emptyenv())
-# Built-ins the package registers at load, by name. They are defaults: an
-# experiment's own indicator with the same id replaces them (Cut 16
-# decision 19), and the built-in replaces such an entry again.
-.ledgr_indicator_package_defaults <- new.env(parent = emptyenv())
-
-ledgr_indicator_register_default <- function(indicator, name) {
-  ledgr_indicator_register(indicator, name)
-  assign(name, indicator, envir = .ledgr_indicator_package_defaults)
-  invisible(indicator)
-}
-
-# Registration for an experiment's own indicators at config construction.
-# Two different definitions under one id still refuse, unless one of them is
-# the package's load-time default for that id.
-ledgr_indicator_register_config <- function(indicator) {
-  name <- indicator$id
-  default <- if (exists(name, envir = .ledgr_indicator_package_defaults, inherits = FALSE)) {
-    get(name, envir = .ledgr_indicator_package_defaults, inherits = FALSE)
+# An experiment's own indicators by id, for run dispatch. Two different
+# definitions under one id in one experiment refuse; equal definitions are
+# kept once. Nothing is registered.
+ledgr_feature_indicator_index <- function(features) {
+  out <- list()
+  logic <- function(x) {
+    ledgr_active_feature_fingerprint(ledgr_precompute_feature_def_from_indicator(x))
   }
-  if (!is.null(default) && exists(name, envir = .ledgr_indicator_registry, inherits = FALSE)) {
-    logic <- function(x) {
-      ledgr_active_feature_fingerprint(ledgr_precompute_feature_def_from_indicator(x))
+  for (feat in features) {
+    if (!inherits(feat, "ledgr_indicator")) next
+    existing <- out[[feat$id]]
+    if (!is.null(existing)) {
+      if (!identical(logic(existing), logic(feat))) {
+        rlang::abort(
+          sprintf(
+            "Indicator '%s' appears more than once in the experiment with different logic; use distinct ids.",
+            feat$id
+          ),
+          class = "ledgr_invalid_args"
+        )
+      }
+      next
     }
-    existing <- get(name, envir = .ledgr_indicator_registry, inherits = FALSE)
-    if (identical(logic(existing), logic(default)) || identical(logic(indicator), logic(default))) {
-      return(ledgr_indicator_register(indicator, overwrite = TRUE))
-    }
+    out[[feat$id]] <- feat
   }
-  ledgr_indicator_register(indicator)
+  out
 }
 
 #' Register an indicator in the global registry

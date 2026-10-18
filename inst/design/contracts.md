@@ -1737,9 +1737,11 @@ and `AAA` a held nonmember, each holding 5:
   selection table, `used_before_window` (whether any returned value used an
   observation or calculation state before the returned window; for a
   feature this includes an output-carried value whose source precedes the
-  window, a bounded window that reaches a leading run of input-carried
-  sessions or does not fit inside the window's expected sessions, for
-  example across a lifetime-inactive interval, and any history-dependent
+  window, a bounded value whose reach of `stable_after` expected sessions
+  (its window and the segment readiness it depends on) reaches a leading
+  run of input-carried sessions or does not fit inside the window's
+  expected sessions, for example across a lifetime-inactive interval, and
+  any history-dependent
   value when the window does not start at the data start) and, for the
   wide layout, the cell evidence as sessions-by-instruments matrices. Cell
   evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
@@ -2004,9 +2006,15 @@ and `AAA` a held nonmember, each holding 5:
   TTR `aroon` declares its `n + 1` width in both modes, which changes its
   dense fingerprint and adds one dense warm-up row (Cut 16 decision (14));
   and a custom indicator whose id matches a built-in pattern (`sma_<n>`,
-  `return_1`) runs its own function in both modes, also over the package's
-  load-time default registration of that id, and is never replaced by
-  the built-in (Cut 16 decision (19)). The availability feature-engine
+  `return_1`) runs its own function in both modes, in any session and
+  call order, and is never replaced by the built-in (Cut 16 decision
+  (19)). A run resolves each feature from the experiment's own
+  definitions, which travel with its config outside config identity and the
+  stored config; runs, sweeps, walk-forward and config building never write
+  the session indicator registry, which a run reads only for an id its
+  config does not carry. A stored fingerprint that matches neither the
+  built-in nor a resolvable indicator refuses with `ledgr_run_hash_mismatch`.
+  The availability feature-engine
   identity binds every helper of this calculation.
 
 <a id="contract-context-ttr-adapter"></a>

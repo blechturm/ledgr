@@ -388,18 +388,21 @@ ledgr_history_view <- function(service, cutoff_col) {
 }
 
 ledgr_history_feature_width <- function(definition) {
-  # A bounded definition depends on its last `requires_bars` expected
-  # sessions; a history-dependent one has no finite width.
+  # A bounded value depends on its last `requires_bars` expected sessions,
+  # and it is valid only once its segment has reached `stable_after`
+  # (>= `requires_bars`), so its reach is `stable_after` expected sessions
+  # (close review S1). A history-dependent definition has no finite reach.
   declarations <- tryCatch(
     ledgr_feature_def_declarations(definition),
     error = function(e) NULL
   )
-  if (!is.null(declarations) && identical(declarations$history_class, "bounded") &&
-      is.numeric(definition$requires_bars) && length(definition$requires_bars) == 1L &&
-      is.finite(definition$requires_bars)) {
-    return(as.integer(definition$requires_bars))
+  if (is.null(declarations) || !identical(declarations$history_class, "bounded")) {
+    return(NA_integer_)
   }
-  NA_integer_
+  reach <- suppressWarnings(as.integer(c(definition$requires_bars, definition$stable_after)))
+  reach <- reach[!is.na(reach)]
+  if (length(reach) == 0L) return(NA_integer_)
+  max(reach)
 }
 
 ledgr_history_request_error <- function(message) {
@@ -486,7 +489,8 @@ ledgr_history_context_view <- function(ctx) {
 #' `not_expected`, so every cell that is not `calculation_valid` has a
 #' reason. `used_before_window` is `TRUE` when any returned value used an
 #' observation or calculation state before the returned window, including
-#' carried values and bounded windows that reach back across inactive
+#' carried values and bounded values whose `stable_after` reach (window and
+#' readiness) extends before the window, for example across inactive
 #' sessions.
 #'
 #' `instruments = "admissible"` selects the decision-axis instruments that are
@@ -722,9 +726,11 @@ ledgr_history_read <- function(view,
 # - an output-carried value whose source time precedes the window;
 # - a history-dependent value when the window does not start at the data
 #   start (its segment state may reach back);
-# - a bounded value whose window of `requires_bars` expected sessions does
-#   not fit inside the returned window's expected sessions (a lookback that
-#   is too short, or one that spans a lifetime-inactive interval), or whose
+# - a bounded value whose reach of `stable_after` expected sessions (its
+#   window and the readiness it depends on) does not fit inside the returned
+#   window's expected sessions (a lookback that is too short, a segment that
+#   began before the window, or one that spans a lifetime-inactive
+#   interval), or whose
 #   window reaches a leading run of input-carried sessions, whose source
 #   precedes the window.
 ledgr_history_used_before_window <- function(kind, evidence, keep, columns, definition,

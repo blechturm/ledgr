@@ -77,7 +77,8 @@ finite), \code{required_input_missing}, \code{carried_input_excluded},
 \code{not_expected}, so every cell that is not \code{calculation_valid} has a
 reason. \code{used_before_window} is \code{TRUE} when any returned value used an
 observation or calculation state before the returned window, including
-carried values and bounded windows that reach back across inactive
+carried values and bounded values whose \code{stable_after} reach (window and
+readiness) extends before the window, for example across inactive
 sessions.
 
 \code{instruments = "admissible"} selects the decision-axis instruments that are

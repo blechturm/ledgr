@@ -219,7 +219,6 @@ ledgr_config <- function(snapshot,
     features = if (length(features) > 0) {
       defs <- lapply(features, function(feat) {
         if (inherits(feat, "ledgr_indicator")) {
-          ledgr_indicator_register_config(feat)
           def <- list(
             id = feat$id,
             params = feat$params,
@@ -299,6 +298,11 @@ ledgr_config <- function(snapshot,
   if (!is.null(run_id)) config$run_id <- run_id
 
   class(config) <- c("ledgr_config", class(config))
+  # The experiment's own indicator objects travel with the config for run
+  # dispatch; two different definitions under one id refuse. The session
+  # registry is not written, and the attribute enters neither config
+  # identity nor the stored config.
+  attr(config, "ledgr_feature_indicators") <- ledgr_feature_indicator_index(features)
   validate_ledgr_config(config)
   config
 }

@@ -3,8 +3,9 @@
 Implementation commits: `0602a93d` (LDG-3065), `73eec63e` (LDG-3066),
 `6bed3dff` (decisions 13-15), merge `806897fc`, renumbering `22324f3f`,
 LDG-3067 `603966ec`, merge `9b5b17c4`, follow-up `6680bdb7` (decision 18,
-frame carry planes), `bfffb0f7` (Correction 1, close review 43) and the
-Correction 2 commit (re-review 1).
+frame carry planes), `bfffb0f7` (Correction 1, close review 43),
+`ddecb5f4` (Correction 2, re-review 1) and the Correction 3 commit
+(re-review 2).
 
 Role: record; Workstream 43 implementation evidence.
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
@@ -14,8 +15,10 @@ LDG-3067 run-path question was decided as Cut 16 decision (18). The close
 review (`close_review_43.md`) returned CHANGES_REQUIRED; Correction 1 below
 answers each finding and implements decisions (19) and (20); focused
 re-review 1 (`close_review_43_rereview_1.md`) returned CHANGES_REQUIRED and
-Correction 2 answers it and implements decision (21). Workstream 43 is
-`review_pending` for the next focused re-review.
+Correction 2 answers it and implements decision (21); focused re-review 2
+(`close_review_43_rereview_2.md`) returned three low findings, answered by
+Correction 3 under the maintainer's authorization of a third round.
+Workstream 43 is `review_pending`.
 
 ## Necessity and scope
 
@@ -522,6 +525,67 @@ the sticky barrier was already derived from (no second resolution), and
 `used_before_window` adds one cumulative sum over the read window. No new
 loop grows with bars, pulses or cells.
 
+## Correction 3 (focused re-review 2, 2026-10-18)
+
+Focused re-review 2 (`close_review_43_rereview_2.md`, `32bb6525`) returned
+three low findings. The maintainer authorized this third round, scoped to
+them, and chose the broader fix for S2. Nothing else changed.
+
+- **S1 (fixed).** `used_before_window` reaches `stable_after` expected
+  sessions for a bounded value (the larger of `requires_bars` and
+  `stable_after`), because a valid value depends on its segment having
+  reached `stable_after`. Correction 2's switch to `requires_bars` dropped
+  that case for custom definitions with `stable_after > requires_bars`. The
+  Correction 2 sentence that the width "is now `requires_bars`" is
+  superseded. LTB-0322 adds the reviewer's `m9.R` shape (`requires_bars = 2`,
+  `stable_after = 4`, data from session 9): a read of sessions 10-14 is
+  TRUE, a read of sessions 9-14 FALSE; the reviewer's M9 (reach back to
+  `requires_bars`) fails it. Contract and `?ledgr_history_frame` state the
+  reach.
+- **S2 (fixed, the maintainer's fix).** Config building, runs, sweeps and
+  walk-forward no longer write the session indicator registry: Correction
+  2's `ledgr_indicator_register_config()` and the package-default bookkeeping
+  are removed, and `.onLoad` registers plainly as before. `ledgr_config()`
+  attaches the experiment's own indicator objects by id
+  (`ledgr_feature_indicator_index()`, which refuses two different
+  definitions under one id) as the attribute `ledgr_feature_indicators`; it
+  is stripped from the config identity payload and from the stored config
+  JSON, so neither changes. `ledgr_feature_defs_from_config()` resolves a
+  custom definition from that attribute and a built-in by its built-in
+  logic; the registry is read only for an id the config does not carry (a
+  config read back from JSON). An unresolvable fingerprint still refuses
+  with `ledgr_run_hash_mismatch`. No call path needed a registry write:
+  sweeps already execute the experiment's resolved definitions, and the
+  internal resume path that reruns a stored `bt$config` (LTB-0074) reads
+  the attribute carried with that config. LTB-0321 now runs custom and
+  built-in `sma_50`/`return_1` and built-in, custom, built-in `sma_3` in one
+  default session in both modes; checks that an explicit
+  `ledgr_indicator_register(mine, "sma_200", overwrite = TRUE)` is returned
+  unchanged by `ledgr_indicator_get()` after a run with
+  `ledgr_ind_sma(200)`; and checks that the registry is identical before and
+  after runs, a sweep and a two-worker sweep. A run that writes the registry
+  fails it. Contract, NEWS and `?ledgr_indicator` say runs never write the
+  registry.
+- **S3 (fixed).** LCL-0313's `oracle_class` and `cheapest_adequate_lane`
+  describe the current 55-session fixture and its checks.
+
+Mutations: 4 of 4 detected (`evidence/mutations_correction3.csv`,
+`scripts/mut3067e.R`):
+
+| Mutation | Detector |
+|---|---|
+| Bounded reach is `requires_bars` (reviewer's M9) | LTB-0322 |
+| A run writes the registry | LTB-0321 |
+| Dispatch ignores the experiment's own definitions | LTB-0321 |
+| Two different definitions under one id accepted | LTB-0321 |
+
+Registered oracles: LTB-0321 and LTB-0322 (this workstream's blocks) are
+extended. LTB-0321 drops Correction 2's package-default replacement
+assertions, which tested behavior S2 removes, and asserts the opposite
+property (registry untouched, explicit registration kept); its decision (19)
+value assertions are unchanged. No other registered oracle changed; the
+availability engine digest is unchanged (no hashed helper changed).
+
 ## Merge with Workstream 42 and renumbering
 
 `806897fc` merges `integrate/cut15-v0.2.2` (accepted Workstream 42) into this
@@ -845,6 +909,11 @@ reasons above; scaling is measured in the previous section.
   `git diff --check` is clean.
 - Merged, renumbered tree (`22324f3f`): full suite 1,132 blocks, no
   failures, the same skip.
+- Correction 3: full suite 1,140 blocks, no failures, the same skip (728
+  seconds on a source copy); census report and check
+  (`ws43-correction-3`), fold-phase checker, YAML parse and
+  `git diff --check` pass; 4 of 4 Correction 3 mutations detected;
+  `integrate/cut15-v0.2.2` had not moved past `42df9de9`.
 - Correction 2: full suite 1,140 blocks, no failures, the same skip (710
   seconds on a source copy); census report and check
   (`ws43-correction-2`), fold-phase checker, YAML parse and

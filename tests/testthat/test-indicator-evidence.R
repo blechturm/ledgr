@@ -279,4 +279,32 @@ testthat::test_that("[LTB-0322] used_before_window reports every returned value 
   testthat::expect_identical(as.numeric(values$feature[1L, 7L]), mean(c(13, 16)))
   testthat::expect_true(window(6:7))
   testthat::expect_false(window(1:2))
+
+  # A bounded definition with stable_after > requires_bars reaches back to
+  # its segment's readiness (close review S1): with data from session 9, the
+  # session-12 value of a requires_bars = 2, stable_after = 4 mean is valid
+  # only because session 9 was available, so a read of sessions 10-14 used
+  # history before its window and a read of sessions 9-14 did not.
+  late <- ws43_history_substrate(c(rep(NA, 8L), 19:30))
+  slow <- ledgr_indicator(
+    "slow", fn = function(window) mean(window$close), requires_bars = 2L,
+    stable_after = 4L, gap_contract = "strict_window"
+  )
+  slow_values <- ledgr:::ledgr_history_compute_feature_series(late, list(feature = slow))
+  slow_bound <- ledgr:::ledgr_history_substrate_bind_features(
+    late,
+    ledgr:::ledgr_projection_from_feature_matrix(
+      slow_values, universe = "AAA", pulses_posix = late$axis, feature_engine_version = "test"
+    )
+  )
+  slow_window <- function(columns) {
+    ev <- ledgr:::ledgr_history_feature_evidence(slow_bound, "feature", 1L, columns, max(columns))
+    ledgr:::ledgr_history_used_before_window(
+      "feature", ev, 1L, columns, ledgr:::ledgr_precompute_feature_def_from_indicator(slow),
+      as.numeric(late$axis[[columns[[1L]]]])
+    )
+  }
+  testthat::expect_identical(as.numeric(slow_values$feature[1L, 12L]), mean(c(21, 22)))
+  testthat::expect_true(slow_window(10:14))
+  testthat::expect_false(slow_window(9:14))
 })

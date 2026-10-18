@@ -47,9 +47,11 @@
 
 - A custom indicator whose id matches a built-in pattern (`sma_<n>` or
   `return_1`) now runs its own function in dense and availability-aware runs,
-  also where the package registers a default under that id at load
-  (`return_1`, `sma_50`, `sma_200`). A run config whose stored fingerprint
-  matches neither the built-in nor a registered indicator refuses with
+  in any session and call order. Runs, sweeps and walk-forward resolve each
+  feature from the experiment's own definitions and no longer write the
+  session indicator registry, so an explicit `ledgr_indicator_register()`
+  entry is never replaced by a run. A run config whose stored fingerprint
+  matches neither the built-in nor a resolvable indicator refuses with
   `ledgr_run_hash_mismatch`, and the unused `sma_n` config id is removed.
   It was previously replaced, silently, by the built-in of that id, so dense
   results for such definitions change.

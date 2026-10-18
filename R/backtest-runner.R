@@ -1575,7 +1575,13 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
   )
 }
 
+# A config built by ledgr_config() carries the experiment's own indicator
+# objects by id (attribute `ledgr_feature_indicators`, outside identity and
+# storage). Dispatch resolves a custom definition from them; the session
+# registry is only read for an id the config does not carry (for example a
+# config read back from JSON) and is never written by a run.
 ledgr_feature_defs_from_config <- function(cfg) {
+  feature_indicators <- attr(cfg, "ledgr_feature_indicators", exact = TRUE)
   feats <- cfg$features
   if (is.null(feats) || is.null(feats$enabled) || !isTRUE(feats$enabled)) {
     return(list())
@@ -1605,6 +1611,8 @@ ledgr_feature_defs_from_config <- function(cfg) {
     def
   }
   registered <- function(id) {
+    own <- feature_indicators[[id]]
+    if (inherits(own, "ledgr_indicator")) return(own)
     if (!exists("ledgr_indicator_get", mode = "function")) return(NULL)
     ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
     if (inherits(ind, "ledgr_indicator")) ind else NULL

@@ -90,7 +90,8 @@ windows as well as carry: after every relisting a bounded definition
 restarts. The declarations enter the availability-aware feature
 identity; dense execution ignores them. An indicator whose \code{id} matches a
 built-in pattern (\verb{sma_<n>}, \code{return_1}) still runs its own \code{fn} in both
-modes, also over the package's load-time default for that id.
+modes, in any session; running an experiment never writes the
+indicator registry.
 
 Availability-aware preparation also checks every definition for
 look-ahead before any run, sweep candidate or precompute payload uses
