@@ -1,14 +1,17 @@
 # Cut 16 Workstream 42 closeout: public causal history and continuous windows
 
-Implementation commits: `c843dc2e` (LDG-3062), `a126a182` (LDG-3063) and
-`eb69aff3` (LDG-3064), on branch `ws42/public-history` from `a915ba66`.
+Implementation commits: `c843dc2e` (LDG-3062), `a126a182` (LDG-3063),
+`eb69aff3` (LDG-3064) and the decision (16) completion commit that follows
+`e051a146`, on branch `ws42/public-history` from `a915ba66`.
 
-Status: implementation complete for LDG-3062 and LDG-3063. LDG-3064 is
-implemented on the availability path and evidenced there, but stays open on
-one `NEEDS_TYPE_2` question (below): whether its single data-start rule and
-carried chain also bind dense experiments, which v12 Section 1 and Cut 16
-decision (1) freeze. Workstream 42 is `review_pending`; nothing here is
-acceptance.
+Role: record; Workstream 42 implementation evidence.
+Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
+behavior.
+Status: under review. LDG-3062, LDG-3063 and LDG-3064 are implemented and
+evidenced. The one `NEEDS_TYPE_2` raised during implementation (whether the
+data-start rule binds dense experiments) was answered by Cut 16 decision
+(16) on 2026-10-18: availability only, dense frozen. Workstream 42 is
+`review_pending`; nothing here is acceptance.
 
 ## Necessity and scope
 
@@ -138,27 +141,36 @@ reconstruction; flat and standalone keep their terminal rule), LTB-0304
 inspection read SMA 13.5 and BBB's stale mark 22 at age 2 at scoring session
 4; one substrate per walk-forward session), LTB-0305 (twelve rolling and
 anchored month folds from 2019-12-31 without drift or gap), the rewritten
-LTB-0197 and the store gate LTB-0260. Claims LCL-0297 to LCL-0299; LCL-0196,
-LCL-0197 and LCL-0291 updated.
+LTB-0197, the store gate LTB-0260, the availability LTB-0196 and the dense
+witness LTB-0306 (below). Claims LCL-0297 to LCL-0300; LCL-0196, LCL-0197 and
+LCL-0291 updated.
 
-## NEEDS_TYPE_2: does the data-start rule bind dense experiments?
+## Decision (16): the data-start rule is availability-only
 
-Ticket LDG-3064 says "rewrite LTB-0196/LCL-0196" for the single data-start
-rule, and v12 Section 10 item 9 and decision D4-F1 ("every indicator starts at
-the beginning of the data in every run, sweep, walk-forward window and
-inspection") read as all modes. LTB-0196 is a dense fixture. v12 Section 1
-("History is availability-only ... this RFC adds no dense history branch"),
-Section 8 ("no new dense-only code is added"), Cut 16 decision (1) and the
-AGENTS dense-frozen rule forbid changing dense execution.
+Implementation stopped on one `NEEDS_TYPE_2`. The ticket said "rewrite
+LTB-0196/LCL-0196" for the single data-start rule, and v12 Section 10 item 9
+and decision D4-F1 ("every indicator starts at the beginning of the data in
+every run, sweep, walk-forward window and inspection") read as all modes,
+while LTB-0196 was a dense fixture and v12 Sections 1 and 8, Cut 16 decision
+(1) and the AGENTS dense-frozen rule forbid changing dense execution.
 
-This implementation keeps dense unchanged: dense entry points still start
-feature state at their scoring start, and LTB-0196's restart literals stand.
-Only its retired field names changed (`warmup_range` to `scoring_range`, the
-stored hydration column now absent, and the retired class replaced by
-`ledgr_precomputed_range_mismatch`). The ticket's sixth acceptance item is
-therefore not claimed. The maintainer should decide whether LTB-0196 moves
-to an availability fixture, stays as the dense-frozen witness, or dense
-receives the rule.
+Cut 16 decision (16) (maintainer, 2026-10-18) binds the single data-start
+rule and the carried walk-forward chain to availability experiments only;
+dense stays frozen. Accordingly:
+
+- LTB-0196/LCL-0196 now run a ten-session availability fixture (closes 30 on
+  sessions 1-5, then 6..10) through `ledgr_run()`, `ledgr_sweep()` with and
+  without a precomputed payload, `ledgr_promote()`, `run_window`,
+  `sweep_window`, walk-forward training and experiment-derived inspection,
+  all scoring from session 6. SMA(3) carried from the data start reads 22 at
+  session 6, so a strategy holding while SMA(3) exceeds 10 ends at 1002, one
+  holding once SMA(3) exists ends at 1003, training on sessions 6-8 ends at
+  1001, and inspection reads 22. Restarted at session 6 those would be 1000,
+  1001, 1000 and NA. Availability accepts only strict-window indicators
+  until Workstream 43, so the recursive EMA witness stays dense-only.
+- The Cut 9 dense literals move unchanged to LTB-0306/LCL-0300, the
+  dense-frozen witness: every dense entry point still restarts features at
+  its scoring start (finals 1001, training 1000).
 
 ## Test changes and their reasons
 
@@ -169,7 +181,11 @@ Every registered block changed only for an accepted v12 Section 2 rule:
   fill 2020-01-10 09:30); the old values are kept in a comment.
 - LTB-0197: replaced by "history has one start and no hydration seam
   remains"; the second-start mutation fails it.
-- LTB-0196: field renames only, as above.
+- LTB-0196: rewritten onto an availability fixture under decision (16);
+  its dense literals move unchanged to the new LTB-0306, whose only edits are
+  the retired field names (`warmup_range` to `scoring_range`, the stored
+  hydration column now absent, the retired class replaced by
+  `ledgr_precomputed_range_mismatch`).
 - LTB-0218: the fixture's valuation policy moves from `ledgr_valuation_stale(2)`
   to a zero-session refusing horizon. Marks now read from the data start, so
   BBB's earlier close would value the first pulse under two sessions; the
@@ -233,6 +249,10 @@ listed block failed and the copy was restored.
 | 3064 | test end from clamped start | LTB-0305 |
 | 3064 | store format not bumped | LTB-0260 |
 | 3064 | hydration field restored | LTB-0197 |
+| 3064 | availability calculation start dropped | LTB-0196, LTB-0197 |
+| 3064 | availability runner features from scoring start | LTB-0196 |
+| 3064 | availability sweep features from scoring start | LTB-0196 |
+| 3064 | dense run features from the data start | LTB-0306 |
 
 Three first-round survivors were closed by strengthening the new blocks
 before their commits: the overlay off-by-one survived until LTB-0297/0298
@@ -357,6 +377,9 @@ Proposed owners pending maintainer confirmation; none changes a WS42 result.
   missing-package path, quantmod installed), 10.9 minutes. The pre-cut
   baseline at `a915ba66` was 1,114 blocks with no failures; the LDG-3063
   commit state was 1,120 blocks with no failures.
+- After decision (16) (availability LTB-0196 plus the dense witness
+  LTB-0306), the full suite on a fresh source copy: 1,124 blocks, 0 failures,
+  0 errors, the same optional skip, 11.2 minutes.
 - Mutations: every row of the table above, each on a source copy of the
   tree it belongs to.
 - Codebase census regenerated (`tools/check-codebase-contracts.R
