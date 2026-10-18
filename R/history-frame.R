@@ -255,7 +255,8 @@ ledgr_history_bar_evidence <- function(substrate, field, rows, columns, cutoff_c
 #   input was policy-carried.
 # `missing_reason` is not_expected, outside_calculation,
 # required_input_missing, carried_input_excluded, not_ready,
-# output_carry_expired or output_carried. Cells are located by binary search
+# calculation_non_finite, output_carry_expired or output_carried, so every
+# cell that is not calculation_valid carries a reason. Cells are located by binary search
 # over the retained sorted keys; nothing is recomputed per read.
 ledgr_history_plane_lookup <- function(table, key) {
   if (length(table) == 0L) return(integer(length(key)))
@@ -321,6 +322,8 @@ ledgr_history_feature_evidence <- function(substrate, feature_id, rows, columns,
   reason[expected & in_range & code == 1L] <- "required_input_missing"
   reason[expected & in_range & code == 2L] <- "carried_input_excluded"
   reason[calculated & !ready] <- "not_ready"
+  # Cut 16 decision (21): derived from the value, no stored plane.
+  reason[ready & !is.finite(value)] <- "calculation_non_finite"
   reason[expected & in_range & code == 3L] <- "output_carry_expired"
   reason[output_carried] <- "output_carried"
   reason[expected & !in_range] <- "outside_calculation"
@@ -385,11 +388,16 @@ ledgr_history_view <- function(service, cutoff_col) {
 }
 
 ledgr_history_feature_width <- function(definition) {
-  # Strict availability windows hand each calculation `stable_after` rows.
-  if (identical(definition$gap_contract, "strict_window") &&
-      is.numeric(definition$stable_after) && length(definition$stable_after) == 1L &&
-      is.finite(definition$stable_after)) {
-    return(as.integer(definition$stable_after))
+  # A bounded definition depends on its last `requires_bars` expected
+  # sessions; a history-dependent one has no finite width.
+  declarations <- tryCatch(
+    ledgr_feature_def_declarations(definition),
+    error = function(e) NULL
+  )
+  if (!is.null(declarations) && identical(declarations$history_class, "bounded") &&
+      is.numeric(definition$requires_bars) && length(definition$requires_bars) == 1L &&
+      is.finite(definition$requires_bars)) {
+    return(as.integer(definition$requires_bars))
   }
   NA_integer_
 }
@@ -472,9 +480,14 @@ ledgr_history_context_view <- function(ctx) {
 #' A cell whose own required input was carried is `input_carried`; a value
 #' carried from an earlier valid cell is `output_carried`, with that cell's
 #' source time and age. `missing_reason` separates `not_ready` (warm-up or
-#' re-warming), `required_input_missing`, `carried_input_excluded`,
+#' re-warming), `calculation_non_finite` (ready, but the calculation is not
+#' finite), `required_input_missing`, `carried_input_excluded`,
 #' `output_carry_expired`, `output_carried`, `outside_calculation` and
-#' `not_expected`.
+#' `not_expected`, so every cell that is not `calculation_valid` has a
+#' reason. `used_before_window` is `TRUE` when any returned value used an
+#' observation or calculation state before the returned window, including
+#' carried values and bounded windows that reach back across inactive
+#' sessions.
 #'
 #' `instruments = "admissible"` selects the decision-axis instruments that are
 #' admissible at the cutoff, `"decision_axis"` adds held nonmembers and
@@ -657,7 +670,8 @@ ledgr_history_read <- function(view,
     as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
   keep <- which(included)
   used_before <- ledgr_history_used_before_window(
-    kind, evidence, keep, columns, service$feature_defs[[source_id]]
+    kind, evidence, keep, columns, service$feature_defs[[source_id]],
+    as.numeric(window_start)
   )
   selection_table <- ledgr_history_selection_table(
     requested_ids = requested_ids,
@@ -702,21 +716,47 @@ ledgr_history_read <- function(view,
   }
 }
 
-ledgr_history_used_before_window <- function(kind, evidence, keep, columns, definition) {
+# Whether any returned value used an observation or calculation state before
+# the returned window. For features (all derived by index from the frame's
+# evidence; nothing is recomputed):
+# - an output-carried value whose source time precedes the window;
+# - a history-dependent value when the window does not start at the data
+#   start (its segment state may reach back);
+# - a bounded value whose window of `requires_bars` expected sessions does
+#   not fit inside the returned window's expected sessions (a lookback that
+#   is too short, or one that spans a lifetime-inactive interval), or whose
+#   window reaches a leading run of input-carried sessions, whose source
+#   precedes the window.
+ledgr_history_used_before_window <- function(kind, evidence, keep, columns, definition,
+                                             window_start = NA_real_) {
   if (length(keep) == 0L || length(columns) == 0L) return(FALSE)
   if (identical(kind, "bar")) {
     source <- evidence$source_index[keep, , drop = FALSE]
     carried <- evidence$input_carried[keep, , drop = FALSE]
     return(any(carried & !is.na(source) & source < columns[[1L]]))
   }
-  # A returned feature value (calculated or output-carried) used history.
-  calculated <- (evidence$calculation_valid | evidence$output_carried)[keep, , drop = FALSE]
+  valid <- evidence$calculation_valid[keep, , drop = FALSE]
+  output_carried <- evidence$output_carried[keep, , drop = FALSE]
+  source_ts <- evidence$source_ts_utc[keep, , drop = FALSE]
+  if (any(output_carried & !is.na(source_ts) & source_ts < window_start)) {
+    return(TRUE)
+  }
   width <- ledgr_history_feature_width(definition)
   if (is.na(width)) {
-    return(columns[[1L]] > 1L && any(calculated))
+    return(columns[[1L]] > 1L && any(valid | output_carried))
   }
-  dependent <- columns - width + 1L < columns[[1L]]
-  any(calculated[, dependent, drop = FALSE])
+  if (!any(valid)) return(FALSE)
+  expected <- evidence$expected[keep, , drop = FALSE]
+  carried <- evidence$input_carried[keep, , drop = FALSE]
+  n_rows <- nrow(expected)
+  n_cols <- ncol(expected)
+  # Expected sessions from the window start through each column.
+  seen <- t(collapse::fcumsum(t(matrix(as.integer(expected), n_rows, n_cols))))
+  # Expected sessions in the leading input-carried run of each row.
+  stop_at <- expected & !carried
+  first_stop <- ifelse(rowSums(stop_at) > 0L, max.col(stop_at, ties.method = "first"), n_cols + 1L)
+  leading <- ifelse(first_stop > 1L, seen[cbind(seq_len(n_rows), pmax(first_stop - 1L, 1L))], 0L)
+  any(valid & (seen - width < leading))
 }
 
 ledgr_history_selection_table <- function(requested_ids,

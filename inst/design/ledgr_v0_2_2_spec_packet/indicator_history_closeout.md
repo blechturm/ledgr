@@ -3,7 +3,8 @@
 Implementation commits: `0602a93d` (LDG-3065), `73eec63e` (LDG-3066),
 `6bed3dff` (decisions 13-15), merge `806897fc`, renumbering `22324f3f`,
 LDG-3067 `603966ec`, merge `9b5b17c4`, follow-up `6680bdb7` (decision 18,
-frame carry planes) and the Correction 1 commit (close review 43).
+frame carry planes), `bfffb0f7` (Correction 1, close review 43) and the
+Correction 2 commit (re-review 1).
 
 Role: record; Workstream 43 implementation evidence.
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
@@ -11,8 +12,10 @@ behavior.
 Status: under review. LDG-3065, LDG-3066 and LDG-3067 are complete; the
 LDG-3067 run-path question was decided as Cut 16 decision (18). The close
 review (`close_review_43.md`) returned CHANGES_REQUIRED; Correction 1 below
-answers each finding and implements decisions (19) and (20). Workstream 43
-is `review_pending` for the focused re-review.
+answers each finding and implements decisions (19) and (20); focused
+re-review 1 (`close_review_43_rereview_1.md`) returned CHANGES_REQUIRED and
+Correction 2 answers it and implements decision (21). Workstream 43 is
+`review_pending` for the next focused re-review.
 
 ## Necessity and scope
 
@@ -337,7 +340,10 @@ Each finding:
   read. `ledgr_history_feature_planes()` now gives valid cells their own
   source time and age 0 without an output-carry policy, limits input carry
   to the calculation range and applies the decision (20) window rule, so
-  both readers agree cell for cell (LTB-0319 compares them). A projection
+  both readers agree cell for cell when no lifetime or terminal fact is
+  learned after the column it changes (LTB-0319 compares them); for
+  later-known facts the frame keeps each pulse's earlier answer and the
+  internal reader recomputes at its cutoff, as LTB-0313 requires. A projection
   sliced to anything but its own prepared axis drops its planes, so a frame
   read refuses instead of misreading (production slices only onto the
   validated identical axis). The WS42 closeout route is corrected.
@@ -416,6 +422,105 @@ Registered oracles changed in Correction 1, with reasons:
   unchanged.
 - No WS42 registered oracle changed; the WS42 history frame and integration
   blocks pass unchanged.
+
+## Correction 2 (focused re-review 1, 2026-10-18)
+
+Focused re-review 1 (`close_review_43_rereview_1.md`, `c59a9b0f`) returned
+CHANGES_REQUIRED with four findings over nine items. The maintainer recorded
+decision (21) from its note. Each item:
+
+- **R1 (fixed).** Decision (20) now restarts at every relisting.
+  `ledgr_history_substrate_terminal_planes()` returns the per-column terminal
+  assertion that `ledgr_history_substrate_terminal_at()` already computed,
+  beside the sticky barrier (which `terminal_at()` still returns unchanged);
+  feature inputs carry both. `ledgr_history_feature_terminal_breaks()` starts
+  a new run at each row that follows a column inside any terminal interval,
+  in preparation and in the internal reader's carried-input windows. The
+  carry barrier stays sticky (2026-10-17): carry never crosses any terminal
+  interval; only window restarts are per relisting. LTB-0320 adds the
+  reviewer's two-cycle case B5 (SMA(3) at session 14 is not ready, never
+  mean(20, 21, 24)) and the internal reader's window counts. Contract, NEWS,
+  `?ledgr_indicator` and the `indicators` article now say "every relisting".
+- **R2 (fixed, behavior change).** `used_before_window` for features now
+  reports every returned value that used earlier history, derived from the
+  frame's evidence by index: an output-carried value whose source time
+  precedes the window; a bounded value whose window of `requires_bars`
+  expected sessions does not fit inside the window's expected sessions (a
+  short lookback, or a window spanning a lifetime-inactive interval) or
+  reaches the window's leading run of input-carried sessions, whose source is
+  before the window; and, as before, any history-dependent value when the
+  window does not start at the data start. The bounded width is now
+  `requires_bars` from the definition's declarations (it was `stable_after`
+  for `strict_window` only). LTB-0322 pins the reviewer's output-carry and
+  input-carry probes (FALSE at session 2, TRUE at session 3) and an SMA(2)
+  window across an inactive interval; reverting to the width rule, ignoring
+  output carry or the leading carried run each fail it. The Inspection
+  contract states the rule.
+- **R3 (fixed).** The unused `sma_n` config branch is deleted. A stored
+  fingerprint that differs from the built-in's and has no registered
+  indicator now refuses with `ledgr_run_hash_mismatch` instead of running the
+  built-in. The package's load-time registrations (`return_1`, `sma_50`,
+  `sma_200`, `ema_12`, `ema_26`, `rsi_14`) are kept and recorded as package
+  defaults: config construction registers an experiment's indicator with
+  `ledgr_indicator_register_config()`, which replaces an entry when either
+  the existing entry or the new definition has the package default's logic,
+  so a custom `return_1` or `sma_50` runs its own function in a default
+  session and the built-in replaces it back; two different user definitions
+  under one id still refuse. The public `ledgr_indicator_register()` is
+  unchanged. LTB-0321 now runs custom and built-in `sma_50` and `return_1`
+  through dense and availability runs in a default session without clearing
+  the registry (it restores the package defaults on exit), checks the
+  user-user refusal and the unregistered-fingerprint refusal.
+- **R4 (fixed).** LTB-0316's panel puts the most-calculated instrument
+  between two others, so probing the first, the last or every instrument
+  fails it. LTB-0320 asserts the internal reader's decision (20) window
+  counts (RR12 fails it). The F2 claim is scoped: both readers agree cell for
+  cell when no lifetime or terminal fact is learned after the column it
+  changes; for later-known facts the frame keeps each pulse's answer
+  (LTB-0313) while the internal reader recomputes at its cutoff. LCL-0311
+  and the Correction 1 text are corrected.
+- **Decision (21) (implemented).** A ready cell whose calculation is not
+  finite reports `missing_reason = "calculation_non_finite"` in both readers,
+  derived from the value (no stored plane), so every cell that is not
+  `calculation_valid` has a reason. LTB-0319 pins it with an fn-only
+  definition that returns `NA` on later sessions, in both readers. Contract,
+  NEWS and `?ledgr_history_frame` list the reason.
+
+New block LTB-0322 (LCL-0314); LTB-0316, LTB-0319, LTB-0320 and LTB-0321
+extended (LCL-0308, LCL-0311, LCL-0312, LCL-0313 updated). Mutations: 12 of
+12 detected (`evidence/mutations_correction2.csv`, `scripts/mut3067d.R`):
+
+| Mutation | Detector |
+|---|---|
+| Runs break only where the sticky plane changes | LTB-0320 |
+| No terminal breaks | LTB-0320 |
+| Internal reader's windows span terminal intervals (RR12) | LTB-0320 |
+| `used_before_window` ignores output-carried sources (RR11) | LTB-0322 |
+| `used_before_window` ignores the leading carried-input run | LTB-0322 |
+| Window reach counted in columns, not expected sessions | LTB-0322 |
+| Unregistered fingerprint falls back to the built-in | LTB-0321 |
+| Package defaults block an experiment's own definition | LTB-0321 |
+| Built-in shadows the custom function | LTB-0321 |
+| Probe the last instrument (RR8) | LTB-0316 |
+| Frame drops `calculation_non_finite` | LTB-0319 |
+| Internal reader drops `calculation_non_finite` | LTB-0319 |
+
+Registered oracles changed in Correction 2, with reasons:
+
+- LTB-0144 and LTB-0276: the availability engine digest becomes
+  `4b2bb8e6...`, because the hashed `calculate` and `inputs` helpers changed
+  and the new `ledgr_history_feature_terminal_breaks()` joins the digest
+  (LTB-0144's helper list names it). Dense literals are unchanged.
+- LTB-0316, LTB-0319, LTB-0320 and LTB-0321 (this workstream's blocks) are
+  extended as above; LTB-0321 no longer clears the registry, and its
+  `sma_3` case moved to `sma_50` so it exercises a package default. No
+  earlier assertion of these blocks was weakened.
+- No WS42 registered oracle changed.
+
+Cost: preparation reads the per-column assertion from the same fact plane
+the sticky barrier was already derived from (no second resolution), and
+`used_before_window` adds one cumulative sum over the read window. No new
+loop grows with bars, pulses or cells.
 
 ## Merge with Workstream 42 and renumbering
 
@@ -740,6 +845,11 @@ reasons above; scaling is measured in the previous section.
   `git diff --check` is clean.
 - Merged, renumbered tree (`22324f3f`): full suite 1,132 blocks, no
   failures, the same skip.
+- Correction 2: full suite 1,140 blocks, no failures, the same skip (710
+  seconds on a source copy); census report and check
+  (`ws43-correction-2`), fold-phase checker, YAML parse and
+  `git diff --check` pass; 12 of 12 Correction 2 mutations detected;
+  `integrate/cut15-v0.2.2` had not moved past `42df9de9`.
 - Correction 1: full suite 1,139 blocks, no failures, the same skip (711
   seconds on a source copy); census report and check
   (`ws43-correction-1`), fold-phase checker, YAML parse and

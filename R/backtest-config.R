@@ -219,7 +219,7 @@ ledgr_config <- function(snapshot,
     features = if (length(features) > 0) {
       defs <- lapply(features, function(feat) {
         if (inherits(feat, "ledgr_indicator")) {
-          ledgr_indicator_register(feat)
+          ledgr_indicator_register_config(feat)
           def <- list(
             id = feat$id,
             params = feat$params,

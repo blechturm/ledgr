@@ -1723,16 +1723,24 @@ and `AAA` a held nonmember, each holding 5:
   cell's `source_ts_utc` and `carry_age_sessions`. `missing_reason` is one of
   `not_expected`, `outside_calculation`, `required_input_missing`,
   `carried_input_excluded`, `not_ready` (warm-up or re-warming),
-  `output_carry_expired` or `output_carried`. Preparation retains segment
-  spans, reason runs and carry exceptions; a read derives warm-up by index
-  and locates its cells by binary search; nothing is recomputed per read.
+  `calculation_non_finite` (a ready cell whose calculation is not finite,
+  Cut 16 decision (21)), `output_carry_expired` or `output_carried`, so every
+  cell that is not `calculation_valid` carries a reason. Preparation retains
+  segment spans, reason runs and carry exceptions; a read derives warm-up and
+  `calculation_non_finite` by index and locates its cells by binary search;
+  nothing is recomputed per read.
 - Wide results have `ts_utc` plus one numeric column per included
   instrument; long results have `ts_utc`, `instrument_id`, `source`
   (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
   The `ledgr_history` attribute records the data start, returned-window start,
   cutoff, requested and available lookback, source and policy identity, the
   selection table, `used_before_window` (whether any returned value used an
-  observation or calculation state before the returned window) and, for the
+  observation or calculation state before the returned window; for a
+  feature this includes an output-carried value whose source precedes the
+  window, a bounded window that reaches a leading run of input-carried
+  sessions or does not fit inside the window's expected sessions, for
+  example across a lifetime-inactive interval, and any history-dependent
+  value when the window does not start at the data start) and, for the
   wide layout, the cell evidence as sessions-by-instruments matrices. Cell
   evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
   `calculated`, `output_carried`, `source_ts_utc`, `carry_age_sessions`,
@@ -1956,7 +1964,10 @@ and `AAA` a held nonmember, each holding 5:
   the instrument is lifetime-inactive are not counted. `fn` receives exactly
   that window and an incomplete window is `NA_real_`. A terminal interval ends
   bounded windows as well as carry (Cut 16 decision (20)): after a relisting a
-  bounded definition restarts on WS41's sticky terminal barrier plane, needs
+  bounded definition restarts at every relisting (a run breaks at each row
+  that follows a column inside a terminal interval, read from the same
+  per-column terminal assertion WS41's sticky carry barrier is derived
+  from; the carry barrier itself stays sticky), needs
   `requires_bars` treated rows from the relisting and is ready again at its
   `stable_after` row, so no window mixes pre-delisting and post-relisting
   prices.
@@ -1993,7 +2004,8 @@ and `AAA` a held nonmember, each holding 5:
   TTR `aroon` declares its `n + 1` width in both modes, which changes its
   dense fingerprint and adds one dense warm-up row (Cut 16 decision (14));
   and a custom indicator whose id matches a built-in pattern (`sma_<n>`,
-  `return_1`) runs its own function in both modes and is never replaced by
+  `return_1`) runs its own function in both modes, also over the package's
+  load-time default registration of that id, and is never replaced by
   the built-in (Cut 16 decision (19)). The availability feature-engine
   identity binds every helper of this calculation.
 

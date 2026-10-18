@@ -1610,11 +1610,26 @@ ledgr_feature_defs_from_config <- function(cfg) {
     if (inherits(ind, "ledgr_indicator")) ind else NULL
   }
   # A stored fingerprint that is not the package built-in's identity names a
-  # registered user indicator whose id matches a built-in id pattern.
+  # user indicator whose id matches a built-in id pattern; it runs its own
+  # function (Cut 16 decision 19) and must be registered, never replaced by
+  # the built-in.
   shadowed <- function(d, builtin) {
-    !is.null(d$fingerprint) &&
-      !identical(d$fingerprint, stored_fingerprint(builtin)) &&
-      !is.null(registered(d$id))
+    if (is.null(d$fingerprint) || identical(d$fingerprint, stored_fingerprint(builtin))) {
+      return(FALSE)
+    }
+    if (is.null(registered(d$id))) {
+      rlang::abort(
+        sprintf(
+          paste0(
+            "Feature '%s' in the run config matches neither the built-in of ",
+            "that id nor a registered indicator."
+          ),
+          d$id
+        ),
+        class = "ledgr_run_hash_mismatch"
+      )
+    }
+    TRUE
   }
   out <- list()
     for (d in defs) {
@@ -1637,15 +1652,6 @@ ledgr_feature_defs_from_config <- function(cfg) {
         !shadowed(d, ledgr_ind_sma(as.integer(sub("^sma_", "", id))))) {
       n <- as.integer(sub("^sma_", "", id))
       out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(n), d)
-      next
-    }
-
-    if (identical(id, "sma_n")) {
-      n <- d$params$n
-      if (!is.numeric(n) || length(n) != 1 || is.na(n) || !is.finite(n) || n < 1 || (n %% 1) != 0) {
-        rlang::abort("features.defs entry 'sma_n' requires params$n as an integer >= 1.", class = "ledgr_invalid_config")
-      }
-      out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(as.integer(n)), d)
       next
     }
 

@@ -88,6 +88,29 @@ testthat::test_that("[LTB-0319] frame feature evidence separates every v12 featu
     testthat::expect_identical(row(frame, "source_ts_utc"), as.numeric(seam$source_ts_utc))
   }
 
+  # Cut 16 decision (21): a ready cell whose calculation is not finite reads
+  # calculation_non_finite, so every cell that is not calculation_valid
+  # carries a reason. Derived from the value; both readers agree.
+  non_finite <- ledgr_indicator(
+    "non_finite",
+    fn = function(window) if (window$close[[nrow(window)]] > 12) NA_real_ else 1,
+    requires_bars = 1L,
+    history_class = "bounded",
+    required_fields = "close"
+  )
+  levels <- ws43_history_substrate(c(10, 11, 12, 13, 14))
+  ev <- ws43_frame_evidence(levels, non_finite, NULL)
+  testthat::expect_identical(
+    row(ev, "missing_reason"),
+    c("", "", "", "calculation_non_finite", "calculation_non_finite")
+  )
+  testthat::expect_identical(row(ev, "ready"), rep(TRUE, 5L))
+  testthat::expect_identical(row(ev, "calculation_valid"), c(TRUE, TRUE, TRUE, FALSE, FALSE))
+  testthat::expect_identical(
+    ledgr:::ledgr_history_feature_planes(levels, "AAA", non_finite)$missing_reason,
+    row(ev, "missing_reason")
+  )
+
   # Input carry is limited to the definition's own required fields: a gap
   # in `high` alone leaves a close-only SMA uncarried while a definition
   # requiring `high` reads a carried input.
@@ -144,9 +167,116 @@ testthat::test_that("[LTB-0320] a terminal interval ends feature carry and bound
     c("not_ready", "required_input_missing", "not_ready", "")
   )
   testthat::expect_identical(as.vector(ev$barrier_reason)[3:4], c("", "terminal"))
+  # The internal reader applies the same window rule to its carried-input
+  # counts: no window spans the terminal interval.
+  seam <- ledgr:::ledgr_history_feature_planes(substrate, "AAA", sma)
+  testthat::expect_identical(
+    seam$required_input_count[c(3L, 7L, 10L)],
+    c(2L, NA, 2L)
+  )
+
+  # Every relisting restarts, not only the first (re-review R1): two
+  # delisting cycles at sessions 5-6 and 12-13 with relistings at 7 and 14.
+  # SMA(3) at session 14 is not ready, never mean(20, 21, 24); the carry
+  # barrier stays sticky, so nothing is carried after either relisting.
+  axis20 <- ws43_history_axis(20L)
+  cycles <- ledgr_facts_lifetime(data.frame(
+    instrument_id = "AAA",
+    effective_from = c(axis20[[1L]] - 7200, axis20[c(5L, 7L, 12L, 14L)] - 3600),
+    effective_to = as.POSIXct(
+      c(axis20[c(5L, 7L, 12L, 14L)] - 3600, NA), origin = "1970-01-01", tz = "UTC"
+    ),
+    knowledge_time = axis20[[1L]] - 7200,
+    assertion = c("known_active", "known_inactive", "known_active", "known_inactive", "known_active"),
+    terminal_event = c(NA, "delisting", NA, "delisting", NA),
+    source = "ws43",
+    stringsAsFactors = FALSE
+  ))
+  two <- ws43_history_substrate(
+    c(10, 11, 12, 13, 99, 99, 17, 18, 19, 20, 21, 99, 99, 24, 25, 26, 27, 28, 29, 30),
+    lifetime = cycles
+  )
+  sma3 <- ledgr_ind_sma(3L)
+  testthat::expect_identical(
+    ws43_feature_values(two, sma3),
+    c(NA, NA, 11, 12, NA, NA, NA, NA, 18, 19, 20, NA, NA, NA, NA, 25, 26, 27, 28, 29)
+  )
+  two_seam <- ledgr:::ledgr_history_feature_planes(two, "AAA", sma3)
+  testthat::expect_identical(two_seam$missing_reason[14:16], c("not_ready", "not_ready", ""))
+  testthat::expect_identical(is.na(two_seam$required_input_count[14:16]), c(TRUE, TRUE, FALSE))
+  testthat::expect_identical(
+    as.vector(ws43_frame_evidence(two, sma3, NULL)$ready)[14:16],
+    c(FALSE, FALSE, TRUE)
+  )
   testthat::skip_if_not_installed("TTR")
   testthat::expect_identical(
     ws43_feature_values(substrate, ledgr_ind_ttr("EMA", input = "close", n = 2L)),
     c(NA, 10.5, 11.5, NA, NA, NA, NA, NA, NA, 19.5)
   )
+})
+
+testthat::test_that("[LTB-0322] used_before_window reports every returned value that used earlier history", {
+  # Re-review R2: a one-session read of a width-1 bounded level reaches
+  # before its window when BBB's value is output-carried (no price carry,
+  # output_carry = 2) or computed from a carried input (default carry) at
+  # session 3, where BBB has no print; session 2 uses nothing earlier.
+  level <- ledgr_indicator(
+    "level",
+    fn = function(window) window$close[[nrow(window)]],
+    requires_bars = 1L,
+    history_class = "bounded"
+  )
+  reader <- function(ctx) {
+    attr(
+      ledgr_history_frame(ctx, feature = "level", lookback = 1L, instruments = "decision_axis"),
+      "ledgr_history"
+    )$used_before_window
+  }
+  used <- function(policy) {
+    seen <- new.env()
+    fixture <- ws42_history_fixture(
+      strategy = ws42_spy(seen, reader),
+      policy = policy,
+      features = ledgr_feature_map(level = level)
+    )
+    on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+    ledgr_sweep(fixture$exp, ledgr_param_grid(list(tag = "s")), stop_on_error = TRUE)
+    vapply(2:3, function(k) seen[[paste("s", ws42_iso(fixture$axis[[k]]))]], logical(1))
+  }
+  testthat::expect_identical(
+    used(ledgr_history_policy(price_carry = NULL, output_carry = 2L)),
+    c(FALSE, TRUE)
+  )
+  testthat::expect_identical(used(ledgr_history_policy()), c(FALSE, TRUE))
+
+  # A bounded SMA(2) window that spans a lifetime-inactive interval (sessions
+  # 5-6) reaches back further than its width: read over sessions 6-7, the
+  # session-7 value averages sessions 4 and 7.
+  axis <- ws43_history_axis(8L)
+  inactive <- ledgr_facts_lifetime(data.frame(
+    instrument_id = "AAA",
+    effective_from = axis[[5L]],
+    effective_to = axis[[7L]],
+    knowledge_time = axis[[1L]] - 3600,
+    assertion = "known_inactive",
+    source = "ws43",
+    stringsAsFactors = FALSE
+  ))
+  substrate <- ws43_history_substrate(c(10, 11, 12, 13, 99, 99, 16, 17), lifetime = inactive)
+  sma <- ledgr_ind_sma(2L)
+  values <- ledgr:::ledgr_history_compute_feature_series(substrate, list(feature = sma))
+  projection <- ledgr:::ledgr_projection_from_feature_matrix(
+    values, universe = "AAA", pulses_posix = axis, feature_engine_version = "test"
+  )
+  bound <- ledgr:::ledgr_history_substrate_bind_features(substrate, projection)
+  window <- function(columns) {
+    ev <- ledgr:::ledgr_history_feature_evidence(bound, "feature", 1L, columns, max(columns))
+    ledgr:::ledgr_history_used_before_window(
+      "feature", ev, 1L, columns, ledgr:::ledgr_precompute_feature_def_from_indicator(sma),
+      as.numeric(axis[[columns[[1L]]]])
+    )
+  }
+  testthat::expect_identical(as.numeric(values$feature[1L, 7L]), mean(c(13, 16)))
+  testthat::expect_true(window(6:7))
+  testthat::expect_false(window(1:2))
 })

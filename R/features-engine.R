@@ -68,6 +68,10 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
       output_carry = helper(ledgr_history_output_carry, "ledgr_history_output_carry"),
       ranges = helper(ledgr_history_feature_ranges, "ledgr_history_feature_ranges"),
       runs = helper(ledgr_history_feature_runs, "ledgr_history_feature_runs"),
+      terminal_breaks = helper(
+        ledgr_history_feature_terminal_breaks,
+        "ledgr_history_feature_terminal_breaks"
+      ),
       calculate = helper(
         ledgr_history_feature_calculate,
         "ledgr_history_feature_calculate"

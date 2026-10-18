@@ -48,11 +48,11 @@
 #'   calculated once per contiguous segment of available input and restarts
 #'   after a gap. `stable_after` is the first-valid boundary after each start
 #'   or restart; it does not promise convergence. A delisting ends bounded
-#'   windows as well as carry: after a relisting a bounded definition
+#'   windows as well as carry: after every relisting a bounded definition
 #'   restarts. The declarations enter the availability-aware feature
 #'   identity; dense execution ignores them. An indicator whose `id` matches a
 #'   built-in pattern (`sma_<n>`, `return_1`) still runs its own `fn` in both
-#'   modes.
+#'   modes, also over the package's load-time default for that id.
 #'
 #'   Availability-aware preparation also checks every definition for
 #'   look-ahead before any run, sweep candidate or precompute payload uses
@@ -321,6 +321,36 @@ ledgr_indicator_capture_overrides <- function(indicator, member) {
 }
 
 .ledgr_indicator_registry <- new.env(parent = emptyenv())
+# Built-ins the package registers at load, by name. They are defaults: an
+# experiment's own indicator with the same id replaces them (Cut 16
+# decision 19), and the built-in replaces such an entry again.
+.ledgr_indicator_package_defaults <- new.env(parent = emptyenv())
+
+ledgr_indicator_register_default <- function(indicator, name) {
+  ledgr_indicator_register(indicator, name)
+  assign(name, indicator, envir = .ledgr_indicator_package_defaults)
+  invisible(indicator)
+}
+
+# Registration for an experiment's own indicators at config construction.
+# Two different definitions under one id still refuse, unless one of them is
+# the package's load-time default for that id.
+ledgr_indicator_register_config <- function(indicator) {
+  name <- indicator$id
+  default <- if (exists(name, envir = .ledgr_indicator_package_defaults, inherits = FALSE)) {
+    get(name, envir = .ledgr_indicator_package_defaults, inherits = FALSE)
+  }
+  if (!is.null(default) && exists(name, envir = .ledgr_indicator_registry, inherits = FALSE)) {
+    logic <- function(x) {
+      ledgr_active_feature_fingerprint(ledgr_precompute_feature_def_from_indicator(x))
+    }
+    existing <- get(name, envir = .ledgr_indicator_registry, inherits = FALSE)
+    if (identical(logic(existing), logic(default)) || identical(logic(indicator), logic(default))) {
+      return(ledgr_indicator_register(indicator, overwrite = TRUE))
+    }
+  }
+  ledgr_indicator_register(indicator)
+}
 
 #' Register an indicator in the global registry
 #'

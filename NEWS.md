@@ -46,7 +46,11 @@
   dense fingerprints are unchanged.
 
 - A custom indicator whose id matches a built-in pattern (`sma_<n>` or
-  `return_1`) now runs its own function in dense and availability-aware runs.
+  `return_1`) now runs its own function in dense and availability-aware runs,
+  also where the package registers a default under that id at load
+  (`return_1`, `sma_50`, `sma_200`). A run config whose stored fingerprint
+  matches neither the built-in nor a registered indicator refuses with
+  `ledgr_run_hash_mismatch`, and the unused `sma_n` config id is removed.
   It was previously replaced, silently, by the built-in of that id, so dense
   results for such definitions change.
 
@@ -73,14 +77,17 @@
   causality, and dense execution runs neither.
 
 - A delisting ends availability-aware bounded indicator windows as well as
-  price carry: after a relisting a bounded indicator restarts and needs
+  price carry: after every relisting a bounded indicator restarts and needs
   `requires_bars` rows from the relisting before it is ready, so no window
   mixes pre-delisting and post-relisting prices.
 
 - History-frame feature evidence reports the feature preparation's planes:
   `calculated` is admission, `ready` is first-valid readiness,
   `calculation_valid` a ready finite value, input and output carry are
-  disclosed, and `missing_reason` distinguishes warm-up, missing and excluded
+  disclosed, `used_before_window` also reports carried values and bounded
+  windows that reach before the returned window, and `missing_reason`
+  (including `calculation_non_finite` for a ready cell whose calculation is
+  not finite) distinguishes warm-up, missing and excluded
   inputs, expired output carry and sessions outside the calculation.
 
 - Snapshot hash rule 4 and experiment-store schema 121 add the causal civil

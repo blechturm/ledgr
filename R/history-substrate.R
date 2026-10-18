@@ -1697,15 +1697,28 @@ ledgr_history_substrate_terminal_at <- function(
     cutoff,
     observation_idx = seq_along(substrate$axis),
     instrument_idx = seq_along(substrate$instrument_ids)) {
-  # The terminal state follows the shared lifetime resolver, but the carry
-  # barrier it implies is sticky (v12 Section 5): once a terminal assertion is
-  # knowable at the cutoff, every later column stays blocked, even after a
-  # relisting. Resolve over the whole prefix so a later window still sees an
-  # earlier terminal, then keep the requested columns.
+  ledgr_history_substrate_terminal_planes(
+    substrate, cutoff, observation_idx, instrument_idx
+  )$sticky
+}
+
+# The terminal fact plane at a cutoff, as both the per-column assertion (the
+# columns inside a terminal interval) and the sticky carry barrier derived
+# from it. The terminal state follows the shared lifetime resolver, but the
+# carry barrier it implies is sticky (v12 Section 5): once a terminal
+# assertion is knowable at the cutoff, every later column stays blocked,
+# even after a relisting. Resolve over the whole prefix so a later window
+# still sees an earlier terminal, then keep the requested columns.
+ledgr_history_substrate_terminal_planes <- function(
+    substrate,
+    cutoff,
+    observation_idx = seq_along(substrate$axis),
+    instrument_idx = seq_along(substrate$instrument_ids)) {
   observation_idx <- as.integer(observation_idx)
   instrument_idx <- as.integer(instrument_idx)
   if (length(observation_idx) == 0L) {
-    return(matrix(FALSE, nrow = length(instrument_idx), ncol = 0L))
+    empty <- matrix(FALSE, nrow = length(instrument_idx), ncol = 0L)
+    return(list(asserted = empty, sticky = empty))
   }
   prefix_idx <- seq_len(max(observation_idx))
   terminal <- ledgr_history_substrate_fact_plane(
@@ -1727,7 +1740,10 @@ ledgr_history_substrate_terminal_at <- function(
     hit <- hit[!duplicated(hit[, 1L]), , drop = FALSE]
     first[hit[, 1L]] <- hit[, 2L]
   }
-  outer(first, observation_idx, "<=")
+  list(
+    asserted = asserted[, observation_idx, drop = FALSE],
+    sticky = outer(first, observation_idx, "<=")
+  )
 }
 
 ledgr_history_segments_diagonal_state <- function(segments, axis) {

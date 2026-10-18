@@ -86,11 +86,11 @@ and an incomplete window is missing. A history-dependent definition is
 calculated once per contiguous segment of available input and restarts
 after a gap. \code{stable_after} is the first-valid boundary after each start
 or restart; it does not promise convergence. A delisting ends bounded
-windows as well as carry: after a relisting a bounded definition
+windows as well as carry: after every relisting a bounded definition
 restarts. The declarations enter the availability-aware feature
 identity; dense execution ignores them. An indicator whose \code{id} matches a
 built-in pattern (\verb{sma_<n>}, \code{return_1}) still runs its own \code{fn} in both
-modes.
+modes, also over the package's load-time default for that id.
 
 Availability-aware preparation also checks every definition for
 look-ahead before any run, sweep candidate or precompute payload uses

@@ -227,12 +227,13 @@ testthat::test_that("[LTB-0316] the causality checker samples a fixed bounded se
   testthat::expect_identical(ledgr:::ledgr_history_feature_causality_positions(0L), integer())
 
   # With several instruments the probe is still one instrument per
-  # definition: the one with the most calculated cells (BBB here, although
-  # AAA comes first), so the count does not grow with instruments and a
-  # refusal names the probe.
+  # definition: the one with the most calculated cells. BBB sits between
+  # AAA and CCC, so probing the first, the last or every instrument fails;
+  # the count does not grow with instruments and a refusal names the probe.
   panel <- ws43_panel_substrate(list(
     AAA = c(rep(NA, 10L), 100 + 1:10),
-    BBB = 50 + sin(1:20)
+    BBB = 50 + sin(1:20),
+    CCC = c(rep(NA, 5L), 70 + 1:15)
   ))
   testthat::expect_identical(
     ws43_count_calls(

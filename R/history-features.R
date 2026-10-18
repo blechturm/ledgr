@@ -170,9 +170,13 @@ ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, 
   expected <- as.logical(ledgr_history_substrate_expected_at(
     substrate, cutoff, prefix, instrument_idx
   )[1L, ])
-  terminal <- as.logical(ledgr_history_substrate_terminal_at(
+  terminal_planes <- ledgr_history_substrate_terminal_planes(
     substrate, cutoff, prefix, instrument_idx
-  )[1L, ])
+  )
+  terminal <- as.logical(terminal_planes$sticky[1L, ])
+  # Columns inside a terminal interval; every relisting after one restarts
+  # windows and segments (Cut 16 decision 20).
+  terminal_asserted <- as.logical(terminal_planes$asserted[1L, ])
   axis <- substrate$axis[prefix]
   policy <- substrate$history_policy
   raw <- list()
@@ -204,10 +208,19 @@ ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, 
     axis = axis,
     expected = expected,
     terminal = terminal,
+    terminal_asserted = terminal_asserted,
     raw = raw,
     treated = treated,
     carried = carried
   )
+}
+
+# Positions k (of `rows`) where a terminal interval lies between rows[k - 1]
+# and rows[k]: each starts a new run (Cut 16 decision 20).
+ledgr_history_feature_terminal_breaks <- function(terminal_asserted, rows) {
+  if (length(rows) < 2L) return(rep(FALSE, length(rows)))
+  crossed <- cumsum(as.integer(terminal_asserted))[rows]
+  c(FALSE, crossed[-1L] != crossed[-length(crossed)])
 }
 
 # Plain data frames built directly: these are constructed once per segment
@@ -339,13 +352,12 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
     calc
   }
   # A terminal interval ends windows and segments as well as carry (Cut 16
-  # decision 20): WS41's terminal barrier plane is sticky from the first
-  # terminal column, so a run restarts where that plane changes and no
-  # window mixes pre-delisting and post-relisting rows.
-  terminal_rows <- inputs$terminal[rows]
+  # decision 20): a run restarts at every row that follows a column inside a
+  # terminal interval, so no window mixes prices from before and after any
+  # delisting. The carry barrier itself stays sticky (WS41).
   runs <- ledgr_history_feature_runs(
     available_all[rows],
-    breaks = c(FALSE, terminal_rows[-1L] != terminal_rows[-length(terminal_rows)])
+    breaks = ledgr_history_feature_terminal_breaks(inputs$terminal_asserted, rows)
   )
   stable_after <- as.integer(cert$def$stable_after)
   # Segment spans in prefix positions, with the first ready position (NA
@@ -623,6 +635,7 @@ ledgr_history_feature_inputs_prefix <- function(inputs, k) {
     axis = inputs$axis[rows],
     expected = inputs$expected[rows],
     terminal = inputs$terminal[rows],
+    terminal_asserted = inputs$terminal_asserted[rows],
     raw = take(inputs$raw),
     treated = take(inputs$treated),
     carried = take(inputs$carried)
@@ -805,6 +818,8 @@ ledgr_history_feature_planes <- function(substrate,
   missing_reason[inputs$expected & in_range & !calculated$available & excluded & carried_any] <-
     "carried_input_excluded"
   missing_reason[calculated$available & !calculated$ready] <- "not_ready"
+  # Cut 16 decision (21): a ready cell whose calculation is not finite.
+  missing_reason[calculated$ready & !calculated$calculated] <- "calculation_non_finite"
   missing_reason[output_expired] <- "output_carry_expired"
   missing_reason[output_carried] <- "output_carried"
   missing_reason[!in_range & inputs$expected] <- "outside_calculation"
@@ -820,10 +835,10 @@ ledgr_history_feature_planes <- function(substrate,
     cumulative <- c(0L, cumsum(carried_cells[expected_rows]))
     k <- seq_along(expected_rows)
     # A window never spans a terminal interval (Cut 16 decision 20).
-    terminal_rows <- inputs$terminal[expected_rows]
+    crossed <- cumsum(as.integer(inputs$terminal_asserted))[expected_rows]
     has_window <- k >= width
-    has_window[has_window] <- terminal_rows[k[has_window]] ==
-      terminal_rows[k[has_window] - width + 1L]
+    has_window[has_window] <- crossed[k[has_window]] ==
+      crossed[k[has_window] - width + 1L]
     rows <- expected_rows[has_window]
     required_count[rows] <- width * length(required)
     carried_count[rows] <- as.integer(

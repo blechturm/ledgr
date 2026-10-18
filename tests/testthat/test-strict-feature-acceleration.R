@@ -184,6 +184,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     "ledgr_history_output_carry",
     "ledgr_history_feature_ranges",
     "ledgr_history_feature_runs",
+    "ledgr_history_feature_terminal_breaks",
     "ledgr_history_feature_calculate",
     "ledgr_history_feature_segment",
     "ledgr_history_feature_frame",
@@ -202,7 +203,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     )
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(TRUE),
-      "283ce161276174a33c555943d711d8f4e75d8b4e57886a18c250d45202525b40"
+      "4b2bb8e6989d77ef7fdd4fd2c0738340e97786724826951af1ddb47cb2a005a9"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
