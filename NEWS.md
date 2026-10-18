@@ -40,8 +40,15 @@
   take exact declarations from a package catalogue keyed by function, output
   and algorithm-changing argument; an undeclared custom indicator or an
   unregistered TTR form is disclosed as history-dependent. TTR `aroon` now
-  declares its true dependency width of `n + 1` rows. The declarations enter
-  availability-aware feature identity; dense fingerprints are unchanged.
+  declares its true dependency width of `n + 1` rows in both modes, so its
+  dense fingerprint changes and dense aroon features gain one more warm-up
+  `NA` row. The declarations enter availability-aware feature identity; other
+  dense fingerprints are unchanged.
+
+- A custom indicator whose id matches a built-in pattern (`sma_<n>` or
+  `return_1`) now runs its own function in dense and availability-aware runs.
+  It was previously replaced, silently, by the built-in of that id, so dense
+  results for such definitions change.
 
 - Availability-aware experiments now run every indicator. Bounded indicators
   use their last `requires_bars` expected sessions on the instrument's
@@ -64,6 +71,17 @@
   bounded `fn`/`series_fn` pair is compared at the same sessions instead of
   at every window. Both checks are samples with a fixed cost, not proofs of
   causality, and dense execution runs neither.
+
+- A delisting ends availability-aware bounded indicator windows as well as
+  price carry: after a relisting a bounded indicator restarts and needs
+  `requires_bars` rows from the relisting before it is ready, so no window
+  mixes pre-delisting and post-relisting prices.
+
+- History-frame feature evidence reports the feature preparation's planes:
+  `calculated` is admission, `ready` is first-valid readiness,
+  `calculation_valid` a ready finite value, input and output carry are
+  disclosed, and `missing_reason` distinguishes warm-up, missing and excluded
+  inputs, expired output carry and sessions outside the calculation.
 
 - Snapshot hash rule 4 and experiment-store schema 121 add the causal civil
   time representation. Older snapshots, stores and identity-rule artifacts

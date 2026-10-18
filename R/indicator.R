@@ -47,8 +47,12 @@
 #'   and an incomplete window is missing. A history-dependent definition is
 #'   calculated once per contiguous segment of available input and restarts
 #'   after a gap. `stable_after` is the first-valid boundary after each start
-#'   or restart; it does not promise convergence. The declarations enter the
-#'   availability-aware feature identity; dense execution ignores them.
+#'   or restart; it does not promise convergence. A delisting ends bounded
+#'   windows as well as carry: after a relisting a bounded definition
+#'   restarts. The declarations enter the availability-aware feature
+#'   identity; dense execution ignores them. An indicator whose `id` matches a
+#'   built-in pattern (`sma_<n>`, `return_1`) still runs its own `fn` in both
+#'   modes.
 #'
 #'   Availability-aware preparation also checks every definition for
 #'   look-ahead before any run, sweep candidate or precompute payload uses

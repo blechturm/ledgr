@@ -2,15 +2,17 @@
 
 Implementation commits: `0602a93d` (LDG-3065), `73eec63e` (LDG-3066),
 `6bed3dff` (decisions 13-15), merge `806897fc`, renumbering `22324f3f`,
-LDG-3067 `603966ec`, merge `9b5b17c4` and the follow-up commit that records
-decision (18) and the feature-evidence fix.
+LDG-3067 `603966ec`, merge `9b5b17c4`, follow-up `6680bdb7` (decision 18,
+frame carry planes) and the Correction 1 commit (close review 43).
 
 Role: record; Workstream 43 implementation evidence.
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behavior.
 Status: under review. LDG-3065, LDG-3066 and LDG-3067 are complete; the
-LDG-3067 run-path question was decided as Cut 16 decision (18). Workstream
-43 is `review_pending` for its independent Type 1 close review.
+LDG-3067 run-path question was decided as Cut 16 decision (18). The close
+review (`close_review_43.md`) returned CHANGES_REQUIRED; Correction 1 below
+answers each finding and implements decisions (19) and (20). Workstream 43
+is `review_pending` for the focused re-review.
 
 ## Necessity and scope
 
@@ -112,8 +114,9 @@ carried), then calculates every definition:
 instrument and definition from the same calculation: expected, observed,
 missing, input carried, blocking field, calculated, ready, calculation valid,
 output carried with source and age, missing and barrier reasons, and the
-carried-input count and share of bounded windows. Preparation stores values
-only.
+carried-input count and share of bounded windows. (As first written,
+preparation stored values only; since `6680bdb7` and Correction 1 it also
+retains the sparse evidence planes described under LDG-3067.)
 
 Recorded behavior changes (v12 Sections 4-6; decisions 13-15):
 
@@ -308,6 +311,111 @@ Decision (13) is implemented in the commit that records these decisions.
 LCL-0306/LTB-0314 is the
 registered detector; its mutation results are in
 `dev/bench/v0_2_2_indicator_history/evidence/mutations_decision13.csv`.
+
+## Correction 1 (close review 43, 2026-10-18)
+
+The independent close review (`close_review_43.md`, `83032e5e`) returned
+CHANGES_REQUIRED with seven findings over eighteen acceptance items. The
+maintainer decided its open questions as Cut 16 decisions (19) and (20).
+Each finding:
+
+- **F1 (fixed).** The Availability-Aware Strict Features sentence now says
+  features are calculated from the data start through each window's scoring
+  end, pointing to Scoring And Feature Start.
+- **F2 (fixed).** Frame feature evidence reports every v12 Sections 5-6 state
+  separately and with the internal reader's column meanings: `calculated`
+  is admission, `ready` is first-valid readiness, `calculation_valid` is a
+  ready finite value, and `missing_reason` is `not_expected`,
+  `outside_calculation`, `required_input_missing`, `carried_input_excluded`,
+  `not_ready` (warm-up and re-warming), `output_carry_expired` or
+  `output_carried`. Preparation retains, beside the carry exceptions, each
+  admitted segment's start, end and first-ready column (warm-up is derived by
+  index from them) and run-length reason codes for unavailable expected
+  cells (missing, carried-input-excluded, output-carry-expired); calculation
+  bounds give `outside_calculation`. The projection keys every set row-major
+  and a read finds its cells by binary search; nothing is recomputed per
+  read. `ledgr_history_feature_planes()` now gives valid cells their own
+  source time and age 0 without an output-carry policy, limits input carry
+  to the calculation range and applies the decision (20) window rule, so
+  both readers agree cell for cell (LTB-0319 compares them). A projection
+  sliced to anything but its own prepared axis drops its planes, so a frame
+  read refuses instead of misreading (production slices only onto the
+  validated identical axis). The WS42 closeout route is corrected.
+  Retained size (`evidence/planes_scale_correction1.csv`, realistic panel,
+  14 definitions, single runs on a shared host): 24.1 MB beside 907.8 MB of
+  values at 1,166 x 7,213 (2.7 percent; 384,771 segments, 475,440 reason
+  runs) and 45.6 MB with five sessions of output carry (5.0 percent);
+  indexing 0.73 s; a full-panel evidence read takes about 1.8 s per
+  definition for 8.4 million cells (lookback-bounded pulse reads are much
+  smaller); preparation 163.3 s versus 154.8 s before (single runs).
+- **F3 (decided, fixed).** Cut 16 decision (19): a custom indicator whose id
+  matches a built-in runs its own function in both modes. LTB-0321 pins it
+  on four public runs (custom and built-in, dense and availability); NEWS,
+  `?ledgr_indicator` and the Strict Features contract record the dense
+  change.
+- **F4 (fixed).** LTB-0320 pins the sticky terminal barrier on feature input
+  carry with the reviewer's relisting shape: SMA(2) at sessions 8-9 is
+  `NA, NA` (17, 18 when the barrier is ignored).
+- **Decision (20) (implemented).** A terminal interval ends bounded windows
+  as well as carry. `ledgr_history_feature_calculate()` starts a new run
+  where WS41's sticky terminal barrier plane changes along the calculation
+  rows, so after a relisting a definition restarts and needs its rows from
+  the relisting; no second barrier rule was added and dense is untouched.
+  LTB-0320 asserts SMA(2) at the relisting session is `NA`, not
+  mean(12, 17) = 14.5. Contract, NEWS, `indicators` teaching and
+  `?ledgr_indicator` are updated.
+- **F5 (routed).** The (lagged facts + 1) x prefix factor is stated in the
+  seven-shape walk and appended to LDG-3070's scope with the reviewer's
+  wording; not changed here.
+- **F6 (fixed).** LTB-0316 adds a two-instrument panel: four recomputations
+  and the refusal names the instrument with the most calculated cells
+  (probe-first and probe-every mutations fail it). LTB-0319 adds a high-only
+  gap: a close-only SMA reports no input carry, a high-only definition does
+  (an all-price-fields mutation fails it). The slice re-index is now the
+  identity-or-drop rule above, which LTB-0318's explicit-precompute route
+  covers; there is no re-indexing code left to protect.
+- **F7 (fixed).** NEWS and the Strict Features contract state the aroon
+  dense fingerprint change and its extra dense warm-up row; the return-family
+  sentence says calculated output and discloses optional output carry; the
+  stale closeout lines (values-only preparation, recomputed evidence) are
+  corrected; LDG-3067 evidence names `603966ec`, `6680bdb7` and this
+  correction.
+
+Correction 1 registered blocks: LTB-0319 (LCL-0311), LTB-0320 (LCL-0312),
+LTB-0321 (LCL-0313), and LTB-0316 extended (LCL-0308). Mutations: 14 of 14
+detected (`evidence/mutations_correction1.csv`, `scripts/mut3067c.R`):
+
+| Mutation | Detector |
+|---|---|
+| `ready` aliased to `calculated` | LTB-0319 (LTB-0318, LTB-0320) |
+| `calculation_valid` aliased to `calculated` | LTB-0319 (LTB-0318) |
+| `not_ready` reason dropped | LTB-0319 (LTB-0318, LTB-0320) |
+| `required_input_missing` back to `not_calculated` | LTB-0319 (LTB-0320) |
+| carried-input-excluded code not retained | LTB-0319 |
+| expired-output code not retained | LTB-0319 |
+| `outside_calculation` dropped | LTB-0319 |
+| segment spans not retained | LTB-0319 (LTB-0318, LTB-0320) |
+| input carry from every price field | LTB-0319 |
+| probe the first instrument | LTB-0316 |
+| probe every instrument | LTB-0316 |
+| terminal barrier ignored in feature input carry | LTB-0320 |
+| windows cross the terminal interval | LTB-0320 |
+| built-in shadows the custom function | LTB-0321 |
+
+Registered oracles changed in Correction 1, with reasons:
+
+- LTB-0318 (this workstream's block): `calculated`, `ready` and
+  `calculation_valid` take the v12 meanings (F2), so BBB's SMA reads
+  admitted at session 1 but not ready, the return reads admitted and not
+  ready at sessions 1 and 5 (warm-up, re-warming) with reason `not_ready`
+  instead of the placeholder `not_calculated`, and AAA's check moves to
+  `calculation_valid`. The carry planes it was written for are unchanged.
+- LTB-0144 and LTB-0276: the availability engine digest becomes
+  `283ce161...` because the hashed `compute`, `calculate` and `runs` helpers
+  changed (decision (20) split and the retained planes). Dense literals are
+  unchanged.
+- No WS42 registered oracle changed; the WS42 history frame and integration
+  blocks pass unchanged.
 
 ## Merge with Workstream 42 and renumbering
 
@@ -568,7 +676,11 @@ included, passed the exact check on every shape.
    releases it.
 2. Each instrument's inputs and lifetime masks are prepared once per
    knowledge range and serve every definition; certification runs once per
-   definition per preparation (LTB-0157), not per instrument or pulse.
+   definition per preparation (LTB-0157), not per instrument or pulse. A
+   lagged lifetime or terminal fact starts a new knowledge range that
+   re-treats the instrument's inputs and recomputes every definition from
+   the calculation start, so an instrument's cost is (lagged facts + 1) x
+   its prefix length (close review F5; routed to LDG-3070).
 3. Carry, admission and run detection are vector operations. The remaining
    per-element loops are stated: built-in SMA keeps one `mean()` per window
    for bit parity (pre-existing), and a custom `fn` is called once per ready
@@ -583,8 +695,11 @@ included, passed the exact check on every shape.
    call per segment.
 6. No pulse operation scans history; pulses read the prepared projection.
 7. One representation: values live in the existing runtime projection; no
-   feature store, cache or second reader was added. Evidence is recomputed
-   on demand by the same calculation.
+   feature store, cache or second reader was added. History-frame evidence
+   reads sparse planes retained by the same preparation (segment spans,
+   reason runs, carry exceptions) by binary search; the internal
+   per-instrument reader `ledgr_history_feature_planes()` recomputes one
+   instrument on demand for inspection and tests.
 
 The new loops over instruments and segments are linear and are the stated
 reasons above; scaling is measured in the previous section.
@@ -625,6 +740,11 @@ reasons above; scaling is measured in the previous section.
   `git diff --check` is clean.
 - Merged, renumbered tree (`22324f3f`): full suite 1,132 blocks, no
   failures, the same skip.
+- Correction 1: full suite 1,139 blocks, no failures, the same skip (711
+  seconds on a source copy); census report and check
+  (`ws43-correction-1`), fold-phase checker, YAML parse and
+  `git diff --check` pass; 14 of 14 Correction 1 mutations detected;
+  `integrate/cut15-v0.2.2` had not moved past `42df9de9`.
 - LDG-3067 follow-up (decision 18, feature evidence, merge `9b5b17c4`):
   full suite 1,136 blocks, no failures, the same skip (702 seconds); census
   report and check (`ws43-ldg-3067-followup`), fold-phase checker, YAML

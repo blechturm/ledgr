@@ -65,10 +65,15 @@ with that structural flag.
 Bar values follow the experiment's \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}: open, high,
 low and close carry forward within the declared expected-session horizon;
 volume never carries. Carried cells are disclosed in the evidence. Feature
-evidence is the evidence the feature preparation produced: a cell whose own
-required input was carried is \code{input_carried}, a value carried from an
-earlier calculated cell is \code{output_carried} with that cell's source time
-and age, and only genuinely calculated cells are \code{calculated}.
+evidence is the evidence the feature preparation produced: \code{calculated}
+means the required inputs were admitted, \code{ready} that the cell reached its
+segment's first-valid row, and \code{calculation_valid} a ready, finite value.
+A cell whose own required input was carried is \code{input_carried}; a value
+carried from an earlier valid cell is \code{output_carried}, with that cell's
+source time and age. \code{missing_reason} separates \code{not_ready} (warm-up or
+re-warming), \code{required_input_missing}, \code{carried_input_excluded},
+\code{output_carry_expired}, \code{output_carried}, \code{outside_calculation} and
+\code{not_expected}.
 
 \code{instruments = "admissible"} selects the decision-axis instruments that are
 admissible at the cutoff, \code{"decision_axis"} adds held nonmembers and

@@ -1,0 +1,15 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"f2_ready_aliases_calculated",TRUE,"1","LTB-0319","[LTB-0318] history frames report the prepared feature carry planes || [LTB-0319] frame feature evidence separates every v12 feature state || [LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"f2_valid_aliases_calculated",TRUE,"1","LTB-0319","[LTB-0318] history frames report the prepared feature carry planes || [LTB-0319] frame feature evidence separates every v12 feature state",TRUE
+"f2_not_ready_reason_dropped",TRUE,"1","LTB-0319","[LTB-0318] history frames report the prepared feature carry planes || [LTB-0319] frame feature evidence separates every v12 feature state || [LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"f2_required_input_missing_placeholder",TRUE,"1","LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state || [LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"f2_carried_input_excluded_not_retained",TRUE,"1","LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state",TRUE
+"f2_expired_output_not_retained",TRUE,"1","LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state",TRUE
+"f2_outside_calculation_dropped",TRUE,"1","LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state",TRUE
+"f2_segments_not_retained",TRUE,"1","LTB-0319","[LTB-0318] history frames report the prepared feature carry planes || [LTB-0319] frame feature evidence separates every v12 feature state || [LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"f6_input_carry_from_all_price_fields",TRUE,"1","LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state",TRUE
+"f6_probe_first_instrument",TRUE,"1","LTB-0316","[LTB-0316] the causality checker samples a fixed bounded set of positions",TRUE
+"f6_probe_every_instrument",TRUE,"1+1","LTB-0316","[LTB-0316] the causality checker samples a fixed bounded set of positions",TRUE
+"f4_terminal_barrier_ignored_in_feature_carry",TRUE,"1","LTB-0320","[LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"d20_windows_cross_terminal_interval",TRUE,"1","LTB-0320","[LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"d19_builtin_shadows_custom",TRUE,"1","LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE

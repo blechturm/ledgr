@@ -56,9 +56,13 @@ Inactive-interval prints are shown raw with their inactive flag (v12
 Section 4). Feature cells use the Workstream 43 seam: `calculated` equals
 non-missing, input and output carry are false, and the reasons are
 `not_calculated` or `not_expected`. (Superseded 2026-10-18 by Workstream 43
-LDG-3067, on the maintainer's instruction: feature cells now read the input-
-and output-carry planes that feature preparation retains, and output-carried
-cells are no longer `calculated`; see `indicator_history_closeout.md`.)
+LDG-3067: in `6680bdb7` feature cells began reading the retained input- and
+output-carry planes; in its Correction 1 they read every v12 Sections 5-6
+state, with `calculated` as admission, `ready` as first-valid readiness and
+`calculation_valid` as a ready finite value, and reasons `not_ready`,
+`required_input_missing`, `carried_input_excluded`, `output_carry_expired`,
+`output_carried` and `outside_calculation`; see
+`indicator_history_closeout.md`.)
 
 The result carries `data_start_utc`, `window_start_utc`, `cutoff_utc`,
 requested and available lookback, source and policy identity, the selection
@@ -406,8 +410,10 @@ Proposed owners pending maintainer confirmation; none changes a WS42 result.
   or reuse them.
 - Feature-cell evidence is the Workstream 43 seam (LDG-3065/LDG-3066):
   readiness, output carry and calculation validity replace the placeholders.
-  (Closed 2026-10-18 by Workstream 43 LDG-3067; registered detector
-  LTB-0318.)
+  (Carry was replaced in `6680bdb7` (LTB-0318); WS43 close review F2 found
+  readiness, validity and reasons still placeholders, so the route stayed
+  open until WS43 Correction 1 (2026-10-18) replaced them; registered
+  detectors LTB-0318 and LTB-0319.)
 - Realized PnL remains per run (each window's result reports its own
   realized trades); the chain equality is on events, equity, cash, lots and
   diagnostics. (The earlier cash-only carry route is superseded by the F1

@@ -43,6 +43,11 @@ x86-64, 24 logical cores, 64 GB RAM.
   preparation (`scripts/planes_scale.R <tree> <label> <realistic|realistic_output>
   <instruments> <sessions> <out.csv>`): exception counts and bytes against
   the value matrices, projection indexing and a full-window read.
+- `evidence/mutations_correction1.csv`: Correction 1 mutations for close
+  review 43 (`scripts/mut3067c.R`).
+- `evidence/planes_scale_correction1.csv`: the same measurement after
+  Correction 1 retains segment spans and reason runs (columns `segments`
+  and `reason_runs` added to `scripts/planes_scale.R`).
 - `evidence/return1_run.csv`: a public availability run of `return_1`
   (`scripts/return1_run.R`), with the number of per-window `fn` calls.
 

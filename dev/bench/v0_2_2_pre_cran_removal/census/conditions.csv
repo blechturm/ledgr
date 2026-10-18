@@ -972,37 +972,37 @@
 "R/fold-phase-contract.R",177,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
 "R/fold-phase-contract.R",75,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
 "R/fold-reconstruction.R",178,"abort_class","ledgr_invalid_event_order",TRUE,"""ledgr_invalid_event_order""",TRUE,TRUE,FALSE
-"R/history-features.R",238,"abort_class","ledgr_indicator_gap_parity",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
-"R/history-features.R",238,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
+"R/history-features.R",240,"abort_class","ledgr_indicator_gap_parity",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
+"R/history-features.R",240,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_indicator_gap_parity"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
 "R/history-features.R",45,"abort_wrapper_class","ledgr_invalid_args",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""Indicator `%s` is a package catalogue row; its input-carry "", ""family is `%s` and cannot be declared `%s`.""), def$id, canonical$input_carry, declarations$input_carry), contradiction = TRUE)",TRUE,TRUE,FALSE
 "R/history-features.R",45,"abort_wrapper_class","ledgr_invalid_indicator_declaration",TRUE,"ledgr_indicator_abort_declaration(sprintf(paste0(""Indicator `%s` is a package catalogue row; its input-carry "", ""family is `%s` and cannot be declared `%s`.""), def$id, canonical$input_carry, declarations$input_carry), contradiction = TRUE)",TRUE,TRUE,FALSE
-"R/history-features.R",662,"abort_class","ledgr_feature_lookahead_detected",TRUE,"c(""ledgr_feature_lookahead_detected"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
-"R/history-features.R",662,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_feature_lookahead_detected"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
-"R/history-features.R",694,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-features.R",694,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-features.R",730,"abort_class","ledgr_feature_lookahead_detected",TRUE,"c(""ledgr_feature_lookahead_detected"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
+"R/history-features.R",730,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_feature_lookahead_detected"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
+"R/history-features.R",762,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-features.R",762,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-frame.R",13,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/history-frame.R",13,"abort_class","ledgr_invalid_history_substrate",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
-"R/history-frame.R",269,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
-"R/history-frame.R",269,"abort_class","ledgr_invalid_history_substrate",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
-"R/history-frame.R",369,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_request"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",369,"abort_class","ledgr_invalid_history_request",TRUE,"c(""ledgr_invalid_history_request"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",406,"abort_class","ledgr_history_unavailable",TRUE,"c(""ledgr_history_unavailable"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",406,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unavailable"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",504,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_field"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",504,"abort_class","ledgr_invalid_history_field",TRUE,"c(""ledgr_invalid_history_field"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",539,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",539,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",566,"abort_class","ledgr_history_outside_axis",TRUE,"c(""ledgr_history_outside_axis"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",566,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_outside_axis"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",578,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",TRUE,TRUE,FALSE
-"R/history-frame.R",585,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_strategy_helper"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",585,"abort_class","ledgr_invalid_strategy_helper",TRUE,"c(""ledgr_invalid_strategy_helper"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",794,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",794,"abort_class","ledgr_invalid_history_result",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",830,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",830,"abort_class","ledgr_invalid_history_result",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",844,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",844,"abort_class","ledgr_invalid_history_result",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",284,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
+"R/history-frame.R",284,"abort_class","ledgr_invalid_history_substrate",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
+"R/history-frame.R",398,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_request"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",398,"abort_class","ledgr_invalid_history_request",TRUE,"c(""ledgr_invalid_history_request"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",435,"abort_class","ledgr_history_unavailable",TRUE,"c(""ledgr_history_unavailable"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",435,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unavailable"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",538,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_field"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",538,"abort_class","ledgr_invalid_history_field",TRUE,"c(""ledgr_invalid_history_field"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",573,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",573,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",600,"abort_class","ledgr_history_outside_axis",TRUE,"c(""ledgr_history_outside_axis"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",600,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_outside_axis"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",612,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",TRUE,TRUE,FALSE
+"R/history-frame.R",619,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_strategy_helper"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",619,"abort_class","ledgr_invalid_strategy_helper",TRUE,"c(""ledgr_invalid_strategy_helper"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",829,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",829,"abort_class","ledgr_invalid_history_result",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",865,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",865,"abort_class","ledgr_invalid_history_result",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",879,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",879,"abort_class","ledgr_invalid_history_result",TRUE,"c(""ledgr_invalid_history_result"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-policy.R",26,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_history_policy"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-policy.R",26,"abort_class","ledgr_invalid_history_policy",TRUE,"c(""ledgr_invalid_history_policy"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-policy.R",57,"abort_class","ledgr_invalid_experiment",TRUE,"c(""ledgr_invalid_history_policy"", ""ledgr_invalid_experiment"")",TRUE,TRUE,FALSE
@@ -1179,31 +1179,31 @@
 "R/indicator-ttr.R",942,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/indicator-ttr.R",969,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/indicator-ttr.R",983,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",103,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",106,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",109,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",112,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",115,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",118,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",121,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",124,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",127,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",133,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",148,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",225,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",275,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",309,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
-"R/indicator.R",314,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
-"R/indicator.R",347,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",353,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",356,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",369,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",407,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",410,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",417,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",452,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",468,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/indicator.R",499,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",107,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",110,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",113,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",116,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",119,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",122,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",125,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",128,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",131,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",137,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",152,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",229,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",279,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",313,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
+"R/indicator.R",318,"abort_class","ledgr_internal_error",TRUE,"""ledgr_internal_error""",FALSE,FALSE,TRUE
+"R/indicator.R",351,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",357,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",360,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",373,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",411,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",414,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",421,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",456,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",472,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/indicator.R",503,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/ledger-writer.R",20,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/ledger-writer.R",24,"abort_class","ledgr_invalid_fill_intent",TRUE,"""ledgr_invalid_fill_intent""",TRUE,TRUE,FALSE
 "R/ledger-writer.R",3,"abort_class","ledgr_invalid_con",TRUE,"""ledgr_invalid_con""",TRUE,TRUE,FALSE
@@ -1583,24 +1583,24 @@
 "R/run-tags.R",6,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/run-tags.R",9,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/runtime-projection.R",11,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",153,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",156,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",155,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",158,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
 "R/runtime-projection.R",17,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",189,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",195,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",238,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",241,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",245,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",191,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",197,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",239,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",242,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",246,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",TRUE,TRUE,FALSE
 "R/runtime-projection.R",26,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
 "R/runtime-projection.R",29,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",366,"stop","",FALSE,"stop(""'arg' should be one of \""schema\"", \""full\"""", call. = FALSE)",FALSE,FALSE,FALSE
-"R/runtime-projection.R",458,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",602,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",634,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",676,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",679,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",746,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",749,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",367,"stop","",FALSE,"stop(""'arg' should be one of \""schema\"", \""full\"""", call. = FALSE)",FALSE,FALSE,FALSE
+"R/runtime-projection.R",459,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",603,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",635,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",677,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",680,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",747,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",750,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/signal-strategy.R",101,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",TRUE,TRUE,FALSE
 "R/signal-strategy.R",114,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",TRUE,TRUE,FALSE
 "R/signal-strategy.R",122,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",TRUE,TRUE,FALSE

@@ -149,14 +149,16 @@ ledgr_feature_catalogue_candidates <- function(def) {
   out
 }
 
-# Start and end positions of each contiguous run of TRUE.
-ledgr_history_feature_runs <- function(available) {
+# Start and end positions of each contiguous run of TRUE. `breaks` marks
+# positions that start a new run even when the previous one is TRUE.
+ledgr_history_feature_runs <- function(available, breaks = NULL) {
   available <- as.logical(available)
   n <- length(available)
   if (n == 0L) return(list(starts = integer(), ends = integer()))
+  if (is.null(breaks)) breaks <- rep(FALSE, n)
   list(
-    starts = which(available & c(TRUE, !available[-n])),
-    ends = which(available & c(!available[-1L], TRUE))
+    starts = which(available & (c(TRUE, !available[-n]) | breaks)),
+    ends = which(available & (c(!available[-1L], TRUE) | c(breaks[-1L], FALSE)))
   )
 }
 
@@ -318,7 +320,8 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
   blocking <- rep("", n)
   if (calc_from > n) {
     return(list(value = value, raw = value, ready = ready, available = available_all,
-                blocking_field = blocking, calculated = rep(FALSE, n), output_carry = NULL))
+                blocking_field = blocking, calculated = rep(FALSE, n), output_carry = NULL,
+                segments = list(start = integer(), end = integer(), ready = integer())))
   }
   calc <- seq.int(calc_from, n)
   fields <- if (identical(declarations$input_carry, "excluded")) inputs$raw else inputs$treated
@@ -335,11 +338,27 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
   } else {
     calc
   }
-  runs <- ledgr_history_feature_runs(available_all[rows])
+  # A terminal interval ends windows and segments as well as carry (Cut 16
+  # decision 20): WS41's terminal barrier plane is sticky from the first
+  # terminal column, so a run restarts where that plane changes and no
+  # window mixes pre-delisting and post-relisting rows.
+  terminal_rows <- inputs$terminal[rows]
+  runs <- ledgr_history_feature_runs(
+    available_all[rows],
+    breaks = c(FALSE, terminal_rows[-1L] != terminal_rows[-length(terminal_rows)])
+  )
   stable_after <- as.integer(cert$def$stable_after)
+  # Segment spans in prefix positions, with the first ready position (NA
+  # when the segment never reaches stable_after).
+  segments <- list(
+    start = rows[runs$starts],
+    end = rows[runs$ends],
+    ready = rep(NA_integer_, length(runs$starts))
+  )
   for (r in seq_along(runs$starts)) {
     segment <- rows[seq.int(runs$starts[[r]], runs$ends[[r]])]
     if (length(segment) < stable_after) next
+    segments$ready[[r]] <- segment[[stable_after]]
     segment_value <- ledgr_history_feature_segment(cert, inputs, fields, segment, cache)
     take <- seq_along(segment) >= stable_after
     ready[segment[take]] <- TRUE
@@ -368,7 +387,8 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
     blocking_field = blocking,
     calculated = calculated,
     output_carry = carried_output,
-    calc = calc
+    calc = calc,
+    segments = segments
   )
 }
 
@@ -428,7 +448,9 @@ ledgr_history_compute_feature_series <- function(substrate,
   bounds <- ledgr_history_feature_bounds(substrate, calculation_start, calculation_end)
   planes <- lapply(certified, function(cert) ledgr_feature_plane_chunks(n_inst))
   if (length(definitions) == 0L || bounds$from > bounds$to) {
-    attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(planes, substrate$instrument_ids)
+    attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(
+      planes, substrate$instrument_ids, bounds
+    )
     return(out)
   }
   output_carry <- substrate$history_policy$output_carry
@@ -453,77 +475,123 @@ ledgr_history_compute_feature_series <- function(substrate,
         exceptions <- ledgr_feature_plane_exceptions(
           certified[[d]], inputs, calculated, ranges$start[[r]], keep
         )
-        if (!is.null(exceptions$input)) {
-          planes[[d]]$input[[i]] <- c(planes[[d]]$input[[i]], exceptions$input)
-        }
-        if (!is.null(exceptions$output)) {
-          planes[[d]]$output_col[[i]] <- c(planes[[d]]$output_col[[i]], exceptions$output$col)
-          planes[[d]]$output_source[[i]] <- c(planes[[d]]$output_source[[i]], exceptions$output$source)
-          planes[[d]]$output_age[[i]] <- c(planes[[d]]$output_age[[i]], exceptions$output$age)
+        for (field in names(exceptions)) {
+          if (length(exceptions[[field]]) > 0L) {
+            planes[[d]][[field]][[i]] <- c(planes[[d]][[field]][[i]], exceptions[[field]])
+          }
         }
       }
     }
   }
   ledgr_history_feature_causality(substrate, certified, bounds, calculated_count, out)
-  attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(planes, substrate$instrument_ids)
+  attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(
+    planes, substrate$instrument_ids, bounds
+  )
   out
 }
 
 # Sparse evidence planes retained by preparation for history reads (v12
-# Section 5). Most cells are calculated and uncarried, so preparation keeps
-# only the exceptions: cells whose own required input was policy-carried
-# and cells whose value is an output-carried earlier value, with that
-# value's source time and age. A read derives every feature plane from these
-# and the prepared values by index; nothing is recomputed per read.
+# Sections 5 and 6). Preparation keeps only what a read cannot derive from
+# the prepared values and the cutoff masks, in run-length or exception form:
+# - segments: each admitted run's first and last column and the column where
+#   it first reaches stable_after (warm-up and re-warming are the positions
+#   before it, derived by index);
+# - reason runs: expected columns whose required input is unavailable, coded
+#   1 required input missing, 2 carried input excluded (return and volatility
+#   families), 3 output carry expired;
+# - input carry: columns whose own required input was policy-carried;
+# - output carry: columns whose value is an earlier calculated value, with
+#   that value's source time and age.
+# Columns outside the calculation bounds are outside_calculation by index.
+ledgr_feature_plane_fields <- function() {
+  c(
+    "input_col", "output_col", "output_source", "output_age",
+    "segment_start", "segment_ready", "segment_end",
+    "reason_start", "reason_end", "reason_code"
+  )
+}
+
 ledgr_feature_plane_chunks <- function(n_inst) {
   # One slot per instrument, filled in place; an instrument with several
   # knowledge ranges appends to its own slot.
-  list(
-    input = vector("list", n_inst),
-    output_col = vector("list", n_inst),
-    output_source = vector("list", n_inst),
-    output_age = vector("list", n_inst)
+  stats::setNames(
+    lapply(ledgr_feature_plane_fields(), function(field) vector("list", n_inst)),
+    ledgr_feature_plane_fields()
   )
 }
 
 # The exceptions one definition produced for one instrument and knowledge
-# range; the caller stores them by instrument index.
+# range (columns range_start..range_end); the caller stores them by
+# instrument index.
 ledgr_feature_plane_exceptions <- function(cert, inputs, calculated, range_start, keep) {
   declarations <- cert$declarations
-  input <- NULL
-  if (!identical(declarations$input_carry, "excluded")) {
-    carried <- Reduce(`|`, lapply(declarations$required_fields, function(field) {
-      inputs$carried[[field]][keep]
-    }))
-    if (any(carried)) input <- keep[carried]
-  }
-  output <- NULL
+  excluded <- identical(declarations$input_carry, "excluded")
+  carried_any <- Reduce(`|`, lapply(declarations$required_fields, function(field) {
+    inputs$carried[[field]][keep]
+  }))
+  out <- list()
+  if (!excluded && any(carried_any)) out$input_col <- keep[carried_any]
   carry <- calculated$output_carry
-  if (!is.null(carry) && any(carry$output_carried)) {
-    flagged <- which(carry$output_carried)
-    col <- calculated$calc[flagged]
-    take <- col >= range_start
-    if (any(take)) {
-      output <- list(
-        col = col[take],
-        source = as.numeric(carry$source_ts_utc)[flagged][take],
-        age = as.integer(carry$carry_age_sessions)[flagged][take]
-      )
+  expired <- rep(FALSE, length(keep))
+  if (!is.null(carry)) {
+    # The output-carry planes are aligned on calc, which starts at or before
+    # range_start; keep's positions are calc's tail.
+    at <- match(keep, calculated$calc)
+    flagged <- carry$output_carried[at]
+    if (any(flagged)) {
+      out$output_col <- keep[flagged]
+      out$output_source <- as.numeric(carry$source_ts_utc)[at][flagged]
+      out$output_age <- as.integer(carry$carry_age_sessions)[at][flagged]
     }
+    expired <- carry$missing_reason[at] == "output_carry_expired" &
+      !calculated$available[keep]
   }
-  list(input = input, output = output)
+  segments <- calculated$segments
+  inside <- segments$end >= range_start
+  if (any(inside)) {
+    out$segment_start <- pmax(segments$start[inside], range_start)
+    out$segment_ready <- segments$ready[inside]
+    out$segment_end <- segments$end[inside]
+  }
+  code <- integer(length(keep))
+  unavailable <- inputs$expected[keep] & !calculated$available[keep]
+  code[unavailable] <- 1L
+  code[unavailable & excluded & carried_any] <- 2L
+  code[expired] <- 3L
+  if (any(code > 0L)) {
+    changes <- c(TRUE, code[-1L] != code[-length(code)] | diff(keep) != 1L)
+    starts <- which(changes)
+    ends <- c(starts[-1L] - 1L, length(code))
+    hit <- code[starts] > 0L
+    out$reason_start <- keep[starts[hit]]
+    out$reason_end <- keep[ends[hit]]
+    out$reason_code <- code[starts[hit]]
+  }
+  out
 }
 
-ledgr_feature_plane_records <- function(planes, instrument_ids) {
+ledgr_feature_plane_records <- function(planes, instrument_ids, bounds) {
   lapply(planes, function(chunks) {
+    rows <- function(field) rep(seq_along(chunks[[field]]), lengths(chunks[[field]]))
+    flat <- function(field) unlist(chunks[[field]], use.names = FALSE)
     list(
       instrument_ids = as.character(instrument_ids),
-      input_row = rep(seq_along(chunks$input), lengths(chunks$input)),
-      input_col = as.integer(unlist(chunks$input, use.names = FALSE)),
-      output_row = rep(seq_along(chunks$output_col), lengths(chunks$output_col)),
-      output_col = as.integer(unlist(chunks$output_col, use.names = FALSE)),
-      output_source_ts = as.numeric(unlist(chunks$output_source, use.names = FALSE)),
-      output_age = as.integer(unlist(chunks$output_age, use.names = FALSE))
+      calc_from = as.integer(bounds$from),
+      calc_to = as.integer(bounds$to),
+      input_row = rows("input_col"),
+      input_col = as.integer(flat("input_col")),
+      output_row = rows("output_col"),
+      output_col = as.integer(flat("output_col")),
+      output_source_ts = as.numeric(flat("output_source")),
+      output_age = as.integer(flat("output_age")),
+      segment_row = rows("segment_start"),
+      segment_start = as.integer(flat("segment_start")),
+      segment_ready = as.integer(flat("segment_ready")),
+      segment_end = as.integer(flat("segment_end")),
+      reason_row = rows("reason_start"),
+      reason_start = as.integer(flat("reason_start")),
+      reason_end = as.integer(flat("reason_end")),
+      reason_code = as.integer(flat("reason_code"))
     )
   })
 }
@@ -725,6 +793,12 @@ ledgr_history_feature_planes <- function(substrate,
       !calculated$available[calculated$calc]
   }
   in_range <- seq_len(prefix_end) >= bounds$from
+  input_carried <- input_carried & in_range
+  # A genuinely calculated cell is its own source (age 0), with or without
+  # an output-carry policy.
+  valid <- calculated$calculated
+  source_ts[valid] <- as.numeric(inputs$axis)[valid]
+  carry_age[valid] <- 0L
   missing_reason <- rep("", prefix_end)
   missing_reason[!inputs$expected] <- "not_expected"
   missing_reason[inputs$expected & in_range & !calculated$available] <- "required_input_missing"
@@ -745,7 +819,11 @@ ledgr_history_feature_planes <- function(substrate,
     expected_rows <- which(inputs$expected)
     cumulative <- c(0L, cumsum(carried_cells[expected_rows]))
     k <- seq_along(expected_rows)
+    # A window never spans a terminal interval (Cut 16 decision 20).
+    terminal_rows <- inputs$terminal[expected_rows]
     has_window <- k >= width
+    has_window[has_window] <- terminal_rows[k[has_window]] ==
+      terminal_rows[k[has_window] - width + 1L]
     rows <- expected_rows[has_window]
     required_count[rows] <- width * length(required)
     carried_count[rows] <- as.integer(

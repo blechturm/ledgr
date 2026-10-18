@@ -56,46 +56,48 @@ ledgr_runtime_projection <- function(feature_values,
 
 # Index availability-aware feature evidence planes (see
 # ledgr_feature_plane_records()) into this projection's instrument x pulse
-# cells: sorted linear indices, so a read locates its cells by binary search.
+# cells. Every set is keyed row-major, `(row - 1) * n_pulse + column`, and
+# sorted, so a read locates its cells by binary search: point sets by
+# equality, segment and reason runs by their start and end keys.
 ledgr_projection_index_planes <- function(record, universe, n_pulse) {
   if (is.null(record)) return(NULL)
   universe <- as.character(universe)
-  n_inst <- length(universe)
-  index <- function(row, col) {
-    mapped <- match(record$instrument_ids[row], universe)
-    keep <- !is.na(mapped) & col >= 1L & col <= n_pulse
-    list(linear = as.integer(mapped[keep] + (col[keep] - 1L) * n_inst), keep = keep)
+  mapped <- function(row) match(record$instrument_ids[row], universe)
+  keyed <- function(row, col) as.numeric(mapped(row) - 1L) * n_pulse + col
+  sorted <- function(key, ...) {
+    keep <- !is.na(key)
+    order_idx <- order(key[keep], method = "radix")
+    c(list(key = key[keep][order_idx]), lapply(list(...), function(x) x[keep][order_idx]))
   }
-  input <- index(record$input_row, record$input_col)
-  output <- index(record$output_row, record$output_col)
-  input_order <- order(input$linear, method = "radix")
-  output_order <- order(output$linear, method = "radix")
-  list(
-    input_carried = input$linear[input_order],
-    output_carried = output$linear[output_order],
-    output_source_ts = record$output_source_ts[output$keep][output_order],
-    output_age = record$output_age[output$keep][output_order]
+  input <- sorted(keyed(record$input_row, record$input_col))
+  output <- sorted(
+    keyed(record$output_row, record$output_col),
+    record$output_source_ts, record$output_age
   )
-}
-
-# Re-index indexed planes to a subset of pulse columns.
-ledgr_projection_slice_planes <- function(planes, n_inst, idx) {
-  if (is.null(planes)) return(NULL)
-  remap <- function(linear) {
-    row <- (linear - 1L) %% n_inst + 1L
-    col <- match((linear - 1L) %/% n_inst + 1L, idx)
-    keep <- !is.na(col)
-    list(linear = as.integer(row[keep] + (col[keep] - 1L) * n_inst), keep = keep)
-  }
-  input <- remap(planes$input_carried)
-  output <- remap(planes$output_carried)
-  input_order <- order(input$linear, method = "radix")
-  output_order <- order(output$linear, method = "radix")
+  segment <- sorted(
+    keyed(record$segment_row, record$segment_start),
+    keyed(record$segment_row, record$segment_end),
+    record$segment_ready
+  )
+  reason <- sorted(
+    keyed(record$reason_row, record$reason_start),
+    keyed(record$reason_row, record$reason_end),
+    record$reason_code
+  )
   list(
-    input_carried = input$linear[input_order],
-    output_carried = output$linear[output_order],
-    output_source_ts = planes$output_source_ts[output$keep][output_order],
-    output_age = planes$output_age[output$keep][output_order]
+    n_pulse = as.integer(n_pulse),
+    calc_from = record$calc_from,
+    calc_to = record$calc_to,
+    input_carried = input$key,
+    output_carried = output$key,
+    output_source_ts = output[[2L]],
+    output_age = output[[3L]],
+    segment_start = segment$key,
+    segment_end = segment[[2L]],
+    segment_ready = segment[[3L]],
+    reason_start = reason$key,
+    reason_end = reason[[2L]],
+    reason_code = reason[[3L]]
   )
 }
 
@@ -201,14 +203,13 @@ ledgr_projection_slice <- function(projection, pulses_posix) {
   feature_values <- lapply(projection$feature_values, function(mat) {
     mat[, idx, drop = FALSE]
   })
+  # Feature evidence planes are keyed to the prepared pulse axis. Production
+  # slices an availability projection only onto its own validated axis (the
+  # identity), so the planes are kept there and dropped otherwise; a frame
+  # read on a projection without planes refuses rather than guessing.
   feature_planes <- projection$feature_planes
-  if (!is.null(feature_planes)) {
-    feature_planes <- lapply(
-      feature_planes,
-      ledgr_projection_slice_planes,
-      n_inst = length(projection$instrument_index),
-      idx = idx
-    )
+  if (!is.null(feature_planes) && !identical(idx, seq_along(projection$pulses_posix))) {
+    feature_planes <- NULL
   }
   ledgr_runtime_projection(
     feature_values = feature_values,

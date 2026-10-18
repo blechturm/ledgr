@@ -1713,14 +1713,19 @@ and `AAA` a held nonmember, each holding 5:
   print inside a knowable lifetime-inactive interval stays readable with its
   structural flag. Feature values are the shared feature preparation's values
   on the same axis, and feature cell evidence is the evidence that
-  preparation produced: `input_carried` marks a cell whose own required input
-  was policy-carried (never for a definition excluded from input carry),
-  `output_carried` marks a value carried from an earlier calculated cell with
-  that cell's `source_ts_utc` and `carry_age_sessions`, `calculated` and
-  `calculation_valid` mark only genuinely calculated cells, never
-  output-carried ones, and `ready` is calculated or output-carried.
-  Preparation retains only the carried exceptions and a read locates its
-  cells by index; nothing is recomputed per read.
+  preparation produced, with the column meanings of the availability-aware
+  feature planes: `calculated` means the required inputs were admitted after
+  treatment, `ready` means an admitted cell at or after its segment's
+  `stable_after` row, `calculation_valid` means ready with a finite
+  calculated value, `input_carried` marks a cell whose own required input was
+  policy-carried (never for a definition excluded from input carry), and
+  `output_carried` marks a value carried from an earlier valid cell with that
+  cell's `source_ts_utc` and `carry_age_sessions`. `missing_reason` is one of
+  `not_expected`, `outside_calculation`, `required_input_missing`,
+  `carried_input_excluded`, `not_ready` (warm-up or re-warming),
+  `output_carry_expired` or `output_carried`. Preparation retains segment
+  spans, reason runs and carry exceptions; a read derives warm-up by index
+  and locates its cells by binary search; nothing is recomputed per read.
 - Wide results have `ts_utc` plus one numeric column per included
   instrument; long results have `ts_utc`, `instrument_id`, `source`
   (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
@@ -1949,21 +1954,29 @@ and `AAA` a held nonmember, each holding 5:
   bounded definition's value at a session is a function of its last
   `requires_bars` expected sessions on the instrument's mask; sessions on which
   the instrument is lifetime-inactive are not counted. `fn` receives exactly
-  that window and an incomplete window is `NA_real_`.
+  that window and an incomplete window is `NA_real_`. A terminal interval ends
+  bounded windows as well as carry (Cut 16 decision (20)): after a relisting a
+  bounded definition restarts on WS41's sticky terminal barrier plane, needs
+  `requires_bars` treated rows from the relisting and is ready again at its
+  `stable_after` row, so no window mixes pre-delisting and post-relisting
+  prices.
 - A history-dependent definition runs once per contiguous segment of available
   input on the common axis. A missing input beyond the carry horizon or a
   lifetime-inactive interval ends the segment; the next segment restarts and
   warms up again. Restart, not skip, is the gap policy. `stable_after` is the
   first-valid position after each start or restart.
 - Return- and volatility-family catalogue rows never consume a carried price:
-  their output is `NA_real_` wherever a required input is missing or carried.
+  their calculated output is `NA_real_` wherever a required input is missing
+  or would have been carried; optional output carry may still fill such a
+  session from an earlier valid value, disclosed as `output_carried`.
   A custom definition declaring `input_carry = "excluded"` follows the same
   rule; an undeclared custom definition consumes the policy-treated input.
 - A real print inside a knowable lifetime-inactive interval enters no
   calculation. Valuation marks never enter feature computation. Each pulse's
   value uses the lifetime and terminal facts knowable at that pulse; a
-  later-known fact changes only later pulses. Features are calculated only
-  inside each window's scoring start and end.
+  later-known fact changes only later pulses. Features are calculated from
+  the data start through each window's scoring end (see
+  [Scoring And Feature Start](#contract-execution-window-start)).
 - Raw missingness, input carry, required-field admission, readiness,
   calculation validity and optional output carry remain separate planes.
   Output carry fills only a session whose own required input is unavailable,
@@ -1975,9 +1988,14 @@ and `AAA` a held nonmember, each holding 5:
   its values from `series_fn` per segment; the sampled causality checks under
   [Feature Path](#contract-context-feature-path) refute it against `fn`. A
   history-dependent pair is not refuted.
-- Dense indicator fingerprints and feature-engine identity omit the
-  availability declarations and remain unchanged; the availability
-  feature-engine identity binds every helper of this calculation.
+- Dense indicator fingerprints and the dense feature-engine identity omit the
+  availability declarations. Two accepted corrections change dense results:
+  TTR `aroon` declares its `n + 1` width in both modes, which changes its
+  dense fingerprint and adds one dense warm-up row (Cut 16 decision (14));
+  and a custom indicator whose id matches a built-in pattern (`sma_<n>`,
+  `return_1`) runs its own function in both modes and is never replaced by
+  the built-in (Cut 16 decision (19)). The availability feature-engine
+  identity binds every helper of this calculation.
 
 <a id="contract-context-ttr-adapter"></a>
 ### TTR Adapter

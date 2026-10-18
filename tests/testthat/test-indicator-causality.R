@@ -19,6 +19,40 @@ ws43_count_calls <- function(name, expr) {
   calls
 }
 
+# Two instruments on one axis; `close` is a named list of close vectors (NA
+# marks a missing bar).
+ws43_panel_substrate <- function(close) {
+  n <- length(close[[1L]])
+  axis <- ws43_history_axis(n)
+  ids <- names(close)
+  bars <- do.call(rbind, lapply(ids, function(id) {
+    x <- close[[id]]
+    keep <- is.finite(x)
+    data.frame(
+      instrument_id = id, ts_utc = axis[keep], open = x[keep], high = x[keep] + 1,
+      low = x[keep] - 1, close = x[keep], volume = 1000, stringsAsFactors = FALSE
+    )
+  }))
+  data <- list(
+    families = data.frame(family = "sessions", stringsAsFactors = FALSE),
+    lifetime = NULL,
+    sessions = data.frame(
+      venue_id = "V", session_date = as.Date(axis), status = "open",
+      session_open = axis - 6 * 3600, session_close = axis,
+      knowledge_time = axis - 6 * 3600, stringsAsFactors = FALSE
+    )
+  )
+  config <- list(
+    universe = list(instrument_ids = ids),
+    availability = list(universe_rule = NULL, valuation_policy = unclass(ledgr_valuation_stale())),
+    history_policy = ledgr_history_policy(price_carry = NULL)
+  )
+  ledgr:::ledgr_history_substrate(
+    bars = bars, instrument_ids = ids, axis = axis, availability_data = data,
+    availability_config = config, snapshot_hash = "ws43-panel"
+  )
+}
+
 testthat::test_that("[LTB-0315] sampled prefix invariance refuses look-ahead before side effects", {
   close <- ws43_causality_close()
   substrate <- ws43_history_substrate(close)
@@ -192,6 +226,34 @@ testthat::test_that("[LTB-0316] the causality checker samples a fixed bounded se
   testthat::expect_identical(ledgr:::ledgr_history_feature_causality_positions(2L), 1:2)
   testthat::expect_identical(ledgr:::ledgr_history_feature_causality_positions(0L), integer())
 
+  # With several instruments the probe is still one instrument per
+  # definition: the one with the most calculated cells (BBB here, although
+  # AAA comes first), so the count does not grow with instruments and a
+  # refusal names the probe.
+  panel <- ws43_panel_substrate(list(
+    AAA = c(rep(NA, 10L), 100 + 1:10),
+    BBB = 50 + sin(1:20)
+  ))
+  testthat::expect_identical(
+    ws43_count_calls(
+      "ledgr_history_feature_inputs_prefix",
+      ledgr:::ledgr_history_compute_feature_series(panel, list(calc))
+    ),
+    4L
+  )
+  demeaned <- ledgr_indicator(
+    "demeaned_close",
+    fn = function(window) 0,
+    requires_bars = 1L,
+    series_fn = function(bars, params) bars$close - mean(bars$close)
+  )
+  refusal <- tryCatch(
+    ledgr:::ledgr_history_compute_feature_series(panel, list(demeaned)),
+    error = identity
+  )
+  testthat::expect_s3_class(refusal, "ledgr_feature_lookahead_detected")
+  testthat::expect_identical(refusal$instrument_id, "BBB")
+
   # Every concrete definition is probed, including catalogue rows; a
   # definition with no calculated cell has nothing to probe.
   substrate <- ws43_history_substrate(ws43_causality_close(30L))
@@ -326,7 +388,12 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   plane <- function(evidence, field, id = "BBB") unname(evidence[[field]][, id])
 
   testthat::expect_identical(plane(run$level, "input_carried"), c(FALSE, FALSE, TRUE, TRUE, FALSE))
-  testthat::expect_identical(plane(run$level, "calculated"), c(FALSE, TRUE, TRUE, TRUE, TRUE))
+  # Column meanings follow v12 Sections 5-6 (close review F2): `calculated`
+  # is admission, `ready` is stable_after reached in the segment and
+  # `calculation_valid` is a ready, finite calculated value.
+  testthat::expect_identical(plane(run$level, "calculated"), rep(TRUE, 5L))
+  testthat::expect_identical(plane(run$level, "ready"), c(FALSE, TRUE, TRUE, TRUE, TRUE))
+  testthat::expect_identical(plane(run$level, "calculation_valid"), c(FALSE, TRUE, TRUE, TRUE, TRUE))
   testthat::expect_identical(plane(run$level, "output_carried"), rep(FALSE, 5L))
   testthat::expect_identical(plane(run$level, "input_carried", "AAA"), rep(FALSE, 5L))
 
@@ -334,9 +401,11 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   testthat::expect_identical(run$values$BBB, c(NA, ret_2, ret_2, ret_2, NA))
   testthat::expect_identical(plane(run$ret, "input_carried"), rep(FALSE, 5L))
   testthat::expect_identical(plane(run$ret, "output_carried"), c(FALSE, FALSE, TRUE, TRUE, FALSE))
-  testthat::expect_identical(plane(run$ret, "calculated"), c(FALSE, TRUE, FALSE, FALSE, FALSE))
+  # Sessions 1 and 5 are admitted but not ready (warm-up, then re-warming
+  # after the gap); sessions 3 and 4 are not admitted and are output-carried.
+  testthat::expect_identical(plane(run$ret, "calculated"), c(TRUE, TRUE, FALSE, FALSE, TRUE))
   testthat::expect_identical(plane(run$ret, "calculation_valid"), c(FALSE, TRUE, FALSE, FALSE, FALSE))
-  testthat::expect_identical(plane(run$ret, "ready"), c(FALSE, TRUE, TRUE, TRUE, FALSE))
+  testthat::expect_identical(plane(run$ret, "ready"), c(FALSE, TRUE, FALSE, FALSE, FALSE))
   testthat::expect_identical(
     plane(run$ret, "source_ts_utc"),
     c(NA, rep(as.numeric(axis[[2L]]), 3L), NA)
@@ -344,9 +413,9 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   testthat::expect_identical(plane(run$ret, "carry_age_sessions"), c(NA, 0L, 1L, 2L, NA))
   testthat::expect_identical(
     plane(run$ret, "missing_reason"),
-    c("not_calculated", "", "output_carried", "output_carried", "not_calculated")
+    c("not_ready", "", "output_carried", "output_carried", "not_ready")
   )
-  testthat::expect_identical(plane(run$ret, "calculated", "AAA"), c(FALSE, rep(TRUE, 4L)))
+  testthat::expect_identical(plane(run$ret, "calculation_valid", "AAA"), c(FALSE, rep(TRUE, 4L)))
 
   # The sweep and explicit-precompute routes read the same retained planes.
   for (tag in c("sweep", "precompute")) {

@@ -129,6 +129,8 @@ row <- data.frame(
   definitions = length(defs), feature_seconds = t_feat,
   input_carried_cells = sum(vapply(records, function(r) length(r$input_col), integer(1))),
   output_carried_cells = sum(vapply(records, function(r) length(r$output_col), integer(1))),
+  segments = sum(vapply(records, function(r) length(r$segment_start), integer(1))),
+  reason_runs = sum(vapply(records, function(r) length(r$reason_start), integer(1))),
   planes_mb = round(size_mb(projection$feature_planes), 2),
   values_mb = round(size_mb(projection$feature_values), 2),
   index_seconds = t_index,

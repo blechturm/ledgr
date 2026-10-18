@@ -681,6 +681,12 @@ indicator runs once per contiguous segment of available input and
 restarts, and warms up again, after a gap. Contradictory declarations
 refuse with `ledgr_indicator_history_contradiction`.
 
+A delisting ends carry and windows: after a relisting, price carry never
+reaches back across the terminal interval, and a bounded indicator
+restarts, so it needs `requires_bars` sessions from the relisting before
+it is ready again and never averages prices from before the delisting
+with prices after it.
+
 `stable_after` is the first-valid boundary: the first session after a
 start or a restart at which ledgr exposes a value. It is not a
 convergence promise. A history-dependent indicator that restarts after a

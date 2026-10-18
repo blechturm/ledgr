@@ -94,8 +94,8 @@
 "R/history-substrate.R",95,"ledgr_history_substrate_is","read_branch_or_equality","identical(x$substrate_version, ledgr_history_substrate_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/indicator-adapters.R",179,"ledgr_adapter_csv","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/indicator-history.R",8,"ledgr_feature_history_rule_version","binding","ledgr_feature_history_rule_version <- 1L",TRUE,"write_site:ledgr_active_feature_fingerprint;ledgr_feature_engine_version",FALSE,TRUE,TRUE,"",FALSE,FALSE
-"R/indicator.R",305,"ledgr_indicator_capture_overrides","read_branch_or_equality","identical(route, list(type = ""csv_data_hash_v1"", fn_capture = ""values""))",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
-"R/indicator.R",307,"ledgr_indicator_capture_overrides","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/indicator.R",309,"ledgr_indicator_capture_overrides","read_branch_or_equality","identical(route, list(type = ""csv_data_hash_v1"", fn_capture = ""values""))",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/indicator.R",311,"ledgr_indicator_capture_overrides","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/metric-context.R",352,"ledgr_metric_context_version","binding","ledgr_metric_context_version <- function() 1L",FALSE,"none",FALSE,FALSE,FALSE,"",FALSE,FALSE
 "R/metric-context.R",443,"ledgr_validate_metric_context_object","read_branch_or_equality","identical(x$metric_context_version, ledgr_metric_context_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/metric-context.R",542,"ledgr_metric_context_from_record","read_branch_or_equality","identical(version, ledgr_metric_context_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
@@ -114,7 +114,7 @@
 "R/risk-model.R",493,"ledgr_risk_model_from_payload","read_branch_or_equality","identical(as.integer(payload$risk_schema_version), ledgr_risk_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/risk-model.R",521,"ledgr_risk_step_from_payload","read_branch_or_equality","identical(as.integer(step$schema_version), ledgr_risk_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/run-registration.R",96,"ledgr_run_registration","read_branch_or_equality","identical(stored_cfg$identity_rule_version, ledgr_identity_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
-"R/runtime-projection.R",365,"ledgr_projection_pulse_views","read_branch_or_equality","feature_table %in% c(""schema"", ""full"")",TRUE,"comparison",FALSE,FALSE,FALSE,"%in%",FALSE,FALSE
+"R/runtime-projection.R",366,"ledgr_projection_pulse_views","read_branch_or_equality","feature_table %in% c(""schema"", ""full"")",TRUE,"comparison",FALSE,FALSE,FALSE,"%in%",FALSE,FALSE
 "R/snapshot-source.R",72,"ledgr_prepare_snapshot_source_tables","read_branch_or_equality","DBI::dbGetQuery(con, paste0(""SELECT COUNT(*) AS n FROM information_schema.tables "", ""WHERE table_catalog = 'ledgr_snapshot_src' AND table_name = "", DBI::dbQuoteString(con, table_name)))$n[[1L]] > 0L",TRUE,"comparison",FALSE,FALSE,FALSE,">",FALSE,FALSE
 "R/snapshots-hash.R",1,"ledgr_snapshot_content_hash_rule_version","binding","ledgr_snapshot_content_hash_rule_version <- 4L",TRUE,"write_site:ledgr_snapshot_create;ledgr_snapshot_from_df;ledgr_snapshot_seal;ledgr_snapshot_write_availability",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/snapshots-seal.R",286,"ledgr_snapshot_metadata_for_seal","read_branch_or_equality","identical(hash_rule, ledgr_snapshot_content_hash_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
