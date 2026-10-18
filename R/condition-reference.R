@@ -64,7 +64,17 @@
 #' fact count, segment count, ratio and limit when causal preparation exceeds
 #' its declared bound. `ledgr_invalid_history_treatment` and
 #' `ledgr_invalid_history_field` refuse malformed treatment evidence or an
-#' unsupported bar field. `ledgr_staged_history_mismatch` refuses a worker task
+#' unsupported bar field. `ledgr_history_unavailable` refuses a history read
+#' from a dense or snapshot-and-universe pulse context, which has no causal
+#' history. `ledgr_invalid_history_request` refuses malformed
+#' [ledgr_history_frame()] and [ledgr_history_sufficient()] arguments, and
+#' `ledgr_invalid_history_result` refuses a matrix or sufficiency query on a
+#' value that is not, or no longer matches, a `ledgr_history` result.
+#' `ledgr_pulse_snapshot_availability_required` refuses experiment-derived
+#' [ledgr_pulse_snapshot()] inspection of a dense experiment, and
+#' `ledgr_pulse_inspection_stopped` refuses an inspection cutoff whose
+#' observe-and-settle stage stops before the strategy context is built.
+#' `ledgr_staged_history_mismatch` refuses a worker task
 #' before candidate execution when its staged immutable input is absent or has
 #' a different identity.
 #'
@@ -846,8 +856,6 @@
 #'   mismatch boundary.
 #' - `ledgr_precomputed_grid_mismatch` reports the precomputed grid mismatch
 #'   boundary.
-#' - `ledgr_precomputed_hydration_mismatch` reports the precomputed hydration
-#'   mismatch boundary.
 #' - `ledgr_precomputed_range_mismatch` reports the precomputed range
 #'   mismatch boundary.
 #' - `ledgr_precomputed_snapshot_mismatch` reports the precomputed snapshot
@@ -957,8 +965,6 @@
 #'   model use.
 #' - `ledgr_unsupported_execution_start` reports unsupported execution start
 #'   use.
-#' - `ledgr_unsupported_hydration_start` reports unsupported hydration start
-#'   use.
 #' - `ledgr_unsupported_param_placement` reports unsupported param placement
 #'   use.
 #' - `ledgr_unsupported_risk_step` reports unsupported risk step use.
@@ -1064,6 +1070,8 @@
 #' @aliases ledgr_invalid_history_substrate
 #' @aliases ledgr_invalid_history_treatment
 #' @aliases ledgr_invalid_history_field
+#' @aliases ledgr_invalid_history_request
+#' @aliases ledgr_invalid_history_result
 #' @aliases ledgr_invalid_indicator_bundle
 #' @aliases ledgr_invalid_ledger_event
 #' @aliases ledgr_invalid_ledger_meta
@@ -1140,7 +1148,6 @@
 #' @aliases ledgr_precomputed_feature_mismatch
 #' @aliases ledgr_precomputed_grid_mismatch
 #' @aliases ledgr_precomputed_history_mismatch
-#' @aliases ledgr_precomputed_hydration_mismatch
 #' @aliases ledgr_precomputed_range_mismatch
 #' @aliases ledgr_precomputed_snapshot_mismatch
 #' @aliases ledgr_precomputed_universe_mismatch
@@ -1205,7 +1212,6 @@
 #' @aliases ledgr_unknown_feature_id
 #' @aliases ledgr_unsupported_accounting_model
 #' @aliases ledgr_unsupported_execution_start
-#' @aliases ledgr_unsupported_hydration_start
 #' @aliases ledgr_unsupported_param_placement
 #' @aliases ledgr_unsupported_risk_step
 #' @aliases ledgr_validation_cluster_invalid_returns
@@ -1231,6 +1237,9 @@
 #' @aliases ledgr_walk_forward_invalid_selection_rule
 #' @aliases ledgr_history_duplicate_bar
 #' @aliases ledgr_history_outside_axis
+#' @aliases ledgr_history_unavailable
+#' @aliases ledgr_pulse_snapshot_availability_required
+#' @aliases ledgr_pulse_inspection_stopped
 #' @aliases ledgr_history_segment_limit_exceeded
 #' @aliases ledgr_history_segment_missing
 #' @aliases ledgr_history_unknown_instrument

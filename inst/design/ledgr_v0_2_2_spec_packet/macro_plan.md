@@ -833,6 +833,30 @@ WS40 causal facts and rule-4 identity
 WS44 also depends on WS42; ticket LDG-3068 names both branch-end
 dependencies. The diagram shows ownership, not permission to skip that join.
 
+**Amended 2026-10-18 (Cut 16 decision 17): simplify before proving.** WS41
+and WS42 were accepted with their scale defects corrected, but the
+antipattern review showed complexity accumulating: facts held twice in the
+substrate, unread bar planes, five membership compilation paths, eager
+evidence in every history read and a growing count of availability/dense
+branches. WS46 therefore runs after WS43 and before WS44, so WS44 measures and
+proves one simplified system rather than proving the current shape and
+re-proving after a later cleanup. WS45 collects the WS40 fact-pipeline
+follow-ups and is independent of the history branches.
+
+```text
+WS42 (accepted) --.
+                  +-- WS46 history representation simplification
+WS43 -------------'     (map, one fact representation, one membership compiler)
+                          `-- WS44 integrated H6 proof and teaching
+WS45 WS40 fact-pipeline follow-ups (independent; before Cut 16 closes)
+```
+
+Rules adopted with the amendment: a new fast path needs a differential test
+against its canonical path and a stated removal or merge condition (recorded
+in `optimization_coding_style.qmd` by LDG-3074); the codebase census counts
+execution-mode branches so additions are visible in review; and parallel
+workstreams reserve disjoint LCL/LTB ID ranges in their briefs.
+
 The common substrate owns the two clocks, cutoff, axis, missingness evidence,
 identity and inclusion/exclusion reasons. The public adapter is not a second
 reader. Indicator tickets may not invent another hydration rule. The cut also
@@ -885,6 +909,34 @@ features or branches; execution-core consolidation is committed before the
 first CRAN release. "Dense universes" in history design means full-membership
 shapes on the availability path. Historical probe evidence and the original
 Cut 15 decision remain unchanged as evidence of the decision sequence.
+
+**Inputs recorded during Cut 16 (2026-10-18).** The history wave adds
+availability/dense branches that consolidation must remove rather than
+re-justify: WS41 and WS42 representation switches in the fold engine,
+runner, sweep, walk-forward and precompute (counted per file by the census
+from LDG-3074), the walk-forward `is.null(history_substrate)` split (the one
+semantic branch, bound by Cut 16 decision 16), and the WS40 Date-boundary
+branches in experiment, window and precompute construction. Consolidation
+should start from the LDG-3074 representation map and branch census.
+
+<a id="deferred-history-simplification"></a>
+
+### Deferred history simplification
+
+Cut 16 decision (17) routes these beyond WS46:
+
+- **Lazy evidence in history reads.** A full-lookback `ledgr_history_frame()`
+  read materializes every evidence plane eagerly (about 8.6 times its value
+  bytes at the H1 shape). Making evidence lazy changes the v12 Section 3
+  result and needs a maintainer decision, probably a short RFC. LDG-3069
+  supplies the measurements; implementation is not scheduled before that
+  decision.
+- **Corporate-action settlement state as data.** The carried walk-forward
+  chain rebuilds the previous window's settlement plan from its ledger.
+  Carrying that state as an explicit object is considered with LDG-3073 if
+  settlement code changes there, otherwise at execution-core consolidation.
+- **Availability/dense branch removal** belongs to execution-core
+  consolidation above.
 
 <a id="post-gate-live-routes"></a>
 

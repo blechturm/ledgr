@@ -217,6 +217,8 @@
 \alias{ledgr_invalid_history_substrate}
 \alias{ledgr_invalid_history_treatment}
 \alias{ledgr_invalid_history_field}
+\alias{ledgr_invalid_history_request}
+\alias{ledgr_invalid_history_result}
 \alias{ledgr_invalid_indicator_bundle}
 \alias{ledgr_invalid_ledger_event}
 \alias{ledgr_invalid_ledger_meta}
@@ -293,7 +295,6 @@
 \alias{ledgr_precomputed_feature_mismatch}
 \alias{ledgr_precomputed_grid_mismatch}
 \alias{ledgr_precomputed_history_mismatch}
-\alias{ledgr_precomputed_hydration_mismatch}
 \alias{ledgr_precomputed_range_mismatch}
 \alias{ledgr_precomputed_snapshot_mismatch}
 \alias{ledgr_precomputed_universe_mismatch}
@@ -358,7 +359,6 @@
 \alias{ledgr_unknown_feature_id}
 \alias{ledgr_unsupported_accounting_model}
 \alias{ledgr_unsupported_execution_start}
-\alias{ledgr_unsupported_hydration_start}
 \alias{ledgr_unsupported_param_placement}
 \alias{ledgr_unsupported_risk_step}
 \alias{ledgr_validation_cluster_invalid_returns}
@@ -384,6 +384,9 @@
 \alias{ledgr_walk_forward_invalid_selection_rule}
 \alias{ledgr_history_duplicate_bar}
 \alias{ledgr_history_outside_axis}
+\alias{ledgr_history_unavailable}
+\alias{ledgr_pulse_snapshot_availability_required}
+\alias{ledgr_pulse_inspection_stopped}
 \alias{ledgr_history_segment_limit_exceeded}
 \alias{ledgr_history_segment_missing}
 \alias{ledgr_history_unknown_instrument}
@@ -463,7 +466,17 @@ internal segment plane rather than returning fabricated state.
 fact count, segment count, ratio and limit when causal preparation exceeds
 its declared bound. \code{ledgr_invalid_history_treatment} and
 \code{ledgr_invalid_history_field} refuse malformed treatment evidence or an
-unsupported bar field. \code{ledgr_staged_history_mismatch} refuses a worker task
+unsupported bar field. \code{ledgr_history_unavailable} refuses a history read
+from a dense or snapshot-and-universe pulse context, which has no causal
+history. \code{ledgr_invalid_history_request} refuses malformed
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and \code{\link[=ledgr_history_sufficient]{ledgr_history_sufficient()}} arguments, and
+\code{ledgr_invalid_history_result} refuses a matrix or sufficiency query on a
+value that is not, or no longer matches, a \code{ledgr_history} result.
+\code{ledgr_pulse_snapshot_availability_required} refuses experiment-derived
+\code{\link[=ledgr_pulse_snapshot]{ledgr_pulse_snapshot()}} inspection of a dense experiment, and
+\code{ledgr_pulse_inspection_stopped} refuses an inspection cutoff whose
+observe-and-settle stage stops before the strategy context is built.
+\code{ledgr_staged_history_mismatch} refuses a worker task
 before candidate execution when its staged immutable input is absent or has
 a different identity.
 }
@@ -1152,8 +1165,6 @@ mismatch boundary.
 mismatch boundary.
 \item \code{ledgr_precomputed_grid_mismatch} reports the precomputed grid mismatch
 boundary.
-\item \code{ledgr_precomputed_hydration_mismatch} reports the precomputed hydration
-mismatch boundary.
 \item \code{ledgr_precomputed_range_mismatch} reports the precomputed range
 mismatch boundary.
 \item \code{ledgr_precomputed_snapshot_mismatch} reports the precomputed snapshot
@@ -1262,8 +1273,6 @@ boundary.
 \item \code{ledgr_unsupported_accounting_model} reports unsupported accounting
 model use.
 \item \code{ledgr_unsupported_execution_start} reports unsupported execution start
-use.
-\item \code{ledgr_unsupported_hydration_start} reports unsupported hydration start
 use.
 \item \code{ledgr_unsupported_param_placement} reports unsupported param placement
 use.

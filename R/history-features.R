@@ -472,7 +472,7 @@ ledgr_history_compute_feature_series <- function(substrate,
 
 # Aligned evidence for one instrument and definition at a cutoff. It shares
 # the calculation above; nothing here is retained by preparation.
-ledgr_history_feature_evidence <- function(substrate,
+ledgr_history_feature_planes <- function(substrate,
                                            instrument_id,
                                            definition,
                                            cutoff = NULL,

@@ -1,0 +1,13 @@
+fixture 1.121112 secs
+substrate 2.45639 secs
+used after substrate Mb: 770.8  substrate MB: 580
+first read (prepares base planes) lookback 252: 0.6751621 secs
+memo MB: 96.3  peak Mb since reset: 1410
+per-call 252 wide (after every late epoch): 54.7 ms
+per-call 252 long: 52.5 ms
+per-call 21 wide: 7.1 ms
+per-call Inf wide (10 calls): 1962.4 ms
+overlay builds:  base builds: 2
+WS41 treated_field per call (252 window): 2793.5 ms
+per-call 252 wide across late epochs: 57 ms
+overlay builds after: 116

@@ -31,12 +31,19 @@ universe, scoring range, causal-history identity, feature engine version,
 grid labels, and resolved feature fingerprints. Use it for larger exploratory grids; \code{ledgr_sweep()}
 warns when more than 20 combinations run without precomputed features.
 
-Feature state starts at the scoring start, as in a run: bars before \code{start}
-are not read, so warmup \code{NA} values repeat at the start of every scoring
-range. \code{warmup_range$start} therefore equals the scoring start, and a sweep
-refuses a payload whose features start before its own scoring start. Until
-ledgr defines causal hydration from earlier history, this is the only
-supported feature start.
+For an availability-aware experiment the payload is computed through the
+same causal history substrate, history policy and calculation bounds as the
+experiment's runs and sweeps: feature state starts at the data start (the
+first session of the snapshot), whatever the scoring start. The payload
+records its causal axis (data start, first calculated session, cutoff and
+session stamps). A sweep reuses it only when that axis, the cutoff, the
+history policy, the snapshot and every candidate's feature identity match
+exactly; otherwise it refuses before any candidate runs. A dense payload
+never serves an availability sweep, nor the reverse.
+
+Dense experiments are unchanged: their feature state starts at the scoring
+start, bars before \code{start} are not read, and a sweep refuses a dense payload
+whose scoring start differs from its own.
 }
 \section{Articles}{
 

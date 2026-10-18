@@ -11,6 +11,7 @@ condition-reference.R,documentation,NA,roxygen condition reference,mentions tabl
 corporate-action-results.R,reader,3,ledgr_corporate_action_summary|print.ledgr_backtest|summary.ledgr_backtest,ledgr_backtest_ensure_snapshot
 corporate-action-settlement.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward,enclosing class-3 guard
 csv-utils.R,writer,NA,adapter ingest,not a content reader
+derived-state.R,reader,3,ledgr_state_reconstruct,ledgr_snapshot_ensure_verified
 db-schema-current.R,schema,NA,current DDL and catalogue,not a content reader
 db-schema-validate.R,schema,NA,schema validation,not a content reader
 execution-timing.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward,enclosing class-3 guard

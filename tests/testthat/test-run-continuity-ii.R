@@ -192,7 +192,8 @@ testthat::test_that("[LTB-0206] a boundary on the first or last sealed date reso
   last_late <- as.POSIXct("2020-06-30 23:59:59", tz = "UTC")
   window <- ledgr:::ledgr_experiment_window(exp, "2020-01-01", last_late)
   testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(window$scoring_start_utc), "2020-01-01T21:00:00Z")
-  testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(window$hydration_start_utc), "2020-01-01T21:00:00Z")
+  # LDG-3064: a window carries no second history start.
+  testthat::expect_false("hydration_start_utc" %in% names(window))
   testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(window$execution_start_utc), "2020-01-01T21:00:00Z")
   testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(window$scoring_end_utc), "2020-06-30T21:00:00Z")
   # Boundaries already inside the sealed range are kept as given.

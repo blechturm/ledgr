@@ -100,10 +100,10 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       actual$engine_version <- NULL
       expected$engine_version <- NULL
       # Cut 16 deliberately replaces schema 118 with the current-only schema
-      # 121. The frozen evidence remains unchanged; all other persisted
+      # 122 (LDG-3064 retired the stored hydration column). The frozen evidence remains unchanged; all other persisted
       # identity fields stay under exact comparison below.
       testthat::expect_identical(expected$schema_version, "118")
-      testthat::expect_identical(actual$schema_version, "121")
+      testthat::expect_identical(actual$schema_version, "122")
       actual$schema_version <- NULL
       expected$schema_version <- NULL
       # LDG-2851 renamed `ctx$vec$positions` to `ctx$vec$position` after the

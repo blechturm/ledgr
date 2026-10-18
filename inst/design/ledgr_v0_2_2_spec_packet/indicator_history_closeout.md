@@ -104,7 +104,7 @@ carried), then calculates every definition:
 - Optional output carry fills only a session whose own required input is
   unavailable, from the latest earlier valid output within the policy age.
 
-`ledgr_history_feature_evidence()` returns the aligned planes for one
+`ledgr_history_feature_planes()` returns the aligned planes for one
 instrument and definition from the same calculation: expected, observed,
 missing, input carried, blocking field, calculated, ready, calculation valid,
 output carried with source and age, missing and barrier reasons, and the
@@ -356,7 +356,7 @@ reasons above; scaling is measured in the previous section.
   ttr-indicators and missing-data articles so no text describes removed
   behavior.
 - WS42 / LDG-3063 / LDG-3068: public history results may consume
-  `ledgr_history_feature_evidence()`; experiment-derived pulse parity for
+  `ledgr_history_feature_planes()`; experiment-derived pulse parity for
   these features and the "supplies no mark" half of the inactive-print
   acceptance are valuation-plane and integration evidence not touched here.
   Explicit `ledgr_precompute_features()` still prepares availability

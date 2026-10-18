@@ -120,13 +120,20 @@ ledgr_folds_rolling <- function(start,
   test_period <- ledgr_walk_forward_period(test_window, "`test_window`")
   step_period <- ledgr_walk_forward_period(step, "`step`")
 
+  # Every boundary is the original anchor plus a whole number of periods,
+  # never a shift of the preceding (possibly month-end-clamped) boundary.
   folds <- list()
   fold_seq <- 1L
-  train_start <- start_utc
+  k <- 0L
   repeat {
-    train_end_exclusive <- ledgr_walk_forward_shift(train_start, train_period)
+    train_start <- ledgr_walk_forward_offset(start_utc, list(step_period), k)
+    train_end_exclusive <- ledgr_walk_forward_offset(
+      start_utc, list(step_period, train_period), c(k, 1L)
+    )
     test_start <- train_end_exclusive
-    test_end_exclusive <- ledgr_walk_forward_shift(test_start, test_period)
+    test_end_exclusive <- ledgr_walk_forward_offset(
+      start_utc, list(step_period, train_period, test_period), c(k, 1L, 1L)
+    )
     train_end <- ledgr_walk_forward_inclusive_end(train_end_exclusive)
     test_end <- ledgr_walk_forward_inclusive_end(test_end_exclusive)
     if (test_end > end_utc) {
@@ -142,8 +149,8 @@ ledgr_folds_rolling <- function(start,
       gap = NULL
     )
     fold_seq <- fold_seq + 1L
-    train_start <- ledgr_walk_forward_shift(train_start, step_period)
-    if (train_start >= end_utc) {
+    k <- k + 1L
+    if (ledgr_walk_forward_offset(start_utc, list(step_period), k) >= end_utc) {
       break
     }
   }
@@ -181,12 +188,19 @@ ledgr_folds_anchored <- function(start,
   test_period <- ledgr_walk_forward_period(test_window, "`test_window`")
   step_period <- ledgr_walk_forward_period(step, "`step`")
 
+  # Every boundary is the original anchor plus a whole number of periods,
+  # never a shift of the preceding (possibly month-end-clamped) boundary.
   folds <- list()
   fold_seq <- 1L
-  train_end_exclusive <- ledgr_walk_forward_shift(start_utc, train_period)
+  k <- 0L
   repeat {
+    train_end_exclusive <- ledgr_walk_forward_offset(
+      start_utc, list(train_period, step_period), c(1L, k)
+    )
     test_start <- train_end_exclusive
-    test_end_exclusive <- ledgr_walk_forward_shift(test_start, test_period)
+    test_end_exclusive <- ledgr_walk_forward_offset(
+      start_utc, list(train_period, step_period, test_period), c(1L, k, 1L)
+    )
     train_end <- ledgr_walk_forward_inclusive_end(train_end_exclusive)
     test_end <- ledgr_walk_forward_inclusive_end(test_end_exclusive)
     if (test_end > end_utc) {
@@ -202,8 +216,8 @@ ledgr_folds_anchored <- function(start,
       gap = NULL
     )
     fold_seq <- fold_seq + 1L
-    train_end_exclusive <- ledgr_walk_forward_shift(train_end_exclusive, step_period)
-    if (train_end_exclusive >= end_utc) {
+    k <- k + 1L
+    if (ledgr_walk_forward_offset(start_utc, list(train_period, step_period), c(1L, k)) >= end_utc) {
       break
     }
   }
@@ -403,9 +417,41 @@ ledgr_walk_forward_period <- function(x, arg) {
   list(value = value, unit = unit, label = paste(value, unit))
 }
 
-ledgr_walk_forward_shift <- function(x, period) {
-  out <- seq(from = as.POSIXct(x, tz = "UTC"), by = paste(period$value, period$unit), length.out = 2L)[[2L]]
-  out <- as.POSIXct(out, origin = "1970-01-01", tz = "UTC")
+# The anchor plus `counts[[i]]` of each period. Calendar months and years
+# combine into one month offset applied to the anchor's civil date and
+# clamped to the last day of the result month; fixed durations are then added
+# exactly. A boundary is therefore never derived from a preceding clamped one.
+ledgr_walk_forward_offset <- function(anchor, periods, counts = rep(1L, length(periods))) {
+  anchor <- as.POSIXct(anchor, tz = "UTC")
+  months <- 0L
+  seconds <- 0
+  unit_seconds <- c(secs = 1, mins = 60, hours = 3600, days = 86400, weeks = 604800)
+  for (i in seq_along(periods)) {
+    period <- periods[[i]]
+    count <- as.integer(counts[[i]])
+    if (identical(period$unit, "months")) {
+      months <- months + count * as.integer(period$value)
+    } else if (identical(period$unit, "years")) {
+      months <- months + count * 12L * as.integer(period$value)
+    } else {
+      seconds <- seconds + count * as.numeric(period$value) * unit_seconds[[period$unit]]
+    }
+  }
+  out <- anchor
+  if (months != 0L) {
+    lt <- as.POSIXlt(anchor, tz = "UTC")
+    month_index <- lt$year * 12L + lt$mon + months
+    year <- month_index %/% 12L + 1900L
+    month <- month_index %% 12L + 1L
+    next_month <- as.Date(sprintf("%04d-%02d-01", year + (month == 12L), month %% 12L + 1L))
+    last_day <- as.integer(format(next_month - 1L, "%d"))
+    day <- min(lt$mday, last_day)
+    out <- as.POSIXct(
+      sprintf("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, lt$hour, lt$min, as.integer(lt$sec)),
+      tz = "UTC"
+    )
+  }
+  out <- out + seconds
   attr(out, "tzone") <- "UTC"
   out
 }
@@ -534,7 +580,6 @@ ledgr_experiment_window <- function(exp,
                                     start_utc,
                                     end_utc,
                                     opening_state_policy = c("carry_test_state", "flat_test_state"),
-                                    hydration_start_utc = NULL,
                                     execution_start_utc = NULL,
                                     validate_pulses = TRUE) {
   if (!inherits(exp, "ledgr_experiment")) {
@@ -558,29 +603,9 @@ ledgr_experiment_window <- function(exp,
   }
   scoring_start <- ledgr_walk_forward_posix(start_utc, "`start_utc`")
   scoring_end <- ledgr_walk_forward_posix(end_utc, "`end_utc`")
-  # Until the joint WS3/WS4 history-start design, scoring_start is the sole
-  # evaluation, execution and feature-state boundary. hydration_start_utc is
-  # kept as the identity seam for that design: it is stored equal to the
-  # scoring start, and any other value refuses rather than being ignored.
-  if (!is.null(hydration_start_utc)) {
-    requested_hydration_start <- ledgr_walk_forward_posix(hydration_start_utc, "`hydration_start_utc`")
-    if (!identical(as.numeric(requested_hydration_start), as.numeric(scoring_start))) {
-      rlang::abort(
-        sprintf(
-          paste(
-            "`hydration_start_utc` (%s) differs from the scoring start (%s).",
-            "Feature state starts at the scoring start; hydration from earlier",
-            "history is planned with the point-in-time history design. Omit",
-            "`hydration_start_utc` or set it equal to `start_utc`."
-          ),
-          ledgr_walk_forward_iso(requested_hydration_start),
-          ledgr_walk_forward_iso(scoring_start)
-        ),
-        class = c("ledgr_unsupported_hydration_start", "ledgr_walk_forward_invalid_fold_window")
-      )
-    }
-  }
-  hydration_start <- scoring_start
+  # The scoring start bounds evaluation and execution only. History has one
+  # start, the experiment's data start, so a window carries no second
+  # history or feature start (v12 Section 2).
   # A distinct execution start would need semantics for targets returned
   # between two clocks, so it refuses.
   if (!is.null(execution_start_utc)) {
@@ -613,13 +638,11 @@ ledgr_experiment_window <- function(exp,
   )
   scoring_start <- sealed$start
   scoring_end <- sealed$end
-  hydration_start <- scoring_start
   execution_start <- scoring_start
   ledgr_snapshot_ensure_handle(exp$snapshot)
 
   out <- structure(
     list(
-      hydration_start_utc = hydration_start,
       scoring_start_utc = scoring_start,
       scoring_end_utc = scoring_end,
       execution_start_utc = execution_start,

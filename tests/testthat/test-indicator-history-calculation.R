@@ -236,7 +236,7 @@ testthat::test_that("[LTB-0301] input carry, calculation, readiness and output c
     fields = list(high = c(11, 12, NA, NA, NA, NA, 17, 18))
   )
   sma <- ledgr_ind_sma(2L)
-  evidence <- ledgr:::ledgr_history_feature_evidence(default, "AAA", sma)
+  evidence <- ledgr:::ledgr_history_feature_planes(default, "AAA", sma)
   testthat::expect_identical(evidence$value, c(NA, 10.5, 11, 12, 13, 13, 14.5, 16.5))
   testthat::expect_identical(evidence$observed, c(TRUE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE))
   testthat::expect_identical(evidence$is_missing, !evidence$observed)
@@ -264,7 +264,7 @@ testthat::test_that("[LTB-0301] input carry, calculation, readiness and output c
     fields = list(high = c(11, 12, NA, NA, NA, NA, 17, 18)),
     policy = ledgr_history_policy(price_carry = NULL)
   )
-  strict_evidence <- ledgr:::ledgr_history_feature_evidence(strict, "AAA", high_close)
+  strict_evidence <- ledgr:::ledgr_history_feature_planes(strict, "AAA", high_close)
   testthat::expect_identical(
     strict_evidence$blocking_field,
     c("", "", "high,close", "high", "high,close", "high,close", "", "")
@@ -280,7 +280,7 @@ testthat::test_that("[LTB-0301] input carry, calculation, readiness and output c
 
   # The return family keeps raw missingness: a carried session is missing
   # input, disclosed as an excluded carried input.
-  returns_evidence <- ledgr:::ledgr_history_feature_evidence(default, "AAA", ledgr_ind_returns(1L))
+  returns_evidence <- ledgr:::ledgr_history_feature_planes(default, "AAA", ledgr_ind_returns(1L))
   testthat::expect_identical(returns_evidence$input_carried, rep(FALSE, 8L))
   testthat::expect_identical(
     returns_evidence$missing_reason,
@@ -296,7 +296,7 @@ testthat::test_that("[LTB-0301] input carry, calculation, readiness and output c
     close,
     policy = ledgr_history_policy(price_carry = NULL, output_carry = 3L)
   )
-  output_evidence <- ledgr:::ledgr_history_feature_evidence(output_only, "AAA", sma)
+  output_evidence <- ledgr:::ledgr_history_feature_planes(output_only, "AAA", sma)
   testthat::expect_identical(output_evidence$value, c(NA, 10.5, 10.5, NA, 10.5, NA, NA, 16.5))
   testthat::expect_identical(output_evidence$output_carried, c(FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, FALSE))
   testthat::expect_identical(output_evidence$input_carried, rep(FALSE, 8L))
@@ -309,7 +309,7 @@ testthat::test_that("[LTB-0301] input carry, calculation, readiness and output c
   )
   # The same policy without output carry leaves every one of those sessions
   # missing: output carry is its own plane.
-  no_output <- ledgr:::ledgr_history_feature_evidence(
+  no_output <- ledgr:::ledgr_history_feature_planes(
     ws43_history_substrate(close, policy = ledgr_history_policy(price_carry = NULL)),
     "AAA",
     sma
@@ -521,7 +521,7 @@ testthat::test_that("[LTB-0304] a custom input_carry declaration excludes carrie
     ws43_feature_values(substrate, declared),
     c(NA, 11 / 10 - 1, 12 / 11 - 1, NA, NA, 15 / 14 - 1)
   )
-  evidence <- ledgr:::ledgr_history_feature_evidence(substrate, "AAA", declared)
+  evidence <- ledgr:::ledgr_history_feature_planes(substrate, "AAA", declared)
   testthat::expect_identical(evidence$missing_reason[[4L]], "carried_input_excluded")
   testthat::expect_false(evidence$input_carried[[4L]])
 

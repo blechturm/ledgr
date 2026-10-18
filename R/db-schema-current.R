@@ -185,7 +185,6 @@ ledgr_current_schema_definition <- function() {
         "scheme VARCHAR NOT NULL, train_start_utc TIMESTAMP NOT NULL,",
         "train_end_utc TIMESTAMP NOT NULL, test_start_utc TIMESTAMP NOT NULL,",
         "test_end_utc TIMESTAMP NOT NULL,",
-        "hydration_start_utc TIMESTAMP NOT NULL,",
         "train_scoring_start_utc TIMESTAMP NOT NULL,",
         "test_scoring_start_utc TIMESTAMP NOT NULL,",
         "opening_state_policy VARCHAR NOT NULL,",

@@ -88,8 +88,11 @@ ledgr_availability_valuation_state <- function(bars_mat,
     }
 
     target_column <- pulse_columns[[pulse_idx]]
+    # Mark history starts at the data start (the first prepared column), not
+    # at the first scoring pulse, so the first pulse sees the latest earlier
+    # observed close and its true age (v12 Section 2).
     current_column <- if (current_pulse == 0L) {
-      pulse_columns[[1L]] - 1L
+      0L
     } else {
       pulse_columns[[current_pulse]]
     }

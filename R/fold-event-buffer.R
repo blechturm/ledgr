@@ -115,19 +115,33 @@ ledgr_opening_position_event_rows <- function(run_id,
                                               ts_utc,
                                               positions,
                                               cost_basis,
-                                              event_seq_start) {
+                                              event_seq_start,
+                                              lots = NULL) {
+  # A carried test window opens with its predecessor's FIFO lots, one opening
+  # row per lot in lot order, so a ledger replay rebuilds the same lots.
+  if (!is.null(lots) && length(lots$instrument_id) > 0L) {
+    positions <- stats::setNames(as.numeric(lots$qty), as.character(lots$instrument_id))
+    cost_basis <- as.numeric(lots$price)
+  } else {
+    lots <- NULL
+  }
   if (length(positions) == 0L) {
     return(data.frame())
   }
   rows <- vector("list", length(positions))
   idx <- 0L
   event_seq <- event_seq_start
-  for (instrument_id in names(positions)) {
-    qty <- as.numeric(positions[[instrument_id]])
+  for (k in seq_along(positions)) {
+    instrument_id <- names(positions)[[k]]
+    qty <- as.numeric(positions[[k]])
     if (!is.finite(qty) || qty == 0) {
       next
     }
-    cb <- as.numeric(cost_basis[[instrument_id]] %||% NA_real_)
+    cb <- if (is.null(lots)) {
+      as.numeric(cost_basis[[instrument_id]] %||% NA_real_)
+    } else {
+      as.numeric(cost_basis[[k]])
+    }
     if (!is.finite(cb)) {
       rlang::abort(
         paste0(

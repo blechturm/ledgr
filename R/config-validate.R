@@ -199,6 +199,45 @@ validate_ledgr_config <- function(config) {
     )
   }
 
+  final_execution <- config$backtest$final_execution_ts_utc
+  if (!is.null(final_execution)) {
+    # Only a continued availability carry window executes after its last
+    # pulse (LDG-3064); the instant is parsed exactly, never truncated.
+    if (!is.character(final_execution) || length(final_execution) != 1L ||
+        !grepl(iso8601_utc, final_execution) ||
+        !isTRUE(config$availability$active) ||
+        !isTRUE(ledgr_history_utc(final_execution) > ledgr_history_utc(end_ts))) {
+      rlang::abort(
+        paste(
+          "Config field backtest.final_execution_ts_utc must be an ISO8601 UTC",
+          "instant after backtest.end_ts_utc on an availability-aware config."
+        ),
+        class = "ledgr_invalid_config"
+      )
+    }
+  }
+  carried <- ledgr_opening_carried_normalize(config$opening$carried)
+  if (!is.null(carried$lots)) {
+    lot_positions <- tapply(carried$lots$qty, carried$lots$instrument_id, sum)
+    if (!setequal(names(lot_positions), names(opening_positions)) ||
+        !isTRUE(all.equal(
+          as.numeric(lot_positions[names(opening_positions)]),
+          as.numeric(opening_positions),
+          tolerance = 1e-12
+        ))) {
+      rlang::abort(
+        "Config field opening.carried.lots must sum to opening.positions.",
+        class = "ledgr_invalid_config"
+      )
+    }
+  }
+  if (length(setdiff(carried$frozen, instrument_ids)) > 0L) {
+    rlang::abort(
+      "Config field opening.carried.frozen names instruments outside the universe.",
+      class = "ledgr_invalid_config"
+    )
+  }
+
   pulse <- cfg_get(c("backtest", "pulse"))
   assert_scalar_chr(pulse, "backtest.pulse")
   if (!identical(pulse, "EOD")) {

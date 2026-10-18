@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulse-snapshot.R
 \name{ledgr_pulse_snapshot}
 \alias{ledgr_pulse_snapshot}
-\title{Freeze a pulse snapshot for interactive strategy development}
+\title{Freeze a pulse snapshot for strategy development}
 \usage{
 ledgr_pulse_snapshot(
   snapshot,
@@ -12,20 +12,26 @@ ledgr_pulse_snapshot(
   feature_params = list(),
   cash = 1e+05,
   positions = NULL,
-  state_prev = NULL
+  state_prev = NULL,
+  params = NULL
 )
 }
 \arguments{
-\item{snapshot}{A \code{ledgr_snapshot} object.}
+\item{snapshot}{A \code{ledgr_snapshot}, or an availability-aware
+\code{ledgr_experiment} for experiment-derived inspection. With an experiment,
+supply only \code{ts_utc} (by name), \code{params} and \code{feature_params}.}
 
-\item{universe}{Character vector of instruments.}
+\item{universe}{Character vector of instruments (snapshot form only).}
 
-\item{ts_utc}{Timestamp to freeze at.}
+\item{ts_utc}{Timestamp to freeze at. For an experiment it must name one
+session close of the declared venue; a \code{Date} selects that session's
+close.}
 
 \item{features}{List of \code{ledgr_indicator} objects to compute.}
 
 \item{feature_params}{JSON-safe list used to resolve parameterized feature
-declarations when \code{features} is a feature map.}
+declarations when \code{features} (or the experiment's features) is a feature
+map.}
 
 \item{cash}{Cash held alongside \code{positions}. It is not total account value;
 pulse equity is \verb{cash + sum(positions * current close)}.}
@@ -35,14 +41,34 @@ pulse equity is \verb{cash + sum(positions * current close)}.}
 \item{state_prev}{Optional JSON-safe previous strategy state. This supports
 dense one-pulse strategy checks; availability-aware state normalization is
 not simulated.}
+
+\item{params}{JSON-safe strategy parameters used to resolve the experiment's
+feature factory and risk plan, as in \code{\link[=ledgr_run]{ledgr_run()}} (experiment form
+only).}
 }
 \value{
 A \code{ledgr_pulse_context} object with the accessors and planes of the
-strategy context (see \code{?ledgr_strategy_context}), including \code{ctx$members}
-and the eligibility planes, with every instrument a member.
+strategy context (see \code{?ledgr_strategy_context}). The snapshot form makes
+every instrument a member.
 }
 \description{
-Freeze a pulse snapshot for interactive strategy development
+\code{ledgr_pulse_snapshot()} constructs one strategy context outside execution
+so that an author can inspect it or call a strategy manually. It is an
+external development and inspection helper: a strategy never calls it.
+}
+\details{
+Called with an availability-aware \code{ledgr_experiment}, it derives everything
+from that experiment and its concrete parameters: snapshot, universe,
+features, history policy, data start and opening state. It returns the
+context that a run of the experiment starting at \code{ts_utc} passes to its
+strategy on that first pulse, built by the same observe-and-settle and
+context stages over the same shared preparation. It calls no strategy and
+creates no fills, events, run rows or other durable state. The context
+supports \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}.
+
+Called with a \code{ledgr_snapshot}, the snapshot-and-universe form builds a
+dense context from the given universe, features and positions. That form
+has no causal history: \code{\link[=ledgr_history_frame]{ledgr_history_frame()}} refuses it.
 }
 \examples{
 bars <- data.frame(

@@ -207,6 +207,16 @@ ledgr_history_substrate_for_experiment <- function(exp,
   )
 }
 
+# The instant from which every availability entry point calculates feature
+# state: one rule shared by runs, sweeps, windows, explicit precompute and
+# pulse inspection. History has a single start, the data start (the first
+# session of the experiment's snapshot); the scoring start bounds decisions
+# only (v12 Section 2).
+ledgr_history_calculation_start <- function(substrate) {
+  ledgr_history_substrate_require(substrate)
+  substrate$data_start_utc
+}
+
 ledgr_history_precompute_payload <- function(unique_defs,
                                              substrate,
                                              calculation_start = NULL,
@@ -396,8 +406,16 @@ ledgr_history_bar_packet_frame <- function(packet, instrument_idx = NULL) {
   )
 }
 
-ledgr_history_substrate_fold_reader <- function(substrate, pulses_posix) {
+ledgr_history_substrate_fold_reader <- function(substrate,
+                                                pulses_posix,
+                                                feature_defs = list(),
+                                                active_alias_map = NULL) {
   ledgr_history_substrate_require(substrate)
+  service <- ledgr_history_read_service(
+    substrate,
+    feature_defs = feature_defs,
+    active_alias_map = active_alias_map
+  )
   pulse_columns <- unname(substrate$pulse_index[
     ledgr_projection_pulse_names(as.POSIXct(pulses_posix, tz = "UTC"))
   ])
@@ -416,14 +434,24 @@ ledgr_history_substrate_fold_reader <- function(substrate, pulses_posix) {
       current <- ledgr_history_substrate_bar_packet(
         substrate, pulse_columns[[pulse_idx]]
       )
-      next_packet <- if (pulse_idx < length(pulse_columns)) {
-        ledgr_history_substrate_bar_packet(
-          substrate, pulse_columns[[pulse_idx + 1L]]
-        )
+      # The final pulse of a continued carry window executes at the next
+      # prepared session's open, which lies beyond the fold's own pulses.
+      next_column <- if (pulse_idx < length(pulse_columns)) {
+        pulse_columns[[pulse_idx + 1L]]
+      } else {
+        pulse_columns[[pulse_idx]] + 1L
+      }
+      next_packet <- if (next_column <= length(substrate$axis)) {
+        ledgr_history_substrate_bar_packet(substrate, next_column)
       } else {
         NULL
       }
       list(current = current, next_bar = next_packet)
+    },
+    # The cutoff-bound history view P2 places on the strategy context. It
+    # records only the pulse column; values are read when a strategy asks.
+    view = function(pulse_idx) {
+      ledgr_history_view(service, pulse_columns[[as.integer(pulse_idx)]])
     },
     stats = function() list(reads = reads)
   )
@@ -1860,7 +1888,11 @@ ledgr_history_substrate <- function(bars,
       provider_plan = ledgr_availability_provider_prepare(
         availability_data,
         availability_config
-      )
+      ),
+      # Derived treatment planes are prepared lazily, once per substrate, by
+      # the public history reader. The memo holds only values derived from
+      # this immutable substrate and its policy and is never staged.
+      history_memo = new.env(parent = emptyenv())
     ),
     class = c("ledgr_history_substrate", "list")
   )

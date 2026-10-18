@@ -140,9 +140,6 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - **Scoring start (Cut 9).** Every entry point evaluates the strategy, fills,
   writes equity and contributes metric input only from its scoring start: the
   experiment's opening date for `ledgr_run()`, `ledgr_sweep()`,
@@ -155,27 +152,33 @@ Accepted change pending:
   `ledgr_run_window_too_short` in runs and sweeps alike. A sweep's
   `scoring_range` names the first and last pulse it scored, in memory and
   after reopening.
-- **Feature start (temporary, Cut 9).** Until the joint WS3/WS4 history-start
-  design replaces it, every run, backtest, sweep, promotion, explicit window,
-  walk-forward training and test window, and public feature precompute starts
-  feature state at its scoring start. Fixed-window and recursive features
-  re-warm in every scoring window, and no entry point reads a bar before its
-  scoring start; a training window shorter than an indicator's warmup cannot
-  trade. `hydration_start_utc` is kept as an identity seam: when omitted it is
-  stored equal to `scoring_start_utc`, and any other value refuses before
-  execution with `ledgr_unsupported_hydration_start`.
-  `ledgr_precompute_features()` records `warmup_range$start` equal to its
-  scoring start, and a sweep, windowed or not, refuses a precomputed payload
-  whose feature state starts at any other time with
-  `ledgr_precomputed_hydration_mismatch`. When no candidate trades in a
+- **History start (Cut 16, LDG-3064).** History has one start, the data
+  start: the first session of the experiment's snapshot. Every
+  availability-aware run, sweep, promotion, run or sweep window, walk-forward
+  training and test window, explicit precompute and experiment-derived pulse
+  inspection reads feature, mark and entitlement history from it through one
+  shared causal preparation; the scoring start bounds decisions, fills, equity
+  and metric input only. A window, stored fold row, precomputed payload or
+  condition carries no second history start: `hydration_start_utc`,
+  `ledgr_unsupported_hydration_start`, `ledgr_precomputed_hydration_mismatch`
+  and the payload `warmup_range` no longer exist. An availability payload
+  records its causal axis (data start, first calculated session, cutoff and
+  session stamps) and a sweep or sweep window reuses it only when that axis,
+  the cutoff, the history policy, the snapshot and every candidate's feature
+  identity match exactly; otherwise it refuses before any candidate runs with
+  `ledgr_precomputed_range_mismatch` (cutoff or calculation start),
+  `ledgr_precomputed_history_mismatch` (policy or axis),
+  `ledgr_precomputed_snapshot_mismatch` or
+  `ledgr_precomputed_feature_mismatch`, and a dense payload never serves an
+  availability sweep nor the reverse. Dense experiments keep the frozen dense
+  rule: their feature state starts at the scoring start, and a dense payload
+  serves only a range or window scoring from its own start
+  (`ledgr_precomputed_range_mismatch`). When no candidate trades in a
   walk-forward training window, volatility-based selection metrics have no
   finite value and that fold has no selection; see No selection.
 
 <a id="contract-execution-walk-forward-folds"></a>
 ### Walk-Forward Fold Lifecycle
-
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 - No selection (Cut 10, LDG-2974). `ledgr_walk_forward(no_selection = )`
   decides what a fold does when no training candidate has a finite, `DONE`
@@ -213,6 +216,36 @@ Accepted change pending:
   `"flat_test_state"` accepts gapped, overlapping and reverse-ordered fold
   lists, because no state crosses fold boundaries. Reconstructing carried
   state at an overlapping window's start is not supported.
+- Continuous carry (Cut 16, LDG-3064). In an availability-aware session
+  under `"carry_test_state"`, the test windows are one economic chain. Every
+  test window except the last executes its final decision in the same run at
+  the following session's open, preserving the decision-to-fill join; the run
+  records that instant as its final execution and its completion may report
+  it as the last execution. The next window opens from the resulting cash and
+  positions, its FIFO lots (one opening row per lot), every corporate-action
+  row the previous window bound but one run would settle later (cash
+  entitlements, dispositions and quantity effects, with the bound quantity),
+  and the holdings frozen at the previous window's last pulse. The carried
+  rows come from the previous window's own settlement plan, rebuilt from its
+  ledger over its pulses and the next window's first pulse; in the next
+  window a passed posting or effective clock counts as reached on its first
+  pulse and the knowledge clock is resolved as in one run, so each row
+  becomes due on the pulse one run uses. Feature, mark and entitlement history come from the shared
+  data-start preparation and are never window-local. Strategy state does not
+  cross a window. The concatenated test runs equal one public run whose
+  strategy switches parameters at the same decision pulses on fills,
+  corporate-action postings, marks, equity and decision diagnostics; each run
+  reports realized profit and loss from its own opening lots. The last window,
+  `"flat_test_state"` windows and standalone runs keep the terminal rule: the
+  final decision is recorded as `final_pulse_no_execution` and nothing
+  crosses. Dense sessions keep their per-window behavior.
+- Calendar-month folds (Cut 16, LDG-3064). `ledgr_folds_rolling()` and
+  `ledgr_folds_anchored()` derive every boundary from the original anchor plus
+  whole multiples of the train, test and step periods. Months and years apply
+  to the anchor's civil date and clamp to the last day of the result month;
+  fixed durations are then added exactly. No boundary is derived from a
+  preceding clamped boundary, so a monthly chain anchored on 2019-12-31 has
+  neither day drift nor a pulse gap.
 - Test-run resume (Cut 11, LDG-2980). When a walk-forward session is rerun, a
   test run that already exists with status `DONE` or `INCOMPLETE` is opened as
   recorded and not re-executed. Any other existing test run, such as one an
@@ -759,8 +792,10 @@ Accepted change pending:
 - The history-treatment primitive does not change the universe or execution
   planes. It keeps structural expectedness, observed/raw missingness, input
   carry, calculation validity, output carry, readiness and estimator admission
-  as distinct evidence. The public selectors and target-intent boundary remain
-  pending under LDG-3062 and LDG-3063.
+  as distinct evidence. The public selectors (`instruments`, `na_action =
+  "drop_instruments"`) and the boundary between estimation exclusion and
+  target intent are bound under Pulse Data And Axis-Aligned Accessors and
+  Strategy Outputs And Helper Values.
 - Under the default history policy the treatment primitive carries an observed
   price level forward for at most five later expected sessions. Carry is causal
   and field-local: it never fills backward, never fabricates a leading value,
@@ -1052,10 +1087,9 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
-- Experiment-store schema 121 is the sole current store schema. One opener and
+- Experiment-store schema 122 is the sole current store schema; LDG-3064
+  removed the stored `walk_forward_folds.hydration_start_utc` column, so
+  schema-120 and schema-121 stores are older stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
@@ -1299,11 +1333,14 @@ Accepted change pending:
 <a id="contract-strategy-outputs"></a>
 ### Strategy Outputs And Helper Values
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Strategy output is a full named numeric target vector, a `ledgr_target`, or a
   list containing `targets`.
+- History estimation exclusion is not a target. An instrument that
+  `ledgr_history_frame(na_action = "drop_instruments")` excludes from an
+  estimator sample still receives a target like every decision-axis
+  instrument; the exclusion alone creates no zero target, liquidation,
+  position change or fill. Keeping, exiting or refusing a held excluded
+  instrument is the strategy's separate target choice.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
   or non-finite targets fail with `ledgr_invalid_strategy_result`.
 - Target values are desired instrument quantities after the next fill, not
@@ -1382,9 +1419,6 @@ Accepted change pending:
 
 <a id="contract-strategy-decision-axis"></a>
 ### Decision Axis And Eligibility
-
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
 
 One decision axis and one eligibility plane hold in dense and
 availability-aware contexts alike, so a strategy written as named-vector
@@ -1477,6 +1511,15 @@ manipulation, or as a helper pipeline, means the same thing in both.
   one-argument form is unchanged, including its zero-length failure.
 - **Dense results.** Every dense ID is eligible, so dense results of the
   existing helper pipelines do not change.
+- **History selection.** `ledgr_history_frame()` selects from this plane at
+  its cutoff. `instruments = "admissible"` requests the `ctx$universe` IDs
+  whose `ctx$vec$admissible` is `TRUE`, `"decision_axis"` requests every
+  `ctx$universe` ID, and an explicit vector requests known instrument IDs in
+  its own order. An explicit ID is never dropped for current
+  inadmissibility; its selection row records `admissible` and an
+  `admissibility_reason` (the target-restriction reason, `not_member` or
+  `not_on_decision_axis`). Membership at a past session does not by itself
+  remove an otherwise admissible observation from the returned history.
 
 Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
 and `AAA` a held nonmember, each holding 5:
@@ -1614,9 +1657,6 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-pulse-data"></a>
 ### Pulse Data And Axis-Aligned Accessors
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Runtime and interactive pulse contexts expose data-frame-compatible
   `ctx$bars` and long-table `ctx$feature_table`.
 - Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, `ctx$idx()`,
@@ -1647,6 +1687,70 @@ Accepted change pending:
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
   behavior is flat-unless-signal or hold-unless-signal.
+- Availability-aware pulse contexts carry the causal history of their pulse.
+  `ledgr_history_frame(ctx, feature = NULL, bar = NULL, lookback = Inf,
+  instruments = "admissible", na_action = "keep", layout = "wide")` reads
+  exactly one numeric series, a sealed bar field (`open`, `high`, `low`,
+  `close`, `volume`) or one feature resolved active-alias-first then by
+  concrete ID, and returns a fresh classed `ledgr_history` data frame. Every
+  returned value is observed at or before the pulse, with facts knowable at
+  it; later-known facts change only later reads and never an earlier
+  returned object. Dense contexts and the snapshot-and-universe
+  `ledgr_pulse_snapshot()` form have no history and refuse with
+  `ledgr_history_unavailable`; malformed requests refuse with
+  `ledgr_invalid_history_request`, `ledgr_invalid_history_field`,
+  `ledgr_unknown_feature_id` or `ledgr_history_unknown_instrument`, and a
+  cutoff outside the prepared axis with `ledgr_history_outside_axis`.
+- The history axis is the declared venue's expected sessions from the data
+  start (the first session of the experiment's snapshot) through the cutoff,
+  with one cutoff-resolved expected-session mask per instrument. `lookback =
+  Inf` returns the whole axis; a finite lookback returns the last `lookback`
+  sessions and is the exact values-and-evidence suffix of the `Inf` result.
+  `lookback = 0` returns the empty axis. Bar values follow the experiment's
+  history policy: open, high, low and close carry forward within the declared
+  expected-session horizon from their original source, volume never carries,
+  nothing fills backward or across a lifetime or terminal barrier, and a
+  print inside a knowable lifetime-inactive interval stays readable with its
+  structural flag. Feature values are the shared feature preparation's values
+  on the same axis.
+- Wide results have `ts_utc` plus one numeric column per included
+  instrument; long results have `ts_utc`, `instrument_id`, `source`
+  (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
+  The `ledgr_history` attribute records the data start, returned-window start,
+  cutoff, requested and available lookback, source and policy identity, the
+  selection table, `used_before_window` (whether any returned value used an
+  observation or calculation state before the returned window) and, for the
+  wide layout, the cell evidence as sessions-by-instruments matrices. Cell
+  evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
+  `calculated`, `output_carried`, `source_ts_utc`, `carry_age_sessions`,
+  `ready`, `calculation_valid`, `missing_reason` and `barrier_reason`;
+  selection evidence uses `requested`, `included`, `exclusion_reason`,
+  `required_input_count`, `carried_input_count` and `carried_input_share`
+  plus the cutoff admissibility of each instrument. Empty results keep their
+  typed columns: an empty wide axis has zero rows and one numeric column per
+  included instrument, a zero-instrument wide result keeps its sessions with
+  only `ts_utc`, and an empty long result keeps all typed columns.
+- `ledgr_history_matrix()` adapts an existing result to a sessions-by-
+  instruments numeric matrix whose row names are the result's ISO 8601 UTC
+  session stamps and whose column names are its included instrument IDs (R
+  stores a zero-length dimension's names as `NULL`). It owns no cutoff, axis,
+  treatment or missingness logic and refuses a value that no longer matches
+  its recorded axis with `ledgr_invalid_history_result`.
+  `ledgr_history_sufficient(x, lookback, min_instruments)` is the structural
+  completeness query: at least `lookback` returned sessions and at least
+  `min_instruments` included instruments. It is not indicator readiness,
+  warm-up or convergence and inspects no value.
+- History reads add no public context field, durable artifact or snapshot
+  row. The history view is a private carrier, `ctx$.history`, that holds the
+  read service and therefore the whole substrate; strategies read history
+  only through `ledgr_history_frame()`, and the strategy preflight does not
+  yet reject direct access to dot-prefixed context internals (routed by the
+  Workstream 42 close review, F4). P1
+  issues the cutoff-bound history view; P2 places it on the context, and the
+  strategy's `ledgr_history_frame()` call reads prepared planes shared by the
+  owning run, sweep or walk-forward session. Treatment planes are prepared
+  once per substrate and history policy; no read rematerializes the causal
+  prefix.
 
 <a id="contract-context-feature-resolution"></a>
 ### Feature Resolution And Explicit Maps
@@ -1713,9 +1817,6 @@ Accepted change pending:
 <a id="contract-context-inspection"></a>
 ### Inspection And Signal Views
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
   `ledgr_pulse_wide()` are read-only inspection views over declared features
   and pulse-known data. They must not precompute unavailable data, mutate
@@ -1740,6 +1841,25 @@ Accepted change pending:
   bundle loops remain unrecorded.
 - Feature maps do not add a new `ctx$features_wide()` contract; the
   public wide pulse inspection API is `ledgr_pulse_wide()`.
+- `ledgr_pulse_snapshot()` is an external development and inspection helper;
+  no strategy callback calls it, receives an experiment or supplies a history
+  policy. Called with an availability-aware `ledgr_experiment`, its concrete
+  `params` and `feature_params`, and a cutoff `ts_utc` naming one session
+  close (a `Date` names that session's close), it takes snapshot, universe,
+  features, history policy, data start and opening state from that experiment
+  alone and accepts no other configuration argument. It prepares what a run of
+  the experiment starting at the cutoff prepares and drives the shared fold
+  core through P1 observe-and-settle and P2 context construction for that
+  first pulse only: due facts settle exactly as in execution, no strategy is
+  called, P3 through P5 never run, and no fill, event, run row or other
+  durable state is written. The returned context is the one that run passes
+  to its strategy, so its data-dependent planes and `ledgr_history_frame()`
+  reads equal that run's first pulse. A cutoff off the prepared venue axis
+  refuses with `ledgr_history_outside_axis`, a pulse whose P1 stops before the
+  context is built refuses with `ledgr_pulse_inspection_stopped`, and a dense
+  experiment refuses with `ledgr_pulse_snapshot_availability_required`. The
+  snapshot-and-universe form remains the dense inspection branch until the
+  execution-core consolidation and carries no history.
 - Strategy evaluation errors are wrapped with pulse context while preserving the
   original condition as the parent. The wrapper must name the run, timestamp,
   instruments, and available feature IDs so users can distinguish strategy
@@ -1913,9 +2033,6 @@ Accepted change pending:
 <a id="contract-result-read-surfaces"></a>
 ### Result Reads And Explanations
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
   backtest object or persistent run state.
@@ -1939,6 +2056,12 @@ Accepted change pending:
   from sealed facts, the stored effective plan, and ledger holdings. Neither
   view executes strategy code, reconstructs a strategy target, writes durable
   rows, or changes run identity.
+- Availability result reads derive marks from history starting at the data
+  start, as the fold does, so a run's first pulse may report a stale mark from
+  before its scoring start. A continued carry window's final decision is
+  executed and recorded by that run at the following session's open; its
+  results, explanations and completion evidence read that execution from the
+  run's own configured final execution instant.
 - `ledgr_run_explain(bt, instrument_id, ts_utc)` joins one retained decision
   trace to its availability, execution, valuation, feature-identity, position,
   and terminal evidence. It consumes `diagnostics` and `availability` through
@@ -2072,12 +2195,12 @@ Accepted change pending:
 <a id="contract-result-fills-and-sweep-restoration"></a>
 ### Fills And Sweep Restoration
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
   full fills-schema tibble for empty and populated runs. It has no public
-  cursor, lazy-read, or row-threshold mode.
+  cursor, lazy-read, or row-threshold mode. A continued carry window's
+  boundary fill belongs to the deciding run and is returned by it with its
+  next-session execution timestamp; the next window's run does not repeat it.
+  Training sweeps never continue a window.
 - When one source fill reverses a position and projects to derived CLOSE and
   OPEN rows, its fee is allocated pro rata by the non-negative absolute leg
   quantities. The derived fees for that event must sum to its source fee in
@@ -2158,9 +2281,6 @@ Accepted change pending:
 <a id="contract-result-return-panels"></a>
 ### Return Panels And Retained Evidence
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `ledgr_return_panel()` constructs source-neutral return evidence from clean
   candidate period returns. `ledgr_sweep_returns_panel()` is the sweep-sourced
   accessor into the same `ledgr_return_panel` contract. Diagnostic panels must
@@ -2184,6 +2304,9 @@ Accepted change pending:
   promotion fails with `ledgr_promote_incomplete_candidate`.
   Sequential and parallel sweeps carry the same canonical completion payload;
   the parent remains the only parallel persistence owner.
+- A continued carry window's equity rows cover only its own scoring pulses;
+  the cash and position effect of its boundary fill first appears in the next
+  window's first equity row, exactly where one continuous run records it.
 - Walk-forward training selection admits only `DONE` candidates. An
   `INCOMPLETE` selected test run records its canonical completion payload,
   marks the fold and session `PARTIAL`, preserves the achieved evidence, and

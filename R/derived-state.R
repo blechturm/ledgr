@@ -94,7 +94,17 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
 
   ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
   if (availability_active) {
-    marks <- ledgr_derived_state_availability_marks(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
+    # Marks come from history starting at the data start, as in the fold.
+    history_pulses <- ledgr_availability_calendar(
+      ledgr_availability_provider(con, cfg, stored_snapshot_hash),
+      ledgr_run_snapshot_history_start(con, cfg$data$snapshot_id),
+      end_ts_utc
+    )$pulses_posix
+    marks <- ledgr_derived_state_availability_marks(
+      con, ids_sql, instrument_ids, pulses, start_ts, end_ts,
+      snapshot_id = cfg$data$snapshot_id,
+      history_pulses = history_pulses
+    )
   } else {
     marks <- ledgr_derived_state_dense_close_map(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
   }
@@ -301,15 +311,30 @@ ledgr_derived_state_availability_pulses <- function(con, run_id, provider, start
 # a holding with no permissible mark stops the run before that pulse is valued.
 # The last observation is carried forward by one cummax over the column-major
 # pulse-by-instrument index, so no loop runs over pulses or instruments.
-ledgr_derived_state_availability_marks <- function(con, ids_sql, instrument_ids, pulses, start_ts, end_ts) {
-  rows <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT instrument_id, ts_utc, close FROM bars ",
-      "WHERE instrument_id IN (", ids_sql, ") AND ts_utc >= ? AND ts_utc <= ?"
-    ),
-    params = list(start_ts, end_ts)
-  )
+ledgr_derived_state_availability_marks <- function(con, ids_sql, instrument_ids, pulses, start_ts, end_ts,
+                                                   snapshot_id = NULL,
+                                                   history_pulses = NULL) {
+  run_pulses <- pulses
+  rows <- if (is.null(history_pulses)) {
+    DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT instrument_id, ts_utc, close FROM bars ",
+        "WHERE instrument_id IN (", ids_sql, ") AND ts_utc >= ? AND ts_utc <= ?"
+      ),
+      params = list(start_ts, end_ts)
+    )
+  } else {
+    pulses <- history_pulses
+    DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT instrument_id, ts_utc, close FROM snapshot_bars ",
+        "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") AND ts_utc <= ?"
+      ),
+      params = list(snapshot_id, end_ts)
+    )
+  }
   n_pulse <- length(pulses)
   n_inst <- length(instrument_ids)
   close <- matrix(NA_real_, nrow = n_pulse, ncol = n_inst)
@@ -325,6 +350,9 @@ ledgr_derived_state_availability_marks <- function(con, ids_sql, instrument_ids,
   seen <- last > 0L
   marks[seen] <- close[cbind(last[seen], col(close)[seen])]
   marks <- t(marks)
+  if (!is.null(history_pulses)) {
+    marks <- marks[, match(as.numeric(as.POSIXct(run_pulses, tz = "UTC")), as.numeric(as.POSIXct(history_pulses, tz = "UTC"))), drop = FALSE]
+  }
   dimnames(marks) <- list(instrument_ids, NULL)
   marks
 }

@@ -1,4 +1,4 @@
-ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
+ledgr_backtest_config <- function(start, end, initial_cash = 100000, final_execution = NULL) {
   start_iso <- ledgr_iso_utc(start)
   end_iso <- ledgr_iso_utc(end)
 
@@ -17,7 +17,18 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
     rlang::abort("`initial_cash` must be > 0.", class = "ledgr_invalid_args")
   }
 
-  list(start = start_iso, end = end_iso, initial_cash = as.numeric(initial_cash))
+  out <- list(start = start_iso, end = end_iso, initial_cash = as.numeric(initial_cash))
+  if (!is.null(final_execution)) {
+    # A continued carry window executes its final decision at this session
+    # open, after its last scoring pulse (LDG-3064).
+    final_iso <- ledgr_iso_utc(final_execution)
+    final_ts <- as.POSIXct(final_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+    if (is.na(final_ts) || final_ts <= end_ts) {
+      rlang::abort("`final_execution` must be a timestamp after `end`.", class = "ledgr_invalid_args")
+    }
+    out$final_execution <- final_iso
+  }
+  out
 }
 
 ledgr_strategy_spec <- function(strategy) {
@@ -180,11 +191,16 @@ ledgr_config <- function(snapshot,
     engine = engine,
     universe = list(instrument_ids = universe),
     history = ledgr_history_policy_identity(history_policy),
-    backtest = list(
-      start_ts_utc = backtest$start,
-      end_ts_utc = backtest$end,
-      pulse = "EOD",
-      initial_cash = backtest$initial_cash
+    backtest = c(
+      list(
+        start_ts_utc = backtest$start,
+        end_ts_utc = backtest$end,
+        pulse = "EOD",
+        initial_cash = backtest$initial_cash
+      ),
+      if (!is.null(backtest$final_execution)) {
+        list(final_execution_ts_utc = backtest$final_execution)
+      }
     ),
     timing_model = list(
       timing_schema_version = timing_model$timing_schema_version,
@@ -342,12 +358,16 @@ ledgr_config_normalize_opening <- function(opening, initial_cash) {
   if (!isTRUE(all.equal(as.numeric(opening$cash), as.numeric(initial_cash), tolerance = 0))) {
     rlang::abort("`opening$cash` must match `backtest$initial_cash`.", class = "ledgr_invalid_args")
   }
-  list(
+  out <- list(
     cash = as.numeric(opening$cash),
     date = opening$date,
     positions = opening$positions,
     cost_basis = opening$cost_basis
   )
+  if (!is.null(opening$carried)) {
+    out$carried <- ledgr_opening_carried_storage(opening$carried)
+  }
+  out
 }
 
 #' Print a ledgr config
@@ -382,4 +402,82 @@ print.ledgr_config <- function(x, ...) {
   cat("Timing Model:", x$timing_model$type_id, "\n")
   cat("Strategy:    ", x$strategy$id, "\n", sep = "")
   invisible(x)
+}
+
+# Normalize the carried part of a walk-forward opening (LDG-3064). It holds
+# only economic state: FIFO lots, corporate-action rows bound but settled
+# later (cash entitlements, dispositions and quantity effects) and frozen
+# holdings. JSON round trips may turn vectors into lists, so every
+# field is coerced to its atomic type.
+ledgr_opening_carried_normalize <- function(carried) {
+  if (is.null(carried)) {
+    return(list(lots = NULL, pending = NULL, frozen = character()))
+  }
+  if (!is.list(carried)) {
+    rlang::abort("A carried opening must be a list.", class = c("ledgr_invalid_opening", "ledgr_invalid_config"))
+  }
+  atomic <- function(x, as) as(unlist(x, use.names = FALSE) %||% as(character()))
+  lots <- carried$lots
+  lots <- if (is.null(lots) || length(unlist(lots$instrument_id)) == 0L) {
+    NULL
+  } else {
+    list(
+      instrument_id = atomic(lots$instrument_id, as.character),
+      qty = atomic(lots$qty, as.numeric),
+      price = atomic(lots$price, as.numeric)
+    )
+  }
+  if (!is.null(lots) && (
+    length(unique(lengths(lots))) != 1L || anyNA(lots$instrument_id) ||
+      any(!is.finite(lots$qty)) || any(lots$qty <= 0) || any(!is.finite(lots$price))
+  )) {
+    rlang::abort(
+      "A carried opening's lots must be aligned, positive and finite.",
+      class = c("ledgr_invalid_opening", "ledgr_invalid_config")
+    )
+  }
+  pending <- carried$pending
+  pending <- if (is.null(pending) || length(unlist(pending$fact_id)) == 0L) {
+    NULL
+  } else {
+    data.frame(
+      fact_id = atomic(pending$fact_id, as.character),
+      quantity = atomic(pending$quantity, as.numeric),
+      posting_ts_utc = atomic(pending$posting_ts_utc, as.character),
+      stringsAsFactors = FALSE
+    )
+  }
+  # A posting instant is recorded for a cash row whose posting already has a
+  # pulse; "" marks a row settled by its effective or knowledge clock.
+  if (!is.null(pending)) {
+    pending$posting_ts_utc[is.na(pending$posting_ts_utc)] <- ""
+  }
+  if (!is.null(pending) && (anyNA(pending$fact_id) || any(!is.finite(pending$quantity)) ||
+      (any(nzchar(pending$posting_ts_utc)) &&
+        anyNA(ledgr_history_utc(pending$posting_ts_utc[nzchar(pending$posting_ts_utc)]))))) {
+    rlang::abort(
+      "A carried opening's pending rows must name facts, finite quantities and valid posting instants.",
+      class = c("ledgr_invalid_opening", "ledgr_invalid_config")
+    )
+  }
+  list(
+    lots = lots,
+    pending = pending,
+    frozen = sort(unique(atomic(carried$frozen, as.character)), method = "radix")
+  )
+}
+
+# The stored form of a carried opening: plain vectors in a fixed order, so the
+# run config and its identity are deterministic.
+ledgr_opening_carried_storage <- function(carried) {
+  carried <- ledgr_opening_carried_normalize(carried)
+  list(
+    lots = if (is.null(carried$lots)) NULL else carried$lots,
+    pending = if (is.null(carried$pending)) NULL else list(
+      fact_id = carried$pending$fact_id,
+      quantity = carried$pending$quantity,
+      posting_ts_utc = carried$pending$posting_ts_utc
+    ),
+    frozen = carried$frozen
+  )
 }

@@ -162,6 +162,42 @@ ledgr_history_input_carry_matrix <- function(value,
   }
 
   observed <- is.finite(value)
+  positions <- ledgr_history_carry_positions(
+    observed,
+    expected,
+    terminal_barrier
+  )
+  column <- matrix(
+    rep(seq_len(n_observations), each = n_instruments),
+    nrow = n_instruments,
+    ncol = n_observations
+  )
+  ledgr_history_carry_evidence(
+    value = value,
+    observed = observed,
+    expected = expected,
+    terminal_barrier = terminal_barrier,
+    source = positions$source,
+    last_barrier = positions$last_barrier,
+    source_value = ledgr_history_carry_source_value(value, positions$source),
+    column = column,
+    axis = axis,
+    max_sessions = max_sessions,
+    carry_allowed = carry_allowed
+  )
+}
+
+# Causal carry positions over one complete prefix. `source` is the latest
+# admissible observation since the last barrier and `last_barrier` the latest
+# barrier column, both as prefix column indices. Both depend only on columns at
+# or before their own, so a later slice of a whole-prefix answer is exact.
+ledgr_history_carry_positions <- function(observed, expected, terminal_barrier) {
+  n_instruments <- nrow(observed)
+  n_observations <- ncol(observed)
+  if (n_instruments == 0L || n_observations == 0L) {
+    empty <- matrix(integer(), nrow = n_instruments, ncol = n_observations)
+    return(list(source = empty, last_barrier = empty))
+  }
   barrier <- !expected | terminal_barrier
   column <- matrix(
     rep(seq_len(n_observations), each = n_instruments),
@@ -190,6 +226,41 @@ ledgr_history_input_carry_matrix <- function(value,
     byrow = TRUE
   )
   last_barrier[last_barrier == 0L] <- NA_integer_
+  list(source = source, last_barrier = last_barrier)
+}
+
+ledgr_history_carry_source_value <- function(value, source) {
+  n_instruments <- nrow(value)
+  out <- matrix(NA_real_, nrow = nrow(source), ncol = ncol(source))
+  hit <- !is.na(source)
+  if (any(hit)) {
+    source_row <- matrix(
+      rep(seq_len(n_instruments), ncol(source)),
+      nrow = n_instruments,
+      ncol = ncol(source)
+    )
+    out[hit] <- value[(source_row + (source - 1L) * n_instruments)[hit]]
+  }
+  out
+}
+
+# Cell-local evidence from carry positions. Every argument is aligned to the
+# same instrument/column cells; `column` holds each cell's prefix column index
+# and `axis` the whole prefix axis, so a slice of a whole-prefix answer yields
+# the same evidence as treating the prefix and then slicing.
+ledgr_history_carry_evidence <- function(value,
+                                         observed,
+                                         expected,
+                                         terminal_barrier,
+                                         source,
+                                         last_barrier,
+                                         source_value,
+                                         column,
+                                         axis,
+                                         max_sessions = NULL,
+                                         carry_allowed = TRUE) {
+  n_instruments <- nrow(value)
+  n_observations <- ncol(value)
   age <- column - source
   age[is.na(source)] <- NA_integer_
   can_carry <- isTRUE(carry_allowed) && !is.null(max_sessions)
@@ -202,13 +273,7 @@ ledgr_history_input_carry_matrix <- function(value,
   }
   treated <- value
   if (any(carried)) {
-    source_row <- matrix(
-      rep(seq_len(n_instruments), n_observations),
-      nrow = n_instruments,
-      ncol = n_observations
-    )
-    source_cell <- source_row + (source - 1L) * n_instruments
-    treated[carried] <- value[source_cell[carried]]
+    treated[carried] <- source_value[carried]
   }
   treated[!expected] <- NA_real_
   source_out <- source

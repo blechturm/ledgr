@@ -141,9 +141,9 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
 
   testthat::expect_identical(precomputed$scoring_range$start, "2020-01-05T00:00:00Z")
   testthat::expect_identical(precomputed$scoring_range$end, "2020-01-08T00:00:00Z")
-  # Cut 9: feature state starts at the scoring start, so only the day-5 bar
-  # is available there.
-  testthat::expect_identical(precomputed$warmup_range$start, "2020-01-05T00:00:00Z")
+  # Dense feature state starts at the scoring start, so only the day-5 bar is
+  # available there. LDG-3064 retired the separate warm-up start field.
+  testthat::expect_null(precomputed$warmup_range)
   testthat::expect_equal(nrow(precomputed$warmup), 1L)
   testthat::expect_equal(precomputed$warmup$available_bars_at_scoring_start[[1]], 1L)
   testthat::expect_false(precomputed$warmup$warmup_achievable[[1]])
@@ -181,13 +181,14 @@ testthat::test_that("windowed sweeps validate precomputed scoring and hydration 
   grid <- ledgr_param_grid(low = list(qty = 1, threshold = 103), high = list(qty = 2, threshold = 106))
   window <- ledgr:::ledgr_experiment_window(exp, "2020-01-04", "2020-01-08")
 
-  # Cut 9: a payload whose feature state starts before the window refuses;
+  # A dense payload whose feature state starts before the window refuses;
   # one starting at the window reproduces the unprecomputed window sweep.
+  # LDG-3064 retired the hydration class; the dense start is the scoring start.
   full_precomputed <- ledgr_precompute_features(exp, grid)
   exact_precomputed <- ledgr_precompute_features(exp, grid, start = "2020-01-04", end = "2020-01-08")
   testthat::expect_error(
     ledgr:::ledgr_sweep_window(exp, grid, window = window, precomputed_features = full_precomputed, seed = 101L),
-    class = "ledgr_precomputed_hydration_mismatch"
+    class = "ledgr_precomputed_range_mismatch"
   )
   plain_window <- ledgr:::ledgr_sweep_window(exp, grid, window = window, seed = 101L)
   exact_window <- ledgr:::ledgr_sweep_window(exp, grid, window = window, precomputed_features = exact_precomputed, seed = 101L)
@@ -203,11 +204,11 @@ testthat::test_that("windowed sweeps validate precomputed scoring and hydration 
     class = "ledgr_precomputed_range_mismatch"
   )
 
-  missing_hydration <- exact_precomputed
-  missing_hydration$warmup_range$start <- "2020-01-05T00:00:00Z"
+  earlier_start <- exact_precomputed
+  earlier_start$scoring_range$start <- "2020-01-03T00:00:00Z"
   testthat::expect_error(
-    ledgr:::ledgr_validate_precomputed_features(missing_hydration, exp, grid, window = window),
-    class = "ledgr_precomputed_hydration_mismatch"
+    ledgr:::ledgr_validate_precomputed_features(earlier_start, exp, grid, window = window),
+    class = "ledgr_precomputed_range_mismatch"
   )
 })
 

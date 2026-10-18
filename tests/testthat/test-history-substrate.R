@@ -1124,6 +1124,21 @@ testthat::test_that("[LTB-0293] availability fold ownership has one history read
     perl = TRUE
   ))
   testthat::expect_match(sweep, "ledgr_sweep_stage_history_tasks", fixed = TRUE)
+
+  # LDG-3063: experiment-derived pulse inspection reaches the substrate only
+  # through the shared fold core, so P1 stays the sole substrate reader there.
+  inspection <- paste(deparse(ledgr:::ledgr_pulse_inspection), collapse = "
+")
+  testthat::expect_length(gregexpr(
+    "ledgr_execute_fold(", inspection, fixed = TRUE
+  )[[1L]], 1L)
+  for (reader in c(
+    "ledgr_history_substrate_bar_packet", "ledgr_history_substrate_fold_reader",
+    "ledgr_history_substrate_bar_frame", "history_reader", "ledgr_history_read(",
+    "ledgr_fold_stage_"
+  )) {
+    testthat::expect_false(grepl(reader, inspection, fixed = TRUE), info = reader)
+  }
 })
 
 # ledgr-test-profile: review
@@ -1578,18 +1593,24 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     ),
     cost_model = ledgr_cost_zero()
   )
+  # LDG-3064 (v12 Section 2): features start at the data start, not the
+  # scoring start. Closes are 100 + day, so return_2 is finite from day 3 and
+  # the run scoring from day 5 buys on day 5 and fills at the day-6 open of
+  # 106, ending at 100000 - 106 + 113. (Under the retired per-window restart
+  # it first bought on day 7, filled at the day-8 open of 108 and ended at
+  # 100005.)
   dated_run <- ledgr_run(dated_experiment, list(qty = 1), seed = 7L)
   withr::defer(close(dated_run))
   dated_fills <- ledgr_results(dated_run, "fills")
   testthat::expect_identical(nrow(dated_fills), 1L)
   testthat::expect_identical(
     as.numeric(dated_fills$ts_utc),
-    as.numeric(as.POSIXct("2020-01-08 09:30:00", tz = "UTC"))
+    as.numeric(as.POSIXct("2020-01-06 09:30:00", tz = "UTC"))
   )
   dated_equity <- ledgr_results(dated_run, "equity")
   testthat::expect_equal(
     dated_equity$equity[[nrow(dated_equity)]],
-    100005
+    100007
   )
   dated_sweep <- ledgr_sweep(
     dated_experiment,
@@ -1597,7 +1618,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     seed = 7L,
     workers = 1L
   )
-  testthat::expect_equal(dated_sweep$final_equity, 100005)
+  testthat::expect_equal(dated_sweep$final_equity, 100007)
   folds <- ledgr:::ledgr_fold_list(
     list(
       ledgr:::ledgr_fold(
@@ -1680,10 +1701,14 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     "metric_value",
     drop = TRUE
   ]
-  testthat::expect_equal(train_final_equity, 100002)
+  # Fold 2 trains on days 2-7 with return_2 finite from day 3 (data start
+  # day 1): one share fills at the day-4 open of 104 and ends at 107. Its test
+  # window (days 9-12) reads the same history and fills at the day-10 open.
+  # (Restarting at each window, they were 100002 and the day-12 open.)
+  testthat::expect_equal(train_final_equity, 100003)
   testthat::expect_identical(
     as.numeric(sequential_fill_times[[1L]]),
-    as.numeric(as.POSIXct("2020-01-12 09:30:00", tz = "UTC"))
+    as.numeric(as.POSIXct("2020-01-10 09:30:00", tz = "UTC"))
   )
   lapply(sequential$test_runs, close)
   parallel <- ledgr_walk_forward(

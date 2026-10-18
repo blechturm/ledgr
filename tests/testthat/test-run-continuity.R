@@ -268,12 +268,12 @@ testthat::test_that("[LTB-0200] the walk-forward no-selection policy and current
   DBI::dbExecute(con, "
     INSERT INTO walk_forward_folds (
       session_id, fold_id, fold_seq, scheme, train_start_utc, train_end_utc,
-      test_start_utc, test_end_utc, hydration_start_utc,
+      test_start_utc, test_end_utc,
       train_scoring_start_utc, test_scoring_start_utc, opening_state_policy,
       selection_source, status
     ) VALUES (
       's', 'f1', 1, 'rolling', '2020-01-01', '2020-01-31',
-      '2020-02-01', '2020-02-29', '2020-01-01', '2020-01-01',
+      '2020-02-01', '2020-02-29', '2020-01-01',
       '2020-02-01', 'carry_test_state', 'train', 'DONE'
     )")
   testthat::expect_error(DBI::dbExecute(con, "UPDATE walk_forward_folds SET selection_source = 'guess'"))

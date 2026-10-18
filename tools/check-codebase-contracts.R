@@ -1405,11 +1405,8 @@ test_seam_contracts <- c(
   ledgr_history_substrate_treated_field = paste(
     "Exercise treatment against late-known expected-session masks before WS42 exposes frames."
   ),
-  ledgr_history_feature_evidence = paste(
+  ledgr_history_feature_planes = paste(
     "Observe per-instrument feature evidence planes from the production calculation before public history results consume them."
-  ),
-  ledgr_history_estimator_admission = paste(
-    "Check post-treatment estimator inclusion without constructing a public history result."
   ),
   ledgr_sweep_compute_feature_matrix = paste(
     "Exercise sweep feature-matrix preparation independently of execution."

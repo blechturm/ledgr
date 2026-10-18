@@ -379,3 +379,52 @@ ledgr_availability_calendar <- function(provider, start_ts_utc, end_ts_utc) {
     execution_opportunities_posix = execution_opportunities_posix
   )
 }
+
+# The session whose open executes a continued carry window's final decision:
+# exactly one declared open session must open at that instant.
+ledgr_availability_continuation <- function(sessions, final_execution_ts_utc) {
+  if (is.null(final_execution_ts_utc)) return(NULL)
+  instant <- ledgr_history_utc(final_execution_ts_utc)
+  open <- sessions[sessions$status == "open" & !is.na(sessions$session_open), , drop = FALSE]
+  hit <- which(as.numeric(as.POSIXct(open$session_open, tz = "UTC")) == as.numeric(instant))
+  if (length(hit) != 1L || is.na(instant)) {
+    rlang::abort(
+      "A continued window's final execution must be one declared session open.",
+      class = c("ledgr_session_boundary_unresolved", "ledgr_invalid_config")
+    )
+  }
+  list(
+    open = as.POSIXct(open$session_open[[hit]], tz = "UTC"),
+    close = as.POSIXct(open$session_close[[hit]], tz = "UTC")
+  )
+}
+
+# The run calendar of an availability config. A continued carry window adds
+# one execution opportunity, the following session's open, for its final
+# pulse; every other run keeps the terminal rule.
+ledgr_availability_run_calendar <- function(provider,
+                                            start_ts_utc,
+                                            end_ts_utc,
+                                            final_execution_ts_utc = NULL) {
+  calendar <- ledgr_availability_calendar(provider, start_ts_utc, end_ts_utc)
+  continuation <- ledgr_availability_continuation(provider$sessions, final_execution_ts_utc)
+  calendar$final_execution_posix <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+  if (!is.null(continuation)) {
+    last <- calendar$pulses_posix[[length(calendar$pulses_posix)]]
+    closes <- as.POSIXct(provider$sessions$session_close[provider$sessions$status == "open"], tz = "UTC")
+    closes <- closes[!is.na(closes) & closes > last]
+    if (continuation$open <= last || length(closes) == 0L ||
+        as.numeric(min(closes)) != as.numeric(continuation$close)) {
+      rlang::abort(
+        "A continued window's final execution must be the next session's open after its last pulse.",
+        class = c("ledgr_session_boundary_unresolved", "ledgr_invalid_config")
+      )
+    }
+    calendar$execution_opportunities_posix <- c(
+      as.POSIXct(calendar$execution_opportunities_posix, tz = "UTC"),
+      continuation$open
+    )
+    calendar$final_execution_posix <- continuation$open
+  }
+  calendar
+}

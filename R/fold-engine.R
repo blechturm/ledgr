@@ -283,6 +283,11 @@ ledgr_fold_stage_observe_settle <- function(
   } else {
     NULL
   }
+  history_view <- if (services$availability_active) {
+    services$history_reader$view(pulse_idx)
+  } else {
+    NULL
+  }
   add_segment <- function(segment) {
     fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
     invisible(NULL)
@@ -615,6 +620,7 @@ ledgr_fold_stage_observe_settle <- function(
       context_ids
     },
     history_bars = history_bars,
+    history_view = history_view,
     sample_start = sample_start,
     t_feats = t_feats,
     t_bars = t_bars
@@ -648,12 +654,10 @@ ledgr_fold_stage_decide <- function(
   } else {
     services$bars_views[[pulse_idx]]
   }
+  # The long feature table is the schema-only frame the context contract
+  # allows on the availability path; accessors and the wide view carry values.
   features_current <- if (services$availability_active) {
-    ledgr_projection_feature_table(
-      services$runtime_projection,
-      projection_idx,
-      feature_ids = services$def_ids
-    )
+    services$empty_feature_table
   } else {
     services$feature_table_views[[pulse_idx]]
   }
@@ -707,6 +711,7 @@ ledgr_fold_stage_decide <- function(
   if (services$availability_active) {
     ctx$availability_active <- TRUE
     ctx$members <- observation$members
+    ctx$.history <- observation$history_view
   } else {
     ctx$members <- context_ids
   }
@@ -1549,7 +1554,12 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   availability_provider <- execution$availability_provider
   availability_active <- !is.null(availability_provider)
   history_reader <- if (availability_active) {
-    ledgr_history_substrate_fold_reader(history_substrate, pulses_posix)
+    ledgr_history_substrate_fold_reader(
+      history_substrate,
+      pulses_posix,
+      feature_defs = feature_defs,
+      active_alias_map = active_alias_map
+    )
   } else {
     NULL
   }

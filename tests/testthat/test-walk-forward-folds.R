@@ -195,7 +195,8 @@ testthat::test_that("experiment windows validate pulse coverage and derive fold 
   test <- ledgr:::ledgr_experiment_window_from_fold(exp, fold, window = "test")
 
   testthat::expect_s3_class(train, "ledgr_experiment_window")
-  testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(train$hydration_start_utc), "2020-01-02T00:00:00Z")
+  # LDG-3064: a window carries no second history start.
+  testthat::expect_false("hydration_start_utc" %in% names(train))
   testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(train$scoring_start_utc), "2020-01-02T00:00:00Z")
   testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(train$scoring_end_utc), "2020-01-04T00:00:00Z")
   testthat::expect_identical(ledgr:::ledgr_walk_forward_iso(train$execution_start_utc), "2020-01-02T00:00:00Z")

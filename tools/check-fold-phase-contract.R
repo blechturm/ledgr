@@ -67,7 +67,7 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "(services\\$)?valuation_state\\$advance\\s*\\(" = "observe",
     "(services\\$)?availability_provider\\$decision_view\\s*\\(" = "observe",
     "(services\\$)?availability_provider\\$execution_view\\s*\\(" = "plan",
-    "(services\\$)?history_reader\\$bars\\s*\\(" = "observe",
+    "(services\\$)?history_reader\\$(bars|view)\\s*\\(" = "observe",
     "(services\\$)?corporate_action_plan\\$(post|post_disposition|check_quantity_effects)\\s*\\(" = "observe",
     "(services\\$)?corporate_action_plan\\$bind_boundary\\s*\\(" = c("envelope", "apply"),
     "diagnostic_writer\\$append_block\\s*\\(" = c("commit", "envelope"),

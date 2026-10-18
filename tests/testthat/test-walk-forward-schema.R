@@ -70,7 +70,6 @@ testthat::test_that("walk-forward schema stores compact identity rows without pl
       train_end_utc = now + 86400,
       test_start_utc = now + 2 * 86400,
       test_end_utc = now + 3 * 86400,
-      hydration_start_utc = now,
       train_scoring_start_utc = now,
       test_scoring_start_utc = now + 2 * 86400,
       opening_state_policy = "carry_test_state",
