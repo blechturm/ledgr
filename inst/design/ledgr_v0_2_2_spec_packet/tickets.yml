@@ -621,12 +621,12 @@ workstreams:
   - id: 42
     name: "Public causal history and continuous windows"
     cut: 16
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 41
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 42", verdict: null, reason: "One claim: strategy callbacks read one immutable causal history surface through ledgr_history_frame(), while external experiment-derived pulse inspection reproduces the corresponding ctx without becoming a strategy dependency. Review exercises run, sweep, pulse snapshot, precompute, window and walk-forward paths and distinguishes estimator exclusion from execution intent."}
+    review: {mode: "Type 1", point: "close of workstream 42", verdict: "CHANGES_REQUIRED", artifact: "close_review_42.md", result: "One product defect: the carried walk-forward chain dropped corporate actions effective in one test window and known in the next. Correction 1ac64ecf rebuilds the previous window's own settlement plan and carries every unsettled row; the reviewer's confirmation returned PASS. F2-F5 were disclosure, routing and record fixes.", reason: "One claim: strategy callbacks read one immutable causal history surface through ledgr_history_frame(), while external experiment-derived pulse inspection reproduces the corresponding ctx without becoming a strategy dependency. Review exercises run, sweep, pulse snapshot, precompute, window and walk-forward paths and distinguishes estimator exclusion from execution intent."}
     integration_evidence: ["Implementation commits c843dc2e (LDG-3062), a126a182 (LDG-3063) and eb69aff3 (LDG-3064) add the public history result, experiment-derived inspection, availability precompute, one data start and the carried walk-forward chain; public_causal_history_closeout.md records per-ticket evidence, mutations, scale and routed items."]
-    accepted: null
+    accepted: "2026-10-18 by the maintainer after the independent close review confirmed PASS on correction 1ac64ecf and the quiet-host fast profile passed at a 105.81-second median (565/565 in three runs). The maintainer confirmed the routed owners: finite-lookback teaching to LDG-3071, eager evidence representation and unread substrate planes to LDG-3069, the real-data late-known count to LDG-3070; the ctx$.history preflight gap becomes LDG-3072 and the effective-only corporate-action gap joins the WS40 follow-up LDG-3073."
   - id: 43
     name: "Indicator history semantics"
     cut: 16
