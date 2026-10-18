@@ -48,17 +48,21 @@ testthat::test_that("[LTB-0300] run, sweep, window, precompute and inspection re
     c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
   )
   testthat::expect_identical(as.numeric(run6$close$ts_utc), as.numeric(axis[1:6]))
-  testthat::expect_identical(names(run6$fast), c("ts_utc", "AAA"))
+  # V12 Section 5 (LDG-3066): the SMA consumes carried closes. BBB's session-5
+  # average uses its close carried from session 2, and CCC's session-6 average
+  # uses session 5's close carried because CCC's inactivity is not yet known.
+  testthat::expect_identical(names(run6$fast), c("ts_utc", "AAA", "BBB", "CCC"))
   testthat::expect_identical(run6$fast$AAA, c(14.5, 15.5))
+  testthat::expect_identical(run6$fast$BBB, c(23.5, 25.5))
+  testthat::expect_identical(run6$fast$CCC, c(34.5, 35))
   selection <- attr(run6$fast, "ledgr_history")$selection
   testthat::expect_identical(
     selection$exclusion_reason[match(c("BBB", "CCC"), selection$instrument_id)],
-    c("missing_required_input", "missing_required_input")
+    c("", "")
   )
-  # BBB's session-6 average needs only sessions 5-6, so nothing before the
-  # two-session window was used.
-  testthat::expect_identical(run6$bbb_fast$BBB, c(NA, 25.5))
-  testthat::expect_false(attr(run6$bbb_fast, "ledgr_history")$used_before_window)
+  # BBB's session-5 average reads session 4, before the two-session window.
+  testthat::expect_identical(run6$bbb_fast$BBB, c(23.5, 25.5))
+  testthat::expect_true(attr(run6$bbb_fast, "ledgr_history")$used_before_window)
   testthat::expect_identical(run6$cash, 1001)
   testthat::expect_identical(run6$equity, 1033)
   run7 <- at("run", 7L)

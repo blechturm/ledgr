@@ -10,7 +10,7 @@ x86-64, 24 logical cores, 64 GB RAM.
 - `evidence/catalogue_certification.csv`: per catalogue row and fixture, the
   maximum scaled difference between the full-series value and the value from
   a window of exactly `requires_bars` rows (`scripts/cert_drift.R <tree>
-  <out.csv>`). LTB-0298 is the registered detector; this file only records
+  <out.csv>`). LTB-0308 is the registered detector; this file only records
   the drift.
 - `evidence/mutations_ldg3065.csv`, `evidence/mutations_ldg3066.csv`: each
   source-copy mutation, the registered block expected to fail, the blocks

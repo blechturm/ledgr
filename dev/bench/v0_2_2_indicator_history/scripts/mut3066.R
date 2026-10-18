@@ -5,85 +5,85 @@ mutations <- list(
     file = hf,
     old = "  rows <- if (identical(declarations$history_class, \"bounded\")) {",
     new = "  rows <- if (TRUE) {",
-    filter = calc_filter, blocks = "LTB-0300"
+    filter = calc_filter, blocks = "LTB-0310"
   ),
   n02_bounded_counts_inactive = list(
     file = hf,
     old = "    calc[inputs$expected[calc]]\n  } else {",
     new = "    calc\n  } else {",
-    filter = "indicator-history-calculation|availability-features", blocks = "LTB-0300 LTB-0093"
+    filter = "indicator-history-calculation|availability-features", blocks = "LTB-0310 LTB-0093"
   ),
   n03_fn_gets_stable_after = list(
     file = hf,
     old = "  value <- rep(NA_real_, m)\n  for (k in which(ready)) {\n    value[[k]] <- ledgr_normalize_feature_scalar_output(\n      ledgr_call_feature_fn(def$fn, ledgr_history_feature_window(frame, seq.int(k - width + 1L, k)), params),",
     new = "  value <- rep(NA_real_, m)\n  for (k in which(ready)) {\n    value[[k]] <- ledgr_normalize_feature_scalar_output(\n      ledgr_call_feature_fn(def$fn, ledgr_history_feature_window(frame, seq.int(k - stable_after + 1L, k)), params),",
-    filter = calc_filter, blocks = "LTB-0300"
+    filter = calc_filter, blocks = "LTB-0310"
   ),
   n04_returns_consume_carry = list(
     file = hf,
     old = "  fields <- if (identical(declarations$input_carry, \"excluded\")) inputs$raw else inputs$treated",
     new = "  fields <- inputs$treated",
-    filter = "indicator-history-calculation|strict-feature-acceleration", blocks = "LTB-0300 LTB-0142"
+    filter = "indicator-history-calculation|strict-feature-acceleration", blocks = "LTB-0310 LTB-0142"
   ),
   n05_admit_all_fields = list(
     file = hf,
     old = "    lapply(fields, function(x) x[calc]),\n    declarations$required_fields\n  )",
     new = "    lapply(fields, function(x) x[calc]),\n    ledgr_indicator_default_required_fields()\n  )",
-    filter = "indicator-history-calculation|strict-feature-acceleration", blocks = "LTB-0300 LTB-0142"
+    filter = "indicator-history-calculation|strict-feature-acceleration", blocks = "LTB-0310 LTB-0142"
   ),
   n06_join_segments_across_gaps = list(
     file = hf,
     old = "  runs <- ledgr_history_feature_runs(available_all[rows])",
     new = "  runs <- ledgr_history_feature_runs(inputs$expected[rows])",
-    filter = calc_filter, blocks = "LTB-0300"
+    filter = calc_filter, blocks = "LTB-0310"
   ),
   n07_drop_parity_check = list(
     file = hf,
     old = "    if (identical(cert$certification, \"custom\") &&\n        identical(declarations$history_class, \"bounded\")) {",
     new = "    if (FALSE) {",
-    filter = calc_filter, blocks = "LTB-0300 LTB-0302"
+    filter = calc_filter, blocks = "LTB-0310 LTB-0312"
   ),
   n08_parity_ignores_tolerance = list(
     file = hf,
     old = "        } else if (tolerance > 0) {",
     new = "        } else if (FALSE) {",
-    filter = calc_filter, blocks = "LTB-0300"
+    filter = calc_filter, blocks = "LTB-0310"
   ),
   n09_refute_history_pair = list(
     file = hf,
     old = "    if (identical(cert$certification, \"custom\") &&\n        identical(declarations$history_class, \"bounded\")) {",
     new = "    if (identical(cert$certification, \"custom\") && is.function(def$fn)) {",
-    filter = calc_filter, blocks = "LTB-0300"
+    filter = calc_filter, blocks = "LTB-0310"
   ),
   n10_final_cutoff_masks = list(
     file = hf,
     old = "    starts <- c(starts, position[lagged])",
     new = "    starts <- starts",
-    filter = calc_filter, blocks = "LTB-0303"
+    filter = calc_filter, blocks = "LTB-0313"
   ),
   n11_ignore_lifetime_mask = list(
     file = hf,
     old = "  expected <- as.logical(ledgr_history_substrate_expected_at(\n    substrate, cutoff, prefix, instrument_idx\n  )[1L, ])",
     new = "  expected <- rep(TRUE, prefix_end)",
-    filter = "indicator-history-calculation|availability-features", blocks = "LTB-0300 LTB-0093"
+    filter = "indicator-history-calculation|availability-features", blocks = "LTB-0310 LTB-0093"
   ),
   n12_output_carry_on_not_ready = list(
     file = hf,
     old = "      eligible_gap = inputs$expected[calc] & !available_all[calc],",
     new = "      eligible_gap = inputs$expected[calc],",
-    filter = calc_filter, blocks = "LTB-0301"
+    filter = calc_filter, blocks = "LTB-0311"
   ),
   n13_first_blocking_field_only = list(
     file = "R/indicator-history.R",
     old = "    blocking[blocked] <- ifelse(\n      nzchar(blocking[blocked]),\n      paste(blocking[blocked], field, sep = \",\"),\n      field\n    )",
     new = "    blocking[blocked & !nzchar(blocking)] <- field",
-    filter = "indicator-history", blocks = "LTB-0301"
+    filter = "indicator-history", blocks = "LTB-0311"
   ),
   n14_sweep_payload_mispaired = list(
     file = "R/history-substrate.R",
     old = "      feature_id = unique_defs[[d]]$id,",
     new = "      feature_id = unique_defs[[length(unique_defs) + 1L - d]]$id,",
-    filter = calc_filter, blocks = "LTB-0302"
+    filter = calc_filter, blocks = "LTB-0312"
   ),
   n15_sma_rowmeans = list(
     file = "R/features-engine.R",
@@ -113,7 +113,7 @@ mutations <- list(
     file = hf,
     old = "      max_sessions = policy$price_carry,\n      carry_allowed = !is.null(policy$price_carry),",
     new = "      max_sessions = 5L,\n      carry_allowed = TRUE,",
-    filter = "indicator-history-calculation|availability-features", blocks = "LTB-0300 LTB-0073"
+    filter = "indicator-history-calculation|availability-features", blocks = "LTB-0310 LTB-0073"
   ),
   n20_certify_per_instrument = list(
     file = hf,

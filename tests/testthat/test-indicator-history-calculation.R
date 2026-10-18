@@ -15,7 +15,7 @@ ws43_segment_oracle <- function(close, segments, fn) {
   out
 }
 
-testthat::test_that("[LTB-0300] bounded and history-dependent indicators compute over treated segments", {
+testthat::test_that("[LTB-0310] bounded and history-dependent indicators compute over treated segments", {
   testthat::skip_if_not_installed("TTR")
   close <- ws43_gap_close()
   carried_close <- c(10, 11, 12, 12, 14, 15, 16, 16, 16, 16, 16, 16, NA, 24, 25, 26, 27, 28)
@@ -229,7 +229,7 @@ testthat::test_that("[LTB-0300] bounded and history-dependent indicators compute
   )
 })
 
-testthat::test_that("[LTB-0301] input carry, calculation, readiness and output carry are separate planes", {
+testthat::test_that("[LTB-0311] input carry, calculation, readiness and output carry are separate planes", {
   close <- c(10, 11, NA, 13, NA, NA, 16, 17)
   default <- ws43_history_substrate(
     close,
@@ -318,7 +318,7 @@ testthat::test_that("[LTB-0301] input carry, calculation, readiness and output c
   testthat::expect_identical(no_output$output_carried, rep(FALSE, 8L))
 })
 
-testthat::test_that("[LTB-0303] features use the lifetime mask knowable at each pulse", {
+testthat::test_that("[LTB-0313] features use the lifetime mask knowable at each pulse", {
   testthat::skip_if_not_installed("TTR")
   axis <- ws43_history_axis(8L)
   # Sessions 4 and 5 are later learned (at session 7) to be lifetime
@@ -404,7 +404,7 @@ ws43_parity_lines <- function(messages) {
   sort(messages[startsWith(messages, "WS43|")], method = "radix")
 }
 
-testthat::test_that("[LTB-0302] feature bytes and failure classes match across run, sweep and workers", {
+testthat::test_that("[LTB-0312] feature bytes and failure classes match across run, sweep and workers", {
   testthat::skip_if_not_installed("TTR")
   snapshot <- ws43_parity_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -491,7 +491,7 @@ testthat::test_that("[LTB-0302] feature bytes and failure classes match across r
   }
 })
 
-testthat::test_that("[LTB-0304] a custom input_carry declaration excludes carried prices", {
+testthat::test_that("[LTB-0314] a custom input_carry declaration excludes carried prices", {
   # Cut 16 decision (13): a custom definition may declare itself a return or
   # volatility definition with input_carry = "excluded".
   ratio <- function(window) window$close[[2L]] / window$close[[1L]] - 1

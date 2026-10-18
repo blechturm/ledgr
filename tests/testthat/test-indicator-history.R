@@ -78,7 +78,7 @@ indicator_history_width <- function(row) {
 }
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0297] indicator history declarations are exact and refuse contradictions", {
+testthat::test_that("[LTB-0307] indicator history declarations are exact and refuse contradictions", {
   testthat::skip_if_not_installed("TTR")
   catalogue <- ledgr:::ledgr_indicator_history_catalogue()
   testthat::expect_identical(
@@ -240,7 +240,7 @@ testthat::test_that("[LTB-0297] indicator history declarations are exact and ref
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0298] catalogue rows are certified on hostile fixtures", {
+testthat::test_that("[LTB-0308] catalogue rows are certified on hostile fixtures", {
   testthat::skip_if_not_installed("TTR")
   catalogue <- ledgr:::ledgr_indicator_history_catalogue()
   fixtures <- list(
@@ -291,7 +291,7 @@ indicator_history_active <- function(indicator) {
 }
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0299] rule-4 feature identity binds every history declaration", {
+testthat::test_that("[LTB-0309] rule-4 feature identity binds every history declaration", {
   testthat::skip_if_not_installed("TTR")
   window_mean <- function(window) mean(window$close)
   series_mean <- function(bars, params) {

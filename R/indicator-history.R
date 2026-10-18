@@ -196,7 +196,7 @@ ledgr_indicator_apply_declarations <- function(indicator, declarations) {
 }
 
 # Package catalogue rows. The certification of every row is a registered
-# package test on fixed hostile fixtures (LTB-0297); no row carries a runtime
+# package test on fixed hostile fixtures (LTB-0308); no row carries a runtime
 # product tolerance. `input_carry = "excluded"` marks the return and
 # volatility families: definitions whose value depends on session-to-session
 # price changes or on price dispersion never consume policy-carried prices.

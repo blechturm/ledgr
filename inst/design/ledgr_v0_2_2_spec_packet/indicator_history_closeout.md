@@ -41,7 +41,7 @@ required fields, input-carry family and width formula. Built-ins and
 `ledgr_ind_ttr()` accepts `history_class`/`tolerance` for those unregistered
 forms only. Classes follow the reviewed H2 conformance census; the spike's
 Aroon width witness corrects TTR `aroon` to `n + 1` rows (it returns a
-partial-window value at row `n`). LTB-0298 certifies every row on smooth and
+partial-window value at row `n`). LTB-0308 certifies every row on smooth and
 1e6-to-1 level-shift fixtures: exact prefix invariance, bounded rows equal
 their `requires_bars` window within 1e-4 scaled, history-dependent rows show
 retained state above 1e-3. The recorded drift
@@ -62,7 +62,7 @@ feature-history rule version. Declaration provenance and labels are
 display-only. The stored availability config definition carries the same
 declarations. Dense fingerprints are unchanged except TTR aroon, whose
 width change decision (14) accepts (the LTB-0144 literals still hold).
-LTB-0299 pins the final rule-4 feature and config golden
+LTB-0309 pins the final rule-4 feature and config golden
 fixtures. Because `ledgr_feature_history_rule_version` is a `*_rule_version`
 binding, it joins the store-format fingerprint, so stores written before this
 commit refuse at open rather than resuming under changed feature semantics;
@@ -100,7 +100,7 @@ carried), then calculates every definition:
   the same order of work as the pre-cut scalar path.
 - Lifetime and terminal masks come from facts knowable at each pulse: a fact
   learned after the column it changes splits the calculation range at its
-  knowledge pulse, and earlier pulses keep their earlier answer (LTB-0303).
+  knowledge pulse, and earlier pulses keep their earlier answer (LTB-0313).
 - Optional output carry fills only a session whose own required input is
   unavailable, from the latest earlier valid output within the policy age.
 
@@ -151,7 +151,7 @@ field of `tickets.yml`.
   definition; a registered TTR row refuses a declaration, and a copy of a
   built-in or catalogue row that declares another family refuses at
   experiment validation and at calculation with
-  `ledgr_indicator_history_contradiction` (LTB-0304).
+  `ledgr_indicator_history_contradiction` (LTB-0314).
 - Decision (14): the TTR aroon width of `n + 1` applies in dense and
   availability modes. The dense aroon output (one more warm-up row) and
   fingerprint change is an accepted catalogue bug fix, not a dense
@@ -164,20 +164,56 @@ field of `tickets.yml`.
   required input is missing.
 
 Decision (13) is implemented in the commit that records these decisions.
-LCL-0297/LTB-0304 is the
+LCL-0306/LTB-0314 is the
 registered detector; its mutation results are in
 `dev/bench/v0_2_2_indicator_history/evidence/mutations_decision13.csv`.
+
+## Merge with Workstream 42 and renumbering
+
+`806897fc` merges `integrate/cut15-v0.2.2` (accepted Workstream 42) into this
+branch. Conflicts kept both sides: the runner and precompute now calculate
+from WS42's single data-start rule (`ledgr_history_calculation_start()`)
+through this workstream's `ledgr_history_compute_feature_series()`; this
+workstream's evidence reader is renamed `ledgr_history_feature_planes()`
+because WS42 owns `ledgr_history_feature_evidence()`; the Cut 16 decisions
+read (1) to (17) in order; the census was regenerated, not hand-merged.
+
+Store format: the integrated experiment-store schema is 122, and
+`ledgr_feature_history_rule_version` joins the store-format fingerprint
+beside WS42's bindings. There is one current format; a store written before
+either change refuses at open with the classed store-format condition, and no
+compatibility code is added. LTB-0259 lists the bindings (27); its oracle
+changed only by naming the new binding, for that reason.
+
+The renumbering commit moves this workstream's claims to LCL-0301..0306 and
+blocks to LTB-0307..0314 (relative order kept; LCL-0307..0320 and
+LTB-0315..0330 stay reserved for it). Three WS42 registered blocks changed
+their literals for the accepted v12 Section 5 reason (a bounded SMA consumes
+policy-carried closes), not to hide a product failure:
+
+- LTB-0297: `fast5$BBB` is `c(22, 23.5)` and `vec_fast` is
+  `c(14.5, 23.5, 34.5)` (BBB's carried session-3/4 close enters the SMA).
+- LTB-0299: the estimator-exclusion fixture now uses `ledgr_ind_returns(1)`,
+  which never consumes a carried price (v12 Section 5), so BBB stays excluded
+  from the estimator sample as the block intends; an SMA would now be
+  calculated from the carried close.
+- LTB-0300: `run6$fast` has AAA, BBB and CCC columns (BBB `c(23.5, 25.5)`,
+  CCC `c(34.5, 35)`), no exclusion reasons, and `bbb_fast$BBB` reads
+  session 4 before the two-session window (`used_before_window` TRUE).
+
+The full suite on the merged, renumbered tree passes 1,132 blocks with no
+failures and the one optional-package skip.
 
 ## Detecting evidence
 
 | Claim | Block | Boundary |
 |---|---|---|
-| LCL-0292 | LTB-0297, LTB-0298 | declarations, contradictions, admission primitive, catalogue certification |
-| LCL-0293 | LTB-0299 | rule-4 feature and config identity, golden fixtures |
-| LCL-0294 | LTB-0300, LTB-0303 | bounded and history-dependent calculation, gaps, carry, restart, readiness, families, inactive prints, late-known masks |
-| LCL-0295 | LTB-0301 | separate evidence planes, output carry |
-| LCL-0296 | LTB-0302 | run, sweep and two-worker byte parity and refusal class |
-| LCL-0297 | LTB-0304 | custom `input_carry` declaration, identity and catalogue refusal (decision 13) |
+| LCL-0301 | LTB-0307, LTB-0308 | declarations, contradictions, admission primitive, catalogue certification |
+| LCL-0302 | LTB-0309 | rule-4 feature and config identity, golden fixtures |
+| LCL-0303 | LTB-0310, LTB-0313 | bounded and history-dependent calculation, gaps, carry, restart, readiness, families, inactive prints, late-known masks |
+| LCL-0304 | LTB-0311 | separate evidence planes, output carry |
+| LCL-0305 | LTB-0312 | run, sweep and two-worker byte parity and refusal class |
+| LCL-0306 | LTB-0314 | custom `input_carry` declaration, identity and catalogue refusal (decision 13) |
 
 Registered blocks changed, each for the stated v12 reason (Sections 4-6
 unless noted):
@@ -218,51 +254,51 @@ and `mutations_ldg3066.csv` list every block that failed).
 
 | Mutation (LDG-3065) | Detector |
 |---|---|
-| Undeclared definitions default to bounded | LTB-0297 |
-| Strict-window/history-dependent contradiction accepted | LTB-0297 |
-| Admission tests all price fields | LTB-0297 |
-| Unregistered TTR argument resolves to the default row | LTB-0297 |
-| Tolerance accepted without a bounded `series_fn` pair | LTB-0297 |
-| Aroon width back to `n` | LTB-0298 |
-| TTR EMA catalogued bounded | LTB-0298 |
-| TTR SMA catalogued history-dependent | LTB-0298 |
-| Required fields, tolerance, input carry or class dropped from the active fingerprint (four mutations) | LTB-0299 |
-| Declaration provenance added to the active fingerprint | LTB-0299 |
-| A declaration dropped from the stored config definition | LTB-0299 |
+| Undeclared definitions default to bounded | LTB-0307 |
+| Strict-window/history-dependent contradiction accepted | LTB-0307 |
+| Admission tests all price fields | LTB-0307 |
+| Unregistered TTR argument resolves to the default row | LTB-0307 |
+| Tolerance accepted without a bounded `series_fn` pair | LTB-0307 |
+| Aroon width back to `n` | LTB-0308 |
+| TTR EMA catalogued bounded | LTB-0308 |
+| TTR SMA catalogued history-dependent | LTB-0308 |
+| Required fields, tolerance, input carry or class dropped from the active fingerprint (four mutations) | LTB-0309 |
+| Declaration provenance added to the active fingerprint | LTB-0309 |
+| A declaration dropped from the stored config definition | LTB-0309 |
 
 | Mutation (LDG-3066) | Detector |
 |---|---|
-| History-dependent rows use expected-session windows | LTB-0300 |
-| Bounded windows count inactive sessions | LTB-0300, LTB-0093 |
-| fn-only windows of `stable_after` rows | LTB-0300 |
-| Returns consume carried prices | LTB-0300, LTB-0142 |
-| Admission on all price fields | LTB-0300, LTB-0142 |
-| Segments joined across gaps | LTB-0300 |
-| Custom bounded parity check removed | LTB-0300, LTB-0302 |
-| Declared tolerance ignored | LTB-0300 |
-| History-dependent pair refuted | LTB-0300 |
-| Lifetime masks resolved at the final cutoff | LTB-0303 |
-| Lifetime mask ignored (inactive prints used) | LTB-0300, LTB-0093 |
-| Output carry eligible on not-ready sessions | LTB-0301 |
-| Only the first blocking field named | LTB-0301 |
-| Sweep payload entry paired with the wrong definition | LTB-0302 |
+| History-dependent rows use expected-session windows | LTB-0310 |
+| Bounded windows count inactive sessions | LTB-0310, LTB-0093 |
+| fn-only windows of `stable_after` rows | LTB-0310 |
+| Returns consume carried prices | LTB-0310, LTB-0142 |
+| Admission on all price fields | LTB-0310, LTB-0142 |
+| Segments joined across gaps | LTB-0310 |
+| Custom bounded parity check removed | LTB-0310, LTB-0312 |
+| Declared tolerance ignored | LTB-0310 |
+| History-dependent pair refuted | LTB-0310 |
+| Lifetime masks resolved at the final cutoff | LTB-0313 |
+| Lifetime mask ignored (inactive prints used) | LTB-0310, LTB-0093 |
+| Output carry eligible on not-ready sessions | LTB-0311 |
+| Only the first blocking field named | LTB-0311 |
+| Sweep payload entry paired with the wrong definition | LTB-0312 |
 | SMA via `rowMeans(embed())` | LTB-0142 |
 | Certification without identity match | LTB-0143 |
 | TTR called once per output | LTB-0276 |
 | Certified definition runs its own functions | LTB-0143, LTB-0276 |
-| History policy ignored | LTB-0300, LTB-0073 |
+| History policy ignored | LTB-0310, LTB-0073 |
 | Certification per instrument | LTB-0157 |
 | Duplicate segment pass | LTB-0153 |
 | History-dependent form refused at validation | LTB-0074 |
 
 LTB-0144's availability-engine literal also fails under every mutation of a
 hashed helper, as designed. Two first-round mutations showed weaker
-detectors than claimed: admitting on all price fields escaped LTB-0300
+detectors than claimed: admitting on all price fields escaped LTB-0310
 (default carry masked the high gap) and a certified built-in SMA running its
 own functions escaped LTB-0143 (the exact SMA series never calls them).
-LTB-0300 gained a no-carry SMA check and LTB-0143 a tampered returns
+LTB-0310 gained a no-carry SMA check and LTB-0143 a tampered returns
 definition; both mutations then fail. A multi-field blocking mutation fails
-LTB-0301 only, so LCL-0292 does not claim it.
+LTB-0311 only, so LCL-0301 does not claim it.
 
 ## Scale
 

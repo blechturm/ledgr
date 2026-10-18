@@ -93,11 +93,12 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   fast5 <- at5$fast
   testthat::expect_identical(names(fast5), c("ts_utc", "AAA", "BBB", "CCC"))
   testthat::expect_identical(fast5$AAA, c(13.5, 14.5))
-  testthat::expect_identical(fast5$BBB, c(NA_real_, NA_real_))
+  # V12 Section 5 (LDG-3066): SMA consumes BBB's carried session-3/4 close.
+  testthat::expect_identical(fast5$BBB, c(22, 23.5))
   testthat::expect_identical(fast5$CCC, c(33.5, 34.5))
   testthat::expect_identical(attr(fast5, "ledgr_history")$source$id, "sma_2")
   testthat::expect_identical(at5$scalar$feature, 14.5)
-  testthat::expect_identical(at5$scalar$vec_fast, c(14.5, NA_real_, 34.5))
+  testthat::expect_identical(at5$scalar$vec_fast, c(14.5, 23.5, 34.5))
   testthat::expect_identical(ledgr_history_matrix(at5$concrete), ledgr_history_matrix(fast5))
   testthat::expect_identical(unique(at5$concrete$source), "feature:sma_2")
   testthat::expect_error(
@@ -398,7 +399,11 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusion creates no execution intent", {
-  captured <- ws42_capture_run(reader = function(ctx) {
+  # A return feature never consumes BBB's carried close (v12 Section 5,
+  # LDG-3066), so BBB stays excluded from the estimator sample; an SMA would
+  # now be calculated from the carried price.
+  returns <- ledgr_feature_map(fast = ledgr_ind_returns(1L))
+  captured <- ws42_capture_run(fixture_args = list(features = returns), reader = function(ctx) {
     list(
       close = ledgr_history_frame(ctx, bar = "close", lookback = 3L),
       fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments"),
@@ -436,7 +441,7 @@ testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusi
   )
 
   # Estimation exclusion is not execution intent. BBB is held (5 shares) and
-  # dropped from the SMA estimator sample on sessions 3-5, yet its target
+  # dropped from the return estimator sample on sessions 3-5, yet its target
   # stays its current quantity, and the run equals one that never reads
   # history: one AAA fill of one share at session 4's open (14).
   decided <- new.env()
@@ -453,13 +458,15 @@ testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusi
     target
   }
   opening <- ledgr_opening(cash = 1000, positions = c(BBB = 5), cost_basis = c(BBB = 21))
-  with_history <- ws42_history_fixture(strategy = reads_history, opening = opening)
+  with_history <- ws42_history_fixture(
+    strategy = reads_history, opening = opening, features = returns
+  )
   on.exit(ledgr_snapshot_close(with_history$snapshot), add = TRUE)
   bt_history <- ledgr_run(with_history$exp, run_id = "reads_history")
   on.exit(close(bt_history), add = TRUE)
   without <- ledgr_experiment(
     with_history$snapshot, ignores_history, universe = ledgr_universe_members("u"),
-    features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
+    features = returns,
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = opening
   )
