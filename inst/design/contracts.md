@@ -1964,9 +1964,8 @@ and `AAA` a held nonmember, each holding 5:
 - Built-ins and catalogue rows are computed with the package constructor's own
   functions, so a definition that claims their identity cannot execute other
   code. A custom bounded definition that supplies `fn` and `series_fn` takes
-  its values from `series_fn` per segment and refuses with
-  `ledgr_indicator_gap_parity`, naming the definition, instrument and session,
-  where `fn` on its window disagrees beyond the declared tolerance. A
+  its values from `series_fn` per segment; the sampled causality checks under
+  [Feature Path](#contract-context-feature-path) refute it against `fn`. A
   history-dependent pair is not refuted.
 - Dense indicator fingerprints and feature-engine identity omit the
   availability declarations and remain unchanged; the availability
@@ -2011,11 +2010,32 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-feature-path"></a>
 ### Feature Path And Intent Constructors
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
-- Fn-only indicators remain supported. The fallback uses bounded
-  stable windows, not expanding full-history windows.
+- Fn-only indicators remain supported. `fn` receives exactly the last
+  `requires_bars` calculation rows ending at the current session (expected
+  sessions for a bounded definition), never an expanding full-history window.
+- Availability-aware feature preparation checks causality before it returns,
+  so a refusal precedes the fold or sweep candidates it prepares for and any
+  precompute payload.
+  Each concrete definition, including built-ins, catalogue rows and fn-only
+  definitions, is probed once on the instrument with the most calculated
+  cells, at no more than four fixed positions among its calculated cells with
+  later history in their calculation range (the first, the last and the two
+  interior thirds). The value recomputed on the history ending at a position
+  must equal the prepared value exactly, or preparation refuses with
+  `ledgr_feature_lookahead_detected`, naming the definition, instrument and
+  session. A custom bounded definition that supplies both `fn` and
+  `series_fn` is also refuted at the same positions: `fn` on its window must
+  equal the `series_fn` value on the full causal prefix exactly, or within a
+  declared nonzero tolerance that enters its fingerprint, or preparation
+  refuses with `ledgr_indicator_gap_parity`. History-dependent pairs are not
+  refuted, and built-ins and catalogue rows are certified by package tests,
+  not runtime refutation. The checks never recompute all prefixes: their cost
+  is a fixed number of recomputations of one instrument per definition.
+  Passing them does not prove a definition causal.
+- A durable `ledgr_run()` prepares features after it registers the run, so a
+  refused definition leaves that run recorded `FAILED` with no strategy call,
+  ledger event or equity row. Dense execution is frozen and runs no causality
+  check.
 - Feature computation follows one uncached production path. Explicit
   `ledgr_precomputed_features` payloads are validated against current feature
   identity before reuse; a mismatch refuses before candidate execution.
@@ -2507,9 +2527,6 @@ Accepted change pending:
 <a id="contract-documentation-indicators"></a>
 ### Indicator Teaching
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
 - Indicator concepts must have one installed teaching article, `indicators`,
   covering built-in indicators, TTR-backed indicators, feature IDs, and warmup
   `NA`. `ttr-indicators` must not remain as a parallel installed teaching
@@ -2533,6 +2550,12 @@ Accepted change pending:
 - Installed documentation must not expose stale retired article paths such as
   `ttr-indicators` after `indicators` is the single installed indicator
   article, unless the contract explicitly documents why both are needed.
+- Indicator teaching distinguishes bounded and history-dependent definitions,
+  teaches `stable_after` as first-valid rather than converged, and cites the
+  measured gap-recovery ranges as evidence instead of promising convergence.
+  It states that availability-aware preparation runs sampled causality and
+  `fn`/`series_fn` checks, that a passing check is not a proof of causality,
+  and that dense execution runs neither.
 
 <a id="contract-documentation-strategy-context"></a>
 ### Strategy Context Teaching

@@ -56,6 +56,15 @@
   rows, and prints inside a known-inactive lifetime interval no longer enter
   feature calculation.
 
+- Availability-aware feature preparation now checks every indicator for
+  look-ahead before any run, sweep candidate or precompute payload uses it:
+  at no more than four fixed sessions on one instrument, a value recomputed
+  from the history ending there must equal the prepared value, or
+  preparation refuses with `ledgr_feature_lookahead_detected`. A custom
+  bounded `fn`/`series_fn` pair is compared at the same sessions instead of
+  at every window. Both checks are samples with a fixed cost, not proofs of
+  causality, and dense execution runs neither.
+
 - Snapshot hash rule 4 and experiment-store schema 121 add the causal civil
   time representation. Older snapshots, stores and identity-rule artifacts
   refuse; no migration or compatibility reader is provided before CRAN.

@@ -94,8 +94,8 @@
 "R/history-substrate.R",95,"ledgr_history_substrate_is","read_branch_or_equality","identical(x$substrate_version, ledgr_history_substrate_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/indicator-adapters.R",179,"ledgr_adapter_csv","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/indicator-history.R",8,"ledgr_feature_history_rule_version","binding","ledgr_feature_history_rule_version <- 1L",TRUE,"write_site:ledgr_active_feature_fingerprint;ledgr_feature_engine_version",FALSE,TRUE,TRUE,"",FALSE,FALSE
-"R/indicator.R",294,"ledgr_indicator_capture_overrides","read_branch_or_equality","identical(route, list(type = ""csv_data_hash_v1"", fn_capture = ""values""))",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
-"R/indicator.R",296,"ledgr_indicator_capture_overrides","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/indicator.R",305,"ledgr_indicator_capture_overrides","read_branch_or_equality","identical(route, list(type = ""csv_data_hash_v1"", fn_capture = ""values""))",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/indicator.R",307,"ledgr_indicator_capture_overrides","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/metric-context.R",352,"ledgr_metric_context_version","binding","ledgr_metric_context_version <- function() 1L",FALSE,"none",FALSE,FALSE,FALSE,"",FALSE,FALSE
 "R/metric-context.R",443,"ledgr_validate_metric_context_object","read_branch_or_equality","identical(x$metric_context_version, ledgr_metric_context_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/metric-context.R",542,"ledgr_metric_context_from_record","read_branch_or_equality","identical(version, ledgr_metric_context_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
@@ -137,7 +137,7 @@
 "R/sweep-retention.R",902,"ledgr_return_panel_hash","convention_string","ledgr_return_panel_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep.R",2674,"ledgr_sweep_provenance","convention_string","ledgr_provenance_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep.R",2682,"ledgr_sweep_provenance","convention_string","ledgr_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/sweep.R",2848,"ledgr_sweep_resolved_from_precomputed","read_branch_or_equality","""alias_map_version"" %in% names(row)",TRUE,"comparison",FALSE,FALSE,FALSE,"%in%",FALSE,FALSE
+"R/sweep.R",2830,"ledgr_sweep_resolved_from_precomputed","read_branch_or_equality","""alias_map_version"" %in% names(row)",TRUE,"comparison",FALSE,FALSE,FALSE,"%in%",FALSE,FALSE
 "R/sweep.R",461,"ledgr_sweep_impl","convention_string","ledgr_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep.R",648,"ledgr_candidate_reproduction_key","convention_string","ledgr_candidate_reproduction_key_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/validation-dsr.R",232,"ledgr_dsr","convention_string","ledgr_dsr_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE

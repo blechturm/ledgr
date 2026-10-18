@@ -50,20 +50,28 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
     .package = "ledgr"
   )
   # Certification constructs the canonical row once (one TTR validation
-  # call); each segment then costs exactly one call.
+  # call); each segment then costs exactly one call. The sampled causality
+  # check (LDG-3067, v12 Section 6) adds a fixed cost, not a per-window
+  # one: the probe recomputes each segment once and each sampled prefix
+  # whose final segment is new costs one call (dense: 1 + 4 sampled
+  # sessions 3, 5, 8 and 11; gapped: 2 + sessions 4, 5 and 10, while the
+  # session-11 prefix reuses the full second segment).
   ws43_feature_values(dense, ttr)
   dense_calls <- ttr_calls
   ttr_calls <- 0L
   ws43_feature_values(gapped, ttr)
-  testthat::expect_identical(c(dense_calls, ttr_calls), c(2L, 3L))
+  testthat::expect_identical(c(dense_calls, ttr_calls), c(2L + 5L, 3L + 5L))
   # The outputs of one multi-output call share one TTR call per segment;
-  # each certification still validates its own constructor once.
+  # each certification still validates its own constructor once. The
+  # causality probe shares its calls across the outputs too: 2 for its
+  # segments and 1 for the only new sampled prefix (session 5; sessions 6
+  # and 11 end where the full segments end).
   macd <- ledgr:::ledgr_indicator_bundle_indicators(ledgr_ind_ttr_outputs(
     "MACD", input = "close", nFast = 2L, nSlow = 3L, nSig = 2L
   ))
   ttr_calls <- 0L
   shared <- ledgr:::ledgr_history_compute_feature_series(gapped, macd)
-  testthat::expect_identical(ttr_calls, 3L + 2L)
+  testthat::expect_identical(ttr_calls, 3L + 2L + 3L)
   for (output in seq_along(macd)) {
     testthat::expect_identical(
       as.numeric(shared[[output]][1L, ]),
@@ -175,7 +183,7 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
     )
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(TRUE),
-      "4b6e6d15c756bec54846cb22e92c0ca2b35730a19f32d0d0cdab0b2b2ceb0686"
+      "136610b32abf7e1204ea75590285f3c1d0617867348fd7c5c7238fcfc364acf0"
     )
   }
 })

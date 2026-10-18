@@ -264,7 +264,6 @@ ledgr_history_feature_refuse_parity <- function(def, inputs, row, fn_value, seri
 # per segment.
 ledgr_history_feature_segment <- function(cert, inputs, fields, rows, cache = NULL) {
   def <- cert$def
-  declarations <- cert$declarations
   stable_after <- as.integer(def$stable_after)
   width <- as.integer(def$requires_bars)
   params <- def$params %||% list()
@@ -290,35 +289,12 @@ ledgr_history_feature_segment <- function(cert, inputs, fields, rows, cache = NU
     ))
   }
   if (is.function(def$series_fn)) {
-    value <- ledgr_normalize_feature_series_output(
+    return(ledgr_normalize_feature_series_output(
       ledgr_call_feature_series_fn(def$series_fn, frame, params),
       m,
       stable_after,
       def$id
-    )
-    if (identical(cert$certification, "custom") &&
-        identical(declarations$history_class, "bounded")) {
-      tolerance <- declarations$tolerance
-      for (k in which(ready)) {
-        scalar <- ledgr_normalize_feature_scalar_output(
-          ledgr_call_feature_fn(def$fn, ledgr_history_feature_window(frame, seq.int(k - width + 1L, k)), params),
-          def$id
-        )
-        agree <- if (is.na(scalar)) {
-          is.na(value[[k]])
-        } else if (tolerance > 0) {
-          abs(scalar - value[[k]]) / max(1, abs(value[[k]])) <= tolerance
-        } else {
-          identical(scalar, value[[k]])
-        }
-        if (!isTRUE(agree)) {
-          ledgr_history_feature_refuse_parity(
-            def, inputs, rows[[k]], scalar, value[[k]], tolerance
-          )
-        }
-      }
-    }
-    return(value)
+    ))
   }
   value <- rep(NA_real_, m)
   for (k in which(ready)) {
@@ -341,8 +317,8 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
   available_all <- rep(FALSE, n)
   blocking <- rep("", n)
   if (calc_from > n) {
-    return(list(value = value, ready = ready, available = available_all, blocking_field = blocking,
-                calculated = rep(FALSE, n), output_carry = NULL))
+    return(list(value = value, raw = value, ready = ready, available = available_all,
+                blocking_field = blocking, calculated = rep(FALSE, n), output_carry = NULL))
   }
   calc <- seq.int(calc_from, n)
   fields <- if (identical(declarations$input_carry, "excluded")) inputs$raw else inputs$treated
@@ -370,6 +346,7 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
     value[segment[take]] <- segment_value[take]
   }
   calculated <- ready & is.finite(value)
+  raw_value <- value
   carried_output <- NULL
   if (!is.null(output_carry)) {
     carried_output <- ledgr_history_output_carry(
@@ -385,6 +362,7 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
   }
   list(
     value = value,
+    raw = raw_value,
     ready = ready,
     available = available_all,
     blocking_field = blocking,
@@ -450,6 +428,9 @@ ledgr_history_compute_feature_series <- function(substrate,
   bounds <- ledgr_history_feature_bounds(substrate, calculation_start, calculation_end)
   if (length(definitions) == 0L || bounds$from > bounds$to) return(out)
   output_carry <- substrate$history_policy$output_carry
+  # Calculated (not carried) cells per definition and instrument choose each
+  # definition's causality probe.
+  calculated_count <- matrix(0L, nrow = length(certified), ncol = n_inst)
   for (i in seq_len(n_inst)) {
     ranges <- ledgr_history_feature_ranges(substrate, i, bounds$from, bounds$to)
     for (r in seq_along(ranges$start)) {
@@ -464,10 +445,165 @@ ledgr_history_compute_feature_series <- function(substrate,
           certified[[d]], inputs, bounds$from, output_carry, cache
         )
         out[[d]][i, keep] <- calculated$value[keep]
+        calculated_count[d, i] <- calculated_count[d, i] + sum(calculated$calculated[keep])
       }
     }
   }
+  ledgr_history_feature_causality(substrate, certified, bounds, calculated_count, out)
   out
+}
+
+# Sampled causality checks (v12 Section 6). They run inside preparation, so
+# a refusal precedes every candidate, fold and precompute payload. Each
+# concrete definition is probed once, on the instrument with the most
+# calculated cells, at no more than four fixed positions: the first, the
+# last and the two interior thirds of its calculated cells that have later
+# history in their calculation range. A position is recomputed on the
+# history ending there and must reproduce the prepared value exactly, so a
+# definition that reads later rows, or carries state between calls, refuses.
+# A custom bounded definition with both `fn` and `series_fn` is also
+# refuted at the same positions: `fn` on its handed window must equal the
+# `series_fn` value on the full causal prefix within the declared tolerance.
+# Built-ins and catalogue rows are certified by package tests and are not
+# refuted at runtime. The cost is a fixed number of recomputations of one
+# instrument per definition, linear in history length, never all prefixes.
+ledgr_history_feature_causality_positions <- function(n) {
+  if (n < 1L) return(integer())
+  unique(c(1L, as.integer(ceiling(n * c(1, 2) / 3)), n))
+}
+
+ledgr_history_feature_inputs_prefix <- function(inputs, k) {
+  rows <- seq_len(k)
+  take <- function(x) lapply(x, `[`, rows)
+  list(
+    instrument_id = inputs$instrument_id,
+    axis = inputs$axis[rows],
+    expected = inputs$expected[rows],
+    terminal = inputs$terminal[rows],
+    raw = take(inputs$raw),
+    treated = take(inputs$treated),
+    carried = take(inputs$carried)
+  )
+}
+
+ledgr_history_feature_causality <- function(substrate, certified, bounds, calculated_count, values) {
+  probes <- list()
+  for (d in seq_along(certified)) {
+    counts <- calculated_count[d, ]
+    if (!any(counts > 0L)) next
+    i <- which.max(counts)
+    key <- as.character(i)
+    if (is.null(probes[[key]])) {
+      ranges <- ledgr_history_feature_ranges(substrate, i, bounds$from, bounds$to)
+      probes[[key]] <- lapply(seq_along(ranges$start), function(r) {
+        range_end <- ranges$end[[r]]
+        list(
+          start = ranges$start[[r]],
+          end = range_end,
+          inputs = ledgr_history_feature_inputs(
+            substrate, i, range_end, substrate$axis[[range_end]]
+          ),
+          cache = new.env(hash = TRUE, parent = emptyenv())
+        )
+      })
+    }
+    ledgr_history_feature_check_definition(
+      certified[[d]], probes[[key]], bounds$from, values[[d]][i, ]
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_history_feature_check_definition <- function(cert, probe, calc_from, prepared) {
+  def <- cert$def
+  full <- lapply(probe, function(p) {
+    ledgr_history_feature_calculate(cert, p$inputs, calc_from, NULL, p$cache)
+  })
+  column <- integer()
+  range <- integer()
+  for (r in seq_along(probe)) {
+    keep <- seq.int(probe[[r]]$start, probe[[r]]$end)
+    keep <- keep[full[[r]]$calculated[keep] & keep < probe[[r]]$end]
+    column <- c(column, keep)
+    range <- c(range, rep(r, length(keep)))
+  }
+  sampled <- ledgr_history_feature_causality_positions(length(column))
+  for (s in sampled) {
+    k <- column[[s]]
+    r <- range[[s]]
+    prefix <- ledgr_history_feature_calculate(
+      cert,
+      ledgr_history_feature_inputs_prefix(probe[[r]]$inputs, k),
+      calc_from,
+      NULL,
+      probe[[r]]$cache
+    )
+    if (!identical(prefix$raw[[k]], prepared[[k]])) {
+      ledgr_history_feature_refuse_lookahead(
+        def, probe[[r]]$inputs, k, prepared[[k]], prefix$raw[[k]]
+      )
+    }
+  }
+  declarations <- cert$declarations
+  if (!identical(cert$certification, "custom") ||
+      !identical(declarations$history_class, "bounded") ||
+      !is.function(def$series_fn) || !is.function(def$fn)) {
+    return(invisible(TRUE))
+  }
+  width <- as.integer(def$requires_bars)
+  tolerance <- declarations$tolerance
+  for (s in sampled) {
+    k <- column[[s]]
+    r <- range[[s]]
+    inputs <- probe[[r]]$inputs
+    fields <- if (identical(declarations$input_carry, "excluded")) inputs$raw else inputs$treated
+    calc <- seq.int(calc_from, length(inputs$axis))
+    rows <- calc[inputs$expected[calc]]
+    p <- match(k, rows)
+    scalar <- ledgr_normalize_feature_scalar_output(
+      ledgr_call_feature_fn(
+        def$fn,
+        ledgr_history_feature_frame(inputs, fields, rows[seq.int(p - width + 1L, p)]),
+        def$params %||% list()
+      ),
+      def$id
+    )
+    series <- prepared[[k]]
+    agree <- if (is.na(scalar)) {
+      FALSE
+    } else if (tolerance > 0) {
+      abs(scalar - series) / max(1, abs(series)) <= tolerance
+    } else {
+      identical(scalar, series)
+    }
+    if (!isTRUE(agree)) {
+      ledgr_history_feature_refuse_parity(def, inputs, k, scalar, series, tolerance)
+    }
+  }
+  invisible(TRUE)
+}
+
+ledgr_history_feature_refuse_lookahead <- function(def, inputs, row, full_value, prefix_value) {
+  rlang::abort(
+    sprintf(
+      paste0(
+        "Indicator '%s' is not prefix invariant for instrument '%s' at %s: ",
+        "its value on the full history (%s) differs from its value on the ",
+        "history ending there (%s)."
+      ),
+      def$id,
+      inputs$instrument_id,
+      format(inputs$axis[[row]], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      format(full_value, digits = 17),
+      format(prefix_value, digits = 17)
+    ),
+    class = c("ledgr_feature_lookahead_detected", "ledgr_invalid_feature_output"),
+    feature_id = def$id,
+    instrument_id = inputs$instrument_id,
+    ts_utc = inputs$axis[[row]],
+    full_value = full_value,
+    prefix_value = prefix_value
+  )
 }
 
 # Aligned evidence for one instrument and definition at a cutoff. It shares

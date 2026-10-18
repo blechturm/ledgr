@@ -50,6 +50,17 @@
 #'   or restart; it does not promise convergence. The declarations enter the
 #'   availability-aware feature identity; dense execution ignores them.
 #'
+#'   Availability-aware preparation also checks every definition for
+#'   look-ahead before any run, sweep candidate or precompute payload uses
+#'   it: on the instrument with the most calculated values, at no more than
+#'   four fixed sessions, the value recomputed from the history ending there
+#'   must equal the prepared value, or preparation refuses with
+#'   `ledgr_feature_lookahead_detected`. A custom bounded definition that
+#'   supplies both `fn` and `series_fn` must also agree, at the same
+#'   sessions, between `fn` on its window and `series_fn` within `tolerance`,
+#'   or preparation refuses with `ledgr_indicator_gap_parity`. Both checks
+#'   are samples, not proofs of causality.
+#'
 #' @return A `ledgr_indicator` object.
 #' @examples
 #' last_close <- ledgr_indicator(

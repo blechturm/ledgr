@@ -1,4 +1,4 @@
-# Workstream 43 indicator history evidence (phase 1: LDG-3065, LDG-3066)
+# Workstream 43 indicator history evidence (LDG-3065 to LDG-3067)
 
 Synthetic, vendor-neutral records for
 `inst/design/ledgr_v0_2_2_spec_packet/indicator_history_closeout.md`. No
@@ -27,6 +27,15 @@ x86-64, 24 logical cores, 64 GB RAM.
   the default policy and fourteen definitions including TTR multi-output and
   history-dependent rows; `ttr_sma` times a single TTR SMA(20). `max_mb` is
   the R heap peak reported by `gc()` over substrate plus preparation.
+- `evidence/mutations_ldg3067.csv`: the LDG-3067 causality-check mutations
+  (`scripts/mut3067.R`). `scripts/mutate.R <spec.R> <name|all> <out.csv>
+  [worktree]` runs any of the specifications; a mutation may carry several
+  edits. Set `LEDGR_MUTATION_SCRATCH` to choose where source copies go.
+- `evidence/checker_scale.csv`: one feature preparation with the sampled
+  causality check timed inside it (`scripts/checker_scale.R <tree> <label>
+  <config> <instruments> <sessions> <out.csv>`, the `realistic` panel and
+  fourteen definitions of `scale.R`), for one instrument over 252 to 16,128
+  sessions and for 1,166 instruments over 252 to 7,213 sessions.
 - `evidence/return1_run.csv`: a public availability run of `return_1`
   (`scripts/return1_run.R`), with the number of per-window `fn` calls.
 

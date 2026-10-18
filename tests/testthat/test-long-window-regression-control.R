@@ -1,20 +1,39 @@
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
+  # Preparation work is counted apart from the sampled causality check
+  # (LDG-3067), whose recomputations run inside the same preparation.
   original <- ledgr:::ledgr_history_feature_segment
+  original_check <- ledgr:::ledgr_history_feature_causality
   work <- 0L
   calls <- 0L
+  check_work <- 0L
+  check_calls <- 0L
+  checking <- FALSE
   testthat::local_mocked_bindings(
     ledgr_history_feature_segment = function(cert, inputs, fields, rows, ...) {
-      work <<- work + length(rows)
-      calls <<- calls + 1L
+      if (checking) {
+        check_work <<- check_work + length(rows)
+        check_calls <<- check_calls + 1L
+      } else {
+        work <<- work + length(rows)
+        calls <<- calls + 1L
+      }
       original(cert, inputs, fields, rows, ...)
+    },
+    ledgr_history_feature_causality = function(...) {
+      checking <<- TRUE
+      on.exit(checking <<- FALSE)
+      original_check(...)
     },
     .package = "ledgr"
   )
 
+  checks <- list()
   observed <- lapply(c(40L, 80L), function(days) {
     work <<- 0L
     calls <<- 0L
+    check_work <<- 0L
+    check_calls <<- 0L
     snapshot <- availability_runtime_fixture(days = days)
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     experiment <- ledgr_experiment(
@@ -28,6 +47,7 @@ testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
     on.exit(close(bt), add = TRUE)
     testthat::expect_identical(ledgr_run_info(snapshot, bt$run_id)$status,
                                "DONE")
+    checks[[length(checks) + 1L]] <<- c(work = check_work, calls = check_calls)
     c(work = work, calls = calls)
   })
 
@@ -37,6 +57,13 @@ testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
     unname(observed[[2L]][["work"]] / observed[[1L]][["work"]]),
     2
   )
+  # The check adds a fixed number of segment calls per definition (its probe
+  # and four sampled prefixes) and work bounded by five passes of the probe's
+  # history, never one pass per prefix.
+  for (i in seq_along(checks)) {
+    testthat::expect_identical(unname(checks[[i]][["calls"]]), 2L * 5L)
+    testthat::expect_lte(unname(checks[[i]][["work"]]), 2L * 5L * c(40L, 80L)[[i]])
+  }
 })
 
 testthat::test_that("[LTB-0154] release-only regression cases stay explicit", {

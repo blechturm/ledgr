@@ -668,13 +668,14 @@ peer_ledgr_ephemeral_experiment_setup <- function(prep, features) {
     feature_defs <- ledgr:::ledgr_flatten_feature_list(features, context = "`features`")
     active_alias_map <- NULL
   }
-  feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(
-    feature_defs,
-    prep$bars_by_id,
-    prep$universe
+  # Production dense precompute payload (the test-only matrix builder was
+  # deleted by LDG-3067).
+  payload <- ledgr:::ledgr_precompute_payload(
+    ledgr:::ledgr_precompute_unique_feature_defs(list(list(feature_defs = feature_defs))),
+    prep$bars_by_id
   )
-  runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(
-    feature_matrix = feature_matrix,
+  runtime_projection <- ledgr:::ledgr_projection_from_payload(
+    payload = payload,
     universe = prep$universe,
     pulses_posix = prep$pulses_posix,
     feature_engine_version = ledgr:::ledgr_feature_engine_version(),

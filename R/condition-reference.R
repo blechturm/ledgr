@@ -141,7 +141,11 @@
 #'
 #' `ledgr_indicator_gap_parity` is raised when a custom bounded indicator's
 #' `fn` on its window disagrees with its `series_fn` value beyond the declared
-#' tolerance; its fields name the feature, instrument and session.
+#' tolerance at a sampled causality position; its fields name the feature,
+#' instrument and session. `ledgr_feature_lookahead_detected` is raised when a
+#' feature recomputed from the history ending at a sampled session differs
+#' from its prepared value; its fields name the feature, instrument and
+#' session and carry both values.
 #'
 #' `ledgr_invalid_indicator_declaration` (parent `ledgr_invalid_args`) is
 #' raised for an invalid indicator history class, required-field set or

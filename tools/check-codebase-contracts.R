@@ -1407,9 +1407,6 @@ test_seam_contracts <- c(
   ),
   ledgr_history_feature_planes = paste(
     "Observe per-instrument feature evidence planes from the production calculation before public history results consume them."
-  ),
-  ledgr_sweep_compute_feature_matrix = paste(
-    "Exercise sweep feature-matrix preparation independently of execution."
   )
 )
 

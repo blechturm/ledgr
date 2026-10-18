@@ -1,12 +1,17 @@
 # Cut 16 Workstream 43 closeout: indicator history semantics
 
-Implementation commits: `0602a93d` (LDG-3065) and `73eec63e` (LDG-3066).
+Implementation commits: `0602a93d` (LDG-3065), `73eec63e` (LDG-3066),
+`6bed3dff` (decisions 13-15), merge `806897fc`, renumbering `22324f3f` and
+the LDG-3067 commit that records this section.
 
-Status: phase 1 of the workstream. LDG-3065 and LDG-3066 are implemented,
-evidenced and green on the full suite. LDG-3067 stays open: it depends on
-Workstream 42's LDG-3063 (both touch production precompute) and resumes after
-the coordinator merges the reviewed Workstream 42 branch. The independent
-Type 1 close review covers the whole workstream after LDG-3067.
+Role: record; Workstream 43 implementation evidence.
+Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
+behavior.
+Status: under review. LDG-3065 and LDG-3066 are complete. LDG-3067 is
+implemented, evidenced and green on the full suite and is `review_pending`
+on one open question (NEEDS_TYPE_2, below): a durable `ledgr_run()` refuses
+a look-ahead definition only after it has registered the run. Workstream 43
+is `review_pending` for its independent Type 1 close review.
 
 ## Necessity and scope
 
@@ -15,10 +20,10 @@ to be bounded or history-dependent, to declare the fields it needs and to be
 calculated over the shared treated substrate from Workstream 41. Before this
 work the availability path accepted only a narrow strict-window set, refused
 EMA, RSI and every other TTR form, calculated windows of `stable_after` rows
-on raw bars and ignored the history policy. This phase adds the declarations,
-their identity and the calculation. It does not add sampled causality checks,
-delete the test-only sweep helper or rewrite indicator teaching (LDG-3067),
-and it changes no dense behavior.
+on raw bars and ignored the history policy. LDG-3065 and LDG-3066 add the
+declarations, their identity and the calculation; LDG-3067 adds the sampled
+causality checks, deletes the test-only sweep helper and updates indicator
+teaching. Dense behavior is unchanged.
 
 ## LDG-3065: declarations, catalogue and identity
 
@@ -131,6 +136,93 @@ returned `NULL` and the run took the per-window scalar path while sweeps used
 the vector path. Certification now recognises the stored built-in
 fingerprint and computes the canonical constructor's functions. Measured below under Scale.
 
+## LDG-3067: sampled causality and production-precompute fixtures
+
+`ledgr_history_compute_feature_series()` ends with
+`ledgr_history_feature_causality()`, so every availability preparation (run,
+sweep, explicit precompute and experiment-derived pulse inspection) checks
+before it returns. For each concrete definition, built-ins and catalogue rows
+included, the probe is the instrument with the most calculated cells (counted
+during the main pass, no extra scan). Its calculated cells that have later
+history in their knowledge range are the candidates; the sample is their
+first, last and two interior thirds (`ceiling(n/3)`, `ceiling(2n/3)`), so at
+most four positions. At each position the definition is recomputed from the
+probe's treated inputs truncated at that session (same cutoff, so only the
+definition's own dependence is tested) and must equal the prepared value
+exactly; otherwise `ledgr_feature_lookahead_detected` names the definition,
+instrument and session and carries both values. The reference is the
+prepared value, not a second full computation, so a definition that carries
+state between calls is caught as well as one that reads later rows.
+
+For a custom bounded definition with both `fn` and `series_fn` the same
+positions refute the pair: `fn` on its exact `requires_bars` window must
+equal the prepared `series_fn` value, exactly unless a fingerprinted nonzero
+tolerance is declared, or `ledgr_indicator_gap_parity` names the definition,
+instrument and session. History-dependent pairs and built-in or catalogue
+rows are not refuted. This replaces LDG-3066's interim every-window loop in
+`ledgr_history_feature_segment()`. The checker's cost is one recomputation of
+the probe for structure plus at most four truncated recomputations per
+definition; catalogue TTR rows reuse the probe's segment cache, so a
+truncated prefix whose last segment is unchanged costs no TTR call.
+
+`ledgr_sweep_compute_feature_matrix()` is deleted from `R/sweep.R` and from
+the census seam list. The three direct-fold fixtures in `test-sweep.R`
+(prebuilt pulse views; mutation isolation across pulses; across candidate
+folds) now take their runtime projection from `ledgr_precompute_features()`
+on a sealed snapshot of the same bars, asserting that the payload's feature
+union carries the fixtures' fingerprints; every prebuilt-view and isolation
+assertion is unchanged, and the cross-candidate block additionally checks
+the observed values against the fixture closes. The fixtures are dense folds
+(prebuilt views are the dense fast context), so they use the dense branch of
+the production precompute, which after the merge sits beside WS42's
+availability branch in the same function. The dev peer benchmark now builds
+its projection with the production `ledgr_precompute_payload()`. The
+historical sweep-profiling spike under `dev/spikes/` still names the deleted
+helper and is left as dated evidence.
+
+Contracts: Feature Path And Intent Constructors and Indicator Teaching are
+present tense and lose their pending links; Availability-Aware Strict
+Features points to Feature Path for the refutation. Teaching: `indicators`
+states first-valid versus convergence with the conformance spike's measured
+one-gap recovery ranges (with their TTR arguments) and the sampled check;
+`custom-indicators` describes both checks and their limits; `leakage` adds
+the check to its enforcement table; `?ledgr_indicator`, the condition
+reference and NEWS state the same rules.
+
+Registered blocks changed, each for the stated reason that the sampled
+causality check adds a fixed, history-independent number of calls:
+
+- LTB-0276 (LCL-0274): TTR call counts become per segment plus the probe's
+  calls (dense `2 + 5`, gapped `3 + 5`, MACD bundle `3 + 2 + 3`, each
+  derived in the test comment); the per-window claim is unchanged.
+- LTB-0143 (LCL-0143): segment calls become `7 * (1 + 1 + 4)`: one
+  preparation segment, one probe segment and four sampled prefixes per
+  definition.
+- LTB-0153 (LCL-0153): preparation segment work stays pinned exactly
+  (80 and 160 rows, two calls, ratio 2); the checker's work is counted
+  apart and bounded: exactly ten segment calls (two definitions times probe
+  plus four prefixes) and at most five passes of the history.
+- LTB-0144 and LTB-0276: the availability feature-engine literal changes
+  because the hashed `compute`, `calculate` and `segment` helpers changed;
+  dense literals are unchanged. The checker helpers are not hashed: they
+  refuse but never change a value.
+
+NEEDS_TYPE_2 (open): the acceptance says a future-looking definition
+"refuses before run, sweep or precompute side effects". Sweep and precompute
+refuse with nothing written. A durable `ledgr_run()` registers its run and
+provenance rows before it verifies the snapshot and prepares features, so the
+refusal leaves the run recorded `FAILED` (one `runs` row, one
+`run_provenance` row) with no strategy call, ledger event or equity row;
+this matches every other data-dependent run refusal (missing bars, snapshot
+checks). Removing that row means preparing the substrate and features before
+registration, which reorders the run prelude; adding a pre-registration
+availability check instead would be a new execution-mode branch in run code,
+which AGENTS.md forbids. The maintainer chooses: (a) accept the recorded
+`FAILED` run as the run-path boundary (the contract currently states this);
+(b) reorder the run prelude; or (c) another rule. LTB-0315 asserts the
+strategy, ledger and equity boundary and deliberately does not assert the
+runs row either way.
+
 ## Maintainer decisions (Cut 16 decisions 13 to 15)
 
 The phase-1 handoff raised four readings as NEEDS_TYPE_2. The maintainer
@@ -214,6 +306,9 @@ failures and the one optional-package skip.
 | LCL-0304 | LTB-0311 | separate evidence planes, output carry |
 | LCL-0305 | LTB-0312 | run, sweep and two-worker byte parity and refusal class |
 | LCL-0306 | LTB-0314 | custom `input_carry` declaration, identity and catalogue refusal (decision 13) |
+| LCL-0307 | LTB-0315 | sampled prefix invariance for `series_fn` and fn-only definitions, exact fn windows, refusal before run, sweep and precompute side effects (LDG-3067) |
+| LCL-0308 | LTB-0316 | fixed four-position sample, history-length independent, catalogue rows probed (LDG-3067) |
+| LCL-0309 | LTB-0317 | custom bounded pair refutation, tolerance, no history-dependent or catalogue refutation (LDG-3067) |
 
 Registered blocks changed, each for the stated v12 reason (Sections 4-6
 unless noted):
@@ -248,9 +343,23 @@ unless noted):
 Every claimed detector was mutation-checked on a source copy (tracked plus
 new files, so worker daemons load the mutated source).
 
-All 14 LDG-3065 and 22 LDG-3066 mutations fail their named registered
-blocks (`dev/bench/v0_2_2_indicator_history/evidence/mutations_ldg3065.csv`
-and `mutations_ldg3066.csv` list every block that failed).
+All 14 LDG-3065, 22 LDG-3066 and 10 LDG-3067 mutations fail their named
+registered blocks (`dev/bench/v0_2_2_indicator_history/evidence/`
+`mutations_ldg3065.csv`, `mutations_ldg3066.csv` and `mutations_ldg3067.csv`
+list every block that failed; `scripts/mutate.R` runs a specification).
+
+| Mutation (LDG-3067) | Detector (other blocks that also failed) |
+|---|---|
+| Causality call removed from preparation | LTB-0315, LTB-0316, LTB-0317 |
+| Check moved to the per-instrument evidence reader (after artifacts) | LTB-0315 (LTB-0316, LTB-0317) |
+| Prefix comparison weakened to missingness only | LTB-0315 |
+| Every candidate position recomputed (all prefixes) | LTB-0316 (LTB-0315) |
+| Custom pair refutation removed | LTB-0317, LTB-0310, LTB-0312 |
+| History-dependent pairs refuted | LTB-0317 (LTB-0315, LTB-0316) |
+| Built-in and catalogue rows refuted at runtime | LTB-0317 (LTB-0316) |
+| Declared tolerance ignored | LTB-0317 |
+| fn-only window one row wider than `requires_bars` | LTB-0315 |
+| fn handed the next (future) row | LTB-0315 (LTB-0316) |
 
 | Mutation (LDG-3065) | Detector |
 |---|---|
@@ -357,6 +466,37 @@ is unchanged within noise (2.97 versus 3.16 and 4.96 versus 5.01 seconds,
 measured while other test processes ran), because one instrument's scalar
 calls are a small share of a public run.
 
+### LDG-3067 checker growth
+
+`scripts/checker_scale.R` times `ledgr_history_feature_causality()` inside
+one preparation of the `realistic` panel and fourteen definitions
+(`evidence/checker_scale.csv`; single runs on a shared host, so timings are
+disclosure only).
+
+| Instruments x sessions | Preparation seconds | Checker seconds | Checker share | Prefix recomputations |
+|---|---:|---:|---:|---:|
+| 1 x 252 | 0.70 | 0.08 | 11.4% | 56 |
+| 1 x 1,008 | 0.72 | 0.11 | 15.3% | 56 |
+| 1 x 4,032 | 0.91 | 0.24 | 26.4% | 56 |
+| 1 x 16,128 | 1.65 | 0.75 | 45.5% | 56 |
+| 1,166 x 252 | 9.39 | 0.04 | 0.4% | 56 |
+| 1,166 x 1,803 | 39.94 | 0.11 | 0.3% | 56 |
+| 1,166 x 7,213 | 152.58 | 0.34 | 0.2% | 56 |
+
+The number of recomputations is fixed at four per definition (56 for
+fourteen) on every shape, so the checker never grows with the number of
+prefixes. Its time grows with history length only through the length of
+each recomputed prefix: from 4,032 to 16,128 sessions on one instrument it
+rises 3.1 times for four times the history (linear, with fixed overhead at
+small sizes), and it does not grow with the instrument count because one
+probe instrument is used per definition. On one instrument the checker is a
+large share of a small preparation (its recomputations are about three
+prefix-weighted passes of that instrument); at the realistic 1,166-instrument
+shapes it is 0.2 to 0.4 percent. The 1,166 x 7,213 preparation (152.58
+seconds) is within the phase-1 measurement (157.85 seconds) for the same
+shape, and every one of the fourteen definitions, TTR multi-output rows
+included, passed the exact check on every shape.
+
 ## Seven-shape walk
 
 1. Values are written by index into preallocated instrument-by-axis matrices;
@@ -367,9 +507,12 @@ calls are a small share of a public run.
    definition per preparation (LTB-0157), not per instrument or pulse.
 3. Carry, admission and run detection are vector operations. The remaining
    per-element loops are stated: built-in SMA keeps one `mean()` per window
-   for bit parity (pre-existing), a custom `fn` is called once per ready
-   window because it is user code, and the interim custom-pair check calls
-   `fn` per ready window until LDG-3067 samples it.
+   for bit parity (pre-existing), and a custom `fn` is called once per ready
+   window because it is user code. LDG-3067 replaced the interim per-window
+   custom-pair loop with at most four `fn` calls per definition; the
+   checker's own loops run over definitions and at most four positions, and
+   the probe count is accumulated during the main pass rather than by a
+   second scan of the result matrices.
 4. No row-wise JSON or hashing: one TTR cache key per segment.
 5. Candidate-invariant work happens once: features are prepared once per
    sweep for the unique definitions, and multi-output TTR rows share one raw
@@ -384,23 +527,23 @@ reasons above; scaling is measured in the previous section.
 
 ## Routed, not fixed here
 
-- LDG-3067: sampled prefix invariance and window-versus-prefix refutation
-  replace the interim every-window custom-pair check; the Feature Path
-  contract still says the fn-only fallback uses "bounded stable windows"
-  (it now hands `requires_bars` rows); full indicator teaching. This phase
-  made only minimal factual edits to the indicators, custom-indicators,
-  ttr-indicators and missing-data articles so no text describes removed
-  behavior.
-- WS42 / LDG-3063 / LDG-3068: public history results may consume
-  `ledgr_history_feature_planes()`; experiment-derived pulse parity for
-  these features and the "supplies no mark" half of the inactive-print
-  acceptance are valuation-plane and integration evidence not touched here.
-  Explicit `ledgr_precompute_features()` still prepares availability
-  experiments through the dense helper (LDG-3063's file).
-- Merge note: the new store-format binding and LTB-0259 list will meet
-  LDG-3064's store-format change; the codebase census records one more
-  version finding of the same kind as the Workstream 40 history bindings
-  (the census tool's member list predates them).
+- LDG-3067 run-path boundary: NEEDS_TYPE_2 above (a refused durable run
+  stays recorded `FAILED`).
+- WS42's public frame feature evidence (`ledgr_history_frame()` on a
+  feature source) still reports the placeholder planes it had before this
+  workstream: it does not read `ledgr_history_feature_planes()`, so its
+  input-carry and output-carry evidence for a feature is not the evidence
+  this calculation produces (values are the prepared ones). Routed to
+  WS46 / LDG-3069 as an integration decision (eager evidence at preparation
+  versus lazy recomputation on read); not changed here because WS42 owns the
+  reader.
+- Dense execution is frozen: it runs neither causality check, and the
+  test-only all-prefix `ledgr_check_no_lookahead()` (LTB-0003) remains a
+  dense oracle seam only. Retiring it with the dense path is left to the
+  execution-core consolidation.
+- Merge note (resolved): explicit `ledgr_precompute_features()` now prepares
+  availability experiments through the causal substrate (WS42), and the
+  store-format binding met WS42's schema 122 as recorded above.
 - Dense execution still rebuilds `return_1` through the legacy id dispatch,
   whose `c / p - 1` differs in the last bit from the sweep's `(c - p) / p`.
   Dense is frozen, so this pre-existing difference is recorded only.
@@ -426,6 +569,16 @@ reasons above; scaling is measured in the previous section.
   `tools/check-fold-phase-contract.R .` reports
   `LEDGR_FOLD_PHASE_CONTRACT_OK`; `tests/claims.yml` and `tickets.yml` parse;
   `git diff --check` is clean.
+- Merged, renumbered tree (`22324f3f`): full suite 1,132 blocks, no
+  failures, the same skip.
+- LDG-3067: full suite 1,135 blocks, no failures, the same skip (source
+  copy, 702 seconds on a shared host). The first run failed only LTB-0153,
+  whose segment-work oracle did not separate the new check's work; the
+  block now counts it apart (stated above) and the rerun is the green one.
+  The census was regenerated (`source_commit` label `ws43-ldg-3067`), the
+  fold-phase checker reports `LEDGR_FOLD_PHASE_CONTRACT_OK`, `claims.yml`
+  and `tickets.yml` parse, and `git diff --check` is clean.
+- Mutations (LDG-3067): 10 of 10 fail their named blocks on source copies.
 - Not run here, by instruction: the timed fast, review and heavy profiles.
   The new blocks are review-profile; LTB-0142 to LTB-0144 stay fast and are
   in-memory, so their fast cost should be comparable, but the fast bound has

@@ -547,7 +547,11 @@ raised for malformed qlcal adapter inputs or replacement rows.
 
 \code{ledgr_indicator_gap_parity} is raised when a custom bounded indicator's
 \code{fn} on its window disagrees with its \code{series_fn} value beyond the declared
-tolerance; its fields name the feature, instrument and session.
+tolerance at a sampled causality position; its fields name the feature,
+instrument and session. \code{ledgr_feature_lookahead_detected} is raised when a
+feature recomputed from the history ending at a sampled session differs
+from its prepared value; its fields name the feature, instrument and
+session and carry both values.
 
 \code{ledgr_invalid_indicator_declaration} (parent \code{ledgr_invalid_args}) is
 raised for an invalid indicator history class, required-field set or

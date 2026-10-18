@@ -87,6 +87,17 @@ calculated once per contiguous segment of available input and restarts
 after a gap. \code{stable_after} is the first-valid boundary after each start
 or restart; it does not promise convergence. The declarations enter the
 availability-aware feature identity; dense execution ignores them.
+
+Availability-aware preparation also checks every definition for
+look-ahead before any run, sweep candidate or precompute payload uses
+it: on the instrument with the most calculated values, at no more than
+four fixed sessions, the value recomputed from the history ending there
+must equal the prepared value, or preparation refuses with
+\code{ledgr_feature_lookahead_detected}. A custom bounded definition that
+supplies both \code{fn} and \code{series_fn} must also agree, at the same
+sessions, between \code{fn} on its window and \code{series_fn} within \code{tolerance},
+or preparation refuses with \code{ledgr_indicator_gap_parity}. Both checks
+are samples, not proofs of causality.
 }
 \examples{
 last_close <- ledgr_indicator(

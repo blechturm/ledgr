@@ -160,8 +160,10 @@ testthat::test_that("[LTB-0143] strict dispatch is canonical and bounded", {
   values <- lapply(c(definitions, list(tampered, tampered_returns)), function(definition) {
     ws43_feature_values(substrate, definition)
   })
-  # One segment covers the complete series for every definition.
-  testthat::expect_identical(segment_calls, 7L)
+  # One segment covers the complete series for every definition. The sampled
+  # causality check (LDG-3067) adds a fixed five per definition: the probe's
+  # own segment and four sampled prefixes, independent of history length.
+  testthat::expect_identical(segment_calls, 7L * (1L + 1L + 4L))
   testthat::expect_identical(values[[7L]], values[[2L]])
   testthat::expect_identical(values[[3L]][[3L]], mean(close[1:3]) + 1)
   testthat::expect_identical(values[[6L]], values[[1L]])
@@ -200,7 +202,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     )
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(TRUE),
-      "4b6e6d15c756bec54846cb22e92c0ca2b35730a19f32d0d0cdab0b2b2ceb0686"
+      "136610b32abf7e1204ea75590285f3c1d0617867348fd7c5c7238fcfc364acf0"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
