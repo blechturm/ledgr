@@ -181,7 +181,7 @@ testthat::test_that("production consumers build one prepared plan at each bounda
 })
 
 # ledgr-test-profile: review
-testthat::test_that("INCOMPLETE reopen builds one prepared provider plan", {
+testthat::test_that("an INCOMPLETE run builds one prepared provider plan and its reopen builds none", {
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
   original <- ledgr:::ledgr_availability_provider_prepare

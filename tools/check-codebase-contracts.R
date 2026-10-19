@@ -1389,6 +1389,10 @@ if (!setequal(structural_public_classes, census_public_classes)) {
 }
 
 test_seam_contracts <- c(
+  ledgr_availability_prepared_membership = paste(
+    "Build the prepared membership cursor straight from fact rows, so its",
+    "answers can be compared with the canonical resolver (LTB-0291, LTB-0334)."
+  ),
   ledgr_local_time_resolve = paste(
     "Exercise ambiguous and nonexistent local-time policy without building",
     "a complete availability input."

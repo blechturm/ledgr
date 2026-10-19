@@ -870,7 +870,8 @@ Accepted change pending:
 ### Provider, Knowledge And Timing
 
 - Availability-aware execution uses one internal provider with `facts`,
-  `decision_view`, `execution_view`, `history`, and `identity` operations. Its
+  `decision_view`, `execution_view` and `identity` operations; history is
+  read only from the shared causal-history substrate. Its
   decision axis preserves declared member order for character-vector universes.
   For membership-rule universes, members are ordered by C-locale stable ID;
   nonzero held nonmembers then follow in the same stable-ID order. The provider
@@ -878,6 +879,11 @@ Accepted change pending:
   risk, valuation economics, affordability, fills, and writes remain in the
   shared fold and its output handlers.
 - Facts become applicable only after both effective time and knowledge time.
+  Preparation refuses any membership, trading-status or lifetime fact whose
+  knowledge time is missing with `ledgr_fact_knowledge_missing`, before any
+  run, sweep, precompute, walk-forward or inspection side effect (Cut 16
+  decision 23); what a missing knowledge time should mean is decided with
+  LDG-3073.
   A higher-precedence assertion that is effective but not yet knowable cannot
   shadow a lower-precedence tie. Future facts may change snapshot and descendant
   identity but must not rewrite earlier context, errors, features, or supported

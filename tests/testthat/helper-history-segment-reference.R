@@ -1,7 +1,7 @@
 # Frozen reference: the membership and trading-status segment compilers of
 # BASE b9d098c8 (R/history-substrate.R, and the header applier from
 # R/availability-provider-prepared.R), copied verbatim with package
-# internals qualified and the six functions renamed history_reference_*.
+# internals qualified and the eight functions renamed history_reference_*.
 # Cut 16 decision (22) removed them from the package: membership and status
 # segments are counted, not stored. LTB-0291 and LTB-0335 compare the
 # package's segment counts and segment-guard refusals with these compilers.
@@ -161,7 +161,7 @@ history_reference_membership_diagonal_segments <- function(data,
   )
   cells <- lapply(seq_along(breaks), function(j) {
     answer <- resolve(as.numeric(axis[[breaks[[j]]]]))
-    state <- ledgr:::ledgr_history_membership_state(
+    state <- history_reference_membership_state(
       ifelse(answer$known, answer$member, NA),
       answer$reason
     )
@@ -389,7 +389,7 @@ history_reference_membership_segments <- function(data,
       instruments = instrument_ids,
       knowledge_cutoff = as.POSIXct(knowledge, origin = "1970-01-01", tz = "UTC")
     )$rows
-    state <- ledgr:::ledgr_history_membership_state(answer$member, answer$reason)
+    state <- history_reference_membership_state(answer$member, answer$reason)
     list(
       state = state,
       winner = as.character(answer$evidence_ids),
@@ -442,14 +442,14 @@ history_reference_membership_segments <- function(data,
           knowledge_cutoff = as.POSIXct(cutoff, origin = "1970-01-01", tz = "UTC")
         )$rows
         list(
-          state = ledgr:::ledgr_history_membership_state(answer$member, answer$reason),
+          state = history_reference_membership_state(answer$member, answer$reason),
           winner = as.character(answer$evidence_ids),
           reason = as.character(answer$reason)
         )
       }
     ))
   }
-  if (ledgr:::ledgr_history_membership_is_diagonal(headers, interval)) {
+  if (history_reference_membership_is_diagonal(headers, interval)) {
     return(history_reference_membership_diagonal_segments(
       data,
       universe_id,
@@ -584,5 +584,27 @@ history_reference_apply_prepared_header <- function(known,
     reason = reason,
     winner = winner,
     knowledge = selected_knowledge
+  )
+}
+
+history_reference_membership_is_diagonal <- function(headers, interval) {
+  same_clock <- function(effective, knowledge) {
+    if (length(effective) == 0L) return(TRUE)
+    identical(
+      as.numeric(as.POSIXct(effective, tz = "UTC")),
+      as.numeric(as.POSIXct(knowledge, tz = "UTC"))
+    )
+  }
+  same_clock(headers$effective_from, headers$knowledge_time) &&
+    same_clock(interval$effective_from, interval$knowledge_time)
+}
+
+history_reference_membership_state <- function(member, reason) {
+  member <- as.logical(member)
+  reason <- as.character(reason)
+  ifelse(
+    !is.na(member),
+    ifelse(member, "active", "inactive"),
+    ifelse(grepl("conflict", reason, fixed = TRUE), "conflicting", "unknown")
   )
 }

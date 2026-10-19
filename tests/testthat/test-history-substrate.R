@@ -128,7 +128,7 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
   testthat::expect_identical(unname(before$state), c("unknown", "unknown"))
   testthat::expect_identical(unname(learned$state), c("active", "inactive"))
   testthat::expect_identical(
-    ledgr:::ledgr_history_membership_state(
+    history_reference_membership_state(
       c(TRUE, FALSE, NA, NA),
       c("member_asserted", "nonmember_asserted", "unknown", "conflicting")
     ),
@@ -332,7 +332,7 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
       )
       testthat::expect_identical(
         actual_answer$state,
-        ledgr:::ledgr_history_membership_state(
+        history_reference_membership_state(
           expected_answer$member, expected_answer$reason
         )
       )
@@ -384,7 +384,7 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
       )
       testthat::expect_identical(
         actual_answer$state,
-        ledgr:::ledgr_history_membership_state(
+        history_reference_membership_state(
           expected_answer$member, expected_answer$reason
         )
       )
@@ -1849,7 +1849,10 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
     "ledgr_history_membership_complete_segments",
     "ledgr_history_membership_diagonal_segments",
     "ledgr_history_status_segments",
-    "ledgr_membership_apply_prepared_header"
+    "ledgr_membership_apply_prepared_header",
+    "ledgr_history_membership_diagonal_counts",
+    "ledgr_history_membership_is_diagonal",
+    "ledgr_history_membership_state"
   )) {
     testthat::expect_false(exists(removed, envir = ns, inherits = FALSE), info = removed)
   }
@@ -2183,7 +2186,10 @@ testthat::test_that("[LTB-0335] counted membership and status segments refuse ex
       identical(counted$segment_ratio, reference$segment_ratio) &&
       identical(counted$limit, reference$limit)
   }
-  shapes <- c("complete", "intervals", "same_clock", "incomplete", "lagged_mixed")
+  # Same-clock families are counted canonically under Cut 16 decision (24) and
+  # may exceed the frozen diagonal count; LTB-0337 compares them with the
+  # canonical two-clock resolver instead.
+  shapes <- c("complete", "intervals", "incomplete", "lagged_mixed")
   checked <- stats::setNames(integer(length(shapes) + 2L), c(shapes, "status_sparse", "status"))
   refused <- 0L
   for (round in 1:24) {
@@ -2234,4 +2240,270 @@ testthat::test_that("[LTB-0335] counted membership and status segments refuse ex
     got <- refusal(ws41_history_fixture(segment_limit = limit))
     testthat::expect_identical(got, expected, info = paste("substrate limit", limit))
   }
+
+  # Literal status guard: the frozen status reference shares the package's
+  # one-fact and per-instrument compilers, so the status limits and counts
+  # are also pinned literally (default limit max(4 * facts, 16)).
+  status_rows <- function(instruments, at) {
+    ledgr_facts_trading_status(data.frame(
+      instrument_id = instruments,
+      effective_from = axis[at],
+      effective_to = axis[at + 1L],
+      knowledge_time = axis[at],
+      status = "halted",
+      source = "literal",
+      stringsAsFactors = FALSE
+    ))$rows
+  }
+  one_fact <- ledgr:::ledgr_history_status_segment_counts(
+    list(status = status_rows("I1", 3L)), ids[1:2], axis, TRUE, NULL
+  )
+  testthat::expect_identical(one_fact$fact_count, c(1L, 0L))
+  testthat::expect_identical(one_fact$segment_count, c(2L, 1L))
+  testthat::expect_identical(one_fact$limit, c(16L, 16L))
+  multi_fact <- ledgr:::ledgr_history_status_segment_counts(
+    list(status = status_rows(c("I1", rep("I2", 5L)), c(3L, 1L, 3L, 5L, 7L, 9L))),
+    ids[1:2], axis, TRUE, NULL
+  )
+  testthat::expect_identical(multi_fact$fact_count, c(1L, 5L))
+  testthat::expect_identical(multi_fact$segment_count, c(2L, 6L))
+  testthat::expect_identical(multi_fact$limit, c(16L, 20L))
+  testthat::expect_error(
+    ledgr:::ledgr_history_status_segment_counts(
+      list(status = status_rows(c("I1", rep("I2", 5L)), c(3L, 1L, 3L, 5L, 7L, 9L))),
+      ids[1:2], axis, TRUE, 5L
+    ),
+    "History segment limit exceeded for instrument `I2`, family `trading_status`: 6 segments for 5 facts (ratio 1.200; limit 5).",
+    fixed = TRUE,
+    class = "ledgr_history_segment_limit_exceeded"
+  )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0336] facts without a knowledge time are refused before any side effect", {
+  days <- as.Date("2021-01-04") + c(0:4, 7:9)
+  utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  axis <- utc(days)
+  bars <- rbind(
+    data.frame(instrument_id = "AAA", ts_utc = axis, close = 10 + seq_along(axis)),
+    data.frame(instrument_id = "BBB", ts_utc = axis, close = 20 + seq_along(axis))
+  )
+  bars$open <- bars$high <- bars$low <- bars$close
+  bars$volume <- 100
+  calendar <- seq(min(days), max(days), by = "day")
+  open <- calendar %in% days
+  sessions <- ledgr_facts_sessions(data.frame(
+    session_date = calendar, status = ifelse(open, "open", "closed"),
+    session_open = ifelse(open, "14:30:00", NA), session_close = ifelse(open, "21:00:00", NA)
+  ), venue_id = "V", knowledge = "assume_effective")
+  members <- data.frame(effective_from = utc(days[[1L]] - 1), source = "t")
+  members$knowledge_time <- members$effective_from
+  members$members <- I(list(c("AAA", "BBB")))
+  known_members <- ledgr_facts_membership_snapshots(members, universe_id = "u", complete = TRUE)
+  # Each family below has one fact whose knowledge time is missing; the
+  # constructors accept it under the default `knowledge = "evidenced"`.
+  unknown <- list(
+    trading_status = ledgr_facts_trading_status(data.frame(
+      instrument_id = "BBB", effective_from = axis[[3L]], status = "halted", source = "t"
+    )),
+    lifetime = ledgr_facts_lifetime(data.frame(
+      instrument_id = "BBB", effective_from = axis[[4L]], assertion = "known_inactive", source = "t"
+    )),
+    membership = ledgr_facts_membership_intervals(data.frame(
+      instrument_id = c("AAA", "BBB"), effective_from = axis[[1L]] - 86400,
+      knowledge_time = c(axis[[1L]] - 86400, NA), member = TRUE, source = "t"
+    ), universe_id = "u")
+  )
+  for (family in names(unknown)) {
+    testthat::expect_true(anyNA(unknown[[family]]$rows$knowledge_time), info = family)
+    facts <- if (identical(family, "membership")) {
+      ledgr_facts(sessions, unknown[[family]])
+    } else {
+      ledgr_facts(sessions, known_members, unknown[[family]])
+    }
+    snapshot <- ledgr_snapshot_from_df(
+      bars, data.frame(instrument_id = c("AAA", "BBB")),
+      db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
+    )
+    exp <- ledgr_experiment(
+      snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
+      features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
+      valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 1000)
+    )
+    con <- ledgr:::get_connection(snapshot)
+    written <- function() {
+      vapply(c("runs", "ledger_events", "sweeps", "walk_forward_sessions"), function(table) {
+        as.numeric(DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n)
+      }, numeric(1))
+    }
+    before <- written()
+    refused <- function(expr, entry) {
+      condition <- tryCatch({
+        force(expr)
+        NULL
+      }, error = function(e) e)
+      testthat::expect_s3_class(condition, "ledgr_fact_knowledge_missing")
+      testthat::expect_identical(
+        names(condition$missing_knowledge), family, info = paste(family, entry)
+      )
+      testthat::expect_identical(written(), before, info = paste(family, entry))
+    }
+    grid <- ledgr_param_grid(list(x = 1))
+    refused(ledgr_run(exp, run_id = paste0("na-", family)), "run")
+    refused(ledgr_sweep(exp, grid), "sweep")
+    refused(ledgr_precompute_features(exp, grid), "precompute")
+    folds <- ledgr:::ledgr_fold_list(
+      list(ledgr_fold(days[[1L]], days[[3L]], days[[4L]], days[[6L]], fold_seq = 1L)),
+      constructor = list(type_id = "explicit")
+    )
+    refused(ledgr_walk_forward(exp, grid, folds, selection_rule = ledgr_rule_argmax("annualized_return")), "walk-forward")
+    refused(ledgr_pulse_snapshot(exp, ts_utc = axis[[5L]]), "inspection")
+    ledgr_snapshot_close(snapshot)
+  }
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0337] every membership shape is counted canonically", {
+  # Cut 16 decision (24). An incomplete set `s` lists AAA on the first day;
+  # complete sets `v` (AAA) at 20:00 and `x` (BBB) at 21:00 on the second day;
+  # every set is known when it takes effect and sessions close at 21:00.
+  # Between 20:00 and 21:00 `v` is the two-clock answer for the second
+  # column, so the canonical counts are 4 (AAA) and 3 (BBB); the removed
+  # same-clock counter read only the diagonal and counted 3 and 2.
+  axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:3) * 86400
+  at <- c(axis[[1L]], axis[[2L]] - 3600, axis[[2L]])
+  sets <- ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = at, knowledge_time = at, set_id = c("s", "v", "x"),
+      members = I(list("AAA", "AAA", "BBB")), source = "literal",
+      stringsAsFactors = FALSE
+    ),
+    universe_id = "U", complete = c(FALSE, TRUE, TRUE)
+  )
+  data <- list(membership_sets = sets$headers, membership = sets$rows)
+  counted <- ledgr:::ledgr_history_membership_segment_counts(data, "U", c("AAA", "BBB"), axis, NULL)
+  testthat::expect_identical(counted$fact_count, c(5L, 4L))
+  testthat::expect_identical(counted$segment_count, c(4L, 3L))
+  frozen <- history_reference_membership_segments(data, "U", c("AAA", "BBB"), axis, NULL)
+  testthat::expect_identical(as.integer(frozen$segment_count), c(3L, 2L))
+  # At limit 3 the removed counter admitted the family; it is now refused.
+  testthat::expect_identical(
+    history_reference_membership_segments(data, "U", c("AAA", "BBB"), axis, 3L)$segment_count,
+    c(3L, 2L)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_history_membership_segment_counts(data, "U", c("AAA", "BBB"), axis, 3L),
+    "History segment limit exceeded for instrument `AAA`, family `membership`: 4 segments for 5 facts (ratio 0.800; limit 3).",
+    fixed = TRUE,
+    class = "ledgr_history_segment_limit_exceeded"
+  )
+
+  # The canonical two-clock count: one initial segment plus, at every
+  # knowledge epoch, each maximal run of consecutive axis columns whose
+  # canonical answer changed to the same new answer.
+  canonical_counts <- function(data, ids, axis) {
+    known <- c(
+      as.numeric(data$membership_sets$knowledge_time),
+      as.numeric(data$membership$knowledge_time[is.na(data$membership$set_id)])
+    )
+    epochs <- sort(unique(known[is.finite(known)]))
+    answers <- function(cutoff) {
+      vapply(seq_along(axis), function(b) {
+        rows <- ledgr:::ledgr_membership_resolve_prepared(
+          data, "U", axis[[b]], instruments = ids,
+          knowledge_cutoff = as.POSIXct(cutoff, origin = "1970-01-01", tz = "UTC")
+        )$rows
+        paste(rows$member, rows$reason, rows$evidence_ids)
+      }, character(length(ids)))
+    }
+    previous <- answers(-Inf)
+    counts <- rep(1L, length(ids))
+    for (epoch in epochs) {
+      current <- answers(epoch)
+      changed <- current != previous
+      continues <- cbind(FALSE, changed[, -1L, drop = FALSE] & changed[, -ncol(changed), drop = FALSE] &
+        current[, -1L, drop = FALSE] == current[, -ncol(current), drop = FALSE])
+      counts <- counts + as.integer(rowSums(changed & !continues))
+      previous <- current
+    }
+    counts
+  }
+  testthat::expect_identical(canonical_counts(data, c("AAA", "BBB"), axis), c(4L, 3L))
+
+  set.seed(24L)
+  axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:9) * 86400
+  ids <- sprintf("I%d", 1:5)
+  # Same-day clocks before, at and after the 21:00 close, so several facts
+  # often take effect between the same two sessions.
+  clock <- function(n) {
+    axis[sample.int(length(axis), n, replace = TRUE)] +
+      sample(c(0, -1, -2, -6.5, 1) * 3600, n, replace = TRUE)
+  }
+  draw <- function(build) {
+    for (attempt in 1:50) {
+      out <- tryCatch(build(), ledgr_invalid_args = function(e) NULL)
+      if (!is.null(out)) return(out)
+    }
+    stop("no valid random family in 50 draws")
+  }
+  headers_family <- function(lag) {
+    sets <- draw(function() {
+      n <- sample(2:6, 1L)
+      from <- clock(n)
+      ledgr_facts_membership_snapshots(
+        data.frame(
+          effective_from = from,
+          knowledge_time = from + if (lag) sample(c(0, 1, 3) * 3600 * 24, n, replace = TRUE) else 0,
+          set_id = sprintf("s%d", seq_len(n)),
+          members = I(lapply(seq_len(n), function(k) sample(ids, sample(1:4, 1L)))),
+          source = "random", stringsAsFactors = FALSE
+        ),
+        universe_id = "U", complete = stats::runif(n) < 0.5
+      )
+    })
+    list(membership_sets = sets$headers, membership = sets$rows)
+  }
+  intervals_family <- function(lag) {
+    rows <- draw(function() {
+      n <- sample(2:6, 1L)
+      from <- clock(n)
+      ledgr_facts_membership_intervals(data.frame(
+        instrument_id = sample(ids, n, replace = TRUE),
+        effective_from = from,
+        effective_to = as.POSIXct(from + sample(c(NA, 1, 2, 4), n, replace = TRUE) * 86400,
+                                  origin = "1970-01-01", tz = "UTC"),
+        knowledge_time = from + if (lag) sample(c(0, 1, 2) * 86400, n, replace = TRUE) else 0,
+        member = sample(c(TRUE, FALSE), n, replace = TRUE),
+        source = "random", stringsAsFactors = FALSE
+      ), universe_id = "U")$rows
+    })
+    empty <- data.frame(
+      universe_id = character(), set_id = character(),
+      effective_from = as.POSIXct(character(), tz = "UTC"),
+      knowledge_time = as.POSIXct(character(), tz = "UTC"),
+      complete = logical(), stringsAsFactors = FALSE
+    )
+    list(membership_sets = empty, membership = rows)
+  }
+  undercounted <- 0L
+  checked <- 0L
+  for (round in 1:12) {
+    for (build in list(
+      function() headers_family(FALSE), function() intervals_family(FALSE),
+      function() headers_family(TRUE), function() intervals_family(TRUE)
+    )) {
+      data <- build()
+      counted <- ledgr:::ledgr_history_membership_segment_counts(data, "U", ids, axis, NULL)
+      testthat::expect_identical(counted$segment_count, canonical_counts(data, ids, axis))
+      frozen <- history_reference_membership_segments(data, "U", ids, axis, NULL)$segment_count
+      undercounted <- undercounted + any(frozen < counted$segment_count)
+      testthat::expect_false(any(frozen > counted$segment_count))
+      checked <- checked + 1L
+    }
+  }
+  testthat::expect_identical(checked, 48L)
+  # The random same-clock header families reach the case the removed
+  # counter undercounted.
+  testthat::expect_gt(undercounted, 0L)
 })

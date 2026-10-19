@@ -388,6 +388,7 @@
 \alias{ledgr_pulse_snapshot_availability_required}
 \alias{ledgr_pulse_inspection_stopped}
 \alias{ledgr_history_segment_limit_exceeded}
+\alias{ledgr_fact_knowledge_missing}
 \alias{ledgr_history_segment_missing}
 \alias{ledgr_history_unknown_instrument}
 \alias{ledgr_staged_history_mismatch}
@@ -464,7 +465,10 @@ preparation and reads. \code{ledgr_history_segment_missing} refuses an invalid
 internal segment plane rather than returning fabricated state.
 \code{ledgr_history_segment_limit_exceeded} reports an instrument, fact family,
 fact count, segment count, ratio and limit when causal preparation exceeds
-its declared bound. \code{ledgr_invalid_history_treatment} and
+its declared bound. \code{ledgr_fact_knowledge_missing} refuses, before any run,
+sweep, precompute, walk-forward or inspection side effect, a snapshot whose
+membership, trading-status or lifetime facts lack a knowledge time.
+\code{ledgr_invalid_history_treatment} and
 \code{ledgr_invalid_history_field} refuse malformed treatment evidence or an
 unsupported bar field. \code{ledgr_history_unavailable} refuses a history read
 from a dense or snapshot-and-universe pulse context, which has no causal
