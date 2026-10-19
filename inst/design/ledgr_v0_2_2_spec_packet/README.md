@@ -85,7 +85,8 @@ second status ledger:
 - [`causal_facts_history_identity_closeout.md`](causal_facts_history_identity_closeout.md),
   [`causal_history_substrate_closeout.md`](causal_history_substrate_closeout.md)
   and
-  [`public_causal_history_closeout.md`](public_causal_history_closeout.md).
+  [`public_causal_history_closeout.md`](public_causal_history_closeout.md);
+- [`history_simplification_closeout.md`](history_simplification_closeout.md).
 
 Other packet files remain historical evidence at their existing paths. Use
 `tickets.yml`, not this index, to decide whether a record is current.
