@@ -630,12 +630,12 @@ workstreams:
   - id: 43
     name: "Indicator history semantics"
     cut: 16
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 41
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 43", verdict: null, reason: "One claim: bounded and history-dependent indicators compute causally over the shared treated substrate with declared readiness, restart, required-field and identity semantics. Review covers internal, TTR and custom definitions, multi-output shapes, causality checks and the production-precompute test migration."}
-    integration_evidence: []
-    accepted: null
+    review: {mode: "Type 1", point: "close of workstream 43", verdict: "CHANGES_REQUIRED", artifact: "close_review_43.md", result: "Close review 7/18 (contract wording, placeholder feature reasons, an undisclosed dispatch fix, missing detectors); focused re-reviews close_review_43_rereview_1.md 4/9, close_review_43_rereview_2.md 3/5 and close_review_43_rereview_3.md 2/3 (record findings only, product verified). The third correction round was authorized by the maintainer; the re-review 3 record patch 93ce0ecf was verified by the coordinator (both new detectors mutation-checked, full suite 1,140 blocks, no failures).", reason: "One claim: bounded and history-dependent indicators compute causally over the shared treated substrate with declared readiness, restart, required-field and identity semantics. Review covers internal, TTR and custom definitions, multi-output shapes, causality checks and the production-precompute test migration."}
+    integration_evidence: ["Implementation commits 0602a93d (LDG-3065), 73eec63e and ce9a6271 (LDG-3066), 603966ec and 6680bdb7 (LDG-3067), with close-review corrections bfffb0f7, ddecb5f4, 61842494 and record patch 93ce0ecf; indicator_history_closeout.md records per-ticket evidence, mutations, scale and routed items. Quiet-host fast profile 9eace5fe: 565/565 blocks in three runs pinned to the performance cores under the High performance plan, median 107.98 seconds against the 112-second bound, alternating with the integration tree at a 100.19-second median."]
+    accepted: "2026-10-19 by the maintainer after three focused re-reviews and the quiet-host fast profile passed at a 107.98-second median. Decisions (18)-(21) record the FAILED run row, custom-over-built-in dispatch, terminal intervals ending bounded windows and calculation_non_finite. Routed: per-lagged-fact feature recomputation to LDG-3070; the per-constructor indicator catalogue rebuild (about 7.8 seconds of fast-profile cost) to LDG-3077 in Workstream 46."
   - id: 44
     name: "Integrated history proof and teaching"
     cut: 16
@@ -2256,4 +2256,14 @@ tickets:
     dependencies: ["LDG-3074", "LDG-3075"]
     scope: "Membership segments are compiled by a complete-set compiler, a same-clock path through the prepared cursor, a per-instrument interval-only compiler and the family-wide epoch compiler, which remains superlinear for incomplete set headers with lagged knowledge (0.8, 3.9 and 23.9 seconds at 20, 40 and 80 sets by 300 instruments). Replace them with one per-instrument compiler over each instrument's own epochs and breaks through the canonical resolver, keeping a complete-set fast path only if a differential and a measurement justify it under the fast-path rule. Amended 2026-10-18 by the maintainer after the LDG-3074 map found no production reader of membership segments: after LDG-3075, first state which membership, status and lifetime compilers remain and who calls them. If the family-wide epoch compiler or another superlinear compiler remains on a production path, replace it with the per-instrument compiler above. If none remains, this ticket registers the missing differentials for the surviving fast paths (the map names the same-clock membership, sparse status and sparse lifetime compilers) under the fast-path rule, and closes."
     acceptance: ["the evidence states which membership, status and lifetime compilers remain after LDG-3075, with their production callers", "every remaining compiler path has a registered randomized differential against its canonical resolver named in the map, with no mismatch for complete, incomplete, mixed, interval-only and lagged families", "if the family-wide epoch compiler remains on a production path it is replaced by one per-instrument compiler, incomplete lagged set compilation is linear in instruments and sets with before/after measurements, and a detector fails if it returns; otherwise the evidence shows it absent from production paths", "the fixture ladder is exact and the full suite passes"]
+    evidence: []
+  - id: "LDG-3077"
+    title: "Build the indicator history catalogue once"
+    workstream: 46
+    status: "open"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    scope: "Every built-in indicator constructor rebuilds the 48-row indicator history catalogue (ledgr_indicator_history_catalogue(), a data.frame built row by row with deparse and paste) to look up its own row; in test-strict-feature-acceleration.R that is about 68 percent of the file time and it accounts for most of the 7.8-second fast-profile cost Workstream 43 added (LTB-0142 +2.2 s, LTB-0143 +0.8 s). Build the catalogue once per session and look rows up by index. No semantic change."
+    acceptance: ["the catalogue is built at most once per session and its content is byte-identical to the Workstream 43 catalogue", "built-in constructors, declarations, fingerprints and rule-4 identity are unchanged, with the engine digest literals unchanged or changed only for the hashed helper with the reason stated", "a detector fails if a constructor rebuilds the catalogue", "the fast profile is measured under the recorded timing method with the before/after block times for LTB-0142 and LTB-0143"]
     evidence: []
