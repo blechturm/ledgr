@@ -14,13 +14,16 @@ fn <- if (exists("ledgr_history_membership_segment_counts", envir = asNamespace(
 } else {
   function(d, ids, axis) ledgr:::ledgr_history_membership_segments(d, "U", ids, axis, NULL)$segment_count
 }
-days <- seq(as.Date("2020-01-01"), by = "day", length.out = 700)
-days <- days[as.integer(format(days, "%u")) <= 5L][1:500]
+# 500 weekday sessions, or more when there are more than 450 sets, so every
+# set takes effect on its own session.
+n_sessions <- max(500L, max(sets_grid) + 50L)
+days <- seq(as.Date("2020-01-01"), by = "day", length.out = ceiling(n_sessions * 7 / 5) + 14L)
+days <- days[as.integer(format(days, "%u")) <= 5L][seq_len(n_sessions)]
 axis <- as.POSIXct(paste(days, "21:00:00"), tz = "UTC")
 for (n_inst in inst_grid) for (n_sets in sets_grid) {
   set.seed(n_sets * 1000L + n_inst)
   ids <- sprintf("I%04d", seq_len(n_inst))
-  at <- as.integer(round(seq(1, 450, length.out = n_sets)))
+  at <- as.integer(round(seq(1, n_sessions - 50L, length.out = n_sets)))
   sets <- ledgr_facts_membership_snapshots(
     data.frame(
       effective_from = axis[at],

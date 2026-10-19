@@ -76,3 +76,11 @@ features and staged invariants were then built by the measured tree.
   other R process; then one candidate run up to 320 sets by 1,200
   instruments ("candidate_scale"). `count_digest` equal across arms shows
   identical per-instrument counts.
+
+## Correction 1 scaling run (2026-10-19)
+
+- `evidence/membership_lagged_counts_scaling.csv`: the counter alone at 320,
+  640, 1,280 and 2,560 sets by 300 instruments, two runs, same timing
+  method. `membership_lagged_counts.R` now uses `max(500, sets + 50)`
+  sessions so each set takes effect on its own session; shapes up to 450
+  sets are unchanged.

@@ -12,8 +12,10 @@ Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behavior; `history_representation_map.md` is the work list.
 Status: LDG-3074 to LDG-3077 are complete. The LDG-3075 NEEDS_TYPE_2 was
 decided by the maintainer on 2026-10-19 as Cut 16 decision (22): membership
-and trading-status segments are counted, not stored. Workstream 46 is
-`review_pending`.
+and trading-status segments are counted, not stored. The close review
+(`close_review_46.md`) returned CHANGES_REQUIRED; Correction 1 at the end of
+this record answers it, implementing Cut 16 decisions (23) and (24).
+Workstream 46 is `review_pending`.
 
 BASE for every byte-identity claim is `b9d098c8`, the integration merge of
 the accepted Workstream 43. Product code on this branch equals BASE up to
@@ -97,7 +99,7 @@ production caller and differential:
 | --- | --- | --- |
 | M-1 canonical resolver | public `ledgr_facts_resolve()` for membership (through `ledgr_membership_resolve_at()`); the rule M-2 and the counter implement | the canonical side of LTB-0334 and of the frozen compilers in LTB-0335 |
 | M-2 prepared cursor | every availability fold pulse; the same-clock membership counter | LTB-0334 |
-| Membership counter (`ledgr_history_membership_fact_counts()`, `ledgr_history_membership_diagonal_counts()`) | `ledgr_history_substrate()` through `ledgr_history_membership_segment_counts()` | LTB-0335 against the frozen BASE compilers |
+| Membership counter (`ledgr_history_membership_fact_counts()`; the same-clock `ledgr_history_membership_diagonal_counts()` was removed by Cut 16 decision 24, Correction 1) | `ledgr_history_substrate()` through `ledgr_history_membership_segment_counts()` | LTB-0335 against the frozen BASE compilers |
 | S-1 rule, S-2 per-instrument and S-4 one-fact compilers (counts only) | `ledgr_history_substrate()` through `ledgr_history_status_segment_counts()` | LTB-0335 (counts and refusals), LTB-0334 (S-3 against S-1) |
 | S-3 diagonal status plan | every availability fold pulse | LTB-0334 |
 | L-1 rule, L-2 and L-3 lifetime compilers, T-1 terminal compiler (stored) | `ledgr_history_substrate()` | LTB-0334 |
@@ -118,9 +120,10 @@ alternating runs per arm):
 
 The per-instrument counts are identical in both arms (equal digests). On
 the counter alone, 20 to 320 sets by 300, 600 and 1,200 instruments take
-0.03 to 1.33 s and grow in proportion to sets times instruments, that is to
-the number of set rows (`evidence/membership_lagged_counts.csv`): doubling
-either sets or instruments about doubles the time.
+0.03 to 1.33 s (`evidence/membership_lagged_counts.csv`). Corrected in
+Correction 1 (close review F4): the cost is O(instruments x own incomplete
+sets x (complete + own sets)), linear in instruments but quadratic in sets
+per instrument for incomplete shapes; 2,560 sets take about 8.5 s.
 
 LCL-0324/LTB-0334 is the randomized differential of the compilers that
 survive under every option against their canonical resolvers: L-2 and L-3 two-clock lifetime
@@ -296,9 +299,9 @@ by index; each instrument's work is one operation per own incomplete header
 over its relevant headers, and interval cover is grouped by knowledge level).
 Instruments with neither share one count. `ledgr_history_uncovered_pieces()`
 merges cover intervals with `cummax()` and counts gaps with one `outer()`.
-`ledgr_history_membership_diagonal_counts()` keeps BASE's loop over
-observation breaks (bounded by fact rows) with vector work over instruments
-and keeps only the previous break's answer. The status counter runs the
+The same-clock counter this paragraph first described was removed by Cut 16
+decision (24) (Correction 1). The fact counter is quadratic in incomplete
+sets per instrument (close review F4), not linear. The status counter runs the
 shared per-instrument compiler, which loops over instruments with status
 facts and their own epochs and breaks (shape 5 is the accepted residual: the
 segments are built and dropped, as BASE built and stored them).
@@ -431,10 +434,11 @@ C, recorded as Cut 16 decision (22). Implementation:
   BASE segment count is one initial segment plus, for every fact, the number
   of contiguous axis blocks it wins when it becomes known.
   `ledgr_history_membership_fact_counts()` computes that from header ranks,
-  breaks and knowledge times and interval spans. The same-clock case keeps
-  BASE's per-break rule through the plan's prepared resolver
-  (`ledgr_history_membership_diagonal_counts()`). Path selection is BASE's,
-  including radix header order for the all-complete case.
+  breaks and knowledge times and interval spans. The same-clock case first
+  kept BASE's per-break rule through the plan's prepared resolver
+  (`ledgr_history_membership_diagonal_counts()`), with BASE's path
+  selection; Correction 1 removed both under Cut 16 decision (24), so every
+  shape is counted by the fact counter.
 - Status: the plan's diagonal status segments do not carry enough to count
   two-clock segments (no end times or statuses), so the status counter runs
   the shared one-fact and per-instrument compilers on the status rows the
@@ -554,3 +558,90 @@ sequentially unless noted:
   (Routed); after a clean `pkgbuild` rebuild of `src/` the runs above
   passed. `R/cpp11.R` and `src/cpp11.cpp` show line-ending churn only and
   are not committed.
+
+## Correction 1 (close review 46, 2026-10-19)
+
+`close_review_46.md` returned CHANGES_REQUIRED with eight findings. The
+maintainer decided F1 and F3 on 2026-10-19 as Cut 16 decisions (23) and
+(24), recorded in `tickets.yml`. Each finding and its answer:
+
+| Finding | Answer | Evidence |
+| --- | --- | --- |
+| F1: facts with no knowledge time behave differently from BASE | Decision (23): such facts are refused with `ledgr_fact_knowledge_missing`. The check runs on the durable run's own store connection before the run is registered (`ledgr_run_fold_impl()`), and on the in-memory fact tables at the start of `ledgr_history_substrate()`, which sweeps, precompute, walk-forward and inspection reach before any side effect. Membership facts can carry a missing knowledge time too: `ledgr_facts_membership_intervals()` and `_snapshots()` share `ledgr_fact_knowledge_time()`, which stores `NA` under the default `knowledge = "evidenced"`; they are refused the same way. Contract (Provider, Knowledge And Timing) and condition reference (roxygen and `man/ledgr_condition_classes.Rd`) name the class | LCL-0326/LTB-0336: status, lifetime and membership snapshots each refused by `ledgr_run()`, `ledgr_sweep()`, `ledgr_precompute_features()`, `ledgr_walk_forward()` and `ledgr_pulse_snapshot()`, with the `runs`, `ledger_events`, `sweeps` and `walk_forward_sessions` row counts unchanged; mutations K1-K3 fail it |
+| F2: the contract still lists a provider `history` operation | Removed; the bullet now says history is read only from the shared substrate | `contracts.md` Provider, Knowledge And Timing |
+| F3: the same-clock counter undercounts against the canonical count | Decision (24): `ledgr_history_membership_diagonal_counts()` and its selection are removed; every shape is counted by `ledgr_history_membership_fact_counts()`. `ledgr_history_membership_is_diagonal()` and `ledgr_history_membership_state()` had no other product caller and move, verbatim, into the frozen reference helper | LCL-0327/LTB-0337: a literal family (counts 4 and 3; the removed counter counted 3 and 2) refused at limit 3 with a literal message, and a randomized differential of 48 same-clock and lagged header and interval families against a brute-force count from `ledgr_membership_resolve_prepared()` at every axis column and knowledge epoch (no mismatch; the removed counter undercounts on some, never overcounts); mutations D1-D3 fail it. LTB-0335 drops its same-clock shape for this reason. LTB-0332 fails if the counter returns (M14) |
+| F4: the counter is not linear in incomplete sets | Claim corrected. The cost is O(instruments x own incomplete sets x (complete + own sets)): quadratic in sets per instrument for incomplete shapes, linear for complete sets. Measured under the recorded timing method (two runs, 300 instruments, half listed per set): 0.36-0.38, 0.75-0.76, 2.12-2.20 and 8.53-8.80 s at 320, 640, 1,280 and 2,560 sets, against 22.2 s for BASE's M-6 at 80 sets. Not optimized; an O(S log S) next-blocking-header pass is the routed exit | `evidence/membership_lagged_counts_scaling.csv`; `membership_lagged_counts.R` now lengthens the axis when there are more than 450 sets so each set has its own session (shapes up to 450 sets are unchanged) |
+| F5: LTB-0335's status half shares the live compilers | LCL-0325's `oracle_independence` now says so. LTB-0335 adds literal status witnesses: one-fact counts `2, 1` with limits `16, 16`, multi-fact counts `2, 6` with limits `16, 20`, and one literal refusal message. The guard's message formatting has one copy: the one-fact and per-instrument compilers call `ledgr_history_segment_limit_check()` | Mutations X16 (the one-fact compiler hands the guard a wrong fact count) and Q6 (default floor) fail LTB-0335 |
+| F6: the map's path tables are stale | Sections 1-2 keep describing `b9d098c8`, and each row Workstream 46 changed now ends with **Now:**; new rows R35 (`segment_counts`) and M-8 (fact counter) carry status, differential and exit | `history_representation_map.md` |
+| F7: dead parameter and redundant condition | `header_method` removed (ties order only which header wins a shared break; the loser's region is empty either way; radix order is used). `previous_keep &` went with the same-clock counter | Code |
+| F8: stale test name; mixed shapes; spike probes | The test is renamed "an INCOMPLETE run builds one prepared provider plan and its reopen builds none". The reviewer's inference holds: `ledgr_facts()` accepts one membership family per universe, so public data cannot mix set headers and interval rows in one universe; the counter's interval cover on header regions and the mixed shapes in LTB-0334/0335 serve internally built data only, and are kept because the canonical resolver defines that case. The historical spike probes `dev/spikes/historical-projection/probe.R` and `dev/spikes/two-clock-history/probe.R` call the removed `ledgr_availability_provider_portable()`; they are not part of any gate and are left as historical records | Test file; this note |
+
+### Identity after Correction 1
+
+The runner gained fixture G (an incomplete set and two complete sets taking
+effect at 20:00 and at the 21:00 close of the same day, all same-clock) with
+declared limits 1 to 5; BASE was re-recorded with 89 families. Result: 86
+of 89 identical. The three differences are the families decision (24)
+allows, all in fixture G, the family the removed counter undercounted:
+
+| Family | BASE | Correction 1 |
+| --- | --- | --- |
+| `G/limit_1` (run, sweep, inspection) | refused: membership, G01, 3 segments for 5 facts | refused: membership, G01, 4 segments for 5 facts |
+| `G/limit_2` (run, sweep, inspection) | refused: membership, G01, 3 segments for 5 facts | refused: membership, G01, 4 segments for 5 facts |
+| `G/limit_3` (run, sweep, inspection) | runs | refused: membership, G01, 4 segments for 5 facts, limit 3 |
+
+`G/limit_4` and `G/limit_5` run on both trees. No other family differs.
+The fixture ladder is 50 of 50 plus identity again.
+
+### Correction 1 mutation table
+
+All earlier mutations (M1-M13, N1-N2, P1-P6, P4b) were re-run on the
+Correction 1 copy and each fails its block as before; M14 (restore the
+same-clock counter) fails LTB-0332 (1).
+
+| ID | Mutation | Block | Result |
+| --- | --- | --- | --- |
+| K1 | drop the knowledge check before run registration | LTB-0336 | fails (15) |
+| K2 | make the knowledge refusal a no-op | LTB-0336 | fails (45) |
+| K3 | stop counting lifetime facts in the stored-fact check | LTB-0336 | fails (5) |
+| D1 | an incomplete header blocks another before it is known | LTB-0337 | fails (1) |
+| D2 | count a header region from its break to the axis end | LTB-0337 | fails (2) |
+| D3 | drop an instrument's incomplete headers | LTB-0337 | fails (43) |
+| Q1 | header region to the axis end | LTB-0335 | fails (5) |
+| Q2 | ignore interval cover on header regions | LTB-0335 | fails (19) |
+| Q4 | a later complete header blocks before it is known | LTB-0335 | fails (12) |
+| Q5 | change the guard message's ratio precision | LTB-0335 | fails (72) |
+| Q6 | default floor 16 to 15 in the shared guard | LTB-0335 | fails (33) |
+| X16 | one-fact compiler hands the guard a fact count of at least 1 | LTB-0335 | fails (1) |
+
+### Test changes in Correction 1
+
+- LTB-0291: the membership-state oracle mapping now calls the frozen
+  `history_reference_membership_state()` (verbatim BASE), because the
+  package function had no product caller left after decision (24). Oracle
+  unchanged.
+- LTB-0332: the removed-function list adds the same-clock counter,
+  `ledgr_history_membership_is_diagonal()` and
+  `ledgr_history_membership_state()`.
+- LTB-0335: the same-clock shape moves to LTB-0337 (decision 24 changes
+  same-clock counts away from the frozen BASE compiler); literal status
+  witnesses added (F5).
+- New LCL-0326/LTB-0336 and LCL-0327/LTB-0337.
+- `ledgr_availability_prepared_membership()` is now called only by tests;
+  the census records it as a test-only seam with a stated contract.
+- The unregistered provider-production test is renamed (F8).
+
+### Correction 1 verification
+
+On `260d3eaf`, Windows 11, R 4.6.1, sequentially: full suite 1,147 blocks,
+18,438 expectations, no failure or error, one optional skip (quantmod
+installed), 658 s of block time; identity runner 86 of 89 against the
+re-recorded BASE with only the three decision (24) differences above,
+self-test 89 of 89; fixture ladder 50 of 50 plus identity, self-test 51 of
+51; census `--mode=check` (158 branch, 55 flow sites; findings 72) and
+`--self-test-mode-branches`, `tools/check-fold-phase-contract.R` and the
+YAML parse pass; `git diff --check` is clean. The first full-suite run of
+Correction 1 had placed the run check before the run store opened, through
+a second snapshot connection; LTB-0131 (one store open per run) failed, so
+the check moved onto the run's own connection. LTB-0271 then required the
+census to list the new condition class.
