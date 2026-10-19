@@ -896,9 +896,12 @@ Accepted change pending:
   `availability_open_v2` convention. A missing or different version is
   refused; no timing convention is inferred from stored rows.
 - The provider and history preparation share the existing family resolvers as
-  the only precedence implementation. Prepared membership, trading-status and
-  lifetime state is stored as flat bitemporal segments over separate
-  observation and knowledge clocks. Adjacent segments merge only when state,
+  the only precedence implementation. Prepared lifetime state, including its
+  terminal label, is stored as flat bitemporal segments over separate
+  observation and knowledge clocks; membership and trading-status state is
+  counted as such segments for the segment guard and is not stored, its facts
+  being held once, in the provider execution plan (Cut 16 decision 22).
+  Adjacent segments merge only when state,
   winning fact and reason all match; active, inactive, unknown and conflicting
   membership remain distinct, while family declaration and set completeness
   remain separate metadata.

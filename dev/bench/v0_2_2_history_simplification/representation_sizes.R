@@ -65,6 +65,9 @@ for (family in names(substrate$segments)) {
   record("substrate_segments", family, seg,
          sprintf("segments=%d facts=%d", length(seg$instrument), sum(seg$fact_count)))
 }
+if (!is.null(substrate$segment_counts)) {
+  record("substrate", "segment_counts (membership, status)", substrate$segment_counts)
+}
 plan <- substrate$provider_plan
 record("provider_plan", "total", plan)
 if (!is.null(plan$membership)) {

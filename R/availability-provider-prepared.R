@@ -20,56 +20,6 @@
 
 ledgr_availability_prepared_seconds <- function(x) as.numeric(as.POSIXct(x, tz = "UTC"))
 
-ledgr_membership_apply_prepared_header <- function(known,
-                                                    state,
-                                                    reason,
-                                                    winner,
-                                                    selected_knowledge,
-                                                    header,
-                                                    headers,
-                                                    header_complete,
-                                                    header_knowledge,
-                                                    set_index,
-                                                    key) {
-  header_ref <- paste0("set:", headers$set_id[[header]])
-  if (isTRUE(header_complete[[header]])) {
-    known[] <- TRUE
-    state[] <- FALSE
-    reason[] <- "omitted_from_complete_set"
-    winner[] <- header_ref
-    selected_knowledge[] <- header_knowledge[[header]]
-  }
-  selected_rows <- set_index$by_header[[header]]
-  if (length(selected_rows) > 0L) {
-    selected_rows <- selected_rows[
-      !duplicated(set_index$rows$instrument_id[selected_rows])
-    ]
-    selected <- match(
-      as.character(set_index$rows$instrument_id[selected_rows]),
-      key
-    )
-    keep <- !is.na(selected)
-    selected <- selected[keep]
-    selected_rows <- selected_rows[keep]
-    known[selected] <- TRUE
-    state[selected] <- TRUE
-    reason[selected] <- "member_asserted"
-    winner[selected] <- paste0(
-      header_ref,
-      "|fact:",
-      as.character(set_index$rows$fact_id[selected_rows])
-    )
-    selected_knowledge[selected] <- header_knowledge[[header]]
-  }
-  list(
-    known = known,
-    state = state,
-    reason = reason,
-    winner = winner,
-    knowledge = selected_knowledge
-  )
-}
-
 ledgr_membership_advance_prepared_header <- function(state,
                                                       header,
                                                       headers,
