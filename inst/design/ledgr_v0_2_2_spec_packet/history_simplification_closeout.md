@@ -3,17 +3,17 @@
 Commits on `ws46/history-simplification`: `d4d13c55` (LDG-3074 draft),
 merge `804e9be2` (accepted Workstream 43), `69543182` and `72f496e7`
 (LDG-3074 finalization), `5ee67009` (LDG-3075 without the segment item,
-and the LDG-3076 differential), `4a9b93cf` (LDG-3077) and the evidence
-commit that adds this record.
+and the LDG-3076 differential), `4a9b93cf` (LDG-3077), `7b09f095` (first
+evidence record with the NEEDS_TYPE_2), then the Cut 16 decision (22)
+implementation and evidence commits named in `tickets.yml`.
 
 Role: record; Workstream 46 implementation evidence.
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behavior; `history_representation_map.md` is the work list.
-Status: blocked on one maintainer question (NEEDS_TYPE_2 below). LDG-3074
-and LDG-3077 are complete. LDG-3075 is implemented except the deletion of
-the membership and trading-status history segments, and LDG-3076 depends on
-that decision; both stay open. Workstream 46 is not yet ready for its close
-review.
+Status: LDG-3074 to LDG-3077 are complete. The LDG-3075 NEEDS_TYPE_2 was
+decided by the maintainer on 2026-10-19 as Cut 16 decision (22): membership
+and trading-status segments are counted, not stored. Workstream 46 is
+`review_pending`.
 
 BASE for every byte-identity claim is `b9d098c8`, the integration merge of
 the accepted Workstream 43. Product code on this branch equals BASE up to
@@ -56,27 +56,27 @@ by name search alone, and removed only when no product path reads it:
 | `provider_plan$sessions` (R14) | the provider's `sessions` | dropped from the stored plan; `ledgr_availability_provider_from_substrate()` passes `substrate$sessions` |
 | `precomputed_features` in tasks and the staged invariant (R33) | none: passed through `ledgr_sweep_eval_candidate_task()`, `ledgr_sweep_run_candidate()` and `ledgr_sweep_candidate_execution()` and never read | removed from the task, the invariant field list and the three signatures; pulse inspection no longer passes `NULL` |
 | Full plan compiled for a calendar (R15, R10, R13) | derived-state rebuild (twice), `ledgr_run_open()` for INCOMPLETE runs, window pulse validation, `ledgr_walk_forward_pulse_calendar()` | each reads the session table through the new `ledgr_availability_session_source()`; `ledgr_run_open()` keeps its eager `ledgr_snapshot_ensure_verified()` call. Window validation's `ledgr_precompute_snapshot_meta()` argument was a lazy promise the provider only forced inside `identity()`, which validation never calls, so it is dropped without removing a check that ran |
-| Membership and trading-status segments (R16, M-3 to M-7, S-2, S-4) | none in production, but see NEEDS_TYPE_2 | **not removed**: blocked |
+| Membership and trading-status segments (R16) and the compilers that only built them: `ledgr_history_segments_build()` (M-6), `ledgr_history_membership_complete_segments()` (M-3) with `ledgr_membership_apply_prepared_header()`, `ledgr_history_membership_diagonal_segments()` (M-4), `ledgr_history_membership_segments()` and `ledgr_history_status_segments()` | none in production; the segment guard and `ledgr_history_substrate_census()` read their counts | removed under Cut 16 decision (22); the substrate keeps `segment_counts` (per instrument fact count, segment count, ratio and limit for each family) and the guard refuses exactly as before (Decision 22 below) |
 
 No execution-mode branch site was added or removed: census check mode passes
 with 158 branch and 55 flow sites; only the helper, condition, connection,
-version and test-only-seam tables move with the removed helpers (findings 73
-to 72: the `uncalled_private` bar-frame finding is gone).
+version and test-only-seam tables move with the removed and added helpers
+(findings 73 to 72: the `uncalled_private` bar-frame finding is gone).
 
 ### Acceptance status
 
 | Acceptance item | Record | Result |
 | --- | --- | --- |
-| Run, sweep, window, walk-forward, inspection and history-read results byte-identical to BASE; fixture ladder exact; full suite passes | Byte-identity runner and fixture ladder below; verification record | 62 of 62 families identical; ladder 50 of 50 plus identity; full suite: see Verification record |
-| A structural detector fails if a second fact representation or a removed plane returns | LCL-0322/LTB-0332 | Fails on every restored plane, field, packet field, provider history member, staged `precomputed_features`, removed helper and session-only reader that builds a provider (mutations M1-M10). The "second fact representation" half is open with the segment decision |
-| Substrate and staged-invariant size at H1 before and after | Sizes below | Substrate 720.6 to 495.3 MB object (737.4 to 477.1 serialized); staged invariant 855.2 to 629.8 (fresh) and 1,121.0 to 629.8 (precomputed) |
+| Run, sweep, window, walk-forward, inspection and history-read results byte-identical to BASE; fixture ladder exact; full suite passes | Byte-identity runner and fixture ladder below; verification record | 84 of 84 families identical, including run, sweep and inspection refusals at declared segment limits; ladder 50 of 50 plus identity; full suite passes |
+| A structural detector fails if a second fact representation or a removed plane returns | LCL-0322/LTB-0332 | Fails on every restored plane, field, packet field, provider history member, staged `precomputed_features`, removed helper, session-only reader that builds a provider, stored membership or status segment family and removed compiler (mutations M1-M13) |
+| Substrate and staged-invariant size at H1 before and after | Sizes below | Substrate 720.6 to 413.5 MB object (737.4 to 428.8 serialized); staged invariant 855.2 to 548.0 (fresh) and 1,121.0 to 548.0 (precomputed) |
 | Seven shapes walked on changed preparation code | Seven-shape walk below | Walked |
-| Each removed item absent from package code and guarded; changed tests with reasons | LTB-0332; Test changes below | Done for every removed item; the segment item is open |
+| Each removed item absent from package code and guarded; changed tests with reasons | LTB-0332; Test changes below | Done |
 
 ## LDG-3076: compilers that remain
 
-On BASE and on this branch, every fact compiler is reached from production
-through `ledgr_history_substrate()` (runner, `ledgr_history_substrate_for_experiment()`
+On BASE every fact compiler was reached from production through
+`ledgr_history_substrate()` (runner, `ledgr_history_substrate_for_experiment()`
 for sweeps, walk-forward, explicit precompute and pulse inspection) or
 through `ledgr_availability_provider_prepare()` (the substrate and the
 store-built provider of the availability results reader):
@@ -88,12 +88,42 @@ store-built provider of the availability results reader):
 | Lifetime | L-2 per-instrument, L-3 sparse | L-4 |
 | Terminal | T-1 per-instrument | L-4 plane 2 |
 
-Whether M-3 to M-6, S-2 and S-4 remain depends on the NEEDS_TYPE_2 decision:
-deleted with their segments under option A, or M-6 replaced by one
-per-instrument compiler with measurements under option B. Until then the
-ticket stays open. Its decision-independent part is done: LCL-0324/LTB-0334
-is a registered randomized differential of the compilers that survive every
-option against their canonical resolvers: L-2 and L-3 two-clock lifetime
+After Cut 16 decision (22) the membership compilers M-3, M-4 and M-6 are
+gone (M-5 was a membership use of the shared per-instrument compiler, which
+stays for lifetime, terminal and status counts). What remains, with its
+production caller and differential:
+
+| Path | Production caller | Differential |
+| --- | --- | --- |
+| M-1 canonical resolver | public `ledgr_facts_resolve()` for membership (through `ledgr_membership_resolve_at()`); the rule M-2 and the counter implement | the canonical side of LTB-0334 and of the frozen compilers in LTB-0335 |
+| M-2 prepared cursor | every availability fold pulse; the same-clock membership counter | LTB-0334 |
+| Membership counter (`ledgr_history_membership_fact_counts()`, `ledgr_history_membership_diagonal_counts()`) | `ledgr_history_substrate()` through `ledgr_history_membership_segment_counts()` | LTB-0335 against the frozen BASE compilers |
+| S-1 rule, S-2 per-instrument and S-4 one-fact compilers (counts only) | `ledgr_history_substrate()` through `ledgr_history_status_segment_counts()` | LTB-0335 (counts and refusals), LTB-0334 (S-3 against S-1) |
+| S-3 diagonal status plan | every availability fold pulse | LTB-0334 |
+| L-1 rule, L-2 and L-3 lifetime compilers, T-1 terminal compiler (stored) | `ledgr_history_substrate()` | LTB-0334 |
+| L-4 diagonal lifetime plan | every availability fold pulse | LTB-0334 |
+
+The family-wide epoch compiler (M-6) is absent from the package and LTB-0332
+fails if it returns (mutation M12). Incomplete lagged set compilation
+(`dev/bench/v0_2_2_history_simplification/membership_lagged_counts.R`, 500
+sessions, sets known five sessions after they take effect, each listing a
+random half of the instruments; timing method under Timing below, three
+alternating runs per arm):
+
+| Sets x instruments | BASE M-6 (s) | Counter (s) | Segments (both arms) |
+| --- | --- | --- | --- |
+| 20 x 300 | 0.78, 0.77, 0.78 | 0.01, 0.02, 0.01 | 3,300 |
+| 40 x 300 | 3.82, 3.80, 3.82 | 0.09, 0.07, 0.08 | 6,300 |
+| 80 x 300 | 22.11, 22.22, 22.24 | 0.06, 0.06, 0.06 | 12,300 |
+
+The per-instrument counts are identical in both arms (equal digests). On
+the counter alone, 20 to 320 sets by 300, 600 and 1,200 instruments take
+0.03 to 1.33 s and grow in proportion to sets times instruments, that is to
+the number of set rows (`evidence/membership_lagged_counts.csv`): doubling
+either sets or instruments about doubles the time.
+
+LCL-0324/LTB-0334 is the randomized differential of the compilers that
+survive under every option against their canonical resolvers: L-2 and L-3 two-clock lifetime
 (state, winner and reason) and T-1 terminal segments against
 `ledgr_history_lifetime_resolve_applicable()` at every observation and at
 cutoffs on, between and after sessions; the diagonal plan's lifetime state,
@@ -156,22 +186,35 @@ through the public fact constructors and records 62 families:
   frames, a long feature frame, `ledgr_history_matrix()` and two
   `ledgr_history_sufficient()` answers.
 
+After Cut 16 decision (22) the runner gained 22 refusal families: a run, a
+sweep and a pulse inspection under `ledgr_history_policy(segment_limit = k)`
+for k = 1 to 6 on fixture A, 1 to 3 on B and C, 1 to 4 on D, and 1 to 6 on a
+fifth fixture E (one complete set, four lagged status facts on one
+instrument), recording each refusal's class, message and condition fields.
+On BASE these refuse with the membership family (A, B, C, D) and with the
+trading-status family (E at k = 2 to 4); the larger limits run. BASE was
+re-recorded with 84 families.
+
 `check_identity.R` compares each family by the bytes of `serialize()`; its
-self-test perturbs each family alone and detects 62 of 62. Before any
+self-test perturbs each family alone and detects 62 of 62 (84 of 84 on the
+re-recorded BASE). Before any
 product change, a run of the unchanged branch head agreed with a BASE run on
 every family (58 families then; the two INCOMPLETE scenarios were added
 later and BASE was re-recorded), after volatile columns (timings, creation
 and promotion times, database paths) were dropped. Result on the final
 candidate (the committed LDG-3075 and LDG-3077 tree): 62 of 62 families
-identical, no family retried; checker self-test 62 of 62. A product
+identical, no family retried; checker self-test 62 of 62. On the decision
+(22) tree: 84 of 84 identical against the re-recorded BASE, no family
+retried. A product
 mutation that makes `ctx$bars$gap_type` `"NONE"` everywhere makes the runner
 report 11 in-strategy and inspection families as different (Mutation table).
 
 The registered fixture ladder (`dev/bench/v0_2_2_real_data_scale`, 800
 instruments, 1,260 sessions, 300 members, ten phases) ran on the BASE copy
-and on the candidate with `--allow-dirty`, twice (the first LDG-3075 tree
-and the final tree): each time 50 of 50 gated families identical and the
-identity family identical; the recorder self-test detects 51 of 51.
+and on the candidate with `--allow-dirty`, on the first LDG-3075 tree, the
+LDG-3077 tree and the decision (22) tree: each time 50 of 50 gated families
+identical and the identity family identical; the recorder self-test detects
+51 of 51.
 
 ## Sizes (H1 shape)
 
@@ -179,23 +222,25 @@ identity family identical; the recorder self-test detects 51 of 51.
 7,213 sessions, 580 complete sets), BASE copy against candidate; MB, object /
 serialized:
 
-| Representation | BASE `b9d098c8` | Candidate |
-| --- | --- | --- |
-| Substrate, no features | 720.6 / 737.4 | 495.3 / 477.1 |
-| Substrate, one feature bound | 788.4 / 803.8 | 563.1 / 543.5 |
-| Bar planes | 8 planes, 449.4 / 483.6 | 6 planes, 353.1 / 353.1 |
-| Diagonal planes (R12a-d) | 128.4 / 128.4 | absent |
-| Provider plan | 59.5 / 75.5 | 58.8 / 74.1 |
-| Staged invariant, fresh sweep | 855.2 / 869.9 | 629.8 / 609.7 |
-| Staged invariant, precomputed sweep | 1,121.0 / 1,133.6 | 629.8 / 609.7 |
-| Membership plus status segments (pending) | 81.8 / 48.3 | 81.8 / 48.3 |
+| Representation | BASE `b9d098c8` | After LDG-3075 part 1 | After decision (22) |
+| --- | --- | --- | --- |
+| Substrate, no features | 720.6 / 737.4 | 495.3 / 477.1 | 413.5 / 428.8 |
+| Substrate, one feature bound | 788.4 / 803.8 | 563.1 / 543.5 | 481.3 / 495.3 |
+| Bar planes | 8 planes, 449.4 / 483.6 | 6 planes, 353.1 / 353.1 | 6 planes, 353.1 / 353.1 |
+| Diagonal planes (R12a-d) | 128.4 / 128.4 | absent | absent |
+| Membership plus status segments | 81.8 / 48.3 | 81.8 / 48.3 | counts only, 0.05 / 0.05 |
+| Provider plan | 59.5 / 75.5 | 58.8 / 74.1 | 58.8 / 74.1 |
+| Staged invariant, fresh sweep | 855.2 / 869.9 | 629.8 / 609.7 | 548.0 / 561.4 |
+| Staged invariant, precomputed sweep | 1,121.0 / 1,133.6 | 629.8 / 609.7 | 548.0 / 561.4 |
 
-The substrate shrinks by 31 percent (object) and 35 percent (serialized);
-the staged invariant by 26 and 30 percent for a fresh sweep and 44 and 46
-percent for a precomputed one. Deleting the membership and status segments
-would remove a further 81.8 / 48.3 MB. Records:
-`dev/bench/v0_2_2_history_simplification/evidence/representation_sizes_h1_b9d098c8.csv`
-and `representation_sizes_h1_ldg3075.csv`, with logs.
+Against BASE the substrate shrinks by 43 percent (object) and 42 percent
+(serialized); the staged invariant by 36 and 35 percent for a fresh sweep and
+51 and 50 percent for a precomputed one. The H1 substrate built in about 2.3
+s on the decision (22) tree against about 10 s on BASE (disclosure only, one
+run each; the complete-set compiler built 677,446 segments there). Records:
+`dev/bench/v0_2_2_history_simplification/evidence/representation_sizes_h1_b9d098c8.csv`,
+`representation_sizes_h1_ldg3075.csv` and
+`representation_sizes_h1_decision22.csv`, with logs.
 
 ## Timing (LDG-3077)
 
@@ -214,8 +259,14 @@ profiles were not run here.
 Changed preparation code: `ledgr_history_substrate()`,
 `ledgr_history_substrate_bar_matrices()`, `ledgr_history_substrate_bar_packet()`,
 `ledgr_history_bar_packet_frame()`, the provider builders,
-`ledgr_availability_session_source()`, the sweep task builders and
-`ledgr_indicator_catalogue_row()` / `ledgr_indicator_catalogue_index()`.
+`ledgr_availability_session_source()`, the sweep task builders,
+`ledgr_indicator_catalogue_row()` / `ledgr_indicator_catalogue_index()`, and
+for decision (22) `ledgr_history_segment_limit_check()`,
+`ledgr_history_membership_segment_counts()`,
+`ledgr_history_membership_fact_counts()`,
+`ledgr_history_uncovered_pieces()`,
+`ledgr_history_membership_diagonal_counts()` and
+`ledgr_history_status_segment_counts()`.
 
 1. One-row frame per element: none added. The catalogue rebuild was a
    one-row `data.frame()` per catalogue row bound with `rbind` on every
@@ -234,6 +285,23 @@ Changed preparation code: `ledgr_history_substrate()`,
 6. Quadratic validators: none.
 7. Scalar writes into an environment-held vector: none; the catalogue cache
    is assigned once.
+
+Decision (22) counting, shape by shape. No loop runs over sessions or
+instruments times sessions. `ledgr_history_membership_fact_counts()` loops
+once over complete headers (each step one vector operation over headers:
+O(headers x complete headers), 0.34 million comparisons at H1's 580 sets),
+then over instruments that appear in an incomplete header or an interval
+row (shape 2 avoided: their facts are grouped once with `split()` and read
+by index; each instrument's work is one operation per own incomplete header
+over its relevant headers, and interval cover is grouped by knowledge level).
+Instruments with neither share one count. `ledgr_history_uncovered_pieces()`
+merges cover intervals with `cummax()` and counts gaps with one `outer()`.
+`ledgr_history_membership_diagonal_counts()` keeps BASE's loop over
+observation breaks (bounded by fact rows) with vector work over instruments
+and keeps only the previous break's answer. The status counter runs the
+shared per-instrument compiler, which loops over instruments with status
+facts and their own epochs and breaks (shape 5 is the accepted residual: the
+segments are built and dropped, as BASE built and stored them).
 
 ## Test changes and reasons
 
@@ -270,8 +338,22 @@ No behavioral oracle changed. Each change below follows a removed structure:
   failure the first complete full-suite run on the candidate reported
 (1,143 blocks; the run before it stopped at the stale shared library noted
 under Routed).
+- Decision (22), LTB-0291: its two-clock membership and trading-status reads
+  (`before`, `learned`, `ignored`, `status_late`, `status_early`, the status
+  side of the provider diagonal loop, the lagged interval-only family and the
+  two-clock complete family) read stored segments that decision (22)
+  removes. They now read the same answers from frozen copies of the BASE
+  compilers (`helper-history-segment-reference.R`), with every literal and
+  canonical-resolver oracle unchanged, and LTB-0291 additionally asserts that
+  the substrate's counts equal the reference compilers' counts. The two
+  sparse-lifetime blocks drop their mock of `ledgr_history_segments_build()`,
+  which no longer exists; LTB-0332 detects its return.
+- Decision (22), LTB-0332: the expected substrate names add `segment_counts`,
+  the expected segment families are `lifetime` and `lifetime_terminal`, and
+  the removed-function list adds the five compilers and the header applier.
 - New: LCL-0322/LTB-0332 (fast), LCL-0323/LTB-0333 (fast), LCL-0324/LTB-0334
-  (review).
+  (review), LCL-0325/LTB-0335 (review). The frozen reference helper is test
+  code only; the census lists no new test-only seam.
 
 ## Mutation table
 
@@ -304,6 +386,20 @@ mutation made the block error.
 | P4b | diagonal plan lets the earliest lifetime fact win (L-4) | `R/availability-provider-prepared.R` | LTB-0334 | fails (7) |
 | P5 | prepared membership cursor treats every header as complete (M-2) | `R/availability-provider-prepared.R` | LTB-0334 | fails (24) |
 | P6 | diagonal status plan ignores precedence (S-3) | `R/availability-provider-prepared.R` | LTB-0334 | fails (7) |
+| M11 | store the membership counts as a segment family again | `R/history-substrate.R` | LTB-0332 | fails (1) |
+| M12 | restore the family-wide epoch compiler | `R/history-substrate.R` | LTB-0332 | fails (1) |
+| M13 | restore the complete-set header applier | `R/availability-provider-prepared.R` | LTB-0332 | fails (1) |
+| Q1 | count an instrument's header region from its break to the axis end | `R/history-substrate.R` | LTB-0335 | fails (16) |
+| Q2 | ignore interval cover on header regions | `R/history-substrate.R` | LTB-0335 | fails (15) |
+| Q3 | merge same-clock runs across different knowledge times | `R/history-substrate.R` | LTB-0335 | survives: equivalent mutant (a run's winner fixes its knowledge time, so equal answers imply equal knowledge) |
+| Q3b | count every kept same-clock break as its own segment | `R/history-substrate.R` | LTB-0335 | fails (43) |
+| Q4 | let a later complete header block before it is known | `R/history-substrate.R` | LTB-0335 | fails (31) |
+| Q5 | change the guard message's ratio precision | `R/history-substrate.R` | LTB-0335 | fails (122) |
+| Q6 | change the default limit floor in the shared guard | `R/history-substrate.R` | LTB-0335 | fails (62) |
+
+M0 to P6 were re-run on the decision (22) tree with the same results
+(LTB-0332 then has 40 expectations); the unmutated copy passes LTB-0335
+(510 expectations).
 
 P4 first survived: the lifetime constructor sorts rows by effective time, so
 row order equalled rank. LTB-0334 now shuffles the lifetime rows (row order
@@ -317,7 +413,49 @@ scenarios and the inspected pulses of four (fixture C's inspected families
 are unchanged, presumably because its four inspected pulses have no missing
 bar).
 
-## NEEDS_TYPE_2: membership and trading-status segments
+## Decision (22): membership and trading-status segments counted, not stored
+
+The NEEDS_TYPE_2 below was decided by the maintainer on 2026-10-19 as option
+C, recorded as Cut 16 decision (22). Implementation:
+
+- `ledgr_history_substrate()` calls `ledgr_history_membership_segment_counts()`
+  and `ledgr_history_status_segment_counts()` in BASE's order (membership,
+  status, then the stored lifetime and terminal compilers), so the first
+  refusing family and instrument are BASE's. Both feed
+  `ledgr_history_segment_limit_check()`, which builds BASE's message, class
+  and fields from the counts.
+- Membership: the counts come from the facts the provider plan holds. For
+  the complete-set, interval-only and lagged cases an instrument's answer is
+  decided by one fact (the last applicable interval, else the last eligible
+  relevant header, else none) and distinct facts give distinct answers, so a
+  BASE segment count is one initial segment plus, for every fact, the number
+  of contiguous axis blocks it wins when it becomes known.
+  `ledgr_history_membership_fact_counts()` computes that from header ranks,
+  breaks and knowledge times and interval spans. The same-clock case keeps
+  BASE's per-break rule through the plan's prepared resolver
+  (`ledgr_history_membership_diagonal_counts()`). Path selection is BASE's,
+  including radix header order for the all-complete case.
+- Status: the plan's diagonal status segments do not carry enough to count
+  two-clock segments (no end times or statuses), so the status counter runs
+  the shared one-fact and per-instrument compilers on the status rows the
+  plan is prepared from and keeps only their counts. This reads decision
+  (22)'s "derives each family's segment count from the provider execution
+  plan" as "from the facts the plan holds"; the operative clauses (counted,
+  not stored; refusals unchanged; status-only compiler wrapper removed) hold.
+- v12 Section 7's "flat bitemporal segment vectors per instrument and
+  fact-state family" and its per-family guard are met by counting for
+  membership and trading status, as decision (22) records, and by stored
+  segments for lifetime and terminal state. `contracts.md` (Provider,
+  Knowledge And Timing) now says membership and trading-status state is
+  counted, not stored, citing decision (22).
+- Verification: LTB-0335 compares counts and refusals with frozen BASE
+  compilers over 24 random rounds (five membership shapes, two status
+  shapes, about 170 limit breaches) and four declared limits on a whole
+  substrate; a scratch probe found no count mismatch on 1,800 further random
+  membership families; the identity runner's refusal families are equal on
+  BASE and the candidate.
+
+### The NEEDS_TYPE_2 as raised
 
 The amended LDG-3075 scope says to delete the membership and trading-status
 history segments because no production path reads them. On BASE that holds
@@ -381,6 +519,15 @@ Options for the maintainer:
   serialized in production.
 
 ## Verification record
+
+On the decision (22) product tree (`a86f8573`),
+Windows 11, R 4.6.1, run sequentially:
+
+- Full suite: 1,145 blocks, 18,352 expectations, no failure or error, one optional skip (quantmod installed); 653 s of block time.
+- Byte-identity runner against BASE: 84 of 84; self-test 84 of 84.
+- Fixture ladder against BASE: 50 of 50 plus identity; self-test 51 of 51.
+- Census check mode and `--self-test-mode-branches`, the fold-phase checker
+  and the YAML parse pass; `git diff --check b9d098c8` is clean.
 
 On the product tree committed as `4a9b93cf`, Windows 11, R 4.6.1, run
 sequentially unless noted:

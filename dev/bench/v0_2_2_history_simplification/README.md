@@ -60,3 +60,19 @@ features and staged invariants were then built by the measured tree.
   `missing_expected_bar`, `inactive_print`, `families`, the plan's
   `sessions` and the staged `precomputed_features`).
 - Same host and software. Sizes do not depend on load.
+
+## Recorded runs after Cut 16 decision (22) (2026-10-19)
+
+- `evidence/representation_sizes_h1_decision22.csv` and `.log`: the same
+  H1 snapshot and script on the working tree with membership and
+  trading-status segments counted, not stored. The new
+  `segment_counts (membership, status)` row is the counts the guard keeps.
+- `membership_lagged_counts.R` and `evidence/membership_lagged_counts.csv`:
+  incomplete lagged set compilation (LDG-3076). Method: High performance
+  power plan, the calling PowerShell process pinned to the performance cores
+  (`ProcessorAffinity = 0xFFFF`), `Rscript.exe` by full path, a `git
+  archive` copy of `b9d098c8` ("base") and the working tree ("candidate")
+  alternating, three runs each at 20, 40 and 80 sets by 300 instruments, no
+  other R process; then one candidate run up to 320 sets by 1,200
+  instruments ("candidate_scale"). `count_digest` equal across arms shows
+  identical per-instrument counts.

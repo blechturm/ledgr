@@ -1,0 +1,56 @@
+universe 1166
+substrate built in 2.348156 secs
+axis 7213 instruments 1166
+substrate              total (no features bound)                         413.5 MB      428.8 MB
+substrate_bars         open                                               64.2 MB       64.2 MB
+substrate_bars         high                                               64.2 MB       64.2 MB
+substrate_bars         low                                                64.2 MB       64.2 MB
+substrate_bars         close                                              64.2 MB       64.2 MB
+substrate_bars         volume                                             64.2 MB       64.2 MB
+substrate_bars         observed                                           32.1 MB       32.1 MB
+substrate_planes       expected                                            0.0 MB        0.0 MB
+substrate_planes       halted                                              0.0 MB        0.0 MB
+substrate_planes       missing_expected_bar                                0.0 MB        0.0 MB
+substrate_planes       inactive_print                                      0.0 MB        0.0 MB
+substrate_segments     lifetime                                            0.1 MB        0.1 MB segments=1226 facts=60
+substrate_segments     lifetime_terminal                                   0.1 MB        0.1 MB segments=1226 facts=60
+substrate              segment_counts (membership, status)                 0.0 MB        0.0 MB
+provider_plan          total                                              58.8 MB       74.1 MB
+provider_plan          membership                                         58.6 MB       74.0 MB
+provider_plan_membership headers                                             0.1 MB        0.1 MB
+provider_plan_membership set_index                                          58.5 MB       73.9 MB
+provider_plan_membership interval                                            0.0 MB        0.0 MB
+provider_plan          status_segments                                     0.0 MB        0.0 MB
+provider_plan          lifetime_segments                                   0.0 MB        0.0 MB
+provider_plan          sessions                                            0.0 MB        0.0 MB
+substrate              sessions                                            0.7 MB        1.4 MB
+substrate              families                                            0.0 MB        0.0 MB
+substrate              axis+indexes                                        0.8 MB        0.3 MB
+flag                   unread+restating planes                             0.0 MB        0.0 MB gap_type, is_synthetic, expected, halted, missing_expected_bar, inactive_print
+flag                   facts held twice (segments+plan)                   59.0 MB       74.2 MB
+provider               from substrate (closures)                           0.8 MB      654.3 MB serialized length includes captured environments
+features               payload, one feature (per-instrument vectors)       65.7 MB       65.5 MB
+features               runtime projection, one feature                    67.8 MB       66.4 MB
+substrate              total (one feature bound)                         481.3 MB      495.3 MB
+precompute             ledgr_precomputed_features, two features          265.8 MB      263.7 MB
+precompute               projection                                      134.3 MB      132.4 MB
+precompute               payload                                         131.3 MB      131.0 MB
+history_memo           late_epochs                                         0.1 MB        0.0 MB
+history_memo           base_masks                                         32.1 MB       32.1 MB
+history_memo           base_close                                         64.2 MB       64.2 MB
+history_memo           overlays (80 keys)                                  3.4 MB        3.3 MB instruments_with_late_facts=40
+history_memo           whole memo after reads                             99.7 MB       99.6 MB
+history_read           result close lookback 252 wide                     20.5 MB       19.6 MB
+history_read           result close lookback Inf wide                    554.0 MB      551.1 MB
+staged_invariant       fresh: invariant                                  548.0 MB      561.4 MB
+staged_invariant       fresh: invariant$history_substrate                547.8 MB      561.3 MB
+staged_invariant       fresh: invariant$precomputed_features               0.0 MB        0.0 MB
+staged_invariant       fresh: one compact task                             0.1 MB        0.1 MB
+staged_invariant       precomputed: invariant                            548.0 MB      561.4 MB
+staged_invariant       precomputed: invariant$history_substrate          547.8 MB      561.3 MB
+staged_invariant       precomputed: invariant$precomputed_features         0.0 MB        0.0 MB
+staged_invariant       precomputed: one compact task                       0.1 MB        0.1 MB
+dense                  bars_mat                                          417.1 MB      449.2 MB
+dense                  static_bars_views                                1011.1 MB      620.1 MB
+dense                  bars_by_id                                        548.1 MB      618.0 MB
+done

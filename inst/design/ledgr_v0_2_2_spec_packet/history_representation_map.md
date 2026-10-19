@@ -404,13 +404,30 @@ At H1 the substrate falls from 720.6 MB object / 737.4 MB serialized to
 1,121.0 / 1,133.6 (precomputed) to 629.8 / 609.7 for both
 (`dev/bench/v0_2_2_history_simplification/evidence/representation_sizes_h1_ldg3075.csv`).
 
-Not removed, pending a maintainer decision (NEEDS_TYPE_2 in the closeout):
-the membership and trading-status history segments (R16; 81.8 MB object /
-48.3 MB serialized at H1) and with them M-3 to M-7 and S-2 and S-4. They
-are the stored form `contracts.md` and v12 Section 7 name and the only input
-of the segment guard for those two families. LDG-3076 is blocked on the same
-decision; its decision-independent differential, LTB-0334, covers L-2, L-3,
-T-1, L-4, S-3 and M-2 against their canonical resolvers.
+Cut 16 decision (22) (2026-10-19, on the LDG-3075 NEEDS_TYPE_2): membership
+and trading-status segments are counted, not stored. LDG-3075 then removed
+the stored membership and trading-status segments (R16's first two
+families; 81.8 MB object / 48.3 MB serialized at H1) and the compilers that
+only built them: M-3, M-4 and M-6 (with the header applier M-3 used), the
+membership dispatcher and the status wrapper. The substrate keeps
+`segment_counts` (per instrument: fact count, segment count, ratio, limit)
+for the guard and the census. Membership counts come from the facts the
+provider plan holds: the complete-set, interval-only and lagged cases by
+counting, for each fact, the contiguous axis blocks it wins when it becomes
+known (`ledgr_history_membership_fact_counts()`), the same-clock case from
+the plan's prepared resolver at each break
+(`ledgr_history_membership_diagonal_counts()`). Status counts run the shared
+one-fact and per-instrument compilers (S-4, S-2, also used by L-3 and L-2)
+without keeping their output. LTB-0335 compares every count and refusal with
+frozen copies of the BASE compilers. With them the substrate is 413.5 /
+428.8 MB at H1 and the staged invariant 548.0 / 561.4 MB
+(`representation_sizes_h1_decision22.csv`).
+
+LDG-3076: M-1 (canonical resolver), M-2 (cursor), S-1 to S-4 and the
+lifetime and terminal compilers remain; LTB-0334 and LTB-0335 are their
+differentials. Incomplete lagged counting at 20, 40 and 80 sets by 300
+instruments takes 0.01 to 0.09 s against 0.78, 3.82 and 22.2 s for M-6 on
+BASE.
 
 LDG-3077 builds R34 once per session (`ledgr_indicator_catalogue_index()`)
 and looks rows up by key; the catalogue function body, and therefore the
