@@ -628,10 +628,13 @@ warmup value.
 
 The dense lifecycle above is the entrance. Availability-aware research
 adds a stricter question: which sessions should have contained an
-observation? A missing observation on a declared open session
-invalidates every bounded window that contains it. ledgr does not
-compress the window, carry a stale value into it, or call the gap
-ordinary startup warmup.
+observation? A missing observation on a declared open session is a gap.
+By default the experiment's history policy carries each price field for
+up to five expected sessions; `ledgr_history_policy(price_carry = NULL)`
+keeps the strict rule, under which the gap invalidates every bounded
+window that contains it. Return- and volatility-family indicators never
+use a carried price, and ledgr never calls a gap ordinary startup
+warmup.
 
 ``` r
 strict_smas <- ledgr_feature_map(
@@ -655,29 +658,57 @@ ledgr_feature_contracts(strict_smas)
 ```
 
 In the strict-gap table in
-`vignette("missing-data-and-sessions", package = "ledgr")`, all three
-follow the same `NA, 11, NA, NA, 15, 17` availability path. That is
-session equivalence, not a claim that different formulas are numerically
-identical.
+`vignette("missing-data-and-sessions", package = "ledgr")`, which
+disables price carry, all three follow the same `NA, 11, NA, NA, 15, 17`
+availability path. That is session equivalence, not a claim that
+different formulas are numerically identical.
 
 <!-- strict-gap-support:start -->
 
-| Form | Declaration | Availability-aware status |
+| Form | Declaration | Availability-aware calculation |
 |----|----|----|
-| Built-in SMA | `ledgr_ind_sma(n)` | Supported |
-| Built-in returns | `ledgr_ind_returns(n)` | Supported |
-| Custom bounded window | `ledgr_indicator(..., gap_contract = "strict_window")` | Supported when the declaration is truthful |
-| Public TTR SMA | `ledgr_ind_ttr("SMA", input = "close", n = n)` | Supported for this exact single-output shape |
-| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Unsupported |
-| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported |
-| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Unsupported |
-| Other TTR signatures | any shape not matching the public TTR SMA row | Unsupported |
+| Built-in SMA, EMA, RSI or returns | `ledgr_ind_sma(n)`, `ledgr_ind_ema(n)`, `ledgr_ind_rsi(n)`, `ledgr_ind_returns(n)` | Supported: bounded |
+| Registered TTR form | `ledgr_ind_ttr()` on a catalogued function, output and argument form | Supported: per catalogue row |
+| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Supported: per catalogue row |
+| Custom bounded declaration | `ledgr_indicator(..., history_class = "bounded")` or `gap_contract = "strict_window"` | Supported: bounded |
+| Undeclared custom or unregistered TTR form | `ledgr_indicator(...)` without a history declaration, or an uncatalogued TTR form | Supported: history-dependent |
 
 <!-- strict-gap-support:end -->
 
-Unsupported declarations fail with `ledgr_indicator_gap_unsupported`
-before the strategy executes. They are never silently evaluated under
-dense semantics.
+A bounded indicator uses the last `requires_bars` expected sessions and
+is missing while that window is incomplete. A history-dependent
+indicator runs once per contiguous segment of available input and
+restarts, and warms up again, after a gap. Contradictory declarations
+refuse with `ledgr_indicator_history_contradiction`.
+
+A delisting ends carry and windows: after each relisting, price carry
+never reaches back across the terminal interval, and a bounded indicator
+restarts, so it needs `requires_bars` sessions from the relisting before
+it is ready again and never averages prices from before the delisting
+with prices after it.
+
+`stable_after` is the first-valid boundary: the first session after a
+start or a restart at which ledgr exposes a value. It is not a
+convergence promise. A history-dependent indicator that restarts after a
+gap is valid again once it passes `stable_after`, yet it can still
+differ from the value an uninterrupted series would have produced. In
+ledgr's conformance measurements (TTR 0.24.4, one missing session at
+three positions), the restarted series needed 40 to 47 observations to
+come within a scaled `1e-6` of the uninterrupted series for TTR EMA with
+`n = 10`, 59 to 72 for the MACD outputs with `nFast = 5`, `nSlow = 10`
+and `nSig = 4`, 101 to 109 for ATR with `n = 10`, and 157 to 190 for RSI
+with `n = 14`. Read those ranges as evidence about how long retained
+state takes to recover, not as a guarantee.
+
+Before an availability-aware run, sweep or precompute uses its features,
+ledgr checks each definition for look-ahead at no more than four fixed
+positions on one instrument: the value recomputed from the history
+ending at a position must equal the prepared value, or preparation
+refuses with `ledgr_feature_lookahead_detected`. The check is a sample,
+so passing it does not prove that a definition is causal, and dense
+experiments do not run it.
+`vignette("custom-indicators", package = "ledgr")` describes the extra
+check for custom definitions that supply both `fn` and `series_fn`.
 
 For result-table interpretation after a zero-trade run, read
 `vignette("metrics-and-accounting", package = "ledgr")`.

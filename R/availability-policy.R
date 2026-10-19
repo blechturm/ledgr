@@ -270,29 +270,12 @@ ledgr_availability_validate_features <- function(features, features_mode) {
       class = "ledgr_invalid_experiment_features"
     )
   }
-  unsupported <- vapply(indicators, function(indicator) {
-    if (inherits(indicator, "ledgr_unresolved_feature_declaration")) {
-      return(FALSE)
-    }
-    !identical(indicator$gap_contract, "strict_window")
-  }, logical(1))
-  if (any(unsupported)) {
-    ids <- vapply(indicators[unsupported], `[[`, character(1), "id")
-    rlang::abort(
-      sprintf(
-        paste0(
-          "Availability-aware execution requires ",
-          "`gap_contract = \"strict_window\"`; unsupported indicator(s): %s."
-        ),
-        paste(ids, collapse = ", ")
-      ),
-      class = c(
-        "ledgr_indicator_gap_unsupported",
-        "ledgr_invalid_experiment_features",
-        "ledgr_invalid_experiment"
-      ),
-      indicator_ids = ids
-    )
+  # Every concrete definition is bounded or history-dependent (v12 Section 6);
+  # an undeclared one is calculated as history-dependent. Declarations are
+  # still validated here so a malformed object refuses before execution.
+  for (indicator in indicators) {
+    if (inherits(indicator, "ledgr_unresolved_feature_declaration")) next
+    ledgr_feature_certify(indicator)
   }
   invisible(TRUE)
 }

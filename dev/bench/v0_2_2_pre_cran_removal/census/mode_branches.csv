@@ -15,7 +15,6 @@
 "R/availability-results.R","ledgr_backtest_terminal_evidence","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",2
-"R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active) && !identical(feat$gap_contract, ""strict_window"")",1
 "R/backtest-results.R","summary.ledgr_backtest","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(object$config)",1
 "R/backtest-runner.R","ledgr_feature_defs_from_config","branch","availability_active","if: availability_active",1
 "R/backtest-runner.R","ledgr_feature_defs_from_config","flow","availability_active","assign_target",1
@@ -27,7 +26,6 @@
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",13
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",14
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",15
-"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",16
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",2
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",3
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",4
@@ -129,8 +127,6 @@
 "R/precompute-features.R","ledgr_precompute_features","flow","availability$active","assign:availability_active",1
 "R/precompute-features.R","ledgr_precompute_features","flow","availability_active","arg:ledgr_feature_engine_version:1",1
 "R/precompute-features.R","ledgr_precompute_features","flow","availability_active","assign_target",1
-"R/precompute-features.R","ledgr_precompute_payload","branch","availability_active","if: isTRUE(availability_active)",1
-"R/precompute-features.R","ledgr_precompute_payload","branch","availability_active","if: isTRUE(availability_active)",2
 "R/precompute-features.R","ledgr_precompute_scoring_range","branch","availability$active","if: !is.null(exp) && isTRUE(exp$availability$active)",1
 "R/precompute-features.R","ledgr_resolve_candidate_features","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/precompute-features.R","ledgr_validate_precomputed_features","branch","availability$active","if: !identical(precomputed$feature_engine_version, ledgr_feature_engine_version(isTRUE(exp$availability$active)))",1

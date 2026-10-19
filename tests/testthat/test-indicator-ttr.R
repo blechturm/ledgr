@@ -10,7 +10,7 @@ ledgr_test_ttr_cases <- function() {
     list(fn = "momentum", input = "close", output = NULL, args = list(n = 10), requires_bars = 11L, id = "ttr_momentum_10"),
     list(fn = "CCI", input = "hlc", output = NULL, args = list(n = 20), requires_bars = 20L, id = "ttr_cci_20"),
     list(fn = "BBands", input = "close", output = "up", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_up"),
-    list(fn = "aroon", input = "hl", output = "oscillator", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_oscillator"),
+    list(fn = "aroon", input = "hl", output = "oscillator", args = list(n = 20), requires_bars = 21L, first_callable = 20L, id = "ttr_aroon_20_oscillator"),
     list(fn = "DonchianChannel", input = "hl", output = "mid", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_mid"),
     list(fn = "MFI", input = "hlcv", output = NULL, args = list(n = 14), requires_bars = 15L, id = "ttr_mfi_14"),
     list(fn = "CMF", input = "hlcv", output = NULL, args = list(n = 20), requires_bars = 20L, id = "ttr_cmf_20"),
@@ -32,8 +32,8 @@ ledgr_test_ttr_parity_cases <- function() {
     list(fn = "BBands", input = "close", output = "dn", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_dn"),
     list(fn = "BBands", input = "close", output = "mavg", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_mavg"),
     list(fn = "BBands", input = "close", output = "pctB", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_pctb"),
-    list(fn = "aroon", input = "hl", output = "aroonUp", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_aroonup"),
-    list(fn = "aroon", input = "hl", output = "aroonDn", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_aroondn"),
+    list(fn = "aroon", input = "hl", output = "aroonUp", args = list(n = 20), requires_bars = 21L, first_callable = 20L, id = "ttr_aroon_20_aroonup"),
+    list(fn = "aroon", input = "hl", output = "aroonDn", args = list(n = 20), requires_bars = 21L, first_callable = 20L, id = "ttr_aroon_20_aroondn"),
     list(fn = "DonchianChannel", input = "hl", output = "high", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_high"),
     list(fn = "DonchianChannel", input = "hl", output = "low", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_low")
   )
@@ -331,7 +331,15 @@ testthat::test_that("TTR ledgr output matches direct TTR output after normalizat
 
     testthat::expect_identical(ind$id, case$id, info = label)
     testthat::expect_identical(ind$requires_bars, case$requires_bars, info = label)
-    testthat::expect_identical(first_callable_from_ttr, case$requires_bars, info = label)
+    # v12 Section 6 makes requires_bars the dependency width. TTR aroon
+    # returns a partial-window value at row n but depends on n + 1 rows (the
+    # H2 conformance width witness), so its first callable row is recorded
+    # separately from its declared width.
+    testthat::expect_identical(
+      first_callable_from_ttr,
+      if (is.null(case$first_callable)) case$requires_bars else case$first_callable,
+      info = label
+    )
     testthat::expect_identical(first_valid_from_ledgr, case$requires_bars, info = label)
     # ledgr_test_ttr_expected_values() forces rows 1:(requires_bars-1) to NA for
     # all cases. For MACD output="macd", full-series TTR returns finite values at
@@ -419,7 +427,7 @@ testthat::test_that("TTR short samples return aligned warmup NA instead of low-l
       list(fn = "RSI", input = "close", output = NULL, args = list(n = 14), requires_bars = 15L, id = "ttr_rsi_14"),
       list(fn = "ATR", input = "hlc", output = "atr", args = list(n = 20), requires_bars = 21L, id = "ttr_atr_20_atr"),
       list(fn = "BBands", input = "close", output = "up", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_up"),
-      list(fn = "aroon", input = "hl", output = "oscillator", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_oscillator"),
+      list(fn = "aroon", input = "hl", output = "oscillator", args = list(n = 20), requires_bars = 21L, first_callable = 20L, id = "ttr_aroon_20_oscillator"),
       list(fn = "DonchianChannel", input = "hl", output = "mid", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_mid")
     )
   )

@@ -709,6 +709,7 @@ ledgr_precompute_feature_defs_from_indicators <- function(indicators) {
 }
 
 ledgr_precompute_feature_def_from_indicator <- function(indicator) {
+  declarations <- ledgr_feature_def_declarations(indicator)
   list(
     id = indicator$id,
     fn = indicator$fn,
@@ -718,7 +719,14 @@ ledgr_precompute_feature_def_from_indicator <- function(indicator) {
     source = ledgr_indicator_source(indicator),
     params = indicator$params,
     fingerprint = ledgr_indicator_fingerprint(indicator),
-    gap_contract = indicator$gap_contract
+    gap_contract = declarations$gap_contract,
+    history_class = declarations$history_class,
+    history_source = declarations$history_source,
+    required_fields = declarations$required_fields,
+    required_fields_source = declarations$required_fields_source,
+    tolerance = declarations$tolerance,
+    input_carry = declarations$input_carry,
+    input_carry_source = declarations$input_carry_source
   )
 }
 
@@ -758,21 +766,14 @@ ledgr_precompute_feature_union <- function(unique_defs) {
   out[order(out$feature_id, out$fingerprint, method = "radix"), , drop = FALSE]
 }
 
-ledgr_precompute_payload <- function(unique_defs, bars_by_id, availability_active = FALSE) {
+# Dense payload. Availability-aware features are calculated over the shared
+# history substrate by ledgr_history_precompute_payload().
+ledgr_precompute_payload <- function(unique_defs, bars_by_id) {
   out <- list()
   for (fingerprint in names(unique_defs)) {
     def <- unique_defs[[fingerprint]]
-    strict_kind <- if (isTRUE(availability_active)) {
-      ledgr_strict_builtin_kind(def)
-    } else {
-      NULL
-    }
     values <- lapply(bars_by_id, function(bars) {
-      if (isTRUE(availability_active)) {
-        ledgr_compute_feature_series_strict(bars, def, kind = strict_kind)
-      } else {
-        ledgr_compute_feature_series(bars, def)
-      }
+      ledgr_compute_feature_series(bars, def)
     })
     out[[fingerprint]] <- list(
       feature_id = def$id,

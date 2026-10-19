@@ -34,6 +34,64 @@
   Date-valued entitlement, effective or payment event resolves to the venue
   session close, while a Date-valued knowledge time resolves to session open.
 
+- Indicators now declare a history class (`bounded` or `history_dependent`),
+  the bar fields they require and, for a custom bounded `fn`/`series_fn`
+  pair, an optional comparison tolerance. Built-ins and registered TTR forms
+  take exact declarations from a package catalogue keyed by function, output
+  and algorithm-changing argument; an undeclared custom indicator or an
+  unregistered TTR form is disclosed as history-dependent. TTR `aroon` now
+  declares its true dependency width of `n + 1` rows in both modes, so its
+  dense fingerprint changes and dense aroon features gain one more warm-up
+  `NA` row. The declarations enter availability-aware feature identity; other
+  dense fingerprints are unchanged.
+
+- A custom indicator whose id matches a built-in pattern (`sma_<n>` or
+  `return_1`) now runs its own function in dense and availability-aware runs,
+  in any session and call order. Runs, sweeps and walk-forward resolve each
+  feature from the experiment's own definitions and no longer write the
+  session indicator registry, so an explicit `ledgr_indicator_register()`
+  entry is never replaced by a run. A run config whose stored fingerprint
+  matches neither the built-in nor a resolvable indicator refuses with
+  `ledgr_run_hash_mismatch`, and the unused `sma_n` config id is removed.
+  It was previously replaced, silently, by the built-in of that id, so dense
+  results for such definitions change.
+
+- Availability-aware experiments now run every indicator. Bounded indicators
+  use their last `requires_bars` expected sessions on the instrument's
+  lifetime mask; history-dependent indicators run once per contiguous segment
+  of available input and restart after a gap. Default price carry now fills
+  eligible feature inputs for up to five expected sessions, while return and
+  volatility catalogue rows never use a carried price; a custom indicator
+  can declare `input_carry = "excluded"` to do the same.
+  `ledgr_history_policy(price_carry = NULL)` keeps the previous strict values.
+  `ledgr_indicator_gap_unsupported` is retired. A custom indicator whose
+  `stable_after` exceeds `requires_bars` now receives exactly `requires_bars`
+  rows, and prints inside a known-inactive lifetime interval no longer enter
+  feature calculation.
+
+- Availability-aware feature preparation now checks every indicator for
+  look-ahead before any run, sweep candidate or precompute payload uses it:
+  at no more than four fixed sessions on one instrument, a value recomputed
+  from the history ending there must equal the prepared value, or
+  preparation refuses with `ledgr_feature_lookahead_detected`. A custom
+  bounded `fn`/`series_fn` pair is compared at the same sessions instead of
+  at every window. Both checks are samples with a fixed cost, not proofs of
+  causality, and dense execution runs neither.
+
+- A delisting ends availability-aware bounded indicator windows as well as
+  price carry: after every relisting a bounded indicator restarts and needs
+  `requires_bars` rows from the relisting before it is ready, so no window
+  mixes pre-delisting and post-relisting prices.
+
+- History-frame feature evidence reports the feature preparation's planes:
+  `calculated` is admission, `ready` is first-valid readiness,
+  `calculation_valid` a ready finite value, input and output carry are
+  disclosed, `used_before_window` also reports carried values and bounded
+  windows that reach before the returned window, and `missing_reason`
+  (including `calculation_non_finite` for a ready cell whose calculation is
+  not finite) distinguishes warm-up, missing and excluded
+  inputs, expired output carry and sessions outside the calculation.
+
 - Snapshot hash rule 4 and experiment-store schema 121 add the causal civil
   time representation. Older snapshots, stores and identity-rule artifacts
   refuse; no migration or compatibility reader is provided before CRAN.

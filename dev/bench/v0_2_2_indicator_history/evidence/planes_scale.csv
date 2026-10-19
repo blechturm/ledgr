@@ -1,0 +1,5 @@
+"tree","config","instruments","sessions","definitions","feature_seconds","input_carried_cells","output_carried_cells","planes_mb","values_mb","index_seconds","full_window_read_seconds_all_definitions"
+"ws43","realistic",1166,1803,14,40.36,247877,0,0.96,227.67,0.170000000000002,2.71
+"ws43","realistic_output",1166,1803,14,48.25,247877,278556,5.21,227.67,0.18,3.21
+"ws43","realistic",1166,7213,14,154.76,1001273,0,3.83,907.8,0.650000000000006,9.19999999999999
+"ws43","realistic_output",1166,7213,14,185.14,1001273,1131879,21.1,907.8,0.719999999999999,12.36

@@ -19,7 +19,7 @@ ledgr_ind_sma <- function(n) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
   n <- as.integer(n)
-  ledgr_indicator(
+  ledgr_indicator_builtin("sma", ledgr_indicator(
     id = sprintf("sma_%d", n),
     fn = function(window) {
       mean(window$close)
@@ -32,7 +32,7 @@ ledgr_ind_sma <- function(n) {
     params = list(n = n),
     source = "ledgr",
     gap_contract = "strict_window"
-  )
+  ))
 }
 
 #' Exponential Moving Average
@@ -56,7 +56,7 @@ ledgr_ind_ema <- function(n) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
   n <- as.integer(n)
-  ledgr_indicator(
+  ledgr_indicator_builtin("ema", ledgr_indicator(
     id = sprintf("ema_%d", n),
     fn = function(window) {
       alpha <- 2 / (n + 1)
@@ -75,8 +75,9 @@ ledgr_ind_ema <- function(n) {
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
     params = list(n = n),
-    source = "ledgr"
-  )
+    source = "ledgr",
+    gap_contract = "strict_window"
+  ))
 }
 
 #' Relative Strength Index
@@ -100,7 +101,7 @@ ledgr_ind_rsi <- function(n = 14L) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
   n <- as.integer(n)
-  ledgr_indicator(
+  ledgr_indicator_builtin("rsi", ledgr_indicator(
     id = sprintf("rsi_%d", n),
     fn = function(window) {
       changes <- diff(window$close)
@@ -122,8 +123,9 @@ ledgr_ind_rsi <- function(n = 14L) {
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
     params = list(n = n),
-    source = "ledgr"
-  )
+    source = "ledgr",
+    gap_contract = "strict_window"
+  ))
 }
 
 #' Simple Returns
@@ -147,7 +149,7 @@ ledgr_ind_returns <- function(n = 1L) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
   n <- as.integer(n)
-  ledgr_indicator(
+  ledgr_indicator_builtin("returns", ledgr_indicator(
     id = sprintf("return_%d", n),
     fn = function(window) {
       current <- window$close[nrow(window)]
@@ -168,5 +170,13 @@ ledgr_ind_returns <- function(n = 1L) {
     params = list(n = n),
     source = "ledgr",
     gap_contract = "strict_window"
-  )
+  ))
+}
+
+ledgr_indicator_builtin <- function(family, indicator) {
+  row <- ledgr_indicator_catalogue_row("ledgr", family)
+  if (is.null(row)) {
+    rlang::abort("Missing built-in indicator catalogue row.", class = "ledgr_internal_error")
+  }
+  ledgr_indicator_apply_catalogue(indicator, row)
 }

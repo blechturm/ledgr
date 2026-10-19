@@ -27,7 +27,7 @@ ledgr_ind_ttr_warmup_rules <- function() {
     formula = c(
       "n + 1", "n", "n", "n + 1", "nSlow + nSig - 1",
       "n", "n + 1", "n + 1", "n", "n",
-      "n", "n", "n + 1", "n",
+      "n + 1", "n", "n + 1", "n",
       "n", "n", "n", "n"
     )
   )
@@ -67,7 +67,24 @@ ledgr_ind_ttr_warmup_rules <- function() {
 #' @param requires_bars Explicit warmup length. Required for unknown TTR
 #'   functions. For known functions this is inferred from explicit arguments.
 #' @param stable_after First stable row. Defaults to `requires_bars`.
+#' @param history_class Optional history class for a TTR form that is not a
+#'   registered package catalogue row. Registered forms take their class from
+#'   the catalogue; a contradicting declaration refuses. An undeclared
+#'   unregistered form is disclosed as `"history_dependent"`.
+#' @param tolerance Optional comparison tolerance for an unregistered form
+#'   declared `"bounded"`; see [ledgr_indicator()]. Registered rows have no
+#'   runtime tolerance.
+#' @param input_carry Optional input-carry declaration for an unregistered
+#'   form; see [ledgr_indicator()]. Registered rows take it from the catalogue
+#'   and refuse a declaration.
 #' @param ... Explicit arguments forwarded to the TTR function.
+#'
+#' @details Registered TTR forms are catalogued per function, selected output
+#'   and algorithm-changing argument (for example `maType` or `wilder`). Each
+#'   row declares its history class, required bar fields and dependency width
+#'   and is certified by package tests. Any other argument combination, or a
+#'   `requires_bars` that differs from the catalogue width, is an unregistered
+#'   form that follows the custom-definition rules of [ledgr_indicator()].
 #'
 #' @return A `ledgr_indicator` object.
 #' @examples
@@ -113,6 +130,9 @@ ledgr_ind_ttr <- function(ttr_fn,
                           id = NULL,
                           requires_bars = NULL,
                           stable_after = requires_bars,
+                          history_class = NULL,
+                          tolerance = NULL,
+                          input_carry = NULL,
                           ...) {
   ledgr_assert_no_param_refs(
     list(
@@ -121,7 +141,10 @@ ledgr_ind_ttr <- function(ttr_fn,
       output = output,
       id = id,
       requires_bars = requires_bars,
-      stable_after = stable_after
+      stable_after = stable_after,
+      history_class = history_class,
+      tolerance = tolerance,
+      input_carry = input_carry
     ),
     "ledgr_ind_ttr()"
   )
@@ -145,7 +168,11 @@ ledgr_ind_ttr <- function(ttr_fn,
     }
     return(ledgr_new_parameterized_indicator(
       "ledgr_ind_ttr",
-      c(list(ttr_fn = ttr_fn, input = input, output = output), args),
+      c(
+        list(ttr_fn = ttr_fn, input = input, output = output),
+        ledgr_ttr_declaration_args(history_class, tolerance, input_carry),
+        args
+      ),
       names(args)
     ))
   }
@@ -222,20 +249,43 @@ ledgr_ind_ttr <- function(ttr_fn,
   )
   ledgr_ttr_validate_output_contract(params, requires_bars)
   indicator_params <- params
-  gap_contract <- if (ledgr_ttr_strict_window_certified(
-    ttr_fn = ttr_fn,
-    input = input,
-    output = output,
-    args = args,
-    requires_bars = requires_bars,
-    stable_after = stable_after
-  )) {
-    "strict_window"
-  } else {
-    NULL
+  catalogue_row <- ledgr_ttr_catalogue_row(ttr_fn, input, output, args, requires_bars)
+  if (!is.null(catalogue_row)) {
+    if (!is.null(history_class) &&
+        !identical(history_class, catalogue_row$history_class[[1L]])) {
+      ledgr_indicator_abort_declaration(
+        sprintf(
+          "Registered TTR form `%s` is catalogued as `%s`; it cannot be declared `%s`.",
+          id,
+          catalogue_row$history_class[[1L]],
+          as.character(history_class)[[1L]]
+        ),
+        contradiction = TRUE
+      )
+    }
+    if (!is.null(tolerance) && !identical(as.numeric(tolerance), 0)) {
+      ledgr_indicator_abort_declaration(
+        sprintf(
+          "Registered TTR form `%s` is certified by package tests and takes no runtime tolerance.",
+          id
+        ),
+        contradiction = TRUE
+      )
+    }
+    if (!is.null(input_carry)) {
+      ledgr_indicator_abort_declaration(
+        sprintf(
+          "Registered TTR form `%s` takes its input-carry family from the package catalogue; it cannot declare `input_carry`.",
+          id
+        ),
+        contradiction = TRUE
+      )
+    }
+    history_class <- NULL
+    tolerance <- NULL
   }
 
-  ledgr_indicator(
+  indicator <- ledgr_indicator(
     id = id,
     fn = function(window, params = indicator_params) {
       selected <- ledgr_ttr_call(window, params)
@@ -248,26 +298,114 @@ ledgr_ind_ttr <- function(ttr_fn,
     stable_after = stable_after,
     params = params,
     source = "TTR",
-    gap_contract = gap_contract
+    history_class = history_class,
+    required_fields = ledgr_ttr_required_fields(input),
+    tolerance = tolerance,
+    input_carry = input_carry
+  )
+  if (is.null(catalogue_row)) {
+    return(indicator)
+  }
+  ledgr_indicator_apply_catalogue(indicator, catalogue_row)
+}
+
+ledgr_ttr_declaration_args <- function(history_class, tolerance, input_carry = NULL) {
+  out <- list(history_class = history_class, tolerance = tolerance, input_carry = input_carry)
+  out[!vapply(out, is.null, logical(1))]
+}
+
+ledgr_ttr_required_fields <- function(input) {
+  switch(
+    input,
+    close = "close",
+    hl = c("high", "low"),
+    hlc = c("high", "low", "close"),
+    ohlc = c("open", "high", "low", "close"),
+    hlcv = c("high", "low", "close", "volume")
   )
 }
 
-ledgr_ttr_strict_window_certified <- function(ttr_fn,
-                                              input,
-                                              output,
-                                              args,
-                                              requires_bars,
-                                              stable_after) {
-  n <- if (is.list(args) && identical(names(args), "n")) args$n else NULL
-  valid_n <- is.numeric(n) && length(n) == 1L && !is.na(n) &&
-    is.finite(n) && n >= 1 && (n %% 1) == 0
-  isTRUE(
-    identical(ttr_fn, "SMA") &&
-      identical(input, "close") &&
-      is.null(output) &&
-      valid_n &&
-      identical(as.integer(requires_bars), as.integer(n)) &&
-      identical(as.integer(stable_after), as.integer(n))
+# Registered TTR forms: per function, the arguments that never change the
+# algorithm (`allowed`), argument values equivalent to the default form
+# (`neutral`) and the algorithm-changing variants that are catalogued.
+ledgr_ttr_catalogue_spec <- function(ttr_fn) {
+  ma <- function(value) {
+    stats::setNames(list(list(maType = value)), paste0("maType=", value))
+  }
+  no_cumulative <- list(cumulative = FALSE)
+  switch(
+    ttr_fn,
+    RSI = list(variants = ma("SMA")),
+    SMA = list(),
+    EMA = list(
+      neutral = list(wilder = FALSE),
+      variants = list("wilder=TRUE" = list(wilder = TRUE))
+    ),
+    ATR = list(variants = ma("SMA")),
+    MACD = list(allowed = "percent", variants = ma("SMA")),
+    WMA = list(),
+    ROC = list(allowed = "type"),
+    momentum = list(),
+    CCI = list(allowed = "c", variants = ma("EMA")),
+    BBands = list(allowed = "sd", variants = ma("EMA")),
+    aroon = list(),
+    DonchianChannel = list(neutral = list(include.lag = FALSE)),
+    MFI = list(),
+    CMF = list(),
+    runMean = list(neutral = no_cumulative),
+    runSD = list(allowed = "sample", neutral = no_cumulative),
+    runVar = list(allowed = "sample", neutral = no_cumulative),
+    runMAD = list(
+      allowed = c("stat", "constant", "non.unique"),
+      neutral = no_cumulative
+    ),
+    NULL
+  )
+}
+
+ledgr_ttr_catalogue_variant <- function(ttr_fn, args) {
+  spec <- ledgr_ttr_catalogue_spec(ttr_fn)
+  rules <- ledgr_ind_ttr_warmup_rules()
+  if (is.null(spec) || !ttr_fn %in% rules$ttr_fn) return(NULL)
+  required <- rules$required_args[[match(ttr_fn, rules$ttr_fn)]]
+  rest <- args[setdiff(names(args), c(required, spec$allowed))]
+  for (name in names(spec$neutral)) {
+    if (name %in% names(rest) && identical(rest[[name]], spec$neutral[[name]])) {
+      rest[[name]] <- NULL
+    }
+  }
+  if (length(rest) == 0L) return("default")
+  for (variant in names(spec$variants)) {
+    wanted <- spec$variants[[variant]]
+    if (setequal(names(rest), names(wanted)) &&
+        all(vapply(names(wanted), function(name) {
+          identical(rest[[name]], wanted[[name]])
+        }, logical(1)))) {
+      return(variant)
+    }
+  }
+  NULL
+}
+
+ledgr_ttr_catalogue_row <- function(ttr_fn, input, output, args, requires_bars) {
+  # Single-output functions are catalogued with `output = NULL`; the row
+  # label "value" is not a selectable TTR column.
+  if (identical(output, "value")) return(NULL)
+  if (is.null(ledgr_ttr_match_rule(ttr_fn, input))) return(NULL)
+  variant <- ledgr_ttr_catalogue_variant(ttr_fn, args)
+  if (is.null(variant)) return(NULL)
+  width <- tryCatch(
+    ledgr_ttr_infer_requires_bars(ttr_fn, args, output = output),
+    error = function(e) NA_integer_
+  )
+  if (is.na(width) || !identical(as.integer(requires_bars), as.integer(width))) {
+    return(NULL)
+  }
+  ledgr_indicator_catalogue_row(
+    "TTR",
+    ttr_fn,
+    if (is.null(output)) "value" else output,
+    variant
   )
 }
 
@@ -301,6 +439,8 @@ ledgr_ttr_strict_window_certified <- function(ttr_fn,
 #' @param requires_bars Explicit warmup length. Required for unknown TTR
 #'   functions. For known functions this is inferred from explicit arguments.
 #' @param stable_after First stable row. Defaults to `requires_bars`.
+#' @param history_class,tolerance,input_carry Optional declarations for unregistered TTR
+#'   forms, forwarded to [ledgr_ind_ttr()] for every output.
 #' @param ... Explicit arguments forwarded to the TTR function.
 #'
 #' @return A `ledgr_indicator_bundle` object.
@@ -331,7 +471,10 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
                                   prefix = ledgr_ttr_id_token(ttr_fn),
                                   naming = NULL,
                                   requires_bars = NULL,
-                                  stable_after = requires_bars) {
+                                  stable_after = requires_bars,
+                                  history_class = NULL,
+                                  tolerance = NULL,
+                                  input_carry = NULL) {
   ledgr_assert_no_param_refs(
     list(
       ttr_fn = ttr_fn,
@@ -340,7 +483,10 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
       prefix = prefix,
       naming = naming,
       requires_bars = requires_bars,
-      stable_after = stable_after
+      stable_after = stable_after,
+      history_class = history_class,
+      tolerance = tolerance,
+      input_carry = input_carry
     ),
     "ledgr_ind_ttr_outputs()"
   )
@@ -379,6 +525,7 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
           prefix = prefix,
           naming = naming
         ),
+        ledgr_ttr_declaration_args(history_class, tolerance, input_carry),
         args
       ),
       names(args),
@@ -468,7 +615,10 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
           output = output,
           id = id,
           requires_bars = requires_bars,
-          stable_after = stable_after
+          stable_after = stable_after,
+          history_class = history_class,
+          tolerance = tolerance,
+          input_carry = input_carry
         ),
         args
       )
@@ -578,7 +728,7 @@ ledgr_ttr_infer_requires_bars <- function(ttr_fn, args, output = NULL) {
     momentum = integer_arg("n") + 1L,
     CCI = integer_arg("n"),
     BBands = integer_arg("n"),
-    aroon = integer_arg("n"),
+    aroon = integer_arg("n") + 1L,
     DonchianChannel = integer_arg("n"),
     MFI = integer_arg("n") + 1L,
     CMF = integer_arg("n"),

@@ -2,7 +2,8 @@ ledgr_runtime_projection <- function(feature_values,
                                      universe,
                                      pulses_posix,
                                      feature_engine_version = ledgr_feature_engine_version(),
-                                     alias_index = NULL) {
+                                     alias_index = NULL,
+                                     feature_planes = NULL) {
   universe <- as.character(universe)
   pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
   feature_values <- feature_values %||% list()
@@ -46,9 +47,57 @@ ledgr_runtime_projection <- function(feature_values,
       pulses_posix = pulses_posix,
       pulses_iso = format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
       feature_engine_version = feature_engine_version,
-      alias_index = alias_index
+      alias_index = alias_index,
+      feature_planes = feature_planes
     ),
     class = c("ledgr_runtime_projection", "list")
+  )
+}
+
+# Index availability-aware feature evidence planes (see
+# ledgr_feature_plane_records()) into this projection's instrument x pulse
+# cells. Every set is keyed row-major, `(row - 1) * n_pulse + column`, and
+# sorted, so a read locates its cells by binary search: point sets by
+# equality, segment and reason runs by their start and end keys.
+ledgr_projection_index_planes <- function(record, universe, n_pulse) {
+  if (is.null(record)) return(NULL)
+  universe <- as.character(universe)
+  mapped <- function(row) match(record$instrument_ids[row], universe)
+  keyed <- function(row, col) as.numeric(mapped(row) - 1L) * n_pulse + col
+  sorted <- function(key, ...) {
+    keep <- !is.na(key)
+    order_idx <- order(key[keep], method = "radix")
+    c(list(key = key[keep][order_idx]), lapply(list(...), function(x) x[keep][order_idx]))
+  }
+  input <- sorted(keyed(record$input_row, record$input_col))
+  output <- sorted(
+    keyed(record$output_row, record$output_col),
+    record$output_source_ts, record$output_age
+  )
+  segment <- sorted(
+    keyed(record$segment_row, record$segment_start),
+    keyed(record$segment_row, record$segment_end),
+    record$segment_ready
+  )
+  reason <- sorted(
+    keyed(record$reason_row, record$reason_start),
+    keyed(record$reason_row, record$reason_end),
+    record$reason_code
+  )
+  list(
+    n_pulse = as.integer(n_pulse),
+    calc_from = record$calc_from,
+    calc_to = record$calc_to,
+    input_carried = input$key,
+    output_carried = output$key,
+    output_source_ts = output[[2L]],
+    output_age = output[[3L]],
+    segment_start = segment$key,
+    segment_end = segment[[2L]],
+    segment_ready = segment[[3L]],
+    reason_start = reason$key,
+    reason_end = reason[[2L]],
+    reason_code = reason[[3L]]
   )
 }
 
@@ -62,12 +111,23 @@ ledgr_projection_from_feature_matrix <- function(feature_matrix,
                                                  feature_engine_version = ledgr_feature_engine_version(),
                                                  alias_index = NULL) {
   feature_matrix <- feature_matrix %||% list()
+  records <- attr(feature_matrix, "ledgr_feature_planes")
+  feature_planes <- if (is.null(records)) {
+    NULL
+  } else {
+    stats::setNames(
+      lapply(records, ledgr_projection_index_planes, universe = universe, n_pulse = length(pulses_posix)),
+      names(feature_matrix)
+    )
+  }
+  attr(feature_matrix, "ledgr_feature_planes") <- NULL
   ledgr_runtime_projection(
     feature_values = feature_matrix,
     universe = universe,
     pulses_posix = pulses_posix,
     feature_engine_version = feature_engine_version,
-    alias_index = alias_index
+    alias_index = alias_index,
+    feature_planes = feature_planes
   )
 }
 
@@ -88,6 +148,7 @@ ledgr_projection_from_payload <- function(payload,
   }
 
   feature_values <- list()
+  feature_planes <- list()
   for (entry in payload) {
     feature_id <- entry$feature_id
     if (!is.character(feature_id) || length(feature_id) != 1L || is.na(feature_id) || !nzchar(feature_id)) {
@@ -108,6 +169,11 @@ ledgr_projection_from_payload <- function(payload,
       mat[j, seq_along(values)] <- as.numeric(values)
     }
     feature_values[[feature_id]] <- mat
+    if (!is.null(entry$planes)) {
+      feature_planes[[feature_id]] <- ledgr_projection_index_planes(
+        entry$planes, universe, length(pulses_posix)
+      )
+    }
   }
 
   ledgr_runtime_projection(
@@ -115,7 +181,8 @@ ledgr_projection_from_payload <- function(payload,
     universe = universe,
     pulses_posix = pulses_posix,
     feature_engine_version = feature_engine_version,
-    alias_index = alias_index
+    alias_index = alias_index,
+    feature_planes = if (length(feature_planes) > 0L) feature_planes else NULL
   )
 }
 
@@ -136,12 +203,21 @@ ledgr_projection_slice <- function(projection, pulses_posix) {
   feature_values <- lapply(projection$feature_values, function(mat) {
     mat[, idx, drop = FALSE]
   })
+  # Feature evidence planes are keyed to the prepared pulse axis. Production
+  # slices an availability projection only onto its own validated axis (the
+  # identity), so the planes are kept there and dropped otherwise; a frame
+  # read on a projection without planes refuses rather than guessing.
+  feature_planes <- projection$feature_planes
+  if (!is.null(feature_planes) && !identical(idx, seq_along(projection$pulses_posix))) {
+    feature_planes <- NULL
+  }
   ledgr_runtime_projection(
     feature_values = feature_values,
     universe = names(projection$instrument_index),
     pulses_posix = pulses_posix,
     feature_engine_version = projection$feature_engine_version,
-    alias_index = projection$alias_index
+    alias_index = projection$alias_index,
+    feature_planes = feature_planes
   )
 }
 

@@ -77,12 +77,14 @@ This path is easy to reason about because the function receives only
 historical rows up to the current decision point. It is the right first
 implementation for most custom features.
 
-`gap_contract = "strict_window"` is a substantive claim: on an
-availability-aware run, the bounded function is valid only when every
-expected session in its window has an observation. Omit it for a
-dense-only custom indicator. ledgr then refuses that indicator in an
-availability-aware experiment instead of guessing that it tolerates
-gaps.
+`gap_contract = "strict_window"` (or `history_class = "bounded"`) is
+a substantive claim: on an availability-aware run, the function receives
+its last `requires_bars` expected sessions and is valid only when each
+of them has an observation, possibly carried by the history policy.
+Without a history declaration ledgr treats a custom indicator as
+history-dependent: it runs once per contiguous segment of available
+input and restarts after a gap. ledgr never infers that a definition is
+bounded.
 
 ## Vectorized Indicators
 
@@ -140,6 +142,20 @@ causal correctness. Because `series_fn` receives the full bar series, a
 badly written vectorized function can still use future rows internally
 while returning a correctly shaped vector.
 
+Availability-aware experiments add two sampled checks before any run,
+sweep candidate or precompute payload uses the feature. For every
+definition, ledgr picks the instrument with the most calculated values
+and at most four fixed sessions on it, recomputes the feature from the
+history ending at each session, and refuses with
+`ledgr_feature_lookahead_detected` when that value differs from the
+prepared one. For a custom definition declared bounded that supplies
+both `fn` and `series_fn`, ledgr also calls `fn` on its window at the
+same sessions and refuses with `ledgr_indicator_gap_parity` when it
+disagrees with `series_fn` beyond the declared `tolerance` (exact by
+default). The checks are samples: a leak at other sessions, or one that
+reads data from outside the bars, can pass them. Dense experiments do
+not run them.
+
 That is why scalar `fn` is often the safer first version. Add
 `series_fn` when the feature logic is stable and the alignment is
 obvious.
@@ -155,7 +171,8 @@ must be greater than or equal to `requires_bars`.
 For a three-bar moving average, both are usually `3`. For indicators
 with a longer settling period, `stable_after` can be larger. ledgr
 treats rows before `stable_after` as warmup and exposes them as
-`NA_real_`.
+`NA_real_`. `stable_after` is the first valid row, not a promise that a
+recursive indicator has converged.
 
 Warmup `NA` is expected. Post-warmup `NA`, `NaN`, or infinite values
 mean the feature did not satisfy its contract.

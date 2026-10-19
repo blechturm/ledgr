@@ -351,12 +351,13 @@ directly with a `series_fn`, as
 adapter escape hatch: external logic remains at the boundary, while the
 engine keeps the same deterministic indicator contract.
 
-Availability-aware runs accept only the exact single-output
-`SMA(close, n)` TTR shape; every other TTR shape is refused with
-`ledgr_indicator_gap_unsupported`, whatever `requires_bars` says. The
-support matrix in `vignette("indicators", package = "ledgr")` lists
-every accepted form. The general warmup and zero-trade checklist lives
-in `vignette("indicators", package = "ledgr")`.
+On availability-aware runs every registered TTR form runs as its
+package catalogue row declares, bounded or history-dependent. An
+unregistered form, such as this DEMA, is history-dependent unless you
+declare otherwise. The support matrix in
+`vignette("indicators", package = "ledgr")` lists the forms. The
+general warmup and zero-trade checklist lives in
+`vignette("indicators", package = "ledgr")`.
 
 ## Where Next
 

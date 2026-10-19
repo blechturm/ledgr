@@ -12,7 +12,10 @@ ledgr_ind_ttr_outputs(
   prefix = ledgr_ttr_id_token(ttr_fn),
   naming = NULL,
   requires_bars = NULL,
-  stable_after = requires_bars
+  stable_after = requires_bars,
+  history_class = NULL,
+  tolerance = NULL,
+  input_carry = NULL
 )
 }
 \arguments{
@@ -40,6 +43,9 @@ vector whose names are backend outputs and whose values are feature IDs.
 functions. For known functions this is inferred from explicit arguments.}
 
 \item{stable_after}{First stable row. Defaults to \code{requires_bars}.}
+
+\item{history_class, tolerance, input_carry}{Optional declarations for unregistered TTR
+forms, forwarded to \code{\link[=ledgr_ind_ttr]{ledgr_ind_ttr()}} for every output.}
 }
 \value{
 A \code{ledgr_indicator_bundle} object.

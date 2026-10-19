@@ -835,7 +835,8 @@ dependencies. The diagram shows ownership, not permission to skip that join.
 
 **Amended 2026-10-18 (Cut 16 decision 17): simplify before proving.** WS41
 and WS42 were accepted with their scale defects corrected, but the
-antipattern review showed complexity accumulating: facts held twice in the
+[Cut 16 antipattern review](cut16_antipattern_review.md) showed complexity
+accumulating: facts held twice in the
 substrate, unread bar planes, five membership compilation paths, eager
 evidence in every history read and a growing count of availability/dense
 branches. WS46 therefore runs after WS43 and before WS44, so WS44 measures and

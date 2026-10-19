@@ -58,13 +58,13 @@ strict_dispatch_experiment <- function(snapshot, instruments) {
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0157] strict dispatch resolves once per definition", {
-  original_kind <- ledgr:::ledgr_strict_builtin_kind
+  original_certify <- ledgr:::ledgr_feature_certify
   calls <- character()
   testthat::local_mocked_bindings(
-    ledgr_strict_builtin_kind = function(feature_def) {
-      kind <- original_kind(feature_def)
-      calls <<- c(calls, if (is.null(kind)) "scalar" else kind)
-      kind
+    ledgr_feature_certify = function(def) {
+      certified <- original_certify(def)
+      calls <<- c(calls, if (is.null(certified$kind)) "scalar" else certified$kind)
+      certified
     },
     .package = "ledgr"
   )

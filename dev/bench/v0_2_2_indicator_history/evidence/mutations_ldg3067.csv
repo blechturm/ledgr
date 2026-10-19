@@ -1,0 +1,11 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"c1_remove_prefix_check",TRUE,"1","LTB-0315 LTB-0316 LTB-0317","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects || [LTB-0316] the causality checker samples a fixed bounded set of positions || [LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions",TRUE
+"c2_move_check_after_artifacts",TRUE,"1+1","LTB-0315","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects || [LTB-0316] the causality checker samples a fixed bounded set of positions || [LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions",TRUE
+"c3_weaken_to_missingness",TRUE,"1","LTB-0315","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects",TRUE
+"c4_all_prefixes",TRUE,"1","LTB-0316","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects || [LTB-0316] the causality checker samples a fixed bounded set of positions",TRUE
+"c5_remove_refutation",TRUE,"1","LTB-0317 LTB-0310 LTB-0312","[LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions || [LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0312] feature bytes and failure classes match across run, sweep and workers",TRUE
+"c6_refute_history_dependent",TRUE,"1","LTB-0317","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects || [LTB-0316] the causality checker samples a fixed bounded set of positions || [LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions",TRUE
+"c7_refute_catalogue_at_runtime",TRUE,"1","LTB-0317","[LTB-0316] the causality checker samples a fixed bounded set of positions || [LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions",TRUE
+"c8_ignore_tolerance",TRUE,"1","LTB-0317","[LTB-0317] custom bounded fn/series_fn pairs are refuted at the sampled positions",TRUE
+"c9_fn_window_not_exact",TRUE,"1","LTB-0315","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects",TRUE
+"c10_fn_handed_future_row",TRUE,"1","LTB-0315","[LTB-0315] sampled prefix invariance refuses look-ahead before side effects || [LTB-0316] the causality checker samples a fixed bounded set of positions",TRUE

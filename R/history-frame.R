@@ -244,48 +244,104 @@ ledgr_history_bar_evidence <- function(substrate, field, rows, columns, cutoff_c
   evidence
 }
 
-# Feature cells read the shared feature projection. Until the indicator
-# history semantics land (Workstream 43), feature values carry no input or
-# output carry and readiness equals calculation; masks still come from the
-# cutoff-resolved lifetime and terminal planes.
+# Feature cells read the shared feature projection and the sparse evidence
+# planes its preparation retained (ledgr_feature_plane_records()), with the
+# same column meanings as ledgr_history_feature_planes():
+# - `calculated`: the required inputs were admitted (after treatment);
+# - `ready`: an admitted cell at or after its segment's stable_after row;
+# - `calculation_valid`: ready with a finite calculated value;
+# - `output_carried`: the value is an earlier calculated value, with that
+#   value's source time and age; `input_carried`: the cell's own required
+#   input was policy-carried.
+# `missing_reason` is not_expected, outside_calculation,
+# required_input_missing, carried_input_excluded, not_ready,
+# calculation_non_finite, output_carry_expired or output_carried, so every
+# cell that is not calculation_valid carries a reason. Cells are located by binary search
+# over the retained sorted keys; nothing is recomputed per read.
+ledgr_history_plane_lookup <- function(table, key) {
+  if (length(table) == 0L) return(integer(length(key)))
+  position <- findInterval(key, table)
+  hit <- position > 0L
+  hit[hit] <- table[position[hit]] == key[hit]
+  position[!hit] <- 0L
+  position
+}
+
+ledgr_history_plane_run <- function(starts, ends, key) {
+  if (length(starts) == 0L) return(integer(length(key)))
+  position <- findInterval(key, starts)
+  hit <- position > 0L
+  hit[hit] <- key[hit] <= ends[position[hit]]
+  position[!hit] <- 0L
+  position
+}
+
 ledgr_history_feature_evidence <- function(substrate, feature_id, rows, columns, cutoff_col) {
   planes <- ledgr_history_cutoff_planes(substrate, NULL, rows, columns, cutoff_col)
-  values <- substrate$feature_projection$feature_values[[feature_id]]
+  projection <- substrate$feature_projection
+  values <- projection$feature_values[[feature_id]]
+  retained <- projection$feature_planes[[feature_id]]
+  if (is.null(retained)) {
+    rlang::abort(
+      sprintf("Feature `%s` has no prepared evidence planes.", feature_id),
+      class = c("ledgr_invalid_history_substrate", "ledgr_invalid_fold_execution")
+    )
+  }
   value <- values[rows, columns, drop = FALSE]
   dimnames(value) <- NULL
   n_rows <- length(rows)
   n_cols <- length(columns)
-  calculated <- is.finite(value)
-  observed <- substrate$bars$observed[rows, columns, drop = FALSE]
+  shape <- function(x) matrix(x, nrow = n_rows, ncol = n_cols)
+  column <- rep(as.integer(columns), each = n_rows)
+  key <- as.numeric(rep(as.integer(rows), times = n_cols) - 1L) * retained$n_pulse + column
   expected <- planes$expected
-  axis_value <- matrix(
-    rep(as.numeric(substrate$axis)[columns], each = n_rows),
-    nrow = n_rows,
-    ncol = n_cols
-  )
-  source_time <- axis_value
-  source_time[!calculated] <- NA_real_
-  age <- matrix(0L, nrow = n_rows, ncol = n_cols)
-  age[!calculated] <- NA_integer_
-  reason <- matrix("", nrow = n_rows, ncol = n_cols)
-  reason[!calculated & expected] <- "not_calculated"
-  reason[!calculated & !expected] <- "not_expected"
-  barrier_reason <- matrix("", nrow = n_rows, ncol = n_cols)
+  in_range <- shape(column >= retained$calc_from & column <= retained$calc_to)
+  input_carried <- shape(ledgr_history_plane_lookup(retained$input_carried, key) > 0L)
+  carried_at <- ledgr_history_plane_lookup(retained$output_carried, key)
+  output_carried <- shape(carried_at > 0L)
+  segment_at <- ledgr_history_plane_run(retained$segment_start, retained$segment_end, key)
+  ready_col <- rep(NA_integer_, length(key))
+  ready_col[segment_at > 0L] <- retained$segment_ready[segment_at[segment_at > 0L]]
+  calculated <- shape(segment_at > 0L) & expected & in_range
+  ready <- calculated & shape(!is.na(ready_col) & column >= ready_col)
+  calculation_valid <- ready & is.finite(value) & !output_carried
+  reason_at <- ledgr_history_plane_run(retained$reason_start, retained$reason_end, key)
+  code <- integer(length(key))
+  code[reason_at > 0L] <- retained$reason_code[reason_at[reason_at > 0L]]
+  code <- shape(code)
+  observed <- substrate$bars$observed[rows, columns, drop = FALSE]
+  source_time <- shape(rep(as.numeric(substrate$axis)[columns], each = n_rows))
+  source_time[!calculation_valid] <- NA_real_
+  age <- shape(0L)
+  age[!calculation_valid] <- NA_integer_
+  carried_cells <- which(carried_at > 0L)
+  source_time[carried_cells] <- retained$output_source_ts[carried_at[carried_cells]]
+  age[carried_cells] <- retained$output_age[carried_at[carried_cells]]
+  reason <- shape("")
+  reason[!expected] <- "not_expected"
+  reason[expected & in_range & code == 1L] <- "required_input_missing"
+  reason[expected & in_range & code == 2L] <- "carried_input_excluded"
+  reason[calculated & !ready] <- "not_ready"
+  # Cut 16 decision (21): derived from the value, no stored plane.
+  reason[ready & !is.finite(value)] <- "calculation_non_finite"
+  reason[expected & in_range & code == 3L] <- "output_carry_expired"
+  reason[output_carried] <- "output_carried"
+  reason[expected & !in_range] <- "outside_calculation"
+  barrier_reason <- shape("")
   barrier_reason[!expected] <- "lifetime_inactive"
   barrier_reason[planes$terminal] <- "terminal"
-  no <- matrix(FALSE, nrow = n_rows, ncol = n_cols)
   list(
     value = value,
     expected = expected,
     observed = observed,
     is_missing = expected & !observed,
-    input_carried = no,
+    input_carried = input_carried,
     calculated = calculated,
-    output_carried = no,
+    output_carried = output_carried,
     source_ts_utc = source_time,
     carry_age_sessions = age,
-    ready = calculated,
-    calculation_valid = calculated,
+    ready = ready,
+    calculation_valid = calculation_valid,
     missing_reason = reason,
     barrier_reason = barrier_reason,
     source_index = NULL
@@ -332,13 +388,21 @@ ledgr_history_view <- function(service, cutoff_col) {
 }
 
 ledgr_history_feature_width <- function(definition) {
-  # Strict availability windows hand each calculation `stable_after` rows.
-  if (identical(definition$gap_contract, "strict_window") &&
-      is.numeric(definition$stable_after) && length(definition$stable_after) == 1L &&
-      is.finite(definition$stable_after)) {
-    return(as.integer(definition$stable_after))
+  # A bounded value depends on its last `requires_bars` expected sessions,
+  # and it is valid only once its segment has reached `stable_after`
+  # (>= `requires_bars`), so its reach is `stable_after` expected sessions
+  # (close review S1). A history-dependent definition has no finite reach.
+  declarations <- tryCatch(
+    ledgr_feature_def_declarations(definition),
+    error = function(e) NULL
+  )
+  if (is.null(declarations) || !identical(declarations$history_class, "bounded")) {
+    return(NA_integer_)
   }
-  NA_integer_
+  reach <- suppressWarnings(as.integer(c(definition$requires_bars, definition$stable_after)))
+  reach <- reach[!is.na(reach)]
+  if (length(reach) == 0L) return(NA_integer_)
+  max(reach)
 }
 
 ledgr_history_request_error <- function(message) {
@@ -412,7 +476,22 @@ ledgr_history_context_view <- function(ctx) {
 #'
 #' Bar values follow the experiment's [ledgr_history_policy()]: open, high,
 #' low and close carry forward within the declared expected-session horizon;
-#' volume never carries. Carried cells are disclosed in the evidence.
+#' volume never carries. Carried cells are disclosed in the evidence. Feature
+#' evidence is the evidence the feature preparation produced: `calculated`
+#' means the required inputs were admitted, `ready` that the cell reached its
+#' segment's first-valid row, and `calculation_valid` a ready, finite value.
+#' A cell whose own required input was carried is `input_carried`; a value
+#' carried from an earlier valid cell is `output_carried`, with that cell's
+#' source time and age. `missing_reason` separates `not_ready` (warm-up or
+#' re-warming), `calculation_non_finite` (ready, but the calculation is not
+#' finite), `required_input_missing`, `carried_input_excluded`,
+#' `output_carry_expired`, `output_carried`, `outside_calculation` and
+#' `not_expected`, so every cell that is not `calculation_valid` has a
+#' reason. `used_before_window` is `TRUE` when any returned value used an
+#' observation or calculation state before the returned window, including
+#' carried values and bounded values whose `stable_after` reach (window and
+#' readiness) extends before the window, for example across inactive
+#' sessions.
 #'
 #' `instruments = "admissible"` selects the decision-axis instruments that are
 #' admissible at the cutoff, `"decision_axis"` adds held nonmembers and
@@ -595,7 +674,8 @@ ledgr_history_read <- function(view,
     as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
   keep <- which(included)
   used_before <- ledgr_history_used_before_window(
-    kind, evidence, keep, columns, service$feature_defs[[source_id]]
+    kind, evidence, keep, columns, service$feature_defs[[source_id]],
+    as.numeric(window_start)
   )
   selection_table <- ledgr_history_selection_table(
     requested_ids = requested_ids,
@@ -640,20 +720,49 @@ ledgr_history_read <- function(view,
   }
 }
 
-ledgr_history_used_before_window <- function(kind, evidence, keep, columns, definition) {
+# Whether any returned value used an observation or calculation state before
+# the returned window. For features (all derived by index from the frame's
+# evidence; nothing is recomputed):
+# - an output-carried value whose source time precedes the window;
+# - a history-dependent value when the window does not start at the data
+#   start (its segment state may reach back);
+# - a bounded value whose reach of `stable_after` expected sessions (its
+#   window and the readiness it depends on) does not fit inside the returned
+#   window's expected sessions (a lookback that is too short, a segment that
+#   began before the window, or one that spans a lifetime-inactive
+#   interval), or whose
+#   window reaches a leading run of input-carried sessions, whose source
+#   precedes the window.
+ledgr_history_used_before_window <- function(kind, evidence, keep, columns, definition,
+                                             window_start = NA_real_) {
   if (length(keep) == 0L || length(columns) == 0L) return(FALSE)
   if (identical(kind, "bar")) {
     source <- evidence$source_index[keep, , drop = FALSE]
     carried <- evidence$input_carried[keep, , drop = FALSE]
     return(any(carried & !is.na(source) & source < columns[[1L]]))
   }
-  calculated <- evidence$calculated[keep, , drop = FALSE]
+  valid <- evidence$calculation_valid[keep, , drop = FALSE]
+  output_carried <- evidence$output_carried[keep, , drop = FALSE]
+  source_ts <- evidence$source_ts_utc[keep, , drop = FALSE]
+  if (any(output_carried & !is.na(source_ts) & source_ts < window_start)) {
+    return(TRUE)
+  }
   width <- ledgr_history_feature_width(definition)
   if (is.na(width)) {
-    return(columns[[1L]] > 1L && any(calculated))
+    return(columns[[1L]] > 1L && any(valid | output_carried))
   }
-  dependent <- columns - width + 1L < columns[[1L]]
-  any(calculated[, dependent, drop = FALSE])
+  if (!any(valid)) return(FALSE)
+  expected <- evidence$expected[keep, , drop = FALSE]
+  carried <- evidence$input_carried[keep, , drop = FALSE]
+  n_rows <- nrow(expected)
+  n_cols <- ncol(expected)
+  # Expected sessions from the window start through each column.
+  seen <- t(collapse::fcumsum(t(matrix(as.integer(expected), n_rows, n_cols))))
+  # Expected sessions in the leading input-carried run of each row.
+  stop_at <- expected & !carried
+  first_stop <- ifelse(rowSums(stop_at) > 0L, max.col(stop_at, ties.method = "first"), n_cols + 1L)
+  leading <- ifelse(first_stop > 1L, seen[cbind(seq_len(n_rows), pmax(first_stop - 1L, 1L))], 0L)
+  any(valid & (seen - width < leading))
 }
 
 ledgr_history_selection_table <- function(requested_ids,

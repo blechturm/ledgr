@@ -14,8 +14,25 @@
 #' @param source Indicator source label. Built-in ledgr indicators use
 #'   `"ledgr"`, TTR-backed indicators use `"TTR"`, and user/adapted indicators
 #'   use `"custom"`.
-#' @param gap_contract Optional availability-aware gap contract. Version 1
-#'   supports only `"strict_window"`.
+#' @param gap_contract Optional gap declaration. `"strict_window"` declares a
+#'   bounded window and is equivalent to `history_class = "bounded"`; it
+#'   contradicts `history_class = "history_dependent"`.
+#' @param history_class Optional history class: `"bounded"` or
+#'   `"history_dependent"`. `NULL` with no `gap_contract` is disclosed as
+#'   `"history_dependent"`: ledgr never infers that a definition is bounded.
+#' @param required_fields Optional character vector of the bar fields the
+#'   calculation requires, from `"open"`, `"high"`, `"low"`, `"close"` and
+#'   `"volume"`. `NULL` requires the four price fields.
+#' @param tolerance Optional comparison tolerance for a bounded definition that
+#'   supplies both `fn` and `series_fn`. `NULL` (the default) means exact. A
+#'   nonzero tolerance is a scaled bound, `abs(a - b) / max(1, abs(b))`, and
+#'   enters the definition's availability-aware identity.
+#' @param input_carry Optional input-carry declaration. `"excluded"` marks a
+#'   return or volatility indicator: it never consumes a price carried by the
+#'   experiment's history policy, so a gap leaves its inputs missing. `NULL`
+#'   (disclosed as the default) and `"eligible"` consume the policy-treated
+#'   input. Package built-ins and registered TTR forms take this from the
+#'   package catalogue.
 #'
 #' @details Indicator fingerprints bind deterministic direct captures of `fn`
 #'   and `series_fn`. Atomic values and deterministic lists are supported;
@@ -23,6 +40,31 @@
 #'   non-deterministic. A captured function contributes its function identity,
 #'   but its own captures are not recursively included. Put explicitly varying
 #'   research inputs in `params`.
+#'
+#'   On availability-aware experiments the history declarations decide how
+#'   the indicator is calculated. A bounded definition depends only on its
+#'   last `requires_bars` expected sessions: `fn` receives exactly that window
+#'   and an incomplete window is missing. A history-dependent definition is
+#'   calculated once per contiguous segment of available input and restarts
+#'   after a gap. `stable_after` is the first-valid boundary after each start
+#'   or restart; it does not promise convergence. A delisting ends bounded
+#'   windows as well as carry: after every relisting a bounded definition
+#'   restarts. The declarations enter the availability-aware feature
+#'   identity; dense execution ignores them. An indicator whose `id` matches a
+#'   built-in pattern (`sma_<n>`, `return_1`) still runs its own `fn` in both
+#'   modes, in any session; running an experiment never writes the
+#'   indicator registry.
+#'
+#'   Availability-aware preparation also checks every definition for
+#'   look-ahead before any run, sweep candidate or precompute payload uses
+#'   it: on the instrument with the most calculated values, at no more than
+#'   four fixed sessions, the value recomputed from the history ending there
+#'   must equal the prepared value, or preparation refuses with
+#'   `ledgr_feature_lookahead_detected`. A custom bounded definition that
+#'   supplies both `fn` and `series_fn` must also agree, at the same
+#'   sessions, between `fn` on its window and `series_fn` within `tolerance`,
+#'   or preparation refuses with `ledgr_indicator_gap_parity`. Both checks
+#'   are samples, not proofs of causality.
 #'
 #' @return A `ledgr_indicator` object.
 #' @examples
@@ -48,9 +90,18 @@ ledgr_indicator <- function(id,
                             stable_after = requires_bars,
                             series_fn = NULL,
                             source = "custom",
-                            gap_contract = NULL) {
+                            gap_contract = NULL,
+                            history_class = NULL,
+                            required_fields = NULL,
+                            tolerance = NULL,
+                            input_carry = NULL) {
   ledgr_assert_no_param_refs(
-    list(id = id, requires_bars = requires_bars, params = params, stable_after = stable_after),
+    list(
+      id = id, requires_bars = requires_bars, params = params,
+      stable_after = stable_after, history_class = history_class,
+      required_fields = required_fields, tolerance = tolerance,
+      input_carry = input_carry
+    ),
     "ledgr_indicator()"
   )
   if (!is.character(id) || length(id) != 1 || !nzchar(id)) {
@@ -86,14 +137,15 @@ ledgr_indicator <- function(id,
   if (!is.character(source) || length(source) != 1L || is.na(source) || !(source %in% c("ledgr", "TTR", "custom"))) {
     rlang::abort("`source` must be one of 'ledgr', 'TTR', or 'custom'.", class = "ledgr_invalid_args")
   }
-  if (!is.null(gap_contract) &&
-      (!is.character(gap_contract) || length(gap_contract) != 1L ||
-       is.na(gap_contract) || !identical(gap_contract, "strict_window"))) {
-    rlang::abort(
-      "`gap_contract` must be NULL or \"strict_window\".",
-      class = "ledgr_invalid_args"
-    )
-  }
+  declarations <- ledgr_indicator_declare(
+    history_class = history_class,
+    gap_contract = gap_contract,
+    required_fields = required_fields,
+    tolerance = tolerance,
+    input_carry = input_carry,
+    has_series_fn = !is.null(series_fn),
+    id = id
+  )
   ledgr_assert_indicator_fn_pure(fn)
   ledgr_assert_indicator_safe(fn)
   if (!is.null(series_fn)) {
@@ -104,7 +156,7 @@ ledgr_indicator <- function(id,
     ledgr_assert_indicator_safe(series_fn)
   }
 
-  structure(
+  indicator <- structure(
     list(
       id = id,
       fn = fn,
@@ -113,10 +165,11 @@ ledgr_indicator <- function(id,
       stable_after = as.integer(stable_after),
       params = params,
       source = source,
-      gap_contract = gap_contract
+      gap_contract = NULL
     ),
     class = "ledgr_indicator"
   )
+  ledgr_indicator_apply_declarations(indicator, declarations)
 }
 
 #' Get feature IDs from ledgr indicators
@@ -195,6 +248,30 @@ print.ledgr_indicator <- function(x, ...) {
   cat("  Requires bars: ", x$requires_bars, "\n", sep = "")
   cat("  Stable after:  ", x$stable_after, "\n", sep = "")
   cat("  Series fn:     ", if (is.null(x$series_fn)) "no" else "yes", "\n", sep = "")
+  declarations <- ledgr_feature_def_declarations(x)
+  source_label <- switch(
+    declarations$history_source,
+    catalogue = "package catalogue",
+    declared = "declared",
+    default = "default for an undeclared definition"
+  )
+  cat("  History class: ", declarations$history_class, " (", source_label, ")\n", sep = "")
+  cat("  Required:      ", paste(declarations$required_fields, collapse = ", "), "\n", sep = "")
+  carry_label <- if (identical(declarations$input_carry, "excluded")) {
+    "excluded (return or volatility family)"
+  } else {
+    "eligible"
+  }
+  carry_source <- switch(
+    declarations$input_carry_source,
+    catalogue = "package catalogue",
+    declared = "declared",
+    default = "default for an undeclared definition"
+  )
+  cat("  Input carry:   ", carry_label, " (", carry_source, ")\n", sep = "")
+  if (declarations$tolerance > 0) {
+    cat("  Tolerance:     ", format(declarations$tolerance), "\n", sep = "")
+  }
   invisible(x)
 }
 
@@ -245,6 +322,33 @@ ledgr_indicator_capture_overrides <- function(indicator, member) {
 }
 
 .ledgr_indicator_registry <- new.env(parent = emptyenv())
+# An experiment's own indicators by id, for run dispatch. Two different
+# definitions under one id in one experiment refuse; equal definitions are
+# kept once. Nothing is registered.
+ledgr_feature_indicator_index <- function(features) {
+  out <- list()
+  logic <- function(x) {
+    ledgr_active_feature_fingerprint(ledgr_precompute_feature_def_from_indicator(x))
+  }
+  for (feat in features) {
+    if (!inherits(feat, "ledgr_indicator")) next
+    existing <- out[[feat$id]]
+    if (!is.null(existing)) {
+      if (!identical(logic(existing), logic(feat))) {
+        rlang::abort(
+          sprintf(
+            "Indicator '%s' appears more than once in the experiment with different logic; use distinct ids.",
+            feat$id
+          ),
+          class = "ledgr_invalid_args"
+        )
+      }
+      next
+    }
+    out[[feat$id]] <- feat
+  }
+  out
+}
 
 #' Register an indicator in the global registry
 #'
@@ -286,7 +390,12 @@ ledgr_indicator_register <- function(indicator, name = NULL, overwrite = FALSE) 
 
   if (exists(name, envir = .ledgr_indicator_registry, inherits = FALSE) && !isTRUE(overwrite)) {
     existing <- get(name, envir = .ledgr_indicator_registry, inherits = FALSE)
-    if (identical(ledgr_indicator_fingerprint(existing), ledgr_indicator_fingerprint(indicator))) {
+    # History declarations are not part of the dense fingerprint, but they
+    # change availability-aware calculation, so they decide sameness here too.
+    same_logic <- function(x) {
+      ledgr_active_feature_fingerprint(ledgr_precompute_feature_def_from_indicator(x))
+    }
+    if (identical(same_logic(existing), same_logic(indicator))) {
       return(invisible(indicator))
     }
     rlang::abort(

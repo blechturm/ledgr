@@ -217,67 +217,36 @@ ledgr_history_calculation_start <- function(substrate) {
   substrate$data_start_utc
 }
 
-ledgr_history_compute_feature_series <- function(substrate,
-                                                 instrument_id,
-                                                 definition,
-                                                 kind = NULL,
-                                                 calculation_start = NULL,
-                                                 calculation_end = NULL,
-                                                 rows = NULL) {
-  if (is.null(rows)) {
-    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
-  }
-  keep <- rep.int(TRUE, nrow(rows))
-  # Bounds arrive as ISO strings or POSIXct; parse both through the exact
-  # instant reader so an ISO time is never truncated to its calendar date.
-  ts <- as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC"))
-  if (!is.null(calculation_start)) {
-    keep <- keep & ts >= as.numeric(ledgr_history_utc(calculation_start))
-  }
-  if (!is.null(calculation_end)) {
-    keep <- keep & ts <= as.numeric(ledgr_history_utc(calculation_end))
-  }
-  calculated <- ledgr_compute_feature_series_strict(
-    rows[keep, , drop = FALSE], definition, kind = kind
-  )
-  if (all(keep)) return(as.numeric(calculated))
-  out <- rep.int(NA_real_, nrow(rows))
-  out[keep] <- as.numeric(calculated)
-  out
-}
-
 ledgr_history_precompute_payload <- function(unique_defs,
                                              substrate,
                                              calculation_start = NULL,
                                              calculation_end = NULL) {
   ledgr_history_substrate_require(substrate)
+  values <- ledgr_history_compute_feature_series(
+    substrate = substrate,
+    definitions = unique_defs,
+    calculation_start = calculation_start,
+    calculation_end = calculation_end
+  )
   fingerprints <- names(unique_defs)
-  out <- lapply(fingerprints, function(fingerprint) {
-    list(
-      feature_id = unique_defs[[fingerprint]]$id,
-      fingerprint = fingerprint,
-      values = stats::setNames(vector("list", length(substrate$instrument_ids)),
-                               substrate$instrument_ids)
+  planes <- attr(values, "ledgr_feature_planes")
+  out <- vector("list", length(fingerprints))
+  for (d in seq_along(fingerprints)) {
+    matrix_values <- values[[d]]
+    # Release each matrix once it is split so the payload and the matrices
+    # are never both held in full.
+    values[d] <- list(NULL)
+    out[[d]] <- list(
+      feature_id = unique_defs[[d]]$id,
+      fingerprint = fingerprints[[d]],
+      values = stats::setNames(
+        lapply(seq_along(substrate$instrument_ids), function(i) matrix_values[i, ]),
+        substrate$instrument_ids
+      ),
+      planes = planes[[d]]
     )
-  })
-  names(out) <- fingerprints
-  kinds <- lapply(unique_defs, ledgr_strict_builtin_kind)
-  for (instrument_id in substrate$instrument_ids) {
-    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
-    for (fingerprint in fingerprints) {
-      def <- unique_defs[[fingerprint]]
-      out[[fingerprint]]$values[[instrument_id]] <-
-        ledgr_history_compute_feature_series(
-        substrate = substrate,
-        instrument_id = instrument_id,
-        definition = def,
-        kind = kinds[[fingerprint]],
-        calculation_start = calculation_start,
-        calculation_end = calculation_end,
-        rows = rows
-      )
-    }
   }
+  names(out) <- fingerprints
   out
 }
 
@@ -1728,15 +1697,28 @@ ledgr_history_substrate_terminal_at <- function(
     cutoff,
     observation_idx = seq_along(substrate$axis),
     instrument_idx = seq_along(substrate$instrument_ids)) {
-  # The terminal state follows the shared lifetime resolver, but the carry
-  # barrier it implies is sticky (v12 Section 5): once a terminal assertion is
-  # knowable at the cutoff, every later column stays blocked, even after a
-  # relisting. Resolve over the whole prefix so a later window still sees an
-  # earlier terminal, then keep the requested columns.
+  ledgr_history_substrate_terminal_planes(
+    substrate, cutoff, observation_idx, instrument_idx
+  )$sticky
+}
+
+# The terminal fact plane at a cutoff, as both the per-column assertion (the
+# columns inside a terminal interval) and the sticky carry barrier derived
+# from it. The terminal state follows the shared lifetime resolver, but the
+# carry barrier it implies is sticky (v12 Section 5): once a terminal
+# assertion is knowable at the cutoff, every later column stays blocked,
+# even after a relisting. Resolve over the whole prefix so a later window
+# still sees an earlier terminal, then keep the requested columns.
+ledgr_history_substrate_terminal_planes <- function(
+    substrate,
+    cutoff,
+    observation_idx = seq_along(substrate$axis),
+    instrument_idx = seq_along(substrate$instrument_ids)) {
   observation_idx <- as.integer(observation_idx)
   instrument_idx <- as.integer(instrument_idx)
   if (length(observation_idx) == 0L) {
-    return(matrix(FALSE, nrow = length(instrument_idx), ncol = 0L))
+    empty <- matrix(FALSE, nrow = length(instrument_idx), ncol = 0L)
+    return(list(asserted = empty, sticky = empty))
   }
   prefix_idx <- seq_len(max(observation_idx))
   terminal <- ledgr_history_substrate_fact_plane(
@@ -1758,7 +1740,10 @@ ledgr_history_substrate_terminal_at <- function(
     hit <- hit[!duplicated(hit[, 1L]), , drop = FALSE]
     first[hit[, 1L]] <- hit[, 2L]
   }
-  outer(first, observation_idx, "<=")
+  list(
+    asserted = asserted[, observation_idx, drop = FALSE],
+    sticky = outer(first, observation_idx, "<=")
+  )
 }
 
 ledgr_history_segments_diagonal_state <- function(segments, axis) {

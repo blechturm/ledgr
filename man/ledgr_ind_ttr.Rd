@@ -11,6 +11,9 @@ ledgr_ind_ttr(
   id = NULL,
   requires_bars = NULL,
   stable_after = requires_bars,
+  history_class = NULL,
+  tolerance = NULL,
+  input_carry = NULL,
   ...
 )
 }
@@ -33,6 +36,19 @@ functions. For known functions this is inferred from explicit arguments.}
 
 \item{stable_after}{First stable row. Defaults to \code{requires_bars}.}
 
+\item{history_class}{Optional history class for a TTR form that is not a
+registered package catalogue row. Registered forms take their class from
+the catalogue; a contradicting declaration refuses. An undeclared
+unregistered form is disclosed as \code{"history_dependent"}.}
+
+\item{tolerance}{Optional comparison tolerance for an unregistered form
+declared \code{"bounded"}; see \code{\link[=ledgr_indicator]{ledgr_indicator()}}. Registered rows have no
+runtime tolerance.}
+
+\item{input_carry}{Optional input-carry declaration for an unregistered
+form; see \code{\link[=ledgr_indicator]{ledgr_indicator()}}. Registered rows take it from the catalogue
+and refuse a declaration.}
+
 \item{...}{Explicit arguments forwarded to the TTR function.}
 }
 \value{
@@ -45,6 +61,14 @@ with \code{ledgr_pulse_snapshot()}, pass an active snapshot handle and the same
 TTR-backed feature declarations used by the experiment. For multi-column TTR
 functions where you want several outputs, prefer
 \code{ledgr_ind_ttr_outputs()}.
+}
+\details{
+Registered TTR forms are catalogued per function, selected output
+and algorithm-changing argument (for example \code{maType} or \code{wilder}). Each
+row declares its history class, required bar fields and dependency width
+and is certified by package tests. Any other argument combination, or a
+\code{requires_bars} that differs from the catalogue width, is an unregistered
+form that follows the custom-definition rules of \code{\link[=ledgr_indicator]{ledgr_indicator()}}.
 }
 \section{Articles}{
 

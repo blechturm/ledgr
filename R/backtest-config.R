@@ -219,25 +219,6 @@ ledgr_config <- function(snapshot,
     features = if (length(features) > 0) {
       defs <- lapply(features, function(feat) {
         if (inherits(feat, "ledgr_indicator")) {
-          ledgr_indicator_register(feat)
-          if (isTRUE(availability$active) &&
-              !identical(feat$gap_contract, "strict_window")) {
-            rlang::abort(
-              sprintf(
-                paste0(
-                  "Availability-aware execution does not support indicator '%s' ",
-                  "without `gap_contract = \"strict_window\"`."
-                ),
-                feat$id
-              ),
-              class = c(
-                "ledgr_indicator_gap_unsupported",
-                "ledgr_invalid_experiment_features",
-                "ledgr_invalid_experiment"
-              ),
-              indicator_ids = feat$id
-            )
-          }
           def <- list(
             id = feat$id,
             params = feat$params,
@@ -246,7 +227,16 @@ ledgr_config <- function(snapshot,
             fingerprint = ledgr_indicator_fingerprint(feat)
           )
           if (isTRUE(availability$active)) {
-            if (!is.null(feat$gap_contract)) def$gap_contract <- feat$gap_contract
+            # Only calculation-affecting declarations enter the stored
+            # definition and therefore config identity.
+            declarations <- ledgr_feature_def_declarations(feat)
+            if (!is.null(declarations$gap_contract)) {
+              def$gap_contract <- declarations$gap_contract
+            }
+            def$history_class <- declarations$history_class
+            def$required_fields <- declarations$required_fields
+            def$input_carry <- declarations$input_carry
+            def$tolerance <- declarations$tolerance
             def$fingerprint <- ledgr_active_feature_fingerprint(def)
           }
           return(def)
@@ -308,6 +298,11 @@ ledgr_config <- function(snapshot,
   if (!is.null(run_id)) config$run_id <- run_id
 
   class(config) <- c("ledgr_config", class(config))
+  # The experiment's own indicator objects travel with the config for run
+  # dispatch; two different definitions under one id refuse. The session
+  # registry is not written, and the attribute enters neither config
+  # identity nor the stored config.
+  attr(config, "ledgr_feature_indicators") <- ledgr_feature_indicator_index(features)
   validate_ledgr_config(config)
   config
 }
