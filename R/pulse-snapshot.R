@@ -485,7 +485,6 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
       alias_map = feature_result$alias_map
     ),
     candidate_feature_row = NULL,
-    precomputed_features = NULL,
     runtime_projection = NULL,
     snapshot_hash = meta$snapshot_hash,
     strategy_hash = NA_character_,

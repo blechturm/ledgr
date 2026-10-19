@@ -220,10 +220,12 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider plan", {
     close(bt)
     testthat::expect_identical(builds$n, 1L)
 
+    # LDG-3075: reopening an INCOMPLETE run reads only the session calendar,
+    # so it compiles no provider plan at all (previously exactly one).
     builds$n <- 0L
     reopened <- ledgr_run_open(snapshot, "production-provider-incomplete")
     close(reopened)
-    testthat::expect_identical(builds$n, 1L)
+    testthat::expect_identical(builds$n, 0L)
   })
 })
 

@@ -499,7 +499,7 @@ ledgr_availability_provider_prepare <- function(data, config) {
 ledgr_availability_provider_from_plan <- function(plan,
                                                   config,
                                                   snapshot_hash,
-                                                  history,
+                                                  sessions = plan$sessions,
                                                   history_substrate_version = NULL) {
   families <- plan$families
   status_declared <- plan$status_declared
@@ -619,9 +619,8 @@ ledgr_availability_provider_from_plan <- function(plan,
       facts = prepared_facts,
       decision_view = decision_view,
       execution_view = execution_view,
-      history = history,
       identity = identity,
-      sessions = plan$sessions,
+      sessions = sessions,
       valuation_policy = config$availability$valuation_policy
     ),
     class = c("ledgr_availability_provider", "list")
@@ -630,12 +629,10 @@ ledgr_availability_provider_from_plan <- function(plan,
 
 ledgr_availability_provider_build_prepared <- function(data,
                                                        config,
-                                                       snapshot_hash,
-                                                       history) {
+                                                       snapshot_hash) {
   ledgr_availability_provider_from_plan(
     ledgr_availability_provider_prepare(data, config),
     config,
-    snapshot_hash,
-    history
+    snapshot_hash
   )
 }

@@ -372,3 +372,50 @@ Every entry the draft marked for Workstream 43 was re-read on `b9d098c8`:
   same rule asks S-4 and L-3 to justify themselves or merge.
 - Execution-core consolidation removes R11, R28's dense views and the 213
   census sites' dense arms.
+
+## 7. Workstream 46 changes
+
+Recorded per ticket in `history_simplification_closeout.md`; this section
+keeps the map's rows current.
+
+Removed by LDG-3075 (results byte-identical to `b9d098c8`):
+
+- R4 and R5 (`gap_type`, `is_synthetic` planes): `ctx$bars` derives both
+  from `observed` in `ledgr_history_bar_packet_frame()`.
+- R6: the packet carries `ts_utc`, `instrument_id`, OHLCV and `observed`.
+- R7, R8 and the provider `history` member on all three provider builders
+  (R9's closure, R14's substrate reader and R10's portable closure).
+- R12a-d with S-5 and L-7 (`ledgr_history_segments_diagonal_state()`).
+- R17's `families`, `universe_rule` and `valuation_policy` fields; the
+  substrate's family declaration and membership completeness are the
+  provider plan's `families` and `membership$header_complete`.
+- The duplicate `provider_plan$sessions`; the provider takes the
+  substrate's `sessions`.
+- R33 and the `precomputed_features` argument of the candidate task,
+  candidate execution and candidate run functions.
+- Sessions-only readers (derived state, `ledgr_run_open()` for INCOMPLETE
+  runs, window pulse validation R10, `ledgr_walk_forward_pulse_calendar()`)
+  read the session table through `ledgr_availability_session_source()` and
+  compile no provider; R10's provider is gone (its bar fetch and alignment
+  stay, unchanged).
+
+At H1 the substrate falls from 720.6 MB object / 737.4 MB serialized to
+495.3 / 477.1 and the staged invariant from 855.2 / 869.9 (fresh) and
+1,121.0 / 1,133.6 (precomputed) to 629.8 / 609.7 for both
+(`dev/bench/v0_2_2_history_simplification/evidence/representation_sizes_h1_ldg3075.csv`).
+
+Not removed, pending a maintainer decision (NEEDS_TYPE_2 in the closeout):
+the membership and trading-status history segments (R16; 81.8 MB object /
+48.3 MB serialized at H1) and with them M-3 to M-7 and S-2 and S-4. They
+are the stored form `contracts.md` and v12 Section 7 name and the only input
+of the segment guard for those two families. LDG-3076 is blocked on the same
+decision; its decision-independent differential, LTB-0334, covers L-2, L-3,
+T-1, L-4, S-3 and M-2 against their canonical resolvers.
+
+LDG-3077 builds R34 once per session (`ledgr_indicator_catalogue_index()`)
+and looks rows up by key; the catalogue function body, and therefore the
+feature-engine digest, is unchanged.
+
+Routed, not changed by Workstream 46: R27 (features held twice inside the
+public precomputed object; a public-object change); L-8's merge (it moves
+the feature-engine digest); C-1/C-2's merge; R29b (a test oracle).

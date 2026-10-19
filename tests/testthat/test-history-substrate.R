@@ -136,16 +136,37 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
   )
   testthat::expect_identical(unname(status_late$state), "halted")
   testthat::expect_identical(unname(status_early$state), "unknown")
-  testthat::expect_true(substrate$halted[1L, 4L])
-  testthat::expect_true(substrate$missing_expected_bar[1L, 2L])
-  testthat::expect_true(substrate$inactive_print[1L, 5L])
+  # LDG-3075: the diagonal halted, expected, missing-bar and inactive-print
+  # planes had no product reader and are gone; the same cells are read from
+  # the forms the fold and history reads use (the provider's diagonal status
+  # and the two-clock lifetime mask), and a returning plane fails here.
+  testthat::expect_false(any(c(
+    "expected", "halted", "missing_expected_bar", "inactive_print",
+    "families", "universe_rule", "valuation_policy"
+  ) %in% names(substrate)))
+  testthat::expect_identical(
+    names(substrate$bars),
+    c("open", "high", "low", "close", "volume", "observed")
+  )
+  testthat::expect_null(substrate$provider_plan$sessions)
+  diagonal <- ledgr:::ledgr_availability_provider_from_substrate(
+    substrate, fixture$config, "ws41"
+  )
+  testthat::expect_identical(
+    unname(diagonal$facts(axis[[4L]], "AAA")$status), "halted"
+  )
+  expected_at <- function(col) {
+    ledgr:::ledgr_history_substrate_expected_at(substrate, axis[[col]], col, 1L)[1L, 1L]
+  }
+  testthat::expect_true(expected_at(2L) && !substrate$bars$observed[1L, 2L])
+  testthat::expect_true(!expected_at(5L) && substrate$bars$observed[1L, 5L])
   testthat::expect_true(substrate$bars$observed[1L, 5L])
 
   testthat::expect_identical(
-    substrate$families$declared,
+    sort(substrate$provider_plan$families, method = "radix"),
     c("lifetime", "membership", "sessions", "trading_status")
   )
-  testthat::expect_true(all(substrate$families$membership_complete$complete))
+  testthat::expect_true(all(substrate$provider_plan$membership$header_complete))
   census <- ledgr:::ledgr_history_substrate_census(substrate)
   testthat::expect_setequal(
     census$family,
@@ -580,15 +601,21 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
     unname(path_substrate$bars$observed[1L, ]),
     c(TRUE, FALSE, TRUE, FALSE)
   )
+  # LDG-3075: the diagonal lifetime mask is read from the two-clock primitive
+  # at each column's own cutoff instead of a stored plane.
+  path_axis <- path_substrate$axis
+  path_expected <- vapply(seq_along(path_axis), function(col) {
+    ledgr:::ledgr_history_substrate_expected_at(
+      path_substrate, path_axis[[col]], col, 1L
+    )[1L, 1L]
+  }, logical(1))
+  path_observed <- unname(path_substrate$bars$observed[1L, ])
+  testthat::expect_identical(path_expected, c(TRUE, TRUE, TRUE, FALSE))
   testthat::expect_identical(
-    unname(path_substrate$expected[1L, ]),
-    c(TRUE, TRUE, TRUE, FALSE)
-  )
-  testthat::expect_identical(
-    unname(path_substrate$missing_expected_bar[1L, ]),
+    path_expected & !path_observed,
     c(FALSE, TRUE, FALSE, FALSE)
   )
-  testthat::expect_false(any(path_substrate$inactive_print[1L, ]))
+  testthat::expect_false(any(!path_expected & path_observed))
 })
 
 # ledgr-test-profile: review
@@ -1747,4 +1774,287 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
   testthat::expect_equal(parallel_three$scores, sequential$scores)
   testthat::expect_equal(parallel$selected, sequential$selected)
   testthat::expect_equal(parallel_three$selected, sequential$selected)
+})
+
+# ledgr-test-profile: fast
+testthat::test_that("[LTB-0332] removed history representations stay removed", {
+  fixture <- ws41_history_fixture()
+  substrate <- fixture$substrate
+  axis <- fixture$axis
+  # LDG-3075: no diagonal plane, restating bar plane, unread field or second
+  # session calendar is held; adding one changes these names.
+  testthat::expect_identical(
+    names(substrate),
+    c(
+      "substrate_version", "snapshot_hash", "policy_identity",
+      "history_policy", "source_start_utc", "data_start_utc",
+      "instrument_ids", "instrument_index", "axis", "pulse_index", "bars",
+      "segments", "sessions", "provider_plan", "history_memo"
+    )
+  )
+  testthat::expect_identical(
+    names(substrate$bars),
+    c("open", "high", "low", "close", "volume", "observed")
+  )
+  testthat::expect_false("sessions" %in% names(substrate$provider_plan))
+
+  # The per-pulse packet carries only what P1-P4 read; ctx$bars derives
+  # gap_type and is_synthetic from `observed`. AAA has no bar at session 2.
+  packet <- ledgr:::ledgr_history_substrate_bar_packet(substrate, 2L)
+  testthat::expect_identical(
+    names(packet),
+    c("ts_utc", "instrument_id", "open", "high", "low", "close", "volume", "observed")
+  )
+  frame <- ledgr:::ledgr_history_bar_packet_frame(packet)
+  testthat::expect_identical(frame$gap_type, c("MISSING_EXPECTED_SESSION", "NONE"))
+  testthat::expect_identical(frame$is_synthetic, c(FALSE, FALSE))
+  testthat::expect_identical(
+    ledgr:::ledgr_history_bar_packet_frame(packet, integer())$gap_type,
+    character()
+  )
+
+  provider <- ledgr:::ledgr_availability_provider_from_substrate(
+    substrate, fixture$config, "ws41"
+  )
+  testthat::expect_false("history" %in% names(provider))
+  testthat::expect_identical(provider$sessions, substrate$sessions)
+
+  ns <- asNamespace("ledgr")
+  for (removed in c(
+    "ledgr_history_substrate_bar_frame",
+    "ledgr_history_substrate_instrument_frame",
+    "ledgr_history_substrate_history_reader",
+    "ledgr_history_segments_diagonal_state",
+    "ledgr_availability_provider_portable"
+  )) {
+    testthat::expect_false(exists(removed, envir = ns, inherits = FALSE), info = removed)
+  }
+  # Precomputed features reach candidates only through the bound projection.
+  testthat::expect_false(
+    "precomputed_features" %in% ledgr:::ledgr_sweep_history_invariant_fields()
+  )
+  for (fn in c(
+    "ledgr_sweep_candidate_tasks", "ledgr_sweep_run_candidate",
+    "ledgr_sweep_candidate_execution"
+  )) {
+    testthat::expect_false(
+      "precomputed_features" %in% names(formals(get(fn, envir = ns))),
+      info = fn
+    )
+  }
+  # Readers that need only the session calendar compile no provider.
+  for (fn in c(
+    "ledgr_rebuild_derived_state", "ledgr_run_open",
+    "ledgr_experiment_window_validate_pulses",
+    "ledgr_walk_forward_pulse_calendar"
+  )) {
+    source_text <- paste(deparse(get(fn, envir = ns)), collapse = "\n")
+    testthat::expect_true(
+      grepl("ledgr_availability_session_source(", source_text, fixed = TRUE),
+      info = fn
+    )
+    for (call in c("ledgr_availability_provider(", "ledgr_availability_provider_data(")) {
+      testthat::expect_false(grepl(call, source_text, fixed = TRUE), info = paste(fn, call))
+    }
+  }
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0334] surviving fact compilers match the canonical resolvers on random families", {
+  set.seed(3076L)
+  axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:13) * 86400
+  n_axis <- length(axis)
+  ids <- sprintf("I%d", 1:5)
+  # Clocks on and between sessions, so knowledge can lag, lead or coincide.
+  clock <- function(n) {
+    axis[sample.int(n_axis, n, replace = TRUE)] +
+      sample(c(0, 0, -6.5 * 3600, 3600), n, replace = TRUE)
+  }
+  draw <- function(build) {
+    for (attempt in 1:50) {
+      out <- tryCatch(build(), ledgr_invalid_args = function(e) NULL)
+      if (!is.null(out)) return(out)
+    }
+    stop("no valid random family in 50 draws")
+  }
+  pick <- function(x, field) vapply(x, function(e) e[[field]], character(1))
+  canonical_lifetime <- function(rows, s, cutoff) {
+    effective <- as.numeric(rows$effective_from)
+    end <- as.numeric(rows$effective_to)
+    end[is.na(end)] <- Inf
+    knowledge <- as.numeric(rows$knowledge_time)
+    terminal <- as.character(rows$terminal_event)
+    terminal[is.na(terminal)] <- ""
+    rank <- order(order(effective, knowledge, seq_len(nrow(rows))))
+    lapply(ids, function(id) {
+      applicable <- which(rows$instrument_id == id & knowledge <= cutoff &
+                            effective <= s & s < end)
+      ledgr:::ledgr_history_lifetime_resolve_applicable(
+        applicable, as.character(rows$assertion), terminal,
+        as.character(rows$fact_id), rank
+      )
+    })
+  }
+  canonical_status <- function(rows, s, cutoff) {
+    effective <- as.numeric(rows$effective_from)
+    end <- as.numeric(rows$effective_to)
+    end[is.na(end)] <- Inf
+    knowledge <- as.numeric(rows$knowledge_time)
+    lineage <- ledgr:::ledgr_status_lineage(rows)
+    vapply(ids, function(id) {
+      applicable <- which(rows$instrument_id == id & knowledge <= cutoff &
+                            effective <= s & s < end)
+      ledgr:::ledgr_history_status_resolve_applicable(
+        applicable, as.character(rows$status), as.integer(rows$precedence),
+        as.character(rows$fact_id), lineage
+      )$state
+    }, character(1), USE.NAMES = FALSE)
+  }
+  checked <- c(lifetime = 0L, sparse_lifetime = 0L, terminal = 0L, diagonal = 0L, membership = 0L)
+  for (family in 1:30) {
+    # Sparse draws hold at most one lifetime fact per instrument, so the
+    # sparse compiler runs; the others take the per-instrument compiler.
+    sparse <- family %% 3L == 0L
+    lifetime <- draw(function() {
+      n <- if (sparse) 4L else sample(4:10, 1L)
+      who <- if (sparse) sample(ids, n) else sample(ids, n, replace = TRUE)
+      from <- clock(n)
+      to <- from + sample(c(NA, 2, 4, 7), n, replace = TRUE) * 86400
+      assertion <- sample(c("known_active", "known_inactive", "unknown"), n,
+                          replace = TRUE, prob = c(0.3, 0.5, 0.2))
+      ledgr_facts_lifetime(data.frame(
+        instrument_id = who,
+        effective_from = from,
+        effective_to = as.POSIXct(to, origin = "1970-01-01", tz = "UTC"),
+        knowledge_time = from + sample(c(-1, 0, 1, 3, 6), n, replace = TRUE) * 86400,
+        assertion = assertion,
+        terminal_event = ifelse(assertion == "known_inactive" & stats::runif(n) < 0.5,
+                                "delisting", NA_character_),
+        source = "random",
+        stringsAsFactors = FALSE
+      ))$rows
+    })
+    # Row order is the lifetime resolver's last tie-break; supply it shuffled.
+    lifetime <- lifetime[sample.int(nrow(lifetime)), , drop = FALSE]
+    status <- draw(function() {
+      n <- sample(3:8, 1L)
+      from <- clock(n)
+      ledgr_facts_trading_status(data.frame(
+        instrument_id = sample(ids, n, replace = TRUE),
+        effective_from = from,
+        effective_to = as.POSIXct(from + sample(c(NA, 1, 3, 5), n, replace = TRUE) * 86400,
+                                  origin = "1970-01-01", tz = "UTC"),
+        knowledge_time = from + sample(c(-1, 0, 2), n, replace = TRUE) * 86400,
+        status = sample(c("active", "halted", "quotation_only"), n, replace = TRUE),
+        source = sample(c("a", "b", "c"), n, replace = TRUE),
+        precedence = sample(0:2, n, replace = TRUE),
+        stringsAsFactors = FALSE
+      ))$rows
+    })
+    sets <- draw(function() {
+      n <- sample(2:5, 1L)
+      from <- sort(clock(n))
+      ledgr_facts_membership_snapshots(
+        data.frame(
+          effective_from = from,
+          knowledge_time = from + sample(c(0, 0, 1, 4), n, replace = TRUE) * 86400,
+          set_id = sprintf("s%d", seq_len(n)),
+          members = I(lapply(seq_len(n), function(k) sample(ids, sample(1:4, 1L)))),
+          source = "random",
+          stringsAsFactors = FALSE
+        ),
+        universe_id = "U",
+        complete = stats::runif(n) < 0.5
+      )
+    })
+    intervals <- draw(function() {
+      who <- sample(ids, 2L)
+      from <- clock(2L)
+      ledgr_facts_membership_intervals(data.frame(
+        instrument_id = who,
+        effective_from = from,
+        effective_to = as.POSIXct(from + c(3, NA) * 86400, origin = "1970-01-01", tz = "UTC"),
+        knowledge_time = from + sample(c(0, 2), 2L, replace = TRUE) * 86400,
+        member = sample(c(TRUE, FALSE), 2L, replace = TRUE),
+        source = "random",
+        stringsAsFactors = FALSE
+      ), universe_id = "U")
+    })
+    data <- list(
+      families = data.frame(family = c("membership", "trading_status", "lifetime", "sessions")),
+      membership_sets = sets$headers,
+      membership = rbind(sets$rows, intervals$rows),
+      status = status,
+      lifetime = lifetime,
+      sessions = NULL
+    )
+    lifetime_segments <- ledgr:::ledgr_history_lifetime_segments(data, ids, axis, NULL)
+    terminal_segments <- ledgr:::ledgr_history_terminal_segments(data, ids, axis, NULL)
+    provider <- ledgr:::ledgr_availability_provider_build_prepared(
+      data,
+      list(
+        universe = list(instrument_ids = ids),
+        availability = list(universe_rule = unclass(ledgr_universe_members("U")))
+      ),
+      "random"
+    )
+    members_at <- attr(
+      ledgr:::ledgr_availability_prepared_membership(data, "U", ids), "resolve", exact = TRUE
+    )
+    # Two-clock lifetime and terminal segments against the canonical rule at
+    # every observation and at cutoffs on, between and after sessions; each
+    # family's answers are compared at once.
+    cutoffs <- as.numeric(c(axis, axis + 3600, axis[[n_axis]] + 30 * 86400))
+    got_two <- want_two <- list()
+    for (j in seq_len(n_axis)) {
+      for (cutoff in sample(cutoffs, 6L)) {
+        expected <- canonical_lifetime(lifetime, as.numeric(axis[[j]]), cutoff)
+        at <- as.POSIXct(cutoff, origin = "1970-01-01", tz = "UTC")
+        got <- ledgr:::ledgr_history_segments_query(lifetime_segments, j, at, seq_along(ids))
+        terminal <- ledgr:::ledgr_history_segments_query(terminal_segments, j, at, seq_along(ids))
+        expected_terminal <- pick(expected, "terminal_event")
+        got_two[[length(got_two) + 1L]] <- c(
+          got$state, got$winner, got$reason, terminal$state, terminal$reason
+        )
+        want_two[[length(want_two) + 1L]] <- c(
+          pick(expected, "state"), pick(expected, "winner"), pick(expected, "reason"),
+          expected_terminal,
+          ifelse(nzchar(expected_terminal), "terminal_asserted", "terminal_not_asserted")
+        )
+      }
+    }
+    testthat::expect_identical(got_two, want_two, info = paste("family", family))
+    key <- if (sparse) "sparse_lifetime" else "lifetime"
+    checked[[key]] <- checked[[key]] + length(got_two)
+    checked[["terminal"]] <- checked[["terminal"]] + length(got_two)
+    # The fold's diagonal plan (cursor) and prepared membership resolver,
+    # read forward, backward and shuffled at and between sessions.
+    diagonal <- as.numeric(c(axis, axis + 3600))
+    got_diag <- want_diag <- got_members <- want_members <- list()
+    for (cutoff in c(sort(diagonal), rev(sort(diagonal)), sample(diagonal))) {
+      at <- as.POSIXct(cutoff, origin = "1970-01-01", tz = "UTC")
+      facts <- provider$facts(at, ids)
+      expected <- canonical_lifetime(lifetime, cutoff, cutoff)
+      got_diag[[length(got_diag) + 1L]] <- unname(c(
+        facts$lifetime, facts$terminal_event, facts$lifetime_fact_id, facts$status
+      ))
+      want_diag[[length(want_diag) + 1L]] <- c(
+        pick(expected, "state"), pick(expected, "terminal_event"),
+        pick(expected, "winner"), canonical_status(status, cutoff, cutoff)
+      )
+      members <- ledgr:::ledgr_membership_resolve_prepared(
+        data, "U", at, instruments = ids, knowledge_cutoff = at
+      )$rows
+      got <- members_at(cutoff)
+      got_members[[length(got_members) + 1L]] <- list(
+        ifelse(got$known, got$member, NA), got$winner
+      )
+      want_members[[length(want_members) + 1L]] <- list(members$member, members$evidence_ids)
+    }
+    testthat::expect_identical(got_diag, want_diag, info = paste("family", family))
+    testthat::expect_identical(got_members, want_members, info = paste("family", family))
+    checked[["diagonal"]] <- checked[["diagonal"]] + length(got_diag)
+    checked[["membership"]] <- checked[["membership"]] + length(got_members)
+  }
+  testthat::expect_true(all(checked > 0L))
 })

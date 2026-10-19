@@ -104,6 +104,15 @@ condition call sites and 217 mode-branch sites (162 branch, 55 flow) in 56
 functions across 29 files. The six existing tables are unchanged;
 `metadata.csv` records check mode.
 
+The merge of the accepted Workstream 43 (`804e9be2`, BASE `b9d098c8`)
+regenerated the record in report mode because Workstream 43 removed four
+sites (one in `ledgr_config()`, one in `ledgr_run_fold_impl()`, two in
+`ledgr_precompute_payload()`) and added none; check mode then passed with
+213 sites (158 branch, 55 flow) in 55 functions across 29 files. LDG-3075
+and LDG-3077 change no mode-branch site; their removals of private helpers
+only move the helper, condition and connection tables, which are
+regenerated with them.
+
 Mutations, each applied to the working tree, run against
 `test-codebase-contracts.R` in one `pkgload::load_all()` session (R 4.6.1,
 Windows) and restored byte for byte (checked by MD5):

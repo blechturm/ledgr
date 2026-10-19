@@ -277,8 +277,6 @@ ledgr_history_substrate_bar_matrices <- function(bars,
     low = numeric_matrix(),
     close = numeric_matrix(),
     volume = numeric_matrix(),
-    gap_type = matrix("MISSING_EXPECTED_SESSION", nrow = n_inst, ncol = n_axis),
-    is_synthetic = matrix(FALSE, nrow = n_inst, ncol = n_axis),
     observed = matrix(FALSE, nrow = n_inst, ncol = n_axis)
   )
   if (!is.data.frame(bars) || nrow(bars) == 0L || n_axis == 0L) {
@@ -302,58 +300,12 @@ ledgr_history_substrate_bar_matrices <- function(bars,
     out[[name]][linear] <<- value
   }
   for (name in c("open", "high", "low", "close", "volume")) assign_numeric(name)
-  if ("gap_type" %in% names(bars)) {
-    value <- as.character(bars$gap_type[keep])
-    value[is.na(value) | !nzchar(value)] <- "NONE"
-    out$gap_type[linear] <- value
-  } else {
-    out$gap_type[linear] <- "NONE"
-  }
-  if ("is_synthetic" %in% names(bars)) {
-    value <- as.logical(bars$is_synthetic[keep])
-    value[is.na(value)] <- FALSE
-    out$is_synthetic[linear] <- value
-  }
   out$observed[linear] <- TRUE
   out
 }
 
-ledgr_history_substrate_bar_frame <- function(substrate,
-                                              pulse_idx,
-                                              instrument_idx = NULL) {
-  ledgr_history_substrate_require(substrate)
-  pulse_idx <- as.integer(pulse_idx)
-  if (length(pulse_idx) != 1L || is.na(pulse_idx) ||
-      pulse_idx < 1L || pulse_idx > length(substrate$axis)) {
-    rlang::abort(
-      "History bar pulse is outside the prepared axis.",
-      class = c("ledgr_history_outside_axis", "ledgr_invalid_args")
-    )
-  }
-  if (is.null(instrument_idx)) instrument_idx <- seq_along(substrate$instrument_ids)
-  instrument_idx <- as.integer(instrument_idx)
-  if (anyNA(instrument_idx) || any(instrument_idx < 1L) ||
-      any(instrument_idx > length(substrate$instrument_ids))) {
-    rlang::abort(
-      "History bar instruments are outside the prepared identity.",
-      class = c("ledgr_history_unknown_instrument", "ledgr_invalid_args")
-    )
-  }
-  bars <- substrate$bars
-  data.frame(
-    instrument_id = substrate$instrument_ids[instrument_idx],
-    ts_utc = as.POSIXct(rep(substrate$axis[[pulse_idx]], length(instrument_idx)), tz = "UTC"),
-    open = as.numeric(bars$open[instrument_idx, pulse_idx]),
-    high = as.numeric(bars$high[instrument_idx, pulse_idx]),
-    low = as.numeric(bars$low[instrument_idx, pulse_idx]),
-    close = as.numeric(bars$close[instrument_idx, pulse_idx]),
-    volume = as.numeric(bars$volume[instrument_idx, pulse_idx]),
-    gap_type = as.character(bars$gap_type[instrument_idx, pulse_idx]),
-    is_synthetic = as.logical(bars$is_synthetic[instrument_idx, pulse_idx]),
-    stringsAsFactors = FALSE
-  )
-}
-
+# One pulse column of the bar planes. P1 reads `close` for marks, P2 builds
+# ctx$bars from the packet and P3/P4 fill at the next packet's OHLCV.
 ledgr_history_substrate_bar_packet <- function(substrate, pulse_idx) {
   ledgr_history_substrate_require(substrate)
   pulse_idx <- as.integer(pulse_idx)
@@ -373,18 +325,14 @@ ledgr_history_substrate_bar_packet <- function(substrate, pulse_idx) {
     low = as.numeric(bars$low[, pulse_idx]),
     close = as.numeric(bars$close[, pulse_idx]),
     volume = as.numeric(bars$volume[, pulse_idx]),
-    gap_type = as.character(bars$gap_type[, pulse_idx]),
-    is_synthetic = as.logical(bars$is_synthetic[, pulse_idx]),
-    observed = as.logical(bars$observed[, pulse_idx]),
-    expected = as.logical(substrate$expected[, pulse_idx]),
-    halted = as.logical(substrate$halted[, pulse_idx]),
-    missing_expected_bar = as.logical(
-      substrate$missing_expected_bar[, pulse_idx]
-    ),
-    inactive_print = as.logical(substrate$inactive_print[, pulse_idx])
+    observed = as.logical(bars$observed[, pulse_idx])
   )
 }
 
+# The ctx$bars frame of one packet. Every substrate bar comes from a sealed
+# snapshot row and is never synthetic, so `gap_type` is "NONE" where a bar
+# row filled the cell and "MISSING_EXPECTED_SESSION" elsewhere, and
+# `is_synthetic` is FALSE; both are derived here rather than stored as planes.
 ledgr_history_bar_packet_frame <- function(packet, instrument_idx = NULL) {
   if (!is.list(packet) || !is.character(packet$instrument_id)) {
     rlang::abort(
@@ -402,8 +350,10 @@ ledgr_history_bar_packet_frame <- function(packet, instrument_idx = NULL) {
     low = packet$low[instrument_idx],
     close = packet$close[instrument_idx],
     volume = packet$volume[instrument_idx],
-    gap_type = packet$gap_type[instrument_idx],
-    is_synthetic = packet$is_synthetic[instrument_idx],
+    gap_type = c("MISSING_EXPECTED_SESSION", "NONE")[
+      packet$observed[instrument_idx] + 1L
+    ],
+    is_synthetic = rep(FALSE, length(instrument_idx)),
     stringsAsFactors = FALSE
   )
 }
@@ -457,41 +407,6 @@ ledgr_history_substrate_fold_reader <- function(substrate,
     },
     stats = function() list(reads = reads)
   )
-}
-
-ledgr_history_substrate_instrument_frame <- function(substrate, instrument_id) {
-  ledgr_history_substrate_require(substrate)
-  idx <- unname(substrate$instrument_index[as.character(instrument_id)])
-  if (length(idx) != 1L || is.na(idx)) {
-    rlang::abort(
-      sprintf("Unknown history instrument_id `%s`.", as.character(instrument_id)),
-      class = c("ledgr_history_unknown_instrument", "ledgr_invalid_args")
-    )
-  }
-  bars <- substrate$bars
-  data.frame(
-    instrument_id = rep(substrate$instrument_ids[[idx]], length(substrate$axis)),
-    ts_utc = substrate$axis,
-    open = as.numeric(bars$open[idx, ]),
-    high = as.numeric(bars$high[idx, ]),
-    low = as.numeric(bars$low[idx, ]),
-    close = as.numeric(bars$close[idx, ]),
-    volume = as.numeric(bars$volume[idx, ]),
-    gap_type = as.character(bars$gap_type[idx, ]),
-    is_synthetic = as.logical(bars$is_synthetic[idx, ]),
-    stringsAsFactors = FALSE
-  )
-}
-
-ledgr_history_substrate_history_reader <- function(substrate) {
-  force(substrate)
-  function(instrument_id, cutoff, sessions = NULL) {
-    rows <- ledgr_history_substrate_instrument_frame(substrate, instrument_id)
-    keep <- rows$ts_utc <= ledgr_history_utc(cutoff)
-    rows <- rows[keep, , drop = FALSE]
-    if (!is.null(sessions)) rows <- utils::tail(rows, as.integer(sessions))
-    rows
-  }
 }
 
 ledgr_history_status_resolve_applicable <- function(applicable,
@@ -1746,32 +1661,6 @@ ledgr_history_substrate_terminal_planes <- function(
   )
 }
 
-ledgr_history_segments_diagonal_state <- function(segments, axis) {
-  n_inst <- length(segments$count)
-  n_axis <- length(axis)
-  out <- matrix("unknown", nrow = n_inst, ncol = n_axis)
-  for (i in seq_len(n_inst)) {
-    rows <- seq.int(segments$off[[i]], length.out = segments$count[[i]])
-    rows <- rows[order(
-      segments$knowledge_from[rows],
-      segments$observation_from[rows],
-      method = "radix"
-    )]
-    knowledge_start <- ledgr_history_axis_lower_bound(
-      axis, segments$knowledge_from[rows]
-    )
-    for (j in seq_along(rows)) {
-      row <- rows[[j]]
-      from <- max(segments$observation_from[[row]], knowledge_start[[j]])
-      to <- min(segments$observation_to[[row]] - 1L, n_axis)
-      if (from <= to) {
-        out[i, from:to] <- segments$state_levels[segments$state[[row]]]
-      }
-    }
-  }
-  out
-}
-
 ledgr_history_substrate_query_facts <- function(substrate,
                                                 family,
                                                 observation,
@@ -1878,7 +1767,15 @@ ledgr_history_substrate <- function(bars,
   bars_matrix <- ledgr_history_substrate_bar_matrices(
     bars, instrument_ids, axis
   )
-  out <- structure(
+  # The fold reads facts through this diagonal plan. Its declared families
+  # and membership headers (with completeness) are the substrate's family
+  # metadata; the session calendar is held once, as `sessions` below.
+  provider_plan <- ledgr_availability_provider_prepare(
+    availability_data,
+    availability_config
+  )
+  provider_plan$sessions <- NULL
+  structure(
     list(
       substrate_version = ledgr_history_substrate_version,
       snapshot_hash = as.character(snapshot_hash),
@@ -1892,21 +1789,8 @@ ledgr_history_substrate <- function(bars,
       pulse_index = stats::setNames(seq_along(axis), ledgr_projection_pulse_names(axis)),
       bars = bars_matrix,
       segments = segments,
-      families = list(
-        declared = sort(unique(families), method = "radix"),
-        membership_complete = if (is.data.frame(availability_data$membership_sets)) {
-          availability_data$membership_sets[, c("universe_id", "set_id", "complete"), drop = FALSE]
-        } else {
-          data.frame()
-        }
-      ),
       sessions = availability_data$sessions,
-      valuation_policy = availability_config$availability$valuation_policy,
-      universe_rule = universe_rule,
-      provider_plan = ledgr_availability_provider_prepare(
-        availability_data,
-        availability_config
-      ),
+      provider_plan = provider_plan,
       # Derived treatment planes are prepared lazily, once per substrate, by
       # the public history reader. The memo holds only values derived from
       # this immutable substrate and its policy and is never staged.
@@ -1914,35 +1798,17 @@ ledgr_history_substrate <- function(bars,
     ),
     class = c("ledgr_history_substrate", "list")
   )
-  lifetime_diagonal <- ledgr_history_segments_diagonal_state(
-    out$segments$lifetime,
-    axis
-  ) != "known_inactive"
-  out$expected <- lifetime_diagonal
-  status_diagonal <- ledgr_history_segments_diagonal_state(
-    out$segments$trading_status,
-    axis
-  )
-  out$halted <- matrix(
-    status_diagonal %in% c("halted", "quotation_only"),
-    nrow = nrow(status_diagonal),
-    ncol = ncol(status_diagonal)
-  )
-  out$missing_expected_bar <- lifetime_diagonal & !bars_matrix$observed
-  out$inactive_print <- !lifetime_diagonal & bars_matrix$observed
-  out
 }
 
 ledgr_availability_provider_from_substrate <- function(substrate,
                                                        config,
                                                        snapshot_hash) {
   ledgr_history_substrate_require(substrate)
-  history <- ledgr_history_substrate_history_reader(substrate)
   ledgr_availability_provider_from_plan(
     substrate$provider_plan,
     config,
     snapshot_hash,
-    history,
+    sessions = substrate$sessions,
     history_substrate_version = substrate$substrate_version
   )
 }

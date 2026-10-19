@@ -147,8 +147,7 @@ testthat::test_that("the production provider is query-order independent", {
   second <- ledgr:::ledgr_availability_provider_build(
     fixture$data,
     config,
-    "witness-hash",
-    function(...) stop("history is unreachable in provider witnesses")
+    "witness-hash"
   )
 
   testthat::expect_null(attr(second, "spike_arm"))

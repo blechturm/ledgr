@@ -50,3 +50,13 @@ features and staged invariants were then built by the measured tree.
 - Same host and software as above. Another R process ran at the same time
   for part of the run; sizes do not depend on load and the substrate build
   time in the log (about 10 s) is disclosure only.
+
+## Recorded run after LDG-3075 (2026-10-19)
+
+- Tree: the `ws46/history-simplification` working tree with the LDG-3075
+  product changes (before their commit), on the same snapshot as the
+  `b9d098c8` run: `evidence/representation_sizes_h1_ldg3075.csv` and `.log`.
+- Absent fields record zero bytes (`expected`, `halted`,
+  `missing_expected_bar`, `inactive_print`, `families`, the plan's
+  `sessions` and the staged `precomputed_features`).
+- Same host and software. Sizes do not depend on load.

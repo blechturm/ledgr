@@ -1122,18 +1122,13 @@ ledgr_run_open <- function(snapshot, run_id) {
     if (isTRUE(snapshot_opened$opened_new)) {
       on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     }
-    snapshot_hash <- ledgr_snapshot_ensure_verified(
+    ledgr_snapshot_ensure_verified(
       snapshot_opened$con,
       snapshot_id,
       snapshot_db_path = snapshot$db_path
     )
-    provider <- ledgr_availability_provider(
-      snapshot_opened$con,
-      cfg,
-      as.character(snapshot_hash)
-    )
     calendar <- ledgr_availability_run_calendar(
-      provider,
+      ledgr_availability_session_source(snapshot_opened$con, cfg$data$snapshot_id),
       cfg$backtest$start_ts_utc,
       cfg$backtest$end_ts_utc,
       cfg$backtest$final_execution_ts_utc

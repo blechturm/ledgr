@@ -324,8 +324,7 @@ testthat::test_that("[LTB-0288] effective and knowledge clocks remain distinct",
       universe = list(instrument_ids = "AAA"),
       availability = list(universe_rule = NULL)
     ),
-    "fixture",
-    function(...) NULL
+    "fixture"
   )
   testthat::expect_identical(unname(provider$facts(at(3), "AAA")$status), "unknown")
   testthat::expect_identical(unname(provider$facts(at(4), "AAA")$status), "halted")
@@ -423,8 +422,7 @@ testthat::test_that("[LTB-0285] correction chains have one graph policy", {
   provider <- ledgr:::ledgr_availability_provider_build_prepared(
     data,
     list(universe = list(instrument_ids = "AAA"), availability = list(universe_rule = NULL)),
-    "fixture",
-    function(...) NULL
+    "fixture"
   )
   testthat::expect_identical(
     unname(provider$facts(at(4), "AAA")$status),
@@ -477,8 +475,7 @@ testthat::test_that("[LTB-0285] correction chains have one graph policy", {
       universe = list(instrument_ids = "AAA"),
       availability = list(universe_rule = NULL)
     ),
-    "fixture",
-    function(...) NULL
+    "fixture"
   )
   testthat::expect_identical(
     unname(revival_provider$facts(at(4), "AAA")$status),
@@ -522,8 +519,7 @@ testthat::test_that("[LTB-0285] correction chains have one graph policy", {
       universe = list(instrument_ids = "AAA"),
       availability = list(universe_rule = NULL)
     ),
-    "fixture",
-    function(...) NULL
+    "fixture"
   )
   testthat::expect_identical(
     unname(conflict_provider$facts(at(4), "AAA")$status),
