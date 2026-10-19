@@ -271,12 +271,36 @@ ledgr_indicator_history_catalogue <- function() {
   out
 }
 
-ledgr_indicator_catalogue_row <- function(source, family, output = "value", variant = "default") {
+# The catalogue is built once per R session and its rows are looked up by
+# index; built-in and TTR constructors call ledgr_indicator_catalogue_row()
+# for every indicator they make (LDG-3077). The cache holds only the
+# catalogue's own value, which depends on nothing but package code.
+.ledgr_indicator_catalogue_cache <- new.env(parent = emptyenv())
+
+ledgr_indicator_catalogue_index <- function() {
+  cached <- .ledgr_indicator_catalogue_cache$index
+  if (!is.null(cached)) return(cached)
   catalogue <- ledgr_indicator_history_catalogue()
-  hit <- catalogue$source == source & catalogue$family == family &
-    catalogue$output == output & catalogue$variant == variant
-  if (sum(hit) != 1L) return(NULL)
-  catalogue[hit, , drop = FALSE]
+  key <- paste(
+    catalogue$source, catalogue$family, catalogue$output, catalogue$variant,
+    sep = "\r"
+  )
+  # A key held by more than one row resolves to no row, as an ambiguous
+  # match always has.
+  unique_key <- !(duplicated(key) | duplicated(key, fromLast = TRUE))
+  index <- list(
+    catalogue = catalogue,
+    rows = stats::setNames(which(unique_key), key[unique_key])
+  )
+  assign("index", index, envir = .ledgr_indicator_catalogue_cache)
+  index
+}
+
+ledgr_indicator_catalogue_row <- function(source, family, output = "value", variant = "default") {
+  index <- ledgr_indicator_catalogue_index()
+  row <- index$rows[paste(source, family, output, variant, sep = "\r")]
+  if (length(row) != 1L || is.na(row)) return(NULL)
+  index$catalogue[row, , drop = FALSE]
 }
 
 ledgr_indicator_catalogue_declarations <- function(row) {
