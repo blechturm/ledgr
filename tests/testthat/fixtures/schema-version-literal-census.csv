@@ -1,7 +1,7 @@
 source_location,enclosing_object,field,classification,persistence_path,disposition
 R/availability-inspection.R:227,ledgr_facts_inspection_result,schema_version,memory_only,returned inspection object; not persisted by ledgr,literal retained
 R/availability-policy.R:46,ledgr_universe_members,schema_version,config_persisted,run_configs.config_json availability.universe_rule,fingerprinted_constant:ledgr_universe_rule_schema_version
-R/availability-policy.R:355,ledgr_experiment_plan,schema_version,memory_only,returned experiment plan; not persisted by ledgr,literal retained
+R/availability-policy.R:338,ledgr_experiment_plan,schema_version,memory_only,returned experiment plan; not persisted by ledgr,literal retained
 R/business-objective.R:653,ledgr_objective_validate_snapshot,snapshot_schema_version,memory_only,validated objective evidence snapshot embedded in an in-memory plan; not persisted by ledgr,literal retained
 R/business-objective.R:725,ledgr_objective_diagnostic_snapshot,snapshot_schema_version,memory_only,objective evidence snapshot embedded in an in-memory plan; not persisted by ledgr,literal retained
 R/business-objective.R:732,ledgr_objective_diagnostic_snapshot,source_metadata.schema_version,memory_only,source metadata embedded in an in-memory objective plan; not persisted by ledgr,literal retained

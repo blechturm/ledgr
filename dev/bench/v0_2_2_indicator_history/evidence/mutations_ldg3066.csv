@@ -1,0 +1,23 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"n01_history_as_bounded",TRUE,1,"LTB-0310","[LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0313] features use the lifetime mask knowable at each pulse",TRUE
+"n02_bounded_counts_inactive",TRUE,1,"LTB-0310 LTB-0093","[LTB-0093] lifetime inactivity keeps venue feature sessions || [LTB-0310] bounded and history-dependent indicators compute over treated segments",TRUE
+"n03_fn_gets_stable_after",TRUE,1,"LTB-0310","[LTB-0310] bounded and history-dependent indicators compute over treated segments",TRUE
+"n04_returns_consume_carry",TRUE,1,"LTB-0310 LTB-0142","[LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0311] input carry, calculation, readiness and output carry are separate planes || [LTB-0142] strict built-ins preserve exact values and masks || [LTB-0144] strict helper provenance is availability-only",TRUE
+"n05_admit_all_fields",TRUE,1,"LTB-0310 LTB-0142","[LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0311] input carry, calculation, readiness and output carry are separate planes || [LTB-0142] strict built-ins preserve exact values and masks || [LTB-0144] strict helper provenance is availability-only",TRUE
+"n06_join_segments_across_gaps",TRUE,1,"LTB-0310","[LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0311] input carry, calculation, readiness and output carry are separate planes || [LTB-0312] feature bytes and failure classes match across run, sweep and workers",TRUE
+"n07_drop_parity_check",TRUE,1,"LTB-0310 LTB-0312","[LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0312] feature bytes and failure classes match across run, sweep and workers",TRUE
+"n08_parity_ignores_tolerance",TRUE,1,"LTB-0310","[LTB-0310] bounded and history-dependent indicators compute over treated segments",TRUE
+"n09_refute_history_pair",TRUE,1,"LTB-0310","[LTB-0310] bounded and history-dependent indicators compute over treated segments",TRUE
+"n10_final_cutoff_masks",TRUE,1,"LTB-0313","[LTB-0313] features use the lifetime mask knowable at each pulse",TRUE
+"n11_ignore_lifetime_mask",TRUE,1,"LTB-0310 LTB-0093","[LTB-0093] lifetime inactivity keeps venue feature sessions || [LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0313] features use the lifetime mask knowable at each pulse",TRUE
+"n12_output_carry_on_not_ready",TRUE,1,"LTB-0311","[LTB-0311] input carry, calculation, readiness and output carry are separate planes",TRUE
+"n13_first_blocking_field_only",TRUE,1,"LTB-0311","[LTB-0311] input carry, calculation, readiness and output carry are separate planes",TRUE
+"n14_sweep_payload_mispaired",TRUE,1,"LTB-0312","[LTB-0312] feature bytes and failure classes match across run, sweep and workers",TRUE
+"n15_sma_rowmeans",TRUE,1,"LTB-0142","[LTB-0142] strict built-ins preserve exact values and masks || [LTB-0144] strict helper provenance is availability-only",TRUE
+"n16_certify_without_identity",TRUE,1,"LTB-0143","[LTB-0142] strict built-ins preserve exact values and masks || [LTB-0143] strict dispatch is canonical and bounded || [LTB-0144] strict helper provenance is availability-only",TRUE
+"n17_ttr_call_per_output",TRUE,1,"LTB-0276","[LTB-0276] strict TTR cleanup is exact and provenance-bounded",TRUE
+"n18_certified_runs_own_functions",TRUE,1,"LTB-0143 LTB-0276","[LTB-0143] strict dispatch is canonical and bounded || [LTB-0144] strict helper provenance is availability-only || [LTB-0276] strict TTR cleanup is exact and provenance-bounded",TRUE
+"n19_ignore_history_policy",TRUE,1,"LTB-0310 LTB-0073","[LTB-0073] strict feature matrices survive every execution route || strict scalar series and active identity contracts agree || undeclared indicators run as history-dependent in availability experiments || [LTB-0310] bounded and history-dependent indicators compute over treated segments || [LTB-0311] input carry, calculation, readiness and output carry are separate planes",TRUE
+"n20_certify_per_instrument",TRUE,1,"LTB-0157","[LTB-0157] strict dispatch resolves once per definition",TRUE
+"n21_duplicate_segment_pass",TRUE,1,"LTB-0153","[LTB-0153] strict built-ins do linear public-run work",TRUE
+"n22_refuse_history_dependent",TRUE,1,"LTB-0074","[LTB-0074] public TTR SMA shares the strict-window contract || undeclared indicators run as history-dependent in availability experiments",TRUE

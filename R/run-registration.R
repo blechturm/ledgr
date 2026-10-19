@@ -4,7 +4,11 @@ ledgr_run_registration <- function(con,
                                    seed,
                                    snapshot_id,
                                    metric_context) {
-  config_json <- canonical_json(cfg)
+  # The experiment's indicator objects travel with the config for dispatch
+  # only; they are not part of the stored config.
+  stored <- cfg
+  attr(stored, "ledgr_feature_indicators") <- NULL
+  config_json <- canonical_json(stored)
   cfg_hash <- config_hash(cfg)
 
   if (is.null(run_id)) {

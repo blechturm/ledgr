@@ -1,0 +1,5 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"s1_reach_is_requires_bars",TRUE,"1","LTB-0322","[LTB-0322] used_before_window reports every returned value that used earlier history",TRUE
+"s2_run_writes_registry",TRUE,"1","LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE
+"s2_dispatch_ignores_own_definitions",TRUE,"1","LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE
+"s2_conflicting_definitions_accepted",TRUE,"1","LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE

@@ -915,7 +915,7 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
     fixed = TRUE
   )
   testthat::expect_match(custom, "fn = function(window, params)", fixed = TRUE)
-  testthat::expect_match(ttr, "accept only the exact single-output\\s+`SMA\\(close, n\\)` TTR shape")
+  testthat::expect_match(ttr, "every registered TTR form runs as its package\\s+catalogue row declares")
   testthat::expect_no_match(walk_forward, "answers the generalization question", fixed = TRUE)
 })
 
@@ -2045,7 +2045,7 @@ ledgr_doc_fact_home_problems <- function(root) {
     c("execution-semantics", "Dense fills do not check cash, which can go negative"),
     c("execution-semantics", "records the refusal with reason `insufficient_cash`"),
     c("execution-semantics", "`dense_bar_timestamp` means a dense run"),
-    c("indicators", "| Public TTR SMA | `ledgr_ind_ttr(\"SMA\", input = \"close\", n = n)` | Supported for this exact single-output shape |"),
+    c("indicators", "| Registered TTR form | `ledgr_ind_ttr()` on a catalogued function, output and argument form | Supported: per catalogue row |"),
     c("indicators", "Read it once across the decision axis with `ctx$vec$feature(\"alias\")`"),
     c("sweeps", "Promotion records a choice; it does not make that choice out-of-sample."),
     c("selection-integrity", "Deflated Sharpe Ratio with effective trials"),

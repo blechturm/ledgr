@@ -1712,14 +1712,37 @@ and `AAA` a held nonmember, each holding 5:
   nothing fills backward or across a lifetime or terminal barrier, and a
   print inside a knowable lifetime-inactive interval stays readable with its
   structural flag. Feature values are the shared feature preparation's values
-  on the same axis.
+  on the same axis, and feature cell evidence is the evidence that
+  preparation produced, with the column meanings of the availability-aware
+  feature planes: `calculated` means the required inputs were admitted after
+  treatment, `ready` means an admitted cell at or after its segment's
+  `stable_after` row, `calculation_valid` means ready with a finite
+  calculated value, `input_carried` marks a cell whose own required input was
+  policy-carried (never for a definition excluded from input carry), and
+  `output_carried` marks a value carried from an earlier valid cell with that
+  cell's `source_ts_utc` and `carry_age_sessions`. `missing_reason` is one of
+  `not_expected`, `outside_calculation`, `required_input_missing`,
+  `carried_input_excluded`, `not_ready` (warm-up or re-warming),
+  `calculation_non_finite` (a ready cell whose calculation is not finite,
+  Cut 16 decision (21)), `output_carry_expired` or `output_carried`, so every
+  cell that is not `calculation_valid` carries a reason. Preparation retains
+  segment spans, reason runs and carry exceptions; a read derives warm-up and
+  `calculation_non_finite` by index and locates its cells by binary search;
+  nothing is recomputed per read.
 - Wide results have `ts_utc` plus one numeric column per included
   instrument; long results have `ts_utc`, `instrument_id`, `source`
   (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
   The `ledgr_history` attribute records the data start, returned-window start,
   cutoff, requested and available lookback, source and policy identity, the
   selection table, `used_before_window` (whether any returned value used an
-  observation or calculation state before the returned window) and, for the
+  observation or calculation state before the returned window; for a
+  feature this includes an output-carried value whose source precedes the
+  window, a bounded value whose reach of `stable_after` expected sessions
+  (its window and the segment readiness it depends on) reaches a leading
+  run of input-carried sessions or does not fit inside the window's
+  expected sessions, for example across a lifetime-inactive interval, and
+  any history-dependent
+  value when the window does not start at the data start) and, for the
   wide layout, the cell evidence as sessions-by-instruments matrices. Cell
   evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
   `calculated`, `output_carried`, `source_ts_utc`, `carry_age_sessions`,
@@ -1868,9 +1891,40 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-indicator-computation"></a>
 ### Indicator Computation And Identity
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
+- Every indicator definition is `bounded` or `history_dependent`.
+  `gap_contract = "strict_window"` declares a bounded window; combined with
+  `history_class = "history_dependent"` it refuses with
+  `ledgr_indicator_history_contradiction`. A custom definition without a
+  history declaration is disclosed as `history_dependent`; bounded is
+  declared, never inferred.
+- A definition declares the bar fields it requires (`required_fields`, from
+  `open`, `high`, `low`, `close` and `volume`); an undeclared custom
+  definition requires the four price fields. Required-field admission tests
+  exactly those fields and records every field that blocks a calculation.
+  Invalid declarations refuse with `ledgr_invalid_indicator_declaration`.
+- For a bounded definition `requires_bars` is the dependency width and the
+  window handed to `fn`; `stable_after`, at least `requires_bars`, is the
+  first-valid boundary and implies no convergence. No other width field
+  exists.
+- Package built-ins and registered TTR forms take exact declarations from one
+  package catalogue keyed by function, selected output and algorithm-changing
+  argument. Registered package tests certify every row on fixed hostile
+  fixtures; rows carry no runtime tolerance. A TTR form outside the catalogue,
+  including a known function with an unregistered argument or a different
+  `requires_bars`, follows the custom rules. Catalogue rows also mark the
+  return and volatility families: a row whose value depends on
+  session-to-session price changes or price dispersion has
+  `input_carry = "excluded"`; a level row is eligible. TTR `aroon` declares
+  its `n + 1` dependency width in every execution mode.
+- A custom definition may declare `input_carry = "excluded"` to mark itself a
+  return or volatility definition; an undeclared one consumes the
+  policy-treated input, disclosed as the default. The declaration enters
+  rule-4 feature identity. A built-in or registered TTR row takes its family
+  from the catalogue, and declaring another family on it refuses with
+  `ledgr_indicator_history_contradiction`.
+- A custom bounded definition that supplies both `fn` and `series_fn` is
+  compared exactly unless it declares a nonzero scaled `tolerance`; a
+  tolerance on any other definition refuses as a contradiction.
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.
@@ -1887,42 +1941,84 @@ Accepted change pending:
   including that function's own captures. The CSV adapter represents its
   constructor-owned captured values through `params$data_hash`; public source or
   adapter labels do not authorize that private route.
+- Dense indicator fingerprints omit the history declarations. Under identity
+  rule 4 an availability-aware feature fingerprint binds the dense
+  fingerprint (functions, captures, `id`, `requires_bars`, `stable_after` and
+  `params`, which carry the TTR version and algorithm arguments) together with
+  the history class, gap behavior, required fields, input-carry family,
+  tolerance and the feature-history rule version. The stored availability
+  config definition carries the same declarations, so each changes config
+  identity. Declaration provenance and display labels do not enter identity.
 
 <a id="contract-context-strict-features"></a>
 ### Availability-Aware Strict Features
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
-- Availability-aware indicators declare `gap_contract = "strict_window"` on
-  the existing indicator definition. The declaration commits the definition to
-  a finite window with no internal carry or imputation. Omission fails with
-  `ledgr_indicator_gap_unsupported` before strategy execution. The certified
-  set is built-in SMA and returns, custom indicators that explicitly accept the
-  contract, and single-output `ledgr_ind_ttr("SMA", input = "close", n = ...)`
-  definitions whose only forwarded argument is one positive integer `n` and
-  whose `requires_bars` and `stable_after` both equal `n`. TTR bundles and all
-  other TTR families remain uncertified until separately evidenced.
-- Strict feature windows count venue open sessions on the shared pulse axis.
-  Accepted lifetime facts, including `known_inactive`, do not remove sessions
-  from that feature axis. Any missing required observation on that axis makes
-  the affected window `NA_real_`; an inactive interval is one instance of the
-  general rule and is never bridged. A real observation inside an inactive
-  interval remains a feature input even though the availability plane may
-  restrict target changes for that instrument. Valuation marks never enter
-  feature computation. Scalar `fn` and the terminal value from `series_fn`
-  receive the same bounded fully observed window and must agree on
-  certification fixtures.
-- Active feature fingerprints include strict expected-session and cutoff-causal
-  history semantics. Future-known facts cannot rewrite earlier feature values.
-  Dense indicator fingerprints and feature-engine
-  identity omit the availability declaration and remain unchanged.
+- Availability-aware features are calculated over the shared causal-history
+  substrate. Every bounded and history-dependent definition runs; no
+  declaration is refused for its class. Each instrument's price fields are
+  treated once per preparation under the experiment's history policy: by
+  default each open, high, low and close field is carried for at most five
+  expected sessions, volume is never carried and
+  `ledgr_history_policy(price_carry = NULL)` keeps raw inputs.
+- Admission tests only a definition's required fields after treatment. A
+  bounded definition's value at a session is a function of its last
+  `requires_bars` expected sessions on the instrument's mask; sessions on which
+  the instrument is lifetime-inactive are not counted. `fn` receives exactly
+  that window and an incomplete window is `NA_real_`. A terminal interval ends
+  bounded windows as well as carry (Cut 16 decision (20)): after a relisting a
+  bounded definition restarts at every relisting (a run breaks at each row
+  that follows a column inside a terminal interval, read from the same
+  per-column terminal assertion WS41's sticky carry barrier is derived
+  from; the carry barrier itself stays sticky), needs
+  `requires_bars` treated rows from the relisting and is ready again at its
+  `stable_after` row, so no window mixes pre-delisting and post-relisting
+  prices.
+- A history-dependent definition runs once per contiguous segment of available
+  input on the common axis. A missing input beyond the carry horizon or a
+  lifetime-inactive interval ends the segment; the next segment restarts and
+  warms up again. Restart, not skip, is the gap policy. `stable_after` is the
+  first-valid position after each start or restart.
+- Return- and volatility-family catalogue rows never consume a carried price:
+  their calculated output is `NA_real_` wherever a required input is missing
+  or would have been carried; optional output carry may still fill such a
+  session from an earlier valid value, disclosed as `output_carried`.
+  A custom definition declaring `input_carry = "excluded"` follows the same
+  rule; an undeclared custom definition consumes the policy-treated input.
+- A real print inside a knowable lifetime-inactive interval enters no
+  calculation. Valuation marks never enter feature computation. Each pulse's
+  value uses the lifetime and terminal facts knowable at that pulse; a
+  later-known fact changes only later pulses. Features are calculated from
+  the data start through each window's scoring end (see
+  [Scoring And Feature Start](#contract-execution-window-start)).
+- Raw missingness, input carry, required-field admission, readiness,
+  calculation validity and optional output carry remain separate planes.
+  Output carry fills only a session whose own required input is unavailable,
+  from an earlier valid output and within the policy's output age; warm-up and
+  re-warming sessions are never filled.
+- Built-ins and catalogue rows are computed with the package constructor's own
+  functions, so a definition that claims their identity cannot execute other
+  code. A custom bounded definition that supplies `fn` and `series_fn` takes
+  its values from `series_fn` per segment; the sampled causality checks under
+  [Feature Path](#contract-context-feature-path) refute it against `fn`. A
+  history-dependent pair is not refuted.
+- Dense indicator fingerprints and the dense feature-engine identity omit the
+  availability declarations. Two accepted corrections change dense results:
+  TTR `aroon` declares its `n + 1` width in both modes, which changes its
+  dense fingerprint and adds one dense warm-up row (Cut 16 decision (14));
+  and a custom indicator whose id matches a built-in pattern (`sma_<n>`,
+  `return_1`) runs its own function in both modes, in any session and
+  call order, and is never replaced by the built-in (Cut 16 decision
+  (19)). A run resolves each feature from the experiment's own
+  definitions, which travel with its config outside config identity and the
+  stored config; runs, sweeps, walk-forward and config building never write
+  the session indicator registry, which a run reads only for an id its
+  config does not carry. A stored fingerprint that matches neither the
+  built-in nor a resolvable indicator refuses with `ledgr_run_hash_mismatch`.
+  The availability feature-engine
+  identity binds every helper of this calculation.
 
 <a id="contract-context-ttr-adapter"></a>
 ### TTR Adapter
-
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
 
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
@@ -1930,7 +2026,14 @@ Accepted change pending:
   fields for fingerprints and diagnostics.
 - TTR warmup inference is allowed only for functions listed by
   `ledgr_ind_ttr_warmup_rules()`. Each listed rule must be deterministic from
-  explicit arguments alone and verified against direct TTR output in tests.
+  explicit arguments alone and is the catalogue dependency width. Aroon depends
+  on `n + 1` rows even though TTR returns a partial-window value at row `n`.
+- Registered TTR forms are package catalogue rows keyed by function, output and
+  algorithm-changing argument (`maType`, `wilder`); each row declares its
+  history class, required fields and input-carry family and is certified by
+  package tests. Any other argument combination or a different
+  `requires_bars` follows the custom rules. Multi-output bundles flatten to
+  ordinary catalogue rows, one per output.
 - TTR adapter parity tests must cover every listed warmup rule and every
   documented multi-output column. Derived outputs such as MACD `histogram` are
   verified against the documented derivation applied to direct TTR output, not
@@ -1940,7 +2043,8 @@ Accepted change pending:
   than leaking low-level TTR errors from ordinary feature precomputation.
 - TTR input mappings are adapter contracts: `close` maps to `bars$close`, `hl`
   maps to `High/Low`, `hlc` maps to `High/Low/Close`, `ohlc` maps to
-  `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`.
+  `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`. The
+  mapped fields are the definition's required fields.
 - TTR-backed generated IDs use rules-table `id_args` first and then any other
   supplied scalar arguments in sorted order before the optional output suffix.
   Users must provide `id` explicitly when non-scalar TTR arguments would make a
@@ -1952,11 +2056,33 @@ Accepted change pending:
 <a id="contract-context-feature-path"></a>
 ### Feature Path And Intent Constructors
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
-- Fn-only indicators remain supported. The fallback uses bounded
-  stable windows, not expanding full-history windows.
+- Fn-only indicators remain supported. `fn` receives exactly the last
+  `requires_bars` calculation rows ending at the current session (expected
+  sessions for a bounded definition), never an expanding full-history window.
+- Availability-aware feature preparation checks causality before it returns,
+  so a refusal precedes the fold or sweep candidates it prepares for and any
+  precompute payload.
+  Each concrete definition, including built-ins, catalogue rows and fn-only
+  definitions, is probed once on the instrument with the most calculated
+  cells, at no more than four fixed positions among its calculated cells with
+  later history in their calculation range (the first, the last and the two
+  interior thirds). The value recomputed on the history ending at a position
+  must equal the prepared value exactly, or preparation refuses with
+  `ledgr_feature_lookahead_detected`, naming the definition, instrument and
+  session. A custom bounded definition that supplies both `fn` and
+  `series_fn` is also refuted at the same positions: `fn` on its window must
+  equal the `series_fn` value on the full causal prefix exactly, or within a
+  declared nonzero tolerance that enters its fingerprint, or preparation
+  refuses with `ledgr_indicator_gap_parity`. History-dependent pairs are not
+  refuted, and built-ins and catalogue rows are certified by package tests,
+  not runtime refutation. The checks never recompute all prefixes: their cost
+  is a fixed number of recomputations of one instrument per definition.
+  Passing them does not prove a definition causal.
+- A durable `ledgr_run()` prepares features after it registers the run, so a
+  refused definition leaves that run recorded `FAILED` with no strategy call,
+  ledger event or equity row (Cut 16 decision (18) in the v0.2.2 packet's
+  `tickets.yml`); sweep and precompute refusals write nothing. Dense
+  execution is frozen and runs no causality check.
 - Feature computation follows one uncached production path. Explicit
   `ledgr_precomputed_features` payloads are validated against current feature
   identity before reuse; a mismatch refuses before candidate execution.
@@ -2448,9 +2574,6 @@ Accepted change pending:
 <a id="contract-documentation-indicators"></a>
 ### Indicator Teaching
 
-Accepted change pending:
-[recursive-indicator history boundary](decisions.md#recursive-indicator-boundary).
-
 - Indicator concepts must have one installed teaching article, `indicators`,
   covering built-in indicators, TTR-backed indicators, feature IDs, and warmup
   `NA`. `ttr-indicators` must not remain as a parallel installed teaching
@@ -2474,6 +2597,12 @@ Accepted change pending:
 - Installed documentation must not expose stale retired article paths such as
   `ttr-indicators` after `indicators` is the single installed indicator
   article, unless the contract explicitly documents why both are needed.
+- Indicator teaching distinguishes bounded and history-dependent definitions,
+  teaches `stable_after` as first-valid rather than converged, and cites the
+  measured gap-recovery ranges as evidence instead of promising convergence.
+  It states that availability-aware preparation runs sampled causality and
+  `fn`/`series_fn` checks, that a passing check is not a proof of causality,
+  and that dense execution runs neither.
 
 <a id="contract-documentation-strategy-context"></a>
 ### Strategy Context Teaching

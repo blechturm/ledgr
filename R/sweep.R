@@ -2808,24 +2808,6 @@ ledgr_sweep_bars_matrix <- function(bars_by_id, universe) {
   out
 }
 
-ledgr_sweep_compute_feature_matrix <- function(feature_defs, bars_by_id, universe) {
-  if (length(feature_defs) == 0L) {
-    return(list())
-  }
-  def_ids <- vapply(feature_defs, function(def) def$id, character(1))
-  out <- vector("list", length(feature_defs))
-  for (d in seq_along(feature_defs)) {
-    def <- feature_defs[[d]]
-    mat <- matrix(NA_real_, nrow = length(universe), ncol = nrow(bars_by_id[[universe[[1L]]]]))
-    for (j in seq_along(universe)) {
-      mat[j, ] <- as.numeric(ledgr_compute_feature_series(bars_by_id[[universe[[j]]]], def))
-    }
-    out[[d]] <- mat
-  }
-  names(out) <- def_ids
-  out
-}
-
 ledgr_sweep_resolved_from_precomputed <- function(precomputed, param_grid) {
   candidates <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {

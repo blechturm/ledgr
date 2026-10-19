@@ -1,0 +1,13 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"r1_breaks_on_sticky_plane",TRUE,1,"LTB-0320","[LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"r1_no_terminal_breaks",TRUE,1,"LTB-0320","[LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"r4_seam_window_rule_removed",TRUE,1,"LTB-0320","[LTB-0320] a terminal interval ends feature carry and bounded windows",TRUE
+"r2_output_carry_ignored",TRUE,1,"LTB-0322","[LTB-0322] used_before_window reports every returned value that used earlier history",TRUE
+"r2_leading_input_carry_ignored",TRUE,1,"LTB-0322","[LTB-0322] used_before_window reports every returned value that used earlier history",TRUE
+"r2_inactive_span_ignored",TRUE,1,"LTB-0322","[LTB-0322] used_before_window reports every returned value that used earlier history",TRUE
+"r3_unregistered_falls_back_to_builtin",TRUE,1,"LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE
+"r3_package_defaults_block_custom",TRUE,1,"LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE
+"r3_builtin_shadows_custom",TRUE,1,"LTB-0321","[LTB-0321] a custom indicator with a built-in id runs its own function in both modes",TRUE
+"r4_probe_last_instrument",TRUE,1,"LTB-0316","[LTB-0316] the causality checker samples a fixed bounded set of positions",TRUE
+"d21_frame_reason_dropped",TRUE,1,"LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state",TRUE
+"d21_seam_reason_dropped",TRUE,1,"LTB-0319","[LTB-0319] frame feature evidence separates every v12 feature state",TRUE

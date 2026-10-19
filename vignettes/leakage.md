@@ -247,7 +247,10 @@ Vectorized custom indicators are useful because many indicators are
 naturally computed over a full series. They are also a residual risk.
 Output shape and value checks can prove that a vector has the right
 length and valid values. They cannot prove that the function avoided
-future rows internally.
+future rows internally. Availability-aware experiments recompute each
+feature from truncated history at a few fixed sessions and refuse when
+the value changes, which catches a function that reads later rows at
+those sessions; it is a sample, not a proof.
 
 The [custom-indicator article](custom-indicators.html) explains this
 boundary in more detail. The core warning is the same: full-series
@@ -263,6 +266,7 @@ custom feature code must be written with causal discipline.
 | Invalid target shape | Missing or extra target instruments are rejected. |
 | Scalar indicator history | Scalar indicators are evaluated on bounded windows ending at the current bar. |
 | Vectorized feature output | `series_fn` output must be aligned, numeric, and valid after warmup. |
+| Feature look-ahead (availability-aware) | Each definition is recomputed from truncated history at no more than four fixed sessions and refuses with `ledgr_feature_lookahead_detected` when its value changes. |
 
 ## What Remains Your Responsibility
 

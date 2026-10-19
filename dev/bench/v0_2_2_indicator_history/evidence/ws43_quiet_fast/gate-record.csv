@@ -1,0 +1,4 @@
+"profile","mode","elapsed_seconds","expected_blocks","executed_blocks","skipped_blocks","failed_blocks","r_version","testthat_version","bound_seconds","median_seconds","gate_passed"
+"fast","ordinary",108.81,565,565,0,0,"4.6.1","3.3.2",112,107.98,TRUE
+"fast","ordinary",107.9,565,565,0,0,"4.6.1","3.3.2",112,107.98,TRUE
+"fast","ordinary",107.98,565,565,0,0,"4.6.1","3.3.2",112,107.98,TRUE

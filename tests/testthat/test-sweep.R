@@ -12,6 +12,26 @@ ledgr_sweep_test_bars <- function(n_pulses = 6L) {
   )
 }
 
+# Direct-fold fixtures take their runtime projection from production
+# precompute (LDG-3067); the payload is computed by ledgr_precompute_features()
+# on a sealed snapshot of the same bars, never by a test-only matrix builder.
+ledgr_sweep_test_precomputed <- function(bars, indicators, feature_defs) {
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    features = indicators,
+    cost_model = ledgr_cost_zero()
+  )
+  precomputed <- ledgr_precompute_features(exp, ledgr_param_grid(candidate = list()))
+  testthat::expect_identical(
+    precomputed$feature_union$fingerprint,
+    vapply(feature_defs, `[[`, character(1), "fingerprint")
+  )
+  precomputed
+}
+
 ledgr_sweep_artifact_counts <- function(snapshot) {
   con <- get_connection(snapshot)
   tables <- c("runs", "ledger_events", "equity_curve", "run_telemetry")
@@ -1016,11 +1036,11 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
   bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
   pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
   pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
-  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(list(
+  indicators <- list(
     ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
-  ))
-  run_feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, "AAA")
-  runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
+  )
+  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
+  runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
   static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
   static_feature_views <- ledgr:::ledgr_projection_pulse_views(runtime_projection, "custom_close")
   static_feature_views_full <- ledgr:::ledgr_projection_pulse_views(
@@ -1136,11 +1156,11 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
   bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
   pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
   pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
-  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(list(
+  indicators <- list(
     ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
-  ))
-  run_feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, "AAA")
-  runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
+  )
+  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
+  runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
   static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
   static_feature_views <- ledgr:::ledgr_projection_pulse_views(
     runtime_projection,
@@ -1220,11 +1240,11 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
   bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
   pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
   pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
-  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(list(
+  indicators <- list(
     ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
-  ))
-  run_feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, "AAA")
-  runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
+  )
+  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
+  runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
   static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
   static_feature_views <- ledgr:::ledgr_projection_pulse_views(
     runtime_projection,
@@ -1288,7 +1308,8 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
   testthat::expect_false(any(observed$bars_close == -777))
   testthat::expect_false(any(observed$table_value == -888))
   testthat::expect_false(any(observed$wide_value == -999))
-  testthat::expect_equal(observed$wide_value, as.numeric(run_feature_matrix$custom_close[1, ]))
+  testthat::expect_equal(observed$wide_value, as.numeric(runtime_projection$feature_values$custom_close[1, ]))
+  testthat::expect_equal(observed$wide_value, bars$close)
   })
 })
 

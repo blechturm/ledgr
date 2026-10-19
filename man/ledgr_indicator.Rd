@@ -12,7 +12,11 @@ ledgr_indicator(
   stable_after = requires_bars,
   series_fn = NULL,
   source = "custom",
-  gap_contract = NULL
+  gap_contract = NULL,
+  history_class = NULL,
+  required_fields = NULL,
+  tolerance = NULL,
+  input_carry = NULL
 )
 }
 \arguments{
@@ -37,8 +41,29 @@ function(bars, params) -> numeric vector aligned to \code{bars}.}
 \code{"ledgr"}, TTR-backed indicators use \code{"TTR"}, and user/adapted indicators
 use \code{"custom"}.}
 
-\item{gap_contract}{Optional availability-aware gap contract. Version 1
-supports only \code{"strict_window"}.}
+\item{gap_contract}{Optional gap declaration. \code{"strict_window"} declares a
+bounded window and is equivalent to \code{history_class = "bounded"}; it
+contradicts \code{history_class = "history_dependent"}.}
+
+\item{history_class}{Optional history class: \code{"bounded"} or
+\code{"history_dependent"}. \code{NULL} with no \code{gap_contract} is disclosed as
+\code{"history_dependent"}: ledgr never infers that a definition is bounded.}
+
+\item{required_fields}{Optional character vector of the bar fields the
+calculation requires, from \code{"open"}, \code{"high"}, \code{"low"}, \code{"close"} and
+\code{"volume"}. \code{NULL} requires the four price fields.}
+
+\item{tolerance}{Optional comparison tolerance for a bounded definition that
+supplies both \code{fn} and \code{series_fn}. \code{NULL} (the default) means exact. A
+nonzero tolerance is a scaled bound, \code{abs(a - b) / max(1, abs(b))}, and
+enters the definition's availability-aware identity.}
+
+\item{input_carry}{Optional input-carry declaration. \code{"excluded"} marks a
+return or volatility indicator: it never consumes a price carried by the
+experiment's history policy, so a gap leaves its inputs missing. \code{NULL}
+(disclosed as the default) and \code{"eligible"} consume the policy-treated
+input. Package built-ins and registered TTR forms take this from the
+package catalogue.}
 }
 \value{
 A \code{ledgr_indicator} object.
@@ -53,6 +78,31 @@ environments, connections, and other unsupported captures refuse as
 non-deterministic. A captured function contributes its function identity,
 but its own captures are not recursively included. Put explicitly varying
 research inputs in \code{params}.
+
+On availability-aware experiments the history declarations decide how
+the indicator is calculated. A bounded definition depends only on its
+last \code{requires_bars} expected sessions: \code{fn} receives exactly that window
+and an incomplete window is missing. A history-dependent definition is
+calculated once per contiguous segment of available input and restarts
+after a gap. \code{stable_after} is the first-valid boundary after each start
+or restart; it does not promise convergence. A delisting ends bounded
+windows as well as carry: after every relisting a bounded definition
+restarts. The declarations enter the availability-aware feature
+identity; dense execution ignores them. An indicator whose \code{id} matches a
+built-in pattern (\verb{sma_<n>}, \code{return_1}) still runs its own \code{fn} in both
+modes, in any session; running an experiment never writes the
+indicator registry.
+
+Availability-aware preparation also checks every definition for
+look-ahead before any run, sweep candidate or precompute payload uses
+it: on the instrument with the most calculated values, at no more than
+four fixed sessions, the value recomputed from the history ending there
+must equal the prepared value, or preparation refuses with
+\code{ledgr_feature_lookahead_detected}. A custom bounded definition that
+supplies both \code{fn} and \code{series_fn} must also agree, at the same
+sessions, between \code{fn} on its window and \code{series_fn} within \code{tolerance},
+or preparation refuses with \code{ledgr_indicator_gap_parity}. Both checks
+are samples, not proofs of causality.
 }
 \examples{
 last_close <- ledgr_indicator(

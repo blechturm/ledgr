@@ -1,87 +1,74 @@
-workstream8_strict_bars <- function() {
-  values <- c(10, 11, 9, 13, 12, 14, 17, 16, 19, 18, 21, 23)
-  data.frame(
-    ts_utc = as.POSIXct("2024-01-01", tz = "UTC") +
-      86400 * seq_along(values),
-    instrument_id = "AAA",
-    open = values - 0.5,
-    high = values + 1,
-    low = values - 1,
-    close = values,
-    volume = 100,
-    stringsAsFactors = FALSE
-  )
+workstream8_strict_values <- function() {
+  c(10, 11, 9, 13, 12, 14, 17, 16, 19, 18, 21, 23)
 }
 
-workstream8_strict_def <- function(indicator, active = FALSE) {
-  definition <- ledgr:::ledgr_precompute_feature_def_from_indicator(indicator)
-  if (isTRUE(active)) {
-    definition$fingerprint <- ledgr:::ledgr_active_feature_fingerprint(
-      definition
-    )
+workstream8_window_means <- function(close, width) {
+  out <- rep(NA_real_, length(close))
+  for (i in seq.int(width, length(close))) {
+    window <- close[seq.int(i - width + 1L, i)]
+    if (all(is.finite(window))) out[[i]] <- mean(window)
   }
-  definition
+  out
+}
+
+workstream8_window_returns <- function(close, lag) {
+  out <- rep(NA_real_, length(close))
+  for (i in seq.int(lag + 1L, length(close))) {
+    # The bounded window is every session from i - lag to i.
+    if (all(is.finite(close[seq.int(i - lag, i)]))) {
+      out[[i]] <- (close[[i]] - close[[i - lag]]) / close[[i - lag]]
+    }
+  }
+  out
 }
 
 testthat::test_that("[LTB-0142] strict built-ins preserve exact values and masks", {
-  dense <- workstream8_strict_bars()
+  # V12 Sections 5-6: built-in SMA and returns require only `close`, so a
+  # missing open, high or low no longer blanks a window; default price carry
+  # fills an SMA input but never a returns input; and an explicit no-carry
+  # policy keeps the exact strict-window values.
+  close <- workstream8_strict_values()
+  strict <- ledgr_history_policy(price_carry = NULL)
+  sma_oracle <- function(x) workstream8_window_means(x, 3L)
+  returns_oracle <- function(x) workstream8_window_returns(x, 2L)
+  no_close <- close
   cases <- list(
-    dense = dense,
-    open_gap = transform(dense, open = replace(open, 6L, NA_real_)),
-    high_gap = transform(dense, high = replace(high, 6L, NA_real_)),
-    low_gap = transform(dense, low = replace(low, 6L, NA_real_)),
-    close_gap = transform(dense, close = replace(close, 6L, NA_real_)),
-    consecutive = transform(
-      dense,
-      close = replace(close, 6:7, NA_real_)
-    ),
-    leading = transform(
-      dense,
-      open = replace(open, 1:4, NA_real_),
-      high = replace(high, 1:4, NA_real_),
-      low = replace(low, 1:4, NA_real_),
-      close = replace(close, 1:4, NA_real_)
-    ),
-    short = dense[1:2, , drop = FALSE]
-  )
-  indicators <- list(
-    sma = ledgr_ind_sma(3L),
-    returns = ledgr_ind_returns(2L)
+    dense = list(close = close, fields = list()),
+    open_gap = list(close = close, fields = list(open = replace(close, 6L, NA_real_))),
+    high_gap = list(close = close, fields = list(high = replace(close + 1, 6L, NA_real_))),
+    low_gap = list(close = close, fields = list(low = replace(close - 1, 6L, NA_real_))),
+    close_gap = list(close = replace(close, 6L, NA_real_), fields = list()),
+    consecutive = list(close = replace(close, 6:7, NA_real_), fields = list()),
+    leading = list(close = replace(close, 1:4, NA_real_), fields = list())
   )
   for (case_name in names(cases)) {
-    for (feature in names(indicators)) {
-      definition <- workstream8_strict_def(indicators[[feature]])
-      expected <- ledgr:::ledgr_compute_feature_series_strict_scalar(
-        cases[[case_name]],
-        definition
-      )
-      actual <- ledgr:::ledgr_compute_feature_series_strict(
-        cases[[case_name]],
-        definition
-      )
-      testthat::expect_identical(actual, expected, info = paste(
-        case_name,
-        feature
-      ))
-      testthat::expect_identical(
-        is.na(actual),
-        is.na(expected),
-        info = paste(case_name, feature, "NA mask")
-      )
-    }
+    case <- cases[[case_name]]
+    strict_substrate <- ws43_history_substrate(case$close, fields = case$fields, policy = strict)
+    testthat::expect_identical(
+      ws43_feature_values(strict_substrate, ledgr_ind_sma(3L)),
+      sma_oracle(case$close),
+      info = paste(case_name, "strict SMA")
+    )
+    testthat::expect_identical(
+      ws43_feature_values(strict_substrate, ledgr_ind_returns(2L)),
+      returns_oracle(case$close),
+      info = paste(case_name, "strict returns")
+    )
+    carried_substrate <- ws43_history_substrate(case$close, fields = case$fields)
+    carried_close <- as.numeric(collapse::na_locf(case$close))
+    testthat::expect_identical(
+      ws43_feature_values(carried_substrate, ledgr_ind_sma(3L)),
+      sma_oracle(carried_close),
+      info = paste(case_name, "carried SMA")
+    )
+    testthat::expect_identical(
+      ws43_feature_values(carried_substrate, ledgr_ind_returns(2L)),
+      returns_oracle(case$close),
+      info = paste(case_name, "returns never consume a carried price")
+    )
   }
-
-  expected_sma <- rep(NA_real_, nrow(dense))
-  for (i in 3:nrow(dense)) {
-    expected_sma[[i]] <- mean(dense$close[(i - 2L):i])
-  }
-  testthat::expect_identical(
-    ledgr:::ledgr_compute_feature_series_strict(
-      dense,
-      workstream8_strict_def(ledgr_ind_sma(3L))
-    ),
-    expected_sma
-  )
+  short <- ws43_history_substrate(close[1:2], policy = strict)
+  testthat::expect_identical(ws43_feature_values(short, ledgr_ind_sma(3L)), c(NA_real_, NA_real_))
 
   set.seed(17L)
   floating <- stats::rnorm(40L)
@@ -109,10 +96,15 @@ testthat::test_that("[LTB-0142] strict built-ins preserve exact values and masks
     ledgr:::ledgr_strict_sma_series(volatile, width),
     scalar_mean
   )
+  testthat::expect_identical(
+    ws43_feature_values(ws43_history_substrate(volatile), ledgr_ind_sma(width)),
+    scalar_mean
+  )
 })
 
 testthat::test_that("[LTB-0143] strict dispatch is canonical and bounded", {
-  bars <- workstream8_strict_bars()
+  close <- workstream8_strict_values()
+  substrate <- ws43_history_substrate(close)
   custom <- ledgr_indicator(
     id = "sma_3",
     fn = function(window) mean(window$close) + 1,
@@ -138,51 +130,67 @@ testthat::test_that("[LTB-0143] strict dispatch is canonical and bounded", {
     gap_contract = "strict_window"
   )
   definitions <- list(
-    workstream8_strict_def(ledgr_ind_sma(3L), active = TRUE),
-    workstream8_strict_def(ledgr_ind_returns(2L), active = TRUE),
-    workstream8_strict_def(custom, active = TRUE),
-    workstream8_strict_def(external, active = TRUE),
-    workstream8_strict_def(ttr_like, active = TRUE)
+    ledgr_ind_sma(3L), ledgr_ind_returns(2L), custom, external, ttr_like
   )
+  certified <- lapply(definitions, ledgr:::ledgr_feature_certify)
+  testthat::expect_identical(
+    vapply(certified, `[[`, character(1), "certification"),
+    c("builtin", "builtin", "custom", "custom", "custom")
+  )
+  testthat::expect_identical(certified[[1L]]$kind, "sma")
+  testthat::expect_identical(certified[[2L]]$kind, "returns")
 
-  scalar_calls <- 0L
-  builtin_calls <- 0L
-  original_scalar <- ledgr:::ledgr_compute_feature_series_strict_scalar
-  original_builtin <- ledgr:::ledgr_compute_feature_series_strict_builtin
+  # A definition that claims a built-in identity is computed with the
+  # package constructor's own functions, never with a replaced function.
+  tampered <- ledgr:::ledgr_precompute_feature_def_from_indicator(ledgr_ind_sma(3L))
+  tampered$fn <- function(window) stop("tampered fn must not run")
+  tampered$series_fn <- function(bars, params) stop("tampered series_fn must not run")
+  segment_calls <- 0L
+  original_segment <- ledgr:::ledgr_history_feature_segment
   testthat::local_mocked_bindings(
-    ledgr_compute_feature_series_strict_scalar = function(...) {
-      scalar_calls <<- scalar_calls + 1L
-      original_scalar(...)
-    },
-    ledgr_compute_feature_series_strict_builtin = function(...) {
-      builtin_calls <<- builtin_calls + 1L
-      original_builtin(...)
+    ledgr_history_feature_segment = function(...) {
+      segment_calls <<- segment_calls + 1L
+      original_segment(...)
     },
     .package = "ledgr"
   )
-  values <- lapply(definitions, function(definition) {
-    ledgr:::ledgr_compute_feature_series_strict(bars, definition)
+  tampered_returns <- ledgr:::ledgr_precompute_feature_def_from_indicator(ledgr_ind_returns(2L))
+  tampered_returns$fn <- function(window) stop("tampered fn must not run")
+  tampered_returns$series_fn <- function(bars, params) stop("tampered series_fn must not run")
+  values <- lapply(c(definitions, list(tampered, tampered_returns)), function(definition) {
+    ws43_feature_values(substrate, definition)
   })
-  testthat::expect_identical(builtin_calls, 2L)
-  testthat::expect_identical(scalar_calls, 3L)
-  testthat::expect_identical(
-    values[[3L]][[3L]],
-    mean(bars$close[1:3]) + 1
-  )
-  testthat::expect_null(ledgr:::ledgr_strict_builtin_kind(definitions[[3L]]))
-  testthat::expect_null(ledgr:::ledgr_strict_builtin_kind(definitions[[4L]]))
-  testthat::expect_null(ledgr:::ledgr_strict_builtin_kind(definitions[[5L]]))
+  # One segment covers the complete series for every definition. The sampled
+  # causality check (LDG-3067) adds a fixed five per definition: the probe's
+  # own segment and four sampled prefixes, independent of history length.
+  testthat::expect_identical(segment_calls, 7L * (1L + 1L + 4L))
+  testthat::expect_identical(values[[7L]], values[[2L]])
+  testthat::expect_identical(values[[3L]][[3L]], mean(close[1:3]) + 1)
+  testthat::expect_identical(values[[6L]], values[[1L]])
+  testthat::expect_identical(values[[4L]][[3L]], mean(close[1:3]))
 })
 
 testthat::test_that("[LTB-0144] strict helper provenance is availability-only", {
   source <- paste(deparse(body(ledgr:::ledgr_feature_engine_version)), collapse = "\n")
   helpers <- c(
-    "ledgr_compute_feature_series_strict_scalar",
-    "ledgr_strict_builtin_kind",
-    "ledgr_strict_ttr_template_match",
-    "ledgr_strict_complete_window_mask",
+    "ledgr_history_compute_feature_series",
+    "ledgr_feature_certify",
+    "ledgr_feature_catalogue_candidates",
+    "ledgr_indicator_history_catalogue",
+    "ledgr_indicator_declare",
+    "ledgr_history_required_field_admission",
+    "ledgr_history_feature_inputs",
+    "ledgr_history_input_carry",
+    "ledgr_history_output_carry",
+    "ledgr_history_feature_ranges",
+    "ledgr_history_feature_runs",
+    "ledgr_history_feature_terminal_breaks",
+    "ledgr_history_feature_calculate",
+    "ledgr_history_feature_segment",
+    "ledgr_history_feature_frame",
+    "ledgr_history_feature_window",
     "ledgr_strict_sma_series",
-    "ledgr_compute_feature_series_strict_builtin"
+    "ledgr_active_feature_fingerprint"
   )
   for (helper in helpers) {
     testthat::expect_match(source, helper, fixed = TRUE)
@@ -195,7 +203,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     )
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(TRUE),
-      "25d86252352ea2228c9b49cade9eb482e21adf41d01f1ec5ce4a8a7db5809281"
+      "4b2bb8e6989d77ef7fdd4fd2c0738340e97786724826951af1ddb47cb2a005a9"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),

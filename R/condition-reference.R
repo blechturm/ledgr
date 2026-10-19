@@ -139,10 +139,20 @@
 #' `ledgr_session_adapter_invalid` and `ledgr_session_override_invalid` are
 #' raised for malformed qlcal adapter inputs or replacement rows.
 #'
-#' `ledgr_indicator_gap_unsupported` is raised before strategy use when an
-#' availability-aware feature does not declare the supported strict-window gap
-#' contract. `ledgr_indicator_gap_parity` is raised when the scalar and series
-#' implementations disagree at the end of a finite strict window.
+#' `ledgr_indicator_gap_parity` is raised when a custom bounded indicator's
+#' `fn` on its window disagrees with its `series_fn` value beyond the declared
+#' tolerance at a sampled causality position; its fields name the feature,
+#' instrument and session. `ledgr_feature_lookahead_detected` is raised when a
+#' feature recomputed from the history ending at a sampled session differs
+#' from its prepared value; its fields name the feature, instrument and
+#' session and carry both values.
+#'
+#' `ledgr_invalid_indicator_declaration` (parent `ledgr_invalid_args`) is
+#' raised for an invalid indicator history class, required-field set or
+#' tolerance. `ledgr_indicator_history_contradiction` is its subclass for
+#' contradictory declarations: a strict window declared history-dependent, a
+#' tolerance without a bounded `fn`/`series_fn` pair, or a registered TTR form
+#' declared against its catalogue row.
 #'
 #' `ledgr_invalid_strategy_state` is raised when availability-aware asset state
 #' is not a named list keyed only by instruments on the current public axis.
@@ -533,7 +543,8 @@
 #' @aliases ledgr_facts_inspection_invalid_args ledgr_facts_scope_not_found
 #' @aliases ledgr_facts_snapshot_not_sealed ledgr_facts_snapshot_hash_mismatch
 #' @aliases ledgr_session_adapter_invalid ledgr_session_override_invalid
-#' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
+#' @aliases ledgr_indicator_gap_parity
+#' @aliases ledgr_invalid_indicator_declaration ledgr_indicator_history_contradiction
 #' @aliases ledgr_invalid_strategy_state ledgr_strategy_error
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target
 #' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible

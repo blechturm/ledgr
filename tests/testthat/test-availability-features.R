@@ -165,6 +165,23 @@ availability_strict_expected <- function(window) {
   )
 }
 
+# Under the default history policy, AAA's missing 4 January close is carried
+# from 2 January (v12 Section 5); BBB has no earlier source to carry.
+availability_carry_expected <- function(window) {
+  out <- availability_strict_expected(window)
+  out$AAA <- switch(
+    as.character(window),
+    `2` = c(NA, 11, 12, 13, 15, 17),
+    `3` = c(NA, NA, 34 / 3, 38 / 3, 14, 16),
+    stop("unsupported expected window")
+  )
+  out
+}
+
+availability_strict_policy <- function() {
+  ledgr_history_policy(price_carry = NULL)
+}
+
 # ledgr-test-profile: fast
 testthat::test_that("[LTB-0093] lifetime inactivity keeps venue feature sessions", {
   snapshot <- availability_session_axis_fixture()
@@ -190,8 +207,8 @@ testthat::test_that("[LTB-0093] lifetime inactivity keeps venue feature sessions
       format(as.Date("2020-01-01") + 0:4, "%Y-%m-%d"),
       "T16:00:00Z"
     ),
-    AAA = c(NA, 11, NA, NA, NA),
-    BBB = c(NA, 21, 23, 25, 27),
+    AAA = c(NA, 11, NA, NA, 15),
+    BBB = c(NA, 21, NA, NA, 25),
     stringsAsFactors = FALSE
   )
   testthat::expect_identical(
@@ -200,13 +217,16 @@ testthat::test_that("[LTB-0093] lifetime inactivity keeps venue feature sessions
   )
   testthat::expect_equal(actual[, c("AAA", "BBB")], expected[, c("AAA", "BBB")])
 
+  # The window after the interval counts expected sessions: 2 and 5 January.
   post_interval <- actual$ts_utc == "2020-01-05T16:00:00Z"
-  testthat::expect_true(is.na(actual$AAA[post_interval]))
+  testthat::expect_equal(actual$AAA[post_interval], (12 + 18) / 2)
+  testthat::expect_equal(actual$BBB[post_interval], (22 + 28) / 2)
+  # BBB's real prints inside the interval (24, 26) enter no calculation.
   inactive_interval <- actual$ts_utc %in% c(
     "2020-01-03T16:00:00Z",
     "2020-01-04T16:00:00Z"
   )
-  testthat::expect_equal(actual$BBB[inactive_interval], c(23, 25))
+  testthat::expect_true(all(is.na(actual$BBB[inactive_interval])))
 
   inactive_explanation <- ledgr_run_explain(
     captured$value,
@@ -235,7 +255,8 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
     features = ledgr_feature_map(signal = ledgr_ind_sma(2)),
     opening = opening,
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    history_policy = availability_strict_policy()
   )
   parameterized <- ledgr_experiment(
     snapshot,
@@ -243,7 +264,8 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
     features = ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n"))),
     opening = opening,
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    history_policy = availability_strict_policy()
   )
   grid <- ledgr_grid_named(
     two = list(feature = list(n = 2L), strategy = list(window = 2L)),
@@ -336,6 +358,45 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
       info = paste(route, "keeps finite strict-window values")
     )
   }
+
+  carried <- ledgr_experiment(
+    snapshot,
+    availability_strict_probe_strategy,
+    features = ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n"))),
+    opening = opening,
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  carried_sweep <- ledgr_sweep(carried, grid, stop_on_error = TRUE)
+  carried_concrete <- ledgr_experiment(
+    snapshot,
+    availability_strict_probe_strategy,
+    features = ledgr_feature_map(signal = ledgr_ind_sma(2)),
+    opening = opening,
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  carried_direct <- availability_strict_capture(ledgr_run(
+    carried_concrete,
+    params = list(window = 2L),
+    run_id = "strict-default-carry"
+  ))
+  on.exit(close(carried_direct$value), add = TRUE)
+  carried_expected <- rbind(
+    availability_carry_expected(2L),
+    availability_carry_expected(3L)
+  )
+  rownames(carried_expected) <- NULL
+  testthat::expect_equal(
+    availability_strict_matrix(availability_strict_sweep_messages(carried_sweep)),
+    carried_expected,
+    tolerance = 1e-12
+  )
+  testthat::expect_equal(
+    availability_strict_matrix(carried_direct$messages),
+    availability_carry_expected(2L),
+    tolerance = 1e-12
+  )
 
   equity <- ledgr_results(direct_cold$value, "equity")
   missing_pulse <- format(
@@ -450,24 +511,27 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     ledgr:::ledgr_compute_feature_series(dense_bars, dense_ttr)
   )
 
-  predicate_cases <- list(
-    certified = list("SMA", "close", NULL, list(n = 2L), 2L, 2L, TRUE),
-    wrong_function = list("EMA", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
-    wrong_rsi_function = list("RSI", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
-    wrong_input = list("SMA", "hl", NULL, list(n = 2L), 2L, 2L, FALSE),
-    selected_output = list("SMA", "close", "value", list(n = 2L), 2L, 2L, FALSE),
-    extra_argument = list("SMA", "close", NULL, list(n = 2L, extra = TRUE), 2L, 2L, FALSE),
-    wrong_requires = list("SMA", "close", NULL, list(n = 2L), 3L, 3L, FALSE),
-    wrong_stability = list("SMA", "close", NULL, list(n = 2L), 2L, 3L, FALSE)
+  # The strict-window certification of TTR forms is the bounded rows of the
+  # package catalogue (v12 Section 6); every other form follows the custom
+  # rules and is not a strict window.
+  catalogue_cases <- list(
+    certified = list("SMA", "close", NULL, list(n = 2L), 2L, "bounded"),
+    history_dependent_ema = list("EMA", "close", NULL, list(n = 2L), 2L, "history_dependent"),
+    history_dependent_rsi = list("RSI", "close", NULL, list(n = 2L), 3L, "history_dependent"),
+    wrong_input = list("SMA", "hl", NULL, list(n = 2L), 2L, NA_character_),
+    selected_output = list("SMA", "close", "value", list(n = 2L), 2L, NA_character_),
+    extra_argument = list("SMA", "close", NULL, list(n = 2L, extra = TRUE), 2L, NA_character_),
+    wrong_requires = list("SMA", "close", NULL, list(n = 2L), 3L, NA_character_)
   )
-  for (case in predicate_cases) {
-    actual <- do.call(
-      ledgr:::ledgr_ttr_strict_window_certified,
-      stats::setNames(case[1:6], c(
-        "ttr_fn", "input", "output", "args", "requires_bars", "stable_after"
+  for (case in catalogue_cases) {
+    row <- do.call(
+      ledgr:::ledgr_ttr_catalogue_row,
+      stats::setNames(case[1:5], c(
+        "ttr_fn", "input", "output", "args", "requires_bars"
       ))
     )
-    testthat::expect_identical(actual, case[[7L]])
+    actual <- if (is.null(row)) NA_character_ else row$history_class[[1L]]
+    testthat::expect_identical(actual, case[[6L]])
   }
   testthat::expect_null(ledgr_ind_ttr("EMA", input = "close", n = 2L)$gap_contract)
   testthat::expect_null(ledgr_ind_ttr("RSI", input = "close", n = 2L)$gap_contract)
@@ -480,7 +544,7 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   testthat::expect_s3_class(bbands_bundle, "ledgr_indicator_bundle")
   testthat::expect_true(all(vapply(
     ledgr:::ledgr_indicator_bundle_indicators(bbands_bundle),
-    function(indicator) is.null(indicator$gap_contract),
+    function(indicator) identical(indicator$gap_contract, "strict_window"),
     logical(1)
   )))
   root <- ledgr_test_source_root()
@@ -491,11 +555,13 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     ), collapse = "\n")
     testthat::expect_match(
       contract_text,
-      'single-output `ledgr_ind_ttr\\("SMA", input = "close", n = \\.\\.\\.\\)`'
+      "A history-dependent definition runs once per contiguous segment",
+      fixed = TRUE
     )
     testthat::expect_match(
       contract_text,
-      "TTR bundles and all\\n  other TTR families remain uncertified"
+      "Return- and volatility-family catalogue rows never consume a carried",
+      fixed = TRUE
     )
   }
 
@@ -513,69 +579,52 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   support_cells <- lapply(support_lines[-1L], function(line) {
     trimws(strsplit(sub("^\\||\\|$", "", line), "|", fixed = TRUE)[[1L]])
   })
-  documented_support <- stats::setNames(
-    vapply(support_cells, function(x) startsWith(x[[3L]], "Supported"), logical(1)),
+  documented_class <- stats::setNames(
+    vapply(support_cells, `[[`, character(1), 3L),
     vapply(support_cells, `[[`, character(1), 1L)
   )
-  custom <- ledgr_indicator(
-    "documented_custom_sma",
-    function(window) mean(window$close),
-    requires_bars = 2L,
-    gap_contract = "strict_window"
-  )
-  bundle <- ledgr_ind_ttr_outputs(
-    "BBands",
-    input = "close",
-    outputs = c("dn", "up"),
-    n = 2L
-  )
-  bundle_supported <- any(vapply(
-    ledgr:::ledgr_indicator_bundle_indicators(bundle),
-    function(indicator) identical(indicator$gap_contract, "strict_window"),
-    logical(1)
-  ))
-  other_ttr <- list(
-    ledgr_ind_ttr("WMA", input = "close", n = 2L),
-    ledgr_ind_ttr("runMean", input = "close", n = 2L),
-    ledgr_ind_ttr("SMA", input = "close", n = 2L, stable_after = 3L),
-    ledgr_ind_ttr("SMA", input = "close", n = 2L, requires_bars = 3L),
-    ledgr_ind_ttr("SMA", input = "close", n = 2L, extra = TRUE)
-  )
-  executable_support <- c(
-    "Built-in SMA" = identical(ledgr_ind_sma(2L)$gap_contract, "strict_window"),
-    "Built-in returns" = identical(
-      ledgr_ind_returns(2L)$gap_contract,
-      "strict_window"
+  # Every documented form runs in availability mode; the documented history
+  # class must be the class the constructors declare.
+  class_of <- function(indicators) {
+    classes <- unique(vapply(indicators, `[[`, character(1), "history_class"))
+    if (length(classes) == 1L) classes else "per catalogue row"
+  }
+  forms <- list(
+    "Built-in SMA, EMA, RSI or returns" = list(
+      ledgr_ind_sma(2L), ledgr_ind_ema(2L), ledgr_ind_rsi(2L), ledgr_ind_returns(2L)
     ),
-    "Custom bounded window" = identical(custom$gap_contract, "strict_window"),
-    "Public TTR SMA" = identical(ttr_sma$gap_contract, "strict_window"),
-    "Built-in EMA or RSI" = any(vapply(
-      list(ledgr_ind_ema(2L), ledgr_ind_rsi(2L)),
-      function(indicator) identical(indicator$gap_contract, "strict_window"),
-      logical(1)
-    )),
-    "TTR EMA or RSI" = any(vapply(
-      list(
-        ledgr_ind_ttr("EMA", input = "close", n = 2L),
-        ledgr_ind_ttr("RSI", input = "close", n = 2L),
-        ledgr_ind_ttr(
-          "RSI",
-          input = "close",
-          n = 2L,
-          requires_bars = 2L
-        )
-      ),
-      function(indicator) identical(indicator$gap_contract, "strict_window"),
-      logical(1)
-    )),
-    "TTR output bundle" = bundle_supported,
-    "Other TTR signatures" = any(vapply(
-      other_ttr,
-      function(indicator) identical(indicator$gap_contract, "strict_window"),
-      logical(1)
-    ))
+    "Registered TTR form" = list(
+      ttr_sma,
+      ledgr_ind_ttr("EMA", input = "close", n = 2L),
+      ledgr_ind_ttr("RSI", input = "close", n = 2L, maType = "SMA")
+    ),
+    "TTR output bundle" = c(
+      ledgr:::ledgr_indicator_bundle_indicators(bbands_bundle),
+      ledgr:::ledgr_indicator_bundle_indicators(ledgr_ind_ttr_outputs(
+        "MACD", input = "close", nFast = 2L, nSlow = 3L, nSig = 2L
+      ))
+    ),
+    "Custom bounded declaration" = list(custom_sma),
+    "Undeclared custom or unregistered TTR form" = list(
+      ledgr_indicator("undeclared", function(window) mean(window$close), requires_bars = 2L),
+      ledgr_ind_ttr("SMA", input = "close", n = 2L, requires_bars = 3L),
+      ledgr_ind_ttr("RSI", input = "close", n = 2L, requires_bars = 2L)
+    )
   )
-  testthat::expect_identical(documented_support, executable_support)
+  executable_class <- vapply(forms, function(indicators) {
+    admitted <- tryCatch({
+      ledgr:::ledgr_availability_validate_features(indicators, "list")
+      TRUE
+    }, error = function(e) FALSE)
+    if (!admitted) return("refused")
+    switch(
+      class_of(indicators),
+      bounded = "Supported: bounded",
+      history_dependent = "Supported: history-dependent",
+      "Supported: per catalogue row"
+    )
+  }, character(1))
+  testthat::expect_identical(documented_class, executable_class)
 
   source_messages <- list()
   source_runs <- list()
@@ -598,11 +647,11 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     source_messages[[source]] <- availability_strict_matrix(captured$messages)
     testthat::expect_identical(
       unname(is.na(as.matrix(source_messages[[source]][, c("AAA", "BBB")]))),
-      unname(is.na(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])))
+      unname(is.na(as.matrix(availability_carry_expected(2L)[, c("AAA", "BBB")])))
     )
     testthat::expect_equal(
       unname(as.matrix(source_messages[[source]][, c("AAA", "BBB")])),
-      unname(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])),
+      unname(as.matrix(availability_carry_expected(2L)[, c("AAA", "BBB")])),
       tolerance = 1e-8
     )
   }
@@ -645,7 +694,7 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     unname(as.matrix(availability_strict_matrix(
       availability_strict_sweep_messages(ttr_one)
     )[, c("AAA", "BBB")])),
-    unname(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])),
+    unname(as.matrix(availability_carry_expected(2L)[, c("AAA", "BBB")])),
     tolerance = 1e-8
   )
 
@@ -670,8 +719,8 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
       availability_strict_sweep_messages(ttr_sweep)
     )[, c("AAA", "BBB")])),
     unname(as.matrix(rbind(
-      availability_strict_expected(2L)[, c("AAA", "BBB")],
-      availability_strict_expected(3L)[, c("AAA", "BBB")]
+      availability_carry_expected(2L)[, c("AAA", "BBB")],
+      availability_carry_expected(3L)[, c("AAA", "BBB")]
     ))),
     tolerance = 1e-8
   )
@@ -689,67 +738,38 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     unname(as.matrix(availability_strict_matrix(
       c(partial$messages, resumed$messages)
     )[, c("AAA", "BBB")])),
-    unname(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])),
+    unname(as.matrix(availability_carry_expected(2L)[, c("AAA", "BBB")])),
     tolerance = 1e-8
   )
 
-  for (unsupported in list(
-    ledgr_ind_ema(2L),
-    ledgr_ind_rsi(2L),
-    ledgr_ind_ttr("EMA", input = "close", n = 2L),
-    ledgr_ind_ttr("RSI", input = "close", n = 2L)
+  # History-dependent TTR forms and bundles now run (v12 Section 6) rather
+  # than refusing with the retired gap_unsupported condition.
+  for (history_feature in list(
+    list(ledgr_ind_ttr("EMA", input = "close", n = 2L)),
+    list(ledgr_ind_ttr("RSI", input = "close", n = 2L)),
+    list(ledgr_ind_ttr_outputs("MACD", input = "close", nSlow = 3L, nFast = 2L, nSig = 2L))
   )) {
-    error <- tryCatch(
-      ledgr_experiment(
-        snapshot,
-        function(ctx, params) stop("strategy must not execute"),
-        features = list(unsupported),
-        valuation_policy = ledgr_valuation_stale(1),
-        cost_model = ledgr_cost_zero()
-      ),
-      error = identity
-    )
-    testthat::expect_s3_class(error, "ledgr_indicator_gap_unsupported")
-    testthat::expect_match(conditionMessage(error), unsupported$id, fixed = TRUE)
-    testthat::expect_match(conditionMessage(error), "strict_window", fixed = TRUE)
-  }
-
-  bundle_error <- tryCatch(
-    ledgr_experiment(
+    experiment <- ledgr_experiment(
       snapshot,
-      function(ctx, params) stop("strategy must not execute"),
-      features = list(bundle),
+      function(ctx, params) ctx$hold(),
+      features = history_feature,
       valuation_policy = ledgr_valuation_stale(1),
       cost_model = ledgr_cost_zero()
-    ),
-    error = identity
-  )
-  testthat::expect_s3_class(bundle_error, "ledgr_indicator_gap_unsupported")
-  testthat::expect_match(
-    conditionMessage(bundle_error),
-    "strict_window",
-    fixed = TRUE
-  )
+    )
+    testthat::expect_s3_class(experiment, "ledgr_experiment")
+  }
 })
 
 testthat::test_that("strict scalar series and active identity contracts agree", {
-  bars <- data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-    instrument_id = "AAA",
-    open = 100:103,
-    high = 101:104,
-    low = 99:102,
-    close = 100:103,
-    volume = 1000,
-    gap_type = c("OBSERVED", "OBSERVED", "MISSING_EXPECTED_SESSION", "OBSERVED"),
-    is_synthetic = FALSE
+  strict <- ws43_history_substrate(
+    c(100, 101, NA, 103),
+    policy = ledgr_history_policy(price_carry = NULL)
   )
-  bars[3L, c("open", "high", "low", "close", "volume")] <- NA_real_
   sma <- ledgr_ind_sma(2)
   dense_sma <- sma
   dense_sma$gap_contract <- NULL
   testthat::expect_equal(
-    ledgr_compute_feature_series_strict(bars, sma),
+    ws43_feature_values(strict, sma),
     c(NA, 100.5, NA, NA)
   )
   testthat::expect_identical(
@@ -773,29 +793,40 @@ testthat::test_that("strict scalar series and active identity contracts agree", 
     gap_contract = "strict_window"
   )
   testthat::expect_error(
-    ledgr_compute_feature_series_strict(bars[1:2, , drop = FALSE], disagreeing),
+    ws43_feature_values(strict, disagreeing),
     class = "ledgr_indicator_gap_parity"
   )
 })
 
 # ledgr-test-profile: review
-testthat::test_that("unsupported active indicators fail during experiment validation", {
-  snapshot <- availability_runtime_fixture()
+testthat::test_that("undeclared indicators run as history-dependent in availability experiments", {
+  snapshot <- availability_runtime_fixture(days = 6L, bar_days = c(1L, 2L, 4L, 5L, 6L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  unsupported <- ledgr_indicator(
-    "unsupported",
+  undeclared <- ledgr_indicator(
+    "undeclared",
     function(window) mean(window$close),
     requires_bars = 2
   )
-  testthat::expect_error(
-    ledgr_experiment(
-      snapshot,
-      function(ctx, params) stop("strategy should not run"),
-      features = list(unsupported),
-      valuation_policy = ledgr_valuation_stale(1),
-      cost_model = ledgr_cost_zero()
-    ),
-    class = "ledgr_indicator_gap_unsupported"
+  testthat::expect_identical(undeclared$history_class, "history_dependent")
+  strategy <- function(ctx, params) {
+    value <- ctx$feature("AAA", "undeclared")
+    history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
+    history[[length(history) + 1L]] <- if (is.na(value)) "NA" else format(value, digits = 17)
+    list(targets = ctx$hold(), state_update = list(history = history))
+  }
+  run <- ledgr_run(ledgr_experiment(
+    snapshot,
+    strategy,
+    features = list(undeclared),
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero(),
+    history_policy = ledgr_history_policy(price_carry = NULL)
+  ))
+  on.exit(close(run), add = TRUE)
+  # Session 3 has no bar: the segment restarts at session 4 and re-warms.
+  testthat::expect_identical(
+    unlist(availability_last_state(run)$history),
+    c("NA", "101.5", "NA", "NA", "104.5", "105.5")
   )
 })
 

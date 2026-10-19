@@ -1162,36 +1162,20 @@ ledgr_run_fold_impl <- function(config,
   feature_engine_version <- ledgr_feature_engine_version(availability_active)
   if (length(feature_defs) > 0) {
     def_ids <- vapply(feature_defs, function(d) d$id, character(1))
-    run_feature_series <- stats::setNames(
-      lapply(feature_defs, function(...) list()),
-      def_ids
-    )
     if (availability_active) {
-      strict_kinds <- stats::setNames(
-        lapply(feature_defs, ledgr_strict_builtin_kind),
+      # One preparation treats each instrument's inputs once and calculates
+      # every definition on the substrate axis.
+      run_feature_matrix <- ledgr_history_compute_feature_series(
+        substrate = history_substrate,
+        definitions = stats::setNames(feature_defs, def_ids),
+        calculation_start = ledgr_history_calculation_start(history_substrate),
+        calculation_end = end_ts_utc
+      )
+    } else {
+      run_feature_series <- stats::setNames(
+        lapply(feature_defs, function(...) list()),
         def_ids
       )
-      for (instrument_id in instrument_ids) {
-        b <- ledgr_history_substrate_instrument_frame(
-          history_substrate, instrument_id
-        )
-        for (def in feature_defs) {
-          values <- ledgr_history_compute_feature_series(
-            substrate = history_substrate,
-            instrument_id = instrument_id,
-            definition = def,
-            kind = strict_kinds[[def$id]],
-            calculation_start = ledgr_history_calculation_start(history_substrate),
-            calculation_end = end_ts_utc,
-            rows = b
-          )
-          if (length(values) != nrow(b)) {
-            fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
-          }
-          run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
-        }
-      }
-    } else {
       for (def in feature_defs) {
         for (instrument_id in instrument_ids) {
           b <- bars_by_id[[instrument_id]]
@@ -1202,22 +1186,21 @@ ledgr_run_fold_impl <- function(config,
           run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
         }
       }
+      n_inst <- length(instrument_ids)
+      n_def <- length(def_ids)
+      run_feature_matrix <- vector("list", n_def)
+      for (d in seq_len(n_def)) {
+        id <- def_ids[[d]]
+        mat <- matrix(NA_real_, nrow = n_inst, ncol = length(pulses_posix))
+        for (j in seq_along(instrument_ids)) {
+          mat[j, ] <- as.numeric(run_feature_series[[id]][[instrument_ids[[j]]]])
+        }
+        run_feature_matrix[[d]] <- mat
+      }
+      names(run_feature_matrix) <- def_ids
+      run_feature_series <- NULL
     }
     bars_by_id <- NULL
-    n_inst <- length(instrument_ids)
-    n_def <- length(def_ids)
-    run_feature_matrix <- vector("list", n_def)
-    for (d in seq_len(n_def)) {
-      id <- def_ids[[d]]
-      feature_axis <- if (availability_active) history_axis else pulses_posix
-      mat <- matrix(NA_real_, nrow = n_inst, ncol = length(feature_axis))
-      for (j in seq_along(instrument_ids)) {
-        mat[j, ] <- as.numeric(run_feature_series[[id]][[instrument_ids[[j]]]])
-      }
-      run_feature_matrix[[d]] <- mat
-    }
-    names(run_feature_matrix) <- def_ids
-    run_feature_series <- NULL
   } else {
     bars_by_id <- NULL
   }
@@ -1592,7 +1575,13 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
   )
 }
 
+# A config built by ledgr_config() carries the experiment's own indicator
+# objects by id (attribute `ledgr_feature_indicators`, outside identity and
+# storage). Dispatch resolves a custom definition from them; the session
+# registry is only read for an id the config does not carry (for example a
+# config read back from JSON) and is never written by a run.
 ledgr_feature_defs_from_config <- function(cfg) {
+  feature_indicators <- attr(cfg, "ledgr_feature_indicators", exact = TRUE)
   feats <- cfg$features
   if (is.null(feats) || is.null(feats$enabled) || !isTRUE(feats$enabled)) {
     return(list())
@@ -1604,10 +1593,53 @@ ledgr_feature_defs_from_config <- function(cfg) {
   }
 
   availability_active <- ledgr_availability_config_active(cfg)
+  stored_fingerprint <- function(ind) {
+    fingerprint <- ledgr_indicator_fingerprint(ind)
+    if (availability_active) {
+      fingerprint <- ledgr_active_feature_fingerprint(
+        ledgr_precompute_feature_def_from_indicator(ind)
+      )
+    }
+    fingerprint
+  }
   add_def <- function(def, stored) {
-    def$gap_contract <- stored$gap_contract %||% def$gap_contract
+    for (field in c("gap_contract", "history_class", "required_fields",
+                    "input_carry", "tolerance")) {
+      if (!is.null(stored[[field]])) def[[field]] <- stored[[field]]
+    }
     def$fingerprint <- stored$fingerprint %||% ledgr_feature_def_fingerprint(def)
     def
+  }
+  registered <- function(id) {
+    own <- feature_indicators[[id]]
+    if (inherits(own, "ledgr_indicator")) return(own)
+    if (!exists("ledgr_indicator_get", mode = "function")) return(NULL)
+    ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
+    if (inherits(ind, "ledgr_indicator")) ind else NULL
+  }
+  # A stored fingerprint that is not the package built-in's identity names a
+  # user indicator whose id matches a built-in id pattern; it runs its own
+  # function (Cut 16 decision 19), never the built-in. `registered()` resolves
+  # it from the experiment's own indicators carried with the config first and
+  # reads the session registry only for an id the config does not carry; an
+  # id resolvable by neither refuses.
+  shadowed <- function(d, builtin) {
+    if (is.null(d$fingerprint) || identical(d$fingerprint, stored_fingerprint(builtin))) {
+      return(FALSE)
+    }
+    if (is.null(registered(d$id))) {
+      rlang::abort(
+        sprintf(
+          paste0(
+            "Feature '%s' in the run config matches neither the built-in of ",
+            "that id nor a registered indicator."
+          ),
+          d$id
+        ),
+        class = "ledgr_run_hash_mismatch"
+      )
+    }
+    TRUE
   }
   out <- list()
     for (d in defs) {
@@ -1621,54 +1653,34 @@ ledgr_feature_defs_from_config <- function(cfg) {
       rlang::abort("Each feature def must include `id` (or `name`) as a non-empty string.", class = "ledgr_invalid_config")
     }
 
-    if (identical(id, "return_1")) {
+    if (identical(id, "return_1") && !shadowed(d, ledgr_ind_returns(1L))) {
       out[[length(out) + 1L]] <- add_def(ledgr_feature_return_1(), d)
       next
     }
 
-    if (grepl("^sma_\\d+$", id)) {
+    if (grepl("^sma_\\d+$", id) &&
+        !shadowed(d, ledgr_ind_sma(as.integer(sub("^sma_", "", id))))) {
       n <- as.integer(sub("^sma_", "", id))
       out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(n), d)
       next
     }
 
-    if (identical(id, "sma_n")) {
-      n <- d$params$n
-      if (!is.numeric(n) || length(n) != 1 || is.na(n) || !is.finite(n) || n < 1 || (n %% 1) != 0) {
-        rlang::abort("features.defs entry 'sma_n' requires params$n as an integer >= 1.", class = "ledgr_invalid_config")
-      }
-      out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(as.integer(n)), d)
-      next
-    }
-
-    if (exists("ledgr_indicator_get", mode = "function")) {
-      ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
-      if (inherits(ind, "ledgr_indicator")) {
-        current_fingerprint <- ledgr_indicator_fingerprint(ind)
-        if (availability_active) {
-          current_fingerprint <- ledgr_active_feature_fingerprint(list(
-            fingerprint = current_fingerprint,
-            gap_contract = ind$gap_contract
-          ))
-        }
-        if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {
-          rlang::abort(
-            sprintf("Registered indicator '%s' no longer matches the fingerprint stored in the run config.", id),
-            class = "ledgr_run_hash_mismatch"
-          )
-        }
-        out[[length(out) + 1L]] <- list(
-          id = ind$id,
-          fn = ind$fn,
-          series_fn = ind$series_fn,
-          requires_bars = ind$requires_bars,
-          stable_after = if (is.null(d$stable_after)) ind$stable_after else d$stable_after,
-          params = if (is.null(d$params)) ind$params else d$params,
-          fingerprint = current_fingerprint,
-          gap_contract = d$gap_contract %||% ind$gap_contract
+    ind <- registered(id)
+    if (!is.null(ind)) {
+      current_fingerprint <- stored_fingerprint(ind)
+      if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {
+        rlang::abort(
+          sprintf("Registered indicator '%s' no longer matches the fingerprint stored in the run config.", id),
+          class = "ledgr_run_hash_mismatch"
         )
-        next
       }
+      def <- ledgr_precompute_feature_def_from_indicator(ind)
+      if (!is.null(d$stable_after)) def$stable_after <- d$stable_after
+      if (!is.null(d$params)) def$params <- d$params
+      def$fingerprint <- current_fingerprint
+      if (!is.null(d$gap_contract)) def$gap_contract <- d$gap_contract
+      out[[length(out) + 1L]] <- def
+      next
     }
 
       rlang::abort(sprintf("Unknown feature id in config: %s", id), class = "ledgr_invalid_config")

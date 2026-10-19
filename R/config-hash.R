@@ -26,6 +26,7 @@ config_hash_payload <- function(config) {
     )
   }
   payload <- unclass(config)
+  attr(payload, "ledgr_feature_indicators") <- NULL
   payload$db_path <- NULL
   payload$run_id <- NULL
   payload$alias_map_order <- NULL
