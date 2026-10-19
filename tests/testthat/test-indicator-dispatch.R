@@ -69,6 +69,9 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
     testthat::expect_identical(mine$return_1, rep(-7, 54L), info = mode)
     theirs <- observe(snapshot, builtins, active, paste(mode, "builtin"))
     testthat::expect_identical(theirs$sma_50, sma_oracle(base, 50L, 50:55), info = mode)
+    # Built-in one-session returns of closes base + k: 1 / (base + k - 1).
+    testthat::expect_equal(theirs$return_1, 1 / (base + seq.int(2L, 55L) - 1), info = mode)
+    testthat::expect_false(any(theirs$return_1 == -7), info = mode)
     # A built-in pattern id with no package registration, in both orders.
     first <- observe(snapshot, builtin_3, active, paste(mode, "sma3-builtin-1"), "sma_3")
     second <- observe(snapshot, custom_3, active, paste(mode, "sma3-custom-1"), "sma_3")
@@ -107,6 +110,21 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
     class = "ledgr_duplicate_feature_id"
   )
   testthat::expect_error(ledgr:::ledgr_feature_indicator_index(clash), class = "ledgr_invalid_args")
+
+  # A reopened or JSON-parsed config carries no indicator objects: dispatch
+  # reads the registry, and a registered definition whose fingerprint differs
+  # from the stored one refuses.
+  registered_b2 <- ledgr_indicator("ws43_registered_b2", function(window) 1, requires_bars = 1L)
+  ledgr_indicator_register(registered_b2)
+  on.exit(ledgr_indicator_remove("ws43_registered_b2"), add = TRUE)
+  reopened <- list(
+    features = list(enabled = TRUE, defs = list(list(id = "ws43_registered_b2", fingerprint = "stale")))
+  )
+  testthat::expect_null(attr(reopened, "ledgr_feature_indicators"))
+  testthat::expect_error(
+    ledgr:::ledgr_feature_defs_from_config(reopened),
+    class = "ledgr_run_hash_mismatch"
+  )
 
   # A stored fingerprint that is neither the built-in's nor a resolvable
   # indicator's refuses instead of falling back to the built-in.

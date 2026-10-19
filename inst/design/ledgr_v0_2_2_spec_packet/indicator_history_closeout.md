@@ -582,9 +582,22 @@ Mutations: 4 of 4 detected (`evidence/mutations_correction3.csv`,
 Registered oracles: LTB-0321 and LTB-0322 (this workstream's blocks) are
 extended. LTB-0321 drops Correction 2's package-default replacement
 assertions, which tested behavior S2 removes, and asserts the opposite
-property (registry untouched, explicit registration kept); its decision (19)
-value assertions are unchanged. No other registered oracle changed; the
-availability engine digest is unchanged (no hashed helper changed).
+property (registry untouched, explicit registration kept). As committed in
+`61842494` it had also dropped the built-in `return_1` value assertion
+without a stated reason (re-review 3 T1); the record patch below restores
+it. No other registered oracle changed; the availability engine digest is
+unchanged (no hashed helper changed).
+
+Record patch (re-review 3, `close_review_43_rereview_3.md`, maintainer
+decision 2026-10-19; no product code change, verified by the coordinator):
+LTB-0321 again asserts the built-in `return_1` values in both modes
+(1 / (base + k - 1), never -7) (T1); LCL-0313's lane counts are corrected
+to 11 public runs and at most 2 sweeps with 3 candidates (T2); LTB-0321
+asserts that a reopened config without the carried indicators, whose stored
+fingerprint differs from the registered definition, refuses with
+`ledgr_run_hash_mismatch`, so the fingerprint check in
+`ledgr_feature_defs_from_config()` is detected (B2); and the comment above
+`shadowed()` describes the current resolution order.
 
 ## Merge with Workstream 42 and renumbering
 

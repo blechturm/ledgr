@@ -1619,8 +1619,10 @@ ledgr_feature_defs_from_config <- function(cfg) {
   }
   # A stored fingerprint that is not the package built-in's identity names a
   # user indicator whose id matches a built-in id pattern; it runs its own
-  # function (Cut 16 decision 19) and must be registered, never replaced by
-  # the built-in.
+  # function (Cut 16 decision 19), never the built-in. `registered()` resolves
+  # it from the experiment's own indicators carried with the config first and
+  # reads the session registry only for an id the config does not carry; an
+  # id resolvable by neither refuses.
   shadowed <- function(d, builtin) {
     if (is.null(d$fingerprint) || identical(d$fingerprint, stored_fingerprint(builtin))) {
       return(FALSE)
