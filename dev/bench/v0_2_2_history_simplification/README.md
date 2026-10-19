@@ -36,3 +36,17 @@ features and staged invariants were then built by the measured tree.
 - The provider row's serialized length includes environments captured by its
   closures, which reach the substrate; the provider is never serialized in
   production.
+
+## Recorded run on the accepted Workstream 43 tree (2026-10-19)
+
+- Tree: `b9d098c8` (integration merge of the accepted Workstream 43),
+  extracted with `git archive` into a scratch directory and loaded with
+  `pkgload::load_all()`. This is the LDG-3074 map's size record and the
+  LDG-3075 "before" arm: `evidence/representation_sizes_h1_b9d098c8.csv`
+  and `.log`.
+- The fixture snapshot was rebuilt with `--build` by the same tree, because
+  Workstream 43 added `ledgr_feature_history_rule_version` to the
+  store-format bindings and older stores refuse at open.
+- Same host and software as above. Another R process ran at the same time
+  for part of the run; sizes do not depend on load and the substrate build
+  time in the log (about 10 s) is disclosure only.

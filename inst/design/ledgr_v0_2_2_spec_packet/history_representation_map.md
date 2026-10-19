@@ -1,7 +1,7 @@
 # History representation map
 
 Role: living; Workstream 46 design map of the causal-history system (LDG-3074).
-Status: working; drafted on the pre-Workstream-43 tree and finalized after Workstream 43 merges.
+Status: finalized against the accepted Workstream 43 tree (`b9d098c8`) for LDG-3074; Section 7 records what Workstream 46 then changed.
 Authority: non-binding. `tickets.yml` owns status and sequencing, `contracts.md`
 owns behaviour, and `../manual/optimization_coding_style.qmd` owns the
 fast-path rule this map applies.
@@ -15,14 +15,12 @@ result. This map is that inventory. It is the input to LDG-3075 (hold each
 fact once, drop unread planes), LDG-3076 (one membership compiler) and the
 execution-core consolidation in the macro plan.
 
-- Source tree: branch `ws46/history-simplification` from
-  `integrate/cut15-v0.2.2` at `9b0b304d` (Workstreams 40, 41 and 42 accepted).
-  Function names are the stable anchors; line numbers are omitted because
-  they churn.
-- **[WS43]** marks an entry that Workstream 43 (indicator history, branch
-  `ws43/indicator-history`, not yet merged) changes. Those entries describe
-  the pre-WS43 tree and are re-checked when this map is finalized against the
-  accepted Workstream 43 tree; LDG-3074 stays open until then.
+- Source tree: `b9d098c8`, the integration merge of the accepted Workstream
+  43 (Workstreams 40 to 43 accepted), merged into `ws46/history-simplification`
+  at `804e9be2` with no product change. The map was drafted on `9b0b304d`
+  before Workstream 43 merged; every entry Workstream 43 changed was re-read
+  on `b9d098c8` (Section 5). Function names are the stable anchors; line
+  numbers are omitted because they churn.
 - "Canonical" names the path whose answer defines the rule. "Fast path"
   names a second path that answers the same question for some inputs, faster
   or in a different shape. Each fast path lists its differential oracle (a
@@ -36,13 +34,16 @@ execution-core consolidation in the macro plan.
 ## Measurement at the H1 shape
 
 Sizes come from `dev/bench/v0_2_2_history_simplification/representation_sizes.R`
-run once on this tree against the vendor-neutral public-history fixture
+run on `b9d098c8` against the vendor-neutral public-history fixture
 (`dev/bench/v0_2_2_public_history/fixture.R`: 1,166 instruments by 7,213
 weekday sessions, 580 rotating complete membership sets of 600 members, 20
 labelled delistings, 40 late-known ten-session inactive intervals, about 0.5
 percent missing member bars, five cash dividends). The recorded output is
-`dev/bench/v0_2_2_history_simplification/evidence/representation_sizes_h1.csv`
-with its console log beside it. "Object" is `object.size()`; "serialized" is
+`dev/bench/v0_2_2_history_simplification/evidence/representation_sizes_h1_b9d098c8.csv`
+with its console log beside it (the draft's `9b0b304d` record,
+`representation_sizes_h1.csv`, is kept; the bar, plane, segment and plan
+rows are unchanged by Workstream 43 and only the feature, precompute and
+staged rows moved, by 1 to 2 percent). "Object" is `object.size()`; "serialized" is
 `length(serialize(x, NULL))`, which is what a worker transport or `saveRDS()`
 carries. One process ran alone; sizes do not depend on host load. Dense
 representations are measured on a synthetic complete matrix of the same
@@ -62,16 +63,17 @@ Headline numbers (MB, object / serialized):
 | `provider_plan` (membership `set_index` 58.5) | 59.5 / 75.5 |
 | Unread plus restating planes (six) | 224.6 / 258.9 |
 | Facts held twice (segments plus provider plan) | 141.5 / 123.9 |
-| One feature: payload / runtime projection | 64.3 / 66.2 |
-| `ledgr_precompute_features()`, two features: total / projection / payload | 259.9 / 131.1 / 128.6 |
+| One feature: payload / runtime projection (each with sparse evidence planes) | 65.7 / 67.8 |
+| `ledgr_precompute_features()`, two features: total / projection / payload | 265.8 / 134.3 / 131.3 |
 | History memo after one `close` read: base masks / base `close` positions / 80 overlays | 32.1 / 64.2 / 3.4 |
 | One read result, `close`, lookback 252 / `Inf` (wide) | 20.5 / 554.0 |
-| Staged invariant, fresh sweep (two features) | 851.9 / 866.7 |
-| Staged invariant, sweep with a precomputed payload | 1,111.8 / 1,124.6 |
+| Staged invariant, fresh sweep (two features) | 855.2 / 869.9 |
+| Staged invariant, sweep with a precomputed payload | 1,121.0 / 1,133.6 |
 | Provider built from the substrate (closures) | 0.8 object, 1,701.3 serialized |
 | Dense `bars_mat` / `static_bars_views` / `bars_by_id` (synthetic) | 417.1 / 1,011.1 / 548.1 |
 
-The substrate builds in about 7.4 seconds at this shape. The provider's
+The substrate builds in about 10 seconds at this shape on `b9d098c8`
+(disclosure only; the host was not quiet). The provider's
 serialized size is an artefact of its closures capturing the substrate (see
 R14); the provider is never serialized in production, it is rebuilt in each
 daemon.
@@ -87,15 +89,15 @@ Section 3.
 | ID | Representation | Owner | Production consumers | H1 size | Note |
 | --- | --- | --- | --- | --- | --- |
 | R1 | Fetched bar frame, one unsplit frame per preparation (transient) | `ledgr_precompute_fetch_bars_frame()` (`R/precompute-features.R`); runner SQL in `ledgr_run_fold_impl()` (`R/backtest-runner.R`) when no substrate is supplied | `ledgr_history_substrate()` only; dropped after construction | not retained | Two fetch sites for one frame: the runner selects OHLCV plus constant `gap_type = 'NONE'` and `is_synthetic = FALSE`, the precompute fetch selects OHLCV only. |
-| R2 | Substrate bar value planes `bars$open/high/low/close/volume` (instrument x session doubles) | `ledgr_history_substrate_bar_matrices()` (`R/history-substrate.R`) | P1 bar packet; valuation marks (`close`); history reads (`ledgr_history_bar_evidence()`); memo carry positions (`is.finite()` of the field); instrument frame for feature calculation **[WS43]**; walk-forward frozen-at-end and terminal recovery | 5 x 64.2 MB | Canonical bar store on the availability path. |
-| R3 | `bars$observed` (logical) | same | precompute warm-up counts (`ledgr_precompute_available_counts()`), history feature evidence `observed` **[WS43]**, test assertions | 32.1 MB | Marks the cells a fetched bar row filled; history bar reads already test `is.finite(raw)` per field instead. |
+| R2 | Substrate bar value planes `bars$open/high/low/close/volume` (instrument x session doubles) | `ledgr_history_substrate_bar_matrices()` (`R/history-substrate.R`) | P1 bar packet; valuation marks (`close`); history reads (`ledgr_history_bar_evidence()`); memo carry positions (`is.finite()` of the field); feature calculation, which reads each instrument's prefix of every field directly (`ledgr_history_feature_inputs()`, `R/history-features.R`); walk-forward frozen-at-end and terminal recovery | 5 x 64.2 MB | Canonical bar store on the availability path. |
+| R3 | `bars$observed` (logical) | same | precompute warm-up counts (`ledgr_precompute_available_counts()`), feature-read evidence `observed` and `is_missing` (`ledgr_history_feature_evidence()`), P1 packet field (copied, unread on `b9d098c8`), test assertions | 32.1 MB | Marks the cells a fetched bar row filled; history bar reads test `is.finite(raw)` per field instead. |
 | R4 | `bars$gap_type` (character) - flag | same | P1 bar packet -> `ctx$bars$gap_type` via `ledgr_history_bar_packet_frame()`; instrument frame column (not read by the feature engine) | 64.2 MB (98.4 serialized) | Restating: every fetch path supplies `'NONE'` or omits the column, so the plane is exactly `ifelse(observed, "NONE", "MISSING_EXPECTED_SESSION")`. |
 | R5 | `bars$is_synthetic` (logical) - flag | same | P1 bar packet -> `ctx$bars$is_synthetic`; instrument frame column | 32.1 MB | Restating: constant `FALSE` on every fetch path. |
 | R6 | P1 bar packet (`current` and `next_bar`, one column of every plane per pulse, 14 vectors each) | `ledgr_history_substrate_bar_packet()` via `ledgr_history_substrate_fold_reader()$bars` | P1 marks (`current$close`), P2 `ctx$bars` (`ledgr_history_bar_packet_frame()`), P3/P4 next-open fills (`next_bar` OHLCV) | 2 x 14 x 1,166 per pulse | Five packet fields (`observed`, `expected`, `halted`, `missing_expected_bar`, `inactive_print`) are copied every pulse and never read. |
-| R7 | Instrument frame (one data frame per instrument over the whole axis) | `ledgr_history_substrate_instrument_frame()` | feature preparation in runner and `ledgr_history_precompute_payload()` **[WS43]**; `ledgr_history_substrate_history_reader()` | transient, about 0.5 MB per instrument | On the Workstream 43 branch the feature path reads planes directly and only the provider history reader (R14, unread) calls this. |
+| R7 | Instrument frame (one data frame per instrument over the whole axis) | `ledgr_history_substrate_instrument_frame()` | none in production: its only caller is `ledgr_history_substrate_history_reader()`, the provider's `history` member (R14), which no product code reads | transient, about 0.5 MB per instrument | Workstream 43 moved feature preparation to the planes (R2), leaving this frame unread. |
 | R8 | `ledgr_history_substrate_bar_frame()` | `R/history-substrate.R` | none | n/a | Uncalled private helper; the codebase census reports it as the one `uncalled_private` finding. |
-| R9 | DB-backed bar readers | `ledgr_availability_provider()` history closure (`R/availability-provider.R`); `ledgr_derived_state_availability_marks()` (`R/derived-state.R`) | provider closure: none in production; marks: `ledgr_rebuild_derived_state()` for results and reconstruction | query-time | The marks query re-derives last-observed closes from `snapshot_bars` with one `cummax()`; see path V-2. |
-| R10 | Window pulse validation bars (`bars_by_id`, aligned) | `ledgr_experiment_window_validate_pulses()` (`R/walk-forward-folds.R`) with `ledgr_availability_provider_portable()` and `ledgr_sweep_align_availability_bars()` | window construction only, to count pulses and check coverage | per window | A third bar shape and a facts provider built only to count calendar pulses; the session calendar alone answers that. |
+| R9 | DB-backed bar readers | `ledgr_availability_provider()` history closure (`R/availability-provider.R`); `ledgr_derived_state_availability_marks()` (`R/derived-state.R`) | provider closure: none in production (the unregistered marks oracle in `test-workstream8-exact-parity.R` reads it); marks: `ledgr_rebuild_derived_state()` for results and reconstruction | query-time | The marks query re-derives last-observed closes from `snapshot_bars` with one `cummax()`; see path V-2. |
+| R10 | Window pulse validation bars (`bars_by_id`, aligned) | `ledgr_experiment_window_validate_pulses()` (`R/walk-forward-folds.R`) with `ledgr_availability_provider_portable()` (a third provider history closure over these bars) and `ledgr_sweep_align_availability_bars()` | window construction only, to count pulses and check coverage | per window | A third bar shape and a full facts provider (membership plan included) built only to count calendar pulses and check coverage; the session calendar alone answers both. |
 | R11 | Dense `bars_by_id`, `bars_mat`, `static_bars_views` (frozen) | runner, `ledgr_sweep_impl()`, `ledgr_bars_pulse_views()` (`R/pulse-context.R`) | dense fold only | 548.1 / 417.1 / 1,011.1 MB synthetic | Frozen by Cut 16 decision (1); removed by execution-core consolidation, not by Workstream 46. |
 
 ### 1.2 Substrate planes derived from facts
@@ -119,7 +121,7 @@ have no product consumer), per the registered-test rule in `AGENTS.md`.
 
 | ID | Representation | Owner | Production consumers | H1 size | Note |
 | --- | --- | --- | --- | --- | --- |
-| R13 | Canonical sparse fact tables (`families`, `membership_sets`, `membership`, `status`, `lifetime`, `sessions`) | `ledgr_availability_provider_data()` (`R/availability-provider.R`) | substrate construction; DB providers (R15); `ledgr_walk_forward_pulse_calendar()` reads only `sessions` | transient | Durable input; never retained whole. |
+| R13 | Canonical sparse fact tables (`families`, `membership_sets`, `membership`, `status`, `lifetime`, `sessions`) | `ledgr_availability_provider_data()` (`R/availability-provider.R`) | substrate construction; DB providers (R15); `ledgr_walk_forward_pulse_calendar()` and window validation (R10) read every fact table and use only `sessions` | transient | Durable input; never retained whole. |
 | R14 | `provider_plan`: membership plan (ordered headers, eligibility times, `set_index` with every set row, interval vectors), status and lifetime diagonal segments (CSR bounds and codes), sessions | `ledgr_availability_provider_prepare()` (`R/availability-provider-prepared.R`), stored in the substrate | every availability fold's decision and execution views through `ledgr_availability_provider_from_plan()`; worker staging rebuilds the provider from it | 59.5 MB (58.5 in `set_index`) | Second form of the facts (diagonal: knowledge cutoff equals observation). Its `sessions` copy duplicates `substrate$sessions`. The provider's `history` member wraps R7 and captures the substrate, but no production code reads `provider$history` (tests in `test-availability-causality.R` and `test-workstream8-exact-parity.R` do). |
 | R15 | Store-built provider (facts re-read from the snapshot) | `ledgr_availability_provider()` | `ledgr_rebuild_derived_state()` (built twice per call), `ledgr_backtest_availability()` results, `ledgr_run_open()` for INCOMPLETE runs | rebuilt per call | Derived state and run open read only `sessions` for a calendar, yet compile the full membership plan; the results reader also replays decision views. |
 | R16 | Two-clock segments, four families (`membership`, `trading_status`, `lifetime`, `lifetime_terminal`): CSR offsets and counts, observation range, `knowledge_from`, dictionary-coded state, winner and reason, segment-guard counts | `ledgr_history_substrate()` through the compilers in Section 2 | lifetime and terminal: history-read masks (R20), `ledgr_history_substrate_treated_field()`; membership and trading status: none in production (`ledgr_history_substrate_query_facts()` in tests, the census and the build-time segment guard) | membership 81.7 MB (677,446 segments for 1,023,787 counted facts); the others 0.1 MB each | First form of the facts. Membership and status segments are compiled, guarded and staged but never read by a production path on this tree. |
@@ -136,16 +138,23 @@ have no product consumer), per the registered-test rule in `AGENTS.md`.
 | R22 | Read result: values plus twelve aligned evidence planes and a selection table | `ledgr_history_read()`, `ledgr_history_wide()`, `ledgr_history_long()` | strategies, `ledgr_history_matrix()`, `ledgr_history_sufficient()` | 20.5 MB at lookback 252; 554.0 MB at `Inf` | Eager evidence; the lazy-evidence decision belongs to the maintainer with LDG-3069 measurements (macro plan, Deferred history simplification). |
 | R23 | Valuation marks state (last observed close, its pulse, frozen set) | `ledgr_availability_valuation_state()` (`R/availability-economics.R`) | fold P1 decision views, `ledgr_availability_frozen_at()`, terminal recovery | 2 vectors of length 1,166 | A running cursor over R2 `close`; see marks paths V-1 and V-2. |
 
-### 1.5 Features **[WS43]**
+### 1.5 Features
+
+Feature values are calculated once per experiment preparation by
+`ledgr_history_compute_feature_series()` (`R/history-features.R`), per
+instrument and per pulse range whose knowable lifetime state is constant
+(L-8), over treated inputs (C-4).
 
 | ID | Representation | Owner | Consumers | H1 size | Note |
 | --- | --- | --- | --- | --- | --- |
-| R24 | Feature payload: per fingerprint, per instrument value vectors on the substrate axis | `ledgr_history_precompute_payload()` (`R/history-substrate.R`); dense `ledgr_precompute_payload()` | `ledgr_projection_from_payload()` | 64.3 MB per feature | Workstream 43 computes matrices first and splits them into this shape. |
-| R25 | Runtime projection: one instrument x session matrix per feature plus index maps | `ledgr_runtime_projection()`, `ledgr_projection_from_payload()`, `ledgr_projection_from_feature_matrix()` (`R/runtime-projection.R`) | bound into the substrate as `feature_projection`; P2 accessors and `features_wide`; history feature reads | 66.2 MB per feature | Canonical feature store at run time. |
+| R24 | Feature payload: per fingerprint, per instrument value vectors on the substrate axis, plus the sparse evidence records of R29 | `ledgr_history_precompute_payload()` (`R/history-substrate.R`); dense `ledgr_precompute_payload()` | `ledgr_projection_from_payload()` | 65.7 MB per feature | Values are computed as matrices first and split into this shape, releasing each matrix as it is split. |
+| R25 | Runtime projection: one instrument x session matrix per feature plus index maps and `feature_planes` (the sparse evidence records aligned to the projection) | `ledgr_runtime_projection()`, `ledgr_projection_from_payload()`, `ledgr_projection_from_feature_matrix()` (`R/runtime-projection.R`) | bound into the substrate as `feature_projection`; P2 accessors and `features_wide`; history feature reads | 67.8 MB per feature | Canonical feature store at run time. |
 | R26 | `substrate$feature_projection` | `ledgr_history_substrate_bind_features()` | fold (as `runtime_projection`), history feature reads, staging identity (`feature_ids`) | same object as R25 | Not a copy in memory; serialized with the substrate. |
-| R27 | Precomputed object: `projection` (R25) and `payload` (R24) together, plus `history_axis`, warm-up table and identity | `ledgr_precompute_features()` (`R/precompute-features.R`) | `ledgr_sweep()` slices `projection`; dense sweeps may rebuild from `payload` | 259.9 MB for two features (131.1 projection, 128.6 payload) - flag | Features held twice inside one public object. |
+| R27 | Precomputed object: `projection` (R25) and `payload` (R24) together, plus `history_axis`, warm-up table and identity | `ledgr_precompute_features()` (`R/precompute-features.R`) | `ledgr_sweep()` slices `projection`; dense sweeps may rebuild from `payload` | 265.8 MB for two features (134.3 projection, 131.3 payload) - flag | Features held twice inside one public object. Not in LDG-3075's amended scope; routed in Section 7. |
 | R28 | Availability feature name and lookup states; dense fast context and static feature views (frozen) | `ledgr_projection_feature_name_state()`, `ledgr_projection_feature_lookup_state()`, `ledgr_fast_context_state()`, `ledgr_projection_pulse_views()` | fold P2 | index maps; dense views per pulse | Dense views are removed with dense mode. |
-| R29 | Feature evidence for history reads (placeholder planes: `calculated` equals non-missing, no carry) | `ledgr_history_feature_evidence()` (`R/history-frame.R`) | `ledgr_history_frame(feature = )` | per read | Workstream 43 replaces the placeholder with readiness, output carry and calculation validity (`ledgr_history_feature_planes()` on its branch). |
+| R29 | Feature evidence for history reads: preparation retains only sparse records (admitted-run spans with their first ready column, reason runs, input-carried and output-carried cells with source time and age; `ledgr_feature_plane_records()`), and each read derives the aligned planes at its cutoff | `ledgr_feature_plane_records()` (`R/history-features.R`), `ledgr_history_feature_evidence()` (`R/history-frame.R`) | `ledgr_history_frame(feature = )` | sparse; per read | Canonical read-time evidence. |
+| R29b | Dense per-instrument evidence frame | `ledgr_history_feature_planes()` (`R/history-features.R`) | none in production; test oracle in `test-indicator-evidence.R` and `test-indicator-history-calculation.R` | per call | A second, dense implementation of R29's column meanings kept as a test oracle; its differential is those tests. |
+| R34 | Indicator history catalogue (48 rows: source, family, output, variant, history class, required fields, input-carry family, width) | `ledgr_indicator_history_catalogue()` (`R/indicator-history.R`), a hashed feature-engine helper | every built-in and registered TTR constructor through `ledgr_indicator_catalogue_row()`; certification (`ledgr_feature_catalogue_candidates()`) | small, but rebuilt row by row for every constructed indicator | LDG-3077: build once per session and look rows up by index; the function body stays as hashed so the engine digest does not move. |
 
 ### 1.6 Precompute payloads and staged worker invariants
 
@@ -153,8 +162,8 @@ have no product consumer), per the registered-test rule in `AGENTS.md`.
 | --- | --- | --- | --- | --- | --- |
 | R30 | Sweep in-memory payload and projection (no explicit precompute) | `ledgr_sweep_impl()` | bound into the sweep's substrate | as R24/R25 | Transient; the payload is dropped after the projection is built. |
 | R31 | Inspection payload and substrate | `ledgr_pulse_inspection()` (`R/pulse-snapshot.R`) | one inspected pulse | one substrate to the snapshot end plus features | One-off external call; not on a run path. |
-| R32 | Staged invariant: `exp` payload, `history_substrate` (memo reset), `pulses_posix`, `metric_kernel`, `retain`, `precomputed_features`, `snapshot_hash`, `strategy_hash`, `master_seed`, `compiled_accounting_model`, `availability_config`, `execution_opportunities_posix`, `corporate_action_rows`, plus empty `bars_by_id`, `bars_mat`, `static_bars_views` and `runtime_projection` slots | `ledgr_sweep_history_invariant_fields()`, `ledgr_sweep_stage_history_tasks()` (`R/sweep.R`); daemon side `ledgr_history_worker_stage()` stores it in `.ledgr_history_worker_stage` | each daemon's candidate tasks through `ledgr_history_worker_take()` | 851.9 MB fresh; 1,111.8 MB with a precomputed payload; one compact task 0.1 MB | Worker-reconstructed, not staged: `pulses_iso`, the availability provider (from R14) and the memo (R20). |
-| R33 | `precomputed_features` inside the staged invariant - flag | same | none: `ledgr_sweep_candidate_execution()` and `ledgr_sweep_run_candidate()` receive and pass the argument but never read it | 259.9 MB (two features) | The features it carries are already in `history_substrate$feature_projection`, so a precomputed sweep stages its features three times: the substrate's sliced projection, the payload's projection and the payload's per-instrument vectors. |
+| R32 | Staged invariant: `exp` payload, `history_substrate` (memo reset), `pulses_posix`, `metric_kernel`, `retain`, `precomputed_features`, `snapshot_hash`, `strategy_hash`, `master_seed`, `compiled_accounting_model`, `availability_config`, `execution_opportunities_posix`, `corporate_action_rows`, plus empty `bars_by_id`, `bars_mat`, `static_bars_views` and `runtime_projection` slots | `ledgr_sweep_history_invariant_fields()`, `ledgr_sweep_stage_history_tasks()` (`R/sweep.R`); daemon side `ledgr_history_worker_stage()` stores it in `.ledgr_history_worker_stage` | each daemon's candidate tasks through `ledgr_history_worker_take()` | 855.2 MB fresh; 1,121.0 MB with a precomputed payload; one compact task 0.1 MB | Worker-reconstructed, not staged: `pulses_iso`, the availability provider (from R14) and the memo (R20). |
+| R33 | `precomputed_features` inside the staged invariant - flag | same | none: `ledgr_sweep_candidate_execution()` and `ledgr_sweep_run_candidate()` receive and pass the argument but never read it, and pulse inspection passes `NULL` | 265.8 MB (two features) | The features it carries are already in `history_substrate$feature_projection`, so a precomputed sweep stages its features three times: the substrate's sliced projection, the payload's projection and the payload's per-instrument vectors. |
 
 ## 2. Resolution paths
 
@@ -207,10 +216,10 @@ row order).
 | L-2 | Per-instrument segment compiler (`ledgr_history_lifetime_segments()`) | canonical compiler shape | an instrument has more than one lifetime fact | LTB-0298 indirectly (reads equal the whole-prefix primitive built on these segments); LTB-0292 literals | Stays as the two-clock lifetime form. |
 | L-3 | Sparse compiler (`ledgr_history_sparse_fact_segments()`) | fast path | at most one lifetime fact per instrument | none (LTB-0291 segment counts only) | Merge into L-2 as S-4. |
 | L-4 | Provider diagonal lifetime segments (three planes: state, terminal label, winner) and cursor | fast path, diagonal only | every availability fold pulse (restrictions, held inactive positions, terminal disposition labels) | LTB-0291 (diagonal agreement at three pulses); provider witness blocks | Derive from the two-clock lifetime and terminal segments' diagonal, or keep as the one diagonal form (LDG-3075). |
-| L-5 | Whole-prefix mask `ledgr_history_substrate_expected_at()` (materializes lifetime segments at a cutoff) | canonical two-clock mask | history-read memo (base and overlays); `ledgr_history_substrate_treated_field()`; Workstream 43 feature inputs **[WS43]** | LTB-0298 is built on it | Stays. |
+| L-5 | Whole-prefix mask `ledgr_history_substrate_expected_at()` (materializes lifetime segments at a cutoff) | canonical two-clock mask | history-read memo (base and overlays); `ledgr_history_substrate_treated_field()` (tests only); feature inputs (`ledgr_history_feature_inputs()`, per instrument and per pulse range at the range end's cutoff) | LTB-0298 is built on it; LTB-0310 and LTB-0313 read feature values through it | Stays. |
 | L-6 | Memo masks: base at knowledge `Inf`, one overlay per late-known instrument and epoch (`ledgr_history_cutoff_planes()`) | fast path | every history read | LTB-0298 (every cutoff of a hostile substrate, forward and shuffled, equals the whole-prefix primitive cell for cell) | Stays while reads are eager. Overlays should be grouped by epoch if LDG-3070 finds a material late-known count; revisit if the lazy-evidence decision changes the read. |
 | L-7 | Diagonal lifetime plane `substrate$expected` and derived `missing_expected_bar`, `inactive_print` | derived planes | none in production (R12) | LTB-0291 literals | Removed with R12a, R12c and R12d. |
-| L-8 | Late-epoch detection: `ledgr_history_late_epochs()` (reads) and, on the Workstream 43 branch, `ledgr_history_feature_ranges()` (feature calculation) **[WS43]** | two implementations of one question | reads; feature calculation | none between them | Merge into one helper when the map is finalized against Workstream 43. |
+| L-8 | Late-epoch detection: `ledgr_history_late_epochs()` (history reads; per instrument, the knowledge instants of lifetime or terminal segments learned after the column they describe) and `ledgr_history_feature_ranges()` (feature calculation; the same instants as pulse positions inside the calculation bounds, used to split ranges) | two implementations of one question | reads; feature calculation | none directly; LTB-0298 (reads) and LTB-0313 (features) each pin their own consumer on late-known lifetime facts | Merge into one helper only with a stated identity change: `ledgr_history_feature_ranges()` is a hashed feature-engine helper (`ledgr_feature_engine_version()`), so changing its body moves the engine digest and every availability feature fingerprint, which a byte-identical Workstream 46 change may not do. Routed (Section 7). |
 
 ### 2.4 Terminal state and the sticky barrier
 
@@ -222,7 +231,7 @@ different questions.
 | ID | Path | Status | Selected when | Differential oracle | Proposed removal or merge condition |
 | --- | --- | --- | --- | --- | --- |
 | T-1 | Terminal segments (`ledgr_history_terminal_segments()`, always per instrument; no sparse path) | canonical two-clock terminal state | barrier and memo | LTB-0292 (state and barrier pinned separately; released barrier mutation fails) | Stays. Holds the same facts as lifetime segments under a second key; LDG-3075 may derive it from lifetime segments if their winners carry the terminal label. |
-| T-2 | Sticky barrier `ledgr_history_substrate_terminal_at()` (first asserted column over the whole prefix, then `<=`) | canonical barrier | memo base and overlays (`terminal_first`), treated field, Workstream 43 feature inputs **[WS43]** | LTB-0292 literal, LTB-0298 cutoffs | Stays. |
+| T-2 | Sticky barrier `ledgr_history_substrate_terminal_planes()` (per-column assertion plus the first asserted column over the whole prefix, then `<=`; `ledgr_history_substrate_terminal_at()` returns the sticky plane) | canonical barrier | memo base and overlays (`terminal_first`), treated field, feature inputs (sticky barrier for carry, asserted columns to restart runs under Cut 16 decision 20) | LTB-0292 literal, LTB-0298 cutoffs, LTB-0310 restart literals | Stays. |
 | T-3 | Memo `terminal_first` per instrument (base and overlay) | fast path of T-2 | every history read | LTB-0298 | As L-6. |
 | T-4 | Provider terminal label (L-4 plane 2) | diagonal, non-sticky by design | fold terminal disposition of held inactive instruments (`ledgr_terminal_resolve()`) | terminal-outcome blocks for the fold; no differential with T-1 | Derive from T-1's diagonal or keep with L-4; the non-sticky execution semantics are bound and do not change. |
 
@@ -233,7 +242,7 @@ different questions.
 | C-1 | `ledgr_history_input_carry()` (vector, one instrument) | canonical carry rule | LTB-0292 literals | Stays, or becomes a one-row call of C-2. |
 | C-2 | `ledgr_history_input_carry_matrix()` = `ledgr_history_carry_positions()` + `ledgr_history_carry_evidence()` | second implementation, matrix shape | LTB-0292 (one matrix row equals C-1 field by field) | Merge: express C-1 through C-2 (or the reverse) so one implementation remains. |
 | C-3 | Memo positions plus `ledgr_history_bar_evidence()` | fast path of C-2 at a cutoff | LTB-0298 | As L-6. |
-| C-4 | Workstream 43 feature-input carry (`ledgr_history_feature_inputs()` on C-1 per range) **[WS43]** | third consumer | to be named at finalization | Re-check at finalization. |
+| C-4 | Feature-input carry: `ledgr_history_feature_inputs()` calls C-1 once per price field per instrument range (volume is never carried) | consumer of C-1, not a separate implementation | LTB-0292 (C-1 literals), LTB-0310 and LTB-0311 (feature values and carry planes under default, no and output-only carry) | Stays with C-1; no C-1 versus C-3 differential exists, so the read and feature paths agree only through their shared primitive and each one's literal tests. |
 | V-1 | Fold marks `ledgr_availability_valuation_state()` | canonical marks | LTB-0303, LTB-0304 | Stays. |
 | V-2 | Result and reconstruction marks `ledgr_derived_state_availability_marks()` (SQL plus `cummax()`) | second implementation | LTB-0303, LTB-0304 (results and reconstruction equal the fold) | Keep while readers have no substrate; merge if result readers ever hold one. |
 
@@ -267,12 +276,18 @@ callers, not by name search alone.
   closeout estimated 41 percent at lake scale). Holding membership once
   removes a further 59.5 or 81.7 MB depending on the form kept.
 - **Also unread on this tree.** `precomputed_features` in the staged
-  invariant (R33, 259.9 MB at two features); `provider$history` (R14), which
+  invariant (R33, 265.8 MB at two features); `provider$history` (R14), which
   captures the substrate through R7; `ledgr_history_substrate_bar_frame()`
   (R8); the substrate's `families`, `universe_rule` and `valuation_policy`
-  fields (R17); the duplicate `provider_plan$sessions`. Each is safe to
-  remove for byte-identical results; LTB-0291 and the two provider-history
-  tests are the only readers of the test-read items.
+  fields (R17); the duplicate `provider_plan$sessions`; the instrument frame
+  (R7) behind `provider$history`; the diagonal-state helper behind R12. Each
+  is safe to remove for byte-identical results; LTB-0291 and the two
+  provider-history tests are the only readers of the test-read items.
+- **Full plan for a calendar.** Derived-state rebuild (twice per call),
+  `ledgr_run_open()` for INCOMPLETE runs and window pulse validation (R10)
+  compile a full provider, membership plan included, to read only the session
+  calendar; `ledgr_walk_forward_pulse_calendar()` reads every fact table for
+  the same calendar.
 - **Per-pulse waste.** P1 copies five unread packet fields for the current
   and next session every pulse (R6).
 
@@ -287,7 +302,7 @@ when the source has a site the committed record lacks, or the record keeps a
 site the source no longer has, so adding or removing a branch changes the
 record visibly. LTB-0331 runs the same comparison in the fast profile.
 
-On this tree the census finds 217 sites in 56 functions across 29 files: 162
+On `b9d098c8` the census finds 213 sites in 55 functions across 29 files: 158
 `branch` sites (an `if` or `ifelse` on a switch) and 55 `flow` sites (a switch
 passed on or assigned). The switch forms are `availability_active` (and the
 `$availability_active` field), `availability$active`,
@@ -299,19 +314,19 @@ function-local aliases such as `use_fast_context`, `dispositions_active`,
 | File | Functions | Branch sites | Flow sites |
 | --- | --- | --- | --- |
 | `R/fold-engine.R` | 5 | 42 | 5 |
-| `R/backtest-runner.R` | 2 | 27 | 12 |
+| `R/backtest-runner.R` | 2 | 26 | 12 |
 | `R/sweep.R` | 4 | 24 | 4 |
 | `R/strategy-helpers.R` | 3 | 11 | 8 |
-| `R/precompute-features.R` | 5 | 6 | 3 |
 | `R/walk-forward.R` | 4 | 6 | 0 |
 | `R/availability-policy.R` | 3 | 4 | 5 |
 | `R/experiment.R` | 2 | 4 | 0 |
+| `R/precompute-features.R` | 4 | 4 | 3 |
 | `R/run-finalize.R` | 1 | 4 | 2 |
-| `R/backtest-config.R` | 1 | 3 | 0 |
 | `R/derived-state.R` | 1 | 3 | 2 |
 | `R/strategy-types.R` | 2 | 3 | 2 |
 | `R/walk-forward-folds.R` | 3 | 3 | 0 |
-| 16 further files | 20 | 22 | 12 |
+| `R/availability-results.R` | 2 | 2 | 1 |
+| 16 further files | 19 | 22 | 11 |
 
 The one semantic branch bound by Cut 16 decision (16) is the walk-forward
 `is.null(history_substrate)` split (`ledgr_walk_forward_continue_windows()`
@@ -319,23 +334,30 @@ and `ledgr_walk_forward_eval_fold()`). Every other site selects the dense or
 availability arm of a representation, validation or rule that dense mode
 keeps frozen. Removal belongs to
 the execution-core consolidation (macro plan), which should start from this
-record and Section 1's dense rows (R11, R28). The Workstream 43 branch at
-`806897fc` removes four sites (one in `ledgr_config()`, one in
-`ledgr_run_fold_impl()`, two in `ledgr_precompute_payload()`) and adds none;
-merging it regenerates the record with that stated reason.
+record and Section 1's dense rows (R11, R28). Workstream 43 removed four
+sites (one in `ledgr_config()`, one in `ledgr_run_fold_impl()`, two in
+`ledgr_precompute_payload()`) and added none; the merge `804e9be2`
+regenerated the record in report mode with that stated reason, and check
+mode then passed.
 
-## 5. Sections Workstream 43 changes
+## 5. Finalization against the accepted Workstream 43 tree
 
-Re-check at finalization, against the accepted Workstream 43 tree:
+Every entry the draft marked for Workstream 43 was re-read on `b9d098c8`:
 
-- R2 and R7: feature preparation reads planes directly; R7 keeps only the
-  unread provider history reader as a caller.
-- R24-R27 and R29-R31: payload construction, readiness, output carry and
-  feature evidence.
-- L-5, L-8, T-2 and C-4: Workstream 43's feature inputs call the
-  whole-prefix mask and barrier per instrument range and detect late epochs
-  separately from the history memo.
-- Section 4 counts (four fewer sites at the current branch tip).
+- R2 and R7: feature preparation reads each instrument's prefix of the bar
+  planes directly; R7's only remaining caller is the unread provider history
+  reader, so R7 joins the Section 3 unread list.
+- R24, R25 and R29: payload and projection carry sparse evidence records;
+  reads derive aligned evidence planes at their cutoff; a dense per-instrument
+  implementation of the same columns (R29b) survives as a test oracle.
+- R27, R32 and R33: sizes re-measured (one to two percent larger with the
+  evidence records).
+- R34: the indicator catalogue Workstream 43 added is rebuilt per
+  constructor (LDG-3077).
+- L-5, L-8, T-2 and C-4: feature inputs call the whole-prefix mask, the
+  terminal planes and the carry rule per instrument range; late-epoch
+  detection exists twice and the feature-side copy is a hashed engine helper.
+- Section 4: 213 sites (four fewer than the draft) after the merge.
 
 ## 6. Implications for the next tickets
 
@@ -348,5 +370,5 @@ Re-check at finalization, against the accepted Workstream 43 tree:
 - LDG-3076 replaces M-3, M-4 and M-6 with the per-instrument compiler M-5
   generalized to headers, keeping M-3 only under the fast-path rule. The
   same rule asks S-4 and L-3 to justify themselves or merge.
-- Execution-core consolidation removes R11, R28's dense views and the 217
+- Execution-core consolidation removes R11, R28's dense views and the 213
   census sites' dense arms.
