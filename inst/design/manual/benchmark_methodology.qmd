@@ -165,6 +165,34 @@ The benchmark harnesses guard against stale source where possible. They are
 still local records: hardware, operating system, loaded package versions,
 Python peer environments, and thermal state can change the timing rows.
 
+## Timing Gates On The Maintainer Host
+
+The fast-profile gate (`tools/run-test-profile.R`, `tools/check-test-gate.R`)
+compares a wall clock with an absolute bound, so the host conditions are part
+of the measurement. The maintainer host is an i9-12900K with performance cores
+(logical processors 0-15) and efficiency cores (16-23). A single-threaded R
+loop runs in about 2.15 seconds on a performance core and 5.2 seconds on an
+efficiency core, and the Balanced power plan lets Windows schedule R on the
+efficiency cores. On 2026-10-19 the same accepted tree took 148.88 seconds
+under Balanced and 100.19 seconds pinned under High performance.
+
+Time a gate under these conditions:
+
+- the High performance power plan (`powercfg /getactivescheme`);
+- the process affinity pinned to the performance cores before R starts, so
+  every child inherits it: in PowerShell,
+  `[System.Diagnostics.Process]::GetCurrentProcess().ProcessorAffinity = [IntPtr]0xFFFF`,
+  then call `Rscript` by its full path;
+- background applications closed (audio workstation, launchers, video
+  editors) and no other R session running;
+- base and candidate runs alternating, one each in turn, when the record
+  compares two trees, so drift over the session reaches both.
+
+`run-test-profile.R` writes `power_plan` and `process_affinity` into each run
+summary, so a gate record shows the conditions it was measured under. A record
+whose summaries name another plan or an unpinned mask is not gate evidence on
+this host.
+
 ## Release-Gate Checks
 
 The release gate should use benchmark evidence only for the scope that the

@@ -66,6 +66,25 @@ run <- ledgr_test_run_profile(
   census_path = census,
   load_package = "none"
 )
+# Timing conditions are recorded beside the clock: on the maintainer's hybrid
+# CPU, the power plan and the core affinity move the fast profile by about 40
+# percent (benchmark_methodology.qmd, "Timing Gates On The Maintainer Host").
+host_condition <- function(command, args) {
+  if (!identical(.Platform$OS.type, "windows")) return(NA_character_)
+  out <- tryCatch(
+    suppressWarnings(system2(command, args, stdout = TRUE, stderr = FALSE)),
+    error = function(e) character()
+  )
+  out <- trimws(out[nzchar(trimws(out))])
+  if (length(out) == 0L) NA_character_ else paste(out, collapse = " ")
+}
+power_plan <- host_condition("powercfg", "/getactivescheme")
+power_plan <- if (is.na(power_plan)) NA_character_ else sub("^.*\\((.*)\\)\\s*$", "\\1", power_plan)
+process_affinity <- host_condition(
+  "powershell",
+  c("-NoProfile", "-Command",
+    shQuote(sprintf("'0x{0:X}' -f [int64](Get-Process -Id %d).ProcessorAffinity", Sys.getpid())))
+)
 summary <- data.frame(
   profile = profile,
   mode = mode,
@@ -76,6 +95,8 @@ summary <- data.frame(
   failed_blocks = sum(run$actual$status %in% c("failed", "error", "warning")),
   r_version = as.character(getRversion()),
   testthat_version = as.character(utils::packageVersion("testthat")),
+  power_plan = power_plan,
+  process_affinity = process_affinity,
   stringsAsFactors = FALSE
 )
 dir.create(dirname(summary_path), recursive = TRUE, showWarnings = FALSE)
