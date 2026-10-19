@@ -250,7 +250,7 @@
 "ledgr_risk_application_error","R/availability-economics.R",301,6,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_risk_plan_parameter_missing","R/risk-model.R",369,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_run_explanation_unavailable","R/availability-results.R",656,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
-"ledgr_run_hash_mismatch","R/backtest-runner.R",1629,6,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_run_hash_mismatch","R/backtest-runner.R",1631,6,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_run_lookup_mismatch","R/run-registration.R",41,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_run_not_complete","R/run-store.R",726,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_run_not_found","R/metric-context.R",666,6,TRUE,FALSE,TRUE,TRUE,"documented_public"
