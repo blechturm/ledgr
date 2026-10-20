@@ -222,18 +222,33 @@ testthat::test_that("[LTB-0393] a fresh sweep and a pulse inspection release the
     },
     .package = "ledgr"
   )
+  # Cut 16 decision (26), amended after close review 47 F1: a sequential
+  # sweep stages no workers and runs no collection.
+  collections <- new.env(parent = emptyenv())
+  collections$n <- 0L
+  suppressMessages(trace(
+    "gc", tracer = quote(collections$n <- collections$n + 1L),
+    where = baseenv(), print = FALSE
+  ))
+  on.exit(suppressMessages(untrace("gc", where = baseenv())), add = TRUE)
   sweep <- ledgr_sweep(fx$exp, ledgr_param_grid(a = list(x = 1)))
+  suppressMessages(untrace("gc", where = baseenv()))
+  testthat::expect_identical(collections$n, 0L)
   testthat::expect_identical(sweep$status, "DONE")
   testthat::expect_identical(seen$sweep_payloads, character())
   testthat::expect_identical(seen$sweep_projections, "runtime_projection")
-  # Cut 16 decision (26): the fresh sweep collects right after the release,
-  # before workers are staged.
+  # A sweep that stages two or more workers collects right after the
+  # release, before staging.
   sweep_body <- vapply(as.list(body(get("ledgr_sweep_impl", envir = ns))), function(e) {
     paste(deparse(e), collapse = "\n")
   }, character(1))
   fresh <- sweep_body[grepl("rm(payload)", sweep_body, fixed = TRUE)]
   testthat::expect_length(fresh, 1L)
-  testthat::expect_match(fresh, "rm(payload)\n    invisible(gc(verbose = FALSE))", fixed = TRUE)
+  testthat::expect_match(
+    fresh,
+    "rm(payload)\n    if (workers > 1L) \n        invisible(gc(verbose = FALSE))",
+    fixed = TRUE
+  )
 
   testthat::local_mocked_bindings(
     ledgr_sweep_candidate_execution = function(...) {

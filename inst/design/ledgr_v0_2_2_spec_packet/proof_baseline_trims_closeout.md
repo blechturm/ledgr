@@ -62,7 +62,7 @@ keeps its scope.
 | --- | --- | --- |
 | Byte-identical to BASE across run, sweep (sequential, two-worker), window, walk-forward, inspection, history reads (reordered, late overlays), refusals | met | Byte-identity runner: 108 of 113 raw, 113 of 113 after substituting the engine digest; H1 audit parity 7 of 7 (sections below) |
 | Structural detector for a retained payload, a removed membership column or a per-field barrier copy | met | LTB-0393 (payload), LTB-0391 (plan columns, memo layout); mutations A1-A3, B1-B4, C1, C2 |
-| Retained sizes at H1 before and after; peak private commit of a two-worker sweep | met | Sizes, Two-worker sweep peak memory and Decision (26) below: with the decision (26) collection the parent peak falls from 3,873.5 to 2,728.5 MiB (median of six pairs) |
+| Retained sizes at H1 before and after; peak private commit of a two-worker sweep | met | Sizes, Two-worker sweep peak memory, Decision (26) and Correction 1 below: BASE's staging peak is bimodal (parent about 3.1-3.3 GB or 3.86-3.94 GB); with the decision (26) collection the candidate peaks at about 2.73 GB parent, about 530 MiB below the low mode and about 1,150 MiB below the high mode; the tree peak falls by about nothing to 1,000 MiB against the low mode and by about 1,170 MiB against the high mode |
 | Seven shapes walked | met | Seven-shape walk |
 
 ## LDG-3079: feature inputs without discarded carry evidence
@@ -232,10 +232,12 @@ decided as Cut 16 decision (26) (next section).
 
 Cut 16 decision (26) (maintainer, 2026-10-20): a fresh sweep runs one explicit
 garbage collection immediately after it releases the feature payload, before
-staging workers. `ledgr_sweep_impl()` now calls `invisible(gc(verbose =
-FALSE))` right after `rm(payload)`, with a comment citing the decision. The
-statement sits in the shared fresh-preparation block, so a dense fresh sweep
-also collects once there; it adds no mode branch (census unchanged).
+staging workers. `ledgr_sweep_impl()` calls `invisible(gc(verbose =
+FALSE))` right after `rm(payload)`, with a comment citing the decision. As
+amended after close review 47 F1 (Correction 1), it runs only when the sweep
+has two or more workers (`if (workers > 1L)`); the condition is on the worker
+count, not on the execution mode, so it adds no mode branch (census
+unchanged).
 
 Pulse inspection does not get a collection: it was not measured, and the
 mechanism behind decision (26), serializing the invariant to workers right
@@ -415,3 +417,68 @@ Scratch (not committed), under the session scratchpad `ws47/`: the runner
 `muts1.py`, `muts2.py`, `mut_runner.py`), H1 probes and raw runs
 (`h1/h1_probe.R`, `h1/run_pairs.ps1`, `h1/out/`) and the adapted audit
 parity probe (`parity/`).
+
+## Correction 1 (close review 47, 2026-10-20)
+
+`close_review_47.md` returned CHANGES_REQUIRED with three findings (3 of 8
+acceptance items) and no product defect. The maintainer decided F1 on
+2026-10-20; the coordinator verifies this correction (mutations included).
+
+- F1, decision (26) scope. The collection ran on every fresh sweep. The
+  reviewer measured about 60 ms per sequential sweep in a fresh process
+  (0.062-0.068 s per collection; +43% on a small dense sweep), three
+  collections per three-fold walk-forward, and 320 collections taking 58.9 s
+  across the full suite (8.0%; fast profile 1.8 s, review 32.3 s, heavy 24.8
+  s), against 0.08-0.11 s for the one collection in a 110 s H1 two-worker
+  sweep. Decision (26) is amended (appended to the Cut 16 decisions): the
+  collection runs only when the sweep stages two or more workers.
+  `ledgr_sweep_impl()` now reads `if (workers > 1L) invisible(gc(verbose =
+  FALSE))` after `rm(payload)`. The condition is the worker count, so a dense
+  fresh sweep with two or more workers also collects there (no mode branch).
+  Sequential sweeps and the training sweeps of a single-worker walk-forward
+  no longer collect; the H1 two-worker measurements above are on the worker
+  path and stand. LTB-0393 now counts `base::gc()` calls over a sequential
+  fresh sweep (literal zero) and checks the deparsed worker-path statement;
+  LCL-0383 says so.
+- F2, LTB-0144. Its helper-name check matched substrings, so
+  `ledgr_history_input_carry` was found inside
+  `ledgr_history_input_carry_calculation` and removing the manifestation from
+  the hashed payload failed only the digest literal (skipped under covr). The
+  check now matches whole names (`\b` on both sides, perl). Stated reason:
+  the detector's own gap, introduced by this workstream; no oracle changed.
+- F3, peak claims. BASE's staging peak is bimodal: parent about 3,111-3,275
+  MiB (tree 4,722-5,337) or 3,852-3,938 MiB (tree 5,340-5,982) over the
+  implementer's twelve BASE runs and the reviewer's two (3,267.0 / 4,751.8 and
+  3,852.2 / 5,970.2). The candidate with the collection peaks at about
+  2,725-2,820 MiB parent (one run 2,311.1) and 4,284-4,755 MiB tree (the
+  reviewer's 2,738.2 / 4,741.8 and 2,725.3 / 4,727.1). The effect is therefore
+  about -530 MiB parent against the low mode and about -1,150 MiB against the
+  high mode; the tree changes by about nothing (reviewer pair 1: 4,751.8 to
+  4,741.8) to about -1,000 MiB against the low mode and by -1,170 MiB (median)
+  against the high mode. The acceptance row and the LDG-3078 evidence now say
+  this; proof baselines should quote the candidate's absolute peak.
+- N1. The comment above `ledgr_history_input_carry_calculation()` said public
+  reads take the full manifestation; only output carry does, and public
+  reads use the matrix positions (C-2/C-3). Comment corrected (outside the
+  hashed function body; the engine digest is unchanged, LTB-0144 passes).
+- N2 to N6 stay recorded notes in the review. For N6: the engine digest also
+  reaches the `feature_engine_version` attribute of every availability sweep
+  result and the persisted sweep row; the runner's canonical sweep form drops
+  that attribute, so the five differing families above are what the runner
+  records, not every carrier of the digest.
+
+Verification on the corrected tree, sequential:
+
+- Touched files: `test-proof-baseline-trims.R` (LTB-0391 21, LTB-0392 9,
+  LTB-0393 9 expectations), `test-strict-feature-acceleration.R` (LTB-0142,
+  LTB-0143, LTB-0144 23) and `test-strict-ttr-cleanup.R` (LTB-0276 35): no
+  failure; the engine digest literals still hold.
+- Full suite: 1,150 blocks, 18,505 expectations, no failure or error, one
+  optional skip (quantmod); 707 s of block time (unpaired; not a measurement
+  of the collection's cost, which the review traced).
+- Census check: OK, 158 branch and 55 flow sites (unchanged), findings 72;
+  regenerated census tables (line references) committed;
+  `--self-test-mode-branches`, the fold-phase checker, the YAML parse and
+  `git diff --check` pass.
+- Not run here (coordinator): mutations for the amended LTB-0393 and LTB-0144
+  checks.

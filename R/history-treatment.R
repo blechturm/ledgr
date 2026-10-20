@@ -10,8 +10,9 @@ ledgr_history_evidence_fields <- function() {
 
 # The canonical carry rule (C-1) in two parts: this calculation, and the
 # evidence ledgr_history_input_carry() manifests from it. Feature inputs read
-# only `value` and `input_carried` (audit F02); public reads and output carry
-# take the full manifestation, so both consume one calculation.
+# only `value` and `input_carried` (audit F02); output carry takes the full
+# manifestation, so both consume one calculation. Public history reads use
+# the matrix positions (C-2/C-3), not this rule.
 ledgr_history_input_carry_calculation <- function(value,
                                                   expected,
                                                   max_sessions = NULL,

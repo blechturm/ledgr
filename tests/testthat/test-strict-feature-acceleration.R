@@ -193,8 +193,10 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     "ledgr_strict_sma_series",
     "ledgr_active_feature_fingerprint"
   )
+  # Whole names: the calculation's name contains the manifestation's
+  # (close review 47 F2).
   for (helper in helpers) {
-    testthat::expect_match(source, helper, fixed = TRUE)
+    testthat::expect_match(source, paste0("\\b", helper, "\\b"), perl = TRUE, info = helper)
   }
   under_covr <- requireNamespace("covr", quietly = TRUE) && covr::in_covr()
   if (!under_covr) {
