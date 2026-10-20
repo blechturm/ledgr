@@ -870,7 +870,8 @@ Accepted change pending:
 ### Provider, Knowledge And Timing
 
 - Availability-aware execution uses one internal provider with `facts`,
-  `decision_view`, `execution_view`, `history`, and `identity` operations. Its
+  `decision_view`, `execution_view` and `identity` operations; history is
+  read only from the shared causal-history substrate. Its
   decision axis preserves declared member order for character-vector universes.
   For membership-rule universes, members are ordered by C-locale stable ID;
   nonzero held nonmembers then follow in the same stable-ID order. The provider
@@ -878,6 +879,11 @@ Accepted change pending:
   risk, valuation economics, affordability, fills, and writes remain in the
   shared fold and its output handlers.
 - Facts become applicable only after both effective time and knowledge time.
+  Preparation refuses any membership, trading-status or lifetime fact whose
+  knowledge time is missing with `ledgr_fact_knowledge_missing`, before any
+  run, sweep, precompute, walk-forward or inspection side effect (Cut 16
+  decision 23); what a missing knowledge time should mean is decided with
+  LDG-3073.
   A higher-precedence assertion that is effective but not yet knowable cannot
   shadow a lower-precedence tie. Future facts may change snapshot and descendant
   identity but must not rewrite earlier context, errors, features, or supported
@@ -896,9 +902,12 @@ Accepted change pending:
   `availability_open_v2` convention. A missing or different version is
   refused; no timing convention is inferred from stored rows.
 - The provider and history preparation share the existing family resolvers as
-  the only precedence implementation. Prepared membership, trading-status and
-  lifetime state is stored as flat bitemporal segments over separate
-  observation and knowledge clocks. Adjacent segments merge only when state,
+  the only precedence implementation. Prepared lifetime state, including its
+  terminal label, is stored as flat bitemporal segments over separate
+  observation and knowledge clocks; membership and trading-status state is
+  counted as such segments for the segment guard and is not stored, its facts
+  being held once, in the provider execution plan (Cut 16 decision 22).
+  Adjacent segments merge only when state,
   winning fact and reason all match; active, inactive, unknown and conflicting
   membership remain distinct, while family declaration and set completeness
   remain separate metadata.

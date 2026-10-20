@@ -752,6 +752,9 @@ ledgr_run_fold_impl <- function(config,
   }, add = TRUE)
 
   ledgr_validate_schema_once(con)
+  # Refused on the run's own connection before the run is registered (Cut 16
+  # decision 23).
+  ledgr_availability_require_fact_knowledge(con, snapshot_id)
 
   registration <- ledgr_run_registration(
     con = con,

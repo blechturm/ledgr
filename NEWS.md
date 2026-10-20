@@ -28,6 +28,13 @@
   and calendar identity; availability-aware Date boundaries resolve to venue
   session opens or closes instead of UTC midnight.
 
+- A membership, trading-status or lifetime fact without a knowledge time is
+  still accepted and sealed, but runs, sweeps, feature precompute,
+  walk-forward sessions and availability-aware pulse inspection on that
+  snapshot now refuse with `ledgr_fact_knowledge_missing` before writing
+  anything. Supply a knowledge time, or declare
+  `knowledge = "assume_effective"` to use the effective time.
+
 - Trading-status corrections now use one acyclic supersession policy before
   precedence. Corporate actions distinguish known-when-effective rows,
   clockless audit-only rows and knowable rows missing an event clock. A

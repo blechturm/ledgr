@@ -130,10 +130,16 @@ Because the set is complete, omission means non-membership for that
 effective set. Use interval assertions instead when your source supplies
 individual membership changes rather than complete lists.
 
-For membership under `knowledge = "evidenced"`, a missing knowledge time
-is kept for audit but cannot affect resolution. Membership evidence may
-become knowable after it took effect; `"assume_effective"` deliberately
-removes that distinction.
+Under `knowledge = "evidenced"`, a membership row without a knowledge
+time is accepted and kept in the sealed evidence, and browsing functions
+such as `ledgr_facts_history()`, `ledgr_facts_resolve()` and
+`ledgr_experiment_plan()` still read it. A run, sweep, feature
+precompute, walk-forward session or experiment pulse inspection that
+prepares availability from that snapshot refuses with
+`ledgr_fact_knowledge_missing` until the row has one. Membership
+evidence may become knowable after it took effect; `"assume_effective"`
+deliberately removes that distinction by using the effective time as the
+knowledge time.
 
 This bundle keeps all five instruments in the set. To see membership
 changes alter a result, continue with
@@ -184,8 +190,8 @@ status_facts <- ledgr_facts_trading_status(
 This separation is the core point-in-time rule: effective time says when
 the world changed; knowledge time says when the backtest may use the
 evidence. Status evidence may arrive late. A status row with missing
-evidenced knowledge stays audit-only rather than becoming an active
-restriction.
+evidenced knowledge is sealed, but runs on that snapshot refuse until
+the row has a knowledge time.
 
 ## Add Lifetime And Economic Events When Needed
 
@@ -240,9 +246,9 @@ pit$corporate_actions |>
            knowledge_time        payment_time
     1 2020-01-09 21:00:00 2020-01-13 21:00:00
 
-Lifetime follows the same late-knowledge rule as status: a missing
-evidenced knowledge time leaves the row audit-only rather than changing
-the run.
+Lifetime follows the same late-knowledge rule as status: a row with a
+missing evidenced knowledge time is sealed, but runs on that snapshot
+refuse until it has one.
 
 Corporate actions have four clocks because entitlement, market effect,
 knowledge, and payment need not coincide. Do not collapse them into one
@@ -382,10 +388,11 @@ Every interval is half-open: `effective_from` is included and
 - identifiers stay stable for the history being sealed;
 - observation and fact timestamps are whole-second UTC instants; and
 - knowledge is declared per family rather than assumed to precede
-  effect; for membership, status and lifetime, missing evidenced
-  knowledge remains audit-only unless `assume_effective` is declared.
-  Sessions instead require a valid knowledge time under the evidenced
-  policy.
+  effect; a membership, status or lifetime row without a knowledge time
+  is sealed, but availability preparation refuses it with
+  `ledgr_fact_knowledge_missing` unless `assume_effective` supplied the
+  effective time. Sessions instead require a valid knowledge time under
+  the evidenced policy.
 
 ## Entity Relationships
 

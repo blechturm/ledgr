@@ -56,7 +56,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
       rlang::abort("Availability-aware reconstruction requires a snapshot-backed run.", class = "ledgr_invalid_run")
     }
     pulses <- ledgr_derived_state_availability_pulses(
-      con, run_id, ledgr_availability_provider(con, cfg, stored_snapshot_hash), start_ts_utc, end_ts_utc
+      con, run_id, ledgr_availability_session_source(con, cfg$data$snapshot_id), start_ts_utc, end_ts_utc
     )
   } else {
     pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
@@ -96,7 +96,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   if (availability_active) {
     # Marks come from history starting at the data start, as in the fold.
     history_pulses <- ledgr_availability_calendar(
-      ledgr_availability_provider(con, cfg, stored_snapshot_hash),
+      ledgr_availability_session_source(con, cfg$data$snapshot_id),
       ledgr_run_snapshot_history_start(con, cfg$data$snapshot_id),
       end_ts_utc
     )$pulses_posix

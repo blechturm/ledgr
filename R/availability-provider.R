@@ -269,41 +269,80 @@ ledgr_availability_provider <- function(con, config, snapshot_hash) {
   if (!ledgr_availability_config_active(config)) return(NULL)
   snapshot_id <- as.character(config$data$snapshot_id)
   data <- ledgr_availability_provider_data(con, snapshot_id)
-  history <- function(instrument_id, cutoff, sessions = NULL) {
-    cutoff <- as.POSIXct(cutoff, tz = "UTC")
-    rows <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT instrument_id, ts_utc, open, high, low, close, volume",
-        "FROM snapshot_bars WHERE snapshot_id = ? AND instrument_id = ?",
-        "AND ts_utc <= ? ORDER BY ts_utc"
+  ledgr_availability_provider_build(data, config, snapshot_hash)
+}
+
+ledgr_availability_provider_build <- function(data, config, snapshot_hash) {
+  ledgr_availability_provider_build_prepared(data, config, snapshot_hash)
+}
+
+# Cut 16 decision (23): preparation refuses membership, trading-status and
+# lifetime facts whose knowledge time is missing. `missing` holds the number
+# of such rows per family; what a missing knowledge time should mean is
+# decided with LDG-3073.
+ledgr_fact_knowledge_refuse <- function(missing) {
+  missing <- missing[missing > 0]
+  if (length(missing) == 0L) return(invisible(TRUE))
+  rlang::abort(
+    sprintf(
+      paste0(
+        "Availability preparation refuses facts with no knowledge time (%s). ",
+        "Supply `knowledge_time`, or construct the facts with ",
+        "`knowledge = \"assume_effective\"`."
       ),
-      params = list(snapshot_id, instrument_id, cutoff)
-    )
-    if (!is.null(sessions)) rows <- utils::tail(rows, as.integer(sessions))
-    rows
-  }
-  ledgr_availability_provider_build(data, config, snapshot_hash, history)
+      paste(sprintf("%s: %d", names(missing), as.integer(missing)), collapse = ", ")
+    ),
+    class = c("ledgr_fact_knowledge_missing", "ledgr_invalid_snapshot"),
+    missing_knowledge = stats::setNames(as.integer(missing), names(missing))
+  )
 }
 
-ledgr_availability_provider_portable <- function(data,
-                                                 config,
-                                                 snapshot_hash,
-                                                 bars_by_id) {
-  history <- function(instrument_id, cutoff, sessions = NULL) {
-    rows <- bars_by_id[[instrument_id]]
-    if (is.null(rows)) rows <- data.frame()
-    if (nrow(rows) > 0L) {
-      rows <- rows[as.POSIXct(rows$ts_utc, tz = "UTC") <= as.POSIXct(cutoff, tz = "UTC"), , drop = FALSE]
-    }
-    if (!is.null(sessions)) rows <- utils::tail(rows, as.integer(sessions))
-    rows
-  }
-  ledgr_availability_provider_build(data, config, snapshot_hash, history)
+# The decision (23) check on a snapshot's stored facts, run on the durable
+# run's connection before the run is registered. Dense snapshots hold no such
+# facts; every other entry point refuses in ledgr_history_substrate() before
+# its first side effect.
+ledgr_availability_require_fact_knowledge <- function(con, snapshot_id) {
+  tables <- c(
+    membership_sets = "snapshot_membership_sets",
+    membership = "snapshot_membership",
+    trading_status = "snapshot_trading_status",
+    lifetime = "snapshot_lifetime"
+  )
+  sql <- paste(
+    sprintf(
+      "SELECT '%s' AS family, COUNT(*) AS n FROM %s WHERE snapshot_id = ? AND knowledge_time IS NULL",
+      names(tables), tables
+    ),
+    collapse = " UNION ALL "
+  )
+  counts <- DBI::dbGetQuery(
+    con, sql, params = as.list(rep(as.character(snapshot_id), length(tables)))
+  )
+  ledgr_fact_knowledge_refuse(stats::setNames(as.numeric(counts$n), counts$family))
 }
 
-ledgr_availability_provider_build <- function(data, config, snapshot_hash, history) {
-  ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
+# The same check on fact tables already in memory (history preparation).
+ledgr_availability_data_require_fact_knowledge <- function(data) {
+  frames <- list(
+    membership_sets = data$membership_sets,
+    membership = data$membership,
+    trading_status = data$status,
+    lifetime = data$lifetime
+  )
+  missing <- vapply(frames, function(rows) {
+    if (!is.data.frame(rows) || nrow(rows) == 0L) return(0)
+    as.numeric(sum(is.na(rows$knowledge_time)))
+  }, numeric(1))
+  ledgr_fact_knowledge_refuse(missing)
+}
+
+# The declared session calendar alone, in the shape the calendar helpers read
+# (`$sessions`). Readers that only need pulses or coverage use it instead of a
+# provider, so no membership, status or lifetime plan is compiled for them.
+ledgr_availability_session_source <- function(con, snapshot_id) {
+  list(sessions = ledgr_availability_read_table(
+    con, "snapshot_sessions", as.character(snapshot_id), "session_date"
+  ))
 }
 
 # The declared calendar must cover the sealed bars a run is asked to run,

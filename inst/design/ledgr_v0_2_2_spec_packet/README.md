@@ -21,6 +21,7 @@ does not copy workstream status, ticket dependencies or acceptance state from
 | Maintained release sequence | [`ledgr_roadmap.md`](../ledgr_roadmap.md) |
 | Non-binding future parking | [`horizon.md`](../horizon.md) |
 | Design-memory navigation | [`inst/design/README.md`](../README.md) |
+| History representations, fast paths and execution-mode branches | [`history_representation_map.md`](history_representation_map.md) |
 
 The macro plan does not authorize implementation and does not replace an
 accepted RFC, contract or research finding. Historical planning displaced
@@ -84,7 +85,8 @@ second status ledger:
 - [`causal_facts_history_identity_closeout.md`](causal_facts_history_identity_closeout.md),
   [`causal_history_substrate_closeout.md`](causal_history_substrate_closeout.md)
   and
-  [`public_causal_history_closeout.md`](public_causal_history_closeout.md).
+  [`public_causal_history_closeout.md`](public_causal_history_closeout.md);
+- [`history_simplification_closeout.md`](history_simplification_closeout.md).
 
 Other packet files remain historical evidence at their existing paths. Use
 `tickets.yml`, not this index, to decide whether a record is current.

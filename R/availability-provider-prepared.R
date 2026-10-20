@@ -20,56 +20,6 @@
 
 ledgr_availability_prepared_seconds <- function(x) as.numeric(as.POSIXct(x, tz = "UTC"))
 
-ledgr_membership_apply_prepared_header <- function(known,
-                                                    state,
-                                                    reason,
-                                                    winner,
-                                                    selected_knowledge,
-                                                    header,
-                                                    headers,
-                                                    header_complete,
-                                                    header_knowledge,
-                                                    set_index,
-                                                    key) {
-  header_ref <- paste0("set:", headers$set_id[[header]])
-  if (isTRUE(header_complete[[header]])) {
-    known[] <- TRUE
-    state[] <- FALSE
-    reason[] <- "omitted_from_complete_set"
-    winner[] <- header_ref
-    selected_knowledge[] <- header_knowledge[[header]]
-  }
-  selected_rows <- set_index$by_header[[header]]
-  if (length(selected_rows) > 0L) {
-    selected_rows <- selected_rows[
-      !duplicated(set_index$rows$instrument_id[selected_rows])
-    ]
-    selected <- match(
-      as.character(set_index$rows$instrument_id[selected_rows]),
-      key
-    )
-    keep <- !is.na(selected)
-    selected <- selected[keep]
-    selected_rows <- selected_rows[keep]
-    known[selected] <- TRUE
-    state[selected] <- TRUE
-    reason[selected] <- "member_asserted"
-    winner[selected] <- paste0(
-      header_ref,
-      "|fact:",
-      as.character(set_index$rows$fact_id[selected_rows])
-    )
-    selected_knowledge[selected] <- header_knowledge[[header]]
-  }
-  list(
-    known = known,
-    state = state,
-    reason = reason,
-    winner = winner,
-    knowledge = selected_knowledge
-  )
-}
-
 ledgr_membership_advance_prepared_header <- function(state,
                                                       header,
                                                       headers,
@@ -499,7 +449,7 @@ ledgr_availability_provider_prepare <- function(data, config) {
 ledgr_availability_provider_from_plan <- function(plan,
                                                   config,
                                                   snapshot_hash,
-                                                  history,
+                                                  sessions = plan$sessions,
                                                   history_substrate_version = NULL) {
   families <- plan$families
   status_declared <- plan$status_declared
@@ -619,9 +569,8 @@ ledgr_availability_provider_from_plan <- function(plan,
       facts = prepared_facts,
       decision_view = decision_view,
       execution_view = execution_view,
-      history = history,
       identity = identity,
-      sessions = plan$sessions,
+      sessions = sessions,
       valuation_policy = config$availability$valuation_policy
     ),
     class = c("ledgr_availability_provider", "list")
@@ -630,12 +579,10 @@ ledgr_availability_provider_from_plan <- function(plan,
 
 ledgr_availability_provider_build_prepared <- function(data,
                                                        config,
-                                                       snapshot_hash,
-                                                       history) {
+                                                       snapshot_hash) {
   ledgr_availability_provider_from_plan(
     ledgr_availability_provider_prepare(data, config),
     config,
-    snapshot_hash,
-    history
+    snapshot_hash
   )
 }

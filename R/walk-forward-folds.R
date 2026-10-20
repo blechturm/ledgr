@@ -720,15 +720,9 @@ ledgr_experiment_window_validate_pulses <- function(exp, window) {
   )
   bars_by_id <- ledgr_sweep_normalize_bars_by_id(bars_by_id, exp$universe)
   if (isTRUE(exp$availability$active)) {
-    availability_data <- ledgr_availability_provider_data(
+    provider <- ledgr_availability_session_source(
       get_connection(exp$snapshot),
       exp$snapshot$snapshot_id
-    )
-    provider <- ledgr_availability_provider_portable(
-      availability_data,
-      ledgr_sweep_availability_config(exp),
-      ledgr_precompute_snapshot_meta(exp$snapshot)$snapshot_hash,
-      bars_by_id
     )
     ledgr_availability_require_coverage(provider, ledgr_snapshot_bar_range(get_connection(exp$snapshot), exp$snapshot$snapshot_id, window$scoring_start_utc, window$scoring_end_utc))
     calendar <- ledgr_availability_calendar(
@@ -797,7 +791,7 @@ ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
   con <- get_connection(exp$snapshot)
   snapshot_id <- exp$snapshot$snapshot_id
   if (isTRUE(exp$availability$active)) {
-    sessions <- ledgr_availability_provider_data(con, snapshot_id)$sessions
+    sessions <- ledgr_availability_session_source(con, snapshot_id)$sessions
     close <- as.POSIXct(sessions$session_close[sessions$status == "open"], tz = "UTC")
     close <- close[!is.na(close) & close >= start & close <= end]
     return(sort(unique(close)))

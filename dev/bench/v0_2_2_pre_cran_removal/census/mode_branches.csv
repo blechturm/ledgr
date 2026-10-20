@@ -1,0 +1,214 @@
+"file","owner","kind","switch","context","occurrence"
+"R/availability-policy.R","ledgr_experiment_plan","branch","alias:active","if: !active",1
+"R/availability-policy.R","ledgr_experiment_plan","flow","alias:active","arg:ledgr_price_basis_label:2",1
+"R/availability-policy.R","ledgr_experiment_plan","flow","alias:active","arg:ledgr_price_basis_label:2",2
+"R/availability-policy.R","ledgr_experiment_plan","flow","alias:active","arg:list:availability_active",1
+"R/availability-policy.R","ledgr_experiment_plan","flow","alias:active","assign_target",1
+"R/availability-policy.R","ledgr_experiment_plan","flow","availability$active","assign:active",1
+"R/availability-policy.R","ledgr_price_basis_label","branch","availability_active","if: isTRUE(availability_active)",1
+"R/availability-policy.R","print.ledgr_experiment_plan","branch","$availability_active","if: isTRUE(x$availability_active)",1
+"R/availability-policy.R","print.ledgr_experiment_plan","branch","$availability_active","if: isTRUE(x$availability_active)",2
+"R/availability-provider.R","ledgr_availability_config_active","flow","availability$active","statement",1
+"R/availability-provider.R","ledgr_availability_provider","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
+"R/availability-results.R","ledgr_backtest_availability","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
+"R/availability-results.R","ledgr_backtest_availability","flow","ledgr_backtest_availability_active()","statement",1
+"R/availability-results.R","ledgr_backtest_terminal_evidence","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
+"R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",1
+"R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",2
+"R/backtest-results.R","summary.ledgr_backtest","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(object$config)",1
+"R/backtest-runner.R","ledgr_feature_defs_from_config","branch","availability_active","if: availability_active",1
+"R/backtest-runner.R","ledgr_feature_defs_from_config","flow","availability_active","assign_target",1
+"R/backtest-runner.R","ledgr_feature_defs_from_config","flow","ledgr_availability_config_active()","assign:availability_active",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",10
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",11
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",12
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",13
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",14
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",15
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",2
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",3
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",4
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",5
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",6
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",7
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",8
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active",9
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && is_resume",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && is_resume && start_idx > 1L",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && is_resume && start_idx > 1L",2
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && length(fold_result$equity_facts) > 0L",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active+is.null(history_substrate)","if: !availability_active || is.null(history_substrate)",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active+is.null(history_substrate)","if: availability_active && is.null(history_substrate)",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","is.null(history_substrate)","if: !is.null(history_substrate)",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","is.null(history_substrate)","if: is.null(history_substrate)",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","is.null(history_substrate)","if: is.null(history_substrate)",2
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","is.null(history_substrate)","if: is.null(history_substrate)",3
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","alias:use_fast_context","arg:ledgr_execution_spec:use_fast_context",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","alias:use_fast_context","assign_target",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","arg:ledgr_corporate_action_plan:dispositions_active",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","arg:ledgr_feature_engine_version:1",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","arg:ledgr_run_snapshot_guard:availability_active",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","arg:list:availability_active",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","arg:list:availability_active",2
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","assign:use_fast_context",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","availability_active","assign_target",1
+"R/backtest-runner.R","ledgr_run_fold_impl","flow","ledgr_availability_config_active()","assign:availability_active",1
+"R/backtest.R","ledgr_run_experiment","branch","availability$active","if: isTRUE(exp$availability$active) && identical(compiled_accounting_model, ""spot_fifo"")",1
+"R/config-validate.R","validate_ledgr_config","branch","availability$active","if: !is.character(final_execution) || length(final_execution) != 1L || !grepl(iso8601_utc, final_execution) || !isTRUE(config$availability$active) || !isTRUE(ledgr_history_utc(final_execution) > ledgr_history_utc(end_ts))",1
+"R/config-validate.R","validate_ledgr_config","branch","availability$active","if: !is.list(availability) || !isTRUE(availability$active) || !is.character(availability$declared_families) || anyNA(availability$declared_families) || anyDuplicated(availability$declared_families) || !all(availability$declared_families %in% allowed_families) || !""sessions"" %in% availability$declared_families || !is.list(availability$valuation_policy) || !identical(availability$provider_version, ledgr_availability_provider_version())",1
+"R/corporate-action-results.R","ledgr_corporate_action_summary","branch","alias:dispositions_active","if: !dispositions_active",1
+"R/corporate-action-results.R","ledgr_corporate_action_summary","flow","alias:dispositions_active","assign_target",1
+"R/corporate-action-results.R","ledgr_corporate_action_summary","flow","availability$active","assign:dispositions_active",1
+"R/corporate-action-results.R","ledgr_corporate_action_summary","flow","ledgr_availability_config_active()","arg:ledgr_price_basis_label:2",1
+"R/derived-state.R","ledgr_rebuild_derived_state","branch","availability_active","if: availability_active",1
+"R/derived-state.R","ledgr_rebuild_derived_state","branch","availability_active","if: availability_active",2
+"R/derived-state.R","ledgr_rebuild_derived_state","branch","availability_active","if: availability_active && anyNA(close_by_id[ids])",1
+"R/derived-state.R","ledgr_rebuild_derived_state","flow","availability_active","assign_target",1
+"R/derived-state.R","ledgr_rebuild_derived_state","flow","ledgr_availability_config_active()","assign:availability_active",1
+"R/execution-spec.R","ledgr_execution_spec","branch","is.null(availability_provider)","if: !is.null(availability_provider)",1
+"R/execution-spec.R","ledgr_execution_spec","branch","is.null(availability_provider)","if: is.null(availability_provider) && !is.null(execution_opportunities_posix)",1
+"R/execution-timing.R","ledgr_execution_timing_provenance","branch","availability$active","if: !is.list(availability) || !isTRUE(availability$active)",1
+"R/execution-timing.R","ledgr_execution_timing_require_current","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
+"R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active)",1
+"R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active)",2
+"R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active) && !is.null(opening$date_civil)",1
+"R/experiment.R","print.ledgr_experiment","branch","availability$active","if: is.null(x$data_identity$price_basis) && !isTRUE(x$availability$active)",1
+"R/features-engine.R","ledgr_feature_engine_version","branch","availability_active","if: isTRUE(availability_active)",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: !availability_active && is.null(bars_views)",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: !availability_active && is.null(feature_views)",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: (!availability_active && length(bars_views) != length(pulses_posix)) || (!availability_active && length(feature_table_views) != length(pulses_posix)) || (!availability_active && length(features_wide_views) != length(pulses_posix))",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",2
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",3
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",4
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",5
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",6
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",7
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",8
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && !is.null(runtime_projection)",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && !is.null(runtime_projection)",2
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && is.function(output_handler$write_exception_diagnostic)",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && length(pulses_posix) > 0L",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && start_idx > 1L",1
+"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: isTRUE(use_fast_context) && !availability_active",1
+"R/fold-engine.R","ledgr_fold_envelope","flow","availability_active","arg:list:availability_active",1
+"R/fold-engine.R","ledgr_fold_envelope","flow","availability_active","assign_target",1
+"R/fold-engine.R","ledgr_fold_envelope","flow","is.null(availability_provider)","assign:availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_commit","branch","$availability_active","if: services$availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_commit","branch","$availability_active","if: services$availability_active",2
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: !is.null(services$fast_context) && !services$availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",10
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",11
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",2
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",3
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",4
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",5
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",6
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",7
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",8
+"R/fold-engine.R","ledgr_fold_stage_decide","branch","$availability_active","if: services$availability_active",9
+"R/fold-engine.R","ledgr_fold_stage_decide","flow","$availability_active","arg:ledgr_validate_strategy_targets:allow_empty",1
+"R/fold-engine.R","ledgr_fold_stage_decide","flow","$availability_active","assign_target",1
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: !services$availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",2
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",3
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",4
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",5
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",6
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",7
+"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",8
+"R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",1
+"R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",2
+"R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","availability$active","if: !inherits(exp, ""ledgr_experiment"") || !isTRUE(exp$availability$active)",1
+"R/precompute-features.R","ledgr_precompute_features","branch","availability_active","if: availability_active",1
+"R/precompute-features.R","ledgr_precompute_features","flow","availability$active","assign:availability_active",1
+"R/precompute-features.R","ledgr_precompute_features","flow","availability_active","arg:ledgr_feature_engine_version:1",1
+"R/precompute-features.R","ledgr_precompute_features","flow","availability_active","assign_target",1
+"R/precompute-features.R","ledgr_precompute_scoring_range","branch","availability$active","if: !is.null(exp) && isTRUE(exp$availability$active)",1
+"R/precompute-features.R","ledgr_resolve_candidate_features","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/precompute-features.R","ledgr_validate_precomputed_features","branch","availability$active","if: !identical(precomputed$feature_engine_version, ledgr_feature_engine_version(isTRUE(exp$availability$active)))",1
+"R/pulse-context.R","ledgr_validate_pulse_context","branch","alias:allow_empty","if: !is.character(ctx$universe) || (!allow_empty && length(ctx$universe) < 1) || anyNA(ctx$universe) || any(!nzchar(ctx$universe))",1
+"R/pulse-context.R","ledgr_validate_pulse_context","flow","$availability_active","assign:allow_empty",1
+"R/pulse-context.R","ledgr_validate_pulse_context","flow","alias:allow_empty","assign_target",1
+"R/pulse-snapshot.R","ledgr_pulse_snapshot","branch","availability$active","if: !isTRUE(snapshot$availability$active)",1
+"R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",1
+"R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",2
+"R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",3
+"R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",4
+"R/run-finalize.R","ledgr_run_finalize","flow","$availability_active","assign:use_fold_equity",1
+"R/run-finalize.R","ledgr_run_finalize","flow","alias:use_fold_equity","assign_target",1
+"R/run-snapshot.R","ledgr_run_snapshot_guard","branch","availability_active","if: !isTRUE(availability_active) && (nrow(coverage) != length(instrument_ids) || any(as.integer(coverage$n) < length(pulses)))",1
+"R/run-snapshot.R","ledgr_run_snapshot_guard","branch","availability_active","if: !isTRUE(availability_active) && length(pulses) < 2L",1
+"R/run-store.R","ledgr_run_open","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(cfg)",1
+"R/signal-strategy.R","ledgr_signal_strategy","branch","availability_active","if: !is.character(universe) || (!availability_active && length(universe) < 1L) || anyNA(universe) || any(!nzchar(universe))",1
+"R/signal-strategy.R","ledgr_signal_strategy","flow","$availability_active","assign:availability_active",1
+"R/signal-strategy.R","ledgr_signal_strategy","flow","availability_active","arg:ledgr_validate_strategy_targets:allow_empty",1
+"R/signal-strategy.R","ledgr_signal_strategy","flow","availability_active","arg:ledgr_validate_strategy_targets:allow_empty",2
+"R/signal-strategy.R","ledgr_signal_strategy","flow","availability_active","arg:ledgr_validate_strategy_targets:allow_empty",3
+"R/signal-strategy.R","ledgr_signal_strategy","flow","availability_active","assign_target",1
+"R/strategy-helpers.R","ledgr_target_quantity","branch","availability_active","if: availability_active",1
+"R/strategy-helpers.R","ledgr_target_quantity","flow","$availability_active","assign:availability_active",1
+"R/strategy-helpers.R","ledgr_target_quantity","flow","availability_active","assign_target",1
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","alias:position_required","if: position_required",1
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","alias:position_required","if: position_required",2
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","alias:position_required","if: position_required && (is.null(position) || length(position) != length(universe))",1
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","availability_active","if: availability_active",1
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","availability_active","if: availability_active",2
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","availability_active","if: availability_active",3
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","availability_active","if: availability_active",4
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","availability_active","if: availability_active && any(invalid_price)",1
+"R/strategy-helpers.R","ledgr_target_rebalance","branch","availability_active","if: availability_active && length(members) > 0L",1
+"R/strategy-helpers.R","ledgr_target_rebalance","flow","$availability_active","assign:availability_active",1
+"R/strategy-helpers.R","ledgr_target_rebalance","flow","alias:position_required","assign_target",1
+"R/strategy-helpers.R","ledgr_target_rebalance","flow","availability_active","assign:position_required",1
+"R/strategy-helpers.R","ledgr_target_rebalance","flow","availability_active","assign_target",1
+"R/strategy-helpers.R","ledgr_validate_strategy_helper_ctx","branch","alias:allow_empty","if: !is.character(universe) || (!allow_empty && length(universe) < 1L) || anyNA(universe) || any(!nzchar(universe)) || anyDuplicated(universe)",1
+"R/strategy-helpers.R","ledgr_validate_strategy_helper_ctx","flow","$availability_active","assign:allow_empty",1
+"R/strategy-helpers.R","ledgr_validate_strategy_helper_ctx","flow","alias:allow_empty","assign_target",1
+"R/strategy-types.R","ledgr_strategy_context_parts","branch","$availability_active","if: isTRUE(ctx$availability_active)",1
+"R/strategy-types.R","ledgr_strategy_context_parts","branch","alias:allow_empty","if: !is.character(axis) || (!allow_empty && length(axis) < 1L) || anyNA(axis) || any(!nzchar(axis)) || anyDuplicated(axis)",1
+"R/strategy-types.R","ledgr_strategy_context_parts","flow","$availability_active","assign:allow_empty",1
+"R/strategy-types.R","ledgr_strategy_context_parts","flow","alias:allow_empty","assign_target",1
+"R/strategy-types.R","ledgr_strategy_eligible","branch","$availability_active","if: is.null(admissible) && !isTRUE(ctx$availability_active)",1
+"R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: !isTRUE(exp$availability$active)",1
+"R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: isTRUE(exp$availability$active)",2
+"R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active+is.null(availability_provider)","if: isTRUE(exp$availability$active) && is.null(availability_provider)",1
+"R/sweep.R","ledgr_sweep_candidate_execution","flow","availability$active","arg:ledgr_corporate_action_plan:dispositions_active",1
+"R/sweep.R","ledgr_sweep_candidate_tasks","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: !availability_active",1
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: !is.null(precomputed_features) && !identical(availability_active, !is.null(precomputed_features$history_axis))",1
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",1
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",10
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",11
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",12
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",2
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",3
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",4
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",5
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",6
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",7
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",8
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",9
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active && identical(compiled_accounting_model, ""spot_fifo"")",1
+"R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: workers > 1L && availability_active",1
+"R/sweep.R","ledgr_sweep_impl","branch","is.null(history_substrate)","if: is.null(history_substrate)",1
+"R/sweep.R","ledgr_sweep_impl","flow","availability$active","assign:availability_active",1
+"R/sweep.R","ledgr_sweep_impl","flow","availability_active","arg:ledgr_feature_engine_version:1",1
+"R/sweep.R","ledgr_sweep_impl","flow","availability_active","assign_target",1
+"R/sweep.R","ledgr_sweep_run_candidate","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/sweep.R","ledgr_sweep_run_candidate","branch","availability$active","if: isTRUE(exp$availability$active)",2
+"R/valuation-summary.R","ledgr_assumption_flags_for_run","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(bt$config)",1
+"R/valuation-summary.R","ledgr_valuation_summary","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(bt$config)",1
+"R/walk-forward-folds.R","ledgr_experiment_window","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/walk-forward-folds.R","ledgr_experiment_window_validate_pulses","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/walk-forward-folds.R","ledgr_walk_forward_pulse_calendar","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/walk-forward.R","ledgr_walk_forward","branch","availability$active","if: !isTRUE(exp$availability$active)",1
+"R/walk-forward.R","ledgr_walk_forward","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/walk-forward.R","ledgr_walk_forward_continue_windows","branch","is.null(history_substrate)","if: is.null(history_substrate) || length(fold_windows) < 2L",1
+"R/walk-forward.R","ledgr_walk_forward_eval_fold","branch","is.null(history_substrate)","if: is.null(history_substrate)",1
+"R/walk-forward.R","ledgr_walk_forward_opening_from_run","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/walk-forward.R","ledgr_walk_forward_opening_from_run","branch","availability$active","if: isTRUE(exp$availability$active)",2

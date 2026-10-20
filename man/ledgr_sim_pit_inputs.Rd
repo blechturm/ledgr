@@ -64,9 +64,9 @@ The default cases require at least four instruments and ten weekdays in the
 requested window. They add one weekday venue closure, one missing observation
 on a declared open session, one delisting, one halt whose knowledge arrives
 after its effective time, and one validated gross cash dividend. Effective
-intervals are half-open. Missing knowledge stays audit-only under
-\code{"evidenced"}; selecting \code{"assume_effective"} is recorded in the recipe and
-delegates that substitution to the public fact constructor.
+intervals are half-open. Under \code{"evidenced"} every row carries a knowledge
+time; \code{"assume_effective"}, recorded in the recipe, leaves it missing and
+the fact constructor uses the effective time (see \code{\link[=ledgr_facts]{ledgr_facts()}}).
 The delisting retains its boundary observation and emits no later bars. The
 halt retains its effective-boundary bar, omits observations strictly inside
 the halted interval, and resumes at the excluded interval end.

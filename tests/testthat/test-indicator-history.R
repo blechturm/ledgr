@@ -471,3 +471,43 @@ testthat::test_that("[LTB-0309] rule-4 feature identity binds every history decl
     )
   }
 })
+
+# ledgr-test-profile: fast
+testthat::test_that("[LTB-0333] the indicator history catalogue is built once per session", {
+  cache <- ledgr:::.ledgr_indicator_catalogue_cache
+  rm(list = ls(cache, all.names = TRUE), envir = cache)
+  withr::defer(rm(list = ls(cache, all.names = TRUE), envir = cache))
+  builds <- new.env(parent = emptyenv())
+  builds$n <- 0L
+  original <- ledgr:::ledgr_indicator_history_catalogue
+  testthat::local_mocked_bindings(
+    ledgr_indicator_history_catalogue = function() {
+      builds$n <- builds$n + 1L
+      original()
+    },
+    .package = "ledgr"
+  )
+  constructed <- list(
+    ledgr_ind_sma(3), ledgr_ind_ema(4), ledgr_ind_rsi(5), ledgr_ind_returns(2),
+    ledgr_ind_sma(10), ledgr_ind_ema(20)
+  )
+  testthat::expect_identical(builds$n, 1L)
+  if (requireNamespace("TTR", quietly = TRUE)) {
+    constructed <- c(constructed, list(
+      ledgr_ind_ttr("SMA", input = "close", n = 3),
+      ledgr_ind_ttr("BBands", input = "close", output = "up", n = 5)
+    ))
+  }
+  constructed <- c(constructed, list(ledgr_ind_sma(3)))
+  testthat::expect_identical(builds$n, 1L)
+  # Rows are the catalogue's own rows, keyed by source, family, output and
+  # variant; an unknown key has no row.
+  row <- ledgr:::ledgr_indicator_catalogue_row("ledgr", "ema")
+  testthat::expect_identical(row, original()[2L, , drop = FALSE])
+  testthat::expect_null(ledgr:::ledgr_indicator_catalogue_row("ledgr", "nope"))
+  testthat::expect_identical(
+    vapply(constructed[1:4], `[[`, character(1), "history_source"),
+    rep("catalogue", 4L)
+  )
+  testthat::expect_identical(builds$n, 1L)
+})

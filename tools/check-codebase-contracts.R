@@ -170,8 +170,71 @@ if (!file.exists(structure_path)) {
   stop("The shared codebase-structure scanner is missing.", call. = FALSE)
 }
 source(structure_path, local = TRUE)
+
+if ("--self-test-mode-branches" %in% args) {
+  probe <- tempfile("ledgr-mode-branch-source-")
+  dir.create(file.path(probe, "R"), recursive = TRUE)
+  on.exit(unlink(probe, recursive = TRUE), add = TRUE)
+  probe_file <- file.path(probe, "R", "probe.R")
+  base_source <- c(
+    "probe_runner <- function(cfg, history_substrate = NULL) {",
+    "  availability_active <- isTRUE(cfg$availability$active)",
+    "  if (availability_active && is.null(history_substrate)) 1 else 2",
+    "}"
+  )
+  writeLines(base_source, probe_file, useBytes = TRUE)
+  recorded <- ledgr_mode_branch_scan(probe)
+  ledgr_mode_branch_check(recorded, ledgr_mode_branch_scan(probe))
+  writeLines(
+    c(base_source[1:3], "  if (!availability_active) 3 else 4", base_source[[4L]]),
+    probe_file,
+    useBytes = TRUE
+  )
+  added <- ledgr_mode_branch_scan(probe)
+  refused <- tryCatch(
+    {
+      ledgr_mode_branch_check(added, recorded)
+      ""
+    },
+    error = function(e) conditionMessage(e)
+  )
+  if (!startsWith(refused, "LEDGR_MODE_BRANCH_CENSUS_FAILED unrecorded=1 stale=0") ||
+      !grepl("probe_runner branch [availability_active]", refused, fixed = TRUE)) {
+    stop("LEDGR_MODE_BRANCH_SELF_TEST_FAILED", call. = FALSE)
+  }
+  cat("LEDGR_MODE_BRANCH_SELF_TEST_OK\n")
+  quit(save = "no", status = 0L)
+}
+
 if (!mode %in% c("report", "check")) {
   stop("`--mode` must be report or check.", call. = FALSE)
+}
+
+# Execution-mode branches are compared with the committed record before any
+# record is written, so a failed check cannot refresh its own baseline.
+mode_branch_record_path <- value_arg(
+  "mode-branch-record",
+  file.path(
+    root, "dev", "bench", "v0_2_2_pre_cran_removal", "census",
+    "mode_branches.csv"
+  )
+)
+mode_branch_sites <- ledgr_mode_branch_scan(root)
+if (identical(mode, "check")) {
+  if (!file.exists(mode_branch_record_path)) {
+    stop(sprintf(
+      "LEDGR_MODE_BRANCH_CENSUS_FAILED the committed record %s is missing.",
+      mode_branch_record_path
+    ), call. = FALSE)
+  }
+  mode_branch_record <- utils::read.csv(
+    mode_branch_record_path,
+    colClasses = "character",
+    na.strings = character(),
+    encoding = "UTF-8"
+  )
+  mode_branch_record$occurrence <- as.integer(mode_branch_record$occurrence)
+  ledgr_mode_branch_check(mode_branch_sites, mode_branch_record)
 }
 
 dir.create(output, recursive = TRUE, showWarnings = FALSE)
@@ -1326,6 +1389,10 @@ if (!setequal(structural_public_classes, census_public_classes)) {
 }
 
 test_seam_contracts <- c(
+  ledgr_availability_prepared_membership = paste(
+    "Build the prepared membership cursor straight from fact rows, so its",
+    "answers can be compared with the canonical resolver (LTB-0291, LTB-0334)."
+  ),
   ledgr_local_time_resolve = paste(
     "Exercise ambiguous and nonexistent local-time policy without building",
     "a complete availability input."
@@ -1488,6 +1555,16 @@ condition_dynamics <- write_table(
   "condition_dynamics.csv",
   c("file", "line", "call_kind", "expression")
 )
+mode_branch_record_rows <- write_table(
+  mode_branch_sites[, ledgr_mode_branch_key_columns(), drop = FALSE],
+  "mode_branches.csv",
+  ledgr_mode_branch_key_columns()
+)
+mode_branch_counts <- write_table(
+  ledgr_mode_branch_counts(mode_branch_sites),
+  "mode_branch_counts.csv",
+  "file"
+)
 
 summary <- ledgr_census_summary(list(
   conditions = condition_rows,
@@ -1518,6 +1595,14 @@ cat(sprintf(
   nrow(helper_rows),
   nrow(condition_rows),
   sum(summary$findings)
+))
+cat(sprintf(
+  "LEDGR_MODE_BRANCH_CENSUS mode=%s files=%d functions=%d branch_sites=%d flow_sites=%d\n",
+  mode,
+  nrow(mode_branch_counts),
+  length(unique(paste(mode_branch_sites$file, mode_branch_sites$owner))),
+  sum(mode_branch_counts$branch_sites),
+  sum(mode_branch_counts$flow_sites)
 ))
 
 if (identical(mode, "check")) {

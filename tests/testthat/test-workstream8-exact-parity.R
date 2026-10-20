@@ -160,7 +160,24 @@ workstream8_observation_bars <- function() {
   )
 }
 
+# Closes observed at or before a cutoff, read straight from the sealed bars
+# (the query the retired provider history closure ran; LDG-3075).
+workstream8_bar_history <- function(con, snapshot_id) {
+  function(instrument_id, cutoff) {
+    DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT instrument_id, ts_utc, open, high, low, close, volume",
+        "FROM snapshot_bars WHERE snapshot_id = ? AND instrument_id = ?",
+        "AND ts_utc <= ? ORDER BY ts_utc"
+      ),
+      params = list(snapshot_id, instrument_id, as.POSIXct(cutoff, tz = "UTC"))
+    )
+  }
+}
+
 workstream8_marks_oracle <- function(provider,
+                                     bar_history,
                                      axis,
                                      calendar,
                                      pulse_idx,
@@ -174,7 +191,7 @@ workstream8_marks_oracle <- function(provider,
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
   cutoff <- pulses[[pulse_idx]] - if (isTRUE(strict_cutoff)) 1 else 0
   for (i in seq_along(axis)) {
-    history <- provider$history(axis[[i]], cutoff)
+    history <- bar_history(axis[[i]], cutoff)
     if (nrow(history) == 0L) next
     index <- match(
       as.numeric(as.POSIXct(history$ts_utc, tz = "UTC")),
@@ -489,6 +506,9 @@ testthat::test_that("availability marks use one query and preserve the prefix or
     run$config$backtest$end_ts_utc
   )
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
+  bar_history <- workstream8_bar_history(
+    con, as.character(run$config$data$snapshot_id)
+  )
   bounded_rows <- ledgr:::ledgr_availability_marks_rows(
     con,
     ledgr_snapshot_info(snapshot)$snapshot_id[[1L]],
@@ -509,7 +529,7 @@ testthat::test_that("availability marks use one query and preserve the prefix or
     rows <- availability[availability$ts_utc == time, , drop = FALSE]
     axis <- as.character(rows$instrument_id)
     pulse_idx <- match(as.numeric(time), as.numeric(pulses))
-    oracle <- workstream8_marks_oracle(provider, axis, calendar, pulse_idx)
+    oracle <- workstream8_marks_oracle(provider, bar_history, axis, calendar, pulse_idx)
     testthat::expect_identical(rows$priced, as.logical(oracle$priced[axis]))
     testthat::expect_identical(rows$mark_source, as.character(oracle$source[axis]))
     testthat::expect_identical(rows$mark_age, as.integer(oracle$age[axis]))
@@ -519,6 +539,7 @@ testthat::test_that("availability marks use one query and preserve the prefix or
   first_pulse <- match(as.numeric(min(times)), as.numeric(pulses))
   strict_mutant <- workstream8_marks_oracle(
     provider,
+    bar_history,
     as.character(first$instrument_id),
     calendar,
     first_pulse,

@@ -130,13 +130,41 @@ testthat::test_that("[LTB-0079] the input documentation spine is progressive", {
   for (rule in c(
     "identifiers stay stable", "whole-second UTC",
     "knowledge is declared per family",
-    "for membership, status and lifetime, missing evidenced knowledge remains audit-only",
+    "a membership, status or lifetime row without a knowledge time is sealed, but availability preparation refuses it with `ledgr_fact_knowledge_missing`",
     "Sessions instead require a valid knowledge time",
     "complete session calendar", "Corporate-action facts alone do not activate",
     "Status evidence may arrive late",
     "Lifetime follows the same late-knowledge rule"
   )) {
     testthat::expect_match(pit_flatten(point_qmd), rule, fixed = TRUE)
+  }
+  # Cut 16 decision (23): a membership, status or lifetime fact without a
+  # knowledge time is refused at preparation, so the article must not call
+  # it audit-only or run-neutral again. Each paragraph that names one of
+  # these families and a missing knowledge time must say the fact is
+  # refused, and none of its sentences may claim the fact is neutral; the
+  # article has four such paragraphs (membership, status, lifetime and the
+  # data dictionary). Sentences about corporate actions, whose clockless
+  # rows are audit-only, are exempt. Limits: the paragraphs are found by
+  # keywords ("membership", "status", "lifetime" with "missing" or
+  # "without" before "knowledge"), so a rewording that drops those words
+  # changes the paragraph count and fails, while one that keeps "refus" in
+  # the paragraph and states neutrality with words outside the forbidden
+  # list passes.
+  neutral <- "audit-only|kept for audit|cannot affect|does not (change|affect)|leaves? the (row|run)|no effect|unchanged"
+  for (text in list(point_qmd, point_md)) {
+    paragraphs <- pit_flatten(strsplit(text, "\n[[:space:]]*\n", perl = TRUE)[[1L]])
+    selected <- paragraphs[
+      grepl("membership|status|lifetime", paragraphs, ignore.case = TRUE) &
+        grepl("(missing|without)[^.]*knowledge", paragraphs, perl = TRUE)
+    ]
+    testthat::expect_identical(length(selected), 4L)
+    for (paragraph in selected) {
+      testthat::expect_match(paragraph, "refus", fixed = TRUE)
+      sentences <- strsplit(paragraph, "(?<=\\.) ", perl = TRUE)[[1L]]
+      sentences <- sentences[!grepl("corporate", sentences, ignore.case = TRUE)]
+      testthat::expect_false(any(grepl(neutral, sentences, perl = TRUE)), info = paragraph)
+    }
   }
 
   entities <- c(

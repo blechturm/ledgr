@@ -148,8 +148,7 @@ availability_v201_build_provider <- function(arm, data, config) {
   builder(
     data,
     config,
-    "witness-hash",
-    history
+    "witness-hash"
   )
 }
 

@@ -27,7 +27,10 @@ A \code{ledgr_facts_report} object with \code{summary}, \code{facts}, and
 \description{
 Produces a source-aware dry-run report. Accepted rows, retained runtime
 conflicts, rejected rows, quarantine candidates, and audit-only facts stay
-distinct. This function never creates or modifies a snapshot.
+distinct. This function never creates or modifies a snapshot. A membership,
+trading-status or lifetime row reported \code{audit_only} with reason
+\code{knowledge_time_missing} is sealed, but availability preparation then
+refuses it with \code{ledgr_fact_knowledge_missing}.
 }
 \section{Articles}{
 

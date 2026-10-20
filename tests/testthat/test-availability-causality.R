@@ -42,10 +42,12 @@ testthat::test_that("provider resolves facts only after effective and knowledge 
     config,
     ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
   )
+  # LDG-3075: the provider's bar-history closure had no product reader and
+  # is removed; history is read only from the shared substrate.
   testthat::expect_named(
     provider,
     c(
-      "facts", "decision_view", "execution_view", "history", "identity",
+      "facts", "decision_view", "execution_view", "identity",
       "sessions", "valuation_policy"
     )
   )
@@ -63,10 +65,6 @@ testthat::test_that("provider resolves facts only after effective and knowledge 
       c(AAA = 0)
     )$axis,
     "AAA"
-  )
-  testthat::expect_equal(
-    nrow(provider$history("AAA", as.POSIXct("2020-01-02 16:00:00", tz = "UTC"))),
-    2L
   )
   testthat::expect_identical(
     provider$identity()$provider_version,
