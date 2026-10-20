@@ -7,7 +7,9 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
         instruments = "decision_axis", na_action = "drop_instruments"),
       fast_long = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
         instruments = "decision_axis", na_action = "drop_instruments", layout = "long"),
-      close_all = ledgr_history_frame(ctx, bar = "close")
+      close_all = ledgr_history_frame(ctx, bar = "close"),
+      fast_admissible = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
+        na_action = "drop_instruments")
     )
   })
   on.exit({
@@ -66,6 +68,23 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   testthat::expect_error(ledgr_history_info(broken), class = "ledgr_invalid_history_result")
   testthat::expect_error(ledgr_history_weights(broken, c(0.5, 0.5)), class = "ledgr_invalid_history_result")
   testthat::expect_error(ledgr_history_info(data.frame(x = 1)), class = "ledgr_invalid_history_result")
+  # Sufficiency refuses the same stale results (close review 44a F3): a
+  # result whose rows were filtered keeps its class and metadata but no
+  # longer matches its recorded two sessions.
+  filtered <- fast[2L, , drop = FALSE]
+  attr(filtered, "ledgr_history") <- attr(fast, "ledgr_history")
+  class(filtered) <- class(fast)
+  testthat::expect_error(ledgr_history_sufficient(filtered), class = "ledgr_invalid_history_result")
+  testthat::expect_error(ledgr_history_sufficient(broken, lookback = 1L), class = "ledgr_invalid_history_result")
+  # Under the "admissible" selector CCC is not requested at session 7, so it
+  # is not an excluded instrument (close review 44a N2).
+  admissible_info <- ledgr_history_info(at7$fast_admissible)
+  testthat::expect_identical(admissible_info$included_ids, c("AAA", "BBB"))
+  testthat::expect_identical(admissible_info$excluded_ids, character())
+  testthat::expect_identical(
+    admissible_info$selection$requested[admissible_info$selection$instrument_id == "CCC"],
+    FALSE
+  )
 
   # Solver output becomes identified weights without colnames(): an unnamed
   # vector in the matrix column order, a named vector in any order, and a
@@ -85,6 +104,15 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
     testthat::expect_error(ledgr_history_weights(fast, bad), class = "ledgr_history_weights_mismatch")
   }
   testthat::expect_error(ledgr_history_weights(fast, c(0.5, NA)), class = "ledgr_invalid_strategy_type")
+  # Three included instruments at session 6 (CCC's inactivity is not yet
+  # known): names in a cyclic order are matched by name, not by a
+  # permutation of positions (close review 44a N2).
+  fast6 <- captured$seen[[ws42_iso(axis[[6L]])]]$fast
+  testthat::expect_identical(ledgr_history_info(fast6)$included_ids, c("AAA", "BBB", "CCC"))
+  testthat::expect_identical(
+    ledgr_history_weights(fast6, c(BBB = 0.2, CCC = 0.3, AAA = 0.5)),
+    ledgr_weights(c(AAA = 0.5, BBB = 0.2, CCC = 0.3), origin = "ledgr_history_weights")
+  )
 
   # Sufficiency defaults to the finite lookback the result was read with and
   # refuses to guess one for a full-lookback read.

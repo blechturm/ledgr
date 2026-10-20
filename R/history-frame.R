@@ -1151,7 +1151,9 @@ print.ledgr_history_info <- function(x, ...) {
 #'
 #' @param x A `ledgr_history` result.
 #' @param weights A finite numeric vector, or a one-column or one-row numeric
-#'   matrix, with one weight per included instrument.
+#'   matrix, with one weight per included instrument. A missing or
+#'   non-finite weight refuses with `ledgr_invalid_strategy_type`, as
+#'   [ledgr_weights()] does.
 #' @return A `ledgr_weights` object named by the included instrument IDs.
 #' @seealso [ledgr_history_matrix()], [ledgr_history_info()],
 #'   [ledgr_target_rebalance()]
@@ -1225,7 +1227,10 @@ ledgr_history_weights <- function(x, weights) {
 #' Without `lookback` it uses the finite lookback the result was read with,
 #' so a strategy states its window once. A result read with the default
 #' `lookback = Inf` has no finite requirement to check, and the call refuses
-#' with `ledgr_invalid_history_request` unless `lookback` is supplied.
+#' with `ledgr_invalid_history_request` unless `lookback` is supplied. Like
+#' [ledgr_history_matrix()], it refuses a result that no longer matches its
+#' recorded axis and instruments (for example after filtering its rows) with
+#' `ledgr_invalid_history_result`.
 #'
 #' @param x A `ledgr_history` result.
 #' @param lookback Required number of expected sessions. `NULL` (the default)
@@ -1235,7 +1240,7 @@ ledgr_history_weights <- function(x, weights) {
 #' @seealso [ledgr_history_frame()], [ledgr_history_info()]
 #' @export
 ledgr_history_sufficient <- function(x, lookback = NULL, min_instruments = 1L) {
-  meta <- ledgr_history_require_result(x)
+  meta <- ledgr_history_require_consistent(x)$meta
   if (is.null(lookback)) {
     lookback <- meta$requested_lookback
     if (!is.numeric(lookback) || length(lookback) != 1L || !is.finite(lookback)) {

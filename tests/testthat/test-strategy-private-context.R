@@ -76,6 +76,56 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     write = function(ctx, params) {
       ctx$.notes <- NULL
       ctx$hold()
+    },
+    # Correction 1 (close review 44a F1): ledgr's internal namespace and
+    # environment-reaching functions named as strings or member extractions.
+    triple_colon = function(ctx, params) {
+      view <- ledgr:::ledgr_history_context_view(ctx)
+      ctx$hold()
+    },
+    get_from_namespace = function(ctx, params) {
+      view <- utils::getFromNamespace("ledgr_history_context_view", "ledgr")(ctx)
+      ctx$hold()
+    },
+    as_namespace = function(ctx, params) {
+      view <- asNamespace("ledgr")$ledgr_history_context_view(ctx)
+      ctx$hold()
+    },
+    get_anywhere = function(ctx, params) {
+      found <- utils::getAnywhere("ledgr_history_context_view")
+      ctx$hold()
+    },
+    mget_call = function(ctx, params) {
+      found <- mget("x", envir = baseenv())
+      ctx$hold()
+    },
+    get0_call = function(ctx, params) {
+      found <- base::get0("x", envir = baseenv())
+      ctx$hold()
+    },
+    lapply_string = function(ctx, params) {
+      envs <- lapply(list(ctx$feature), "environment")
+      ctx$hold()
+    },
+    sapply_string = function(ctx, params) {
+      envs <- sapply(list(ctx$feature), "environment")
+      ctx$hold()
+    },
+    map_string = function(ctx, params) {
+      envs <- Map("environment", list(ctx$feature))
+      ctx$hold()
+    },
+    match_fun = function(ctx, params) {
+      env <- match.fun("environment")(ctx$feature)
+      ctx$hold()
+    },
+    baseenv_member = function(ctx, params) {
+      env <- baseenv()$environment(ctx$feature)
+      ctx$hold()
+    },
+    namespace_member = function(ctx, params) {
+      env <- getNamespace("base")[["environment"]](ctx$feature)
+      ctx$hold()
     }
   )
   expected_access <- c(
@@ -84,8 +134,14 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     subset2 = "\".pulse_lookup\"", name_in_string = "\".feature_vector\"",
     closure = "environment()", projection = "environment()",
     qualified = "base::environment()", rlang = "rlang::fn_env()",
-    by_name = "environment()", do_call = "do.call(\"environment\")",
-    frame = "parent.frame()", sys = "sys.function()", write = "$.notes"
+    by_name = "environment()", do_call = "\"environment\"",
+    frame = "parent.frame()", sys = "sys.function()", write = "$.notes",
+    triple_colon = "ledgr:::ledgr_history_context_view (not exported)",
+    get_from_namespace = "utils::getFromNamespace()", as_namespace = "asNamespace()",
+    get_anywhere = "utils::getAnywhere()", mget_call = "mget()", get0_call = "base::get0()",
+    lapply_string = "\"environment\"", sapply_string = "\"environment\"",
+    map_string = "\"environment\"", match_fun = "\"environment\"",
+    baseenv_member = "$environment", namespace_member = "[[\"environment\"]]"
   )
   for (name in names(refused)) {
     preflight <- ledgr_strategy_preflight(refused[[name]])
@@ -123,6 +179,38 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
   testthat::expect_identical(ledgr_strategy_preflight(history_strategy)$tier, "tier_1")
   testthat::expect_identical(ledgr_strategy_preflight(plain_strategy)$tier, "tier_1")
   testthat::expect_identical(ledgr_strategy_preflight(qualified_strategy)$tier, "tier_2")
+  # A strategy's own dot-prefixed data and strings naming pulse-local private
+  # fields stay Tier 1, as at BASE 6f019c6b (close review 44a F2); an
+  # exported ledgr helper stays Tier 1 when qualified.
+  own_data <- list(
+    own_list = function(ctx, params) {
+      fit <- list(.fitted = 1)
+      v <- fit$.fitted
+      ctx$hold()
+    },
+    own_frame = function(ctx, params) {
+      d <- data.frame(.pred = 1)
+      v <- d$.pred + d[[".pred"]]
+      ctx$hold()
+    },
+    model = function(ctx, params) {
+      m <- stats::lm(y ~ x, data.frame(x = 1:3, y = c(1, 3, 2)))
+      v <- m$.fitted
+      ctx$hold()
+    },
+    labels = function(ctx, params) {
+      msg <- ".notes"
+      lbl <- c(".positions", "x")
+      ctx$hold()
+    },
+    exported = function(ctx, params) {
+      close <- ledgr::ledgr_history_frame(ctx, bar = "close", lookback = 2L)
+      ctx$hold()
+    }
+  )
+  for (name in names(own_data)) {
+    testthat::expect_identical(ledgr_strategy_preflight(own_data[[name]])$tier, "tier_1", info = name)
+  }
 
   # The refusal precedes every run, sweep and walk-forward side effect.
   fixture <- ws42_history_fixture(strategy = refused$carrier)
@@ -147,6 +235,23 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     ),
     class = "ledgr_strategy_tier3"
   )
+  # Every refused body is refused by ledgr_run() before it reads anything:
+  # no run row or other store row appears.
+  for (name in names(refused)) {
+    testthat::expect_error(
+      ledgr_run(
+        ledgr_experiment(
+          fixture$snapshot, refused[[name]], universe = ledgr_universe_members("u"),
+          features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
+          valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
+          opening = ledgr_opening(cash = 1000)
+        ),
+        run_id = paste0("private-", gsub("_", "-", name))
+      ),
+      class = "ledgr_strategy_tier3",
+      info = name
+    )
+  }
   testthat::expect_identical(ws44_store_counts(fixture$snapshot), before)
 
   # The same experiment with a public history read runs, and its result is

@@ -113,7 +113,7 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
     "13" = list(owner = "LDG-3061", blocks = "LTB-0294",
                 contributing = list("LDG-3059" = "LTB-0293")),
     "14" = list(owner = "LDG-3070", pending = TRUE),
-    "15" = list(owner = "LDG-3068", blocks = c("LTB-0409", "LTB-0410")),
+    "15" = list(owner = "LDG-3068", blocks = c("LTB-0409", "LTB-0410", "LTB-0413")),
     "16" = list(owner = "LDG-3063", blocks = "LTB-0301",
                 contributing = list("LDG-3058" = "LTB-0290")),
     "17" = list(owner = "LDG-3069", pending = TRUE,
@@ -476,4 +476,141 @@ testthat::test_that("[LTB-0412] the test-only sweep feature matrix stays deleted
     length(grep("runtime_projection <- ledgr_sweep_test_precomputed(", sweep_tests, fixed = TRUE)),
     3L
   )
+})
+
+# Two-instrument fixture over `days` with DDD closes `ddd` (NA = no print)
+# and the given lifetime facts for DDD.
+ws44_lifetime_fixture <- function(days, ddd, lifetime, strategy, policy = ledgr_history_policy()) {
+  utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  k <- seq_along(days)
+  bars <- rbind(
+    data.frame(instrument_id = "AAA", ts_utc = utc(days), close = 10 + k),
+    data.frame(instrument_id = "DDD", ts_utc = utc(days[!is.na(ddd)]), close = ddd[!is.na(ddd)])
+  )
+  bars$open <- bars$high <- bars$low <- bars$close
+  bars$volume <- 100
+  calendar <- seq(min(days), max(days), by = "day")
+  open <- calendar %in% days
+  sessions <- data.frame(
+    session_date = calendar, status = ifelse(open, "open", "closed"),
+    session_open = ifelse(open, "14:30:00", NA), session_close = ifelse(open, "21:00:00", NA)
+  )
+  membership <- data.frame(
+    effective_from = utc(days[[1L]] - 1), knowledge_time = utc(days[[1L]] - 1), source = "ws44"
+  )
+  membership$members <- I(list(c("AAA", "DDD")))
+  facts <- ledgr_facts(
+    ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
+    ledgr_facts_membership_snapshots(
+      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+    ),
+    ledgr_facts_lifetime(lifetime)
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    bars, data.frame(instrument_id = c("AAA", "DDD")),
+    db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
+  )
+  exp <- ledgr_experiment(
+    snapshot, strategy, universe = ledgr_universe_members("u"),
+    features = ledgr_feature_map(sma = ledgr_ind_sma(2)),
+    valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000), history_policy = policy
+  )
+  list(snapshot = snapshot, exp = exp, axis = utc(days))
+}
+
+testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's knowledge at a pulse-instant fact, a relisting and the bounded reach", {
+  # Close review 44a F5. Twelve sessions. DDD closes 40, -, 44, 46, 50, 54,
+  # 60, 66, 70, 80, 90, 100. Lifetime facts: an inactive interval at
+  # sessions 3-4 learned at session 5's open; a delisting from session 7's
+  # open to session 10's open learned exactly at session 8's close (the
+  # pulse instant); a relisting from session 10 learned at session 11's open.
+  days <- as.Date("2021-01-04") + c(0:4, 7:11, 14:15)
+  session_open <- function(d) as.POSIXct(paste(d, "14:30:00"), tz = "UTC")
+  session_close <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  lifetime <- data.frame(
+    instrument_id = "DDD",
+    effective_from = c(session_open(days[[3L]]), session_open(days[[7L]]), session_open(days[[10L]])),
+    effective_to = c(session_open(days[[5L]]), session_open(days[[10L]]), as.POSIXct(NA, tz = "UTC")),
+    knowledge_time = c(session_open(days[[5L]]), session_close(days[[8L]]), session_open(days[[11L]])),
+    assertion = c("known_inactive", "known_inactive", "known_active"),
+    terminal_event = c(NA, "delisting", NA),
+    stringsAsFactors = FALSE
+  )
+  seen <- new.env()
+  spy <- function(ctx, params) {
+    seen[[ctx$ts_utc]] <- list(
+      sma = ledgr_history_frame(ctx, feature = "sma", instruments = "DDD"),
+      close = ledgr_history_frame(ctx, bar = "close", instruments = "DDD")
+    )
+    ctx$hold()
+  }
+  fixture <- ws44_lifetime_fixture(days, c(40, NA, 44, 46, 50, 54, 60, 66, 70, 80, 90, 100), lifetime, spy)
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  close(ledgr_run(fixture$exp, run_id = "vintage-terminal"))
+  at <- function(session) seen[[ws44_iso(fixture$axis[[session]])]]
+  na <- NA_real_
+
+  # Feature cells as computed at their own pulses (Cut 16 decision 29):
+  # session 2 averages a close carried from session 1 (40); sessions 3-4 were
+  # computed before their interval was known ((40 + 44) / 2, (44 + 46) / 2);
+  # session 5 knows it and spans it to session 2 ((40 + 50) / 2); session 7
+  # was computed before the delisting was known ((54 + 60) / 2); from
+  # session 8, where the knowledge instant equals the pulse instant, the
+  # delisting is known, so sessions 8-9 are not expected and the terminal
+  # barrier is sticky; the relisting restarts the window, so session 10 is
+  # warm-up and sessions 11-12 read (80 + 90) / 2 and (90 + 100) / 2.
+  sma <- ws44_cells(at(12L)$sma, "DDD")
+  testthat::expect_identical(sma$value, c(na, 40, 42, 45, 45, 52, 57, na, na, na, 85, 95))
+  testthat::expect_identical(sma$expected, c(rep(TRUE, 7L), FALSE, FALSE, TRUE, TRUE, TRUE))
+  testthat::expect_identical(
+    sma$missing_reason,
+    c("not_ready", rep("", 6L), "not_expected", "not_expected", "not_ready", "", "")
+  )
+  testthat::expect_identical(sma$barrier_reason, c(rep("", 7L), rep("terminal", 5L)))
+  testthat::expect_identical(sma$input_carried, c(FALSE, TRUE, rep(FALSE, 10L)))
+  for (session in seq_len(12L)) {
+    testthat::expect_identical(
+      sma[session, ], ws44_cells(at(session)$sma, "DDD")[session, ],
+      info = paste("own pulse", session)
+    )
+  }
+  # Bar history is restated with the cutoff's knowledge: the prints inside
+  # both intervals are inactive-interval prints.
+  close12 <- ws44_cells(at(12L)$close, "DDD")
+  testthat::expect_identical(close12$value, c(40, 40, 44, 46, 50, 54, 60, 66, 70, 80, 90, 100))
+  testthat::expect_identical(
+    close12$expected,
+    c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE)
+  )
+
+  # Bounded reach under each cell's own mask: no prints at sessions 5-6, an
+  # interval there learned at session 7, no input carry. At cutoff 7 a
+  # three-session read holds sessions 5 and 6 as computed at their pulses
+  # (expected, required input missing) and session 7's SMA (50 + 68) / 2 =
+  # 59, whose window is sessions 4 and 7: it used session 4, before the
+  # returned window.
+  short <- data.frame(
+    instrument_id = "DDD",
+    effective_from = session_open(days[[5L]]),
+    effective_to = session_open(days[[7L]]),
+    knowledge_time = session_open(days[[7L]]),
+    assertion = "known_inactive",
+    terminal_event = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  reach <- ws44_lifetime_fixture(
+    days[1:8], c(41, 43, 45, 50, NA, NA, 68, 76), short,
+    function(ctx, params) ctx$hold(), policy = ledgr_history_policy(price_carry = NULL)
+  )
+  on.exit(ledgr_snapshot_close(reach$snapshot), add = TRUE)
+  window <- ledgr_history_frame(
+    ledgr_pulse_snapshot(reach$exp, ts_utc = reach$axis[[7L]]),
+    feature = "sma", lookback = 3L, instruments = "DDD"
+  )
+  cells <- ws44_cells(window, "DDD")
+  testthat::expect_identical(cells$value, c(na, na, 59))
+  testthat::expect_identical(cells$expected, c(TRUE, TRUE, TRUE))
+  testthat::expect_identical(cells$missing_reason, c("required_input_missing", "required_input_missing", ""))
+  testthat::expect_true(ledgr_history_info(window)$used_before_window)
 })

@@ -28,7 +28,10 @@ readiness, warm-up or convergence and does not inspect values.
 Without \code{lookback} it uses the finite lookback the result was read with,
 so a strategy states its window once. A result read with the default
 \code{lookback = Inf} has no finite requirement to check, and the call refuses
-with \code{ledgr_invalid_history_request} unless \code{lookback} is supplied.
+with \code{ledgr_invalid_history_request} unless \code{lookback} is supplied. Like
+\code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}}, it refuses a result that no longer matches its
+recorded axis and instruments (for example after filtering its rows) with
+\code{ledgr_invalid_history_result}.
 }
 \seealso{
 \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}, \code{\link[=ledgr_history_info]{ledgr_history_info()}}

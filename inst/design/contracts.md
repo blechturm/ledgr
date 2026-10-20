@@ -777,12 +777,18 @@ Accepted change pending:
   units, and as-traded bars across a split would book a phantom loss.
   Corporate-action per-parent-unit terms use the same units:
   `gross_cash_per_parent_unit` and `recipient_quantity_per_parent_unit` are
-  per split-adjusted parent share. A cash entitlement posts the term times
-  the held split-adjusted quantity, and nothing converts at a split, so an
-  amount declared per as-traded share before a later split must be divided
-  by the cumulative split factor before it is supplied; supplied unconverted,
-  it is credited that factor too large. The source adapter owns the
-  conversion (Cut 16 LDG-3068). The
+  per split-adjusted parent share, and `recipient_quantity_per_parent_unit`
+  counts recipient shares in the recipient's own split-adjusted units. A cash
+  entitlement posts the cash term times the held split-adjusted quantity,
+  and nothing converts at a split, so a cash amount declared per as-traded
+  share before a later parent split must be divided by the parent's
+  cumulative split factor from the entitlement to the bars' adjustment
+  reference before it is supplied; supplied unconverted, it is credited that
+  factor too large. A recipient ratio declared in as-traded shares is
+  supplied as that ratio times the recipient's cumulative split factor over
+  the same span, divided by the parent's (the term currently feeds only the
+  reported estimated consideration, since quantity effects refuse). The
+  source adapter owns both conversions (Cut 16 LDG-3068). The
   basis appears in `ledgr_experiment_plan()`, in
   `ledgr_corporate_action_summary()` (`price_basis`, `price_basis_default`)
   and in `print()` of a result, labeled declared or assumed default. A dense
@@ -1636,18 +1642,40 @@ and `AAA` a held nonmember, each holding 5:
 - A strategy reads the pulse context only through its public fields, its
   public functions and exported ledgr helpers. Reaching private context
   internals is Tier 3 and fails before any run, sweep or walk-forward side
-  effect (Cut 16 LDG-3072): a `$`, `@`, `[[` or `[` extraction of a literal
-  dot-prefixed name on any object, a string constant naming a private context
-  field (`ledgr_pulse_context_private_fields()`), or closure, call or frame
-  environment introspection (`environment()`, `parent.env()`,
-  `parent.frame()`, the `sys.*()` frame functions, `as.environment()`,
-  `topenv()` and their `rlang` equivalents, called, passed by name or named
-  in `do.call()`). The private history carrier `ctx$.history` holds the whole
-  prepared substrate, and the closures behind public context functions hold
-  the context and the run's whole feature projection, so either path could
-  read values after the pulse. Dynamically constructed names, positional
-  extraction from the context and iteration over it remain outside what the
-  static preflight detects.
+  effect (Cut 16 LDG-3072):
+  - a `$`, `@`, `[[` or `[` extraction, on any object, of a literal private
+    context field name (`ledgr_pulse_context_private_fields()`: `.history`,
+    `.pulse_lookup`, `.feature_vector`, `.feature_table_current`, `.notes`,
+    `.positions`, `.safety_state`);
+  - a string constant naming a private field that holds prepared data beyond
+    the pulse (`.history`, `.pulse_lookup`, `.feature_vector`,
+    `.feature_table_current`);
+  - an environment-reaching function: closure, call, frame and namespace
+    access (`environment()`, `parent.env()`, `parent.frame()`, the `sys.*()`
+    frame functions, `as.environment()`, `topenv()`, `asNamespace()`,
+    `getNamespace()`, `loadNamespace()`, `getNamespaceInfo()`,
+    `getFromNamespace()`, `getAnywhere()`, `get0()`, `mget()`, `dynGet()`
+    and their `rlang` equivalents), whether called, qualified, passed by
+    name, named in a string (`lapply(x, "environment")`,
+    `match.fun("environment")`, `do.call("environment", ...)`) or extracted
+    as a member (`baseenv()$environment`);
+  - a reference to a non-exported ledgr object (`ledgr:::name`); only the
+    exported namespace is Tier 1-compatible.
+
+  A dot-prefixed name that is not a private context field (a model's
+  `$.fitted`, a data frame's `.pred` column) is ordinary data and keeps its
+  tier. The private history carrier `ctx$.history` holds the whole prepared
+  substrate, the closures behind public context functions hold the context
+  and the run's whole feature projection, and ledgr's internal namespace holds
+  the history accessors, so each path could read values after the pulse.
+  Static analysis still cannot see: names built at run time
+  (`paste0(".", "history")`, `sprintf()`, `ls()` results) used in
+  extraction or in `.subset2()`; positional extraction from the context
+  (`ctx[[15]]`, `as.list(ctx)[[15]]`) and iteration over it
+  (`lapply(ctx, ...)`, `eapply()`); a private field name other than the
+  four carriers held in a variable; environment access through a function
+  from a package outside base, utils, methods and rlang; and functions or
+  objects supplied from outside the strategy body.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
   strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top_n()`,

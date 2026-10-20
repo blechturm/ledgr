@@ -273,7 +273,10 @@ call_name <- function(x) {
   if (!is.call(x)) return(NA_character_)
   head <- x[[1L]]
   if (is.symbol(head)) return(as.character(head))
-  if (is.call(head) && length(head) == 3L &&
+  # A call whose head is itself a call result (`f(x)(y)`) has a call, not a
+  # symbol, in head[[1L]]; only `pkg::name` and `pkg:::name` heads name a
+  # function.
+  if (is.call(head) && length(head) == 3L && is.symbol(head[[1L]]) &&
       as.character(head[[1L]]) %in% c("::", ":::")) {
     return(as.character(head[[3L]]))
   }

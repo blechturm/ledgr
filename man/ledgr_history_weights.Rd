@@ -10,7 +10,9 @@ ledgr_history_weights(x, weights)
 \item{x}{A \code{ledgr_history} result.}
 
 \item{weights}{A finite numeric vector, or a one-column or one-row numeric
-matrix, with one weight per included instrument.}
+matrix, with one weight per included instrument. A missing or
+non-finite weight refuses with \code{ledgr_invalid_strategy_type}, as
+\code{\link[=ledgr_weights]{ledgr_weights()}} does.}
 }
 \value{
 A \code{ledgr_weights} object named by the included instrument IDs.

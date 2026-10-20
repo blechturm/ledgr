@@ -49,15 +49,20 @@ context mutation such as \code{attr(ctx, "secret") <- 1}.
 Strategies read the pulse context only through its public fields, its
 public functions and exported ledgr helpers such as
 \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}. Reaching private context internals is Tier 3:
-extracting a dot-prefixed member of any object (\code{ctx$.history},
-\code{x[[".notes"]]}), naming a private context field in a string, or
-introspecting closure or call environments with \code{environment()},
-\code{parent.env()}, \code{parent.frame()}, the \verb{sys.*()} frame functions,
-\code{as.environment()}, \code{topenv()} or their \code{rlang} equivalents. The private
-history carrier and the environments behind public context functions hold
-prepared data beyond the pulse, so such a read could see the future.
-Dynamically constructed names, positional extraction from \code{ctx} and
-iteration over it remain outside what static analysis detects.
+extracting a private context field from any object (\code{ctx$.history},
+\code{x[[".notes"]]}), naming a field that holds prepared data beyond the pulse
+in a string (\code{".history"}), reaching closure, call, frame or namespace
+environments (\code{environment()}, \code{parent.frame()}, the \verb{sys.*()} frame
+functions, \code{asNamespace()}, \code{getFromNamespace()}, \code{get0()}, \code{mget()} and
+their \code{rlang} equivalents, also when named in a string such as
+\code{lapply(x, "environment")} or extracted as \code{baseenv()$environment}), or
+referring to a non-exported ledgr object (\code{ledgr:::name}). The private
+history carrier, the environments behind public context functions and
+ledgr's internal namespace hold prepared data beyond the pulse, so such a
+read could see the future. Other dot-prefixed names, such as a model's
+\verb{$.fitted}, are ordinary data and keep their tier. Names built at run time,
+positional extraction from \code{ctx}, iteration over it and environment access
+through other packages remain outside what static analysis detects.
 
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
 seed contract for ordinary sequential runs, but they are not certified for

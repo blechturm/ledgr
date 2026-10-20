@@ -30,15 +30,20 @@
 #' Strategies read the pulse context only through its public fields, its
 #' public functions and exported ledgr helpers such as
 #' [ledgr_history_frame()]. Reaching private context internals is Tier 3:
-#' extracting a dot-prefixed member of any object (`ctx$.history`,
-#' `x[[".notes"]]`), naming a private context field in a string, or
-#' introspecting closure or call environments with `environment()`,
-#' `parent.env()`, `parent.frame()`, the `sys.*()` frame functions,
-#' `as.environment()`, `topenv()` or their `rlang` equivalents. The private
-#' history carrier and the environments behind public context functions hold
-#' prepared data beyond the pulse, so such a read could see the future.
-#' Dynamically constructed names, positional extraction from `ctx` and
-#' iteration over it remain outside what static analysis detects.
+#' extracting a private context field from any object (`ctx$.history`,
+#' `x[[".notes"]]`), naming a field that holds prepared data beyond the pulse
+#' in a string (`".history"`), reaching closure, call, frame or namespace
+#' environments (`environment()`, `parent.frame()`, the `sys.*()` frame
+#' functions, `asNamespace()`, `getFromNamespace()`, `get0()`, `mget()` and
+#' their `rlang` equivalents, also when named in a string such as
+#' `lapply(x, "environment")` or extracted as `baseenv()$environment`), or
+#' referring to a non-exported ledgr object (`ledgr:::name`). The private
+#' history carrier, the environments behind public context functions and
+#' ledgr's internal namespace hold prepared data beyond the pulse, so such a
+#' read could see the future. Other dot-prefixed names, such as a model's
+#' `$.fitted`, are ordinary data and keep their tier. Names built at run time,
+#' positional extraction from `ctx`, iteration over it and environment access
+#' through other packages remain outside what static analysis detects.
 #'
 #' Ambient strategy RNG calls such as `runif(1)` are Tier 2 under the execution
 #' seed contract for ordinary sequential runs, but they are not certified for
@@ -379,58 +384,82 @@ ledgr_pulse_context_private_fields <- function() {
   )
 }
 
-# Functions that return a closure, call or frame environment. Public context
-# functions are closures over prepared state that extends past the pulse
-# (for example the feature accessor's projection and the context itself), so
-# a strategy may not introspect them (LDG-3072).
+# The private fields that hold prepared data beyond the pulse: the history
+# carrier and the lookup closures that reach it and the run's feature
+# projection. A string naming one is refused wherever it appears; the other
+# private fields (`.notes`, `.positions`, `.safety_state`) hold pulse-local
+# state, so only their literal extraction is refused.
+ledgr_pulse_context_future_carriers <- function() {
+  c(".feature_table_current", ".feature_vector", ".history", ".pulse_lookup")
+}
+
+# Functions that return a closure, call, frame or namespace environment, or
+# read a binding out of one. Public context functions are closures over
+# prepared state that extends past the pulse (for example the feature
+# accessor's projection and the context itself), and ledgr's namespace holds
+# the private history accessors, so a strategy may not reach either
+# (LDG-3072). `base` covers base, utils and methods; `rlang` its equivalents.
 ledgr_strategy_environment_functions <- function() {
   list(
     base = c(
       "environment", "environment<-", "parent.env", "parent.env<-",
       "parent.frame", "sys.function", "sys.frame", "sys.frames", "sys.call",
       "sys.calls", "sys.parent", "sys.parents", "sys.on.exit", "sys.status",
-      "as.environment", "topenv"
+      "as.environment", "topenv", "asNamespace", "getNamespace",
+      ".getNamespace", "loadNamespace", "getNamespaceInfo", "getFromNamespace",
+      "get0", "mget", "dynGet", "getAnywhere"
     ),
     rlang = c(
       "fn_env", "get_env", "env_parent", "env_parents", "env_tail",
       "caller_env", "caller_fn", "current_env", "current_fn",
-      "as_environment", "env_get", "env_get_list"
+      "as_environment", "env_get", "env_get_list", "ns_env", "pkg_env",
+      "ns_imports_env"
     )
   )
 }
 
-# Static reads of private context internals: `$`, `@`, `[[` or `[` with a
-# literal dot-prefixed name on any object (a context is easily aliased), a
-# string constant naming a private context field, and environment
-# introspection, called, passed by name or named in `do.call()`.
+# Static reads of private context internals:
+# - a `$`, `@`, `[[` or `[` extraction whose literal name is a private context
+#   field (on any object, since a context is easily aliased) or an
+#   environment-reaching function (`baseenv()$environment`);
+# - a string constant naming a future-bearing private field or an
+#   environment-reaching function (`getElement(ctx, ".history")`,
+#   `lapply(x, "environment")`, `match.fun("environment")`,
+#   `do.call("environment", ...)`);
+# - an environment-reaching function called, qualified or passed by name;
+# - a reference to a non-exported ledgr object (`ledgr:::name`): only ledgr's
+#   exported namespace is Tier 1-compatible, and the internal namespace holds
+#   the private history accessors.
+# A dot-prefixed name that is not a private context field (`fit$.fitted`,
+# `d[[".pred"]]`) is ordinary data and stays allowed.
 ledgr_strategy_private_context_access <- function(expr,
                                                   symbols,
                                                   qualified,
                                                   string_constants) {
   out <- character()
-  dot_name <- function(x) {
-    name <- if (is.symbol(x)) as.character(x) else if (is.character(x) && length(x) == 1L) x else NA_character_
-    if (!is.na(name) && nchar(name) >= 2L && startsWith(name, ".")) name else NA_character_
+  env_fns <- ledgr_strategy_environment_functions()
+  reaching <- c(env_fns$base, env_fns$rlang)
+  private <- ledgr_pulse_context_private_fields()
+  blocked <- c(private, reaching)
+  literal_name <- function(x) {
+    if (is.symbol(x)) return(as.character(x))
+    if (is.character(x) && length(x) == 1L && !is.na(x)) return(x)
+    NA_character_
   }
   visit <- function(node) {
     if (is.call(node) && length(node) >= 3L) {
       head <- ledgr_strategy_call_head_name(node)
       if (head %in% c("$", "@", "$<-", "@<-")) {
-        name <- dot_name(node[[3L]])
-        if (!is.na(name)) out <<- c(out, paste0(head, name))
+        name <- literal_name(node[[3L]])
+        if (!is.na(name) && name %in% blocked) out <<- c(out, paste0(sub("<-$", "", head), name))
       } else if (head %in% c("[[", "[", "[[<-", "[<-")) {
         for (i in seq.int(3L, length(node))) {
-          name <- if (identical(node[[i]], quote(expr = ))) NA_character_ else dot_name(node[[i]])
-          if (!is.na(name) && is.character(node[[i]])) {
-            out <<- c(out, sprintf("%s\"%s\"]%s", sub("<-$", "", head), name, if (startsWith(head, "[[")) "]" else ""))
+          if (identical(node[[i]], quote(expr = )) || !is.character(node[[i]])) next
+          name <- literal_name(node[[i]])
+          if (!is.na(name) && name %in% blocked) {
+            open <- sub("<-$", "", head)
+            out <<- c(out, sprintf("%s\"%s\"%s", open, name, if (identical(open, "[[")) "]]" else "]"))
           }
-        }
-      }
-      if (head %in% c("do.call", "base::do.call")) {
-        target <- ledgr_strategy_do_call_target_name(node[[2L]])
-        env_fns <- ledgr_strategy_environment_functions()
-        if (!is.null(target) && target$name %in% c(env_fns$base, env_fns$rlang)) {
-          out <<- c(out, sprintf("do.call(%s)", target$label))
         }
       }
     }
@@ -442,14 +471,23 @@ ledgr_strategy_private_context_access <- function(expr,
     invisible(NULL)
   }
   visit(expr)
-  env_fns <- ledgr_strategy_environment_functions()
   out <- c(out, sprintf("%s()", intersect(symbols, env_fns$base)))
   if (nrow(qualified) > 0L) {
-    hit <- (qualified$package == "base" & qualified$name %in% env_fns$base) |
+    hit <- (qualified$package %in% c("base", "utils", "methods") & qualified$name %in% env_fns$base) |
       (qualified$package == "rlang" & qualified$name %in% env_fns$rlang)
     out <- c(out, sprintf("%s%s%s()", qualified$package[hit], qualified$operator[hit], qualified$name[hit]))
+    own <- qualified$package == "ledgr"
+    internal <- own & !vapply(
+      qualified$name,
+      function(name) ledgr_strategy_package_exports("ledgr", name),
+      logical(1)
+    )
+    out <- c(out, sprintf("%s%s%s (not exported)", qualified$package[internal], qualified$operator[internal], qualified$name[internal]))
   }
-  out <- c(out, sprintf("\"%s\"", intersect(string_constants, ledgr_pulse_context_private_fields())))
+  out <- c(out, sprintf(
+    "\"%s\"",
+    intersect(string_constants, c(ledgr_pulse_context_future_carriers(), reaching))
+  ))
   sort(unique(out), method = "radix")
 }
 
