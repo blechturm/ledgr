@@ -164,7 +164,7 @@ ledgr_history_feature_runs <- function(available, breaks = NULL) {
 
 # Treated inputs for one instrument over the prefix 1..prefix_end, with the
 # expected-session mask and terminal barrier knowable at `cutoff`. Price
-# fields are carried by the shared primitive; volume is never carried.
+# fields are carried by the shared calculation; volume is never carried.
 ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, cutoff) {
   prefix <- seq_len(prefix_end)
   expected <- as.logical(ledgr_history_substrate_expected_at(
@@ -192,10 +192,11 @@ ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, 
       carried[[field]] <- rep(FALSE, prefix_end)
       next
     }
-    treatment <- ledgr_history_input_carry(
+    # Only the treated value and the input-carried flag feed a calculation;
+    # carry evidence is never manifested here (audit F02).
+    treatment <- ledgr_history_input_carry_calculation(
       value = value,
       expected = expected,
-      axis = axis,
       max_sessions = policy$price_carry,
       carry_allowed = !is.null(policy$price_carry),
       terminal_barrier = terminal

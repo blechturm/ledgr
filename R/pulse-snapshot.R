@@ -465,6 +465,8 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
     feature_engine_version = ledgr_feature_engine_version(TRUE),
     alias_index = NULL
   )
+  # Released at its last read; the projection holds every value (audit F01).
+  rm(payload)
   substrate <- ledgr_history_substrate_bind_features(substrate, projection)
   exp_payload <- ledgr_sweep_exp_payload(exp)
   exp_payload$strategy <- ledgr_pulse_inspection_capture

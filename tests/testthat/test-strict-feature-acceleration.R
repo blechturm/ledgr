@@ -181,6 +181,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     "ledgr_history_required_field_admission",
     "ledgr_history_feature_inputs",
     "ledgr_history_input_carry",
+    "ledgr_history_input_carry_calculation",
     "ledgr_history_output_carry",
     "ledgr_history_feature_ranges",
     "ledgr_history_feature_runs",
@@ -192,8 +193,10 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     "ledgr_strict_sma_series",
     "ledgr_active_feature_fingerprint"
   )
+  # Whole names: the calculation's name contains the manifestation's
+  # (close review 47 F2).
   for (helper in helpers) {
-    testthat::expect_match(source, helper, fixed = TRUE)
+    testthat::expect_match(source, paste0("\\b", helper, "\\b"), perl = TRUE, info = helper)
   }
   under_covr <- requireNamespace("covr", quietly = TRUE) && covr::in_covr()
   if (!under_covr) {
@@ -203,7 +206,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
     )
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(TRUE),
-      "4b2bb8e6989d77ef7fdd4fd2c0738340e97786724826951af1ddb47cb2a005a9"
+      "0072232f5cf0eb40b15a2d93e83551573ffcc9f388226527fabce16f50e2d508"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),

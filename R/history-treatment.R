@@ -8,18 +8,21 @@ ledgr_history_evidence_fields <- function() {
   )
 }
 
-ledgr_history_input_carry <- function(value,
-                                      expected,
-                                      axis,
-                                      max_sessions = NULL,
-                                      carry_allowed = TRUE,
-                                      terminal_barrier = rep(FALSE, length(value))) {
+# The canonical carry rule (C-1) in two parts: this calculation, and the
+# evidence ledgr_history_input_carry() manifests from it. Feature inputs read
+# only `value` and `input_carried` (audit F02); output carry takes the full
+# manifestation, so both consume one calculation. Public history reads use
+# the matrix positions (C-2/C-3), not this rule.
+ledgr_history_input_carry_calculation <- function(value,
+                                                  expected,
+                                                  max_sessions = NULL,
+                                                  carry_allowed = TRUE,
+                                                  terminal_barrier = rep(FALSE, length(value))) {
   value <- as.numeric(value)
   expected <- as.logical(expected)
-  axis <- as.POSIXct(axis, tz = "UTC")
   n <- length(value)
   terminal_barrier <- as.logical(terminal_barrier)
-  if (length(expected) != n || length(axis) != n || anyNA(expected) ||
+  if (length(expected) != n || anyNA(expected) ||
       length(terminal_barrier) != n || anyNA(terminal_barrier)) {
     rlang::abort(
       "History carry inputs must align on one complete expected-session axis.",
@@ -59,6 +62,49 @@ ledgr_history_input_carry <- function(value,
   treated <- value
   if (any(carried)) treated[carried] <- value[source[carried]]
   treated[!expected] <- NA_real_
+  list(
+    value = treated,
+    input_carried = carried,
+    observed = observed,
+    source = source,
+    last_barrier = last_barrier,
+    age = age,
+    can_carry = can_carry
+  )
+}
+
+ledgr_history_input_carry <- function(value,
+                                      expected,
+                                      axis,
+                                      max_sessions = NULL,
+                                      carry_allowed = TRUE,
+                                      terminal_barrier = rep(FALSE, length(value))) {
+  value <- as.numeric(value)
+  expected <- as.logical(expected)
+  axis <- as.POSIXct(axis, tz = "UTC")
+  n <- length(value)
+  terminal_barrier <- as.logical(terminal_barrier)
+  if (length(expected) != n || length(axis) != n || anyNA(expected) ||
+      length(terminal_barrier) != n || anyNA(terminal_barrier)) {
+    rlang::abort(
+      "History carry inputs must align on one complete expected-session axis.",
+      class = c("ledgr_invalid_history_treatment", "ledgr_invalid_config")
+    )
+  }
+  calculation <- ledgr_history_input_carry_calculation(
+    value = value,
+    expected = expected,
+    max_sessions = max_sessions,
+    carry_allowed = carry_allowed,
+    terminal_barrier = terminal_barrier
+  )
+  treated <- calculation$value
+  carried <- calculation$input_carried
+  observed <- calculation$observed
+  source <- calculation$source
+  last_barrier <- calculation$last_barrier
+  age <- calculation$age
+  can_carry <- calculation$can_carry
   source_out <- source
   source_out[observed & expected] <- seq_len(n)[observed & expected]
   source_out[!observed & !carried] <- NA_integer_
@@ -191,12 +237,20 @@ ledgr_history_input_carry_matrix <- function(value,
 # admissible observation since the last barrier and `last_barrier` the latest
 # barrier column, both as prefix column indices. Both depend only on columns at
 # or before their own, so a later slice of a whole-prefix answer is exact.
+# `last_barrier` depends only on the masks, never on a field's observations,
+# so the history-read memo keeps one per mask (audit F04).
 ledgr_history_carry_positions <- function(observed, expected, terminal_barrier) {
+  list(
+    source = ledgr_history_carry_source(observed, expected, terminal_barrier),
+    last_barrier = ledgr_history_carry_last_barrier(expected, terminal_barrier)
+  )
+}
+
+ledgr_history_carry_source <- function(observed, expected, terminal_barrier) {
   n_instruments <- nrow(observed)
   n_observations <- ncol(observed)
   if (n_instruments == 0L || n_observations == 0L) {
-    empty <- matrix(integer(), nrow = n_instruments, ncol = n_observations)
-    return(list(source = empty, last_barrier = empty))
+    return(matrix(integer(), nrow = n_instruments, ncol = n_observations))
   }
   barrier <- !expected | terminal_barrier
   column <- matrix(
@@ -215,7 +269,21 @@ ledgr_history_carry_positions <- function(observed, expected, terminal_barrier) 
     byrow = TRUE
   )
   source[source == 0L] <- NA_integer_
+  source
+}
 
+ledgr_history_carry_last_barrier <- function(expected, terminal_barrier) {
+  n_instruments <- nrow(expected)
+  n_observations <- ncol(expected)
+  if (n_instruments == 0L || n_observations == 0L) {
+    return(matrix(integer(), nrow = n_instruments, ncol = n_observations))
+  }
+  barrier <- !expected | terminal_barrier
+  column <- matrix(
+    rep(seq_len(n_observations), each = n_instruments),
+    nrow = n_instruments,
+    ncol = n_observations
+  )
   barrier_seed <- ifelse(barrier, column, NA_integer_)
   reset <- is.na(barrier_seed[, 1L])
   barrier_seed[reset, 1L] <- 0L
@@ -226,7 +294,7 @@ ledgr_history_carry_positions <- function(observed, expected, terminal_barrier) 
     byrow = TRUE
   )
   last_barrier[last_barrier == 0L] <- NA_integer_
-  list(source = source, last_barrier = last_barrier)
+  last_barrier
 }
 
 ledgr_history_carry_source_value <- function(value, source) {

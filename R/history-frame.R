@@ -86,31 +86,55 @@ ledgr_history_prepare_masks <- function(substrate, knowledge, instrument_idx, bl
   list(expected = expected, terminal_first = terminal_first)
 }
 
-# Carry positions for one field over the whole prepared axis, through the
-# treatment primitive, in bounded instrument blocks.
+# Carry sources for one field over the whole prepared axis, through the
+# treatment primitive, in bounded instrument blocks. The last barrier is a
+# property of the masks, not of the field: it is kept once per mask
+# (ledgr_history_mask_barrier(); audit F04).
 ledgr_history_prepare_positions <- function(substrate, masks, instrument_idx, field,
                                             block = 128L) {
   n_axis <- length(substrate$axis)
   n_rows <- length(instrument_idx)
   source <- matrix(NA_integer_, nrow = n_rows, ncol = n_axis)
-  last_barrier <- matrix(NA_integer_, nrow = n_rows, ncol = n_axis)
   if (n_rows == 0L || n_axis == 0L) {
-    return(list(source = source, last_barrier = last_barrier))
+    return(list(source = source))
   }
   all_columns <- seq_len(n_axis)
   for (start in seq.int(1L, n_rows, by = block)) {
     rows <- seq.int(start, min(n_rows, start + block - 1L))
     terminal <- outer(masks$terminal_first[rows], all_columns, "<=")
     dim(terminal) <- c(length(rows), n_axis)
-    positions <- ledgr_history_carry_positions(
+    source[rows, ] <- ledgr_history_carry_source(
       is.finite(substrate$bars[[field]][instrument_idx[rows], , drop = FALSE]),
       masks$expected[rows, , drop = FALSE],
       terminal
     )
-    source[rows, ] <- positions$source
-    last_barrier[rows, ] <- positions$last_barrier
   }
-  list(source = source, last_barrier = last_barrier)
+  list(source = source)
+}
+
+# The terminal last-barrier plane of one mask, shared by every bar field. It
+# is added to the mask's memo entry on the first bar-field read, so a
+# feature-only reader never builds it.
+ledgr_history_mask_barrier <- function(substrate, key, masks, block = 128L) {
+  if (!is.null(masks$last_barrier)) return(masks$last_barrier)
+  n_rows <- nrow(masks$expected)
+  n_axis <- ncol(masks$expected)
+  last_barrier <- matrix(NA_integer_, nrow = n_rows, ncol = n_axis)
+  if (n_rows > 0L && n_axis > 0L) {
+    all_columns <- seq_len(n_axis)
+    for (start in seq.int(1L, n_rows, by = block)) {
+      rows <- seq.int(start, min(n_rows, start + block - 1L))
+      terminal <- outer(masks$terminal_first[rows], all_columns, "<=")
+      dim(terminal) <- c(length(rows), n_axis)
+      last_barrier[rows, ] <- ledgr_history_carry_last_barrier(
+        masks$expected[rows, , drop = FALSE],
+        terminal
+      )
+    }
+  }
+  masks$last_barrier <- last_barrier
+  assign(key, masks, envir = ledgr_history_memo(substrate))
+  last_barrier
 }
 
 # Cutoff-invariant masks and per-field carry positions for every instrument,
@@ -147,8 +171,12 @@ ledgr_history_base_positions <- function(substrate, field) {
 # Epoch j of an instrument holds every fact known before its next late
 # knowledge instant. Whole-second clocks put half a second strictly between
 # two instants.
+ledgr_history_overlay_key <- function(instrument, epoch) {
+  paste0("overlay_", instrument, "_", epoch)
+}
+
 ledgr_history_overlay_masks <- function(substrate, instrument, epoch, epochs) {
-  key <- paste0("overlay_", instrument, "_", epoch)
+  key <- ledgr_history_overlay_key(instrument, epoch)
   ledgr_history_memo_value(ledgr_history_memo(substrate), key, function() {
     knowledge <- as.POSIXct(epochs[[epoch + 1L]] - 0.5, tz = "UTC")
     ledgr_history_prepare_masks(substrate, knowledge, instrument)
@@ -156,7 +184,7 @@ ledgr_history_overlay_masks <- function(substrate, instrument, epoch, epochs) {
 }
 
 ledgr_history_overlay_positions <- function(substrate, instrument, epoch, epochs, field) {
-  key <- paste0("overlay_", instrument, "_", epoch, "_", field)
+  key <- paste0(ledgr_history_overlay_key(instrument, epoch), "_", field)
   ledgr_history_memo_value(ledgr_history_memo(substrate), key, function() {
     ledgr_history_prepare_positions(
       substrate,
@@ -176,9 +204,12 @@ ledgr_history_cutoff_planes <- function(substrate, field, rows, columns, cutoff_
   terminal_first <- masks$terminal_first[rows]
   last_barrier <- source <- NULL
   if (!is.null(field)) {
-    positions <- ledgr_history_base_positions(substrate, field)
-    last_barrier <- positions$last_barrier[rows, columns, drop = FALSE]
-    source <- positions$source[rows, columns, drop = FALSE]
+    last_barrier <- ledgr_history_mask_barrier(
+      substrate, "base_masks", masks
+    )[rows, columns, drop = FALSE]
+    source <- ledgr_history_base_positions(substrate, field)$source[
+      rows, columns, drop = FALSE
+    ]
   }
   for (r in which(lengths(late[rows]) > 0L)) {
     instrument <- rows[[r]]
@@ -189,9 +220,12 @@ ledgr_history_cutoff_planes <- function(substrate, field, rows, columns, cutoff_
     expected[r, ] <- overlay$expected[1L, columns]
     terminal_first[[r]] <- overlay$terminal_first[[1L]]
     if (!is.null(field)) {
-      overlay <- ledgr_history_overlay_positions(substrate, instrument, epoch, epochs, field)
-      last_barrier[r, ] <- overlay$last_barrier[1L, columns]
-      source[r, ] <- overlay$source[1L, columns]
+      last_barrier[r, ] <- ledgr_history_mask_barrier(
+        substrate, ledgr_history_overlay_key(instrument, epoch), overlay
+      )[1L, columns]
+      source[r, ] <- ledgr_history_overlay_positions(
+        substrate, instrument, epoch, epochs, field
+      )$source[1L, columns]
     }
   }
   terminal <- outer(terminal_first, columns, "<=")
