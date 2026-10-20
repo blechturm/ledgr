@@ -82,6 +82,13 @@ ledgr_availability_prepared_membership_plan <- function(data, universe_id, key) 
   iv_member <- !is.na(interval$member) & as.logical(interval$member)
   iv_idx <- match(as.character(interval$instrument_id), key)
   n_interval <- nrow(interval)
+  # The cursor and its attached resolver read only these columns; clocks,
+  # states and provenance are compiled into the vectors above, so the plan
+  # every run, sweep and staged worker holds keeps no other fact column
+  # (audit F03).
+  set_index$rows <- set_index$rows[c("instrument_id", "fact_id")]
+  headers <- headers["set_id"]
+  interval <- interval["fact_id"]
 
   list(
     key = key,

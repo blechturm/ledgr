@@ -325,6 +325,9 @@ ledgr_sweep_impl <- function(exp,
       feature_engine_version = ledgr_feature_engine_version(availability_active),
       alias_index = NULL
     )
+    # The projection holds every value the sweep reads; release the payload
+    # at its last read so the two are never both kept (audit F01).
+    rm(payload)
   } else if (availability_active) {
     # An availability payload is reused only on the exact causal axis, cutoff,
     # calculation start and policy this sweep prepares; candidates keep their

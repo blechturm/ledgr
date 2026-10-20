@@ -65,6 +65,10 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
       ),
       inputs = helper(ledgr_history_feature_inputs, "ledgr_history_feature_inputs"),
       input_carry = helper(ledgr_history_input_carry, "ledgr_history_input_carry"),
+      input_carry_calculation = helper(
+        ledgr_history_input_carry_calculation,
+        "ledgr_history_input_carry_calculation"
+      ),
       output_carry = helper(ledgr_history_output_carry, "ledgr_history_output_carry"),
       ranges = helper(ledgr_history_feature_ranges, "ledgr_history_feature_ranges"),
       runs = helper(ledgr_history_feature_runs, "ledgr_history_feature_runs"),

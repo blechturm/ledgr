@@ -23,7 +23,7 @@
 "R/public-api.R",19,"ledgr_open_duckdb_with_retry","direct_connect","dbConnect",TRUE,"persistent_ledgr_store","none"
 "R/public-api.R",59,"ledgr_join_open_duckdb","direct_connect","dbConnect",TRUE,"persistent_ledgr_store","none"
 "R/pulse-snapshot.R",308,"ledgr_open_dedicated_snapshot","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
-"R/pulse-snapshot.R",499,"ledgr_pulse_inspection","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
+"R/pulse-snapshot.R",501,"ledgr_pulse_inspection","cached_or_handle_connection","get_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/run-store.R",1061,"ledgr_run_open","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/run-store.R",1121,"ledgr_run_open","cached_or_handle_connection","ledgr_snapshot_connection",TRUE,"persistent_ledgr_store","ledgr_snapshot_ensure_verified;ledgr_store_assert_current;ledgr_store_open"
 "R/run-store.R",1182,"ledgr_run_label","run_store_opener","ledgr_run_store_open",TRUE,"persistent_ledgr_store","ledgr_store_assert_current;ledgr_store_open"
