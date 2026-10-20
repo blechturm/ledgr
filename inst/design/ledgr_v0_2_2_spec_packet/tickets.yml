@@ -657,12 +657,12 @@ workstreams:
   - id: 46
     name: "History representation simplification"
     cut: 16
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 43
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 46", verdict: null, reason: "One claim: the history system holds each fact once, compiles membership segments on one per-instrument path and lists every remaining representation, fast path and execution-mode branch, with results byte-identical to the accepted Workstream 43 tree and memory measured before Workstream 44 proves it."}
+    review: {mode: "Type 1", point: "close of workstream 46", verdict: "CHANGES_REQUIRED", artifact: "close_review_46.md", result: "Close review 8/16; re-reviews 3/10 and 2/6; correction 3 verified by the coordinator under maintainer authorization.", reason: "One claim: the history system holds each fact once, compiles membership segments on one per-instrument path and lists every remaining representation, fast path and execution-mode branch, with results byte-identical to the accepted Workstream 43 tree and memory measured before Workstream 44 proves it."}
     integration_evidence: ["Commits 69543182 and 72f496e7 (LDG-3074), 5ee67009 and a86f8573 (LDG-3075, LDG-3076 under Cut 16 decision 22), 4a9b93cf (LDG-3077), 260d3eaf (Correction 1 for close_review_46.md under decisions 23 and 24), b936675d and adcc9de8 (Correction 2 for close_review_46_rereview_1.md); history_simplification_closeout.md records per-ticket evidence, the byte-identity results against b9d098c8 (86 of 89 after Correction 1, the three differences being decision 24 refusals), the fixture ladder, H1 sizes, timings, the seven-shape walk, the mutation table, test changes with reasons and routed items."]
-    accepted: null
+    accepted: "2026-10-20 by the maintainer after the quiet-host fast profile passed at a 104.72-second median (82d43f81)."
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
