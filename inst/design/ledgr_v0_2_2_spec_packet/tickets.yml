@@ -2299,10 +2299,10 @@ tickets:
   - id: "LDG-3080"
     title: "Report the real-data fact census"
     workstream: 44
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "Split out of LDG-3070 so it can run at once (Cut 16 decision 25): on the Sharadar research lake, report aggregate-only counts of instruments with late-known lifetime facts, with more than one lifetime or trading-status row, the per-instrument distribution of facts and lagged facts by family, and the lifetime and terminal segment census. These size audit finding F05 (generic fact compilation can do far more work than the segment limit suggests) and WS43 close review F5 (feature recomputation per lagged fact). No private rows or paths; no second manifest. LDG-3070 consumes this census instead of producing it."
     acceptance: ["aggregate counts and distributions by family are recorded for the 1998-2026 lake with the snapshot and adapter identities they were computed from", "the evidence contains no vendor row, credential or private path", "the result states whether F05 or the lagged-fact feature cost is material at real-data density, with the threshold used"]
-    evidence: []
+    evidence: ["ledgr-research branch claude/history-fact-census-v0.2.2 at bc25127 and its data commit, experiments/history-wave-fact-census/: aggregate census on the adapter v003 1998-2026 S&P 500 projection rebuilt under schema 122 (1,166 instruments, 7,213 sessions, 5,481,906 bars; ledgr 2ef0f2da). Lifetime facts per instrument max 2 (78 instruments with two rows), terminal 1, membership set rows max 580, no trading-status or corporate-action facts, no late-known facts, every segment guard passes (highest share 0.25). F05 not material: fact compilation 0.57 s, 3.9 percent of preparation. Lagged-fact feature cost not material: zero lagged ranges, multiplier 1.000. Caveat: adapter v003 sets knowledge time equal to effective time for every family, so the lagged-fact result holds for v003 only; an adapter that maps real knowledge times must be re-censused."]
