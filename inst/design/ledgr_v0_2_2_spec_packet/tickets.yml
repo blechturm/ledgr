@@ -666,12 +666,12 @@ workstreams:
   - id: 47
     name: "Proof-baseline trims"
     cut: 16
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 46
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 47", verdict: null, reason: "One claim: the four wastes the external architecture audit measured (F01-F04) are removed with results byte-identical to the accepted Workstream 46 tree, except the recorded availability feature-engine identity change from F02, and their memory and time effects are measured under the recorded timing method."}
+    review: {mode: "Type 1", point: "close of workstream 47", verdict: "CHANGES_REQUIRED", artifact: "close_review_47.md", result: "Close review 3/8 (gc scope, a detector gap, an overstated peak claim; no product defect); correction verified by the coordinator under maintainer authorization.", reason: "One claim: the four wastes the external architecture audit measured (F01-F04) are removed with results byte-identical to the accepted Workstream 46 tree, except the recorded availability feature-engine identity change from F02, and their memory and time effects are measured under the recorded timing method."}
     integration_evidence: ["Commit f367ed80 implements LDG-3078 (F01, F03, F04) and LDG-3079 (F02); proof_baseline_trims_closeout.md records per-ticket evidence, byte identity against 2ef0f2da (108 of 113 raw, 113 of 113 with the availability feature-engine digest substituted; H1 audit parity 7 of 7), H1 sizes and paired timings, two-worker sweep peak memory before and after Cut 16 decision (26) (implemented in the commit after fcadf1ae), the seven-shape walk, the mutation table, test changes with reasons and routed items."]
-    accepted: null
+    accepted: "2026-10-20 by the maintainer after the quiet-host fast profile passed at a 106.10-second median (971164bb)."
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
