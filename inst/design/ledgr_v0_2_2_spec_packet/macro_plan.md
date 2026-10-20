@@ -920,6 +920,19 @@ semantic branch, bound by Cut 16 decision 16), and the WS40 Date-boundary
 branches in experiment, window and precompute construction. Consolidation
 should start from the LDG-3074 representation map and branch census.
 
+**collapse primitives (maintainer, 2026-10-20).** When consolidation merges
+the two carry implementations (C-1 vector, C-2 matrix; audit
+`cut16_architecture_audit.md`), use the collapse path, including
+`na_locf(set = TRUE)` where an in-place fill avoids a copy. Then check the
+hot paths it touches for collapse primitives ledgr does not use yet
+(`fmatch()`/`%iin%` for base `match()`/`%in%`, `whichv()`/`whichNA()`,
+`ss(check = FALSE)`, `setop()`), following the collapse developer guidance
+(`fastverse.org/collapse/articles/developing_with_collapse.html`). Adopt one
+only where a profile shows the call in a hot path and the result stays
+byte-identical under `ledgr_with_collapse_deterministic()`; no blanket swap.
+History frames already use the article's manual list-to-data-frame
+construction, so `qDF()` brings no speed gain there.
+
 <a id="deferred-history-simplification"></a>
 
 ### Deferred history simplification
