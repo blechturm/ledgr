@@ -131,11 +131,15 @@ effective set. Use interval assertions instead when your source supplies
 individual membership changes rather than complete lists.
 
 Under `knowledge = "evidenced"`, a membership row without a knowledge
-time is accepted and kept in the sealed evidence, but a run, sweep or
-inspection on that snapshot refuses with `ledgr_fact_knowledge_missing`
-until the row has one. Membership evidence may become knowable after it
-took effect; `"assume_effective"` deliberately removes that distinction
-by using the effective time as the knowledge time.
+time is accepted and kept in the sealed evidence, and browsing functions
+such as `ledgr_facts_history()`, `ledgr_facts_resolve()` and
+`ledgr_experiment_plan()` still read it. A run, sweep, feature
+precompute, walk-forward session or experiment pulse inspection that
+prepares availability from that snapshot refuses with
+`ledgr_fact_knowledge_missing` until the row has one. Membership
+evidence may become knowable after it took effect; `"assume_effective"`
+deliberately removes that distinction by using the effective time as the
+knowledge time.
 
 This bundle keeps all five instruments in the set. To see membership
 changes alter a result, continue with

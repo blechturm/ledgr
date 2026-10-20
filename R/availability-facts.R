@@ -1255,7 +1255,10 @@ ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
 #'
 #' Produces a source-aware dry-run report. Accepted rows, retained runtime
 #' conflicts, rejected rows, quarantine candidates, and audit-only facts stay
-#' distinct. This function never creates or modifies a snapshot.
+#' distinct. This function never creates or modifies a snapshot. A membership,
+#' trading-status or lifetime row reported `audit_only` with reason
+#' `knowledge_time_missing` is sealed, but availability preparation then
+#' refuses it with `ledgr_fact_knowledge_missing`.
 #'
 #' @param facts A `ledgr_facts` bundle.
 #' @param bars_df Bars intended for [ledgr_snapshot_from_df()].

@@ -2461,6 +2461,50 @@ testthat::test_that("[LTB-0337] every membership shape is counted canonically", 
     rep(2L, 5L)
   )
 
+  # Shared knowledge time (re-review 2, S2): four complete sets s1 (AAA),
+  # s2 (BBB), s3 (AAA), s4 (BBB) take effect 2021-03-02 21:00, 03-05 22:00,
+  # 03-06 14:30 and 03-08 21:00 and are all known 2021-03-09 21:00, as in a
+  # bulk delivery of historical lists. Sessions close at 21:00. Before the
+  # knowledge time every column is unknown (1 segment). At it, s1 answers
+  # 03-02 to 03-05, s3 answers 03-06 and 03-07 (s2 took effect after the
+  # 03-05 close and s3 supersedes it before the next one) and s4 answers
+  # from 03-08: three new runs, 4 segments per instrument. A counter that
+  # lets the later-ranked s3 stop blocking s2 on their equal knowledge time
+  # counts s2's empty region too (5) and refuses at limit 4.
+  bulk_axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:9) * 86400
+  bulk_sets <- ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = as.POSIXct(c(
+        "2021-03-02 21:00:00", "2021-03-05 22:00:00",
+        "2021-03-06 14:30:00", "2021-03-08 21:00:00"
+      ), tz = "UTC"),
+      knowledge_time = as.POSIXct("2021-03-09 21:00:00", tz = "UTC"),
+      set_id = c("s1", "s2", "s3", "s4"),
+      members = I(list("AAA", "BBB", "AAA", "BBB")),
+      source = "literal", stringsAsFactors = FALSE
+    ),
+    universe_id = "U", complete = TRUE
+  )
+  bulk <- list(membership_sets = bulk_sets$headers, membership = bulk_sets$rows)
+  bulk_ids <- c("AAA", "BBB")
+  bulk_counted <- ledgr:::ledgr_history_membership_segment_counts(bulk, "U", bulk_ids, bulk_axis, NULL)
+  testthat::expect_identical(bulk_counted$fact_count, c(6L, 6L))
+  testthat::expect_identical(bulk_counted$segment_count, c(4L, 4L))
+  testthat::expect_identical(canonical_counts(bulk, bulk_ids, bulk_axis), c(4L, 4L))
+  testthat::expect_identical(
+    tryCatch(
+      ledgr:::ledgr_history_membership_segment_counts(bulk, "U", bulk_ids, bulk_axis, 4L)$segment_count,
+      ledgr_history_segment_limit_exceeded = function(e) conditionMessage(e)
+    ),
+    c(4L, 4L)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_history_membership_segment_counts(bulk, "U", bulk_ids, bulk_axis, 3L),
+    "History segment limit exceeded for instrument `AAA`, family `membership`: 4 segments for 6 facts (ratio 0.667; limit 3).",
+    fixed = TRUE,
+    class = "ledgr_history_segment_limit_exceeded"
+  )
+
   set.seed(24L)
   axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:9) * 86400
   ids <- sprintf("I%d", 1:5)
