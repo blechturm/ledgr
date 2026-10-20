@@ -933,6 +933,26 @@ byte-identical under `ledgr_with_collapse_deterministic()`; no blanket swap.
 History frames already use the article's manual list-to-data-frame
 construction, so `qDF()` brings no speed gain there.
 
+<a id="pre-cran-api-cleanup"></a>
+
+### Pre-CRAN API cleanup
+
+Recorded 2026-10-20 from the external reviews of the WS44 API demo. Each
+item changes public API, so it lands before the first CRAN release under the
+no-backward-compatibility rule, in one cleanup cut rather than inside the
+history proof:
+
+- remove `ledgr_param_grid()`; its help calls it a compatibility helper for
+  old flat-grid workflows, which AGENTS.md does not allow before CRAN.
+  `ledgr_strategy_grid()`, `ledgr_feature_grid()` and `ledgr_grid_cross()`
+  remain the grid API;
+- let experiment pulse inspection address an end-of-day pulse by session
+  date as well as by the exact session-close instant; today a non-close
+  timestamp refuses with "not a session close";
+- show each sweep candidate's parameters in the printed sweep table instead
+  of only a hashed `candidate_id`, with `params` currently among the hidden
+  columns.
+
 <a id="deferred-history-simplification"></a>
 
 ### Deferred history simplification

@@ -29,6 +29,17 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-20 [data] Raw bars with point-in-time adjustment
+
+ledgr accounts in split-adjusted share units (contracts, Units, Price Basis
+And Universe): back-adjusted price levels encode later splits, so price
+thresholds, lot sizes and integer sizing before a split are in post-split
+units. Returns are unaffected and the limitation is documented. A fully
+point-in-time price model would store as-traded bars and apply split and
+distribution adjustments as known at the decision time, with splits acting
+on positions as events. Raised by an external review of the WS44 API demo
+(2026-10-20). This entry authorizes no RFC, API or release scope.
+
 ### 2026-10-15 [execution] Fused plan-plus-apply compiled kernel and a unified stop-or-abort type
 
 Parked at acceptance of the fold-phase RFC synthesis
