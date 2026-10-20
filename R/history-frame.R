@@ -238,6 +238,44 @@ ledgr_history_cutoff_planes <- function(substrate, field, rows, columns, cutoff_
   )
 }
 
+# Feature cells are a vintage view (Cut 16 decision 29): each cell carries the
+# masks knowable at its own pulse, the knowledge its value was computed
+# with, rather than the cutoff's. Columns of an instrument with late-known
+# facts take the mask of the epoch their pulse falls in, from the same
+# memoised base and overlay masks the bar reads use; nothing is recomputed per
+# read. `reach_seen` counts, per cell, the expected sessions from the window
+# start through the cell under that cell's own mask, for the bounded reach in
+# ledgr_history_used_before_window().
+ledgr_history_vintage_planes <- function(substrate, rows, columns) {
+  late <- ledgr_history_late_epochs(substrate)
+  masks <- ledgr_history_base_masks(substrate)
+  n_rows <- length(rows)
+  n_cols <- length(columns)
+  expected <- masks$expected[rows, columns, drop = FALSE]
+  terminal <- outer(masks$terminal_first[rows], columns, "<=")
+  dim(terminal) <- c(n_rows, n_cols)
+  reach_seen <- matrix(0L, nrow = n_rows, ncol = n_cols)
+  if (n_rows > 0L && n_cols > 0L) {
+    reach_seen <- t(collapse::fcumsum(t(matrix(as.integer(expected), n_rows, n_cols))))
+    dim(reach_seen) <- c(n_rows, n_cols)
+  }
+  axis <- as.numeric(substrate$axis)[columns]
+  for (r in which(lengths(late[rows]) > 0L)) {
+    instrument <- rows[[r]]
+    epochs <- late[[instrument]]
+    column_epoch <- findInterval(axis, epochs)
+    for (epoch in unique(column_epoch[column_epoch < length(epochs)])) {
+      at <- which(column_epoch == epoch)
+      overlay <- ledgr_history_overlay_masks(substrate, instrument, epoch, epochs)
+      own <- overlay$expected[1L, columns]
+      expected[r, at] <- own[at]
+      terminal[r, at] <- overlay$terminal_first[[1L]] <= columns[at]
+      reach_seen[r, at] <- cumsum(as.integer(own))[at]
+    }
+  }
+  list(expected = expected, terminal = terminal, reach_seen = reach_seen)
+}
+
 ledgr_history_bar_evidence <- function(substrate, field, rows, columns, cutoff_col) {
   planes <- ledgr_history_cutoff_planes(substrate, field, rows, columns, cutoff_col)
   stored <- substrate$bars[[field]]
@@ -311,7 +349,9 @@ ledgr_history_plane_run <- function(starts, ends, key) {
 }
 
 ledgr_history_feature_evidence <- function(substrate, feature_id, rows, columns, cutoff_col) {
-  planes <- ledgr_history_cutoff_planes(substrate, NULL, rows, columns, cutoff_col)
+  # A vintage view (Cut 16 decision 29): each cell's masks are those knowable
+  # at its own pulse, matching the knowledge its value was computed with.
+  planes <- ledgr_history_vintage_planes(substrate, rows, columns)
   projection <- substrate$feature_projection
   values <- projection$feature_values[[feature_id]]
   retained <- projection$feature_planes[[feature_id]]
@@ -378,7 +418,8 @@ ledgr_history_feature_evidence <- function(substrate, feature_id, rows, columns,
     calculation_valid = calculation_valid,
     missing_reason = reason,
     barrier_reason = barrier_reason,
-    source_index = NULL
+    source_index = NULL,
+    reach_seen = planes$reach_seen
   )
 }
 
@@ -507,6 +548,15 @@ ledgr_history_context_view <- function(ctx) {
 #' mask on the common axis: a lifetime-inactive session is structural, not a
 #' missing observation, and a print inside such an interval stays readable
 #' with that structural flag.
+#'
+#' Bar history is restated with the cutoff's knowledge. Feature history is a
+#' vintage view: each cell keeps the value and the evidence it had at its own
+#' pulse, so a fact that becomes known later changes feature cells only from
+#' its knowledge pulse on. For example, if an inactive interval at sessions 5
+#' and 6 becomes known at session 7, a read at session 7 shows the bar prints
+#' of sessions 5 and 6 as inactive-interval prints, while their feature cells
+#' keep the valid values computed at sessions 5 and 6; the session-7 feature
+#' cell is computed with the interval known.
 #'
 #' Bar values follow the experiment's [ledgr_history_policy()]: open, high,
 #' low and close carry forward within the declared expected-session horizon;
@@ -790,8 +840,9 @@ ledgr_history_used_before_window <- function(kind, evidence, keep, columns, defi
   carried <- evidence$input_carried[keep, , drop = FALSE]
   n_rows <- nrow(expected)
   n_cols <- ncol(expected)
-  # Expected sessions from the window start through each column.
-  seen <- t(collapse::fcumsum(t(matrix(as.integer(expected), n_rows, n_cols))))
+  # Expected sessions from the window start through each column, under each
+  # cell's own (vintage) mask.
+  seen <- evidence$reach_seen[keep, , drop = FALSE]
   # Expected sessions in the leading input-carried run of each row.
   stop_at <- expected & !carried
   first_stop <- ifelse(rowSums(stop_at) > 0L, max.col(stop_at, ties.method = "first"), n_cols + 1L)

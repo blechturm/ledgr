@@ -125,6 +125,12 @@
   the lookback the result was read with when `lookback` is omitted, and
   refuses to guess one for a full-lookback read.
 
+- Feature history from `ledgr_history_frame()` is a vintage view: after a
+  lifetime fact becomes known late, earlier feature cells keep the value and
+  the evidence they had at their own pulse, while bar history is restated
+  with what is known at the cutoff. Before, those feature cells showed their
+  earlier values with evidence resolved at the cutoff.
+
 - Strategy preflight now classifies as Tier 3 a strategy that reaches private
   context internals: a dot-prefixed member such as `ctx$.history`, a string
   naming a private context field, or closure and frame environments such as

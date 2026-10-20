@@ -207,7 +207,11 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
   #   (55, 61) stay readable, flagged inactive and never valid, and SMA(2) at
   #   session 7 counts DDD's expected sessions, so its window is sessions 4
   #   and 7 across the interval (Cut 16 decision 15): (50 + 68) / 2 = 59. At
-  #   session 8 it is (68 + 76) / 2 = 72.
+  #   session 8 it is (68 + 76) / 2 = 72;
+  # - feature history is a vintage view (Cut 16 decision 29): sessions 1-6
+  #   keep the values and the evidence they had at their own pulses, so after
+  #   the fact is known sessions 5 and 6 still read 52.5 and 58, expected and
+  #   valid, while bar history restates them as inactive prints.
   default <- capture(ledgr_history_policy())
   axis <- default$axis
   at6 <- default$at(6L)
@@ -239,12 +243,14 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
     testthat::expect_identical(close$barrier_reason[5:6], rep("lifetime_inactive", 2L))
     testthat::expect_identical(close$input_carried[[3L]], TRUE)
     sma <- ws44_cells(after$sma, "DDD")
-    # Sessions 1-4 keep their values; sessions 5-6 are no longer expected
-    # sessions. (Their feature values are the NEEDS_TYPE_2 question recorded
-    # in history_proof_phase_a_closeout.md and are not pinned here.)
-    testthat::expect_identical(sma$value[1:4], c(na, 42, 43, 46.5), info = session)
-    testthat::expect_identical(sma$expected, expected_mask, info = session)
-    testthat::expect_false(any(sma$calculation_valid[5:6]))
+    # Sessions 1-6 keep their at-pulse values and evidence (decision 29):
+    # every cell equals the session-6 read's cell.
+    testthat::expect_identical(sma$value[1:6], c(na, 42, 43, 46.5, 52.5, 58), info = session)
+    testthat::expect_identical(sma[1:6, ], ws44_cells(at6$sma, "DDD"), info = session)
+    testthat::expect_identical(sma$expected, rep(TRUE, session), info = session)
+    testthat::expect_identical(sma$calculation_valid[5:6], c(TRUE, TRUE), info = session)
+    testthat::expect_identical(sma$missing_reason[5:6], c("", ""), info = session)
+    testthat::expect_identical(sma$barrier_reason[5:6], c("", ""), info = session)
     testthat::expect_identical(sma$value[7L], 59, info = session)
     testthat::expect_true(sma$calculation_valid[[7L]])
   }
@@ -272,8 +278,9 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
   testthat::expect_identical(sma6$missing_reason[3:4], c("required_input_missing", "not_ready"))
   testthat::expect_identical(sma6$input_carried, rep(FALSE, 6L))
   strict7 <- ws44_cells(strict$at(7L)$sma, "DDD")
-  testthat::expect_identical(strict7$value[c(1:4, 7L)], c(na, 42, na, na, 59))
-  testthat::expect_identical(strict7$expected, c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE))
+  testthat::expect_identical(strict7$value, c(na, 42, na, na, 52.5, 58, 59))
+  testthat::expect_identical(strict7$expected, rep(TRUE, 7L))
+  testthat::expect_identical(strict7[1:6, ], ws44_cells(strict6$sma, "DDD"))
   testthat::expect_identical(strict$at(7L)$scalar, 59)
   testthat::expect_identical(ws44_cells(strict$at(7L)$close, "DDD")$value[[3L]], na)
 
@@ -290,7 +297,8 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
   testthat::expect_identical(sma6$missing_reason[3:4], c("output_carried", "not_ready"))
   testthat::expect_identical(ws44_cells(output$at(6L)$close, "DDD")$value[[3L]], na)
   output7 <- ws44_cells(output$at(7L)$sma, "DDD")
-  testthat::expect_identical(output7$value[c(1:4, 7L)], c(na, 42, 42, na, 59))
+  testthat::expect_identical(output7$value, c(na, 42, 42, na, 52.5, 58, 59))
+  testthat::expect_identical(output7[1:6, ], ws44_cells(output$at(6L)$sma, "DDD"))
   testthat::expect_identical(output7$output_carried[[3L]], TRUE)
 })
 

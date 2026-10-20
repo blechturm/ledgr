@@ -1748,16 +1748,25 @@ and `AAA` a held nonmember, each holding 5:
   cutoff outside the prepared axis with `ledgr_history_outside_axis`.
 - The history axis is the declared venue's expected sessions from the data
   start (the first session of the experiment's snapshot) through the cutoff,
-  with one cutoff-resolved expected-session mask per instrument. `lookback =
-  Inf` returns the whole axis; a finite lookback returns the last `lookback`
+  with one cutoff-resolved expected-session mask per instrument for bar
+  reads. `lookback = Inf` returns the whole axis; a finite lookback returns the last `lookback`
   sessions and is the exact values-and-evidence suffix of the `Inf` result.
   `lookback = 0` returns the empty axis. Bar values follow the experiment's
   history policy: open, high, low and close carry forward within the declared
   expected-session horizon from their original source, volume never carries,
   nothing fills backward or across a lifetime or terminal barrier, and a
   print inside a knowable lifetime-inactive interval stays readable with its
-  structural flag. Feature values are the shared feature preparation's values
-  on the same axis, and feature cell evidence is the evidence that
+  structural flag. Bar history is restated with the cutoff's knowledge;
+  feature history is a vintage view (Cut 16 decision 29): each cell keeps the
+  value and the evidence it had at its own pulse, its masks being the
+  lifetime and terminal state knowable then, so a fact that becomes known
+  later changes feature cells only from its knowledge pulse on. For example,
+  when an inactive interval at sessions 5 and 6 becomes known at session 7, a
+  read at session 7 shows those sessions' bar prints as inactive-interval
+  prints, while their feature cells keep the valid values they were computed
+  with at sessions 5 and 6, and the session-7 feature cell is computed with
+  the interval known. Feature values are the shared feature preparation's
+  values on the same axis, and feature cell evidence is the evidence that
   preparation produced, with the column meanings of the availability-aware
   feature planes: `calculated` means the required inputs were admitted after
   treatment, `ready` means an admitted cell at or after its segment's
