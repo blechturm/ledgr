@@ -1,0 +1,47 @@
+id,mutation,file,verdict,blocks
+P1,private-access branch removed from the tier decision,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|68|
+P2,dot-prefixed extraction not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|16|
+P3,private field names in strings not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|12|
+P4,base environment functions not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|20|
+P5,only the literal symbol ctx is checked,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|4|
+P6,.history dropped from the private field list,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|5|
+D1,horizon printed without its name,R/valuation-summary.R,DETECTED,LTB-0406|fail|22|4|
+D2,History policy line dropped from print(),R/valuation-summary.R,DETECTED,LTB-0406|fail|22|2|
+D3,History Policy section dropped from summary(),R/valuation-summary.R,DETECTED,LTB-0406|fail|22|3|
+D4,plan print drops the Valuation and History lines,R/availability-policy.R,DETECTED,LTB-0406|fail|22|2|
+D5,history fields always marked default,R/history-policy.R,DETECTED,LTB-0406|fail|22|5|
+D6,experiment print drops the lines,R/experiment.R,DETECTED,LTB-0406|fail|22|1|
+D7,history rows dropped from the plan assumptions,R/availability-policy.R,DETECTED,LTB-0406|fail|22|4|
+A1,metadata accessor skips the consistency check,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
+A2,unnamed weights assigned in reverse order,R/history-frame.R,DETECTED,LTB-0407|fail|58|5|
+A3,length mismatch accepted,R/history-frame.R,DETECTED,LTB-0407|fail|38|0|error
+A4,excluded IDs dropped,R/history-frame.R,DETECTED,LTB-0407|fail|58|2|
+A5,print footer dropped,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
+A6,sufficiency defaults to the available lookback,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
+A7,named weights matched by position,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
+O1,an item dropped from evidence_owners,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|169|1|
+O2,item 9 primary and contributing owners swapped,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|2|
+O3,pending owner LDG-3069 closed without blocks,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|1|
+O4,LTB-0305 citation removed from LDG-3064 evidence,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|1|
+O5,mapped block LTB-0285 no longer defined,tests/testthat/test-history-foundation.R,DETECTED,LTB-0408|fail|177|1|
+L1,late-known fact applied before its knowledge pulse (feature ranges not split),R/history-features.R,DETECTED,LTB-0409|fail|60|6|
+L2,history reads ignore later knowledge (first epoch only),R/history-frame.R,DETECTED,LTB-0409|fail|14|0|error
+L3,bounded windows stop at a lifetime-inactive interval,R/history-features.R,DETECTED,LTB-0409|fail|22|0|error
+L4,output carry fills a warm-up cell,R/history-features.R,DETECTED,LTB-0409|fail|60|4|
+L5,bar reads ignore a disabled input carry,R/history-frame.R,DETECTED,LTB-0409|fail|60|5|
+S1,every history read uses the previous session as cutoff,R/history-frame.R,DETECTED,LTB-0410|fail|0|0|error
+S2,matrix adapter reverses values,R/history-frame.R,DETECTED,LTB-0410|fail|90|15|
+S3,inspection calculates features from its cutoff,R/pulse-snapshot.R,DETECTED,LTB-0410|fail|90|12|
+S4,runner calculates features from its last pulse,R/backtest-runner.R,DETECTED,LTB-0410|fail|90|24|
+U1,credited amount scaled by a split-like factor,R/corporate-action-settlement.R,DETECTED,LTB-0411|fail|10|4|
+U2,bound quantity differs from the held quantity,R/corporate-action-settlement.R,DETECTED,LTB-0411|fail|10|6|
+U3,cash posts one session later,R/corporate-action-settlement.R,DETECTED,LTB-0411|fail|10|3|
+H1,deleted sweep feature-matrix helper reintroduced,R/sweep.R,DETECTED,LTB-0412|fail|5|2|
+C1,continuous-carry: no window continuation,R/walk-forward.R,DETECTED,LTB-0303|fail|60|12|
+C2,correction-chain: successor knowable before predecessor accepted,R/availability-facts.R,DETECTED,LTB-0285|fail|12|1|
+C3,rolling-month: month-end clamp drifts to day 28,R/walk-forward-folds.R,DETECTED,LTB-0305|fail|10|3|
+C4,civil-date: a knowledge Date resolves to session close,R/availability-facts.R,DETECTED,LTB-0284|fail|51|6|
+C5a,carry: calculation horizon one session too long,R/history-treatment.R,DETECTED,LTB-0292|fail|93|8|
+C5b,carry: read-path horizon one session too long,R/history-treatment.R,DETECTED,LTB-0292|fail|93|3|;LTB-0297|pass|74|0|;LTB-0298|pass|1595|0|
+C6,indicator: bounded windows stop at lifetime-inactive intervals,R/history-features.R,DETECTED,LTB-0310|fail|25|1|
+C7,rule-4 refusal: non-current history identity accepted,R/history-policy.R,DETECTED,LTB-0287|fail|23|3|;LTB-0290|pass|8|0|

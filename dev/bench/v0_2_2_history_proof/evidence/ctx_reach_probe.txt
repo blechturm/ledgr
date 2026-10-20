@@ -1,0 +1,11 @@
+captured pulse: 2020-03-02T16:00:00Z
+context fields: run_id, ts_utc, universe, bars, feature_table, .positions, cash, equity, seed, pulse_seed, state_prev, .safety_state, availability_active, members, .history, .pulse_lookup, bar, open, high, low, close, volume, position, idx, flat, hold, tradable, features_wide, .feature_table_current, feature, .feature_vector, features, vec, .notes
+dot-prefixed fields: .positions, .safety_state, .history, .pulse_lookup, .feature_table_current, .feature_vector, .notes
+ctx$.history: substrate axis 261 sessions, last 2020-12-31, cutoff column 43; 218 sessions after the pulse
+environment(ctx$feature): context_index, ctx, feature, feature_table_current, feature_vector, features, private_universe, universe, vec
+environment(ctx$feature)$ctx is the context, so $.history is reachable: TRUE
+environment(environment(ctx$feature)$feature_vector)$feature_values$return_1: 8 x 261, 218 columns after the pulse, 1526 finite future values
+environment(ctx$bar)$lookup: availability, bar_index, bars, feature_vector, id_to_idx, positions, scalar_access_state, universe; its feature_vector closure reaches the context again: TRUE
+preflight carrier: tier_3 - Strategy reaches private context internals: $.history. Read the context through its public fields and functions and history through `ledgr_history_frame()`.
+preflight closure: tier_3 - Strategy reaches private context internals: environment(). Read the context through its public fields and functions and history through `ledgr_history_frame()`.
+preflight lookup: tier_3 - Strategy reaches private context internals: environment(). Read the context through its public fields and functions and history through `ledgr_history_frame()`.

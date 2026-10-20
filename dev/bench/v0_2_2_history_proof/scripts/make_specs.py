@@ -1,0 +1,158 @@
+import json
+import os
+
+here = os.path.dirname(os.path.abspath(__file__))
+P72 = ["test-strategy-private-context.R"]
+P81 = ["test-history-policy-disclosure.R"]
+P71 = ["test-history-api-bridge.R"]
+PROOF = ["test-history-integrated-proof.R"]
+
+
+def m(id, desc, file, old, new, test_files, blocks, must_fail=None):
+    d = dict(id=id, desc=desc, file=file, old=old, new=new, test_files=test_files, blocks=blocks)
+    if must_fail:
+        d["must_fail"] = must_fail
+    return d
+
+
+specs = [
+    # LDG-3072 -> LTB-0371
+    m("P1", "private-access branch removed from the tier decision", "R/strategy-preflight.R",
+      "  } else if (length(private_context_access) > 0L) {", "  } else if (FALSE) {", P72, ["LTB-0371"]),
+    m("P2", "dot-prefixed extraction not scanned", "R/strategy-preflight.R",
+      "        if (!is.na(name)) out <<- c(out, paste0(head, name))",
+      "        if (FALSE) out <<- c(out, paste0(head, name))", P72, ["LTB-0371"]),
+    m("P3", "private field names in strings not scanned", "R/strategy-preflight.R",
+      '  out <- c(out, sprintf("\\"%s\\"", intersect(string_constants, ledgr_pulse_context_private_fields())))\n',
+      "", P72, ["LTB-0371"]),
+    m("P4", "base environment functions not scanned", "R/strategy-preflight.R",
+      '  out <- c(out, sprintf("%s()", intersect(symbols, env_fns$base)))\n', "", P72, ["LTB-0371"]),
+    m("P5", "only the literal symbol ctx is checked", "R/strategy-preflight.R",
+      "        if (!is.na(name)) out <<- c(out, paste0(head, name))",
+      "        if (!is.na(name) && identical(node[[2L]], quote(ctx))) out <<- c(out, paste0(head, name))",
+      P72, ["LTB-0371"]),
+    m("P6", ".history dropped from the private field list", "R/strategy-preflight.R",
+      '    ".feature_table_current", ".feature_vector", ".history", ".notes",',
+      '    ".feature_table_current", ".feature_vector", ".notes",', P72, ["LTB-0371"]),
+    # LDG-3081 -> LTB-0406
+    m("D1", "horizon printed without its name", "R/valuation-summary.R",
+      '      "; valuation stale-mark horizon ", basis$horizon,', '      "; max sessions ", basis$horizon,',
+      P81, ["LTB-0406"]),
+    m("D2", "History policy line dropped from print()", "R/valuation-summary.R",
+      "    if (!is.null(summary$history_policy)) {", "    if (FALSE) {", P81, ["LTB-0406"]),
+    m("D3", "History Policy section dropped from summary()", "R/valuation-summary.R",
+      "  if (!is.null(rows)) {", "  if (FALSE) {", P81, ["LTB-0406"]),
+    m("D4", "plan print drops the Valuation and History lines", "R/availability-policy.R",
+      '    cat(ledgr_experiment_plan_policy_lines(x, width = 14L), sep = "")\n', "", P81, ["LTB-0406"]),
+    m("D5", "history fields always marked default", "R/history-policy.R",
+      "      identical(policy$price_carry, defaults$price_carry),", "      TRUE,", P81, ["LTB-0406"]),
+    m("D6", "experiment print drops the lines", "R/experiment.R",
+      '  cat(ledgr_experiment_plan_policy_lines(ledgr_experiment_plan(x), width = 13L), sep = "")\n', "",
+      P81, ["LTB-0406"]),
+    m("D7", "history rows dropped from the plan assumptions", "R/availability-policy.R",
+      "    if (!is.null(history_policy)) {\n      history <- ledgr_history_policy_disclosure(history_policy)",
+      "    if (FALSE) {\n      history <- ledgr_history_policy_disclosure(history_policy)", P81, ["LTB-0406"]),
+    # LDG-3071 API -> LTB-0407
+    m("A1", "metadata accessor skips the consistency check", "R/history-frame.R",
+      "ledgr_history_info <- function(x) {\n  meta <- ledgr_history_require_consistent(x)$meta",
+      "ledgr_history_info <- function(x) {\n  meta <- ledgr_history_require_result(x)", P71, ["LTB-0407"]),
+    m("A2", "unnamed weights assigned in reverse order", "R/history-frame.R",
+      "    stats::setNames(as.numeric(weights), ids),", "    stats::setNames(rev(as.numeric(weights)), ids),",
+      P71, ["LTB-0407"]),
+    m("A3", "length mismatch accepted", "R/history-frame.R",
+      "  if (length(weights) != length(ids)) {", "  if (FALSE) {", P71, ["LTB-0407"]),
+    m("A4", "excluded IDs dropped", "R/history-frame.R",
+      "      excluded_ids = as.character(selection$instrument_id[requested & !included]),",
+      "      excluded_ids = character(),", P71, ["LTB-0407"]),
+    m("A5", "print footer dropped", "R/history-frame.R",
+      '  cat("# i Selection, exclusions and window: ledgr_history_info(x)\\n")\n', "", P71, ["LTB-0407"]),
+    m("A6", "sufficiency defaults to the available lookback", "R/history-frame.R",
+      "    lookback <- meta$requested_lookback\n", "    lookback <- meta$available_lookback\n", P71, ["LTB-0407"]),
+    m("A7", "named weights matched by position", "R/history-frame.R",
+      "    weights <- weights[match(ids, labels)]\n", "", P71, ["LTB-0407"]),
+    # LDG-3068 owner check -> LTB-0408
+    m("O1", "an item dropped from evidence_owners", "inst/design/ledgr_v0_2_2_spec_packet/tickets.yml",
+      "; 11 LDG-3064; ", "; ", PROOF, ["LTB-0408"]),
+    m("O2", "item 9 primary and contributing owners swapped", "inst/design/ledgr_v0_2_2_spec_packet/tickets.yml",
+      "9 LDG-3064 with LDG-3063 supplying plane parity", "9 LDG-3063 with LDG-3064 supplying plane parity",
+      PROOF, ["LTB-0408"]),
+    m("O3", "pending owner LDG-3069 closed without blocks", "inst/design/ledgr_v0_2_2_spec_packet/tickets.yml",
+      '  - id: "LDG-3069"\n    title: "Prove history resource and worker bounds"\n    workstream: 44\n    status: "open"',
+      '  - id: "LDG-3069"\n    title: "Prove history resource and worker bounds"\n    workstream: 44\n    status: "complete"',
+      PROOF, ["LTB-0408"]),
+    m("O4", "LTB-0305 citation removed from LDG-3064 evidence", "inst/design/ledgr_v0_2_2_spec_packet/tickets.yml",
+      "LTB-0305", "LTB-9305", PROOF, ["LTB-0408"]),
+    m("O5", "mapped block LTB-0285 no longer defined", "tests/testthat/test-history-foundation.R",
+      'testthat::test_that("[LTB-0285] correction chains', 'testthat::test_that("[LTB-9285] correction chains',
+      PROOF, ["LTB-0408"]),
+    # LDG-3068 late-known oracle -> LTB-0409
+    m("L1", "late-known fact applied before its knowledge pulse (feature ranges not split)", "R/history-features.R",
+      "      position > calc_from & position <= calc_to", "      position > calc_from & position <= calc_to & FALSE",
+      PROOF, ["LTB-0409"]),
+    m("L2", "history reads ignore later knowledge (first epoch only)", "R/history-frame.R",
+      "    epoch <- findInterval(cutoff, epochs)", "    epoch <- 0L", PROOF, ["LTB-0409"]),
+    m("L3", "bounded windows stop at a lifetime-inactive interval", "R/history-features.R",
+      "    calc[inputs$expected[calc]]", "    calc", PROOF, ["LTB-0409"]),
+    m("L4", "output carry fills a warm-up cell", "R/history-features.R",
+      "      eligible_gap = inputs$expected[calc] & !available_all[calc],",
+      "      eligible_gap = inputs$expected[calc] & !calculated[calc],", PROOF, ["LTB-0409"]),
+    m("L5", "bar reads ignore a disabled input carry", "R/history-frame.R",
+      "    max_sessions = substrate$history_policy$price_carry,", "    max_sessions = 5L,", PROOF, ["LTB-0409"]),
+    # LDG-3068 cross-surface -> LTB-0410
+    m("S1", "every history read uses the previous session as cutoff", "R/history-frame.R",
+      "  cutoff_col <- view$cutoff_col\n", "  cutoff_col <- view$cutoff_col - 1L\n", PROOF, ["LTB-0410"]),
+    m("S2", "matrix adapter reverses values", "R/history-frame.R",
+      "      out[] <- as.numeric(unlist(unclass(x)[ids], use.names = FALSE))",
+      "      out[] <- rev(as.numeric(unlist(unclass(x)[ids], use.names = FALSE)))", PROOF, ["LTB-0410"]),
+    m("S3", "inspection calculates features from its cutoff", "R/pulse-snapshot.R",
+      "    calculation_start = ledgr_history_calculation_start(substrate),\n    calculation_end = cutoff",
+      "    calculation_start = cutoff,\n    calculation_end = cutoff", PROOF, ["LTB-0410"]),
+    m("S4", "runner calculates features from its last pulse", "R/backtest-runner.R",
+      "        calculation_start = ledgr_history_calculation_start(history_substrate),\n        calculation_end = end_ts_utc",
+      "        calculation_start = end_ts_utc,\n        calculation_end = end_ts_utc", PROOF, ["LTB-0410"]),
+    # LDG-3068 dividend units -> LTB-0411
+    m("U1", "credited amount scaled by a split-like factor", "R/corporate-action-settlement.R",
+      "    cash_delta <- quantity * as.numeric(source_rows$gross_cash_per_parent_unit)",
+      "    cash_delta <- 0.5 * quantity * as.numeric(source_rows$gross_cash_per_parent_unit)", PROOF, ["LTB-0411"]),
+    m("U2", "bound quantity differs from the held quantity", "R/corporate-action-settlement.R",
+      "    quantity <- state$quantity[held]\n    cash_delta <-", "    quantity <- state$quantity[held] + 1\n    cash_delta <-",
+      PROOF, ["LTB-0411"]),
+    m("U3", "cash posts one session later", "R/corporate-action-settlement.R",
+      '  if (identical(settings[["cash_posting"]], "next_open")) {', "  if (TRUE) {", PROOF, ["LTB-0411"]),
+    # LDG-3068 helper deletion -> LTB-0412
+    m("H1", "deleted sweep feature-matrix helper reintroduced", "R/sweep.R",
+      "ledgr_sweep_impl <- function(exp,",
+      "ledgr_sweep_" + "compute_feature_matrix <- function() NULL\n\nledgr_sweep_impl <- function(exp,",
+      PROOF, ["LTB-0412"]),
+    # LDG-3068 acceptance item 4: named families fail their registered owners
+    m("C1", "continuous-carry: no window continuation", "R/walk-forward.R",
+      "  if (is.null(history_substrate) || length(fold_windows) < 2L) return(fold_windows)",
+      "  if (TRUE) return(fold_windows)", ["test-history-continuity.R"], ["LTB-0303"]),
+    m("C2", "correction-chain: successor knowable before predecessor accepted", "R/availability-facts.R",
+      "        rows$knowledge_time[[i]] < rows$knowledge_time[[target]]) {", "        FALSE) {",
+      ["test-history-foundation.R"], ["LTB-0285"]),
+    m("C3", "rolling-month: month-end clamp drifts to day 28", "R/walk-forward-folds.R",
+      "    day <- min(lt$mday, last_day)", "    day <- min(lt$mday, last_day, 28L)",
+      ["test-history-continuity.R"], ["LTB-0305"]),
+    m("C4", "civil-date: a knowledge Date resolves to session close", "R/availability-facts.R",
+      '        "entitlement_time", "effective_time", "payment_time"\n      )) {',
+      '        "entitlement_time", "effective_time", "payment_time", "knowledge_time"\n      )) {',
+      ["test-history-foundation.R"], ["LTB-0284"]),
+    m("C5a", "carry: calculation horizon one session too long", "R/history-treatment.R",
+      "  carried <- rep(FALSE, n)\n  if (can_carry) {\n    carried <- expected & !observed & !is.na(source) &\n      age <= as.integer(max_sessions)\n",
+      "  carried <- rep(FALSE, n)\n  if (can_carry) {\n    carried <- expected & !observed & !is.na(source) &\n      age <= as.integer(max_sessions) + 1L\n",
+      ["test-history-substrate.R"], ["LTB-0292"]),
+    m("C5b", "carry: read-path horizon one session too long", "R/history-treatment.R",
+      "  if (can_carry) {\n    carried <- expected & !observed & !is.na(source) &\n      age <= as.integer(max_sessions)\n  }\n  treated <- value\n  if (any(carried)) {",
+      "  if (can_carry) {\n    carried <- expected & !observed & !is.na(source) &\n      age <= as.integer(max_sessions) + 1L\n  }\n  treated <- value\n  if (any(carried)) {",
+      ["test-history-substrate.R", "test-history-frame.R"], ["LTB-0292", "LTB-0297", "LTB-0298"],
+      must_fail=["LTB-0292"]),
+    m("C6", "indicator: bounded windows stop at lifetime-inactive intervals", "R/history-features.R",
+      "    calc[inputs$expected[calc]]", "    calc", ["test-indicator-history-calculation.R"], ["LTB-0310"]),
+    m("C7", "rule-4 refusal: non-current history identity accepted", "R/history-policy.R",
+      '    rlang::abort(\n      "Config field history must contain the current causal-history identity.",',
+      '    if (FALSE) rlang::abort(\n      "Config field history must contain the current causal-history identity.",',
+      ["test-history-foundation.R"], ["LTB-0287", "LTB-0290"], must_fail=["LTB-0287"]),
+]
+json.dump(specs, open(os.path.join(here, "specs.json"), "w", encoding="utf-8"), indent=1)
+print(len(specs), "specs")
