@@ -920,6 +920,17 @@ semantic branch, bound by Cut 16 decision 16), and the WS40 Date-boundary
 branches in experiment, window and precompute construction. Consolidation
 should start from the LDG-3074 representation map and branch census.
 
+**Bars-only happy path (maintainer, 2026-10-20).** Consolidation removes the
+dense engine, not the dense use case. A snapshot with bars and no facts must
+keep running with no extra declarations, as a special case of the one engine:
+a calendar implied by the bar dates and full membership, with no status,
+lifetime or corporate-action facts. Because point-in-time rules never infer
+sessions from bars, the implied calendar is a disclosed default, labeled as
+such on the same surfaces as the price basis, not presented as a declared
+fact. Acceptance: the short hello-world path stays short, and bars-only
+results stay identical to today's dense results or each difference is
+explained and decided by the maintainer.
+
 **collapse primitives (maintainer, 2026-10-20).** When consolidation merges
 the two carry implementations (C-1 vector, C-2 matrix; audit
 `cut16_architecture_audit.md`), use the collapse path, including
