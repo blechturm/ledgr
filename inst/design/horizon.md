@@ -601,6 +601,57 @@ showing what a dense engine computes on a survivorship-free universe with
 listings and delistings and why it is wrong. This addendum changes no
 publication rule above.
 
+**PyBroker v2 and suite ownership (maintainer, 2026-10-20).** Add a pinned
+PyBroker v2 row when this suite is designed. PyBroker is a chronological
+bar-driven engine whose normal execution surface calls a Python strategy once
+per active symbol per bar and schedules later fills; it is neither a
+whole-universe callback nor an event-sourced store. The comparison must measure
+that architecture rather than infer speed from its NumPy and Numba components.
+
+Keep four distinct workload lanes: dense conventional parity, scaling
+geometry, whole-universe portfolio construction, and one point-in-time
+demonstration that is never ranked as a parity or speed row. The first new
+portfolio workload is top-N rotation with the same ranking, rebalance schedule,
+next-bar fills and holdings in PyBroker and ledgr. It should expose the
+per-symbol-callback versus per-pulse-whole-universe crossover. The initial
+shape set is deliberately non-Cartesian: 10 instruments by about 7,200
+sessions, the existing 500 by 1,260 reference, 1,166 by 252, and a separately
+budgeted 1,166 by about 7,200 stress row.
+
+Each engine and workload runs in its own process. Report parity before timing.
+The public timing surface has three distinct views: cold end to end from raw
+input through comparable results; warm end to end with reusable preparation
+retained but a real public experiment still constructed and executed; and an
+engine-only diagnostic that must never replace the public headline. Report
+input preparation, indicator preparation, orchestration, engine time, result
+materialization, instrument-bars and strategy callback count for both the cold
+and warm boundaries.
+
+Setup is normally paid once in an interactive research session, so also report
+an amortized session: one preparation followed by a predeclared sequence of
+real public runs or candidates, initially at 10, 100 and 1,000 repetitions
+where feasible. Peers receive equivalent reuse when their supported public
+APIs permit it; wrappers must not rebuild reusable state merely to make a peer
+look slow. If a framework cannot safely reuse prepared state, record that as
+part of its performance profile rather than silently choosing a private path.
+Measure peak child RSS separately for cold preparation and warm execution.
+
+Warm end-to-end time is the primary research-speed comparison. Cold end to
+end, engine-only diagnostics, amortized session cost and both memory peaks stay
+adjacent so the headline neither penalizes reusable setup as if paid every run
+nor hides its real first-use cost. PyBroker reports cold-JIT and warm-JIT rows
+and distinguishes minimal output from a result-retention boundary comparable
+to the ledgr row. Every peer version, environment and workload contract is
+pinned.
+
+The durable home is this repository under `dev/bench/peer_benchmark/`: workload
+specifications, peer adapters, lockfiles, generators, parity oracles, compact
+promoted evidence and the rendered method report travel with the ledgr source
+they evaluate. `ledgr-research` may hold exploratory probes, private-data runs
+and bulky raw evidence, but it must not become the only home of a release claim
+or its reproducer. This is an amendment to the existing benchmark-methodology
+obligation, not authority to publish a speed claim before the suite exists.
+
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 
 The maintainer wants this done soon. It is RFC work, a continuation of
