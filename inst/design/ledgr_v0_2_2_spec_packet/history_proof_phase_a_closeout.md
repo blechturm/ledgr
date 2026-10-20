@@ -4,11 +4,14 @@ Role: record; Workstream 44 phase A implementation evidence (LDG-3072,
 LDG-3081, the LDG-3071 API items and LDG-3068).
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behaviour.
-Status: LDG-3072, LDG-3081 and LDG-3068 are complete; the fast and review
-profiles are run by the coordinator. LDG-3071 stays `open` (phase B owns its
-teaching and reconciliation); its three API items are implemented. The
-`NEEDS_TYPE_2` raised by LDG-3068 was decided by the maintainer as Cut 16
-decision (29) and is implemented (below). Workstream 44 stays `open`.
+Status: LDG-3072 and LDG-3081 are complete. LDG-3068 is `review_pending`:
+its acceptance item 5 (fast and review profiles) is recorded by the
+coordinator. LDG-3071 stays `open` (phase B owns its teaching and
+reconciliation); its three API items are implemented. The `NEEDS_TYPE_2`
+raised by LDG-3068 was decided by the maintainer as Cut 16 decision (29) and
+is implemented (below). The independent close review
+(`close_review_44a.md`) returned CHANGES_REQUIRED; Correction 1 below
+answers it. Workstream 44 stays `open`.
 
 BASE is `6f019c6b` (`integrate/cut15-v0.2.2`, accepted Workstreams 40-43, 46
 and 47). Branch `ws44/history-proof`: the implementation is `f61d6fca`, the
@@ -69,24 +72,13 @@ the pulse lookup environment, whose `feature_vector` reaches the context
 again. So closure environments of public functions do reach future values;
 they are refused by the same rule rather than documented as unreachable.
 
-The rule (`R/strategy-preflight.R`,
-`ledgr_strategy_private_context_access()`) makes Tier 3 any of: a `$`, `@`,
-`[[` or `[` extraction of a literal dot-prefixed name on any object (a
-context is easily aliased); a string constant naming a private context
-field (`ledgr_pulse_context_private_fields()`, which catches `getElement()`,
-`.subset2()` and a name held in a variable); and closure, call or frame
-environment introspection: `environment()`, `environment<-`,
-`parent.env()`, `parent.frame()`, `sys.function()` and the other `sys.*()`
-frame functions, `as.environment()`, `topenv()`, and the `rlang`
-equivalents (`fn_env`, `get_env`, `env_parent`, `caller_env`,
-`current_env`, ...), whether called, qualified, passed by name or named in
-`do.call()`. The reason names each access. The private carrier keeps its
-runtime role; `ledgr_history_frame()` still reads it.
-
-Stated limits (contract and help): dynamically constructed names
-(`paste0(".", "history")`), positional extraction from the context
-(`ctx[[15]]`) and iteration over it (`lapply(ctx, ...)`) are outside static
-analysis, as the contract already says of dynamic dispatch.
+The rule as first written (`R/strategy-preflight.R`,
+`ledgr_strategy_private_context_access()`) refused any literal dot-prefixed
+extraction, any string naming a private field and closure, call or frame
+environment introspection. The close review found it both too narrow and too
+broad; Correction 1 below gives the rule as it now stands. The reason names
+each access. The private carrier keeps its runtime role;
+`ledgr_history_frame()` still reads it.
 
 Evidence: LCL-0361/LTB-0371 (sixteen hostile bodies refused with the named
 access; three valid strategies keep tier 1, 1 and 2; `ledgr_run()`,
@@ -214,7 +206,7 @@ without late facts take the base mask by index and one cumulative sum.
 
 Each mutation was applied to one file of a source copy made with
 `git ls-files -z | tar --null -T - -cf - | tar -xf - -C <copy>` from the
-decision (29) commit `19b08d85`, the named blocks run in a fresh R
+Correction 1 commit `3b8bd118`, the named blocks run in a fresh R
 process, and the file restored byte for byte. The drivers and the result
 are in `dev/bench/v0_2_2_history_proof/scripts/` and
 `evidence/mutations.csv`. "error" means the block stopped. Two first
@@ -223,17 +215,29 @@ detector, and that block passes because it compares the memoised read with
 the whole-prefix primitive, which shares the mutated horizon (the carry
 owner LTB-0292 fails, as recorded); C7 was first written as `FALSE && a ||
 b`, which R parses as `(FALSE && a) || b` and so changed nothing. The whole
-table was re-run on the decision (29) tree, adding V1. The unmutated copy
+table was re-run on the decision (29) tree, adding V1, and again on the
+Correction 1 tree, adding Q1-Q6 and the reviewer's X5-X9. The unmutated copy
 passed every named block in the full suite run.
 
 | ID | Mutation | File | Result |
 | --- | --- | --- | --- |
-| P1 | private-access branch removed from the tier decision | `R/strategy-preflight.R` | LTB-0371 fails (68 failed) |
-| P2 | dot-prefixed extraction not scanned | `R/strategy-preflight.R` | LTB-0371 fails (16 failed) |
-| P3 | private field names in strings not scanned | `R/strategy-preflight.R` | LTB-0371 fails (12 failed) |
-| P4 | base environment functions not scanned | `R/strategy-preflight.R` | LTB-0371 fails (20 failed) |
-| P5 | only the literal symbol ctx is checked | `R/strategy-preflight.R` | LTB-0371 fails (4 failed) |
-| P6 | .history dropped from the private field list | `R/strategy-preflight.R` | LTB-0371 fails (5 failed) |
+| Q1 | non-exported ledgr:: references allowed | `R/strategy-preflight.R` | LTB-0371 fails (6 failed) |
+| Q2 | environment functions named in strings allowed | `R/strategy-preflight.R` | LTB-0371 fails (26 failed) |
+| Q3 | environment functions extracted as members allowed | `R/strategy-preflight.R` | LTB-0371 fails (7 failed) |
+| Q4 | any dot-prefixed extraction refused again | `R/strategy-preflight.R` | LTB-0371 fails (3 failed) |
+| Q5 | every private field name refused in strings | `R/strategy-preflight.R` | LTB-0371 fails (1 failed) |
+| Q6 | sufficiency reads stale metadata | `R/history-frame.R` | LTB-0407 fails (2 failed) |
+| X5 | named weights matched by the inverse permutation (review) | `R/history-frame.R` | LTB-0407 fails (1 failed) |
+| X6 | excluded IDs ignore the requested flag (review) | `R/history-frame.R` | LTB-0407 fails (1 failed) |
+| X7 | used_before_window counts the vintage row, not each cell's own mask (review) | `R/history-frame.R` | LTB-0413 fails (1 failed) |
+| X8 | vintage epoch counts knowledge at the pulse instant as later (review) | `R/history-frame.R` | LTB-0413 fails (3 failed) |
+| X9 | vintage terminal flag taken from the base mask (review) | `R/history-frame.R` | LTB-0413 fails (1 failed) |
+| P1 | private-access branch removed from the tier decision | `R/strategy-preflight.R` | LTB-0371 fails (135 failed, error) |
+| P2 | private-field extraction not scanned | `R/strategy-preflight.R` | LTB-0371 fails (24 failed) |
+| P3 | carrier field names in strings not scanned | `R/strategy-preflight.R` | LTB-0371 fails (16 failed) |
+| P4 | base environment functions not scanned | `R/strategy-preflight.R` | LTB-0371 fails (34 failed, error) |
+| P5 | only the literal symbol ctx is checked | `R/strategy-preflight.R` | LTB-0371 fails (11 failed) |
+| P6 | .history dropped from the private field list | `R/strategy-preflight.R` | LTB-0371 fails (16 failed) |
 | D1 | horizon printed without its name | `R/valuation-summary.R` | LTB-0406 fails (4 failed) |
 | D2 | History policy line dropped from print() | `R/valuation-summary.R` | LTB-0406 fails (2 failed) |
 | D3 | History Policy section dropped from summary() | `R/valuation-summary.R` | LTB-0406 fails (3 failed) |
@@ -242,12 +246,12 @@ passed every named block in the full suite run.
 | D6 | experiment print drops the lines | `R/experiment.R` | LTB-0406 fails (1 failed) |
 | D7 | history rows dropped from the plan assumptions | `R/availability-policy.R` | LTB-0406 fails (4 failed) |
 | A1 | metadata accessor skips the consistency check | `R/history-frame.R` | LTB-0407 fails (1 failed) |
-| A2 | unnamed weights assigned in reverse order | `R/history-frame.R` | LTB-0407 fails (5 failed) |
+| A2 | unnamed weights assigned in reverse order | `R/history-frame.R` | LTB-0407 fails (6 failed) |
 | A3 | length mismatch accepted | `R/history-frame.R` | LTB-0407 fails (0 failed, error) |
 | A4 | excluded IDs dropped | `R/history-frame.R` | LTB-0407 fails (2 failed) |
 | A5 | print footer dropped | `R/history-frame.R` | LTB-0407 fails (1 failed) |
 | A6 | sufficiency defaults to the available lookback | `R/history-frame.R` | LTB-0407 fails (1 failed) |
-| A7 | named weights matched by position | `R/history-frame.R` | LTB-0407 fails (1 failed) |
+| A7 | named weights matched by position | `R/history-frame.R` | LTB-0407 fails (2 failed) |
 | O1 | an item dropped from evidence_owners | `inst/design/ledgr_v0_2_2_spec_packet/tickets.yml` | LTB-0408 fails (1 failed) |
 | O2 | item 9 primary and contributing owners swapped | `inst/design/ledgr_v0_2_2_spec_packet/tickets.yml` | LTB-0408 fails (2 failed) |
 | O3 | pending owner LDG-3069 closed without blocks | `inst/design/ledgr_v0_2_2_spec_packet/tickets.yml` | LTB-0408 fails (1 failed) |
@@ -320,38 +324,136 @@ passed every named block in the full suite run.
   does not reach it. Proposed owner: the same.
 - Phase B: LDG-3069 (resources), LDG-3070 (real data), LDG-3071 teaching,
   hello world and decision reconciliation.
+- Phase-B teaching note (close review 44a N4): `excluded_ids` lists
+  requested instruments the estimate left out. Under the default
+  `instruments = "admissible"` a held instrument that is no longer admissible
+  is not requested, so it is not listed; teaching on `keep` must get held
+  IDs from the context (`ctx$vec$held`) or read with
+  `instruments = "decision_axis"`.
+- LDG-3069 (close review 44a N1, appended to its scope): the per-read cost of
+  decision (29)'s vintage evidence, +14 percent at full lookback and +3
+  percent at lookback 20 with 100 late-fact instruments in the review's
+  probe; its size depends on the real-data late-fact count (LDG-3080,
+  LDG-3070).
+
+## Correction 1 (close review 44a, 2026-10-20)
+
+`close_review_44a.md` (Type 1) returned CHANGES_REQUIRED: six findings over
+fifteen phase-A acceptance items. Each is answered here.
+
+- F1 (blocking), future-data routes. Two Tier 1 routes reached the carrier
+  or the closure environments and read session-8 values at the first pulse:
+  ledgr's internal namespace (`ledgr:::ledgr_history_context_view(ctx)`,
+  `utils::getFromNamespace()`) and `environment` named as a string or
+  reached as a member (`lapply(x, "environment")`, `match.fun()`,
+  `baseenv()$environment`). The rule now also refuses:
+  - a reference to a non-exported ledgr object (`ledgr:::name`), matching
+    the contract's rule that only the exported namespace is
+    Tier 1-compatible;
+  - namespace and binding getters as environment-reaching functions:
+    `asNamespace()`, `getNamespace()`, `.getNamespace()`,
+    `loadNamespace()`, `getNamespaceInfo()`, `getFromNamespace()`,
+    `getAnywhere()`, `get0()`, `mget()`, `dynGet()`, and `rlang::ns_env()`,
+    `pkg_env()`, `ns_imports_env()`, qualified from base, utils, methods or
+    rlang or not;
+  - any environment-reaching function named in a string constant
+    (`lapply`, `sapply`, `Map`, `match.fun`, `do.call`) or extracted as a
+    member with `$`, `@`, `[[` or `[`.
+
+  LTB-0371 adds the twelve reviewer probe bodies and now runs every refused
+  body through `ledgr_run()`: each is refused with `ledgr_strategy_tier3`
+  and no store row appears, so none reaches data at run time. The contract
+  and `?ledgr_strategy_preflight` now list what static analysis still cannot
+  see: names built at run time, positional extraction from or iteration over
+  the context, a non-carrier private name held in a variable, environment
+  access through packages other than base, utils, methods and rlang, and
+  functions or objects supplied from outside the strategy body.
+- F2 (blocking), tier changes. Extraction names are now matched against
+  `ledgr_pulse_context_private_fields()` rather than any dot prefix, and
+  string constants against the four fields that hold data beyond the pulse
+  (`ledgr_pulse_context_future_carriers()`: `.history`, `.pulse_lookup`,
+  `.feature_vector`, `.feature_table_current`). A strategy's own
+  `list(.fitted = 1)$.fitted`, `data.frame(.pred = 1)$.pred`,
+  `d[[".pred"]]`, `stats::lm(...)$.fitted` and the strings `".notes"` and
+  `".positions"` are Tier 1 again, as at BASE; `ctx$.history` through an
+  alias is still refused. On the reviewer's 61 probe bodies, the corrected
+  rule refuses every body that reaches data beyond the pulse by a literal
+  route and returns every other body to its BASE tier. A scan of every
+  function taking `ctx` in tests, vignettes, roxygen examples and the README
+  found one strategy whose tier changes against BASE: LTB-0055's test
+  strategy called `ledgr:::ledgr_normalize_ts_utc()` inside its body (Tier 2
+  at BASE through its captured fixture, Tier 3 now). The timestamp is now
+  computed outside the strategy; the block's subject and oracle are
+  unchanged (stated reason: a strategy may not reference non-exported ledgr
+  objects).
+- F3, stale sufficiency. `ledgr_history_sufficient()` runs
+  `ledgr_history_require_consistent()` like the matrix adapter and refuses a
+  filtered or column-dropped result with `ledgr_invalid_history_result`;
+  LTB-0407 pins both (mutation Q6).
+- F4, units. The contract now says `recipient_quantity_per_parent_unit`
+  counts recipient shares in the recipient's own split-adjusted units, that
+  the divide-by-the-split-factor rule applies to cash amounts (the parent's
+  factor from the entitlement to the bars' adjustment reference), and that a
+  recipient ratio in as-traded shares converts as that ratio times the
+  recipient's factor divided by the parent's.
+- F5, detectors. LCL-0403/LTB-0413 pins, against a hand oracle, a delisting
+  learned exactly at a pulse instant (the session-8 cell is not expected,
+  the session-7 cell keeps no terminal barrier), a relisting (warm-up at
+  session 10, then 85 and 95), every cell equal to the cell read at its own
+  pulse, and the bounded reach behind `used_before_window` (a three-session
+  read whose 59 used session 4 reports `TRUE`). The reviewer's mutations X7,
+  X8 and X9 fail it.
+- F6, record. LDG-3068 is `review_pending`; item 5 waits for the
+  coordinator's profile record. The fixture-lane disposition is recorded:
+  48 of 50 families identical, and the two others differ only by the LDG-3081
+  `history_policy` rows (an intended difference, not a pass).
+- Notes. N2: LTB-0407 adds three cyclically named weights and an
+  admissible-selector read whose unrequested CCC is not excluded (the
+  reviewer's X5 and X6 fail it). N3: `?ledgr_history_weights` names
+  `ledgr_invalid_strategy_type` for non-finite weights. N1 is appended to
+  LDG-3069's scope and N4 to the phase-B notes (Routed). N5 to N9 need no
+  change.
+
+Test changes in Correction 1: LTB-0371 (new bodies, refusal through
+`ledgr_run()`, the kept-tier bodies; `do.call("environment")` is now
+reported as the string `"environment"`), LTB-0407 (stale sufficiency,
+cyclic names, admissible selection), LTB-0408 (item 15 now also maps
+LTB-0413), new LTB-0413, and LTB-0055 (strategy timestamp computed outside
+the body, reason above). No accepted oracle changed. Tooling: the census
+script's `call_name()` (`tools/check-codebase-contracts.R`) stopped on a
+call whose head is itself a call result (`f(x)(y)`, now in LTB-0371's
+bodies); it now names only `pkg::name` heads, and the census output is
+otherwise unchanged (158 branch and 55 flow sites, findings 72).
 
 ## Verification record
 
 Windows 11, R 4.6.1, every R process run sequentially.
 
-On the decision (29) commit `19b08d85` (source copy):
+On the Correction 1 commit `3b8bd118` (source copy):
 
 - Full suite (`pkgload::load_all('.')` then `testthat::test_local('.',
   reporter = 'summary', stop_on_failure = FALSE, load_package = 'none')`):
-  1,158 blocks, 19,009 expectations, no failure or error, one optional skip
-  (`ledgr_snapshot_from_yahoo requires quantmod`); 689 s of block time.
-- Mutations: 47 of 47 detected by their named blocks (table above).
-- Fixture lane against the BASE record: 48 of 50 families identical and the
-  identity family identical; the two differences are the LDG-3081
-  `history_policy` rows, byte-identical to the first run's, so decision (29)
-  changed no other family.
-- After the run, the `info =` labels of LTB-0409's per-cutoff assertions
-  were made character (a numeric label made a failing assertion stop with a
-  testthat argument error instead of reporting; found while reading V1's
-  output). `test-history-integrated-proof.R` passes after the change and
-  L1-L3 and V1 then fail on expectations, as tabled.
+  1,159 blocks, 19,123 expectations, no failure or error, one optional skip
+  (`ledgr_snapshot_from_yahoo requires quantmod`); 694 s of block time.
+- Mutations: 58 of 58 detected by their named blocks (table above).
 - `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55 flow
-  sites (unchanged), findings 72; the regenerated census tables are
-  committed; `--self-test-mode-branches`: OK.
+  sites (unchanged), findings 72; `--self-test-mode-branches`: OK.
 - `tools/check-fold-phase-contract.R .`: `LEDGR_FOLD_PHASE_CONTRACT_OK`.
-- `tickets.yml` and `tests/claims.yml` parse with `yaml::read_yaml()`;
-  `git diff --check 6f019c6b` is clean.
+- `tickets.yml` and `tests/claims.yml` parse; the 327 claims resolve against
+  the control-plane preflight; `git diff --check 6f019c6b` is clean.
+- The fixture lane was not re-run for Correction 1: the correction changes
+  strategy preflight (which every valid lane strategy passes at its BASE
+  tier), sufficiency refusals and records, none of which the lane's families
+  record (inference). The decision (29) result stands: 48 of 50 families
+  identical, the two others differing only by the LDG-3081 `history_policy`
+  rows.
 
-On the implementation commit `f61d6fca` (first round): full suite 1,158
-blocks, 19,001 expectations, one failure (LTB-0269, whose literal census
-records the plan's moved `schema_version` line; see Test changes), one
-optional skip; 46 of 46 mutations detected; fixture lane as above.
+On the decision (29) commit `19b08d85`: full suite 1,158 blocks, 19,009
+expectations, no failure; 47 of 47 mutations detected; fixture lane 48 of
+50 identical with the disposition above. On the implementation commit
+`f61d6fca` (first round): full suite 1,158 blocks, 19,001 expectations, one
+failure (LTB-0269's moved line, see Test changes), one optional skip; 46 of
+46 mutations detected.
 
 Not run here, by instruction: the independent close review and the fast,
 review and heavy profiles. `R/cpp11.R` and `src/cpp11.cpp` line-ending churn

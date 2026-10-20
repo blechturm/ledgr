@@ -1,10 +1,21 @@
 id,mutation,file,verdict,blocks
-P1,private-access branch removed from the tier decision,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|68|
-P2,dot-prefixed extraction not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|16|
-P3,private field names in strings not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|12|
-P4,base environment functions not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|20|
-P5,only the literal symbol ctx is checked,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|4|
-P6,.history dropped from the private field list,R/strategy-preflight.R,DETECTED,LTB-0371|fail|74|5|
+Q1,non-exported ledgr:: references allowed,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|6|
+Q2,environment functions named in strings allowed,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|26|
+Q3,environment functions extracted as members allowed,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|7|
+Q4,any dot-prefixed extraction refused again,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|3|
+Q5,every private field name refused in strings,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|1|
+Q6,sufficiency reads stale metadata,R/history-frame.R,DETECTED,LTB-0407|fail|65|2|
+X5,named weights matched by the inverse permutation (review),R/history-frame.R,DETECTED,LTB-0407|fail|65|1|
+X6,excluded IDs ignore the requested flag (review),R/history-frame.R,DETECTED,LTB-0407|fail|65|1|
+X7,"used_before_window counts the vintage row, not each cell's own mask (review)",R/history-frame.R,DETECTED,LTB-0413|fail|23|1|
+X8,vintage epoch counts knowledge at the pulse instant as later (review),R/history-frame.R,DETECTED,LTB-0413|fail|23|3|
+X9,vintage terminal flag taken from the base mask (review),R/history-frame.R,DETECTED,LTB-0413|fail|23|1|
+P1,private-access branch removed from the tier decision,R/strategy-preflight.R,DETECTED,LTB-0371|fail|143|135|error
+P2,private-field extraction not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|24|
+P3,carrier field names in strings not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|16|
+P4,base environment functions not scanned,R/strategy-preflight.R,DETECTED,LTB-0371|fail|143|34|error
+P5,only the literal symbol ctx is checked,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|11|
+P6,.history dropped from the private field list,R/strategy-preflight.R,DETECTED,LTB-0371|fail|155|16|
 D1,horizon printed without its name,R/valuation-summary.R,DETECTED,LTB-0406|fail|22|4|
 D2,History policy line dropped from print(),R/valuation-summary.R,DETECTED,LTB-0406|fail|22|2|
 D3,History Policy section dropped from summary(),R/valuation-summary.R,DETECTED,LTB-0406|fail|22|3|
@@ -12,18 +23,18 @@ D4,plan print drops the Valuation and History lines,R/availability-policy.R,DETE
 D5,history fields always marked default,R/history-policy.R,DETECTED,LTB-0406|fail|22|5|
 D6,experiment print drops the lines,R/experiment.R,DETECTED,LTB-0406|fail|22|1|
 D7,history rows dropped from the plan assumptions,R/availability-policy.R,DETECTED,LTB-0406|fail|22|4|
-A1,metadata accessor skips the consistency check,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
-A2,unnamed weights assigned in reverse order,R/history-frame.R,DETECTED,LTB-0407|fail|58|5|
-A3,length mismatch accepted,R/history-frame.R,DETECTED,LTB-0407|fail|38|0|error
-A4,excluded IDs dropped,R/history-frame.R,DETECTED,LTB-0407|fail|58|2|
-A5,print footer dropped,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
-A6,sufficiency defaults to the available lookback,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
-A7,named weights matched by position,R/history-frame.R,DETECTED,LTB-0407|fail|58|1|
-O1,an item dropped from evidence_owners,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|169|1|
-O2,item 9 primary and contributing owners swapped,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|2|
-O3,pending owner LDG-3069 closed without blocks,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|1|
-O4,LTB-0305 citation removed from LDG-3064 evidence,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|1|
-O5,mapped block LTB-0285 no longer defined,tests/testthat/test-history-foundation.R,DETECTED,LTB-0408|fail|177|1|
+A1,metadata accessor skips the consistency check,R/history-frame.R,DETECTED,LTB-0407|fail|65|1|
+A2,unnamed weights assigned in reverse order,R/history-frame.R,DETECTED,LTB-0407|fail|65|6|
+A3,length mismatch accepted,R/history-frame.R,DETECTED,LTB-0407|fail|43|0|error
+A4,excluded IDs dropped,R/history-frame.R,DETECTED,LTB-0407|fail|65|2|
+A5,print footer dropped,R/history-frame.R,DETECTED,LTB-0407|fail|65|1|
+A6,sufficiency defaults to the available lookback,R/history-frame.R,DETECTED,LTB-0407|fail|65|1|
+A7,named weights matched by position,R/history-frame.R,DETECTED,LTB-0407|fail|65|2|
+O1,an item dropped from evidence_owners,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|172|1|
+O2,item 9 primary and contributing owners swapped,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|180|2|
+O3,pending owner LDG-3069 closed without blocks,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|180|1|
+O4,LTB-0305 citation removed from LDG-3064 evidence,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|180|1|
+O5,mapped block LTB-0285 no longer defined,tests/testthat/test-history-foundation.R,DETECTED,LTB-0408|fail|180|1|
 L1,late-known fact applied before its knowledge pulse (feature ranges not split),R/history-features.R,DETECTED,LTB-0409|fail|68|14|
 L2,history reads ignore later knowledge (first epoch only),R/history-frame.R,DETECTED,LTB-0409|fail|68|8|
 L3,bounded windows stop at a lifetime-inactive interval,R/history-features.R,DETECTED,LTB-0409|fail|68|8|
