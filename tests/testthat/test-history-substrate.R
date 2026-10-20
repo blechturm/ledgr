@@ -2431,6 +2431,36 @@ testthat::test_that("[LTB-0337] every membership shape is counted canonically", 
   }
   testthat::expect_identical(canonical_counts(data, c("AAA", "BBB"), axis), c(4L, 3L))
 
+  # Tie family (re-review 1, R2): a complete set `x` (I1) and an incomplete
+  # set `z` (I1..I5) with identical effective and knowledge times, between
+  # two 21:00 sessions. `x` ranks first, so `z` wins the shared break for
+  # the instruments it lists, and each instrument has one segment before
+  # and one after: canonical count 2. A counter that lets `z` stop blocking
+  # `x` on an equal knowledge time counts 3 and refuses at limit 2.
+  tie_axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:5) * 86400
+  tie_at <- as.POSIXct("2021-03-04 20:00:00", tz = "UTC")
+  tie_ids <- sprintf("I%d", 1:5)
+  tie_sets <- ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = c(tie_at, tie_at), knowledge_time = c(tie_at, tie_at),
+      set_id = c("x", "z"), members = I(list("I1", tie_ids)),
+      source = c("src_x", "src_z"), stringsAsFactors = FALSE
+    ),
+    universe_id = "U", complete = c(TRUE, FALSE)
+  )
+  tie <- list(membership_sets = tie_sets$headers, membership = tie_sets$rows)
+  tie_counted <- ledgr:::ledgr_history_membership_segment_counts(tie, "U", tie_ids, tie_axis, NULL)
+  testthat::expect_identical(tie_counted$fact_count, c(4L, 3L, 3L, 3L, 3L))
+  testthat::expect_identical(tie_counted$segment_count, rep(2L, 5L))
+  testthat::expect_identical(canonical_counts(tie, tie_ids, tie_axis), rep(2L, 5L))
+  testthat::expect_identical(
+    tryCatch(
+      ledgr:::ledgr_history_membership_segment_counts(tie, "U", tie_ids, tie_axis, 2L)$segment_count,
+      ledgr_history_segment_limit_exceeded = function(e) conditionMessage(e)
+    ),
+    rep(2L, 5L)
+  )
+
   set.seed(24L)
   axis <- as.POSIXct("2021-03-01 21:00:00", tz = "UTC") + (0:9) * 86400
   ids <- sprintf("I%d", 1:5)

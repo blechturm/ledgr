@@ -130,13 +130,20 @@ testthat::test_that("[LTB-0079] the input documentation spine is progressive", {
   for (rule in c(
     "identifiers stay stable", "whole-second UTC",
     "knowledge is declared per family",
-    "for membership, status and lifetime, missing evidenced knowledge remains audit-only",
+    "a membership, status or lifetime row without a knowledge time is sealed, but availability preparation refuses it with `ledgr_fact_knowledge_missing`",
     "Sessions instead require a valid knowledge time",
     "complete session calendar", "Corporate-action facts alone do not activate",
     "Status evidence may arrive late",
     "Lifetime follows the same late-knowledge rule"
   )) {
     testthat::expect_match(pit_flatten(point_qmd), rule, fixed = TRUE)
+  }
+  # Cut 16 decision (23): a membership, status or lifetime fact without a
+  # knowledge time is refused at preparation, so the article must not call
+  # it audit-only or run-neutral again.
+  for (text in list(point_qmd, point_md)) {
+    testthat::expect_no_match(pit_flatten(text), "knowledge[^.]*audit-only", perl = TRUE)
+    testthat::expect_no_match(pit_flatten(text), "kept for audit but cannot affect", fixed = TRUE)
   }
 
   entities <- c(

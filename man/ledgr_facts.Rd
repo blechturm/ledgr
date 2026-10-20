@@ -63,9 +63,13 @@ A classed fact-family object, or a \code{ledgr_facts} bundle.
 These constructors normalize point-in-time membership, trading-status,
 session-calendar, lifetime, and equity corporate-action evidence before
 snapshot creation. Effective intervals are half-open: \code{effective_from} is
-included and \code{effective_to} is excluded. Missing knowledge time remains
-audit-only unless \code{knowledge = "assume_effective"} is declared. Date-backed
-fact clocks are civil labels: \code{\link[=ledgr_facts]{ledgr_facts()}} resolves each to exactly one
+included and \code{effective_to} is excluded. A membership, trading-status or
+lifetime row without a knowledge time is accepted and kept in sealed
+evidence, but every run, sweep, feature precompute, walk-forward session or
+pulse inspection that prepares availability from that snapshot refuses with
+\code{ledgr_fact_knowledge_missing} until the row has a knowledge time.
+\code{knowledge = "assume_effective"} supplies one by using the effective time.
+Date-backed fact clocks are civil labels: \code{\link[=ledgr_facts]{ledgr_facts()}} resolves each to exactly one
 declared open session and retains the civil date, UTC instant, venue zone
 and calendar identity in sealed evidence. Corporate-action entitlement,
 effective, and payment dates resolve to session close; their knowledge
