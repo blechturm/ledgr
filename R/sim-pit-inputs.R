@@ -33,11 +33,9 @@
 #' requested window. They add one weekday venue closure, one missing observation
 #' on a declared open session, one delisting, one halt whose knowledge arrives
 #' after its effective time, and one validated gross cash dividend. Effective
-#' intervals are half-open. Under `"evidenced"` every generated row carries a
-#' knowledge time. Selecting `"assume_effective"` leaves it missing, is
-#' recorded in the recipe, and lets the public fact constructor substitute the
-#' effective time. See [ledgr_facts()] for how a fact row without a knowledge
-#' time is refused.
+#' intervals are half-open. Under `"evidenced"` every row carries a knowledge
+#' time; `"assume_effective"`, recorded in the recipe, leaves it missing and
+#' the fact constructor uses the effective time (see [ledgr_facts()]).
 #' The delisting retains its boundary observation and emits no later bars. The
 #' halt retains its effective-boundary bar, omits observations strictly inside
 #' the halted interval, and resumes at the excluded interval end.
