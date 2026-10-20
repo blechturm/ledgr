@@ -228,6 +228,8 @@ reference:
       - ledgr_history_frame
       - ledgr_history_matrix
       - ledgr_history_sufficient
+      - ledgr_history_info
+      - ledgr_history_weights
       - ledgr_history_policy
       - ledgr_feature_map
       - print.ledgr_feature_map

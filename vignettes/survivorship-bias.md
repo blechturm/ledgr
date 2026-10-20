@@ -621,6 +621,8 @@ ledgr_experiment_plan(point_in_time_experiment)
 #> Availability: active
 #> Price basis:  split_adjusted (declared)
 #> Universe:     membership
+#> Valuation:    stale-mark horizon 2 sessions (declared)
+#> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
 #> Checks:
 #> # A tibble: 4 x 3
 #>   family         status   assumption_reasons
@@ -632,6 +634,9 @@ ledgr_experiment_plan(point_in_time_experiment)
 #> Declared assumptions:
 #>   valuation.max_sessions          2
 #>   valuation.exhausted             freeze (default)
+#>   history.price_carry             5 sessions (default)
+#>   history.output_carry            off (default)
+#>   history.segment_limit           4 per fact, at least 16 (default)
 #>   held_terminal_position.default  last_permissible (default)
 #>   frozen_terminal_position        write_off (default)
 ```
@@ -920,7 +925,8 @@ point_in_time
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
 #> Price basis: split_adjusted (declared)
 #> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
-#> Point in time: membership rule 'demo_members'; max sessions 2
+#> Point in time: membership rule 'demo_members'; valuation stale-mark horizon 2 sessions (declared)
+#> History policy: price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
 #>
 #> Use summary(bt) for metrics and evidence
 ```
@@ -937,7 +943,7 @@ pit_valuation
 #> Valuation Evidence:
 #> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
 #>   Universe:                    membership rule 'demo_members'
-#>   Max sessions:                2
+#>   Stale-mark horizon:          2 sessions (declared)
 #>   Exhausted marks:             freeze
 #>   Stale instrument-sessions:   4
 #>   Frozen instrument-sessions:  3
@@ -946,6 +952,11 @@ pit_valuation
 #>   Max frozen weight:           23.60%
 #>   Frozen at end:               1 holdings, 1980 (23.04% of equity)
 #>   Return if frozen worthless:  -33.87%
+#>
+#> History Policy:
+#>   Price carry:                 5 sessions (default)
+#>   Output carry:                off (default)
+#>   Segment limit:               4 per fact, at least 16 (default)
 pit_valuation$total_return_if_frozen_worthless
 #> [1] -0.3387
 ```
@@ -1099,7 +1110,8 @@ written_off
 #> Corporate actions: MODELED - configured settlement conventions were exercised
 #> Price basis: split_adjusted (declared)
 #> Valuation: STALE - 2 holdings valued at a permitted stale close (longest age 1 session)
-#> Point in time: membership rule 'demo_members'; max sessions 2; assumption-backed facts: lifetime (knowledge assumed effective)
+#> Point in time: membership rule 'demo_members'; valuation stale-mark horizon 2 sessions (declared); assumption-backed facts: lifetime (knowledge assumed effective)
+#> History policy: price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
 #>
 #> Use summary(bt) for metrics and evidence
 ```

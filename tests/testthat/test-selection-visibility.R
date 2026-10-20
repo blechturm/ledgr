@@ -432,13 +432,18 @@ testthat::test_that("[LTB-0180] the experiment plan lists declared assumptions w
   testthat::expect_identical(
     as.data.frame(plan$assumptions),
     data.frame(
+      # LDG-3081 adds the history-policy rows after the valuation rows.
       setting = c(
         "valuation.max_sessions", "valuation.exhausted",
+        "history.price_carry", "history.output_carry", "history.segment_limit",
         "held_terminal_position.delisted", "held_terminal_position.default",
         "frozen_terminal_position"
       ),
-      value = c("1", "freeze", "refuse", "last_permissible", "write_off"),
-      default = c(FALSE, TRUE, FALSE, TRUE, TRUE),
+      value = c(
+        "1", "freeze", "5 sessions", "off", "4 per fact, at least 16",
+        "refuse", "last_permissible", "write_off"
+      ),
+      default = c(FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE),
       stringsAsFactors = FALSE
     )
   )

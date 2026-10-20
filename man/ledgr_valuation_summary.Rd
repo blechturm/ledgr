@@ -45,7 +45,13 @@ whether the snapshot declares membership facts a fixed basket does not
 apply), \code{assumption_backed_families} with their \code{assumption_reasons}
 (\code{"knowledge_assume_effective"}, \code{"generated_schedule"}, joined by \code{|}, as
 in \code{\link[=ledgr_experiment_plan]{ledgr_experiment_plan()}}), and \code{max_sessions_default}, \code{TRUE} when the
-horizon is the \code{ledgr_valuation_stale()} default of 5 sessions. \code{print()}
-of a result shows these on one \verb{Point in time:} line; \code{summary()} lists them
-with the valuation evidence.
+stale-mark horizon (\code{max_sessions}) is the \code{ledgr_valuation_stale()} default
+of 5 sessions. \code{print()} of a result shows these on one \verb{Point in time:}
+line that names the valuation stale-mark horizon as such, followed by a
+\verb{History policy:} line with the experiment's \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}
+(price carry, output carry and segment limit, each marked \code{default} or
+\code{declared}); the stale-mark horizon is a valuation setting, not the history
+policy's price carry. \code{history_policy} holds those three fields as a tibble
+(\code{setting}, \code{label}, \code{value}, \code{default}). \code{summary()} lists the same fields
+with the valuation evidence and a \verb{History Policy} section.
 }

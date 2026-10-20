@@ -698,7 +698,7 @@ print.ledgr_backtest <- function(x, ...) {
   valuation_headline <- ledgr_valuation_headline(valuation)
   if (!is.null(valuation_headline)) cat(valuation_headline, "\n", sep = "")
   point_in_time <- ledgr_point_in_time_line(valuation)
-  if (!is.null(point_in_time)) cat(point_in_time, "\n", sep = "")
+  if (!is.null(point_in_time)) cat(paste0(point_in_time, "\n"), sep = "")
   cat("\n")
   cat("Use summary(bt) for metrics and evidence\n")
 

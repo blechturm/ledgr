@@ -22,9 +22,15 @@
 #' apply), `assumption_backed_families` with their `assumption_reasons`
 #' (`"knowledge_assume_effective"`, `"generated_schedule"`, joined by `|`, as
 #' in [ledgr_experiment_plan()]), and `max_sessions_default`, `TRUE` when the
-#' horizon is the `ledgr_valuation_stale()` default of 5 sessions. `print()`
-#' of a result shows these on one `Point in time:` line; `summary()` lists them
-#' with the valuation evidence.
+#' stale-mark horizon (`max_sessions`) is the `ledgr_valuation_stale()` default
+#' of 5 sessions. `print()` of a result shows these on one `Point in time:`
+#' line that names the valuation stale-mark horizon as such, followed by a
+#' `History policy:` line with the experiment's [ledgr_history_policy()]
+#' (price carry, output carry and segment limit, each marked `default` or
+#' `declared`); the stale-mark horizon is a valuation setting, not the history
+#' policy's price carry. `history_policy` holds those three fields as a tibble
+#' (`setting`, `label`, `value`, `default`). `summary()` lists the same fields
+#' with the valuation evidence and a `History Policy` section.
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public
@@ -101,6 +107,10 @@ ledgr_valuation_summary_add_basis <- function(out, config, con) {
   out$membership_declared <- "membership" %in% declared
   out$assumption_backed_families <- names(reasons)
   out$assumption_reasons <- unname(vapply(reasons, paste, character(1), collapse = "|"))
+  # The run's history policy is part of the same basis (LDG-3081).
+  out$history_policy <- ledgr_history_policy_disclosure(
+    ledgr_history_identity_require_current(config$history)
+  )
   out
 }
 
@@ -264,18 +274,26 @@ ledgr_point_in_time_basis <- function(summary) {
   list(
     universe = universe,
     assumed = assumed,
-    horizon = paste0(summary$max_sessions, if (isTRUE(summary$max_sessions_default)) " (default)")
+    horizon = ledgr_valuation_horizon_value(summary$max_sessions, summary$max_sessions_default)
   )
 }
 
-# One print() line naming what the point-in-time view rested on.
+# The print() lines naming what the point-in-time view rested on. The
+# valuation horizon is named as such (LDG-3081): it is the stale-mark limit
+# of ledgr_valuation_stale(), not the history policy's price carry, which a
+# second line discloses when the summary carries it.
 ledgr_point_in_time_line <- function(summary) {
   if (identical(summary$valuation_state, "not_applicable")) return(NULL)
   basis <- ledgr_point_in_time_basis(summary)
-  paste0(
-    "Point in time: ", basis$universe %||% "universe not recorded",
-    "; max sessions ", basis$horizon,
-    if (!is.null(basis$assumed)) paste0("; assumption-backed facts: ", basis$assumed)
+  c(
+    paste0(
+      "Point in time: ", basis$universe %||% "universe not recorded",
+      "; valuation stale-mark horizon ", basis$horizon,
+      if (!is.null(basis$assumed)) paste0("; assumption-backed facts: ", basis$assumed)
+    ),
+    if (!is.null(summary$history_policy)) {
+      paste0("History policy: ", ledgr_history_policy_rows_display(summary$history_policy))
+    }
   )
 }
 
@@ -307,7 +325,7 @@ ledgr_print_valuation_summary <- function(summary) {
   fields <- c(
     if (!is.null(basis$universe)) c("Universe" = basis$universe),
     if (!is.null(basis$assumed)) c("Assumption-backed facts" = basis$assumed),
-    "Max sessions" = basis$horizon,
+    "Stale-mark horizon" = basis$horizon,
     "Exhausted marks" = summary$exhausted,
     "Stale instrument-sessions" = as.character(summary$stale_instrument_sessions),
     "Frozen instrument-sessions" = as.character(summary$frozen_instrument_sessions),
@@ -324,6 +342,16 @@ ledgr_print_valuation_summary <- function(summary) {
   )
   for (label in names(fields)) {
     cat(sprintf("  %-28s %s\n", paste0(label, ":"), fields[[label]]))
+  }
+  rows <- summary$history_policy
+  if (!is.null(rows)) {
+    cat("\nHistory Policy:\n")
+    cat(sprintf(
+      "  %-28s %s (%s)\n",
+      paste0(toupper(substring(rows$label, 1L, 1L)), substring(rows$label, 2L), ":"),
+      rows$value,
+      ifelse(rows$default, "default", "declared")
+    ), sep = "")
   }
   invisible(summary)
 }

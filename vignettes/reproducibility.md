@@ -490,6 +490,7 @@ The most common hard rejections are:
 | dynamic evaluation | `get("x")`, `eval(expr)`, `assign("x", 1)` | preflight cannot recover the value path as stored metadata |
 | global assignment | `x <<- 1` | strategy mutates state outside the run artifact |
 | context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgr’s execution context |
+| private context internals | `ctx$.history` or `environment(ctx$feature)` | the private carriers hold prepared data beyond the pulse; read history with `ledgr_history_frame()` |
 | unresolved helper | `my_helper(ctx)` | helper source is not stored as part of the strategy |
 
 Recommended-R functions such as `stats::median()` remain Tier

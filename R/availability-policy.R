@@ -300,7 +300,12 @@ ledgr_availability_validate_features <- function(features, features_mode) {
 #'   `setting`, with `value` and a `default` flag that is `TRUE` when the
 #'   value is the constructor default rather than a choice the caller changed.
 #'   The held terminal map has one `held_terminal_position.<label>` row per
-#'   entry, in map order.
+#'   entry, in map order. `history_policy` is the experiment's
+#'   [ledgr_history_policy()]; an availability-aware plan, which alone uses
+#'   it, adds `history.price_carry`, `history.output_carry` and
+#'   `history.segment_limit` rows. Its print names
+#'   `valuation.max_sessions` as the valuation stale-mark horizon and shows
+#'   the history policy beside it, each value marked `default` or `declared`.
 #' @section Articles:
 #' Point-in-time universe workflow:
 #' `vignette("survivorship-bias", package = "ledgr")`
@@ -342,10 +347,12 @@ ledgr_experiment_plan <- function(x, ...) {
       price_basis = ledgr_price_basis_label(x$data_identity$price_basis, active)$value,
       price_basis_default = ledgr_price_basis_label(x$data_identity$price_basis, active)$default,
       valuation_policy = x$valuation_policy,
+      history_policy = x$history_policy,
       checks = tibble::as_tibble(checks),
       assumptions = ledgr_experiment_plan_assumptions(
         x$valuation_policy,
-        x$corporate_action_policy
+        x$corporate_action_policy,
+        x$history_policy
       )
     ),
     class = c("ledgr_experiment_plan", "list")
@@ -360,6 +367,7 @@ print.ledgr_experiment_plan <- function(x, ...) {
   cat("Price basis:  ", ledgr_price_basis_display(x$price_basis %||% "undeclared", x$price_basis_default), "\n", sep = "")
   if (isTRUE(x$availability_active)) {
     cat("Universe:     ", x$universe_type, "\n", sep = "")
+    cat(ledgr_experiment_plan_policy_lines(x, width = 14L), sep = "")
     cat("Checks:\n")
     print(x$checks, row.names = FALSE)
   }
@@ -375,9 +383,11 @@ print.ledgr_experiment_plan <- function(x, ...) {
   invisible(x)
 }
 
-# Declared valuation-horizon and terminal-outcome choices with a default
-# marker against the constructor defaults. Disclosure only.
-ledgr_experiment_plan_assumptions <- function(valuation_policy, corporate_action_policy) {
+# Declared valuation-horizon, terminal-outcome and history-policy choices
+# with a default marker against the constructor defaults. Disclosure only.
+ledgr_experiment_plan_assumptions <- function(valuation_policy,
+                                              corporate_action_policy,
+                                              history_policy = NULL) {
   setting <- character()
   value <- character()
   default <- logical()
@@ -393,6 +403,14 @@ ledgr_experiment_plan_assumptions <- function(valuation_policy, corporate_action
       identical(as.integer(valuation_policy$max_sessions), ledgr_valuation_default_max_sessions),
       identical(valuation_policy$exhausted %||% "freeze", "freeze")
     )
+    # Only availability-aware experiments carry a valuation policy, and only
+    # they use the history policy, so its rows join this block (LDG-3081).
+    if (!is.null(history_policy)) {
+      history <- ledgr_history_policy_disclosure(history_policy)
+      setting <- c(setting, history$setting)
+      value <- c(value, history$value)
+      default <- c(default, history$default)
+    }
   }
   if (!is.null(corporate_action_policy)) {
     research <- ledgr_corporate_actions_research()
@@ -416,4 +434,27 @@ ledgr_experiment_plan_assumptions <- function(valuation_policy, corporate_action
     }
   }
   tibble::tibble(setting = setting, value = value, default = default)
+}
+
+# The plan's valuation stale-mark horizon and history policy as display
+# lines, derived from its assumption rows (LDG-3081); none for a plan whose
+# rows hold neither, such as a dense experiment's.
+ledgr_experiment_plan_policy_lines <- function(plan, width) {
+  rows <- plan$assumptions
+  label <- function(text) formatC(text, width = -width)
+  horizon <- rows[rows$setting == "valuation.max_sessions", , drop = FALSE]
+  history <- rows[startsWith(rows$setting, "history."), , drop = FALSE]
+  c(
+    if (nrow(horizon) == 1L) {
+      paste0(
+        label("Valuation:"),
+        ledgr_valuation_horizon_display(as.integer(horizon$value), horizon$default),
+        "\n"
+      )
+    },
+    if (nrow(history) > 0L) {
+      history$label <- gsub("_", " ", sub("^history[.]", "", history$setting))
+      paste0(label("History:"), ledgr_history_policy_rows_display(history), "\n")
+    }
+  )
 }

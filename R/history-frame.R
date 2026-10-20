@@ -914,6 +914,35 @@ ledgr_history_require_result <- function(x) {
   meta
 }
 
+# The result's metadata after checking that its columns still match the
+# recorded axis and instruments, as every adapter over a result does. For the
+# long layout it also returns each row's session and instrument position.
+ledgr_history_require_consistent <- function(x) {
+  meta <- ledgr_history_require_result(x)
+  axis <- meta$axis
+  ids <- as.character(meta$instrument_ids)
+  mismatch <- function() {
+    rlang::abort(
+      "`x` no longer matches its recorded history axis and instruments.",
+      class = c("ledgr_invalid_history_result", "ledgr_invalid_args")
+    )
+  }
+  if (identical(meta$layout, "wide")) {
+    if (!identical(names(x), c("ts_utc", ids)) || nrow(x) != length(axis) ||
+        !identical(as.numeric(x$ts_utc), as.numeric(axis))) {
+      mismatch()
+    }
+    return(list(meta = meta, row = NULL, col = NULL))
+  }
+  row <- match(as.numeric(x$ts_utc), as.numeric(axis))
+  col <- match(as.character(x$instrument_id), ids)
+  if (anyNA(row) || anyNA(col) || nrow(x) != length(axis) * length(ids) ||
+      anyDuplicated(row + (col - 1L) * length(axis))) {
+    mismatch()
+  }
+  list(meta = meta, row = row, col = col)
+}
+
 #' Convert a history result to an identified matrix
 #'
 #' `ledgr_history_matrix()` is an adapter over an existing [ledgr_history_frame()]
@@ -929,7 +958,8 @@ ledgr_history_require_result <- function(x) {
 #' @seealso [ledgr_history_frame()]
 #' @export
 ledgr_history_matrix <- function(x) {
-  meta <- ledgr_history_require_result(x)
+  checked <- ledgr_history_require_consistent(x)
+  meta <- checked$meta
   axis <- meta$axis
   ids <- as.character(meta$instrument_ids)
   time_names <- ledgr_history_time_names(axis)
@@ -940,29 +970,197 @@ ledgr_history_matrix <- function(x) {
     dimnames = list(time_names, ids)
   )
   if (identical(meta$layout, "wide")) {
-    if (!identical(names(x), c("ts_utc", ids)) || nrow(x) != length(axis) ||
-        !identical(as.numeric(x$ts_utc), as.numeric(axis))) {
-      rlang::abort(
-        "`x` no longer matches its recorded history axis and instruments.",
-        class = c("ledgr_invalid_history_result", "ledgr_invalid_args")
-      )
-    }
     if (length(ids) > 0L && length(axis) > 0L) {
       out[] <- as.numeric(unlist(unclass(x)[ids], use.names = FALSE))
     }
     return(out)
   }
-  row <- match(as.numeric(x$ts_utc), as.numeric(axis))
-  col <- match(as.character(x$instrument_id), ids)
-  if (anyNA(row) || anyNA(col) || nrow(x) != length(axis) * length(ids) ||
-      anyDuplicated(row + (col - 1L) * length(axis))) {
+  out[checked$row + (checked$col - 1L) * length(axis)] <- as.numeric(x$value)
+  out
+}
+
+#' Read the metadata of a history result
+#'
+#' `ledgr_history_info()` returns what a [ledgr_history_frame()] result
+#' recorded about itself, so a strategy or an inspection never reads the
+#' `"ledgr_history"` attribute directly: its source, causal cutoff, data
+#' start and returned-window start, requested and available lookback, the
+#' selection table with every exclusion reason, the included and excluded
+#' instrument IDs, and whether any returned value used observations or
+#' calculation state before the returned window. Like [ledgr_history_matrix()]
+#' it first checks that the result still matches its recorded axis and
+#' instruments, and it reads no data.
+#'
+#' Excluded instruments are estimation evidence only. An instrument that
+#' `na_action = "drop_instruments"` left out of the estimator sample still
+#' needs a target: [ledgr_target_rebalance()] targets a held instrument that
+#' is not in its weights to zero unless the strategy passes it in `keep`, and
+#' `excluded_ids` is the list to consult for that choice.
+#'
+#' @param x A `ledgr_history` result.
+#' @return A `ledgr_history_info` list with `source` (the `bar:<field>` or
+#'   `feature:<id>` label), `source_kind`, `source_id`, `cutoff_utc`,
+#'   `data_start_utc`, `window_start_utc`, `requested_lookback`,
+#'   `available_lookback`, `instruments` (the selector: `"admissible"`,
+#'   `"decision_axis"` or `"explicit"`), `na_action`, `layout`,
+#'   `used_before_window`, `included_ids`, `excluded_ids` (requested but not
+#'   included), `selection` (a tibble with one row per requested or
+#'   decision-axis instrument: `requested`, `included`, `exclusion_reason`,
+#'   `on_decision_axis`, `admissible`, `admissibility_reason`,
+#'   `required_input_count`, `carried_input_count` and
+#'   `carried_input_share`), `policy_identity`, `snapshot_hash` and, for the
+#'   wide layout, `evidence`, the sessions-by-instruments cell evidence
+#'   matrices.
+#' @seealso [ledgr_history_frame()], [ledgr_history_matrix()],
+#'   [ledgr_history_weights()]
+#' @examples
+#' \dontrun{
+#' strategy <- function(ctx, params) {
+#'   returns <- ctx |>
+#'     ledgr_history_frame(feature = "return_1", lookback = 20L,
+#'                         na_action = "drop_instruments")
+#'   info <- ledgr_history_info(returns)
+#'   info$excluded_ids
+#'   ctx$hold()
+#' }
+#' }
+#' @export
+ledgr_history_info <- function(x) {
+  meta <- ledgr_history_require_consistent(x)$meta
+  selection <- meta$selection
+  requested <- as.logical(selection$requested)
+  included <- as.logical(selection$included)
+  structure(
+    list(
+      source = meta$source$label,
+      source_kind = meta$source$kind,
+      source_id = meta$source$id,
+      cutoff_utc = meta$cutoff_utc,
+      data_start_utc = meta$data_start_utc,
+      window_start_utc = meta$window_start_utc,
+      requested_lookback = meta$requested_lookback,
+      available_lookback = meta$available_lookback,
+      instruments = meta$instruments,
+      na_action = meta$na_action,
+      layout = meta$layout,
+      used_before_window = meta$used_before_window,
+      included_ids = as.character(meta$instrument_ids),
+      excluded_ids = as.character(selection$instrument_id[requested & !included]),
+      selection = tibble::as_tibble(selection),
+      policy_identity = meta$policy_identity,
+      snapshot_hash = meta$snapshot_hash,
+      evidence = meta$evidence
+    ),
+    class = c("ledgr_history_info", "list")
+  )
+}
+
+#' @export
+print.ledgr_history_info <- function(x, ...) {
+  cat("ledgr_history_info\n")
+  cat("Source:       ", x$source, "\n", sep = "")
+  cat("Cutoff:       ", ledgr_history_time_names(x$cutoff_utc), "\n", sep = "")
+  window <- if (length(x$window_start_utc) == 1L && !is.na(x$window_start_utc)) {
+    ledgr_history_time_names(x$window_start_utc)
+  } else {
+    "empty"
+  }
+  cat("Window start: ", window, "\n", sep = "")
+  cat("Sessions:     ", x$available_lookback, " of requested ",
+      format(x$requested_lookback), "\n", sep = "")
+  cat("Selector:     ", x$instruments, ", na_action = ", x$na_action, "\n", sep = "")
+  cat("Included:     ", length(x$included_ids), " of ",
+      sum(x$selection$requested), " requested\n", sep = "")
+  if (length(x$excluded_ids) > 0L) {
+    reasons <- x$selection$exclusion_reason[match(x$excluded_ids, x$selection$instrument_id)]
+    cat("Excluded:     ", paste(sprintf("%s (%s)", x$excluded_ids, reasons), collapse = ", "),
+        "\n", sep = "")
+  }
+  cat("Used before window: ", if (isTRUE(x$used_before_window)) "yes" else "no", "\n", sep = "")
+  cat("# i Selection table: info$selection\n")
+  invisible(x)
+}
+
+#' Align solver weights to a history result
+#'
+#' `ledgr_history_weights()` turns the numeric output of an estimator or
+#' solver into [ledgr_weights()] identified by the instruments of the
+#' [ledgr_history_frame()] result it was estimated from, so no column names
+#' have to be rebuilt by hand. An unnamed vector is read in the order of
+#' the result's included instruments, which is the column order of
+#' [ledgr_history_matrix()]; a vector named by those instruments, in any
+#' order, is matched by name. A one-column or one-row matrix is read as a
+#' vector. A length that differs from the number of included instruments,
+#' or names that differ from them, refuse with
+#' `ledgr_history_weights_mismatch` rather than guessing.
+#'
+#' Only the included estimation sample receives a weight. Instruments the
+#' result excluded are listed by [ledgr_history_info()]; see that page and
+#' [ledgr_target_rebalance()] for what happens to a held excluded instrument.
+#'
+#' @param x A `ledgr_history` result.
+#' @param weights A finite numeric vector, or a one-column or one-row numeric
+#'   matrix, with one weight per included instrument.
+#' @return A `ledgr_weights` object named by the included instrument IDs.
+#' @seealso [ledgr_history_matrix()], [ledgr_history_info()],
+#'   [ledgr_target_rebalance()]
+#' @examples
+#' \dontrun{
+#' strategy <- function(ctx, params) {
+#'   returns <- ctx |>
+#'     ledgr_history_frame(feature = "return_1", lookback = 60L,
+#'                         na_action = "drop_instruments")
+#'   x <- ledgr_history_matrix(returns)
+#'   w <- 1 / apply(x, 2L, stats::sd)
+#'   returns |>
+#'     ledgr_history_weights(unname(w / sum(w))) |>
+#'     ledgr_target_rebalance(ctx, equity_fraction = 0.95)
+#' }
+#' }
+#' @export
+ledgr_history_weights <- function(x, weights) {
+  meta <- ledgr_history_require_consistent(x)$meta
+  ids <- as.character(meta$instrument_ids)
+  mismatch <- function(message) {
     rlang::abort(
-      "`x` no longer matches its recorded history axis and instruments.",
-      class = c("ledgr_invalid_history_result", "ledgr_invalid_args")
+      message,
+      class = c("ledgr_history_weights_mismatch", "ledgr_invalid_args")
     )
   }
-  out[row + (col - 1L) * length(axis)] <- as.numeric(x$value)
-  out
+  if (!is.numeric(weights)) {
+    mismatch("`weights` must be a numeric vector with one weight per included instrument.")
+  }
+  if (!is.null(dim(weights))) {
+    if (length(dim(weights)) != 2L || min(dim(weights)) > 1L && length(weights) > 0L) {
+      mismatch("`weights` must be a vector or a one-column or one-row matrix.")
+    }
+    dims <- dimnames(weights)
+    labels <- if (is.null(dims)) NULL else dims[[which.max(dim(weights))]]
+    weights <- as.numeric(weights)
+    names(weights) <- labels
+  }
+  labels <- names(weights)
+  if (length(weights) != length(ids)) {
+    mismatch(sprintf(
+      "`weights` has %d value%s but the history result includes %d instrument%s (%s).",
+      length(weights), if (length(weights) == 1L) "" else "s",
+      length(ids), if (length(ids) == 1L) "" else "s",
+      if (length(ids) > 0L) paste(ids, collapse = ", ") else "none"
+    ))
+  }
+  if (!is.null(labels) && any(nzchar(labels))) {
+    if (anyNA(labels) || anyDuplicated(labels) || !setequal(labels, ids)) {
+      mismatch(sprintf(
+        "`weights` names must be the history result's included instruments: %s.",
+        paste(ids, collapse = ", ")
+      ))
+    }
+    weights <- weights[match(ids, labels)]
+  }
+  ledgr_weights(
+    stats::setNames(as.numeric(weights), ids),
+    origin = "ledgr_history_weights"
+  )
 }
 
 #' Check structural sufficiency of a history result
@@ -973,14 +1171,29 @@ ledgr_history_matrix <- function(x) {
 #' query on the returned axis and selection only. It is not indicator
 #' readiness, warm-up or convergence and does not inspect values.
 #'
+#' Without `lookback` it uses the finite lookback the result was read with,
+#' so a strategy states its window once. A result read with the default
+#' `lookback = Inf` has no finite requirement to check, and the call refuses
+#' with `ledgr_invalid_history_request` unless `lookback` is supplied.
+#'
 #' @param x A `ledgr_history` result.
-#' @param lookback Required number of expected sessions.
+#' @param lookback Required number of expected sessions. `NULL` (the default)
+#'   uses the result's requested lookback, which must be finite.
 #' @param min_instruments Required number of included instruments.
 #' @return `TRUE` or `FALSE`.
-#' @seealso [ledgr_history_frame()]
+#' @seealso [ledgr_history_frame()], [ledgr_history_info()]
 #' @export
-ledgr_history_sufficient <- function(x, lookback, min_instruments = 1L) {
+ledgr_history_sufficient <- function(x, lookback = NULL, min_instruments = 1L) {
   meta <- ledgr_history_require_result(x)
+  if (is.null(lookback)) {
+    lookback <- meta$requested_lookback
+    if (!is.numeric(lookback) || length(lookback) != 1L || !is.finite(lookback)) {
+      ledgr_history_request_error(paste(
+        "The history result was read with `lookback = Inf`, so it has no finite",
+        "lookback to check; supply `lookback`."
+      ))
+    }
+  }
   whole <- function(value, argument) {
     if (!is.numeric(value) || length(value) != 1L || is.na(value) ||
         !is.finite(value) || value < 0 || value != floor(value)) {
@@ -1012,5 +1225,6 @@ print.ledgr_history <- function(x, ...) {
   attr(frame, "ledgr_history") <- NULL
   class(frame) <- "data.frame"
   print(utils::head(frame, 10L), ...)
+  cat("# i Selection, exclusions and window: ledgr_history_info(x)\n")
   invisible(x)
 }

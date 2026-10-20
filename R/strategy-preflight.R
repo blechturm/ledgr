@@ -27,6 +27,19 @@
 #' `get()`, `eval()`, and `assign()`, global assignment with `<<-`, and visible
 #' context mutation such as `attr(ctx, "secret") <- 1`.
 #'
+#' Strategies read the pulse context only through its public fields, its
+#' public functions and exported ledgr helpers such as
+#' [ledgr_history_frame()]. Reaching private context internals is Tier 3:
+#' extracting a dot-prefixed member of any object (`ctx$.history`,
+#' `x[[".notes"]]`), naming a private context field in a string, or
+#' introspecting closure or call environments with `environment()`,
+#' `parent.env()`, `parent.frame()`, the `sys.*()` frame functions,
+#' `as.environment()`, `topenv()` or their `rlang` equivalents. The private
+#' history carrier and the environments behind public context functions hold
+#' prepared data beyond the pulse, so such a read could see the future.
+#' Dynamically constructed names, positional extraction from `ctx` and
+#' iteration over it remain outside what static analysis detects.
+#'
 #' Ambient strategy RNG calls such as `runif(1)` are Tier 2 under the execution
 #' seed contract for ordinary sequential runs, but they are not certified for
 #' resume or parallel equivalence. Strategies that need pulse-specific
@@ -89,6 +102,7 @@ ledgr_strategy_preflight <- function(strategy) {
   forbidden_call_symbols <- analysis$forbidden_call_symbols
   has_global_assignment <- analysis$has_global_assignment
   unsupported_context_mutations <- analysis$unsupported_context_mutations
+  private_context_access <- analysis$private_context_access
   notes <- analysis$notes
 
   if (isTRUE(has_global_assignment)) {
@@ -101,6 +115,17 @@ ledgr_strategy_preflight <- function(strategy) {
     reason <- sprintf(
       "Strategy uses unsupported context mutation(s): %s.",
       paste(unsupported_context_mutations, collapse = ", ")
+    )
+  } else if (length(private_context_access) > 0L) {
+    tier <- "tier_3"
+    allowed <- FALSE
+    reason <- sprintf(
+      paste(
+        "Strategy reaches private context internals: %s.",
+        "Read the context through its public fields and functions and",
+        "history through `ledgr_history_frame()`."
+      ),
+      paste(private_context_access, collapse = ", ")
     )
   } else if (length(forbidden_call_symbols) > 0L) {
     tier <- "tier_3"
@@ -206,6 +231,12 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   string_constants <- unique(ledgr_strategy_character_constants(body(strategy)))
   forbidden_do_call_symbols <- ledgr_strategy_forbidden_do_call_targets(body(strategy))
   unsupported_context_mutations <- ledgr_strategy_unsupported_context_mutations(body(strategy))
+  private_context_access <- ledgr_strategy_private_context_access(
+    body(strategy),
+    symbols = union(as.character(globals$functions), as.character(globals$variables)),
+    qualified = qualified,
+    string_constants = string_constants
+  )
   raw_functions <- functions
   global_assignment_lhs <- ledgr_strategy_global_assignment_lhs(body(strategy))
   qualified_names <- if (nrow(qualified) > 0L) as.character(qualified$name) else character()
@@ -333,8 +364,93 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
     forbidden_call_symbols = forbidden_call_symbols,
     has_global_assignment = has_global_assignment,
     unsupported_context_mutations = unsupported_context_mutations,
+    private_context_access = private_context_access,
     notes = notes
   )
+}
+
+# Dot-prefixed members of a ledgr pulse context. They are private runtime
+# carriers: `.history` holds the whole prepared history substrate and the
+# others hold lookup state behind the public accessors (LDG-3072).
+ledgr_pulse_context_private_fields <- function() {
+  c(
+    ".feature_table_current", ".feature_vector", ".history", ".notes",
+    ".positions", ".pulse_lookup", ".safety_state"
+  )
+}
+
+# Functions that return a closure, call or frame environment. Public context
+# functions are closures over prepared state that extends past the pulse
+# (for example the feature accessor's projection and the context itself), so
+# a strategy may not introspect them (LDG-3072).
+ledgr_strategy_environment_functions <- function() {
+  list(
+    base = c(
+      "environment", "environment<-", "parent.env", "parent.env<-",
+      "parent.frame", "sys.function", "sys.frame", "sys.frames", "sys.call",
+      "sys.calls", "sys.parent", "sys.parents", "sys.on.exit", "sys.status",
+      "as.environment", "topenv"
+    ),
+    rlang = c(
+      "fn_env", "get_env", "env_parent", "env_parents", "env_tail",
+      "caller_env", "caller_fn", "current_env", "current_fn",
+      "as_environment", "env_get", "env_get_list"
+    )
+  )
+}
+
+# Static reads of private context internals: `$`, `@`, `[[` or `[` with a
+# literal dot-prefixed name on any object (a context is easily aliased), a
+# string constant naming a private context field, and environment
+# introspection, called, passed by name or named in `do.call()`.
+ledgr_strategy_private_context_access <- function(expr,
+                                                  symbols,
+                                                  qualified,
+                                                  string_constants) {
+  out <- character()
+  dot_name <- function(x) {
+    name <- if (is.symbol(x)) as.character(x) else if (is.character(x) && length(x) == 1L) x else NA_character_
+    if (!is.na(name) && nchar(name) >= 2L && startsWith(name, ".")) name else NA_character_
+  }
+  visit <- function(node) {
+    if (is.call(node) && length(node) >= 3L) {
+      head <- ledgr_strategy_call_head_name(node)
+      if (head %in% c("$", "@", "$<-", "@<-")) {
+        name <- dot_name(node[[3L]])
+        if (!is.na(name)) out <<- c(out, paste0(head, name))
+      } else if (head %in% c("[[", "[", "[[<-", "[<-")) {
+        for (i in seq.int(3L, length(node))) {
+          name <- if (identical(node[[i]], quote(expr = ))) NA_character_ else dot_name(node[[i]])
+          if (!is.na(name) && is.character(node[[i]])) {
+            out <<- c(out, sprintf("%s\"%s\"]%s", sub("<-$", "", head), name, if (startsWith(head, "[[")) "]" else ""))
+          }
+        }
+      }
+      if (head %in% c("do.call", "base::do.call")) {
+        target <- ledgr_strategy_do_call_target_name(node[[2L]])
+        env_fns <- ledgr_strategy_environment_functions()
+        if (!is.null(target) && target$name %in% c(env_fns$base, env_fns$rlang)) {
+          out <<- c(out, sprintf("do.call(%s)", target$label))
+        }
+      }
+    }
+    if (is.recursive(node)) {
+      for (i in seq_along(node)) {
+        if (!identical(node[[i]], quote(expr = ))) visit(node[[i]])
+      }
+    }
+    invisible(NULL)
+  }
+  visit(expr)
+  env_fns <- ledgr_strategy_environment_functions()
+  out <- c(out, sprintf("%s()", intersect(symbols, env_fns$base)))
+  if (nrow(qualified) > 0L) {
+    hit <- (qualified$package == "base" & qualified$name %in% env_fns$base) |
+      (qualified$package == "rlang" & qualified$name %in% env_fns$rlang)
+    out <- c(out, sprintf("%s%s%s()", qualified$package[hit], qualified$operator[hit], qualified$name[hit]))
+  }
+  out <- c(out, sprintf("\"%s\"", intersect(string_constants, ledgr_pulse_context_private_fields())))
+  sort(unique(out), method = "radix")
 }
 
 ledgr_strategy_has_global_assignment <- function(strategy) {

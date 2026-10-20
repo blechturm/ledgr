@@ -201,7 +201,7 @@ NYSE window above. It has one closed date, one missing open-session
 observation for `AAA`, and a `BBB` series that starts late. Both moving
 averages use a two-session window, and price carry is disabled with
 `ledgr_history_policy(price_carry = NULL)`. Under the default policy,
-`AAA`'s 4 January close would be carried from 2 January for up to five
+`AAA`’s 4 January close would be carried from 2 January for up to five
 expected sessions, giving 12 on 4 January and 13 on 5 January.
 
 <!-- strict-gap-table:start -->
@@ -421,7 +421,8 @@ tight_run
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
 #> Price basis: split_adjusted (declared)
 #> Valuation: FROZEN - 1 holding frozen (longest 2 sessions, max 530 or 0.53% of equity)
-#> Point in time: fixed basket; max sessions 1; assumption-backed facts: sessions (knowledge assumed effective, generated schedule); trading_status (knowledge assumed effective)
+#> Point in time: fixed basket; valuation stale-mark horizon 1 session (declared); assumption-backed facts: sessions (knowledge assumed effective, generated schedule); trading_status (knowledge assumed effective)
+#> History policy: price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
 #>
 #> Use summary(bt) for metrics and evidence
 ```
@@ -441,7 +442,11 @@ facts ledgr took on assumption rather than on evidence. This calendar
 was generated rather than taken from a venue’s record, and neither the
 calendar nor the halt records say when they became known, so ledgr
 assumed they were known as soon as they took effect. Facts that carry
-their own knowledge times drop off that list.
+their own knowledge times drop off that list. The `History policy:` line
+below it is a separate setting: how many sessions a price may carry
+forward in the strategy’s history reads and features
+(`ledgr_history_policy()`), not how long a holding may be valued at a
+stale close.
 
 ``` r
 ledgr_run_explain(tight_run, "BBB") |>
@@ -531,7 +536,7 @@ ledgr_valuation_summary(loose_run)
 #> Valuation: STALE - 1 holding valued at a permitted stale close (longest age 3 sessions)
 #>   Universe:                    fixed basket
 #>   Assumption-backed facts:     sessions (knowledge assumed effective, generated schedule); trading_status (knowledge assumed effective)
-#>   Max sessions:                5 (default)
+#>   Stale-mark horizon:          5 sessions (default)
 #>   Exhausted marks:             freeze
 #>   Stale instrument-sessions:   3
 #>   Frozen instrument-sessions:  0
@@ -540,6 +545,11 @@ ledgr_valuation_summary(loose_run)
 #>   Max frozen weight:           0.00%
 #>   Frozen at end:               0 holdings, 0 (0.00% of equity)
 #>   Return if frozen worthless:  not applicable
+#>
+#> History Policy:
+#>   Price carry:                 5 sessions (default)
+#>   Output carry:                off (default)
+#>   Segment limit:               4 per fact, at least 16 (default)
 ```
 
 Same data, same strategy, and no warning this time: every carried mark

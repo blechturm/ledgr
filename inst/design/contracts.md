@@ -774,7 +774,15 @@ Accepted change pending:
   refused for execution. Under
   `split_adjusted`, level rules and integer sizing read back-adjusted price
   levels, so a quantity or price threshold before a split is in post-split
-  units, and as-traded bars across a split would book a phantom loss. The
+  units, and as-traded bars across a split would book a phantom loss.
+  Corporate-action per-parent-unit terms use the same units:
+  `gross_cash_per_parent_unit` and `recipient_quantity_per_parent_unit` are
+  per split-adjusted parent share. A cash entitlement posts the term times
+  the held split-adjusted quantity, and nothing converts at a split, so an
+  amount declared per as-traded share before a later split must be divided
+  by the cumulative split factor before it is supplied; supplied unconverted,
+  it is credited that factor too large. The source adapter owns the
+  conversion (Cut 16 LDG-3068). The
   basis appears in `ledgr_experiment_plan()`, in
   `ledgr_corporate_action_summary()` (`price_basis`, `price_basis_default`)
   and in `print()` of a result, labeled declared or assumed default. A dense
@@ -832,6 +840,19 @@ Accepted change pending:
   shows one `Point in time:` line and `summary()` lists the same fields with
   the valuation evidence. A run whose applied facts are all evidenced shows no
   assumption label (Cut 12 LDG-3010).
+- The valuation horizon is disclosed under its name: `print()` reads
+  `valuation stale-mark horizon N sessions`, `summary()` reads
+  `Stale-mark horizon`, and the plan and the experiment print a `Valuation:`
+  line, each value marked `default` or `declared`. The experiment's history
+  policy appears on the same surfaces as the price basis: a `History policy:`
+  line in `print()` of an availability-aware result, a `History Policy`
+  section in `summary()`, a `History:` line in `print()` of the experiment
+  and of `ledgr_experiment_plan()`, whose `assumptions` table adds
+  `history.price_carry`, `history.output_carry` and `history.segment_limit`.
+  Each field is marked `default` when it equals the `ledgr_history_policy()`
+  constructor default (omission and an explicit default share identity) and
+  `declared` otherwise. Dense results, experiments and plans show no history
+  policy (Cut 16 LDG-3081).
 
 <a id="contract-availability-fact-inspection"></a>
 ### Fact Inspection And Calendar Adapters
@@ -1612,6 +1633,21 @@ and `AAA` a held nonmember, each holding 5:
   execution identity, including `Sys.time()`, `Sys.Date()`, `date()`, `get()`,
   `eval()`, `assign()`, and `Sys.getenv()`, are Tier 3 in preflight and must
   fail before `ledgr_run()` or `ledgr_sweep()` creates execution artifacts.
+- A strategy reads the pulse context only through its public fields, its
+  public functions and exported ledgr helpers. Reaching private context
+  internals is Tier 3 and fails before any run, sweep or walk-forward side
+  effect (Cut 16 LDG-3072): a `$`, `@`, `[[` or `[` extraction of a literal
+  dot-prefixed name on any object, a string constant naming a private context
+  field (`ledgr_pulse_context_private_fields()`), or closure, call or frame
+  environment introspection (`environment()`, `parent.env()`,
+  `parent.frame()`, the `sys.*()` frame functions, `as.environment()`,
+  `topenv()` and their `rlang` equivalents, called, passed by name or named
+  in `do.call()`). The private history carrier `ctx$.history` holds the whole
+  prepared substrate, and the closures behind public context functions hold
+  the context and the run's whole feature projection, so either path could
+  read values after the pulse. Dynamically constructed names, positional
+  extraction from the context and iteration over it remain outside what the
+  static preflight detects.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
   strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top_n()`,
@@ -1768,16 +1804,32 @@ and `AAA` a held nonmember, each holding 5:
   stores a zero-length dimension's names as `NULL`). It owns no cutoff, axis,
   treatment or missingness logic and refuses a value that no longer matches
   its recorded axis with `ledgr_invalid_history_result`.
-  `ledgr_history_sufficient(x, lookback, min_instruments)` is the structural
-  completeness query: at least `lookback` returned sessions and at least
-  `min_instruments` included instruments. It is not indicator readiness,
-  warm-up or convergence and inspects no value.
+  `ledgr_history_sufficient(x, lookback = NULL, min_instruments = 1L)` is the
+  structural completeness query: at least `lookback` returned sessions and at
+  least `min_instruments` included instruments. Without `lookback` it uses
+  the result's requested lookback and refuses an infinite one with
+  `ledgr_invalid_history_request`. It is not indicator readiness, warm-up or
+  convergence and inspects no value.
+- `ledgr_history_info()` returns a result's recorded metadata as a
+  `ledgr_history_info` list (source, cutoff, data and window starts,
+  requested and available lookback, selector, `na_action`, layout,
+  `used_before_window`, included and excluded instrument IDs, the selection
+  table as a tibble, policy identity, snapshot hash and, for the wide layout,
+  the cell evidence) after the same consistency check as
+  `ledgr_history_matrix()`; `print()` of a `ledgr_history` names it in a
+  footer. `ledgr_history_weights(x, weights)` turns estimator output into
+  `ledgr_weights` named by the result's included instruments: an unnamed
+  vector is read in the matrix column order, a named vector is matched by
+  name, and a one-column or one-row matrix is read as a vector; a length or
+  names that differ from the included instruments refuse with
+  `ledgr_history_weights_mismatch`. Both read no data. (Cut 16 LDG-3071 API
+  items.)
 - History reads add no public context field, durable artifact or snapshot
   row. The history view is a private carrier, `ctx$.history`, that holds the
   read service and therefore the whole substrate; strategies read history
-  only through `ledgr_history_frame()`, and the strategy preflight does not
-  yet reject direct access to dot-prefixed context internals (routed by the
-  Workstream 42 close review, F4). P1
+  only through `ledgr_history_frame()`, and the strategy preflight refuses
+  direct access to dot-prefixed context internals and closure-environment
+  introspection as Tier 3 (Reproducibility And Preflight, Cut 16 LDG-3072). P1
   issues the cutoff-bound history view; P2 places it on the context, and the
   strategy's `ledgr_history_frame()` call reads prepared planes shared by the
   owning run, sweep or walk-forward session. Treatment planes are prepared

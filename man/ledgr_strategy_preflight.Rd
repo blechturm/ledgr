@@ -46,6 +46,19 @@ forbidden calls include direct wall-clock/process-environment calls such as
 \code{get()}, \code{eval()}, and \code{assign()}, global assignment with \verb{<<-}, and visible
 context mutation such as \code{attr(ctx, "secret") <- 1}.
 
+Strategies read the pulse context only through its public fields, its
+public functions and exported ledgr helpers such as
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}}. Reaching private context internals is Tier 3:
+extracting a dot-prefixed member of any object (\code{ctx$.history},
+\code{x[[".notes"]]}), naming a private context field in a string, or
+introspecting closure or call environments with \code{environment()},
+\code{parent.env()}, \code{parent.frame()}, the \verb{sys.*()} frame functions,
+\code{as.environment()}, \code{topenv()} or their \code{rlang} equivalents. The private
+history carrier and the environments behind public context functions hold
+prepared data beyond the pulse, so such a read could see the future.
+Dynamically constructed names, positional extraction from \code{ctx} and
+iteration over it remain outside what static analysis detects.
+
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
 seed contract for ordinary sequential runs, but they are not certified for
 resume or parallel equivalence. Strategies that need pulse-specific

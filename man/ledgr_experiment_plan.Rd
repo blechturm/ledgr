@@ -26,7 +26,12 @@ declared valuation-horizon and terminal-outcome choices, one row per
 \code{setting}, with \code{value} and a \code{default} flag that is \code{TRUE} when the
 value is the constructor default rather than a choice the caller changed.
 The held terminal map has one \verb{held_terminal_position.<label>} row per
-entry, in map order.
+entry, in map order. \code{history_policy} is the experiment's
+\code{\link[=ledgr_history_policy]{ledgr_history_policy()}}; an availability-aware plan, which alone uses
+it, adds \code{history.price_carry}, \code{history.output_carry} and
+\code{history.segment_limit} rows. Its print names
+\code{valuation.max_sessions} as the valuation stale-mark horizon and shows
+the history policy beside it, each value marked \code{default} or \code{declared}.
 }
 \description{
 Reports whether point-in-time availability is active and which fact-family
