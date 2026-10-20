@@ -19,11 +19,13 @@ governance_read_lines <- function(path) {
   }
   out <- tryCatch(
     readLines(path, warn = FALSE, encoding = "UTF-8"),
-    error = function(e) governance_abort(sprintf(
-      "cannot read required input '%s': %s",
-      path,
-      conditionMessage(e)
-    ))
+    error = function(e) {
+      governance_abort(sprintf(
+        "cannot read required input '%s': %s",
+        path,
+        conditionMessage(e)
+      ))
+    }
   )
   out
 }
@@ -32,11 +34,13 @@ governance_read_yaml <- function(path) {
   governance_read_lines(path)
   tryCatch(
     yaml::read_yaml(path),
-    error = function(e) governance_abort(sprintf(
-      "malformed YAML input '%s': %s",
-      path,
-      conditionMessage(e)
-    ))
+    error = function(e) {
+      governance_abort(sprintf(
+        "malformed YAML input '%s': %s",
+        path,
+        conditionMessage(e)
+      ))
+    }
   )
 }
 

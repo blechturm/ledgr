@@ -667,10 +667,14 @@ ledgr_experiment_window_from_fold <- function(exp,
   if (identical(window, "train")) {
     train_start <- if (!is.null(fold$civil_boundaries$train_start)) {
       as.Date(fold$civil_boundaries$train_start)
-    } else fold$train_start_utc
+    } else {
+      fold$train_start_utc
+    }
     train_end <- if (!is.null(fold$civil_boundaries$train_end)) {
       as.Date(fold$civil_boundaries$train_end)
-    } else fold$train_end_utc
+    } else {
+      fold$train_end_utc
+    }
     return(ledgr_experiment_window(
       exp = exp,
       start_utc = train_start,
@@ -680,10 +684,14 @@ ledgr_experiment_window_from_fold <- function(exp,
   }
   test_start <- if (!is.null(fold$civil_boundaries$test_start)) {
     as.Date(fold$civil_boundaries$test_start)
-  } else fold$test_start_utc
+  } else {
+    fold$test_start_utc
+  }
   test_end <- if (!is.null(fold$civil_boundaries$test_end)) {
     as.Date(fold$civil_boundaries$test_end)
-  } else fold$test_end_utc
+  } else {
+    fold$test_end_utc
+  }
   ledgr_experiment_window(
     exp = exp,
     start_utc = test_start,
