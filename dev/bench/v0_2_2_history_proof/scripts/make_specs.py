@@ -81,7 +81,7 @@ specs = [
       '  - id: "LDG-3069"\n    title: "Prove history resource and worker bounds"\n    workstream: 44\n    status: "complete"',
       PROOF, ["LTB-0408"]),
     m("O4", "LTB-0305 citation removed from LDG-3064 evidence", "inst/design/ledgr_v0_2_2_spec_packet/tickets.yml",
-      "LTB-0305", "LTB-9305", PROOF, ["LTB-0408"]),
+      "LCL-0299/LTB-0305 shows", "LCL-0299/LTB-9305 shows", PROOF, ["LTB-0408"]),
     m("O5", "mapped block LTB-0285 no longer defined", "tests/testthat/test-history-foundation.R",
       'testthat::test_that("[LTB-0285] correction chains', 'testthat::test_that("[LTB-9285] correction chains',
       PROOF, ["LTB-0408"]),
@@ -98,6 +98,12 @@ specs = [
       "      eligible_gap = inputs$expected[calc] & !calculated[calc],", PROOF, ["LTB-0409"]),
     m("L5", "bar reads ignore a disabled input carry", "R/history-frame.R",
       "    max_sessions = substrate$history_policy$price_carry,", "    max_sessions = 5L,", PROOF, ["LTB-0409"]),
+    m("V1", "feature evidence resolved with the cutoff's mask (decision 29 reverted)", "R/history-frame.R",
+      "  planes <- ledgr_history_vintage_planes(substrate, rows, columns)\n",
+      "  planes <- ledgr_history_cutoff_planes(substrate, NULL, rows, columns, cutoff_col)\n"
+      "  planes$reach_seen <- t(collapse::fcumsum(t(matrix(as.integer(planes$expected), length(rows), length(columns)))))\n"
+      "  dim(planes$reach_seen) <- c(length(rows), length(columns))\n",
+      PROOF, ["LTB-0409"]),
     # LDG-3068 cross-surface -> LTB-0410
     m("S1", "every history read uses the previous session as cutoff", "R/history-frame.R",
       "  cutoff_col <- view$cutoff_col\n", "  cutoff_col <- view$cutoff_col - 1L\n", PROOF, ["LTB-0410"]),

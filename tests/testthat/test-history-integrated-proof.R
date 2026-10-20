@@ -235,23 +235,23 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
     after <- default$at(session)
     close <- ws44_cells(after$close, "DDD")
     shown <- c(41, 43, 43, 50, 55, 61, 68, 76)[seq_len(session)]
-    testthat::expect_identical(close$value, shown, info = session)
+    testthat::expect_identical(close$value, shown, info = paste("cutoff", session))
     expected_mask <- c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE)[seq_len(session)]
-    testthat::expect_identical(close$expected, expected_mask, info = session)
-    testthat::expect_identical(close$calculation_valid, expected_mask, info = session)
+    testthat::expect_identical(close$expected, expected_mask, info = paste("cutoff", session))
+    testthat::expect_identical(close$calculation_valid, expected_mask, info = paste("cutoff", session))
     testthat::expect_identical(close$missing_reason[5:6], rep("inactive_interval_print", 2L))
     testthat::expect_identical(close$barrier_reason[5:6], rep("lifetime_inactive", 2L))
     testthat::expect_identical(close$input_carried[[3L]], TRUE)
     sma <- ws44_cells(after$sma, "DDD")
     # Sessions 1-6 keep their at-pulse values and evidence (decision 29):
     # every cell equals the session-6 read's cell.
-    testthat::expect_identical(sma$value[1:6], c(na, 42, 43, 46.5, 52.5, 58), info = session)
-    testthat::expect_identical(sma[1:6, ], ws44_cells(at6$sma, "DDD"), info = session)
-    testthat::expect_identical(sma$expected, rep(TRUE, session), info = session)
-    testthat::expect_identical(sma$calculation_valid[5:6], c(TRUE, TRUE), info = session)
-    testthat::expect_identical(sma$missing_reason[5:6], c("", ""), info = session)
-    testthat::expect_identical(sma$barrier_reason[5:6], c("", ""), info = session)
-    testthat::expect_identical(sma$value[7L], 59, info = session)
+    testthat::expect_identical(sma$value[1:6], c(na, 42, 43, 46.5, 52.5, 58), info = paste("cutoff", session))
+    testthat::expect_identical(sma[1:6, ], ws44_cells(at6$sma, "DDD"), info = paste("cutoff", session))
+    testthat::expect_identical(sma$expected, rep(TRUE, session), info = paste("cutoff", session))
+    testthat::expect_identical(sma$calculation_valid[5:6], c(TRUE, TRUE), info = paste("cutoff", session))
+    testthat::expect_identical(sma$missing_reason[5:6], c("", ""), info = paste("cutoff", session))
+    testthat::expect_identical(sma$barrier_reason[5:6], c("", ""), info = paste("cutoff", session))
+    testthat::expect_identical(sma$value[7L], 59, info = paste("cutoff", session))
     testthat::expect_true(sma$calculation_valid[[7L]])
   }
   testthat::expect_identical(default$at(7L)$scalar, 59)

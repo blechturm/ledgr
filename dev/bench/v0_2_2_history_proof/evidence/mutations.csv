@@ -24,11 +24,12 @@ O2,item 9 primary and contributing owners swapped,inst/design/ledgr_v0_2_2_spec_
 O3,pending owner LDG-3069 closed without blocks,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|1|
 O4,LTB-0305 citation removed from LDG-3064 evidence,inst/design/ledgr_v0_2_2_spec_packet/tickets.yml,DETECTED,LTB-0408|fail|177|1|
 O5,mapped block LTB-0285 no longer defined,tests/testthat/test-history-foundation.R,DETECTED,LTB-0408|fail|177|1|
-L1,late-known fact applied before its knowledge pulse (feature ranges not split),R/history-features.R,DETECTED,LTB-0409|fail|60|6|
-L2,history reads ignore later knowledge (first epoch only),R/history-frame.R,DETECTED,LTB-0409|fail|14|0|error
-L3,bounded windows stop at a lifetime-inactive interval,R/history-features.R,DETECTED,LTB-0409|fail|22|0|error
-L4,output carry fills a warm-up cell,R/history-features.R,DETECTED,LTB-0409|fail|60|4|
-L5,bar reads ignore a disabled input carry,R/history-frame.R,DETECTED,LTB-0409|fail|60|5|
+L1,late-known fact applied before its knowledge pulse (feature ranges not split),R/history-features.R,DETECTED,LTB-0409|fail|68|14|
+L2,history reads ignore later knowledge (first epoch only),R/history-frame.R,DETECTED,LTB-0409|fail|68|8|
+L3,bounded windows stop at a lifetime-inactive interval,R/history-features.R,DETECTED,LTB-0409|fail|68|8|
+L4,output carry fills a warm-up cell,R/history-features.R,DETECTED,LTB-0409|fail|68|4|
+L5,bar reads ignore a disabled input carry,R/history-frame.R,DETECTED,LTB-0409|fail|68|5|
+V1,feature evidence resolved with the cutoff's mask (decision 29 reverted),R/history-frame.R,DETECTED,LTB-0409|fail|68|13|
 S1,every history read uses the previous session as cutoff,R/history-frame.R,DETECTED,LTB-0410|fail|0|0|error
 S2,matrix adapter reverses values,R/history-frame.R,DETECTED,LTB-0410|fail|90|15|
 S3,inspection calculates features from its cutoff,R/pulse-snapshot.R,DETECTED,LTB-0410|fail|90|12|

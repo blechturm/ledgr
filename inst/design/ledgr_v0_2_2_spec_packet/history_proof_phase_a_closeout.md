@@ -4,15 +4,16 @@ Role: record; Workstream 44 phase A implementation evidence (LDG-3072,
 LDG-3081, the LDG-3071 API items and LDG-3068).
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behaviour.
-Status: LDG-3072 and LDG-3081 are complete. LDG-3071 stays `open` (phase B
-owns its teaching and reconciliation); its three API items are implemented.
-LDG-3068 stays `open` on one `NEEDS_TYPE_2` question (below); every other
-acceptance item is evidenced, the fast and review profiles excepted, which
-the coordinator runs. Workstream 44 stays `open`.
+Status: LDG-3072, LDG-3081 and LDG-3068 are complete; the fast and review
+profiles are run by the coordinator. LDG-3071 stays `open` (phase B owns its
+teaching and reconciliation); its three API items are implemented. The
+`NEEDS_TYPE_2` raised by LDG-3068 was decided by the maintainer as Cut 16
+decision (29) and is implemented (below). Workstream 44 stays `open`.
 
 BASE is `6f019c6b` (`integrate/cut15-v0.2.2`, accepted Workstreams 40-43, 46
-and 47). Branch `ws44/history-proof`; the implementation is `f61d6fca` and
-this record with the ticket evidence follows it.
+and 47). Branch `ws44/history-proof`: the implementation is `f61d6fca`, the
+first record `75636976`, and decision (29) with its record the commits after
+those.
 
 ## What changed for a ledgr user
 
@@ -39,9 +40,12 @@ this record with the ticket evidence follows it.
   the held split-adjusted quantity and converts nothing at a split, so an
   as-traded amount from before a split is credited too large by the split
   factor (a registered witness shows 5 against 10 for a 2:1 split).
-- One open question for the maintainer: after a lifetime fact becomes known
-  late, a later history read shows feature values computed before the fact
-  was known next to evidence computed after it (NEEDS_TYPE_2 below).
+- Feature history is now stated and implemented as a vintage view (Cut 16
+  decision 29): after a lifetime fact becomes known late, a history read
+  shows each earlier feature cell with the value and the evidence it had at
+  its own pulse; bar history is restated with what is known at the cutoff.
+  Before this, those cells showed their earlier values next to evidence
+  computed with the later knowledge.
 
 ## Proposed function names
 
@@ -149,60 +153,68 @@ the decision reconciliation are phase B.
 | Acceptance item | Evidence |
 | --- | --- |
 | evidence-owner check | LCL-0398/LTB-0408 parses Cut 16 `evidence_owners`, requires items 1-17, 18a and 18b once each with the expected primary, contributing and routed owners, and checks every mapped block is cited in its supplier's ticket evidence, registered in `claims.yml` and defined once. Items 14 (LDG-3070), 17 (LDG-3069) and 18b (routed to WS7, recorded by LDG-3071) are pending while their owners are open. Item 18a had no registered detector (LDG-3067 recorded the deletion in prose); LCL-0402/LTB-0412 adds one. |
-| late-known lifetime hand oracle | LCL-0399/LTB-0409, with the scope limited by the NEEDS_TYPE_2 below. |
+| late-known lifetime hand oracle | LCL-0399/LTB-0409, including the cells decided by Cut 16 decision (29) below. |
 | cross-surface agreement | LCL-0400/LTB-0410: run, sweep, explicit precompute, walk-forward test windows and pulse inspection, each through frame, matrix, scalar, vector and close reads, against one literal oracle at sessions 6-8. |
 | named mutation families | C1-C7 in the mutation table: each fails its registered owner. |
 | fixture lane and profiles | The fixture lane (`dev/bench/v0_2_2_real_data_scale/`, BASE `6f019c6b` against the candidate source copy, recorded with `--allow-dirty` because both arms are exports) reports 48 of 50 gated families identical and the identity family identical. The two differences, `momentum_valuation_summary` and `equal_weight_valuation_summary`, are the LDG-3081 `history_policy` rows added to `ledgr_valuation_summary()` (the recorder flattens them to three rows); every pre-existing field is identical. The fast and review profiles are run by the coordinator. |
 | dividend units | LCL-0401/LTB-0411 and the Units, Price Basis And Universe contract text. No product defect: the adapter-authoring article already tells adapters to convert amounts to the bars' unit basis. |
 
-### NEEDS_TYPE_2: features read after a late-known lifetime fact
+### Cut 16 decision (29): feature history is a vintage view
+
+LDG-3068 raised a `NEEDS_TYPE_2`: after a lifetime fact became known late, a
+feature history read showed earlier cells with the values computed at their
+own pulses (the accepted LTB-0313 rule) next to evidence resolved with the
+cutoff's mask. The maintainer decided on 2026-10-20 (Cut 16 decision 29):
+a feature history read returns each earlier cell as it was computed at its
+own pulse, values and evidence alike; bar history reads remain restated with
+the cutoff's knowledge; a fact that becomes known later changes feature
+cells only from its knowledge pulse on.
+
+Implementation (`R/history-frame.R`): `ledgr_history_feature_evidence()` now
+takes its masks from `ledgr_history_vintage_planes()` instead of the
+cutoff's. For an instrument with late-known lifetime or terminal facts, each
+column takes the mask of the knowledge epoch its own pulse falls in, read
+from the same memoised base and per-epoch overlay masks the bar reads use, so
+nothing is recomputed per read; every other instrument's mask does not
+depend on knowledge. `expected`, `is_missing`, `calculated`, `ready`,
+`calculation_valid`, `missing_reason` and `barrier_reason` follow, and the
+retained input-carry, output-carry, segment and reason planes were already
+those of each cell's own preparation range. The bounded reach behind
+`used_before_window` counts each cell's expected sessions under that cell's
+own mask (`reach_seen`). The selection table and `na_action =
+"drop_instruments"` read the same evidence. Bar reads are unchanged.
 
 Fixture (LTB-0409): DDD closes 41, 43, -, 50, 55, 61, 68, 76; sessions 5-6
-are a lifetime-inactive interval learned at session 7's open.
+are a lifetime-inactive interval learned at session 7's open. A read at
+cutoff 7 or 8 now returns, for DDD's SMA(2):
 
-A history read at cutoff 7 or 8 returns, for DDD's SMA(2):
+| Session | Value | expected | calculation_valid | missing_reason | bar close at the same read |
+| --- | --- | --- | --- | --- | --- |
+| 5 | 52.5 | TRUE | TRUE | | 55, inactive-interval print |
+| 6 | 58 | TRUE | TRUE | | 61, inactive-interval print |
+| 7 | 59 | TRUE | TRUE | | 68 |
 
-| Session | Value | expected | calculation_valid | missing_reason |
-| --- | --- | --- | --- | --- |
-| 5 | 52.5 | FALSE | FALSE | not_expected |
-| 6 | 58 | FALSE | FALSE | not_expected |
-| 7 | 59 | TRUE | TRUE | |
+52.5 and 58 are `(50 + 55) / 2` and `(55 + 61) / 2`, computed at sessions 5
+and 6 before the interval was known; 59 is `(50 + 68) / 2`, computed at
+session 7 with the interval known (the window spans it, decision 15).
+LTB-0409 pins every one of the first six cells as identical to the session-6
+read's cell, under the default policy, with input carry disabled and with
+output carry alone. Mutation V1 (feature evidence resolved at the cutoff
+again) fails it.
 
-Sessions 5 and 6 carry the values feature preparation computed at their own
-pulses, before the fact was known (`(50 + 55) / 2` and `(55 + 61) / 2`,
-using the prints now known to be inactive), while their evidence comes from
-the cutoff's mask. This follows the accepted LTB-0313 rule ("earlier pulses
-keep their earlier answer", WS43 re-review 1 R4), and `ledgr_history_frame()`
-bar reads follow the cutoff's mask throughout. v12 Sections 4-6 read the
-other way for the same cells: the mask is cutoff-resolved, a print inside a
-knowable inactive interval "enters no indicator computation segment", and a
-bounded window counts the cutoff-resolved expected sessions. Under that
-reading sessions 5 and 6 would read missing at cutoffs 7 and 8.
-
-The question for the maintainer: at a cutoff after a lifetime or terminal
-fact is known, should a feature history read return
-
-- A. each cell as computed at its own pulse, values and evidence alike
-  (vintage; the evidence would then say expected and valid at sessions 5-6,
-  disagreeing with the bar read of the same cutoff);
-- B. each cell as the cutoff's knowledge computes it (revised; sessions 5-6
-  missing as `not_expected`, and any later window that reached into the
-  interval recomputed); or
-- C. the current mix (vintage value, revised evidence)?
-
-Scalar and vector reads are unaffected (they read only the cutoff column,
-where all three agree), and so is every cell computed at or after the
-knowledge pulse (session 7 reads 59 under all three). LTB-0409 therefore
-pins every other value, mask and reason and asserts only that sessions 5-6
-are not `calculation_valid` after knowledge (true under B and C); it pins no
-value for them. LDG-3068 stays open until the maintainer decides; B would be
-a product change owned by a follow-up, A or C a contract sentence.
+Seven-shape walk of the change: the new loop runs per read over requested
+instruments with late-known facts and, within each, over the distinct
+knowledge epochs that the window's columns fall in, indexing memoised masks;
+it is the shape of the existing overlay loop in
+`ledgr_history_cutoff_planes()` (WS42 close review F3) and builds no frame,
+hashes nothing and scans no axis beyond the requested window. Instruments
+without late facts take the base mask by index and one cumulative sum.
 
 ## Mutation table
 
 Each mutation was applied to one file of a source copy made with
 `git ls-files -z | tar --null -T - -cf - | tar -xf - -C <copy>` from the
-committed tree plus the ticket evidence, the named blocks run in a fresh R
+decision (29) commit `19b08d85`, the named blocks run in a fresh R
 process, and the file restored byte for byte. The drivers and the result
 are in `dev/bench/v0_2_2_history_proof/scripts/` and
 `evidence/mutations.csv`. "error" means the block stopped. Two first
@@ -210,8 +222,9 @@ attempts are not in the table: C5b first named LTB-0298 as its required
 detector, and that block passes because it compares the memoised read with
 the whole-prefix primitive, which shares the mutated horizon (the carry
 owner LTB-0292 fails, as recorded); C7 was first written as `FALSE && a ||
-b`, which R parses as `(FALSE && a) || b` and so changed nothing. The
-unmutated copy passed every named block in the full suite run.
+b`, which R parses as `(FALSE && a) || b` and so changed nothing. The whole
+table was re-run on the decision (29) tree, adding V1. The unmutated copy
+passed every named block in the full suite run.
 
 | ID | Mutation | File | Result |
 | --- | --- | --- | --- |
@@ -240,11 +253,12 @@ unmutated copy passed every named block in the full suite run.
 | O3 | pending owner LDG-3069 closed without blocks | `inst/design/ledgr_v0_2_2_spec_packet/tickets.yml` | LTB-0408 fails (1 failed) |
 | O4 | LTB-0305 citation removed from LDG-3064 evidence | `inst/design/ledgr_v0_2_2_spec_packet/tickets.yml` | LTB-0408 fails (1 failed) |
 | O5 | mapped block LTB-0285 no longer defined | `tests/testthat/test-history-foundation.R` | LTB-0408 fails (1 failed) |
-| L1 | late-known fact applied before its knowledge pulse (feature ranges not split) | `R/history-features.R` | LTB-0409 fails (6 failed) |
-| L2 | history reads ignore later knowledge (first epoch only) | `R/history-frame.R` | LTB-0409 fails (0 failed, error) |
-| L3 | bounded windows stop at a lifetime-inactive interval | `R/history-features.R` | LTB-0409 fails (0 failed, error) |
+| L1 | late-known fact applied before its knowledge pulse (feature ranges not split) | `R/history-features.R` | LTB-0409 fails (14 failed) |
+| L2 | history reads ignore later knowledge (first epoch only) | `R/history-frame.R` | LTB-0409 fails (8 failed) |
+| L3 | bounded windows stop at a lifetime-inactive interval | `R/history-features.R` | LTB-0409 fails (8 failed) |
 | L4 | output carry fills a warm-up cell | `R/history-features.R` | LTB-0409 fails (4 failed) |
 | L5 | bar reads ignore a disabled input carry | `R/history-frame.R` | LTB-0409 fails (5 failed) |
+| V1 | feature evidence resolved with the cutoff's mask (decision 29 reverted) | `R/history-frame.R` | LTB-0409 fails (13 failed) |
 | S1 | every history read uses the previous session as cutoff | `R/history-frame.R` | LTB-0410 fails (0 failed, error) |
 | S2 | matrix adapter reverses values | `R/history-frame.R` | LTB-0410 fails (15 failed) |
 | S3 | inspection calculates features from its cutoff | `R/pulse-snapshot.R` | LTB-0410 fails (12 failed) |
@@ -277,6 +291,11 @@ unmutated copy passed every named block in the full suite run.
   recorded line number changes (the full suite found it).
 - `test-api-exports.R` (unregistered): the locked export list gains
   `ledgr_history_info` and `ledgr_history_weights`.
+- LTB-0409 (new in this phase, not yet accepted): after Cut 16 decision (29)
+  it pins the sessions 5-6 feature cells at cutoffs 7 and 8 (values 52.5 and
+  58 with their at-pulse evidence) where it had asserted only that they were
+  not valid, and the input-carry-disabled and output-carry cases pin their
+  full value vectors; stated reason: the maintainer's decision.
 - New: LTB-0371 (`test-strategy-private-context.R`), LTB-0406
   (`test-history-policy-disclosure.R`), LTB-0407
   (`test-history-api-bridge.R`), LTB-0408 to LTB-0412
@@ -289,7 +308,7 @@ unmutated copy passed every named block in the full suite run.
 
 ## Routed, not changed here
 
-- NEEDS_TYPE_2 above (maintainer).
+- None from decision (29).
 - Strategy preflight treats `x$name <- value` on a captured environment as a
   local assignment, so a strategy can hand its context to an outside
   environment at Tier 1 (the probe uses this to capture a context). This is
@@ -304,31 +323,36 @@ unmutated copy passed every named block in the full suite run.
 
 ## Verification record
 
-On a source copy of the implementation commit `f61d6fca` plus the ticket
-evidence (product code identical to the final tree), Windows 11, R 4.6.1,
-run sequentially:
+Windows 11, R 4.6.1, every R process run sequentially.
+
+On the decision (29) commit `19b08d85` (source copy):
 
 - Full suite (`pkgload::load_all('.')` then `testthat::test_local('.',
   reporter = 'summary', stop_on_failure = FALSE, load_package = 'none')`):
-  1,158 blocks, 19,001 expectations, one failure, no error, one optional
-  skip (`ledgr_snapshot_from_yahoo requires quantmod`); 679 s of block time.
-  The failure was LTB-0269, whose literal census records the plan's
-  `schema_version` line; the line moved (Test changes) and the block passes
-  after the recorded line is updated. Every new block passes.
-- After the final record edits (claims text, the LTB-0269 line, tickets and
-  this record; no R change): the integrated-proof, schema-literal,
-  control-plane, governance, documentation-contract, current-only,
-  project-metadata and codebase-contract files pass (49 blocks, no failure), and `tests/claims.yml` resolves against the control-plane preflight (326 claims; the eight new blocks are review profile).
-- Mutations: 46 of 46 detected by their named blocks (table above).
-- Fixture lane: 48 of 50 families identical, the two differences explained
-  above.
+  1,158 blocks, 19,009 expectations, no failure or error, one optional skip
+  (`ledgr_snapshot_from_yahoo requires quantmod`); 689 s of block time.
+- Mutations: 47 of 47 detected by their named blocks (table above).
+- Fixture lane against the BASE record: 48 of 50 families identical and the
+  identity family identical; the two differences are the LDG-3081
+  `history_policy` rows, byte-identical to the first run's, so decision (29)
+  changed no other family.
+- After the run, the `info =` labels of LTB-0409's per-cutoff assertions
+  were made character (a numeric label made a failing assertion stop with a
+  testthat argument error instead of reporting; found while reading V1's
+  output). `test-history-integrated-proof.R` passes after the change and
+  L1-L3 and V1 then fail on expectations, as tabled.
 - `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55 flow
-  sites (unchanged), findings 72; the regenerated census tables (line
-  references, the new helpers and condition class) are committed;
-  `--self-test-mode-branches`: OK.
+  sites (unchanged), findings 72; the regenerated census tables are
+  committed; `--self-test-mode-branches`: OK.
 - `tools/check-fold-phase-contract.R .`: `LEDGR_FOLD_PHASE_CONTRACT_OK`.
 - `tickets.yml` and `tests/claims.yml` parse with `yaml::read_yaml()`;
   `git diff --check 6f019c6b` is clean.
-- Not run here, by instruction: the independent close review and the fast,
-  review and heavy profiles. `R/cpp11.R` and `src/cpp11.cpp` line-ending
-  churn from compilation is not committed.
+
+On the implementation commit `f61d6fca` (first round): full suite 1,158
+blocks, 19,001 expectations, one failure (LTB-0269, whose literal census
+records the plan's moved `schema_version` line; see Test changes), one
+optional skip; 46 of 46 mutations detected; fixture lane as above.
+
+Not run here, by instruction: the independent close review and the fast,
+review and heavy profiles. `R/cpp11.R` and `src/cpp11.cpp` line-ending churn
+from compilation is not committed.
