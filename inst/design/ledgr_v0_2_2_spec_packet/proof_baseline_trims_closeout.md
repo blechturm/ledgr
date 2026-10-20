@@ -5,13 +5,15 @@ Authority: non-binding. `tickets.yml` owns status, `contracts.md` owns
 behaviour, Cut 16 decision (25) and `cut16_architecture_audit.md` (F01 to
 F04) are the work list.
 Status: LDG-3078 and LDG-3079 are complete; Workstream 47 is
-`review_pending` for its independent Type 1 close review. One measurement
-question is open for the maintainer (Two-worker sweep peak memory, below).
+`review_pending` for its independent Type 1 close review. The two-worker
+sweep peak question this record first raised was decided by the maintainer
+as Cut 16 decision (26) and is implemented (Decision (26) below).
 
 BASE for every byte-identity claim is `2ef0f2da` (`integrate/cut15-v0.2.2`,
 the accepted Workstream 46 at `36d77574` plus record-only commits). The
-implementation is commit `f367ed80` on `ws47/proof-baseline-trims`; this
-record and the map follow in the next commit.
+implementation is commit `f367ed80` on `ws47/proof-baseline-trims`, this
+record and the map follow in `fcadf1ae`, and Cut 16 decision (26) is
+implemented with its evidence in the commit after that.
 
 ## Necessity and scope
 
@@ -60,7 +62,7 @@ keeps its scope.
 | --- | --- | --- |
 | Byte-identical to BASE across run, sweep (sequential, two-worker), window, walk-forward, inspection, history reads (reordered, late overlays), refusals | met | Byte-identity runner: 108 of 113 raw, 113 of 113 after substituting the engine digest; H1 audit parity 7 of 7 (sections below) |
 | Structural detector for a retained payload, a removed membership column or a per-field barrier copy | met | LTB-0393 (payload), LTB-0391 (plan columns, memo layout); mutations A1-A3, B1-B4, C1, C2 |
-| Retained sizes at H1 before and after; peak private commit of a two-worker sweep | met (measured) | Sizes and Two-worker sweep peak memory below; the peak did not fall (open question) |
+| Retained sizes at H1 before and after; peak private commit of a two-worker sweep | met | Sizes, Two-worker sweep peak memory and Decision (26) below: with the decision (26) collection the parent peak falls from 3,873.5 to 2,728.5 MiB (median of six pairs) |
 | Seven shapes walked | met | Seven-shape walk |
 
 ## LDG-3079: feature inputs without discarded carry evidence
@@ -222,10 +224,43 @@ parent / 4,931.7 tree and the candidate with F02 reverted at 3,016.6 /
 released payload is still uncollected when staging serializes the invariant,
 so the peak depends on collection timing, not on retained bytes; each change
 alone, or an explicit collection, lowers the peak by 230 to 520 MiB against
-BASE. The explicit collection is not in the product: it is a design choice
-outside the ticket's smallest change. Question for the maintainer, routed with
-the H6 two-worker parent gate: adopt a collection after the payload release
-before Workstream 44 sets its baseline, or accept the measured peak.
+BASE. The explicit collection was not in `f367ed80`: it was a design choice
+outside the ticket's smallest change, raised as a maintainer question and
+decided as Cut 16 decision (26) (next section).
+
+## Decision (26): one collection after the payload release
+
+Cut 16 decision (26) (maintainer, 2026-10-20): a fresh sweep runs one explicit
+garbage collection immediately after it releases the feature payload, before
+staging workers. `ledgr_sweep_impl()` now calls `invisible(gc(verbose =
+FALSE))` right after `rm(payload)`, with a comment citing the decision. The
+statement sits in the shared fresh-preparation block, so a dense fresh sweep
+also collects once there; it adds no mode branch (census unchanged).
+
+Pulse inspection does not get a collection: it was not measured, and the
+mechanism behind decision (26), serializing the invariant to workers right
+after preparation, does not occur there (inspection runs its one pulse in
+process).
+
+Re-measurement, same method as above (High performance plan, affinity
+0xFFFF, Rscript by full path, six alternating BASE/candidate pairs, no R
+process the runner did not own during any run), MiB:
+
+| | BASE `2ef0f2da` | Candidate with decision (26) |
+| --- | --- | --- |
+| Parent peak private commit, median (range) | 3,873.5 (3,861.3-3,937.8) | 2,728.5 (2,311.1-2,819.8) |
+| Tree peak private commit, median (range) | 5,676.7 (5,340.1-5,982.3) | 4,507.2 (4,283.9-4,755.2) |
+| Sweep call seconds, median (range) | 110.7 (109.6-111.3) | 106.9 (106.4-107.5) |
+| Process wall seconds, median | 122.3 | 118.5 |
+
+Every candidate run is below every BASE run, for parent and tree. BASE peaked
+higher in this round than in the first (3,250.8 parent median); peaks at
+worker staging vary between rounds of the same tree, so the comparison is the
+paired one. The parent R heap max reported by `gc()` after the sweep is
+1,830.2 (BASE) and 1,830.4 (candidate); `gc()` max used is updated only at
+collections, so it is not a sampled peak (the diagnostic copy reported
+1,551.2). All twelve result tables are serialization-identical to the first
+BASE run.
 
 ## Seven-shape walk
 
@@ -276,7 +311,11 @@ No behavioural oracle changed.
   fingerprints and every other literal are unchanged.
 - New: LCL-0381/LTB-0391 (fast, F03 and F04), LCL-0382/LTB-0392 (fast, F02),
   LCL-0383/LTB-0393 (review, F01; it builds a snapshot, sweeps and inspects,
-  about 2.5 s) in `test-proof-baseline-trims.R`. No test asserted a removed
+  about 2.5 s) in `test-proof-baseline-trims.R`. For decision (26),
+  LTB-0393 also asserts that the fresh-preparation statement of
+  `ledgr_sweep_impl()` runs `invisible(gc(verbose = FALSE))` right after
+  `rm(payload)` (mutations E1, E2); a structural check, since a missing
+  collection changes no result, only the peak. No test asserted a removed
   structure, so no detector replaced an existing assertion.
 
 ## Mutation table
@@ -304,6 +343,9 @@ failed count; "error" means the block stopped.
 | D2 | the calculation also builds a reason vector | `R/history-treatment.R` | LTB-0392 fails (1) |
 | D3 | the calculation erases the input-carried flag, values kept | `R/history-treatment.R` | LTB-0392 fails (2); LTB-0311 fails (8); LTB-0314 fails (1); LTB-0319 fails (7) |
 | D4 | the calculation leaves the feature-engine payload | `R/features-engine.R` | LTB-0144 fails (2) |
+| M0b | none (unmutated copy, decision (26) tree) | - | LTB-0391 21, LTB-0392 9, LTB-0393 8 expectations, none failed |
+| E1 | the fresh sweep drops the decision (26) collection | `R/sweep.R` | LTB-0393 fails (1) |
+| E2 | the collection runs before the payload release | `R/sweep.R` | LTB-0393 fails (1) |
 
 C2 first failed LTB-0391 only structurally, and LTB-0298 and the identity
 runner did not see it: a wrong overlay barrier changes a barrier reason only
@@ -317,8 +359,8 @@ a terminal column. This was so on BASE too.
 
 ## Routed, not changed here
 
-- Two-worker sweep peak private commit (above): maintainer question, with the
-  H6 two-worker parent gate (Workstream 44).
+- Two-worker sweep peak private commit: decided (Cut 16 decision 26) and
+  implemented; Workstream 44 measures it under the H6 two-worker parent gate.
 - Building the projection directly from the feature matrices instead of
   through the payload (audit F01's later step), and R27 (features held twice
   in the public precomputed object): consolidation.
@@ -353,6 +395,20 @@ every record above ran on), Windows 11, R 4.6.1, run sequentially:
 - Not run here (coordinator): the independent close review and the fast,
   review and heavy gate profiles. `R/cpp11.R` and `src/cpp11.cpp`
   line-ending churn from compilation is not committed.
+
+On the decision (26) tree (the `f367ed80` product code plus the one
+collection in `ledgr_sweep_impl()`), run sequentially:
+
+- Full suite, same command: 1,150 blocks, 18,504 expectations, no failure or
+  error, one optional skip (quantmod); 709 s of block time. LTB-0393 has 8
+  expectations.
+- Byte-identity runner against BASE: 108 of 113 raw (the same five
+  explicit-precompute families, engine digest only), 113 of 113 with the
+  digest substituted; no family retried.
+- Census check: OK, 158 branch and 55 flow sites (unchanged), findings 72;
+  the regenerated census tables (line references) are in the commit;
+  `--self-test-mode-branches`, the fold-phase checker, the YAML parse and
+  `git diff --check` pass.
 
 Scratch (not committed), under the session scratchpad `ws47/`: the runner
 (`runner/`), records (`records/`), mutation driver and specs (`mutate.py`,
