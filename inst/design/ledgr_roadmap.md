@@ -75,6 +75,23 @@ themes; this list is not a within-release sequence:
   [context-frame retirement RFC row](rfc/README.md#ctx-frame-retirement), and
   decide persisted-data execution placement through its
   [focused RFC row](rfc/README.md#persisted-data-execution-placement).
+- **One output handler (maintainer, 2026-10-20):** replace the persistent and
+  memory output handlers, which stage the same fill events, equity and
+  diagnostics and are held equal by parity tests, with one handler behind a
+  sink interface (DuckDB or memory). This removes the second implementation and
+  its parity suite and closes most of the committed-run-versus-sweep gap,
+  because the sweep stops being a separately optimized engine. It is
+  independent of execution-core consolidation and may go first. Source: lever 2
+  of the horizon entry
+  ["Where the package's weight is"](horizon.md#2026-10-12-architecture-where-the-packages-weight-is-and-the-four-levers-that-reduce-it).
+- **One result reader (maintainer, 2026-10-20):** after execution-core
+  consolidation leaves one run shape, merge the three result-reader families
+  (`R/backtest-results.R`, `R/availability-results.R`,
+  `R/corporate-action-results.R`), which each read the ledger and equity with
+  their own helpers and print paths, into one reader with one print path.
+  Acceptance: every public result table and print is byte-identical or each
+  difference is decided by the maintainer, and no reader re-derives state
+  another already provides. Source: lever 4 of the same horizon entry.
 - **Still-live chores:** phase-level memory and parallel-worker budgets, plus
   the plotting, print/result-reader, and symbol-surface work retained by
   [macro-plan Section 5](ledgr_v0_2_2_spec_packet/macro_plan.md#5-explicit-non-goals)

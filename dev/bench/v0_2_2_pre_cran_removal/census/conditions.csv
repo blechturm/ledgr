@@ -2326,13 +2326,13 @@
 "R/walk-forward-folds.R",614,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"c(""ledgr_unsupported_execution_start"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
 "R/walk-forward-folds.R",633,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
 "R/walk-forward-folds.R",635,"abort_wrapper_class","ledgr_walk_forward_invalid_fold_window",TRUE,"ledgr_sealed_range_window(scoring_start, scoring_end, snapshot_start, snapshot_end, ""Experiment window"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",744,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",757,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",760,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",838,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"c(""ledgr_walk_forward_overlapping_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",838,"abort_class","ledgr_walk_forward_overlapping_carry",TRUE,"c(""ledgr_walk_forward_overlapping_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",859,"abort_class","ledgr_walk_forward_gapped_carry",TRUE,"c(""ledgr_walk_forward_gapped_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
-"R/walk-forward-folds.R",859,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"c(""ledgr_walk_forward_gapped_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",752,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",765,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",768,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",846,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"c(""ledgr_walk_forward_overlapping_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",846,"abort_class","ledgr_walk_forward_overlapping_carry",TRUE,"c(""ledgr_walk_forward_overlapping_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",867,"abort_class","ledgr_walk_forward_gapped_carry",TRUE,"c(""ledgr_walk_forward_gapped_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
+"R/walk-forward-folds.R",867,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"c(""ledgr_walk_forward_gapped_carry"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
 "R/walk-forward-identity.R",150,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_walk_forward_invalid_identity"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/walk-forward-identity.R",150,"abort_class","ledgr_walk_forward_invalid_identity",TRUE,"c(""ledgr_walk_forward_invalid_identity"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/walk-forward-identity.R",170,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_walk_forward_invalid_identity"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE

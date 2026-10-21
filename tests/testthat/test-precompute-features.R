@@ -364,12 +364,14 @@ testthat::test_that("precomputed features refuse after a direct capture changes"
     if (is.finite(value) && value > params$threshold) target[["AAA"]] <- 1
     target
   }
-  experiment <- function(scale) ledgr_experiment(
-    snapshot,
-    strategy,
-    features = list(make_indicator(scale)),
-    cost_model = ledgr_cost_zero()
-  )
+  experiment <- function(scale) {
+    ledgr_experiment(
+      snapshot,
+      strategy,
+      features = list(make_indicator(scale)),
+      cost_model = ledgr_cost_zero()
+    )
+  }
   grid <- ledgr_param_grid(one = list(threshold = 0))
   original <- experiment(1)
   changed <- experiment(2)
