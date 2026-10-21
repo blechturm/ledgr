@@ -137,6 +137,18 @@
   `environment(ctx$feature)`. Those carriers hold prepared data beyond the
   pulse. Read history with `ledgr_history_frame()`.
 
+- New article "Reading Causal History"
+  (`vignette("causal-history", package = "ledgr")`). It opens an existing
+  snapshot and completes a run, then teaches history reads from the defaults
+  to explicit instrument and missing-value choices, the matrix adapter,
+  `ledgr_history_info()`, structural sufficiency, indicator history classes,
+  carry evidence, return features instead of differenced carried closes, the
+  vintage feature view, one history across walk-forward windows, finite
+  lookbacks and what preflight does and does not guarantee. One executed
+  portfolio estimate goes from a history read through a solver and
+  `ledgr_history_weights()` to `ledgr_target_rebalance()`, keeping held
+  instruments the estimate dropped.
+
 - Results, `summary()`, `ledgr_experiment_plan()` and `print()` of an
   experiment now name the valuation horizon as the "stale-mark horizon" and
   show the experiment's history policy (price carry, output carry and segment

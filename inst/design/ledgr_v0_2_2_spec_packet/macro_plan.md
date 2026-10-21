@@ -408,6 +408,15 @@ valid exit when the measured cost is immaterial.
 - Make the behavior of an admissible held instrument omitted from the
   estimation sample explicit in the proof. Do not let absence from a weight
   vector silently choose between keep, liquidation and refusal.
+- Consume the carried-input share (v12 Section 10 item 18b, routed here by
+  Cut 16 LDG-3071). Cut 16 only shows that `carried_input_share` is reachable
+  from `ledgr_history_frame()` through `ledgr_history_info()` (LTB-0297 and
+  the causal-history article). WS7 owns the consumer proof: a registered
+  history workload in which the estimator reads the share and acts on it
+  (for example, excludes or down-weights an instrument whose window is
+  mostly carried prices), with a failure-sensitive block showing that the
+  weights change when the share crosses the strategy's threshold. The
+  existence of the field alone does not pass this item.
 
 Exit: at least one nontrivial long-only portfolio strategy runs without private
 engine access, private history construction, research-side accounting or a

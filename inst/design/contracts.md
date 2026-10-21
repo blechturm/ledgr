@@ -2722,9 +2722,6 @@ Accepted change pending:
 <a id="contract-documentation-strategy-context"></a>
 ### Strategy Context Teaching
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `man/ledgr_strategy_context.Rd` owns one explicit reference table for every
   public runtime context member and plane. It records dense and availability
   applicability, shape, axis, units, missingness and counterpart, and
@@ -2738,6 +2735,27 @@ Accepted change pending:
   exit. They state that helper weights use allocatable rather than total NAV
   when held nonmembers are reserved, and that hold does not bypass risk or
   guarantee an absence of fills.
+- The causal-history article (`vignettes/causal-history.qmd`) opens with a
+  short path that opens an existing sealed snapshot and completes a run
+  before any point-in-time ingestion, which the next article in the reading
+  flow teaches. With executed output it then teaches the default
+  `ledgr_history_frame()` read, the matrix adapter, `ledgr_history_info()`,
+  explicit instrument-selection and missing-value choices, structural
+  sufficiency (never presented as indicator warm-up or convergence), the
+  bounded and history-dependent indicator classes, carry evidence including
+  `carried_input_share`, reading return features rather than differencing
+  carried closes, the vintage feature view against restated bar history,
+  one continuous history across walk-forward windows, the advice to read a
+  finite lookback, and the boundary that ledgr guarantees causal access
+  through its own history, feature and fact readers while strategy code
+  outside them is the author's responsibility, checked best-effort by
+  preflight.
+- One executed portfolio-estimation example goes from a history read through
+  an estimator and `ledgr_history_weights()` to `ledgr_target_rebalance()`
+  with no manual timestamp removal, column-name reconstruction or second
+  history reader. It explains estimation exclusion separately from execution
+  intent: an instrument the estimate drops receives a zero target from the
+  rebalance unless its held position is passed in `keep`.
 
 <a id="contract-documentation-terminal-disclosure"></a>
 ### Terminal And Release Disclosure

@@ -97,7 +97,7 @@ folds
 #> ================
 #> Scheme: rolling
 #> Folds:  3
-#> Hash:   b901194b80cb
+#> Hash:   2fc89449a420
 #>
 #> # A tibble: 3 x 3
 #>    fold train                    test
@@ -177,7 +177,7 @@ wf
 #> 3        3 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: d2bff4aa84ee10cdd2fb4f4178abe61572ff6a2c18f391a34f403c45fec28a17
+#> Session: 11ae4fd9c9f9b4f991863849361784b6765458f25abc4ce78036d02082f1bd16
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 3
@@ -232,10 +232,10 @@ candidate
 #> =====================
 #> Candidate ID:     feature_af0f94c90243/strategy_86be010cf688
 #> Status:           DONE
-#> Execution seed:   1276713596
+#> Execution seed:   1554369446
 #> Strategy:         7a84341722d5
-#> Snapshot hash:    689d79faf5dc3ef9e7335e46bc583d6027bb8bfe9416a4c944a4294689269d26
-#> Feature-set hash: e5fbf0013f67e30f4d6d4bb75e5fa7c056b3e93ea61f08076575a974da10ee70
+#> Snapshot hash:    7541f794ddcc0be54533f510a911e15af92c60c365957d2ff069d7ceb81685a4
+#> Feature-set hash: f7026cd02411bdc7b52beab150390fc3facb90a9dd7c5c0b419ac4ddee22ee69
 #> Evaluation scope: walk_forward
 #> Params:           {"qty":5.0,"threshold":0.0}
 str(candidate$feature_params)
@@ -362,10 +362,12 @@ sets.
 
 ## Where Next
 
-- If your research needs calendars, changing universes, trading
-  restrictions, or corporate actions, continue with
-  `vignette("point-in-time-inputs", package = "ledgr")`; a study on
-  complete daily bars can go on to
+- To read windows of past values inside a strategy, continue with
+  `vignette("causal-history", package = "ledgr")`. If your research
+  needs calendars, changing universes, trading restrictions, or
+  corporate actions,
+  `vignette("point-in-time-inputs", package = "ledgr")` follows it; a
+  study on complete daily bars can go on to
   `vignette("strategy-authoring-tools", package = "ledgr")`.
 - For the sweep, selection and promotion loop this builds on, see
   `vignette("sweeps", package = "ledgr")`.

@@ -34,6 +34,13 @@ Only the included estimation sample receives a weight. Instruments the
 result excluded are listed by \code{\link[=ledgr_history_info]{ledgr_history_info()}}; see that page and
 \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} for what happens to a held excluded instrument.
 }
+\section{Articles}{
+
+Reading causal history:
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
+}
+
 \examples{
 \dontrun{
 strategy <- function(ctx, params) {

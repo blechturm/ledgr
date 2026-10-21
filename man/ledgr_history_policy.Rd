@@ -32,3 +32,10 @@ resource controls are not.
 \details{
 Supplied ages and limits must fit in an R integer.
 }
+\section{Articles}{
+
+Reading causal history:
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
+}
+

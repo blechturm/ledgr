@@ -216,7 +216,15 @@ reconciliation table and the v12 as-implemented appendix wait for Workstream
   restated bar history on a late-known lifetime fact; one continuous history
   across walk-forward windows; finite-lookback advice with sizes; and the
   preflight boundary (decision 30) with an executed Tier 3 refusal.
-ARTICLE_NOTES
+- **Rendering.** `causal-history.md` is rendered with
+  `tools/render-vignettes-gfm.R`. `walk-forward.md` is re-rendered for its
+  new Where Next hand-off; its fold hash, session ID, execution seed,
+  snapshot hash and feature-set hash lines change because the committed
+  render predates identity rule 4 and snapshot hash rule 4 (stale rendered
+  output, not a behaviour change). While writing the article, preflight
+  refused the first portfolio strategy because its solver was a function in
+  the calling session; the article now defines the solver inside the
+  strategy and says why. That is preflight working as documented.
 - **Contract.** Strategy Context Teaching is present tense, its v12 pending
   link removed, with two new bullets for the article and the portfolio
   example. With Release Gates and Store And Codebase Gates (LDG-3069), no
