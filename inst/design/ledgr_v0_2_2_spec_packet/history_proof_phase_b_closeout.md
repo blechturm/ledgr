@@ -15,7 +15,46 @@ accepted and merged). Branch `ws44/history-proof`. Real-data work is in
 
 ## What was proven, in plain terms
 
-Written when phase B is complete.
+Proven, by measurement on the real Sharadar data (1,166 instruments, 7,213
+sessions, 1998-2026):
+
+- **Memory.** The history-enabled ledgr uses much less memory than the
+  pre-history baseline on the registered workload, not more: about 60
+  percent for a single run and 20 to 25 percent for a two-worker sweep. All
+  three exact 1.10 gates pass with wide margins. Both versions produce the
+  same trades and the same final equity on this workload.
+- **Parallel transport.** Running the sweep sequentially, with the old
+  full-payload dispatch or with the new staged dispatch gives identical
+  results on real data.
+- **Full history runs.** A strategy that reads causal history every month
+  runs over the full 1998-2026 span on both the changing S&P membership and
+  the full instrument set without any history-related stop; the default
+  segment guard accepts the reference build; every count and identity
+  reconciles to the earlier H1, WS39 and LDG-3080 records; a fresh rerun
+  reproduces every counted result.
+- **Teaching.** One executed article now teaches history from a
+  hello-world run through a full history-to-weights-to-targets estimate,
+  and the contract carries no pending history link.
+
+Not proven, or found:
+
+- **Shared memory comes back as a question.** The staged copy of the history
+  data on each worker is large enough (12.2 percent of total memory, against
+  a 10 percent trigger) that the accepted design says to reconsider shared
+  memory. Nothing was built; it is routed to the maintainer.
+- **The single run is slower.** The history-enabled run takes 23 percent
+  longer than the baseline (52 against 42 seconds); the two-worker sweep is
+  27 percent faster. Time was not gated; routed to WS8.
+- **Explaining one instrument is expensive** (9 seconds, 2.6 GB), unchanged
+  by the history work; routed to WS8.
+- **Late-known and trading-status facts are absent from the real data**
+  (adapter v003 sets knowledge equal to effective time and emits no status
+  facts), so their cost on real data could not be measured; it was measured
+  only on synthetic fixtures earlier. Two workers do not pay for themselves
+  on small walk-forward folds.
+- Not run here, by instruction: the fast, review and heavy profiles and the
+  independent close review. LDG-3071 stays open for the decision
+  reconciliation after Workstream 45.
 
 ## LDG-3069: history resource and worker bounds
 
@@ -274,7 +313,43 @@ checker on the copy.
 | F7 | a failed stage | `check_full.R` | fails |
 | F8 | one more fill in a copy of the rerun data (by hand) | `check_full.R` with a rerun | fails: rerun differs |
 
-MUTATION_ROWS_B
+Registered blocks. Each mutation is applied to one file of a source copy
+(`git archive` of the teaching commit), the named block runs in a fresh R
+process (`scripts/block_runner.R`) and the file is restored byte for byte
+(`scripts/mutate.py`, specs from `scripts/make_specs_phase_b.py`). The
+unmutated copy passes all three blocks. T6 first named "Used before
+window:", which occurs twice in the rendered article and so could not be
+applied; it was respecified to a unique executed line. "error" means the
+block stopped.
+
+| ID | Mutation | File | Result |
+| --- | --- | --- | --- |
+| T1 | hello world no longer the first shown chunk (label changed) | `vignettes/causal-history.qmd` | LTB-0414 fails (2 failed, error) |
+| T2 | portfolio example drops `keep` | `vignettes/causal-history.qmd` | LTB-0414 fails (1 failed) |
+| T3 | portfolio example rebuilds names with `colnames()` | `vignettes/causal-history.qmd` | LTB-0414 fails (2 failed) |
+| T4 | a teaching chunk declares `eval: false` | `vignettes/causal-history.qmd` | LTB-0414 fails (1 failed) |
+| T5 | the default-read chunk lost (renamed), so defaults are not taught first | `vignettes/causal-history.qmd` | LTB-0414 fails (1 failed, error) |
+| T6 | an executed indicator print missing from the rendered article | `vignettes/causal-history.md` | LTB-0414 fails (1 failed) |
+| T7 | a help page no longer links the article | `man/ledgr_history_info.Rd` | LTB-0414 fails (1 failed) |
+| R1 | a v12 pending link restored on Release Gates | `inst/design/contracts.md` | LTB-0415 fails (1 failed) |
+| R2 | a current-tense rule-3 snapshot-hash sentence | `inst/design/contracts.md` | LTB-0415 fails (1 failed) |
+| R3 | a receiver anchor renamed | `inst/design/contracts.md` | LTB-0415 fails (1 failed) |
+| R4 | a decisions bridge row anchor renamed | `inst/design/decisions.md` | LTB-0415 fails (1 failed) |
+| O6 | LDG-3069 evidence no longer cites LTB-0295 | `tickets.yml` | LTB-0408 fails (1 failed) |
+| O7 | LDG-3070 evidence no longer cites LTB-0291 | `tickets.yml` | LTB-0408 fails (1 failed) |
+
+## Test changes and reasons
+
+- New: LTB-0414 and LTB-0415 (`test-history-teaching.R`, review profile),
+  registered as LCL-0404 and LCL-0405.
+- LTB-0408 (`test-history-integrated-proof.R`): items 17 and 14 leave their
+  pending state as LDG-3069 and LDG-3070 close, and the map names the
+  registered blocks their evidence cites (LTB-0295, LDG-3061's transport
+  oracle that LDG-3069 reran on real data; LTB-0291, the segment-guard
+  refusal that LDG-3070's real-data guard pass relies on). This is the
+  lifecycle the block's own comment requires ("when it closes, this map must
+  name its detecting blocks"), not an oracle change to make a failure pass.
+- No other registered test, fixture or oracle changed.
 
 ## Routed, not changed here
 

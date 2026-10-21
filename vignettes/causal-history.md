@@ -568,7 +568,9 @@ late_snapshot <- ledgr_snapshot_from_df(
   snapshot_id = "late_fact", facts = late_facts, price_basis = "split_adjusted"
 )
 late_exp <- ledgr_experiment(
-  late_snapshot, function(ctx, params) ctx$hold(),
+  late_snapshot, function(ctx, params) {
+    ctx$hold()
+  },
   features = ledgr_feature_map(sma = ledgr_ind_sma(2)),
   universe = ledgr_universe_members("late"),
   cost_model = ledgr_cost_zero()

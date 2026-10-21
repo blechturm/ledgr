@@ -38,4 +38,3 @@ Reading causal history:
 \code{vignette("causal-history", package = "ledgr")}
 \code{system.file("doc", "causal-history.html", package = "ledgr")}
 }
-
