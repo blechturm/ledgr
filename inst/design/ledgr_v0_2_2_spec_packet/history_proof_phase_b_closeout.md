@@ -7,7 +7,9 @@ behaviour.
 Status: LDG-3069 and LDG-3070 are complete. LDG-3071 stays `open`: its
 teaching part is done here, and its decision-reconciliation table and v12
 as-implemented appendix wait for Workstream 45 and close with the cut.
-Workstream 44 stays open.
+The close review (`close_review_44b.md`) returned CHANGES_REQUIRED with five
+non-blocking findings; Correction 1 below answers them. Workstream 44 stays
+open.
 
 BASE is the integration head `67f98d6b` (`integrate/cut15-v0.2.2`, phase A
 accepted and merged). Branch `ws44/history-proof`: LDG-3069 `d1b7ede7`,
@@ -476,11 +478,43 @@ showed the block passed mutations it claimed to detect. No accepted oracle
 changed; the new literals (52.5, 58.0, the 10 January sale) are the
 article's executed output, not product oracles.
 
-MUT_C1
+Mutations for Correction 1, on a `git archive` source copy of `22c50b58`
+(`scripts/make_specs_phase_b.py`, `scripts/mutate.py`; the unmutated copy
+passes LTB-0414 with 104 expectations, LTB-0415 and LTB-0408). All earlier
+T, R and O mutations were re-run and still fail their blocks.
+
+| ID | Mutation | File | Result |
+| --- | --- | --- | --- |
+| U2 | portfolio adds `names(w)<-names(returns)[-1]` (no spaces; the review's survivor) | `vignettes/causal-history.qmd` | LTB-0414 fails (1 failed) |
+| U3 | walk-forward strategy no longer reads history in the test window (review's survivor) | `vignettes/causal-history.qmd` | LTB-0414 fails (1 failed) |
+| U4 | late-fact chunk drops the restated bar read at the seventh session (review's survivor) | `vignettes/causal-history.qmd` | LTB-0414 fails (1 failed) |
+| E1 | rendered keep comparison: the no-keep run no longer sells on 10 January | `vignettes/causal-history.md` | LTB-0414 fails (1 failed) |
+| E2 | rendered walk-forward: the first window read only 63 sessions | `vignettes/causal-history.md` | LTB-0414 fails (1 failed) |
+| E3 | rendered vintage read: the session-5 feature restated to NA | `vignettes/causal-history.md` | LTB-0414 fails (1 failed) |
+| F9 | one fill fewer in the committed changing run, no rerun (review's M3) | `check_full.R` data | fails: fill_rows changed |
+| F10 | full-membership config hash changed, no rerun | `check_full.R` data | fails: config_hash changed |
 
 ## Verification record
 
 Windows 11, R 4.6.1, DuckDB 1.5.6, every R process run sequentially.
+
+On the Correction 1 commit `22c50b58` (source copy):
+
+- Full suite: 1,161 blocks, 19,392 expectations, no failure or error, one
+  optional skip (quantmod); 686 s of block time.
+- `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55
+  flow sites (unchanged), findings 72; `--self-test-mode-branches`: OK;
+  `tools/check-fold-phase-contract.R .`: OK; `tickets.yml` and
+  `tests/claims.yml` parse; `git diff --check 67f98d6b` is clean;
+  `tools/render-vignettes-gfm.R --check vignettes/causal-history.qmd
+  vignettes/walk-forward.qmd`: verified.
+- `R CMD build` (with `QUARTO_PATH` as before, rebuilding every vignette)
+  and `R CMD check --no-manual --no-build-vignettes` on a source copy of
+  `22c50b58`: Status OK, no warning or note.
+- `check_full.R` passes on the committed data and against the private
+  rerun aggregates.
+
+Earlier, before Correction 1:
 
 - Full suite, first run (source copy of `ea971d2e`): 1,161 blocks, 19,377
   expectations, one failure, one optional skip (quantmod). The failure was
