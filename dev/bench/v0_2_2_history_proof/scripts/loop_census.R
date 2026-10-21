@@ -1,17 +1,15 @@
 # Loop census for the LDG-3069 seven-shape walk: every R-level iteration
-# construct inside functions that Cut 16 added or changed in the history
-# preparation, fold, transport and reader files. Output: one row per loop with
+# construct inside functions that Cut 16 added or changed, in every R file
+# the cut touched (preparation, fold, transport, reader and the rest). Output: one row per loop with
 # the function, the construct and the iterated expression.
 args <- commandArgs(trailingOnly = TRUE)
 repo <- args[[1L]]
 base <- args[[2L]]
 out <- args[[3L]]
-files <- c("R/history-substrate.R", "R/history-frame.R", "R/history-features.R",
-           "R/history-treatment.R", "R/indicator-history.R", "R/availability-facts.R",
-           "R/availability-provider-prepared.R", "R/availability-provider.R",
-           "R/backtest-runner.R", "R/sweep.R", "R/parallel-workers.R", "R/fold-engine.R",
-           "R/walk-forward.R", "R/precompute-features.R", "R/pulse-snapshot.R",
-           "R/features-engine.R", "R/runtime-projection.R", "R/history-policy.R")
+# Every R file Cut 16 changed (close review 44b F2): the walk covers every
+# changed function, not a hand-picked subset of files.
+files <- system2("git", c("-C", repo, "diff", "--name-only", base, "HEAD", "--", "R/"), stdout = TRUE)
+files <- sort(files[grepl("[.]R$", files)])
 changed_lines <- function(file) {
   d <- system2("git", c("-C", repo, "diff", "-U0", base, "HEAD", "--", file), stdout = TRUE)
   h <- grep("^@@", d, value = TRUE)

@@ -58,6 +58,26 @@ specs = [
     m("O7", "LDG-3070 evidence no longer cites its segment-guard block", "inst/design/ledgr_v0_2_2_spec_packet/tickets.yml",
       "LTB-0291 (the segment-guard refusal it reuses)", "the segment-guard refusal it reuses",
       PROOF, ["LTB-0408"]),
+    # Correction 1 (close review 44b F3 and F5): the review's surviving
+    # mutations U2-U4 and effect mutations on the rendered article.
+    m("U2", "portfolio assigns names without spaces", ART,
+      "  w <- min_variance(stats::cov(ledgr_history_matrix(returns)))\n",
+      "  w <- min_variance(stats::cov(ledgr_history_matrix(returns)))\n  names(w)<-names(returns)[-1]\n",
+      TEACH, ["LTB-0414"]),
+    m("U3", "walk-forward strategy no longer reads history in the test window", ART,
+      '  sessions <- nrow(ledgr_history_frame(ctx, bar = "close"))',
+      "  sessions <- 1L", TEACH, ["LTB-0414"]),
+    m("U4", "late-fact chunk drops the restated bar read at the seventh session", ART,
+      'read_ddd(days[[7L]], bar = "close")\n', "", TEACH, ["LTB-0414"]),
+    m("E1", "rendered keep comparison: the no-keep run no longer sells at the gap", MD,
+      "    12 2020-01-10 09:30:00 SELL 357", "    12 2020-01-16 09:30:00 SELL 357",
+      TEACH, ["LTB-0414"]),
+    m("E2", "rendered walk-forward: the first test window read only its own window", MD,
+      "    1 2020-07-02 09:30:00       DEMO_05 130", "    1 2020-07-02 09:30:00       DEMO_05  63",
+      TEACH, ["LTB-0414"]),
+    m("E3", "rendered vintage read: the session-5 feature value restated", MD,
+      "    5 2021-01-08 21:00:00  52.5     TRUE", "    5 2021-01-08 21:00:00  NA      FALSE",
+      TEACH, ["LTB-0414"]),
 ]
 with open(os.path.join(here, "specs_phase_b.json"), "w", encoding="utf-8") as f:
     json.dump(specs, f, indent=1)

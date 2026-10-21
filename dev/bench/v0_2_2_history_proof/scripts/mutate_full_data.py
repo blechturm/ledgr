@@ -8,6 +8,9 @@ muts = [
  ("F5 pulse count changed", "changing__run.csv", '"pulse_count","7213"', '"pulse_count","7212"'),
  ("F6 late-known fact appears", "census__facts.csv", '"lifetime",829,751,78,2,0,0,0,0', '"lifetime",829,751,78,2,1,1,1,0'),
  ("F7 failed stage", "steps.csv", '"full","full",0,', '"full","full",1,'),
+ # Correction 1 (close review 44b N2): run outcomes pinned in single-directory mode.
+ ("F9 one fill fewer, no rerun", "changing__run.csv", '"fill_rows","10703"', '"fill_rows","10702"'),
+ ("F10 config hash changed, no rerun", "full__run.csv", '"config_hash","872998b5', '"config_hash","072998b5'),
 ]
 for name, f, old, new in muts:
     d = os.path.join(work, "data")

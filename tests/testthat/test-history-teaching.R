@@ -68,8 +68,17 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
   testthat::expect_match(code("indicator-classes"), "ledgr_ind_ttr(", fixed = TRUE)
   testthat::expect_match(code("carried-share"), "carried_input_share", fixed = TRUE)
   testthat::expect_match(code("returns-not-diff"), "feature = \"return_1\"", fixed = TRUE)
-  testthat::expect_match(code("late-fact"), "feature = \"sma\"", fixed = TRUE)
-  testthat::expect_match(code("walk-forward"), "ledgr_walk_forward(", fixed = TRUE)
+  # The late fact is read after it is known, once as restated bars and once
+  # as vintage features (close review 44b F5).
+  late <- code("late-fact")
+  testthat::expect_match(late, "read_ddd(days[[7L]], bar = \"close\")", fixed = TRUE)
+  testthat::expect_match(late, "read_ddd(days[[7L]], feature = \"sma\")", fixed = TRUE)
+  # The walk-forward chunk reads history from the strategy's own context
+  # inside the test runs and shows what each test window read.
+  walk <- code("walk-forward")
+  testthat::expect_match(walk, "ledgr_walk_forward(", fixed = TRUE)
+  testthat::expect_match(walk, "nrow(ledgr_history_frame(ctx", fixed = TRUE)
+  testthat::expect_match(walk, "wf$test_runs", fixed = TRUE)
   testthat::expect_match(code("finite-lookback"), "lookback", fixed = TRUE)
   testthat::expect_match(code("preflight"), "ledgr_strategy_preflight(", fixed = TRUE)
 
@@ -81,11 +90,15 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
                  "ledgr_history_info(", "ledgr_target_rebalance(", "keep = keep")) {
     testthat::expect_match(portfolio, call, fixed = TRUE, info = call)
   }
-  for (forbidden in c("colnames(", "rownames(", "names(w) <-", "setNames(", "ts_utc",
-                      "[, -1", "ledgr_results(", "ctx$bars", "ctx$feature_table",
+  # Whitespace is removed before the scan, so spacing cannot hide a forbidden
+  # call or a names assignment (close review 44b F5).
+  compact <- gsub("[[:space:]]+", "", portfolio)
+  for (forbidden in c("colnames(", "rownames(", "setNames(", "ts_utc",
+                      "[,-1", "ledgr_results(", "ctx$bars", "ctx$feature_table",
                       "ledgr_pulse_features(", "ctx$vec$feature(")) {
-    testthat::expect_false(grepl(forbidden, portfolio, fixed = TRUE), info = forbidden)
+    testthat::expect_false(grepl(forbidden, compact, fixed = TRUE), info = forbidden)
   }
+  testthat::expect_false(grepl("(^|[^[:alnum:]_.])(dim)?names\\(", compact), info = "names(")
   testthat::expect_identical(lengths(regmatches(portfolio, gregexpr("ledgr_history_frame(", portfolio,
                                                                       fixed = TRUE))), 1L)
 
@@ -97,6 +110,39 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
     testthat::expect_match(md, output, fixed = TRUE, info = output)
   }
   testthat::expect_false(grepl("#> Error", md, fixed = TRUE))
+
+  # Executed effects, not only calls (close review 44b F3 and F5). Output of
+  # a chunk call: the text between that call's code block and the next one.
+  output_after <- function(call) {
+    at <- regexpr(call, md, fixed = TRUE)
+    testthat::expect_true(at > 0L, info = call)
+    rest <- substring(md, at + nchar(call))
+    rest <- sub("^[^`]*```", "", rest)
+    sub("``` r.*$", "", rest)
+  }
+  # Late fact: the restated bar read marks sessions 5 and 6 as inactive
+  # prints; the vintage feature read keeps their at-pulse values 52.5 and 58.
+  bars_late <- output_after("read_ddd(days[[7L]], bar = \"close\")")
+  testthat::expect_match(bars_late, "inactive_interval_print", fixed = TRUE)
+  features_late <- output_after("read_ddd(days[[7L]], feature = \"sma\")")
+  testthat::expect_match(features_late, "52.5", fixed = TRUE)
+  testthat::expect_match(features_late, "58.0", fixed = TRUE)
+  testthat::expect_false(grepl("inactive_interval_print", features_late, fixed = TRUE))
+  # Walk-forward: each test window's first fill is the session count its
+  # strategy read; both exceed a test window's length (about 64 sessions),
+  # and the later window read more.
+  fills <- output_after("do.call(rbind, first_fills)")
+  quantities <- as.numeric(sub(".*DEMO_05[[:space:]]+([0-9]+).*", "\\1",
+                               regmatches(fills, gregexpr("DEMO_05[[:space:]]+[0-9]+", fills))[[1L]]))
+  testthat::expect_length(quantities, 2L)
+  testthat::expect_true(all(quantities > 64), info = "test windows read from the data start")
+  testthat::expect_gt(quantities[[2L]], quantities[[1L]])
+  # keep: the held DEMO_04 is not sold at the gap with keep, and is sold on
+  # 10 January without it.
+  with_keep <- output_after("demo_04_fills(estimated)")
+  without <- output_after("demo_04_fills(without_keep)")
+  testthat::expect_false(grepl("2020-01-10", with_keep, fixed = TRUE))
+  testthat::expect_match(without, "2020-01-10 09:30:00 SELL", fixed = TRUE)
   # Help pages point to the article with a browser-free path.
   for (page in c("ledgr_history_frame", "ledgr_history_matrix", "ledgr_history_info",
                  "ledgr_history_weights", "ledgr_history_sufficient", "ledgr_history_policy")) {

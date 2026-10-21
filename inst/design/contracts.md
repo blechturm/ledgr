@@ -2813,8 +2813,9 @@ Accepted change pending:
   10 percent of which shared-memory transport stays rejected and at or above
   which it is routed to a maintainer decision rather than implemented; and
   records the read-side peak of the full decision trace through
-  `ledgr_results(bt, "diagnostics")` and `ledgr_run_explain()`, routing a
-  material cost to WS8 without weakening the trace.
+  `ledgr_results(bt, "diagnostics")` and `ledgr_run_explain()`; a material
+  read cost is routed as performance work and never answered by weakening
+  the trace.
 
 <a id="contract-verification-diagnostic-inputs"></a>
 ### Diagnostic Input Gates

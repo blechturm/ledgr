@@ -47,9 +47,9 @@ sessions, 1998-2026):
 Not proven, or found:
 
 - **Shared memory comes back as a question.** The staged copy of the history
-  data on each worker is large enough (12.2 percent of total memory, against
-  a 10 percent trigger) that the accepted design says to reconsider shared
-  memory. Nothing was built; it is routed to the maintainer.
+  data on each worker is large enough (12.2 percent of the sweep's summed
+  parent-plus-daemon private commit, against a 10 percent trigger) that the
+  accepted design says to reconsider shared memory. Nothing was built; it is routed to the maintainer.
 - **The single run is slower.** The history-enabled run takes 23 percent
   longer than the baseline (52 against 42 seconds); the two-worker sweep is
   27 percent faster. Time was not gated; routed to WS8.
@@ -179,6 +179,31 @@ facts, scalar-`fn` features, more than two workers and many folds; each has
 the owner or note above. The candidate single run is 23 percent slower than
 the baseline (preparation and per-pulse decision work, from the profile);
 that is a timing observation routed to WS8, not a shape.
+
+**Extended census (Correction 1, close review 44b F2).** The first census
+read eighteen hand-picked files, so it did not cover every changed function.
+The script now takes its file list from `git diff --name-only 99a3b067
+67f98d6b -- R/` (all 56 changed R files): 281 iterations in 114 changed
+functions across the 35 files that have one, 139 on changed lines
+(`evidence/ldg3069/loop_census.csv`, replaced). The files the first census
+missed add 17 iterations on changed lines; none is a seven-shape instance:
+
+| file:line | function | iterates | assessment |
+| --- | --- | --- | --- |
+| `availability-economics.R:100` | `ledgr_availability_valuation_state()` | session columns advanced since the last pulse (one per pulse in a run) | each step reads one close column and writes the instruments' last close by mask; linear in sessions x instruments, the read itself. Not per-element writes (shape 7); the changed lines are its data-start comment |
+| `availability-policy.R:276` | `ledgr_availability_validate_features()` | feature definitions | fixed small set |
+| `fold-event-buffer.R:134` | `ledgr_opening_position_event_rows()` | opening positions, once per run or carried window | bounded by instruments, once per window, not per pulse |
+| `indicator-ttr.R:314` | `ledgr_ttr_declaration_args()` | declaration arguments | fixed small set |
+| `indicator-ttr.R:372, 378, 381` | `ledgr_ttr_catalogue_variant()` | catalogue neutral arguments and variants | fixed catalogue |
+| `indicator.R:333` | `ledgr_feature_indicator_index()` | feature definitions | fixed small set |
+| `lot-accounting.R:183` | `ledgr_lot_state_from_opening()` | opening lots, once per carried window | bounded by open lots, once per window |
+| `strategy-preflight.R:518, 571, 598, 631` | `ledgr_strategy_private_context_access()`, `ledgr_strategy_named_symbols()` | nodes of the strategy's source | grows with the strategy's code, not with data; once per preflight |
+| `walk-forward-folds.R:429` | `ledgr_walk_forward_offset()` | the step's period terms | fixed small set |
+| `walk-forward-folds.R:828, 833, 837` | `ledgr_walk_forward_refuse_noncontiguous_carry()` | folds | one pass over the fold list |
+
+The thirteen the review listed are the ones above outside
+`strategy-preflight.R`; the four preflight iterations are added because the
+census now reads every changed file.
 
 Contracts: Release Gates and Store And Codebase Gates are rewritten in the
 present tense and their v12 pending links removed (LDG-3069 is their
@@ -384,6 +409,74 @@ block stopped.
   daemons and restaging per fold makes two workers slower than one (74.5
   against 71.9 s); a reuse of daemons across folds would be a transport
   change for the macro plan, not this ticket.
+
+## Correction 1 (close review 44b, 2026-10-21)
+
+The close review (`close_review_44b.md`) returned CHANGES_REQUIRED with five
+non-blocking findings. It verified the memory and real-data proofs
+independently; nothing was re-measured, and the H6 plans and the Sharadar
+workloads were not re-run.
+
+- **F1, routes recorded where they are owned.** `macro_plan.md` WS8
+  "Routed inputs" now lists the `ledgr_run_explain()` read cost (9.3 s, a
+  2.6 GB R heap peak, the same as the baseline) and the history-enabled
+  single-run time (52.3 against 42.4 s; preparation and per-pulse decision
+  work from the profile, marked as inference). The deferred history
+  simplification list updates the lazy-evidence entry to the measured 8.79
+  times (243.4 MiB for 27.7 MiB of values) and adds the shared-memory trigger
+  0.1218 and the `seed = NULL` caller-RNG advancement as open maintainer
+  questions, and walk-forward daemon reuse across folds as a routed item
+  owned by execution-core consolidation with the transport.
+- **F2, census covers every changed function.** `loop_census.R` now takes
+  its file list from the Cut 16 diff of `R/`; see "Extended census" in the
+  seven-shape walk above. No shape instance was found among the 17 added
+  iterations.
+- **F3, the article exercises what it teaches.** The walk-forward example
+  now reads history from the strategy's own context inside the test runs:
+  a strategy holds as many shares as its history read has sessions, each
+  window starts flat, and the first fills show 130 sessions at 1 July and 196
+  at 1 October, both from the data start. The portfolio example runs once
+  with `keep` and once without on a three-session window: both buy 357
+  `DEMO_04` on 8 January; after its missing 9 January close the estimate
+  leaves it out; with `keep` the position stays until 16 January, without
+  `keep` all 357 shares are sold on 10 January. A `params$keep` switch exists
+  only for this comparison. Re-rendered;
+  `tools/render-vignettes-gfm.R --check vignettes/causal-history.qmd
+  vignettes/walk-forward.qmd` verifies both.
+- **F4, decision axis described as the help describes it.** The article now
+  says `instruments = "decision_axis"` adds held nonmembers and members the
+  strategy may not trade now, names `DEMO_01` (a member delisted on
+  14 January) and explains `structural_exclusion` in one sentence.
+- **F5, LTB-0414 checks effects.** The forbidden-name scan runs on
+  whitespace-stripped code and refuses any `names(` or `dimnames(` use in the
+  portfolio chunk. The late-fact chunk must read both restated bars and
+  vintage features at the seventh session, and the rendered output must show
+  inactive-interval prints for the bars and the at-pulse values 52.5 and 58.0
+  for the features. The walk-forward chunk must read history inside the test
+  runs, and the rendered first fills must exceed a window's length, the later
+  window more. The rendered keep comparison must show no 10 January sale with
+  `keep` and the 10 January sale without it. LCL-0404's scope and smallest
+  failing change state these checks. The review's surviving U2-U4 now fail
+  the block (table below).
+- **Notes.** N2: `check_full.R` pins both runs' config, fills and equity
+  hashes, fill and trace-row counts and final equity on the committed data
+  alone (ledgr-research `3e9ea29`); F9 and F10 make it fail. N3: the summary
+  now names the shared-memory denominator (the sweep's summed
+  parent-plus-daemon private commit), not "total memory". N5: the article
+  explains where `pit` and `snapshot_path` come from, what "Used before
+  window: yes" means, shows the readiness flip from `not_ready` to valid, and
+  compares the feature with simple (not log) differences, so the observed
+  day matches exactly. N6: the Release Gates bullet no longer names a
+  workstream. N1, N4 and N7-N9 need no change.
+
+Test changes in Correction 1: LTB-0414 (whitespace-stripped forbidden scan,
+`names(`/`dimnames(` refusal, late-fact and walk-forward reads and their
+rendered effects, keep effect); the reason is close review 44b F5, which
+showed the block passed mutations it claimed to detect. No accepted oracle
+changed; the new literals (52.5, 58.0, the 10 January sale) are the
+article's executed output, not product oracles.
+
+MUT_C1
 
 ## Verification record
 
