@@ -11,7 +11,8 @@ reconciliation); its three API items are implemented. The `NEEDS_TYPE_2`
 raised by LDG-3068 was decided by the maintainer as Cut 16 decision (29) and
 is implemented (below). The independent close review
 (`close_review_44a.md`) returned CHANGES_REQUIRED; Correction 1 below
-answers it. Workstream 44 stays `open`.
+answers it, and Correction 2 answers its focused re-review under Cut 16
+decision (30). Workstream 44 stays `open`.
 
 BASE is `6f019c6b` (`integrate/cut15-v0.2.2`, accepted Workstreams 40-43, 46
 and 47). Branch `ws44/history-proof`: the implementation is `f61d6fca`, the
@@ -206,7 +207,7 @@ without late facts take the base mask by index and one cumulative sum.
 
 Each mutation was applied to one file of a source copy made with
 `git ls-files -z | tar --null -T - -cf - | tar -xf - -C <copy>` from the
-Correction 1 commit `3b8bd118`, the named blocks run in a fresh R
+Correction 2 commit `26ab8129`, the named blocks run in a fresh R
 process, and the file restored byte for byte. The drivers and the result
 are in `dev/bench/v0_2_2_history_proof/scripts/` and
 `evidence/mutations.csv`. "error" means the block stopped. Two first
@@ -215,29 +216,23 @@ detector, and that block passes because it compares the memoised read with
 the whole-prefix primitive, which shares the mutated horizon (the carry
 owner LTB-0292 fails, as recorded); C7 was first written as `FALSE && a ||
 b`, which R parses as `(FALSE && a) || b` and so changed nothing. The whole
-table was re-run on the decision (29) tree, adding V1, and again on the
-Correction 1 tree, adding Q1-Q6 and the reviewer's X5-X9. The unmutated copy
+table was re-run on the decision (29) tree, adding V1, again on the
+Correction 1 tree, adding Q1-Q6 and the reviewer's X5-X9, and again on the
+Correction 2 tree (Correction 2 below lists the preflight rows it restated,
+retired and added). The unmutated copy
 passed every named block in the full suite run.
 
 | ID | Mutation | File | Result |
 | --- | --- | --- | --- |
-| Q1 | non-exported ledgr:: references allowed | `R/strategy-preflight.R` | LTB-0371 fails (6 failed) |
-| Q2 | environment functions named in strings allowed | `R/strategy-preflight.R` | LTB-0371 fails (26 failed) |
-| Q3 | environment functions extracted as members allowed | `R/strategy-preflight.R` | LTB-0371 fails (7 failed) |
-| Q4 | any dot-prefixed extraction refused again | `R/strategy-preflight.R` | LTB-0371 fails (3 failed) |
-| Q5 | every private field name refused in strings | `R/strategy-preflight.R` | LTB-0371 fails (1 failed) |
-| Q6 | sufficiency reads stale metadata | `R/history-frame.R` | LTB-0407 fails (2 failed) |
+| Q6 | sufficiency reads stale metadata | `R/history-frame.R` | LTB-0407 fails (3 failed) |
 | X5 | named weights matched by the inverse permutation (review) | `R/history-frame.R` | LTB-0407 fails (1 failed) |
 | X6 | excluded IDs ignore the requested flag (review) | `R/history-frame.R` | LTB-0407 fails (1 failed) |
 | X7 | used_before_window counts the vintage row, not each cell's own mask (review) | `R/history-frame.R` | LTB-0413 fails (1 failed) |
 | X8 | vintage epoch counts knowledge at the pulse instant as later (review) | `R/history-frame.R` | LTB-0413 fails (3 failed) |
 | X9 | vintage terminal flag taken from the base mask (review) | `R/history-frame.R` | LTB-0413 fails (1 failed) |
-| P1 | private-access branch removed from the tier decision | `R/strategy-preflight.R` | LTB-0371 fails (135 failed, error) |
-| P2 | private-field extraction not scanned | `R/strategy-preflight.R` | LTB-0371 fails (24 failed) |
-| P3 | carrier field names in strings not scanned | `R/strategy-preflight.R` | LTB-0371 fails (16 failed) |
-| P4 | base environment functions not scanned | `R/strategy-preflight.R` | LTB-0371 fails (34 failed, error) |
-| P5 | only the literal symbol ctx is checked | `R/strategy-preflight.R` | LTB-0371 fails (11 failed) |
-| P6 | .history dropped from the private field list | `R/strategy-preflight.R` | LTB-0371 fails (16 failed) |
+| P1 | private-access branch removed from the tier decision | `R/strategy-preflight.R` | LTB-0371 fails (189 failed, error) |
+| P4 | base environment functions not scanned | `R/strategy-preflight.R` | LTB-0371 fails (41 failed, error) |
+| P6 | .history dropped from the private field list | `R/strategy-preflight.R` | LTB-0371 fails (4 failed) |
 | D1 | horizon printed without its name | `R/valuation-summary.R` | LTB-0406 fails (4 failed) |
 | D2 | History policy line dropped from print() | `R/valuation-summary.R` | LTB-0406 fails (2 failed) |
 | D3 | History Policy section dropped from summary() | `R/valuation-summary.R` | LTB-0406 fails (3 failed) |
@@ -279,6 +274,23 @@ passed every named block in the full suite run.
 | C5b | carry: read-path horizon one session too long | `R/history-treatment.R` | LTB-0292 fails (3 failed); LTB-0297 passes (0 failed); LTB-0298 passes (0 failed) |
 | C6 | indicator: bounded windows stop at lifetime-inactive intervals | `R/history-features.R` | LTB-0310 fails (1 failed) |
 | C7 | rule-4 refusal: non-current history identity accepted | `R/history-policy.R` | LTB-0287 fails (3 failed); LTB-0290 passes (0 failed) |
+| P2 | private-field extraction not scanned | `R/strategy-preflight.R` | LTB-0371 fails (11 failed, error) |
+| P3 | carrier field names in strings not scanned | `R/strategy-preflight.R` | LTB-0371 fails (16 failed) |
+| P5 | only the literal symbol ctx is checked | `R/strategy-preflight.R` | LTB-0371 fails (1 failed) |
+| Q4 | any dot-prefixed extraction refused again | `R/strategy-preflight.R` | LTB-0371 fails (3 failed) |
+| Q5 | every private field name refused in strings | `R/strategy-preflight.R` | LTB-0371 fails (1 failed) |
+| W1 | carrier symbols (also inside quote()) not scanned | `R/strategy-preflight.R` | LTB-0371 fails (11 failed) |
+| W2 | non-exported ledgr objects allowed as symbols and as ledgr::: references | `R/strategy-preflight.R` | LTB-0371 fails (7 failed) |
+| W3 | body<-, formals<-, as.function() and unserialize() allowed | `R/strategy-preflight.R` | LTB-0371 fails (14 failed) |
+| W4 | substitute() with an environment allowed | `R/strategy-preflight.R` | LTB-0371 fails (7 failed) |
+| W5 | bquote() with where allowed | `R/strategy-preflight.R` | LTB-0371 fails (1 failed) |
+| W6 | environment-reaching names handed to a functional allowed | `R/strategy-preflight.R` | LTB-0371 fails (29 failed, error) |
+| W7 | environment-reaching members called allowed | `R/strategy-preflight.R` | LTB-0371 fails (7 failed) |
+| W8 | member names checked against environment-reaching names again (R2 regression) | `R/strategy-preflight.R` | LTB-0371 fails (1 failed) |
+| Y4 | @ extraction not scanned (re-review) | `R/strategy-preflight.R` | LTB-0371 fails (4 failed, error) |
+| Y5 | rlang namespace getters dropped (re-review) | `R/strategy-preflight.R` | LTB-0371 fails (6 failed) |
+| Y7 | functional string check for base names only (re-review) | `R/strategy-preflight.R` | LTB-0371 fails (4 failed, error) |
+| Y10 | sufficiency consistency check for the wide layout only (re-review) | `R/history-frame.R` | LTB-0407 fails (1 failed) |
 
 ## Test changes and reasons
 
@@ -425,34 +437,104 @@ call whose head is itself a call result (`f(x)(y)`, now in LTB-0371's
 bodies); it now names only `pkg::name` heads, and the census output is
 otherwise unchanged (158 branch and 55 flow sites, findings 72).
 
+## Correction 2 (focused re-review 1, 2026-10-21)
+
+`close_review_44a_rereview_1.md` (Type 1) returned CHANGES_REQUIRED: three
+findings over eleven re-reviewed items. The reviewer recommended a Type 2 on
+the name-denylist approach; the maintainer decided on 2026-10-21 (Cut 16
+decision 30): strategy preflight is a best-effort static check, not a
+sandbox. It refuses accidental and common deliberate access to private
+context carriers, non-exported ledgr internals and environment-reaching
+functions, and the contract says plainly that R offers no private memory,
+so a strategy that deliberately subverts evaluation is outside ledgr's
+guarantee, as is one that reads a future-data file. ledgr guarantees that
+its own public history, feature and fact APIs return only data known at the
+decision time. LDG-3072's second acceptance item now reads "every such path
+is refused by the same rule or listed in the contract as outside
+preflight's static guarantee". Cutoff-bound context internals and a
+separate-process strategy sandbox are a horizon entry (2026-10-21,
+[execution]) with the trigger "ledgr needs to run untrusted strategies".
+
+- R1 (blocking), the re-review's Tier 1 bypasses. Cheap literal rules only:
+  - a future-bearing carrier (`.history`, `.pulse_lookup`,
+    `.feature_vector`, `.feature_table_current`) or a non-exported ledgr
+    object named as a symbol anywhere in the body, including inside
+    `quote()`, `bquote()` and `substitute()`; this refuses
+    `do.call(with, list(ctx, quote(.history)))`,
+    `do.call(evalq, ...)`, `baseenv()$eval(quote(.history), ctx)` and a
+    rebound body naming `ledgr_history_context_view`;
+  - `body<-`, `formals<-`, `as.function()` and `unserialize()` (and rlang
+    `fn_body<-`, `fn_fmls<-`) as environment-reaching functions, which
+    refuses every body-rebinding route the re-review ran, including the
+    S3-method and `unserialize()` copies;
+  - `substitute()` or `bquote()` given an environment or list.
+
+  LTB-0371 adds the re-review's bypass bodies and runs each through
+  `ledgr_run()`: refused with `ledgr_strategy_tier3`, no store row. The
+  contract (Reproducibility And Preflight, Pulse Data) and
+  `?ledgr_strategy_preflight` replace the exhaustive limits list with the
+  short decision (30) statement. Iteration over the context
+  (`Filter()`/`Find()` over `as.list(ctx, all.names = TRUE)`) stays outside
+  the static guarantee, as stated.
+- R2 (medium), `environment` as data. Environment-reaching names are now
+  refused only in call position: called, qualified, passed as a value,
+  extracted and called (`baseenv()$environment(...)`), or named in a
+  string or member handed to a functional (`lapply`, `sapply`, `vapply`,
+  `mapply`, `Map`, `rapply`, `eapply`, `tapply`, `apply`, `outer`,
+  `Reduce`, `Filter`, `Find`, `Position`, `match.fun`, `do.call`, `Recall`,
+  `Vectorize`). `params$environment`, `scores$environment`,
+  `d[["environment"]]` and an `"environment"` label are Tier 1 again (the
+  re-review's `probe_names.R` and two kept-tier bodies in LTB-0371). Across
+  all 632 `function(ctx, ...)` literals of BASE's tests, vignettes, roxygen
+  examples and README (the re-review's `probe_scan.R`), the corrected
+  preflight gives BASE's tier for every one.
+- R3 (low), detectors. LTB-0371 adds `ctx@.notes`, `rlang::ns_env()` and
+  `lapply(x, "fn_env")`; LTB-0407 adds a long-layout result filtered to one
+  instrument. The re-review's Y4, Y5, Y7 and Y10 each fail their block.
+
+Test changes in Correction 2: LTB-0371 (fourteen refused and two kept-tier
+bodies; the reason fragments of the earlier bodies are unchanged) and
+LTB-0407 (long-layout stale refusal). No accepted oracle changed. The
+mutation table above was re-run on `26ab8129`: the preflight rows P2, P3,
+P5, Q4 and Q5 are restated against the new rule's code, Q1-Q3 are retired
+(their routes are now covered by W2, W6 and W7 together with the
+non-exported-symbol rule), and W1-W8, Y4, Y5, Y7 and Y10 are added.
+
 ## Verification record
 
 Windows 11, R 4.6.1, every R process run sequentially.
 
-On the Correction 1 commit `3b8bd118` (source copy):
+On the Correction 2 commit `26ab8129` (source copy):
 
 - Full suite (`pkgload::load_all('.')` then `testthat::test_local('.',
   reporter = 'summary', stop_on_failure = FALSE, load_package = 'none')`):
-  1,159 blocks, 19,123 expectations, no failure or error, one optional skip
-  (`ledgr_snapshot_from_yahoo requires quantmod`); 694 s of block time.
-- Mutations: 58 of 58 detected by their named blocks (table above).
+  1,159 blocks, 19,196 expectations, one failure, no error, one optional
+  skip (`ledgr_snapshot_from_yahoo requires quantmod`); 689 s of block time.
+  The failure is LTB-0258 (`test-schema-current.R`), whose golden schema
+  fixtures record `duckdb_version` 1.5.6.9000: the host's user library now
+  holds duckdb 1.5.6, installed at 2026-10-21 07:27 by something outside
+  this work (no process of this workstream installs packages). The block
+  passed on every earlier run of this workstream, its fixture is not
+  changed here, and no product file it reads changed in Correction 2. Every
+  other block passes.
+- Mutations: 67 of 67 detected by their named blocks (table above).
 - `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55 flow
   sites (unchanged), findings 72; `--self-test-mode-branches`: OK.
 - `tools/check-fold-phase-contract.R .`: `LEDGR_FOLD_PHASE_CONTRACT_OK`.
 - `tickets.yml` and `tests/claims.yml` parse; the 327 claims resolve against
   the control-plane preflight; `git diff --check 6f019c6b` is clean.
-- The fixture lane was not re-run for Correction 1: the correction changes
-  strategy preflight (which every valid lane strategy passes at its BASE
-  tier), sufficiency refusals and records, none of which the lane's families
-  record (inference). The decision (29) result stands: 48 of 50 families
-  identical, the two others differing only by the LDG-3081 `history_policy`
-  rows.
+- The fixture lane was not re-run: Corrections 1 and 2 change strategy
+  preflight (every lane strategy keeps its BASE tier), sufficiency refusals
+  and records, none of which the lane's families record (inference). The
+  decision (29) result stands: 48 of 50 families identical, the two others
+  differing only by the LDG-3081 `history_policy` rows.
 
-On the decision (29) commit `19b08d85`: full suite 1,158 blocks, 19,009
-expectations, no failure; 47 of 47 mutations detected; fixture lane 48 of
-50 identical with the disposition above. On the implementation commit
-`f61d6fca` (first round): full suite 1,158 blocks, 19,001 expectations, one
-failure (LTB-0269's moved line, see Test changes), one optional skip; 46 of
+On the Correction 1 commit `3b8bd118`: full suite 1,159 blocks, 19,123
+expectations, no failure; 58 of 58 mutations detected. On the decision (29)
+commit `19b08d85`: full suite 1,158 blocks, 19,009 expectations, no
+failure; 47 of 47 mutations detected; fixture lane 48 of 50 identical with
+the disposition above. On the implementation commit `f61d6fca`: full suite
+1,158 blocks, one failure (LTB-0269's moved line, see Test changes); 46 of
 46 mutations detected.
 
 Not run here, by instruction: the independent close review and the fast,

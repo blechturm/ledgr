@@ -192,5 +192,59 @@ specs = [
       '    if (FALSE) rlang::abort(\n      "Config field history must contain the current causal-history identity.",',
       ["test-history-foundation.R"], ["LTB-0287", "LTB-0290"], must_fail=["LTB-0287"]),
 ]
+# Correction 2 overrides for the preflight rule group (appended to make_specs.py).
+EXT2 = '        if (!is.na(name) && name %in% private) out <<- c(out, paste0(sub("<-$", "", head), name))'
+CARRIER_STR = '  out <- c(out, sprintf("\\"%s\\"", intersect(string_constants, carriers)))\n'
+SUFF = "ledgr_history_sufficient <- function(x, lookback = NULL, min_instruments = 1L) {\n  meta <- ledgr_history_require_consistent(x)$meta"
+c2 = [
+    m("P2", "private-field extraction not scanned", "R/strategy-preflight.R",
+      EXT2, EXT2.replace('if (!is.na(name) && name %in% private)', 'if (FALSE)'), P72, ["LTB-0371"]),
+    m("P3", "carrier field names in strings not scanned", "R/strategy-preflight.R",
+      CARRIER_STR, "", P72, ["LTB-0371"]),
+    m("P5", "only the literal symbol ctx is checked", "R/strategy-preflight.R",
+      EXT2, EXT2.replace('name %in% private)', 'name %in% private && identical(node[[2L]], quote(ctx)))'), P72, ["LTB-0371"]),
+    m("Q4", "any dot-prefixed extraction refused again", "R/strategy-preflight.R",
+      EXT2, EXT2.replace('name %in% private)', '(name %in% private || (nchar(name) >= 2L && startsWith(name, "."))))'), P72, ["LTB-0371"]),
+    m("Q5", "every private field name refused in strings", "R/strategy-preflight.R",
+      CARRIER_STR, CARRIER_STR.replace('intersect(string_constants, carriers)', 'intersect(string_constants, private)'), P72, ["LTB-0371"]),
+    m("W1", "carrier symbols (also inside quote()) not scanned", "R/strategy-preflight.R",
+      "  out <- c(out, intersect(all_symbols, carriers))\n", "", P72, ["LTB-0371"]),
+    m("W2", "non-exported ledgr objects allowed as symbols and as ledgr::: references", "R/strategy-preflight.R",
+      '  out <- c(out, sprintf("%s (not exported)", intersect(all_symbols, ledgr_strategy_ledgr_internal_names())))\n',
+      "", P72, ["LTB-0371"]),
+    m("W3", "body<-, formals<-, as.function() and unserialize() allowed", "R/strategy-preflight.R",
+      '      "get0", "mget", "dynGet", "getAnywhere", "body<-", "formals<-",\n      "as.function", "unserialize"\n',
+      '      "get0", "mget", "dynGet", "getAnywhere"\n', P72, ["LTB-0371"]),
+    m("W4", "substitute() with an environment allowed", "R/strategy-preflight.R",
+      '      if (head %in% c("substitute", "base::substitute") && length(node) >= 3L) {',
+      '      if (FALSE) {', P72, ["LTB-0371"]),
+    m("W5", "bquote() with where allowed", "R/strategy-preflight.R",
+      '          (length(node) >= 3L || "where" %in% names(node))) {',
+      '          FALSE) {', P72, ["LTB-0371"]),
+    m("W6", "environment-reaching names handed to a functional allowed", "R/strategy-preflight.R",
+      '          if (!is.na(name) && name %in% reaching) {', '          if (FALSE) {', P72, ["LTB-0371"]),
+    m("W7", "environment-reaching members called allowed", "R/strategy-preflight.R",
+      '      if (!is.na(member) && member %in% reaching) {', '      if (FALSE) {', P72, ["LTB-0371"]),
+    m("W8", "member names checked against environment-reaching names again (R2 regression)", "R/strategy-preflight.R",
+      EXT2, EXT2.replace('name %in% private)', 'name %in% c(private, reaching))'), P72, ["LTB-0371"]),
+    m("Y4", "@ extraction not scanned (re-review)", "R/strategy-preflight.R",
+      '      if (length(node) >= 3L && head %in% c("$", "@", "$<-", "@<-")) {',
+      '      if (length(node) >= 3L && head %in% c("$", "$<-")) {', P72, ["LTB-0371"]),
+    m("Y5", "rlang namespace getters dropped (re-review)", "R/strategy-preflight.R",
+      '      "as_environment", "env_get", "env_get_list", "ns_env", "pkg_env",\n      "ns_imports_env", "fn_body<-", "fn_fmls<-"',
+      '      "as_environment", "env_get", "env_get_list", "fn_body<-", "fn_fmls<-"', P72, ["LTB-0371"]),
+    m("Y7", "functional string check for base names only (re-review)", "R/strategy-preflight.R",
+      '          if (!is.na(name) && name %in% reaching) {', '          if (!is.na(name) && name %in% env_fns$base) {',
+      P72, ["LTB-0371"]),
+    m("Y10", "sufficiency consistency check for the wide layout only (re-review)", "R/history-frame.R",
+      SUFF,
+      SUFF.replace('  meta <- ledgr_history_require_consistent(x)$meta',
+                   '  meta <- if (identical(attr(x, "ledgr_history")$layout, "wide")) ledgr_history_require_consistent(x)$meta else ledgr_history_require_result(x)'),
+      P71, ["LTB-0407"]),
+]
+_drop = {"Q1", "Q2", "Q3"}
+_ids = {s["id"] for s in c2}
+specs = [s for s in specs if s["id"] not in _ids and s["id"] not in _drop] + c2
+
 json.dump(specs, open(os.path.join(here, "specs.json"), "w", encoding="utf-8"), indent=1)
 print(len(specs), "specs")
