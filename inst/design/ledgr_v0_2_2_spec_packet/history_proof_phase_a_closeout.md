@@ -12,7 +12,8 @@ raised by LDG-3068 was decided by the maintainer as Cut 16 decision (29) and
 is implemented (below). The independent close review
 (`close_review_44a.md`) returned CHANGES_REQUIRED; Correction 1 below
 answers it, and Correction 2 answers its focused re-review under Cut 16
-decision (30). Workstream 44 stays `open`.
+decision (30), and Correction 3 answers re-review 2. Workstream 44 stays
+`open`.
 
 BASE is `6f019c6b` (`integrate/cut15-v0.2.2`, accepted Workstreams 40-43, 46
 and 47). Branch `ws44/history-proof`: the implementation is `f61d6fca`, the
@@ -500,9 +501,74 @@ P5, Q4 and Q5 are restated against the new rule's code, Q1-Q3 are retired
 (their routes are now covered by W2, W6 and W7 together with the
 non-exported-symbol rule), and W1-W8, Y4, Y5, Y7 and Y10 are added.
 
+## Correction 3 (focused re-review 2, 2026-10-21)
+
+`close_review_44a_rereview_2.md` returned CHANGES_REQUIRED (four findings
+over eight items). The maintainer authorized this third round on
+2026-10-21, verified by the coordinator without a further review; after it,
+any newly found bypass is outside decision (30) unless the contract claims
+to refuse it.
+
+- S1, qualified and attached spellings. An assignment whose target is
+  headed by `pkg::name` or `pkg:::name` is checked as `name<-`, so
+  `base::body(f) <-`, `base::formals(f) <-` and `rlang::fn_body(f) <-` are
+  refused. Free symbols are checked against the base and rlang lists
+  together, so `env_get(fn_env(ctx$feature), ...)` with rlang attached is
+  refused. The re-review's four bodies are in LTB-0371 and are refused by
+  `ledgr_run()` with no store row.
+- S2, functional arguments. A functional is inspected only in its function
+  slot (`FUN`, `f` or `what`, matched with `match.call()` against the
+  functional's formals), so `tapply(d$environment, ...)`,
+  `sapply(s, "[[", "environment")`, `lapply(d[["environment"]], sqrt)` and
+  `mapply(f, 1:2, params$environment)` keep their BASE tier (LTB-0371
+  kept-tier body). `Recall` left the list: it has no function argument.
+- S3, a strategy's own names. The non-exported-ledgr-name rule skips the
+  member after `$` or `@` and names the body binds itself (assignment
+  targets, `for` variables, formals of inner functions), so a local
+  `config_hash`, `res$config_hash`, a local `compute_sharpe_ratio` helper and
+  `snapshot_state` keep their BASE tier (LTB-0371 kept-tier body).
+- S4, detectors. LTB-0371 adds `formals(f) <-` alone (Z4),
+  `rlang::fn_body(f) <-` (Z5), `bquote(.(a), ctx)` (Z8) and a quoted
+  `.feature_vector` (Z12).
+- N1, splice. `bquote()` is refused only when `where` is supplied, by name
+  or position (matched with `match.call()`); `bquote(..., splice = TRUE)`
+  is Tier 1 again (LTB-0371 kept-tier body).
+- Contract and help. The rule list in Reproducibility And Preflight and
+  `?ledgr_strategy_preflight` now claims only what the code refuses, and the
+  decision (30) limit names the re-review's remaining routes as examples: a
+  function reached through an alias, parentheses or `getElement()`, another
+  package's replacement function (`methods::functionBody<-`), `trace()`,
+  runtime-built names and iteration over the context.
+- Scan. Across the 632 `function(ctx, ...)` literals of BASE's tests,
+  vignettes, roxygen examples and README (re-review 1's `probe_scan.R`),
+  every literal keeps its BASE tier (506 Tier 1, 23 Tier 2, 65 Tier 3, 38
+  errors in both arms). Re-review 2's `probe_c2.R` gives BASE's tier for
+  every S2, S3 and splice body and Tier 3 for every S1 and S4 body; the
+  routes listed under the limit stay Tier 1, as stated.
+
+Test change in Correction 3: LTB-0371 adds seven refused and three
+kept-tier bodies; earlier expectations are unchanged. No accepted oracle
+changed. Mutations are verified by the coordinator; the committed
+`make_specs.py` defines them (Z4, Z5, Z8, Z12; V2-V7 for the new rules; P4,
+W2 and W5 restated for the new code).
+
 ## Verification record
 
 Windows 11, R 4.6.1, every R process run sequentially.
+
+On the Correction 3 commit `7d5b334b` (source copy, after the integration
+merge `ba3d80db`):
+
+- Full suite: 1,159 blocks, 19,234 expectations, no failure or error, one
+  optional skip (quantmod); 679 s of block time. LTB-0258 passes on the
+  merged CRAN DuckDB 1.5.6 golden.
+- `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55 flow
+  sites (unchanged), findings 72; `--self-test-mode-branches`: OK;
+  `tools/check-fold-phase-contract.R .`: OK; `tickets.yml` and
+  `tests/claims.yml` parse and the 327 claims resolve; `git diff --check
+  6f019c6b` is clean.
+- Mutations: not run here; the coordinator verifies them from the committed
+  `make_specs.py`. The table above is the Correction 2 run.
 
 On the Correction 2 commit `26ab8129` (source copy):
 

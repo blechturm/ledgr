@@ -246,5 +246,44 @@ _drop = {"Q1", "Q2", "Q3"}
 _ids = {s["id"] for s in c2}
 specs = [s for s in specs if s["id"] not in _ids and s["id"] not in _drop] + c2
 
+# Correction 3 overrides and additions (appended to make_specs.py).
+WHERE = "        if (!is.null(matched) && !is.null(matched$where)) {"
+c3 = [
+    m("W2", "non-exported ledgr objects allowed as bare symbols", "R/strategy-preflight.R",
+      '  out <- c(out, sprintf("%s (not exported)", internal_hits))\n', "", P72, ["LTB-0371"]),
+    m("W5", "bquote() with where allowed", "R/strategy-preflight.R",
+      WHERE, "        if (FALSE) {", P72, ["LTB-0371"]),
+    m("Z4", "formals<- alone dropped (re-review 2)", "R/strategy-preflight.R",
+      '      "get0", "mget", "dynGet", "getAnywhere", "body<-", "formals<-",',
+      '      "get0", "mget", "dynGet", "getAnywhere", "body<-",', P72, ["LTB-0371"]),
+    m("Z5", "rlang fn_body<- and fn_fmls<- dropped (re-review 2)", "R/strategy-preflight.R",
+      '      "ns_imports_env", "fn_body<-", "fn_fmls<-"', '      "ns_imports_env"', P72, ["LTB-0371"]),
+    m("Z8", "positional bquote() where not checked (re-review 2)", "R/strategy-preflight.R",
+      WHERE, '        if (!is.null(matched) && "where" %in% names(node)) {', P72, ["LTB-0371"]),
+    m("Z12", "carrier symbols limited to .history (re-review 2)", "R/strategy-preflight.R",
+      "  out <- c(out, intersect(all_symbols, carriers))\n", '  out <- c(out, intersect(all_symbols, ".history"))\n',
+      P72, ["LTB-0371"]),
+    m("P4", "free environment-reaching symbols not scanned", "R/strategy-preflight.R",
+      '  out <- c(out, sprintf("%s()", intersect(symbols, reaching)))\n', "", P72, ["LTB-0371"]),
+    m("V2", "qualified replacement functions not checked as their setter", "R/strategy-preflight.R",
+      '          if (setter %in% reaching) out <<- c(out, sprintf("%s<-()", target))',
+      '          if (FALSE) out <<- c(out, sprintf("%s<-()", target))', P72, ["LTB-0371"]),
+    m("V3", "free symbols checked against base names only", "R/strategy-preflight.R",
+      '  out <- c(out, sprintf("%s()", intersect(symbols, reaching)))',
+      '  out <- c(out, sprintf("%s()", intersect(symbols, env_fns$base)))', P72, ["LTB-0371"]),
+    m("V4", "functional inspects its last argument instead of its function slot", "R/strategy-preflight.R",
+      "        arg <- ledgr_strategy_functional_target(node, functional, functionals[[functional]])",
+      "        arg <- node[[length(node)]]", P72, ["LTB-0371"]),
+    m("V5", "the member after $ or @ counted as a ledgr-internal name", "R/strategy-preflight.R",
+      '      if (i == 3L && head %in% c("$", "@", "$<-", "@<-")) next\n', "", P72, ["LTB-0371"]),
+    m("V6", "names the body binds not skipped", "R/strategy-preflight.R",
+      "    intersect(named$used, ledgr_strategy_ledgr_internal_names()),\n    named$bound\n",
+      "    intersect(named$used, ledgr_strategy_ledgr_internal_names()),\n    character()\n", P72, ["LTB-0371"]),
+    m("V7", "bquote() refused for any third argument (splice)", "R/strategy-preflight.R",
+      WHERE, "        if (!is.null(matched) && length(node) >= 3L) {", P72, ["LTB-0371"]),
+]
+_ids3 = {s["id"] for s in c3}
+specs = [s for s in specs if s["id"] not in _ids3] + c3
+
 json.dump(specs, open(os.path.join(here, "specs.json"), "w", encoding="utf-8"), indent=1)
 print(len(specs), "specs")
