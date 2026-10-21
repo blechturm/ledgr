@@ -4,8 +4,8 @@ Role: record; Workstream 44 phase B evidence (LDG-3069, LDG-3070 and the
 teaching part of LDG-3071).
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behaviour.
-Status: in progress. LDG-3069 is complete (this section). LDG-3070 and the
-LDG-3071 teaching sections follow as their evidence is committed.
+Status: in progress. LDG-3069 and LDG-3070 are complete. The LDG-3071
+teaching section follows as its evidence is committed.
 
 BASE is the integration head `67f98d6b` (`integrate/cut15-v0.2.2`, phase A
 accepted and merged). Branch `ws44/history-proof`. Real-data work is in
@@ -139,8 +139,156 @@ receiver owner).
 
 ## LDG-3070: full-history real-data proof
 
-Follows.
+Record and checker: `ledgr-research` `experiments/history-wave-full-proof/`
+(README, `check_full.R`). Both 1998-2026 workloads ran on the integration
+head `67f98d6b` against the snapshot built for LDG-3069 (hash `1f53c098`,
+equal to the LDG-3080 build), each reading causal history every month
+(`ledgr_history_frame(feature = "return_1", lookback = 63L, na_action =
+"drop_instruments")`, sufficiency, an inverse-volatility estimate,
+`ledgr_history_weights()` and `ledgr_target_rebalance()`).
+
+| measure | changing membership | full membership |
+| --- | ---: | ---: |
+| status, pulses | DONE, 7,213 | DONE, 7,213 |
+| fills; decision-trace rows | 10,703; 3,653,273 | 10,550; 8,428,204 |
+| preparation, fold, native total s | 9.69, 43.70, 54.32 | 9.63, 64.53, 75.11 |
+| parent peak working set / private MiB: preparation | 1,681 / 1,704 | 1,652 / 1,698 |
+| fold | 1,638 / 1,685 | 1,806 / 1,844 |
+| reading fills, equity and the whole trace | 3,273 / 3,660 | 5,951 / 6,599 |
+
+- **Segment guard.** The default guard passes on both shapes: lifetime and
+  terminal 829 facts in 1,995 segments (max 3 per instrument, share 0.19),
+  membership 967,091 guard facts in 677,446 segments (max 581, share 0.25),
+  trading status none (share 0.06); no instrument over its limit. The
+  full-membership shape has no membership family.
+- **Reconciliation.** Bars 5,481,906, instruments 1,166, open sessions
+  7,213, membership 290,811 rows in 580 sets, lifetime 829 rows (527
+  terminal), no trading-status or corporate-action rows, first and last bar
+  1998-01-02 and 2026-09-04: all equal H1/WS39 and LDG-3080. The intended
+  differences are Cut 16's snapshot hash rule 4, schema 122 and identity rule
+  4.
+- **Routed real-data counts.** No late-known lifetime fact; 78 instruments
+  with more than one lifetime row; no trading-status row; zero lagged
+  knowledge ranges on every instrument in both shapes, so the WS43 F5
+  prefix-replay cost is a factor of 1 on this data. As LDG-3080 notes,
+  adapter v003 sets knowledge equal to effective time; an adapter that maps
+  vendor knowledge times must be re-censused.
+- **Checker.** `check_full.R` fails on a changed identity or count, a
+  late-known or missing-knowledge fact, a segment-guard breach, a lagged
+  range, a run that is not `DONE` over 7,213 pulses or a failed stage, and,
+  given a rerun directory, on any counted difference. Seven data mutations
+  (F1-F7 below) each make it fail. A fresh rerun into a new private work directory reproduced every counted
+  file exactly, including the fills, equity and config hashes of both runs,
+  and `check_full.R data <rerun>` passes; F8 makes that comparison fail.
+- **Plausibility.** The runs are mechanical evidence, not a strategy claim.
+  The equity paths have no implausible jump: the largest one-day gain is
+  11 percent (changing) and 23 percent (full membership); no day gains more
+  than 50 percent.
+- The stage peaks come from reading the whole decision trace back after the
+  run (8.4 million rows for full membership), not from history preparation
+  or the fold. This joins the WS8 trace-read route above.
 
 ## LDG-3071: teaching (ticket stays open)
 
-Follows.
+Phase B implements the teaching part of LDG-3071; the decision
+reconciliation table and the v12 as-implemented appendix wait for Workstream
+45 (decisions 27 and 28) and close with the cut, so the ticket stays `open`.
+
+- **Article.** New `vignettes/causal-history.qmd` ("Reading Causal
+  History"), first in the Point-In-Time Evidence group: walk-forward hands
+  off to it and it hands off to point-in-time-inputs. Interpretation of
+  "before the point-in-time ingestion material": the article opens with a
+  hello-world path (open an existing sealed snapshot, declare an experiment,
+  run it) before any ingestion, and point-in-time ingestion is the next
+  article in the reading flow. The snapshot it opens is built in a hidden
+  setup chunk from `ledgr_sim_pit_inputs()`; every shown chunk executes and
+  the rendered `causal-history.md` holds its output. It teaches, with
+  executed output: the default read and its four defaults; the matrix
+  adapter; `ledgr_history_info()`; `instruments = "decision_axis"` and
+  `na_action = "drop_instruments"` with the selection table; the long layout
+  and its evidence; structural sufficiency (stated not to be warm-up);
+  bounded and history-dependent indicator classes (printed); feature cell
+  evidence; carry evidence including `carried_input_share`; return features
+  against differenced carried closes; one portfolio estimate from a history
+  read through a plain solver, `ledgr_history_weights()` and
+  `ledgr_target_rebalance(keep = )` with estimation exclusion and execution
+  intent explained separately, then run; the vintage feature view against
+  restated bar history on a late-known lifetime fact; one continuous history
+  across walk-forward windows; finite-lookback advice with sizes; and the
+  preflight boundary (decision 30) with an executed Tier 3 refusal.
+ARTICLE_NOTES
+- **Contract.** Strategy Context Teaching is present tense, its v12 pending
+  link removed, with two new bullets for the article and the portfolio
+  example. With Release Gates and Store And Codebase Gates (LDG-3069), no
+  v12 pending link remains in `contracts.md`; LTB-0415 checks that, that
+  every v12 receiver anchor resolves, that no contracts.md sentence states
+  rule 3 or schema 120/121 as current, and that the decisions bridge rows and
+  the three RFC redirect anchors remain. No WS45-owned pending link exists
+  in `contracts.md` (decisions 27 and 28 were made after the v12 receiver
+  map and add none).
+- **WS7.** The macro plan's WS7 entry now owns the carried-input-share
+  consumer proof (v12 Section 10 item 18b): a registered workload whose
+  estimator acts on the share, with a block showing the weights change at
+  its threshold; field existence alone does not pass. Cut 16 shows only that
+  the field is reachable (LTB-0297 and the article).
+- **Help.** `?ledgr_history_frame`, `?ledgr_history_matrix`,
+  `?ledgr_history_info`, `?ledgr_history_weights`,
+  `?ledgr_history_sufficient` and `?ledgr_history_policy` link the article
+  with a browser-free path. NEWS names the article.
+- **Detector.** LTB-0414 (LCL-0404) checks the article's structure, calls,
+  forbidden manual reconstruction in the portfolio chunk, the rendered output
+  and the help links.
+
+## Mutation table
+
+Real-data checkers. Each mutation edits a copy of the committed `data/`
+directory (`dev/bench/v0_2_2_history_proof/scripts/mutate_h6_data.py` and
+`mutate_full_data.py`; samples are scaled in the gzip files) and runs the
+checker on the copy.
+
+| ID | Mutation | Checker | Result |
+| --- | --- | --- | --- |
+| H1 | candidate single-run parent samples x1.9 in two repeats | `check_h6.R` | fails: single-run gates 1.1006 and 1.1441 |
+| H2 | candidate sweep daemon samples x8 in two repeats | `check_h6.R` | fails: parent-plus-daemon gate 1.1704 |
+| H2a | the same at x5 (first attempt) | `check_h6.R` | passes, correctly: the ratio stays 0.87, below the bound |
+| H3 | candidate sweep parent samples x6 in two repeats | `check_h6.R` | fails: two-worker parent gates 1.1133 and 1.1156 |
+| H4 | current-dispatch final equity differs | `check_h6.R` | fails: transport parity |
+| H5 | sequential execution seed differs | `check_h6.R` | fails: transport parity |
+| H6 | a candidate run repeat has one fill fewer | `check_h6.R` | fails: run repeats differ |
+| H7 | a gated step exited non-zero | `check_h6.R` | fails |
+| H8 | a gated repeat missing | `check_h6.R` | fails (stops on the missing samples) |
+| F1 | bar count changed | `check_full.R` | fails |
+| F2 | snapshot hash changed | `check_full.R` | fails |
+| F3 | a segment-guard breach | `check_full.R` | fails |
+| F4 | full-membership run stopped | `check_full.R` | fails |
+| F5 | pulse count changed | `check_full.R` | fails |
+| F6 | a late-known lifetime fact | `check_full.R` | fails |
+| F7 | a failed stage | `check_full.R` | fails |
+| F8 | one more fill in a copy of the rerun data (by hand) | `check_full.R` with a rerun | fails: rerun differs |
+
+MUTATION_ROWS_B
+
+## Routed, not changed here
+
+- **Shared memory (maintainer).** The post-substrate trigger is 0.1218 on the
+  H1 workload, at or above the 10 percent threshold of v12 Section 7 (E6), so
+  shared memory reopens as a question. Nothing is implemented. Inputs: the
+  staged invariant is 454 MiB (`object.size`) and each daemon peaks at about
+  1.1 GB with it. If reopened, E6 says to share the bar substrate rather than
+  rebuild it and to rebuild only the pulse strings.
+- **WS8: `ledgr_run_explain()` read cost.** Explaining one instrument reads
+  the whole diagnostics and availability tables (9.3 s and a 2.6 GB R heap
+  peak at H1), unchanged by the cut. The trace is not weakened.
+- **WS8: single-run timing.** The history-enabled single run is 23 percent
+  slower than the baseline on H1 (52.3 against 42.4 s native elapsed;
+  preparation 10.0 against 6.2 s, fold 41.2 against 35.1 s; the profile names
+  feature preparation and per-pulse decision work). Not gated by LDG-3069.
+- **Maintainer: caller RNG with `seed = NULL`.** Unseeded parallel sweeps
+  advance the caller's RNG through `mirai` daemon start and stop, before and
+  after the cut. Whether ledgr should restore it is a behaviour choice.
+- **Lazy history evidence (maintainer, Cut 16 decision 17).** Measured input:
+  a full-lookback wide read is 8.79 times its value bytes on real data.
+- **Walk-forward with two workers.** At the measured fold size, restarting
+  daemons and restaging per fold makes two workers slower than one (74.5
+  against 71.9 s); a reuse of daemons across folds would be a transport
+  change for the macro plan, not this ticket.

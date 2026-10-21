@@ -112,7 +112,9 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
     "12" = list(owner = "LDG-3057", blocks = "LTB-0286"),
     "13" = list(owner = "LDG-3061", blocks = "LTB-0294",
                 contributing = list("LDG-3059" = "LTB-0293")),
-    "14" = list(owner = "LDG-3070", pending = TRUE),
+    # LDG-3070's real-data proof relies on the default segment guard; the
+    # registered detector it cites is the guard's refusal block.
+    "14" = list(owner = "LDG-3070", blocks = "LTB-0291"),
     "15" = list(owner = "LDG-3068", blocks = c("LTB-0409", "LTB-0410", "LTB-0413")),
     "16" = list(owner = "LDG-3063", blocks = "LTB-0301",
                 contributing = list("LDG-3058" = "LTB-0290")),
