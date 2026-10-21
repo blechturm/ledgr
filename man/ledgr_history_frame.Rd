@@ -100,6 +100,13 @@ sample and records the reason. Exclusion is estimation only: it creates no
 target, zero target, liquidation or fill. The strategy still returns a
 target for every instrument on its decision axis.
 }
+\section{Articles}{
+
+Reading causal history:
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
+}
+
 \examples{
 \dontrun{
 strategy <- function(ctx, params) {

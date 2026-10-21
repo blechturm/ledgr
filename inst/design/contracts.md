@@ -2722,9 +2722,6 @@ Accepted change pending:
 <a id="contract-documentation-strategy-context"></a>
 ### Strategy Context Teaching
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - `man/ledgr_strategy_context.Rd` owns one explicit reference table for every
   public runtime context member and plane. It records dense and availability
   applicability, shape, axis, units, missingness and counterpart, and
@@ -2738,6 +2735,27 @@ Accepted change pending:
   exit. They state that helper weights use allocatable rather than total NAV
   when held nonmembers are reserved, and that hold does not bypass risk or
   guarantee an absence of fills.
+- The causal-history article (`vignettes/causal-history.qmd`) opens with a
+  short path that opens an existing sealed snapshot and completes a run
+  before any point-in-time ingestion, which the next article in the reading
+  flow teaches. With executed output it then teaches the default
+  `ledgr_history_frame()` read, the matrix adapter, `ledgr_history_info()`,
+  explicit instrument-selection and missing-value choices, structural
+  sufficiency (never presented as indicator warm-up or convergence), the
+  bounded and history-dependent indicator classes, carry evidence including
+  `carried_input_share`, reading return features rather than differencing
+  carried closes, the vintage feature view against restated bar history,
+  one continuous history across walk-forward windows, the advice to read a
+  finite lookback, and the boundary that ledgr guarantees causal access
+  through its own history, feature and fact readers while strategy code
+  outside them is the author's responsibility, checked best-effort by
+  preflight.
+- One executed portfolio-estimation example goes from a history read through
+  an estimator and `ledgr_history_weights()` to `ledgr_target_rebalance()`
+  with no manual timestamp removal, column-name reconstruction or second
+  history reader. It explains estimation exclusion separately from execution
+  intent: an instrument the estimate drops receives a zero target from the
+  rebalance unless its held position is passed in `keep`.
 
 <a id="contract-documentation-terminal-disclosure"></a>
 ### Terminal And Release Disclosure
@@ -2760,9 +2778,6 @@ Accepted change pending:
 <a id="contract-verification-release-gates"></a>
 ### Release Gates
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Full regression tests must pass before release-ticket completion.
 - Package check target:
   `R CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz`.
@@ -2778,6 +2793,29 @@ Accepted change pending:
 - Release-ticket execution should follow `inst/design/release_ci_playbook.md`.
   Main-branch CI and tag-triggered CI are separate gates; a release tag is not
   valid until the tag workflow is green.
+- A change to causal-history preparation, worker transport or fold memory is
+  measured with the paired history resource protocol (v12 Section 10, Cut 16
+  decision (9)) on the registered H1 Sharadar workload and host: one
+  full-history `ledgr_run()` and one two-candidate `ledgr_sweep()` on two
+  local workers, a baseline arm built fresh from the pre-change code and the
+  candidate arm run alternately three times each, the worker and every
+  descendant process sampled about every 0.2 seconds, and medians compared.
+  Single-run parent working set and private commit, two-worker parent working
+  set and private commit, and summed parent-plus-daemon private commit each
+  pass at no more than 1.10 times the paired baseline; summed working set is
+  disclosed as a lower bound and is not gated. A miss is corrected or receives
+  an explicit maintainer exception with a user-visible limit and a routed
+  follow-up.
+- The same record shows that sequential, current-dispatch and
+  staged-dispatch sweeps agree on final equity, trade count, execution seed
+  and the snapshot, strategy and reproduction-key hashes; reports
+  `(workers - 1) * staged_invariant_bytes / total_private_commit`, below
+  10 percent of which shared-memory transport stays rejected and at or above
+  which it is routed to a maintainer decision rather than implemented; and
+  records the read-side peak of the full decision trace through
+  `ledgr_results(bt, "diagnostics")` and `ledgr_run_explain()`; a material
+  read cost is routed as performance work and never answered by weakening
+  the trace.
 
 <a id="contract-verification-diagnostic-inputs"></a>
 ### Diagnostic Input Gates
@@ -2811,9 +2849,6 @@ Accepted change pending:
 <a id="contract-verification-store-and-codebase-gates"></a>
 ### Store And Codebase Gates
 
-Accepted change pending:
-[point-in-time historical projection](decisions.md#point-in-time-historical-projection).
-
 - Package code obtains a persistent store connection through
   `ledgr_store_open(path, mode)` or passes a borrowed, cached or
   caller-supplied connection through its one existing-connection check. The
@@ -2842,3 +2877,9 @@ Accepted change pending:
   columns. The fast boundary block runs every empty family through the shared
   summary arithmetic and pins the report to that boundary; the full populated
   census remains a report/check tool rather than running inside the test lane.
+- A structural check fails if availability run, sweep or fold code builds a
+  per-instrument bar list, aligned bar matrices or static bar views beside the
+  causal-history substrate, or gives a fold stage other than observe-and-settle
+  a substrate reader (LTB-0293). A daemon refuses a missing, stale or altered
+  staged-invariant identity before any strategy call, fill or result write
+  (LTB-0294).

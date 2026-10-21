@@ -14,6 +14,10 @@
 #' @details Supplied ages and limits must fit in an R integer.
 #'
 #' @return A `ledgr_history_policy` object.
+#' @section Articles:
+#' Reading causal history:
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
 ledgr_history_policy <- function(price_carry = 5L,
                                  output_carry = NULL,

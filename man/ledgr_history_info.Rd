@@ -42,6 +42,13 @@ needs a target: \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} 
 is not in its weights to zero unless the strategy passes it in \code{keep}, and
 \code{excluded_ids} is the list to consult for that choice.
 }
+\section{Articles}{
+
+Reading causal history:
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
+}
+
 \examples{
 \dontrun{
 strategy <- function(ctx, params) {

@@ -619,6 +619,10 @@ ledgr_history_context_view <- function(ctx) {
 #'   ctx$hold()
 #' }
 #' }
+#' @section Articles:
+#' Reading causal history:
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
 ledgr_history_frame <- function(ctx,
                                 feature = NULL,
@@ -1007,6 +1011,10 @@ ledgr_history_require_consistent <- function(x) {
 #' @return A numeric matrix with `dimnames` equal to the result's session
 #'   timestamps and included instrument IDs.
 #' @seealso [ledgr_history_frame()]
+#' @section Articles:
+#' Reading causal history:
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
 ledgr_history_matrix <- function(x) {
   checked <- ledgr_history_require_consistent(x)
@@ -1075,6 +1083,10 @@ ledgr_history_matrix <- function(x) {
 #'   ctx$hold()
 #' }
 #' }
+#' @section Articles:
+#' Reading causal history:
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
 ledgr_history_info <- function(x) {
   meta <- ledgr_history_require_consistent(x)$meta
@@ -1170,6 +1182,10 @@ print.ledgr_history_info <- function(x, ...) {
 #'     ledgr_target_rebalance(ctx, equity_fraction = 0.95)
 #' }
 #' }
+#' @section Articles:
+#' Reading causal history:
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
 ledgr_history_weights <- function(x, weights) {
   meta <- ledgr_history_require_consistent(x)$meta
@@ -1238,6 +1254,10 @@ ledgr_history_weights <- function(x, weights) {
 #' @param min_instruments Required number of included instruments.
 #' @return `TRUE` or `FALSE`.
 #' @seealso [ledgr_history_frame()], [ledgr_history_info()]
+#' @section Articles:
+#' Reading causal history:
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
 ledgr_history_sufficient <- function(x, lookback = NULL, min_instruments = 1L) {
   meta <- ledgr_history_require_consistent(x)$meta

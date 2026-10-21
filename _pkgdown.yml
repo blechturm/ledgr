@@ -55,9 +55,11 @@ articles:
   - title: Point-In-Time Evidence
     navbar: Point-In-Time Evidence
     desc: >
-      Add calendars, availability, corporate actions, and historical-universe
-      evidence when the research question requires them.
+      Read causal history inside a strategy, then add calendars, availability,
+      corporate actions, and historical-universe evidence when the research
+      question requires them.
     contents:
+      - causal-history
       - point-in-time-inputs
       - missing-data-and-sessions
       - corporate-action-cash

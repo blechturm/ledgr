@@ -33,6 +33,13 @@ with \code{ledgr_invalid_history_request} unless \code{lookback} is supplied. Li
 recorded axis and instruments (for example after filtering its rows) with
 \code{ledgr_invalid_history_result}.
 }
+\section{Articles}{
+
+Reading causal history:
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
+}
+
 \seealso{
 \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}, \code{\link[=ledgr_history_info]{ledgr_history_info()}}
 }

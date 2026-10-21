@@ -446,10 +446,11 @@ identity introduced here.
 
 ## Where Next
 
-- If your research needs calendars, changing universes, trading restrictions,
-  or corporate actions, continue with
-  `vignette("point-in-time-inputs", package = "ledgr")`; a study on complete
-  daily bars can go on to
+- To read windows of past values inside a strategy, continue with
+  `vignette("causal-history", package = "ledgr")`. If your research needs
+  calendars, changing universes, trading restrictions, or corporate actions,
+  `vignette("point-in-time-inputs", package = "ledgr")` follows it; a study
+  on complete daily bars can go on to
   `vignette("strategy-authoring-tools", package = "ledgr")`.
 - For the sweep, selection and promotion loop this builds on, see
   `vignette("sweeps", package = "ledgr")`.

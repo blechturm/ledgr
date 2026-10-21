@@ -408,6 +408,15 @@ valid exit when the measured cost is immaterial.
 - Make the behavior of an admissible held instrument omitted from the
   estimation sample explicit in the proof. Do not let absence from a weight
   vector silently choose between keep, liquidation and refusal.
+- Consume the carried-input share (v12 Section 10 item 18b, routed here by
+  Cut 16 LDG-3071). Cut 16 only shows that `carried_input_share` is reachable
+  from `ledgr_history_frame()` through `ledgr_history_info()` (LTB-0297 and
+  the causal-history article). WS7 owns the consumer proof: a registered
+  history workload in which the estimator reads the share and acts on it
+  (for example, excludes or down-weights an instrument whose window is
+  mostly carried prices), with a failure-sensitive block showing that the
+  weights change when the share crosses the strategy's threshold. The
+  existence of the field alone does not pass this item.
 
 Exit: at least one nontrivial long-only portfolio strategy runs without private
 engine access, private history construction, research-side accounting or a
@@ -497,6 +506,17 @@ no ticket:
   strategy review" row has no ticket;
 - fast-lane headroom: each cut close records the ordinary fast profile's
   margin against its 112-second gate beside the review ratio.
+- `ledgr_run_explain()` read cost (Cut 16 LDG-3069, H6 record): explaining
+  one instrument of the H1 single run reads the whole diagnostics and
+  availability tables and filters them in R, 9.3 s at a 2.6 GB R heap peak
+  (3.6 million trace rows). The baseline `99a3b067` costs the same. Read only
+  the instrument's rows; the full logical trace stays;
+- history-enabled single-run time (Cut 16 LDG-3069): on the H1 workload the
+  run takes 52.3 s native elapsed against 42.4 s at `99a3b067` (preparation
+  10.0 against 6.2 s, fold 41.2 against 35.1 s), while the two-worker sweep is
+  faster (50.8 against 69.8 s). From the profile, the extra time is in history
+  feature preparation and per-pulse decision work (an inference; not
+  attributed function by function). Memory gates pass; time was not gated.
 
 Promote a remaining candidate only when the current product path, not a private
 harness, shows the cost. Then run one integrated long-window record covering:
@@ -971,11 +991,31 @@ history proof:
 Cut 16 decision (17) routes these beyond WS46:
 
 - **Lazy evidence in history reads.** A full-lookback `ledgr_history_frame()`
-  read materializes every evidence plane eagerly (about 8.6 times its value
-  bytes at the H1 shape). Making evidence lazy changes the v12 Section 3
-  result and needs a maintainer decision, probably a short RFC. LDG-3069
-  supplies the measurements; implementation is not scheduled before that
-  decision.
+  read materializes every evidence plane eagerly. LDG-3069 measured it on the
+  real H1 data: a wide read at the last session (503 instruments by 7,213
+  sessions) is 243.4 MiB for 27.7 MiB of values, 8.79 times, in about 1 s; at
+  lookback 252 it is 9.2 MiB. Making evidence lazy changes the v12 Section 3
+  result and needs a maintainer decision, probably a short RFC;
+  implementation is not scheduled before that decision.
+- **Shared memory reopened as a question (maintainer).** After the single
+  substrate, LDG-3069 measured the v12 Section 7 (E6) trigger on the H1
+  workload: `(workers - 1) * staged_invariant_bytes / total_private_commit =
+  (2 - 1) * 476,486,520 B / 3,731.0 MiB = 0.1218`, where the denominator is
+  the summed parent-plus-daemon private commit of the two-worker sweep. That
+  is at or above 10 percent, so E6 reopens shared memory; nothing is
+  implemented. If reopened, E6 says to share the bar substrate rather than
+  rebuild it and to rebuild only the pulse strings.
+- **Caller RNG with `seed = NULL` (maintainer).** An unseeded parallel sweep
+  advances the caller's RNG, before and after Cut 16, because starting and
+  stopping `mirai` daemons does (LDG-3069 probe). A seeded sweep restores it.
+  Whether ledgr should save and restore the caller's RNG around backend start
+  and stop is a behaviour choice.
+- **Walk-forward daemon reuse across folds (owner: execution-core
+  consolidation, with the transport).** Each parallel walk-forward fold starts
+  new daemons and restages the invariant (about 444 MiB per daemon per fold
+  on H1, 0.8 s of parent staging time); at three two-year folds two workers
+  took 74.5 s against 71.9 s for one (LDG-3069). Reusing staged daemons across
+  folds is a transport change, not a history semantics change.
 - **Corporate-action settlement state as data.** The carried walk-forward
   chain rebuilds the previous window's settlement plan from its ledger.
   Carrying that state as an explicit object is considered with LDG-3073 if

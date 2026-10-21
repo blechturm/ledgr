@@ -21,6 +21,13 @@ column names are its included instrument IDs, ready for an ordinary R
 estimator. It reads no data and owns no cutoff, axis, treatment or
 missingness logic.
 }
+\section{Articles}{
+
+Reading causal history:
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
+}
+
 \seealso{
 \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}
 }
