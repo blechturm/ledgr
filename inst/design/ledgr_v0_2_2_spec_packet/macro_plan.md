@@ -387,6 +387,16 @@ Exit if promoted: scheduled strategies pay strategy and feature cost on
 decision dates, not blindly on every market pulse. A deferred result is also a
 valid exit when the measured cost is immaterial.
 
+Measured input (2026-10-21, coordinator profile of the Cut 16 LDG-3070
+changing-membership workload, which rebalances monthly and returns
+`ctx$hold()` on about 95 percent of pulses): the fold is about 80 percent of
+the 56.6 s run, and per-pulse context building (helper and lookup refresh
+4.2 s, bar packet 1.8 s), the strategy call (3.3 s) and the commit path
+(8.5 s) are paid on every pulse. This is the held-pulse probe's first real
+workload; the probe still has to show how much of that a scheduler can skip
+while fills, cash, disposition events, valuation ageing and availability
+boundaries stay complete.
+
 ### WS7. One public long-only estimator strategy
 
 - Implement one representative estimator-to-weight strategy, such as long-only
@@ -517,6 +527,20 @@ no ticket:
   faster (50.8 against 69.8 s). From the profile, the extra time is in history
   feature preparation and per-pulse decision work (an inference; not
   attributed function by function). Memory gates pass; time was not gated.
+  Attributed on 2026-10-21 (coordinator profile, LDG-3070 changing-membership
+  workload at `e4d23bc5`, pinned, `Rprof` 10 ms, 36.3 of 56.6 s sampled):
+  preparation is about 20 percent (history feature series 5.0 s, of which
+  input wrangling 3.3 s with the per-instrument carry routine 1.9 s, and the
+  indicator calculation 1.3 s; substrate build including the DuckDB fetch
+  1.1 s) and the fold about 80 percent (decide 11.9 s with context helper and
+  lookup refresh 4.2 s, per-pulse bar packet 1.8 s, history reads 2.0 s and
+  the strategy call 3.3 s; commit 8.5 s with the pulse block flush 4.4 s,
+  `ledgr_canonical_json_encode` 1.9 s and the diagnostic block 1.3 s;
+  observe/settle 4.4 s; plan and apply 3.2 s). Levers in order: per-pulse
+  context and commit work on held pulses (see WS6), the per-pulse canonical
+  JSON encoding, and moving feature inputs onto the matrix collapse carry path
+  (execution-core consolidation). DuckDB pushdown would address only the
+  1.1 s substrate fetch;
 
 Promote a remaining candidate only when the current product path, not a private
 harness, shows the cost. Then run one integrated long-window record covering:
