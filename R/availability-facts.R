@@ -107,7 +107,7 @@ ledgr_facts_membership_intervals <- function(df,
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = FALSE)
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   effective_to <- ledgr_fact_optional_time(df, "effective_to")
-  ledgr_fact_validate_intervals(effective_from, effective_to, "membership intervals")
+  ledgr_fact_check_exact_intervals(df, effective_from, effective_to, "membership intervals")
   member <- ledgr_fact_logical(df$member, "member")
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
   civil_time_json <- ledgr_fact_civil_json(
@@ -135,17 +135,8 @@ ledgr_facts_membership_intervals <- function(df,
   )
   rows$fact_id <- ledgr_fact_ids("membership", rows, supplied_id)
   rows <- ledgr_fact_deduplicate(rows, "membership")
-  ledgr_fact_validate_membership_conflicts(rows)
-  rows <- rows[order(
-    rows$universe_id,
-    rows$instrument_id,
-    rows$effective_from,
-    rows$fact_id,
-    method = "radix"
-  ), , drop = FALSE]
-  rownames(rows) <- NULL
 
-  ledgr_new_fact_family(
+  ledgr_fact_family_build(
     "membership",
     universe_id,
     rows,
@@ -255,23 +246,8 @@ ledgr_facts_membership_snapshots <- function(df,
     rows$fact_id <- ledgr_fact_ids("membership", rows, rep(NA_character_, nrow(rows)))
     rows <- ledgr_fact_deduplicate(rows, "membership")
   }
-  headers <- headers[order(
-    headers$effective_from,
-    headers$knowledge_time,
-    headers$set_id,
-    na.last = TRUE,
-    method = "radix"
-  ), , drop = FALSE]
-  rows <- rows[order(
-    rows$effective_from,
-    rows$set_id,
-    rows$instrument_id,
-    method = "radix"
-  ), , drop = FALSE]
-  rownames(headers) <- NULL
-  rownames(rows) <- NULL
 
-  ledgr_new_fact_family(
+  ledgr_fact_family_build(
     "membership",
     universe_id,
     rows,
@@ -293,7 +269,7 @@ ledgr_facts_trading_status <- function(df,
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = FALSE)
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   effective_to <- ledgr_fact_optional_time(df, "effective_to")
-  ledgr_fact_validate_intervals(effective_from, effective_to, "trading status")
+  ledgr_fact_check_exact_intervals(df, effective_from, effective_to, "trading status")
   status <- tolower(as.character(df$status))
   allowed <- c("active", "halted", "quotation_only")
   if (anyNA(status) || any(!status %in% allowed)) {
@@ -333,27 +309,15 @@ ledgr_facts_trading_status <- function(df,
     stringsAsFactors = FALSE
   )
   rows$fact_id <- ledgr_fact_ids("trading_status", rows, supplied_id)
-  for (i in which(!is.na(rows$supersedes_fact_id))) {
-    target <- which(
-      supplied_id == rows$supersedes_fact_id[[i]] &
-        source == rows$source[[i]]
-    )
-    if (length(target) == 1L) rows$supersedes_fact_id[[i]] <- rows$fact_id[[target]]
-  }
+  rows$supersedes_fact_id <- ledgr_fact_status_link_ids(
+    rows$supersedes_fact_id,
+    supplied_id,
+    source,
+    rows$fact_id
+  )
   rows <- ledgr_fact_deduplicate(rows, "trading_status")
-  ledgr_fact_validate_status_supersession(rows)
-  ledgr_fact_validate_source_conflicts(rows)
-  rows <- rows[order(
-    rows$instrument_id,
-    rows$effective_from,
-    -rows$precedence,
-    rows$source,
-    rows$fact_id,
-    method = "radix"
-  ), , drop = FALSE]
-  rownames(rows) <- NULL
 
-  ledgr_new_fact_family(
+  ledgr_fact_family_build(
     "trading_status",
     "instrument",
     rows,
@@ -371,7 +335,7 @@ ledgr_facts_lifetime <- function(df,
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = FALSE)
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   effective_to <- ledgr_fact_optional_time(df, "effective_to")
-  ledgr_fact_validate_intervals(effective_from, effective_to, "lifetime")
+  ledgr_fact_check_exact_intervals(df, effective_from, effective_to, "lifetime")
   assertion <- tolower(as.character(df$assertion))
   allowed <- c("known_active", "known_inactive", "unknown")
   if (anyNA(assertion) || any(!assertion %in% allowed)) {
@@ -406,17 +370,8 @@ ledgr_facts_lifetime <- function(df,
   )
   rows$fact_id <- ledgr_fact_ids("lifetime", rows, supplied_id)
   rows <- ledgr_fact_deduplicate(rows, "lifetime")
-  ledgr_fact_validate_lifetime_conflicts(rows)
-  rows <- rows[order(
-    rows$instrument_id,
-    rows$effective_from,
-    rows$source,
-    rows$fact_id,
-    method = "radix"
-  ), , drop = FALSE]
-  rownames(rows) <- NULL
 
-  ledgr_new_fact_family(
+  ledgr_fact_family_build(
     "lifetime",
     "instrument",
     rows,
@@ -437,7 +392,8 @@ ledgr_equity_corporate_action_abort <- function(message,
 }
 
 ledgr_validate_equity_corporate_action_rows <- function(rows,
-                                                         state = FALSE) {
+                                                         state = FALSE,
+                                                         clocks = TRUE) {
   required <- c(
     "fact_id", "subtype", "parent_instrument_id", "entitlement_time",
     "effective_time", "knowledge_time", "payment_time", "complete",
@@ -538,20 +494,7 @@ ledgr_validate_equity_corporate_action_rows <- function(rows,
     )
   }
 
-  entitlement <- rows$entitlement_time
-  effective <- rows$effective_time
-  payment <- rows$payment_time
-  bad_order <- (!is.na(entitlement) & !is.na(effective) &
-    entitlement > effective) |
-    (!is.na(effective) & !is.na(payment) & effective > payment) |
-    (!is.na(entitlement) & !is.na(payment) & entitlement > payment)
-  if (any(bad_order)) {
-    ledgr_equity_corporate_action_abort(
-      "Corporate-action clocks must preserve entitlement <= effective <= payment when supplied.",
-      "ledgr_fact_invalid_clock_order",
-      state
-    )
-  }
+  if (isTRUE(clocks)) ledgr_validate_equity_corporate_action_clocks(rows, state)
 
   check_term <- function(value, validated, label, valid_value) {
     present <- !is.na(value)
@@ -584,6 +527,49 @@ ledgr_validate_equity_corporate_action_rows <- function(rows,
   invisible(TRUE)
 }
 
+# Clock order on resolved instants. A constructor defers it to
+# ledgr_fact_family_settle() so a civil date is never compared through a
+# UTC-midnight stand-in.
+ledgr_validate_equity_corporate_action_clocks <- function(rows, state = FALSE) {
+  entitlement <- rows$entitlement_time
+  effective <- rows$effective_time
+  payment <- rows$payment_time
+  bad_order <- (!is.na(entitlement) & !is.na(effective) &
+    entitlement > effective) |
+    (!is.na(effective) & !is.na(payment) & effective > payment) |
+    (!is.na(entitlement) & !is.na(payment) & entitlement > payment)
+  if (any(bad_order)) {
+    ledgr_equity_corporate_action_abort(
+      "Corporate-action clocks must preserve entitlement <= effective <= payment when supplied.",
+      "ledgr_fact_invalid_clock_order",
+      state
+    )
+  }
+  invisible(TRUE)
+}
+
+# Cut 16 decisions (11) and (27), the one known-when-effective rule. A
+# corporate-action row with an event clock and no knowledge clock is known
+# when its event becomes effective; the event clock is the effective time,
+# else the entitlement time. A POSIXct event is known at that instant. A
+# Date event is a civil session label whose event edge is the session close
+# (decision 12); its knowledge label is the same civil date, which civil
+# resolution places at that session's declared open (decision 27). A
+# supplied knowledge time, Date or POSIXct, is never replaced.
+ledgr_corporate_action_assumed_knowledge <- function(rows, labels) {
+  event <- rows$effective_time
+  event_label <- labels$effective_time
+  from_entitlement <- is.na(event) & !is.na(rows$entitlement_time)
+  event[from_entitlement] <- rows$entitlement_time[from_entitlement]
+  event_label[from_entitlement] <- labels$entitlement_time[from_entitlement]
+  assume <- is.na(rows$knowledge_time) & !is.na(event)
+  knowledge_time <- rows$knowledge_time
+  knowledge_time[assume] <- event[assume]
+  knowledge_label <- labels$knowledge_time
+  knowledge_label[assume] <- event_label[assume]
+  list(knowledge_time = knowledge_time, knowledge_label = knowledge_label)
+}
+
 ledgr_equity_corporate_action_optional_numeric <- function(df, field) {
   if (!field %in% names(df)) return(rep(NA_real_, nrow(df)))
   raw <- df[[field]]
@@ -613,13 +599,12 @@ ledgr_facts_equity_corporate_actions <- function(df) {
     "equity corporate actions"
   )
   source <- ledgr_fact_source(df)
-  civil_time_json <- ledgr_fact_civil_json(
+  labels <- ledgr_fact_civil_labels(
     df,
     c(
       "entitlement_time", "effective_time", "knowledge_time",
       "payment_time"
-    ),
-    assume_event_knowledge = TRUE
+    )
   )
   rows <- data.frame(
     fact_id = rep("", nrow(df)),
@@ -666,32 +651,24 @@ ledgr_facts_equity_corporate_actions <- function(df) {
         "recipient_quantity_validated"
       ),
     source = source,
-    civil_time_json = civil_time_json,
+    civil_time_json = "",
     provenance_json = ledgr_fact_provenance(df, source, "evidenced"),
     stringsAsFactors = FALSE
   )
-  event_clock <- rows$effective_time
-  use_entitlement <- is.na(event_clock) & !is.na(rows$entitlement_time)
-  event_clock[use_entitlement] <- rows$entitlement_time[use_entitlement]
-  assume_known <- is.na(rows$knowledge_time) & !is.na(event_clock)
-  rows$knowledge_time[assume_known] <- event_clock[assume_known]
+  known <- ledgr_corporate_action_assumed_knowledge(rows, labels)
+  rows$knowledge_time <- known$knowledge_time
+  labels$knowledge_time <- known$knowledge_label
+  rows$civil_time_json <- ledgr_fact_civil_encode(labels)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
   rows$fact_id <- ledgr_fact_ids(
     "equity_corporate_actions",
     rows,
     supplied_id
   )
-  ledgr_validate_equity_corporate_action_rows(rows)
+  ledgr_validate_equity_corporate_action_rows(rows, clocks = FALSE)
   rows <- ledgr_fact_deduplicate(rows, "equity corporate actions")
-  rows <- rows[order(
-    rows$parent_instrument_id,
-    rows$entitlement_time,
-    rows$effective_time,
-    rows$fact_id
-  ), , drop = FALSE]
-  rownames(rows) <- NULL
 
-  ledgr_new_fact_family(
+  ledgr_fact_family_build(
     "equity_corporate_actions",
     "equity",
     rows,
@@ -1022,138 +999,188 @@ ledgr_facts <- function(...) {
   )
 }
 
-ledgr_fact_civil_json <- function(df,
-                                  fields,
-                                  knowledge = NULL,
-                                  assume_event_knowledge = FALSE) {
-  dates <- lapply(fields, function(field) {
-    if (!field %in% names(df)) return(rep(NA_character_, nrow(df)))
-    value <- df[[field]]
-    if (!inherits(value, "Date") || inherits(value, "POSIXt")) {
-      return(rep(NA_character_, nrow(df)))
+# Civil labels of the Date-valued `fields` of `df`: one character vector per
+# field, NA where the field is absent or not a Date. Each distinct date is
+# formatted once.
+ledgr_fact_civil_labels <- function(df, fields) {
+  count <- nrow(df)
+  # Iterates the fixed clock-field vocabulary, not rows.
+  labels <- lapply(fields, function(field) {
+    value <- if (field %in% names(df)) df[[field]] else NULL
+    if (is.null(value) || !inherits(value, "Date") || inherits(value, "POSIXt")) {
+      return(rep(NA_character_, count))
     }
-    as.character(value)
+    distinct <- unique(value)
+    as.character(distinct)[match(value, distinct)]
   })
-  names(dates) <- fields
-  if (identical(knowledge, "assume_effective") &&
-      "knowledge_time" %in% fields && "effective_from" %in% fields) {
-    missing <- is.na(dates$knowledge_time)
-    dates$knowledge_time[missing] <- dates$effective_from[missing]
-  }
-  if (isTRUE(assume_event_knowledge) && "knowledge_time" %in% fields) {
-    missing <- is.na(dates$knowledge_time)
-    if ("effective_time" %in% fields) {
-      use <- missing & !is.na(dates$effective_time)
-      dates$knowledge_time[use] <- dates$effective_time[use]
-      missing[use] <- FALSE
-    }
-    if ("entitlement_time" %in% fields) {
-      use <- missing & !is.na(dates$entitlement_time)
-      dates$knowledge_time[use] <- dates$entitlement_time[use]
-    }
-  }
-  ledgr_fact_civil_encode(dates)
+  names(labels) <- fields
+  labels
 }
 
-ledgr_fact_civil_encode <- function(dates, resolved = NULL) {
-  if (length(dates) == 0L) return(character())
-  count <- length(dates[[1L]])
-  fields <- sort(names(dates), method = "radix")
+ledgr_fact_civil_json <- function(df, fields, knowledge = NULL) {
+  labels <- ledgr_fact_civil_labels(df, fields)
+  if (identical(knowledge, "assume_effective") &&
+      "knowledge_time" %in% fields && "effective_from" %in% fields) {
+    # The assume-effective label follows the effective label wherever the
+    # knowledge field carries no civil label of its own. Retained unchanged
+    # from the accepted WS40 tree: with a POSIXct knowledge column and a Date
+    # effective_from it also relabels supplied knowledge times, which is
+    # routed to the maintainer in the WS45 closeout rather than changed here.
+    missing <- is.na(labels$knowledge_time)
+    labels$knowledge_time[missing] <- labels$effective_from[missing]
+  }
+  ledgr_fact_civil_encode(labels)
+}
+
+# Unresolved civil evidence, one JSON object per row:
+# {"<field>":{"civil_date":"YYYY-MM-DD"},...} with fields in name order.
+# Each distinct date is encoded once per field and indexed back to rows.
+ledgr_fact_civil_encode <- function(labels) {
+  if (length(labels) == 0L) return(character())
+  count <- length(labels[[1L]])
+  # Iterates the fixed clock-field vocabulary, not rows.
+  fragments <- lapply(labels, function(civil) {
+    civil <- as.character(civil)
+    has <- !is.na(civil) & nzchar(civil)
+    out <- rep(NA_character_, count)
+    if (!any(has)) return(out)
+    distinct <- unique(civil[has])
+    encoded <- ledgr_fact_civil_ndjson(
+      data.frame(civil_date = distinct, stringsAsFactors = FALSE)
+    )
+    out[has] <- encoded[match(civil[has], distinct)]
+    out
+  })
+  ledgr_fact_civil_assemble(fragments)
+}
+
+ledgr_fact_civil_ndjson <- function(frame) {
+  encoded <- strsplit(
+    ledgr_json_write_canonical_ndjson(frame),
+    "\n",
+    fixed = TRUE
+  )[[1L]]
+  encoded[nzchar(encoded)]
+}
+
+# Joins per-field evidence fragments (NA where a row has none for that field)
+# into one JSON object per row, fields in name order.
+ledgr_fact_civil_assemble <- function(fragments) {
+  count <- length(fragments[[1L]])
   out <- rep("{", count)
   populated <- rep(FALSE, count)
-  for (field in fields) {
-    civil <- as.character(dates[[field]])
-    has <- !is.na(civil) & nzchar(civil)
+  # Iterates the fixed clock-field vocabulary, not rows.
+  for (field in sort(names(fragments), method = "radix")) {
+    fragment <- fragments[[field]]
+    has <- !is.na(fragment)
     if (!any(has)) next
-    if (is.null(resolved)) {
-      inner <- data.frame(civil_date = civil[has], stringsAsFactors = FALSE)
-    } else {
-      detail <- resolved[[field]]
-      inner <- data.frame(
-        calendar_id = detail$calendar_id[has],
-        civil_date = civil[has],
-        resolved_ts_utc = detail$resolved_ts_utc[has],
-        timezone = detail$timezone[has],
-        venue_id = detail$venue_id[has],
-        stringsAsFactors = FALSE
-      )
-    }
-    encoded <- strsplit(
-      ledgr_json_write_canonical_ndjson(inner),
-      "\n",
-      fixed = TRUE
-    )[[1L]]
-    encoded <- encoded[nzchar(encoded)]
     field_json <- as.character(ledgr_json_write_canonical_v2(field))
     separator <- ifelse(populated[has], ",", "")
-    out[has] <- paste0(out[has], separator, field_json, ":", encoded)
+    out[has] <- paste0(out[has], separator, field_json, ":", fragment[has])
     populated[has] <- TRUE
   }
   paste0(out, "}")
 }
 
+# TRUE when a frame holds civil labels that no session has resolved yet.
+ledgr_fact_frame_pending_civil <- function(frame) {
+  if (is.null(frame) || nrow(frame) == 0L ||
+      !"civil_time_json" %in% names(frame)) return(FALSE)
+  json <- frame$civil_time_json
+  populated <- !is.na(json) & json != "{}"
+  any(populated & !grepl('"resolved_ts_utc"', json, fixed = TRUE))
+}
+
+# Resolves every family that still holds civil labels against the bundle's
+# declared open sessions, then validates and orders that family on the
+# resolved instants and rehashes it. A family without pending labels,
+# including one resolved by an earlier bundle, is returned untouched with its
+# own hash, so an edit to it is refused by ledgr_facts_assert() whatever else
+# the bundle holds. A family about to be rehashed is checked first, so
+# resolution never launders an edit made after construction.
 ledgr_fact_resolve_civil_families <- function(families) {
-  session_index <- which(vapply(
-    families,
-    function(x) identical(x$family, "sessions"),
-    logical(1)
-  ))
-  has_civil <- any(vapply(families, function(family) {
-    frame_has_civil <- function(frame) {
-      !is.null(frame) && "civil_time_json" %in% names(frame) &&
-        any(!is.na(frame$civil_time_json) & frame$civil_time_json != "{}")
-    }
-    frame_has_civil(family$rows) || frame_has_civil(family$headers)
-  }, logical(1)))
-  if (!has_civil) return(families)
-  sessions <- lapply(session_index, function(i) {
+  # Iterates the bundle's fact families, not rows.
+  pending <- vapply(families, function(family) {
+    ledgr_fact_frame_pending_civil(family$rows) ||
+      ledgr_fact_frame_pending_civil(family$headers)
+  }, logical(1))
+  if (!any(pending)) return(families)
+  if (!all(vapply(families[pending], ledgr_fact_family_intact, logical(1)))) {
+    rlang::abort(
+      "`facts` must be an untampered ledgr_facts object.",
+      class = c("ledgr_invalid_facts", "ledgr_invalid_args")
+    )
+  }
+  sessions <- ledgr_fact_civil_sessions(families)
+  for (i in which(pending)) {
     family <- families[[i]]
-    rows <- family$rows[family$rows$status == "open", , drop = FALSE]
-    rows$timezone <- family$metadata$timezone %||% "UTC"
-    rows$calendar_id <- family$metadata$calendar_id %||% family$scope_id
-    rows
-  })
-  sessions <- if (length(sessions) == 0L) data.frame() else
-    do.call(rbind, sessions)
-  for (i in seq_along(families)) {
-    family <- families[[i]]
-    family$rows <- ledgr_fact_resolve_civil_frame(family$rows, sessions)
-    family$headers <- ledgr_fact_resolve_civil_frame(family$headers, sessions)
-    if (identical(family$family, "membership") && nrow(family$rows) > 0L) {
-      ledgr_fact_validate_intervals(
-        family$rows$effective_from,
-        family$rows$effective_to,
-        "membership intervals"
-      )
-      ledgr_fact_validate_membership_conflicts(family$rows)
-    }
-    if (identical(family$family, "trading_status") && nrow(family$rows) > 0L) {
-      ledgr_fact_validate_intervals(
-        family$rows$effective_from,
-        family$rows$effective_to,
-        "trading status"
-      )
-      ledgr_fact_validate_status_supersession(family$rows)
-      ledgr_fact_validate_source_conflicts(family$rows)
-    }
-    if (identical(family$family, "lifetime") && nrow(family$rows) > 0L) {
-      ledgr_fact_validate_intervals(
-        family$rows$effective_from,
-        family$rows$effective_to,
-        "lifetime"
-      )
-      ledgr_fact_validate_lifetime_conflicts(family$rows)
-    }
-    family$fact_hash <- ledgr_fact_family_hash(
+    rows <- ledgr_fact_resolve_civil_frame(family$rows, sessions)
+    headers <- ledgr_fact_resolve_civil_frame(family$headers, sessions)
+    settled <- ledgr_fact_family_settle(
+      family$family,
+      rows,
+      headers,
+      family$metadata,
+      intervals = TRUE
+    )
+    families[[i]] <- ledgr_new_fact_family(
       family$family,
       family$scope_id,
-      family$rows,
-      family$headers,
+      settled$rows,
+      settled$headers,
       family$metadata
     )
-    families[[i]] <- family
   }
   families
+}
+
+# Every declared open session in the bundle, prepared once: its civil date,
+# open and close instants, how many open sessions share that date, and the
+# resolved evidence for each edge (calendar, civil date, instant, zone and
+# venue) encoded once per session. Rows read it by session index.
+ledgr_fact_civil_sessions <- function(families) {
+  # Iterates the bundle's session families (one per venue), not rows.
+  frames <- lapply(families, function(family) {
+    if (!identical(family$family, "sessions")) return(NULL)
+    rows <- family$rows[family$rows$status == "open", , drop = FALSE]
+    count <- nrow(rows)
+    data.frame(
+      civil_date = as.character(rows$session_date),
+      session_open = rows$session_open,
+      session_close = rows$session_close,
+      venue_id = as.character(rows$venue_id),
+      timezone = rep(family$metadata$timezone %||% "UTC", count),
+      calendar_id = rep(
+        family$metadata$calendar_id %||% family$scope_id,
+        count
+      ),
+      stringsAsFactors = FALSE
+    )
+  })
+  frames <- Filter(Negate(is.null), frames)
+  table <- if (length(frames) == 0L) NULL else do.call(rbind, frames)
+  if (is.null(table) || nrow(table) == 0L) {
+    return(list(civil_date = character(), date_count = integer()))
+  }
+  key <- match(table$civil_date, unique(table$civil_date))
+  evidence <- function(instant) {
+    ledgr_fact_civil_ndjson(data.frame(
+      calendar_id = as.character(table$calendar_id),
+      civil_date = table$civil_date,
+      resolved_ts_utc = ledgr_fact_time_token(instant),
+      timezone = as.character(table$timezone),
+      venue_id = table$venue_id,
+      stringsAsFactors = FALSE
+    ))
+  }
+  list(
+    civil_date = table$civil_date,
+    date_count = tabulate(key)[key],
+    session_open = table$session_open,
+    session_close = table$session_close,
+    open_evidence = evidence(table$session_open),
+    close_evidence = evidence(table$session_close)
+  )
 }
 
 ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
@@ -1180,14 +1207,11 @@ ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
     names(frame)
   )
   count <- nrow(frame)
-  dates <- stats::setNames(
-    replicate(length(candidate_fields), rep(NA_character_, count), simplify = FALSE),
+  fragments <- stats::setNames(
+    vector("list", length(candidate_fields)),
     candidate_fields
   )
-  resolved <- stats::setNames(vector("list", length(candidate_fields)), candidate_fields)
-  session_dates <- if (nrow(sessions) == 0L) character() else
-    as.character(sessions$session_date)
-  date_counts <- table(session_dates)
+  # Iterates the fixed clock-field vocabulary, not rows.
   for (field in candidate_fields) {
     token <- paste0(
       as.character(ledgr_json_write_canonical_v2(field)),
@@ -1195,19 +1219,15 @@ ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
     )
     starts <- regexpr(token, frame$civil_time_json, fixed = TRUE)
     has <- starts > 0L
-    detail <- list(
-      resolved_ts_utc = rep(NA_character_, count),
-      venue_id = rep(NA_character_, count),
-      timezone = rep(NA_character_, count),
-      calendar_id = rep(NA_character_, count)
-    )
+    fragment <- rep(NA_character_, count)
     if (any(has)) {
       remainder <- substring(
         frame$civil_time_json[has],
         starts[has] + attr(starts, "match.length")[has]
       )
       civil <- substring(remainder, 1L, regexpr('"', remainder, fixed = TRUE) - 1L)
-      match_count <- unname(date_counts[civil])
+      session <- match(civil, sessions$civil_date)
+      match_count <- sessions$date_count[session]
       match_count[is.na(match_count)] <- 0L
       invalid <- which(match_count != 1L)
       if (length(invalid) > 0L) {
@@ -1227,28 +1247,137 @@ ledgr_fact_resolve_civil_frame <- function(frame, sessions) {
           match_count = match_count[[first]]
         )
       }
-      session_index <- match(civil, session_dates)
       row_index <- which(has)
-      session <- sessions[session_index, , drop = FALSE]
-      resolved_edge <- if (field %in% c(
-        "entitlement_time", "effective_time", "payment_time"
-      )) {
-        session$session_close
+      # Event clocks name the session close (Cut 16 decision 12); starts,
+      # ends and knowledge name the session open.
+      if (field %in% c("entitlement_time", "effective_time", "payment_time")) {
+        frame[[field]][row_index] <- sessions$session_close[session]
+        fragment[row_index] <- sessions$close_evidence[session]
       } else {
-        session$session_open
+        frame[[field]][row_index] <- sessions$session_open[session]
+        fragment[row_index] <- sessions$open_evidence[session]
       }
-      dates[[field]][row_index] <- civil
-      frame[[field]][row_index] <- resolved_edge
-      detail$resolved_ts_utc[row_index] <-
-        ledgr_fact_time_token(resolved_edge)
-      detail$venue_id[row_index] <- as.character(session$venue_id)
-      detail$timezone[row_index] <- as.character(session$timezone)
-      detail$calendar_id[row_index] <- as.character(session$calendar_id)
     }
-    resolved[[field]] <- detail
+    fragments[[field]] <- fragment
   }
-  frame$civil_time_json <- ledgr_fact_civil_encode(dates, resolved)
+  frame$civil_time_json <- if (length(fragments) == 0L) {
+    rep("{}", count)
+  } else {
+    ledgr_fact_civil_assemble(fragments)
+  }
   frame
+}
+
+# Validates and orders one fact family on resolved instants. A constructor
+# calls it when no civil label awaits resolution (POSIXct input is already
+# exact); ledgr_facts() calls it once the bundle's sessions have resolved the
+# family's labels. It is the only place a family's time comparisons run and
+# its row order is fixed, so neither ever reads a UTC-midnight stand-in for a
+# civil date.
+ledgr_fact_family_settle <- function(family,
+                                     rows,
+                                     headers,
+                                     metadata,
+                                     intervals = TRUE) {
+  if (identical(family, "membership")) {
+    if (identical(metadata$shape, "snapshots")) {
+      # Snapshot rows are open, member-only assertions: interval and
+      # opposing-state validation cannot fire on them.
+      if (!is.null(headers) && nrow(headers) > 0L) {
+        headers <- headers[order(
+          headers$effective_from,
+          headers$knowledge_time,
+          headers$set_id,
+          na.last = TRUE,
+          method = "radix"
+        ), , drop = FALSE]
+      }
+      rows <- rows[order(
+        rows$effective_from,
+        rows$set_id,
+        rows$instrument_id,
+        method = "radix"
+      ), , drop = FALSE]
+    } else {
+      if (isTRUE(intervals)) {
+        ledgr_fact_validate_intervals(
+          rows$effective_from,
+          rows$effective_to,
+          "membership intervals"
+        )
+      }
+      ledgr_fact_validate_membership_conflicts(rows)
+      rows <- rows[order(
+        rows$universe_id,
+        rows$instrument_id,
+        rows$effective_from,
+        rows$fact_id,
+        method = "radix"
+      ), , drop = FALSE]
+    }
+  } else if (identical(family, "trading_status")) {
+    ledgr_fact_validate_status_rows(rows, intervals = intervals)
+    rows <- rows[order(
+      rows$instrument_id,
+      rows$effective_from,
+      -rows$precedence,
+      rows$source,
+      rows$fact_id,
+      method = "radix"
+    ), , drop = FALSE]
+  } else if (identical(family, "lifetime")) {
+    if (isTRUE(intervals)) {
+      ledgr_fact_validate_intervals(
+        rows$effective_from,
+        rows$effective_to,
+        "lifetime"
+      )
+    }
+    ledgr_fact_validate_lifetime_conflicts(rows)
+    rows <- rows[order(
+      rows$instrument_id,
+      rows$effective_from,
+      rows$source,
+      rows$fact_id,
+      method = "radix"
+    ), , drop = FALSE]
+  } else if (identical(family, "equity_corporate_actions")) {
+    ledgr_validate_equity_corporate_action_clocks(rows)
+    rows <- rows[order(
+      rows$parent_instrument_id,
+      rows$entitlement_time,
+      rows$effective_time,
+      rows$fact_id
+    ), , drop = FALSE]
+  }
+  rownames(rows) <- NULL
+  if (!is.null(headers)) rownames(headers) <- NULL
+  list(rows = rows, headers = headers)
+}
+
+# A constructor's last step: settle the family now when nothing awaits civil
+# resolution, otherwise leave validation and order to ledgr_facts(). Such a
+# family has exact interval bounds, which the constructor already checked
+# (ledgr_fact_check_exact_intervals()) where the accepted refusal order puts
+# that check, ahead of identity conflicts.
+ledgr_fact_family_build <- function(family,
+                                    scope_id,
+                                    rows,
+                                    headers = NULL,
+                                    metadata = list()) {
+  if (!ledgr_fact_frame_pending_civil(rows) &&
+      !ledgr_fact_frame_pending_civil(headers)) {
+    settled <- ledgr_fact_family_settle(
+      family,
+      rows,
+      headers,
+      metadata,
+      intervals = FALSE
+    )
+    rows <- settled$rows
+    headers <- settled$headers
+  }
+  ledgr_new_fact_family(family, scope_id, rows, headers, metadata)
 }
 
 #' Validate point-in-time facts without writing
@@ -1365,19 +1494,7 @@ ledgr_facts_assert <- function(x) {
       !all(vapply(x$families, inherits, logical(1), "ledgr_fact_family"))) {
     rlang::abort("`facts` must be an untampered ledgr_facts object.", class = c("ledgr_invalid_facts", "ledgr_invalid_args"))
   }
-  family_valid <- vapply(x$families, function(family) {
-    is.character(family$fact_hash) && length(family$fact_hash) == 1L &&
-      identical(
-        family$fact_hash,
-        ledgr_fact_family_hash(
-          family$family,
-          family$scope_id,
-          family$rows,
-          family$headers,
-          family$metadata
-        )
-      )
-  }, logical(1))
+  family_valid <- vapply(x$families, ledgr_fact_family_intact, logical(1))
   expected_bundle <- digest::digest(
     as.character(canonical_json(list(
       schema = "ledgr_facts_v1",
@@ -1389,6 +1506,22 @@ ledgr_facts_assert <- function(x) {
     rlang::abort("`facts` must be an untampered ledgr_facts object.", class = c("ledgr_invalid_facts", "ledgr_invalid_args"))
   }
   x
+}
+
+# One integrity rule for a fact family: its recorded hash equals the hash of
+# its current family, scope, rows, headers and metadata.
+ledgr_fact_family_intact <- function(family) {
+  is.character(family$fact_hash) && length(family$fact_hash) == 1L &&
+    identical(
+      family$fact_hash,
+      ledgr_fact_family_hash(
+        family$family,
+        family$scope_id,
+        family$rows,
+        family$headers,
+        family$metadata
+      )
+    )
 }
 
 ledgr_facts_validated <- function(x) {
@@ -1561,6 +1694,17 @@ ledgr_fact_knowledge_metadata <- function(knowledge) {
     out$knowledge_assumption <- "effective"
   }
   out
+}
+
+# Interval bounds that carry no civil label are exact instants, so the
+# constructor checks them where the accepted refusal order expects it. A
+# civil bound is checked only after resolution, in ledgr_fact_family_settle().
+ledgr_fact_check_exact_intervals <- function(df, from, to, label) {
+  civil <- ledgr_fact_civil_labels(df, c("effective_from", "effective_to"))
+  if (all(is.na(civil$effective_from)) && all(is.na(civil$effective_to))) {
+    ledgr_fact_validate_intervals(from, to, label)
+  }
+  invisible(TRUE)
 }
 
 ledgr_fact_validate_intervals <- function(from, to, label) {
@@ -2009,116 +2153,152 @@ ledgr_empty_membership_sets <- function() {
   )
 }
 
-ledgr_fact_validate_status_supersession <- function(rows) {
-  superseded <- rows$supersedes_fact_id
-  supplied <- !is.na(superseded)
-  if (!any(supplied)) return(invisible(TRUE))
-  missing <- setdiff(unique(superseded[supplied]), rows$fact_id)
-  if (length(missing) > 0L) {
-    rlang::abort("Trading-status supersession references an unknown fact.", class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args"))
+# A supplied `supersedes_fact_id` names a supplied `fact_id` of the same
+# source. When exactly one row carries that supplied id and source, the
+# link is rewritten to that row's canonical fact id; otherwise it is kept as
+# supplied (and later refused as unknown if it names no fact). One keyed
+# match replaces a scan of every row per link.
+ledgr_fact_status_link_ids <- function(links, supplied_id, source, fact_id) {
+  linked <- which(!is.na(links))
+  if (length(linked) == 0L) return(links)
+  key <- function(id, src) {
+    paste0(nchar(id, type = "bytes"), ":", id, "\r", src)
   }
-  for (i in which(supplied)) {
-    target <- match(superseded[[i]], rows$fact_id)
-    if (!identical(rows$source[[i]], rows$source[[target]]) ||
-        !identical(rows$instrument_id[[i]], rows$instrument_id[[target]])) {
-      rlang::abort(
-        "Trading-status supersession must stay within one source and instrument.",
-        class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
-      )
-    }
-    if (is.na(rows$knowledge_time[[i]]) ||
-        is.na(rows$knowledge_time[[target]]) ||
-        rows$knowledge_time[[i]] < rows$knowledge_time[[target]]) {
-      rlang::abort(
-        "A trading-status successor cannot be knowable before its predecessor.",
-        class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
-      )
-    }
-    predecessor_end <- rows$effective_to[[target]]
-    successor_end <- rows$effective_to[[i]]
-    begins_in_time <- is.na(predecessor_end) ||
-      rows$effective_from[[i]] <= predecessor_end
-    covers_end <- if (is.na(predecessor_end)) {
-      is.na(successor_end)
-    } else {
-      is.na(successor_end) || successor_end >= predecessor_end
-    }
-    if (!begins_in_time || !covers_end) {
-      rlang::abort(
-        paste(
-          "A trading-status successor must start no later than its",
-          "predecessor ends and cover the predecessor through that end."
-        ),
-        class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
-      )
-    }
+  supplied_key <- key(supplied_id, source)
+  supplied_key[is.na(supplied_id)] <- NA_character_
+  repeated <- supplied_key[!is.na(supplied_key) & duplicated(supplied_key)]
+  target <- match(key(links[linked], source[linked]), supplied_key)
+  unique_target <- !is.na(target) & !supplied_key[target] %in% repeated
+  links[linked[unique_target]] <- fact_id[target[unique_target]]
+  links
+}
+
+# The one trading-status validator: half-open intervals, the correction
+# graph and tied-source conflicts, on resolved instants. The correction
+# lineage is built once here and shared by both graph checks; a family
+# without supersession builds none.
+ledgr_fact_validate_status_rows <- function(rows, intervals = TRUE) {
+  if (isTRUE(intervals)) {
+    ledgr_fact_validate_intervals(
+      rows$effective_from,
+      rows$effective_to,
+      "trading status"
+    )
   }
-  ledgr_status_lineage(rows)
+  lineage <- ledgr_fact_validate_status_supersession(rows)
+  ledgr_fact_validate_source_conflicts(rows, lineage)
   invisible(TRUE)
 }
 
+# Validates every supersession link at once and returns the correction
+# lineage, or NULL when no row supersedes another.
+ledgr_fact_validate_status_supersession <- function(rows) {
+  superseded <- rows$supersedes_fact_id
+  supplied <- !is.na(superseded)
+  if (!any(supplied)) return(invisible(NULL))
+  successor <- which(supplied)
+  target <- match(superseded[successor], rows$fact_id)
+  if (anyNA(target)) {
+    rlang::abort("Trading-status supersession references an unknown fact.", class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args"))
+  }
+  if (any(rows$source[successor] != rows$source[target]) ||
+      any(rows$instrument_id[successor] != rows$instrument_id[target])) {
+    rlang::abort(
+      "Trading-status supersession must stay within one source and instrument.",
+      class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
+    )
+  }
+  successor_known <- as.numeric(rows$knowledge_time[successor])
+  predecessor_known <- as.numeric(rows$knowledge_time[target])
+  if (anyNA(successor_known) || anyNA(predecessor_known) ||
+      any(successor_known < predecessor_known)) {
+    rlang::abort(
+      "A trading-status successor cannot be knowable before its predecessor.",
+      class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
+    )
+  }
+  predecessor_end <- as.numeric(rows$effective_to[target])
+  successor_end <- as.numeric(rows$effective_to[successor])
+  open_predecessor <- is.na(predecessor_end)
+  begins_in_time <- open_predecessor |
+    as.numeric(rows$effective_from[successor]) <= predecessor_end
+  covers_end <- is.na(successor_end) |
+    (!open_predecessor & successor_end >= predecessor_end)
+  if (!all(begins_in_time & covers_end)) {
+    rlang::abort(
+      paste(
+        "A trading-status successor must start no later than its",
+        "predecessor ends and cover the predecessor through that end."
+      ),
+      class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
+    )
+  }
+  ledgr_status_lineage(rows)
+}
+
+# Correction-chain lineage: the parent row of each fact and preorder
+# entry/exit numbers, so `a` is an ancestor of `d` when a's interval
+# encloses d's (ledgr_status_is_ancestor()). Children are held in CSR form
+# (`child`, offsets `child_start`, counts `child_count`) and read by integer
+# index. Roots and children are visited in increasing row order. A family
+# without supersession returns its trivial numbering without a walk.
 ledgr_status_lineage <- function(rows) {
   count <- nrow(rows)
   parent <- match(rows$supersedes_fact_id, rows$fact_id)
   if (count == 0L) {
     return(list(parent = parent, entry = integer(), exit = integer()))
   }
-  state <- integer(count)
-  path <- integer(count)
-  for (start in seq_len(count)) {
-    if (state[[start]] != 0L) next
-    current <- start
-    length_path <- 0L
-    while (!is.na(current) && state[[current]] == 0L) {
-      length_path <- length_path + 1L
-      path[[length_path]] <- current
-      state[[current]] <- 1L
-      current <- parent[[current]]
-    }
-    if (!is.na(current) && state[[current]] == 1L) {
-      rlang::abort(
-        "Trading-status supersession must be acyclic.",
-        class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
-      )
-    }
-    if (length_path > 0L) state[path[seq_len(length_path)]] <- 2L
+  has_parent <- !is.na(parent)
+  if (!any(has_parent)) {
+    trivial <- seq_len(count)
+    return(list(parent = parent, entry = trivial, exit = trivial))
+  }
+  child <- which(has_parent)
+  child <- child[order(parent[child], method = "radix")]
+  child_count <- tabulate(parent[has_parent], nbins = count)
+  child_start <- cumsum(c(1L, child_count[-count]))
+
+  # Breadth-first levels from the roots. The loop runs once per level of
+  # the deepest correction chain, not per row; each level is one vectorised
+  # step. Every level holds its nodes grouped by parent in row order.
+  levels <- list()
+  level <- which(!has_parent)
+  reached <- logical(count)
+  while (length(level) > 0L) {
+    reached[level] <- TRUE
+    levels[[length(levels) + 1L]] <- level
+    parents <- level[child_count[level] > 0L]
+    level <- child[sequence(child_count[parents], from = child_start[parents])]
+  }
+  if (!all(reached)) {
+    rlang::abort(
+      "Trading-status supersession must be acyclic.",
+      class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
+    )
   }
 
-  children <- split(which(!is.na(parent)), parent[!is.na(parent)])
+  # Subtree sizes bottom-up, then preorder entry numbers top-down; both
+  # read each level as runs of siblings that share a parent.
+  size <- rep(1L, count)
+  for (depth in rev(seq_along(levels))[-length(levels)]) {
+    nodes <- levels[[depth]]
+    run_end <- c(parent[nodes][-1L] != parent[nodes][-length(nodes)], TRUE)
+    total <- cumsum(size[nodes])[run_end]
+    size[parent[nodes][run_end]] <- size[parent[nodes][run_end]] +
+      diff(c(0L, total))
+  }
   entry <- integer(count)
-  exit <- integer(count)
-  stack_node <- integer(2L * count)
-  stack_exit <- logical(2L * count)
-  top <- 0L
-  roots <- rev(which(is.na(parent)))
-  if (length(roots) > 0L) {
-    stack_node[seq_along(roots)] <- roots
-    top <- length(roots)
+  roots <- levels[[1L]]
+  entry[roots] <- cumsum(size[roots]) - size[roots] + 1L
+  for (depth in seq_along(levels)[-1L]) {
+    nodes <- levels[[depth]]
+    owner <- parent[nodes]
+    run_start <- c(TRUE, owner[-1L] != owner[-length(owner)])
+    before <- cumsum(size[nodes]) - size[nodes]
+    sibling_offset <- before - before[run_start][cumsum(run_start)]
+    entry[nodes] <- entry[owner] + 1L + sibling_offset
   }
-  clock <- 0L
-  while (top > 0L) {
-    node <- stack_node[[top]]
-    leaving <- stack_exit[[top]]
-    top <- top - 1L
-    if (leaving) {
-      exit[[node]] <- clock
-      next
-    }
-    clock <- clock + 1L
-    entry[[node]] <- clock
-    top <- top + 1L
-    stack_node[[top]] <- node
-    stack_exit[[top]] <- TRUE
-    descendants <- children[[as.character(node)]]
-    if (length(descendants) > 0L) {
-      descendants <- rev(descendants)
-      target <- top + seq_along(descendants)
-      stack_node[target] <- descendants
-      stack_exit[target] <- FALSE
-      top <- top + length(descendants)
-    }
-  }
-  list(parent = parent, entry = entry, exit = exit)
+  list(parent = parent, entry = entry, exit = entry + size - 1L)
 }
 
 ledgr_status_is_ancestor <- function(lineage, ancestor, descendant) {
@@ -2232,49 +2412,32 @@ ledgr_fact_opposing_state_overlap <- function(rows,
   any(starts < opposing_end)
 }
 
-ledgr_fact_validate_source_conflicts <- function(rows) {
-  ledgr_fact_nonmissing_states(rows, "status")
+# One source may not assert different statuses over overlapping intervals at
+# one precedence unless one row supersedes the other. Rows outside every
+# correction chain take the grouped opposing-state sweep. When chains exist,
+# all rows are checked by counting instead of pairing:
+# ledgr_fact_status_unrelated_overlap(). `lineage` is
+# ledgr_status_lineage(rows) when the caller already built it.
+ledgr_fact_validate_source_conflicts <- function(rows, lineage = NULL) {
+  states <- ledgr_fact_nonmissing_states(rows, "status")
   if (nrow(rows) < 2L) return(invisible(TRUE))
   superseded <- as.character(rows$supersedes_fact_id)
   supplied <- !is.na(superseded) & nzchar(superseded)
   involved <- supplied | rows$fact_id %in% superseded[supplied]
-  uninvolved <- rows[!involved, , drop = FALSE]
+  scope_columns <- c("instrument_id", "source", "precedence")
   conflict <- ledgr_fact_opposing_state_overlap(
-    uninvolved,
-    c("instrument_id", "source", "precedence"),
+    rows[!involved, , drop = FALSE],
+    scope_columns,
     "status"
   )
-
-  # Correction rows are normally tiny. Keep the common no-correction path in
-  # the linear interval validator above; only correction components require
-  # explicit ancestry comparisons.
-  involved_index <- which(involved)
-  if (!conflict && length(involved_index) > 0L) {
-    lineage <- ledgr_status_lineage(rows)
-    scope <- ledgr_fact_scope_group(
+  if (!conflict && any(involved)) {
+    if (is.null(lineage)) lineage <- ledgr_status_lineage(rows)
+    conflict <- ledgr_fact_status_unrelated_overlap(
       rows,
-      c("instrument_id", "source", "precedence")
+      states,
+      scope_columns,
+      lineage
     )
-    pair_chunks <- lapply(involved_index, function(left) {
-      right <- which(scope == scope[[left]] & seq_len(nrow(rows)) != left)
-      if (length(right) == 0L) return(NULL)
-      cbind(pmin(left, right), pmax(left, right))
-    })
-    pair_chunks <- Filter(Negate(is.null), pair_chunks)
-    if (length(pair_chunks) > 0L) {
-      pairs <- unique(do.call(rbind, pair_chunks))
-      left <- pairs[, 1L]
-      right <- pairs[, 2L]
-      related <- ledgr_status_is_ancestor(lineage, left, right) |
-        ledgr_status_is_ancestor(lineage, right, left)
-      ends <- as.numeric(rows$effective_to)
-      ends[is.na(ends)] <- Inf
-      starts <- as.numeric(rows$effective_from)
-      overlap <- starts[left] < ends[right] & starts[right] < ends[left]
-      conflict <- any(
-        !related & rows$status[left] != rows$status[right] & overlap
-      )
-    }
   }
   if (conflict) {
     rlang::abort(
@@ -2286,6 +2449,72 @@ ledgr_fact_validate_source_conflicts <- function(rows) {
     )
   }
   invisible(TRUE)
+}
+
+# TRUE when two rows of one (instrument, source, precedence) scope assert
+# different statuses over overlapping intervals without either superseding
+# the other. Every ordered pair with different statuses that overlaps is
+# counted by binary search over sorted interval bounds; the ordered pairs in
+# which one row is an ancestor of the other are counted by walking each
+# correction chain once; an unrelated pair exists exactly when the first
+# count exceeds the second. Intervals must already be valid half-open
+# intervals.
+ledgr_fact_status_unrelated_overlap <- function(rows,
+                                               states,
+                                               scope_columns,
+                                               lineage) {
+  count <- nrow(rows)
+  scope <- ledgr_fact_scope_group(rows, scope_columns)
+  starts <- as.numeric(rows$effective_from)
+  ends <- as.numeric(rows$effective_to)
+  ends[is.na(ends)] <- Inf
+  levels <- sort(unique(states), method = "radix")
+  state <- match(states, levels)
+
+  # Interval bounds become integer ranks so a (scope, state, bound) key is
+  # one exactly representable number: key = group * width + rank.
+  bounds <- sort(unique(c(starts, ends)), method = "radix")
+  start_rank <- match(starts, bounds)
+  end_rank <- match(ends, bounds)
+  width <- length(bounds) + 1
+  group <- (scope - 1) * length(levels) + state
+  start_key <- sort(group * width + start_rank, method = "radix")
+  end_key <- sort(group * width + end_rank, method = "radix")
+
+  # Ordered pairs (i, j) in one scope with different states that overlap:
+  # j starts before i ends, minus those j that end at or before i starts.
+  # The loop runs over the fixed status vocabulary, not over rows.
+  opposing <- 0
+  for (other in seq_along(levels)) {
+    query <- which(state != other)
+    if (length(query) == 0L) next
+    base <- ((scope[query] - 1) * length(levels) + other) * width
+    begun <- findInterval(base + end_rank[query] - 0.5, start_key) -
+      findInterval(base + 0.5, start_key)
+    ended <- findInterval(base + start_rank[query], end_key) -
+      findInterval(base + 0.5, end_key)
+    opposing <- opposing + sum(as.numeric(begun - ended))
+  }
+  if (opposing == 0) return(FALSE)
+
+  # Ordered pairs related by supersession with the same properties. Each
+  # step moves every row one link up its correction chain, so the loop runs
+  # once per level of the deepest chain and visits each ancestor pair once.
+  related <- 0
+  descendant <- which(!is.na(lineage$parent))
+  ancestor <- lineage$parent[descendant]
+  while (length(descendant) > 0L) {
+    counted <- scope[ancestor] == scope[descendant] &
+      state[ancestor] != state[descendant] &
+      starts[ancestor] < ends[descendant] &
+      starts[descendant] < ends[ancestor]
+    related <- related + 2 * sum(counted)
+    ancestor <- lineage$parent[ancestor]
+    keep <- !is.na(ancestor)
+    descendant <- descendant[keep]
+    ancestor <- ancestor[keep]
+  }
+  opposing > related
 }
 
 ledgr_fact_validate_membership_conflicts <- function(rows) {

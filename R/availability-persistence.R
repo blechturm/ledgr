@@ -700,9 +700,7 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
 
   status_rows <- data$snapshot_trading_status
   if (nrow(status_rows) > 0L) {
-    ledgr_fact_validate_intervals(status_rows$effective_from, status_rows$effective_to, "trading status")
-    ledgr_fact_validate_status_supersession(status_rows)
-    ledgr_fact_validate_source_conflicts(status_rows)
+    ledgr_fact_validate_status_rows(status_rows)
   }
   lifetime_rows <- data$snapshot_lifetime
   if (nrow(lifetime_rows) > 0L) {
