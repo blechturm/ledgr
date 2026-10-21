@@ -407,7 +407,13 @@ Windows 11, R 4.6.1, DuckDB 1.5.6, every R process run sequentially.
   clean. The census check rewrites its line-number CSVs under
   `dev/bench/v0_2_2_pre_cran_removal/census/` because roxygen lines moved
   code down; those regenerated files are not committed, as in phase A.
-RCMD
+- `R CMD build` (with `QUARTO_PATH` naming RStudio's bundled Quarto, which
+  rebuilds every vignette including the new article) and `R CMD check
+  --no-manual --no-build-vignettes ledgr_0.2.1.0.tar.gz` on a source copy of
+  `ab02a214`: Status OK, no warning or note. The check's test step runs the
+  fast profile's membership as `tests/testthat.R` defines it; that is the
+  package check, not the coordinator's timed fast-profile gate. "Running R
+  code from vignettes" passes for all 25 package vignettes.
 - Not run here, by instruction: the fast, review and heavy profiles and the
   independent close review. `R/cpp11.R` and `src/cpp11.cpp` line-ending churn
   from compilation is not committed.
