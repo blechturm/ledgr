@@ -126,6 +126,71 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     namespace_member = function(ctx, params) {
       env <- getNamespace("base")[["environment"]](ctx$feature)
       ctx$hold()
+    },
+    # Correction 2 (re-review 1 R1 and R3): code rebuilt in an enclosure,
+    # quoted carriers and internals, evaluation in the context, @ extraction,
+    # rlang namespace getters and rlang names handed to a functional.
+    body_rebind_export = function(ctx, params) {
+      f <- ledgr::ledgr_history_frame
+      body(f) <- quote(ledgr_history_context_view(ctx))
+      v <- f(ctx)
+      ctx$hold()
+    },
+    body_rebind_closure = function(ctx, params) {
+      f <- ctx$feature
+      body(f) <- quote(feature_vector)
+      v <- f()
+      ctx$hold()
+    },
+    s3method_rebind = function(ctx, params) {
+      m <- utils::getS3method("print", "ledgr_history")
+      body(m) <- quote(ledgr_history_context_view)
+      v <- m()(ctx)
+      ctx$hold()
+    },
+    unserialize_copy = function(ctx, params) {
+      g <- unserialize(serialize(ctx$feature, NULL))
+      ctx$hold()
+    },
+    as_function = function(ctx, params) {
+      g <- as.function(alist(x = , x))
+      ctx$hold()
+    },
+    substitute_ctx = function(ctx, params) {
+      v <- substitute(.history, ctx)
+      ctx$hold()
+    },
+    substitute_list = function(ctx, params) {
+      v <- substitute(x, list(x = 1))
+      ctx$hold()
+    },
+    bquote_where = function(ctx, params) {
+      v <- bquote(.(.history), where = ctx)
+      ctx$hold()
+    },
+    docall_with = function(ctx, params) {
+      v <- do.call(with, list(ctx, quote(.history)))
+      ctx$hold()
+    },
+    docall_evalq = function(ctx, params) {
+      v <- do.call(evalq, list(quote(.history), ctx))
+      ctx$hold()
+    },
+    quoted_internal = function(ctx, params) {
+      call <- quote(ledgr_history_context_view(ctx))
+      ctx$hold()
+    },
+    at_extraction = function(ctx, params) {
+      v <- ctx@.notes
+      ctx$hold()
+    },
+    rlang_namespace = function(ctx, params) {
+      ns <- rlang::ns_env("ledgr")
+      ctx$hold()
+    },
+    rlang_name_string = function(ctx, params) {
+      envs <- lapply(list(ctx$feature), "fn_env")
+      ctx$hold()
     }
   )
   expected_access <- c(
@@ -141,7 +206,15 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     get_anywhere = "utils::getAnywhere()", mget_call = "mget()", get0_call = "base::get0()",
     lapply_string = "\"environment\"", sapply_string = "\"environment\"",
     map_string = "\"environment\"", match_fun = "\"environment\"",
-    baseenv_member = "$environment", namespace_member = "[[\"environment\"]]"
+    baseenv_member = "$environment", namespace_member = "[[\"environment\"]]",
+    body_rebind_export = "body<-()", body_rebind_closure = "body<-()",
+    s3method_rebind = "ledgr_history_context_view (not exported)",
+    unserialize_copy = "unserialize()", as_function = "as.function()",
+    substitute_ctx = "substitute(<expr>, <env>)", substitute_list = "substitute(<expr>, <env>)",
+    bquote_where = "bquote(<expr>, where = <env>)", docall_with = ".history",
+    docall_evalq = ".history", quoted_internal = "ledgr_history_context_view (not exported)",
+    at_extraction = "@.notes", rlang_namespace = "rlang::ns_env()",
+    rlang_name_string = "lapply(\"fn_env\")"
   )
   for (name in names(refused)) {
     preflight <- ledgr_strategy_preflight(refused[[name]])
@@ -205,6 +278,19 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     },
     exported = function(ctx, params) {
       close <- ledgr::ledgr_history_frame(ctx, bar = "close", lookback = 2L)
+      ctx$hold()
+    },
+    # An ordinary field, column or label called "environment" is data
+    # (re-review 1 R2), as at BASE.
+    environment_field = function(ctx, params) {
+      scores <- list(environment = 0.3, social = 0.2)
+      live <- identical(params$environment, "live") || scores$environment > 0
+      ctx$hold()
+    },
+    environment_label = function(ctx, params) {
+      d <- data.frame(environment = 1)
+      lbl <- c("environment", "momentum")
+      v <- d[["environment"]]
       ctx$hold()
     }
   )

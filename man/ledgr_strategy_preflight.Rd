@@ -48,21 +48,26 @@ context mutation such as \code{attr(ctx, "secret") <- 1}.
 
 Strategies read the pulse context only through its public fields, its
 public functions and exported ledgr helpers such as
-\code{\link[=ledgr_history_frame]{ledgr_history_frame()}}. Reaching private context internals is Tier 3:
-extracting a private context field from any object (\code{ctx$.history},
-\code{x[[".notes"]]}), naming a field that holds prepared data beyond the pulse
-in a string (\code{".history"}), reaching closure, call, frame or namespace
-environments (\code{environment()}, \code{parent.frame()}, the \verb{sys.*()} frame
-functions, \code{asNamespace()}, \code{getFromNamespace()}, \code{get0()}, \code{mget()} and
-their \code{rlang} equivalents, also when named in a string such as
-\code{lapply(x, "environment")} or extracted as \code{baseenv()$environment}), or
-referring to a non-exported ledgr object (\code{ledgr:::name}). The private
-history carrier, the environments behind public context functions and
-ledgr's internal namespace hold prepared data beyond the pulse, so such a
-read could see the future. Other dot-prefixed names, such as a model's
-\verb{$.fitted}, are ordinary data and keep their tier. Names built at run time,
-positional extraction from \code{ctx}, iteration over it and environment access
-through other packages remain outside what static analysis detects.
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}}. The preflight refuses as Tier 3 common access to
+private context internals: extracting a private context field from any
+object (\code{ctx$.history}, \code{x[[".notes"]]}); naming a field that holds
+prepared data beyond the pulse anywhere, also inside \code{quote()}; naming a
+non-exported ledgr object (\code{ledgr:::name}); calling or handing to a
+functional an environment-reaching function (\code{environment()},
+\code{parent.frame()}, \code{asNamespace()}, \code{getFromNamespace()}, \code{get0()},
+\code{mget()}, \verb{body<-}, \code{as.function()}, \code{unserialize()} and their \code{rlang}
+equivalents, also as \code{lapply(x, "environment")} or
+\code{baseenv()$environment(...)}); and \code{substitute()} or \code{bquote()} with an
+environment to evaluate in. A field, column or label called \code{environment}
+and a dot-prefixed name such as a model's \verb{$.fitted} are ordinary data.
+
+The check is static and best-effort, not a sandbox: R offers no private
+memory. A strategy that deliberately subverts evaluation, evaluates code in
+the context or in a function's enclosure by another route, builds names at
+run time, iterates over the context or uses objects from outside its body
+is outside ledgr's guarantee, as is one that reads a future-data file.
+ledgr guarantees that its own history, feature and fact APIs return only
+data known at the decision time.
 
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
 seed contract for ordinary sequential runs, but they are not certified for

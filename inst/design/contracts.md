@@ -1640,42 +1640,45 @@ and `AAA` a held nonmember, each holding 5:
   `eval()`, `assign()`, and `Sys.getenv()`, are Tier 3 in preflight and must
   fail before `ledgr_run()` or `ledgr_sweep()` creates execution artifacts.
 - A strategy reads the pulse context only through its public fields, its
-  public functions and exported ledgr helpers. Reaching private context
-  internals is Tier 3 and fails before any run, sweep or walk-forward side
-  effect (Cut 16 LDG-3072):
+  public functions and exported ledgr helpers. Strategy preflight is a
+  best-effort static check, not a sandbox (Cut 16 decision 30). It refuses as
+  Tier 3, before any run, sweep or walk-forward side effect, accidental and
+  common deliberate access to private context carriers, non-exported ledgr
+  internals and environment-reaching functions (Cut 16 LDG-3072):
   - a `$`, `@`, `[[` or `[` extraction, on any object, of a literal private
     context field name (`ledgr_pulse_context_private_fields()`: `.history`,
     `.pulse_lookup`, `.feature_vector`, `.feature_table_current`, `.notes`,
     `.positions`, `.safety_state`);
-  - a string constant naming a private field that holds prepared data beyond
-    the pulse (`.history`, `.pulse_lookup`, `.feature_vector`,
-    `.feature_table_current`);
-  - an environment-reaching function: closure, call, frame and namespace
-    access (`environment()`, `parent.env()`, `parent.frame()`, the `sys.*()`
-    frame functions, `as.environment()`, `topenv()`, `asNamespace()`,
-    `getNamespace()`, `loadNamespace()`, `getNamespaceInfo()`,
-    `getFromNamespace()`, `getAnywhere()`, `get0()`, `mget()`, `dynGet()`
-    and their `rlang` equivalents), whether called, qualified, passed by
-    name, named in a string (`lapply(x, "environment")`,
-    `match.fun("environment")`, `do.call("environment", ...)`) or extracted
-    as a member (`baseenv()$environment`);
-  - a reference to a non-exported ledgr object (`ledgr:::name`); only the
-    exported namespace is Tier 1-compatible.
+  - a field that holds prepared data beyond the pulse (`.history`,
+    `.pulse_lookup`, `.feature_vector`, `.feature_table_current`) named
+    anywhere, as a string or as a symbol, including inside `quote()`,
+    `bquote()` or `substitute()`;
+  - a non-exported ledgr object, named as a symbol anywhere or referenced as
+    `ledgr:::name`; only the exported namespace is Tier 1-compatible;
+  - an environment-reaching function in call position: closure, call,
+    frame and namespace access (`environment()`, `parent.frame()`, the
+    `sys.*()` frame functions, `asNamespace()`, `getFromNamespace()`,
+    `get0()`, `mget()` and their `rlang` equivalents) and rebuilding a
+    function inside an existing enclosure (`body<-`, `formals<-`,
+    `as.function()`, `unserialize()`), whether called, qualified, passed as
+    a value, extracted as a member and called, or named in a string or
+    member handed to a functional (`lapply(x, "environment")`,
+    `match.fun("environment")`, `do.call("environment", ...)`);
+  - `substitute()` or `bquote()` given an environment or list to evaluate
+    in.
 
-  A dot-prefixed name that is not a private context field (a model's
-  `$.fitted`, a data frame's `.pred` column) is ordinary data and keeps its
-  tier. The private history carrier `ctx$.history` holds the whole prepared
-  substrate, the closures behind public context functions hold the context
-  and the run's whole feature projection, and ledgr's internal namespace holds
-  the history accessors, so each path could read values after the pulse.
-  Static analysis still cannot see: names built at run time
-  (`paste0(".", "history")`, `sprintf()`, `ls()` results) used in
-  extraction or in `.subset2()`; positional extraction from the context
-  (`ctx[[15]]`, `as.list(ctx)[[15]]`) and iteration over it
-  (`lapply(ctx, ...)`, `eapply()`); a private field name other than the
-  four carriers held in a variable; environment access through a function
-  from a package outside base, utils, methods and rlang; and functions or
-  objects supplied from outside the strategy body.
+  An ordinary name that is data keeps its tier: a dot-prefixed name that is
+  not a private context field (a model's `$.fitted`, a `.pred` column) and a
+  field, column or label called `environment`. R offers no private memory:
+  the context's carriers, the closures behind its public functions and
+  ledgr's namespace hold prepared data beyond the pulse, and preflight is
+  static. A strategy that deliberately subverts R evaluation, evaluates code
+  in the context or in a function's enclosure by a route preflight does not
+  recognise, builds names at run time, iterates over the context or uses
+  objects supplied from outside its body is outside ledgr's guarantee, as is
+  one that reads a future-data file. ledgr guarantees that its own public
+  history, feature and fact APIs return only data known at the decision
+  time.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
   strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top_n()`,
@@ -1864,9 +1867,11 @@ and `AAA` a held nonmember, each holding 5:
 - History reads add no public context field, durable artifact or snapshot
   row. The history view is a private carrier, `ctx$.history`, that holds the
   read service and therefore the whole substrate; strategies read history
-  only through `ledgr_history_frame()`, and the strategy preflight refuses
-  direct access to dot-prefixed context internals and closure-environment
-  introspection as Tier 3 (Reproducibility And Preflight, Cut 16 LDG-3072). P1
+  only through `ledgr_history_frame()`, and the strategy preflight refuses,
+  as a best-effort static check, direct access to private context
+  internals, non-exported ledgr objects and environment-reaching functions
+  as Tier 3 (Reproducibility And Preflight, Cut 16 LDG-3072 and decision
+  30). P1
   issues the cutoff-bound history view; P2 places it on the context, and the
   strategy's `ledgr_history_frame()` call reads prepared planes shared by the
   owning run, sweep or walk-forward session. Treatment planes are prepared

@@ -76,6 +76,15 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   class(filtered) <- class(fast)
   testthat::expect_error(ledgr_history_sufficient(filtered), class = "ledgr_invalid_history_result")
   testthat::expect_error(ledgr_history_sufficient(broken, lookback = 1L), class = "ledgr_invalid_history_result")
+  # The long layout is checked the same way (re-review 1 R3): keeping only
+  # AAA's rows leaves a result that no longer holds its recorded instruments.
+  long_filtered <- at7$fast_long[at7$fast_long$instrument_id == "AAA", , drop = FALSE]
+  attr(long_filtered, "ledgr_history") <- attr(at7$fast_long, "ledgr_history")
+  class(long_filtered) <- class(at7$fast_long)
+  testthat::expect_error(
+    ledgr_history_sufficient(long_filtered, min_instruments = 2L),
+    class = "ledgr_invalid_history_result"
+  )
   # Under the "admissible" selector CCC is not requested at session 7, so it
   # is not an excluded instrument (close review 44a N2).
   admissible_info <- ledgr_history_info(at7$fast_admissible)
