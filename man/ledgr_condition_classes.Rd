@@ -391,6 +391,7 @@
 \alias{ledgr_fact_knowledge_missing}
 \alias{ledgr_history_segment_missing}
 \alias{ledgr_history_unknown_instrument}
+\alias{ledgr_history_weights_mismatch}
 \alias{ledgr_staged_history_mismatch}
 \title{ledgr condition classes}
 \description{
@@ -473,9 +474,13 @@ membership, trading-status or lifetime facts lack a knowledge time.
 unsupported bar field. \code{ledgr_history_unavailable} refuses a history read
 from a dense or snapshot-and-universe pulse context, which has no causal
 history. \code{ledgr_invalid_history_request} refuses malformed
-\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and \code{\link[=ledgr_history_sufficient]{ledgr_history_sufficient()}} arguments, and
-\code{ledgr_invalid_history_result} refuses a matrix or sufficiency query on a
-value that is not, or no longer matches, a \code{ledgr_history} result.
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and \code{\link[=ledgr_history_sufficient]{ledgr_history_sufficient()}} arguments,
+including a sufficiency query without \code{lookback} on a result read with
+\code{lookback = Inf}, and \code{ledgr_invalid_history_result} refuses a matrix,
+metadata, weights or sufficiency query on a value that is not, or no longer
+matches, a \code{ledgr_history} result. \code{ledgr_history_weights_mismatch} refuses
+\code{\link[=ledgr_history_weights]{ledgr_history_weights()}} input whose length, names or shape do not match
+the result's included instruments.
 \code{ledgr_pulse_snapshot_availability_required} refuses experiment-derived
 \code{\link[=ledgr_pulse_snapshot]{ledgr_pulse_snapshot()}} inspection of a dense experiment, and
 \code{ledgr_pulse_inspection_stopped} refuses an inspection cutoff whose

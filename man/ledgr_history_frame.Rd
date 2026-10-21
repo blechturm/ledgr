@@ -62,6 +62,15 @@ mask on the common axis: a lifetime-inactive session is structural, not a
 missing observation, and a print inside such an interval stays readable
 with that structural flag.
 
+Bar history is restated with the cutoff's knowledge. Feature history is a
+vintage view: each cell keeps the value and the evidence it had at its own
+pulse, so a fact that becomes known later changes feature cells only from
+its knowledge pulse on. For example, if an inactive interval at sessions 5
+and 6 becomes known at session 7, a read at session 7 shows the bar prints
+of sessions 5 and 6 as inactive-interval prints, while their feature cells
+keep the valid values computed at sessions 5 and 6; the session-7 feature
+cell is computed with the interval known.
+
 Bar values follow the experiment's \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}: open, high,
 low and close carry forward within the declared expected-session horizon;
 volume never carries. Carried cells are disclosed in the evidence. Feature

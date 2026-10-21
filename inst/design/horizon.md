@@ -29,6 +29,19 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-21 [execution] Cutoff-bound context internals or a strategy sandbox
+
+Strategy preflight is a best-effort static check, not a sandbox (Cut 16
+decision 30). The private context carriers, the closures behind public
+context functions and ledgr's namespace hold prepared data beyond the pulse,
+so a strategy that deliberately subverts R evaluation can read it. Two
+options were deferred: make the context internals cutoff-bound (each carrier
+and closure holds only data known at the pulse), or run strategies in a
+separate process that receives only the pulse's public context. Trigger:
+ledgr needs to run untrusted strategies. Raised by the WS44 phase A close
+review and its re-review (2026-10-20/21). This entry authorizes no RFC, API
+or release scope.
+
 ### 2026-10-20 [data] Raw bars with point-in-time adjustment
 
 ledgr accounts in split-adjusted share units (contracts, Units, Price Basis

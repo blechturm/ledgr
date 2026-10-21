@@ -774,7 +774,21 @@ Accepted change pending:
   refused for execution. Under
   `split_adjusted`, level rules and integer sizing read back-adjusted price
   levels, so a quantity or price threshold before a split is in post-split
-  units, and as-traded bars across a split would book a phantom loss. The
+  units, and as-traded bars across a split would book a phantom loss.
+  Corporate-action per-parent-unit terms use the same units:
+  `gross_cash_per_parent_unit` and `recipient_quantity_per_parent_unit` are
+  per split-adjusted parent share, and `recipient_quantity_per_parent_unit`
+  counts recipient shares in the recipient's own split-adjusted units. A cash
+  entitlement posts the cash term times the held split-adjusted quantity,
+  and nothing converts at a split, so a cash amount declared per as-traded
+  share before a later parent split must be divided by the parent's
+  cumulative split factor from the entitlement to the bars' adjustment
+  reference before it is supplied; supplied unconverted, it is credited that
+  factor too large. A recipient ratio declared in as-traded shares is
+  supplied as that ratio times the recipient's cumulative split factor over
+  the same span, divided by the parent's (the term currently feeds only the
+  reported estimated consideration, since quantity effects refuse). The
+  source adapter owns both conversions (Cut 16 LDG-3068). The
   basis appears in `ledgr_experiment_plan()`, in
   `ledgr_corporate_action_summary()` (`price_basis`, `price_basis_default`)
   and in `print()` of a result, labeled declared or assumed default. A dense
@@ -832,6 +846,19 @@ Accepted change pending:
   shows one `Point in time:` line and `summary()` lists the same fields with
   the valuation evidence. A run whose applied facts are all evidenced shows no
   assumption label (Cut 12 LDG-3010).
+- The valuation horizon is disclosed under its name: `print()` reads
+  `valuation stale-mark horizon N sessions`, `summary()` reads
+  `Stale-mark horizon`, and the plan and the experiment print a `Valuation:`
+  line, each value marked `default` or `declared`. The experiment's history
+  policy appears on the same surfaces as the price basis: a `History policy:`
+  line in `print()` of an availability-aware result, a `History Policy`
+  section in `summary()`, a `History:` line in `print()` of the experiment
+  and of `ledgr_experiment_plan()`, whose `assumptions` table adds
+  `history.price_carry`, `history.output_carry` and `history.segment_limit`.
+  Each field is marked `default` when it equals the `ledgr_history_policy()`
+  constructor default (omission and an explicit default share identity) and
+  `declared` otherwise. Dense results, experiments and plans show no history
+  policy (Cut 16 LDG-3081).
 
 <a id="contract-availability-fact-inspection"></a>
 ### Fact Inspection And Calendar Adapters
@@ -1612,6 +1639,58 @@ and `AAA` a held nonmember, each holding 5:
   execution identity, including `Sys.time()`, `Sys.Date()`, `date()`, `get()`,
   `eval()`, `assign()`, and `Sys.getenv()`, are Tier 3 in preflight and must
   fail before `ledgr_run()` or `ledgr_sweep()` creates execution artifacts.
+- A strategy reads the pulse context only through its public fields, its
+  public functions and exported ledgr helpers. Strategy preflight is a
+  best-effort static check, not a sandbox (Cut 16 decision 30). It refuses as
+  Tier 3, before any run, sweep or walk-forward side effect, accidental and
+  common deliberate access to private context carriers, non-exported ledgr
+  internals and environment-reaching functions (Cut 16 LDG-3072):
+  - a `$`, `@`, `[[` or `[` extraction, on any object, of a literal private
+    context field name (`ledgr_pulse_context_private_fields()`: `.history`,
+    `.pulse_lookup`, `.feature_vector`, `.feature_table_current`, `.notes`,
+    `.positions`, `.safety_state`);
+  - a field that holds prepared data beyond the pulse (`.history`,
+    `.pulse_lookup`, `.feature_vector`, `.feature_table_current`) named
+    anywhere, as a string or as a symbol, including inside `quote()`,
+    `bquote()` or `substitute()`;
+  - a non-exported ledgr object, named as a symbol (also inside `quote()`)
+    other than as the member after `$` or `@` and other than a name the
+    strategy binds itself, or referenced as `ledgr:::name`; only the
+    exported namespace is Tier 1-compatible;
+  - an environment-reaching function: closure, call, frame and namespace
+    access (`environment()`, `parent.frame()`, the `sys.*()` frame
+    functions, `asNamespace()`, `getFromNamespace()`, `get0()`, `mget()` and
+    their `rlang` equivalents) and rebuilding a function inside an existing
+    enclosure (`body<-`, `formals<-`, `as.function()`, `unserialize()`,
+    rlang `fn_body<-` and `fn_fmls<-`), when it is called (unqualified,
+    including through an attached package, or qualified), assigned through
+    (`body(f) <-`, `base::body(f) <-`, `rlang::fn_body(f) <-`), passed as a
+    value, extracted as a member and called directly
+    (`baseenv()$environment(...)`), or named as a string or member in the
+    function slot of a functional (`FUN`, `f` or `what`: `lapply(x,
+    "environment")`, `match.fun("environment")`, `do.call("environment",
+    ...)`);
+  - `substitute()` with an environment or list, and `bquote()` with
+    `where`, by name or by position.
+
+  An ordinary name that is data keeps its tier: a dot-prefixed name that is
+  not a private context field (a model's `$.fitted`, a `.pred` column), a
+  field, column or label called `environment` (also as data handed to a
+  functional, such as `tapply(d$environment, ...)` or `sapply(s, "[[",
+  "environment")`), and a strategy's own name that happens to equal a ledgr
+  internal (a local `config_hash`, `res$config_hash`). R offers no private
+  memory: the context's carriers, the closures behind its public functions
+  and ledgr's namespace hold prepared data beyond the pulse, and preflight
+  is static. Outside ledgr's guarantee is a strategy that deliberately
+  subverts R evaluation by a route preflight does not recognise: for
+  example, a function reached through an alias, parentheses or
+  `getElement()` before it is called, another package's replacement
+  function (`methods::functionBody<-`), `trace()`, names built at run time,
+  iteration over the context, code evaluated in the context or in a
+  function's enclosure by other means, objects supplied from outside the
+  body, or a future-data file. ledgr guarantees that its own public
+  history, feature and fact APIs return only data known at the decision
+  time.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
   strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top_n()`,
@@ -1712,16 +1791,25 @@ and `AAA` a held nonmember, each holding 5:
   cutoff outside the prepared axis with `ledgr_history_outside_axis`.
 - The history axis is the declared venue's expected sessions from the data
   start (the first session of the experiment's snapshot) through the cutoff,
-  with one cutoff-resolved expected-session mask per instrument. `lookback =
-  Inf` returns the whole axis; a finite lookback returns the last `lookback`
+  with one cutoff-resolved expected-session mask per instrument for bar
+  reads. `lookback = Inf` returns the whole axis; a finite lookback returns the last `lookback`
   sessions and is the exact values-and-evidence suffix of the `Inf` result.
   `lookback = 0` returns the empty axis. Bar values follow the experiment's
   history policy: open, high, low and close carry forward within the declared
   expected-session horizon from their original source, volume never carries,
   nothing fills backward or across a lifetime or terminal barrier, and a
   print inside a knowable lifetime-inactive interval stays readable with its
-  structural flag. Feature values are the shared feature preparation's values
-  on the same axis, and feature cell evidence is the evidence that
+  structural flag. Bar history is restated with the cutoff's knowledge;
+  feature history is a vintage view (Cut 16 decision 29): each cell keeps the
+  value and the evidence it had at its own pulse, its masks being the
+  lifetime and terminal state knowable then, so a fact that becomes known
+  later changes feature cells only from its knowledge pulse on. For example,
+  when an inactive interval at sessions 5 and 6 becomes known at session 7, a
+  read at session 7 shows those sessions' bar prints as inactive-interval
+  prints, while their feature cells keep the valid values they were computed
+  with at sessions 5 and 6, and the session-7 feature cell is computed with
+  the interval known. Feature values are the shared feature preparation's
+  values on the same axis, and feature cell evidence is the evidence that
   preparation produced, with the column meanings of the availability-aware
   feature planes: `calculated` means the required inputs were admitted after
   treatment, `ready` means an admitted cell at or after its segment's
@@ -1768,16 +1856,34 @@ and `AAA` a held nonmember, each holding 5:
   stores a zero-length dimension's names as `NULL`). It owns no cutoff, axis,
   treatment or missingness logic and refuses a value that no longer matches
   its recorded axis with `ledgr_invalid_history_result`.
-  `ledgr_history_sufficient(x, lookback, min_instruments)` is the structural
-  completeness query: at least `lookback` returned sessions and at least
-  `min_instruments` included instruments. It is not indicator readiness,
-  warm-up or convergence and inspects no value.
+  `ledgr_history_sufficient(x, lookback = NULL, min_instruments = 1L)` is the
+  structural completeness query: at least `lookback` returned sessions and at
+  least `min_instruments` included instruments. Without `lookback` it uses
+  the result's requested lookback and refuses an infinite one with
+  `ledgr_invalid_history_request`. It is not indicator readiness, warm-up or
+  convergence and inspects no value.
+- `ledgr_history_info()` returns a result's recorded metadata as a
+  `ledgr_history_info` list (source, cutoff, data and window starts,
+  requested and available lookback, selector, `na_action`, layout,
+  `used_before_window`, included and excluded instrument IDs, the selection
+  table as a tibble, policy identity, snapshot hash and, for the wide layout,
+  the cell evidence) after the same consistency check as
+  `ledgr_history_matrix()`; `print()` of a `ledgr_history` names it in a
+  footer. `ledgr_history_weights(x, weights)` turns estimator output into
+  `ledgr_weights` named by the result's included instruments: an unnamed
+  vector is read in the matrix column order, a named vector is matched by
+  name, and a one-column or one-row matrix is read as a vector; a length or
+  names that differ from the included instruments refuse with
+  `ledgr_history_weights_mismatch`. Both read no data. (Cut 16 LDG-3071 API
+  items.)
 - History reads add no public context field, durable artifact or snapshot
   row. The history view is a private carrier, `ctx$.history`, that holds the
   read service and therefore the whole substrate; strategies read history
-  only through `ledgr_history_frame()`, and the strategy preflight does not
-  yet reject direct access to dot-prefixed context internals (routed by the
-  Workstream 42 close review, F4). P1
+  only through `ledgr_history_frame()`, and the strategy preflight refuses,
+  as a best-effort static check, direct access to private context
+  internals, non-exported ledgr objects and environment-reaching functions
+  as Tier 3 (Reproducibility And Preflight, Cut 16 LDG-3072 and decision
+  30). P1
   issues the cutoff-bound history view; P2 places it on the context, and the
   strategy's `ledgr_history_frame()` call reads prepared planes shared by the
   owning run, sweep or walk-forward session. Treatment planes are prepared

@@ -657,6 +657,9 @@ print.ledgr_experiment <- function(x, ...) {
     "\n",
     sep = ""
   )
+  # The valuation stale-mark horizon and the history policy follow the price
+  # basis, as the plan discloses them (LDG-3081).
+  cat(ledgr_experiment_plan_policy_lines(ledgr_experiment_plan(x), width = 13L), sep = "")
   cat("Metrics:     ", ledgr_calendar_display(x$metric_context$calendar), "\n", sep = "")
   invisible(x)
 }

@@ -99,6 +99,63 @@ ledgr_history_identity_require_current <- function(history) {
   ))
 }
 
+# Disclosure rows for the history policy (LDG-3081): one row per bound field
+# with its shown value and a default flag that is TRUE when the value equals
+# the ledgr_history_policy() constructor default. Omission and an explicit
+# default policy share identity, so the flag compares values, as the plan
+# does for the valuation horizon.
+ledgr_history_policy_disclosure <- function(policy) {
+  policy <- ledgr_history_policy_normalize(policy)
+  defaults <- ledgr_history_policy()
+  sessions <- function(value) {
+    if (is.null(value)) "off" else sprintf("%d session%s", value, if (value == 1L) "" else "s")
+  }
+  tibble::tibble(
+    setting = c("history.price_carry", "history.output_carry", "history.segment_limit"),
+    label = c("price carry", "output carry", "segment limit"),
+    value = c(
+      sessions(policy$price_carry),
+      sessions(policy$output_carry),
+      if (is.null(policy$segment_limit)) {
+        "4 per fact, at least 16"
+      } else {
+        as.character(policy$segment_limit)
+      }
+    ),
+    default = c(
+      identical(policy$price_carry, defaults$price_carry),
+      identical(policy$output_carry, defaults$output_carry),
+      identical(policy$segment_limit, defaults$segment_limit)
+    )
+  )
+}
+
+# One display string for disclosure rows, with a marker on every field.
+ledgr_history_policy_rows_display <- function(rows) {
+  paste(
+    sprintf(
+      "%s %s (%s)", rows$label, rows$value,
+      ifelse(rows$default, "default", "declared")
+    ),
+    collapse = "; "
+  )
+}
+
+# The valuation stale-mark horizon (LDG-3081): its value with a marker, and
+# the display that names it as such.
+ledgr_valuation_horizon_value <- function(max_sessions, default) {
+  max_sessions <- as.integer(max_sessions)
+  sprintf(
+    "%d session%s (%s)",
+    max_sessions, if (identical(max_sessions, 1L)) "" else "s",
+    if (isTRUE(default)) "default" else "declared"
+  )
+}
+
+ledgr_valuation_horizon_display <- function(max_sessions, default) {
+  paste("stale-mark horizon", ledgr_valuation_horizon_value(max_sessions, default))
+}
+
 #' @export
 print.ledgr_history_policy <- function(x, ...) {
   x <- ledgr_history_policy_normalize(x)

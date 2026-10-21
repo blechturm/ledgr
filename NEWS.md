@@ -114,6 +114,42 @@
   identified sessions-by-instruments matrix and `ledgr_history_sufficient()`
   answers structural sufficiency. Estimation exclusion never changes a target.
 
+- `ledgr_history_info()` returns what a history result recorded about itself:
+  its cutoff, window and lookback, the selection table with every exclusion
+  reason, the included and excluded instrument IDs and whether any value used
+  history before the window. `print()` of a history result points to it.
+  `ledgr_history_weights()` turns an estimator's or solver's numeric output
+  into `ledgr_weights` named by the result's included instruments, without
+  rebuilding column names, and refuses a length or names that do not match
+  (`ledgr_history_weights_mismatch`). `ledgr_history_sufficient()` now uses
+  the lookback the result was read with when `lookback` is omitted, and
+  refuses to guess one for a full-lookback read.
+
+- Feature history from `ledgr_history_frame()` is a vintage view: after a
+  lifetime fact becomes known late, earlier feature cells keep the value and
+  the evidence they had at their own pulse, while bar history is restated
+  with what is known at the cutoff. Before, those feature cells showed their
+  earlier values with evidence resolved at the cutoff.
+
+- Strategy preflight now classifies as Tier 3 a strategy that reaches private
+  context internals: a dot-prefixed member such as `ctx$.history`, a string
+  naming a private context field, or closure and frame environments such as
+  `environment(ctx$feature)`. Those carriers hold prepared data beyond the
+  pulse. Read history with `ledgr_history_frame()`.
+
+- Results, `summary()`, `ledgr_experiment_plan()` and `print()` of an
+  experiment now name the valuation horizon as the "stale-mark horizon" and
+  show the experiment's history policy (price carry, output carry and segment
+  limit), each value marked default or declared. Previously `print()` showed
+  an unnamed "max sessions" value that could be read as the history policy's
+  price carry.
+
+- Under `split_adjusted`, corporate-action per-share amounts must be supplied
+  per split-adjusted share. ledgr credits the amount times the held
+  split-adjusted quantity and converts nothing at a split, so an amount
+  declared per as-traded share before a later split is credited too large by
+  the split factor unless the adapter converts it.
+
 - `ledgr_pulse_snapshot()` accepts an availability-aware `ledgr_experiment`
   with `ts_utc`, `params` and `feature_params` and returns the context the
   experiment's run starting at that cutoff passes to its strategy, without

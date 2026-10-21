@@ -4,12 +4,13 @@
 \alias{ledgr_history_sufficient}
 \title{Check structural sufficiency of a history result}
 \usage{
-ledgr_history_sufficient(x, lookback, min_instruments = 1L)
+ledgr_history_sufficient(x, lookback = NULL, min_instruments = 1L)
 }
 \arguments{
 \item{x}{A \code{ledgr_history} result.}
 
-\item{lookback}{Required number of expected sessions.}
+\item{lookback}{Required number of expected sessions. \code{NULL} (the default)
+uses the result's requested lookback, which must be finite.}
 
 \item{min_instruments}{Required number of included instruments.}
 }
@@ -23,6 +24,15 @@ result has at least \code{lookback} expected sessions and at least
 query on the returned axis and selection only. It is not indicator
 readiness, warm-up or convergence and does not inspect values.
 }
+\details{
+Without \code{lookback} it uses the finite lookback the result was read with,
+so a strategy states its window once. A result read with the default
+\code{lookback = Inf} has no finite requirement to check, and the call refuses
+with \code{ledgr_invalid_history_request} unless \code{lookback} is supplied. Like
+\code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}}, it refuses a result that no longer matches its
+recorded axis and instruments (for example after filtering its rows) with
+\code{ledgr_invalid_history_result}.
+}
 \seealso{
-\code{\link[=ledgr_history_frame]{ledgr_history_frame()}}
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}}, \code{\link[=ledgr_history_info]{ledgr_history_info()}}
 }

@@ -169,11 +169,11 @@ testthat::test_that("[LTB-0055] memory failure discards disposition artifacts on
     },
     .package = "ledgr"
   )
+  # The failing pulse is computed outside the strategy: a strategy body may
+  # not reference non-exported ledgr objects (LDG-3072 correction 1).
+  fail_at <- ledgr:::ledgr_normalize_ts_utc(fixture$pulses[[2L]])
   strategy <- function(ctx, params) {
-    if (isTRUE(params$fail) && identical(
-      ctx$ts_utc,
-      ledgr:::ledgr_normalize_ts_utc(fixture$pulses[[2L]])
-    )) {
+    if (isTRUE(params$fail) && identical(ctx$ts_utc, fail_at)) {
       rlang::abort("injected after disposition", class = "ledgr_test_after_disposition")
     }
     ctx$hold()

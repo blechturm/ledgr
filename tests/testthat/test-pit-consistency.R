@@ -887,8 +887,9 @@ testthat::test_that("[LTB-0233] availability-aware experiments default to a disc
   valuation <- ledgr_valuation_summary(bt_omitted)
   testthat::expect_identical(valuation$max_sessions, 5L)
   testthat::expect_true(valuation$max_sessions_default)
-  testthat::expect_true(any(grepl("^  Max sessions: +5 \\(default\\)$", utils::capture.output(summary(bt_omitted)))))
-  testthat::expect_true(any(grepl("max sessions 5 (default)", utils::capture.output(print(bt_omitted)), fixed = TRUE)))
+  # LDG-3081 names the horizon as the valuation stale-mark horizon.
+  testthat::expect_true(any(grepl("^  Stale-mark horizon: +5 sessions \\(default\\)$", utils::capture.output(summary(bt_omitted)))))
+  testthat::expect_true(any(grepl("valuation stale-mark horizon 5 sessions (default)", utils::capture.output(print(bt_omitted)), fixed = TRUE)))
   # LTB-0246 (review) covers a declared horizon and the dense default.
 })
 
@@ -909,8 +910,9 @@ testthat::test_that("[LTB-0246] a declared horizon carries no default marker and
   bt_two <- ledgr_run(experiment(valuation_policy = ledgr_valuation_stale(2)), run_id = "horizon_two")
   on.exit(close(bt_two), add = TRUE)
   testthat::expect_false(ledgr_valuation_summary(bt_two)$max_sessions_default)
-  testthat::expect_true(any(grepl("^  Max sessions: +2$", utils::capture.output(summary(bt_two)))))
-  testthat::expect_true(any(grepl("max sessions 2;", utils::capture.output(print(bt_two)), fixed = TRUE)))
+  # LDG-3081 names the horizon and marks a declared value as declared.
+  testthat::expect_true(any(grepl("^  Stale-mark horizon: +2 sessions \\(declared\\)$", utils::capture.output(summary(bt_two)))))
+  testthat::expect_true(any(grepl("valuation stale-mark horizon 2 sessions (declared);", utils::capture.output(print(bt_two)), fixed = TRUE)))
 
   # The default never activates availability: a snapshot without availability
   # facts stays dense and its config carries no valuation policy.
@@ -953,7 +955,7 @@ testthat::test_that("[LTB-0234] results name the universe kind and the assumptio
   testthat::expect_identical(valuation$assumption_backed_families, c("membership", "sessions"))
   testthat::expect_identical(valuation$assumption_reasons, c("knowledge_assume_effective", "knowledge_assume_effective"))
   testthat::expect_true(paste(
-    "Point in time: membership rule 'u'; max sessions 2;",
+    "Point in time: membership rule 'u'; valuation stale-mark horizon 2 sessions (declared);",
     "assumption-backed facts: membership (knowledge assumed effective); sessions (knowledge assumed effective)"
   ) %in% utils::capture.output(print(rule)))
   summary_lines <- utils::capture.output(summary(rule))
@@ -971,7 +973,7 @@ testthat::test_that("[LTB-0234] results name the universe kind and the assumptio
   testthat::expect_true(valuation_basket$membership_declared)
   testthat::expect_identical(valuation_basket$assumption_backed_families, "sessions")
   testthat::expect_true(paste(
-    "Point in time: fixed basket (the snapshot's membership facts are not applied); max sessions 2;",
+    "Point in time: fixed basket (the snapshot's membership facts are not applied); valuation stale-mark horizon 2 sessions (declared);",
     "assumption-backed facts: sessions (knowledge assumed effective)"
   ) %in% utils::capture.output(print(basket)))
   testthat::expect_true(
@@ -985,7 +987,7 @@ testthat::test_that("[LTB-0234] results name the universe kind and the assumptio
   clean <- run(evidenced, ledgr_universe_members("u"), "kind_evidenced")
   on.exit(close(clean), add = TRUE)
   testthat::expect_identical(ledgr_valuation_summary(clean)$assumption_backed_families, character())
-  testthat::expect_true("Point in time: membership rule 'u'; max sessions 2" %in% utils::capture.output(print(clean)))
+  testthat::expect_true("Point in time: membership rule 'u'; valuation stale-mark horizon 2 sessions (declared)" %in% utils::capture.output(print(clean)))
   testthat::expect_false(any(grepl("Assumption-backed", utils::capture.output(summary(clean)), fixed = TRUE)))
   # LTB-0243 (review) covers two universes of different knowledge.
 })

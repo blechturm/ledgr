@@ -70,9 +70,13 @@
 #' unsupported bar field. `ledgr_history_unavailable` refuses a history read
 #' from a dense or snapshot-and-universe pulse context, which has no causal
 #' history. `ledgr_invalid_history_request` refuses malformed
-#' [ledgr_history_frame()] and [ledgr_history_sufficient()] arguments, and
-#' `ledgr_invalid_history_result` refuses a matrix or sufficiency query on a
-#' value that is not, or no longer matches, a `ledgr_history` result.
+#' [ledgr_history_frame()] and [ledgr_history_sufficient()] arguments,
+#' including a sufficiency query without `lookback` on a result read with
+#' `lookback = Inf`, and `ledgr_invalid_history_result` refuses a matrix,
+#' metadata, weights or sufficiency query on a value that is not, or no longer
+#' matches, a `ledgr_history` result. `ledgr_history_weights_mismatch` refuses
+#' [ledgr_history_weights()] input whose length, names or shape do not match
+#' the result's included instruments.
 #' `ledgr_pulse_snapshot_availability_required` refuses experiment-derived
 #' [ledgr_pulse_snapshot()] inspection of a dense experiment, and
 #' `ledgr_pulse_inspection_stopped` refuses an inspection cutoff whose
@@ -1251,6 +1255,7 @@
 #' @aliases ledgr_fact_knowledge_missing
 #' @aliases ledgr_history_segment_missing
 #' @aliases ledgr_history_unknown_instrument
+#' @aliases ledgr_history_weights_mismatch
 #' @aliases ledgr_staged_history_mismatch
 NULL
 
