@@ -353,6 +353,13 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
       snapshot_state <- 1
       ctx$hold()
     },
+    # A member named like a ledgr internal that the strategy does not bind
+    # itself: only the `$`/`@` member skip keeps this at Tier 1.
+    member_only = function(ctx, params) {
+      res <- list(config_hash = 1, compute_sharpe_ratio = 2)
+      v <- res$config_hash + res$compute_sharpe_ratio
+      ctx$hold()
+    },
     bquote_splice = function(ctx, params) {
       v <- bquote(f(..(list(1, 2))), splice = TRUE)
       ctx$hold()
