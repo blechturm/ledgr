@@ -643,7 +643,7 @@ workstreams:
     depends_on_workstream: 47
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 44", verdict: null, reason: "One claim: after Workstreams 42 and 43 are both accepted, the combined history system is correct, resource-bounded and teachable on current public and aggregate real-data evidence. Review covers both product branches, every v12 Section 10 gate, contracts, docs, release profiles and the WS7 consumer handoff."}
-    integration_evidence: ["Phase A (LDG-3068, LDG-3072, LDG-3081 and the LDG-3071 API items) accepted 2026-10-21 by the maintainer after a close review, two re-reviews and a coordinator-verified third correction round; fast profile median 103.56 s (0edcc2ab)."]
+    integration_evidence: ["Phase A (LDG-3068, LDG-3072, LDG-3081 and the LDG-3071 API items) accepted 2026-10-21 by the maintainer after a close review, two re-reviews and a coordinator-verified third correction round; fast profile median 103.56 s (0edcc2ab).", "Phase B (LDG-3069, LDG-3070 and the LDG-3071 teaching part) accepted 2026-10-21 by the maintainer after a close review and a coordinator-verified correction; fast profile median 105.81 s (552b8a63). LDG-3071 stays open for the decision reconciliation after Workstream 45."]
     accepted: null
   - id: 45
     name: "Causal facts follow-ups"
