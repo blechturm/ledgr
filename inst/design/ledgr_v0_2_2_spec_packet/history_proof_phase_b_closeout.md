@@ -4,14 +4,22 @@ Role: record; Workstream 44 phase B evidence (LDG-3069, LDG-3070 and the
 teaching part of LDG-3071).
 Authority: non-binding. `tickets.yml` owns status and `contracts.md` owns
 behaviour.
-Status: in progress. LDG-3069 and LDG-3070 are complete. The LDG-3071
-teaching section follows as its evidence is committed.
+Status: LDG-3069 and LDG-3070 are complete. LDG-3071 stays `open`: its
+teaching part is done here, and its decision-reconciliation table and v12
+as-implemented appendix wait for Workstream 45 and close with the cut.
+Workstream 44 stays open.
 
 BASE is the integration head `67f98d6b` (`integrate/cut15-v0.2.2`, phase A
-accepted and merged). Branch `ws44/history-proof`. Real-data work is in
-`ledgr-research` branch `claude/history-proof-v0.2.2` (from
-`claude/history-fact-census-v0.2.2`), `experiments/history-wave-h6/`
-(LDG-3069) and `experiments/history-wave-full-proof/` (LDG-3070).
+accepted and merged). Branch `ws44/history-proof`: LDG-3069 `d1b7ede7`,
+LDG-3070 `18d915b5`, LDG-3071 teaching `ea971d2e` and `59feeb0e`, this
+record's final state after them. Real-data work is in `ledgr-research`
+branch `claude/history-proof-v0.2.2` (from
+`claude/history-fact-census-v0.2.2`, not pushed):
+`experiments/history-wave-h6/` (LDG-3069; `67d56afd`, `ccbf76a8`, README
+correction `65c379d`) and `experiments/history-wave-full-proof/` (LDG-3070;
+`b37d2044`, `a6e63b7f`). The measured source copies are detached
+worktrees of `99a3b067` and `67f98d6b`, each compiled once before any
+measured run.
 
 ## What was proven, in plain terms
 
@@ -216,9 +224,10 @@ equal to the LDG-3080 build), each reading causal history every month
   late-known or missing-knowledge fact, a segment-guard breach, a lagged
   range, a run that is not `DONE` over 7,213 pulses or a failed stage, and,
   given a rerun directory, on any counted difference. Seven data mutations
-  (F1-F7 below) each make it fail. A fresh rerun into a new private work directory reproduced every counted
-  file exactly, including the fills, equity and config hashes of both runs,
-  and `check_full.R data <rerun>` passes; F8 makes that comparison fail.
+  (F1-F7 below) each make it fail. A fresh rerun into a new private work
+  directory reproduced every counted file exactly, including the fills,
+  equity and config hashes of both runs, and `check_full.R data <rerun>`
+  passes; F8 makes that comparison fail.
 - **Plausibility.** The runs are mechanical evidence, not a strategy claim.
   The equity paths have no implausible jump: the largest one-day gain is
   11 percent (changing) and 23 percent (full membership); no day gains more
@@ -375,3 +384,30 @@ block stopped.
   daemons and restaging per fold makes two workers slower than one (74.5
   against 71.9 s); a reuse of daemons across folds would be a transport
   change for the macro plan, not this ticket.
+
+## Verification record
+
+Windows 11, R 4.6.1, DuckDB 1.5.6, every R process run sequentially.
+
+- Full suite, first run (source copy of `ea971d2e`): 1,161 blocks, 19,377
+  expectations, one failure, one optional skip (quantmod). The failure was
+  LTB-0302: its scan of documented strategy bodies reads from
+  `function(ctx` to the next brace, and the article's brace-less
+  `function(ctx, params) ctx$hold()` ran on into a helper that calls
+  `ledgr_pulse_snapshot()`. The article was changed (the strategy has
+  braces, `59feeb0e`); the block is unchanged and passes.
+- Full suite on `59feeb0e` (source copy; `pkgload::load_all('.')` then
+  `testthat::test_local('.', reporter = 'summary', stop_on_failure = FALSE,
+  load_package = 'none')`): 1,161 blocks, 19,377 expectations, no failure
+  or error, one optional skip (quantmod); 684 s of block time.
+- `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55
+  flow sites (unchanged), findings 72; `--self-test-mode-branches`: OK;
+  `tools/check-fold-phase-contract.R .`: `LEDGR_FOLD_PHASE_CONTRACT_OK`;
+  `tickets.yml` and `tests/claims.yml` parse; `git diff --check 67f98d6b` is
+  clean. The census check rewrites its line-number CSVs under
+  `dev/bench/v0_2_2_pre_cran_removal/census/` because roxygen lines moved
+  code down; those regenerated files are not committed, as in phase A.
+RCMD
+- Not run here, by instruction: the fast, review and heavy profiles and the
+  independent close review. `R/cpp11.R` and `src/cpp11.cpp` line-ending churn
+  from compilation is not committed.
