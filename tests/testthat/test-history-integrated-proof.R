@@ -116,7 +116,9 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
     "15" = list(owner = "LDG-3068", blocks = c("LTB-0409", "LTB-0410", "LTB-0413")),
     "16" = list(owner = "LDG-3063", blocks = "LTB-0301",
                 contributing = list("LDG-3058" = "LTB-0290")),
-    "17" = list(owner = "LDG-3069", pending = TRUE,
+    # LDG-3069 reran LDG-3061's transport oracle on the H1 workload; the
+    # registered detector it cites is that oracle.
+    "17" = list(owner = "LDG-3069", blocks = "LTB-0295",
                 contributing = list("LDG-3061" = "LTB-0295")),
     # The helper deletion is recorded in LDG-3067's evidence without a
     # registered block; LDG-3068 adds the structural integration detector.
