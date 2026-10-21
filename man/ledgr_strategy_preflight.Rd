@@ -52,22 +52,26 @@ public functions and exported ledgr helpers such as
 private context internals: extracting a private context field from any
 object (\code{ctx$.history}, \code{x[[".notes"]]}); naming a field that holds
 prepared data beyond the pulse anywhere, also inside \code{quote()}; naming a
-non-exported ledgr object (\code{ledgr:::name}); calling or handing to a
-functional an environment-reaching function (\code{environment()},
-\code{parent.frame()}, \code{asNamespace()}, \code{getFromNamespace()}, \code{get0()},
-\code{mget()}, \verb{body<-}, \code{as.function()}, \code{unserialize()} and their \code{rlang}
-equivalents, also as \code{lapply(x, "environment")} or
+non-exported ledgr object (\code{ledgr:::name}, or the bare name other than a
+member or a name the strategy binds itself); calling, assigning through
+(\verb{base::body(f) <-}), or putting in a functional's function slot an
+environment-reaching function (\code{environment()}, \code{parent.frame()},
+\code{asNamespace()}, \code{getFromNamespace()}, \code{get0()}, \code{mget()}, \verb{body<-},
+\verb{formals<-}, \code{as.function()}, \code{unserialize()} and their \code{rlang}
+equivalents, also attached, as \code{lapply(x, "environment")} or as
 \code{baseenv()$environment(...)}); and \code{substitute()} or \code{bquote()} with an
-environment to evaluate in. A field, column or label called \code{environment}
-and a dot-prefixed name such as a model's \verb{$.fitted} are ordinary data.
+environment to evaluate in. A field, column or label called \code{environment},
+a strategy's own \code{config_hash} and a dot-prefixed name such as a model's
+\verb{$.fitted} are ordinary data.
 
 The check is static and best-effort, not a sandbox: R offers no private
-memory. A strategy that deliberately subverts evaluation, evaluates code in
-the context or in a function's enclosure by another route, builds names at
-run time, iterates over the context or uses objects from outside its body
-is outside ledgr's guarantee, as is one that reads a future-data file.
-ledgr guarantees that its own history, feature and fact APIs return only
-data known at the decision time.
+memory. A strategy that deliberately subverts evaluation by a route the
+check does not recognise (a function reached through an alias,
+parentheses or \code{getElement()}, another package's replacement function,
+\code{trace()}, names built at run time, iteration over the context, objects
+from outside its body) is outside ledgr's guarantee, as is one that reads
+a future-data file. ledgr guarantees that its own history, feature and
+fact APIs return only data known at the decision time.
 
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
 seed contract for ordinary sequential runs, but they are not certified for

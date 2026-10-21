@@ -1653,30 +1653,42 @@ and `AAA` a held nonmember, each holding 5:
     `.pulse_lookup`, `.feature_vector`, `.feature_table_current`) named
     anywhere, as a string or as a symbol, including inside `quote()`,
     `bquote()` or `substitute()`;
-  - a non-exported ledgr object, named as a symbol anywhere or referenced as
-    `ledgr:::name`; only the exported namespace is Tier 1-compatible;
-  - an environment-reaching function in call position: closure, call,
-    frame and namespace access (`environment()`, `parent.frame()`, the
-    `sys.*()` frame functions, `asNamespace()`, `getFromNamespace()`,
-    `get0()`, `mget()` and their `rlang` equivalents) and rebuilding a
-    function inside an existing enclosure (`body<-`, `formals<-`,
-    `as.function()`, `unserialize()`), whether called, qualified, passed as
-    a value, extracted as a member and called, or named in a string or
-    member handed to a functional (`lapply(x, "environment")`,
-    `match.fun("environment")`, `do.call("environment", ...)`);
-  - `substitute()` or `bquote()` given an environment or list to evaluate
-    in.
+  - a non-exported ledgr object, named as a symbol (also inside `quote()`)
+    other than as the member after `$` or `@` and other than a name the
+    strategy binds itself, or referenced as `ledgr:::name`; only the
+    exported namespace is Tier 1-compatible;
+  - an environment-reaching function: closure, call, frame and namespace
+    access (`environment()`, `parent.frame()`, the `sys.*()` frame
+    functions, `asNamespace()`, `getFromNamespace()`, `get0()`, `mget()` and
+    their `rlang` equivalents) and rebuilding a function inside an existing
+    enclosure (`body<-`, `formals<-`, `as.function()`, `unserialize()`,
+    rlang `fn_body<-` and `fn_fmls<-`), when it is called (unqualified,
+    including through an attached package, or qualified), assigned through
+    (`body(f) <-`, `base::body(f) <-`, `rlang::fn_body(f) <-`), passed as a
+    value, extracted as a member and called directly
+    (`baseenv()$environment(...)`), or named as a string or member in the
+    function slot of a functional (`FUN`, `f` or `what`: `lapply(x,
+    "environment")`, `match.fun("environment")`, `do.call("environment",
+    ...)`);
+  - `substitute()` with an environment or list, and `bquote()` with
+    `where`, by name or by position.
 
   An ordinary name that is data keeps its tier: a dot-prefixed name that is
-  not a private context field (a model's `$.fitted`, a `.pred` column) and a
-  field, column or label called `environment`. R offers no private memory:
-  the context's carriers, the closures behind its public functions and
-  ledgr's namespace hold prepared data beyond the pulse, and preflight is
-  static. A strategy that deliberately subverts R evaluation, evaluates code
-  in the context or in a function's enclosure by a route preflight does not
-  recognise, builds names at run time, iterates over the context or uses
-  objects supplied from outside its body is outside ledgr's guarantee, as is
-  one that reads a future-data file. ledgr guarantees that its own public
+  not a private context field (a model's `$.fitted`, a `.pred` column), a
+  field, column or label called `environment` (also as data handed to a
+  functional, such as `tapply(d$environment, ...)` or `sapply(s, "[[",
+  "environment")`), and a strategy's own name that happens to equal a ledgr
+  internal (a local `config_hash`, `res$config_hash`). R offers no private
+  memory: the context's carriers, the closures behind its public functions
+  and ledgr's namespace hold prepared data beyond the pulse, and preflight
+  is static. Outside ledgr's guarantee is a strategy that deliberately
+  subverts R evaluation by a route preflight does not recognise: for
+  example, a function reached through an alias, parentheses or
+  `getElement()` before it is called, another package's replacement
+  function (`methods::functionBody<-`), `trace()`, names built at run time,
+  iteration over the context, code evaluated in the context or in a
+  function's enclosure by other means, objects supplied from outside the
+  body, or a future-data file. ledgr guarantees that its own public
   history, feature and fact APIs return only data known at the decision
   time.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself

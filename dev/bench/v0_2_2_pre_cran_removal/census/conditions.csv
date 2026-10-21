@@ -1817,15 +1817,15 @@
 "R/strategy-helpers.R",563,"abort_class","ledgr_invalid_strategy_helper",TRUE,"""ledgr_invalid_strategy_helper""",TRUE,TRUE,FALSE
 "R/strategy-helpers.R",9,"abort_class","ledgr_invalid_strategy_helper",TRUE,"""ledgr_invalid_strategy_helper""",TRUE,TRUE,FALSE
 "R/strategy-helpers.R",95,"abort_class","ledgr_invalid_strategy_helper",TRUE,"""ledgr_invalid_strategy_helper""",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",1002,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",1002,"abort_class","ledgr_strategy_ambient_rng_parallel",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",1002,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",79,"abort_class","ledgr_invalid_strategy_preflight",TRUE,"""ledgr_invalid_strategy_preflight""",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",953,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",953,"abort_class","ledgr_strategy_tier3",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",982,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",982,"abort_class","ledgr_strategy_ambient_rng_resume",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
-"R/strategy-preflight.R",982,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1026,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1026,"abort_class","ledgr_strategy_tier3",TRUE,"c(""ledgr_strategy_tier3"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1055,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1055,"abort_class","ledgr_strategy_ambient_rng_resume",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1055,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_resume"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1075,"abort_class","ledgr_strategy_ambient_rng_not_supported",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1075,"abort_class","ledgr_strategy_ambient_rng_parallel",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",1075,"abort_class","ledgr_strategy_preflight_error",TRUE,"c(""ledgr_strategy_ambient_rng_parallel"", ""ledgr_strategy_ambient_rng_not_supported"", ""ledgr_strategy_preflight_error"")",TRUE,TRUE,FALSE
+"R/strategy-preflight.R",83,"abort_class","ledgr_invalid_strategy_preflight",TRUE,"""ledgr_invalid_strategy_preflight""",TRUE,TRUE,FALSE
 "R/strategy-provenance.R",123,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",TRUE,TRUE,FALSE
 "R/strategy-provenance.R",13,"abort_class","ledgr_invalid_strategy_signature",TRUE,"""ledgr_invalid_strategy_signature""",TRUE,TRUE,FALSE
 "R/strategy-provenance.R",3,"abort_class","ledgr_invalid_strategy_signature",TRUE,"""ledgr_invalid_strategy_signature""",TRUE,TRUE,FALSE

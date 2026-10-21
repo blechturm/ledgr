@@ -191,6 +191,42 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     rlang_name_string = function(ctx, params) {
       envs <- lapply(list(ctx$feature), "fn_env")
       ctx$hold()
+    },
+    # Correction 3 (re-review 2 S1 and S4): qualified replacement functions,
+    # attached rlang getters, formals<- alone, positional bquote() where, and
+    # a quoted carrier other than .history.
+    base_body_assign = function(ctx, params) {
+      f <- ctx$feature
+      base::body(f) <- quote(feature_vector)
+      v <- f()
+      ctx$hold()
+    },
+    rlang_fn_body_assign = function(ctx, params) {
+      f <- ctx$feature
+      rlang::fn_body(f) <- quote(feature_vector)
+      ctx$hold()
+    },
+    attached_rlang = function(ctx, params) {
+      e <- env_get(fn_env(ctx$feature), "feature_vector", inherit = TRUE)
+      ctx$hold()
+    },
+    base_formals_assign = function(ctx, params) {
+      f <- ctx$feature
+      base::formals(f) <- alist(x = 1)
+      ctx$hold()
+    },
+    formals_only = function(ctx, params) {
+      f <- ctx$feature
+      formals(f) <- alist(x = 1)
+      ctx$hold()
+    },
+    bquote_positional = function(ctx, params) {
+      v <- bquote(.(a), ctx)
+      ctx$hold()
+    },
+    quoted_feature_vector = function(ctx, params) {
+      v <- do.call(with, list(ctx, quote(.feature_vector)))
+      ctx$hold()
     }
   )
   expected_access <- c(
@@ -214,7 +250,11 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     bquote_where = "bquote(<expr>, where = <env>)", docall_with = ".history",
     docall_evalq = ".history", quoted_internal = "ledgr_history_context_view (not exported)",
     at_extraction = "@.notes", rlang_namespace = "rlang::ns_env()",
-    rlang_name_string = "lapply(\"fn_env\")"
+    rlang_name_string = "lapply(\"fn_env\")",
+    base_body_assign = "base::body<-()", rlang_fn_body_assign = "rlang::fn_body<-()",
+    attached_rlang = "fn_env()", base_formals_assign = "base::formals<-()",
+    formals_only = "formals<-()", bquote_positional = "bquote(<expr>, where = <env>)",
+    quoted_feature_vector = ".feature_vector"
   )
   for (name in names(refused)) {
     preflight <- ledgr_strategy_preflight(refused[[name]])
@@ -291,6 +331,30 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
       d <- data.frame(environment = 1)
       lbl <- c("environment", "momentum")
       v <- d[["environment"]]
+      ctx$hold()
+    },
+    # Correction 3 (re-review 2 S2, S3 and N1): environment data handed to a
+    # functional outside its function slot, the strategy's own names that
+    # equal ledgr internals, and bquote() splicing without an environment.
+    functional_data = function(ctx, params) {
+      d <- data.frame(environment = c(1, 2), sector = c("a", "b"))
+      s <- list(list(environment = 1), list(environment = 2))
+      by_sector <- tapply(d$environment, d$sector, mean)
+      pillar <- sapply(s, "[[", "environment")
+      roots <- lapply(d[["environment"]], sqrt)
+      pairs <- mapply(function(a, b) a, 1:2, params$environment)
+      ctx$hold()
+    },
+    own_names = function(ctx, params) {
+      config_hash <- "abc"
+      res <- list(config_hash = 1)
+      v <- res$config_hash
+      compute_sharpe_ratio <- function(r) mean(r) / stats::sd(r)
+      snapshot_state <- 1
+      ctx$hold()
+    },
+    bquote_splice = function(ctx, params) {
+      v <- bquote(f(..(list(1, 2))), splice = TRUE)
       ctx$hold()
     }
   )
