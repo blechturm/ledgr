@@ -545,6 +545,11 @@ no ticket:
   JSON encoding, and moving feature inputs onto the matrix collapse carry path
   (execution-core consolidation). DuckDB pushdown would address only the
   1.1 s substrate fetch;
+- LTB-0393 detector repair (Cut 16 close, `close_review_44c.md` N1): the
+  block's `gc()` tracer can never count, because `collections` is not
+  visible inside the traced `gc()`. Removing the decision (26) guard still
+  fails the block, but through an error rather than the count assertion.
+  Make the tracer count and re-run the guard mutation;
 
 Promote a remaining candidate only when the current product path, not a private
 harness, shows the cost. Then run one integrated long-window record covering:
