@@ -1914,13 +1914,16 @@ and `AAA` a held nonmember, each holding 5:
   table as a tibble, policy identity, snapshot hash and, for the wide layout,
   the cell evidence) after the same consistency check as
   `ledgr_history_matrix()`; `print()` of a `ledgr_history` names it in a
-  footer. `ledgr_history_weights(x, weights)` turns estimator output into
-  `ledgr_weights` named by the result's included instruments: an unnamed
-  vector is read in the matrix column order, a named vector is matched by
-  name, and a one-column or one-row matrix is read as a vector; a length or
-  names that differ from the included instruments refuse with
-  `ledgr_history_weights_mismatch`. Both read no data. (Cut 16 LDG-3071 API
-  items.)
+  footer. `ledgr_align_weights(solution, history)` turns estimator output
+  into `ledgr_weights` with origin `ledgr_align_weights`, named by the
+  history result's included instruments: an unnamed vector is read in the
+  matrix column order, a named vector is matched by name, and a one-column
+  or one-row matrix is read as a vector; a non-numeric value, a wider
+  matrix, a length that differs from the included instruments, or wrong,
+  duplicated or missing names refuse with `ledgr_weight_alignment_mismatch`
+  (also `ledgr_invalid_args`), and a missing or non-finite weight refuses
+  through `ledgr_weights()` with `ledgr_invalid_strategy_type`. Both read no
+  data. (Cut 16 LDG-3071 API items.)
 - History reads add no public context field, durable artifact or snapshot
   row. The history view is a private carrier, `ctx$.history`, that holds the
   read service and therefore the whole substrate; strategies read history
@@ -2796,7 +2799,7 @@ Accepted change pending:
   outside them is the author's responsibility, checked best-effort by
   preflight.
 - One executed portfolio-estimation example goes from a history read through
-  an estimator and `ledgr_history_weights()` to `ledgr_target_rebalance()`
+  an estimator and `ledgr_align_weights()` to `ledgr_target_rebalance()`
   with no manual timestamp removal, column-name reconstruction or second
   history reader. It explains estimation exclusion separately from execution
   intent: an instrument the estimate drops receives a zero target from the

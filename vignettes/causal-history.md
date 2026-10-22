@@ -469,8 +469,8 @@ estimate <- function(ctx, params) {
   held <- ctx$universe[ctx$vec$position != 0]
   keep <- intersect(ledgr_history_info(returns)$excluded_ids, held)
   if (!isTRUE(params$keep)) keep <- character()
-  returns |>
-    ledgr_history_weights(w) |>
+  w |>
+    ledgr_align_weights(returns) |>
     ledgr_target_rebalance(ctx, equity_fraction = 0.95, keep = keep)
 }
 
@@ -494,9 +494,9 @@ c(estimate(june, list(lookback = 40L, keep = TRUE)))
     DEMO_01 DEMO_02 DEMO_03 DEMO_04 DEMO_05 DEMO_06 DEMO_07 DEMO_08
           0     365     159      93     134     177     176     104
 
-`ledgr_history_weights()` reads the unnamed solver output in the order
-of the result’s included instruments and refuses a vector of the wrong
-length, so no column name is rebuilt by hand.
+`ledgr_align_weights()` reads the unnamed solver output in the order of
+the history result’s included instruments and refuses a vector of the
+wrong length, so no column name is rebuilt by hand.
 
 Two separate choices are at work. Estimation exclusion decides which
 instruments enter the covariance estimate. Execution intent decides what

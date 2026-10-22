@@ -66,7 +66,7 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   broken <- fast
   broken$BBB <- NULL
   testthat::expect_error(ledgr_history_info(broken), class = "ledgr_invalid_history_result")
-  testthat::expect_error(ledgr_history_weights(broken, c(0.5, 0.5)), class = "ledgr_invalid_history_result")
+  testthat::expect_error(ledgr_align_weights(c(0.5, 0.5), broken), class = "ledgr_invalid_history_result")
   testthat::expect_error(ledgr_history_info(data.frame(x = 1)), class = "ledgr_invalid_history_result")
   # Sufficiency refuses the same stale results (close review 44a F3): a
   # result whose rows were filtered keeps its class and metadata but no
@@ -98,29 +98,29 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   # Solver output becomes identified weights without colnames(): an unnamed
   # vector in the matrix column order, a named vector in any order, and a
   # one-column matrix all give AAA = 0.25, BBB = 0.75.
-  expected <- ledgr_weights(c(AAA = 0.25, BBB = 0.75), origin = "ledgr_history_weights")
+  expected <- ledgr_weights(c(AAA = 0.25, BBB = 0.75), origin = "ledgr_align_weights")
   testthat::expect_identical(colnames(ledgr_history_matrix(fast)), c("AAA", "BBB"))
-  testthat::expect_identical(ledgr_history_weights(fast, c(0.25, 0.75)), expected)
-  testthat::expect_identical(ledgr_history_weights(fast, c(BBB = 0.75, AAA = 0.25)), expected)
-  testthat::expect_identical(ledgr_history_weights(fast, matrix(c(0.25, 0.75), ncol = 1L)), expected)
+  testthat::expect_identical(ledgr_align_weights(c(0.25, 0.75), fast), expected)
+  testthat::expect_identical(ledgr_align_weights(c(BBB = 0.75, AAA = 0.25), fast), expected)
+  testthat::expect_identical(ledgr_align_weights(matrix(c(0.25, 0.75), ncol = 1L), fast), expected)
   testthat::expect_identical(
-    ledgr_history_weights(fast, matrix(c(0.25, 0.75), nrow = 1L, dimnames = list(NULL, c("AAA", "BBB")))),
+    ledgr_align_weights(matrix(c(0.25, 0.75), nrow = 1L, dimnames = list(NULL, c("AAA", "BBB"))), fast),
     expected
   )
-  testthat::expect_identical(ledgr_history_weights(at7$fast_long, c(0.25, 0.75)), expected)
+  testthat::expect_identical(ledgr_align_weights(c(0.25, 0.75), at7$fast_long), expected)
   for (bad in list(c(0.5, 0.25, 0.25), 1, numeric(), c(AAA = 0.5, CCC = 0.5), c(AAA = 0.5, AAA = 0.5),
                    matrix(1, 2L, 2L), "0.5")) {
-    testthat::expect_error(ledgr_history_weights(fast, bad), class = "ledgr_history_weights_mismatch")
+    testthat::expect_error(ledgr_align_weights(bad, fast), class = "ledgr_weight_alignment_mismatch")
   }
-  testthat::expect_error(ledgr_history_weights(fast, c(0.5, NA)), class = "ledgr_invalid_strategy_type")
+  testthat::expect_error(ledgr_align_weights(c(0.5, NA), fast), class = "ledgr_invalid_strategy_type")
   # Three included instruments at session 6 (CCC's inactivity is not yet
   # known): names in a cyclic order are matched by name, not by a
   # permutation of positions (close review 44a N2).
   fast6 <- captured$seen[[ws42_iso(axis[[6L]])]]$fast
   testthat::expect_identical(ledgr_history_info(fast6)$included_ids, c("AAA", "BBB", "CCC"))
   testthat::expect_identical(
-    ledgr_history_weights(fast6, c(BBB = 0.2, CCC = 0.3, AAA = 0.5)),
-    ledgr_weights(c(AAA = 0.5, BBB = 0.2, CCC = 0.3), origin = "ledgr_history_weights")
+    ledgr_align_weights(c(BBB = 0.2, CCC = 0.3, AAA = 0.5), fast6),
+    ledgr_weights(c(AAA = 0.5, BBB = 0.2, CCC = 0.3), origin = "ledgr_align_weights")
   )
 
   # Sufficiency defaults to the finite lookback the result was read with and
@@ -148,7 +148,7 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
     returns <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments")
     if (!ledgr_history_sufficient(returns, min_instruments = 2L)) return(ctx$hold())
     n <- length(ledgr_history_info(returns)$included_ids)
-    ledgr_target_rebalance(ledgr_history_weights(returns, rep(1 / n, n)), ctx, equity_fraction = 1)
+    ledgr_target_rebalance(ledgr_align_weights(rep(1 / n, n), returns), ctx, equity_fraction = 1)
   }
   testthat::expect_identical(ledgr_strategy_preflight(strategy)$tier, "tier_1")
   bought <- ws42_history_fixture(strategy = strategy)
@@ -159,4 +159,91 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   testthat::expect_identical(fills$instrument_id, c("AAA", "BBB"))
   testthat::expect_identical(as.numeric(fills$qty), c(20, 12))
   testthat::expect_identical(as.numeric(fills$price), c(17, 27))
+})
+
+testthat::test_that("[LTB-0417] ledgr_align_weights takes the solution first and refuses missing names and non-finite weights by their own classes", {
+  captured <- ws42_capture_run(reader = function(ctx) {
+    ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
+      instruments = "decision_axis", na_action = "drop_instruments")
+  })
+  on.exit({
+    close(captured$bt)
+    ledgr_snapshot_close(captured$fixture$snapshot)
+  }, add = TRUE)
+  # Session 7 of the WS42 fixture includes AAA and BBB (LTB-0407).
+  fast <- captured$seen[[ws42_iso(captured$fixture$axis[[7L]])]]
+  testthat::expect_identical(ledgr_history_info(fast)$included_ids, c("AAA", "BBB"))
+
+  # The solver output is the first argument, so it pipes into the bridge and
+  # the bridge's origin names it.
+  testthat::expect_identical(names(formals(ledgr_align_weights)), c("solution", "history"))
+  piped <- c(0.25, 0.75) |> ledgr_align_weights(fast)
+  testthat::expect_identical(piped, ledgr_weights(c(AAA = 0.25, BBB = 0.75), origin = "ledgr_align_weights"))
+  testthat::expect_identical(attr(piped, "origin"), "ledgr_align_weights")
+  testthat::expect_identical(ledgr_align_weights(history = fast, solution = c(BBB = 0.75, AAA = 0.25)), piped)
+
+  # A missing name (empty or NA) among named weights cannot be aligned and
+  # refuses with the alignment class, which is also ledgr_invalid_args.
+  missing_names <- list(
+    c(AAA = 0.25, 0.75),
+    stats::setNames(c(0.25, 0.75), c("AAA", NA)),
+    matrix(c(0.25, 0.75), nrow = 1L, dimnames = list(NULL, c("", "BBB")))
+  )
+  for (bad in missing_names) {
+    cnd <- tryCatch(ledgr_align_weights(bad, fast), error = function(e) e)
+    testthat::expect_s3_class(cnd, "ledgr_weight_alignment_mismatch")
+    testthat::expect_s3_class(cnd, "ledgr_invalid_args")
+  }
+
+  # A missing or non-finite weight in an aligned solution refuses through
+  # ledgr_weights() with ledgr_invalid_strategy_type, never the alignment class.
+  for (bad in list(c(0.25, Inf), c(NaN, 0.75), c(BBB = -Inf, AAA = 0.25), c(NA_real_, 0.75))) {
+    cnd <- tryCatch(ledgr_align_weights(bad, fast), error = function(e) e)
+    testthat::expect_s3_class(cnd, "ledgr_invalid_strategy_type")
+    testthat::expect_false(inherits(cnd, "ledgr_weight_alignment_mismatch"))
+  }
+})
+
+# Files of the current public surface: exports, help, code, articles, the
+# reference index, NEWS and the contracts.
+ws44_current_surface_files <- function(root) {
+  text <- "[.](R|Rd|qmd|Rmd|md)$"
+  c(
+    file.path(root, "NAMESPACE"),
+    list.files(file.path(root, "man"), pattern = text, full.names = TRUE, recursive = TRUE),
+    list.files(file.path(root, "R"), pattern = text, full.names = TRUE, recursive = TRUE),
+    list.files(file.path(root, "vignettes"), pattern = text, full.names = TRUE, recursive = TRUE),
+    file.path(root, "_pkgdown.yml"),
+    file.path(root, "NEWS.md"),
+    file.path(root, "inst", "design", "contracts.md")
+  )
+}
+
+# Files among `files` whose text contains `name`.
+ws44_files_naming <- function(files, name) {
+  files[vapply(files, function(path) {
+    any(grepl(name, readLines(path, warn = FALSE, encoding = "UTF-8"), fixed = TRUE))
+  }, logical(1))]
+}
+
+testthat::test_that("[LTB-0418] the superseded weights bridge name is absent from every current surface", {
+  # Assembled so this block does not name the old bridge itself; the stem
+  # also matches the old condition class (stem plus "_mismatch").
+  old <- paste0("ledgr_history", "_weights")
+  testthat::expect_false(exists(old, envir = asNamespace("ledgr"), inherits = FALSE))
+  testthat::expect_false(old %in% getNamespaceExports("ledgr"))
+  testthat::expect_true("ledgr_align_weights" %in% getNamespaceExports("ledgr"))
+  root <- ledgr_test_source_root()
+  if (!ledgr_test_checkout_context(root)) return(invisible(NULL))
+  files <- ws44_current_surface_files(root)
+  testthat::expect_true(all(file.exists(files)))
+  testthat::expect_true(file.path(root, "man", "ledgr_align_weights.Rd") %in% files)
+  testthat::expect_false(file.exists(file.path(root, "man", paste0(old, ".Rd"))))
+  testthat::expect_identical(ws44_files_naming(files, old), character())
+  # The scan reads the surfaces it claims: the new names are found in them.
+  testthat::expect_true(file.path(root, "NAMESPACE") %in% ws44_files_naming(files, "ledgr_align_weights"))
+  testthat::expect_true(
+    file.path(root, "inst", "design", "contracts.md") %in%
+      ws44_files_naming(files, "ledgr_weight_alignment_mismatch")
+  )
 })

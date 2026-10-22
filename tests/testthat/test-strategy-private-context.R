@@ -276,7 +276,7 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     x <- ledgr_history_matrix(returns)
     info <- ledgr_history_info(returns)
     w <- rep(1 / ncol(x), ncol(x))
-    ledgr_target_rebalance(ledgr_history_weights(returns, w), ctx, equity_fraction = 0.5, keep = NULL)
+    ledgr_target_rebalance(ledgr_align_weights(w, returns), ctx, equity_fraction = 0.5, keep = NULL)
   }
   plain_strategy <- function(ctx, params) {
     state <- list(last = ctx$ts_utc, count = 1L)

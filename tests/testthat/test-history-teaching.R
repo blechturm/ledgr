@@ -86,7 +86,7 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
   # rebuilding timestamps or names and without a second reader, and keeps
   # held instruments the estimate dropped.
   portfolio <- code("portfolio")
-  for (call in c("ledgr_history_frame(", "ledgr_history_matrix(", "ledgr_history_weights(",
+  for (call in c("ledgr_history_frame(", "ledgr_history_matrix(", "ledgr_align_weights(",
                  "ledgr_history_info(", "ledgr_target_rebalance(", "keep = keep")) {
     testthat::expect_match(portfolio, call, fixed = TRUE, info = call)
   }
@@ -145,7 +145,7 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
   testthat::expect_match(without, "2020-01-10 09:30:00 SELL", fixed = TRUE)
   # Help pages point to the article with a browser-free path.
   for (page in c("ledgr_history_frame", "ledgr_history_matrix", "ledgr_history_info",
-                 "ledgr_history_weights", "ledgr_history_sufficient", "ledgr_history_policy")) {
+                 "ledgr_align_weights", "ledgr_history_sufficient", "ledgr_history_policy")) {
     rd <- paste(readLines(file.path(root, "man", paste0(page, ".Rd")), warn = FALSE), collapse = "\n")
     testthat::expect_match(rd, "vignette(\"causal-history\", package = \"ledgr\")", fixed = TRUE, info = page)
     testthat::expect_match(rd, "system.file(\"doc\", \"causal-history.html\", package = \"ledgr\")",

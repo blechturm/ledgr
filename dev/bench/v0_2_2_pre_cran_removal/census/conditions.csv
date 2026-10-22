@@ -987,8 +987,8 @@
 "R/history-features.R",744,"abort_class","ledgr_invalid_feature_output",TRUE,"c(""ledgr_feature_lookahead_detected"", ""ledgr_invalid_feature_output"")",TRUE,TRUE,FALSE
 "R/history-features.R",776,"abort_class","ledgr_history_unknown_instrument",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-features.R",776,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_unknown_instrument"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",1194,"abort_class","ledgr_history_weights_mismatch",TRUE,"c(""ledgr_history_weights_mismatch"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/history-frame.R",1194,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_history_weights_mismatch"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",1196,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_weight_alignment_mismatch"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/history-frame.R",1196,"abort_class","ledgr_weight_alignment_mismatch",TRUE,"c(""ledgr_weight_alignment_mismatch"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/history-frame.R",13,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/history-frame.R",13,"abort_class","ledgr_invalid_history_substrate",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/history-frame.R",359,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_history_substrate"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE

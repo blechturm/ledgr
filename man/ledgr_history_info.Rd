@@ -63,5 +63,5 @@ strategy <- function(ctx, params) {
 }
 \seealso{
 \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}, \code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}},
-\code{\link[=ledgr_history_weights]{ledgr_history_weights()}}
+\code{\link[=ledgr_align_weights]{ledgr_align_weights()}}
 }

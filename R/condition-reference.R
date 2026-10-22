@@ -80,9 +80,9 @@
 #' including a sufficiency query without `lookback` on a result read with
 #' `lookback = Inf`, and `ledgr_invalid_history_result` refuses a matrix,
 #' metadata, weights or sufficiency query on a value that is not, or no longer
-#' matches, a `ledgr_history` result. `ledgr_history_weights_mismatch` refuses
-#' [ledgr_history_weights()] input whose length, names or shape do not match
-#' the result's included instruments.
+#' matches, a `ledgr_history` result. `ledgr_weight_alignment_mismatch`
+#' refuses [ledgr_align_weights()] solver output whose length, names or shape
+#' do not match the history result's included instruments.
 #' `ledgr_pulse_snapshot_availability_required` refuses experiment-derived
 #' [ledgr_pulse_snapshot()] inspection of a dense experiment, and
 #' `ledgr_pulse_inspection_stopped` refuses an inspection cutoff whose
@@ -1265,7 +1265,7 @@
 #' @aliases ledgr_fact_knowledge_missing
 #' @aliases ledgr_history_segment_missing
 #' @aliases ledgr_history_unknown_instrument
-#' @aliases ledgr_history_weights_mismatch
+#' @aliases ledgr_weight_alignment_mismatch
 #' @aliases ledgr_staged_history_mismatch
 NULL
 

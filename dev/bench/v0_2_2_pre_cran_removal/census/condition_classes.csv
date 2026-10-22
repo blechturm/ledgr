@@ -93,7 +93,6 @@
 "ledgr_history_segment_missing","R/history-substrate.R",1196,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_history_unavailable","R/history-frame.R",521,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_history_unknown_instrument","R/history-features.R",776,3,TRUE,FALSE,TRUE,TRUE,"documented_public"
-"ledgr_history_weights_mismatch","R/history-frame.R",1194,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_incomplete_sweep_candidate","R/sweep.R",585,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_indicator_gap_parity","R/history-features.R",254,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_internal_error","R/determinism.R",146,18,FALSE,TRUE,FALSE,FALSE,"internal"
@@ -399,3 +398,4 @@
 "ledgr_walk_forward_session_not_found","R/walk-forward-inspection.R",354,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_walk_forward_snapshot_hash_mismatch","R/walk-forward-inspection.R",396,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_walk_forward_snapshot_override_mismatch","R/walk-forward-inspection.R",320,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_weight_alignment_mismatch","R/history-frame.R",1196,1,TRUE,FALSE,TRUE,TRUE,"documented_public"

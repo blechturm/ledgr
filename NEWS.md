@@ -149,10 +149,12 @@
   its cutoff, window and lookback, the selection table with every exclusion
   reason, the included and excluded instrument IDs and whether any value used
   history before the window. `print()` of a history result points to it.
-  `ledgr_history_weights()` turns an estimator's or solver's numeric output
-  into `ledgr_weights` named by the result's included instruments, without
-  rebuilding column names, and refuses a length or names that do not match
-  (`ledgr_history_weights_mismatch`). `ledgr_history_sufficient()` now uses
+  `ledgr_align_weights(solution, history)` turns an estimator's or solver's
+  numeric output into `ledgr_weights` named by the history result's included
+  instruments, without rebuilding column names, and refuses a length, names
+  or shape that do not match (`ledgr_weight_alignment_mismatch`); it pipes as
+  `solution |> ledgr_align_weights(history) |> ledgr_target_rebalance(ctx)`.
+  `ledgr_history_sufficient()` now uses
   the lookback the result was read with when `lookback` is omitted, and
   refuses to guess one for a full-lookback read.
 
@@ -177,7 +179,7 @@
   vintage feature view, one history across walk-forward windows, finite
   lookbacks and what preflight does and does not guarantee. One executed
   portfolio estimate goes from a history read through a solver and
-  `ledgr_history_weights()` to `ledgr_target_rebalance()`, keeping held
+  `ledgr_align_weights()` to `ledgr_target_rebalance()`, keeping held
   instruments the estimate dropped.
 
 - Results, `summary()`, `ledgr_experiment_plan()` and `print()` of an
