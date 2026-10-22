@@ -144,11 +144,9 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
     testthat::expect_identical(grepl("routed to", entries[[i]], fixed = TRUE), isTRUE(spec$routed), info = info)
     testthat::expect_false(is.na(match(spec$owner, ticket_ids)), info = info)
     status <- ticket(spec$owner)$status
-    if (isTRUE(spec$pending)) {
-      # A pending owner is still open; when it closes, this map must name
-      # its detecting blocks.
-      testthat::expect_identical(status, "open", info = info)
-    }
+    # The lifecycle assertion that a pending owner (LDG-3071, item 18b) is
+    # still open flipped when LDG-3071 closed; LTB-0416 checks the closed
+    # state (maintainer approval 2026-10-22).
     supplied <- c(
       if (length(spec$blocks) > 0L) stats::setNames(list(spec$blocks), spec$owner),
       spec$contributing,

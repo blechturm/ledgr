@@ -206,3 +206,83 @@ testthat::test_that("[LTB-0415] Cut 16 contract receivers are present tense and 
     testthat::expect_match(rfc, sprintf("<a id=\"%s\"></a>", anchor), fixed = TRUE, info = anchor)
   }
 })
+
+testthat::test_that("[LTB-0416] Cut 16 closes with every evidence owner, receiver and decision reconciled", {
+  root <- ledgr_test_source_root()
+  if (!ledgr_test_design_source_context(root)) return(invisible(NULL))
+  design <- file.path(root, "inst", "design")
+  packet_dir <- file.path(design, "ledgr_v0_2_2_spec_packet")
+  packet <- yaml::read_yaml(file.path(packet_dir, "tickets.yml"))
+  cut <- Filter(function(x) identical(as.integer(x$id), 16L), packet$cuts)
+  testthat::expect_length(cut, 1L)
+  cut <- cut[[1L]]
+  ticket_ids <- vapply(packet$tickets, function(t) t$id, character(1))
+  status <- function(id) packet$tickets[[match(id, ticket_ids)]]$status
+  contracts <- readLines(file.path(design, "contracts.md"), warn = FALSE, encoding = "UTF-8")
+  anchors <- sub("^<a id=\"(contract-[a-z0-9-]+)\"></a>$", "\\1",
+                 grep("^<a id=\"contract-[a-z0-9-]+\"></a>$", contracts, value = TRUE))
+
+  # Evidence owners: no owner is missing or still open, including the routed
+  # item 18b's owner LDG-3071, and 18b has its WS7 consumer-proof record.
+  entries <- strsplit(sub("[.]$", "", sub("^V12 Section 10: ", "", cut$evidence_owners)),
+                      "; ", fixed = TRUE)[[1L]]
+  testthat::expect_identical(sub(" .*$", "", entries),
+                             c(as.character(1:17), "18a", "18b"))
+  owners <- regmatches(entries, gregexpr("LDG-[0-9]{4}", entries))
+  testthat::expect_true(all(lengths(owners) > 0L))
+  for (owner in unique(unlist(owners))) {
+    testthat::expect_false(is.na(match(owner, ticket_ids)), info = owner)
+    testthat::expect_identical(status(owner), "complete", info = owner)
+  }
+  testthat::expect_identical(sub(" .*$", "", entries[grepl("routed to", entries, fixed = TRUE)]), "18b")
+  macro <- gsub("\\s+", " ", paste(readLines(file.path(packet_dir, "macro_plan.md"), warn = FALSE),
+                                   collapse = " "))
+  testthat::expect_match(macro, "Consume the carried-input share (v12 Section 10 item 18b", fixed = TRUE)
+
+  # Receivers: no v12 pending back-link and no current rule-3 or
+  # schema-120/121 statement remains in contracts.md.
+  joined <- gsub("\\s+", " ", paste(contracts, collapse = " "))
+  for (target in c("point-in-time-historical-projection", "recursive-indicator-boundary")) {
+    pattern <- sprintf("Accepted change pending: \\[[^]]+\\]\\(decisions[.]md#%s\\)", target)
+    testthat::expect_false(grepl(pattern, joined, perl = TRUE), info = target)
+  }
+  testthat::expect_identical(ws44_current_rule3_statements(contracts), character())
+
+  # Decisions: every numbered Cut 16 decision has exactly one reconciliation
+  # row, and that row cites a contracts.md anchor that resolves or names a
+  # routed owner; every block it cites is registered and defined once.
+  starts <- regmatches(cut$decisions, gregexpr("(?<=[.] )\\([0-9]+\\)(?= )", cut$decisions, perl = TRUE))[[1L]]
+  numbers <- as.integer(gsub("[()]", "", starts))
+  testthat::expect_identical(numbers, seq_len(length(numbers)))
+  table <- readLines(file.path(packet_dir, "cut16_decision_reconciliation.md"), warn = FALSE,
+                     encoding = "UTF-8")
+  rows <- grep("^\\| [0-9]+ \\|", table, value = TRUE)
+  row_numbers <- as.integer(sub("^\\| ([0-9]+) \\|.*$", "\\1", rows))
+  testthat::expect_identical(row_numbers, numbers)
+  claims <- yaml::read_yaml(file.path(root, "tests", "claims.yml"))$claims
+  registered <- unique(unlist(lapply(claims, function(claim) claim$detecting_blocks)))
+  test_text <- unlist(lapply(
+    list.files(file.path(root, "tests", "testthat"), pattern = "^test-.*[.]R$", full.names = TRUE),
+    readLines, warn = FALSE
+  ))
+  defined <- regmatches(test_text, regexpr("^testthat::test_that\\(\"\\[LTB-[0-9]{4}\\]", test_text))
+  defined <- sub("^.*\\[(LTB-[0-9]{4})\\]$", "\\1", defined)
+  for (i in seq_along(rows)) {
+    info <- paste("decision", row_numbers[[i]])
+    cells <- trimws(strsplit(sub("\\|\\s*$", "", rows[[i]]), "|", fixed = TRUE)[[1L]][-1L])
+    testthat::expect_length(cells, 7L)
+    row_status <- cells[[7L]]
+    cited <- unique(unlist(regmatches(rows[[i]], gregexpr("contracts[.]md#contract-[a-z0-9-]+", rows[[i]]))))
+    cited <- sub("^contracts[.]md#", "", cited)
+    testthat::expect_true(all(cited %in% anchors), info = info)
+    if (row_status %in% c("stated", "fixed here")) {
+      testthat::expect_gt(length(cited), 0L, label = info)
+    } else {
+      testthat::expect_match(row_status, "^routed: \\S", info = info)
+    }
+    for (block in unique(unlist(regmatches(cells[[5L]], gregexpr("LTB-[0-9]{4}", cells[[5L]]))))) {
+      testthat::expect_true(block %in% registered, info = paste(info, block))
+      testthat::expect_identical(sum(defined == block), 1L, info = paste(info, block))
+    }
+  }
+})
