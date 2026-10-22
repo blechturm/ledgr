@@ -430,7 +430,7 @@ testthat::test_that("[LTB-0411] a cash dividend is credited per split-adjusted s
     out <- list(
       equity = as.data.frame(ledgr_results(bt, "equity"))[, c("cash", "positions_value", "equity")],
       cash_ts = as.numeric(cash$ts_utc),
-      meta = lapply(cash$meta_json, jsonlite::fromJSON),
+      meta = lapply(cash$meta_json, ledgr:::ledgr_json_read_nested),
       fills = nrow(ledgr_results(bt, "fills"))
     )
     close(bt)
