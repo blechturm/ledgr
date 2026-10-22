@@ -68,10 +68,11 @@ articles:
     navbar: Going Deeper
     desc: >
       Companion deep-dives the core articles hand off to: authoring helpers,
-      TTR and custom indicators, metric-context conventions, and how a target
-      becomes a fill.
+      a complete minimum-variance strategy, TTR and custom indicators,
+      metric-context conventions, and how a target becomes a fill.
     contents:
       - strategy-authoring-tools
+      - minimum-variance
       - ttr-indicators
       - custom-indicators
       - corporate-action-adapter-authoring

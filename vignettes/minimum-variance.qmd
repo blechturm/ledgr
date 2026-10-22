@@ -1,0 +1,500 @@
+---
+title: "A Long-Only Minimum-Variance Strategy"
+format:
+  html:
+    toc: false
+    theme: cosmo
+    code-copy: true
+execute:
+  echo: true
+vignette: >
+  %\VignetteIndexEntry{A Long-Only Minimum-Variance Strategy}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(width = 90)
+options(cli.unicode = FALSE)
+pkg_root <- if (file.exists("DESCRIPTION")) {
+  "."
+} else if (file.exists("../DESCRIPTION")) {
+  ".."
+} else {
+  NA_character_
+}
+if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(pkg_root, quiet = TRUE)
+}
+default_output_hook <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(
+  output = function(x, options) {
+    x <- gsub("[ \t]+(?=\n)", "", x, perl = TRUE)
+    default_output_hook(x, options)
+  }
+)
+```
+
+A minimum-variance portfolio puts its money where the estimated risk is
+lowest. This article builds one such strategy from the history tools of
+`vignette("causal-history", package = "ledgr")`: it estimates a covariance
+matrix from daily returns once a month, solves for the long-only weights with
+the smallest estimated variance, and turns them into share targets. Every step
+uses ledgr's public functions, so the same strategy runs in a single backtest,
+a sweep and on parallel workers.
+
+Three choices that an estimator usually hides are made explicit here: which
+instruments enter the estimate, what happens to a holding the estimate leaves
+out, and what the strategy does on a day it cannot estimate at all.
+
+The solver comes from the `quadprog` package. The code chunks that run the
+strategy are evaluated only when it is installed:
+
+```r
+install.packages("quadprog")
+```
+
+## The Demo Data
+
+The demo is three years of simulated sessions for eight instruments from
+`ledgr_sim_pit_inputs()`, with two changes to its bars, so that the screens
+below have something to screen:
+
+- `DEMO_05` trades thinly from June to November 2019: it has no print on
+  every second session, so ledgr carries its previous close forward on those
+  sessions.
+- `DEMO_08` is listed late: its first print is on 3 September 2019.
+
+```{r}
+#| label: demo-data
+#| message: false
+
+library(ledgr)
+
+ids <- sprintf("DEMO_%02d", 1:8)
+pit <- ledgr_sim_pit_inputs(ids, from = "2018-01-01", to = "2020-12-31", seed = 7L)
+bars <- pit$bars
+day <- as.Date(bars$ts_utc)
+thin <- sort(unique(day[day >= as.Date("2019-06-01") & day <= as.Date("2019-11-30")]))
+skipped <- thin[seq(2L, length(thin), by = 2L)]
+bars <- bars[!(bars$instrument_id == "DEMO_05" & day %in% skipped), ]
+day <- as.Date(bars$ts_utc)
+bars <- bars[!(bars$instrument_id == "DEMO_08" & day < as.Date("2019-09-03")), ]
+
+facts <- ledgr_facts(
+  ledgr_facts_sessions(pit$sessions, venue_id = "DEMO_VENUE",
+                       knowledge = "evidenced", timezone = "UTC"),
+  ledgr_facts_membership_snapshots(pit$membership, universe_id = "DEMO_UNIVERSE",
+                                   complete = TRUE, knowledge = "evidenced"),
+  ledgr_facts_trading_status(pit$trading_status, knowledge = "evidenced"),
+  ledgr_facts_lifetime(pit$lifetime, knowledge = "evidenced"),
+  ledgr_facts_equity_corporate_actions(pit$corporate_actions)
+)
+snapshot_path <- file.path(tempdir(), "minimum-variance-demo.duckdb")
+if (file.exists(snapshot_path)) unlink(snapshot_path)
+snapshot <- ledgr_snapshot_from_df(
+  bars, instruments_df = pit$instruments, facts = facts,
+  db_path = snapshot_path, snapshot_id = "minimum_variance_demo",
+  price_basis = "split_adjusted"
+)
+pit$cases
+```
+
+The simulated inputs also hold the teaching cases of
+`vignette("point-in-time-inputs", package = "ledgr")`. All of them fall in
+the first two weeks of 2018. One of them is a cash dividend on `DEMO_03` on
+10 January 2018. The strategy holds nothing until its first decision a year
+later, so no dividend is posted in this demo; the run below says so. The bars
+are split-adjusted and exclude distributions, so the strategy estimates risk
+from price returns.
+
+## The Strategy
+
+The whole strategy is one function. Everything it needs is defined inside it,
+because preflight refuses a strategy that calls a helper from the calling
+session.
+
+```{r}
+#| label: strategy
+
+min_variance <- function(ctx, params) {
+  lookback <- params$lookback %||% 252L
+  threshold <- params$threshold %||% 0.2
+  shrink <- params$shrink %||% 0.5
+  min_obs <- params$min_obs %||% 60L
+  keep_excluded <- params$keep_excluded %||% TRUE
+  hold <- function(outcome) structure(ctx$hold(), outcome = outcome)
+
+  # 1. Decide only on a month's first session: the session whose UTC month
+  #    differs from that of the previous expected venue session. The data
+  #    start has no previous session and counts as a month start.
+  axis <- ctx |>
+    ledgr_history_frame(bar = "close", lookback = 2L, instruments = character())
+  months <- format(axis$ts_utc, "%Y-%m", tz = "UTC")
+  if (length(months) == 2L && months[[1L]] == months[[2L]]) {
+    return(hold("not_a_decision_date"))
+  }
+
+  # 2. Read closes over the window and screen out instruments whose window
+  #    holds too many carried prices.
+  closes <- ctx |> ledgr_history_frame(bar = "close", lookback = lookback)
+  if (!ledgr_history_sufficient(closes)) {
+    return(hold("insufficient_history"))
+  }
+  selection <- ledgr_history_info(closes)$selection
+  selection <- selection[selection$requested, , drop = FALSE]
+  candidates <- selection$instrument_id[selection$carried_input_share <= threshold]
+
+  # 3. Read daily returns of the remaining instruments, missing cells kept,
+  #    and screen out instruments with too few valid returns. Read again, so
+  #    the final read holds exactly the instruments that are estimated.
+  returns <- ctx |>
+    ledgr_history_frame(feature = "return_1", lookback = lookback,
+                        instruments = candidates, na_action = "keep")
+  valid <- colSums(is.finite(ledgr_history_matrix(returns)))
+  estimated <- ledgr_history_info(returns)$included_ids[valid >= min_obs]
+  if (length(estimated) < 2L) {
+    return(hold("too_few_instruments"))
+  }
+  returns <- ctx |>
+    ledgr_history_frame(feature = "return_1", lookback = lookback,
+                        instruments = estimated, na_action = "keep")
+
+  # 4. Estimate a pairwise covariance and shrink it toward its diagonal.
+  sigma <- stats::cov(ledgr_history_matrix(returns), use = "pairwise.complete.obs")
+  sigma <- (1 - shrink) * sigma + shrink * diag(diag(sigma))
+  if (anyNA(sigma)) {
+    return(hold("covariance_not_positive_definite"))
+  }
+  eigenvalues <- eigen(sigma, symmetric = TRUE, only.values = TRUE)$values
+  if (min(eigenvalues) <= 1e-10 * max(eigenvalues)) {
+    return(hold("covariance_not_positive_definite"))
+  }
+
+  # 5. Solve: minimise w' sigma w subject to sum(w) = 1 and w >= 0.
+  n <- ncol(sigma)
+  solution <- tryCatch(
+    quadprog::solve.QP(Dmat = sigma, dvec = rep(0, n),
+                       Amat = cbind(rep(1, n), diag(n)),
+                       bvec = c(1, rep(0, n)), meq = 1L)$solution,
+    error = function(e) NULL
+  )
+  if (is.null(solution) || any(!is.finite(solution)) ||
+      any(solution < -1e-8) || abs(sum(solution) - 1) > 1e-8) {
+    return(hold("solver_failure"))
+  }
+  solution[solution < 0] <- 0
+
+  # 6. Keep every holding the estimate left out, and target the rest.
+  held <- ctx$universe[ctx$vec$position != 0]
+  held_excluded <- if (isTRUE(keep_excluded)) setdiff(held, estimated) else character()
+  target <- tryCatch(
+    solution |>
+      ledgr_align_weights(returns) |>
+      ledgr_target_rebalance(ctx, equity_fraction = 0.95, keep = held_excluded),
+    ledgr_target_sizing_unavailable = function(e) NULL
+  )
+  if (is.null(target)) {
+    return(hold("no_permissible_mark"))
+  }
+  structure(target, outcome = "solved")
+}
+```
+
+The parameters and their defaults:
+
+- `lookback = 252`: the estimation window, in expected venue sessions. It is
+  finite, so each decision reads the same amount of history however long the
+  run is.
+- `threshold = 0.2`: the largest share of carried closes an instrument may
+  have in its window and still be estimated.
+- `shrink = 0.5`: how far the covariance is pulled toward its diagonal, a
+  fixed number in (0, 1]. Without it, a window with fewer sessions than
+  instruments gives a singular covariance, and the solver fails. Half way is a
+  strong pull; it keeps the estimate usable when instruments outnumber
+  sessions.
+- `min_obs = 60`: the fewest valid daily returns an instrument needs, about a
+  quarter of the default window.
+- `keep_excluded = TRUE`: keep holdings the estimate left out. It exists so
+  that this article can show what happens without it.
+
+Every returned target carries an `outcome` attribute that names how the pulse
+ended. A run does not record it, but calling the strategy on one pulse shows
+it.
+
+## One Decision, Step By Step
+
+`ledgr_pulse_snapshot()` builds the context a run would hand to the strategy
+on one session. On 1 November 2019, the first session of the month, the close
+read shows how much of each window was carried:
+
+```{r}
+#| label: experiment
+
+exp <- ledgr_experiment(
+  snapshot, min_variance,
+  features = list(ledgr_ind_returns(1L)),
+  universe = ledgr_universe_members("DEMO_UNIVERSE"),
+  cost_model = ledgr_cost_zero()
+)
+november <- ledgr_pulse_snapshot(exp, ts_utc = as.Date("2019-11-01"), params = list())
+closes <- november |> ledgr_history_frame(bar = "close", lookback = 252L)
+ledgr_history_info(closes)$selection[, c("instrument_id", "requested",
+                                         "carried_input_count", "carried_input_share")]
+```
+
+`DEMO_01` was delisted in January 2018, so it is not requested. `DEMO_05`'s
+thin trading has carried 55 of its 252 closes, a share of 0.218, above the
+threshold of 0.2: the strategy leaves it out. Return features never use a
+carried close, so its return cells on those sessions are missing rather than
+zero.
+
+The return read of the remaining instruments shows how many valid daily
+returns each has:
+
+```{r}
+#| label: valid-returns
+
+selection <- ledgr_history_info(closes)$selection
+candidates <- selection$instrument_id[selection$requested &
+                                        selection$carried_input_share <= 0.2]
+returns <- november |>
+  ledgr_history_frame(feature = "return_1", lookback = 252L,
+                      instruments = candidates, na_action = "keep")
+colSums(is.finite(ledgr_history_matrix(returns)))
+```
+
+`DEMO_08` has traded for two months, so it has fewer than 60 valid returns and
+is left out too. The five instruments that remain are estimated, and the
+solver's output becomes share targets:
+
+```{r}
+#| label: one-decision
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+decision <- min_variance(november, list())
+attr(decision, "outcome")
+c(decision)
+```
+
+`ledgr_align_weights()` names the solver's unnamed output by the instruments
+of the final return read, in the order of its columns, and refuses a vector of
+the wrong length. That is why the strategy reads returns a second time after
+the screen: the aligned read must hold exactly the estimated instruments.
+
+## Decision Dates
+
+The strategy decides on the first session of each month and returns
+`ctx$hold()` on every other session. It finds the first session from a
+two-session history read with no instruments: if the current session and the
+previous expected session fall in the same month, this is not a decision
+date. The very first session of the data has no previous session, so it
+counts as a month start. Months are taken in UTC. That is right for this
+venue, whose sessions close at 16:00 UTC on the venue's own civil date; for a
+venue whose close falls after midnight UTC, the UTC month would differ from
+the venue's month.
+
+Before a full window of 252 sessions exists, the strategy holds as well:
+
+```{r}
+#| label: decision-dates
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+outcome_on <- function(date, params = list()) {
+  ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date(date), params = params)
+  on.exit(close(ctx))
+  attr(min_variance(ctx, params), "outcome")
+}
+outcome_on("2019-11-12")
+outcome_on("2018-06-01")
+```
+
+## Run It
+
+Preflight classifies the strategy as Tier 2, because it calls a package
+outside base R. It records `quadprog` as a namespace that parallel workers
+must load.
+
+```{r}
+#| label: preflight
+
+check <- ledgr_strategy_preflight(min_variance)
+check$tier
+check$worker_dependencies$require_namespace
+```
+
+```{r}
+#| label: run
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+bt <- exp |> ledgr_run(params = list(), run_id = "minimum-variance")
+fills <- as.data.frame(ledgr_results(bt, "fills"))
+fill_days <- unique(as.Date(fills$ts_utc))
+length(fill_days)
+head(fill_days, 4)
+bt
+```
+
+The run has 36 month starts. The first twelve hold for want of a full window,
+and the strategy trades after each of the other 24: the fills fall on the
+session after each decision, at the next open. The summary line on corporate
+actions confirms that the demo's only dividend affected no holding.
+
+## Holdings The Estimate Leaves Out
+
+Leaving an instrument out of the estimate is an estimation choice. It should
+not sell anything by itself. But `ledgr_target_rebalance()` targets every
+eligible instrument without a weight to zero, so a holding the estimate left
+out would be sold at the next open. The strategy therefore passes every
+holding outside the estimate in `keep`, and the rebalance keeps its quantity
+and sizes the rest around it.
+
+`DEMO_05` is held when its carried share crosses the threshold in November
+2019. Its share stays above 0.2 until the thin stretch leaves the window in
+July 2020:
+
+```{r}
+#| label: carried-share
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+share_on <- function(date) {
+  ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date(date), params = list())
+  on.exit(close(ctx))
+  selection <- ledgr_history_info(
+    ctx |> ledgr_history_frame(bar = "close", lookback = 252L)
+  )$selection
+  selection$carried_input_share[selection$instrument_id == "DEMO_05"]
+}
+dates <- c("2019-10-01", "2019-11-01", "2020-06-01", "2020-07-01")
+data.frame(date = dates, demo_05_share = round(vapply(dates, share_on, numeric(1)), 3))
+```
+
+Run once with `keep` and once without, and compare the `DEMO_05` fills from
+October 2019 to July 2020:
+
+```{r}
+#| label: keep
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+without_keep <- exp |>
+  ledgr_run(params = list(keep_excluded = FALSE), run_id = "minimum-variance-no-keep")
+demo_05_fills <- function(bt) {
+  fills <- as.data.frame(ledgr_results(bt, "fills"))
+  fills[fills$instrument_id == "DEMO_05" &
+          fills$ts_utc > as.POSIXct("2019-10-01", tz = "UTC") &
+          fills$ts_utc < as.POSIXct("2020-07-31", tz = "UTC"),
+        c("ts_utc", "side", "qty")]
+}
+demo_05_fills(bt)
+demo_05_fills(without_keep)
+```
+
+With `keep`, the position is not traded while `DEMO_05` is outside the
+estimate; it is rebalanced again once the estimate includes it in July 2020.
+Without `keep`, the rebalance sells the whole position at the open after the
+November decision and buys it back in July.
+
+## When The Strategy Holds
+
+On a decision date the strategy returns `ctx$hold()` instead of a target when
+it cannot estimate. Each case has its own outcome:
+
+- `not_a_decision_date` and `insufficient_history`, shown above.
+- `too_few_instruments`: fewer than two instruments pass the screens. Here
+  every instrument fails a `min_obs` that is longer than the window:
+
+```{r}
+#| label: too-few
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+outcome_on("2019-11-01", list(min_obs = 300L))
+```
+
+- `covariance_not_positive_definite`: the shrunk covariance has a missing
+  entry or a zero or negative eigenvalue. With five sessions for seven
+  instruments the sample covariance is singular, and a negligible shrinkage
+  leaves it so:
+
+```{r}
+#| label: not-positive-definite
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+outcome_on("2019-11-01", list(lookback = 5L, min_obs = 2L, shrink = 1e-12))
+outcome_on("2019-11-01", list(lookback = 5L, min_obs = 2L))
+```
+
+  The second call uses the default shrinkage, and the same five sessions
+  give a solution.
+
+- `solver_failure`: `solve.QP()` raises an error or returns a solution that
+  does not sum to one or has a weight below zero beyond rounding. With a
+  positive definite covariance and these constraints this should not happen,
+  but the strategy holds rather than trade on a broken solution.
+- `no_permissible_mark`: `ledgr_target_rebalance()` refuses with
+  `ledgr_target_sizing_unavailable` when it must value a holding, kept or
+  weighted, that has no permissible mark. The strategy catches exactly that
+  class and holds.
+
+In a run, ledgr does not let it come to that. Before the strategy is called,
+every holding must have a permissible mark, a current or recent close, or a
+frozen one under the default valuation policy. A run that starts from a book
+holding `DEMO_08` before its first print stops at the first session:
+
+```{r}
+#| label: no-mark
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE)
+
+book <- ledgr_experiment(
+  snapshot, min_variance,
+  features = list(ledgr_ind_returns(1L)),
+  opening = ledgr_opening(cash = 100000, positions = c(DEMO_08 = 100),
+                          cost_basis = c(DEMO_08 = 50)),
+  universe = ledgr_universe_members("DEMO_UNIVERSE"),
+  cost_model = ledgr_cost_zero()
+)
+unpriced <- book |> ledgr_run(params = list(), run_id = "minimum-variance-unpriced")
+completion <- ledgr_run_completion(unpriced)
+completion$completion_status
+completion$stop_reason
+```
+
+The run is `INCOMPLETE` with `valuation_horizon_exhausted`: the holding could
+not be valued, and the strategy was never asked to decide.
+
+## Sweep The Window And The Threshold
+
+The strategy reads its parameters from `params`, so the window and the
+threshold are ordinary sweep parameters. Preflight told the workers to load
+`quadprog`:
+
+```{r}
+#| label: sweep
+#| eval: !expr requireNamespace("quadprog", quietly = TRUE) && requireNamespace("mirai", quietly = TRUE)
+
+grid <- ledgr_strategy_grid(lookback = c(126L, 252L), threshold = c(0.1, 0.2))
+sweep <- ledgr_sweep(exp, grid, workers = 2L, seed = 1L)
+sweep
+```
+
+## Where Next
+
+- `vignette("ttr-indicators", package = "ledgr")` declares TTR indicators
+  such as RSI, Bollinger bands and MACD.
+- `vignette("causal-history", package = "ledgr")` explains every history read
+  used here.
+- `vignette("sweeps", package = "ledgr")` covers candidate selection and
+  promotion after a sweep.
+
+```{r}
+#| label: cleanup
+#| include: false
+
+close(november)
+if (exists("bt")) close(bt)
+if (exists("without_keep")) close(without_keep)
+if (exists("unpriced")) close(unpriced)
+ledgr_snapshot_close(snapshot)
+```
