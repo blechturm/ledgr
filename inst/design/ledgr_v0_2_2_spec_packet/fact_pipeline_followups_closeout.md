@@ -433,7 +433,7 @@ decided the three open questions of this record and F1 as Cut 16 decisions
   `ordinary_cash_dividend`; the refusal, carry and every-mode rule are
   unchanged. LTB-0359 (LCL-0349) pins a single availability run, the carried
   chain (effective in window 1, known in window 2) and a dense run; mutation
-  Q1 fails it. In the identity runner's three-window fixture the dividend is
+  Q1 fails it. In the identity runner's two-fold fixture the dividend is
   effective inside every training window, so the walk-forward's training
   candidates fail and it completes with no test run; the single run refuses.
 - **(34) and F1: snapshot header order.** No code change: headers are ordered
@@ -463,7 +463,7 @@ decided the three open questions of this record and F1 as Cut 16 decisions
 Identity comparison after Correction 1 (`evidence/compare_result.txt`):
 `WS45_IDENTITY_OK`; 21 cases identical with BASE `4b33f377` (including the
 three snapshot hashes, stored fact tables, runs and walk-forward chains) and
-14 declared differences, each listed in the table above with its decision.
+13 declared differences, each listed in the table above with its decision.
 
 Sharadar identity: the 1998-2026 projection rebuilt with adapter
 `sharadar_ledgr_snapshot_adapter_v003` (ledgr-research `6be0b99`) from

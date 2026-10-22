@@ -747,14 +747,15 @@ testthat::test_that("[LTB-0359] an effective-only cash dividend refuses in every
 })
 
 testthat::test_that("[LTB-0360] snapshot headers follow resolved knowledge times (decision 34)", {
-  # Two sets effective 2021-01-05 10:00 UTC. set_y supplies the Date
-  # 2021-01-05 (resolves to its 14:30 UTC open); set_x supplies none, so it
-  # is known at 10:00. Input lists set_y first; resolved order is x, y. The
-  # UTC-midnight stand-in for set_y's Date ordered y before x.
+  # Two sets effective 2021-01-05 10:00 UTC. set_a supplies the Date
+  # 2021-01-05 (resolves to its 14:30 UTC open); set_z supplies none, so it
+  # is known at 10:00. Input lists set_a first; resolved order is z, a. The
+  # UTC-midnight stand-in for set_a's Date ordered a before z, and so does an
+  # alphabetical order, so only the resolved knowledge time yields z, a.
   input <- data.frame(
     effective_from = ws45_utc("2021-01-05 10:00:00"),
     instrument_id = c("AAA", "CCC", "AAA", "BBB"),
-    set_id = c("set_y", "set_y", "set_x", "set_x"),
+    set_id = c("set_a", "set_a", "set_z", "set_z"),
     source = "ws45",
     stringsAsFactors = FALSE
   )
@@ -766,7 +767,7 @@ testthat::test_that("[LTB-0360] snapshot headers follow resolved knowledge times
     ),
     "membership"
   )[[1L]]
-  testthat::expect_identical(family$headers$set_id, c("set_x", "set_y"))
+  testthat::expect_identical(family$headers$set_id, c("set_z", "set_a"))
   testthat::expect_identical(
     as.numeric(family$headers$knowledge_time),
     as.numeric(ws45_utc(c("2021-01-05 10:00:00", "2021-01-05 14:30:00")))
