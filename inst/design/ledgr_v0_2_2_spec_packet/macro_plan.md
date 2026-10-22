@@ -412,6 +412,10 @@ boundaries stay complete.
   input, an identity-preserving matrix boundary, identified long-only weights
   and target conversion. Schur complementary allocation is evidence for this
   shape, not a required dependency or the estimator that must ship.
+- Use the final Cut 16 bridge exactly as
+  `solution |> ledgr_align_weights(history) |>
+  ledgr_target_rebalance(ctx, ...)`; do not restore the superseded
+  `ledgr_history_weights()` name or reconstruct instrument names manually.
 - Treat the completed method cards as design evidence, not as a substitute for
   this runnable proof. Black-Litterman's upstream views and the paper-level DRO
   adapter are explicitly outside the proof.

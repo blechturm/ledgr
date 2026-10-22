@@ -1071,7 +1071,7 @@ ledgr_history_matrix <- function(x) {
 #'   wide layout, `evidence`, the sessions-by-instruments cell evidence
 #'   matrices.
 #' @seealso [ledgr_history_frame()], [ledgr_history_matrix()],
-#'   [ledgr_history_weights()]
+#'   [ledgr_align_weights()]
 #' @examples
 #' \dontrun{
 #' strategy <- function(ctx, params) {
@@ -1146,26 +1146,28 @@ print.ledgr_history_info <- function(x, ...) {
 
 #' Align solver weights to a history result
 #'
-#' `ledgr_history_weights()` turns the numeric output of an estimator or
+#' `ledgr_align_weights()` turns the numeric output of an estimator or
 #' solver into [ledgr_weights()] identified by the instruments of the
 #' [ledgr_history_frame()] result it was estimated from, so no column names
-#' have to be rebuilt by hand. An unnamed vector is read in the order of
-#' the result's included instruments, which is the column order of
-#' [ledgr_history_matrix()]; a vector named by those instruments, in any
-#' order, is matched by name. A one-column or one-row matrix is read as a
-#' vector. A length that differs from the number of included instruments,
-#' or names that differ from them, refuse with
-#' `ledgr_history_weights_mismatch` rather than guessing.
+#' have to be rebuilt by hand. The solver output comes first, so it pipes:
+#' `solution |> ledgr_align_weights(history) |> ledgr_target_rebalance(ctx)`.
+#' An unnamed vector is read in the order of the result's included
+#' instruments, which is the column order of [ledgr_history_matrix()]; a
+#' vector named by those instruments, in any order, is matched by name. A
+#' one-column or one-row matrix is read as a vector. A length that differs
+#' from the number of included instruments, names that differ from them
+#' (wrong, duplicated or missing names) or a wider matrix refuse with
+#' `ledgr_weight_alignment_mismatch` rather than guessing.
 #'
 #' Only the included estimation sample receives a weight. Instruments the
 #' result excluded are listed by [ledgr_history_info()]; see that page and
 #' [ledgr_target_rebalance()] for what happens to a held excluded instrument.
 #'
-#' @param x A `ledgr_history` result.
-#' @param weights A finite numeric vector, or a one-column or one-row numeric
-#'   matrix, with one weight per included instrument. A missing or
+#' @param solution A finite numeric vector, or a one-column or one-row
+#'   numeric matrix, with one weight per included instrument. A missing or
 #'   non-finite weight refuses with `ledgr_invalid_strategy_type`, as
 #'   [ledgr_weights()] does.
+#' @param history The `ledgr_history` result the solution was estimated from.
 #' @return A `ledgr_weights` object named by the included instrument IDs.
 #' @seealso [ledgr_history_matrix()], [ledgr_history_info()],
 #'   [ledgr_target_rebalance()]
@@ -1177,8 +1179,8 @@ print.ledgr_history_info <- function(x, ...) {
 #'                         na_action = "drop_instruments")
 #'   x <- ledgr_history_matrix(returns)
 #'   w <- 1 / apply(x, 2L, stats::sd)
-#'   returns |>
-#'     ledgr_history_weights(unname(w / sum(w))) |>
+#'   unname(w / sum(w)) |>
+#'     ledgr_align_weights(returns) |>
 #'     ledgr_target_rebalance(ctx, equity_fraction = 0.95)
 #' }
 #' }
@@ -1187,32 +1189,32 @@ print.ledgr_history_info <- function(x, ...) {
 #' `vignette("causal-history", package = "ledgr")`
 #' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @export
-ledgr_history_weights <- function(x, weights) {
-  meta <- ledgr_history_require_consistent(x)$meta
+ledgr_align_weights <- function(solution, history) {
+  meta <- ledgr_history_require_consistent(history)$meta
   ids <- as.character(meta$instrument_ids)
   mismatch <- function(message) {
     rlang::abort(
       message,
-      class = c("ledgr_history_weights_mismatch", "ledgr_invalid_args")
+      class = c("ledgr_weight_alignment_mismatch", "ledgr_invalid_args")
     )
   }
-  if (!is.numeric(weights)) {
-    mismatch("`weights` must be a numeric vector with one weight per included instrument.")
+  if (!is.numeric(solution)) {
+    mismatch("`solution` must be a numeric vector with one weight per included instrument.")
   }
-  if (!is.null(dim(weights))) {
-    if (length(dim(weights)) != 2L || min(dim(weights)) > 1L && length(weights) > 0L) {
-      mismatch("`weights` must be a vector or a one-column or one-row matrix.")
+  if (!is.null(dim(solution))) {
+    if (length(dim(solution)) != 2L || min(dim(solution)) > 1L && length(solution) > 0L) {
+      mismatch("`solution` must be a vector or a one-column or one-row matrix.")
     }
-    dims <- dimnames(weights)
-    labels <- if (is.null(dims)) NULL else dims[[which.max(dim(weights))]]
-    weights <- as.numeric(weights)
-    names(weights) <- labels
+    dims <- dimnames(solution)
+    labels <- if (is.null(dims)) NULL else dims[[which.max(dim(solution))]]
+    solution <- as.numeric(solution)
+    names(solution) <- labels
   }
-  labels <- names(weights)
-  if (length(weights) != length(ids)) {
+  labels <- names(solution)
+  if (length(solution) != length(ids)) {
     mismatch(sprintf(
-      "`weights` has %d value%s but the history result includes %d instrument%s (%s).",
-      length(weights), if (length(weights) == 1L) "" else "s",
+      "`solution` has %d value%s but the history result includes %d instrument%s (%s).",
+      length(solution), if (length(solution) == 1L) "" else "s",
       length(ids), if (length(ids) == 1L) "" else "s",
       if (length(ids) > 0L) paste(ids, collapse = ", ") else "none"
     ))
@@ -1220,15 +1222,15 @@ ledgr_history_weights <- function(x, weights) {
   if (!is.null(labels) && any(nzchar(labels))) {
     if (anyNA(labels) || anyDuplicated(labels) || !setequal(labels, ids)) {
       mismatch(sprintf(
-        "`weights` names must be the history result's included instruments: %s.",
+        "`solution` names must be the history result's included instruments: %s.",
         paste(ids, collapse = ", ")
       ))
     }
-    weights <- weights[match(ids, labels)]
+    solution <- solution[match(ids, labels)]
   }
   ledgr_weights(
-    stats::setNames(as.numeric(weights), ids),
-    origin = "ledgr_history_weights"
+    stats::setNames(as.numeric(solution), ids),
+    origin = "ledgr_align_weights"
   )
 }
 

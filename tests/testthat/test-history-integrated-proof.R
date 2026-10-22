@@ -94,7 +94,8 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
 
   # The expected map: v12 Section 10 item -> primary owner and its detecting
   # blocks, with contributing owners and the blocks they supply. Items whose
-  # owner has not closed are pending: their owner must still be open.
+  # owner had not closed are pending: they are routed, and LTB-0416 checks
+  # that their owner has since closed.
   expected <- list(
     "1" = list(owner = "LDG-3057", blocks = "LTB-0288"),
     "2" = list(owner = "LDG-3062", blocks = "LTB-0297"),
@@ -143,12 +144,9 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
     testthat::expect_setequal(owners[[i]][-1L], as.character(names(spec$contributing)))
     testthat::expect_identical(grepl("routed to", entries[[i]], fixed = TRUE), isTRUE(spec$routed), info = info)
     testthat::expect_false(is.na(match(spec$owner, ticket_ids)), info = info)
-    status <- ticket(spec$owner)$status
-    if (isTRUE(spec$pending)) {
-      # A pending owner is still open; when it closes, this map must name
-      # its detecting blocks.
-      testthat::expect_identical(status, "open", info = info)
-    }
+    # The lifecycle assertion that a pending owner (LDG-3071, item 18b) is
+    # still open flipped when LDG-3071 closed; LTB-0416 checks the closed
+    # state (maintainer approval 2026-10-22).
     supplied <- c(
       if (length(spec$blocks) > 0L) stats::setNames(list(spec$blocks), spec$owner),
       spec$contributing,
@@ -430,7 +428,7 @@ testthat::test_that("[LTB-0411] a cash dividend is credited per split-adjusted s
     out <- list(
       equity = as.data.frame(ledgr_results(bt, "equity"))[, c("cash", "positions_value", "equity")],
       cash_ts = as.numeric(cash$ts_utc),
-      meta = lapply(cash$meta_json, jsonlite::fromJSON),
+      meta = lapply(cash$meta_json, ledgr:::ledgr_json_read_nested),
       fills = nrow(ledgr_results(bt, "fills"))
     )
     close(bt)

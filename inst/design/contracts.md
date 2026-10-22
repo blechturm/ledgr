@@ -127,9 +127,11 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 - Availability-aware execution prepares one immutable causal-history
   substrate from the first session of the experiment snapshot through the
   requested end. That substrate alone owns the common venue axis, canonical
-  instrument index, bars, fact segments, expected-session masks and feature
-  inputs. It replaces `bars_by_id`, `bars_mat` and `static_bars_views` on that
-  path; dense execution retains its pre-cut representation.
+  instrument index, bars, facts (stored lifetime and terminal segments, and
+  the provider execution plan that holds membership and trading-status facts
+  once), expected-session masks and feature inputs. It replaces `bars_by_id`,
+  `bars_mat` and `static_bars_views` on that path; dense execution retains its
+  pre-cut representation.
 - P1 (observe and settle) is the sole fold-stage substrate reader. P2 (decide)
   adapts the primitive packet returned by P1 into the strategy context and
   feature views. P3 through P5 receive neither a history frame nor a substrate
@@ -293,6 +295,12 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   measured history envelope;
   larger counts remain runnable but are labelled unmeasured. Worker count and
   resource settings never enter experiment, candidate or run identity.
+- A sweep that computes its own features, and experiment-derived pulse
+  inspection, release the feature payload once the runtime projection that
+  holds every value they read exists. When that sweep stages two or more
+  workers it then runs one garbage collection before staging, so the
+  released payload does not stay resident through serialization; sequential
+  sweeps and pulse inspection do not collect (Cut 16 decisions 25 and 26).
 
 <a id="contract-execution-snapshot-trust"></a>
 ### Snapshot Trust Boundary
@@ -575,7 +583,7 @@ Accepted change pending:
   `v001` keeps its earlier meaning.
 - `ledgr_valuation_stale(max_sessions, exhausted = "freeze")` records
   `schema_version = 2` with `exhausted` of `"freeze"` or `"refuse"`. The field
-  is invalid under any other schema, and no default `max_sessions` exists.
+  is invalid under any other schema.
 - Every executable or inspectable current config carries schema-2
   corporate-action and valuation policy records. Missing or different policy
   schemas are invalid rather than inferred, translated or migrated.
@@ -780,7 +788,8 @@ Accepted change pending:
   calendar (Cut 12 LDG-2998). The check runs at those execution
   entry points; reading or reconstructing a stored run does not repeat it.
   `ledgr_valuation_stale()` defaults to `max_sessions = 5` (decided from
-  Sharadar gap data) and `exhausted = "freeze"`. When snapshot facts make an
+  Sharadar gap data) and `exhausted = "freeze"`; `max_sessions = 0` means
+  that only a current-session mark is permissible. When snapshot facts make an
   experiment availability-aware and it supplies no `valuation_policy`, it runs
   under `ledgr_valuation_stale()`; that policy is the same record, with the
   same config identity, as declaring it explicitly. A defaulted policy never
@@ -825,8 +834,7 @@ Accepted change pending:
   basis appears in `ledgr_experiment_plan()`, in
   `ledgr_corporate_action_summary()` (`price_basis`, `price_basis_default`)
   and in `print()` of a result, labeled declared or assumed default. A dense
-  experiment may still run undeclared and shows `undeclared` (Cut 12 LDG-3012). `max_sessions = 0` means that only
-  a current-session mark is permissible.
+  experiment may still run undeclared and shows `undeclared` (Cut 12 LDG-3012).
 - A character-vector universe remains a fixed basket even when it consumes
   session, trading-status, or lifetime facts. Dynamic membership is explicit
   through `ledgr_universe_members(universe_id)` and must name a membership
@@ -852,8 +860,8 @@ Accepted change pending:
   sticky: once a terminal assertion is knowable at the cutoff, carry stays
   blocked from its boundary onward, even after a relisting (maintainer,
   2026-10-17). It exposes raw missingness and
-  carried price levels separately; LDG-3066 owns the feature-family rule that
-  returns and volatility consume no carried price. Output carry is separately
+  carried price levels separately; return- and volatility-family features
+  consume no carried price (Availability-Aware Strict Features). Output carry is separately
   declared and disabled by default. A valid declared carry may make an
   instrument complete enough for the admission primitive; ledgr imposes no
   carried-share threshold.
@@ -942,11 +950,10 @@ Accepted change pending:
   Preparation refuses any membership, trading-status or lifetime fact whose
   knowledge time is missing with `ledgr_fact_knowledge_missing`, before any
   run, sweep, precompute, walk-forward or inspection side effect (Cut 16
-  decision 23). Cut 16 decision (27) keeps this refusal: a missing knowledge
-  time is not assumed for these families except under
-  `knowledge = "assume_effective"`, which fills it from the effective time
-  and never replaces a supplied one (decision 32); corporate actions follow
-  the known-when-effective rule in Point-In-Time Facts.
+  decision 23). A missing knowledge time is assumed for these families only
+  under `knowledge = "assume_effective"`, which fills it from the effective
+  time and never replaces a supplied one (Cut 16 decision 32); corporate
+  actions follow the known-when-effective rule in Point-In-Time Facts.
   A higher-precedence assertion that is effective but not yet knowable cannot
   shadow a lower-precedence tie. Future facts may change snapshot and descendant
   identity but must not rewrite earlier context, errors, features, or supported
@@ -974,7 +981,9 @@ Accepted change pending:
   winning fact and reason all match; active, inactive, unknown and conflicting
   membership remain distinct, while family declaration and set completeness
   remain separate metadata.
-- Preparation counts segments for every instrument and family. The default
+- Preparation counts segments for every instrument and family, with one
+  canonical two-clock count for every membership shape (Cut 16 decision 24),
+  so a family is refused at its limit whatever its clock layout. The default
   limit is `max(4 * fact_count, 16)`; a declared experiment-level
   `segment_limit` replaces it and participates in config identity. Exceeding
   the limit never truncates: it raises
@@ -1159,9 +1168,9 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-- Experiment-store schema 122 is the sole current store schema; LDG-3064
-  removed the stored `walk_forward_folds.hydration_start_utc` column, so
-  schema-120 and schema-121 stores are older stores. One opener and
+- Experiment-store schema 122 is the sole current store schema; it stores no
+  `walk_forward_folds.hydration_start_utc` column, and schema-120 and
+  schema-121 stores are older stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
@@ -1905,13 +1914,16 @@ and `AAA` a held nonmember, each holding 5:
   table as a tibble, policy identity, snapshot hash and, for the wide layout,
   the cell evidence) after the same consistency check as
   `ledgr_history_matrix()`; `print()` of a `ledgr_history` names it in a
-  footer. `ledgr_history_weights(x, weights)` turns estimator output into
-  `ledgr_weights` named by the result's included instruments: an unnamed
-  vector is read in the matrix column order, a named vector is matched by
-  name, and a one-column or one-row matrix is read as a vector; a length or
-  names that differ from the included instruments refuse with
-  `ledgr_history_weights_mismatch`. Both read no data. (Cut 16 LDG-3071 API
-  items.)
+  footer. `ledgr_align_weights(solution, history)` turns estimator output
+  into `ledgr_weights` with origin `ledgr_align_weights`, named by the
+  history result's included instruments: an unnamed vector is read in the
+  matrix column order, a named vector is matched by name, and a one-column
+  or one-row matrix is read as a vector; a non-numeric value, a wider
+  matrix, a length that differs from the included instruments, or wrong,
+  duplicated or missing names refuse with `ledgr_weight_alignment_mismatch`
+  (also `ledgr_invalid_args`), and a missing or non-finite weight refuses
+  through `ledgr_weights()` with `ledgr_invalid_strategy_type`. Both read no
+  data. (Cut 16 LDG-3071 API items.)
 - History reads add no public context field, durable artifact or snapshot
   row. The history view is a private carrier, `ctx$.history`, that holds the
   read service and therefore the whole substrate; strategies read history
@@ -2119,8 +2131,8 @@ and `AAA` a held nonmember, each holding 5:
   bounded windows as well as carry (Cut 16 decision (20)): after a relisting a
   bounded definition restarts at every relisting (a run breaks at each row
   that follows a column inside a terminal interval, read from the same
-  per-column terminal assertion WS41's sticky carry barrier is derived
-  from; the carry barrier itself stays sticky), needs
+  per-column terminal assertion the sticky carry barrier is derived from;
+  the carry barrier itself stays sticky), needs
   `requires_bars` treated rows from the relisting and is ready again at its
   `stable_after` row, so no window mixes pre-delisting and post-relisting
   prices.
@@ -2231,8 +2243,8 @@ and `AAA` a held nonmember, each holding 5:
   Passing them does not prove a definition causal.
 - A durable `ledgr_run()` prepares features after it registers the run, so a
   refused definition leaves that run recorded `FAILED` with no strategy call,
-  ledger event or equity row (Cut 16 decision (18) in the v0.2.2 packet's
-  `tickets.yml`); sweep and precompute refusals write nothing. Dense
+  ledger event or equity row (Cut 16 decision 18); sweep and precompute
+  refusals write nothing. Dense
   execution is frozen and runs no causality check.
 - Feature computation follows one uncached production path. Explicit
   `ledgr_precomputed_features` payloads are validated against current feature
@@ -2787,7 +2799,7 @@ Accepted change pending:
   outside them is the author's responsibility, checked best-effort by
   preflight.
 - One executed portfolio-estimation example goes from a history read through
-  an estimator and `ledgr_history_weights()` to `ledgr_target_rebalance()`
+  an estimator and `ledgr_align_weights()` to `ledgr_target_rebalance()`
   with no manual timestamp removal, column-name reconstruction or second
   history reader. It explains estimation exclusion separately from execution
   intent: an instrument the estimate drops receives a zero target from the
