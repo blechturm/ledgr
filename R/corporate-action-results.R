@@ -72,9 +72,11 @@ ledgr_corporate_action_choice_keys <- function() {
   }), use.names = FALSE)
 }
 
+# The sealed corporate-action rows and every sealed refusal reason with its
+# row count, counted by one grouped query.
 ledgr_corporate_action_fact_state <- function(con, snapshot_id) {
   supplied <- FALSE
-  refusal_reasons <- character()
+  sealed_refusal_counts <- stats::setNames(integer(), character())
   rows <- data.frame()
   supplied <- DBI::dbGetQuery(
     con,
@@ -86,23 +88,26 @@ ledgr_corporate_action_fact_state <- function(con, snapshot_id) {
   )$n[[1L]] > 0L
   if (isTRUE(supplied)) {
     rows <- ledgr_corporate_action_rows(con, snapshot_id)
-    refusal_reasons <- DBI::dbGetQuery(
+    sealed <- DBI::dbGetQuery(
       con,
       paste(
-        "SELECT DISTINCT refusal_reason",
+        "SELECT refusal_reason, COUNT(*) AS n",
         "FROM snapshot_equity_corporate_actions",
         "WHERE snapshot_id = ? AND refusal_reason IS NOT NULL",
-        "ORDER BY refusal_reason"
+        "AND refusal_reason <> ''",
+        "GROUP BY refusal_reason ORDER BY refusal_reason"
       ),
       params = list(snapshot_id)
-    )$refusal_reason
-    refusal_reasons <- as.character(refusal_reasons)
-    refusal_reasons <- refusal_reasons[!is.na(refusal_reasons) &
-      nzchar(refusal_reasons)]
+    )
+    sealed_refusal_counts <- stats::setNames(
+      as.integer(sealed$n),
+      as.character(sealed$refusal_reason)
+    )
   }
   list(
     supplied = isTRUE(supplied),
-    refusal_reasons = refusal_reasons,
+    refusal_reasons = names(sealed_refusal_counts),
+    sealed_refusal_counts = sealed_refusal_counts,
     rows = rows
   )
 }
@@ -183,17 +188,31 @@ ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows
   quantity
 }
 
-# One TRUE per complete fact of a subtype ledgr does not model whose parent
-# the run held when the fact was entitled.
-ledgr_corporate_action_held_unmodeled <- function(con, snapshot_id, run_id, rows) {
-  if (is.null(rows) || nrow(rows) == 0L) return(logical())
-  selected <- which(rows$complete & !rows$subtype %in% ledgr_corporate_action_supported_subtypes())
-  if (length(selected) == 0L) return(logical())
+# One row per fact whose parent the run held when the fact was entitled and
+# that settles nothing: a complete fact of a subtype ledgr does not model
+# (`refusal_reason` NA) or a refused (complete = FALSE) fact (Cut 17
+# decision 12), with its entitled parent quantity.
+ledgr_corporate_action_held_unsupported <- function(con, snapshot_id, run_id, rows) {
+  none <- data.frame(
+    refusal_reason = character(),
+    entitled_quantity = numeric(),
+    stringsAsFactors = FALSE
+  )
+  if (is.null(rows) || nrow(rows) == 0L) return(none)
+  selected <- which(!rows$complete | !rows$subtype %in% ledgr_corporate_action_supported_subtypes())
+  if (length(selected) == 0L) return(none)
   events <- ledgr_corporate_action_result_events(con, run_id, rows$parent_instrument_id[selected])
-  if (nrow(events) == 0L) return(logical())
+  if (nrow(events) == 0L) return(none)
   meta <- ledgr_corporate_action_event_meta(events)
   quantity <- ledgr_corporate_action_run_quantities(con, snapshot_id, run_id, rows, selected, events, meta)
-  rep(TRUE, sum(quantity != 0))
+  held <- selected[quantity != 0]
+  reason <- as.character(rows$refusal_reason[held])
+  reason[rows$complete[held]] <- NA_character_
+  data.frame(
+    refusal_reason = reason,
+    entitled_quantity = as.numeric(quantity[quantity != 0]),
+    stringsAsFactors = FALSE
+  )
 }
 
 ledgr_corporate_action_composition_report <- function(con,
@@ -353,6 +372,18 @@ ledgr_corporate_action_composition_report <- function(con,
 #' `price_basis_default = TRUE` for an availability-aware run whose snapshot
 #' declares none, or `"undeclared"` for such a dense run.
 #'
+#' A refused fact (`complete = FALSE`) settles nothing. `sealed_refusal_counts`
+#' counts every sealed refused fact by `refusal_reason`. `refusal_counts`
+#' counts, under the same reasons, the refused facts whose parent the run held
+#' when the fact was entitled, and `refusal_entitled_quantity` sums their
+#' absolute entitled parent quantities. A held refused fact takes the
+#' unsupported-quantity route: under `unsupported_quantity = "report_only"` it
+#' counts in `unsupported_facts` and `corporate_action_fidelity` reads
+#' `"unsupported"`; under `"refuse"` an availability-aware run stops
+#' `INCOMPLETE` with `corporate_action_quantity_refused` and a dense run raises
+#' `ledgr_corporate_action_quantity_unsupported`. An unheld refused fact
+#' changes neither fidelity nor the run outcome.
+#'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public
 #'   callers should leave this as `NULL`.
@@ -380,10 +411,6 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   choice_counts <- stats::setNames(
     integer(length(ledgr_corporate_action_choice_keys())),
     ledgr_corporate_action_choice_keys()
-  )
-  refusal_counts <- stats::setNames(
-    integer(length(facts$refusal_reasons)),
-    facts$refusal_reasons
   )
   event_rows <- DBI::dbGetQuery(
     con,
@@ -455,8 +482,9 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     facts$rows
   )
   # A held fact is unsupported when its effect is not represented: quantity
-  # legs, an acquisition in a run where no disposition acts (dense), and a
-  # subtype ledgr does not model (Cut 12 LDG-2996).
+  # legs, an acquisition in a run where no disposition acts (dense), a
+  # subtype ledgr does not model (Cut 12 LDG-2996) and a refused fact (Cut 17
+  # LDG-3089).
   dispositions_active <- isTRUE(config$availability$active)
   unsupported <- if (nrow(composition) == 0L) {
     logical()
@@ -466,7 +494,19 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       if (!dispositions_active) "cash_acquisition"
     )
   }
-  unsupported <- c(unsupported, ledgr_corporate_action_held_unmodeled(con, snapshot_id, bt$run_id, facts$rows))
+  held_route <- ledgr_corporate_action_held_unsupported(con, snapshot_id, bt$run_id, facts$rows)
+  unsupported <- c(unsupported, rep(TRUE, nrow(held_route)))
+  # Held refused facts by sealed reason, counted and their entitled
+  # quantities summed in one grouped pass.
+  reasons <- facts$refusal_reasons
+  refused <- !is.na(held_route$refusal_reason)
+  reason_idx <- match(held_route$refusal_reason[refused], reasons)
+  refusal_counts <- stats::setNames(tabulate(reason_idx, nbins = length(reasons)), reasons)
+  refusal_entitled_quantity <- stats::setNames(numeric(length(reasons)), reasons)
+  if (any(refused)) {
+    by_reason <- rowsum(abs(held_route$entitled_quantity[refused]), reason_idx, reorder = FALSE)
+    refusal_entitled_quantity[as.integer(rownames(by_reason))] <- by_reason[, 1L]
+  }
   # A run stopped on a refused settlement did not represent that effect.
   completion <- ledgr_run_completion_read(con, bt$run_id, required = FALSE)
   refusal_stop <- !is.null(completion) && nrow(completion) == 1L &&
@@ -493,6 +533,8 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     terminal_outcomes = terminal_outcomes,
     choice_counts = choice_counts,
     refusal_counts = refusal_counts,
+    refusal_entitled_quantity = refusal_entitled_quantity,
+    sealed_refusal_counts = facts$sealed_refusal_counts,
     late_arrival_count = as.integer(sum_meta(cash_meta, "late_arrival")),
     affected_marked_exposure = sum(
       c(
@@ -572,13 +614,30 @@ ledgr_print_corporate_action_summary <- function(summary) {
       )
     ), sep = "")
   }
+  # Held refused facts by reason, then every sealed refused fact by reason.
   cat("  Refusal reasons:\n")
   if (length(summary$refusal_counts) == 0L) {
     cat("    none declared: 0\n")
   } else {
-    for (key in names(summary$refusal_counts)) {
-      cat(sprintf("    %s: %d\n", key, summary$refusal_counts[[key]]))
-    }
+    held <- summary$refusal_counts
+    quantity <- summary$refusal_entitled_quantity[names(held)]
+    cat(sprintf(
+      "    %s: %d%s\n",
+      names(held),
+      held,
+      ifelse(
+        held > 0L,
+        sprintf(" (entitled quantity %s)", vapply(quantity, ledgr_corporate_action_value, character(1))),
+        ""
+      )
+    ), sep = "")
+  }
+  cat("  Sealed refusal reasons:\n")
+  if (length(summary$sealed_refusal_counts) == 0L) {
+    cat("    none declared: 0\n")
+  } else {
+    sealed <- summary$sealed_refusal_counts
+    cat(sprintf("    %s: %d\n", names(sealed), sealed), sep = "")
   }
   fields <- c(
     "Late arrivals" = "late_arrival_count",

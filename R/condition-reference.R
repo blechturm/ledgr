@@ -481,7 +481,7 @@
 #' | `terminal_settlement_unsupported` | valuation stop | unlabeled or refused terminal; holding preserved, no fabricated settlement |
 #' | `terminal_mark_unavailable` | valuation stop | the terminal choice needs a mark that does not exist; accepted prefix finalized incomplete |
 #' | `corporate_action_cash_refused` | valuation stop | a held corporate-action cash settlement refused by policy; accepted prefix finalized incomplete |
-#' | `corporate_action_quantity_refused` | valuation stop | a held quantity effect or unmodeled fact refused by policy; accepted prefix finalized incomplete |
+#' | `corporate_action_quantity_refused` | valuation stop | a held quantity effect, unmodeled fact or refused (`complete = FALSE`) fact refused by policy; accepted prefix finalized incomplete |
 #' | `fold_exception` | error | failed after transaction rollback |
 #'
 #' For the connected workflow and interpretation, see

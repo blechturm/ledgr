@@ -43,9 +43,10 @@
 #'   map of exact terminal labels to those choices with a required `default`
 #'   entry.
 #' @param unsupported_quantity One of `"report_only"` or `"refuse"`. Applies
-#'   to held quantity legs (stock and mixed acquisitions, spin-offs) and to
-#'   held facts ledgr does not model: a subtype outside the supported set, or
-#'   an acquisition in a dense run.
+#'   to held quantity legs (stock and mixed acquisitions, spin-offs), to held
+#'   facts ledgr does not model (a subtype outside the supported set, or an
+#'   acquisition in a dense run) and to held refused facts (`complete =
+#'   FALSE`), whose parent was held when the fact was entitled.
 #' @param frozen_terminal_position One of `"write_off"`, `"last_mark"`, or
 #'   `"refuse"`. Applies to a terminal reached while the holding is frozen.
 #' @param haircut One finite fraction in `[0, 1]`, required when and only when
@@ -70,8 +71,10 @@ ledgr_corporate_action_policy_choices <- function() {
 }
 
 # Held-terminal choices are v002 because their trigger widens from scheduled
-# corporate-action rows to sealed lifetime terminals. The other fields keep
-# their v001 meaning.
+# corporate-action rows to sealed lifetime terminals. Unsupported-quantity
+# choices are v002 because their trigger widens to held refused
+# (complete = FALSE) facts (Cut 17 LDG-3089). The other fields keep their
+# v001 meaning.
 ledgr_corporate_action_policy_ids <- function() {
   list(
     cash_amount = c(
@@ -91,8 +94,8 @@ ledgr_corporate_action_policy_ids <- function() {
       refuse = "ledgr.corporate_action.held_terminal_position.refuse.v002"
     ),
     unsupported_quantity = c(
-      report_only = "ledgr.corporate_action.unsupported_quantity.report_only.v001",
-      refuse = "ledgr.corporate_action.unsupported_quantity.refuse.v001"
+      report_only = "ledgr.corporate_action.unsupported_quantity.report_only.v002",
+      refuse = "ledgr.corporate_action.unsupported_quantity.refuse.v002"
     ),
     frozen_terminal_position = c(
       write_off = "ledgr.corporate_action.frozen_terminal_position.write_off.v001",

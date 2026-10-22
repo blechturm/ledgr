@@ -25,13 +25,17 @@ testthat::test_that("[LTB-0032] corporate-action policy is closed and versioned"
   testthat::expect_true(all(grepl(
     "[.]v001$",
     unlist(research$identity[c(
-      "cash_amount", "cash_posting", "unsupported_quantity",
-      "frozen_terminal_position"
+      "cash_amount", "cash_posting", "frozen_terminal_position"
     )])
   )))
+  # Cut 17 LDG-3089 advanced the unsupported_quantity identities to v002
+  # because their trigger widened to held refused facts.
   testthat::expect_true(all(grepl(
     "[.]v002$",
-    research$identity$held_terminal_position$policy_ids
+    c(
+      research$identity$held_terminal_position$policy_ids,
+      research$identity$unsupported_quantity
+    )
   )))
   short_values <- unlist(research[c(
     "cash_amount", "cash_posting", "held_terminal_position",

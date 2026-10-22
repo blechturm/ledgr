@@ -215,10 +215,20 @@ validated. Set `complete = FALSE`, provide the applicable refusal
 reason, and leave unvalidated terms unavailable. Do not infer a ratio,
 fabricate a mark, or turn an unsupported event into absence.
 
-At execution time, strict policy stops on a relevant unsupported effect.
-Research policy may report a quantity effect without changing account
-state. Neither path claims exact recipient exposure, broker settlement,
-withholding, tax treatment, or completeness of the upstream source.
+A refused fact settles nothing, and results count it.
+`ledgr_corporate_action_summary()` counts every sealed refused fact by
+reason in `sealed_refusal_counts`. When the run held the parent at the
+fact’s entitlement, the fact also counts under its reason in
+`refusal_counts`, with its entitled quantity in
+`refusal_entitled_quantity`, and takes the unsupported-quantity route.
+Under the research preset nothing posts and `corporate_action_fidelity`
+reads `unsupported`. Under the strict preset an availability-aware run
+stops `INCOMPLETE` with `corporate_action_quantity_refused`, and a dense
+run raises `ledgr_corporate_action_quantity_unsupported`. A refused fact
+on a parent the run did not hold changes neither fidelity nor the run
+outcome. Neither preset claims exact recipient exposure, broker
+settlement, withholding, tax treatment, or completeness of the upstream
+source.
 
 This release does not claim corporate-action completeness, broker-exact
 settlement, net cash, tax correctness, or exact recipient exposure.

@@ -465,9 +465,10 @@ testthat::test_that("[LTB-0309] rule-4 feature identity binds every history decl
       bt$config$features$feature_set_hash,
       "3286cf4679b732aadc8b73f009e4c2f05806a04d92291cd609bfaf27e3cb3ea9"
     )
+    # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002.
     testthat::expect_identical(
       config_hash(bt$config),
-      "c470ce4f43c231ca01012e13345f82515392636c91a0d7e5fbe07195b8ac79cb"
+      "5122c04fc15701589075ef358eb451d5da628d5627e1691a58360886b47ed5ab"
     )
   }
 })

@@ -232,12 +232,14 @@ ledgr_corporate_action_plan <- function(rows,
   )
   disposition_eligible <- acquisition & rows$complete & isTRUE(dispositions_active)
   # Effects ledgr does not model take the unsupported-quantity route (Cut 12
-  # decision 5): a subtype outside the supported vocabulary, and an acquisition
-  # in a run where no disposition acts (dense). A held one is refused under
-  # `unsupported_quantity = "refuse"` and reported otherwise.
-  unmodeled <- rows$complete &
-    (!rows$subtype %in% ledgr_corporate_action_supported_subtypes() |
-      (acquisition & !isTRUE(dispositions_active)))
+  # decision 5): a subtype outside the supported vocabulary, an acquisition
+  # in a run where no disposition acts (dense), and a refused
+  # (complete = FALSE) fact, which settles nothing (Cut 17 decision 12). A
+  # held one is refused under `unsupported_quantity = "refuse"` and reported
+  # otherwise.
+  unmodeled <- !rows$complete |
+    !rows$subtype %in% ledgr_corporate_action_supported_subtypes() |
+    (acquisition & !isTRUE(dispositions_active))
   quantity_eligible <- (rows$subtype %in% c(
     "stock_acquisition", "mixed_acquisition", "spin_off"
   ) & rows$complete) | unmodeled

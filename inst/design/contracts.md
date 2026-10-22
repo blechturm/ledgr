@@ -580,7 +580,10 @@ Accepted change pending:
   `refuse` (strict preset). Map order, labels, choices, the haircut fraction
   and the frozen fallback enter identity. Every terminal choice carries a
   `v002` identity because its trigger widened to lifetime terminal facts;
-  `v001` keeps its earlier meaning.
+  `v001` keeps its earlier meaning. Every `unsupported_quantity` choice
+  carries a `v002` identity because its trigger widened to held refused
+  facts (Corporate Actions And Valuation; Cut 17 LDG-3089); `v001` keeps its
+  earlier meaning.
 - `ledgr_valuation_stale(max_sessions, exhausted = "freeze")` records
   `schema_version = 2` with `exhausted` of `"freeze"` or `"refuse"`. The field
   is invalid under any other schema.
@@ -2365,17 +2368,26 @@ and `AAA` a held nonmember, each holding 5:
   realized model P&L. A defaulted frozen-fallback write-off reads exactly
   `default: assumed worthless`. Settlement evidence is reported as evidence,
   not as an assumption.
-- A complete corporate-action fact whose effect ledgr does not model takes the
-  unsupported-quantity route when its parent is held at entitlement: a subtype
-  outside `ordinary_cash_dividend`, `cash_acquisition`, `stock_acquisition`,
-  `mixed_acquisition` and `spin_off`, and an acquisition in a dense run, where
-  no disposition acts. Under `unsupported_quantity = "refuse"` (the strict
-  preset) an availability run stops `INCOMPLETE` with
-  `corporate_action_quantity_refused` at the fact's effective pulse and a
-  dense run raises `ledgr_corporate_action_quantity_unsupported`; otherwise nothing
-  posts, the fact counts in `unsupported_facts` and `corporate_action_fidelity`
-  is `unsupported`. Ingest keeps the subtype vocabulary open (Cut 12
-  LDG-2996).
+- A corporate-action fact whose effect ledgr does not represent takes the
+  unsupported-quantity route when its parent is held at entitlement: a
+  complete fact of a subtype outside `ordinary_cash_dividend`,
+  `cash_acquisition`, `stock_acquisition`, `mixed_acquisition` and
+  `spin_off`, a complete acquisition in a dense run, where no disposition
+  acts, and a refused fact (`complete = FALSE`) of any subtype. Under
+  `unsupported_quantity = "refuse"` (the strict preset) an availability run
+  stops `INCOMPLETE` with `corporate_action_quantity_refused` at the fact's
+  effective pulse and a dense run raises
+  `ledgr_corporate_action_quantity_unsupported`; otherwise nothing posts, the
+  fact counts in `unsupported_facts` and `corporate_action_fidelity` is
+  `unsupported`. Ingest keeps the subtype
+  vocabulary open (Cut 12 LDG-2996; Cut 17 LDG-3089).
+- `ledgr_corporate_action_summary()` discloses refused facts in two counts
+  keyed by sealed `refusal_reason`: `sealed_refusal_counts` counts every
+  sealed refused fact, and `refusal_counts` counts those whose parent the run
+  held at entitlement, with `refusal_entitled_quantity` summing their
+  absolute entitled parent quantities. `print()` and `summary()` show both
+  counts. An unheld refused fact changes neither fidelity nor the run outcome
+  (Cut 17 LDG-3089).
 - `ledgr_valuation_summary(bt)` reports one run's valuation state (`current`,
   `stale`, `frozen`, or `not_applicable` for dense runs), stale and frozen
   instrument-sessions and holdings, longest stale age and longest freeze,

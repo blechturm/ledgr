@@ -1,5 +1,19 @@
 # ledgr (development version)
 
+## Corporate-action disclosure
+
+- Refused corporate-action facts (`complete = FALSE`) are now visible in
+  results. `ledgr_corporate_action_summary()` gains `sealed_refusal_counts`
+  (every sealed refused fact by reason) and `refusal_entitled_quantity`, and
+  its `refusal_counts` now counts the refused facts whose parent the run held
+  at entitlement; `print()` and `summary()` show both counts. A held refused
+  fact takes the unsupported-quantity route: under the research preset it
+  counts in `unsupported_facts` and fidelity reads `UNSUPPORTED`; under the
+  strict preset an availability-aware run stops `INCOMPLETE` with
+  `corporate_action_quantity_refused` and a dense run raises
+  `ledgr_corporate_action_quantity_unsupported`. Previously such a fact was
+  silent. The `unsupported_quantity` policy identities move to `v002`.
+
 ## Fact pipeline follow-ups
 
 - Fact construction is faster at scale with unchanged rows, fact IDs and
