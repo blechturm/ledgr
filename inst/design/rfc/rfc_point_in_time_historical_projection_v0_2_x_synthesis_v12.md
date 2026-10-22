@@ -715,3 +715,32 @@ implementation changes and the present-tense contract consolidation.
   corrected in place.
 - **2026-10-16:** accepted by the maintainer. The source/bridge/receiver
   routing in Section 12 is operative; implementation remains pending H5.
+
+## As implemented (appended 2026-10-22 at the Cut 16 close)
+
+This appendix is a pointer, not an amendment: the accepted text above is
+unchanged. Cut 16 (H5) implemented this synthesis, and some of its
+maintainer decisions changed what a section says. Each row names the
+section, the decisions that changed it and the `contracts.md` group that now
+states the shipped rule. The decisions are in the v0.2.2 packet's
+`tickets.yml` (Cut 16 `decisions`); the per-decision code owners and
+registered blocks are in
+[`cut16_decision_reconciliation.md`](../ledgr_v0_2_2_spec_packet/cut16_decision_reconciliation.md).
+Decisions (1) to (9) bound this synthesis at the cut and are not listed
+except where they named a spec-cut helper or exercised a stated condition.
+
+| Section | What changed | Cut 16 decisions | Shipped rule |
+| --- | --- | --- | --- |
+| Section 1 (dense mode frozen) | Four accepted corrections change dense results without adding dense history: known-when-effective corporate actions, the TTR `aroon` width, custom indicators that share a built-in id, and the effective-only corporate-action refusals. | (11), (14), (19), (35) | `contracts.md#contract-snapshot-point-in-time-facts`, `#contract-context-strict-features` |
+| Section 2 (history start, knowledge clocks) | The single data start applies to availability experiments only. A membership, trading-status or lifetime fact without a knowledge time refuses at preparation; the known-when-effective assumption stays for corporate actions. | (16), (23) | `#contract-execution-window-start`, `#contract-availability-provider-and-timing` |
+| Section 3 (public surface) | The reader and adapter are `ledgr_history_frame()` and `ledgr_history_matrix()`. Feature cells are a vintage view: each earlier cell keeps the value and evidence of its own pulse, while bar history is restated at the cutoff. | (3), (29) | `#contract-context-pulse-data` |
+| Section 4 (civil time, facts) | A Date corporate-action entitlement, effective or payment time names the session close and a Date knowledge time the session open; an assumed Date knowledge time is the session open; a supplied knowledge time is kept; effective-only disposition, quantity-effect and cash-dividend rows refuse; membership-snapshot headers are ordered by resolved knowledge time. | (12), (27), (28), (31), (33), (34) | `#contract-snapshot-point-in-time-facts` |
+| Section 5 (missing data, carry) | The policy constructor is `ledgr_history_policy()`. A custom definition may declare `input_carry = "excluded"`. Bounded windows, readiness and output carry are stated against lifetime-inactive and terminal intervals, and `calculation_non_finite` joins the evidence reasons. | (4), (13), (15), (20), (21) | `#contract-config-policies`, `#contract-context-strict-features`, `#contract-context-pulse-data` |
+| Section 6 (indicator classes) | The custom input-carry declaration and the `aroon` `n + 1` width are catalogue rules; a terminal interval ends bounded windows; a refused feature in a durable run leaves one `FAILED` run row, the only record written before the refusal. | (13), (14), (15), (18), (20) | `#contract-context-indicator-computation`, `#contract-context-strict-features`, `#contract-context-feature-path` |
+| Section 7 (substrate) | Only lifetime and terminal segments are stored; membership and trading-status segments are counted for the guard with one canonical count. For features, the cutoff-correct answer to a late-known fact is the vintage view. | (22), (24), (29) | `#contract-availability-provider-and-timing`, `#contract-execution-fold-core`, `#contract-context-pulse-data` |
+| Section 8 (windows, inspection) | Availability-aware inspection is derived from an experiment, its parameters and a cutoff. The carried walk-forward chain applies to availability experiments only. | (10), (16) | `#contract-context-inspection`, `#contract-execution-walk-forward-folds` |
+| Section 9 (identity, persistence) | Civil-time facts changed the sealed representation, so snapshot hash rule 4 replaced rule 3; the store format advanced to 121 and, with the stored hydration column removed, to 122. | (6) | `#contract-snapshot-identity-and-verification`, `#contract-persistence-current-format`, `#contract-execution-identity` |
+
+Sections 10, 11 and 12 are unchanged. The Section 10 shared-memory trigger
+measured 0.1218 on the H1 workload and is a maintainer question in the v0.2.2
+macro plan (`#deferred-history-simplification`); nothing was implemented.
