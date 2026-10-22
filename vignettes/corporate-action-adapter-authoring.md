@@ -27,7 +27,9 @@ Every row needs a stable `fact_id`, a closed `subtype`, and a
 - `entitlement_time` determines which holding is entitled;
 - `effective_time` records when the source says the event takes effect;
 - `knowledge_time` is the first instant the terms may be used without
-  look-ahead; and
+  look-ahead; leave it missing when the source has none, and ledgr
+  assumes the event was known when it became effective, labels that
+  knowledge `assumed` and discloses it in results; and
 - `payment_time` is optional evidence, not the research preset’s posting
   clock.
 
@@ -57,7 +59,7 @@ bars. The source adapter, not ledgr execution, owns that conversion.
 
 `provenance_tier = "snapshot_bound"` is the portable tier. It binds the
 canonical facts to the sealed snapshot without requiring a provider
-build. `build_and_vintage_bound` is stronger: it additionally requires
+build. `upstream_vintage_bound` is stronger: it additionally requires
 `upstream_build_id` and `bar_vintage_id`. The tier records evidence
 strength; it does not select a settlement capability.
 

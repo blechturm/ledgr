@@ -44,7 +44,9 @@ The summary also records what the run's point-in-time view rested on:
 whether the snapshot declares membership facts a fixed basket does not
 apply), \code{assumption_backed_families} with their \code{assumption_reasons}
 (\code{"knowledge_assume_effective"}, \code{"generated_schedule"}, joined by \code{|}, as
-in \code{\link[=ledgr_experiment_plan]{ledgr_experiment_plan()}}), and \code{max_sessions_default}, \code{TRUE} when the
+in \code{\link[=ledgr_experiment_plan]{ledgr_experiment_plan()}}; \code{equity_corporate_actions} is listed when any
+sealed corporate-action knowledge time was filled known-when-effective),
+and \code{max_sessions_default}, \code{TRUE} when the
 stale-mark horizon (\code{max_sessions}) is the \code{ledgr_valuation_stale()} default
 of 5 sessions. \code{print()} of a result shows these on one \verb{Point in time:}
 line that names the valuation stale-mark horizon as such, followed by a

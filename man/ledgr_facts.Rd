@@ -103,8 +103,11 @@ require one lower-snake-case \code{refusal_reason}. Provenance is either
 A row with an event clock (the effective time, else the entitlement time)
 and no \code{knowledge_time} is known when that event becomes effective: a
 POSIXct event at its instant, a Date event at the declared open of its venue
-session, while the event itself stays at that session's close. A supplied
-\code{knowledge_time} is never replaced. A row with no event or knowledge clock is
+session, while the event itself stays at that session's close. Such a
+row's knowledge provenance reads \code{assumed}, with reason
+\code{knowledge_assume_effective}, and results of an availability-aware run list
+\code{equity_corporate_actions} among their assumption-backed families. A supplied
+\code{knowledge_time} is never replaced and reads \code{evidenced}. A row with no event or knowledge clock is
 audit-only. A knowable row with neither an entitlement nor effective clock
 refuses only once its knowledge cutoff is reached during execution. A
 complete \code{ordinary_cash_dividend}, \code{cash_acquisition}, \code{stock_acquisition},

@@ -21,7 +21,9 @@
 #' whether the snapshot declares membership facts a fixed basket does not
 #' apply), `assumption_backed_families` with their `assumption_reasons`
 #' (`"knowledge_assume_effective"`, `"generated_schedule"`, joined by `|`, as
-#' in [ledgr_experiment_plan()]), and `max_sessions_default`, `TRUE` when the
+#' in [ledgr_experiment_plan()]; `equity_corporate_actions` is listed when any
+#' sealed corporate-action knowledge time was filled known-when-effective),
+#' and `max_sessions_default`, `TRUE` when the
 #' stale-mark horizon (`max_sessions`) is the `ledgr_valuation_stale()` default
 #' of 5 sessions. `print()` of a result shows these on one `Point in time:`
 #' line that names the valuation stale-mark horizon as such, followed by a
@@ -100,7 +102,9 @@ ledgr_valuation_summary_add_basis <- function(out, config, con) {
   }
   reasons <- ledgr_fact_assumption_reasons(headers)
   # A fixed basket does not apply membership facts, so it rests on none.
+  # Sealed corporate-action facts apply to every run on the snapshot.
   applied <- if (is.null(rule)) setdiff(declared, "membership") else declared
+  applied <- c(applied, "equity_corporate_actions")
   reasons <- reasons[names(reasons) %in% applied & lengths(reasons) > 0L]
   out$universe_kind <- if (is.null(rule)) "fixed" else "membership"
   out$universe_id <- rule$universe_id %||% NA_character_

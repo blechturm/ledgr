@@ -705,8 +705,12 @@ Accepted change pending:
   else the entitlement time (Cut 16 decision 11). A POSIXct event is known at
   that instant. A Date-valued event is known at the declared open of its
   venue session, so a strategy can act on it during that session, and stays
-  effective at that session's close (Cut 16 decisions 12 and 27). A supplied
-  knowledge time, Date or POSIXct, is never replaced (Cut 16 decision 31).
+  effective at that session's close (Cut 16 decisions 12 and 27). Each such
+  filled row's provenance records knowledge `assumed` with reason
+  `knowledge_assume_effective`, and a family holding one records
+  `knowledge = "assume_effective"` in its metadata (Cut 17 LDG-3085). A
+  supplied knowledge time, Date or POSIXct, is never replaced and its
+  provenance records knowledge `evidenced` (Cut 16 decision 31).
   For membership, trading-status and lifetime facts,
   `knowledge = "assume_effective"` fills only a missing knowledge time from
   the effective time (and a Date effective time's civil label); a supplied
@@ -886,7 +890,11 @@ Accepted change pending:
   and the applied fact families whose knowledge clocks or schedules were
   assumed (`assumption_backed_families`, `assumption_reasons`, read from the
   sealed fact headers as the plan reads them; a fixed basket applies no
-  membership facts, so membership is never among them). `print()` of a result
+  membership facts, so membership is never among them). Sealed
+  corporate-action facts apply to every run, so `equity_corporate_actions`
+  is among them, with reason `knowledge_assume_effective`, whenever its
+  family holds a knowledge time filled known-when-effective (Cut 17
+  LDG-3085). `print()` of a result
   shows one `Point in time:` line and `summary()` lists the same fields with
   the valuation evidence. A run whose applied facts are all evidenced shows no
   assumption label (Cut 12 LDG-3010).
@@ -1171,9 +1179,11 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-- Experiment-store schema 122 is the sole current store schema; it stores no
-  `walk_forward_folds.hydration_start_utc` column, and schema-120 and
-  schema-121 stores are older stores. One opener and
+- Experiment-store schema 123 is the sole current store schema; it stores no
+  `walk_forward_folds.hydration_start_utc` column, and its sealed
+  corporate-action provenance distinguishes assumed from evidenced knowledge
+  (Cut 17 LDG-3085). Schema-120, schema-121 and schema-122 stores are older
+  stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
