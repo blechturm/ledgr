@@ -648,12 +648,12 @@ workstreams:
   - id: 45
     name: "Causal facts follow-ups"
     cut: 16
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 40
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 45", verdict: null, reason: "One claim: the WS40 fact pipeline validates, resolves and hashes facts once and in linear shape, tamper detection does not depend on bundle composition, and corporate-action rows without an entitlement clock act or refuse explicitly under recorded maintainer decisions."}
+    review: {mode: "Type 1", point: "close of workstream 45", verdict: "CHANGES_REQUIRED", artifact: "close_review_45.md", result: "Close review 5/6 (one undeclared hash change decided as (34), a sessions tamper path); focused re-review 1 PASS 2/7, its two low findings fixed and mutation-verified by the coordinator.", reason: "One claim: the WS40 fact pipeline validates, resolves and hashes facts once and in linear shape, tamper detection does not depend on bundle composition, and corporate-action rows without an entitlement clock act or refuse explicitly under recorded maintainer decisions."}
     integration_evidence: ["Commit 4c92fd92 implements LDG-3073 with LTB-0351..0357 (LCL-0341..0347); the following commit computes constructor civil labels once and adds the contract and condition-reference text for Cut 16 decisions (27) and (28), the census tables, dev/bench/v0_2_2_fact_pipeline_followups/ and fact_pipeline_followups_closeout.md (per-item evidence, the BASE 4b33f377 identity comparison, scale record, seven-shape walk, mutation table, routed items).", "Close review 45 (close_review_45.md, CHANGES_REQUIRED, 5 findings over 6 items); Correction 1 under Cut 16 decisions (31)-(35) follows in the next commits (closeout section Correction 1)."]
-    accepted: null
+    accepted: "2026-10-22 by the maintainer after the quiet-host fast profile passed at a 104.98-second median (10e0a0bd)."
   - id: 46
     name: "History representation simplification"
     cut: 16
