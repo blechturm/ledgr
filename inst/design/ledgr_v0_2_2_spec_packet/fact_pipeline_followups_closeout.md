@@ -380,7 +380,11 @@ Host: i9-12900K, Windows 11, R 4.6.1, DuckDB 1.5.6 (CRAN), run sequentially.
   with roxygen2; unrelated roxygen drift in eight other Rd files was not
   kept.
 - `R CMD build` (with `QUARTO_PATH` naming RStudio's bundled Quarto) and
-  `R CMD check --no-manual --no-build-vignettes`: @@RCMD@@
+  `R CMD check --no-manual --no-build-vignettes ledgr_0.2.1.0.tar.gz` on a
+  `git archive` source copy of `1793d1f3`: Status OK, no warning or note;
+  every vignette rebuilt and its code ran. The check's test step runs the
+  fast-profile membership as `tests/testthat.R` defines it, not the timed
+  gate.
 - Not run here, by instruction: the fast, review and heavy gate profiles and
   the independent close review. `R/cpp11.R` and `src/cpp11.cpp` line-ending
   churn from compilation is not committed.
