@@ -684,19 +684,18 @@ v0.2.2 is ready for its release gate only when:
 
 ## 7. Remaining order
 
-Cut 15 is closed: Workstreams 32 through 39 are complete and accepted. The
-WS35-plus-WS39 joint gate is satisfied, so the WS3/WS4 history wave is the
-current work. Resume from the decision register's **Resume here** section.
+Cut 16 is closed (2026-10-22): the WS3/WS4 history wave shipped through H5
+and H6, and its design record is reconciled in
+`cut16_decision_reconciliation.md`. Cut 17 (accepted 2026-10-22) is the
+current work.
 
-1. Cut and implement the accepted v12 successor through H5 and H6.
-2. Run WS7 product proof; WS6 proceeds independently only if its probe
-   promotes it.
-3. Finish WS8 residual performance work and integrated release evidence.
+1. Cut 17: the WS7 product proof (Workstream 48), the Sharadar dividend facts
+   (Workstream 49) and the private estimator run with dividends (Workstream
+   50). WS6 proceeds independently only if its probe promotes it.
+2. Finish WS8 residual performance work and integrated release evidence.
+3. The pre-CRAN API cleanup cut lands before the first CRAN release.
 
-The history wave consumes the normalized governance record, final fold
-structure and WS39 schema-120/rule-3 real-data evidence. Old schema-119 stores
-remain unreachable evidence, not compatibility targets. `tickets.yml` alone
-binds exact dependencies and status.
+`tickets.yml` alone binds exact dependencies and status.
 
 <a id="history-wave-execution-plan"></a>
 
@@ -764,7 +763,7 @@ and Session F. It does not pretend to benchmark a public history API before
 that API exists. End-to-end history-surface measurements belong to H6.
 
 H0 and the non-private parts of H1 may proceed in parallel. The later
-dividend-facts rebuild remains with the adapter and WS7 owners.
+dividend-facts rebuild is Cut 17 Workstream 49.
 
 #### H2. Finish stage-2 decisions
 
@@ -1076,10 +1075,13 @@ Cut 16 decision (17) routes these beyond WS46:
 
 ### Post-gate live routes
 
-- **Dividend facts:** LFB-013 supplies adapter interpretation; the later
-  dividend-facts lake rebuild and WS7 own carried-input G-013, dividend-status
-  G-016, build-time, and peak-RSS checks. WS8 owns G-025. Until those facts
-  pass end to end, the headline explicitly excludes dividends. Maintainer,
+- **Dividend facts:** LFB-013 supplies adapter interpretation. Cut 17
+  (maintainer, 2026-10-22) owns them: Workstream 49 the dividend-facts lake
+  rebuild, its per-event `closeadj` witness (the unit and date gate),
+  build-time and peak-RSS records; Workstream 50 the carried-input G-013 and
+  dividend-status G-016 reports and the end-to-end G-025 buy-and-hold sample
+  (Cut 17 decision 10). WS8 cites both checks. Until those facts pass end to
+  end, the headline explicitly excludes dividends. Maintainer,
   2026-10-22 (`close_review_45_rereview_1.md` N3): Cut 16 decision (33)
   applies whatever `gross_cash_validated` says, so a cash dividend without an
   entitlement clock refuses even when its terms are unvalidated.

@@ -268,8 +268,8 @@ cuts:
     workstreams: [48, 49, 50]
     closeout: "Each workstream receives one independent Type 1 close review against its single claim; finding-bearing reviews write a packet file and a third correction round stops for maintainer disposition. Each workstream that changes the ledgr package passes the quiet-host fast profile before acceptance. At cut close record M1 accounting, review artifacts, maintainer decisions outside an RFC, every new condition class, fast-lane headroom, and the WS7 exit statement: the strategy runs without private engine access, private history construction, research-side accounting or a model-management system, and its estimation exclusions cannot silently become execution decisions."
     review_lifecycle: "The governance-lifecycle synthesis Section 5 applies, as in Cut 16. Reviewers challenge necessity and input choice before internal completeness and use vendor-neutral reproductions where practical. Private Sharadar evidence is aggregate only: no vendor row, instrument identifier, credential or private path enters the package."
-    accepted: null
-    status: "draft"
+    accepted: "2026-10-22 by the maintainer after the focused cut re-review returned PASS_AFTER_PATCHES and its N1-N8 patches were incorporated; the maintainer confirmed N1: under decision (12) the strict preset refuses a held refused fact in each execution mode's existing form (an availability run stops INCOMPLETE, a dense run raises ledgr_corporate_action_quantity_unsupported). The macro_plan.md amendments named in the opening are applied with this acceptance."
+    status: "open"
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -691,7 +691,7 @@ workstreams:
   - id: 48
     name: "Long-only minimum-variance proof"
     cut: 17
-    status: "draft"
+    status: "open"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 48", verdict: null, reason: "One claim: One ordinary long-only minimum-variance strategy runs end to end through public APIs on explicit decision dates, solves the constrained problem, consumes the carried-input share so the weights change when it crosses the strategy threshold, and keeps every held instrument it could not estimate instead of letting absence become a sell."}
@@ -699,7 +699,7 @@ workstreams:
   - id: 49
     name: "Sharadar dividend facts"
     cut: 17
-    status: "draft"
+    status: "open"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 49", verdict: null, reason: "One claim: Sharadar cash dividends enter a sealed private build as validated ordinary_cash_dividend facts in split-adjusted units, proven per event against the vendor's dividend-adjusted series, or, where the witness cannot prove them, refuse with named reasons that public results count; assumed knowledge is labelled as assumed and every unmapped or refused row is disclosed."}
@@ -707,7 +707,7 @@ workstreams:
   - id: 50
     name: "Private estimator run with dividends"
     cut: 17
-    status: "draft"
+    status: "open"
     depends_on_workstream: 49
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 50", verdict: null, reason: "One claim: The Workstream 48 strategy runs on the full Sharadar dividend build within the E8 memory bound for one run and a two-worker sweep, actually trades on its decision dates, its posted dividends reconcile end to end on a preregistered sample, its headline states the dividend status and posting clock, and the estimator sample on carried inputs (G-013) is reported."}
