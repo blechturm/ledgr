@@ -550,6 +550,9 @@ no ticket:
   visible inside the traced `gc()`. Removing the decision (26) guard still
   fails the block, but through an error rather than the count assertion.
   Make the tracer count and re-run the guard mutation;
+- worker-count memory record (maintainer, 2026-10-22): the H1 sweep at 4 and
+  8 workers decides whether shared memory is designed (see
+  [Deferred history simplification](#deferred-history-simplification));
 
 Promote a remaining candidate only when the current product path, not a private
 harness, shows the cost. Then run one integrated long-window record covering:
@@ -1029,7 +1032,10 @@ Cut 16 decision (17) routes these beyond WS46:
   sessions) is 243.4 MiB for 27.7 MiB of values, 8.79 times, in about 1 s; at
   lookback 252 it is 9.2 MiB. Making evidence lazy changes the v12 Section 3
   result and needs a maintainer decision, probably a short RFC;
-  implementation is not scheduled before that decision.
+  implementation is not scheduled before that decision. Maintainer,
+  2026-10-22: parked, with WS7 as the trigger. The short RFC opens only if the
+  WS7 estimator needs full-history reads; finite-lookback teaching (decision
+  17) covers the other cases.
 - **Shared memory reopened as a question (maintainer).** After the single
   substrate, LDG-3069 measured the v12 Section 7 (E6) trigger on the H1
   workload: `(workers - 1) * staged_invariant_bytes / total_private_commit =
@@ -1037,12 +1043,19 @@ Cut 16 decision (17) routes these beyond WS46:
   the summed parent-plus-daemon private commit of the two-worker sweep. That
   is at or above 10 percent, so E6 reopens shared memory; nothing is
   implemented. If reopened, E6 says to share the bar substrate rather than
-  rebuild it and to rebuild only the pulse strings.
+  rebuild it and to rebuild only the pulse strings. Maintainer, 2026-10-22:
+  not built now. WS8 measures the H1 sweep at 4 and 8 workers (memory and
+  time); shared memory is designed only if the 8-worker sweep does not fit a
+  16 GB host comfortably (about 3.2 GiB of duplicate invariant at 8 workers).
 - **Caller RNG with `seed = NULL` (maintainer).** An unseeded parallel sweep
   advances the caller's RNG, before and after Cut 16, because starting and
   stopping `mirai` daemons does (LDG-3069 probe). A seeded sweep restores it.
   Whether ledgr should save and restore the caller's RNG around backend start
-  and stop is a behaviour choice.
+  and stop is a behaviour choice. Maintainer, 2026-10-22: yes. With
+  `seed = NULL`, ledgr saves the caller's RNG state before backend start and
+  restores it after stop; draws made by the strategy itself are not undone.
+  It is a small ticket in the next cut that touches the sweep backend, or in
+  the pre-CRAN API cleanup, whichever is cut first.
 - **Walk-forward daemon reuse across folds (owner: execution-core
   consolidation, with the transport).** Each parallel walk-forward fold starts
   new daemons and restages the invariant (about 444 MiB per daemon per fold
@@ -1066,7 +1079,10 @@ Cut 16 decision (17) routes these beyond WS46:
 - **Dividend facts:** LFB-013 supplies adapter interpretation; the later
   dividend-facts lake rebuild and WS7 own carried-input G-013, dividend-status
   G-016, build-time, and peak-RSS checks. WS8 owns G-025. Until those facts
-  pass end to end, the headline explicitly excludes dividends.
+  pass end to end, the headline explicitly excludes dividends. Maintainer,
+  2026-10-22 (`close_review_45_rereview_1.md` N3): Cut 16 decision (33)
+  applies whatever `gross_cash_validated` says, so a cash dividend without an
+  entitlement clock refuses even when its terms are unvalidated.
 - **Growth shape:** WS8 owns custom-function indicator slicing, result/trade/
   print replay, and sweep/walk-forward phase timing in its regression suite.
 - **Availability core:** the WS3/WS4 cut decides optimization placement. WS4
