@@ -489,4 +489,24 @@ assertions added, none changed); LTB-0358, LTB-0359 and LTB-0360 are new
 (claims LCL-0348 to LCL-0350; LCL-0344's scope names the sessions case). No
 other registered test changed.
 
-@@C1VERIFY@@
+Verification on the correction commit `6a3f8472`, run sequentially:
+
+- `test-fact-pipeline-followups.R`: 10 blocks pass.
+- Full suite (same command as above): 1,171 blocks, 20,473 expectations, no
+  failure or error, one optional skip (quantmod); 700 s wall. A first run
+  before the commit reported one error, LTB-0408, because an unescaped quote
+  in the new `tickets.yml` evidence broke its YAML parse; the quote was
+  removed and the file passes. Two later runs stopped inside
+  `test-execution-spec.R` (exit 127) with a library that roxygen had
+  recompiled in debug mode during Rd regeneration; with the library rebuilt
+  from the unchanged sources (`src/` is identical to BASE) the file and the
+  full suite pass. No product code was involved.
+- `tools/check-codebase-contracts.R --mode=check`: OK, 158 branch and 55
+  flow sites (unchanged), findings 72; regenerated census tables committed;
+  `--self-test-mode-branches`: OK. `tools/check-fold-phase-contract.R .`:
+  OK. `tickets.yml` and `tests/claims.yml` parse. `git diff --check
+  4b33f377` is clean.
+- `R CMD build` (with `QUARTO_PATH` naming RStudio's bundled Quarto) and
+  `R CMD check --no-manual --no-build-vignettes` on a `git archive` copy of
+  `6a3f8472`: Status OK, no warning or note; every vignette ran.
+- Not run here, by instruction: the gate profiles and the close re-review.
