@@ -68,7 +68,8 @@ lifetime row without a knowledge time is accepted and kept in sealed
 evidence, but every run, sweep, feature precompute, walk-forward session or
 pulse inspection that prepares availability from that snapshot refuses with
 \code{ledgr_fact_knowledge_missing} until the row has a knowledge time.
-\code{knowledge = "assume_effective"} supplies one by using the effective time.
+\code{knowledge = "assume_effective"} fills a missing knowledge time from the
+effective time; a supplied knowledge time is always kept.
 Date-backed fact clocks are civil labels: \code{\link[=ledgr_facts]{ledgr_facts()}} resolves each to exactly one
 declared open session and retains the civil date, UTC instant, venue zone
 and calendar identity in sealed evidence. Corporate-action entitlement,
@@ -106,9 +107,10 @@ session, while the event itself stays at that session's close. A supplied
 \code{knowledge_time} is never replaced. A row with no event or knowledge clock is
 audit-only. A knowable row with neither an entitlement nor effective clock
 refuses only once its knowledge cutoff is reached during execution. A
-complete \code{cash_acquisition}, \code{stock_acquisition}, \code{mixed_acquisition} or
-\code{spin_off} row with an effective clock but no entitlement clock refuses with
-\code{ledgr_corporate_action_entitlement_missing} at the pulse it would act on.
+complete \code{ordinary_cash_dividend}, \code{cash_acquisition}, \code{stock_acquisition},
+\code{mixed_acquisition} or \code{spin_off} row with an effective clock but no
+entitlement clock refuses with \code{ledgr_corporate_action_entitlement_missing}
+at the pulse it would act on, in every execution mode.
 Clock order and interval bounds are checked on resolved instants, so a Date
 field is compared only after it resolves to its session.
 

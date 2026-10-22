@@ -214,7 +214,45 @@ cases <- list(
   diff_ca_posix_effective = function() ledgr_facts(sessions(), ca(ca_posix_effective)),
   diff_ca_false_accept = function() ledgr_facts(sessions(), ca(ca_false_accept)),
   diff_ca_false_refusal = function() ledgr_facts(sessions(), ca(ca_false_refusal)),
-  diff_membership_false_refusal = function() ledgr_facts(sessions(), membership(membership_false_refusal))
+  diff_membership_false_refusal = function() ledgr_facts(sessions(), membership(membership_false_refusal)),
+  # Decision (32): supplied POSIXct knowledge beside a Date effective time
+  # under assume_effective is kept (BASE replaced it with the session open).
+  diff32_membership_assume = function() {
+    df <- membership_date
+    df$knowledge_time <- c(open_utc(open_dates[c(1, 9)]) + 3600, rep(utc(NA), 10))
+    ledgr_facts(sessions(), membership(df, knowledge = "assume_effective"))
+  },
+  diff32_status_assume = function() {
+    df <- status_date
+    df$knowledge_time <- c(close_utc(open_dates[c(2, 4, 6)]), rep(utc(NA), 3))
+    ledgr_facts(sessions(), ledgr_facts_trading_status(df, knowledge = "assume_effective"))
+  },
+  diff32_lifetime_assume = function() {
+    df <- lifetime_date
+    df$knowledge_time <- c(utc(NA), close_utc(open_dates[1]), utc(NA), close_utc(open_dates[24]))
+    ledgr_facts(sessions(), ledgr_facts_lifetime(df, knowledge = "assume_effective"))
+  },
+  diff32_snapshots_assume = function() {
+    df <- data.frame(
+      effective_from = open_dates[c(2, 2, 2, 2, 5)],
+      knowledge_time = utc(paste(open_dates[c(2, 2, 2, 2, 5)], c("23:00:00", "23:00:00", "12:00:00", "12:00:00", "01:00:00"))),
+      instrument_id = c("AAA", "BBB", "AAA", "CCC", "DDD"),
+      set_id = c("set_a", "set_a", "set_z", "set_z", "set_m"),
+      source = "idx", stringsAsFactors = FALSE
+    )
+    ledgr_facts(sessions(), ledgr_facts_membership_snapshots(df, "idx", knowledge = "assume_effective"))
+  },
+  # Decision (34) (close review 45 F1): headers ordered by resolved knowledge.
+  diff34_snapshot_header_order = function() {
+    df <- data.frame(
+      effective_from = utc(paste(open_dates[[2]], "10:00:00")),
+      instrument_id = c("AAA", "BBB", "AAA", "CCC"),
+      set_id = c("set_x", "set_x", "set_y", "set_y"),
+      source = "idx", stringsAsFactors = FALSE
+    )
+    df$knowledge_time <- as.Date(c(NA, NA, open_dates[[2]], open_dates[[2]]))
+    ledgr_facts(sessions(), ledgr_facts_membership_snapshots(df, "idx", knowledge = "assume_effective"))
+  }
 )
 out <- list(facts = lapply(cases, function(f) bundle_view(capture(f()))))
 
@@ -328,7 +366,17 @@ out$snapshots <- list(
       sessions(), membership(membership_date), ledgr_facts_trading_status(with_cover(status_date_knowledge)),
       ledgr_facts_lifetime(lifetime_date), ca(unentitled)
     )
-  }, ledgr_corporate_actions_research(), "d28")
+  }, ledgr_corporate_actions_research(), "d28"),
+  # Intended difference (decision 33): AAA's dividend loses its entitlement
+  # clock (BASE never posted it).
+  diff_d33_dividend_effective_only = snapshot_view(function() {
+    unentitled <- ca_date
+    unentitled$entitlement_time[[1L]] <- as.Date(NA)
+    ledgr_facts(
+      sessions(), membership(membership_date), ledgr_facts_trading_status(with_cover(status_date_knowledge)),
+      ledgr_facts_lifetime(lifetime_date), ca(unentitled)
+    )
+  }, ledgr_corporate_actions_research(), "d33")
 )
 saveRDS(out, out_path)
 cat("written", out_path, "\n")

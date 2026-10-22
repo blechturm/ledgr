@@ -278,8 +278,9 @@ ledgr_availability_provider_build <- function(data, config, snapshot_hash) {
 
 # Cut 16 decision (23): preparation refuses membership, trading-status and
 # lifetime facts whose knowledge time is missing. `missing` holds the number
-# of such rows per family; what a missing knowledge time should mean is
-# decided with LDG-3073.
+# of such rows per family. Decision (27) keeps this refusal; only
+# knowledge = "assume_effective" fills a missing knowledge time, and never
+# replaces a supplied one (decision 32).
 ledgr_fact_knowledge_refuse <- function(missing) {
   missing <- missing[missing > 0]
   if (length(missing) == 0L) return(invisible(TRUE))

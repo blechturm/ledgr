@@ -4,8 +4,9 @@ Role: record; Workstream 45 implementation evidence (LDG-3073).
 Authority: non-binding. `tickets.yml` owns status, `contracts.md` owns
 behaviour, Cut 16 decisions (11), (12), (23), (27) and (28) and
 `cut16_antipattern_review.md` (findings 11 to 15) are the work list.
-Status: LDG-3073 is complete; Workstream 45 is `review_pending` for its
-independent Type 1 close review.
+Status: LDG-3073 is complete; Workstream 45 is `review_pending` after
+correction round 1 for `close_review_45.md` (CHANGES_REQUIRED) under Cut 16
+decisions (31) to (35); see Correction 1.
 
 BASE for every identity claim is `4b33f377` (`integrate/cut15-v0.2.2`). The
 implementation and its tests are `4c92fd92` on `ws45/fact-pipeline`; the
@@ -31,12 +32,17 @@ and adds the documentation, census tables, evidence and this record.
   becomes effective, by one rule: a Date event at its session's open
   (decision 27), a POSIXct event at its instant. A supplied knowledge time is
   always kept; before, a POSIXct knowledge time beside a Date event was
-  replaced by the event's session open.
+  replaced by the event's session open. The same holds for membership,
+  trading-status and lifetime facts built with
+  `knowledge = "assume_effective"`, which now only fills a missing knowledge
+  time (decision 32).
 - A cash, stock or mixed acquisition or spin-off with an effective date but no
   entitlement date no longer passes silently: the run, the carried
   walk-forward chain and a dense run refuse with
   `ledgr_corporate_action_entitlement_missing` at the pulse it would act on
-  (decision 28). Supply the entitlement time.
+  (decision 28). An ordinary cash dividend with an effective date but no
+  entitlement date, which used to never pay, refuses the same way (decision
+  33). Supply the entitlement time.
 
 ## Item 1: correction lineage once per family
 
@@ -122,10 +128,14 @@ The registered witnesses (LTB-0355, New York sessions, 14:30 and 21:00 UTC):
 - a Date interval end `2021-01-05` resolves to 14:30 before it is compared:
   accepted after a 10:00 start (BASE refused), refused after a 15:00 start.
 
-Ordering on resolved instants equals BASE's placeholder order whenever each
-sort column holds one type, because a civil date maps to its session instant
-monotonically within one venue; the identity comparison below confirms it on
-every fixture.
+Ordering on resolved instants equals BASE's placeholder order only when
+every sort column holds instants of one source. It does not when a knowledge
+column mixes assumed and supplied times, which the assume-effective rule
+produces from a single-typed input column: membership-snapshot headers then
+reorder and the family and bundle hashes change (close review 45 F1). The
+first version of this record claimed otherwise; the maintainer accepted the
+order on resolved instants as Cut 16 decision (34), LTB-0360 registers it
+and the identity comparison declares it.
 
 ## Item 5 and decision (27): one known-when-effective rule
 
@@ -170,7 +180,8 @@ its effective clock fell in the window and its knowledge clock falls after
 it, so the successor window refuses on the pulse one run uses. LTB-0357 pins
 the single run, the completing first window, the chain refusal for a row
 effective in window 1 and known in window 2, a spin-off effective inside
-window 2, and a dense run. Rows of other subtypes are unchanged (see Routed).
+window 2, and a dense run. Correction 1 adds the `ordinary_cash_dividend`
+under decisions (33) and (35) (LTB-0359).
 
 ## Item 8: settlement state as data
 
@@ -196,8 +207,8 @@ Result (`evidence/compare_result.txt`): `WS45_IDENTITY_OK`.
 - Identical: 21 cases, including the three snapshot hashes
   (`1d710543...`, `1643c9c3...`, `2c9a6089...`), their stored fact tables,
   runs (fills, three corporate-action events each) and walk-forward chains.
-- Intended differences (all mixed Date/POSIXct rows BASE handled wrongly, and
-  decision 28):
+- Intended differences, each under a recorded decision (rows marked C1 were
+  added in Correction 1):
 
 | Case | BASE | Candidate | Reason |
 |---|---|---|---|
@@ -208,9 +219,18 @@ Result (`evidence/compare_result.txt`): `WS45_IDENTITY_OK`.
 | POSIXct entitlement before same-day Date effective close | refused | accepted | item 4 (former false refusal) |
 | POSIXct start before a Date end's session open | refused | accepted | item 4 |
 | effective-only cash acquisition, run and chain | completes, no disposition | `ledgr_corporate_action_entitlement_missing` | decision (28); snapshot hash identical |
+| C1: assume_effective membership intervals, POSIXct knowledge beside a Date effective time | knowledge = effective session open | supplied knowledge kept | decision (32) |
+| C1: same, trading status (correction chain) | as above | supplied knowledge kept | decision (32) |
+| C1: same, lifetime | as above | supplied knowledge kept | decision (32) |
+| C1: same, membership snapshots (two sets on one date) | both headers at the session open | supplied knowledge kept, headers in resolved order | decisions (32), (34) |
+| C1: snapshot headers with an assumed POSIXct and a Date knowledge (close review 45 F1) | header order `set_y, set_x` (UTC-midnight stand-in) | `set_x, set_y` (resolved) | decision (34) |
+| C1: effective-only cash dividend, run | completes, never posts | `ledgr_corporate_action_entitlement_missing` | decisions (33), (35); snapshot hash identical |
 
-No other hash changed. Decision (27) changes no all-Date row: BASE already
-resolved such knowledge to the session open through its civil copy.
+The first version of this record said no other hash changed; close review 45
+F1 found the snapshot-header case, now declared. Decision (27) changes no
+all-Date row: BASE already resolved such knowledge to the session open
+through its civil copy. Decisions (31) and (32) make the supplied-knowledge
+rows intended.
 
 ## Scale
 
@@ -237,8 +257,13 @@ fact rows per input row). Raw rows: `evidence/scale_record.csv`.
 | Family hash | 400,000 | 2.23 | 2.23 | 3.9 | 3.9 |
 
 Candidate lineage, validation, resolution and hashing grow linearly with fact
-rows (ratios 3.4 to 4.7 for four times the rows; the sorts add the log
-factor). BASE lineage grew quadratically (16.4 times) because each child
+rows at bounded correction depth (these fixtures use depth 2; ratios 3.4 to
+4.7 for four times the rows; the sorts add the log factor). The related-pair
+walk in validation costs the sum of all rows' chain depths, so one chain of
+D corrections costs D(D - 1) / 2: close review 45 measured 0.11 s, 1.11 s
+and 14.02 s for D = 2,000, 8,000 and 32,000 (lineage itself 0.03, 0.12 and
+0.45 s, linear in depth). Real correction chains are short; the bound is
+stated in the code. BASE lineage grew quadratically (16.4 times) because each child
 list was found by name; BASE validation was not run at 480,000 rows because
 its pair formation is quadratic (projected over 20 minutes per repetition).
 Of the candidate's 1.52 s of civil resolution at 100,000 rows, two family
@@ -258,14 +283,15 @@ code.
 
 | Function | Change | Walk |
 |---|---|---|
-| `ledgr_status_lineage()` | rewritten | CSR children from one radix order (2); level loop runs once per depth level of the deepest correction chain, each level vectorised; no name lookup; no-supersession families return without a walk (5); local vectors only (7). |
+| `ledgr_status_lineage()` | rewritten | CSR children from one radix order (2); level loop runs once per depth level of the deepest correction chain, each level vectorised; the level list is preallocated (Correction 1); no name lookup; no-supersession families return without a walk (5); local vectors only (7). |
 | `ledgr_fact_validate_status_rows()` | new | One lineage per family shared by both graph checks (5). |
 | `ledgr_fact_validate_status_supersession()` | rewritten | Per-link `for` loop replaced by vectorised checks over all links (3); returns the lineage it builds (5). |
 | `ledgr_fact_validate_source_conflicts()` | changed | Pair formation over correction rows times scope rows removed (6); grouped sweep for rows outside chains, counting check otherwise. |
-| `ledgr_fact_status_unrelated_overlap()` | new | Binary search over rank-encoded bounds per group (6); loop over the fixed three-status vocabulary; chain-walk loop runs once per depth level and visits each ancestor pair once. |
+| `ledgr_fact_status_unrelated_overlap()` | new | Binary search over rank-encoded bounds per group (6); loop over the fixed three-status vocabulary; chain-walk loop runs once per depth level and visits each ancestor pair once, so its total work is the sum of chain depths: linear for bounded depth, quadratic in one chain's depth (stated in the code; Correction 1). |
 | `ledgr_fact_status_link_ids()` | new | One keyed `match()` instead of a scan per link (2, 6). |
 | `ledgr_fact_civil_labels()` | new | `lapply` over the fixed clock-field vocabulary; each distinct date formatted once (3). |
-| `ledgr_fact_civil_json()`, `ledgr_fact_civil_encode()` | changed | One NDJSON write per field over distinct dates, indexed back (4). |
+| `ledgr_fact_civil_encode()` | changed | One NDJSON write per field over distinct dates, indexed back (4). `ledgr_fact_civil_json()` was removed in Correction 1. |
+| `ledgr_fact_knowledge_time()` | changed (Correction 1) | The one assume-effective rule for instants and labels; vectorised masks (5). |
 | `ledgr_fact_civil_ndjson()`, `ledgr_fact_civil_assemble()` | new | One write per call; `for` over the fixed field vocabulary, vectorised over rows. |
 | `ledgr_fact_civil_sessions()` | new | One table per bundle; two NDJSON writes and two timestamp formats over sessions, never rows (3, 4); `lapply` over the bundle's session families. |
 | `ledgr_fact_resolve_civil_frame()` | changed | Per-row session data-frame subset and per-row formatting removed: rows read instants and evidence by session index (1, 2, 3, 4); `for` over the fixed field vocabulary. |
@@ -325,22 +351,13 @@ whose BASE was correct but quadratic; its mutations C1 to C3 detect).
 
 ## Routed, not changed here
 
-- **Question for the maintainer (not changed, identity-preserving).** Under
-  `knowledge = "assume_effective"`, a membership, trading-status or lifetime
-  family with a Date `effective_from` and a POSIXct `knowledge_time` column
-  has every supplied knowledge time replaced by the effective date's session
-  open (the civil-label copy of the assume-effective rule overrides the
-  instant copy, the same pattern item 5 removed for corporate actions). When
-  the supplied knowledge is later than that open, the fact becomes visible
-  before it was known. Fixing it changes fact rows and hashes for that input
-  shape, which no recorded decision covers, so it is kept byte-identical
-  (`ledgr_fact_civil_json()` says so in place) and routed for a decision.
-- **Effective-only rows outside decision (28).** An `ordinary_cash_dividend`
-  with an effective clock and no entitlement clock still never posts (its
-  posting binds at entitlement), and an unmodeled subtype with only an
-  effective clock is still not reported as unsupported. Decision (28) names
-  dispositions and quantity effects; these keep BASE behaviour and are routed
-  to the corporate-action settlement owner.
+- **Decided in Correction 1.** The assume-effective relabelling question is
+  Cut 16 decision (32) and the effective-only cash dividend is decision (33);
+  both are implemented (Correction 1).
+- **Unmodeled subtypes with only an effective clock** keep BASE behaviour
+  (inference: they bind no entitled quantity and so are not reported as
+  unsupported). Decisions (28) and (33) name dispositions, quantity effects
+  and the cash dividend; routed to the corporate-action settlement owner.
 - **Per-row identity and provenance hashing in constructors.**
   `ledgr_fact_ids()` digests one canonical JSON per row and
   `ledgr_fact_provenance()` writes one per row; the membership-snapshot set-id
@@ -374,8 +391,9 @@ Host: i9-12900K, Windows 11, R 4.6.1, DuckDB 1.5.6 (CRAN), run sequentially.
   72; the regenerated census tables (line references, the new condition
   class and helpers) are in the commit; `--self-test-mode-branches`: OK.
 - `tools/check-fold-phase-contract.R .`: `LEDGR_FOLD_PHASE_CONTRACT_OK`.
-- `tickets.yml` and `tests/claims.yml` parse; `git diff --check 4b33f377` is
-  clean.
+- `tickets.yml` and `tests/claims.yml` parse. `git diff --check 4b33f377`
+  was not clean: `evidence/compare_result.txt` had trailing spaces (close
+  review 45 F5); corrected in Correction 1.
 - Rd: `man/ledgr_condition_classes.Rd` and `man/ledgr_facts.Rd` regenerated
   with roxygen2; unrelated roxygen drift in eight other Rd files was not
   kept.
@@ -392,3 +410,83 @@ Host: i9-12900K, Windows 11, R 4.6.1, DuckDB 1.5.6 (CRAN), run sequentially.
 Scripts and records: `dev/bench/v0_2_2_fact_pipeline_followups/`
 (`scale_fixtures.R`, `scale_stage.R`, `run_scale.ps1`, `compare_runner.R`,
 `compare_check.R`, `diff_lineage.R`, `mutations.py`, `evidence/`).
+
+## Correction 1 (close review 45, 2026-10-22)
+
+`close_review_45.md` returned CHANGES_REQUIRED with F1 to F5. The maintainer
+decided the three open questions of this record and F1 as Cut 16 decisions
+(31) to (35), appended to the Cut 16 decisions in `tickets.yml`.
+
+- **(31) supplied corporate-action knowledge.** No code change: the item-5
+  rule already keeps it. The two supplied-knowledge shapes and the
+  POSIXct-effective/Date-entitlement shape are intended differences.
+- **(32) assume_effective keeps supplied knowledge.**
+  `ledgr_fact_knowledge_time()` is now the one assume-effective rule for
+  instants and civil labels: under `knowledge = "assume_effective"` it fills
+  only a missing knowledge time from the effective time, and gives exactly
+  those rows the effective field's civil label. The separate label copy
+  (`ledgr_fact_civil_json()`) is removed. LTB-0358 (LCL-0348) pins
+  membership intervals, membership snapshots, trading status and lifetime;
+  mutations P1 (BASE label mask) and P2 (no label for assumed rows) fail it.
+- **(33) and (35) effective-only cash dividend.**
+  `ledgr_corporate_action_entitled_subtypes()` adds
+  `ordinary_cash_dividend`; the refusal, carry and every-mode rule are
+  unchanged. LTB-0359 (LCL-0349) pins a single availability run, the carried
+  chain (effective in window 1, known in window 2) and a dense run; mutation
+  Q1 fails it. In the identity runner's three-window fixture the dividend is
+  effective inside every training window, so the walk-forward's training
+  candidates fail and it completes with no test run; the single run refuses.
+- **(34) and F1: snapshot header order.** No code change: headers are ordered
+  by resolved effective and knowledge times after resolution. The closeout's
+  ordering and "no other hash changed" claims are corrected above. LTB-0360
+  (LCL-0350) registers the reviewer's input A with the Date set listed first;
+  mutation H1 (headers not ordered after resolution, the reviewer's O8)
+  fails it.
+- **F2: sessions families are checked.** `ledgr_fact_resolve_civil_families()`
+  checks the recorded hash of every family it reads, pending families and
+  session families, before resolving. LTB-0354 adds the reviewer's case D (a
+  sessions family with its opens shifted by an hour); mutation S1 fails it.
+- **F3: chain-walk bound.** `ledgr_fact_status_unrelated_overlap()` states
+  its O(sum of chain depths) cost with the reviewer's deep-chain numbers;
+  `ledgr_status_lineage()` preallocates its level list. The Scale section
+  and the seven-shape row state the bound.
+- **F4: present tense.** `contracts.md` Provider, Knowledge And Timing and
+  `R/availability-provider.R` now state the settled rule (decisions 23, 27,
+  32); the Point-In-Time Facts sentence on Date bounds says fact interval
+  ends resolve to the session open and execution-window ends to the close
+  (review N5); `NEWS.md` records the refusal class, the timing rule and the
+  mixed-clock changes (N6); `ledgr_fact_ids()`, `ledgr_fact_provenance()`
+  and the snapshot set-id `vapply` carry a one-line route comment (N7).
+- **F5.** `compare_check.R` no longer pads line ends; the evidence file and
+  `git diff --check 4b33f377` are clean.
+
+Identity comparison after Correction 1 (`evidence/compare_result.txt`):
+`WS45_IDENTITY_OK`; 21 cases identical with BASE `4b33f377` (including the
+three snapshot hashes, stored fact tables, runs and walk-forward chains) and
+14 declared differences, each listed in the table above with its decision.
+
+Sharadar identity: the 1998-2026 projection rebuilt with adapter
+`sharadar_ledgr_snapshot_adapter_v003` (ledgr-research `6be0b99`) from
+canonical build `canonical-20260906T055922734354Z-78941588416a97c6` on the
+corrected candidate source, into a scratch store under the sentinel-guarded
+`E:/ledgr-data/sharadar/experiments/`, seals with snapshot hash
+`1f53c09897dfc39c02cde728077be65f8c3b1819e5224eb80786b9e5d30e2b5a` (rule 4),
+equal to the LDG-3080 census hash. No decision changes that real-data store.
+
+Mutations: 25 of 25 detected (`evidence/mutations.csv`), the 20 above plus
+P1, P2, Q1, S1 and H1:
+
+| ID | Mutation | Failing blocks |
+|---|---|---|
+| P1 | supplied knowledge relabelled (BASE assume-effective mask) | LTB-0358 |
+| P2 | assumed knowledge keeps no civil label | LTB-0358 |
+| Q1 | cash dividend not refused | LTB-0359 |
+| S1 | sessions family not checked before resolution | LTB-0354 |
+| H1 | snapshot headers not ordered after resolution | LTB-0360 |
+
+Test changes and reasons: LTB-0354 gains the sessions-family case (F2;
+assertions added, none changed); LTB-0358, LTB-0359 and LTB-0360 are new
+(claims LCL-0348 to LCL-0350; LCL-0344's scope names the sessions case). No
+other registered test changed.
+
+@@C1VERIFY@@

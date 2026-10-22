@@ -11,7 +11,13 @@ intended <- c(
   "facts/diff_ca_false_accept",
   "facts/diff_ca_false_refusal",
   "facts/diff_membership_false_refusal",
-  "snapshots/diff_d28_effective_only"
+  "facts/diff32_membership_assume",
+  "facts/diff32_status_assume",
+  "facts/diff32_lifetime_assume",
+  "facts/diff32_snapshots_assume",
+  "facts/diff34_snapshot_header_order",
+  "snapshots/diff_d28_effective_only",
+  "snapshots/diff_d33_dividend_effective_only"
 )
 leaves <- function(x, prefix) {
   if (is.list(x) && !is.data.frame(x) && !is.null(names(x)) && all(nzchar(names(x)))) {
@@ -32,10 +38,11 @@ for (section in c("facts", "snapshots")) {
     ok <- identical_case != (case %in% intended)
     if (!ok) fail <- TRUE
     differing <- sub(paste0(case, "/"), "", keys[in_case & !same], fixed = TRUE)
-    cat(sprintf("%-40s %-9s %-10s %s\n", case,
+    line <- sprintf("%-40s %-9s %-10s %s", case,
       if (identical_case) "IDENTICAL" else "DIFFERS",
       if (ok) "ok" else "UNEXPECTED",
-      if (length(differing)) paste0("[", paste(differing, collapse = ", "), "]") else ""))
+      if (length(differing)) paste0("[", paste(differing, collapse = ", "), "]") else "")
+    cat(sub(" +$", "", line), "\n", sep = "")
   }
 }
 fmt <- function(x) ifelse(is.na(x), "NA", format(.POSIXct(x, tz = "UTC"), "%Y-%m-%d %H:%M"))
@@ -47,7 +54,11 @@ describe <- function(x) {
     sprintf("entitlement=%s effective=%s knowledge=%s",
       fmt(r$entitlement_time), fmt(r$effective_time), fmt(r$knowledge_time))
   } else {
-    sprintf("from=%s to=%s knowledge=%s", fmt(r$effective_from), fmt(r$effective_to), fmt(r$knowledge_time))
+    h <- fams[[1L]]$headers
+    c(
+      sprintf("from=%s to=%s knowledge=%s", fmt(r$effective_from), fmt(r$effective_to), fmt(r$knowledge_time)),
+      if (!is.null(h) && nrow(h) > 0L) sprintf("header %s knowledge=%s", h$set_id, fmt(h$knowledge_time))
+    )
   }
 }
 cat("\nIntended differences (UTC):\n")

@@ -293,6 +293,15 @@ testthat::test_that("[LTB-0354] an edited family is refused whatever else the bu
     ledgr_facts(ws45_sessions(), edited_civil),
     class = "ledgr_invalid_facts"
   )
+
+  # Close review 45 F2: a sessions family edited after construction cannot
+  # lend its shifted instants to a family resolved against it.
+  shifted <- ws45_sessions()
+  shifted$rows$session_open <- shifted$rows$session_open - 3600
+  testthat::expect_error(
+    ledgr_facts(shifted, civil),
+    class = "ledgr_invalid_facts"
+  )
 })
 
 testthat::test_that("[LTB-0355] mixed Date and POSIXct clocks are validated on resolved instants", {
@@ -622,4 +631,144 @@ testthat::test_that("[LTB-0357] an effective-only disposition or quantity effect
     run_id = "ws45-unentitled-dense"
   ))
   testthat::expect_identical(dense_refusal$subtype, "stock_acquisition")
+})
+
+testthat::test_that("[LTB-0358] assume_effective fills only missing knowledge times (decision 32)", {
+  sessions <- ws45_sessions()
+  # Effective 2021-01-05 resolves to 14:30 UTC. Row 1 supplies a POSIXct
+  # knowledge time of 2021-01-06 18:00 UTC (later than the open); row 2
+  # supplies none, so it is known at the effective session's open.
+  supplied <- ws45_utc(c("2021-01-06 18:00:00", NA))
+  resolved <- function(family, kind = "membership") {
+    ledgr:::ledgr_facts_family(ledgr_facts(sessions, family), kind)[[1L]]
+  }
+  expected <- as.numeric(ws45_utc(c("2021-01-06 18:00:00", "2021-01-05 14:30:00")))
+  intervals <- resolved(ledgr_facts_membership_intervals(
+    data.frame(
+      instrument_id = c("AAA", "BBB"), effective_from = as.Date("2021-01-05"),
+      knowledge_time = supplied, member = TRUE, source = "ws45"
+    ),
+    universe_id = "u", knowledge = "assume_effective"
+  ))
+  rows <- intervals$rows[order(intervals$rows$instrument_id), ]
+  testthat::expect_identical(as.numeric(rows$knowledge_time), expected)
+  testthat::expect_null(ledgr:::ledgr_json_read_nested(rows$civil_time_json[[1L]])$knowledge_time)
+  testthat::expect_identical(
+    ledgr:::ledgr_json_read_nested(rows$civil_time_json[[2L]])$knowledge_time$civil_date,
+    "2021-01-05"
+  )
+  status <- resolved(ledgr_facts_trading_status(
+    data.frame(
+      instrument_id = c("AAA", "BBB"), effective_from = as.Date("2021-01-05"),
+      knowledge_time = supplied, status = "halted", source = "ws45"
+    ),
+    knowledge = "assume_effective"
+  ), "trading_status")
+  rows <- status$rows[order(status$rows$instrument_id), ]
+  testthat::expect_identical(as.numeric(rows$knowledge_time), expected)
+  lifetime <- resolved(ledgr_facts_lifetime(
+    data.frame(
+      instrument_id = c("AAA", "BBB"), effective_from = as.Date("2021-01-05"),
+      knowledge_time = supplied, assertion = "known_active", source = "ws45"
+    ),
+    knowledge = "assume_effective"
+  ), "lifetime")
+  rows <- lifetime$rows[order(lifetime$rows$instrument_id), ]
+  testthat::expect_identical(as.numeric(rows$knowledge_time), expected)
+  snapshots <- resolved(ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = as.Date("2021-01-05"), knowledge_time = supplied,
+      instrument_id = c("AAA", "BBB"), set_id = c("s1", "s2"), source = "ws45"
+    ),
+    universe_id = "u", knowledge = "assume_effective"
+  ))
+  headers <- snapshots$headers[order(snapshots$headers$set_id), ]
+  testthat::expect_identical(as.numeric(headers$knowledge_time), expected)
+})
+
+testthat::test_that("[LTB-0359] an effective-only cash dividend refuses in every mode (decisions 33, 35)", {
+  refusal <- function(expr) {
+    tryCatch(
+      {
+        force(expr)
+        NULL
+      },
+      ledgr_corporate_action_entitlement_missing = function(e) e
+    )
+  }
+  # Effective at session 4 (first test window), known at session 7 (second).
+  late <- ws45_unentitled_fixture("ordinary_cash_dividend", effective = 4L, known = 7L)
+  on.exit(ledgr_snapshot_close(late$snapshot), add = TRUE)
+  one <- refusal(ledgr:::ledgr_run_window(
+    late$exp, params = list(),
+    window = ledgr:::ledgr_experiment_window(late$exp, late$days[[3L]], late$days[[8L]]),
+    run_id = "ws45-unentitled-dividend"
+  ))
+  testthat::expect_identical(one$subtype, "ordinary_cash_dividend")
+  testthat::expect_identical(
+    as.numeric(one$knowledge_time),
+    as.numeric(ws45_utc("2021-01-12 14:30:00"))
+  )
+  chain <- refusal(suppressWarnings(ledgr_walk_forward(
+    late$exp, ledgr_param_grid(list()), late$folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
+  )))
+  testthat::expect_identical(chain$fact_id, one$fact_id)
+
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = ws45_utc("2021-01-04 21:00:00") + 86400 * 0:3,
+    open = 10, high = 10, low = 10, close = 10, volume = 100
+  )
+  dense <- ledgr_snapshot_from_df(
+    bars,
+    facts = ledgr_facts(ledgr_facts_equity_corporate_actions(data.frame(
+      subtype = "ordinary_cash_dividend", parent_instrument_id = "AAA",
+      effective_time = bars$ts_utc[[3L]], complete = TRUE,
+      provenance_tier = "snapshot_bound", gross_cash_per_parent_unit = 1,
+      gross_cash_validated = TRUE, source = "ws45", stringsAsFactors = FALSE
+    ))),
+    price_basis = "split_adjusted"
+  )
+  on.exit(ledgr_snapshot_close(dense), add = TRUE)
+  dense_refusal <- refusal(ledgr_run(
+    ledgr_experiment(
+      dense, function(ctx, params) ctx$hold(),
+      opening = ledgr_opening(cash = 100, positions = c(AAA = 1), cost_basis = c(AAA = 10)),
+      cost_model = ledgr_cost_zero()
+    ),
+    run_id = "ws45-unentitled-dividend-dense"
+  ))
+  testthat::expect_identical(dense_refusal$subtype, "ordinary_cash_dividend")
+  testthat::expect_identical(
+    as.numeric(dense_refusal$effective_time),
+    as.numeric(bars$ts_utc[[3L]])
+  )
+})
+
+testthat::test_that("[LTB-0360] snapshot headers follow resolved knowledge times (decision 34)", {
+  # Two sets effective 2021-01-05 10:00 UTC. set_y supplies the Date
+  # 2021-01-05 (resolves to its 14:30 UTC open); set_x supplies none, so it
+  # is known at 10:00. Input lists set_y first; resolved order is x, y. The
+  # UTC-midnight stand-in for set_y's Date ordered y before x.
+  input <- data.frame(
+    effective_from = ws45_utc("2021-01-05 10:00:00"),
+    instrument_id = c("AAA", "CCC", "AAA", "BBB"),
+    set_id = c("set_y", "set_y", "set_x", "set_x"),
+    source = "ws45",
+    stringsAsFactors = FALSE
+  )
+  input$knowledge_time <- as.Date(c("2021-01-05", "2021-01-05", NA, NA))
+  family <- ledgr:::ledgr_facts_family(
+    ledgr_facts(
+      ws45_sessions(),
+      ledgr_facts_membership_snapshots(input, "u", knowledge = "assume_effective")
+    ),
+    "membership"
+  )[[1L]]
+  testthat::expect_identical(family$headers$set_id, c("set_x", "set_y"))
+  testthat::expect_identical(
+    as.numeric(family$headers$knowledge_time),
+    as.numeric(ws45_utc(c("2021-01-05 10:00:00", "2021-01-05 14:30:00")))
+  )
 })

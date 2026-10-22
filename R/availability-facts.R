@@ -10,7 +10,8 @@ ledgr_fact_schema_version <- 1L
 #' evidence, but every run, sweep, feature precompute, walk-forward session or
 #' pulse inspection that prepares availability from that snapshot refuses with
 #' `ledgr_fact_knowledge_missing` until the row has a knowledge time.
-#' `knowledge = "assume_effective"` supplies one by using the effective time.
+#' `knowledge = "assume_effective"` fills a missing knowledge time from the
+#' effective time; a supplied knowledge time is always kept.
 #' Date-backed fact clocks are civil labels: [ledgr_facts()] resolves each to exactly one
 #' declared open session and retains the civil date, UTC instant, venue zone
 #' and calendar identity in sealed evidence. Corporate-action entitlement,
@@ -59,9 +60,10 @@ ledgr_fact_schema_version <- 1L
 #' `knowledge_time` is never replaced. A row with no event or knowledge clock is
 #' audit-only. A knowable row with neither an entitlement nor effective clock
 #' refuses only once its knowledge cutoff is reached during execution. A
-#' complete `cash_acquisition`, `stock_acquisition`, `mixed_acquisition` or
-#' `spin_off` row with an effective clock but no entitlement clock refuses with
-#' `ledgr_corporate_action_entitlement_missing` at the pulse it would act on.
+#' complete `ordinary_cash_dividend`, `cash_acquisition`, `stock_acquisition`,
+#' `mixed_acquisition` or `spin_off` row with an effective clock but no
+#' entitlement clock refuses with `ledgr_corporate_action_entitlement_missing`
+#' at the pulse it would act on, in every execution mode.
 #' Clock order and interval bounds are checked on resolved instants, so a Date
 #' field is compared only after it resolves to its session.
 #'
@@ -121,8 +123,9 @@ ledgr_facts_membership_intervals <- function(df,
   )
   ledgr_fact_check_exact_intervals(labels, effective_from, effective_to, "membership intervals")
   member <- ledgr_fact_logical(df$member, "member")
-  knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(labels, knowledge)
+  known <- ledgr_fact_knowledge_time(df, effective_from, knowledge, labels)
+  knowledge_time <- known$knowledge_time
+  civil_time_json <- ledgr_fact_civil_encode(known$labels)
   source <- ledgr_fact_source(df)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
@@ -177,11 +180,14 @@ ledgr_facts_membership_snapshots <- function(df,
   complete <- normalized$complete
   ledgr_fact_require_columns(df, c("instrument_id", "effective_from"), "membership snapshots")
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
-  knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(
-    ledgr_fact_civil_labels(df, c("effective_from", "knowledge_time")),
-    knowledge
+  known <- ledgr_fact_knowledge_time(
+    df,
+    effective_from,
+    knowledge,
+    ledgr_fact_civil_labels(df, c("effective_from", "knowledge_time"))
   )
+  knowledge_time <- known$knowledge_time
+  civil_time_json <- ledgr_fact_civil_encode(known$labels)
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = TRUE)
   source <- ledgr_fact_source(df)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
@@ -196,6 +202,7 @@ ledgr_facts_membership_snapshots <- function(df,
   set_id <- supplied_set_id
   missing_set <- is.na(set_id) | !nzchar(set_id)
   if (any(missing_set)) {
+    # One digest per row lacking a set_id (shape 4); routed to LDG-3080/F05.
     generated <- vapply(
       group_key[missing_set],
       function(key) paste0("set_", substr(digest::digest(key, algo = "sha256"), 1L, 24L)),
@@ -294,8 +301,9 @@ ledgr_facts_trading_status <- function(df,
   if (anyNA(precedence) || any(as.numeric(precedence) != suppressWarnings(as.numeric(df$precedence %||% precedence)))) {
     rlang::abort("Trading-status `precedence` must contain whole numbers.", class = c("ledgr_fact_invalid_precedence", "ledgr_invalid_args"))
   }
-  knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(labels, knowledge)
+  known <- ledgr_fact_knowledge_time(df, effective_from, knowledge, labels)
+  knowledge_time <- known$knowledge_time
+  civil_time_json <- ledgr_fact_civil_encode(known$labels)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
   supplied_supersedes <- ledgr_fact_optional_character(df, "supersedes_fact_id")
@@ -356,8 +364,9 @@ ledgr_facts_lifetime <- function(df,
     )
   }
   source <- ledgr_fact_source(df)
-  knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(labels, knowledge)
+  known <- ledgr_fact_knowledge_time(df, effective_from, knowledge, labels)
+  knowledge_time <- known$knowledge_time
+  civil_time_json <- ledgr_fact_civil_encode(known$labels)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
   terminal_event <- ledgr_fact_optional_character(df, "terminal_event")
@@ -765,7 +774,7 @@ ledgr_facts_sessions <- function(df,
     timezone,
     "next session_date boundary"
   )
-  knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
+  knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)$knowledge_time
   late <- ifelse(is_open, knowledge_time > session_open, knowledge_time > effective_from)
   late[is.na(late)] <- TRUE
   if (any(late)) {
@@ -1024,20 +1033,6 @@ ledgr_fact_civil_labels <- function(df, fields) {
   labels
 }
 
-ledgr_fact_civil_json <- function(labels, knowledge = NULL) {
-  if (identical(knowledge, "assume_effective") &&
-      all(c("knowledge_time", "effective_from") %in% names(labels))) {
-    # The assume-effective label follows the effective label wherever the
-    # knowledge field carries no civil label of its own. Retained unchanged
-    # from the accepted WS40 tree: with a POSIXct knowledge column and a Date
-    # effective_from it also relabels supplied knowledge times, which is
-    # routed to the maintainer in the WS45 closeout rather than changed here.
-    missing <- is.na(labels$knowledge_time)
-    labels$knowledge_time[missing] <- labels$effective_from[missing]
-  }
-  ledgr_fact_civil_encode(labels)
-}
-
 # Unresolved civil evidence, one JSON object per row:
 # {"<field>":{"civil_date":"YYYY-MM-DD"},...} with fields in name order.
 # Each distinct date is encoded once per field and indexed back to rows.
@@ -1102,8 +1097,10 @@ ledgr_fact_frame_pending_civil <- function(frame) {
 # resolved instants and rehashes it. A family without pending labels,
 # including one resolved by an earlier bundle, is returned untouched with its
 # own hash, so an edit to it is refused by ledgr_facts_assert() whatever else
-# the bundle holds. A family about to be rehashed is checked first, so
-# resolution never launders an edit made after construction.
+# the bundle holds. Every family resolution reads is checked first, the
+# families about to be rehashed and the session families whose instants they
+# take, so resolution never launders an edit made after construction (close
+# review 45 F2).
 ledgr_fact_resolve_civil_families <- function(families) {
   # Iterates the bundle's fact families, not rows.
   pending <- vapply(families, function(family) {
@@ -1111,7 +1108,9 @@ ledgr_fact_resolve_civil_families <- function(families) {
       ledgr_fact_frame_pending_civil(family$headers)
   }, logical(1))
   if (!any(pending)) return(families)
-  if (!all(vapply(families[pending], ledgr_fact_family_intact, logical(1)))) {
+  read <- pending |
+    vapply(families, function(family) identical(family$family, "sessions"), logical(1))
+  if (!all(vapply(families[read], ledgr_fact_family_intact, logical(1)))) {
     rlang::abort(
       "`facts` must be an untampered ledgr_facts object.",
       class = c("ledgr_invalid_facts", "ledgr_invalid_args")
@@ -1686,12 +1685,20 @@ ledgr_fact_optional_time <- function(df, field) {
   ledgr_fact_time(df[[field]], field, allow_missing = TRUE)
 }
 
-ledgr_fact_knowledge_time <- function(df, effective_from, knowledge) {
+# Cut 16 decision (32), the one assume-effective rule: under
+# knowledge = "assume_effective" a missing knowledge time is filled from the
+# effective time and a supplied one, Date or POSIXct, is always kept. The
+# filled rows also take the effective field's civil label, so an assumed
+# knowledge time of a Date effective_from resolves with it to the session
+# open. `labels` is NULL for families without civil labels (sessions).
+ledgr_fact_knowledge_time <- function(df, effective_from, knowledge, labels = NULL) {
   out <- ledgr_fact_optional_time(df, "knowledge_time")
-  if (identical(knowledge, "assume_effective")) {
-    out[is.na(out)] <- effective_from[is.na(out)]
+  assume <- identical(knowledge, "assume_effective") & is.na(out)
+  out[assume] <- effective_from[assume]
+  if (!is.null(labels)) {
+    labels$knowledge_time[assume] <- labels$effective_from[assume]
   }
-  out
+  list(knowledge_time = out, labels = labels)
 }
 
 ledgr_fact_knowledge_metadata <- function(knowledge) {
@@ -1746,6 +1753,8 @@ ledgr_fact_optional_character <- function(df, field) {
   out
 }
 
+# Writes one canonical JSON per row (shape 4); unchanged by WS45 because its
+# bytes are fact identity, routed to LDG-3080/F05 (WS45 closeout).
 ledgr_fact_provenance <- function(df, source, knowledge) {
   if ("provenance_json" %in% names(df)) {
     out <- as.character(df$provenance_json)
@@ -1772,6 +1781,9 @@ ledgr_fact_provenance <- function(df, source, knowledge) {
   }, character(1))
 }
 
+# Digests one canonical JSON per row through a one-row frame (shapes 1, 4);
+# unchanged by WS45 because the IDs are fact identity, routed to
+# LDG-3080/F05 (WS45 closeout).
 ledgr_fact_ids <- function(family, rows, supplied_id) {
   vapply(seq_len(nrow(rows)), function(i) {
     source_id <- supplied_id[[i]]
@@ -2266,12 +2278,14 @@ ledgr_status_lineage <- function(rows) {
   # Breadth-first levels from the roots. The loop runs once per level of
   # the deepest correction chain, not per row; each level is one vectorised
   # step. Every level holds its nodes grouped by parent in row order.
-  levels <- list()
+  levels <- vector("list", count)
+  depth_count <- 0L
   level <- which(!has_parent)
   reached <- logical(count)
   while (length(level) > 0L) {
     reached[level] <- TRUE
-    levels[[length(levels) + 1L]] <- level
+    depth_count <- depth_count + 1L
+    levels[[depth_count]] <- level
     parents <- level[child_count[level] > 0L]
     level <- child[sequence(child_count[parents], from = child_start[parents])]
   }
@@ -2281,6 +2295,7 @@ ledgr_status_lineage <- function(rows) {
       class = c("ledgr_fact_invalid_supersession", "ledgr_invalid_args")
     )
   }
+  levels <- levels[seq_len(depth_count)]
 
   # Subtree sizes bottom-up, then preorder entry numbers top-down; both
   # read each level as runs of siblings that share a parent.
@@ -2505,6 +2520,11 @@ ledgr_fact_status_unrelated_overlap <- function(rows,
   # Ordered pairs related by supersession with the same properties. Each
   # step moves every row one link up its correction chain, so the loop runs
   # once per level of the deepest chain and visits each ancestor pair once.
+  # Its total work is the sum over rows of their chain depth: linear in rows
+  # for bounded correction depth, but D(D - 1) / 2 for one chain of D
+  # corrections (about 14 s at D = 32,000; close review 45 F3). Real
+  # correction chains are short; an O(n log n) count via preorder intervals
+  # is possible if deep chains appear.
   related <- 0
   descendant <- which(!is.na(lineage$parent))
   ancestor <- lineage$parent[descendant]

@@ -152,10 +152,14 @@ ledgr_corporate_action_refusal_abort <- function(stopped) {
   )
 }
 
-# Subtypes whose disposition or quantity effect binds an entitled parent
-# quantity; Cut 16 decision (28) refuses one without an entitlement clock.
+# Subtypes whose effect binds an entitled parent quantity: dispositions and
+# quantity effects (Cut 16 decision 28) and the cash dividend (decision 33).
+# A complete row of one of them without an entitlement clock refuses.
 ledgr_corporate_action_entitled_subtypes <- function() {
-  c("cash_acquisition", "stock_acquisition", "mixed_acquisition", "spin_off")
+  c(
+    "ordinary_cash_dividend", "cash_acquisition", "stock_acquisition",
+    "mixed_acquisition", "spin_off"
+  )
 }
 
 # Subtypes some settlement path models; any other sealed subtype is unmodeled.
@@ -237,9 +241,10 @@ ledgr_corporate_action_plan <- function(rows,
   quantity_eligible <- (rows$subtype %in% c(
     "stock_acquisition", "mixed_acquisition", "spin_off"
   ) & rows$complete) | unmodeled
-  # Cut 16 decision (28): a complete disposition or quantity-effect row with
-  # an effective clock but no entitlement clock has no entitled quantity to
-  # bind. It refuses at the pulse it would act on instead of acting, in every
+  # Cut 16 decisions (28), (33) and (35): a complete cash-dividend,
+  # disposition or quantity-effect row with an effective clock but no
+  # entitlement clock has no entitled quantity to bind. It refuses at the
+  # pulse it would act on instead of acting or never posting, in every
   # execution mode.
   entitlement_missing <- rows$complete &
     rows$subtype %in% ledgr_corporate_action_entitled_subtypes() &
@@ -442,7 +447,7 @@ ledgr_corporate_action_plan <- function(rows,
       row <- state$rows[missing_entitlement[[1L]], , drop = FALSE]
       rlang::abort(
         paste(
-          "A corporate-action disposition or quantity effect requires an",
+          "A corporate-action cash, disposition or quantity effect requires an",
           "entitlement clock; supply the fact's entitlement time."
         ),
         class = c(
@@ -707,7 +712,7 @@ ledgr_corporate_action_plan <- function(rows,
     effect <- (state$disposition_eligible & !state$disposition_posted) |
       state$quantity_eligible
     effect <- effect & effective_reached & (effective_later | known_later)
-    # A decision (28) row whose effective clock this window reached but
+    # A decision (28) or (33) row whose effective clock this window reached but
     # which becomes known after it refuses in the successor, as in one run;
     # it carries with no entitled quantity.
     unentitled <- state$entitlement_missing & !is.na(state$effective_idx) &
