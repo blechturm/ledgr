@@ -1,0 +1,21 @@
+mutation,change,expected_block,failed_blocks,test_filter,result
+L1,siblings numbered out of preorder,LTB-0351,LTB-0351,fact-pipeline-followups,DETECTED
+L2,acyclicity check dropped,LTB-0351,LTB-0351,fact-pipeline-followups,DETECTED
+L3,conflict validator rebuilds lineage,LTB-0351,LTB-0351,fact-pipeline-followups,DETECTED
+L4,lineage built without supersession,LTB-0351,LTB-0351,fact-pipeline-followups,DETECTED
+C1,related pair counted once,LTB-0352,LTB-0351;LTB-0352,fact-pipeline-followups,DETECTED
+C2,ancestor scope ignored,LTB-0352,LTB-0352,fact-pipeline-followups,DETECTED
+C3,touching half-open intervals overlap,LTB-0352,LTB-0352,fact-pipeline-followups,DETECTED
+R1,resolved instants formatted per row,LTB-0353,LTB-0353,fact-pipeline-followups,DETECTED
+R2,evidence key order changed,LTB-0353,LTB-0353;LTB-0356,fact-pipeline-followups,DETECTED
+I1,every bundle family rehashed,LTB-0354,LTB-0354,fact-pipeline-followups,DETECTED
+I2,pending family rehashed unchecked,LTB-0354,LTB-0354,fact-pipeline-followups,DETECTED
+V1,clock order checked before resolution,LTB-0355,LTB-0355,fact-pipeline-followups,DETECTED
+V2,intervals not checked after resolution,LTB-0355,LTB-0355,fact-pipeline-followups,DETECTED
+K1,supplied knowledge replaced (label mask),LTB-0356,LTB-0356;LTB-0357,fact-pipeline-followups,DETECTED
+K2,entitlement preferred over effective,LTB-0356,LTB-0356,fact-pipeline-followups,DETECTED
+K3,Date knowledge resolved to close,LTB-0356,LTB-0353;LTB-0356,fact-pipeline-followups,DETECTED
+K4,known-when-effective dropped,LTB-0356,LTB-0356;LTB-0357,fact-pipeline-followups,DETECTED
+D1,effective-only row passes silently,LTB-0357,LTB-0357,fact-pipeline-followups,DETECTED
+D2,refusal only in availability runs,LTB-0357,LTB-0357,fact-pipeline-followups,DETECTED
+D3,unentitled row not carried,LTB-0357,LTB-0357,fact-pipeline-followups,DETECTED

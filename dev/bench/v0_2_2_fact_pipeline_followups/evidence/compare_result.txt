@@ -1,0 +1,62 @@
+facts/membership_date                    IDENTICAL ok         
+facts/membership_posix                   IDENTICAL ok         
+facts/membership_mixed_ok                IDENTICAL ok         
+facts/membership_assume                  IDENTICAL ok         
+facts/snapshots_rows                     IDENTICAL ok         
+facts/snapshots_list                     IDENTICAL ok         
+facts/status_posix                       IDENTICAL ok         
+facts/status_date_knowledge              IDENTICAL ok         
+facts/status_date                        IDENTICAL ok         
+facts/status_bare                        IDENTICAL ok         
+facts/lifetime_date                      IDENTICAL ok         
+facts/ca_date                            IDENTICAL ok         
+facts/ca_posix                           IDENTICAL ok         
+facts/ca_posix_bare                      IDENTICAL ok         
+facts/ca_mixed_ok                        IDENTICAL ok         
+facts/all_families                       IDENTICAL ok         
+facts/rebundle                           IDENTICAL ok         
+facts/qlcal_sessions                     IDENTICAL ok         
+facts/diff_ca_supplied_knowledge         DIFFERS   ok         [bundle_hash, families]
+facts/diff_ca_mixed_knowledge            DIFFERS   ok         [bundle_hash, families]
+facts/diff_ca_posix_effective            DIFFERS   ok         [bundle_hash, families]
+facts/diff_ca_false_accept               DIFFERS   ok         [bundle_hash, families, error, message]
+facts/diff_ca_false_refusal              DIFFERS   ok         [error, message, bundle_hash, families]
+facts/diff_membership_false_refusal      DIFFERS   ok         [error, message, bundle_hash, families]
+snapshots/all_families                   IDENTICAL ok         
+snapshots/posix_families                 IDENTICAL ok         
+snapshots/mixed_ok                       IDENTICAL ok         
+snapshots/diff_d28_effective_only        DIFFERS   ok         [run/ledger, run/equity, run/fills, run/summary, chain/status, chain/runs, run/error, run/message, chain/error, chain/message]
+
+Intended differences (UTC):
+  diff_ca_supplied_knowledge
+    BASE:      entitlement=2021-01-11 21:00 effective=2021-01-12 21:00 knowledge=2021-01-12 14:30
+    candidate: entitlement=2021-01-11 21:00 effective=2021-01-12 21:00 knowledge=2021-01-13 12:00
+  diff_ca_mixed_knowledge
+    BASE:      entitlement=2021-01-11 21:00 effective=2021-01-12 21:00 knowledge=2021-01-12 14:30; entitlement=2021-01-13 21:00 effective=2021-01-14 21:00 knowledge=2021-01-14 14:30; entitlement=2021-02-02 21:00 effective=2021-02-03 21:00 knowledge=2021-02-03 14:30; entitlement=NA effective=NA knowledge=NA; entitlement=2021-02-11 21:00 effective=2021-02-11 21:00 knowledge=2021-02-11 14:30
+    candidate: entitlement=2021-01-11 21:00 effective=2021-01-12 21:00 knowledge=2021-01-08 12:30; entitlement=2021-01-13 21:00 effective=2021-01-14 21:00 knowledge=2021-01-12 12:30; entitlement=2021-02-02 21:00 effective=2021-02-03 21:00 knowledge=2021-02-01 12:30; entitlement=NA effective=NA knowledge=NA; entitlement=2021-02-11 21:00 effective=2021-02-11 21:00 knowledge=2021-02-10 12:30
+  diff_ca_posix_effective
+    BASE:      entitlement=2021-01-11 21:00 effective=2021-01-12 21:00 knowledge=2021-01-11 14:30
+    candidate: entitlement=2021-01-11 21:00 effective=2021-01-12 21:00 knowledge=2021-01-12 21:00
+  diff_ca_false_accept
+    BASE:      entitlement=2021-01-12 21:00 effective=2021-01-12 15:00 knowledge=2021-01-12 14:30
+    candidate: REFUSED ledgr_fact_invalid_clock_order
+  diff_ca_false_refusal
+    BASE:      REFUSED ledgr_fact_invalid_clock_order
+    candidate: entitlement=2021-01-12 15:00 effective=2021-01-12 21:00 knowledge=2021-01-12 14:30
+  diff_membership_false_refusal
+    BASE:      REFUSED ledgr_fact_invalid_interval
+    candidate: from=2021-01-15 10:00 to=2021-01-15 14:30 knowledge=2021-01-15 10:00
+
+Snapshot runs (base):
+  all_families: hash=1d71054398c5225a rule=4; run: 8 ledger rows, 38 equity rows, 3 corporate-action events; walk-forward: DONE with 2 test runs
+  posix_families: hash=1643c9c3cd10fe77 rule=4; run: 8 ledger rows, 38 equity rows, 3 corporate-action events; walk-forward: DONE with 2 test runs
+  mixed_ok: hash=2c9a60890149b600 rule=4; run: 8 ledger rows, 38 equity rows, 3 corporate-action events; walk-forward: DONE with 2 test runs
+  diff_d28_effective_only: hash=9ac3809a16039fb4 rule=4; run: 7 ledger rows, 38 equity rows, 2 corporate-action events; walk-forward: DONE with 2 test runs
+
+Snapshot runs (cand):
+  all_families: hash=1d71054398c5225a rule=4; run: 8 ledger rows, 38 equity rows, 3 corporate-action events; walk-forward: DONE with 2 test runs
+  posix_families: hash=1643c9c3cd10fe77 rule=4; run: 8 ledger rows, 38 equity rows, 3 corporate-action events; walk-forward: DONE with 2 test runs
+  mixed_ok: hash=2c9a60890149b600 rule=4; run: 8 ledger rows, 38 equity rows, 3 corporate-action events; walk-forward: DONE with 2 test runs
+  diff_d28_effective_only: hash=9ac3809a16039fb4 rule=4; run: REFUSED ledgr_corporate_action_entitlement_missing; walk-forward: REFUSED ledgr_corporate_action_entitlement_missing
+
+WS45_IDENTITY_OK

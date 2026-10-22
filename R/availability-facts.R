@@ -52,10 +52,18 @@ ledgr_fact_schema_version <- 1L
 #' `snapshot_bound`, with no upstream identifiers, or
 #' `upstream_vintage_bound`, with both `upstream_build_id` and
 #' `bar_vintage_id`.
-#' An event clock without `knowledge_time` is known when effective. A row with
-#' no event or knowledge clock is audit-only. A knowable row with neither an
-#' entitlement nor effective clock refuses only once its knowledge cutoff is
-#' reached during execution.
+#' A row with an event clock (the effective time, else the entitlement time)
+#' and no `knowledge_time` is known when that event becomes effective: a
+#' POSIXct event at its instant, a Date event at the declared open of its venue
+#' session, while the event itself stays at that session's close. A supplied
+#' `knowledge_time` is never replaced. A row with no event or knowledge clock is
+#' audit-only. A knowable row with neither an entitlement nor effective clock
+#' refuses only once its knowledge cutoff is reached during execution. A
+#' complete `cash_acquisition`, `stock_acquisition`, `mixed_acquisition` or
+#' `spin_off` row with an effective clock but no entitlement clock refuses with
+#' `ledgr_corporate_action_entitlement_missing` at the pulse it would act on.
+#' Clock order and interval bounds are checked on resolved instants, so a Date
+#' field is compared only after it resolves to its session.
 #'
 #' Session rows require `session_date`, `status`, `session_open`, and
 #' `session_close`; `knowledge_time` is required under evidenced knowledge and
@@ -107,14 +115,14 @@ ledgr_facts_membership_intervals <- function(df,
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = FALSE)
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   effective_to <- ledgr_fact_optional_time(df, "effective_to")
-  ledgr_fact_check_exact_intervals(df, effective_from, effective_to, "membership intervals")
+  labels <- ledgr_fact_civil_labels(
+    df,
+    c("effective_from", "effective_to", "knowledge_time")
+  )
+  ledgr_fact_check_exact_intervals(labels, effective_from, effective_to, "membership intervals")
   member <- ledgr_fact_logical(df$member, "member")
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(
-    df,
-    c("effective_from", "effective_to", "knowledge_time"),
-    knowledge
-  )
+  civil_time_json <- ledgr_fact_civil_json(labels, knowledge)
   source <- ledgr_fact_source(df)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
@@ -171,8 +179,7 @@ ledgr_facts_membership_snapshots <- function(df,
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
   civil_time_json <- ledgr_fact_civil_json(
-    df,
-    c("effective_from", "knowledge_time"),
+    ledgr_fact_civil_labels(df, c("effective_from", "knowledge_time")),
     knowledge
   )
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = TRUE)
@@ -269,7 +276,11 @@ ledgr_facts_trading_status <- function(df,
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = FALSE)
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   effective_to <- ledgr_fact_optional_time(df, "effective_to")
-  ledgr_fact_check_exact_intervals(df, effective_from, effective_to, "trading status")
+  labels <- ledgr_fact_civil_labels(
+    df,
+    c("effective_from", "effective_to", "knowledge_time")
+  )
+  ledgr_fact_check_exact_intervals(labels, effective_from, effective_to, "trading status")
   status <- tolower(as.character(df$status))
   allowed <- c("active", "halted", "quotation_only")
   if (anyNA(status) || any(!status %in% allowed)) {
@@ -284,11 +295,7 @@ ledgr_facts_trading_status <- function(df,
     rlang::abort("Trading-status `precedence` must contain whole numbers.", class = c("ledgr_fact_invalid_precedence", "ledgr_invalid_args"))
   }
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(
-    df,
-    c("effective_from", "effective_to", "knowledge_time"),
-    knowledge
-  )
+  civil_time_json <- ledgr_fact_civil_json(labels, knowledge)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
   supplied_supersedes <- ledgr_fact_optional_character(df, "supersedes_fact_id")
@@ -335,7 +342,11 @@ ledgr_facts_lifetime <- function(df,
   instrument_id <- ledgr_fact_instrument_ids(df$instrument_id, allow_missing = FALSE)
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   effective_to <- ledgr_fact_optional_time(df, "effective_to")
-  ledgr_fact_check_exact_intervals(df, effective_from, effective_to, "lifetime")
+  labels <- ledgr_fact_civil_labels(
+    df,
+    c("effective_from", "effective_to", "knowledge_time")
+  )
+  ledgr_fact_check_exact_intervals(labels, effective_from, effective_to, "lifetime")
   assertion <- tolower(as.character(df$assertion))
   allowed <- c("known_active", "known_inactive", "unknown")
   if (anyNA(assertion) || any(!assertion %in% allowed)) {
@@ -346,11 +357,7 @@ ledgr_facts_lifetime <- function(df,
   }
   source <- ledgr_fact_source(df)
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
-  civil_time_json <- ledgr_fact_civil_json(
-    df,
-    c("effective_from", "effective_to", "knowledge_time"),
-    knowledge
-  )
+  civil_time_json <- ledgr_fact_civil_json(labels, knowledge)
   provenance_json <- ledgr_fact_provenance(df, source, knowledge)
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
   terminal_event <- ledgr_fact_optional_character(df, "terminal_event")
@@ -1017,10 +1024,9 @@ ledgr_fact_civil_labels <- function(df, fields) {
   labels
 }
 
-ledgr_fact_civil_json <- function(df, fields, knowledge = NULL) {
-  labels <- ledgr_fact_civil_labels(df, fields)
+ledgr_fact_civil_json <- function(labels, knowledge = NULL) {
   if (identical(knowledge, "assume_effective") &&
-      "knowledge_time" %in% fields && "effective_from" %in% fields) {
+      all(c("knowledge_time", "effective_from") %in% names(labels))) {
     # The assume-effective label follows the effective label wherever the
     # knowledge field carries no civil label of its own. Retained unchanged
     # from the accepted WS40 tree: with a POSIXct knowledge column and a Date
@@ -1699,9 +1705,8 @@ ledgr_fact_knowledge_metadata <- function(knowledge) {
 # Interval bounds that carry no civil label are exact instants, so the
 # constructor checks them where the accepted refusal order expects it. A
 # civil bound is checked only after resolution, in ledgr_fact_family_settle().
-ledgr_fact_check_exact_intervals <- function(df, from, to, label) {
-  civil <- ledgr_fact_civil_labels(df, c("effective_from", "effective_to"))
-  if (all(is.na(civil$effective_from)) && all(is.na(civil$effective_to))) {
+ledgr_fact_check_exact_intervals <- function(labels, from, to, label) {
+  if (all(is.na(labels$effective_from)) && all(is.na(labels$effective_to))) {
     ledgr_fact_validate_intervals(from, to, label)
   }
   invisible(TRUE)

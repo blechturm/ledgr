@@ -99,10 +99,18 @@ require one lower-snake-case \code{refusal_reason}. Provenance is either
 \code{snapshot_bound}, with no upstream identifiers, or
 \code{upstream_vintage_bound}, with both \code{upstream_build_id} and
 \code{bar_vintage_id}.
-An event clock without \code{knowledge_time} is known when effective. A row with
-no event or knowledge clock is audit-only. A knowable row with neither an
-entitlement nor effective clock refuses only once its knowledge cutoff is
-reached during execution.
+A row with an event clock (the effective time, else the entitlement time)
+and no \code{knowledge_time} is known when that event becomes effective: a
+POSIXct event at its instant, a Date event at the declared open of its venue
+session, while the event itself stays at that session's close. A supplied
+\code{knowledge_time} is never replaced. A row with no event or knowledge clock is
+audit-only. A knowable row with neither an entitlement nor effective clock
+refuses only once its knowledge cutoff is reached during execution. A
+complete \code{cash_acquisition}, \code{stock_acquisition}, \code{mixed_acquisition} or
+\code{spin_off} row with an effective clock but no entitlement clock refuses with
+\code{ledgr_corporate_action_entitlement_missing} at the pulse it would act on.
+Clock order and interval bounds are checked on resolved instants, so a Date
+field is compared only after it resolves to its session.
 
 Session rows require \code{session_date}, \code{status}, \code{session_open}, and
 \code{session_close}; \code{knowledge_time} is required under evidenced knowledge and
