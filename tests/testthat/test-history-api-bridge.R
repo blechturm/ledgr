@@ -195,6 +195,16 @@ testthat::test_that("[LTB-0417] ledgr_align_weights takes the solution first and
     testthat::expect_s3_class(cnd, "ledgr_invalid_args")
   }
 
+  # A three-dimensional array or a character vector whose length matches the
+  # included instruments reaches only the shape and type refusals.
+  for (bad in list(array(c(0.25, 0.75), c(1L, 1L, 2L)), c("0.25", "0.75"))) {
+    cnd <- tryCatch(ledgr_align_weights(bad, fast), error = function(e) e)
+    testthat::expect_s3_class(cnd, "ledgr_weight_alignment_mismatch")
+  }
+  # The history is validated before the solution.
+  testthat::expect_error(ledgr_align_weights("0.5", data.frame(x = 1)),
+    class = "ledgr_invalid_history_result")
+
   # A missing or non-finite weight in an aligned solution refuses through
   # ledgr_weights() with ledgr_invalid_strategy_type, never the alignment class.
   for (bad in list(c(0.25, Inf), c(NaN, 0.75), c(BBB = -Inf, AAA = 0.25), c(NA_real_, 0.75))) {
