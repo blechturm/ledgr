@@ -1,5 +1,36 @@
 # ledgr (development version)
 
+## Fact pipeline follow-ups
+
+- Fact construction is faster at scale with unchanged rows, fact IDs and
+  hashes: correction lineage, trading-status validation and Date resolution
+  now grow linearly with fact rows (for example 0.15 s instead of 83 s to
+  validate 120,000 corrected status rows).
+
+- Date and POSIXct clocks on one row are compared on the session instants
+  the Dates resolve to, not on UTC midnight. A Date entitlement whose session
+  close falls after a same-day POSIXct effective time now refuses
+  (`ledgr_fact_invalid_clock_order`); a POSIXct start before a Date interval
+  end's session open is now accepted. Such Date-dependent refusals are raised
+  by `ledgr_facts()` rather than by the family constructor.
+
+- A corporate action without a knowledge time is known when its event
+  becomes effective: a Date event at its session's open, a POSIXct event at
+  its instant. A supplied knowledge time is always kept, for corporate
+  actions and, under `knowledge = "assume_effective"`, for membership,
+  trading-status and lifetime facts; it was previously replaced by a session
+  open when the event or effective time was a Date.
+
+- A complete ordinary cash dividend, cash, stock or mixed acquisition or
+  spin-off with an effective time but no entitlement time now refuses at the
+  pulse it would act on with `ledgr_corporate_action_entitlement_missing`,
+  in single runs, sweeps, the carried walk-forward chain and dense runs.
+  Supply the entitlement time.
+
+- A fact family edited after construction is refused whatever else its bundle
+  holds, including an edited sessions family that a Date family resolves
+  against. Membership-snapshot headers are ordered by resolved times.
+
 ## Causal history foundation
 
 - Availability-aware runs, sweeps and walk-forward sessions now prepare one

@@ -1,6 +1,6 @@
 "file","line","call_kind","expression","disposition","reason"
 "R/accounting-replay.R",2,"abort_dynamic","c(""ledgr_invalid_accounting_event"", class)","runtime_class_expression","The class is supplied by a validated caller, wrapper formal, or caught runtime condition and cannot be enumerated at this site."
-"R/availability-facts.R",430,"abort_dynamic","c(subclass, if (isTRUE(state)) ""ledgr_invalid_state"" else ""ledgr_invalid_args"")","runtime_class_expression","The class is supplied by a validated caller, wrapper formal, or caught runtime condition and cannot be enumerated at this site."
+"R/availability-facts.R",401,"abort_dynamic","c(subclass, if (isTRUE(state)) ""ledgr_invalid_state"" else ""ledgr_invalid_args"")","runtime_class_expression","The class is supplied by a validated caller, wrapper formal, or caught runtime condition and cannot be enumerated at this site."
 "R/backtest-runner.R",336,"abort_dynamic","class","runtime_class_expression","The class is supplied by a validated caller, wrapper formal, or caught runtime condition and cannot be enumerated at this site."
 "R/backtest-runner.R",49,"abort_dynamic","ledgr_strategy_error_classes(error)","runtime_class_expression","The class is supplied by a validated caller, wrapper formal, or caught runtime condition and cannot be enumerated at this site."
 "R/corporate-action-policy.R",302,"stop","stop(""unknown policy id"", call. = FALSE)","base_condition","Base R condition without a ledgr public class-vector element."

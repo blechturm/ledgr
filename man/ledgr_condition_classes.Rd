@@ -145,6 +145,7 @@
 \alias{ledgr_corporate_action_clock_mismatch}
 \alias{ledgr_corporate_action_clock_missing}
 \alias{ledgr_corporate_action_double_credit}
+\alias{ledgr_corporate_action_entitlement_missing}
 \alias{ledgr_corporate_action_quantity_unsupported}
 \alias{ledgr_corporate_action_unsupported}
 \alias{ledgr_db_not_found}
@@ -454,6 +455,12 @@ to exactly one declared open venue session. \code{ledgr_session_boundary_unresol
 applies the same refusal to an availability-aware execution boundary.
 \code{ledgr_corporate_action_clock_missing} is raised, at its knowledge cutoff,
 for a knowable corporate action with neither entitlement nor effective time.
+\code{ledgr_corporate_action_entitlement_missing} is raised, at the pulse it would
+act on and in every execution mode, for a complete \code{ordinary_cash_dividend},
+\code{cash_acquisition}, \code{stock_acquisition}, \code{mixed_acquisition} or \code{spin_off}
+row with an effective clock but no entitlement clock; it carries the fact and instrument IDs, the subtype and
+the effective and knowledge clocks, and the user supplies the entitlement
+time.
 \code{ledgr_invalid_history_policy} is raised for malformed history-policy
 constructor arguments or a non-current policy object.
 \code{ledgr_history_identity_mismatch} and \code{ledgr_precomputed_history_mismatch}
@@ -978,6 +985,9 @@ boundary.
 clock mismatch boundary.
 \item \code{ledgr_corporate_action_double_credit} reports the corporate action
 double credit boundary.
+\item \code{ledgr_corporate_action_entitlement_missing} reports a cash-dividend,
+disposition or quantity-effect corporate action without an entitlement
+clock.
 \item \code{ledgr_corporate_action_quantity_unsupported} reports the corporate
 action quantity unsupported boundary.
 \item \code{ledgr_db_not_found} reports db was not found.

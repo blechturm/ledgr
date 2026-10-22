@@ -664,11 +664,25 @@ Accepted change pending:
   persistence and preparation. A Date-backed fact stores its original civil
   date together with the resolved UTC instant, venue zone and calendar
   identity; it must resolve to exactly one declared open venue session.
-  Availability-aware Date boundaries resolve to session open for starts and
-  session close for ends. A Date-valued corporate-action entitlement,
+  A Date-valued fact interval bound resolves to its session open, for the
+  inclusive start and the exclusive end alike, as does a Date-valued
+  knowledge time; run, sweep, window and fold ends given as Dates resolve
+  to the session close, as stated for availability-aware entry points
+  below. A Date-valued corporate-action entitlement,
   effective or payment event resolves to that session's close, while its
   Date-valued knowledge time resolves to session open. POSIXct boundaries
-  remain exact instants.
+  remain exact instants. Interval bounds, corporate-action clock order,
+  correction order and family row order are checked on resolved instants, so
+  a Date field is never compared through a UTC-midnight stand-in: a mixed
+  Date and POSIXct row is accepted or refused by its resolved session
+  instants (Cut 16 LDG-3073). Membership-snapshot headers are ordered by
+  resolved effective and knowledge times after resolution (Cut 16 decision
+  34).
+- A fact family carries the hash of its own rows, headers and metadata.
+  `ledgr_facts()` resolves and rehashes only a family that still holds civil
+  labels, and checks that family's recorded hash first; every other family
+  keeps its hash. A family edited after construction is therefore refused,
+  with `ledgr_invalid_facts`, whatever else its bundle holds.
 - Trading-status corrections form an acyclic supersession forest within one
   source and instrument. A successor cannot become knowable before its
   predecessor, may start earlier, and must cover the predecessor through its
@@ -676,10 +690,29 @@ Accepted change pending:
   remaining assertions. Tied contradictory siblings or unrelated descendants
   refuse; same-assertion components and later revivals remain valid.
 - A corporate-action row with an event clock and no knowledge clock is known
-  when effective. A row with no event or knowledge clock is audit-only and is
-  never due. A row with knowledge time but neither entitlement nor effective
-  time refuses, at that knowledge cutoff and not before, with
-  `ledgr_corporate_action_clock_missing` carrying its fact and clock fields.
+  when its event becomes effective; the event clock is the effective time,
+  else the entitlement time (Cut 16 decision 11). A POSIXct event is known at
+  that instant. A Date-valued event is known at the declared open of its
+  venue session, so a strategy can act on it during that session, and stays
+  effective at that session's close (Cut 16 decisions 12 and 27). A supplied
+  knowledge time, Date or POSIXct, is never replaced (Cut 16 decision 31).
+  For membership, trading-status and lifetime facts,
+  `knowledge = "assume_effective"` fills only a missing knowledge time from
+  the effective time (and a Date effective time's civil label); a supplied
+  knowledge time is always kept (Cut 16 decision 32). A row with no event or
+  knowledge clock is audit-only and is never due. A row with knowledge time
+  but neither entitlement nor effective time refuses, at that knowledge cutoff
+  and not before, with `ledgr_corporate_action_clock_missing` carrying its
+  fact and clock fields.
+- A complete `ordinary_cash_dividend`, `cash_acquisition`,
+  `stock_acquisition`, `mixed_acquisition` or `spin_off` row with an effective
+  clock but no entitlement clock does not act or post: it refuses with `ledgr_corporate_action_entitlement_missing` at the
+  pulse it would act on (its effective clock, or its knowledge clock when
+  later), carrying its fact and instrument IDs, subtype and effective and
+  knowledge clocks, in every execution mode. A carried walk-forward chain
+  refuses on the same pulse as one run, including when the effective clock
+  falls in an earlier test window than the knowledge clock (Cut 16 decisions
+  28, 33 and 35). The user supplies the entitlement time.
 - Local session wall times must resolve to exactly one UTC instant. Ambiguous
   fall-back and nonexistent spring-forward labels fail closed; an explicit
   POSIXct instant is already disambiguated and remains valid. An open
@@ -909,8 +942,11 @@ Accepted change pending:
   Preparation refuses any membership, trading-status or lifetime fact whose
   knowledge time is missing with `ledgr_fact_knowledge_missing`, before any
   run, sweep, precompute, walk-forward or inspection side effect (Cut 16
-  decision 23); what a missing knowledge time should mean is decided with
-  LDG-3073.
+  decision 23). Cut 16 decision (27) keeps this refusal: a missing knowledge
+  time is not assumed for these families except under
+  `knowledge = "assume_effective"`, which fills it from the effective time
+  and never replaces a supplied one (decision 32); corporate actions follow
+  the known-when-effective rule in Point-In-Time Facts.
   A higher-precedence assertion that is effective but not yet knowable cannot
   shadow a lower-precedence tie. Future facts may change snapshot and descendant
   identity but must not rewrite earlier context, errors, features, or supported

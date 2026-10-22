@@ -1040,10 +1040,13 @@ Cut 16 decision (17) routes these beyond WS46:
   on H1, 0.8 s of parent staging time); at three two-year folds two workers
   took 74.5 s against 71.9 s for one (LDG-3069). Reusing staged daemons across
   folds is a transport change, not a history semantics change.
-- **Corporate-action settlement state as data.** The carried walk-forward
-  chain rebuilds the previous window's settlement plan from its ledger.
-  Carrying that state as an explicit object is considered with LDG-3073 if
-  settlement code changes there, otherwise at execution-core consolidation.
+- **Corporate-action settlement state as data (owner: execution-core
+  consolidation).** The carried walk-forward chain rebuilds the previous
+  window's settlement plan from its ledger. LDG-3073 changed settlement code
+  for Cut 16 decision (28) and considered the change: one carry predicate
+  sufficed, while carrying the plan state as an object would have the fold
+  return its plan at window end, a fold-output and carried-opening identity
+  change outside that ticket. It stays here.
 - **Availability/dense branch removal** belongs to execution-core
   consolidation above.
 

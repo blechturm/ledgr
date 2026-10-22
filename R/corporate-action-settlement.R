@@ -152,6 +152,16 @@ ledgr_corporate_action_refusal_abort <- function(stopped) {
   )
 }
 
+# Subtypes whose effect binds an entitled parent quantity: dispositions and
+# quantity effects (Cut 16 decision 28) and the cash dividend (decision 33).
+# A complete row of one of them without an entitlement clock refuses.
+ledgr_corporate_action_entitled_subtypes <- function() {
+  c(
+    "ordinary_cash_dividend", "cash_acquisition", "stock_acquisition",
+    "mixed_acquisition", "spin_off"
+  )
+}
+
 # Subtypes some settlement path models; any other sealed subtype is unmodeled.
 ledgr_corporate_action_supported_subtypes <- function() {
   c("ordinary_cash_dividend", "cash_acquisition", "stock_acquisition", "mixed_acquisition", "spin_off")
@@ -231,8 +241,16 @@ ledgr_corporate_action_plan <- function(rows,
   quantity_eligible <- (rows$subtype %in% c(
     "stock_acquisition", "mixed_acquisition", "spin_off"
   ) & rows$complete) | unmodeled
+  # Cut 16 decisions (28), (33) and (35): a complete cash-dividend,
+  # disposition or quantity-effect row with an effective clock but no
+  # entitlement clock has no entitled quantity to bind. It refuses at the
+  # pulse it would act on instead of acting or never posting, in every
+  # execution mode.
+  entitlement_missing <- rows$complete &
+    rows$subtype %in% ledgr_corporate_action_entitled_subtypes() &
+    is.na(rows$entitlement_time) & !is.na(rows$effective_time)
   if (!any(cash_eligible | disposition_eligible | quantity_eligible |
-      clock_missing)) {
+      clock_missing | entitlement_missing)) {
     return(NULL)
   }
 
@@ -297,6 +315,8 @@ ledgr_corporate_action_plan <- function(rows,
   disposition_due_idx[!disposition_eligible] <- NA_integer_
   quantity_due_idx <- pmax(effective_idx, knowledge_idx, na.rm = FALSE)
   quantity_due_idx[!quantity_eligible] <- NA_integer_
+  entitlement_missing_idx <- pmax(effective_idx, knowledge_idx, na.rm = FALSE)
+  entitlement_missing_idx[!entitlement_missing] <- NA_integer_
 
   state <- new.env(parent = emptyenv())
   state$rows <- rows
@@ -314,6 +334,11 @@ ledgr_corporate_action_plan <- function(rows,
   state$clock_missing_by_pulse <- split(
     seq_len(nrow(rows))[clock_missing],
     knowledge_idx[clock_missing]
+  )
+  state$entitlement_missing <- entitlement_missing
+  state$entitlement_missing_by_pulse <- split(
+    seq_len(nrow(rows)),
+    entitlement_missing_idx
   )
   state$late <- as.logical(late)
   state$quantity <- rep(NA_real_, nrow(rows))
@@ -414,8 +439,29 @@ ledgr_corporate_action_plan <- function(rows,
   }
 
   check_clocks <- function(index) {
+    missing_entitlement <-
+      state$entitlement_missing_by_pulse[[as.character(index)]] %||% integer()
     selected <- state$clock_missing_by_pulse[[as.character(index)]] %||%
       integer()
+    if (length(selected) == 0L && length(missing_entitlement) > 0L) {
+      row <- state$rows[missing_entitlement[[1L]], , drop = FALSE]
+      rlang::abort(
+        paste(
+          "A corporate-action cash, disposition or quantity effect requires an",
+          "entitlement clock; supply the fact's entitlement time."
+        ),
+        class = c(
+          "ledgr_corporate_action_entitlement_missing",
+          "ledgr_invalid_corporate_action_event",
+          "ledgr_invalid_state"
+        ),
+        fact_id = as.character(row$fact_id[[1L]]),
+        parent_instrument_id = as.character(row$parent_instrument_id[[1L]]),
+        subtype = as.character(row$subtype[[1L]]),
+        effective_time = row$effective_time[[1L]],
+        knowledge_time = row$knowledge_time[[1L]]
+      )
+    }
     if (length(selected) == 0L) return(invisible(TRUE))
     row <- state$rows[selected[[1L]], , drop = FALSE]
     rlang::abort(
@@ -666,15 +712,22 @@ ledgr_corporate_action_plan <- function(rows,
     effect <- (state$disposition_eligible & !state$disposition_posted) |
       state$quantity_eligible
     effect <- effect & effective_reached & (effective_later | known_later)
-    selected <- which(state$bound & (cash | effect))
+    # A decision (28) or (33) row whose effective clock this window reached but
+    # which becomes known after it refuses in the successor, as in one run;
+    # it carries with no entitled quantity.
+    unentitled <- state$entitlement_missing & !is.na(state$effective_idx) &
+      state$effective_idx <= last_idx & known_later
+    selected <- which((state$bound & (cash | effect)) | unentitled)
     if (length(selected) == 0L) return(NULL)
     posting <- state$posting_idx[selected]
     posting_ts <- rep("", length(selected))
     inside <- !is.na(posting) & posting <= length(pulses_posix)
     posting_ts[inside] <- format(pulses_posix[posting[inside]], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    quantity <- as.numeric(state$quantity[selected])
+    quantity[state$entitlement_missing[selected]] <- 0
     data.frame(
       fact_id = as.character(rows$fact_id[selected]),
-      quantity = as.numeric(state$quantity[selected]),
+      quantity = quantity,
       posting_ts_utc = posting_ts,
       stringsAsFactors = FALSE
     )
