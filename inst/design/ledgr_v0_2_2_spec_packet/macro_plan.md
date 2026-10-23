@@ -570,6 +570,12 @@ no ticket:
   an installed library instead of load_all adds 200-700 MiB, and varies
   widely between repeats, in a single run's preparation peak on the H1
   workload. Attribute it;
+- composition-report timestamp formatting (Cut 17 LDG-3091,
+  `close_review_50a.md` N4): `ledgr_corporate_action_composition_report()`
+  formats every snapshot bar time one at a time through `vapply` over
+  `ledgr_normalize_ts_utc()`, optimization shape 3 on a reader path. It runs
+  only for held complete acquisition or spin-off facts; replace it with the
+  vectorised helper;
 - worker-count memory record (maintainer, 2026-10-22): the H1 sweep at 4 and
   8 workers decides whether shared memory is designed (see
   [Deferred history simplification](#deferred-history-simplification));
