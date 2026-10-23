@@ -560,6 +560,16 @@ no ticket:
   `meta_json` parse for its parent (synthetic dense run: summary 0.03 to
   0.29 s, print 0.48 to 0.67 s). LDG-3088 records both on the dividend
   build;
+- dividend-fact memory in sweeps (Cut 17 decision 21, LDG-3088): on the H1
+  workload the 57,593 corporate-action facts of the dividend build add about
+  234 MiB to the two-worker parent and 460-870 MiB to parent plus daemons,
+  disproportionate to a few megabytes of fact data. Find where the facts are
+  expanded or staged per worker and fix it before release, or keep the
+  stated limit;
+- installed-library preparation peak (Cut 17 decision 21): loading ledgr as
+  an installed library instead of load_all adds 200-700 MiB, and varies
+  widely between repeats, in a single run's preparation peak on the H1
+  workload. Attribute it;
 - worker-count memory record (maintainer, 2026-10-22): the H1 sweep at 4 and
   8 workers decides whether shared memory is designed (see
   [Deferred history simplification](#deferred-history-simplification));
