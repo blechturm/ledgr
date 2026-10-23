@@ -62,7 +62,9 @@ Every row needs a stable `fact_id`, a closed `subtype`, and a
 - `entitlement_time` determines which holding is entitled;
 - `effective_time` records when the source says the event takes effect;
 - `knowledge_time` is the first instant the terms may be used without
-  look-ahead; and
+  look-ahead; leave it missing when the source has none, and ledgr assumes
+  the event was known when it became effective, labels that knowledge
+  `assumed` and discloses it in results; and
 - `payment_time` is optional evidence, not the research preset's posting
   clock.
 
@@ -92,7 +94,7 @@ not ledgr execution, owns that conversion.
 
 `provenance_tier = "snapshot_bound"` is the portable tier. It binds the
 canonical facts to the sealed snapshot without requiring a provider build.
-`build_and_vintage_bound` is stronger: it additionally requires
+`upstream_vintage_bound` is stronger: it additionally requires
 `upstream_build_id` and `bar_vintage_id`. The tier records evidence strength;
 it does not select a settlement capability.
 
@@ -202,10 +204,22 @@ Set `complete = FALSE`, provide the applicable refusal reason, and leave
 unvalidated terms unavailable. Do not infer a ratio, fabricate a mark, or
 turn an unsupported event into absence.
 
-At execution time, strict policy stops on a relevant unsupported effect.
-Research policy may report a quantity effect without changing account state.
-Neither path claims exact recipient exposure, broker settlement, withholding,
-tax treatment, or completeness of the upstream source.
+A refused fact settles nothing, and results count it.
+`ledgr_corporate_action_summary()` counts every sealed refused fact by reason
+in `sealed_refusal_counts`. When the run held the parent at the fact's
+entitlement, the fact also counts under its reason in `refusal_counts`, with
+its entitled quantity in `refusal_entitled_quantity`, and takes the
+unsupported-quantity route. Under the research preset nothing posts and
+`corporate_action_fidelity` reads `unsupported`. Under the strict preset an
+availability-aware run stops `INCOMPLETE` with
+`corporate_action_quantity_refused`, and a dense run raises
+`ledgr_corporate_action_quantity_unsupported`. A held fact with no effective
+clock has no effective pulse, so under either preset it only counts in
+`unsupported_facts` and makes `corporate_action_fidelity` read
+`unsupported`. A refused fact on a parent the
+run did not hold changes neither fidelity nor the run outcome. Neither preset
+claims exact recipient exposure, broker settlement, withholding, tax
+treatment, or completeness of the upstream source.
 
 This release does not claim corporate-action completeness, broker-exact
 settlement, net cash, tax correctness, or exact recipient exposure.

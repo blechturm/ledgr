@@ -898,7 +898,7 @@ without a complication uses an empty reason code.\tabular{lll}{
    \code{terminal_settlement_unsupported} \tab valuation stop \tab unlabeled or refused terminal; holding preserved, no fabricated settlement \cr
    \code{terminal_mark_unavailable} \tab valuation stop \tab the terminal choice needs a mark that does not exist; accepted prefix finalized incomplete \cr
    \code{corporate_action_cash_refused} \tab valuation stop \tab a held corporate-action cash settlement refused by policy; accepted prefix finalized incomplete \cr
-   \code{corporate_action_quantity_refused} \tab valuation stop \tab a held quantity effect or unmodeled fact refused by policy; accepted prefix finalized incomplete \cr
+   \code{corporate_action_quantity_refused} \tab valuation stop \tab a held quantity effect, unmodeled fact or refused (\code{complete = FALSE}) fact refused by policy; accepted prefix finalized incomplete \cr
    \code{fold_exception} \tab error \tab failed after transaction rollback \cr
 }
 

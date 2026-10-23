@@ -153,11 +153,11 @@ ledgr_fact_headers_read <- function(con, snapshot_id) {
   )
 }
 
-# Assumption reasons per runtime fact family from sealed fact headers: a
-# knowledge clock assumed effective, or a generated session schedule. Shared
-# by ledgr_experiment_plan() and result summaries (LDG-3010).
+# Assumption reasons per fact family from sealed fact headers: an assumed
+# knowledge clock (corporate actions too, Cut 17 LDG-3085) or a generated
+# session schedule. Shared by ledgr_experiment_plan() and result summaries.
 ledgr_fact_assumption_reasons <- function(headers) {
-  families <- c("membership", "sessions", "trading_status", "lifetime")
+  families <- c("membership", "sessions", "trading_status", "lifetime", "equity_corporate_actions")
   out <- stats::setNames(rep(list(character()), length(families)), families)
   if (is.null(headers) || nrow(headers) == 0L) return(out)
   for (i in seq_len(nrow(headers))) {

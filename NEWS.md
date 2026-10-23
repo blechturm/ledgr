@@ -10,6 +10,29 @@
   new suggested package. The causal-history article's stand-in solver is no
   longer described as long-only minimum variance.
 
+## Corporate-action disclosure
+
+- Refused corporate-action facts (`complete = FALSE`) are now visible in
+  results. `ledgr_corporate_action_summary()` gains `sealed_refusal_counts`
+  (every sealed refused fact by reason) and `refusal_entitled_quantity`, and
+  its `refusal_counts` now counts the refused facts whose parent the run held
+  at entitlement; `print()` and `summary()` show both counts. A held refused
+  fact takes the unsupported-quantity route: under the research preset it
+  counts in `unsupported_facts` and fidelity reads `UNSUPPORTED`; under the
+  strict preset an availability-aware run stops `INCOMPLETE` with
+  `corporate_action_quantity_refused` and a dense run raises
+  `ledgr_corporate_action_quantity_unsupported`. Previously such a fact was
+  silent. The `unsupported_quantity` policy identities move to `v002`.
+
+- A corporate action whose knowledge time ledgr fills known-when-effective
+  now records its knowledge as `assumed` (reason
+  `knowledge_assume_effective`) instead of `evidenced`, and results of an
+  availability-aware run list `equity_corporate_actions` among their
+  assumption-backed facts. A supplied knowledge time stays `evidenced`. The
+  fact IDs and family hash of such rows change, so the experiment-store
+  schema moves to 123 and schema-122 stores refuse with
+  `ledgr_store_rebuild_required`; rebuild them.
+
 ## Fact pipeline follow-ups
 
 - Fact construction is faster at scale with unchanged rows, fact IDs and

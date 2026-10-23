@@ -23,3 +23,16 @@ totals, and effective-date omitted-value estimates recorded for one run.
 \code{price_basis_default = TRUE} for an availability-aware run whose snapshot
 declares none, or \code{"undeclared"} for such a dense run.
 }
+\details{
+A refused fact (\code{complete = FALSE}) settles nothing. \code{sealed_refusal_counts}
+counts every sealed refused fact by \code{refusal_reason}. \code{refusal_counts}
+counts, under the same reasons, the refused facts whose parent the run held
+when the fact was entitled, and \code{refusal_entitled_quantity} sums their
+absolute entitled parent quantities. A held refused fact takes the
+unsupported-quantity route: under \code{unsupported_quantity = "report_only"} it
+counts in \code{unsupported_facts} and \code{corporate_action_fidelity} reads
+\code{"unsupported"}; under \code{"refuse"} an availability-aware run stops
+\code{INCOMPLETE} with \code{corporate_action_quantity_refused} and a dense run raises
+\code{ledgr_corporate_action_quantity_unsupported}. An unheld refused fact
+changes neither fidelity nor the run outcome.
+}

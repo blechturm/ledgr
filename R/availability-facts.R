@@ -56,8 +56,11 @@ ledgr_fact_schema_version <- 1L
 #' A row with an event clock (the effective time, else the entitlement time)
 #' and no `knowledge_time` is known when that event becomes effective: a
 #' POSIXct event at its instant, a Date event at the declared open of its venue
-#' session, while the event itself stays at that session's close. A supplied
-#' `knowledge_time` is never replaced. A row with no event or knowledge clock is
+#' session, while the event itself stays at that session's close. Such a
+#' row's knowledge provenance reads `assumed`, with reason
+#' `knowledge_assume_effective`, and results of an availability-aware run list
+#' `equity_corporate_actions` among their assumption-backed families. A supplied
+#' `knowledge_time` is never replaced and reads `evidenced`. A row with no event or knowledge clock is
 #' audit-only. A knowable row with neither an entitlement nor effective clock
 #' refuses only once its knowledge cutoff is reached during execution. A
 #' complete `ordinary_cash_dividend`, `cash_acquisition`, `stock_acquisition`,
@@ -571,7 +574,9 @@ ledgr_validate_equity_corporate_action_clocks <- function(rows, state = FALSE) {
 # Date event is a civil session label whose event edge is the session close
 # (decision 12); its knowledge label is the same civil date, which civil
 # resolution places at that session's declared open (decision 27). A
-# supplied knowledge time, Date or POSIXct, is never replaced.
+# supplied knowledge time, Date or POSIXct, is never replaced. `assumed`
+# marks the filled rows, whose knowledge provenance reads assumed (Cut 17
+# decision 6, register D1-F7).
 ledgr_corporate_action_assumed_knowledge <- function(rows, labels) {
   event <- rows$effective_time
   event_label <- labels$effective_time
@@ -583,7 +588,7 @@ ledgr_corporate_action_assumed_knowledge <- function(rows, labels) {
   knowledge_time[assume] <- event[assume]
   knowledge_label <- labels$knowledge_time
   knowledge_label[assume] <- event_label[assume]
-  list(knowledge_time = knowledge_time, knowledge_label = knowledge_label)
+  list(knowledge_time = knowledge_time, knowledge_label = knowledge_label, assumed = assume)
 }
 
 ledgr_equity_corporate_action_optional_numeric <- function(df, field) {
@@ -668,13 +673,21 @@ ledgr_facts_equity_corporate_actions <- function(df) {
       ),
     source = source,
     civil_time_json = "",
-    provenance_json = ledgr_fact_provenance(df, source, "evidenced"),
+    provenance_json = "",
     stringsAsFactors = FALSE
   )
   known <- ledgr_corporate_action_assumed_knowledge(rows, labels)
   rows$knowledge_time <- known$knowledge_time
   labels$knowledge_time <- known$knowledge_label
   rows$civil_time_json <- ledgr_fact_civil_encode(labels)
+  # One knowledge label per row, computed once as a vector: a filled
+  # knowledge time is assumed, a supplied one stays evidenced.
+  rows$provenance_json <- ledgr_fact_provenance(
+    df,
+    source,
+    ifelse(known$assumed, "assumed", "evidenced"),
+    ifelse(known$assumed, "knowledge_assume_effective", NA_character_)
+  )
   supplied_id <- ledgr_fact_optional_character(df, "fact_id")
   rows$fact_id <- ledgr_fact_ids(
     "equity_corporate_actions",
@@ -688,9 +701,14 @@ ledgr_facts_equity_corporate_actions <- function(df) {
     "equity_corporate_actions",
     "equity",
     rows,
-    metadata = list(
-      contract = "vendor_neutral_normalized_terms_v1",
-      provenance_tiers = sort(unique(rows$provenance_tier), method = "radix")
+    metadata = c(
+      list(
+        contract = "vendor_neutral_normalized_terms_v1",
+        provenance_tiers = sort(unique(rows$provenance_tier), method = "radix")
+      ),
+      # A family with any assumed knowledge time is disclosed as assumption
+      # backed; an all-evidenced family keeps its metadata unchanged.
+      if (any(known$assumed)) ledgr_fact_knowledge_metadata("assume_effective")
     )
   )
 }
@@ -1755,7 +1773,9 @@ ledgr_fact_optional_character <- function(df, field) {
 
 # Writes one canonical JSON per row (shape 4); unchanged by WS45 because its
 # bytes are fact identity, routed to LDG-3080/F05 (WS45 closeout).
-ledgr_fact_provenance <- function(df, source, knowledge) {
+# `knowledge` is one label or one per row; `knowledge_reason`, when given, is
+# one reason per row (NA for none) written beside the label in the same pass.
+ledgr_fact_provenance <- function(df, source, knowledge, knowledge_reason = NULL) {
   if ("provenance_json" %in% names(df)) {
     out <- as.character(df$provenance_json)
     bad <- is.na(out) | !nzchar(out)
@@ -1775,8 +1795,15 @@ ledgr_fact_provenance <- function(df, source, knowledge) {
   } else {
     out <- rep(as.character(canonical_json(list())), nrow(df))
   }
+  knowledge <- rep_len(as.character(knowledge), length(out))
+  knowledge_reason <- if (is.null(knowledge_reason)) {
+    rep(NA_character_, length(out))
+  } else {
+    rep_len(as.character(knowledge_reason), length(out))
+  }
   vapply(seq_along(out), function(i) {
-    payload <- list(source = source[[i]], knowledge = knowledge, payload = ledgr_json_read_nested(out[[i]]))
+    payload <- list(source = source[[i]], knowledge = knowledge[[i]], payload = ledgr_json_read_nested(out[[i]]))
+    if (!is.na(knowledge_reason[[i]])) payload$knowledge_reason <- knowledge_reason[[i]]
     as.character(canonical_json(payload))
   }, character(1))
 }

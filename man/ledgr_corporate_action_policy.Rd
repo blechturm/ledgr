@@ -32,9 +32,9 @@ map of exact terminal labels to those choices with a required \code{default}
 entry.}
 
 \item{unsupported_quantity}{One of \code{"report_only"} or \code{"refuse"}. Applies
-to held quantity legs (stock and mixed acquisitions, spin-offs) and to
-held facts ledgr does not model: a subtype outside the supported set, or
-an acquisition in a dense run.}
+to held quantity legs (stock and mixed acquisitions, spin-offs), to held
+facts ledgr does not model (a subtype outside the supported set, or an
+acquisition in a dense run) and to held refused facts (\code{complete = FALSE}), whose parent was held when the fact was entitled.}
 
 \item{frozen_terminal_position}{One of \code{"write_off"}, \code{"last_mark"}, or
 \code{"refuse"}. Applies to a terminal reached while the holding is frozen.}

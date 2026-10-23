@@ -540,8 +540,9 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
     strategy = list(id = "x", params = list())
   )
 
+  # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002.
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "a349248b2d7ca647b1cf661d9c37f584c8bd493f9788e558031fcf609cf0a4e4"
+    "2ffe955ea6e7d2a411fd8ea52de1b7e28aeeae9160323f51eba1aa090cd3004b"
   )
 })

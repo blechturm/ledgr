@@ -580,7 +580,10 @@ Accepted change pending:
   `refuse` (strict preset). Map order, labels, choices, the haircut fraction
   and the frozen fallback enter identity. Every terminal choice carries a
   `v002` identity because its trigger widened to lifetime terminal facts;
-  `v001` keeps its earlier meaning.
+  `v001` keeps its earlier meaning. Every `unsupported_quantity` choice
+  carries a `v002` identity because its trigger widened to held refused
+  facts (Corporate Actions And Valuation; Cut 17 LDG-3089); `v001` keeps its
+  earlier meaning.
 - `ledgr_valuation_stale(max_sessions, exhausted = "freeze")` records
   `schema_version = 2` with `exhausted` of `"freeze"` or `"refuse"`. The field
   is invalid under any other schema.
@@ -702,8 +705,12 @@ Accepted change pending:
   else the entitlement time (Cut 16 decision 11). A POSIXct event is known at
   that instant. A Date-valued event is known at the declared open of its
   venue session, so a strategy can act on it during that session, and stays
-  effective at that session's close (Cut 16 decisions 12 and 27). A supplied
-  knowledge time, Date or POSIXct, is never replaced (Cut 16 decision 31).
+  effective at that session's close (Cut 16 decisions 12 and 27). Each such
+  filled row's provenance records knowledge `assumed` with reason
+  `knowledge_assume_effective`, and a family holding one records
+  `knowledge = "assume_effective"` in its metadata (Cut 17 LDG-3085). A
+  supplied knowledge time, Date or POSIXct, is never replaced and its
+  provenance records knowledge `evidenced` (Cut 16 decision 31).
   For membership, trading-status and lifetime facts,
   `knowledge = "assume_effective"` fills only a missing knowledge time from
   the effective time (and a Date effective time's civil label); a supplied
@@ -883,7 +890,11 @@ Accepted change pending:
   and the applied fact families whose knowledge clocks or schedules were
   assumed (`assumption_backed_families`, `assumption_reasons`, read from the
   sealed fact headers as the plan reads them; a fixed basket applies no
-  membership facts, so membership is never among them). `print()` of a result
+  membership facts, so membership is never among them). Sealed
+  corporate-action facts apply to every run, so `equity_corporate_actions`
+  is among them, with reason `knowledge_assume_effective`, whenever its
+  family holds a knowledge time filled known-when-effective (Cut 17
+  LDG-3085). `print()` of a result
   shows one `Point in time:` line and `summary()` lists the same fields with
   the valuation evidence. A run whose applied facts are all evidenced shows no
   assumption label (Cut 12 LDG-3010).
@@ -1168,9 +1179,11 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-- Experiment-store schema 122 is the sole current store schema; it stores no
-  `walk_forward_folds.hydration_start_utc` column, and schema-120 and
-  schema-121 stores are older stores. One opener and
+- Experiment-store schema 123 is the sole current store schema; it stores no
+  `walk_forward_folds.hydration_start_utc` column, and its sealed
+  corporate-action provenance distinguishes assumed from evidenced knowledge
+  (Cut 17 LDG-3085). Schema-120, schema-121 and schema-122 stores are older
+  stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
   empty file transactionally with the marker written last; every non-empty
@@ -2365,17 +2378,29 @@ and `AAA` a held nonmember, each holding 5:
   realized model P&L. A defaulted frozen-fallback write-off reads exactly
   `default: assumed worthless`. Settlement evidence is reported as evidence,
   not as an assumption.
-- A complete corporate-action fact whose effect ledgr does not model takes the
-  unsupported-quantity route when its parent is held at entitlement: a subtype
-  outside `ordinary_cash_dividend`, `cash_acquisition`, `stock_acquisition`,
-  `mixed_acquisition` and `spin_off`, and an acquisition in a dense run, where
-  no disposition acts. Under `unsupported_quantity = "refuse"` (the strict
-  preset) an availability run stops `INCOMPLETE` with
-  `corporate_action_quantity_refused` at the fact's effective pulse and a
-  dense run raises `ledgr_corporate_action_quantity_unsupported`; otherwise nothing
-  posts, the fact counts in `unsupported_facts` and `corporate_action_fidelity`
-  is `unsupported`. Ingest keeps the subtype vocabulary open (Cut 12
-  LDG-2996).
+- A corporate-action fact whose effect ledgr does not represent takes the
+  unsupported-quantity route when its parent is held at entitlement: a
+  complete fact of a subtype outside `ordinary_cash_dividend`,
+  `cash_acquisition`, `stock_acquisition`, `mixed_acquisition` and
+  `spin_off`, a complete acquisition in a dense run, where no disposition
+  acts, and a refused fact (`complete = FALSE`) of any subtype. Under
+  `unsupported_quantity = "refuse"` (the strict preset) an availability run
+  stops `INCOMPLETE` with `corporate_action_quantity_refused` at the fact's
+  effective pulse and a dense run raises
+  `ledgr_corporate_action_quantity_unsupported`; a held fact with no
+  effective clock has no effective pulse, so under either value it only
+  counts in `unsupported_facts` and makes `corporate_action_fidelity` read
+  `unsupported`; otherwise nothing posts, the
+  fact counts in `unsupported_facts` and `corporate_action_fidelity` is
+  `unsupported`. Ingest keeps the subtype
+  vocabulary open (Cut 12 LDG-2996; Cut 17 LDG-3089).
+- `ledgr_corporate_action_summary()` discloses refused facts in two counts
+  keyed by sealed `refusal_reason`: `sealed_refusal_counts` counts every
+  sealed refused fact, and `refusal_counts` counts those whose parent the run
+  held at entitlement, with `refusal_entitled_quantity` summing their
+  absolute entitled parent quantities. `print()` and `summary()` show both
+  counts. An unheld refused fact changes neither fidelity nor the run outcome
+  (Cut 17 LDG-3089).
 - `ledgr_valuation_summary(bt)` reports one run's valuation state (`current`,
   `stale`, `frozen`, or `not_applicable` for dense runs), stale and frozen
   instrument-sessions and holdings, longest stale age and longest freeze,

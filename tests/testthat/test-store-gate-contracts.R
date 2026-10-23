@@ -146,33 +146,36 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
   expect_cause(marker_store("120"), "older", 120L)
   # LDG-3064 retired the stored hydration column: schema-121 stores are older.
   expect_cause(marker_store("121"), "older", 121L)
-  expect_cause(marker_store("122"), "missing_marker", 122L)
-  expect_cause(marker_store("122", "not-json"), "invalid_marker", 122L)
+  # Cut 17 LDG-3085 changed the stored meaning of corporate-action knowledge
+  # provenance: schema-122 stores are older.
+  expect_cause(marker_store("122"), "older", 122L)
+  expect_cause(marker_store("123"), "missing_marker", 123L)
+  expect_cause(marker_store("123", "not-json"), "invalid_marker", 123L)
 
   current <- ledgr:::ledgr_store_format_bindings()
   prior_universe_rule <- current
   prior_universe_rule[["ledgr_universe_rule_schema_version"]] <- NULL
   expect_cause(
-    marker_store("122", ledgr:::ledgr_store_format_json(prior_universe_rule)),
+    marker_store("123", ledgr:::ledgr_store_format_json(prior_universe_rule)),
     "fingerprint_mismatch",
-    122L,
+    123L,
     "ledgr_universe_rule_schema_version"
   )
   prior_ordering <- current
   prior_ordering[["ledgr_canonical_json_rule_version"]] <- NULL
   expect_cause(
-    marker_store("122", ledgr:::ledgr_store_format_json(prior_ordering)),
+    marker_store("123", ledgr:::ledgr_store_format_json(prior_ordering)),
     "fingerprint_mismatch",
-    122L,
+    123L,
     "ledgr_canonical_json_rule_version"
   )
   changed <- current
   changed[["ledgr_cost_schema_version"]] <- 999L
   changed[["ledgr_business_objective_schema_version"]] <- 999L
   expect_cause(
-    marker_store("122", ledgr:::ledgr_store_format_json(changed)),
+    marker_store("123", ledgr:::ledgr_store_format_json(changed)),
     "fingerprint_mismatch",
-    122L,
+    123L,
     c(
       "ledgr_business_objective_schema_version",
       "ledgr_cost_schema_version"

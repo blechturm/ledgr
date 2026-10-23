@@ -71,13 +71,15 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
       frozen_terminal_position = "write_off"
     )
   )
+  # Cut 17 LDG-3089 advanced the unsupported_quantity identities to v002
+  # because their trigger widened to held refused facts.
   testthat::expect_identical(
     absent$selected_identities,
     c(
       cash_amount = "ledgr.corporate_action.cash_amount.gross.v001",
       cash_posting = "ledgr.corporate_action.cash_posting.effective_close.v001",
       held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v002",
-      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001",
+      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v002",
       frozen_terminal_position = "ledgr.corporate_action.frozen_terminal_position.write_off.v001"
     )
   )
@@ -101,7 +103,7 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
       cash_amount = "ledgr.corporate_action.cash_amount.gross.v001",
       cash_posting = "ledgr.corporate_action.cash_posting.effective_close.v001",
       held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v002",
-      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001",
+      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v002",
       frozen_terminal_position = "ledgr.corporate_action.frozen_terminal_position.write_off.v001"
     )
   )
@@ -147,4 +149,40 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
     ledgr:::ledgr_corporate_action_fidelity("evidenced"),
     class = "ledgr_invalid_corporate_action_fidelity"
   )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0453] an unheld refused fact is counted as sealed and changes neither fidelity nor the outcome", {
+  supplied <- corporate_action_result_fixture(TRUE)
+  withr::defer({
+    close(supplied$bt)
+    ledgr_snapshot_close(supplied$snapshot)
+  })
+  none <- ledgr_corporate_action_summary(supplied$bt)
+  testthat::expect_identical(none$sealed_refusal_counts, c(missing_terms = 1L))
+  testthat::expect_identical(none$refusal_counts, c(missing_terms = 0L))
+  testthat::expect_identical(none$refusal_entitled_quantity, c(missing_terms = 0))
+  testthat::expect_identical(none$corporate_action_fidelity, "none")
+  detailed <- capture.output(summary(supplied$bt))
+  sealed_at <- match("  Sealed refusal reasons:", detailed)
+  testthat::expect_false(is.na(sealed_at))
+  testthat::expect_identical(detailed[[sealed_at + 1L]], "    missing_terms: 1")
+
+  # The strict preset refuses only held effects, so the unheld refused fact
+  # leaves the run DONE with the same fidelity.
+  strict <- ledgr_run(
+    ledgr_experiment(
+      supplied$snapshot,
+      function(ctx, params) ctx$flat(),
+      cost_model = ledgr_cost_zero(),
+      corporate_action_policy = ledgr_corporate_actions_strict()
+    ),
+    run_id = "facts-none-strict"
+  )
+  withr::defer(close(strict))
+  testthat::expect_identical(ledgr_run_info(supplied$snapshot, "facts-none-strict")$status, "DONE")
+  strict_summary <- ledgr_corporate_action_summary(strict)
+  testthat::expect_identical(strict_summary$corporate_action_fidelity, "none")
+  testthat::expect_identical(strict_summary$refusal_counts, c(missing_terms = 0L))
+  testthat::expect_identical(strict_summary$sealed_refusal_counts, c(missing_terms = 1L))
 })

@@ -130,7 +130,7 @@ summary(research_run)
 #>   Setting held_terminal_position:    last_permissible
 #>   Identity held_terminal_position:   ledgr.corporate_action.held_terminal_position.last_permissible.v002
 #>   Setting unsupported_quantity:      report_only
-#>   Identity unsupported_quantity:     ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Identity unsupported_quantity:     ledgr.corporate_action.unsupported_quantity.report_only.v002
 #>   Setting frozen_terminal_position:  write_off
 #>   Identity frozen_terminal_position: ledgr.corporate_action.frozen_terminal_position.write_off.v001
 #>   Exercised choices:
@@ -150,6 +150,8 @@ summary(research_run)
 #>     frozen_terminal_position.last_mark: 0
 #>     frozen_terminal_position.refuse: 0
 #>   Refusal reasons:
+#>     none declared: 0
+#>   Sealed refusal reasons:
 #>     none declared: 0
 #>   Late arrivals:               0
 #>   Affected marked exposure:    97.5
