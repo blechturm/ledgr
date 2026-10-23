@@ -733,7 +733,7 @@ workstreams:
   - id: 51
     name: "Release-gate headroom"
     cut: 18
-    status: "pending"
+    status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 51", verdict: null, artifact: null, result: null, reason: "One claim: the fast lane again has durable headroom without weakening a registered claim, and its sweep-memory detector observes the behavior it claims to guard."}
@@ -2499,13 +2499,13 @@ tickets:
   - id: "LDG-3092"
     title: "Restore fast-lane headroom and repair the sweep-memory detector"
     workstream: 51
-    status: "open"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Repair LTB-0393 so its gc() tracer observes the explicit pre-worker collection and a guard-removal mutation fails the intended count assertion. Profile the current 573-block ordinary fast lane by block and shared setup. Remove duplicated expensive setup or retier only multi-run redundancy where one cheap fast detector still guards each registered claim and the full end-to-end witness remains in review. Do not alter a fixture, setup or oracle to make timing pass. Confirm rather than rebuild the existing nightly/release-tag review cadence and local-reference-host timing authority."
     acceptance: ["LTB-0393 passes after changing only its broken tracer capture; its existing sequential oracle observes zero collections, the worker-path placement check still locates the explicit collection immediately after payload release, and removing only the decision-(26) guard increments the sequential counter and fails the intended count assertion rather than incidentally erroring", "a source-derived map pairs every moved or consolidated claim with one named cheap fast detector and one review-profile integration witness; deleting either representative makes the map fail", "three quiet pinned local fast runs execute every selected block without failure and pass the unchanged 112-second bound, with a preregistered durable-headroom target of median at most 106.4 seconds; a miss stops for maintainer disposition rather than widening the bound or weakening claims", "the existing workflow is shown to run review nightly and on release tags and the playbook still makes hosted clocks advisory and the local reference host binding", "the ordinary long-window suite passes and the test-change ledger states why every changed profile marker or shared fixture changed"]
-    evidence: []
+    evidence: ["Implementation 2bad5e33. dev/bench/v0_2_2_residual_performance/README.md records the repaired LTB-0393 tracer and its guard-removal mutation (zero sequential collections becomes one and fails the count and placement assertions); the source-derived LTB-0483 map pairing LCL-0204/LTB-0204 with LCL-0471/LTB-0481 and LCL-0444/LTB-0454 with LCL-0472/LTB-0482; the unchanged 1,842-helper, 2,401-condition-reference, 158-branch and 55-flow codebase census; and the reason for each profile split. The pinned P-core record in evidence/ws51_fast executes 574/574 blocks in 106.88, 106.74 and 107.32 seconds (median 106.88), passing the unchanged 112-second gate with 5.12 seconds of headroom. The preregistered 106.4 target misses by 0.48 seconds and awaits maintainer disposition without changing the bound, profiles or claims. The accepted long-window record self-test and test-long-window-regression-control.R pass; the workflow and release playbook retain nightly/release review execution and advisory hosted versus binding local timing authority."]
   - id: "LDG-3093"
     title: "Remove four set-wise growth amplifications"
     workstream: 52
