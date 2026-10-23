@@ -2390,7 +2390,12 @@ and `AAA` a held nonmember, each holding 5:
   changed no decision in between; path statistics may remain distorted
   because the price move books on the resumption date.
 - `print()` and `summary()` of an availability-aware run show one valuation
-  headline (`CURRENT`, `STALE` or `FROZEN`). Whenever the run entered frozen
+  headline (`CURRENT`, `STALE` or `FROZEN`). A run that stopped `INCOMPLETE`
+  with `valuation_horizon_exhausted` because a holding had no permissible
+  mark shows `STOPPED` instead, with the stop pulse, the unvalued holdings
+  and the reason; `ledgr_valuation_summary()` records them in
+  `valuation_stop_reason`, `valuation_stop_ts_utc` and
+  `valuation_stop_instruments`. Whenever the run entered frozen
   valuation or used an assumed terminal outcome, they print one warning before
   any metric that names each assumption and the argument that declared it.
   The warning has no materiality threshold. Refused exhaustion, settlement

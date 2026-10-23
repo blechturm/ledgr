@@ -52,7 +52,8 @@ ws48_utc <- function(d) as.POSIXct(paste(d, "16:00:00"), tz = "UTC")
 # One availability-aware experiment over the given closes (NA = no print).
 ws48_fixture <- function(closes, strategy, days = ws48_days(),
                          opening = ledgr_opening(cash = 100000),
-                         policy = ledgr_history_policy(), status = NULL) {
+                         policy = ledgr_history_policy(), status = NULL,
+                         valuation = NULL) {
   ids <- colnames(closes)
   bars <- data.frame(
     instrument_id = rep(ids, each = length(days)),
@@ -93,6 +94,7 @@ ws48_fixture <- function(closes, strategy, days = ws48_days(),
     universe = ledgr_universe_members("u"),
     cost_model = ledgr_cost_zero(),
     opening = opening,
+    valuation_policy = valuation,
     history_policy = policy
   )
   list(snapshot = snapshot, exp = exp, days = days, closes = closes)
@@ -614,4 +616,74 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
     pkgdown[match("      - strategy-authoring-tools", pkgdown) + 1L],
     "      - minimum-variance"
   )
+})
+
+testthat::test_that("[LTB-0438] a run that stops for a holding without a permissible mark prints the stop, not CURRENT", {
+  hold <- function(ctx, params) ctx$hold()
+  days <- ws48_days()
+  lines_of <- function(bt, f) gsub("[ \t]+$", "", utils::capture.output(f(bt)))
+
+  # DDD is held from the opening book but has no print before 1 February, so
+  # the run stops at its first pulse, 13 January.
+  never <- ws48_closes()
+  never[days < as.Date("2021-02-01"), "DDD"] <- NA
+  nx <- ws48_fixture(
+    never, hold,
+    opening = ledgr_opening(cash = 100000, positions = c(DDD = 100), cost_basis = c(DDD = 80))
+  )
+  on.exit(ledgr_snapshot_close(nx$snapshot), add = TRUE)
+  unpriced <- ledgr_run(nx$exp, params = list(), run_id = "ws48-print-unpriced")
+  on.exit(close(unpriced), add = TRUE, after = FALSE)
+  expected <- paste(
+    "Valuation: STOPPED - 1 holding without a permissible mark at 2021-01-13T16:00:00Z (DDD);",
+    "the run is INCOMPLETE (valuation_horizon_exhausted)"
+  )
+  printed <- lines_of(unpriced, print)
+  summarised <- lines_of(unpriced, summary)
+  testthat::expect_true(expected %in% printed)
+  testthat::expect_true(expected %in% summarised)
+  for (out in list(printed, summarised)) {
+    testthat::expect_false(any(grepl("Valuation: (CURRENT|STALE|FROZEN)", out)))
+  }
+  valuation <- ledgr_valuation_summary(unpriced)
+  testthat::expect_identical(valuation$valuation_stop_reason, "valuation_horizon_exhausted")
+  testthat::expect_identical(valuation$valuation_stop_instruments, "DDD")
+  testthat::expect_identical(
+    format(valuation$valuation_stop_ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    "2021-01-13T16:00:00Z"
+  )
+
+  # Under exhausted = "refuse" with a one-session horizon, AAA (held from the
+  # opening book) has no print on 20 and 21 January: its mark is stale on the
+  # 20th and expired on the 21st, where the run stops after earlier stale
+  # pulses.
+  gap <- ws48_closes()
+  gap[days %in% as.Date(c("2021-01-20", "2021-01-21")), "AAA"] <- NA
+  rx <- ws48_fixture(
+    gap, hold,
+    opening = ledgr_opening(cash = 100000, positions = c(AAA = 100), cost_basis = c(AAA = 50)),
+    valuation = ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")
+  )
+  on.exit(ledgr_snapshot_close(rx$snapshot), add = TRUE)
+  refused <- ledgr_run(rx$exp, params = list(), run_id = "ws48-print-refused")
+  on.exit(close(refused), add = TRUE, after = FALSE)
+  testthat::expect_identical(ledgr_run_completion(refused)$stop_reason, "valuation_horizon_exhausted")
+  testthat::expect_identical(ledgr_valuation_summary(refused)$valuation_state, "stale")
+  expected_refused <- paste(
+    "Valuation: STOPPED - 1 holding without a permissible mark at 2021-01-21T16:00:00Z (AAA);",
+    "the run is INCOMPLETE (valuation_horizon_exhausted)"
+  )
+  testthat::expect_true(expected_refused %in% lines_of(refused, print))
+  testthat::expect_false(any(grepl("Valuation: STALE", lines_of(refused, print))))
+
+  # A run without a valuation stop keeps its ordinary headline.
+  cx <- ws48_fixture(ws48_closes(), hold)
+  on.exit(ledgr_snapshot_close(cx$snapshot), add = TRUE)
+  clean <- ledgr_run(cx$exp, params = list(), run_id = "ws48-print-clean")
+  on.exit(close(clean), add = TRUE, after = FALSE)
+  clean_lines <- lines_of(clean, print)
+  testthat::expect_true("Valuation: CURRENT - every held mark was a current close" %in% clean_lines)
+  testthat::expect_false(any(grepl("STOPPED", clean_lines)))
+  testthat::expect_identical(ledgr_valuation_summary(clean)$valuation_stop_reason, NA_character_)
+  testthat::expect_identical(ledgr_valuation_summary(clean)$valuation_stop_instruments, character())
 })
