@@ -1,0 +1,4 @@
+"profile","mode","elapsed_seconds","expected_blocks","executed_blocks","skipped_blocks","failed_blocks","r_version","testthat_version","power_plan","process_affinity","bound_seconds","median_seconds","gate_passed"
+"fast","ordinary",109.5,570,570,0,0,"4.6.1","3.3.2","High performance",65535,112,109.19,TRUE
+"fast","ordinary",108.97,570,570,0,0,"4.6.1","3.3.2","High performance",65535,112,109.19,TRUE
+"fast","ordinary",109.19,570,570,0,0,"4.6.1","3.3.2","High performance",65535,112,109.19,TRUE
