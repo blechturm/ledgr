@@ -384,6 +384,12 @@ ledgr_corporate_action_composition_report <- function(con,
 #' `ledgr_corporate_action_quantity_unsupported`. An unheld refused fact
 #' changes neither fidelity nor the run outcome.
 #'
+#' `choice_counts` counts exercised choices: the cash amount and posting
+#' choices once per corporate-action cash posting, the terminal choices once
+#' per disposition, and `unsupported_quantity.report_only` once per held fact
+#' on the unsupported-quantity route under `"report_only"`, where it equals
+#' `unsupported_facts`. A `"refuse"` choice posts nothing and reads 0.
+#'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public
 #'   callers should leave this as `NULL`.
@@ -496,6 +502,14 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   }
   held_route <- ledgr_corporate_action_held_unsupported(con, snapshot_id, bt$run_id, facts$rows)
   unsupported <- c(unsupported, rep(TRUE, nrow(held_route)))
+  # Under report_only every held fact on the unsupported-quantity route,
+  # refused facts included, exercised that choice (Cut 17 LDG-3091).
+  if (identical(
+    identity$unsupported_quantity,
+    ledgr_corporate_action_policy_ids()$unsupported_quantity[["report_only"]]
+  )) {
+    choice_counts[["unsupported_quantity.report_only"]] <- as.integer(sum(unsupported))
+  }
   # Held refused facts by sealed reason, counted and their entitled
   # quantities summed in one grouped pass.
   reasons <- facts$refusal_reasons

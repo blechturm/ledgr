@@ -10,6 +10,17 @@ ledgr_history_utc <- function(x) {
   )
 }
 
+# Many instants in one parse (Cut 17 LDG-3091). It accepts the form
+# ledgr_normalize_ts_utc() accepts; an element in another form or naming no
+# calendar instant reads NA, so the caller refuses with its own class.
+ledgr_history_utc_many <- function(x) {
+  x <- as.character(x)
+  ok <- !is.na(x) & grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", x)
+  out <- .POSIXct(rep(NA_real_, length(x)), tz = "UTC")
+  out[ok] <- as.POSIXct(x[ok], tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  out
+}
+
 ledgr_history_stage_identity <- function(substrate, owner_id) {
   ledgr_history_substrate_require(substrate)
   digest::digest(

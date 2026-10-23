@@ -452,13 +452,13 @@ ledgr_opening_carried_normalize <- function(carried) {
     )
   }
   # A posting instant is recorded for a cash row whose posting already has a
-  # pulse; "" marks a row settled by its effective or knowledge clock.
+  # pulse; "" marks a row settled by its effective or knowledge clock. Every
+  # recorded instant is checked in one parse (Cut 17 LDG-3091).
   if (!is.null(pending)) {
     pending$posting_ts_utc[is.na(pending$posting_ts_utc)] <- ""
   }
   if (!is.null(pending) && (anyNA(pending$fact_id) || any(!is.finite(pending$quantity)) ||
-      (any(nzchar(pending$posting_ts_utc)) &&
-        anyNA(ledgr_history_utc(pending$posting_ts_utc[nzchar(pending$posting_ts_utc)]))))) {
+      anyNA(ledgr_history_utc_many(pending$posting_ts_utc[nzchar(pending$posting_ts_utc)])))) {
     rlang::abort(
       "A carried opening's pending rows must name facts, finite quantities and valid posting instants.",
       class = c("ledgr_invalid_opening", "ledgr_invalid_config")

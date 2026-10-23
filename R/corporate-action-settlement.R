@@ -293,7 +293,7 @@ ledgr_corporate_action_plan <- function(rows,
     posting_number <- rep(NA_real_, length(posting_text))
     has_posting <- !is.na(posting_text) & nzchar(posting_text)
     if (any(has_posting)) {
-      posting_number[has_posting] <- as.numeric(ledgr_history_utc(posting_text[has_posting]))
+      posting_number[has_posting] <- as.numeric(ledgr_history_utc_many(posting_text[has_posting]))
     }
     passed_posting <- is.na(entitlement_idx[carried_rows]) & !is.na(posting_number)
     carried_posting <- ledgr_corporate_action_knowledge_index(

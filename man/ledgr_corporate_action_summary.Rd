@@ -35,4 +35,10 @@ counts in \code{unsupported_facts} and \code{corporate_action_fidelity} reads
 \code{INCOMPLETE} with \code{corporate_action_quantity_refused} and a dense run raises
 \code{ledgr_corporate_action_quantity_unsupported}. An unheld refused fact
 changes neither fidelity nor the run outcome.
+
+\code{choice_counts} counts exercised choices: the cash amount and posting
+choices once per corporate-action cash posting, the terminal choices once
+per disposition, and \code{unsupported_quantity.report_only} once per held fact
+on the unsupported-quantity route under \code{"report_only"}, where it equals
+\code{unsupported_facts}. A \code{"refuse"} choice posts nothing and reads 0.
 }
