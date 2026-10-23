@@ -736,14 +736,13 @@ v0.2.2 is ready for its release gate only when:
 
 Cut 16 is closed (2026-10-22): the WS3/WS4 history wave shipped through H5
 and H6, and its design record is reconciled in
-`cut16_decision_reconciliation.md`. Cut 17 (accepted 2026-10-22) is the
-current work.
+`cut16_decision_reconciliation.md`. Cut 17 closed on 2026-10-23 after the
+WS7 proof, dividend-facts build and private integrated record were accepted.
+WS8 is the current work.
 
-1. Cut 17: the WS7 product proof (Workstream 48), the Sharadar dividend facts
-   (Workstream 49) and the private estimator run with dividends (Workstream
-   50). WS6 proceeds independently only if its probe promotes it.
-2. Finish WS8 residual performance work and integrated release evidence.
-3. The pre-CRAN API cleanup cut, including the routed minimum-variance article
+1. Finish WS8 residual performance work and integrated release evidence.
+   WS6 proceeds independently only if its probe promotes it.
+2. The pre-CRAN API cleanup cut, including the routed minimum-variance article
    modernization below, lands before the first CRAN release.
 
 `tickets.yml` alone binds exact dependencies and status.
