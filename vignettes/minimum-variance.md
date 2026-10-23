@@ -141,15 +141,18 @@ min_variance <- function(ctx, params) {
   if (anyNA(sigma)) {
     return(hold("covariance_not_positive_definite"))
   }
-  decomposition <- eigen(sigma, symmetric = TRUE)
-  largest <- max(decomposition$values)
+  values <- eigen(sigma, symmetric = TRUE, only.values = TRUE)$values
+  largest <- max(values)
   if (!(largest > 0)) {
     return(hold("covariance_not_positive_definite"))
   }
-  floored <- decomposition$values
-  floored[floored < eig_floor * largest] <- eig_floor * largest
-  sigma <- decomposition$vectors %*% (floored * t(decomposition$vectors))
-  sigma <- (sigma + t(sigma)) / 2
+  if (min(values) < eig_floor * largest) {
+    decomposition <- eigen(sigma, symmetric = TRUE)
+    floored <- decomposition$values
+    floored[floored < eig_floor * largest] <- eig_floor * largest
+    sigma <- decomposition$vectors %*% (floored * t(decomposition$vectors))
+    sigma <- (sigma + t(sigma)) / 2
+  }
 
   # 5. Solve: minimise w' sigma w subject to sum(w) = 1 and w >= 0.
   n <- ncol(sigma)
@@ -461,10 +464,12 @@ the book indefinitely. The strategy therefore targets every held
 non-member to zero after the rebalance. Both choices are deliberate: an
 instrument the estimate left out is kept, because leaving it out is an
 estimation choice; an instrument the index dropped is sold, because the
-strategy holds index members. The demo’s universe never changes, so the
-registered blocks show the sale. One cost remains: the rebalance
-reserved the leaver’s value before sizing the others, so the cash from
-the sale stays idle until the next decision.
+strategy holds index members. The demo’s universe never changes, so this
+run has no leaver. The sale happens on decisions that solve: on a
+decision that holds, a leaver stays until the next one, and so does one
+halted at the decision. One cost remains: the rebalance reserved the
+leaver’s value before sizing the others, so the cash from the sale stays
+idle until the next decision.
 
 ## When The Strategy Holds
 
@@ -548,7 +553,7 @@ sweep <- ledgr_sweep(exp, grid, workers = 2L, seed = 1L)
 sweep
 ```
 
-    # ledgr sweep -- sweep_e6415a6fc39a98b1
+    # ledgr sweep -- sweep_7349bd2b047d2b7c
     # A tibble: 4 x 8
       candidate_id        candidate_row status sharpe_ratio total_return max_drawdown n_trades
       <chr>                       <int> <chr>         <dbl> <chr>        <chr>           <int>

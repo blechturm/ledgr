@@ -424,6 +424,17 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
   testthat::expect_identical(ledgr_run_completion(bt)$completion_status, "DONE")
   testthat::expect_false("2021-03-02" %in% format(as.Date(ws48_fill_days(bt)$ts_utc)))
 
+  # No positive variance at all: every close is constant, so no floor can be
+  # set relative to the largest eigenvalue and the decision holds under the
+  # same outcome (re-review 1 N3).
+  flat_closes <- ws48_closes()
+  flat_closes[] <- rep(c(50, 60, 70, 80), each = nrow(flat_closes))
+  zx <- ws48_fixture(flat_closes, strategy)
+  on.exit(ledgr_snapshot_close(zx$snapshot), add = TRUE)
+  flat_seen <- ws48_decide(strategy, zx$exp, "2021-03-01", params)
+  testthat::expect_identical(flat_seen$outcome, "covariance_not_positive_definite")
+  testthat::expect_identical(flat_seen$target, flat_seen$hold)
+
   # A solver that fails, or returns an unusable solution, holds.
   fx <- ws48_fixture(ws48_closes(), strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -813,6 +824,16 @@ testthat::test_that("[LTB-0439] an indefinite pairwise covariance from short-his
   expected <- floor(w * 0.95 * 100000 / price)
   testthat::expect_lte(max(abs(seen$target[ids] - expected)), 1)
   testthat::expect_gt(sum(seen$target[ids]), 0)
+
+  # A floor large enough to bind on the solution pins the floor's rule and
+  # size: relative to the largest eigenvalue and read from eig_floor
+  # (re-review 1 N1). The oracle's targets are 653/546/109/119/129.
+  floor_params <- utils::modifyList(params, list(eig_floor = 0.2))
+  wide <- ws48_decide(strategy, fx$exp, "2021-03-01", floor_params)
+  testthat::expect_identical(wide$outcome, "solved")
+  expected_wide <- floor(ws48_long_only(ws48_floor(sigma, 0.2)) * 0.95 * 100000 / price)
+  testthat::expect_identical(unname(expected_wide), c(653, 546, 109, 119, 129))
+  testthat::expect_lte(max(abs(wide$target[ids] - expected_wide)), 1)
 })
 
 testthat::test_that("[LTB-0440] a held index leaver is sold on the next decision date while a screened holding is kept", {
