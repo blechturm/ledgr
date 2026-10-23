@@ -226,8 +226,14 @@ testthat::test_that("[LTB-0393] a fresh sweep and a pulse inspection release the
   # sweep stages no workers and runs no collection.
   collections <- new.env(parent = emptyenv())
   collections$n <- 0L
+  old_counter <- options(ledgr.test.gc.counter = collections)
+  on.exit(options(old_counter), add = TRUE)
+  collection_tracer <- quote({
+    counter <- getOption("ledgr.test.gc.counter")
+    counter$n <- counter$n + 1L
+  })
   suppressMessages(trace(
-    "gc", tracer = quote(collections$n <- collections$n + 1L),
+    "gc", tracer = collection_tracer,
     where = baseenv(), print = FALSE
   ))
   on.exit(suppressMessages(untrace("gc", where = baseenv())), add = TRUE)

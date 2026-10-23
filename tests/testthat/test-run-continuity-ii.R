@@ -98,7 +98,65 @@ testthat::test_that("[LTB-0203] reconstruction rebuilds gap-bearing availability
   testthat::expect_identical(rebuilt$equity_curve$equity, stored$equity)
 })
 
-testthat::test_that("[LTB-0204] carry_test_state refuses test windows that are not ordered and contiguous", {
+testthat::test_that("[LTB-0204] the carry-window checker distinguishes gaps, overlaps and contiguous windows", {
+  at <- function(x) as.POSIXct(x, tz = "UTC")
+  window <- function(start, end) list(test = list(
+    scoring_start_utc = at(start), scoring_end_utc = at(end)
+  ))
+  pulses <- at(c(
+    "2020-02-01 16:00:00", "2020-02-02 16:00:00",
+    "2020-02-03 16:00:00", "2020-02-04 16:00:00",
+    "2020-02-05 16:00:00"
+  ))
+  testthat::local_mocked_bindings(
+    ledgr_walk_forward_pulse_calendar = function(...) pulses,
+    .package = "ledgr"
+  )
+  exp <- list()
+
+  gap <- list(
+    window("2020-02-01 16:00:00", "2020-02-02 16:00:00"),
+    window("2020-02-04 16:00:00", "2020-02-05 16:00:00")
+  )
+  error <- testthat::expect_error(
+    ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, gap),
+    class = "ledgr_walk_forward_gapped_carry"
+  )
+  testthat::expect_s3_class(error, "ledgr_walk_forward_invalid_fold_window")
+  testthat::expect_match(conditionMessage(error), "between test window 1", fixed = TRUE)
+
+  overlap <- list(
+    window("2020-02-01 16:00:00", "2020-02-04 16:00:00"),
+    window("2020-02-03 16:00:00", "2020-02-05 16:00:00")
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, overlap),
+    class = "ledgr_walk_forward_overlapping_carry"
+  )
+  reverse <- rev(overlap)
+  testthat::expect_error(
+    ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, reverse),
+    class = "ledgr_walk_forward_overlapping_carry"
+  )
+  touching <- list(
+    window("2020-02-01 16:00:00", "2020-02-03 16:00:00"),
+    window("2020-02-03 16:00:00", "2020-02-05 16:00:00")
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, touching),
+    class = "ledgr_walk_forward_overlapping_carry"
+  )
+  contiguous <- list(
+    window("2020-02-01 16:00:00", "2020-02-02 16:00:00"),
+    window("2020-02-03 16:00:00", "2020-02-05 16:00:00")
+  )
+  testthat::expect_true(
+    ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, contiguous)
+  )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0481] public carry_test_state refuses invalid windows before work", {
   snapshot <- continuity_ii_wf_snapshot(c("AAA", "BBB"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- continuity_ii_experiment(snapshot, function(ctx, params) ctx$flat())

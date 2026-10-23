@@ -174,6 +174,16 @@ ledgr_structure_symbols <- function(x) {
   character()
 }
 
+ledgr_structure_reference_tokens <- function(source_files) {
+  source <- unlist(source_files, use.names = FALSE)
+  parsed <- parse(text = source, keep.source = TRUE, encoding = "UTF-8")
+  data <- getParseData(attr(parsed, "srcfile"))
+  values <- data$text[data$token %in% c(
+    "SYMBOL", "SYMBOL_FUNCTION_CALL", "STR_CONST"
+  )]
+  sub("^(['\"])(.*)\\1$", "\\2", values, perl = TRUE)
+}
+
 ledgr_structure_class_expression <- function(call) {
   args <- as.list(call)[-1L]
   tags <- names(args)
@@ -228,8 +238,14 @@ ledgr_structure_resolved_classes <- function(x, call, formals, functions,
 }
 
 ledgr_structure_condition_classes <- function(expressions, functions) {
-  found <- character()
+  found <- list()
   wrappers <- list()
+  add_found <- function(values) {
+    if (length(values) > 0L) {
+      found[[length(found) + 1L]] <<- values
+    }
+    invisible(NULL)
+  }
 
   collect_calls <- function(x, target = NULL) {
     calls <- list()
@@ -284,27 +300,24 @@ ledgr_structure_condition_classes <- function(expressions, functions) {
     }
     if (is.call(x)) {
       name <- ledgr_structure_call_name(x[[1L]])
-      if (grepl("(^|::)(abort|warn)$", name, perl = TRUE)) {
+      if (name %in% c("abort", "rlang::abort", "warn", "rlang::warn")) {
         class_expression <- ledgr_structure_class_expression(x)
         if (!is.null(class_expression)) {
-        found <<- c(found, ledgr_structure_literal_classes(class_expression))
+        add_found(ledgr_structure_literal_classes(class_expression))
         resolver <- if (is.call(class_expression)) {
           ledgr_structure_call_name(class_expression[[1L]])
         } else {
           ""
         }
         if (nzchar(resolver) && resolver %in% names(functions)) {
-          found <<- c(
-            found,
-            ledgr_structure_ledgr_literals(functions[[resolver]])
-          )
+          add_found(ledgr_structure_ledgr_literals(functions[[resolver]]))
         }
         }
       }
       matching <- wrappers_by_name[[name]]
       if (is.null(matching)) matching <- list()
       for (spec in matching) {
-        found <<- c(found, ledgr_structure_resolved_classes(
+        add_found(ledgr_structure_resolved_classes(
           spec$class_expression, x, spec$formals, functions
         ))
       }
@@ -316,6 +329,7 @@ ledgr_structure_condition_classes <- function(expressions, functions) {
     invisible(NULL)
   }
   walk(expressions)
+  found <- unlist(found, use.names = FALSE)
   sort(unique(found[grepl("^ledgr_", found)]), method = "radix")
 }
 
@@ -330,8 +344,15 @@ ledgr_structure_scan <- function(root) {
   if (length(r_files) == 0L || length(test_files) == 0L) {
     stop("The structural scan requires non-empty R/ and test sources.", call. = FALSE)
   }
-  r_parsed <- lapply(r_files, parse, keep.source = TRUE)
-  test_parsed <- lapply(test_files, parse, keep.source = TRUE)
+  r_source <- lapply(r_files, readLines, warn = FALSE, encoding = "UTF-8")
+  test_source <- lapply(
+    test_files, readLines, warn = FALSE, encoding = "UTF-8"
+  )
+  parse_source <- function(source) {
+    parse(text = source, keep.source = FALSE, encoding = "UTF-8")
+  }
+  r_parsed <- lapply(r_source, parse_source)
+  test_parsed <- lapply(test_source, parse_source)
 
   definitions <- unique(unlist(lapply(r_parsed, function(expressions) {
     vapply(expressions, function(expression) {
@@ -362,13 +383,9 @@ ledgr_structure_scan <- function(root) {
       }
     }
   }
-  tokens <- unlist(lapply(c(r_parsed, test_parsed), function(expressions) {
-    data <- getParseData(attr(expressions, "srcfile"))
-    values <- data$text[data$token %in% c(
-      "SYMBOL", "SYMBOL_FUNCTION_CALL", "STR_CONST"
-    )]
-    sub("^(['\"])(.*)\\1$", "\\2", values, perl = TRUE)
-  }), use.names = FALSE)
+  # Parse one combined source for the reference census instead of building a
+  # separate parse-data table for every R and test file.
+  tokens <- ledgr_structure_reference_tokens(c(r_source, test_source))
   token_counts <- table(tokens)
 
   namespace <- readLines(file.path(root, "NAMESPACE"), warn = FALSE)

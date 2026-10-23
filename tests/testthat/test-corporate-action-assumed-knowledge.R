@@ -58,7 +58,19 @@ testthat::test_that("[LTB-0454] assumed corporate-action knowledge reads assumed
     identical(ledgr:::ledgr_json_read_nested(json)$knowledge, "evidenced")
   }, logical(1))))
   testthat::expect_null(evidenced$metadata$knowledge)
+})
 
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0482] assumed corporate-action knowledge is disclosed by public results", {
+  supplied_at <- as.POSIXct("2021-01-11 21:00:00", tz = "UTC")
+  mixed <- ledgr_facts_equity_corporate_actions(
+    assumed_knowledge_rows(as.POSIXct(
+      c(NA, supplied_at), origin = "1970-01-01", tz = "UTC"
+    ))
+  )
+  evidenced <- ledgr_facts_equity_corporate_actions(
+    assumed_knowledge_rows(rep(supplied_at - 86400 * 7, 2))
+  )
   # Sealed and run: the assumed family is disclosed in the result; the
   # all-evidenced one is not. Sessions and membership are evidenced so the
   # corporate-action family is the only possible assumption.

@@ -494,6 +494,36 @@ testthat::test_that("heavy protocols require an owner invocation and checker", {
   )
 })
 
+testthat::test_that("[LTB-0483] fast claim splits retain their integration witnesses", {
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  registry <- yaml::read_yaml(file.path(root, "tests", "claims.yml"))$claims
+  claims <- stats::setNames(registry, vapply(registry, `[[`, character(1), "id"))
+  split_map <- data.frame(
+    fast_claim = c("LCL-0204", "LCL-0444"),
+    fast_block = c("LTB-0204", "LTB-0454"),
+    review_claim = c("LCL-0471", "LCL-0472"),
+    review_block = c("LTB-0481", "LTB-0482"),
+    stringsAsFactors = FALSE
+  )
+  source_rows <- do.call(rbind, lapply(
+    c("test-run-continuity-ii.R", "test-corporate-action-assumed-knowledge.R"),
+    function(file) ledgr_test_scan_file(file.path(root, "tests", "testthat", file))
+  ))
+
+  for (i in seq_len(nrow(split_map))) {
+    fast_claim <- claims[[split_map$fast_claim[[i]]]]
+    review_claim <- claims[[split_map$review_claim[[i]]]]
+    testthat::expect_identical(fast_claim$detecting_blocks, split_map$fast_block[[i]])
+    testthat::expect_identical(fast_claim$promised_profile, "fast")
+    testthat::expect_identical(review_claim$detecting_blocks, split_map$review_block[[i]])
+    testthat::expect_identical(review_claim$promised_profile, "review")
+  }
+  expected_blocks <- unlist(split_map[c("fast_block", "review_block")], use.names = FALSE)
+  actual <- source_rows[match(expected_blocks, source_rows$block_id), c("block_id", "profile")]
+  testthat::expect_identical(actual$block_id, expected_blocks)
+  testthat::expect_identical(actual$profile, rep(c("fast", "review"), each = 2L))
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0237] check-test-gate accepts the documented record set and refuses an incomplete one", {
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
