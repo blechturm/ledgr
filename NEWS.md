@@ -33,6 +33,14 @@
   schema moves to 123 and schema-122 stores refuse with
   `ledgr_store_rebuild_required`; rebuild them.
 
+- A `carry_test_state` walk-forward no longer stops with
+  `ledgr_invalid_pulse_context` when two or more corporate-action cash
+  postings are pending at a fold boundary; the carried opening checks every
+  posting instant at once. In `ledgr_corporate_action_summary()`, the
+  `unsupported_quantity.report_only` exercised-choice count now counts each
+  held fact on the unsupported-quantity route, refused facts included, instead
+  of reading 0.
+
 ## Fact pipeline follow-ups
 
 - Fact construction is faster at scale with unchanged rows, fact IDs and

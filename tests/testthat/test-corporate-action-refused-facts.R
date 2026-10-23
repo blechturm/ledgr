@@ -174,3 +174,92 @@ testthat::test_that("[LTB-0452] the strict preset refuses a held refused fact in
   )$fact_id
   testthat::expect_identical(error$source_fact_ids, refused_id)
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0473] the report_only choice count is the held facts on the unsupported route (LDG-3091)", {
+  days <- refused_fact_days()
+  # Case refused: the LTB-0451 facts, so one held refused AAA dividend is the
+  # only held fact on the unsupported route. Case mixed: a held complete AAA
+  # fact of a subtype ledgr does not model joins it on the same route.
+  refused_rows <- rbind(
+    refused_fact_rows("div_paid", "AAA", days[[5]], cash = 0.5),
+    refused_fact_rows("div_refused", "AAA", days[[7]], reason = "basis_unverified"),
+    refused_fact_rows("div_unheld", "BBB", days[[7]], reason = "basis_unverified"),
+    refused_fact_rows("div_other", "BBB", days[[8]], reason = "same_date_unresolved")
+  )
+  unmodeled <- refused_fact_rows("div_unknown", "AAA", days[[6]], cash = 0.25)
+  unmodeled$subtype <- "cash_dividend"
+  # Case composition: a held complete spin-off (AAA to BBB) joins the refused
+  # fact from the composition side of the route (close_review_50a.md F1).
+  pad <- function(x, recipient = NA_character_, per_unit = NA_real_) {
+    x$recipient_instrument_id <- recipient
+    x$recipient_identity_validated <- !is.na(recipient)
+    x$recipient_quantity_per_parent_unit <- per_unit
+    x$recipient_quantity_validated <- !is.na(recipient)
+    x
+  }
+  spin_off <- refused_fact_rows("ca_spin_off", "AAA", days[[6]], cash = 0.25)
+  spin_off$subtype <- "spin_off"
+  spin_off$gross_cash_per_parent_unit <- NA_real_
+  spin_off$gross_cash_validated <- FALSE
+  cases <- list(
+    refused = list(rows = refused_rows, route = 1L),
+    mixed = list(rows = rbind(refused_rows, unmodeled), route = 2L),
+    composition = list(rows = rbind(pad(refused_rows), pad(spin_off, "BBB", 0.5)), route = 2L)
+  )
+  for (name in names(cases)) {
+    rows <- cases[[name]]$rows
+    availability <- scale_test_events_snapshot(
+      corporate_actions = ledgr_facts_equity_corporate_actions(rows)
+    )
+    dense <- refused_fact_dense_snapshot(rows)
+    for (mode in c("availability", "dense")) {
+      snapshot <- if (mode == "availability") availability else dense
+      bt <- ledgr_run(
+        refused_fact_experiment(snapshot, ledgr_corporate_actions_research(), mode == "availability"),
+        run_id = paste0("report_only_", name, "_", mode)
+      )
+      summary <- ledgr_corporate_action_summary(bt)
+      printed <- capture.output(summary(bt))
+      close(bt)
+      info <- paste("case:", name, "mode:", mode)
+      route <- cases[[name]]$route
+      testthat::expect_identical(summary$unsupported_facts, route, info = info)
+      testthat::expect_identical(sum(summary$refusal_counts), 1L, info = info)
+      testthat::expect_identical(
+        summary$choice_counts[c("unsupported_quantity.report_only", "unsupported_quantity.refuse")],
+        c(unsupported_quantity.report_only = route, unsupported_quantity.refuse = 0L),
+        info = info
+      )
+      testthat::expect_identical(summary$choice_counts[["cash_amount.gross"]], 1L, info = info)
+      testthat::expect_true(
+        sprintf("    unsupported_quantity.report_only: %d", route) %in% printed,
+        info = info
+      )
+    }
+    ledgr_snapshot_close(availability)
+    ledgr_snapshot_close(dense)
+  }
+
+  # Under the strict preset the report_only choice is never exercised: the
+  # held refused fact stops the availability run (as in LTB-0452).
+  strict_rows <- rbind(
+    refused_fact_rows("div_refused", "AAA", days[[7]], reason = "basis_unverified"),
+    refused_fact_rows("div_unheld", "BBB", days[[7]], reason = "basis_unverified")
+  )
+  strict <- scale_test_events_snapshot(
+    corporate_actions = ledgr_facts_equity_corporate_actions(strict_rows)
+  )
+  on.exit(ledgr_snapshot_close(strict), add = TRUE)
+  bt <- ledgr_run(
+    refused_fact_experiment(strict, ledgr_corporate_actions_strict(), TRUE),
+    run_id = "report_only_strict"
+  )
+  summary <- ledgr_corporate_action_summary(bt)
+  close(bt)
+  testthat::expect_identical(summary$refusal_counts, c(basis_unverified = 1L))
+  testthat::expect_identical(
+    summary$choice_counts[c("unsupported_quantity.report_only", "unsupported_quantity.refuse")],
+    c(unsupported_quantity.report_only = 0L, unsupported_quantity.refuse = 0L)
+  )
+})

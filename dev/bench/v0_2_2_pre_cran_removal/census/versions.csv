@@ -90,8 +90,8 @@
 "R/history-policy.R",92,"ledgr_history_identity_require_current","read_branch_or_equality","identical(history$cutoff_rule_version, ledgr_history_cutoff_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/history-policy.R",93,"ledgr_history_identity_require_current","read_branch_or_equality","identical(history$treatment_rule_version, ledgr_history_treatment_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/history-substrate.R",1,"ledgr_history_substrate_version","binding","ledgr_history_substrate_version <- 1L",FALSE,"none",FALSE,TRUE,TRUE,"",FALSE,FALSE
-"R/history-substrate.R",17,"ledgr_history_stage_identity","convention_string","ledgr_history_worker_stage_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/history-substrate.R",95,"ledgr_history_substrate_is","read_branch_or_equality","identical(x$substrate_version, ledgr_history_substrate_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/history-substrate.R",106,"ledgr_history_substrate_is","read_branch_or_equality","identical(x$substrate_version, ledgr_history_substrate_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/history-substrate.R",28,"ledgr_history_stage_identity","convention_string","ledgr_history_worker_stage_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/indicator-adapters.R",179,"ledgr_adapter_csv","convention_string","csv_data_hash_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/indicator-history.R",8,"ledgr_feature_history_rule_version","binding","ledgr_feature_history_rule_version <- 1L",TRUE,"write_site:ledgr_active_feature_fingerprint;ledgr_feature_engine_version",FALSE,TRUE,TRUE,"",FALSE,FALSE
 "R/indicator.R",310,"ledgr_indicator_capture_overrides","read_branch_or_equality","identical(route, list(type = ""csv_data_hash_v1"", fn_capture = ""values""))",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
