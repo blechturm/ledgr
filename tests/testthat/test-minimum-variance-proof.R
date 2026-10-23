@@ -53,7 +53,7 @@ ws48_utc <- function(d) as.POSIXct(paste(d, "16:00:00"), tz = "UTC")
 ws48_fixture <- function(closes, strategy, days = ws48_days(),
                          opening = ledgr_opening(cash = 100000),
                          policy = ledgr_history_policy(), status = NULL,
-                         valuation = NULL) {
+                         valuation = NULL, membership = NULL) {
   ids <- colnames(closes)
   bars <- data.frame(
     instrument_id = rep(ids, each = length(days)),
@@ -70,10 +70,12 @@ ws48_fixture <- function(closes, strategy, days = ws48_days(),
     session_date = calendar, status = ifelse(open, "open", "closed"),
     session_open = ifelse(open, "09:30:00", NA), session_close = ifelse(open, "16:00:00", NA)
   )
-  membership <- data.frame(
-    effective_from = ws48_utc(days[[1L]] - 1), knowledge_time = ws48_utc(days[[1L]] - 1)
-  )
-  membership$members <- I(list(ids))
+  if (is.null(membership)) {
+    membership <- data.frame(
+      effective_from = ws48_utc(days[[1L]] - 1), knowledge_time = ws48_utc(days[[1L]] - 1)
+    )
+    membership$members <- I(list(ids))
+  }
   families <- list(
     ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
     ledgr_facts_membership_snapshots(
@@ -402,19 +404,25 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
   days <- ws48_days()
   params <- list(lookback = 10L, min_obs = 5L)
 
-  # A constant DDD close has zero variance, so the covariance is singular at
-  # every decision; the run completes without a fill.
-  constant <- ws48_closes()
-  constant[, "DDD"] <- 80
-  cx <- ws48_fixture(constant, strategy)
+  # A covariance the eigenvalue floor cannot repair (Cut 17 decision 20):
+  # without input carry, CCC has valid returns only on 24-26 February and
+  # 1 March and DDD only on 16-22 February inside the ten-session window
+  # ending 1 March, so the pair shares no return and its covariance is
+  # missing. The decision holds and the run completes without a fill then.
+  disjoint <- ws48_closes()
+  disjoint[days %in% as.Date(c("2021-02-15", "2021-02-16", "2021-02-17", "2021-02-18",
+                               "2021-02-19", "2021-02-22")), "CCC"] <- NA
+  disjoint[days %in% as.Date(c("2021-02-23", "2021-02-24", "2021-02-25", "2021-02-26")), "DDD"] <- NA
+  cx <- ws48_fixture(disjoint, strategy, policy = ledgr_history_policy(price_carry = NULL))
   on.exit(ledgr_snapshot_close(cx$snapshot), add = TRUE)
-  seen <- ws48_decide(strategy, cx$exp, "2021-03-01", params)
+  missing_params <- list(lookback = 10L, min_obs = 4L)
+  seen <- ws48_decide(strategy, cx$exp, "2021-03-01", missing_params)
   testthat::expect_identical(seen$outcome, "covariance_not_positive_definite")
   testthat::expect_identical(seen$target, seen$hold)
-  bt <- ledgr_run(cx$exp, params = params, run_id = "ws48-singular")
+  bt <- ledgr_run(cx$exp, params = missing_params, run_id = "ws48-singular")
   on.exit(close(bt), add = TRUE, after = FALSE)
   testthat::expect_identical(ledgr_run_completion(bt)$completion_status, "DONE")
-  testthat::expect_identical(nrow(ws48_fill_days(bt)), 0L)
+  testthat::expect_false("2021-03-02" %in% format(as.Date(ws48_fill_days(bt)$ts_utc)))
 
   # A solver that fails, or returns an unusable solution, holds.
   fx <- ws48_fixture(ws48_closes(), strategy)
@@ -609,8 +617,8 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
     "outcome_on(\"2019-11-12\")" = "not_a_decision_date",
     "outcome_on(\"2018-06-01\")" = "insufficient_history",
     "outcome_on(\"2019-11-01\", list(min_obs = 300L))" = "too_few_instruments",
-    "outcome_on(\"2019-11-01\", list(lookback = 5L, min_obs = 2L, shrink = 1e-12))" =
-      "covariance_not_positive_definite",
+    # Cut 17 decision (20): the eigenvalue floor repairs this singular case.
+    "outcome_on(\"2019-11-01\", list(lookback = 5L, min_obs = 2L, shrink = 1e-12))" = "solved",
     "attr(decision, \"outcome\")" = "solved",
     "check$tier" = "tier_2",
     "check$worker_dependencies$require_namespace" = "quadprog",
@@ -740,4 +748,112 @@ testthat::test_that("[LTB-0438] a run that stops for a holding without a permiss
   testthat::expect_false(any(grepl("STOPPED", clean_lines)))
   testthat::expect_identical(ledgr_valuation_summary(clean)$valuation_stop_reason, NA_character_)
   testthat::expect_identical(ledgr_valuation_summary(clean)$valuation_stop_instruments, character())
+})
+
+# Eigenvalue floor of the strategy (Cut 17 decision 20), written out for the
+# oracle: eigenvalues below floor times the largest are raised to it.
+ws48_floor <- function(sigma, floor = 1e-6) {
+  e <- eigen(sigma, symmetric = TRUE)
+  values <- pmax(e$values, floor * max(e$values))
+  out <- e$vectors %*% (values * t(e$vectors))
+  dimnames(out) <- dimnames(sigma)
+  (out + t(out)) / 2
+}
+
+# Five instruments over the WS48 calendar. In the ten-session window ending
+# 1 March, AAA and BBB are calm for six sessions and swing for the last four;
+# CCC, DDD and EEE enter (first print) on the sixth window session and follow
+# the swing, so each has four valid returns. Their pairwise covariances with
+# AAA and BBB rest on the swing alone while AAA's and BBB's variances span
+# the whole window, so the pairwise matrix is indefinite even after
+# shrinkage.
+ws48_entrant_closes <- function(days = ws48_days()) {
+  at <- match(as.Date("2021-03-01"), days)
+  window <- (at - 9L):at
+  k <- seq_along(days)
+  ra <- 0.010 * sin(0.9 * k) + 0.004 * sin(0.31 * k)
+  rb <- 0.012 * sin(1.7 * k + 1) + 0.004 * sin(0.31 * k)
+  calm <- c(0.002, -0.0015, 0.001, -0.002, 0.0015, -0.001)
+  swing <- c(0.03, -0.025, 0.028, -0.03)
+  ra[window] <- c(calm, swing)
+  rb[window] <- c(-calm, swing + 0.002 * cos(1:4))
+  entrant <- function(phase) {
+    r <- rep(0, length(days))
+    r[window[7:10]] <- swing + 0.002 * sin(1:4 + phase)
+    r
+  }
+  r <- cbind(AAA = ra, BBB = rb, CCC = entrant(1), DDD = entrant(2), EEE = entrant(3))
+  r[1L, ] <- 0
+  closes <- exp(apply(log1p(r), 2L, cumsum)) *
+    matrix(c(50, 60, 70, 80, 90), nrow(r), 5L, byrow = TRUE)
+  closes[seq_len(window[6] - 1L), c("CCC", "DDD", "EEE")] <- NA
+  closes
+}
+
+testthat::test_that("[LTB-0439] an indefinite pairwise covariance from short-history entrants is repaired and solved, not held", {
+  strategy <- ws48_strategy()
+  days <- ws48_days()
+  closes <- ws48_entrant_closes(days)
+  fx <- ws48_fixture(closes, strategy)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  params <- list(lookback = 10L, min_obs = 4L, shrink = 0.5)
+  ids <- c("AAA", "BBB", "CCC", "DDD", "EEE")
+
+  # Precondition from the fixture closes: four valid returns for each
+  # entrant, and a shrunk pairwise covariance with a negative eigenvalue.
+  x <- ws48_window_returns(closes, days, "2021-03-01", 10L, ids)
+  testthat::expect_identical(unname(colSums(is.finite(x))), c(10, 10, 4, 4, 4))
+  sigma <- ws48_sigma(x, 0.5)
+  testthat::expect_lt(min(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values), 0)
+
+  seen <- ws48_decide(strategy, fx$exp, "2021-03-01", params)
+  testthat::expect_identical(seen$outcome, "solved")
+  w <- ws48_long_only(ws48_floor(sigma))
+  price <- closes[match(as.Date("2021-03-01"), days), ids]
+  expected <- floor(w * 0.95 * 100000 / price)
+  testthat::expect_lte(max(abs(seen$target[ids] - expected)), 1)
+  testthat::expect_gt(sum(seen$target[ids]), 0)
+})
+
+testthat::test_that("[LTB-0440] a held index leaver is sold on the next decision date while a screened holding is kept", {
+  strategy <- ws48_strategy()
+  days <- ws48_days()
+  # DDD leaves the universe with the snapshot effective 15 February.
+  membership <- data.frame(
+    effective_from = c(ws48_utc(days[[1L]] - 1), ws48_utc(as.Date("2021-02-15"))),
+    knowledge_time = c(ws48_utc(days[[1L]] - 1), ws48_utc(as.Date("2021-02-15")))
+  )
+  membership$members <- I(list(c("AAA", "BBB", "CCC", "DDD"), c("AAA", "BBB", "CCC")))
+  # CCC's carried share is 0.3 on 1 March (as in LTB-0432), so it is a
+  # screened holding that keep preserves.
+  closes <- ws48_closes()
+  closes[days %in% as.Date(c("2021-02-18", "2021-02-22", "2021-02-24")), "CCC"] <- NA
+  fx <- ws48_fixture(closes, strategy, membership = membership)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  params <- list(lookback = 10L, min_obs = 3L, threshold = 0.2)
+
+  ctx <- ledgr_pulse_snapshot(fx$exp, ts_utc = as.Date("2021-03-01"), params = params)
+  testthat::expect_true(all(c("AAA", "BBB", "CCC") %in% ctx$members))
+  testthat::expect_false("DDD" %in% ctx$members)
+  close(ctx)
+
+  bt <- ledgr_run(fx$exp, params = params, run_id = "ws48-leaver")
+  on.exit(close(bt), add = TRUE, after = FALSE)
+  fills <- as.data.frame(ledgr_results(bt, "fills"))
+  fill <- function(id, day) {
+    hit <- fills[fills$instrument_id == id & format(as.Date(fills$ts_utc)) == day, , drop = FALSE]
+    if (nrow(hit) == 0L) return(NULL)
+    list(side = hit$side, qty = hit$qty)
+  }
+  bought <- fill("DDD", "2021-02-02")
+  testthat::expect_identical(bought$side, "BUY")
+  testthat::expect_gt(bought$qty, 0)
+  # The leaver is sold in full at the open after the 1 March decision.
+  sold <- fill("DDD", "2021-03-02")
+  testthat::expect_identical(sold$side, "SELL")
+  testthat::expect_identical(sold$qty, bought$qty)
+  # Nothing of DDD is bought back, and the screened CCC is not traded on
+  # 2 March.
+  testthat::expect_null(fill("DDD", "2021-04-02"))
+  testthat::expect_null(fill("CCC", "2021-03-02"))
 })

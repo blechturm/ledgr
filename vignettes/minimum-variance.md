@@ -92,6 +92,7 @@ min_variance <- function(ctx, params) {
   threshold <- params$threshold %||% 0.2
   shrink <- params$shrink %||% 0.5
   min_obs <- params$min_obs %||% 60L
+  eig_floor <- params$eig_floor %||% 1e-6
   keep_excluded <- params$keep_excluded %||% TRUE
   hold <- function(outcome) structure(ctx$hold(), outcome = outcome)
 
@@ -130,16 +131,25 @@ min_variance <- function(ctx, params) {
     ledgr_history_frame(feature = "return_1", lookback = lookback,
                         instruments = estimated, na_action = "keep")
 
-  # 4. Estimate a pairwise covariance and shrink it toward its diagonal.
+  # 4. Estimate a pairwise covariance and shrink it toward its diagonal. A
+  #    pairwise estimate need not be positive definite, so floor its
+  #    eigenvalues at eig_floor times the largest one. Hold only when no
+  #    repair is possible: a pair without common valid returns, or no
+  #    positive variance at all.
   sigma <- stats::cov(ledgr_history_matrix(returns), use = "pairwise.complete.obs")
   sigma <- (1 - shrink) * sigma + shrink * diag(diag(sigma))
   if (anyNA(sigma)) {
     return(hold("covariance_not_positive_definite"))
   }
-  eigenvalues <- eigen(sigma, symmetric = TRUE, only.values = TRUE)$values
-  if (min(eigenvalues) <= 1e-10 * max(eigenvalues)) {
+  decomposition <- eigen(sigma, symmetric = TRUE)
+  largest <- max(decomposition$values)
+  if (!(largest > 0)) {
     return(hold("covariance_not_positive_definite"))
   }
+  floored <- decomposition$values
+  floored[floored < eig_floor * largest] <- eig_floor * largest
+  sigma <- decomposition$vectors %*% (floored * t(decomposition$vectors))
+  sigma <- (sigma + t(sigma)) / 2
 
   # 5. Solve: minimise w' sigma w subject to sum(w) = 1 and w >= 0.
   n <- ncol(sigma)
@@ -168,6 +178,11 @@ min_variance <- function(ctx, params) {
   if (is.null(target)) {
     return(hold("no_permissible_mark"))
   }
+
+  # 7. Sell index leavers: holdings that are no longer members of the
+  #    universe. The rebalance preserves them, so target them to zero.
+  leavers <- ctx$universe[ctx$vec$position != 0 & !ctx$vec$member]
+  target[leavers] <- 0
   structure(target, outcome = "solved")
 }
 ```
@@ -181,11 +196,19 @@ The parameters and their defaults:
   may have in its window and still be estimated.
 - `shrink = 0.5`: how far the covariance is pulled toward its diagonal,
   a fixed number in (0, 1\]. Without it, a window with fewer sessions
-  than instruments gives a singular covariance, and the solver fails.
-  Half way is a strong pull; it keeps the estimate usable when
-  instruments outnumber sessions.
+  than instruments gives a singular covariance. Half way is a strong
+  pull; it keeps the estimate usable when instruments outnumber
+  sessions.
 - `min_obs = 60`: the fewest valid daily returns an instrument needs,
   about a quarter of the default window.
+- `eig_floor = 1e-6`: the smallest eigenvalue the covariance may keep,
+  as a fraction of its largest. Each pair’s covariance is estimated from
+  the sessions both instruments have, so instruments with short or
+  different histories, such as recent index entrants, can give a matrix
+  that is not positive definite even after shrinkage. Raising its
+  eigenvalues to the floor is the standard nearest positive definite
+  repair; an estimate whose eigenvalues are all above the floor is left
+  unchanged.
 - `keep_excluded = TRUE`: keep holdings the estimate left out. It exists
   so that this article can show what happens without it.
 
@@ -431,6 +454,18 @@ estimate; it is rebalanced again once the estimate includes it in July
 2020. Without `keep`, the rebalance sells the whole position at the open
 after the November decision and buys it back in July.
 
+Index leavers are the opposite case. When an instrument leaves the
+universe, `ledgr_target_rebalance()` preserves the holding: it is not a
+member, so the helper neither weights nor sells it, and it would stay in
+the book indefinitely. The strategy therefore targets every held
+non-member to zero after the rebalance. Both choices are deliberate: an
+instrument the estimate left out is kept, because leaving it out is an
+estimation choice; an instrument the index dropped is sold, because the
+strategy holds index members. The demo’s universe never changes, so the
+registered blocks show the sale. One cost remains: the rebalance
+reserved the leaver’s value before sizing the others, so the cash from
+the sale stays idle until the next decision.
+
 ## When The Strategy Holds
 
 On a decision date the strategy returns `ctx$hold()` instead of a target
@@ -447,31 +482,24 @@ outcome_on("2019-11-01", list(min_obs = 300L))
 
     [1] "too_few_instruments"
 
-- `covariance_not_positive_definite`: the shrunk covariance has a
-  missing entry or a zero or negative eigenvalue. With five sessions for
-  six instruments the sample covariance is singular, and a negligible
-  shrinkage leaves it so:
+- `covariance_not_positive_definite`: the covariance cannot be repaired,
+  because two estimated instruments share no valid return in the window
+  (a missing entry) or no instrument has a positive variance. A
+  covariance that is merely singular or indefinite is repaired by the
+  eigenvalue floor instead. With five sessions for six instruments the
+  sample covariance is singular, and a negligible shrinkage leaves it
+  so, yet the strategy still solves:
 
 ``` r
 outcome_on("2019-11-01", list(lookback = 5L, min_obs = 2L, shrink = 1e-12))
 ```
 
-    [1] "covariance_not_positive_definite"
-
-``` r
-outcome_on("2019-11-01", list(lookback = 5L, min_obs = 2L))
-```
-
     [1] "solved"
-
-The second call uses the default shrinkage, and the same five sessions
-give a solution.
 
 - `solver_failure`: `solve.QP()` raises an error or returns a solution
   that does not sum to one or has a weight below zero beyond rounding.
-  With a positive definite covariance and these constraints this should
-  not happen, but the strategy holds rather than trade on a broken
-  solution.
+  With the repaired covariance and these constraints this should not
+  happen, but the strategy holds rather than trade on a broken solution.
 - `no_permissible_mark`: `ledgr_target_rebalance()` refuses with
   `ledgr_target_sizing_unavailable` when it must value a holding, kept
   or weighted, that has no permissible mark. The strategy catches
@@ -520,7 +548,7 @@ sweep <- ledgr_sweep(exp, grid, workers = 2L, seed = 1L)
 sweep
 ```
 
-    # ledgr sweep -- sweep_5d6a762af8189dc4
+    # ledgr sweep -- sweep_e6415a6fc39a98b1
     # A tibble: 4 x 8
       candidate_id        candidate_row status sharpe_ratio total_return max_drawdown n_trades
       <chr>                       <int> <chr>         <dbl> <chr>        <chr>           <int>
