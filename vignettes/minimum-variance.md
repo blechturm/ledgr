@@ -154,6 +154,7 @@ min_variance <- function(ctx, params) {
     return(hold("solver_failure"))
   }
   solution[solution < 0] <- 0
+  solution <- solution / sum(solution)
 
   # 6. Keep every holding the estimate left out, and target the rest.
   held <- ctx$universe[ctx$vec$position != 0]
@@ -361,7 +362,10 @@ The run has 36 month starts. The first twelve hold for want of a full
 window, and the strategy trades after each of the other 24: the fills
 fall on the session after each decision, at the next open. The summary
 line on corporate actions confirms that the demo’s only dividend
-affected no holding.
+affected no holding. The valuation line reads STALE because `DEMO_05`
+was held through its thin stretch: on every second session it was valued
+at its previous close, which the default valuation policy permits for up
+to five sessions.
 
 ## Holdings The Estimate Leaves Out
 
@@ -445,7 +449,7 @@ outcome_on("2019-11-01", list(min_obs = 300L))
 
 - `covariance_not_positive_definite`: the shrunk covariance has a
   missing entry or a zero or negative eigenvalue. With five sessions for
-  seven instruments the sample covariance is singular, and a negligible
+  six instruments the sample covariance is singular, and a negligible
   shrinkage leaves it so:
 
 ``` r
@@ -516,7 +520,7 @@ sweep <- ledgr_sweep(exp, grid, workers = 2L, seed = 1L)
 sweep
 ```
 
-    # ledgr sweep -- sweep_62dfcae713db64a3
+    # ledgr sweep -- sweep_5d6a762af8189dc4
     # A tibble: 4 x 8
       candidate_id        candidate_row status sharpe_ratio total_return max_drawdown n_trades
       <chr>                       <int> <chr>         <dbl> <chr>        <chr>           <int>

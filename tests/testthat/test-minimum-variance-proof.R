@@ -239,6 +239,12 @@ testthat::test_that("[LTB-0432] the weights change when one instrument's carried
   expect_targets(loose, "2021-03-01", all_ids)
   testthat::expect_gt(loose$target[["CCC"]], 0)
   testthat::expect_gt(max(abs(loose$target[c("AAA", "BBB", "DDD")] - mar$target[c("AAA", "BBB", "DDD")])), 1)
+  # At the boundary the share (3/10) equals the threshold, and an instrument
+  # whose share is at most the threshold is estimated (close review 48 F2).
+  boundary <- ws48_decide(strategy, fx$exp, "2021-03-01", utils::modifyList(params, list(threshold = 0.3)))
+  testthat::expect_identical(boundary$outcome, "solved")
+  testthat::expect_gt(boundary$target[["CCC"]], 0)
+  expect_targets(boundary, "2021-03-01", all_ids)
 })
 
 testthat::test_that("[LTB-0433] an instrument with fewer than min_obs valid returns is excluded and, if held, kept", {
@@ -426,6 +432,20 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
       testthat::expect_identical(seen$target, seen$hold, info = case)
     })
   }
+  # A solution inside the tolerances whose clipped weights would sum above
+  # the rebalance's leverage limit is renormalised and solved, not an error
+  # (close review 48 F6).
+  local({
+    testthat::local_mocked_bindings(
+      solve.QP = function(Dmat, ...) {
+        list(solution = c(0.5 + 0.9e-8, 0.5 + 0.9e-8, -0.9e-8, rep(0, ncol(Dmat) - 3L)))
+      },
+      .package = "quadprog"
+    )
+    seen <- ws48_decide(strategy, fx$exp, "2021-03-01", params)
+    testthat::expect_identical(seen$outcome, "solved")
+    testthat::expect_gt(seen$target[["AAA"]], 0)
+  })
 
   # A holding the rebalance must value without a permissible mark. A run
   # never reaches the strategy with one (see the run below), so the context
@@ -462,10 +482,18 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
 
   # In a run, a holding without any mark stops the run before the strategy
   # is asked: DDD has no print before 1 February.
+  # A counting strategy shows the stop comes before the strategy is called
+  # (close review 48 F3).
   late <- ws48_closes()
   late[days < as.Date("2021-02-01"), "DDD"] <- NA
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  counted <- function(ctx, params) {
+    calls$n <- calls$n + 1L
+    ctx$hold()
+  }
   lx <- ws48_fixture(
-    late, strategy,
+    late, counted,
     opening = ledgr_opening(cash = 100000, positions = c(DDD = 100), cost_basis = c(DDD = 80))
   )
   on.exit(ledgr_snapshot_close(lx$snapshot), add = TRUE)
@@ -474,6 +502,7 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
   completion <- ledgr_run_completion(stopped)
   testthat::expect_identical(completion$completion_status, "INCOMPLETE")
   testthat::expect_identical(completion$stop_reason, "valuation_horizon_exhausted")
+  testthat::expect_identical(calls$n, 0L)
 })
 
 # R chunks of a Quarto source: label, options and code.
@@ -675,6 +704,31 @@ testthat::test_that("[LTB-0438] a run that stops for a holding without a permiss
   )
   testthat::expect_true(expected_refused %in% lines_of(refused, print))
   testthat::expect_false(any(grepl("Valuation: STALE", lines_of(refused, print))))
+
+  # The LTB-0164 terminal fixture (close review 48 F1): AAA closes 100, -,
+  # 103 and is known inactive (bankruptcy) from day 2, where its terminal
+  # choice needs a permissible mark under a zero-session refuse horizon and
+  # has none, so the run stops with terminal_mark_unavailable.
+  no_mark <- terminal_outcome_snapshot(
+    list(AAA = c(100, NA, 103)),
+    lifetime = terminal_outcome_lifetime("AAA", 2L, "bankruptcy")
+  )
+  on.exit(ledgr_snapshot_close(no_mark), add = TRUE)
+  terminal <- ledgr_run(
+    terminal_outcome_experiment(no_mark, valuation = ledgr_valuation_stale(0, exhausted = "refuse")),
+    run_id = "ws48-print-terminal"
+  )
+  on.exit(close(terminal), add = TRUE, after = FALSE)
+  testthat::expect_identical(ledgr_run_completion(terminal)$stop_reason, "terminal_mark_unavailable")
+  expected_terminal <- paste(
+    "Valuation: STOPPED - 1 holding without a permissible mark at 2020-01-02T16:00:00Z (AAA);",
+    "the run is INCOMPLETE (terminal_mark_unavailable)"
+  )
+  for (out in list(lines_of(terminal, print), lines_of(terminal, summary))) {
+    testthat::expect_true(expected_terminal %in% out)
+    testthat::expect_false(any(grepl("Valuation: (CURRENT|STALE|FROZEN)", out)))
+  }
+  testthat::expect_identical(ledgr_valuation_summary(terminal)$valuation_stop_reason, "terminal_mark_unavailable")
 
   # A run without a valuation stop keeps its ordinary headline.
   cx <- ws48_fixture(ws48_closes(), hold)

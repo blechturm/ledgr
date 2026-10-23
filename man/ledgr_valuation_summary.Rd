@@ -56,8 +56,10 @@ policy's price carry. \code{history_policy} holds those three fields as a tibble
 with the valuation evidence and a \verb{History Policy} section.
 
 A run that stopped \code{INCOMPLETE} because a holding had no permissible mark
-(\code{valuation_horizon_exhausted}, a holding never priced or, under
-\code{exhausted = "refuse"}, a mark older than \code{max_sessions}) records the stop
+(\code{valuation_horizon_exhausted}: a holding never priced or, under
+\code{exhausted = "refuse"}, a mark older than \code{max_sessions}; or
+\code{terminal_mark_unavailable}: a known-inactive holding whose terminal choice
+needs a mark it lacks) records the stop
 in \code{valuation_stop_reason}, \code{valuation_stop_ts_utc} and
 \code{valuation_stop_instruments} (\code{NA}, \code{NA} and empty otherwise), and the
 valuation headline of \code{print()} and \code{summary()} reads \code{STOPPED} with the

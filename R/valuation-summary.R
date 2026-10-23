@@ -33,8 +33,10 @@
 #' with the valuation evidence and a `History Policy` section.
 #'
 #' A run that stopped `INCOMPLETE` because a holding had no permissible mark
-#' (`valuation_horizon_exhausted`, a holding never priced or, under
-#' `exhausted = "refuse"`, a mark older than `max_sessions`) records the stop
+#' (`valuation_horizon_exhausted`: a holding never priced or, under
+#' `exhausted = "refuse"`, a mark older than `max_sessions`; or
+#' `terminal_mark_unavailable`: a known-inactive holding whose terminal choice
+#' needs a mark it lacks) records the stop
 #' in `valuation_stop_reason`, `valuation_stop_ts_utc` and
 #' `valuation_stop_instruments` (`NA`, `NA` and empty otherwise), and the
 #' valuation headline of `print()` and `summary()` reads `STOPPED` with the
@@ -66,22 +68,25 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
 }
 
 # The valuation stop of a run that ended INCOMPLETE because a holding had no
-# permissible mark (LDG-3090): the stop pulse and the unvalued holdings, read
-# in one query from the stop rows the fold recorded. valuation_state still
+# permissible mark (LDG-3090): an unvalued holding (valuation_horizon_exhausted)
+# or a known-inactive holding whose terminal choice needs a mark it lacks
+# (terminal_mark_unavailable). The stop pulse, reason and holdings are read in
+# one query from the stop rows the fold recorded. valuation_state still
 # describes the marks of the pulses before the stop.
 ledgr_valuation_summary_add_stop <- function(out, run_id, con) {
   stopped <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT ts_utc, instrument_id FROM run_diagnostics WHERE run_id = ?",
+      "SELECT ts_utc, instrument_id, reason_code FROM run_diagnostics WHERE run_id = ?",
       "AND stage = 'valuation' AND outcome = 'stopped'",
-      "AND reason_code = 'valuation_horizon_exhausted' ORDER BY diagnostic_seq"
+      "AND reason_code IN ('valuation_horizon_exhausted', 'terminal_mark_unavailable')",
+      "ORDER BY diagnostic_seq"
     ),
     params = list(run_id)
   )
   ids <- unique(as.character(stopped$instrument_id))
   found <- nrow(stopped) > 0L
-  out$valuation_stop_reason <- if (found) "valuation_horizon_exhausted" else NA_character_
+  out$valuation_stop_reason <- if (found) as.character(stopped$reason_code[[1L]]) else NA_character_
   out$valuation_stop_ts_utc <- as.POSIXct(
     if (found) as.numeric(as.POSIXct(stopped$ts_utc[[1L]], tz = "UTC")) else NA_real_,
     origin = "1970-01-01", tz = "UTC"

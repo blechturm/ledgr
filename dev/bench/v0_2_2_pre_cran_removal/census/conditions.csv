@@ -2300,7 +2300,7 @@
 "R/validation-pbo.R",301,"abort_class","ledgr_validation_pbo_invalid_metric",TRUE,"c(""ledgr_validation_pbo_invalid_metric"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/validation-pbo.R",313,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_validation_pbo_invalid_metric"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/validation-pbo.R",313,"abort_class","ledgr_validation_pbo_invalid_metric",TRUE,"c(""ledgr_validation_pbo_invalid_metric"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/valuation-summary.R",51,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",TRUE,TRUE,FALSE
+"R/valuation-summary.R",53,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",TRUE,TRUE,FALSE
 "R/walk-forward-folds.R",116,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
 "R/walk-forward-folds.R",184,"abort_class","ledgr_walk_forward_invalid_fold_window",TRUE,"""ledgr_walk_forward_invalid_fold_window""",TRUE,TRUE,FALSE
 "R/walk-forward-folds.R",298,"abort_class","ledgr_walk_forward_gap_not_supported",TRUE,"c(""ledgr_walk_forward_gap_not_supported"", ""ledgr_walk_forward_invalid_fold_window"")",TRUE,TRUE,FALSE
