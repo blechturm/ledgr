@@ -430,12 +430,27 @@ boundaries stay complete.
   (for example, excludes or down-weights an instrument whose window is
   mostly carried prices), with a failure-sensitive block showing that the
   weights change when the share crosses the strategy's threshold. The
-  existence of the field alone does not pass this item.
+  existence of the field alone does not pass this item. Cut 17 LTB-0432 is
+  the failure-sensitive consumer proof (including the exact threshold
+  boundary), with LTB-0433 and LTB-0434 separating estimation exclusion from
+  execution intent.
 
 Exit: at least one nontrivial long-only portfolio strategy runs without private
 engine access, private history construction, research-side accounting or a
 model-management system, and its estimation exclusions cannot silently become
 execution decisions.
+
+Cut 17 record (2026-10-23):
+`vignettes/minimum-variance.qmd` is the shipped public proof. Registered review
+blocks LTB-0431 through LTB-0440 exercise its decision schedule, carried-share
+screen, `min_obs`, constrained solve, covariance repair, keep/liquidate
+counterfactual, leaver exit and failure outcomes against the article's actual
+strategy function. In ledgr-research, `experiments/estimator-run-v004/` at
+commits 5c13d73, f3b06f5, 06d69e6 and e58fc69 records the unchanged strategy
+on the 1998-2026 dividend build, the G-013 carried-input report, G-016 dividend
+status, G-025 cash reconciliation and the corrected 26-of-26 walk-forward.
+Together these satisfy the exit without private engine access or research-side
+accounting; `keep` makes the estimator/execution boundary explicit.
 
 ### WS8. Residual performance pass and integrated release evidence
 
@@ -519,7 +534,16 @@ no ticket:
   breakage stops surfacing only in nightly runs. The roadmap's "v0.2.2 CI
   strategy review" row has no ticket;
 - fast-lane headroom: each cut close records the ordinary fast profile's
-  margin against its 112-second gate beside the review ratio.
+  margin against its 112-second gate beside the review ratio. Cut 17 WS50
+  records the first exhausted lane: after moving its three multi-run
+  integration detectors to the review profile, the pre-WS50 arm measures
+  113.78/114.15/114.36 seconds (median 114.15) and the candidate measures
+  113.65/113.00/114.50 seconds (median 113.65, ratio 0.996), with 573 of 573
+  blocks in each arm. Both arms miss the unchanged bound, so this is not a
+  WS50 regression or a gate pass. WS8 first restores durable headroom by
+  profiling shared setup cost and retaining one cheap fast detector per
+  claim before another cut adds fast blocks; it does not widen the bound or
+  hide end-to-end claims merely to make the clock green;
 - `ledgr_run_explain()` read cost (Cut 16 LDG-3069, H6 record): explaining
   one instrument of the H1 single run reads the whole diagnostics and
   availability tables and filters them in R, 9.3 s at a 2.6 GB R heap peak
@@ -719,7 +743,8 @@ current work.
    (Workstream 49) and the private estimator run with dividends (Workstream
    50). WS6 proceeds independently only if its probe promotes it.
 2. Finish WS8 residual performance work and integrated release evidence.
-3. The pre-CRAN API cleanup cut lands before the first CRAN release.
+3. The pre-CRAN API cleanup cut, including the routed minimum-variance article
+   modernization below, lands before the first CRAN release.
 
 `tickets.yml` alone binds exact dependencies and status.
 
@@ -1045,6 +1070,36 @@ history proof:
   of only a hashed `candidate_id`, with `params` currently among the hidden
   columns.
 
+**Minimum-variance article modernization, routed 2026-10-23.** Cut 17 closes
+against the accepted Workstream 48 article and the strategy source hash used
+by its Workstream 50 private evidence; do not silently rewrite that accepted
+record while the cut is open. After Cut 17, and before tickets are cut for the
+article rewrite, run bounded public-API probes on the final Cut 17 tree for:
+
+- monthly scheduling without a dummy two-session history read;
+- identity-preserving narrowing of a history result after an estimator screen,
+  without a second window read;
+- the separate meanings of estimation exclusion, keeping an excluded holding,
+  liquidating an index leaver and allocating the remaining capital; and
+- portable user-written estimator helpers across run, sweep and worker paths.
+
+Reuse native capabilities where they suffice and check the feedback register
+before allocating a finding. Scheduling stays with WS6 and ships only if its
+cost probe promotes it. A missing identity-preserving history-selection bridge
+may enter the pre-CRAN cleanup cut. Keep/liquidate/allocation semantics remain
+a portfolio-construction RFC question: the article must not encode a new
+economic default as local plumbing. Portable helper bundles keep their existing
+post-v0.2.2 route unless the probe finds a smaller already-supported form.
+Durable factor and decision evidence remains LFB-028 and is not a prerequisite
+for teaching the estimator.
+
+Rewrite the article only after the supporting API decisions are stable. Teach
+the causal-history-to-estimator-to-identified-weights-to-explicit-intent path,
+with advanced covariance repair and failure material separated from the main
+flow. If the strategy source changes, rerun the registered synthetic evidence
+and the private Sharadar evidence needed to make its recorded strategy hash
+truthful; do not carry the Cut 17 hash forward by assertion.
+
 <a id="deferred-history-simplification"></a>
 
 ### Deferred history simplification
@@ -1106,8 +1161,14 @@ Cut 16 decision (17) routes these beyond WS46:
   rebuild, its per-event `closeadj` witness (the unit and date gate),
   build-time and peak-RSS records; Workstream 50 the carried-input G-013 and
   dividend-status G-016 reports and the end-to-end G-025 buy-and-hold sample
-  (Cut 17 decision 10). WS8 cites both checks. Until those facts pass end to
-  end, the headline explicitly excludes dividends. Maintainer,
+  (Cut 17 decision 10). The record is now complete: Workstream 49's full-lake
+  per-event witness validates 56,658 sealed dividends, and Workstream 50's
+  preregistered 20-name G-025 sample reconciles 1,085 of 1,085 held complete
+  events with no missing, extra, mistimed or unequal posting while 25 held
+  refused events post nothing (`experiments/estimator-run-v004/`, research
+  commits 5c13d73, f3b06f5, 06d69e6 and e58fc69). WS8 cites both checks; the
+  public headline may now state the recorded dividend status rather than a
+  blanket exclusion. Maintainer,
   2026-10-22 (`close_review_45_rereview_1.md` N3): Cut 16 decision (33)
   applies whatever `gross_cash_validated` says, so a cash dividend without an
   entitlement clock refuses even when its terms are unvalidated.
