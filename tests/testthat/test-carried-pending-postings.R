@@ -57,6 +57,7 @@ ldg3091_two_pending_fixture <- function() {
   list(snapshot = snapshot, exp = exp, days = days)
 }
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0471] a walk-forward carries two pending dividend postings across a fold boundary", {
   fixture <- ldg3091_two_pending_fixture()
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
@@ -133,6 +134,7 @@ testthat::test_that("[LTB-0471] a walk-forward carries two pending dividend post
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0472] a carried opening validates many posting instants and refuses an invalid one among them", {
   normalize <- ledgr:::ledgr_opening_carried_normalize
   carried <- function(posting) {

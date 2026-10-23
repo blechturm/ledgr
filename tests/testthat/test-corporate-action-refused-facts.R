@@ -175,6 +175,7 @@ testthat::test_that("[LTB-0452] the strict preset refuses a held refused fact in
   testthat::expect_identical(error$source_fact_ids, refused_id)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0473] the report_only choice count is the held facts on the unsupported route (LDG-3091)", {
   days <- refused_fact_days()
   # Case refused: the LTB-0451 facts, so one held refused AAA dividend is the
