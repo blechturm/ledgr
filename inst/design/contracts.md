@@ -2387,7 +2387,10 @@ and `AAA` a held nonmember, each holding 5:
   `unsupported_quantity = "refuse"` (the strict preset) an availability run
   stops `INCOMPLETE` with `corporate_action_quantity_refused` at the fact's
   effective pulse and a dense run raises
-  `ledgr_corporate_action_quantity_unsupported`; otherwise nothing posts, the
+  `ledgr_corporate_action_quantity_unsupported`; a held fact with no
+  effective clock has no effective pulse, so under either value it only
+  counts in `unsupported_facts` and makes `corporate_action_fidelity` read
+  `unsupported`; otherwise nothing posts, the
   fact counts in `unsupported_facts` and `corporate_action_fidelity` is
   `unsupported`. Ingest keeps the subtype
   vocabulary open (Cut 12 LDG-2996; Cut 17 LDG-3089).

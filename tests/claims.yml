@@ -4045,6 +4045,6 @@ claims:
     owner: "maintainer"
     protected_contract_or_defect: "LFB-013 and cut_review_17.md R8: corporate-action knowledge filled by the known-when-effective rule was written as evidenced and the assumption disclosure covered four families only."
     oracle_independence: "Which row is filled follows from the hand-built input (one row without a knowledge time, one with); sessions and membership are evidenced, so the corporate-action family is the only possible assumption."
-    smallest_failing_change: "Label filled rows evidenced, label supplied rows assumed, drop the reason, drop the family metadata, or leave equity_corporate_actions out of the assumption families or the applied families."
+    smallest_failing_change: "Label filled rows evidenced, label supplied rows assumed, drop the reason, drop the family metadata, or leave equity_corporate_actions out of the assumption families or the applied families; label a knowledge time filled from an entitlement-only row evidenced (close_review_49a.md P3), or disclose the corporate-action family only under a membership rule and not for a fixed basket (P4)."
     cheapest_adequate_lane: "Two constructors, two snapshots and two short runs; fast."
     overlapping_evidence: "LTB-0260 (LCL-0258) pins that a schema-122 store now refuses with ledgr_store_rebuild_required; LTB-0234 pins the other families' disclosure."

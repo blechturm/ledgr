@@ -35,6 +35,21 @@ testthat::test_that("[LTB-0454] assumed corporate-action knowledge reads assumed
     ignore_attr = TRUE
   )
 
+  # A row with an entitlement clock only fills its knowledge from that clock,
+  # and is labelled assumed too (close_review_49a.md F1).
+  entitlement_only <- ledgr_facts_equity_corporate_actions(data.frame(
+    fact_id = "div_entitlement_only", subtype = "ordinary_cash_dividend",
+    parent_instrument_id = "AAA",
+    entitlement_time = as.POSIXct("2021-01-08 21:00:00", tz = "UTC"),
+    complete = TRUE, provenance_tier = "snapshot_bound",
+    gross_cash_per_parent_unit = 0.5, gross_cash_validated = TRUE,
+    source = "assumed_knowledge_test", stringsAsFactors = FALSE
+  ))
+  entitlement_provenance <- ledgr:::ledgr_json_read_nested(entitlement_only$rows$provenance_json[[1L]])
+  testthat::expect_identical(entitlement_provenance$knowledge, "assumed")
+  testthat::expect_identical(entitlement_provenance$knowledge_reason, "knowledge_assume_effective")
+  testthat::expect_identical(entitlement_only$metadata$knowledge, "assume_effective")
+
   # Every knowledge time supplied: no assumption, no metadata label.
   evidenced <- ledgr_facts_equity_corporate_actions(
     assumed_knowledge_rows(rep(supplied_at - 86400 * 7, 2))
@@ -47,7 +62,7 @@ testthat::test_that("[LTB-0454] assumed corporate-action knowledge reads assumed
   # Sealed and run: the assumed family is disclosed in the result; the
   # all-evidenced one is not. Sessions and membership are evidenced so the
   # corporate-action family is the only possible assumption.
-  disclosed <- function(family, run_id) {
+  disclosed <- function(family, run_id, universe = ledgr_universe_members("u")) {
     snapshot <- scale_test_events_snapshot(corporate_actions = family, knowledge = "evidenced")
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     sealed <- DBI::dbGetQuery(
@@ -57,7 +72,7 @@ testthat::test_that("[LTB-0454] assumed corporate-action knowledge reads assumed
     bt <- ledgr_run(
       ledgr_experiment(
         snapshot, function(ctx, params) ctx$hold(),
-        universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2),
+        universe = universe, valuation_policy = ledgr_valuation_stale(2),
         cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
       ),
       run_id = run_id
@@ -80,6 +95,10 @@ testthat::test_that("[LTB-0454] assumed corporate-action knowledge reads assumed
     assumed_run$printed,
     fixed = TRUE
   )))
+
+  # A fixed basket applies the corporate-action facts too.
+  fixed_run <- disclosed(mixed, "assumed_knowledge_fixed", universe = c("AAA", "BBB"))
+  testthat::expect_identical(fixed_run$summary$assumption_backed_families, "equity_corporate_actions")
 
   evidenced_run <- disclosed(evidenced, "evidenced_knowledge")
   testthat::expect_identical(evidenced_run$sealed, c("evidenced", "evidenced"))
