@@ -691,19 +691,19 @@ workstreams:
   - id: 48
     name: "Long-only minimum-variance proof"
     cut: 17
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 48", verdict: null, reason: "One claim: One ordinary long-only minimum-variance strategy runs end to end through public APIs on explicit decision dates, solves the constrained problem, consumes the carried-input share so the weights change when it crosses the strategy threshold, and keeps every held instrument it could not estimate instead of letting absence become a sell."}
-    accepted: null
+    review: {mode: "Type 1", point: "close of workstream 48", verdict: "CHANGES_REQUIRED", artifact: "close_review_48.md", result: "Close review 6 findings (F1 widened STOPPED headline, F2-F3 detectors, F4-F5 teaching, F6 renormalisation); focused re-review close_review_48_rereview_1.md PASS_AFTER_PATCHES 5 findings (N1-N5), applied at 53e8dee3 and verified by the coordinator; decisions (16), (17), (19) and (20) taken during implementation.", reason: "One claim: One ordinary long-only minimum-variance strategy runs end to end through public APIs on explicit decision dates, solves the constrained problem, consumes the carried-input share so the weights change when it crosses the strategy threshold, and keeps every held instrument it could not estimate instead of letting absence become a sell."}
+    accepted: "2026-10-23 by the maintainer after the focused re-review patches and the quiet-host fast profile passed at a 109.19-second median against a 108.84-109.63-second base (5023626c). Provisional defaults accepted as the reviews judged them: article under Going Deeper; keep_excluded parameter; uncalibrated shrink 0.5, min_obs 60 and equity_fraction 0.95; excluded by the history read as not admissible; STOPPED wording naming at most three holdings; LTB-0438 in the review profile; decision (17) covering both missing-mark stops; leavers sold only on solved decisions; eig_floor 1e-6; missing covariance entries not imputed."
   - id: 49
     name: "Sharadar dividend facts"
     cut: 17
-    status: "open"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 49", verdict: null, reason: "One claim: Sharadar cash dividends enter a sealed private build as validated ordinary_cash_dividend facts in split-adjusted units, proven per event against the vendor's dividend-adjusted series, or, where the witness cannot prove them, refuse with named reasons that public results count; assumed knowledge is labelled as assumed and every unmapped or refused row is disclosed."}
-    accepted: null
+    review: {mode: "Type 1", point: "close of workstream 49", verdict: "PASS_AFTER_PATCHES", artifact: "close_review_49.md", result: "Phase-A review close_review_49a.md PASS_AFTER_PATCHES (F1-F4) on LDG-3089, LDG-3085 and LDG-3086, applied at 60ae907e and ledgr-research ae4103f; close review close_review_49.md PASS_AFTER_PATCHES (F1-F4) on LDG-3087 and the workstream claim, applied at ledgr-research aefb2d9; decisions (15) and (18) taken during implementation.", reason: "One claim: Sharadar cash dividends enter a sealed private build as validated ordinary_cash_dividend facts in split-adjusted units, proven per event against the vendor's dividend-adjusted series, or, where the witness cannot prove them, refuse with named reasons that public results count; assumed knowledge is labelled as assumed and every unmapped or refused row is disclosed."}
+    accepted: "2026-10-23 by the maintainer after the close-review patches and the quiet-host fast profile passed at a 108.91-second median (573 blocks, three new fast blocks) against a 104.95-111.12-second base (53432d22). Provisional defaults accepted as the review judged them: witness census from a separate witness stage; unit check joined by parent and ex-date; identities pinned after the first build; a v003 memory control; knowledge labels read by regex; LDG-3088 runs on its own copy of the main snapshot. The extra private build directories (smoke, mutant, v003 control) are deleted at acceptance; their aggregates stay committed."
   - id: 50
     name: "Private estimator run with dividends"
     cut: 17
