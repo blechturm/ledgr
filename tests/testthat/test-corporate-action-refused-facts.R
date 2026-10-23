@@ -188,9 +188,23 @@ testthat::test_that("[LTB-0473] the report_only choice count is the held facts o
   )
   unmodeled <- refused_fact_rows("div_unknown", "AAA", days[[6]], cash = 0.25)
   unmodeled$subtype <- "cash_dividend"
+  # Case composition: a held complete spin-off (AAA to BBB) joins the refused
+  # fact from the composition side of the route (close_review_50a.md F1).
+  pad <- function(x, recipient = NA_character_, per_unit = NA_real_) {
+    x$recipient_instrument_id <- recipient
+    x$recipient_identity_validated <- !is.na(recipient)
+    x$recipient_quantity_per_parent_unit <- per_unit
+    x$recipient_quantity_validated <- !is.na(recipient)
+    x
+  }
+  spin_off <- refused_fact_rows("ca_spin_off", "AAA", days[[6]], cash = 0.25)
+  spin_off$subtype <- "spin_off"
+  spin_off$gross_cash_per_parent_unit <- NA_real_
+  spin_off$gross_cash_validated <- FALSE
   cases <- list(
     refused = list(rows = refused_rows, route = 1L),
-    mixed = list(rows = rbind(refused_rows, unmodeled), route = 2L)
+    mixed = list(rows = rbind(refused_rows, unmodeled), route = 2L),
+    composition = list(rows = rbind(pad(refused_rows), pad(spin_off, "BBB", 0.5)), route = 2L)
   )
   for (name in names(cases)) {
     rows <- cases[[name]]$rows

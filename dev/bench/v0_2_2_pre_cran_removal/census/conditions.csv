@@ -655,7 +655,7 @@
 "R/corporate-action-policy.R",316,"stop","",FALSE,"stop(""malformed held-terminal map"", call. = FALSE)",FALSE,FALSE,FALSE
 "R/corporate-action-policy.R",345,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",TRUE,TRUE,FALSE
 "R/corporate-action-policy.R",351,"abort_class","ledgr_invalid_config",TRUE,"""ledgr_invalid_config""",TRUE,TRUE,FALSE
-"R/corporate-action-results.R",400,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",TRUE,TRUE,FALSE
+"R/corporate-action-results.R",402,"abort_class","ledgr_invalid_backtest",TRUE,"""ledgr_invalid_backtest""",TRUE,TRUE,FALSE
 "R/corporate-action-results.R",9,"abort_class","ledgr_invalid_corporate_action_fidelity",TRUE,"c(""ledgr_invalid_corporate_action_fidelity"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/corporate-action-results.R",9,"abort_class","ledgr_invalid_state",TRUE,"c(""ledgr_invalid_corporate_action_fidelity"", ""ledgr_invalid_state"")",TRUE,TRUE,FALSE
 "R/corporate-action-settlement.R",138,"abort_class","ledgr_corporate_action_quantity_unsupported",TRUE,"c(""ledgr_corporate_action_quantity_unsupported"", ""ledgr_corporate_action_unsupported"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE

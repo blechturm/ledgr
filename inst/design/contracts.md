@@ -2405,8 +2405,9 @@ and `AAA` a held nonmember, each holding 5:
   posting choices once per corporate-action `CASHFLOW`, the terminal choices
   once per `DISPOSITION`, and `unsupported_quantity.report_only` once per held
   fact on the unsupported-quantity route under `"report_only"`, refused facts
-  included, so there it equals `unsupported_facts`. A `"refuse"` choice posts
-  nothing and reads 0 (Cut 17 LDG-3091).
+  included, so there it equals `unsupported_facts`. Every `refuse` choice
+  reads 0: a refusal is reported by the run's status and stop reason (in a
+  dense run, by the raised condition), not counted here (Cut 17 LDG-3091).
 - `ledgr_valuation_summary(bt)` reports one run's valuation state (`current`,
   `stale`, `frozen`, or `not_applicable` for dense runs), stale and frozen
   instrument-sessions and holdings, longest stale age and longest freeze,
