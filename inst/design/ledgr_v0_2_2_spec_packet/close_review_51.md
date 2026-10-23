@@ -1,7 +1,7 @@
 # Workstream 51 close review
 
-**Mode:** Type 1 close review  
-**Range:** `0638d6b3..af42634e`  
+**Mode:** Type 1 close review
+**Range:** `0638d6b3..af42634e`
 **Verdict:** CHANGES_REQUIRED
 
 The independent clean-context review found one detector gap. LCL-0471 claimed
