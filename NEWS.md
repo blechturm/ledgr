@@ -1,5 +1,15 @@
 # ledgr (development version)
 
+## A long-only minimum-variance strategy
+
+- New article `vignette("minimum-variance", package = "ledgr")`: a long-only
+  minimum-variance strategy that decides on the first session of each month,
+  screens instruments by their carried-price share and valid-return count,
+  solves the constrained problem with `quadprog::solve.QP()`, keeps holdings
+  the estimate leaves out, and holds when it cannot estimate. `quadprog` is a
+  new suggested package. The causal-history article's stand-in solver is no
+  longer described as long-only minimum variance.
+
 ## Fact pipeline follow-ups
 
 - Fact construction is faster at scale with unchanged rows, fact IDs and

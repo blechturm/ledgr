@@ -43,6 +43,7 @@ Suggests:
     pbo,
     pkgload,
     qlcal,
+    quadprog,
     quarto,
     rmarkdown,
     testthat (>= 3.0.0),

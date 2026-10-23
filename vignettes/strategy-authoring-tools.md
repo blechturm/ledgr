@@ -758,6 +758,8 @@ ledgr_snapshot_close(snapshot)
 
 ## Where Next
 
+- `vignette("minimum-variance", package = "ledgr")` builds a complete
+  long-only minimum-variance strategy from causal history reads.
 - `vignette("ttr-indicators", package = "ledgr")` declares TTR
   indicators such as RSI, Bollinger bands, and MACD.
 - `vignette("strategy-development", package = "ledgr")` covers the

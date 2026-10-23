@@ -444,17 +444,25 @@ as.data.frame(return_cells)[, c("ts_utc", "value", "missing_reason")]
 ## From History To Targets
 
 This is the whole estimation flow in one strategy: read a window of
-daily returns, estimate minimum-variance weights with a plain solver,
-name the solver’s output through the history result, and turn the
-weights into targets. The solver is defined inside the strategy, because
-preflight refuses a strategy that depends on a function from the calling
-session.
+daily returns, turn a covariance estimate into weights with a small
+stand-in solver, name the solver’s output through the history result,
+and turn the weights into targets. The solver is defined inside the
+strategy, because preflight refuses a strategy that depends on a
+function from the calling session.
+
+The stand-in is not a long-only minimum-variance solver. It solves the
+unconstrained problem, sets negative weights to zero and rescales the
+rest, which in general is not the long-only optimum.
+`vignette("minimum-variance", package = "ledgr")` builds the constrained
+strategy with a quadratic-programming solver, screens and decision
+dates.
 
 ``` r
 estimate <- function(ctx, params) {
-  # A plain long-only minimum-variance solver: it returns an unnamed vector
-  # in the column order of its input.
-  min_variance <- function(sigma) {
+  # A stand-in solver, not a long-only minimum-variance solver: unconstrained
+  # weights with negatives set to zero. It returns an unnamed vector in the
+  # column order of its input.
+  clipped_weights <- function(sigma) {
     w <- solve(sigma + diag(1e-6, ncol(sigma)), rep(1, ncol(sigma)))
     w <- pmax(as.vector(w), 0)
     w / sum(w)
@@ -465,7 +473,7 @@ estimate <- function(ctx, params) {
   if (!ledgr_history_sufficient(returns, min_instruments = 3L)) {
     return(ctx$hold())
   }
-  w <- min_variance(stats::cov(ledgr_history_matrix(returns)))
+  w <- clipped_weights(stats::cov(ledgr_history_matrix(returns)))
   held <- ctx$universe[ctx$vec$position != 0]
   keep <- intersect(ledgr_history_info(returns)$excluded_ids, held)
   if (!isTRUE(params$keep)) keep <- character()
@@ -795,3 +803,5 @@ file of future prices, is outside what ledgr can guarantee.
   see how a snapshot like the one above is prepared from bars and facts.
 - For how missing sessions and halts become values, see
   `vignette("missing-data-and-sessions", package = "ledgr")`.
+- For a complete long-only minimum-variance strategy built on these
+  reads, see `vignette("minimum-variance", package = "ledgr")`.

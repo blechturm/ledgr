@@ -32,6 +32,17 @@
 #' (`setting`, `label`, `value`, `default`). `summary()` lists the same fields
 #' with the valuation evidence and a `History Policy` section.
 #'
+#' A run that stopped `INCOMPLETE` because a holding had no permissible mark
+#' (`valuation_horizon_exhausted`: a holding never priced or, under
+#' `exhausted = "refuse"`, a mark older than `max_sessions`; or
+#' `terminal_mark_unavailable`: a known-inactive holding whose terminal choice
+#' needs a mark it lacks) records the stop
+#' in `valuation_stop_reason`, `valuation_stop_ts_utc` and
+#' `valuation_stop_instruments` (`NA`, `NA` and empty otherwise), and the
+#' valuation headline of `print()` and `summary()` reads `STOPPED` with the
+#' stop pulse, the holdings and the reason. `valuation_state` still describes
+#' the marks of the pulses before the stop.
+#'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public
 #'   callers should leave this as `NULL`.
@@ -52,7 +63,36 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
   ledgr_store_assert_current(con, bt$db_path)
   ledgr_backtest_ensure_snapshot(bt, con)
   out <- ledgr_valuation_summary_evidence(bt, con)
+  out <- ledgr_valuation_summary_add_stop(out, bt$run_id, con)
   ledgr_valuation_summary_add_basis(out, bt$config, con)
+}
+
+# The valuation stop of a run that ended INCOMPLETE because a holding had no
+# permissible mark (LDG-3090): an unvalued holding (valuation_horizon_exhausted)
+# or a known-inactive holding whose terminal choice needs a mark it lacks
+# (terminal_mark_unavailable). The stop pulse, reason and holdings are read in
+# one query from the stop rows the fold recorded. valuation_state still
+# describes the marks of the pulses before the stop.
+ledgr_valuation_summary_add_stop <- function(out, run_id, con) {
+  stopped <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT ts_utc, instrument_id, reason_code FROM run_diagnostics WHERE run_id = ?",
+      "AND stage = 'valuation' AND outcome = 'stopped'",
+      "AND reason_code IN ('valuation_horizon_exhausted', 'terminal_mark_unavailable')",
+      "ORDER BY diagnostic_seq"
+    ),
+    params = list(run_id)
+  )
+  ids <- unique(as.character(stopped$instrument_id))
+  found <- nrow(stopped) > 0L
+  out$valuation_stop_reason <- if (found) as.character(stopped$reason_code[[1L]]) else NA_character_
+  out$valuation_stop_ts_utc <- as.POSIXct(
+    if (found) as.numeric(as.POSIXct(stopped$ts_utc[[1L]], tz = "UTC")) else NA_real_,
+    origin = "1970-01-01", tz = "UTC"
+  )
+  out$valuation_stop_instruments <- ids[!is.na(ids) & nzchar(ids)]
+  out
 }
 
 # Valuation evidence of an availability-aware run from its diagnostics and
@@ -227,6 +267,21 @@ ledgr_valuation_headline <- function(summary) {
   state <- summary$valuation_state
   if (identical(state, "not_applicable")) return(NULL)
   plural <- function(n, word) sprintf("%d %s%s", n, word, if (n == 1L) "" else "s")
+  # A run that stopped because a holding had no permissible mark reports the
+  # stop, not the state of the pulses before it (LDG-3090).
+  stop_reason <- summary$valuation_stop_reason
+  if (length(stop_reason) == 1L && !is.na(stop_reason)) {
+    ids <- summary$valuation_stop_instruments
+    shown <- paste(utils::head(ids, 3L), collapse = ", ")
+    if (length(ids) > 3L) shown <- sprintf("%s and %d more", shown, length(ids) - 3L)
+    return(sprintf(
+      "Valuation: STOPPED - %s without a permissible mark at %s (%s); the run is INCOMPLETE (%s)",
+      plural(length(ids), "holding"),
+      format(summary$valuation_stop_ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      shown,
+      stop_reason
+    ))
+  }
   if (identical(state, "frozen")) {
     detail <- sprintf(
       "%s frozen (longest %s, max %s or %s of equity)",
