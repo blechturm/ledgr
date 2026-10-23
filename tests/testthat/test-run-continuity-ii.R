@@ -236,8 +236,25 @@ testthat::test_that("[LTB-0481] public carry_test_state refuses invalid windows 
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
   dense_exp <- ledgr_experiment(dense, function(ctx, params) ctx$flat(), cost_model = ledgr_cost_zero(),
                                 opening = ledgr_opening(cash = 1000))
-  testthat::expect_error(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(dense_exp, gapped),
-                         class = "ledgr_walk_forward_gapped_carry")
+  dense_err <- testthat::expect_error(
+    ledgr_walk_forward(
+      dense_exp, grid, gapped, ledgr_rule_argmax("sharpe_ratio"), seed = 1L
+    ),
+    class = "ledgr_walk_forward_gapped_carry"
+  )
+  testthat::expect_s3_class(
+    dense_err, "ledgr_walk_forward_invalid_fold_window"
+  )
+  dense_tables <- DBI::dbListTables(ledgr:::get_connection(dense))
+  if ("walk_forward_sessions" %in% dense_tables) {
+    testthat::expect_identical(
+      DBI::dbGetQuery(
+        ledgr:::get_connection(dense),
+        "SELECT COUNT(*) AS n FROM walk_forward_sessions"
+      )$n,
+      0
+    )
+  }
   testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(dense_exp, contiguous))
 })
 

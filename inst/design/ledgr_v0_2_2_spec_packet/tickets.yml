@@ -736,7 +736,7 @@ workstreams:
     status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 51", verdict: null, artifact: null, result: null, reason: "One claim: the fast lane again has durable headroom without weakening a registered claim, and its sweep-memory detector observes the behavior it claims to guard."}
+    review: {mode: "Type 1", point: "close of workstream 51", verdict: "CHANGES_REQUIRED", artifact: "close_review_51.md", result: "The release gate, GC detector, source-derived split map and scanner optimization passed; one public dense walk-forward detector was missing and is corrected for focused confirmation. The 106.4-second target miss remains for maintainer disposition.", reason: "One claim: the fast lane again has durable headroom without weakening a registered claim, and its sweep-memory detector observes the behavior it claims to guard."}
     accepted: null
   - id: 52
     name: "Set-wise scale repairs"
