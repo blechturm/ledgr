@@ -550,6 +550,16 @@ no ticket:
   visible inside the traced `gc()`. Removing the decision (26) guard still
   fails the block, but through an error rather than the count assertion.
   Make the tracer count and re-run the guard mutation;
+- strict refusal of corporate-action facts that carry only an entitlement
+  clock (Cut 17, `close_review_49a.md` F2): a held refused or unmodeled fact
+  without an effective clock has no effective pulse, so under
+  `unsupported_quantity = "refuse"` it only counts and marks fidelity
+  `unsupported`. Refusing at the entitlement pulse is a design change;
+- result-reader cost of refused facts (Cut 17, `close_review_49a.md` N1): a
+  refused fact sends `summary()` and `print()` through the per-event
+  `meta_json` parse for its parent (synthetic dense run: summary 0.03 to
+  0.29 s, print 0.48 to 0.67 s). LDG-3088 records both on the dividend
+  build;
 - worker-count memory record (maintainer, 2026-10-22): the H1 sweep at 4 and
   8 workers decides whether shared memory is designed (see
   [Deferred history simplification](#deferred-history-simplification));
