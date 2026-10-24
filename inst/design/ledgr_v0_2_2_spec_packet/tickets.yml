@@ -792,10 +792,11 @@ workstreams:
   - id: 56
     name: "Optional strategy intent evidence"
     cut: 19
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 56", verdict: "CHANGES_REQUIRED followed by finding-free focused PASS", artifact: "close_review_56.md", result: "The independent close review found the persistence, economics, identity and lifecycle boundaries sound, but dense ledgr_run_explain() had gained an availability-only column and availability history explanation parsed JSON once per retained reason. Correction e7256caa restores the exact dense query/schema and batch-decodes all selected one-key objects in one parser call. The same independent reviewer mutation-checked both corrections, confirmed all 46 focused expectations and the five recorded mode-routing sites, and returned PASS with no new finding; under M2 no second artifact was created.", reason: "One claim: a strategy may attach one optional stable reason code to its target intent, and ledgr records and reopens that code once for the invoked pulse without changing economics, state, identity or the meaning of LFB-028."}
+    accepted: "2026-10-24 by the maintainer after the focused Type 1 re-review returned PASS"
   - id: 57
     name: "Rectangular sweep inputs and readable candidates"
     cut: 19
@@ -2657,7 +2658,7 @@ tickets:
   - id: "LDG-3101"
     title: "Persist one optional strategy intent reason per invoked pulse"
     workstream: 56
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
