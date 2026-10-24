@@ -1161,7 +1161,11 @@ The work proceeds in this order:
    history-native orientation, direct classed matrix and frame construction,
    complete-case selection and sparse carry overlay. Measure elapsed time,
    allocation, retained size and growth at 50 by 252, 500 by 252, 1,166 by
-   252 and one full-history shape.
+   252 and one full-history shape. The spike treats the verified snapshot and
+   owner-validated prepared substrate as its trust boundary: transient history
+   outputs inherit that provenance and are not content-hashed, sealed or fully
+   rescanned for integrity. Cryptographic sealing is therefore excluded from
+   the candidate manifestation rather than benchmarked as an alternative.
 2. Write a focused amendment to the accepted historical-projection synthesis.
    It binds the slim ordinary result, the compact provenance boundary, direct
    sibling manifestations and cost scaling. It does not reopen causal or
