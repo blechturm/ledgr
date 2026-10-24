@@ -1,7 +1,9 @@
 # Workstream 58 close review
 
-**Mode:** Type 1, independent clean-context close review  
-**Range:** `25631b55..bfbcea8c`  
+**Mode:** Type 1, independent clean-context close review
+
+**Range:** `25631b55..bfbcea8c`
+
 **Verdict:** `CHANGES_REQUIRED`
 
 The compact rewrite is justified and uses existing public APIs without

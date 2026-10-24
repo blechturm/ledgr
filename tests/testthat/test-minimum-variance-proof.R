@@ -674,8 +674,16 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
   }
   collect_calls(parsed_body)
   call_name <- function(x) {
-    if (!is.call(x) || !is.symbol(x[[1L]])) return(NA_character_)
-    as.character(x[[1L]])
+    if (!is.call(x)) return(NA_character_)
+    head <- x[[1L]]
+    if (is.symbol(head)) return(as.character(head))
+    if (is.call(head) &&
+        is.symbol(head[[1L]]) &&
+        as.character(head[[1L]]) %in% c("::", ":::") &&
+        (is.symbol(head[[3L]]) || is.character(head[[3L]]))) {
+      return(as.character(head[[3L]]))
+    }
+    NA_character_
   }
   matrix_calls <- Filter(
     function(x) identical(call_name(x), "ledgr_history_matrix"),

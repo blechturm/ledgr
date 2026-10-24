@@ -130,7 +130,9 @@ parses the strategy source, requires exactly one direct
 `attr()` or `attributes()` access independently of quoting and formatting.
 On source copies, a second single-quoted return read fails the call-count
 assertion and raw single-quoted history-attribute access fails the attribute
-assertion. The unmutated focused file passes.
+assertion. A second namespace-qualified return read and namespace-qualified
+`base::attr()` and `base::attributes()` calls fail the same assertions. The
+unmutated focused file passes.
 
 Research correction `c7a5dee` removes the private current-estimator runner's
 user-specific R library. Package resolution is left to ordinary R library
