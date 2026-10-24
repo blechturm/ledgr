@@ -101,6 +101,14 @@ present at the workstream base, so WS57 adds no formatting finding.
 
 ## Verification
 
+The independent close review returned `CHANGES_REQUIRED` in
+`close_review_57.md`. Corrections `4c81535b` and `aa3b4320` made the parity
+oracle genuinely two-dimensional, matched equivalent candidates by identity,
+made namespace swaps observable on every printed surface at both widths,
+removed repeated rectangular-row canonicalization and the obsolete condition
+names, and corrected the records. The same reviewer reran the focused checks
+and returned `PASS` with no new defect.
+
 - The final focused set passes `test-param-grid.R`, `test-sweep.R`,
   `test-sweep-review.R`, `test-sweep-parity.R`,
   `test-sweep-persistence-roundtrip.R`, `test-walk-forward-identity.R`,
