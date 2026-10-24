@@ -138,18 +138,25 @@ public and persisted shapes.
 
 ## Seven-shape walk
 
-1. One-row frames: removed from the changed run-equity path; one result frame
-   is constructed after vector accumulation.
-2. Repeated concatenation: none added.
-3. Scalar helpers over vectors: removed from composition timestamps.
-4. Full-table subsets per group: removed from candidate features and equity;
-   the explain reader filters diagnostics in SQL and availability at source.
-5. Discarded work: no duplicate snapshot verification remains inside the
-   filtered availability helper.
-6. Queries in loops: removed from latest bars; the explanation keeps one
-   diagnostics query and the existing bounded reconstruction queries.
-7. Large retained temporaries: groups and filtered results are local to one
-   call; no cache or durable copy was added.
+1. **One-row frame per element, bound at the end.** Removed from the changed
+   run-equity path: the helper accumulates typed vectors and constructs one
+   result frame. None of the other changed helpers constructs row frames.
+2. **Full-table subset inside a loop over ids.** Removed from candidate
+   features and equity. The explanation filters diagnostics in SQL and
+   availability before reconstructing rows; latest bars uses one set query.
+3. **Per-element parsing or formatting where a vectorised call exists.**
+   Removed from composition timestamps. One vector call formats the combined
+   bar and effective-time vector.
+4. **Per-row JSON on repetitive strings.** The changed paths add no JSON
+   parsing, formatting or hashing. Existing explanation output is preserved.
+5. **Work computed and discarded, or recomputed on every call.** The filtered
+   availability helper does not repeat snapshot verification, and the four
+   grouped/set-wise helpers prepare each shared input once per call.
+6. **Quadratic validators.** No validator changes here. None of the six
+   changed paths introduces pairwise row comparisons or nested validation.
+7. **Scalar writes into an environment-held vector.** None added. The equity
+   accumulator vectors are local to the helper, not reached through an
+   environment; the other changes do not write scale-growing buffers.
 
 ## Mutation ledger
 

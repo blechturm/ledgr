@@ -4243,7 +4243,7 @@ claims:
   - id: "LCL-0474"
     source: "Cut 18 LDG-3093"
     scope: "Sweep candidate feature rows are grouped once, preserving candidate order, duplicate candidate rows, positional fallback and empty input at three registered scales"
-    oracle_class: "Exact row groups against the former subset rule plus one structural preparation call from the persisted-candidate projection"
+    oracle_class: "Exact row groups against the former subset rule plus structural pins for one split, grouped lookup and one preparation call from the persisted-candidate projection"
     detecting_blocks: ["LTB-0484"]
     promised_profile: "fast"
     owner: "maintainer"
@@ -4255,7 +4255,7 @@ claims:
   - id: "LCL-0475"
     source: "Cut 18 LDG-3093"
     scope: "Run-store equity statistics group the fetched equity table once and preserve first equity, final equity and maximum drawdown for populated and empty runs at three registered scales"
-    oracle_class: "Exact statistics against the former per-run scan plus one structural grouping call from the run-store reader"
+    oracle_class: "Exact statistics against the former per-run scan plus structural pins for one split, grouped lookup and one grouping call from the run-store reader"
     detecting_blocks: ["LTB-0485"]
     promised_profile: "fast"
     owner: "maintainer"
@@ -4267,7 +4267,7 @@ claims:
   - id: "LCL-0476"
     source: "Cut 18 LDG-3093"
     scope: "Latest pulse bars are fetched by one set query independent of requested universe width, then restored to requested order with duplicates and the first missing ID named"
-    oracle_class: "Counted private query boundary, literal requested IDs and closes, empty result and exact missing-ID condition"
+    oracle_class: "Counted public query boundary, a structural single set query with no per-instrument iterator, literal requested IDs and closes, empty result and exact missing-ID condition"
     detecting_blocks: ["LTB-0486"]
     promised_profile: "fast"
     owner: "maintainer"
@@ -4279,7 +4279,7 @@ claims:
   - id: "LCL-0477"
     source: "Cut 18 LDG-3093"
     scope: "Corporate-action composition formats all bar and effective POSIXct instants through one vector call, preserving canonical UTC strings and invalid-time refusal at three registered scales"
-    oracle_class: "Exact tokens against the former scalar normalizer, exact invalid-time condition and one structural formatter call from the composition report"
+    oracle_class: "Exact tokens against the former scalar normalizer, exact invalid-time condition, one structural formatter call from the composition report and a structural refusal of the former scalar loop inside the vector helper"
     detecting_blocks: ["LTB-0487"]
     promised_profile: "fast"
     owner: "maintainer"
@@ -4291,7 +4291,7 @@ claims:
   - id: "LCL-0478"
     source: "Cut 18 LDG-3094"
     scope: "A scalar run explanation opens one run connection and materializes only the requested instrument's decision, execution and matching availability rows, while remaining exact with the established explanation"
-    oracle_class: "Counted filtered-reader boundaries, materialized row counts and exact public explanation against the existing scalar result"
+    oracle_class: "Counted filtered-reader boundaries, forbidden full-reader mocks, captured instrument/time arguments at active availability reconstruction, materialized row counts and exact public explanation against the existing scalar result"
     detecting_blocks: ["LTB-0063"]
     promised_profile: "review"
     owner: "maintainer"

@@ -691,10 +691,20 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
   filtered_counts$diagnostic_rows <- 0L
   filtered_counts$availability_calls <- 0L
   filtered_counts$availability_rows <- 0L
+  filtered_counts$availability_active_calls <- 0L
+  filtered_counts$availability_active_ids <- NULL
+  filtered_counts$availability_active_times <- NULL
   original_diagnostics_filtered <- ledgr:::ledgr_backtest_diagnostics_filtered
   original_availability_filtered <- ledgr:::ledgr_backtest_availability_filtered
+  original_availability_active <- ledgr:::ledgr_backtest_availability_active
   filtered_probe <- local({
     testthat::local_mocked_bindings(
+      ledgr_backtest_diagnostics = function(...) {
+        rlang::abort("full diagnostics materialization is forbidden in an explanation")
+      },
+      ledgr_backtest_availability = function(...) {
+        rlang::abort("full availability materialization is forbidden in an explanation")
+      },
       ledgr_backtest_diagnostics_filtered = function(...) {
         out <- original_diagnostics_filtered(...)
         filtered_counts$diagnostic_calls <- filtered_counts$diagnostic_calls + 1L
@@ -707,6 +717,21 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
         filtered_counts$availability_rows <- filtered_counts$availability_rows + nrow(out)
         out
       },
+      ledgr_backtest_availability_active = function(bt,
+                                                    con,
+                                                    diagnostics = NULL,
+                                                    instrument_ids = NULL) {
+        filtered_counts$availability_active_calls <-
+          filtered_counts$availability_active_calls + 1L
+        filtered_counts$availability_active_ids <- instrument_ids
+        filtered_counts$availability_active_times <- diagnostics$ts_utc
+        original_availability_active(
+          bt,
+          con,
+          diagnostics = diagnostics,
+          instrument_ids = instrument_ids
+        )
+      },
       .package = "ledgr"
     )
     ledgr_run_explain(bt, "AAA", decision$ts_utc)
@@ -715,6 +740,12 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
   testthat::expect_identical(filtered_probe, explanation)
   testthat::expect_identical(filtered_counts$diagnostic_calls, 1L)
   testthat::expect_identical(filtered_counts$availability_calls, 1L)
+  testthat::expect_identical(filtered_counts$availability_active_calls, 1L)
+  testthat::expect_identical(filtered_counts$availability_active_ids, "AAA")
+  testthat::expect_identical(
+    as.numeric(filtered_counts$availability_active_times),
+    as.numeric(decision$ts_utc)
+  )
   testthat::expect_lt(filtered_counts$diagnostic_rows, nrow(diagnostics))
   testthat::expect_identical(filtered_counts$availability_rows, 1L)
   testthat::expect_lt(filtered_counts$availability_rows, nrow(availability))

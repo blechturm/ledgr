@@ -744,7 +744,7 @@ workstreams:
     status: "review_pending"
     depends_on_workstream: 51
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 52", verdict: null, artifact: null, result: null, reason: "One claim: four known query, subset and formatting amplifications and the full-table explain reader are removed without changing public results, ordering, errors or identities."}
+    review: {mode: "Type 1", point: "close of workstream 52", verdict: "CHANGES_REQUIRED; correction pending focused confirmation", artifact: "close_review_52.md", result: "The product changes and H1 gates held. The review required operation-boundary detectors for all six repaired growth shapes and a verbatim seven-shape closeout; both are corrected after the reviewed range.", reason: "One claim: four known query, subset and formatting amplifications and the full-table explain reader are removed without changing public results, ordering, errors or identities."}
     accepted: null
   - id: 53
     name: "Residual cost and memory decisions"

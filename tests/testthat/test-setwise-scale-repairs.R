@@ -88,6 +88,20 @@ testthat::test_that("[LTB-0484] candidate features are grouped once with exact r
     ),
     1L
   )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      ledgr:::ledgr_sweep_storage_candidate_feature_rows,
+      "split("
+    ),
+    1L
+  )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      ledgr:::ledgr_sweep_storage_candidate_feature_rows,
+      "groups[["
+    ),
+    1L
+  )
 })
 
 testthat::test_that("[LTB-0485] run equity is grouped once with exact statistics", {
@@ -110,6 +124,20 @@ testthat::test_that("[LTB-0485] run equity is grouped once with exact statistics
     ledgr_test_body_occurrences(
       ledgr:::ledgr_run_store_fetch,
       "ledgr_run_store_equity_stats"
+    ),
+    1L
+  )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      ledgr:::ledgr_run_store_equity_stats,
+      "split("
+    ),
+    1L
+  )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      ledgr:::ledgr_run_store_equity_stats,
+      "row_groups[["
     ),
     1L
   )
@@ -176,6 +204,23 @@ testthat::test_that("[LTB-0486] latest bars use one query and restore request or
     fixed = TRUE,
     class = "ledgr_invalid_args"
   )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      original_query,
+      "DBI::dbGetQuery"
+    ),
+    1L
+  )
+  for (token in c("lapply", "vapply", "seq_along", "for (")) {
+    testthat::expect_identical(
+      ledgr_test_body_occurrences(
+        original_query,
+        token
+      ),
+      0L,
+      info = paste("forbidden per-instrument query shape", token)
+    )
+  }
 })
 
 testthat::test_that("[LTB-0487] composition timestamps use one vector formatter", {
@@ -208,5 +253,19 @@ testthat::test_that("[LTB-0487] composition timestamps use one vector formatter"
       "ledgr_corporate_action_time_tokens"
     ),
     1L
+  )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      ledgr:::ledgr_corporate_action_time_tokens,
+      "ledgr_normalize_ts_utc"
+    ),
+    0L
+  )
+  testthat::expect_identical(
+    ledgr_test_body_occurrences(
+      ledgr:::ledgr_corporate_action_time_tokens,
+      "vapply"
+    ),
+    0L
   )
 })
