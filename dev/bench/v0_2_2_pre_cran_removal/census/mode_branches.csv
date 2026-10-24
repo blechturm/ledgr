@@ -15,6 +15,11 @@
 "R/availability-results.R","ledgr_backtest_availability_filtered","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
 "R/availability-results.R","ledgr_backtest_availability_filtered","flow","ledgr_backtest_availability_active()","statement",1
 "R/availability-results.R","ledgr_backtest_terminal_evidence","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
+"R/availability-results.R","ledgr_run_explain","branch","availability_active","if: availability_active",1
+"R/availability-results.R","ledgr_run_explain","branch","availability_active","if: availability_active",2
+"R/availability-results.R","ledgr_run_explain","flow","availability_active","arg:ledgr_backtest_diagnostics_filtered:include_strategy_intent",1
+"R/availability-results.R","ledgr_run_explain","flow","availability_active","assign_target",1
+"R/availability-results.R","ledgr_run_explain","flow","ledgr_availability_config_active()","assign:availability_active",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",2
 "R/backtest-results.R","summary.ledgr_backtest","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(object$config)",1

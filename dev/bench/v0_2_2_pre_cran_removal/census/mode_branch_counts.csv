@@ -1,7 +1,7 @@
 "file","functions","branch_sites","flow_sites"
 "R/availability-policy.R",3,4,5
 "R/availability-provider.R",2,1,1
-"R/availability-results.R",3,3,2
+"R/availability-results.R",4,5,5
 "R/backtest-config.R",1,2,0
 "R/backtest-results.R",1,1,0
 "R/backtest-runner.R",2,26,12

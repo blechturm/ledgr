@@ -127,6 +127,18 @@ Windows) and restored byte for byte (checked by MD5):
 
 The unmutated block passes 11 expectations before and after the run.
 
+## Workstream 56 intent-explanation refresh
+
+LDG-3101 adds five recorded sites in `ledgr_run_explain()`: one assignment of
+the established availability flag, its flow into the bounded diagnostics
+query, and two branches that retrieve, decode and expose the optional
+portfolio intent reason only for availability-aware explanations. The split
+is required by the accepted scope: availability explanation gains the joined
+field, while dense explanation must keep its prior query and exact zero-row
+schema. Report mode recorded 161 branch and 59 flow sites in 57 functions;
+check mode then passed against the committed record. No fold, execution or
+accounting branch was added.
+
 ## Failure sensitivity
 
 A typed zero-row instance of all six summary families produces six zero row

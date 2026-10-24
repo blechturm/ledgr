@@ -57,9 +57,12 @@ Four review-profile claims own the boundary:
 - LCL-0481 / LTB-0490 pins the row count, all physical literals, one-key JSON,
   omitted zero-row result, live/reopen bytes, equal economics and state, and
   equal config and derived run identity when only the returned note differs.
+  It also pins the exact pre-cut dense explanation schema, which has no
+  availability-only `intent_reason` column.
 - LCL-0482 / LTB-0491 places a deliberate missing note between two distinct
   notes, so an instrument join or compact-row-position join gives the wrong
-  literal explanation vector.
+  literal explanation vector. A counted parser witness requires the selected
+  one-key objects to be decoded in one batch rather than once per pulse.
 - LCL-0483 / LTB-0492 rejects length-two, missing, empty and non-character
   values and proves a public failed run commits neither an economic event nor
   a `strategy_intent` row.
@@ -91,8 +94,9 @@ run identity. Only the diagnostic rows differ.
 3. The omitted path builds no segment or JSON and writes no row.
 4. The filtered explanation query retrieves at most one additional portfolio
    row per requested decision pulse.
-5. Explanation parses each returned reason once in a linear vector pass; it
-   does not rescan instruments or the full run store.
+5. Availability explanation decodes every selected one-key reason object in
+   one parser call, then validates and aligns the returned vector. Dense
+   explanation neither retrieves portfolio rows nor adds a result column.
 6. Validation is one scalar check outside all instrument work.
 7. No environment-held strategy value, target, state vector or table is
    mutated or cached.
@@ -112,3 +116,29 @@ run identity. Only the diagnostic rows differ.
 
 The package and claims YAML parse, generated help matches its roxygen source,
 and `git diff --check` is clean. No private vendor data is used.
+
+## Close-review correction
+
+The independent Type 1 close review returned `CHANGES_REQUIRED` for two
+read-surface boundaries; `close_review_56.md` preserves the findings.
+
+- Dense `ledgr_run_explain()` now passes `include_strategy_intent = FALSE` to
+  the filtered query and returns the exact pre-cut zero-row column set. Forcing
+  that argument to `TRUE` fails LTB-0490.
+- Availability explanation combines the selected fixed one-key objects into
+  one JSON array, calls the parser once, validates the flattened character
+  vector and aligns it by decision timestamp. Restoring one parser call per
+  diagnostic fails LTB-0491 because two retained reasons produce two calls
+  instead of one.
+- The accepted availability-only explanation behavior adds five explicit
+  result-reader sites to the frozen execution-mode census. The census README
+  records why; report mode writes 161 branch and 59 flow sites in 57
+  functions, and check mode passes against that record. No fold, execution or
+  accounting branch changes.
+
+After the correction the focused file passes 46 expectations, the codebase
+and test-control-plane blocks pass, and the earlier affected suites remain
+green. One ordinary fast-profile confirmation executes all 578 blocks in
+114.73 seconds; it exceeds the unchanged 112-second timing hint and is not
+recorded as a gate pass. The registered implementation record above remains
+the binding timing evidence; neither correction touches the run hot path.

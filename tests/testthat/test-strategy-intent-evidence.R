@@ -122,6 +122,33 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
     vapply(parsed, `[[`, character(1L), "intent_reason"),
     c("minimum_variance_solution", "hold_current_portfolio")
   )
+  dense_intent_query <- NULL
+  diagnostics_filtered <- ledgr:::ledgr_backtest_diagnostics_filtered
+  dense_explanation <- testthat::with_mocked_bindings(
+    ledgr_run_explain(with_reason, "AAA"),
+    ledgr_backtest_diagnostics_filtered = function(...,
+                                                    include_strategy_intent = FALSE) {
+      dense_intent_query <<- include_strategy_intent
+      diagnostics_filtered(
+        ...,
+        include_strategy_intent = include_strategy_intent
+      )
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_identical(dense_intent_query, FALSE)
+  testthat::expect_identical(nrow(dense_explanation), 0L)
+  testthat::expect_identical(
+    names(dense_explanation),
+    c(
+      "run_id", "ts_utc", "instrument_id", "member", "held",
+      "target_restricted", "target_restriction_reason",
+      "target_restriction_reasons", "feature_identity_json", "quantity",
+      "target_before_risk", "target_after_risk", "execution_outcome",
+      "execution_reason", "execution_reasons", "resulting_position",
+      "mark_source", "mark_age", "completion_status", "complete_performance"
+    )
+  )
   fills <- ledgr_results(with_reason, "fills")
   equity <- ledgr_results(with_reason, "equity")
   metrics <- ledgr_compute_metrics(with_reason)
@@ -195,9 +222,21 @@ testthat::test_that("[LTB-0491] availability explanations join intent by decisio
   )
   on.exit(close(bt), add = TRUE)
   rows <- intent_evidence_rows(bt)
+  intent_parser_calls <- 0L
+  read_nested <- ledgr:::ledgr_json_read_nested
+  testthat::local_mocked_bindings(
+    ledgr_json_read_nested = function(x) {
+      if (any(grepl("intent_reason", x, fixed = TRUE))) {
+        intent_parser_calls <<- intent_parser_calls + 1L
+      }
+      read_nested(x)
+    },
+    .package = "ledgr"
+  )
   explanation <- ledgr_run_explain(bt, "AAA")
 
   testthat::expect_identical(nrow(rows), 2L)
+  testthat::expect_identical(intent_parser_calls, 1L)
   testthat::expect_type(explanation$intent_reason, "character")
   testthat::expect_identical(
     explanation$intent_reason,
@@ -207,6 +246,9 @@ testthat::test_that("[LTB-0491] availability explanations join intent by decisio
     as.numeric(rows$ts_utc),
     as.numeric(explanation$ts_utc[c(1L, 3L)])
   )
+  scalar_explanation <- ledgr_run_explain(bt, "AAA", explanation$ts_utc[[1L]])
+  testthat::expect_identical(scalar_explanation$intent_reason, "minimum_variance_solution")
+  testthat::expect_identical(intent_parser_calls, 2L)
 
   close(bt)
   reopened <- ledgr_run_open(snapshot, "intent-availability")

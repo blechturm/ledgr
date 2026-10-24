@@ -44,9 +44,10 @@ ledgr_backtest_diagnostics <- function(con, run_id) {
 }
 
 ledgr_backtest_diagnostics_filtered <- function(con,
-                                                run_id,
-                                                instrument_id,
-                                                ts_utc = NULL) {
+                                                 run_id,
+                                                 instrument_id,
+                                                 ts_utc = NULL,
+                                                 include_strategy_intent = FALSE) {
   where_time <- ""
   params <- list(run_id, instrument_id)
   if (!is.null(ts_utc)) {
@@ -56,19 +57,61 @@ ledgr_backtest_diagnostics_filtered <- function(con,
     )
     params <- c(params, list(ts_utc, ts_utc))
   }
+  where_diagnostic <- if (isTRUE(include_strategy_intent)) {
+    paste(
+      "AND ((instrument_id = ? AND stage IN ('decision', 'execution'))",
+      "OR (instrument_id = '' AND stage = 'decision'",
+      "AND reason_code = 'strategy_intent'))"
+    )
+  } else {
+    paste(
+      "AND instrument_id = ?",
+      "AND stage IN ('decision', 'execution')"
+    )
+  }
   tibble::as_tibble(DBI::dbGetQuery(
     con,
     paste(
       "SELECT * FROM run_diagnostics",
       "WHERE run_id = ?",
-      "AND ((instrument_id = ? AND stage IN ('decision', 'execution'))",
-      "OR (instrument_id = '' AND stage = 'decision'",
-      "AND reason_code = 'strategy_intent'))",
+      where_diagnostic,
       where_time,
       "ORDER BY diagnostic_seq"
     ),
     params = params
   ))
+}
+
+ledgr_strategy_intent_reasons <- function(detail_json) {
+  detail_json <- as.character(detail_json)
+  if (length(detail_json) == 0L) return(character())
+
+  # The diagnostics contract fixes each payload to one JSON object with one
+  # key. Decode the selected objects as one JSON array so explanation cost has
+  # one parser call rather than one parser setup per decision pulse.
+  parsed <- ledgr_json_read_nested(
+    paste0("[", paste(detail_json, collapse = ","), "]")
+  )
+  flattened <- unlist(parsed, recursive = TRUE, use.names = TRUE)
+  valid_shape <- is.list(parsed) &&
+    length(parsed) == length(detail_json) &&
+    all(lengths(parsed) == 1L) &&
+    is.character(flattened) &&
+    length(flattened) == length(detail_json) &&
+    identical(names(flattened), rep("intent_reason", length(detail_json)))
+  reasons <- if (valid_shape) {
+    unname(flattened)
+  } else {
+    NULL
+  }
+  if (!is.character(reasons) || length(reasons) != length(detail_json) ||
+      anyNA(reasons) || any(!nzchar(reasons))) {
+    rlang::abort(
+      "The retained strategy intent evidence is malformed.",
+      class = "ledgr_run_explanation_unavailable"
+    )
+  }
+  reasons
 }
 
 ledgr_run_completion_info_empty <- function() {
@@ -683,10 +726,11 @@ ledgr_backtest_availability_filtered <- function(bt,
 #' - identifiers: `run_id`, `ts_utc`, and `instrument_id`;
 #' - availability: `member`, `held`, `target_restricted`,
 #'   `target_restriction_reason`, and `target_restriction_reasons`;
-#' - decision evidence: `feature_identity_json`, `intent_reason`, `quantity`,
-#'   `target_before_risk`, and `target_after_risk`; `intent_reason` is the
-#'   optional portfolio-level note returned by the strategy at that decision
-#'   pulse and is `NA_character_` when none was supplied;
+#' - decision evidence: `feature_identity_json`, `quantity`,
+#'   `target_before_risk`, and `target_after_risk`; on availability-aware runs,
+#'   `intent_reason` is the optional portfolio-level note returned by the
+#'   strategy at that decision pulse and is `NA_character_` when none was
+#'   supplied. Dense explanation retains its existing schema;
 #' - execution evidence: `execution_outcome`, `execution_reason`,
 #'   `execution_reasons`, and `resulting_position`;
 #' - valuation evidence: `mark_source` and `mark_age`; and
@@ -720,11 +764,13 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   opened <- ledgr_backtest_read_connection(bt)
   on.exit(opened$close(), add = TRUE)
   ledgr_backtest_ensure_snapshot(bt, opened$con)
+  availability_active <- ledgr_availability_config_active(bt$config)
   diagnostics <- ledgr_backtest_diagnostics_filtered(
     opened$con,
     bt$run_id,
     instrument_id,
-    ts
+    ts,
+    include_strategy_intent = availability_active
   )
   decision_idx <- diagnostics$stage == "decision" &
     diagnostics$instrument_id == instrument_id
@@ -747,40 +793,30 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     ]
   }
   decision_time <- as.POSIXct(decision$ts_utc, tz = "UTC")
-  intent <- diagnostics[
-    diagnostics$stage == "decision" &
-      diagnostics$instrument_id == "" &
-      diagnostics$reason_code == "strategy_intent",
-    ,
-    drop = FALSE
-  ]
-  intent_time <- as.numeric(as.POSIXct(intent$ts_utc, tz = "UTC"))
-  if (anyDuplicated(intent_time)) {
-    rlang::abort(
-      "The retained decision trace has duplicate strategy intent evidence.",
-      class = "ledgr_run_explanation_unavailable"
-    )
-  }
-  intent_idx <- match(as.numeric(decision_time), intent_time)
-  intent_reason <- rep(NA_character_, length(intent_idx))
-  found_intent <- !is.na(intent_idx)
-  if (any(found_intent)) {
-    intent_reason[found_intent] <- vapply(
-      intent$detail_json[intent_idx[found_intent]],
-      function(value) {
-        parsed <- ledgr_json_read_nested(value)
-        reason <- parsed$intent_reason
-        if (!is.character(reason) || length(reason) != 1L ||
-            is.na(reason) || !nzchar(reason)) {
-          rlang::abort(
-            "The retained strategy intent evidence is malformed.",
-            class = "ledgr_run_explanation_unavailable"
-          )
-        }
-        as.character(reason)
-      },
-      character(1)
-    )
+  intent_reason <- NULL
+  if (availability_active) {
+    intent <- diagnostics[
+      diagnostics$stage == "decision" &
+        diagnostics$instrument_id == "" &
+        diagnostics$reason_code == "strategy_intent",
+      ,
+      drop = FALSE
+    ]
+    intent_time <- as.numeric(as.POSIXct(intent$ts_utc, tz = "UTC"))
+    if (anyDuplicated(intent_time)) {
+      rlang::abort(
+        "The retained decision trace has duplicate strategy intent evidence.",
+        class = "ledgr_run_explanation_unavailable"
+      )
+    }
+    intent_idx <- match(as.numeric(decision_time), intent_time)
+    intent_reason <- rep(NA_character_, length(intent_idx))
+    found_intent <- !is.na(intent_idx)
+    if (any(found_intent)) {
+      intent_reason[found_intent] <- ledgr_strategy_intent_reasons(
+        intent$detail_json[intent_idx[found_intent]]
+      )
+    }
   }
   available <- if (nrow(decision) == 0L) {
     ledgr_availability_result_empty()
@@ -827,7 +863,7 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   feature_identity <- as.character(decision$feature_identity_json)
   missing_identity <- is.na(feature_identity) | !nzchar(feature_identity)
   feature_identity[missing_identity] <- ledgr_availability_feature_identity_json(bt$config)
-  tibble::tibble(
+  out <- tibble::tibble(
     run_id = rep(bt$run_id, nrow(decision)),
     ts_utc = decision_time,
     instrument_id = rep(instrument_id, nrow(decision)),
@@ -837,7 +873,6 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     target_restriction_reason = as.character(available$target_restriction_reason),
     target_restriction_reasons = as.character(available$target_restriction_reasons),
     feature_identity_json = feature_identity,
-    intent_reason = intent_reason,
     quantity = as.numeric(decision$quantity),
     target_before_risk = as.numeric(decision$target_before_risk),
     target_after_risk = as.numeric(decision$target_after_risk),
@@ -850,4 +885,12 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     completion_status = rep(terminal$status, nrow(decision)),
     complete_performance = rep(complete_performance, nrow(decision))
   )
+  if (availability_active) {
+    out <- tibble::add_column(
+      out,
+      intent_reason = intent_reason,
+      .after = "feature_identity_json"
+    )
+  }
+  out
 }
