@@ -50,8 +50,8 @@ affinity `0xFFFF`. All 574 selected blocks passed in every run:
 
 The median is 106.88 seconds. The unchanged 112-second gate passes with 5.12
 seconds of headroom. The preregistered 106.4-second durable-headroom target
-misses by 0.48 seconds and is returned to the maintainer exactly as specified;
-the bound, profile rules and claims remain unchanged.
+misses by 0.48 seconds. The maintainer accepted that narrow secondary-target
+miss on 2026-10-24; the bound, profile rules and claims remain unchanged.
 
 The maintained long-window record passes its self-test (`LWREG_CHECK_OK`) and
 `test-long-window-regression-control.R` passes. The workflow still executes
