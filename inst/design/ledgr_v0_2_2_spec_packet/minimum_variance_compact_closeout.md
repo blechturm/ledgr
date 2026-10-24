@@ -121,3 +121,19 @@ outside pulse and candidate loops.
   `ledgr_history_bar_mask_view()`; the same source is present at `25631b55`
   and WS58 does not widen into unrelated code cleanup.
 
+## Close-review corrections
+
+The independent Type 1 close review is recorded in `close_review_58.md` and
+returned `CHANGES_REQUIRED` on two bounded evidence defects. LTB-0437 now
+parses the strategy source, requires exactly one direct
+`ledgr_history_matrix()` call whose feature is `return_1`, and rejects raw
+`attr()` or `attributes()` access independently of quoting and formatting.
+On source copies, a second single-quoted return read fails the call-count
+assertion and raw single-quoted history-attribute access fails the attribute
+assertion. The unmutated focused file passes.
+
+Research correction `c7a5dee` removes the private current-estimator runner's
+user-specific R library. Package resolution is left to ordinary R library
+configuration. The
+runner parses, contains no user-specific path or `.libPaths()` override, and
+the unchanged local aggregate record still passes `check.R`.

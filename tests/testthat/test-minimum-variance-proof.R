@@ -661,9 +661,34 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
     testthat::expect_false(grepl(forbidden, compact, fixed = TRUE), info = forbidden)
   }
   testthat::expect_false(grepl("(^|[^[:alnum:]_.])(dim)?names\\(", compact), info = "names(")
-  testthat::expect_identical(
-    lengths(regmatches(body, gregexpr("feature = \"return_1\"", body, fixed = TRUE))), 1L
+  parsed_body <- parse(text = body, keep.source = FALSE)
+  calls <- list()
+  collect_calls <- function(x) {
+    if (is.call(x)) {
+      calls[[length(calls) + 1L]] <<- x
+    }
+    if (is.recursive(x)) {
+      invisible(lapply(as.list(x), collect_calls))
+    }
+    invisible(NULL)
+  }
+  collect_calls(parsed_body)
+  call_name <- function(x) {
+    if (!is.call(x) || !is.symbol(x[[1L]])) return(NA_character_)
+    as.character(x[[1L]])
+  }
+  matrix_calls <- Filter(
+    function(x) identical(call_name(x), "ledgr_history_matrix"),
+    calls
   )
+  testthat::expect_length(matrix_calls, 1L)
+  testthat::expect_identical(as.list(matrix_calls[[1L]])$feature, "return_1")
+  raw_attribute_calls <- vapply(
+    calls,
+    function(x) call_name(x) %in% c("attr", "attributes"),
+    logical(1L)
+  )
+  testthat::expect_false(any(raw_attribute_calls))
   params_body <- code("strategy-params")
   for (name in c(
     "lookback", "min_observations", "min_instruments", "carry_threshold",
