@@ -591,14 +591,14 @@ peer_indicator_feature_parity <- function(bars_path, fast, slow) {
       peer_public_ttr_features(fast, slow),
       peer_strategy("fast", "slow")
     ),
-    ledgr_param_grid(only = list())
+    data.frame(row.names = 1L)
   )$projection
   builtin <- ledgr_precompute_features(
     make_experiment(
       peer_builtin_sma_features(fast, slow),
       peer_strategy(sprintf("sma_%d", fast), sprintf("sma_%d", slow))
     ),
-    ledgr_param_grid(only = list())
+    data.frame(row.names = 1L)
   )$projection
   ttr_values <- c(
     as.numeric(ttr$feature_values$fast),
@@ -1065,7 +1065,7 @@ peer_run_ledgr_sweep <- function(engine, bars_path, features, strategy, seed,
     cost_model = cost_model,
     risk_chain = risk_chain
   )
-  grid <- ledgr_param_grid(benchmark = list())
+  grid <- data.frame(row.names = 1L)
   retention <- ledgr_sweep_retention(returns = "completed", trades = "closed")
   t2 <- proc.time()[["elapsed"]]
 

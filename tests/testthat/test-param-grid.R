@@ -88,7 +88,8 @@ testthat::test_that("[LTB-0496] the retired parameter-grid API is absent", {
     list.files(file.path(root, "R"), pattern = "[.]R$", full.names = TRUE),
     list.files(file.path(root, "man"), pattern = "[.]Rd$", full.names = TRUE),
     list.files(file.path(root, "vignettes"), pattern = "[.](qmd|Rmd|md)$", full.names = TRUE),
-    list.files(file.path(root, "tests", "testthat"), pattern = "[.]R$", full.names = TRUE)
+    list.files(file.path(root, "tests", "testthat"), pattern = "[.]R$", full.names = TRUE),
+    file.path(root, "dev", "bench", "peer_benchmark", "peer_benchmark.R")
   )
   files <- files[file.exists(files)]
   occurrences <- vapply(files, function(path) {
