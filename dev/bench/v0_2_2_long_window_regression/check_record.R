@@ -22,6 +22,8 @@ lwreg_check <- function(path) {
                                stringsAsFactors = FALSE)
   measurements <- utils::read.csv(file.path(path, "measurements.csv"),
                                   stringsAsFactors = FALSE)
+  summary <- utils::read.csv(file.path(path, "summary.csv"),
+                             stringsAsFactors = FALSE)
   recorded_hashes <- utils::read.csv(
     file.path(path, "record_hashes.csv"), stringsAsFactors = FALSE
   )
@@ -38,6 +40,11 @@ lwreg_check <- function(path) {
     fail("Recorded LF-normalized file hashes do not match")
   }
   manifest <- lwreg_manifest(script)
+  selected <- manifest[manifest$profile == suite$profile, , drop = FALSE]
+  if (!suite$profile %in% c("ordinary", "release") || !nrow(selected)) {
+    fail("Unknown or empty suite profile: ", suite$profile)
+    return(errors)
+  }
   if (any(processes$exit_status != 0L)) fail("A child process failed")
   if (identical(suite$profile, "ordinary") && suite$elapsed_s > 1200) {
     fail("Ordinary suite exceeded 1,200 seconds")
@@ -53,22 +60,25 @@ lwreg_check <- function(path) {
 
   probes <- jsonlite::read_json(file.path(path, "fixture_probes.json"),
                                 simplifyVector = FALSE)
-  ordinary <- manifest[manifest$profile == "ordinary", , drop = FALSE]
   initial_shapes <- unique(measurements$shape_id[
     measurements$attempt == "initial"
   ])
-  missing_shapes <- setdiff(ordinary$shape_id, initial_shapes)
+  missing_shapes <- setdiff(selected$shape_id, initial_shapes)
   if (length(missing_shapes)) {
-    fail("Missing ordinary shape: ", paste(missing_shapes, collapse = ", "))
+    fail("Missing ", suite$profile, " shape: ",
+         paste(missing_shapes, collapse = ", "))
   }
-  for (shape in ordinary$shape_id) {
+  for (shape in selected$shape_id) {
     probe <- probes[[shape]]
     if (is.null(probe)) {
       fail("Missing fixture probe: ", shape)
       next
     }
-    if (!identical(probe$expected_status, "DONE")) {
-      fail("Ordinary fixture is not declared DONE: ", shape)
+    declared_status <- selected$expected_status[
+      match(shape, selected$shape_id)
+    ]
+    if (!identical(probe$expected_status, declared_status)) {
+      fail("Fixture status disagrees with manifest: ", shape)
     }
     if (probe$terminal_member_overlap != 0L) {
       fail("Terminal entered membership: ", shape)
@@ -131,7 +141,7 @@ lwreg_check <- function(path) {
     }
   }
   expected_pairs <- seq_len(as.integer(suite$pairs))
-  for (shape in ordinary$shape_id) {
+  for (shape in selected$shape_id) {
     shape_attempts <- unique(measurements$attempt[
       measurements$shape_id == shape
     ])
@@ -182,6 +192,7 @@ lwreg_check <- function(path) {
         expected_status <- manifest$expected_status[
           match(shape, manifest$shape_id)
         ]
+        if (identical(expected_status, "returned")) expected_status <- "DONE"
         for (phase in c("cold", "warm")) {
           if (!identical(a[[phase]]$identities, c[[phase]]$identities)) {
             fail("Semantic drift: ", shape, " ", pair, " ", attempt,
@@ -247,6 +258,38 @@ lwreg_check <- function(path) {
           }
         }
       }
+    }
+  }
+
+  if (!setequal(summary$shape_id, selected$shape_id)) {
+    fail("Summary shape set does not match suite profile")
+  }
+  for (shape in intersect(summary$shape_id, selected$shape_id)) {
+    row <- summary[summary$shape_id == shape, , drop = FALSE]
+    part <- initial[initial$shape_id == shape, , drop = FALSE]
+    a <- part[part$arm == "accepted", ]; a <- a[order(a$pair), ]
+    c <- part[part$arm == "candidate", ]; c <- c[order(c$pair), ]
+    process_peaks <- processes$peak_rss_bytes[processes$shape_id == shape]
+    if (nrow(a) != suite$pairs || nrow(c) != suite$pairs ||
+        !length(process_peaks)) {
+      next
+    }
+    expected_summary <- c(
+      pairs = nrow(a),
+      accepted_cold_median_s = median(a$cold_s),
+      candidate_cold_median_s = median(c$cold_s),
+      cold_pair_ratio_median = median(c$cold_s / a$cold_s),
+      accepted_warm_median_s = median(a$warm_s),
+      candidate_warm_median_s = median(c$warm_s),
+      warm_pair_ratio_median = median(c$warm_s / a$warm_s),
+      peak_rss_bytes = max(process_peaks)
+    )
+    observed_summary <- unlist(row[names(expected_summary)], use.names = TRUE)
+    if (!isTRUE(all.equal(
+      as.numeric(observed_summary), as.numeric(expected_summary),
+      tolerance = 1e-12
+    ))) {
+      fail("Summary drift: ", shape)
     }
   }
 
@@ -333,6 +376,9 @@ if (self_test) {
                          null = "null", digits = 16)
   }, "Semantic drift")
 
+  if (identical(jsonlite::read_json(
+    file.path(record, "suite.json"), simplifyVector = TRUE
+  )$profile, "ordinary")) {
   expect_mutation("timing retry", function(path) {
     measurements <- read_measurements(path)
     target <- measurements$arm == "candidate" &
@@ -416,11 +462,11 @@ if (self_test) {
     utils::write.csv(processes, file.path(path, "processes.csv"),
                      row.names = FALSE)
   }, "Attempt has fewer complete pairs: feature_gaps retry accepted")
+  }
 
   expect_mutation("raw timing mismatch", function(path) {
     measurements <- read_measurements(path)
-    row <- which(measurements$shape_id == "feature_gaps" &
-                 measurements$arm == "candidate" &
+    row <- which(measurements$arm == "candidate" &
                  measurements$attempt == "initial")[[1L]]
     case_path <- file.path(path, "raw", measurements$file[[row]])
     case <- jsonlite::read_json(case_path, simplifyVector = FALSE)
@@ -431,13 +477,18 @@ if (self_test) {
 
   expect_mutation("missing process measurement", function(path) {
     measurements <- read_measurements(path)
-    remove <- which(measurements$shape_id == "feature_gaps" &
-                    measurements$arm == "candidate" &
-                    measurements$pair == 5L &
+    remove <- which(measurements$arm == "candidate" &
                     measurements$attempt == "initial")[[1L]]
     measurements <- measurements[-remove, , drop = FALSE]
     write_measurements(measurements, path)
   }, "Successful case process lacks measurement")
+
+  expect_mutation("summary resource drift", function(path) {
+    summary_path <- file.path(path, "summary.csv")
+    summary <- utils::read.csv(summary_path, stringsAsFactors = FALSE)
+    summary$peak_rss_bytes[[1L]] <- summary$peak_rss_bytes[[1L]] + 1
+    utils::write.csv(summary, summary_path, row.names = FALSE)
+  }, "Summary drift")
 
   expect_mutation("dirty provenance", function(path) {
     suite_path <- file.path(path, "suite.json")

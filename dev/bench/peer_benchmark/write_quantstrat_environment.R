@@ -7,8 +7,7 @@ if (length(args) != 2L) {
 }
 
 record_prefix <- normalizePath(args[[1L]], winslash = "/", mustWork = FALSE)
-quantstrat_lib <- normalizePath(args[[2L]], winslash = "/", mustWork = TRUE)
-.libPaths(c(quantstrat_lib, .libPaths()))
+quantstrat_lib <- normalizePath(args[[2L]], winslash = "/", mustWork = FALSE)
 
 package_record <- function(package) {
   description <- utils::packageDescription(package)
@@ -35,13 +34,27 @@ packages <- c(
   "quantstrat", "blotter", "FinancialInstrument", "xts", "TTR",
   "collapse", "duckdb"
 )
-output <- list(
-  created_at = environment$created_at,
-  record_prefix = record_prefix,
-  R = R.version.string,
-  primary_library = quantstrat_lib,
-  packages = stats::setNames(lapply(packages, package_record), packages)
-)
+if (dir.exists(quantstrat_lib)) {
+  .libPaths(c(quantstrat_lib, .libPaths()))
+  output <- list(
+    created_at = environment$created_at,
+    record_prefix = record_prefix,
+    R = R.version.string,
+    status = "AVAILABLE",
+    primary_library = quantstrat_lib,
+    packages = stats::setNames(lapply(packages, package_record), packages)
+  )
+} else {
+  output <- list(
+    created_at = environment$created_at,
+    record_prefix = record_prefix,
+    R = R.version.string,
+    status = "UNAVAILABLE",
+    reason = "quantstrat library path does not exist",
+    primary_library = quantstrat_lib,
+    packages = list()
+  )
+}
 jsonlite::write_json(
   output,
   paste0(record_prefix, "_quantstrat_environment.json"),

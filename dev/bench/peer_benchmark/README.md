@@ -116,6 +116,28 @@ record every ledgr row is as fast or faster, but the unchanged peer engines
 were also 5 to 22 percent faster, so no ledgr speedup is claimed. The sampled
 process tree peaked at 2,284.1 MiB across 885 one-second samples.
 
+## v0.2.2 Descriptive Release Record
+
+The tracked report renders the ignored local prefix
+`dev/bench/results/peer_benchmark_record_20261024T050123Z`, acquired from
+source commit `3483a688` after accepted Workstream 53. The product tree is
+unchanged from accepted Workstream 52 commit `0ffaaa0f`. The registered shape
+is 500 instruments by 1,260 sessions. Public durable TTR, public one-candidate
+sweep, compiled spot-FIFO sweep and built-in SMA rows complete; their required
+ledgr parity surfaces are exact. Backtrader and zipline-reloaded complete with
+their classified residuals. Quantstrat is unavailable because its isolated
+library is absent, and LEAN is unavailable because the local CLI root uses its
+retired layout. Missing phases remain `NA` with reasons.
+
+The report separates snapshot preparation, experiment setup, engine and
+required results; cold end-to-end and warm research-iteration clocks reconcile
+to those phases. The sampled complete process tree peaks at 1,449.7 MiB across
+486 one-second samples. These are internal same-host observations, not a
+public ranking, cross-version speedup or general claim about R. The wrapper's
+quantstrat environment sidecar records `UNAVAILABLE` when the declared library
+does not exist instead of turning an honestly unavailable peer into a failed
+benchmark record.
+
 ## v0.2.1.0 Public TTR Boundary Record
 
 Workstream 17 replaces the private benchmark-only TTR wrapper with exported

@@ -1,0 +1,47 @@
+{
+  "shape_id": "availability_sweep",
+  "commit": "3483a688bd8d4afd768e964dadcda84e1e9de865",
+  "product_tree_status": "",
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6",
+  "collapse_version": "2.1.8",
+  "snapshot": {
+    "snapshot_id": "lwreg_availability_sweep",
+    "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+    "status": "SEALED"
+  },
+  "cold": {
+    "status": "DONE+DONE",
+    "elapsed_s": 7.339999999999999,
+    "strategy_calls": 1000,
+    "identities": {
+      "candidates": {
+        "rows": 2,
+        "hash": "fa06b9cbde4035d3007453cba919865cb2341ab94f1988b507a0ce1dea36eaa6"
+      },
+      "distinct_decision_outcomes": 2,
+      "returns": {
+        "rows": 1000,
+        "hash": "dd74650c483186df23f48499d72da27d18440693855fad13149013be63e7c5f0"
+      }
+    }
+  },
+  "warm": {
+    "status": "DONE+DONE",
+    "elapsed_s": 5.2200000000000006,
+    "strategy_calls": 1000,
+    "identities": {
+      "candidates": {
+        "rows": 2,
+        "hash": "fa06b9cbde4035d3007453cba919865cb2341ab94f1988b507a0ce1dea36eaa6"
+      },
+      "distinct_decision_outcomes": 2,
+      "returns": {
+        "rows": 1000,
+        "hash": "dd74650c483186df23f48499d72da27d18440693855fad13149013be63e7c5f0"
+      }
+    }
+  },
+  "facts_resolve": null
+}

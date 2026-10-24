@@ -107,3 +107,26 @@ The correction fast profile passed 511 of 511 blocks in 85.07 seconds against
 the 112-second bound. This is local regression evidence, not a public or peer
 performance claim. The corrected record remains agent-provisional until the
 Workstream 11 focused Type 1 re-review and maintainer acceptance.
+
+## v0.2.2 Workstream 54 release record
+
+The retained `evidence/ws54_ordinary/` record compares accepted Workstream 52
+product commit `0ffaaa0f` with the current release-evidence commit. Five
+alternating pairs completed in 499.53 seconds. All semantic hashes agree. Cold
+candidate/accepted median ratios are 1.010 (`feature_gaps`), 1.004
+(`fact_churn_terminal`) and 1.003 (`availability_sweep`); warm ratios are
+0.983, 0.994 and 0.974. No retry was triggered. Peak child RSS is 693 MiB.
+
+The explicitly enabled `evidence/ws54_release/` record covers both release
+shapes. EXP-0003 scale is 7,470 sessions by 1,150 instruments and completes at
+66.18 seconds cold and 62.28 warm on the candidate, ratios 1.017 and 0.979,
+with a 4.83 GiB peak. The 757-session, 600-instrument walk-forward completes at
+46.93 seconds cold and 34.05 warm, ratios 0.996 and 1.020, with a 0.77 GiB
+peak. The single-pair release clocks are descriptive, as declared by the
+manifest; exact identities, statuses and counts are binding.
+
+`evidence/ws54_terminal/terminal_release.json` is the maintained straight,
+reopened and interrupted/resumed terminal fixture. It passes with 678 events
+and three dispositions. `check_record.R` now accepts both declared profiles,
+recomputes every summary clock and peak from raw records, and its self-test
+detects semantic, status/count, timing, provenance and summary-resource drift.
