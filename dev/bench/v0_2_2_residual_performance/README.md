@@ -115,6 +115,15 @@ and the single 4- and 8-worker trigger arms. The preregistration and complete
 dispositions are in
 `inst/design/ledgr_v0_2_2_spec_packet/residual_cost_memory_closeout.md`.
 
+The definitive acquisition programs and checker were frozen at `1cab9637`
+before every retained arm ran. `run_attribution.R` acquires each repeated
+load-mode, dividend-shape and worker arm in a fresh process;
+`profile_h1_current.R` acquires the public run profile and the separate
+every-pulse telemetry arm; `worker_scaling_h1.R` acquires the declared four-
+and eight-worker trigger arms. These runners require caller-supplied snapshot
+paths and output directories. The committed evidence deliberately contains
+neither private paths nor vendor rows.
+
 Reproduce the committed summaries and checks from the package root:
 
 ```powershell
@@ -123,10 +132,16 @@ Reproduce the committed summaries and checks from the package root:
   dev/bench/v0_2_2_residual_performance/evidence/ws53_profile
 & "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
   dev/bench/v0_2_2_residual_performance/check_ws53.R `
-  dev/bench/v0_2_2_residual_performance/evidence/ws53_profile
+  dev/bench/v0_2_2_residual_performance/evidence/ws53_profile `
+  --self-test
 ```
 
-The checker returns `WS53_CHECK_OK`. The record is internal release evidence,
-not a peer-speed claim. Its scheduler result advances the staged scheduler
-RFC to a Type 2 response; no scheduler behavior or telemetry contract changes
-in this workstream.
+The checker recomputes the summaries from raw records, checks the complete
+native run and sweep oracles, and corrupts one raw record plus both summary
+layers to prove the boundary fails. It returns `WS53_CHECK_OK`. The public H1
+profile is 60.99 seconds; the scheduler lower bound is 14.17 seconds (22.6
+percent of the separate 62.65-second diagnostic arm), and the eight-worker
+private peak is 8.71 GiB, below the 12 GiB trigger. The record is internal
+release evidence, not a peer-speed claim. Its scheduler result advances the
+staged scheduler RFC to a Type 2 response; no scheduler behavior or telemetry
+contract changes in this workstream.

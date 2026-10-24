@@ -44,6 +44,15 @@ worker-count arms run.
   stable fills/equity/trades hashes for runs; candidate status, final equity
   and execution seed for sweeps. No research-side replay is an oracle.
 
+The first descriptive record at `c8401ecc` did not satisfy that ordering: most
+arms predated the committed acquisition program, the repeated arms retained
+only a partial native oracle, and the checker trusted derived summaries. It is
+rejected and overwritten, not used below. The final acquisition programs and
+raw-to-summary checker were frozen through `1cab9637` before the definitive
+rerun. All 24 repeated arms, both single-run diagnostics and the 2-, 4- and
+8-worker arms were then rerun. The repeated files name `1cab9637` as their one
+acquisition commit and `0ffaaa0f` as the unchanged product commit.
+
 ## Gates and dispositions
 
 A cost must be at least five percent of current public-path elapsed time and a
@@ -74,38 +83,40 @@ advertised as supported in either case.
 The product tree stayed at accepted Workstream 52 commit `0ffaaa0f`. The
 record scripts and this document are later commits with no change under
 `R/`, `src/`, `DESCRIPTION` or `NAMESPACE`. Every current-run output was
-`DONE` over 7,213 pulses with 8,798 fills and 4,870 closed trades. The
-profile and telemetry arms have identical normalized fills, equity and trade
-hashes.
+`DONE` over 7,213 pulses with 8,798 fills. The dividend build has 4,870
+closed trades and the no-dividend build has 4,882. Within each build, load
+mode and repetition have identical status, counts, final equity and normalized
+fills, equity and trades hashes. The profile and telemetry arms also have
+identical normalized output hashes.
 
 ### Current public-path profile
 
-The R-profile run took 60.39 seconds. Native phase clocks account for 58.96
-seconds (`t_pre` 9.69, `t_loop` 49.21, `t_post` 0.06), leaving 1.43 seconds,
-or 2.4 percent, outside those phases. Windows `Rprof()` accumulated only
-19.36 seconds while R was sampleable; time inside or waiting on native code
+The R-profile run took 60.99 seconds. Native phase clocks account for 59.62
+seconds (`t_pre` 9.66, `t_loop` 49.91, `t_post` 0.05), leaving 1.37 seconds,
+or 2.2 percent, outside those phases. Windows `Rprof()` accumulated only
+19.53 seconds while R was sampleable; time inside or waiting on native code
 is therefore not assigned a fictional R function. The phase clocks, not the
 sample total, are the wall-time reconciliation.
 
-The every-pulse diagnostic is a separate 62.22-second arm. Its component
+The every-pulse diagnostic is a separate 62.65-second arm. Its component
 clocks overlap where `t_exec` summarizes lower-level fields, so they are not
 summed. They locate the remaining costs:
 
 | Cost owner | Current evidence | Share of run wall | Disposition |
 | --- | ---: | ---: | --- |
-| causal feature work | `t_feats` 15.07 s | 24.2% | No bounded WS53 candidate. WS4 owns recursive/strict history work; generic custom-function slicing stays a growth-shape input because H1 uses the built-in return definition. |
-| availability context and accessor refresh | `t_ctx` 9.00 s | 14.5% | Routed to the already parked next-version context-surface retirement; changing the callback boundary here would be architecture, not a local optimization. |
-| state preparation/persistence | `t_state` 5.00 s | 8.0% | No exact bounded candidate identified. The current per-pulse state is durability evidence and stays unchanged. |
-| target normalization and planning | `t_target` 5.12 s | 8.2% | Routed with the typed execution / unified fold work; 4.96 s occurs on held pulses and is also scheduler evidence. |
-| fill timing and resolution | `t_fill` 1.42 s | 2.3% | Below the five-percent share gate; rejected for this cut. |
-| event/accounting application | `t_event` 1.03 s | 1.7% | Below the gate; the broader `t_exec` field overlaps target, fill, event and state and is not counted as an independent candidate. |
-| canonical JSON | `canonical_json` 1.65 s in the R sample | 2.7% of wall | Below the five-percent share gate; unchanged as required. |
-| DuckDB append boundary | `DBI::dbAppendTable` 3.55 s in the R sample | 5.9% of wall | The writer is already set-wise and buffered. No concrete duplicate representation or bounded exact candidate was found; retain and re-profile after execution-core unification. |
-| fill-event payload | `ledgr_fill_event_payload` 0.23 s | 0.4% | Below the gate; rejected. |
+| causal feature work | `t_feats` 14.95 s | 23.9% | No bounded WS53 candidate. WS4 owns recursive/strict history work; generic custom-function slicing stays a growth-shape input because H1 uses the built-in return definition. |
+| availability context and accessor refresh | `t_ctx` 9.16 s | 14.6% | Routed to the already parked next-version context-surface retirement; changing the callback boundary here would be architecture, not a local optimization. |
+| state preparation/persistence | `t_state` 5.08 s | 8.1% | No exact bounded candidate identified. The current per-pulse state is durability evidence and stays unchanged. |
+| target normalization and planning | `t_target` 4.97 s | 7.9% | Routed with the typed execution / unified fold work; 4.64 s occurs on held pulses and is also scheduler evidence. |
+| fill timing and resolution | `t_fill` 1.53 s | 2.4% | Below the five-percent share gate; rejected for this cut. |
+| event/accounting application | `t_event` 0.73 s | 1.2% | Below the gate; the broader `t_exec` field overlaps target, fill, event and state and is not counted as an independent candidate. |
+| canonical JSON | `canonical_json` 1.64 s in the R sample | 2.7% of wall | Below the five-percent share gate; unchanged as required. |
+| DuckDB append boundary | `DBI::dbAppendTable` 3.58 s in the R sample | 5.9% of wall | The writer is already set-wise and buffered. No concrete duplicate representation or bounded exact candidate was found; retain and re-profile after execution-core unification. |
+| fill-event payload | `ledgr_fill_event_payload` 0.22 s | 0.4% | Below the gate; rejected. |
 
 The public post-run clocks are also below the gate individually: run info
-0.81 seconds, fills 0.73, equity 0.03, trades 0.79, summary 1.09, printed
-summary 1.78 and cold `ledgr_run_open()` 0.03. Recovery replay is not reached
+0.84 seconds, fills 0.71, equity 0.07, trades 0.84, summary 0.94, printed
+summary 1.76 and cold `ledgr_run_open()` 0.03. Recovery replay is not reached
 by a completed H1 run and receives no invented clock; Workstream 54 retains
 the registered interruption/resume case. The two-worker sweep medians below
 cover the sweep phase. The accepted Cut 17 26-fold record remains the
@@ -115,8 +126,8 @@ different boundaries.
 ### Scheduler result and telemetry decision
 
 Of 7,213 pulses, 6,868 are held pulses and 345 are monthly decision pulses.
-On held pulses alone, context, strategy and target work totals 14.27 seconds,
-22.9 percent of wall. This is deliberately a lower bound: it does not claim
+On held pulses alone, context, strategy and target work totals 14.17 seconds,
+22.6 percent of wall. This is deliberately a lower bound: it does not claim
 that fills, settlement, valuation, state, diagnostics or commit can be
 skipped. It clears the five-percent trigger, so the staged scheduler seed
 advances to a Type 2 response. No scheduling semantics enter Cut 18.
@@ -139,19 +150,19 @@ historical label is kept only because the accepted runner reserves that arm.
 
 | Snapshot / load mode | Workers | Elapsed | Parent private peak | Parent + daemons private peak |
 | --- | ---: | ---: | ---: | ---: |
-| v003, `load_all()` | 1 | 61.97 s | 1,864.5 MiB | 1,864.5 MiB |
-| v003, installed | 1 | 56.66 s | 2,145.4 MiB | 2,145.4 MiB |
-| v004 dividends, `load_all()` | 1 | 73.34 s | 1,904.7 MiB | 1,904.7 MiB |
-| v004 dividends, installed | 1 | 68.53 s | 2,602.8 MiB | 2,602.8 MiB |
-| v003, `load_all()` | 2 | 60.55 s | 2,305.4 MiB | 4,071.6 MiB |
-| v003, installed | 2 | 57.80 s | 2,211.7 MiB | 3,982.9 MiB |
-| v004 dividends, `load_all()` | 2 | 66.81 s | 2,538.6 MiB | 4,469.1 MiB |
-| v004 dividends, installed | 2 | 61.85 s | 2,547.2 MiB | 4,223.0 MiB |
+| v003, `load_all()` | 1 | 63.99 s | 1,729.9 MiB | 1,729.9 MiB |
+| v003, installed | 1 | 58.42 s | 1,766.6 MiB | 1,766.6 MiB |
+| v004 dividends, `load_all()` | 1 | 75.36 s | 1,938.5 MiB | 1,938.5 MiB |
+| v004 dividends, installed | 1 | 69.65 s | 1,810.3 MiB | 1,810.3 MiB |
+| v003, `load_all()` | 2 | 59.70 s | 2,280.1 MiB | 3,648.9 MiB |
+| v003, installed | 2 | 58.53 s | 2,223.0 MiB | 3,991.9 MiB |
+| v004 dividends, `load_all()` | 2 | 67.05 s | 2,534.3 MiB | 4,457.8 MiB |
+| v004 dividends, installed | 2 | 64.04 s | 2,454.3 MiB | 4,384.5 MiB |
 
 The dividend increment is in the engine phase, not initial setup: under
-`load_all()` the one-worker engine peak rises only 40.2 MiB, while installed
-mode rises 457.5 MiB; the two-worker tree median rises 397.5 MiB under
-`load_all()` and 240.1 MiB installed. The opposite load-mode memory ordering
+`load_all()` the one-worker engine peak rises 208.6 MiB, while installed mode
+rises 43.7 MiB; the two-worker tree median rises 809.0 MiB under `load_all()`
+and 392.7 MiB installed. The opposite load-mode memory ordering
 between shapes is reproducible but does not identify a removable package
 representation, so no product change is authorized from it.
 
@@ -171,10 +182,10 @@ corrected sampler interval is 0.203 seconds in both:
 
 | Workers | Outer elapsed | Parent private peak | Parent + daemons private peak |
 | ---: | ---: | ---: | ---: |
-| 4 | 67.08 s | 2,734.3 MiB | 6,085.4 MiB |
-| 8 | 71.01 s | 2,978.6 MiB | 8,948.7 MiB |
+| 4 | 67.42 s | 2,986.1 MiB | 6,083.2 MiB |
+| 8 | 71.30 s | 2,985.0 MiB | 8,916.7 MiB |
 
-The eight-worker peak is 8.74 GiB, below the accepted 12 GiB trigger.
+The eight-worker peak is 8.71 GiB, below the accepted 12 GiB trigger.
 Shared-memory transport stays deferred and eight workers remain unadvertised.
 More workers do not improve this two-candidate workload. Supported guidance
 remains one worker for memory efficiency and at most two when the user has
@@ -182,14 +193,17 @@ measured enough independent candidate work to justify the extra memory.
 
 ### Reproduction and data boundary
 
-`profile_h1_current.R`, `worker_scaling_h1.R` and their runners reproduce the
-records. `summarize_ws53.R` derives the compact medians and phase peaks;
-`check_ws53.R` checks the complete arm set, process exits, sampler intervals,
-native-output equality, phase reconciliation, canonical-JSON gate, scheduler
-trigger, worker equality, the 12 GiB trigger and absence of local paths from
-the text evidence. It prints `WS53_CHECK_OK`.
+`profile_h1_current.R`, `attribution_h1.R`, `worker_scaling_h1.R` and their
+runners reproduce the records. `summarize_ws53.R` derives the compact medians
+and phase peaks; `check_ws53.R` checks the complete arm set, process exits,
+sampler intervals, native-output equality, raw-to-summary derivation, phase
+reconciliation, canonical-JSON gate, scheduler trigger, worker equality, the
+12 GiB trigger and absence of local paths from the text evidence. Its
+`--self-test` corrupts a raw sample, an arm summary and a phase summary and
+requires all three to fail. It prints `WS53_CHECK_OK`.
 
-The committed record contains 94 aggregate or compressed process-sample
-files totalling about 0.4 MB. No vendor row, instrument identifier or private
-path enters it. After the aggregates were checked, 12.49 GiB of disposable
-run-store copies were deleted; source snapshots were untouched.
+The committed record contains 100 aggregate or compressed process-sample
+files totalling 425,355 bytes (0.406 MiB). No vendor row, instrument
+identifier or private path enters it. After the aggregates were checked,
+16.27 GiB of disposable correction run-store copies were deleted; source
+snapshots were untouched.
