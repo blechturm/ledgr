@@ -22,3 +22,11 @@ sensitivity and matrix/wide/long parity gates. `payload_copies` counts the
 returned numeric payload once and every additional
 allocation at least 90 percent of its size. `allocated_ratio` separately
 discloses all smaller allocation overhead recorded by `Rprofmem()`.
+
+Instrument growth is measured at 500, 1,166 and 2,332 instruments over 252
+sessions; session growth is measured at 252, 504 and 1,260 sessions over 500
+instruments. Each instrument-growth fixture has a decision universe of the
+same size, because the compact selection table intentionally covers the full
+decision axis. The 2,332-instrument synthetic stress point keeps the growth fit
+out of the small-call fixed-cost region. The focal 500 by 252 shape remains an
+observed point on both axes rather than an interpolated clock.

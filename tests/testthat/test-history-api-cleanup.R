@@ -129,7 +129,11 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
                                            max_carry_sessions,
                                            axis_names, instrument_ids,
                                            manifestation = "matrix") {
-        seen[[length(seen) + 1L]] <<- list(rows = rows, columns = columns)
+        seen[[length(seen) + 1L]] <<- list(
+          rows = rows, columns = columns,
+          dependency_first = masks$dependency_first,
+          max_carry_sessions = max_carry_sessions
+        )
         original_slice(
           stored, rows, columns, masks, max_carry_sessions,
           axis_names, instrument_ids,
@@ -143,6 +147,8 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
     )
     testthat::expect_length(seen, 1L)
     testthat::expect_identical(seen[[1L]]$columns, 4:5)
+    testthat::expect_identical(seen[[1L]]$dependency_first, 1L)
+    testthat::expect_identical(seen[[1L]]$max_carry_sessions, 5L)
     testthat::expect_identical(nrow(bounded), 2L)
   })
 
@@ -162,7 +168,9 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
   memo_names <- ls(ledgr:::ledgr_history_memo(
     ledgr:::ledgr_history_context_view(ctx)$service$substrate
   ))
-  testthat::expect_false(any(grepl("finite.*count|count.*finite", memo_names)))
+  testthat::expect_false(any(grepl(
+    "finite.*count|count.*finite|_patch_", memo_names
+  )))
 
   isolated <- ledgr_history_matrix(
     ctx, bar = "close", lookback = 2L, min_observations = 0L

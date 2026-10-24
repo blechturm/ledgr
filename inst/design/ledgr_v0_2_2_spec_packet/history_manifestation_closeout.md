@@ -1,0 +1,116 @@
+# Workstream 55 amendment closeout: ordinary history manifestation
+
+## Outcome
+
+LDG-3105 is implemented at `a22381d5`. Ordinary
+`ledgr_history_matrix()` and `ledgr_history_frame(..., layout = "wide")`
+reads are direct sibling manifestations of one causal request. They retain
+the values, ordered axis, included IDs, complete selection table, policy and
+snapshot provenance, requirements and `used_before_window`; neither retains
+cell evidence nor authenticates the transient numeric result. The explicit
+long layout remains the cell-diagnostic request.
+
+The verified snapshot and owner-prepared substrate are the trust boundary.
+The ordinary result is a fresh R value. Registered ledgr transformations drop
+its provenance, while an attribute-preserving base or third-party operation
+may retain provenance about the originating read. No helper represents that
+metadata as a seal over transformed values.
+
+## Implementation shape
+
+The initial least-machinery R implementation removed the evidence and digest
+but its bounded value/count pass measured about 1.53 ms at 500 instruments by
+252 sessions in development clocks, above the accepted 0.75 ms gate. The
+implemented correction therefore fuses the bounded bar copy, permitted carry,
+finite counts, carried counts and before-window flag in one compiled pass.
+
+The pass reads the requested cells and, only for a missing price cell, at most
+the declared carry horizon before that cell. It consumes the substrate's
+prepared lifetime and terminal masks. It does not create a dense count plane,
+a prepared count index, an opposite-orientation plane, a result cache or a
+second whole-history carry patch. The final matrix receives its dimensions and
+names at allocation, avoiding an otherwise unnecessary full numeric copy.
+Wide output allocates its final numeric columns directly.
+
+Feature manifestation uses the prepared feature values and sparse projection
+records over the requested rows and columns. It derives compact admission and
+dependency disclosure without constructing the long layout's textual evidence
+columns. The long bar and feature paths retain the existing diagnostic oracle.
+
+## Binding resource record
+
+The registered installed-package record is
+`dev/bench/v0_2_2_history_manifestation/evidence/a22381d5/`. It ran on Windows
+11, R 4.6.1, High performance power plan and process affinity `0xFFFF`.
+`check_record.R` returns `LEDGR_HISTORY_MANIFESTATION_OK`.
+
+| Gate | Matrix | Wide | Bound |
+| --- | ---: | ---: | ---: |
+| 500 x 252 median | 0.560 ms | 0.587 ms | <= 0.750 ms |
+| returned-payload copies | 1 | 1 | <= 2.5 |
+| digest calls | 0 | 0 | 0 |
+| instrument exponent, 500/1,166/2,332 x 252 | 1.023 | 0.996 | 0.65-1.30 |
+| session exponent, 500 x 252/504/1,260 | 0.880 | 0.822 | 0.65-1.30 |
+| 252-versus-1,260-source median delta | 0.0045 ms | 0.0148 ms | <= 0.100 ms |
+
+The focal allocation ratios are 1.264 numeric-payload equivalents for matrix
+and 1.308 for wide. The instrument-growth fixtures have matching decision
+universe and requested widths, so the retained complete selection table is
+part of each measured shape rather than an unlabelled larger axis.
+
+The earlier GREEN spike recorded the replaced ordinary reader at 24.20 ms
+for matrix construction at 500 by 252. The product record is not presented as
+a paired speedup against that research harness; it binds the accepted absolute
+resource and exactness gates.
+
+## Semantic and detecting evidence
+
+LCL-0479 / LTB-0488 now pins:
+
+- matrix, wide and explicit-long value parity, including empty axes;
+- one causal request-plan call and direct sibling construction;
+- no ordinary evidence payload, transient hash or value-seal helper;
+- ordinary bar and feature reads that do not call the eager evidence builders;
+- exact requested rows and columns at the fused manifestation boundary;
+- structural provenance under registered ledgr transforms and the documented
+  attribute-preserving base-operation boundary;
+- absence of a finite-count or whole-history patch memo; and
+- caller-mutation isolation from the substrate and later fresh reads.
+
+LCL-0295, LCL-0397 and their existing integration blocks were migrated from
+implicit wide evidence to explicit long diagnostics. They continue to pin
+late-known restatements, vintage feature evidence, input and output carry,
+lifetime and terminal barriers, run, sweep, walk-forward, explicit-precompute
+and pulse-inspection parity. LTB-0391 additionally proves that ordinary bar
+reads create neither whole-history carry-source nor patch caches.
+
+The binding benchmark independently checks numeric, selection and
+`used_before_window` parity across matrix, wide and long forms, absence of
+ordinary evidence, presence of long evidence, zero digest calls, allocations,
+two-axis growth and fixed-window source-length sensitivity.
+
+## Optimization-shape walk
+
+1. No R-level accumulator grows with returned cells or instruments. Sparse
+   late-knowledge mask exceptions use fixed-size storage.
+2. No row-wise data-frame append is introduced.
+3. Bar manifestation is one compiled bounded pass; it does not rescan the
+   completed result.
+4. Estimator admission consumes counts from that pass. Only excluded rows ask
+   the existing diagnostic oracle for reason priority.
+5. Matrix and wide outputs are allocated in final orientation; neither is
+   built through the other.
+6. No per-cell environment mutation or lookup is introduced.
+7. No candidate-, pulse- or instrument-invariant input is rebuilt inside a
+   growing execution loop.
+
+## Verification
+
+The focused history API, frame, substrate, continuity, foundation, policy,
+teaching, integration, integrated-proof, indicator-history, causality,
+documentation-contract and control-plane suites pass. The codebase census and
+its mode-branch self-test pass, as does the fold-phase contract checker. The
+causal-history article was executed, regenerated and verified against its GFM
+render. The full package suite, fixture ladder and `R CMD check` are recorded
+after the product and evidence commits, before independent close review.
+

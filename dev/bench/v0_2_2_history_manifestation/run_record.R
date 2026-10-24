@@ -30,15 +30,16 @@ if (!identical(trimws(tail(affinity, 1L)), "65535") ||
   stop("The record requires the registered High-performance/0xFFFF host setup.")
 }
 
-n_instrument <- 1166L
+n_instrument_max <- 2332L
 n_session <- 1260L
 calendar <- seq(as.Date("2018-01-01"), by = "day", length.out = 1800L)
 days <- calendar[as.integer(format(calendar, "%u")) <= 5L][seq_len(n_session)]
 pulses <- as.POSIXct(paste(days, "21:00:00"), tz = "UTC")
-ids <- sprintf("I%04d", seq_len(n_instrument))
+ids <- sprintf("I%04d", seq_len(n_instrument_max))
 
-make_fixture <- function(source_columns, label) {
+make_fixture <- function(source_columns, label, instrument_ids) {
   n_time <- length(source_columns)
+  n_instrument <- length(instrument_ids)
   instrument <- rep(seq_len(n_instrument), each = n_time)
   local_session <- rep(seq_len(n_time), times = n_instrument)
   global_session <- source_columns[local_session]
@@ -46,7 +47,7 @@ make_fixture <- function(source_columns, label) {
   keep <- global_session <= 5L |
     ((instrument * 131L + global_session * 17L) %% 997L != 0L)
   bars <- data.frame(
-    instrument_id = ids[instrument[keep]],
+    instrument_id = instrument_ids[instrument[keep]],
     ts_utc = pulses[global_session[keep]],
     open = close_value[keep], high = close_value[keep],
     low = close_value[keep], close = close_value[keep],
@@ -72,14 +73,14 @@ make_fixture <- function(source_columns, label) {
     source = "history_manifestation_record",
     stringsAsFactors = FALSE
   )
-  members$members <- I(list(ids))
+  members$members <- I(list(instrument_ids))
   membership <- ledgr_facts_membership_snapshots(
     members, universe_id = "U", complete = TRUE
   )
   db_path <- tempfile(pattern = paste0("ledgr-history-", label, "-"),
                       fileext = ".duckdb")
   snapshot <- ledgr_snapshot_from_df(
-    bars, data.frame(instrument_id = ids), db_path = db_path,
+    bars, data.frame(instrument_id = instrument_ids), db_path = db_path,
     snapshot_id = paste0("history-manifestation-", label),
     facts = ledgr_facts(sessions, membership),
     price_basis = "split_adjusted"
@@ -171,23 +172,41 @@ measure <- function(ctx, path, instruments, lookback, axis, size, replicate,
   )
 }
 
-full <- make_fixture(seq_len(n_session), "full")
+focal_ids <- ids[seq_len(500L)]
+full <- make_fixture(seq_len(n_session), "full", focal_ids)
 on.exit(close_fixture(full), add = TRUE)
 ctx <- full$ctx
 
 records <- list()
 for (path in c("matrix", "wide")) {
-  for (n in c(500L, 833L, 1166L)) {
+  for (replicate in 1:3) {
+    records[[length(records) + 1L]] <- measure(
+      ctx, path, focal_ids, 252L, "instrument", 500L, replicate
+    )
+  }
+}
+measure_instrument_growth <- function(n) {
+  fixture <- make_fixture(seq_len(n_session), paste0("instrument-", n), ids[seq_len(n)])
+  on.exit(close_fixture(fixture), add = TRUE)
+  out <- list()
+  for (path in c("matrix", "wide")) {
     for (replicate in 1:3) {
-      records[[length(records) + 1L]] <- measure(
-        ctx, path, ids[seq_len(n)], 252L, "instrument", n, replicate
+      out[[length(out) + 1L]] <- measure(
+        fixture$ctx, path, ids[seq_len(n)], 252L,
+        "instrument", n, replicate
       )
     }
   }
+  out
+}
+for (n in c(1166L, 2332L)) {
+  records <- c(records, measure_instrument_growth(n))
+}
+for (path in c("matrix", "wide")) {
   for (n in c(252L, 504L, 1260L)) {
     for (replicate in 1:3) {
       records[[length(records) + 1L]] <- measure(
-        ctx, path, ids[seq_len(500L)], n, "session", n, replicate
+        ctx, path, focal_ids, n, "session", n, replicate
       )
     }
   }
@@ -195,13 +214,13 @@ for (path in c("matrix", "wide")) {
 measurements <- do.call(rbind, records)
 
 direct <- ledgr_history_matrix(
-  ctx, bar = "close", lookback = 252L, instruments = ids[seq_len(500L)]
+  ctx, bar = "close", lookback = 252L, instruments = focal_ids
 )
 wide <- ledgr_history_frame(
-  ctx, bar = "close", lookback = 252L, instruments = ids[seq_len(500L)]
+  ctx, bar = "close", lookback = 252L, instruments = focal_ids
 )
 long <- ledgr_history_frame(
-  ctx, bar = "close", lookback = 252L, instruments = ids[seq_len(500L)],
+  ctx, bar = "close", lookback = 252L, instruments = focal_ids,
   layout = "long"
 )
 wide_matrix <- ledgr_history_matrix(wide)
@@ -254,14 +273,14 @@ slopes <- do.call(rbind, lapply(split(shape_medians, list(
 rownames(slopes) <- NULL
 
 # Select the instrument-axis 500 x 252 observations, which are unambiguous.
-short <- make_fixture((n_session - 251L):n_session, "short")
+short <- make_fixture((n_session - 251L):n_session, "short", focal_ids)
 on.exit(close_fixture(short), add = TRUE)
 source_scale <- do.call(rbind, lapply(c("matrix", "wide"), function(path) {
   full_fn <- function() read_path(
-    full$ctx, path, ids[seq_len(500L)], 252L
+    full$ctx, path, focal_ids, 252L
   )
   short_fn <- function() read_path(
-    short$ctx, path, ids[seq_len(500L)], 252L
+    short$ctx, path, focal_ids, 252L
   )
   invisible(full_fn())
   invisible(short_fn())
