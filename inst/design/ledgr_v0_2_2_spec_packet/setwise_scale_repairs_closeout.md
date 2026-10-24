@@ -162,12 +162,14 @@ public and persisted shapes.
 
 | Mutation | Result |
 | --- | --- |
-| restore candidate full-table subset | LTB-0484 fails once |
-| restore per-run equity scan | LTB-0485 fails once |
-| restore latest-bar query-per-ID loop | LTB-0486 fails three times |
-| restore scalar composition formatter | LTB-0487 fails once |
-| restore full diagnostics in explain | LTB-0063 filtered-call count fails |
-| restore full availability in explain | LTB-0063 call and row counts fail |
+| restore candidate full-table subset inside the grouped helper | LTB-0484 fails two structural assertions |
+| restore per-run equity scan inside the grouped helper | LTB-0485 fails two structural assertions |
+| restore latest-bar query-per-ID loop inside the query helper | LTB-0486 fails its iterator pin |
+| restore scalar composition formatter inside the time helper | LTB-0487 fails its scalar-normalizer and iterator pins |
+| restore full diagnostics then filter inside the filtered helper | LTB-0063 aborts through the forbidden full reader |
+| restore full availability then filter inside the filtered helper | LTB-0063 aborts through the forbidden full reader |
 
-The mutations ran only in disposable worktree `C:/tmp/ws52-mut`. Its unrelated
+The original mutations ran only in disposable worktree `C:/tmp/ws52-mut`.
+The focused re-review repeated all six inside the optimized helpers in a fresh
+disposable worktree and confirmed the results above. Its unrelated
 parallel-worker error under `pkgload` is not claimed as a detector result.

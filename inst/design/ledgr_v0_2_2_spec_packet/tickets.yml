@@ -741,11 +741,11 @@ workstreams:
   - id: 52
     name: "Set-wise scale repairs"
     cut: 18
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 51
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 52", verdict: "CHANGES_REQUIRED; correction pending focused confirmation", artifact: "close_review_52.md", result: "The product changes and H1 gates held. The review required operation-boundary detectors for all six repaired growth shapes and a verbatim seven-shape closeout; both are corrected after the reviewed range.", reason: "One claim: four known query, subset and formatting amplifications and the full-table explain reader are removed without changing public results, ordering, errors or identities."}
-    accepted: null
+    review: {mode: "Type 1", point: "close of workstream 52", verdict: "PASS after one focused correction review", artifact: "close_review_52.md", result: "The product changes and H1 gates held. Operation-boundary detectors now kill all six restored amplification shapes, the closeout walks the manual's seven shapes verbatim, and the focused suites, census, fold checker, YAML and diff checks pass.", reason: "One claim: four known query, subset and formatting amplifications and the full-table explain reader are removed without changing public results, ordering, errors or identities."}
+    accepted: "2026-10-24 maintainer acceptance after focused Type 1 confirmation."
   - id: 53
     name: "Residual cost and memory decisions"
     cut: 18
@@ -2509,7 +2509,7 @@ tickets:
   - id: "LDG-3093"
     title: "Remove four set-wise growth amplifications"
     workstream: 52
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3092"]
@@ -2519,7 +2519,7 @@ tickets:
   - id: "LDG-3094"
     title: "Filter ledgr_run_explain inputs at source"
     workstream: 52
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3092"]
