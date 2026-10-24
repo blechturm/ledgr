@@ -1,0 +1,2 @@
+"run","instrument_id","symbol","terminal_event","choice","assumption_label","ts_utc","proceeds"
+"ew_pit","CMC3513","FTM","migrated","last_permissible","default: last permissible mark",2025-01-14 23:59:59,35844.2188913292

@@ -1,0 +1,3 @@
+"strategy","total_return_pit_minus_surv","cagr_pit_minus_surv","volatility_pit_minus_surv","sharpe_pit_minus_surv","max_drawdown_pit_minus_surv"
+"equal_weight",-0.322369192109976,-0.0273430562036023,-0.00351916677886965,-0.0374358404296475,0.00270559937068959
+"min_variance",0.000366442839702108,6.50732446897395e-05,-1.24354506259583e-05,0.00116614547173066,1.11022302462516e-16
