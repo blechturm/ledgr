@@ -1434,8 +1434,7 @@ ledgr_fold_stage_commit <- function(
       ts
     )
   }
-  if (!services$availability_active &&
-      length(fold_state$pending_segments) > 0L) {
+  if (length(fold_state$pending_segments) > 0L) {
     ledgr_fold_flush_pulse_block(
       fold_state,
       services$diagnostic_writer,
