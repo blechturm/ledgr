@@ -147,7 +147,7 @@ testthat::test_that("[LTB-0182] the terminal release fixture stays release-only 
     # The checked-in record crosses every case the fixture promises.
     record <- yyjsonr::read_json_file(file.path(
       suite, "evidence", "terminal_release", "expected.json"
-    ))
+    ))$outputs
     testthat::expect_identical(record$status, "DONE")
     outcomes <- unlist(record$terminal_outcomes)
     testthat::expect_identical(substr(outcomes, 1L, 3L), c("T10", "T15", "T20"))
