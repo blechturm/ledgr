@@ -4,6 +4,13 @@ This is the binding LDG-3105 reference-host record. It measures the complete
 public matrix and wide-frame reads from the same prepared availability-aware
 context, including estimator admission and retained compact metadata.
 
+The timed boundary begins after the context owner has prepared the immutable
+history substrate and its mask summaries. This is the package's
+prepare-once/reuse boundary, not a benchmark warm-up: the runner verifies that
+`base_masks` exists before the first public read, makes that first read the
+allocation witness, and requires the owner memo to remain unchanged across all
+first and repeated public reads.
+
 Run an installed candidate on the registered Windows host with the High
 performance power plan and processor affinity `0xFFFF`:
 

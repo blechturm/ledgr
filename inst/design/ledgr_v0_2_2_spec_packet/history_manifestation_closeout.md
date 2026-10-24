@@ -2,7 +2,7 @@
 
 ## Outcome
 
-LDG-3105 is implemented at `a22381d5`. Ordinary
+LDG-3105 is implemented at `a22381d5` and corrected at `00a3d5bf`. Ordinary
 `ledgr_history_matrix()` and `ledgr_history_frame(..., layout = "wide")`
 reads are direct sibling manifestations of one causal request. They retain
 the values, ordered axis, included IDs, complete selection table, policy and
@@ -24,13 +24,16 @@ but its bounded value/count pass measured about 1.53 ms at 500 instruments by
 implemented correction therefore fuses the bounded bar copy, permitted carry,
 finite counts, carried counts and before-window flag in one compiled pass.
 
-The pass reads the requested cells and, only for a missing price cell, at most
-the declared carry horizon before that cell. It consumes the substrate's
-prepared lifetime and terminal masks. It does not create a dense count plane,
-a prepared count index, an opposite-orientation plane, a result cache or a
-second whole-history carry patch. The final matrix receives its dimensions and
-names at allocation, avoiding an otherwise unnecessary full numeric copy.
-Wide output allocates its final numeric columns directly.
+The context owner prepares immutable lifetime, terminal and late-knowledge
+mask summaries before a public pulse context is exposed. The substrate also
+holds sparse maximal non-finite bar runs, whose storage grows with gaps rather
+than source cells. The compiled pass reads requested cells and, only for a
+missing price cell, the one finite source named by a gap run when it falls
+inside the declared carry horizon. It does not create a dense count plane, a
+prepared count index, field-position evidence, an opposite-orientation plane,
+a result cache or a second whole-history carry patch. The final matrix receives
+its dimensions and names at allocation, avoiding an otherwise unnecessary full
+numeric copy. Wide output allocates its final numeric columns directly.
 
 Feature manifestation uses the prepared feature values and sparse projection
 records over the requested rows and columns. It derives compact admission and
@@ -39,22 +42,25 @@ columns. The long bar and feature paths retain the existing diagnostic oracle.
 
 ## Binding resource record
 
-The registered installed-package record is
-`dev/bench/v0_2_2_history_manifestation/evidence/a22381d5/`. It ran on Windows
+The corrected registered installed-package record is
+`dev/bench/v0_2_2_history_manifestation/evidence/00a3d5bf/`. It ran on Windows
 11, R 4.6.1, High performance power plan and process affinity `0xFFFF`.
 `check_record.R` returns `LEDGR_HISTORY_MANIFESTATION_OK`.
 
 | Gate | Matrix | Wide | Bound |
 | --- | ---: | ---: | ---: |
-| 500 x 252 median | 0.560 ms | 0.587 ms | <= 0.750 ms |
+| 500 x 252 median | 0.556 ms | 0.598 ms | <= 0.750 ms |
 | returned-payload copies | 1 | 1 | <= 2.5 |
 | digest calls | 0 | 0 | 0 |
-| instrument exponent, 500/1,166/2,332 x 252 | 1.023 | 0.996 | 0.65-1.30 |
-| session exponent, 500 x 252/504/1,260 | 0.880 | 0.822 | 0.65-1.30 |
-| 252-versus-1,260-source median delta | 0.0045 ms | 0.0148 ms | <= 0.100 ms |
+| instrument exponent, 500/1,166/2,332 x 252 | 0.937 | 0.946 | 0.65-1.30 |
+| session exponent, 500 x 252/504/1,260 | 0.826 | 0.720 | 0.65-1.30 |
+| 252-versus-1,260-source median delta | 0.0043 ms | 0.0111 ms | <= 0.100 ms |
 
-The focal allocation ratios are 1.264 numeric-payload equivalents for matrix
-and 1.308 for wide. The instrument-growth fixtures have matching decision
+The focal allocation ratios are 1.268 numeric-payload equivalents for matrix
+and 1.312 for wide after the allocation witness. The runner proves that owner
+mask summaries already exist before the first public read and that neither
+that read nor subsequent clocks change the memo. The instrument-growth
+fixtures have matching decision
 universe and requested widths, so the retained complete selection table is
 part of each measured shape rather than an unlabelled larger axis.
 
@@ -71,7 +77,10 @@ LCL-0479 / LTB-0488 now pins:
 - one causal request-plan call and direct sibling construction;
 - no ordinary evidence payload, transient hash or value-seal helper;
 - ordinary bar and feature reads that do not call the eager evidence builders;
-- exact requested rows and columns at the fused manifestation boundary;
+- owner preparation completed before the first public read, with no hidden
+  memo growth on that read;
+- exact requested source-value accesses at the fused manifestation boundary,
+  including bounded carry dependencies;
 - structural provenance under registered ledgr transforms and the documented
   attribute-preserving base-operation boundary;
 - absence of a finite-count or whole-history patch memo; and
@@ -96,8 +105,8 @@ two-axis growth and fixed-window source-length sensitivity.
 2. No row-wise data-frame append is introduced.
 3. Bar manifestation is one compiled bounded pass; it does not rescan the
    completed result.
-4. Estimator admission consumes counts from that pass. Only excluded rows ask
-   the existing diagnostic oracle for reason priority.
+4. Estimator admission consumes counts and compact structural/expiry flags
+   from that pass. Excluded ordinary reads never reacquire diagnostic planes.
 5. Matrix and wide outputs are allocated in final orientation; neither is
    built through the other.
 6. No per-cell environment mutation or lookup is introduced.
