@@ -12,6 +12,8 @@
 "R/availability-provider.R","ledgr_availability_provider","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
 "R/availability-results.R","ledgr_backtest_availability","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
 "R/availability-results.R","ledgr_backtest_availability","flow","ledgr_backtest_availability_active()","statement",1
+"R/availability-results.R","ledgr_backtest_availability_filtered","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
+"R/availability-results.R","ledgr_backtest_availability_filtered","flow","ledgr_backtest_availability_active()","statement",1
 "R/availability-results.R","ledgr_backtest_terminal_evidence","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",2

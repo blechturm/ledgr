@@ -142,7 +142,12 @@ testthat::test_that("[LTB-0486] latest bars use one query and restore request or
     },
     .package = "ledgr"
   )
-  for (requested in list("I1", instruments[7:1], c("I3", "I1", "I3"))) {
+  for (requested in list(
+    "I1",
+    instruments[7:1],
+    rev(instruments),
+    c("I3", "I1", "I3")
+  )) {
     before <- query_calls
     out <- ledgr:::ledgr_fetch_latest_bars(
       con,
@@ -174,7 +179,7 @@ testthat::test_that("[LTB-0486] latest bars use one query and restore request or
 })
 
 testthat::test_that("[LTB-0487] composition timestamps use one vector formatter", {
-  for (n in c(0L, 7L, 31L)) {
+  for (n in c(1L, 7L, 31L)) {
     value <- as.POSIXct("1969-10-26 01:30:00", tz = "UTC") + seq_len(n) * 3600
     expected <- vapply(
       seq_along(value),
@@ -187,6 +192,10 @@ testthat::test_that("[LTB-0487] composition timestamps use one vector formatter"
       info = paste("timestamp scale", n)
     )
   }
+  testthat::expect_identical(
+    ledgr:::ledgr_corporate_action_time_tokens(as.POSIXct(character(), tz = "UTC")),
+    character()
+  )
   testthat::expect_error(
     ledgr:::ledgr_corporate_action_time_tokens(as.POSIXct(NA, tz = "UTC")),
     "`ts_utc` could not be converted to UTC POSIXct.",

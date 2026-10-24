@@ -1,0 +1,13 @@
+target,scale,input_rows,requested_groups,old_expensive_units,new_expensive_units
+candidate_features,1,2,2,4,4
+candidate_features,7,14,8,112,22
+candidate_features,31,62,32,1984,94
+run_equity,1,4,2,8,6
+run_equity,7,28,8,224,36
+run_equity,31,124,32,3968,156
+latest_bars,1,1,1,1,1
+latest_bars,7,7,7,7,1
+latest_bars,31,31,31,31,1
+timestamp_format,1,2,2,2,1
+timestamp_format,7,8,8,8,1
+timestamp_format,31,32,32,32,1
