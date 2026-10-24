@@ -48,9 +48,9 @@ ledgr_wfo_folds <- function() {
 }
 
 ledgr_wfo_grid <- function() {
-  ledgr_param_grid(
-    trade = list(qty = 1, threshold = 101),
-    idle = list(qty = 0, threshold = 999)
+  ledgr_grid_named(
+    trade = list(strategy = list(qty = 1, threshold = 101)),
+    idle = list(strategy = list(qty = 0, threshold = 999))
   )
 }
 
@@ -239,8 +239,7 @@ testthat::test_that("walk-forward derives fold/window candidate seeds and preser
     wf$scores$fold_seq == 1L &
       wf$scores$window == "train" &
       wf$scores$metric_name == "sharpe_ratio" &
-      wf$scores$candidate_label == "trade",
-    ,
+      wf$scores$candidate_label == "trade", ,
     drop = FALSE
   ]
   strategy_hash <- ledgr:::ledgr_strategy_source_info(fx$exp$strategy)$hash
@@ -266,8 +265,7 @@ testthat::test_that("walk-forward derives fold/window candidate seeds and preser
   test_score <- wf$scores[
     wf$scores$fold_seq == 1L &
       wf$scores$window == "test" &
-      wf$scores$metric_name == "sharpe_ratio",
-    ,
+      wf$scores$metric_name == "sharpe_ratio", ,
     drop = FALSE
   ]
   expected_test_seed <- ledgr:::ledgr_walk_forward_execution_seed(
@@ -407,9 +405,9 @@ testthat::test_that("walk-forward preserves failed train candidate score rows wh
 
   wf <- ledgr_walk_forward(
     fx$exp,
-    grid = ledgr_param_grid(
-      trade = list(qty = 1, threshold = 101, fail = FALSE),
-      broken = list(qty = 1, threshold = 101, fail = TRUE)
+    grid = ledgr_grid_named(
+      trade = list(strategy = list(qty = 1, threshold = 101, fail = FALSE)),
+      broken = list(strategy = list(qty = 1, threshold = 101, fail = TRUE))
     ),
     folds = ledgr_fold_list(
       list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
@@ -423,8 +421,7 @@ testthat::test_that("walk-forward preserves failed train candidate score rows wh
   failed_rows <- wf$scores[
     wf$scores$window == "train" &
       wf$scores$candidate_label == "broken" &
-      wf$scores$metric_name == "sharpe_ratio",
-    ,
+      wf$scores$metric_name == "sharpe_ratio", ,
     drop = FALSE
   ]
   testthat::expect_equal(nrow(failed_rows), 1L)
@@ -442,7 +439,7 @@ testthat::test_that("walk-forward persists no-selection failure evidence", {
   testthat::expect_error(
     ledgr_walk_forward(
       fx$exp,
-      grid = ledgr_param_grid(broken = list(qty = 1, threshold = 101, fail = TRUE)),
+      grid = ledgr_grid_named(broken = list(strategy = list(qty = 1, threshold = 101, fail = TRUE))),
       folds = ledgr_fold_list(
         list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
         constructor = list(type_id = "explicit")
@@ -479,7 +476,7 @@ testthat::test_that("walk-forward test-run failure preserves train rows and fail
   testthat::expect_error(
     ledgr_walk_forward(
       fx$exp,
-      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      grid = ledgr_grid_named(trade = list(strategy = list(qty = 1, threshold = 101))),
       folds = ledgr_fold_list(
         list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
         constructor = list(type_id = "explicit")
@@ -515,7 +512,7 @@ testthat::test_that("walk-forward interrupt after a completed fold persists a pa
   err <- tryCatch(
     ledgr_walk_forward(
       fx$exp,
-      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      grid = ledgr_grid_named(trade = list(strategy = list(qty = 1, threshold = 101))),
       folds = ledgr_wfo_folds(),
       selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 808L
@@ -559,7 +556,7 @@ testthat::test_that("[LTB-0070] terminal cleanup closes test handles without mas
   err <- tryCatch(
     ledgr_walk_forward(
       fx$exp,
-      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      grid = ledgr_grid_named(trade = list(strategy = list(qty = 1, threshold = 101))),
       folds = ledgr_wfo_folds(),
       selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 809L
@@ -667,7 +664,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   err <- tryCatch(
     ledgr_walk_forward(
       partial_fx$exp,
-      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      grid = ledgr_grid_named(trade = list(strategy = list(qty = 1, threshold = 101))),
       folds = ledgr_wfo_folds(),
       selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 42L

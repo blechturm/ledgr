@@ -163,12 +163,14 @@ testthat::test_that("[LTB-0315] sampled prefix invariance refuses look-ahead bef
   )
   con <- get_connection(snapshot)
   store_rows <- function(table, run_id = NULL) {
-    if (!DBI::dbExistsTable(con, table)) return(0)
+    if (!DBI::dbExistsTable(con, table)) {
+      return(0)
+    }
     sql <- sprintf("SELECT COUNT(*) AS n FROM %s", table)
     if (!is.null(run_id)) sql <- paste0(sql, sprintf(" WHERE run_id = '%s'", run_id))
     DBI::dbGetQuery(con, sql)$n
   }
-  grid <- ledgr_param_grid(one = list())
+  grid <- ledgr_grid_named(one = list(strategy = list()))
   testthat::expect_error(
     ledgr_precompute_features(experiment, grid),
     class = "ledgr_feature_lookahead_detected"
@@ -365,12 +367,18 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   seen <- new.env()
   reader <- function(ctx) {
     list(
-      level = ledgr_history_frame(ctx, feature = "level", lookback = Inf,
-        min_observations = 0L, layout = "long"),
-      ret = ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
-        min_observations = 0L, layout = "long"),
-      values = ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
-        min_observations = 0L)
+      level = ledgr_history_frame(ctx,
+        feature = "level", lookback = Inf,
+        min_observations = 0L, layout = "long"
+      ),
+      ret = ledgr_history_frame(ctx,
+        feature = "ret", lookback = Inf,
+        min_observations = 0L, layout = "long"
+      ),
+      values = ledgr_history_frame(ctx,
+        feature = "ret", lookback = Inf,
+        min_observations = 0L
+      )
     )
   }
   fixture <- ws42_history_fixture(
@@ -381,8 +389,8 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   axis <- fixture$axis
   close(ledgr_run(fixture$exp, params = list(tag = "run"), run_id = "planes"))
-  ledgr_sweep(fixture$exp, ledgr_param_grid(list(tag = "sweep")))
-  grid <- ledgr_param_grid(list(tag = "precompute"))
+  ledgr_sweep(fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "sweep"))))
+  grid <- ledgr_grid_named(candidate_1 = list(strategy = list(tag = "precompute")))
   ledgr_sweep(
     fixture$exp, grid,
     precomputed_features = ledgr_precompute_features(fixture$exp, grid)

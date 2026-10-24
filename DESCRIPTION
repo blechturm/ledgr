@@ -47,6 +47,7 @@ Suggests:
     quarto,
     rmarkdown,
     testthat (>= 3.0.0),
+    tidyr,
     TTR,
     withr,
     quantmod,

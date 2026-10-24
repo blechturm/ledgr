@@ -960,7 +960,7 @@ testthat::test_that("[LTB-0015] run and sweep share execution construction and f
   on.exit(close(run), add = TRUE)
   sweep <- ledgr_sweep(
     experiment,
-    ledgr_param_grid(single = list()),
+    ledgr_grid_named(single = list(strategy = list())),
     seed = 1L
   )
   testthat::expect_s3_class(run, "ledgr_backtest")

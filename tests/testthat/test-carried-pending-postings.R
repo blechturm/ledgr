@@ -41,7 +41,8 @@ ldg3091_two_pending_fixture <- function() {
     ledgr_facts_equity_corporate_actions(actions),
     ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
     ledgr_facts_membership_snapshots(
-      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+      membership,
+      universe_id = "u", complete = TRUE, knowledge = "assume_effective"
     )
   )
   snapshot <- ledgr_snapshot_from_df(
@@ -49,7 +50,8 @@ ldg3091_two_pending_fixture <- function() {
     db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
   )
   exp <- ledgr_experiment(
-    snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
+    snapshot, function(ctx, params) ctx$hold(),
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2, BBB = 1), cost_basis = c(AAA = 10, BBB = 21)),
     corporate_action_policy = ledgr_corporate_actions_research()
@@ -70,7 +72,7 @@ testthat::test_that("[LTB-0471] a walk-forward carries two pending dividend post
     constructor = list(type_id = "explicit")
   )
   chain <- ledgr_walk_forward(
-    fixture$exp, ledgr_param_grid(list(x = 1)), folds,
+    fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(x = 1))), folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )
   on.exit(lapply(chain$test_runs, close), add = TRUE)
@@ -120,7 +122,8 @@ testthat::test_that("[LTB-0471] a walk-forward carries two pending dividend post
   testthat::expect_true(grepl('"entitled_quantity":2', cash$meta[[1L]], fixed = TRUE))
   testthat::expect_true(grepl('"entitled_quantity":1', cash$meta[[2L]], fixed = TRUE))
   single <- ledgr:::ledgr_run_window(
-    fixture$exp, params = list(x = 1),
+    fixture$exp,
+    params = list(x = 1),
     window = ledgr:::ledgr_experiment_window(fixture$exp, days[[3L]], days[[8L]]),
     run_id = "ldg3091-single"
   )

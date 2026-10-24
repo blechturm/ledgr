@@ -89,14 +89,15 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
   testthat::expect_identical(ledgr_indicator_get("sma_200"), mine_200)
 
   # Runs, sweeps and two-worker sweeps leave the registry as they found it.
-  grid <- ledgr_param_grid(one = list())
+  grid <- ledgr_grid_named(one = list(strategy = list()))
   sweep_exp <- ledgr_experiment(
-    availability, function(ctx, params) ctx$hold(), features = c(custom, custom_3),
+    availability, function(ctx, params) ctx$hold(),
+    features = c(custom, custom_3),
     valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero()
   )
   ledgr_sweep(sweep_exp, grid, stop_on_error = TRUE)
   if (requireNamespace("mirai", quietly = TRUE) && !ledgr_test_in_coverage()) {
-    ledgr_sweep(sweep_exp, ledgr_param_grid(one = list(), two = list()), workers = 2L, stop_on_error = TRUE)
+    ledgr_sweep(sweep_exp, ledgr_grid_named(one = list(strategy = list()), two = list(strategy = list())), workers = 2L, stop_on_error = TRUE)
   }
   testthat::expect_identical(ws43_registry_state(), after_registration)
   assign("sma_200", saved_sma_200, envir = registry)

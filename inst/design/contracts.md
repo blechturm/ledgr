@@ -490,11 +490,22 @@ Accepted change pending:
 <a id="contract-promotion-candidate-evidence"></a>
 ### Candidate Evidence
 
+- A simple strategy sweep accepts an ordinary rectangular data frame or tibble:
+  one candidate per row and one strategy parameter per column. Columns are
+  unclassed logical, integer, finite double or character vectors without
+  missing cells. Row order is execution order; row names are not identity.
+  Duplicate rows and unsupported or classed columns refuse before execution.
+  `ledgr_strategy_grid()` is the constructor form of the same strategy
+  namespace. Only `ledgr_grid_cross()` introduces a non-empty feature namespace.
 - Sweep results are summary outputs, not committed run artifacts. They
   must still carry enough compact candidate identity for deliberate promotion:
   candidate label, params, status, standard summary metrics, warnings, error
   fields, candidate-specific feature fingerprints, row-level `execution_seed`,
   and row-level `provenance`.
+- Sweep, reopened-sweep and sweep-review printing show compact strategy and
+  feature parameter summaries before `candidate_id`. Printing is presentation
+  only: complete parameters remain in the candidate row and are extracted with
+  `ledgr_candidate()`.
 - `execution_seed` is the actual fold seed used by the candidate. It is
   `NA_integer_` for unseeded candidates and maps to `seed = NULL` when
   promoted. A non-`NA` value must be passed to `ledgr_run(seed = ...)` during

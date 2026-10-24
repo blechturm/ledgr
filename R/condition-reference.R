@@ -690,6 +690,8 @@
 #' - `ledgr_duplicate_fact_family` reports duplicate fact family evidence.
 #' - `ledgr_duplicate_feature_id` reports duplicate feature id evidence.
 #' - `ledgr_duplicate_grid_labels` reports duplicate grid labels evidence.
+#' - `ledgr_duplicate_grid_rows` reports duplicate rectangular-grid row
+#'   evidence.
 #' - `ledgr_duplicate_param_grid_labels` reports duplicate param grid labels
 #'   evidence.
 #' - `ledgr_empty_warmup_input` reports the empty warmup input boundary.
@@ -772,6 +774,10 @@
 #' - `ledgr_invalid_fill_intent` reports invalid fill intent input.
 #' - `ledgr_invalid_fold_execution` reports invalid fold execution input.
 #' - `ledgr_invalid_grid` reports invalid grid input.
+#' - `ledgr_invalid_grid_column` reports a rectangular-grid column whose
+#'   type or class is unsupported.
+#' - `ledgr_invalid_grid_value` reports a missing or non-finite
+#'   rectangular-grid value.
 #' - `ledgr_invalid_indicator_bundle` reports invalid indicator bundle input.
 #' - `ledgr_invalid_ledger_event` reports invalid ledger event input.
 #' - `ledgr_invalid_ledger_meta` reports invalid ledger meta input.
@@ -1029,6 +1035,7 @@
 #' @aliases ledgr_duplicate_fact_family
 #' @aliases ledgr_duplicate_feature_id
 #' @aliases ledgr_duplicate_grid_labels
+#' @aliases ledgr_duplicate_grid_rows
 #' @aliases ledgr_duplicate_param_grid_labels
 #' @aliases ledgr_empty_warmup_input
 #' @aliases ledgr_event_buffer_capacity_exceeded
@@ -1087,6 +1094,8 @@
 #' @aliases ledgr_invalid_fill_intent
 #' @aliases ledgr_invalid_fold_execution
 #' @aliases ledgr_invalid_grid
+#' @aliases ledgr_invalid_grid_column
+#' @aliases ledgr_invalid_grid_value
 #' @aliases ledgr_invalid_history_policy
 #' @aliases ledgr_invalid_history_substrate
 #' @aliases ledgr_invalid_history_treatment

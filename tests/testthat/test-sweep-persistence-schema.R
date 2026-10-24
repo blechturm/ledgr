@@ -20,7 +20,7 @@ ledgr_sweep_persistence_schema_sweep <- function() {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   list(
     snapshot = snapshot,
     sweep = ledgr_sweep(
@@ -54,8 +54,7 @@ testthat::test_that("saved sweep schema is created and validated", {
     "SELECT index_name, table_name, expressions FROM duckdb_indexes()"
   )
   sweep_return_index <- indexes[
-    indexes$index_name == "idx_sweep_returns_timestamp",
-    ,
+    indexes$index_name == "idx_sweep_returns_timestamp", ,
     drop = FALSE
   ]
   testthat::expect_identical(nrow(sweep_return_index), 1L)
@@ -65,8 +64,7 @@ testthat::test_that("saved sweep schema is created and validated", {
   testthat::expect_match(sweep_return_index$expressions[[1]], "ts_utc", fixed = TRUE)
 
   sweep_trade_index <- indexes[
-    indexes$index_name == "idx_sweep_trades_close_ts",
-    ,
+    indexes$index_name == "idx_sweep_trades_close_ts", ,
     drop = FALSE
   ]
   testthat::expect_identical(nrow(sweep_trade_index), 1L)

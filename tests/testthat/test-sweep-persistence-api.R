@@ -19,7 +19,7 @@ ledgr_sweep_persistence_api_sweep <- function(snapshot) {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   ledgr_sweep(
     exp,
     grid,

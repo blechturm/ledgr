@@ -105,7 +105,8 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
     fixture$data, "U", c("AAA", "BBB"), axis, NULL
   )
   reference_status <- history_reference_status_segments(
-    fixture$data, c("AAA", "BBB"), axis, declared = TRUE, segment_limit = NULL
+    fixture$data, c("AAA", "BBB"), axis,
+    declared = TRUE, segment_limit = NULL
   )
   for (counted in list(
     list(substrate$segment_counts$membership, reference_membership),
@@ -631,7 +632,8 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   value <- c(NA, 10, NA, NA, 999, 20, NA)
   expected <- c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE)
   treated <- ledgr:::ledgr_history_input_carry(
-    value, expected, axis, max_sessions = 2L
+    value, expected, axis,
+    max_sessions = 2L
   )
   testthat::expect_equal(treated$value, c(NA, 10, 10, 10, NA, 20, 20))
   testthat::expect_identical(
@@ -648,7 +650,8 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   testthat::expect_identical(treated$barrier_reason[[5L]], "lifetime_inactive")
 
   short <- ledgr:::ledgr_history_input_carry(
-    value, expected, axis, max_sessions = 1L
+    value, expected, axis,
+    max_sessions = 1L
   )
   testthat::expect_true(is.na(short$value[[4L]]))
   testthat::expect_identical(short$missing_reason[[4L]], "carry_expired")
@@ -663,10 +666,12 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
     boundary$missing_reason[1L, 7L], "carry_expired"
   )
   strict <- ledgr:::ledgr_history_input_carry(
-    value, expected, axis, max_sessions = NULL
+    value, expected, axis,
+    max_sessions = NULL
   )
   volume <- ledgr:::ledgr_history_input_carry(
-    value, expected, axis, max_sessions = 5L, carry_allowed = FALSE
+    value, expected, axis,
+    max_sessions = 5L, carry_allowed = FALSE
   )
   testthat::expect_false(any(strict$input_carried))
   testthat::expect_false(any(volume$input_carried))
@@ -674,7 +679,8 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   testthat::expect_true(is.na(volume$value[[3L]]))
 
   no_refresh <- ledgr:::ledgr_history_input_carry(
-    c(1, NA, NA, NA), rep(TRUE, 4L), axis[1:4], max_sessions = 2L
+    c(1, NA, NA, NA), rep(TRUE, 4L), axis[1:4],
+    max_sessions = 2L
   )
   testthat::expect_equal(no_refresh$value, c(1, 1, 1, NA))
   testthat::expect_identical(no_refresh$carry_age_sessions, c(0L, 1L, 2L, NA_integer_))
@@ -702,7 +708,8 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
     axis[1:4],
     max_sessions = 5L,
     terminal_barrier = matrix(
-      c(FALSE, TRUE, FALSE, FALSE), nrow = 1L
+      c(FALSE, TRUE, FALSE, FALSE),
+      nrow = 1L
     )
   )
   testthat::expect_equal(terminal_matrix$value[1L, ], c(1, NA, NA, 4))
@@ -743,7 +750,8 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   admission <- ledgr:::ledgr_history_estimator_admission(treated)
   testthat::expect_false(admission$included)
   fully_treated <- ledgr:::ledgr_history_input_carry(
-    c(1, NA, 2), rep(TRUE, 3L), axis[1:3], max_sessions = 1L
+    c(1, NA, 2), rep(TRUE, 3L), axis[1:3],
+    max_sessions = 1L
   )
   admitted <- ledgr:::ledgr_history_estimator_admission(fully_treated)
   testthat::expect_true(admitted$included)
@@ -793,15 +801,18 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
   testthat::expect_false(revived$input_carried[1L, 7L])
   testthat::expect_identical(revived$barrier_reason[1L, 7L], "terminal")
   terminal_before_knowledge <- ledgr:::ledgr_history_substrate_terminal_at(
-    fixture$substrate, fixture$axis[[4L]], observation_idx = 1:4
+    fixture$substrate, fixture$axis[[4L]],
+    observation_idx = 1:4
   )
   terminal_after_knowledge <- ledgr:::ledgr_history_substrate_terminal_at(
-    fixture$substrate, fixture$axis[[5L]], observation_idx = 1:4
+    fixture$substrate, fixture$axis[[5L]],
+    observation_idx = 1:4
   )
   testthat::expect_false(terminal_before_knowledge[1L, 4L])
   testthat::expect_true(terminal_after_knowledge[1L, 4L])
   terminal_after_relisting <- ledgr:::ledgr_history_substrate_terminal_at(
-    fixture$substrate, fixture$axis[[7L]], observation_idx = 7L
+    fixture$substrate, fixture$axis[[7L]],
+    observation_idx = 7L
   )
   # The terminal state follows the shared lifetime resolver after relisting,
   # while the carry barrier it implies stays sticky (v12 Section 5).
@@ -1134,10 +1145,12 @@ testthat::test_that("[LTB-0293] availability fold ownership has one history read
   sweep <- paste(readLines(file.path(repository, "R", "sweep.R")), collapse = "\n")
 
   testthat::expect_length(gregexpr(
-    "services$history_reader$bars(pulse_idx)", fold, fixed = TRUE
+    "services$history_reader$bars(pulse_idx)", fold,
+    fixed = TRUE
   )[[1L]], 1L)
   testthat::expect_false(grepl(
-    "ledgr_history_substrate_bar_frame", fold, fixed = TRUE
+    "ledgr_history_substrate_bar_frame", fold,
+    fixed = TRUE
   ))
   testthat::expect_false(grepl(
     "history_substrate = history_substrate", paste(
@@ -1145,7 +1158,8 @@ testthat::test_that("[LTB-0293] availability fold ownership has one history read
       deparse(ledgr:::ledgr_fold_stage_apply),
       deparse(ledgr:::ledgr_fold_stage_commit),
       collapse = "\n"
-    ), fixed = TRUE
+    ),
+    fixed = TRUE
   ))
   testthat::expect_true(grepl(
     paste0(
@@ -1164,7 +1178,8 @@ testthat::test_that("[LTB-0293] availability fold ownership has one history read
   inspection <- paste(deparse(ledgr:::ledgr_pulse_inspection), collapse = "
 ")
   testthat::expect_length(gregexpr(
-    "ledgr_execute_fold(", inspection, fixed = TRUE
+    "ledgr_execute_fold(", inspection,
+    fixed = TRUE
   )[[1L]], 1L)
   for (reader in c(
     "ledgr_history_substrate_bar_packet", "ledgr_history_substrate_fold_reader",
@@ -1315,7 +1330,8 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
       history_substrate = fixture$substrate,
       pulses_posix = fixture$substrate$axis,
       pulses_iso = format(
-        fixture$substrate$axis, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+        fixture$substrate$axis, "%Y-%m-%dT%H:%M:%SZ",
+        tz = "UTC"
       )
     ), list(
       candidate_id = "a", params = list(n = 1L)
@@ -1324,7 +1340,8 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
       history_substrate = fixture$substrate,
       pulses_posix = fixture$substrate$axis,
       pulses_iso = format(
-        fixture$substrate$axis, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+        fixture$substrate$axis, "%Y-%m-%dT%H:%M:%SZ",
+        tz = "UTC"
       )
     ), list(
       candidate_id = "b", params = list(n = 2L)
@@ -1369,7 +1386,7 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(one = list(n = 1L))
+  grid <- ledgr_grid_named(one = list(strategy = list(n = 1L)))
   stops <- new.env(parent = emptyenv())
   stops$n <- 0L
   dispatch_without_daemon <- function(tasks, workers) {
@@ -1472,10 +1489,10 @@ testthat::test_that("[LTB-0295] availability sweeps stage history without semant
     ),
     class = "ledgr_invalid_history_substrate"
   )
-  grid <- ledgr_param_grid(
-    one = list(qty = 1),
-    two = list(qty = 2),
-    three = list(qty = 3)
+  grid <- ledgr_grid_named(
+    one = list(strategy = list(qty = 1)),
+    two = list(strategy = list(qty = 2)),
+    three = list(strategy = list(qty = 3))
   )
   set.seed(8675309)
   caller_rng <- .Random.seed
@@ -1504,7 +1521,8 @@ testthat::test_that("[LTB-0295] availability sweeps stage history without semant
       .package = "ledgr"
     )
     builds$result <- ledgr_sweep(
-      experiment, grid, seed = 42L, workers = 1L
+      experiment, grid,
+      seed = 42L, workers = 1L
     )
   })
   sequential <- builds$result
@@ -1616,7 +1634,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     features = list(ledgr_ind_returns(2L)),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(one = list(qty = 1), two = list(qty = 2))
+  grid <- ledgr_grid_named(one = list(strategy = list(qty = 1)), two = list(strategy = list(qty = 2)))
   dated_experiment <- ledgr_experiment(
     snapshot,
     strategy,
@@ -1648,7 +1666,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
   )
   dated_sweep <- ledgr_sweep(
     dated_experiment,
-    ledgr_param_grid(one = list(qty = 1)),
+    ledgr_grid_named(one = list(strategy = list(qty = 1))),
     seed = 7L,
     workers = 1L
   )
@@ -1689,7 +1707,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
       original_stage_tasks(...)
     },
     ledgr_history_compute_feature_series = function(...,
-                                                     calculation_end = NULL) {
+                                                    calculation_end = NULL) {
       feature_bounds$end <- c(
         feature_bounds$end,
         if (is.null(calculation_end)) {
@@ -1910,7 +1928,9 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
   draw <- function(build) {
     for (attempt in 1:50) {
       out <- tryCatch(build(), ledgr_invalid_args = function(e) NULL)
-      if (!is.null(out)) return(out)
+      if (!is.null(out)) {
+        return(out)
+      }
     }
     stop("no valid random family in 50 draws")
   }
@@ -1925,7 +1945,7 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
     rank <- order(order(effective, knowledge, seq_len(nrow(rows))))
     lapply(ids, function(id) {
       applicable <- which(rows$instrument_id == id & knowledge <= cutoff &
-                            effective <= s & s < end)
+        effective <= s & s < end)
       ledgr:::ledgr_history_lifetime_resolve_applicable(
         applicable, as.character(rows$assertion), terminal,
         as.character(rows$fact_id), rank
@@ -1940,7 +1960,7 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
     lineage <- ledgr:::ledgr_status_lineage(rows)
     vapply(ids, function(id) {
       applicable <- which(rows$instrument_id == id & knowledge <= cutoff &
-                            effective <= s & s < end)
+        effective <= s & s < end)
       ledgr:::ledgr_history_status_resolve_applicable(
         applicable, as.character(rows$status), as.integer(rows$precedence),
         as.character(rows$fact_id), lineage
@@ -1958,7 +1978,8 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
       from <- clock(n)
       to <- from + sample(c(NA, 2, 4, 7), n, replace = TRUE) * 86400
       assertion <- sample(c("known_active", "known_inactive", "unknown"), n,
-                          replace = TRUE, prob = c(0.3, 0.5, 0.2))
+        replace = TRUE, prob = c(0.3, 0.5, 0.2)
+      )
       ledgr_facts_lifetime(data.frame(
         instrument_id = who,
         effective_from = from,
@@ -1966,7 +1987,8 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
         knowledge_time = from + sample(c(-1, 0, 1, 3, 6), n, replace = TRUE) * 86400,
         assertion = assertion,
         terminal_event = ifelse(assertion == "known_inactive" & stats::runif(n) < 0.5,
-                                "delisting", NA_character_),
+          "delisting", NA_character_
+        ),
         source = "random",
         stringsAsFactors = FALSE
       ))$rows
@@ -1980,7 +2002,8 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
         instrument_id = sample(ids, n, replace = TRUE),
         effective_from = from,
         effective_to = as.POSIXct(from + sample(c(NA, 1, 3, 5), n, replace = TRUE) * 86400,
-                                  origin = "1970-01-01", tz = "UTC"),
+          origin = "1970-01-01", tz = "UTC"
+        ),
         knowledge_time = from + sample(c(-1, 0, 2), n, replace = TRUE) * 86400,
         status = sample(c("active", "halted", "quotation_only"), n, replace = TRUE),
         source = sample(c("a", "b", "c"), n, replace = TRUE),
@@ -2036,7 +2059,8 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
       "random"
     )
     members_at <- attr(
-      ledgr:::ledgr_availability_prepared_membership(data, "U", ids), "resolve", exact = TRUE
+      ledgr:::ledgr_availability_prepared_membership(data, "U", ids), "resolve",
+      exact = TRUE
     )
     # Two-clock lifetime and terminal segments against the canonical rule at
     # every observation and at cutoffs on, between and after sessions; each
@@ -2080,7 +2104,8 @@ testthat::test_that("[LTB-0334] surviving fact compilers match the canonical res
         pick(expected, "winner"), canonical_status(status, cutoff, cutoff)
       )
       members <- ledgr:::ledgr_membership_resolve_prepared(
-        data, "U", at, instruments = ids, knowledge_cutoff = at
+        data, "U", at,
+        instruments = ids, knowledge_cutoff = at
       )$rows
       got <- members_at(cutoff)
       got_members[[length(got_members) + 1L]] <- list(
@@ -2111,7 +2136,9 @@ testthat::test_that("[LTB-0335] counted membership and status segments refuse ex
   draw <- function(build) {
     for (attempt in 1:50) {
       out <- tryCatch(build(), ledgr_invalid_args = function(e) NULL)
-      if (!is.null(out)) return(out)
+      if (!is.null(out)) {
+        return(out)
+      }
     }
     stop("no valid random family in 50 draws")
   }
@@ -2123,39 +2150,44 @@ testthat::test_that("[LTB-0335] counted membership and status segments refuse ex
   )
   membership_family <- function(shape) {
     lagged <- !identical(shape, "same_clock")
-    sets <- if (!identical(shape, "intervals")) draw(function() {
-      n <- sample(1:6, 1L)
-      from <- clock(n)
-      known <- if (lagged) {
-        from + sample(c(0, 0, 1, 2, 5), n, replace = TRUE) * 86400 +
-          sample(c(0, 3600), n, replace = TRUE)
-      } else {
-        from
-      }
-      ledgr_facts_membership_snapshots(
-        data.frame(
-          effective_from = from, knowledge_time = known,
-          set_id = sprintf("s%d", seq_len(n)),
-          members = I(lapply(seq_len(n), function(k) sample(ids, sample(0:5, 1L)))),
+    sets <- if (!identical(shape, "intervals")) {
+      draw(function() {
+        n <- sample(1:6, 1L)
+        from <- clock(n)
+        known <- if (lagged) {
+          from + sample(c(0, 0, 1, 2, 5), n, replace = TRUE) * 86400 +
+            sample(c(0, 3600), n, replace = TRUE)
+        } else {
+          from
+        }
+        ledgr_facts_membership_snapshots(
+          data.frame(
+            effective_from = from, knowledge_time = known,
+            set_id = sprintf("s%d", seq_len(n)),
+            members = I(lapply(seq_len(n), function(k) sample(ids, sample(0:5, 1L)))),
+            source = "random", stringsAsFactors = FALSE
+          ),
+          universe_id = "U",
+          complete = if (identical(shape, "complete")) rep(TRUE, n) else stats::runif(n) < 0.4
+        )
+      })
+    }
+    intervals <- if (!shape %in% c("complete", "incomplete")) {
+      draw(function() {
+        n <- sample(1:7, 1L)
+        from <- clock(n)
+        ledgr_facts_membership_intervals(data.frame(
+          instrument_id = sample(ids, n, replace = TRUE),
+          effective_from = from,
+          effective_to = as.POSIXct(from + sample(c(NA, 1, 2, 4), n, replace = TRUE) * 86400,
+            origin = "1970-01-01", tz = "UTC"
+          ),
+          knowledge_time = if (lagged) from + sample(c(-1, 0, 1, 3), n, replace = TRUE) * 86400 else from,
+          member = sample(c(TRUE, FALSE), n, replace = TRUE),
           source = "random", stringsAsFactors = FALSE
-        ),
-        universe_id = "U",
-        complete = if (identical(shape, "complete")) rep(TRUE, n) else stats::runif(n) < 0.4
-      )
-    })
-    intervals <- if (!shape %in% c("complete", "incomplete")) draw(function() {
-      n <- sample(1:7, 1L)
-      from <- clock(n)
-      ledgr_facts_membership_intervals(data.frame(
-        instrument_id = sample(ids, n, replace = TRUE),
-        effective_from = from,
-        effective_to = as.POSIXct(from + sample(c(NA, 1, 2, 4), n, replace = TRUE) * 86400,
-                                  origin = "1970-01-01", tz = "UTC"),
-        knowledge_time = if (lagged) from + sample(c(-1, 0, 1, 3), n, replace = TRUE) * 86400 else from,
-        member = sample(c(TRUE, FALSE), n, replace = TRUE),
-        source = "random", stringsAsFactors = FALSE
-      ), universe_id = "U")
-    })
+        ), universe_id = "U")
+      })
+    }
     list(
       membership_sets = if (is.null(sets)) empty_headers else sets$headers,
       membership = rbind(if (!is.null(sets)) sets$rows, if (!is.null(intervals)) intervals$rows)
@@ -2169,7 +2201,8 @@ testthat::test_that("[LTB-0335] counted membership and status segments refuse ex
         instrument_id = if (sparse) sample(ids, n) else sample(ids, n, replace = TRUE),
         effective_from = from,
         effective_to = as.POSIXct(from + sample(c(NA, 1, 3, 5), n, replace = TRUE) * 86400,
-                                  origin = "1970-01-01", tz = "UTC"),
+          origin = "1970-01-01", tz = "UTC"
+        ),
         knowledge_time = from + sample(c(-1, 0, 2), n, replace = TRUE) * 86400,
         status = sample(c("active", "halted", "quotation_only"), n, replace = TRUE),
         source = sample(c("a", "b"), n, replace = TRUE),
@@ -2179,16 +2212,21 @@ testthat::test_that("[LTB-0335] counted membership and status segments refuse ex
     })
   }
   refusal <- function(expr) {
-    tryCatch({
-      force(expr)
-      NULL
-    }, ledgr_history_segment_limit_exceeded = function(e) {
-      list(
-        class = class(e), message = conditionMessage(e),
-        fields = e[c("instrument_id", "family", "fact_count", "segment_count",
-                     "segment_ratio", "segment_limit")]
-      )
-    })
+    tryCatch(
+      {
+        force(expr)
+        NULL
+      },
+      ledgr_history_segment_limit_exceeded = function(e) {
+        list(
+          class = class(e), message = conditionMessage(e),
+          fields = e[c(
+            "instrument_id", "family", "fact_count", "segment_count",
+            "segment_ratio", "segment_limit"
+          )]
+        )
+      }
+    )
   }
   same_counts <- function(counted, reference) {
     identical(counted$fact_count, as.integer(reference$fact_count)) &&
@@ -2336,7 +2374,8 @@ testthat::test_that("[LTB-0336] facts without a knowledge time are refused befor
       db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
     )
     exp <- ledgr_experiment(
-      snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
+      snapshot, function(ctx, params) ctx$hold(),
+      universe = ledgr_universe_members("u"),
       features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
       valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
       opening = ledgr_opening(cash = 1000)
@@ -2349,17 +2388,21 @@ testthat::test_that("[LTB-0336] facts without a knowledge time are refused befor
     }
     before <- written()
     refused <- function(expr, entry) {
-      condition <- tryCatch({
-        force(expr)
-        NULL
-      }, error = function(e) e)
+      condition <- tryCatch(
+        {
+          force(expr)
+          NULL
+        },
+        error = function(e) e
+      )
       testthat::expect_s3_class(condition, "ledgr_fact_knowledge_missing")
       testthat::expect_identical(
-        names(condition$missing_knowledge), family, info = paste(family, entry)
+        names(condition$missing_knowledge), family,
+        info = paste(family, entry)
       )
       testthat::expect_identical(written(), before, info = paste(family, entry))
     }
-    grid <- ledgr_param_grid(list(x = 1))
+    grid <- ledgr_grid_named(candidate_1 = list(strategy = list(x = 1)))
     refused(ledgr_run(exp, run_id = paste0("na-", family)), "run")
     refused(ledgr_sweep(exp, grid), "sweep")
     refused(ledgr_precompute_features(exp, grid), "precompute")
@@ -2421,7 +2464,8 @@ testthat::test_that("[LTB-0337] every membership shape is counted canonically", 
     answers <- function(cutoff) {
       vapply(seq_along(axis), function(b) {
         rows <- ledgr:::ledgr_membership_resolve_prepared(
-          data, "U", axis[[b]], instruments = ids,
+          data, "U", axis[[b]],
+          instruments = ids,
           knowledge_cutoff = as.POSIXct(cutoff, origin = "1970-01-01", tz = "UTC")
         )$rows
         paste(rows$member, rows$reason, rows$evidence_ids)
@@ -2527,7 +2571,9 @@ testthat::test_that("[LTB-0337] every membership shape is counted canonically", 
   draw <- function(build) {
     for (attempt in 1:50) {
       out <- tryCatch(build(), ledgr_invalid_args = function(e) NULL)
-      if (!is.null(out)) return(out)
+      if (!is.null(out)) {
+        return(out)
+      }
     }
     stop("no valid random family in 50 draws")
   }
@@ -2556,7 +2602,8 @@ testthat::test_that("[LTB-0337] every membership shape is counted canonically", 
         instrument_id = sample(ids, n, replace = TRUE),
         effective_from = from,
         effective_to = as.POSIXct(from + sample(c(NA, 1, 2, 4), n, replace = TRUE) * 86400,
-                                  origin = "1970-01-01", tz = "UTC"),
+          origin = "1970-01-01", tz = "UTC"
+        ),
         knowledge_time = from + if (lag) sample(c(0, 1, 2) * 86400, n, replace = TRUE) else 0,
         member = sample(c(TRUE, FALSE), n, replace = TRUE),
         source = "random", stringsAsFactors = FALSE

@@ -284,13 +284,13 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
   on.exit(ledgr_snapshot_close(short_end), add = TRUE)
   exp <- experiment(short_end)
   testthat::expect_error(ledgr_run(exp, run_id = "short_calendar"), class = "ledgr_sessions_incomplete")
-  testthat::expect_error(ledgr_sweep(exp, ledgr_param_grid(a = list())), class = "ledgr_sessions_incomplete")
+  testthat::expect_error(ledgr_sweep(exp, ledgr_grid_named(a = list(strategy = list()))), class = "ledgr_sessions_incomplete")
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(at(days[[2]]), at(days[[7]]), at(days[[8]]), at(days[[13]]), fold_seq = 1L)),
     constructor = list(type_id = "explicit")
   )
   testthat::expect_error(
-    ledgr_walk_forward(exp, grid = ledgr_param_grid(a = list()), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio")),
+    ledgr_walk_forward(exp, grid = ledgr_grid_named(a = list(strategy = list())), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio")),
     class = "ledgr_sessions_incomplete"
   )
   window <- ledgr_experiment_window(exp, at(days[[1]]), at(days[[10]]))
@@ -342,13 +342,13 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   snapshot <- scale_test_events_snapshot(sessions_from = days[[4]])
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- experiment(snapshot)
-  testthat::expect_error(ledgr_sweep(exp, ledgr_param_grid(a = list())), class = "ledgr_sessions_incomplete")
+  testthat::expect_error(ledgr_sweep(exp, ledgr_grid_named(a = list(strategy = list()))), class = "ledgr_sessions_incomplete")
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(at(days[[2]]), at(days[[7]]), at(days[[8]]), at(days[[10]]), fold_seq = 1L)),
     constructor = list(type_id = "explicit")
   )
   testthat::expect_error(
-    ledgr_walk_forward(exp, grid = ledgr_param_grid(a = list()), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio")),
+    ledgr_walk_forward(exp, grid = ledgr_grid_named(a = list(strategy = list())), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio")),
     class = "ledgr_sessions_incomplete"
   )
   window <- ledgr_experiment_window(exp, at(days[[4]]), at(days[[15]]))
@@ -375,7 +375,7 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   )
   close(ledgr_run(exp, run_id = "ny_opening_first"))
   testthat::expect_identical(ledgr_run_info(ny, "ny_opening_first")$status, "DONE")
-  testthat::expect_identical(ledgr_sweep(exp, ledgr_param_grid(a = list()))$status[[1]], "DONE")
+  testthat::expect_identical(ledgr_sweep(exp, ledgr_grid_named(a = list(strategy = list())))$status[[1]], "DONE")
   testthat::expect_error(
     ledgr_experiment(ny, hold,
       universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
@@ -417,7 +417,7 @@ testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and
   }
   close(ledgr_run(late_exp(date = ny_days[[2]]), run_id = "late_calendar_opening"))
   testthat::expect_identical(ledgr_run_info(late, "late_calendar_opening")$status, "DONE")
-  testthat::expect_identical(ledgr_sweep(late_exp(date = ny_days[[2]]), ledgr_param_grid(a = list()))$status[[1]], "DONE")
+  testthat::expect_identical(ledgr_sweep(late_exp(date = ny_days[[2]]), ledgr_grid_named(a = list(strategy = list())))$status[[1]], "DONE")
   window <- ledgr_experiment_window(late_exp(), as.POSIXct(paste(ny_days[[2]], "00:00:00"), tz = "UTC"), ny_close[[5]])
   close(ledgr_run_window(late_exp(), window = window, run_id = "late_calendar_window"))
   testthat::expect_identical(ledgr_run_info(late, "late_calendar_window")$status, "DONE")
@@ -666,7 +666,7 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
       universe = c("AAA", "CCC"), cost_model = ledgr_cost_zero(),
       opening = ledgr_opening(cash = 1000), corporate_action_policy = ledgr_corporate_actions_strict()
     ),
-    ledgr_param_grid(a = list())
+    ledgr_grid_named(a = list(strategy = list()))
   )
   testthat::expect_identical(dense_sweep$error_class[[1L]], "ledgr_corporate_action_quantity_unsupported")
 })
@@ -1044,7 +1044,7 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
       opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features
     )
   }
-  sweep <- ledgr_sweep(experiment(), ledgr_param_grid(q1 = list(qty = 1)))
+  sweep <- ledgr_sweep(experiment(), ledgr_grid_named(q1 = list(strategy = list(qty = 1))))
   candidate <- ledgr_candidate(sweep, which = 1L)
 
   same <- testthat::expect_no_warning(ledgr_promote(experiment(), candidate, run_id = "promote_same"))
@@ -1118,7 +1118,7 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
       opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features
     )
   }
-  sweep <- ledgr_sweep(experiment(), ledgr_param_grid(q1 = list(qty = 1)))
+  sweep <- ledgr_sweep(experiment(), ledgr_grid_named(q1 = list(strategy = list(qty = 1))))
   candidate <- ledgr_candidate(sweep, which = 1L)
 
   variants <- list(
@@ -1202,7 +1202,7 @@ testthat::test_that("[LTB-0244] walk-forward sessions use current content identi
     list(ledgr_fold(at(days[[2]]), at(days[[7]]), at(days[[8]]), at(days[[13]]), fold_seq = 1L)),
     constructor = list(type_id = "explicit")
   )
-  wf_args <- list(exp, grid = ledgr_param_grid(a = list()), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio"))
+  wf_args <- list(exp, grid = ledgr_grid_named(a = list(strategy = list())), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio"))
   wf <- do.call(ledgr_walk_forward, wf_args)
   wf_con <- ledgr:::get_connection(snapshot)
   session <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions")

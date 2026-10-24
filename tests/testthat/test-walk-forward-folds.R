@@ -250,9 +250,9 @@ testthat::test_that("windowed run and sweep match equivalent sliced snapshots", 
     tolerance = 1e-10
   )
 
-  grid <- ledgr_param_grid(
-    low = list(qty = 1, threshold = 102),
-    high = list(qty = 2, threshold = 105)
+  grid <- ledgr_grid_named(
+    low = list(strategy = list(qty = 1, threshold = 102)),
+    high = list(strategy = list(qty = 2, threshold = 105))
   )
   sweep_window <- ledgr:::ledgr_sweep_window(exp_full, grid, window = window, seed = 22L)
   sweep_direct <- ledgr_sweep(exp_slice, grid, seed = 22L)
@@ -307,9 +307,9 @@ testthat::test_that("walk-forward routes every candidate and test through the fo
     )),
     constructor = list(type_id = "explicit")
   )
-  grid <- ledgr_param_grid(
-    trade = list(qty = 1, threshold = 101),
-    idle = list(qty = 0, threshold = 999)
+  grid <- ledgr_grid_named(
+    trade = list(strategy = list(qty = 1, threshold = 101)),
+    idle = list(strategy = list(qty = 0, threshold = 999))
   )
   calls <- 0L
   original <- ledgr:::ledgr_execute_fold

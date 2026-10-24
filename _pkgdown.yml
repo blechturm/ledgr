@@ -104,9 +104,11 @@ reference:
       - print.ledgr_opening
       - ledgr_opening_from_broker
       - ledgr_run
-      - ledgr_param_grid
-      - print.ledgr_param_grid
       - ledgr_feature_grid
+      - ledgr_strategy_grid
+      - ledgr_grid_cross
+      - ledgr_grid_named
+      - ledgr_grid_add_baseline
       - ledgr_precompute_features
       - print.ledgr_precomputed_features
       - ledgr_sweep

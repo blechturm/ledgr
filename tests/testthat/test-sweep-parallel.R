@@ -46,9 +46,9 @@ ledgr_parallel_sweep_reproduction_key_comparable <- function(key) {
 
 ledgr_parallel_contains_runtime_handle <- function(x) {
   if (is.function(x) ||
-      is.environment(x) ||
-      typeof(x) == "externalptr" ||
-      inherits(x, "connection")) {
+    is.environment(x) ||
+    typeof(x) == "externalptr" ||
+    inherits(x, "connection")) {
     return(TRUE)
   }
   if (is.list(x)) {
@@ -78,7 +78,7 @@ testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   reference <- ledgr_sweep(exp, grid, seed = 123L)
   explicit_one <- ledgr_sweep(exp, grid, seed = 123L, workers = 1L)
@@ -152,10 +152,10 @@ testthat::test_that("[LTB-0025] parallel sweep constructs opening lots identical
     ),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(
-    a = list(qty = 1, modulus = 2L),
-    b = list(qty = 2, modulus = 3L),
-    c = list(qty = 3, modulus = 5L)
+  grid <- ledgr_grid_named(
+    a = list(strategy = list(qty = 1, modulus = 2L)),
+    b = list(strategy = list(qty = 2, modulus = 3L)),
+    c = list(strategy = list(qty = 3, modulus = 5L))
   )
 
   sequential <- ledgr_sweep(exp, grid, seed = 123L)
@@ -199,9 +199,9 @@ testthat::test_that("parallel sweep preserves parameterized risk identity and ro
     risk_chain = risk,
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(
-    low = list(cap = 0.10),
-    high = list(cap = 0.20)
+  grid <- ledgr_grid_named(
+    low = list(strategy = list(cap = 0.10)),
+    high = list(strategy = list(cap = 0.20))
   )
 
   sequential <- ledgr_sweep(exp, grid, seed = 123L)
@@ -248,11 +248,11 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
     risk_chain = ledgr_risk_max_weight(0.50),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(
-    ok = list(id = "ok", qty = 1, warn = FALSE, fail = FALSE),
-    noisy = list(id = "noisy", qty = 1, warn = TRUE, fail = FALSE),
-    bad = list(id = "bad", qty = 1, warn = FALSE, fail = TRUE),
-    tail = list(id = "tail", qty = 2, warn = FALSE, fail = FALSE)
+  grid <- ledgr_grid_named(
+    ok = list(strategy = list(id = "ok", qty = 1, warn = FALSE, fail = FALSE)),
+    noisy = list(strategy = list(id = "noisy", qty = 1, warn = TRUE, fail = FALSE)),
+    bad = list(strategy = list(id = "bad", qty = 1, warn = FALSE, fail = TRUE)),
+    tail = list(strategy = list(id = "tail", qty = 2, warn = FALSE, fail = FALSE))
   )
 
   out <- ledgr_sweep(exp, grid, seed = 123L, workers = 2L)
@@ -280,7 +280,7 @@ testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep i
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list(qty = 1))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1)))
 
   sequential <- ledgr_sweep(exp, grid, seed = 123L)
   parallel <- ledgr_sweep(exp, grid, seed = 123L, workers = 2L)
@@ -307,7 +307,7 @@ testthat::test_that("parallel sweep workers do not write persistent artifacts", 
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   before <- ledgr_parallel_sweep_artifact_counts(snapshot)
   out <- ledgr_sweep(exp, grid, seed = 123L, workers = 2L)
@@ -333,7 +333,7 @@ testthat::test_that("parallel sweep rejects ambient RNG strategies", {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid, workers = 2L))
   testthat::expect_s3_class(err, "ledgr_strategy_ambient_rng_parallel")

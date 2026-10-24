@@ -34,7 +34,8 @@ ws44_late_fixture <- function(strategy = function(ctx, params) ctx$hold(),
   facts <- ledgr_facts(
     ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
     ledgr_facts_membership_snapshots(
-      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+      membership,
+      universe_id = "u", complete = TRUE, knowledge = "assume_effective"
     ),
     ledgr_facts_lifetime(data.frame(
       instrument_id = "DDD",
@@ -50,7 +51,8 @@ ws44_late_fixture <- function(strategy = function(ctx, params) ctx$hold(),
     db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
   )
   exp <- ledgr_experiment(
-    snapshot, strategy, universe = ledgr_universe_members("u"),
+    snapshot, strategy,
+    universe = ledgr_universe_members("u"),
     features = ledgr_feature_map(sma = ledgr_ind_sma(2)),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000), history_policy = policy
@@ -63,14 +65,18 @@ ws44_iso <- function(x) format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 # Evidence rows of one instrument in an explicit long diagnostic result.
 ws44_cells <- function(result, id) {
   out <- result[result$instrument_id == id,
-    c("value", ledgr:::ledgr_history_cell_fields()), drop = FALSE]
+    c("value", ledgr:::ledgr_history_cell_fields()),
+    drop = FALSE
+  ]
   out$source_ts_utc <- as.numeric(out$source_ts_utc)
   out
 }
 
 testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to registered detecting blocks", {
   root <- ledgr_test_source_root()
-  if (!ledgr_test_design_source_context(root)) return(invisible(NULL))
+  if (!ledgr_test_design_source_context(root)) {
+    return(invisible(NULL))
+  }
   packet <- yaml::read_yaml(file.path(
     root, "inst", "design", "ledgr_v0_2_2_spec_packet", "tickets.yml"
   ))
@@ -87,7 +93,8 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
   registered <- unique(unlist(lapply(claims, function(claim) claim$detecting_blocks)))
   test_text <- unlist(lapply(
     list.files(file.path(root, "tests", "testthat"), pattern = "^test-.*[.]R$", full.names = TRUE),
-    readLines, warn = FALSE
+    readLines,
+    warn = FALSE
   ))
   defined <- regmatches(test_text, regexpr("^testthat::test_that\\(\"\\[LTB-[0-9]{4}\\]", test_text))
   defined <- sub("^.*\\[(LTB-[0-9]{4})\\]$", "\\1", defined)
@@ -102,27 +109,37 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
     "3" = list(owner = "LDG-3059", blocks = "LTB-0291"),
     "4" = list(owner = "LDG-3057", blocks = "LTB-0284"),
     "5" = list(owner = "LDG-3060", blocks = "LTB-0292"),
-    "6" = list(owner = "LDG-3060", blocks = "LTB-0292",
-               contributing = list("LDG-3065" = "LTB-0307", "LDG-3066" = "LTB-0311")),
+    "6" = list(
+      owner = "LDG-3060", blocks = "LTB-0292",
+      contributing = list("LDG-3065" = "LTB-0307", "LDG-3066" = "LTB-0311")
+    ),
     "7" = list(owner = "LDG-3066", blocks = "LTB-0310"),
     "8" = list(owner = "LDG-3067", blocks = c("LTB-0315", "LTB-0316", "LTB-0317")),
-    "9" = list(owner = "LDG-3064", blocks = c("LTB-0303", "LTB-0304"),
-               contributing = list("LDG-3063" = "LTB-0300")),
+    "9" = list(
+      owner = "LDG-3064", blocks = c("LTB-0303", "LTB-0304"),
+      contributing = list("LDG-3063" = "LTB-0300")
+    ),
     "10" = list(owner = "LDG-3057", blocks = "LTB-0285"),
     "11" = list(owner = "LDG-3064", blocks = "LTB-0305"),
     "12" = list(owner = "LDG-3057", blocks = "LTB-0286"),
-    "13" = list(owner = "LDG-3061", blocks = "LTB-0294",
-                contributing = list("LDG-3059" = "LTB-0293")),
+    "13" = list(
+      owner = "LDG-3061", blocks = "LTB-0294",
+      contributing = list("LDG-3059" = "LTB-0293")
+    ),
     # LDG-3070's real-data proof relies on the default segment guard; the
     # registered detector it cites is the guard's refusal block.
     "14" = list(owner = "LDG-3070", blocks = "LTB-0291"),
     "15" = list(owner = "LDG-3068", blocks = c("LTB-0409", "LTB-0410", "LTB-0413")),
-    "16" = list(owner = "LDG-3063", blocks = "LTB-0301",
-                contributing = list("LDG-3058" = "LTB-0290")),
+    "16" = list(
+      owner = "LDG-3063", blocks = "LTB-0301",
+      contributing = list("LDG-3058" = "LTB-0290")
+    ),
     # LDG-3069 reran LDG-3061's transport oracle on the H1 workload; the
     # registered detector it cites is that oracle.
-    "17" = list(owner = "LDG-3069", blocks = "LTB-0295",
-                contributing = list("LDG-3061" = "LTB-0295")),
+    "17" = list(
+      owner = "LDG-3069", blocks = "LTB-0295",
+      contributing = list("LDG-3061" = "LTB-0295")
+    ),
     # The helper deletion is recorded in LDG-3067's evidence without a
     # registered block; LDG-3068 adds the structural integration detector.
     "18a" = list(owner = "LDG-3067", integration = list("LDG-3068" = "LTB-0412")),
@@ -175,15 +192,23 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
 testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads only, against a hand oracle", {
   read <- function(ctx) {
     list(
-      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-        instruments = "DDD", min_observations = 0L, layout = "long"),
-      sma = ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
-        instruments = "DDD", min_observations = 0L, layout = "long"),
+      close = ledgr_history_frame(ctx,
+        bar = "close", lookback = Inf,
+        instruments = "DDD", min_observations = 0L, layout = "long"
+      ),
+      sma = ledgr_history_frame(ctx,
+        feature = "sma", lookback = Inf,
+        instruments = "DDD", min_observations = 0L, layout = "long"
+      ),
       bytes = serialize(list(
-        ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-          instruments = "DDD", min_observations = 0L, layout = "long"),
-        ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
-          instruments = "DDD", min_observations = 0L, layout = "long")
+        ledgr_history_frame(ctx,
+          bar = "close", lookback = Inf,
+          instruments = "DDD", min_observations = 0L, layout = "long"
+        ),
+        ledgr_history_frame(ctx,
+          feature = "sma", lookback = Inf,
+          instruments = "DDD", min_observations = 0L, layout = "long"
+        )
       ), NULL),
       scalar = ctx$feature("DDD", "sma"),
       vec = ctx$vec$feature("sma")
@@ -313,12 +338,15 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
   reader <- function(ctx) {
     sma <- ledgr_history_frame(ctx, feature = "sma", lookback = 1L, instruments = c("AAA", "DDD"))
     list(
-      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-        instruments = "DDD", min_observations = 0L)$DDD,
+      close = ledgr_history_frame(ctx,
+        bar = "close", lookback = Inf,
+        instruments = "DDD", min_observations = 0L
+      )$DDD,
       sma = c(AAA = sma$AAA, DDD = sma$DDD),
       matrix = ledgr_history_matrix(sma),
       direct_matrix = ledgr_history_matrix(
-        ctx, feature = "sma", lookback = 1L, instruments = c("AAA", "DDD")
+        ctx,
+        feature = "sma", lookback = 1L, instruments = c("AAA", "DDD")
       ),
       scalar = c(ctx$feature("AAA", "sma"), ctx$feature("DDD", "sma")),
       vec = ctx$vec$feature("sma"),
@@ -337,8 +365,8 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
   days <- fixture$days
 
   close(ledgr_run(exp, params = list(tag = "run"), run_id = "agree-run"))
-  ledgr_sweep(exp, ledgr_param_grid(list(tag = "sweep")))
-  pre_grid <- ledgr_param_grid(list(tag = "precompute"))
+  ledgr_sweep(exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "sweep"))))
+  pre_grid <- ledgr_grid_named(candidate_1 = list(strategy = list(tag = "precompute")))
   ledgr_sweep(exp, pre_grid, precomputed_features = ledgr_precompute_features(exp, pre_grid))
   folds <- ledgr:::ledgr_fold_list(
     list(
@@ -348,7 +376,7 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
     constructor = list(type_id = "explicit")
   )
   wf <- ledgr_walk_forward(
-    exp, ledgr_param_grid(list(tag = "wf")), folds,
+    exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "wf"))), folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
@@ -372,7 +400,8 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
       info = info
     )
     testthat::expect_identical(as.matrix(got$direct_matrix), as.matrix(got$matrix),
-                               info = info)
+      info = info
+    )
     testthat::expect_identical(
       ledgr_history_info(got$direct_matrix), ledgr_history_info(got$matrix),
       info = info
@@ -432,7 +461,8 @@ testthat::test_that("[LTB-0411] a cash dividend is credited per split-adjusted s
       db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
     )
     exp <- ledgr_experiment(
-      snapshot, function(ctx, params) ctx$hold(), universe = "AAA",
+      snapshot, function(ctx, params) ctx$hold(),
+      universe = "AAA",
       valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
       opening = ledgr_opening(cash = 1000, positions = c(AAA = 10), cost_basis = c(AAA = 50))
     )
@@ -472,7 +502,9 @@ testthat::test_that("[LTB-0411] a cash dividend is credited per split-adjusted s
 
 testthat::test_that("[LTB-0412] the test-only sweep feature matrix stays deleted and its fixtures use production precompute", {
   root <- ledgr_test_source_root()
-  if (!ledgr_test_checkout_context(root)) return(invisible(NULL))
+  if (!ledgr_test_checkout_context(root)) {
+    return(invisible(NULL))
+  }
   helper <- paste0("ledgr_sweep_compute", "_feature_matrix")
   files <- c(
     list.files(file.path(root, "R"), pattern = "[.]R$", full.names = TRUE),
@@ -518,7 +550,8 @@ ws44_lifetime_fixture <- function(days, ddd, lifetime, strategy, policy = ledgr_
   facts <- ledgr_facts(
     ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
     ledgr_facts_membership_snapshots(
-      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+      membership,
+      universe_id = "u", complete = TRUE, knowledge = "assume_effective"
     ),
     ledgr_facts_lifetime(lifetime)
   )
@@ -527,7 +560,8 @@ ws44_lifetime_fixture <- function(days, ddd, lifetime, strategy, policy = ledgr_
     db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted"
   )
   exp <- ledgr_experiment(
-    snapshot, strategy, universe = ledgr_universe_members("u"),
+    snapshot, strategy,
+    universe = ledgr_universe_members("u"),
     features = ledgr_feature_map(sma = ledgr_ind_sma(2)),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000), history_policy = policy
@@ -556,10 +590,14 @@ testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's kn
   seen <- new.env()
   spy <- function(ctx, params) {
     seen[[ctx$ts_utc]] <- list(
-      sma = ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
-        instruments = "DDD", min_observations = 0L, layout = "long"),
-      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-        instruments = "DDD", min_observations = 0L, layout = "long")
+      sma = ledgr_history_frame(ctx,
+        feature = "sma", lookback = Inf,
+        instruments = "DDD", min_observations = 0L, layout = "long"
+      ),
+      close = ledgr_history_frame(ctx,
+        bar = "close", lookback = Inf,
+        instruments = "DDD", min_observations = 0L, layout = "long"
+      )
     )
     ctx$hold()
   }
@@ -619,7 +657,8 @@ testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's kn
   )
   reach <- ws44_lifetime_fixture(
     days[1:8], c(41, 43, 45, 50, NA, NA, 68, 76), short,
-    function(ctx, params) ctx$hold(), policy = ledgr_history_policy(price_carry = NULL)
+    function(ctx, params) ctx$hold(),
+    policy = ledgr_history_policy(price_carry = NULL)
   )
   on.exit(ledgr_snapshot_close(reach$snapshot), add = TRUE)
   window <- ledgr_history_frame(

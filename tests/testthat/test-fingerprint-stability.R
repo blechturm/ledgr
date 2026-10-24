@@ -132,9 +132,9 @@ testthat::test_that("feature-factory sweep identity remains stable", {
     snapshot,
     strategy,
     features = function(params) list(ledgr_ind_sma(params$n)),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(short = list(n = 10L), long = list(n = 20L))
+  grid <- ledgr_grid_named(short = list(strategy = list(n = 10L)), long = list(strategy = list(n = 20L)))
 
   out <- ledgr_sweep(exp, grid, seed = 123L)
   feature_set_hashes <- vapply(out$provenance, `[[`, character(1), "feature_set_hash")

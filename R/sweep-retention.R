@@ -246,7 +246,7 @@ ledgr_sweep_collect_retained_trades <- function(results, sweep_id) {
 #'   targets
 #' }
 #' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-#' grid <- ledgr_param_grid(flat = list(qty = 0), long = list(qty = 1))
+#' grid <- data.frame(qty = c(0, 1))
 #' sweep <- ledgr_sweep(
 #'   exp,
 #'   grid,

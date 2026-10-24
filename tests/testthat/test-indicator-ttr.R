@@ -125,10 +125,13 @@ ledgr_test_ttr_expected_values <- function(bars, case) {
 ledgr_test_ttr_first_callable <- function(case, max_n = 80L) {
   for (n in seq_len(max_n)) {
     bars <- ledgr_test_ttr_bars(n)
-    value <- tryCatch({
-      values <- ledgr_test_ttr_direct_values(bars, case)
-      utils::tail(values, 1L)
-    }, error = function(e) NA_real_)
+    value <- tryCatch(
+      {
+        values <- ledgr_test_ttr_direct_values(bars, case)
+        utils::tail(values, 1L)
+      },
+      error = function(e) NA_real_
+    )
     if (is.numeric(value) && length(value) == 1L && !is.na(value) && is.finite(value)) {
       return(n)
     }
@@ -581,9 +584,9 @@ testthat::test_that("TTR output bundles flatten at feature boundaries", {
     features = function(params) {
       ledgr_ind_ttr_outputs("BBands", input = "close", outputs = params$outputs, n = 20)
     },
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(short = list(outputs = c("dn", "up")))
+  grid <- ledgr_grid_named(short = list(strategy = list(outputs = c("dn", "up"))))
 
   testthat::expect_identical(
     ledgr_feature_id(ledgr:::ledgr_experiment_materialize_features(exp_static, list())),
@@ -672,7 +675,7 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
     end = "2020-01-10",
     features = list(ind),
     db_path = db_path,
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 

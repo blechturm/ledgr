@@ -19,7 +19,8 @@ ledgr_sweep(
 \arguments{
 \item{exp}{A \code{ledgr_experiment}.}
 
-\item{param_grid}{A \code{ledgr_param_grid}.}
+\item{param_grid}{An ordinary rectangular data frame, a
+\code{ledgr_strategy_grid}, or a \code{ledgr_executable_grid}.}
 
 \item{precomputed_features}{Optional \code{ledgr_precomputed_features} object.}
 
@@ -55,7 +56,8 @@ reports attempted, done, incomplete, and failed counts. Only \code{DONE} rows
 enter ranking, filtering, promotion, and validation panels.
 }
 \description{
-\code{ledgr_sweep()} evaluates a \code{ledgr_param_grid} against a \code{ledgr_experiment}
+\code{ledgr_sweep()} evaluates a rectangular strategy grid or a composed ledgr
+grid against a \code{ledgr_experiment}
 without writing candidate runs to the experiment store. Sweep is an
 exploratory surface: it returns candidate summaries, does not rank candidates
 automatically, and does not create committed run artifacts.
@@ -86,9 +88,9 @@ Hash fields in sweep provenance and reproduction keys are summarized in
 
 Failed candidates are retained as rows when \code{stop_on_error = FALSE}. Contract
 errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
-strategy preflight failures still abort. Compatibility note: old
-feature-factory experiments use a flat parameter-grid contract. Executable
-grids with separate \code{feature_params} require active aliases through
+strategy preflight failures still abort. Feature factories consume the
+strategy-parameter namespace. Grids with separate \code{feature_params} require
+active aliases through
 \code{ledgr_feature_map()}. Failed rows can be inspected with
 \code{ledgr_candidate(..., allow_failed = TRUE)}, but \code{\link[=ledgr_promote]{ledgr_promote()}} rejects
 failed candidates. When \code{stop_on_error = TRUE} rethrows a strategy failure,

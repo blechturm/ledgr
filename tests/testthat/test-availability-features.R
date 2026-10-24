@@ -144,8 +144,7 @@ availability_strict_expected <- function(window) {
     c("2020-01-01", "2020-01-02", "2020-01-04", "2020-01-05", "2020-01-06", "2020-01-07"),
     "T16:00:00Z"
   )
-  values <- switch(
-    as.character(window),
+  values <- switch(as.character(window),
     `2` = list(
       AAA = c(NA, 11, NA, NA, 15, 17),
       BBB = c(NA, NA, NA, NA, 21, 23)
@@ -169,8 +168,7 @@ availability_strict_expected <- function(window) {
 # from 2 January (v12 Section 5); BBB has no earlier source to carry.
 availability_carry_expected <- function(window) {
   out <- availability_strict_expected(window)
-  out$AAA <- switch(
-    as.character(window),
+  out$AAA <- switch(as.character(window),
     `2` = c(NA, 11, 12, 13, 15, 17),
     `3` = c(NA, NA, 34 / 3, 38 / 3, 14, 16),
     stop("unsupported expected window")
@@ -291,7 +289,7 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
 
   one <- ledgr_sweep(
     concrete,
-    ledgr_param_grid(one = list(window = 2L)),
+    ledgr_grid_named(one = list(strategy = list(window = 2L))),
     stop_on_error = TRUE
   )
   sequential <- ledgr_sweep(parameterized, grid, stop_on_error = TRUE)
@@ -601,7 +599,8 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     "TTR output bundle" = c(
       ledgr:::ledgr_indicator_bundle_indicators(bbands_bundle),
       ledgr:::ledgr_indicator_bundle_indicators(ledgr_ind_ttr_outputs(
-        "MACD", input = "close", nFast = 2L, nSlow = 3L, nSig = 2L
+        "MACD",
+        input = "close", nFast = 2L, nSlow = 3L, nSig = 2L
       ))
     ),
     "Custom bounded declaration" = list(custom_sma),
@@ -612,13 +611,17 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     )
   )
   executable_class <- vapply(forms, function(indicators) {
-    admitted <- tryCatch({
-      ledgr:::ledgr_availability_validate_features(indicators, "list")
-      TRUE
-    }, error = function(e) FALSE)
-    if (!admitted) return("refused")
-    switch(
-      class_of(indicators),
+    admitted <- tryCatch(
+      {
+        ledgr:::ledgr_availability_validate_features(indicators, "list")
+        TRUE
+      },
+      error = function(e) FALSE
+    )
+    if (!admitted) {
+      return("refused")
+    }
+    switch(class_of(indicators),
       bounded = "Supported: bounded",
       history_dependent = "Supported: history-dependent",
       "Supported: per catalogue row"
@@ -686,7 +689,7 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
 
   ttr_one <- ledgr_sweep(
     ttr_experiment,
-    ledgr_param_grid(one = list(window = 2L)),
+    ledgr_grid_named(one = list(strategy = list(window = 2L))),
     stop_on_error = TRUE
   )
   testthat::expect_identical(ttr_one$status, "DONE")

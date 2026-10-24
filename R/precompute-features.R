@@ -30,7 +30,8 @@
 #' `system.file("doc", "sweeps.html", package = "ledgr")`
 #'
 #' @param exp A `ledgr_experiment` object.
-#' @param param_grid A `ledgr_param_grid` object.
+#' @param param_grid An ordinary rectangular data frame, a
+#'   `ledgr_strategy_grid`, or a `ledgr_executable_grid`.
 #' @param start Optional scoring-range start. Defaults to the experiment's opening
 #'   date, or to the snapshot start when the opening is undated.
 #' @param end Optional scoring-range end. Defaults to the snapshot end.
@@ -48,7 +49,7 @@
 #' snapshot <- ledgr_snapshot_from_df(bars)
 #' strategy <- function(ctx, params) ctx$flat()
 #' exp <- ledgr_experiment(snapshot, strategy, features = list(ledgr_ind_sma(2)), cost_model = ledgr_cost_zero())
-#' grid <- ledgr_param_grid(list(qty = 1), list(qty = 2))
+#' grid <- data.frame(qty = c(1, 2))
 #' features <- ledgr_precompute_features(exp, grid)
 #' print(features)
 #' ledgr_snapshot_close(snapshot)
@@ -57,9 +58,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
-  if (!inherits(param_grid, "ledgr_param_grid")) {
-    rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
-  }
+  param_grid <- ledgr_executable_grid_normalize(param_grid)
   ledgr_validate_feature_factory_grid(exp, param_grid)
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
@@ -167,9 +166,7 @@ ledgr_validate_precomputed_features <- function(precomputed,
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
-  if (!inherits(param_grid, "ledgr_param_grid")) {
-    rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
-  }
+  param_grid <- ledgr_executable_grid_normalize(param_grid)
 
   window <- ledgr_experiment_window_resolve(exp, window)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
@@ -360,7 +357,7 @@ ledgr_precompute_posix <- function(x) {
 }
 
 ledgr_warn_large_grid_without_precomputed_features <- function(param_grid, precomputed_features, threshold = 20L) {
-  if (!inherits(param_grid, "ledgr_param_grid") || !is.null(precomputed_features)) {
+  if (!inherits(param_grid, "ledgr_executable_grid") || !is.null(precomputed_features)) {
     return(invisible(FALSE))
   }
   if (length(param_grid$params) > threshold) {
@@ -560,8 +557,8 @@ ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FA
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_experiment")
   }
-  if (!inherits(param_grid, "ledgr_param_grid")) {
-    rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
+  if (!inherits(param_grid, "ledgr_executable_grid")) {
+    rlang::abort("`param_grid` must be a normalized executable grid.", class = "ledgr_invalid_args")
   }
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")

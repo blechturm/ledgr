@@ -1,35 +1,35 @@
 testthat::test_that("derived run and pulse seeds are stable and ambient-RNG independent", {
   local({
-  set.seed(1)
-  first <- ledgr:::ledgr_derive_seed(2026L, list(run_id = "grid_abc", params = list(n = 20L)))
-  stats::runif(10)
-  second <- ledgr:::ledgr_derive_seed(2026L, list(params = list(n = 20L), run_id = "grid_abc"))
+    set.seed(1)
+    first <- ledgr:::ledgr_derive_seed(2026L, list(run_id = "grid_abc", params = list(n = 20L)))
+    stats::runif(10)
+    second <- ledgr:::ledgr_derive_seed(2026L, list(params = list(n = 20L), run_id = "grid_abc"))
 
-  testthat::expect_identical(first, second)
-  testthat::expect_type(first, "integer")
-  testthat::expect_true(first >= 1L)
-  testthat::expect_true(first <= 2147483647L)
-  testthat::expect_identical(first, 350931654L)
+    testthat::expect_identical(first, second)
+    testthat::expect_type(first, "integer")
+    testthat::expect_true(first >= 1L)
+    testthat::expect_true(first <= 2147483647L)
+    testthat::expect_identical(first, 350931654L)
   })
 
   # Also covers: ledgr_derive_pulse_seed is stable and independent of ambient RNG
   local({
-  set.seed(1)
-  first <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
-  stats::runif(10)
-  second <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
-  adjacent <- ledgr:::ledgr_derive_pulse_seed(350931654L, 4L)
+    set.seed(1)
+    first <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
+    stats::runif(10)
+    second <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
+    adjacent <- ledgr:::ledgr_derive_pulse_seed(350931654L, 4L)
 
-  testthat::expect_identical(first, second)
-  testthat::expect_false(identical(first, adjacent))
-  testthat::expect_type(first, "integer")
-  testthat::expect_true(first >= 1L)
-  testthat::expect_true(first <= 2147483647L)
-  testthat::expect_null(ledgr:::ledgr_derive_pulse_seed(NULL, 1L))
-  testthat::expect_error(
-    ledgr:::ledgr_derive_pulse_seed(350931654L, 0L),
-    class = "ledgr_invalid_args"
-  )
+    testthat::expect_identical(first, second)
+    testthat::expect_false(identical(first, adjacent))
+    testthat::expect_type(first, "integer")
+    testthat::expect_true(first >= 1L)
+    testthat::expect_true(first <= 2147483647L)
+    testthat::expect_null(ledgr:::ledgr_derive_pulse_seed(NULL, 1L))
+    testthat::expect_error(
+      ledgr:::ledgr_derive_pulse_seed(350931654L, 0L),
+      class = "ledgr_invalid_args"
+    )
   })
 })
 
@@ -40,13 +40,16 @@ testthat::test_that("[LTB-0009] snapshot ingestion and nonempty fill reads prese
   if (seed_existed) {
     old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   }
-  on.exit({
-    if (seed_existed) {
-      assign(".Random.seed", old_seed, envir = .GlobalEnv)
-    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-      rm(".Random.seed", envir = .GlobalEnv)
-    }
-  }, add = TRUE)
+  on.exit(
+    {
+      if (seed_existed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    },
+    add = TRUE
+  )
 
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   assert_preserves_rng <- function(code) {
@@ -107,13 +110,16 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
   if (seed_existed) {
     old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   }
-  on.exit({
-    if (seed_existed) {
-      assign(".Random.seed", old_seed, envir = .GlobalEnv)
-    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-      rm(".Random.seed", envir = .GlobalEnv)
-    }
-  }, add = TRUE)
+  on.exit(
+    {
+      if (seed_existed) {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      }
+    },
+    add = TRUE
+  )
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -197,7 +203,7 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
   )
   options(ledgr.interrupt = FALSE)
 
-  grid <- ledgr_param_grid(candidate = list(unused = 1L))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(unused = 1L)))
   set.seed(1L)
   sweep_before_1 <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   sweep_1 <- ledgr_sweep(experiment, grid, seed = 2026L)
@@ -220,7 +226,8 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
   )
   for (field in compared) {
     testthat::expect_equal(
-      sweep_1[[field]], sweep_2[[field]], tolerance = 0,
+      sweep_1[[field]], sweep_2[[field]],
+      tolerance = 0,
       info = paste("ambient-seed sweep field", field)
     )
   }
@@ -236,11 +243,13 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
   metrics <- ledgr_compute_metrics(direct)
   equity <- ledgr_results(direct, "equity")
   testthat::expect_equal(
-    sweep_1$final_equity[[1L]], equity$equity[[nrow(equity)]], tolerance = 1e-10
+    sweep_1$final_equity[[1L]], equity$equity[[nrow(equity)]],
+    tolerance = 1e-10
   )
   for (field in setdiff(compared, c("status", "final_equity"))) {
     testthat::expect_equal(
-      sweep_1[[field]][[1L]], metrics[[field]], tolerance = 1e-10,
+      sweep_1[[field]][[1L]], metrics[[field]],
+      tolerance = 1e-10,
       info = field
     )
   }

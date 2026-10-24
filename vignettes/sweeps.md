@@ -221,8 +221,17 @@ across candidates.
 **Strategy parameters** are passed to `strategy(ctx, params)` during
 execution. Keeping those namespaces separate is what lets a strategy
 read stable aliases while the sweep varies indicator windows. Use
-`ledgr_feature_grid()` for feature knobs, `ledgr_strategy_grid()` for
+`ledgr_feature_grid()` for feature knobs, an ordinary data frame for
 strategy-code knobs, and `ledgr_grid_cross()` to combine them.
+`ledgr_strategy_grid()` remains available when its `.filter` syntax is
+useful.
+
+For a strategy-only sweep, an ordinary data frame or tibble is enough:
+each row is one candidate and each column is one strategy parameter.
+Output from `tidyr::crossing()` has this same rectangular form and can
+be passed directly to `ledgr_sweep()`. Use the ledgr grid helpers below
+when feature parameters also vary, because that composition keeps
+feature and strategy names in distinct namespaces.
 
 ``` r
 feature_grid <- ledgr_feature_grid(
@@ -231,22 +240,20 @@ feature_grid <- ledgr_feature_grid(
   .filter = fast_n < slow_n
 )
 
-strategy_grid <- ledgr_strategy_grid(
-  threshold = c(0, 0.01),
-  qty = c(5, 10)
+strategy_grid <- tibble::tibble(
+  threshold = rep(c(0, 0.01), each = 2L),
+  qty = rep(c(5, 10), times = 2L)
 )
 
 grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
 grid
 ```
 
-    ledgr_param_grid
-    ================
-    Combinations: 16
-    Labels:       feature_9a29b31dae19/strategy_86be010cf688, feature_9a29b31dae19/strategy_7ccbbefd14d1, feature_9a29b31dae19/strategy_ab759ad88623, feature_9a29b31dae19/strategy_dc6315936028, feature_af0f94c90243/strategy_86be010cf688, feature_af0f94c90243/strategy_7ccbbefd14d1
-                  ... 10 more
-
-    Grid labels identify sweep candidates; they are not committed run IDs.
+    ledgr_executable_grid
+    =====================
+    Candidates: 16
+    Labels:     feature_9a29b31dae19/strategy_86be010cf688, feature_9a29b31dae19/strategy_ab759ad88623, feature_9a29b31dae19/strategy_7ccbbefd14d1, feature_9a29b31dae19/strategy_dc6315936028, feature_af0f94c90243/strategy_86be010cf688, feature_af0f94c90243/strategy_ab759ad88623
+                ... 10 more
 
 The `.filter` expression is a structural grid constraint. Here it says
 the fast moving average must be shorter than the slow moving average.
@@ -363,37 +370,38 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_ce12b8115836ec8b
-    # A tibble: 16 x 8
-       candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
-       <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
-     1 feature_9a29b31da~             1 DONE          0.546 +0.2%        -0.5%               6
-     2 feature_9a29b31da~             2 DONE          3.08  +1.1%        -0.3%               3
-     3 feature_9a29b31da~             3 DONE          0.551 +0.5%        -1.0%               6
-     4 feature_9a29b31da~             4 DONE          3.08  +2.3%        -0.6%               3
-     5 feature_af0f94c90~             5 DONE          1.80  +0.8%        -0.3%               5
-     6 feature_af0f94c90~             6 DONE          2.06  +0.7%        -0.4%               3
-     7 feature_af0f94c90~             7 DONE          1.81  +1.6%        -0.7%               5
-     8 feature_af0f94c90~             8 DONE          2.06  +1.4%        -0.7%               3
-     9 feature_6ff6fe3a1~             9 DONE          1.38  +0.6%        -0.3%               3
-    10 feature_6ff6fe3a1~            10 DONE          2.13  +0.8%        -0.3%               2
-    11 feature_6ff6fe3a1~            11 DONE          1.39  +1.1%        -0.7%               3
-    12 feature_6ff6fe3a1~            12 DONE          2.13  +1.6%        -0.6%               2
-    13 feature_fa560ccbe~            13 DONE          1.34  +0.5%        -0.4%               2
-    14 feature_fa560ccbe~            14 DONE          1.30  +0.5%        -0.4%               2
-    15 feature_fa560ccbe~            15 DONE          1.35  +1.1%        -0.8%               2
-    16 feature_fa560ccbe~            16 DONE          1.31  +1.0%        -0.8%               2
-    # i 1 more variable: execution_seed <int>
+    # ledgr sweep -- sweep_c2f38c1d7b98b05f
+    # A tibble: 16 x 10
+       strategy_params           feature_params candidate_id candidate_row status sharpe_ratio
+       <chr>                     <chr>          <chr>                <int> <chr>         <dbl>
+     1 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_9a2~             1 DONE          0.546
+     2 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_9a2~             2 DONE          0.551
+     3 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_9a2~             3 DONE          3.08
+     4 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_9a2~             4 DONE          3.08
+     5 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_af0~             5 DONE          1.80
+     6 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_af0~             6 DONE          1.81
+     7 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_af0~             7 DONE          2.06
+     8 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_af0~             8 DONE          2.06
+     9 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_6ff~             9 DONE          1.38
+    10 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_6ff~            10 DONE          1.39
+    11 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_6ff~            11 DONE          2.13
+    12 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_6ff~            12 DONE          2.13
+    13 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_fa5~            13 DONE          1.34
+    14 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_fa5~            14 DONE          1.35
+    15 "{\"qty\":5.0,\"threshol~ "{\"fast_n\":~ feature_fa5~            15 DONE          1.30
+    16 "{\"qty\":10.0,\"thresho~ "{\"fast_n\":~ feature_fa5~            16 DONE          1.31
+    # i 4 more variables: total_return <chr>, max_drawdown <chr>, n_trades <int>,
+    #   execution_seed <int>
 
     # i 16 candidates attempted: 16 done, 0 incomplete, 0 failed.
     # i Retention returns: none.
     # i Retention trades: none.
-    # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
+    # i Snapshot hash: 1f315cc620d0849849114d32cb44b042ec567f9512db99ad802c4ac89efe3a43.
     # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
     # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
     # i Saved artifact: not saved.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-    # i Hidden columns (25): completion_json, stop_reason, affected_instrument_ids, valuation_state, frozen_instrument_sessions, max_frozen_equity_weight, frozen_at_end_value, assumed_terminal_outcomes, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
+    # i Hidden columns (24): completion_json, stop_reason, affected_instrument_ids, valuation_state, frozen_instrument_sessions, max_frozen_equity_weight, frozen_at_end_value, assumed_terminal_outcomes, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
 
 ``` r
 candidate_table <- bind_cols(
@@ -404,35 +412,25 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_ce12b8115836ec8b
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
      1 feature_9a29b31dae19/strategy_86be010cf688 DONE        0        5      5     20
-     2 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE        0.01     5      5     20
-     3 feature_9a29b31dae19/strategy_ab759ad88623 DONE        0       10      5     20
+     2 feature_9a29b31dae19/strategy_ab759ad88623 DONE        0       10      5     20
+     3 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE        0.01     5      5     20
      4 feature_9a29b31dae19/strategy_dc6315936028 DONE        0.01    10      5     20
      5 feature_af0f94c90243/strategy_86be010cf688 DONE        0        5     10     20
-     6 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE        0.01     5     10     20
-     7 feature_af0f94c90243/strategy_ab759ad88623 DONE        0       10     10     20
+     6 feature_af0f94c90243/strategy_ab759ad88623 DONE        0       10     10     20
+     7 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE        0.01     5     10     20
      8 feature_af0f94c90243/strategy_dc6315936028 DONE        0.01    10     10     20
      9 feature_6ff6fe3a1d38/strategy_86be010cf688 DONE        0        5      5     40
-    10 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1 DONE        0.01     5      5     40
-    11 feature_6ff6fe3a1d38/strategy_ab759ad88623 DONE        0       10      5     40
+    10 feature_6ff6fe3a1d38/strategy_ab759ad88623 DONE        0       10      5     40
+    11 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1 DONE        0.01     5      5     40
     12 feature_6ff6fe3a1d38/strategy_dc6315936028 DONE        0.01    10      5     40
     13 feature_fa560ccbec9f/strategy_86be010cf688 DONE        0        5     10     40
-    14 feature_fa560ccbec9f/strategy_7ccbbefd14d1 DONE        0.01     5     10     40
-    15 feature_fa560ccbec9f/strategy_ab759ad88623 DONE        0       10     10     40
+    14 feature_fa560ccbec9f/strategy_ab759ad88623 DONE        0       10     10     40
+    15 feature_fa560ccbec9f/strategy_7ccbbefd14d1 DONE        0.01     5     10     40
     16 feature_fa560ccbec9f/strategy_dc6315936028 DONE        0.01    10     10     40
-
-    # i 16 candidates attempted: 16 done, 0 incomplete, 0 failed.
-    # i Retention returns: none.
-    # i Retention trades: none.
-    # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
-    # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
-    # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
-    # i Saved artifact: not saved.
-    # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
 
 The second view connects each status row to the strategy and feature
 parameters that produced it. The table is not a full artifact store and
@@ -484,14 +482,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 Each `candidate_id` here is a row of `candidate_table` above, which
 lists the parameters that produced it.
@@ -553,8 +551,8 @@ ledgr_sweep_returns_wide(
     4 2019-01-04 00:00:00                      0                      0                      0
     5 2019-01-07 00:00:00                      0                      0                      0
     # i abbreviated names: 1: `feature_9a29b31dae19/strategy_86be010cf688`,
-    #   2: `feature_9a29b31dae19/strategy_7ccbbefd14d1`,
-    #   3: `feature_9a29b31dae19/strategy_ab759ad88623`
+    #   2: `feature_9a29b31dae19/strategy_ab759ad88623`,
+    #   3: `feature_9a29b31dae19/strategy_7ccbbefd14d1`
 
 ## Save And Reopen Sweep Artifacts
 
@@ -578,7 +576,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-10-06 11:36:43                    4           16          16
+    1 sma_retained_sweep 2026-10-24 19:44:36                    5           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -594,7 +592,7 @@ ledgr_sweep_info(reopened_sweep)
 
     Sweep ID:          sma_retained_sweep
     Snapshot:          demo_2019_h1
-    Snapshot Hash:     6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+    Snapshot Hash:     1f315cc620d0849849114d32cb44b042ec567f9512db99ad802c4ac89efe3a43
     Candidates:        16
     Completed:         16
     Failed:            0
@@ -602,11 +600,11 @@ ledgr_sweep_info(reopened_sweep)
     Retention trades:  none
     Cost Model Hash:   4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0
     Metric Hash:       794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
-    Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
+    Feature Union:     8dcc07d45aaa9cfcc74ef1d6cd33e51cae4af2cc1c06b345152c443ae5c303dc
 
     Saved artifact
-    Created At:        2026-10-06 11:36:43.242044
-    Schema Version:    4
+    Created At:        2026-10-24 19:44:36.792069
+    Schema Version:    5
     Engine Version:    0.2.1.0
     Note:              Exploratory SMA sweep with retained return series.
 
@@ -648,9 +646,9 @@ Retention does not change execution identity. It changes which derived
 evidence is kept after the same candidate execution.
 
 Saved sweeps persist the same risk identity fields on the parent sweep
-row and candidate rows. They reopen only from the current experiment-
-store and saved-sweep formats; ledgr does not migrate an older research
-store in place.
+row and candidate rows. They reopen only from the current
+experiment-store and saved-sweep formats; ledgr does not migrate an
+older research store in place.
 
 ## What Retained Returns Can And Cannot Validate
 
@@ -760,21 +758,11 @@ failed_sweep |>
   select(candidate_id, qty, status, error_class, error_msg)
 ```
 
-    # ledgr sweep -- sweep_cdb96014c53a8800
     # A tibble: 2 x 5
       candidate_id            qty status error_class          error_msg
       <chr>                 <dbl> <chr>  <chr>                <chr>
     1 strategy_69e7ad01d1e8     5 DONE   <NA>                  <NA>
     2 strategy_8d5f90d900e7    -1 FAILED ledgr_strategy_error "Strategy error at ts_utc=2019-~
-
-    # i 2 candidates attempted: 1 done, 0 incomplete, 1 failed.
-    # i Retention returns: none.
-    # i Retention trades: none.
-    # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
-    # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
-    # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
-    # i Saved artifact: not saved.
-    # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
 
 Use the failed row as an interactive debugging handle: inspect
 `error_class`, `error_msg`, and `params`, then reproduce the single
@@ -823,10 +811,10 @@ review$top |>
 review$issues
 ```
 
-    # A tibble: 0 x 8
-    # i 8 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
-    #   stop_reason <chr>, affected_instrument_ids <list>, error_class <chr>,
-    #   error_msg <chr>, warnings <list>
+    # A tibble: 0 x 10
+    # i 10 variables: strategy_params <chr>, feature_params <chr>, candidate_id <chr>,
+    #   candidate_row <int>, status <chr>, stop_reason <chr>, affected_instrument_ids <list>,
+    #   error_class <chr>, error_msg <chr>, warnings <list>
 
 ``` r
 ranked <- review$ranked
@@ -866,20 +854,10 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_ce12b8115836ec8b
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
     1 feature_9a29b31dae19/strategy_dc6315936028 DONE        0.01    10      5     20
-
-    # i 1 candidates attempted: 1 done, 0 incomplete, 0 failed.
-    # i Retention returns: none.
-    # i Retention trades: none.
-    # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
-    # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
-    # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
-    # i Saved artifact: not saved.
-    # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
 
 ``` r
 promoted_run <- ledgr_promote(

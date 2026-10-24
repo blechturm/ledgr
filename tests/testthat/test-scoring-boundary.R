@@ -53,7 +53,7 @@ testthat::test_that("[LTB-0192] run, backtest, sweep, promotion and walk-forward
     opening = ledgr_opening(cash = 1000),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(only = list())
+  grid <- ledgr_grid_named(only = list(strategy = list()))
   retain <- ledgr_sweep_retention(returns = "completed")
 
   # Day 6 decides, day 7 fills at open 7, day 10 closes at 10.
@@ -81,7 +81,8 @@ testthat::test_that("[LTB-0192] run, backtest, sweep, promotion and walk-forward
   precomputed <- ledgr_precompute_features(dated, grid)
   testthat::expect_identical(precomputed$scoring_range$start, scoring_boundary_iso(6L))
   precomputed_sweep <- ledgr_sweep(
-    dated, grid, precomputed_features = precomputed,
+    dated, grid,
+    precomputed_features = precomputed,
     retain = retain, workers = 1L, seed = 1L
   )
   testthat::expect_identical(scoring_boundary_equity(ledgr_sweep_returns(precomputed_sweep)), expected)
@@ -96,7 +97,9 @@ testthat::test_that("[LTB-0192] run, backtest, sweep, promotion and walk-forward
 
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(scoring_boundary_iso(6L), scoring_boundary_iso(8L),
-                    scoring_boundary_iso(9L), scoring_boundary_iso(10L), fold_seq = 1L)),
+      scoring_boundary_iso(9L), scoring_boundary_iso(10L),
+      fold_seq = 1L
+    )),
     constructor = list(type_id = "explicit")
   )
   walk_forward <- suppressWarnings(ledgr_walk_forward(
@@ -152,7 +155,7 @@ testthat::test_that("[LTB-0193] a dated availability sweep executes and values l
 
   sweep <- ledgr_sweep(
     experiment,
-    ledgr_param_grid(only = list()),
+    ledgr_grid_named(only = list(strategy = list())),
     retain = ledgr_sweep_retention(returns = "completed", trades = "closed"),
     workers = 1L,
     seed = 1L
@@ -212,7 +215,7 @@ testthat::test_that("[LTB-0195] run and sweep agree on boundary edges and keep t
       cost_model = ledgr_cost_zero()
     )
   }
-  grid <- ledgr_param_grid(only = list())
+  grid <- ledgr_grid_named(only = list(strategy = list()))
   retain <- ledgr_sweep_retention(returns = "completed")
 
   # An opening date before the snapshot starts at the first bar in both paths:
@@ -222,17 +225,23 @@ testthat::test_that("[LTB-0195] run and sweep agree on boundary edges and keep t
   on.exit(close(run), add = TRUE)
   sweep <- ledgr_sweep(early, grid, retain = retain, workers = 1L, seed = 1L)
   testthat::expect_identical(sweep$final_equity[[1L]], 1008)
-  testthat::expect_identical(scoring_boundary_equity(ledgr_sweep_returns(sweep)),
-                             scoring_boundary_equity(ledgr_results(run, "equity")))
-  testthat::expect_identical(ledgr_precompute_features(early, grid)$scoring_range$start,
-                             scoring_boundary_iso(1L))
+  testthat::expect_identical(
+    scoring_boundary_equity(ledgr_sweep_returns(sweep)),
+    scoring_boundary_equity(ledgr_results(run, "equity"))
+  )
+  testthat::expect_identical(
+    ledgr_precompute_features(early, grid)$scoring_range$start,
+    scoring_boundary_iso(1L)
+  )
 
   # One scoring pulse cannot fill at a next bar: both paths refuse.
   last <- dated(scoring_boundary_iso(10L))
   testthat::expect_error(ledgr_run(last, run_id = "scoring-boundary-last"),
-                         class = "ledgr_run_window_too_short")
+    class = "ledgr_run_window_too_short"
+  )
   testthat::expect_error(ledgr_sweep(last, grid, workers = 1L, seed = 1L),
-                         class = "ledgr_run_window_too_short")
+    class = "ledgr_run_window_too_short"
+  )
 
   # A start between bars scores from the next bar, in memory and after reopen.
   between <- ledgr_sweep(dated("2020-01-06T12:00:00Z"), grid, retain = retain, workers = 1L, seed = 1L)

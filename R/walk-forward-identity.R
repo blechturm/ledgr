@@ -146,9 +146,9 @@ ledgr_walk_forward_candidate_identity <- function(params_hash,
 }
 
 ledgr_walk_forward_param_grid_hash <- function(param_grid) {
-  if (!inherits(param_grid, "ledgr_param_grid") || !is.list(param_grid)) {
+  if (!inherits(param_grid, "ledgr_executable_grid") || !is.list(param_grid)) {
     rlang::abort(
-      "`param_grid` must be a ledgr_param_grid object.",
+      "`param_grid` must be a normalized executable grid.",
       class = c("ledgr_walk_forward_invalid_identity", "ledgr_invalid_args")
     )
   }

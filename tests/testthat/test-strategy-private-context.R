@@ -271,9 +271,13 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
   # and exported helpers stay Tier 1, a package-qualified call stays Tier 2,
   # and a strategy's own list members are not context internals.
   history_strategy <- function(ctx, params) {
-    returns <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
-      min_instruments = 2L)
-    if (!ledgr_passed_warmup(returns)) return(ctx$hold())
+    returns <- ledgr_history_frame(ctx,
+      feature = "fast", lookback = 2L,
+      min_instruments = 2L
+    )
+    if (!ledgr_passed_warmup(returns)) {
+      return(ctx$hold())
+    }
     x <- ledgr_history_matrix(returns)
     info <- ledgr_history_info(returns)
     w <- rep(1 / ncol(x), ncol(x))
@@ -283,7 +287,9 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     state <- list(last = ctx$ts_utc, count = 1L)
     targets <- ctx$flat()
     targets[ctx$universe[ctx$vec$admissible]] <- ctx$vec$position[ctx$vec$admissible]
-    if (is.null(state$last)) return(ctx$hold())
+    if (is.null(state$last)) {
+      return(ctx$hold())
+    }
     targets
   }
   qualified_strategy <- function(ctx, params) {
@@ -379,7 +385,7 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     class = "ledgr_strategy_tier3"
   )
   testthat::expect_error(
-    ledgr_sweep(fixture$exp, ledgr_param_grid(list(tag = "private"))),
+    ledgr_sweep(fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "private")))),
     class = "ledgr_strategy_tier3"
   )
   folds <- ledgr:::ledgr_fold_list(
@@ -388,7 +394,7 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
   )
   testthat::expect_error(
     ledgr_walk_forward(
-      fixture$exp, ledgr_param_grid(list(tag = "private")), folds,
+      fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "private"))), folds,
       selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
     ),
     class = "ledgr_strategy_tier3"
@@ -399,7 +405,8 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
     testthat::expect_error(
       ledgr_run(
         ledgr_experiment(
-          fixture$snapshot, refused[[name]], universe = ledgr_universe_members("u"),
+          fixture$snapshot, refused[[name]],
+          universe = ledgr_universe_members("u"),
           features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
           valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
           opening = ledgr_opening(cash = 1000)
@@ -429,7 +436,8 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
   if (ledgr_test_checkout_context(root)) {
     sources <- unlist(lapply(
       list.files(file.path(root, "R"), pattern = "[.]R$", full.names = TRUE),
-      readLines, warn = FALSE
+      readLines,
+      warn = FALSE
     ))
     used <- regmatches(sources, gregexpr("ctx(\\$|\\[\\[\")\\.[A-Za-z_]+", sources))
     fields <- unique(sub("^ctx(\\$|\\[\\[\")", "", unlist(used)))

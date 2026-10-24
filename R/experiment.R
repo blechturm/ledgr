@@ -580,7 +580,7 @@ ledgr_validate_feature_factory_grid <- function(exp, param_grid) {
   if (!inherits(exp, "ledgr_experiment") || !identical(exp$features_mode, "function")) {
     return(invisible(TRUE))
   }
-  if (!inherits(param_grid, "ledgr_param_grid")) {
+  if (!inherits(param_grid, "ledgr_executable_grid")) {
     return(invisible(TRUE))
   }
   has_feature_params <- vapply(param_grid$params, function(params) {
@@ -595,9 +595,9 @@ ledgr_validate_feature_factory_grid <- function(exp, param_grid) {
 ledgr_abort_feature_factory_feature_params <- function() {
   rlang::abort(
     paste(
-      "Feature factories use the legacy flat parameter-grid contract and cannot receive separate `feature_params`.",
+      "Feature factories use strategy parameters and cannot receive separate `feature_params`.",
       "Use `ledgr_feature_map()` with active aliases plus `ledgr_feature_grid()`, `ledgr_strategy_grid()`, and `ledgr_grid_cross()` for parameterized feature sweeps,",
-      "or keep feature-factory inputs in the flat `ledgr_param_grid()` candidate."
+      "or keep feature-factory inputs in the strategy grid."
     ),
     class = c(
       "ledgr_legacy_feature_factory_feature_params_unsupported",

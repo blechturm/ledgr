@@ -527,7 +527,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
   testthat::expect_error(
     ledgr_sweep(
       experiment,
-      ledgr_param_grid(candidate = list()),
+      ledgr_grid_named(candidate = list(strategy = list())),
       stop_on_error = TRUE,
       compiled_accounting_model = "spot_fifo"
     ),

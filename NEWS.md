@@ -1,5 +1,14 @@
 # ledgr (development version)
 
+## Rectangular sweep inputs
+
+- `ledgr_sweep()` now accepts an ordinary rectangular data frame or tibble as
+  a strategy grid, with one candidate per row. Strategy and feature parameter
+  namespaces remain separate, and sweep output prints their readable summaries
+  before the candidate hash. The pre-release `ledgr_param_grid()` compatibility
+  constructor has been removed; use a data frame, `ledgr_strategy_grid()`, or
+  the feature/strategy grid composition helpers.
+
 ## Optional strategy intent evidence
 
 - A structured strategy result may include `intent_reason`, one non-empty

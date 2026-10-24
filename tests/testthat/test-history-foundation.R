@@ -152,7 +152,7 @@ testthat::test_that("[LTB-0284] civil fact dates retain venue resolution evidenc
     dated_run$config$backtest$start_ts_utc,
     ledgr_iso_utc(fixture$sessions$rows$session_open[[2L]])
   )
-  dated_sweep <- ledgr_sweep(dated, ledgr_param_grid(list()))
+  dated_sweep <- ledgr_sweep(dated, ledgr_grid_named(candidate_1 = list(strategy = list())))
   testthat::expect_identical(
     attr(dated_sweep, "scoring_range")$start,
     ledgr_iso_utc(fixture$sessions$rows$session_close[[2L]])
@@ -192,7 +192,7 @@ testthat::test_that("[LTB-0284] civil fact dates retain venue resolution evidenc
   )
   precomputed <- ledgr_precompute_features(
     dated,
-    ledgr_param_grid(list()),
+    ledgr_grid_named(candidate_1 = list(strategy = list())),
     start = as.Date("2020-01-03"),
     end = as.Date("2020-01-06")
   )
@@ -233,7 +233,7 @@ testthat::test_that("[LTB-0284] civil fact dates retain venue resolution evidenc
   )
   walk_forward <- ledgr_walk_forward(
     walk_forward_experiment,
-    grid = ledgr_param_grid(list()),
+    grid = ledgr_grid_named(candidate_1 = list(strategy = list())),
     folds = folds,
     selection_rule = ledgr_rule_argmax("annualized_return"),
     seed = 47L
@@ -626,7 +626,7 @@ testthat::test_that("[LTB-0286] corporate-action clocks distinguish three cases"
     ledgr_run(experiment, run_id = "clockless-corporate-action"),
     class = "ledgr_corporate_action_clock_missing"
   )
-  sweep <- ledgr_sweep(experiment, ledgr_param_grid(list()))
+  sweep <- ledgr_sweep(experiment, ledgr_grid_named(candidate_1 = list(strategy = list())))
   testthat::expect_identical(sweep$status, "FAILED")
   testthat::expect_identical(
     sweep$error_class,
@@ -771,7 +771,7 @@ testthat::test_that("[LTB-0290] precomputed features bind causal history identit
     cost_model = ledgr_cost_zero(),
     history_policy = ledgr_history_policy(output_carry = 2L)
   )
-  grid <- ledgr_param_grid(list())
+  grid <- ledgr_grid_named(candidate_1 = list(strategy = list()))
   precomputed <- ledgr_precompute_features(default, grid)
   candidate_calls <- 0L
   testthat::local_mocked_bindings(

@@ -59,12 +59,13 @@ ledgr_sweep_persistence_parity_grid <- function(candidate_ids = NULL) {
     open_end = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day5 = FALSE)
   )
   if (!is.null(candidate_ids)) cases <- cases[candidate_ids]
-  do.call(ledgr_param_grid, cases)
+  specs <- lapply(cases, function(x) list(strategy = x))
+  do.call(ledgr_grid_named, specs)
 }
 
 ledgr_sweep_persistence_parity_fixture <- function(compiled_accounting_model = NULL,
-                                                    n_days = 8L,
-                                                    candidate_ids = NULL) {
+                                                   n_days = 8L,
+                                                   candidate_ids = NULL) {
   db_path <- tempfile(fileext = ".duckdb")
   bars <- ledgr_sweep_persistence_parity_bars(n_days)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
@@ -260,9 +261,9 @@ testthat::test_that("retained-series parity matrix covers final-bar and failed-c
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, universe = c("AAA", "BBB"), cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(
-    final_bar = list(qty = 1, fail = FALSE),
-    failed = list(qty = 1, fail = TRUE)
+  grid <- ledgr_grid_named(
+    final_bar = list(strategy = list(qty = 1, fail = FALSE)),
+    failed = list(strategy = list(qty = 1, fail = TRUE))
   )
   sweep <- ledgr_sweep(exp, grid, seed = 2591L, retain = ledgr_sweep_retention("completed"))
 

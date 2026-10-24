@@ -29,8 +29,9 @@ grid columns.}
 \item{features}{A \code{ledgr_feature_grid} object. Omitted to use one empty
 feature-parameter row.}
 
-\item{strategy}{A \code{ledgr_strategy_grid} or \code{ledgr_param_grid} object. Omitted
-to use one empty strategy-parameter row.}
+\item{strategy}{A \code{ledgr_strategy_grid} object or an ordinary rectangular
+data frame with one strategy-parameter candidate per row. Omitted to use
+one empty strategy-parameter row.}
 
 \item{grid}{A \code{ledgr_executable_grid} object.}
 }
@@ -40,7 +41,7 @@ A grid object.
 \description{
 These helpers keep feature-materialization parameters and strategy-runtime
 parameters in separate namespaces before composing executable sweep
-candidates. They are the canonical v0.1.8.5 authoring path for sweeps that
+candidates. They are the canonical authoring path for sweeps that
 vary ledgr-owned indicator parameters behind active aliases.
 }
 \examples{

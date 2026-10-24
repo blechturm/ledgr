@@ -10,9 +10,7 @@ testthat::test_that("feature and strategy grids build deterministic cross produc
   )
 
   testthat::expect_s3_class(features, "ledgr_feature_grid")
-  testthat::expect_false(inherits(features, "ledgr_param_grid"))
   testthat::expect_s3_class(strategy, "ledgr_strategy_grid")
-  testthat::expect_s3_class(strategy, "ledgr_param_grid")
   testthat::expect_length(features$params, 4L)
   testthat::expect_length(strategy$params, 2L)
   testthat::expect_identical(features$params[[1]], list(fast_n = 10L, slow_n = 40L))
@@ -81,7 +79,6 @@ testthat::test_that("grid_cross composes namespaces and handles omitted sides", 
   grid <- ledgr_grid_cross(features = features, strategy = strategy)
 
   testthat::expect_s3_class(grid, "ledgr_executable_grid")
-  testthat::expect_s3_class(grid, "ledgr_param_grid")
   testthat::expect_length(grid$params, 4L)
   testthat::expect_true(grepl("/", grid$labels[[1]], fixed = TRUE))
   testthat::expect_identical(grid$params[[1]]$feature_params, list(fast_n = 10L))
@@ -99,9 +96,9 @@ testthat::test_that("grid_cross composes namespaces and handles omitted sides", 
   )
 })
 
-testthat::test_that("grid_cross accepts legacy param grids as strategy side", {
+testthat::test_that("grid_cross accepts rectangular data frames as strategy side", {
   features <- ledgr_feature_grid(n = c(10L, 20L))
-  strategy <- ledgr_param_grid(a = list(qty = 1L), b = list(qty = 2L))
+  strategy <- data.frame(qty = c(1L, 2L))
   grid <- ledgr_grid_cross(features = features, strategy = strategy)
 
   testthat::expect_s3_class(grid, "ledgr_executable_grid")

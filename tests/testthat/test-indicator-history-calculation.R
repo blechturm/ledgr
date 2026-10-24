@@ -56,8 +56,10 @@ testthat::test_that("[LTB-0310] bounded and history-dependent indicators compute
 
   # Multi-output TTR rows: MACD signal (history-dependent, consumes carry) and
   # Bollinger upper band (bounded, volatility family: raw input only).
-  macd <- ledgr_ind_ttr("MACD", input = "close", output = "signal",
-    nFast = 2L, nSlow = 3L, nSig = 2L)
+  macd <- ledgr_ind_ttr("MACD",
+    input = "close", output = "signal",
+    nFast = 2L, nSlow = 3L, nSig = 2L
+  )
   macd_oracle <- function(x) {
     value <- TTR::MACD(x, nFast = 2L, nSlow = 3L, nSig = 2L)[, "signal"]
     value[seq_len(min(3L, length(x)))] <- NA_real_
@@ -202,7 +204,8 @@ testthat::test_that("[LTB-0310] bounded and history-dependent indicators compute
       high_gap,
       ledgr_indicator("hl_range", function(window) window$high[[2L]] - window$low[[2L]],
         requires_bars = 2L, history_class = "bounded",
-        required_fields = c("high", "low")),
+        required_fields = c("high", "low")
+      ),
       calculation_start = NULL
     ),
     # Session 3 uses the high carried from session 2 (12) and its own low (11).
@@ -223,7 +226,8 @@ testthat::test_that("[LTB-0310] bounded and history-dependent indicators compute
       strict_high,
       ledgr_indicator("hl_range", function(window) window$high[[2L]] - window$low[[2L]],
         requires_bars = 2L, history_class = "bounded",
-        required_fields = c("high", "low"))
+        required_fields = c("high", "low")
+      )
     ),
     c(NA, 2, NA, NA, 2)
   )
@@ -274,8 +278,10 @@ testthat::test_that("[LTB-0311] input carry, calculation, readiness and output c
   testthat::expect_identical(strict_evidence$ready, c(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE))
   testthat::expect_identical(
     strict_evidence$missing_reason,
-    c("not_ready", "", "required_input_missing", "required_input_missing",
-      "required_input_missing", "required_input_missing", "not_ready", "")
+    c(
+      "not_ready", "", "required_input_missing", "required_input_missing",
+      "required_input_missing", "required_input_missing", "not_ready", ""
+    )
   )
 
   # The return family keeps raw missingness: a carried session is missing
@@ -284,8 +290,10 @@ testthat::test_that("[LTB-0311] input carry, calculation, readiness and output c
   testthat::expect_identical(returns_evidence$input_carried, rep(FALSE, 8L))
   testthat::expect_identical(
     returns_evidence$missing_reason,
-    c("not_ready", "", "carried_input_excluded", "not_ready",
-      "carried_input_excluded", "carried_input_excluded", "not_ready", "")
+    c(
+      "not_ready", "", "carried_input_excluded", "not_ready",
+      "carried_input_excluded", "carried_input_excluded", "not_ready", ""
+    )
   )
   testthat::expect_identical(returns_evidence$value, c(NA, 0.1, NA, NA, NA, NA, NA, 17 / 16 - 1))
 
@@ -304,8 +312,10 @@ testthat::test_that("[LTB-0311] input carry, calculation, readiness and output c
   testthat::expect_identical(output_evidence$carry_age_sessions, c(NA, 0L, 1L, NA, 3L, NA, NA, 0L))
   testthat::expect_identical(
     output_evidence$missing_reason,
-    c("not_ready", "", "output_carried", "not_ready", "output_carried",
-      "output_carry_expired", "not_ready", "")
+    c(
+      "not_ready", "", "output_carried", "not_ready", "output_carried",
+      "output_carry_expired", "not_ready", ""
+    )
   )
   # The same policy without output carry leaves every one of those sessions
   # missing: output carry is its own plane.
@@ -412,8 +422,10 @@ testthat::test_that("[LTB-0312] feature bytes and failure classes match across r
     sma_2 = ledgr_ind_sma(2L),
     ret = ledgr_ind_returns(1L),
     ema = ledgr_ind_ttr("EMA", input = "close", n = 3L),
-    macd_signal = ledgr_ind_ttr("MACD", input = "close", output = "signal",
-      nFast = 2L, nSlow = 3L, nSig = 2L),
+    macd_signal = ledgr_ind_ttr("MACD",
+      input = "close", output = "signal",
+      nFast = 2L, nSlow = 3L, nSig = 2L
+    ),
     bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 3L),
     custom = ledgr_indicator("custom_last", function(window) window$close[[nrow(window)]], requires_bars = 2L)
   )
@@ -436,7 +448,7 @@ testthat::test_that("[LTB-0312] feature bytes and failure classes match across r
   run_lines <- ws43_parity_lines(run_messages)
   testthat::expect_length(run_lines, 14L)
 
-  grid <- ledgr_param_grid(one = list())
+  grid <- ledgr_grid_named(one = list(strategy = list()))
   sweep_lines <- function(sweep) {
     ws43_parity_lines(unlist(lapply(
       sweep$warnings,
@@ -475,7 +487,7 @@ testthat::test_that("[LTB-0312] feature bytes and failure classes match across r
   if (requireNamespace("mirai", quietly = TRUE) && !ledgr_test_in_coverage()) {
     parallel <- ledgr_sweep(
       experiment,
-      ledgr_param_grid(one = list(), two = list()),
+      ledgr_grid_named(one = list(strategy = list()), two = list(strategy = list())),
       workers = 2L,
       stop_on_error = TRUE
     )
@@ -484,8 +496,9 @@ testthat::test_that("[LTB-0312] feature bytes and failure classes match across r
     testthat::expect_identical(lines[seq(1L, length(lines), by = 2L)], run_lines)
     testthat::expect_identical(lines[seq(2L, length(lines), by = 2L)], run_lines)
     testthat::expect_error(
-      ledgr_sweep(refusing, ledgr_param_grid(one = list(), two = list()),
-        workers = 2L, stop_on_error = TRUE),
+      ledgr_sweep(refusing, ledgr_grid_named(one = list(strategy = list()), two = list(strategy = list())),
+        workers = 2L, stop_on_error = TRUE
+      ),
       class = "ledgr_indicator_gap_parity"
     )
   }
@@ -497,7 +510,8 @@ testthat::test_that("[LTB-0314] a custom input_carry declaration excludes carrie
   ratio <- function(window) window$close[[2L]] / window$close[[1L]] - 1
   make <- function(...) {
     ledgr_indicator(
-      "custom_ratio", ratio, requires_bars = 2L,
+      "custom_ratio", ratio,
+      requires_bars = 2L,
       history_class = "bounded", required_fields = "close", ...
     )
   }
@@ -550,8 +564,10 @@ testthat::test_that("[LTB-0314] a custom input_carry declaration excludes carrie
     class = "ledgr_indicator_history_contradiction"
   )
   testthat::expect_identical(
-    ledgr_ind_ttr("ROC", input = "close", n = 2L, na.pad = TRUE,
-      input_carry = "excluded")$input_carry_source,
+    ledgr_ind_ttr("ROC",
+      input = "close", n = 2L, na.pad = TRUE,
+      input_carry = "excluded"
+    )$input_carry_source,
     "declared"
   )
   relabelled <- ledgr_ind_sma(2L)

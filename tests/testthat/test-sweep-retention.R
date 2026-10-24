@@ -89,7 +89,7 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
@@ -124,7 +124,7 @@ testthat::test_that("completed retention is accepted without changing scalar ide
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   none <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("none"))
   completed <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
@@ -160,7 +160,7 @@ testthat::test_that("completed retention exposes long and wide return series", {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   out <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
   long <- ledgr_sweep_returns(out)
@@ -295,7 +295,7 @@ testthat::test_that("sweep return panels use the same class and hash payload", {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   sweep <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
   panel <- ledgr_sweep_returns_panel(sweep)
   direct <- ledgr_return_panel(panel$matrix, ts = panel$ts_utc)
@@ -354,7 +354,7 @@ testthat::test_that("closed-trade retention exposes deterministic minimal trade 
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   none <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
   retained <- ledgr_sweep(
@@ -420,9 +420,9 @@ testthat::test_that("retained return accessors fail loudly for unretained, missi
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(
-    good = list(qty = 1, fail = FALSE),
-    bad = list(qty = 1, fail = TRUE)
+  grid <- ledgr_grid_named(
+    good = list(strategy = list(qty = 1, fail = FALSE)),
+    bad = list(strategy = list(qty = 1, fail = TRUE))
   )
 
   unretained <- ledgr_sweep(exp, grid, seed = 123L)
@@ -479,7 +479,7 @@ testthat::test_that("retained-return panels fail closed for ragged complete grid
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   out <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
   ragged <- out
@@ -512,7 +512,7 @@ testthat::test_that("xts retained-return projection labels external evidence whe
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   out <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
   only_b <- ledgr_sweep_returns(out, candidates = "b")
@@ -552,7 +552,7 @@ testthat::test_that("retained returns keep final equity row with final-bar no-fi
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list(qty = 1))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1)))
 
   out <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
   long <- ledgr_sweep_returns(out)
@@ -573,7 +573,7 @@ testthat::test_that("ledgr_sweep rejects invalid retain arguments before executi
 
   strategy <- function(ctx, params) ctx$flat()
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   testthat::expect_error(
     ledgr_sweep(exp, grid, retain = "completed"),
@@ -598,13 +598,11 @@ testthat::test_that("wide return projections reversibly escape reserved candidat
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   reserved_prefix_id <- "..ledgr_candidate_6162"
   utf8_reserved_id <- paste0("..ledgr_candidate_", intToUtf8(233L))
-  grid <- do.call(
-    ledgr_param_grid,
-    stats::setNames(
-      list(list(qty = 1), list(qty = 2), list(qty = 3), list(qty = 4)),
-      c("ts_utc", reserved_prefix_id, utf8_reserved_id, "plain")
-    )
+  specs <- stats::setNames(
+    lapply(1:4, function(qty) list(strategy = list(qty = qty))),
+    c("ts_utc", reserved_prefix_id, utf8_reserved_id, "plain")
   )
+  grid <- do.call(ledgr_grid_named, specs)
   sweep <- ledgr_sweep(
     exp,
     grid,

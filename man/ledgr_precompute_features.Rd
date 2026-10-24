@@ -9,7 +9,8 @@ ledgr_precompute_features(exp, param_grid, start = NULL, end = NULL)
 \arguments{
 \item{exp}{A \code{ledgr_experiment} object.}
 
-\item{param_grid}{A \code{ledgr_param_grid} object.}
+\item{param_grid}{An ordinary rectangular data frame, a
+\code{ledgr_strategy_grid}, or a \code{ledgr_executable_grid}.}
 
 \item{start}{Optional scoring-range start. Defaults to the experiment's opening
 date, or to the snapshot start when the opening is undated.}
@@ -65,7 +66,7 @@ bars <- data.frame(
 snapshot <- ledgr_snapshot_from_df(bars)
 strategy <- function(ctx, params) ctx$flat()
 exp <- ledgr_experiment(snapshot, strategy, features = list(ledgr_ind_sma(2)), cost_model = ledgr_cost_zero())
-grid <- ledgr_param_grid(list(qty = 1), list(qty = 2))
+grid <- data.frame(qty = c(1, 2))
 features <- ledgr_precompute_features(exp, grid)
 print(features)
 ledgr_snapshot_close(snapshot)

@@ -92,7 +92,7 @@ testthat::test_that("[LTB-0157] strict dispatch resolves once per definition", {
   calls <- character()
   sweep <- ledgr_sweep(
     experiment,
-    ledgr_param_grid(a = list(), b = list()),
+    ledgr_grid_named(a = list(strategy = list()), b = list(strategy = list())),
     stop_on_error = TRUE
   )
   testthat::expect_identical(sort(calls), c("returns", "sma"))

@@ -28,7 +28,7 @@ testthat::test_that("[LTB-0131] public calls open the store once, plus once per 
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(c(path, paste0(path, ".wal")), force = TRUE), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  grid <- ledgr_param_grid(a = list(), b = list())
+  grid <- ledgr_grid_named(a = list(strategy = list()), b = list(strategy = list()))
 
   testthat::expect_identical(opens(
     snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "lifecycle")
@@ -95,7 +95,7 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(c(path, paste0(path, ".wal")), force = TRUE), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  grid <- ledgr_param_grid(a = list(), b = list())
+  grid <- ledgr_grid_named(a = list(strategy = list()), b = list(strategy = list()))
 
   testthat::expect_identical(opens(
     snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "lifecycle")
@@ -128,7 +128,8 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
     targets
   }
   wf_exp <- ledgr_experiment(
-    wf_snapshot, wf_strategy, opening = ledgr_opening(cash = 10000), cost_model = ledgr_cost_zero()
+    wf_snapshot, wf_strategy,
+    opening = ledgr_opening(cash = 10000), cost_model = ledgr_cost_zero()
   )
   folds <- ledgr:::ledgr_fold_list(
     list(
@@ -139,7 +140,7 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
   )
   testthat::expect_identical(opens(wf <- ledgr_walk_forward(
     wf_exp,
-    grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+    grid = ledgr_grid_named(trade = list(strategy = list(qty = 1, threshold = 101))),
     folds = folds,
     selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 101L

@@ -10,16 +10,26 @@ testthat::test_that("[LTB-0162] modeled terminal choices dispose once before the
   }
   refuse_horizon <- ledgr_valuation_stale(0, exhausted = "refuse")
   cases <- list(
-    research = list(policy = ledgr_corporate_actions_research(), price = 102,
-                    choice = "last_permissible", basis = "default"),
-    last_mark = list(policy = ledgr_corporate_actions(held_terminal_position = "last_mark"),
-                     price = 102, choice = "last_mark", basis = "default"),
-    haircut = list(policy = ledgr_corporate_actions(held_terminal_position = "haircut", haircut = 0.25),
-                   price = 76.5, choice = "haircut", basis = "default"),
-    write_off = list(policy = ledgr_corporate_actions(held_terminal_position = "write_off"),
-                     price = 0, choice = "write_off", basis = "default"),
-    refuse = list(policy = ledgr_corporate_actions(held_terminal_position = "refuse"),
-                  stop = "terminal_settlement_unsupported"),
+    research = list(
+      policy = ledgr_corporate_actions_research(), price = 102,
+      choice = "last_permissible", basis = "default"
+    ),
+    last_mark = list(
+      policy = ledgr_corporate_actions(held_terminal_position = "last_mark"),
+      price = 102, choice = "last_mark", basis = "default"
+    ),
+    haircut = list(
+      policy = ledgr_corporate_actions(held_terminal_position = "haircut", haircut = 0.25),
+      price = 76.5, choice = "haircut", basis = "default"
+    ),
+    write_off = list(
+      policy = ledgr_corporate_actions(held_terminal_position = "write_off"),
+      price = 0, choice = "write_off", basis = "default"
+    ),
+    refuse = list(
+      policy = ledgr_corporate_actions(held_terminal_position = "refuse"),
+      stop = "terminal_settlement_unsupported"
+    ),
     label_override = list(
       policy = ledgr_corporate_actions(held_terminal_position = c(bankruptcy = "write_off", default = "last_permissible")),
       price = 0, choice = "write_off", basis = "label", matched = "bankruptcy"
@@ -28,13 +38,17 @@ testthat::test_that("[LTB-0162] modeled terminal choices dispose once before the
       policy = ledgr_corporate_actions(held_terminal_position = c(merger = "write_off", default = "haircut"), haircut = 0.5),
       price = 51, choice = "haircut", basis = "default"
     ),
-    expired_last_mark = list(snapshot = expired, valuation = refuse_horizon,
-                             policy = ledgr_corporate_actions(held_terminal_position = "last_mark"),
-                             price = 100, choice = "last_mark", basis = "default",
-                             mark_source = "expired_close", mark_age = 1L),
-    expired_last_permissible = list(snapshot = expired, valuation = refuse_horizon,
-                                    policy = ledgr_corporate_actions_research(),
-                                    stop = "terminal_mark_unavailable")
+    expired_last_mark = list(
+      snapshot = expired, valuation = refuse_horizon,
+      policy = ledgr_corporate_actions(held_terminal_position = "last_mark"),
+      price = 100, choice = "last_mark", basis = "default",
+      mark_source = "expired_close", mark_age = 1L
+    ),
+    expired_last_permissible = list(
+      snapshot = expired, valuation = refuse_horizon,
+      policy = ledgr_corporate_actions_research(),
+      stop = "terminal_mark_unavailable"
+    )
   )
   for (name in names(cases)) {
     case <- cases[[name]]
@@ -225,7 +239,7 @@ testthat::test_that("[LTB-0165] an exhausted mark freezes without inventing tran
   strategy <- function(ctx, params) {
     target <- ctx$hold()
     if (ctx$ts_utc == "2020-01-03T16:00:00Z" ||
-        (isTRUE(params$persistent) && ctx$ts_utc > "2020-01-03T16:00:00Z")) {
+      (isTRUE(params$persistent) && ctx$ts_utc > "2020-01-03T16:00:00Z")) {
       target[["AAA"]] <- 0
     }
     target
@@ -357,8 +371,10 @@ testthat::test_that("[LTB-0167] frozen holdings are preserved and reserved by st
     if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
       idx <- match("AAA", ctx$universe)
       seen$vec <- lapply(
-        ctx$vec[c("held", "position", "risk_mark", "mark_source", "mark_age",
-                  "target_restricted", "target_restriction_reason", "admissible", "priced")],
+        ctx$vec[c(
+          "held", "position", "risk_mark", "mark_source", "mark_age",
+          "target_restricted", "target_restriction_reason", "admissible", "priced"
+        )],
         function(v) v[[idx]]
       )
       seen$tradable <- ctx$tradable()
@@ -412,11 +428,15 @@ testthat::test_that("[LTB-0168] a terminal reached while frozen resolves its dec
   on.exit(ledgr_snapshot_close(evidence), add = TRUE)
   ids <- ledgr:::ledgr_corporate_action_policy_ids()
   cases <- list(
-    research = list(policy = ledgr_corporate_actions_research(), price = 0, choice = "write_off",
-                    basis = "frozen_fallback", id = ids$frozen_terminal_position[["write_off"]]),
-    frozen_last_mark = list(policy = ledgr_corporate_actions(frozen_terminal_position = "last_mark"),
-                            price = 100, choice = "last_mark", basis = "frozen_fallback",
-                            id = ids$frozen_terminal_position[["last_mark"]]),
+    research = list(
+      policy = ledgr_corporate_actions_research(), price = 0, choice = "write_off",
+      basis = "frozen_fallback", id = ids$frozen_terminal_position[["write_off"]]
+    ),
+    frozen_last_mark = list(
+      policy = ledgr_corporate_actions(frozen_terminal_position = "last_mark"),
+      price = 100, choice = "last_mark", basis = "frozen_fallback",
+      id = ids$frozen_terminal_position[["last_mark"]]
+    ),
     haircut_falls_back = list(
       policy = ledgr_corporate_actions(held_terminal_position = "haircut", haircut = 0.5),
       price = 0, choice = "write_off", basis = "frozen_fallback",
@@ -433,12 +453,16 @@ testthat::test_that("[LTB-0168] a terminal reached while frozen resolves its dec
       ),
       price = 0, choice = "write_off", basis = "label", id = ids$held_terminal_position[["write_off"]]
     ),
-    frozen_refuse = list(policy = ledgr_corporate_actions(frozen_terminal_position = "refuse"),
-                         reasons = "terminal_settlement_unsupported|frozen_terminal_refuse"),
-    evidence = list(snapshot = evidence, policy = ledgr_corporate_actions_research(), price = 100,
-                    choice = "last_permissible", basis = "evidence",
-                    id = ids$held_terminal_position[["last_permissible"]],
-                    source = "corporate_action_disposition", fact = acquisition$rows$fact_id[[1L]]),
+    frozen_refuse = list(
+      policy = ledgr_corporate_actions(frozen_terminal_position = "refuse"),
+      reasons = "terminal_settlement_unsupported|frozen_terminal_refuse"
+    ),
+    evidence = list(
+      snapshot = evidence, policy = ledgr_corporate_actions_research(), price = 100,
+      choice = "last_permissible", basis = "evidence",
+      id = ids$held_terminal_position[["last_permissible"]],
+      source = "corporate_action_disposition", fact = acquisition$rows$fact_id[[1L]]
+    ),
     evidence_loss_default = list(
       snapshot = evidence,
       policy = ledgr_corporate_actions(held_terminal_position = c(bankruptcy = "write_off", default = "haircut"), haircut = 0.5),
@@ -571,7 +595,7 @@ testthat::test_that("[LTB-0169] memory, durable reopen and resume agree across f
   # The in-memory sweep fold reaches the same final equity and return path.
   sweep <- ledgr_sweep(
     exp,
-    ledgr_param_grid(one = list(interrupt = FALSE)),
+    ledgr_grid_named(one = list(strategy = list(interrupt = FALSE))),
     retain = ledgr_sweep_retention("completed")
   )
   testthat::expect_identical(as.character(sweep$status), "DONE")

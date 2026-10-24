@@ -26,7 +26,7 @@ ledgr_sweep_roundtrip_experiment <- function(snapshot, risk_chain = ledgr_risk_n
 }
 
 ledgr_sweep_roundtrip_sweep <- function(exp) {
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   ledgr_sweep(
     exp,
     grid,
@@ -156,7 +156,7 @@ testthat::test_that("reopened sweeps round-trip retained closed-trade evidence",
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   sweep <- ledgr_sweep(
     exp,
-    ledgr_param_grid(a = list(qty = 1), b = list(qty = 2)),
+    ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2))),
     seed = 123L,
     retain = ledgr_sweep_retention(returns = "completed", trades = "closed")
   )
@@ -259,7 +259,7 @@ testthat::test_that("schema-1 saved sweeps fail closed with non-noop risk identi
     risk_chain = ledgr_risk_max_weight(0.2),
     cost_model = ledgr_cost_zero()
   )
-  sweep <- ledgr_sweep(exp, ledgr_param_grid(candidate = list()), seed = 123L)
+  sweep <- ledgr_sweep(exp, ledgr_grid_named(candidate = list(strategy = list())), seed = 123L)
   ledgr_sweep_save(sweep, snapshot, sweep_id = "schema1_ambiguous_saved")
 
   con <- ledgr:::get_connection(snapshot)
@@ -465,7 +465,7 @@ testthat::test_that("promotion from reopened sweep replays selected candidate ri
   )
   sweep <- ledgr_sweep(
     sweep_exp,
-    ledgr_param_grid(low = list(cap = 0.10), high = list(cap = 0.20)),
+    ledgr_grid_named(low = list(strategy = list(cap = 0.10)), high = list(strategy = list(cap = 0.20))),
     seed = 123L,
     retain = ledgr_sweep_retention("completed")
   )

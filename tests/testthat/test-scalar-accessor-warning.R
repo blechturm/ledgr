@@ -151,7 +151,7 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without f
       opening = ledgr_opening(cash = 10000),
       cost_model = ledgr_cost_zero()
     ),
-    ledgr_param_grid(small = list()),
+    ledgr_grid_named(small = list(strategy = list())),
     seed = 17L,
     stop_on_error = TRUE
   ))

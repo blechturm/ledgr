@@ -3,13 +3,15 @@
 
 #' Run a parameter sweep
 #'
-#' `ledgr_sweep()` evaluates a `ledgr_param_grid` against a `ledgr_experiment`
+#' `ledgr_sweep()` evaluates a rectangular strategy grid or a composed ledgr
+#' grid against a `ledgr_experiment`
 #' without writing candidate runs to the experiment store. Sweep is an
 #' exploratory surface: it returns candidate summaries, does not rank candidates
 #' automatically, and does not create committed run artifacts.
 #'
 #' @param exp A `ledgr_experiment`.
-#' @param param_grid A `ledgr_param_grid`.
+#' @param param_grid An ordinary rectangular data frame, a
+#'   `ledgr_strategy_grid`, or a `ledgr_executable_grid`.
 #' @param precomputed_features Optional `ledgr_precomputed_features` object.
 #' @param retain A `ledgr_sweep_retention` object. The default keeps the
 #'   current scalar-only sweep output. Retention metadata is not execution
@@ -60,9 +62,9 @@
 #'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
-#' strategy preflight failures still abort. Compatibility note: old
-#' feature-factory experiments use a flat parameter-grid contract. Executable
-#' grids with separate `feature_params` require active aliases through
+#' strategy preflight failures still abort. Feature factories consume the
+#' strategy-parameter namespace. Grids with separate `feature_params` require
+#' active aliases through
 #' `ledgr_feature_map()`. Failed rows can be inspected with
 #' `ledgr_candidate(..., allow_failed = TRUE)`, but [ledgr_promote()] rejects
 #' failed candidates. When `stop_on_error = TRUE` rethrows a strategy failure,
@@ -159,20 +161,21 @@ ledgr_sweep_impl <- function(exp,
     } else {
       NULL
     }
-    on.exit({
-      if (had_seed) {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      }
-    }, add = TRUE)
+    on.exit(
+      {
+        if (had_seed) {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv)
+        } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+          rm(".Random.seed", envir = .GlobalEnv)
+        }
+      },
+      add = TRUE
+    )
   }
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
-  if (!inherits(param_grid, "ledgr_param_grid")) {
-    rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
-  }
+  param_grid <- ledgr_executable_grid_normalize(param_grid)
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
@@ -191,7 +194,7 @@ ledgr_sweep_impl <- function(exp,
     )
   }
   if (!is.null(precomputed_features) &&
-      !identical(availability_active, !is.null(precomputed_features$history_axis))) {
+    !identical(availability_active, !is.null(precomputed_features$history_axis))) {
     rlang::abort(
       if (availability_active) {
         "Availability-aware sweeps do not accept a dense precomputed feature payload."
@@ -258,7 +261,8 @@ ledgr_sweep_impl <- function(exp,
     availability_config <- ledgr_sweep_availability_config(exp)
     if (is.null(history_substrate)) {
       history_substrate <- ledgr_history_substrate_for_experiment(
-        exp, meta, end = range$scoring_end
+        exp, meta,
+        end = range$scoring_end
       )
     } else {
       ledgr_history_substrate_validate_owner(
@@ -860,6 +864,8 @@ print.ledgr_sweep_candidate <- function(x, ...) {
 
   cat("ledgr_sweep_candidate\n")
   cat("=====================\n")
+  cat("Strategy params:  ", ledgr_sweep_params_summary(x$params), "\n", sep = "")
+  cat("Feature params:   ", ledgr_sweep_params_summary(x$feature_params %||% list()), "\n", sep = "")
   cat("Candidate ID:     ", x$candidate_id, "\n", sep = "")
   cat("Status:           ", x$status %||% NA_character_, "\n", sep = "")
   cat("Execution seed:   ", seed, "\n", sep = "")
@@ -867,7 +873,6 @@ print.ledgr_sweep_candidate <- function(x, ...) {
   cat("Snapshot hash:    ", snapshot_hash, "\n", sep = "")
   cat("Feature-set hash: ", feature_hash, "\n", sep = "")
   cat("Evaluation scope: ", evaluation_scope, "\n", sep = "")
-  cat("Params:           ", canonical_json(x$params), "\n", sep = "")
   invisible(x)
 }
 
@@ -878,6 +883,12 @@ print.ledgr_sweep_candidate <- function(x, ...) {
 #' @return The input object, invisibly.
 #' @export
 print.ledgr_sweep_results <- function(x, ...) {
+  if (!all(c("params", "feature_params") %in% names(x))) {
+    degraded <- x
+    class(degraded) <- setdiff(class(degraded), "ledgr_sweep_results")
+    print(degraded, ...)
+    return(invisible(x))
+  }
   count_lines <- ledgr_selection_table_lines(x)
   retention <- attr(x, "sweep_retention", exact = TRUE)
   retention_returns <- if (inherits(retention, "ledgr_sweep_retention")) retention$returns else "unknown"
@@ -892,25 +903,29 @@ print.ledgr_sweep_results <- function(x, ...) {
   } else {
     "Saved artifact: not saved."
   }
+  display <- x
+  display$strategy_params <- vapply(display$params, ledgr_sweep_params_summary, character(1))
+  display$feature_params <- vapply(display$feature_params, ledgr_sweep_params_summary, character(1))
+  attr(display, "ledgr_complete_names") <- names(display)
   visible <- c(
-    "candidate_id", "candidate_row", "status", "sharpe_ratio", "total_return",
+    "strategy_params", "feature_params", "candidate_id", "candidate_row", "status", "sharpe_ratio", "total_return",
     "max_drawdown", "n_trades", "execution_seed"
   )
   # Freeze and assumed-terminal flags travel beside the ranking columns
   # whenever any candidate carries them.
   flagged <- function(name, test) {
-    value <- x[[name]]
+    value <- display[[name]]
     !is.null(value) && any(test(value), na.rm = TRUE)
   }
   if (flagged("valuation_state", function(v) v %in% "frozen") ||
-      flagged("assumed_terminal_outcomes", function(v) v > 0L) ||
-      flagged("status", function(v) !as.character(v) %in% "DONE")) {
+    flagged("assumed_terminal_outcomes", function(v) v > 0L) ||
+    flagged("status", function(v) !as.character(v) %in% "DONE")) {
     visible <- c(visible, "stop_reason", "valuation_state", "assumed_terminal_outcomes")
   }
-  hidden <- setdiff(names(x), visible)
+  hidden <- setdiff(names(display), visible)
   ledgr_print_curated_tibble(
     sprintf("# ledgr sweep -- %s", attr(x, "sweep_id") %||% "<unknown>"),
-    x,
+    display,
     cols = visible,
     footer = c(
       count_lines,
@@ -928,6 +943,20 @@ print.ledgr_sweep_results <- function(x, ...) {
   )
 }
 
+ledgr_sweep_params_summary <- function(params, max_bytes = 56L) {
+  if (!is.list(params) || is.data.frame(params)) {
+    return("<invalid; use ledgr_candidate()>")
+  }
+  if (length(params) == 0L) {
+    return("{}")
+  }
+  text <- as.character(canonical_json(params))
+  if (nchar(text, type = "bytes") <= max_bytes) {
+    return(text)
+  }
+  "<truncated; use ledgr_candidate()>"
+}
+
 ledgr_candidate_row_index <- function(view, which) {
   if (is.character(which) && length(which) == 1L && !is.na(which) && nzchar(which)) {
     matches <- base::which(as.character(view$candidate_id) == which)
@@ -940,7 +969,7 @@ ledgr_candidate_row_index <- function(view, which) {
     return(matches[[1]])
   }
   if (is.numeric(which) && length(which) == 1L && !is.na(which) &&
-      is.finite(which) && which == as.integer(which)) {
+    is.finite(which) && which == as.integer(which)) {
     idx <- as.integer(which)
     if (idx < 1L || idx > nrow(view)) {
       rlang::abort("Candidate row position is out of bounds.", class = "ledgr_sweep_candidate_not_found")
@@ -1003,14 +1032,14 @@ ledgr_candidate_cost_identity <- function(candidate) {
     )
   }
   if (!is.character(cost_model_hash) || length(cost_model_hash) != 1L ||
-      is.na(cost_model_hash) || !grepl("^[0-9a-f]{64}$", cost_model_hash)) {
+    is.na(cost_model_hash) || !grepl("^[0-9a-f]{64}$", cost_model_hash)) {
     rlang::abort(
       "Candidate cost_model_hash is missing or invalid.",
       class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
     )
   }
   if (!is.character(cost_plan_json) || length(cost_plan_json) != 1L ||
-      is.na(cost_plan_json) || !nzchar(cost_plan_json)) {
+    is.na(cost_plan_json) || !nzchar(cost_plan_json)) {
     rlang::abort(
       "Candidate cost_plan_json is missing or invalid.",
       class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
@@ -1067,14 +1096,14 @@ ledgr_candidate_risk_identity <- function(candidate) {
     ))
   }
   if (!is.character(risk_chain_hash) || length(risk_chain_hash) != 1L ||
-      is.na(risk_chain_hash) || !grepl("^[0-9a-f]{64}$", risk_chain_hash)) {
+    is.na(risk_chain_hash) || !grepl("^[0-9a-f]{64}$", risk_chain_hash)) {
     rlang::abort(
       "Candidate risk_chain_hash is missing or invalid.",
       class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args")
     )
   }
   if (!is.character(risk_plan_json) || length(risk_plan_json) != 1L ||
-      is.na(risk_plan_json) || !nzchar(risk_plan_json)) {
+    is.na(risk_plan_json) || !nzchar(risk_plan_json)) {
     rlang::abort(
       "Candidate risk_plan_json is missing or invalid.",
       class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args")
@@ -1092,7 +1121,7 @@ ledgr_candidate_risk_identity <- function(candidate) {
   )
   canonical_plan <- ledgr_risk_plan_json(risk_chain)
   if (!identical(canonical_plan, as.character(canonical_json(risk_plan_json))) ||
-      !identical(ledgr_risk_chain_hash(risk_chain), risk_chain_hash)) {
+    !identical(ledgr_risk_chain_hash(risk_chain), risk_chain_hash)) {
     rlang::abort(
       "Candidate risk_chain_hash does not match risk_plan_json.",
       class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args")
@@ -1108,11 +1137,11 @@ ledgr_candidate_risk_identity <- function(candidate) {
 ledgr_candidate_validate_same_snapshot <- function(exp, candidate) {
   provenance <- candidate$provenance
   if (!is.list(provenance) ||
-      is.null(provenance$snapshot_hash) ||
-      !is.character(provenance$snapshot_hash) ||
-      length(provenance$snapshot_hash) != 1L ||
-      is.na(provenance$snapshot_hash) ||
-      !nzchar(provenance$snapshot_hash)) {
+    is.null(provenance$snapshot_hash) ||
+    !is.character(provenance$snapshot_hash) ||
+    length(provenance$snapshot_hash) != 1L ||
+    is.na(provenance$snapshot_hash) ||
+    !nzchar(provenance$snapshot_hash)) {
     rlang::abort(
       "`require_same_snapshot = TRUE` needs candidate provenance with `snapshot_hash`.",
       class = "ledgr_candidate_missing_snapshot_hash"
@@ -1201,7 +1230,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
   tasks <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
-    raw_params <- param_grid$params[[i]]
+    candidate_spec <- param_grid$params[[i]]
+    raw_params <- param_grid$identity_params[[i]]
     tasks[[i]] <- list(
       index = i,
       exp = exp_payload,
@@ -1209,8 +1239,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
       candidate_id = label,
       candidate_row = i,
       raw_params = raw_params,
-      params = ledgr_grid_candidate_strategy_params(raw_params),
-      feature_params = ledgr_grid_candidate_feature_params(raw_params),
+      params = ledgr_grid_candidate_strategy_params(candidate_spec),
+      feature_params = ledgr_grid_candidate_feature_params(candidate_spec),
       execution_seed = if (!is.null(execution_seed_override)) {
         execution_seed_override[[i]]
       } else if (is.null(seed)) {
@@ -1467,7 +1497,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         row = ledgr_sweep_failure_row(
           candidate_id = task$candidate_id,
           candidate_row = task$candidate_row,
-          params = task$raw_params,
+          params = task$params,
+          feature_params = task$feature_params,
           execution_seed = task$execution_seed,
           error_class = ledgr_condition_class(e),
           error_msg = conditionMessage(e),
@@ -1527,28 +1558,31 @@ ledgr_sweep_eval_candidate_tasks_parallel <- function(tasks,
   if (is.null(value)) {
     value <- function(promise) promise[]
   }
-  tryCatch({
-    promises <- lapply(tasks, submit)
-    lapply(seq_along(promises), function(i) {
-      result <- value(promises[[i]])
-      if (inherits(result, "errorValue")) {
-        rlang::abort(
-          sprintf(
-            "Parallel worker failed before returning candidate '%s': %s",
-            tasks[[i]]$run_id,
-            as.character(result)
-          ),
-          class = c("ledgr_parallel_worker_failed", "ledgr_parallel_error")
-        )
+  tryCatch(
+    {
+      promises <- lapply(tasks, submit)
+      lapply(seq_along(promises), function(i) {
+        result <- value(promises[[i]])
+        if (inherits(result, "errorValue")) {
+          rlang::abort(
+            sprintf(
+              "Parallel worker failed before returning candidate '%s': %s",
+              tasks[[i]]$run_id,
+              as.character(result)
+            ),
+            class = c("ledgr_parallel_worker_failed", "ledgr_parallel_error")
+          )
+        }
+        result
+      })
+    },
+    interrupt = function(e) {
+      if (is.function(cleanup)) {
+        try(cleanup(), silent = TRUE)
       }
-      result
-    })
-  }, interrupt = function(e) {
-    if (is.function(cleanup)) {
-      try(cleanup(), silent = TRUE)
+      ledgr_abort_parallel_sweep_interrupted(e)
     }
-    ledgr_abort_parallel_sweep_interrupted(e)
-  })
+  )
 }
 
 ledgr_abort_parallel_sweep_interrupted <- function(parent = NULL) {
@@ -2140,7 +2174,7 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   }
   handler$buffer_event <- function(write_res) {
     if (inherits(write_res, "ledgr_ledger_write_result") &&
-        identical(write_res$status, "WROTE")) {
+      identical(write_res$status, "WROTE")) {
       append_event_row_list(
         write_res$row,
         cash_delta = write_res$cash_delta,
@@ -2153,7 +2187,7 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
 
   stage_fill_event <- function(write_res) {
     if (!inherits(write_res, "ledgr_ledger_write_result") ||
-        !identical(write_res$status, "WROTE")) {
+      !identical(write_res$status, "WROTE")) {
       return(invisible(FALSE))
     }
     i <- pulse_fill_n + 1L
@@ -2285,8 +2319,8 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   state$equity_fact_n <- 0L
   handler$record_accounting_fact <- function(write_res, lot_res, lot_state) {
     if (!inherits(write_res, "ledgr_ledger_write_result") ||
-        !identical(write_res$status, "WROTE") ||
-        pulse_fill_n == 0L && state$event_count == 0L) {
+      !identical(write_res$status, "WROTE") ||
+      pulse_fill_n == 0L && state$event_count == 0L) {
       return(invisible(FALSE))
     }
     staged <- pulse_fill_n > 0L
@@ -2420,7 +2454,7 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   state$diagnostic_part_n <- 0L
   keep_summary_rows <- function(diagnostics) {
     keep <- (diagnostics$stage %in% "decision" & !is.na(diagnostics$quantity) & diagnostics$quantity != 0 &
-               diagnostics$mark_source %in% c("stale_close", "frozen_close")) |
+      diagnostics$mark_source %in% c("stale_close", "frozen_close")) |
       (diagnostics$stage %in% "valuation" & diagnostics$reason_code %in% "terminal_disposition") |
       diagnostics$outcome %in% "stopped"
     if (any(keep)) {
@@ -2449,8 +2483,12 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   handler$completion <- function() state$completion
   # The kept summary rows, in emission order; NULL when nothing was written.
   handler$diagnostics <- function() {
-    if (state$diagnostic_count == 0L) return(NULL)
-    if (state$diagnostic_part_n == 0L) return(NULL)
+    if (state$diagnostic_count == 0L) {
+      return(NULL)
+    }
+    if (state$diagnostic_part_n == 0L) {
+      return(NULL)
+    }
     do.call(rbind, state$diagnostic_parts[seq_len(state$diagnostic_part_n)])
   }
   handler$write_exception_diagnostic <- function(diagnostic) {

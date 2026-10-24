@@ -4,7 +4,8 @@
 # preparation, at the last session of a one-instrument substrate.
 ws43_frame_evidence <- function(substrate, definition, calculation_start) {
   values <- ledgr:::ledgr_history_compute_feature_series(
-    substrate, list(feature = definition), calculation_start = calculation_start
+    substrate, list(feature = definition),
+    calculation_start = calculation_start
   )
   projection <- ledgr:::ledgr_projection_from_feature_matrix(
     values,
@@ -77,7 +78,8 @@ testthat::test_that("[LTB-0319] frame feature evidence separates every v12 featu
   for (case in list(list(output, sma), list(default, sma), list(default, ret))) {
     frame <- ws43_frame_evidence(case[[1L]], case[[2L]], start)
     seam <- ledgr:::ledgr_history_feature_planes(
-      case[[1L]], "AAA", case[[2L]], calculation_start = start
+      case[[1L]], "AAA", case[[2L]],
+      calculation_start = start
     )
     for (field in c(
       "calculated", "ready", "calculation_valid", "input_carried",
@@ -184,7 +186,8 @@ testthat::test_that("[LTB-0320] a terminal interval ends feature carry and bound
     instrument_id = "AAA",
     effective_from = c(axis20[[1L]] - 7200, axis20[c(5L, 7L, 12L, 14L)] - 3600),
     effective_to = as.POSIXct(
-      c(axis20[c(5L, 7L, 12L, 14L)] - 3600, NA), origin = "1970-01-01", tz = "UTC"
+      c(axis20[c(5L, 7L, 12L, 14L)] - 3600, NA),
+      origin = "1970-01-01", tz = "UTC"
     ),
     knowledge_time = axis20[[1L]] - 7200,
     assertion = c("known_active", "known_inactive", "known_active", "known_inactive", "known_active"),
@@ -240,7 +243,7 @@ testthat::test_that("[LTB-0322] used_before_window reports every returned value 
       features = ledgr_feature_map(level = level)
     )
     on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
-    ledgr_sweep(fixture$exp, ledgr_param_grid(list(tag = "s")), stop_on_error = TRUE)
+    ledgr_sweep(fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "s"))), stop_on_error = TRUE)
     vapply(2:3, function(k) seen[[paste("s", ws42_iso(fixture$axis[[k]]))]], logical(1))
   }
   testthat::expect_identical(
@@ -266,7 +269,8 @@ testthat::test_that("[LTB-0322] used_before_window reports every returned value 
   sma <- ledgr_ind_sma(2L)
   values <- ledgr:::ledgr_history_compute_feature_series(substrate, list(feature = sma))
   projection <- ledgr:::ledgr_projection_from_feature_matrix(
-    values, universe = "AAA", pulses_posix = axis, feature_engine_version = "test"
+    values,
+    universe = "AAA", pulses_posix = axis, feature_engine_version = "test"
   )
   bound <- ledgr:::ledgr_history_substrate_bind_features(substrate, projection)
   window <- function(columns) {
@@ -287,14 +291,16 @@ testthat::test_that("[LTB-0322] used_before_window reports every returned value 
   # history before its window and a read of sessions 9-14 did not.
   late <- ws43_history_substrate(c(rep(NA, 8L), 19:30))
   slow <- ledgr_indicator(
-    "slow", fn = function(window) mean(window$close), requires_bars = 2L,
+    "slow",
+    fn = function(window) mean(window$close), requires_bars = 2L,
     stable_after = 4L, gap_contract = "strict_window"
   )
   slow_values <- ledgr:::ledgr_history_compute_feature_series(late, list(feature = slow))
   slow_bound <- ledgr:::ledgr_history_substrate_bind_features(
     late,
     ledgr:::ledgr_projection_from_feature_matrix(
-      slow_values, universe = "AAA", pulses_posix = late$axis, feature_engine_version = "test"
+      slow_values,
+      universe = "AAA", pulses_posix = late$axis, feature_engine_version = "test"
     )
   )
   slow_window <- function(columns) {

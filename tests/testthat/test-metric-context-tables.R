@@ -29,7 +29,7 @@ testthat::test_that("comparison tables carry exactly one metric context", {
     universe = "AAA",
     opening = ledgr_opening(cash = 1000),
     metric_context = ledgr_metric_context(risk_free_rate = 0.04),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
   bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "compare-context-a")
   on.exit(close(bt_a), add = TRUE)
@@ -122,7 +122,7 @@ testthat::test_that("sweep and promotion disclose source sweep metric context se
     metric_context = ledgr_metric_context(
       risk_free_rate = ledgr_risk_free_rate(0.04, label = "source sweep")
     ),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
   run_exp <- ledgr_experiment(
     snapshot = snapshot,
@@ -132,10 +132,10 @@ testthat::test_that("sweep and promotion disclose source sweep metric context se
     metric_context = ledgr_metric_context(
       risk_free_rate = ledgr_risk_free_rate(0.01, label = "committed run")
     ),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
 
-  results <- ledgr_sweep(sweep_exp, ledgr_param_grid(a = list(qty = 1), b = list(qty = 2)), seed = 123L)
+  results <- ledgr_sweep(sweep_exp, ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2))), seed = 123L)
   testthat::expect_s3_class(results, "ledgr_sweep_results")
   testthat::expect_equal(ledgr_metric_context(results)$risk_free_rate$annual_rate, 0.04)
   testthat::expect_identical(attr(results, "metric_context_hash"), ledgr_metric_context_hash(ledgr_metric_context(results)))

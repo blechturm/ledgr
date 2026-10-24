@@ -316,12 +316,12 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
   calls <- 0L
   mixed <- ledgr_sweep(
     experiment,
-    ledgr_param_grid(failed = list(qty = 1), completed = list(qty = 2)),
+    ledgr_grid_named(failed = list(strategy = list(qty = 1)), completed = list(strategy = list(qty = 2))),
     seed = 1L
   )
   reference <- ledgr_sweep(
     experiment,
-    ledgr_param_grid(completed = list(qty = 2)),
+    ledgr_grid_named(completed = list(strategy = list(qty = 2))),
     seed = 1L
   )
   testthat::expect_identical(mixed$status, c("FAILED", "DONE"))
@@ -452,7 +452,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
       sweep <- testthat::with_mocked_bindings(
         ledgr_sweep(
           experiments[[mode]],
-          ledgr_param_grid(failed = list()),
+          ledgr_grid_named(failed = list(strategy = list())),
           seed = 1L
         ),
         ledgr_memory_output_handler = fault_factory(memory_factory, method),
@@ -758,9 +758,9 @@ testthat::test_that("public sweep applies parameterized max-weight risk step", {
     cost_model = ledgr_cost_zero()
   )
   expected_risk <- ledgr_risk_max_weight(ledgr_param("cap"))
-  grid <- ledgr_param_grid(
-    low = list(cap = 0.1),
-    high = list(cap = 0.2)
+  grid <- ledgr_grid_named(
+    low = list(strategy = list(cap = 0.1)),
+    high = list(strategy = list(cap = 0.2))
   )
 
   out <- ledgr_sweep(exp, grid, seed = 123L)
@@ -799,9 +799,9 @@ testthat::test_that("risk failures are captured as sweep candidate failures", {
     risk_chain = risk,
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(
-    ok = list(cap = 0.1),
-    bad = list(cap = 2)
+  grid <- ledgr_grid_named(
+    ok = list(strategy = list(cap = 0.1)),
+    bad = list(strategy = list(cap = 2))
   )
 
   out <- ledgr_sweep(exp, grid, seed = 123L, stop_on_error = FALSE)

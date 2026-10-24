@@ -257,7 +257,7 @@ testthat::test_that("dense public consumers use the primitive validator", {
     features = list(ledgr_ind_sma(2)),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(only = list())
+  grid <- ledgr_grid_named(only = list(strategy = list()))
 
   testthat::expect_s3_class(
     ledgr_precompute_features(exp, grid),
@@ -294,7 +294,7 @@ testthat::test_that("dense public consumers use the primitive validator", {
   )
   walk_forward <- ledgr_walk_forward(
     walk_forward_exp,
-    grid = ledgr_param_grid(one = list(quantity = 1)),
+    grid = ledgr_grid_named(one = list(strategy = list(quantity = 1))),
     folds = folds,
     selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 2742L
@@ -329,7 +329,7 @@ testthat::test_that("availability consumers bypass dense timestamp validation", 
   testthat::expect_s3_class(
     ledgr_sweep(
       exp,
-      ledgr_param_grid(only = list()),
+      ledgr_grid_named(only = list(strategy = list())),
       seed = 2742L
     ),
     "ledgr_sweep_results"

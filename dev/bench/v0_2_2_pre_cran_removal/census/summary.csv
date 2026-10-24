@@ -1,7 +1,7 @@
 "family","rows","findings"
-"condition_call_sites",2402,65
-"condition_classes",400,0
+"condition_call_sites",2424,65
+"condition_classes",401,3
 "connections",74,0
-"helpers",1848,0
+"helpers",1877,0
 "run_configs",80,0
 "versions",159,7

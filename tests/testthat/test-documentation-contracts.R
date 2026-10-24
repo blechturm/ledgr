@@ -513,7 +513,6 @@ testthat::test_that("help pages provide browser-free paths to installed articles
       ledgr_run = c("strategy-development", "metrics-and-accounting"),
       ledgr_experiment = c("strategy-development", "experiment-store", "reproducibility"),
       ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
-      ledgr_param_grid = "sweeps",
       ledgr_precompute_features = "sweeps",
       ledgr_sweep = "sweeps",
       ledgr_pbo = "selection-integrity",

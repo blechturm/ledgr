@@ -20,7 +20,8 @@ ledgr_walk_forward(
 \arguments{
 \item{exp}{A \code{ledgr_experiment}.}
 
-\item{grid}{A \code{ledgr_param_grid}.}
+\item{grid}{An ordinary rectangular data frame, a \code{ledgr_strategy_grid}, or
+a \code{ledgr_executable_grid}.}
 
 \item{folds}{A \code{ledgr_fold_list}.}
 

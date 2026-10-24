@@ -83,7 +83,8 @@ ws42_late_action_fixture <- function(subtype, policy, effective = 4L, known = 7L
     ledgr_facts_equity_corporate_actions(action),
     ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
     ledgr_facts_membership_snapshots(
-      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+      membership,
+      universe_id = "u", complete = TRUE, knowledge = "assume_effective"
     )
   )
   snapshot <- ledgr_snapshot_from_df(
@@ -99,7 +100,8 @@ ws42_late_action_fixture <- function(subtype, policy, effective = 4L, known = 7L
     target
   }
   exp <- ledgr_experiment(
-    snapshot, strategy, universe = ledgr_universe_members("u"),
+    snapshot, strategy,
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2, BBB = 1), cost_basis = c(AAA = 10, BBB = 21)),
     corporate_action_policy = policy
@@ -126,18 +128,20 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   exp <- fixture$exp
   days <- fixture$days
-  grid <- ledgr_param_grid(list(qty = 1))
+  grid <- ledgr_grid_named(candidate_1 = list(strategy = list(qty = 1)))
   folds <- ws42_continuity_folds(days)
 
   # One public run over the same decision pulses with the same parameters.
   single <- ledgr:::ledgr_run_window(
-    exp, params = list(qty = 1),
+    exp,
+    params = list(qty = 1),
     window = ledgr:::ledgr_experiment_window(exp, days[[3L]], days[[8L]]),
     run_id = "continuity-single"
   )
   on.exit(close(single), add = TRUE)
   chain <- ledgr_walk_forward(
-    exp, grid, folds, selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
+    exp, grid, folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )
   on.exit(lapply(chain$test_runs, close), add = TRUE)
   testthat::expect_identical(chain$status, "DONE")
@@ -221,7 +225,8 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
   # Standalone and flat windows keep their terminal rule: the last decision
   # is recorded but not executed, and nothing crosses.
   standalone <- ledgr:::ledgr_run_window(
-    exp, params = list(qty = 1),
+    exp,
+    params = list(qty = 1),
     window = ledgr:::ledgr_experiment_window(exp, days[[3L]], days[[5L]]),
     run_id = "continuity-standalone"
   )
@@ -230,7 +235,8 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
   standalone_diag <- ws42_frame(ledgr_results(standalone, "diagnostics"))
   testthat::expect_true("final_pulse_no_execution" %in% standalone_diag$reason_code)
   flat <- suppressWarnings(ledgr_walk_forward(
-    exp, grid, folds, selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L,
+    exp, grid, folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L,
     opening_state_policy = "flat_test_state"
   ))
   on.exit(lapply(flat$test_runs, close), add = TRUE)
@@ -275,14 +281,16 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
     # fill of three more at 26, and posts 0.5 at session 7.
     next_pulse_dividend = list(
       args = list("ordinary_cash_dividend", ledgr_corporate_actions(cash_posting = "next_open"),
-                  effective = 6L, known = 1L, buy_bbb = 3),
+        effective = 6L, known = 1L, buy_bbb = 3
+      ),
       event = "CASHFLOW", ts = "2021-01-12 21:00:00", final = 1070.5, status = "DONE"
     ),
     # Effective at session 6, known at 8: one run disposes of all four shares
     # at session 8's close of 28.
     next_pulse_acquisition = list(
       args = list("cash_acquisition", ledgr_corporate_actions_research(),
-                  effective = 6L, known = 8L, buy_bbb = 3),
+        effective = 6L, known = 8L, buy_bbb = 3
+      ),
       event = "DISPOSITION", ts = "2021-01-13 21:00:00", final = 1070, status = "DONE"
     )
   )
@@ -290,12 +298,13 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
     case <- cases[[name]]
     late <- do.call(ws42_late_action_fixture, case$args)
     one <- ledgr:::ledgr_run_window(
-      late$exp, params = late$params,
+      late$exp,
+      params = late$params,
       window = ledgr:::ledgr_experiment_window(late$exp, late$days[[3L]], late$days[[8L]]),
       run_id = paste0("late-single-", name)
     )
     late_chain <- suppressWarnings(ledgr_walk_forward(
-      late$exp, ledgr_param_grid(late$params), ws42_continuity_folds(late$days),
+      late$exp, ledgr_grid_named(candidate_1 = list(strategy = late$params)), ws42_continuity_folds(late$days),
       selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
     ))
     expected <- ws42_chain_record(list(one))
@@ -309,7 +318,8 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
     } else {
       testthat::expect_identical(action$event_type, case$event, info = name)
       testthat::expect_identical(
-        as.numeric(action$ts_utc), as.numeric(as.POSIXct(case$ts, tz = "UTC")), info = name
+        as.numeric(action$ts_utc), as.numeric(as.POSIXct(case$ts, tz = "UTC")),
+        info = name
       )
     }
     close(one)
@@ -337,7 +347,8 @@ testthat::test_that("[LTB-0304] every entry point reads feature, mark and entitl
   axis <- fixture$axis
   days <- fixture$days
   dated <- ledgr_experiment(
-    fixture$snapshot, ws42_spy(seen, reader), universe = ledgr_universe_members("u"),
+    fixture$snapshot, ws42_spy(seen, reader),
+    universe = ledgr_universe_members("u"),
     features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000, date = days[[4L]], positions = c(BBB = 1), cost_basis = c(BBB = 21))
@@ -345,15 +356,16 @@ testthat::test_that("[LTB-0304] every entry point reads feature, mark and entitl
   # Scoring starts at session 4. SMA(2) there reads sessions 3-4 (13.5); BBB's
   # last print before session 4 is session 2 (22), a stale mark of age 2.
   close(ledgr_run(dated, params = list(tag = "run"), run_id = "start-run"))
-  sweep <- ledgr_sweep(dated, ledgr_param_grid(list(tag = "sweep")))
+  sweep <- ledgr_sweep(dated, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "sweep"))))
   promoted <- ledgr_promote(dated, ledgr_candidate(sweep, 1L), run_id = "start-promote")
   on.exit(close(promoted), add = TRUE)
   window <- ledgr:::ledgr_experiment_window(fixture$exp, days[[4L]], days[[8L]])
   close(ledgr:::ledgr_run_window(
-    fixture$exp, params = list(tag = "run_window"), window = window, run_id = "start-window"
+    fixture$exp,
+    params = list(tag = "run_window"), window = window, run_id = "start-window"
   ))
-  ledgr:::ledgr_sweep_window(fixture$exp, ledgr_param_grid(list(tag = "sweep_window")), window)
-  pre_grid <- ledgr_param_grid(list(tag = "precompute"))
+  ledgr:::ledgr_sweep_window(fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "sweep_window"))), window)
+  pre_grid <- ledgr_grid_named(candidate_1 = list(strategy = list(tag = "precompute")))
   precomputed <- ledgr_precompute_features(dated, pre_grid)
   ledgr_sweep(dated, pre_grid, precomputed_features = precomputed)
   testthat::expect_identical(precomputed$history_axis$calculation_start_utc, ws42_iso(axis[[1L]]))
@@ -395,7 +407,7 @@ testthat::test_that("[LTB-0304] every entry point reads feature, mark and entitl
     constructor = list(type_id = "explicit")
   )
   session <- ledgr_walk_forward(
-    fixture$exp, ledgr_param_grid(list(tag = "wf")), folds,
+    fixture$exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "wf"))), folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )
   on.exit(lapply(session$test_runs, close), add = TRUE)

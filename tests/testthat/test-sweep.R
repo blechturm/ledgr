@@ -24,7 +24,7 @@ ledgr_sweep_test_precomputed <- function(bars, indicators, feature_defs) {
     features = indicators,
     cost_model = ledgr_cost_zero()
   )
-  precomputed <- ledgr_precompute_features(exp, ledgr_param_grid(candidate = list()))
+  precomputed <- ledgr_precompute_features(exp, ledgr_grid_named(candidate = list(strategy = list())))
   testthat::expect_identical(
     precomputed$feature_union$fingerprint,
     vapply(feature_defs, `[[`, character(1), "fingerprint")
@@ -330,7 +330,7 @@ testthat::test_that("sweep public compiled accounting opt-in dispatches spot FIF
     opening = ledgr_opening(cash = 1000),
     cost_model = ledgr_cost_fixed_fee(0.25)
   )
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   r_path <- ledgr_sweep(exp, grid, seed = 123L)
   compiled_arg_path <- ledgr_sweep(
     exp,
@@ -385,9 +385,9 @@ testthat::test_that("sweep public compiled accounting preserves risk parity", {
     risk_chain = risk,
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(
-    low = list(cap = 0.10),
-    high = list(cap = 0.20)
+  grid <- ledgr_grid_named(
+    low = list(strategy = list(cap = 0.10)),
+    high = list(strategy = list(cap = 0.20))
   )
 
   r_path <- ledgr_sweep(exp, grid, seed = 123L)
@@ -415,9 +415,9 @@ testthat::test_that("sweep public compiled accounting preserves risk parity", {
     class = "ledgr_unsupported_accounting_model"
   )
 
-  failure_grid <- ledgr_param_grid(
-    ok = list(cap = 0.10),
-    bad = list(cap = 2)
+  failure_grid <- ledgr_grid_named(
+    ok = list(strategy = list(cap = 0.10)),
+    bad = list(strategy = list(cap = 2))
   )
   failure_path <- ledgr_sweep(
     exp,
@@ -476,7 +476,7 @@ testthat::test_that("ledgr_sweep returns ordered summary rows without store writ
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   before_counts <- ledgr_sweep_artifact_counts(snapshot)
   before_telemetry <- ls(ledgr:::.ledgr_telemetry_registry, all.names = TRUE)
@@ -507,7 +507,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   unseeded <- ledgr_sweep(exp, grid)
   seeded <- ledgr_sweep(exp, grid, seed = 123L)
@@ -585,7 +585,7 @@ testthat::test_that("ledgr_sweep preserves warning conditions", {
     ctx$flat()
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
   testthat::expect_true(length(out$warnings[[1]]) > 0L)
@@ -599,7 +599,7 @@ testthat::test_that("ledgr_sweep_results prints a curated view", {
 
   strategy <- function(ctx, params) ctx$flat()
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
   printed <- utils::capture.output(print(out))
@@ -613,6 +613,11 @@ testthat::test_that("ledgr_sweep_results prints a curated view", {
   testthat::expect_true(any(grepl("warnings", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("feature_fingerprints", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("provenance", printed, fixed = TRUE)))
+
+  degraded <- out[c("candidate_id", "status")]
+  degraded_print <- utils::capture.output(print(degraded))
+  testthat::expect_true(any(grepl("candidate_id", degraded_print, fixed = TRUE)))
+  testthat::expect_true(any(grepl("status", degraded_print, fixed = TRUE)))
 })
 
 # ledgr-test-profile: heavy_protocol
@@ -622,7 +627,7 @@ testthat::test_that("ledgr_sweep_results print footer stays neutral after reorde
 
   strategy <- function(ctx, params) ctx$flat()
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   out <- ledgr_sweep(exp, grid, seed = 123L)
   reordered <- out[c(2L, 1L), ]
 
@@ -642,7 +647,7 @@ testthat::test_that("ledgr_candidate selects by label or position and handles fa
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
   by_label <- ledgr_candidate(out, "b")
@@ -667,7 +672,7 @@ testthat::test_that("ledgr_candidate selects by label or position and handles fa
     list(ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1))
   }
   failed_exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$flat(), features = features, cost_model = ledgr_cost_zero())
-  failed_grid <- ledgr_param_grid(good = list(n = 1), bad = list(n = 0))
+  failed_grid <- ledgr_grid_named(good = list(strategy = list(n = 1)), bad = list(strategy = list(n = 0)))
   failed <- ledgr_sweep(failed_exp, failed_grid)
   testthat::expect_error(ledgr_candidate(failed, "bad"), class = "ledgr_failed_sweep_candidate")
   diagnostic <- ledgr_candidate(failed, "bad", allow_failed = TRUE)
@@ -685,7 +690,7 @@ testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
 
   strategy <- function(ctx, params) ctx$flat()
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   out <- ledgr_sweep(exp, grid, seed = 123L)
   plain <- tibble::as_tibble(out)
 
@@ -719,7 +724,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, features = list(ind), cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list(qty = 1, threshold = 102))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1, threshold = 102)))
 
   before_counts <- ledgr_sweep_artifact_counts(snapshot)
   results <- ledgr_sweep(exp, grid, seed = 123L)
@@ -772,7 +777,7 @@ testthat::test_that("ledgr_promote forwards candidate params and execution seed"
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   out <- ledgr_sweep(exp, grid, seed = 123L)
   candidate <- ledgr_candidate(out, "b")
 
@@ -819,7 +824,7 @@ testthat::test_that("ledgr_promote validates same-snapshot provenance when reque
   strategy <- function(ctx, params) ctx$flat()
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   other_exp <- ledgr_experiment(other_snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   candidate <- ledgr_candidate(ledgr_sweep(exp, grid), "candidate")
 
   testthat::expect_error(
@@ -852,7 +857,7 @@ testthat::test_that("ledgr_sweep_candidate print shows strategy name and hash wh
   strategy <- function(ctx, params) ctx$flat()
   attr(strategy, "name") <- "named_strategy"
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   candidate <- ledgr_candidate(ledgr_sweep(exp, grid, seed = 123L), "candidate")
 
   printed <- utils::capture.output(print(candidate))
@@ -872,7 +877,7 @@ testthat::test_that("derived execution seeds are stable across sweep invocations
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   one <- ledgr_sweep(exp, grid, seed = 123L)
   two <- ledgr_sweep(exp, grid, seed = 123L)
@@ -896,7 +901,7 @@ testthat::test_that("ledgr_sweep captures candidate failures and stop_on_error r
     list(ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1))
   }
   exp <- ledgr_experiment(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(good = list(n = 1), bad = list(n = 0))
+  grid <- ledgr_grid_named(good = list(strategy = list(n = 1)), bad = list(strategy = list(n = 0)))
 
   out <- ledgr_sweep(exp, grid)
   testthat::expect_identical(out$status, c("DONE", "FAILED"))
@@ -916,7 +921,7 @@ testthat::test_that("ledgr_sweep stop_on_error preserves unique strategy error c
     rlang::abort("bad strategy", class = "ledgr_test_bad_strategy")
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid, stop_on_error = TRUE))
   testthat::expect_s3_class(err, "ledgr_strategy_error")
@@ -933,7 +938,7 @@ testthat::test_that("ledgr_sweep rejects Tier 3 strategies before candidate exec
     helper(ctx)
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid))
   testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
@@ -948,7 +953,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(2L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   sys_time_strategy <- function(ctx, params) {
     Sys.time()
@@ -1018,7 +1023,7 @@ testthat::test_that("feature-consuming sweep strategies see the same feature val
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, features = list(ind), cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   out <- ledgr_sweep(exp, grid)
   observed$mode <- "run"
@@ -1070,7 +1075,11 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
     }
     targets <- ctx$flat()
     targets[["AAA"]] <- if (is.finite(ctx$feature("AAA", "custom_close")) &&
-      ctx$feature("AAA", "custom_close") > 101) 1 else 0
+      ctx$feature("AAA", "custom_close") > 101) {
+      1
+    } else {
+      0
+    }
     targets
   }
 
@@ -1150,112 +1159,52 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
 
 testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or candidates", {
   local({
-  bars <- ledgr_sweep_test_bars()
-  bars_by_id <- split(bars, as.character(bars$instrument_id))
-  bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
-  bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
-  pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
-  pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
-  indicators <- list(
-    ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
-  )
-  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
-  runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
-  static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
-  static_feature_views <- ledgr:::ledgr_projection_pulse_views(
-    runtime_projection,
-    "custom_close",
-    feature_table = "full"
-  )
+    bars <- ledgr_sweep_test_bars()
+    bars_by_id <- split(bars, as.character(bars$instrument_id))
+    bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
+    bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
+    pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
+    pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
+    indicators <- list(
+      ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
+    )
+    feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
+    runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
+    static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
+    static_feature_views <- ledgr:::ledgr_projection_pulse_views(
+      runtime_projection,
+      "custom_close",
+      feature_table = "full"
+    )
 
-  observed <- new.env(parent = emptyenv())
-  observed$pulse <- 0L
-  strategy <- function(ctx, params) {
-    observed$pulse <- observed$pulse + 1L
-    if (observed$pulse == 1L) {
-      observed$bars_1 <- ctx$bars
-      observed$table_1 <- ctx$feature_table
-      observed$wide_1 <- ctx$features_wide
-      observed$bars_1_snapshot <- as.list(ctx$bars)
-      observed$table_1_snapshot <- as.list(ctx$feature_table)
-      observed$wide_1_snapshot <- as.list(ctx$features_wide)
+    observed <- new.env(parent = emptyenv())
+    observed$pulse <- 0L
+    strategy <- function(ctx, params) {
+      observed$pulse <- observed$pulse + 1L
+      if (observed$pulse == 1L) {
+        observed$bars_1 <- ctx$bars
+        observed$table_1 <- ctx$feature_table
+        observed$wide_1 <- ctx$features_wide
+        observed$bars_1_snapshot <- as.list(ctx$bars)
+        observed$table_1_snapshot <- as.list(ctx$feature_table)
+        observed$wide_1_snapshot <- as.list(ctx$features_wide)
+      }
+      if (observed$pulse == 2L) {
+        ctx$bars$close[[1]] <- -777
+        ctx$feature_table$feature_value[[1]] <- -888
+        ctx$features_wide$custom_close[[1]] <- -999
+      }
+      if (observed$pulse == 3L) {
+        observed$bars_3 <- as.list(ctx$bars)
+        observed$table_3 <- as.list(ctx$feature_table)
+        observed$wide_3 <- as.list(ctx$features_wide)
+      }
+      ctx$flat()
     }
-    if (observed$pulse == 2L) {
-      ctx$bars$close[[1]] <- -777
-      ctx$feature_table$feature_value[[1]] <- -888
-      ctx$features_wide$custom_close[[1]] <- -999
-    }
-    if (observed$pulse == 3L) {
-      observed$bars_3 <- as.list(ctx$bars)
-      observed$table_3 <- as.list(ctx$feature_table)
-      observed$wide_3 <- as.list(ctx$features_wide)
-    }
-    ctx$flat()
-  }
 
-  handler <- ledgr:::ledgr_memory_output_handler("pulse-view-leak")
-  execution <- ledgr:::ledgr_execution_spec(
-    run_id = "pulse-view-leak",
-    instrument_ids = "AAA",
-    strategy_fn = strategy,
-    strategy_params = list(),
-    strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
-    strategy_is_functional = TRUE,
-    pulses_posix = pulses_posix,
-    pulses_iso = pulses_iso,
-    start_idx = 1L,
-    max_pulses = Inf,
-    checkpoint_every = 0L,
-    telemetry_stride = 0L,
-    state = list(cash = 100000, positions = stats::setNames(0, "AAA")),
-    state_prev = NULL,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
-    static_bars_views = static_bars_views,
-    static_feature_views = static_feature_views,
-    feature_defs = feature_defs,
-    runtime_projection = runtime_projection,
-    cost_resolver = ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0),
-    event_seq_start = 1L,
-    telemetry = ledgr:::ledgr_sweep_telemetry_env(),
-    seed = 123L,
-    event_mode = "buffered",
-    use_fast_context = TRUE
-  )
-  ledgr:::ledgr_execute_fold(execution, handler)
-
-  testthat::expect_equal(as.list(observed$bars_1), observed$bars_1_snapshot)
-  testthat::expect_equal(as.list(observed$table_1), observed$table_1_snapshot)
-  testthat::expect_equal(as.list(observed$wide_1), observed$wide_1_snapshot)
-  testthat::expect_false(any(unlist(observed$bars_3, use.names = FALSE) == -777))
-  testthat::expect_false(any(unlist(observed$table_3, use.names = FALSE) == -888))
-  testthat::expect_false(any(unlist(observed$wide_3, use.names = FALSE) == -999))
-  })
-
-  # Also covers: prebuilt pulse view mutation does not leak across candidate folds
-  local({
-  bars <- ledgr_sweep_test_bars()
-  bars_by_id <- split(bars, as.character(bars$instrument_id))
-  bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
-  bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
-  pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
-  pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
-  indicators <- list(
-    ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
-  )
-  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
-  runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
-  static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
-  static_feature_views <- ledgr:::ledgr_projection_pulse_views(
-    runtime_projection,
-    "custom_close",
-    feature_table = "full"
-  )
-
-  run_direct_fold <- function(strategy, run_id) {
-    handler <- ledgr:::ledgr_memory_output_handler(run_id)
+    handler <- ledgr:::ledgr_memory_output_handler("pulse-view-leak")
     execution <- ledgr:::ledgr_execution_spec(
-      run_id = run_id,
+      run_id = "pulse-view-leak",
       instrument_ids = "AAA",
       strategy_fn = strategy,
       strategy_params = list(),
@@ -1283,33 +1232,93 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
       use_fast_context = TRUE
     )
     ledgr:::ledgr_execute_fold(execution, handler)
-  }
 
-  mutating_strategy <- function(ctx, params) {
-    ctx$bars$close[[1]] <- -777
-    ctx$feature_table$feature_value[[1]] <- -888
-    ctx$features_wide$custom_close[[1]] <- -999
-    ctx$flat()
-  }
-  observed <- new.env(parent = emptyenv())
-  observed$bars_close <- numeric()
-  observed$table_value <- numeric()
-  observed$wide_value <- numeric()
-  observing_strategy <- function(ctx, params) {
-    observed$bars_close <- c(observed$bars_close, ctx$bars$close[[1]])
-    observed$table_value <- c(observed$table_value, ctx$feature_table$feature_value[[1]])
-    observed$wide_value <- c(observed$wide_value, ctx$features_wide$custom_close[[1]])
-    ctx$flat()
-  }
+    testthat::expect_equal(as.list(observed$bars_1), observed$bars_1_snapshot)
+    testthat::expect_equal(as.list(observed$table_1), observed$table_1_snapshot)
+    testthat::expect_equal(as.list(observed$wide_1), observed$wide_1_snapshot)
+    testthat::expect_false(any(unlist(observed$bars_3, use.names = FALSE) == -777))
+    testthat::expect_false(any(unlist(observed$table_3, use.names = FALSE) == -888))
+    testthat::expect_false(any(unlist(observed$wide_3, use.names = FALSE) == -999))
+  })
 
-  run_direct_fold(mutating_strategy, "pulse-view-mutate")
-  run_direct_fold(observing_strategy, "pulse-view-observe")
+  # Also covers: prebuilt pulse view mutation does not leak across candidate folds
+  local({
+    bars <- ledgr_sweep_test_bars()
+    bars_by_id <- split(bars, as.character(bars$instrument_id))
+    bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
+    bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
+    pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
+    pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
+    indicators <- list(
+      ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
+    )
+    feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(indicators)
+    runtime_projection <- ledgr_sweep_test_precomputed(bars, indicators, feature_defs)$projection
+    static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
+    static_feature_views <- ledgr:::ledgr_projection_pulse_views(
+      runtime_projection,
+      "custom_close",
+      feature_table = "full"
+    )
 
-  testthat::expect_false(any(observed$bars_close == -777))
-  testthat::expect_false(any(observed$table_value == -888))
-  testthat::expect_false(any(observed$wide_value == -999))
-  testthat::expect_equal(observed$wide_value, as.numeric(runtime_projection$feature_values$custom_close[1, ]))
-  testthat::expect_equal(observed$wide_value, bars$close)
+    run_direct_fold <- function(strategy, run_id) {
+      handler <- ledgr:::ledgr_memory_output_handler(run_id)
+      execution <- ledgr:::ledgr_execution_spec(
+        run_id = run_id,
+        instrument_ids = "AAA",
+        strategy_fn = strategy,
+        strategy_params = list(),
+        strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
+        strategy_is_functional = TRUE,
+        pulses_posix = pulses_posix,
+        pulses_iso = pulses_iso,
+        start_idx = 1L,
+        max_pulses = Inf,
+        checkpoint_every = 0L,
+        telemetry_stride = 0L,
+        state = list(cash = 100000, positions = stats::setNames(0, "AAA")),
+        state_prev = NULL,
+        bars_by_id = bars_by_id,
+        bars_mat = bars_mat,
+        static_bars_views = static_bars_views,
+        static_feature_views = static_feature_views,
+        feature_defs = feature_defs,
+        runtime_projection = runtime_projection,
+        cost_resolver = ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0),
+        event_seq_start = 1L,
+        telemetry = ledgr:::ledgr_sweep_telemetry_env(),
+        seed = 123L,
+        event_mode = "buffered",
+        use_fast_context = TRUE
+      )
+      ledgr:::ledgr_execute_fold(execution, handler)
+    }
+
+    mutating_strategy <- function(ctx, params) {
+      ctx$bars$close[[1]] <- -777
+      ctx$feature_table$feature_value[[1]] <- -888
+      ctx$features_wide$custom_close[[1]] <- -999
+      ctx$flat()
+    }
+    observed <- new.env(parent = emptyenv())
+    observed$bars_close <- numeric()
+    observed$table_value <- numeric()
+    observed$wide_value <- numeric()
+    observing_strategy <- function(ctx, params) {
+      observed$bars_close <- c(observed$bars_close, ctx$bars$close[[1]])
+      observed$table_value <- c(observed$table_value, ctx$feature_table$feature_value[[1]])
+      observed$wide_value <- c(observed$wide_value, ctx$features_wide$custom_close[[1]])
+      ctx$flat()
+    }
+
+    run_direct_fold(mutating_strategy, "pulse-view-mutate")
+    run_direct_fold(observing_strategy, "pulse-view-observe")
+
+    testthat::expect_false(any(observed$bars_close == -777))
+    testthat::expect_false(any(observed$table_value == -888))
+    testthat::expect_false(any(observed$wide_value == -999))
+    testthat::expect_equal(observed$wide_value, as.numeric(runtime_projection$feature_values$custom_close[1, ]))
+    testthat::expect_equal(observed$wide_value, bars$close)
   })
 })
 
@@ -1332,7 +1341,7 @@ testthat::test_that("precomputed features validate current factory identity befo
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(), b = list())
+  grid <- ledgr_grid_named(a = list(strategy = list()), b = list(strategy = list()))
   precomputed <- ledgr_precompute_features(exp, grid)
 
   calls$n <- 0L

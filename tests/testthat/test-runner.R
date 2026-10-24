@@ -525,7 +525,7 @@ testthat::test_that("run info projects recorded risk identity without side effec
 
   sweep <- ledgr_sweep(
     direct_exp,
-    ledgr_param_grid(low = list(qty = 1), high = list(qty = 2)),
+    ledgr_grid_named(low = list(strategy = list(qty = 1)), high = list(strategy = list(qty = 2))),
     seed = 123L
   )
   review <- ledgr_sweep_review(sweep, rank_by = -final_equity)

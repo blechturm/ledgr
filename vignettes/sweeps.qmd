@@ -248,8 +248,16 @@ and `values[["slow"]]`. The aliases stay stable across candidates.
 parameters** are passed to `strategy(ctx, params)` during execution. Keeping
 those namespaces separate is what lets a strategy read stable aliases while the
 sweep varies indicator windows. Use `ledgr_feature_grid()` for feature knobs,
-`ledgr_strategy_grid()` for strategy-code knobs, and `ledgr_grid_cross()` to
-combine them.
+an ordinary data frame for strategy-code knobs, and `ledgr_grid_cross()` to
+combine them. `ledgr_strategy_grid()` remains available when its `.filter`
+syntax is useful.
+
+For a strategy-only sweep, an ordinary data frame or tibble is enough: each
+row is one candidate and each column is one strategy parameter. Output from
+`tidyr::crossing()` has this same rectangular form and can be passed directly
+to `ledgr_sweep()`. Use the ledgr grid helpers below when feature parameters
+also vary, because that composition keeps feature and strategy names in
+distinct namespaces.
 
 ```{r}
 #| label: grids
@@ -260,9 +268,9 @@ feature_grid <- ledgr_feature_grid(
   .filter = fast_n < slow_n
 )
 
-strategy_grid <- ledgr_strategy_grid(
-  threshold = c(0, 0.01),
-  qty = c(5, 10)
+strategy_grid <- tibble::tibble(
+  threshold = rep(c(0, 0.01), each = 2L),
+  qty = rep(c(5, 10), times = 2L)
 )
 
 grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
@@ -518,8 +526,8 @@ Retention does not change execution identity. It changes which derived evidence
 is kept after the same candidate execution.
 
 Saved sweeps persist the same risk identity fields on the parent sweep row and
-candidate rows. They reopen only from the current experiment-store and saved-
-sweep formats; ledgr does not migrate an older research store in place.
+candidate rows. They reopen only from the current experiment-store and
+saved-sweep formats; ledgr does not migrate an older research store in place.
 
 ## What Retained Returns Can And Cannot Validate
 

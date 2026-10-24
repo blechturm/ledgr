@@ -127,7 +127,7 @@ testthat::test_that("parameterized active-alias bundle sweeps resolve concrete o
   testthat::expect_match(out$provenance[[1]]$alias_map_json, "bbands_dn", fixed = TRUE)
 })
 
-testthat::test_that("legacy feature factories reject executable feature grids", {
+testthat::test_that("feature factories reject separate feature grids", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -139,7 +139,7 @@ testthat::test_that("legacy feature factories reject executable feature grids", 
     features = ledgr_feature_grid(n = c(2L, 3L)),
     strategy = ledgr_strategy_grid(qty = 1)
   )
-  flat_grid <- ledgr_param_grid(short = list(n = 2L, qty = 1))
+  strategy_grid <- ledgr_grid_named(short = list(strategy = list(n = 2L, qty = 1)))
 
   testthat::expect_error(
     ledgr_sweep(exp, executable_grid),
@@ -149,7 +149,7 @@ testthat::test_that("legacy feature factories reject executable feature grids", 
     ledgr_precompute_features(exp, executable_grid),
     class = "ledgr_legacy_feature_factory_feature_params_unsupported"
   )
-  testthat::expect_s3_class(ledgr_sweep(exp, flat_grid), "ledgr_sweep_results")
+  testthat::expect_s3_class(ledgr_sweep(exp, strategy_grid), "ledgr_sweep_results")
 })
 
 testthat::test_that("promotion replays active alias feature params", {

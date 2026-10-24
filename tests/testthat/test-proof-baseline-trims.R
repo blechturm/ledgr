@@ -183,7 +183,8 @@ testthat::test_that("[LTB-0392] feature inputs take the narrow carry calculation
   # consumes the carried 11 and flags it; the return family refuses it and
   # reports the excluded carried input.
   projection <- ledgr:::ledgr_projection_from_feature_matrix(
-    values, universe = substrate$instrument_ids,
+    values,
+    universe = substrate$instrument_ids,
     pulses_posix = substrate$axis, feature_engine_version = "test"
   )
   bound <- ledgr:::ledgr_history_substrate_bind_features(substrate, projection)
@@ -233,11 +234,12 @@ testthat::test_that("[LTB-0393] a fresh sweep and a pulse inspection release the
     counter$n <- counter$n + 1L
   })
   suppressMessages(trace(
-    "gc", tracer = collection_tracer,
+    "gc",
+    tracer = collection_tracer,
     where = baseenv(), print = FALSE
   ))
   on.exit(suppressMessages(untrace("gc", where = baseenv())), add = TRUE)
-  sweep <- ledgr_sweep(fx$exp, ledgr_param_grid(a = list(x = 1)))
+  sweep <- ledgr_sweep(fx$exp, ledgr_grid_named(a = list(strategy = list(x = 1))))
   suppressMessages(untrace("gc", where = baseenv()))
   testthat::expect_identical(collections$n, 0L)
   testthat::expect_identical(sweep$status, "DONE")

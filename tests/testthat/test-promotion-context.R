@@ -22,7 +22,7 @@ testthat::test_that("promoted runs write and read durable promotion context", {
     targets
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   results <- ledgr_sweep(exp, grid, seed = 123L)
   selection <- results[c(2, 1), ]
   candidate <- ledgr_candidate(selection, 1)
@@ -82,7 +82,7 @@ testthat::test_that("ranked reopened sweeps retain lineage through promotion", {
   )
   results <- ledgr_sweep(
     sweep_exp,
-    ledgr_param_grid(low = list(qty = 1), high = list(qty = 2)),
+    ledgr_grid_named(low = list(strategy = list(qty = 1)), high = list(strategy = list(qty = 2))),
     seed = 123L
   )
   ledgr_sweep_save(results, snapshot, sweep_id = "review_lineage_saved")
@@ -164,7 +164,7 @@ testthat::test_that("promotion context stores warning summaries only", {
     ctx$flat()
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  grid <- ledgr_param_grid(candidate = list())
+  grid <- ledgr_grid_named(candidate = list(strategy = list()))
   results <- ledgr_sweep(exp, grid)
   candidate <- ledgr_candidate(results, "candidate")
 
@@ -183,7 +183,7 @@ testthat::test_that("promotion context write failures warn without rolling back 
 
   strategy <- function(ctx, params) ctx$flat()
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  candidate <- ledgr_candidate(ledgr_sweep(exp, ledgr_param_grid(candidate = list())), "candidate")
+  candidate <- ledgr_candidate(ledgr_sweep(exp, ledgr_grid_named(candidate = list(strategy = list()))), "candidate")
   candidate$selection_view$params[[1]] <- list(non_serializable = new.env(parent = emptyenv()))
 
   bt <- NULL

@@ -86,7 +86,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_opening",
     "ledgr_opening_from_broker",
     "ledgr_param",
-    "ledgr_param_grid",
     "ledgr_parameters",
     "ledgr_precompute_features",
     "ledgr_promote",
@@ -222,4 +221,3 @@ testthat::test_that("exported API surface is locked", {
   snapshot_open <- get("ledgr_snapshot_open", envir = ns)
   testthat::expect_identical(names(formals(snapshot_open)[1]), "db_path")
 })
-

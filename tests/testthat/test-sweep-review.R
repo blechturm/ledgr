@@ -23,7 +23,7 @@ testthat::test_that("ledgr_sweep_review ranks completed rows and separates issue
   testthat::expect_identical(review$ranked$candidate_id, c("high", "low"))
   testthat::expect_identical(review$ranked$rank, 1:2)
   testthat::expect_identical(review$top$candidate_id, "high")
-  testthat::expect_true("params" %in% names(review$top))
+  testthat::expect_true(all(c("strategy_params", "feature_params") %in% names(review$top)))
   testthat::expect_identical(review$issues$candidate_id, c("high", "failed"))
   testthat::expect_true("warnings" %in% names(review$issues))
   testthat::expect_false(inherits(review, "ledgr_sweep_candidate"))
@@ -38,44 +38,44 @@ testthat::test_that("ledgr_sweep_review ranks completed rows and separates issue
 
 testthat::test_that("ledgr_sweep_review preserves ranking columns and validates inputs", {
   local({
-  sweep <- tibble::tibble(
-    candidate_id = c("a", "b"),
-    candidate_row = 1:2,
-    status = c("DONE", "DONE"),
-    custom_metric = c(3, 7)
-  )
+    sweep <- tibble::tibble(
+      candidate_id = c("a", "b"),
+      candidate_row = 1:2,
+      status = c("DONE", "DONE"),
+      custom_metric = c(3, 7)
+    )
 
-  review <- ledgr_sweep_review(sweep, rank_by = desc(custom_metric), n = 1L)
+    review <- ledgr_sweep_review(sweep, rank_by = desc(custom_metric), n = 1L)
 
-  testthat::expect_identical(review$top$candidate_id, "b")
-  testthat::expect_true("custom_metric" %in% names(review$top))
-  testthat::expect_identical(review$top$custom_metric, 7)
+    testthat::expect_identical(review$top$candidate_id, "b")
+    testthat::expect_true("custom_metric" %in% names(review$top))
+    testthat::expect_identical(review$top$custom_metric, 7)
   })
 
   # Also covers: ledgr_sweep_review validates ranking inputs
   local({
-  sweep <- tibble::tibble(
-    candidate_id = c("a", "b"),
-    status = c("DONE", "DONE"),
-    sharpe_ratio = c(0.1, 0.2)
-  )
+    sweep <- tibble::tibble(
+      candidate_id = c("a", "b"),
+      status = c("DONE", "DONE"),
+      sharpe_ratio = c(0.1, 0.2)
+    )
 
-  testthat::expect_error(
-    ledgr_sweep_review(sweep),
-    class = "ledgr_invalid_args"
-  )
-  testthat::expect_error(
-    ledgr_sweep_review(sweep, rank_by = 1),
-    class = "ledgr_invalid_sweep_review_rank"
-  )
-  testthat::expect_error(
-    ledgr_sweep_review(sweep, rank_by = sharpe_ratio, n = Inf),
-    class = "ledgr_invalid_args"
-  )
-  testthat::expect_error(
-    ledgr_sweep_review(tibble::tibble(candidate_id = "a"), rank_by = candidate_id),
-    class = "ledgr_invalid_sweep_review_input"
-  )
+    testthat::expect_error(
+      ledgr_sweep_review(sweep),
+      class = "ledgr_invalid_args"
+    )
+    testthat::expect_error(
+      ledgr_sweep_review(sweep, rank_by = 1),
+      class = "ledgr_invalid_sweep_review_rank"
+    )
+    testthat::expect_error(
+      ledgr_sweep_review(sweep, rank_by = sharpe_ratio, n = Inf),
+      class = "ledgr_invalid_args"
+    )
+    testthat::expect_error(
+      ledgr_sweep_review(tibble::tibble(candidate_id = "a"), rank_by = candidate_id),
+      class = "ledgr_invalid_sweep_review_input"
+    )
   })
 })
 

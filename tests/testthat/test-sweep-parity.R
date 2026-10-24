@@ -231,10 +231,10 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
     cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1)),
     universe = c("AAA", "BBB")
   )
-  grid <- ledgr_param_grid(
-    zero = list(aaa_qty = 0, aaa_partial_qty = 0, bbb_qty = 0, close_day3 = TRUE, last_bar_qty = 0),
-    partial = list(aaa_qty = 4, aaa_partial_qty = 2, bbb_qty = 2, close_day3 = TRUE, last_bar_qty = 3),
-    open_end = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day3 = FALSE, last_bar_qty = 1)
+  grid <- ledgr_grid_named(
+    zero = list(strategy = list(aaa_qty = 0, aaa_partial_qty = 0, bbb_qty = 0, close_day3 = TRUE, last_bar_qty = 0)),
+    partial = list(strategy = list(aaa_qty = 4, aaa_partial_qty = 2, bbb_qty = 2, close_day3 = TRUE, last_bar_qty = 3)),
+    open_end = list(strategy = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day3 = FALSE, last_bar_qty = 1))
   )
 
   results <- ledgr_sweep(exp, grid, seed = 2026L)
@@ -284,12 +284,12 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
     close(direct)
   }
 
-  zero_direct <- ledgr_run(exp, params = grid$params[[1]], run_id = "parity-zero-check", seed = 1L)
+  zero_direct <- ledgr_run(exp, params = grid$params[[1]]$strategy_params, run_id = "parity-zero-check", seed = 1L)
   on.exit(close(zero_direct), add = TRUE)
   testthat::expect_identical(nrow(ledgr_results(zero_direct, "fills")), 0L)
   testthat::expect_identical(ledgr_compute_metrics(zero_direct)$n_trades, 0L)
 
-  open_end_direct <- ledgr_run(exp, params = grid$params[[3]], run_id = "parity-open-end-check", seed = 1L)
+  open_end_direct <- ledgr_run(exp, params = grid$params[[3]]$strategy_params, run_id = "parity-open-end-check", seed = 1L)
   on.exit(close(open_end_direct), add = TRUE)
   open_end_equity <- ledgr_parity_persistent_equity_detail(open_end_direct)
   testthat::expect_gt(abs(open_end_equity$unrealized_pnl[[nrow(open_end_equity)]]), 0)
@@ -325,7 +325,7 @@ testthat::test_that("sweep parity covers opening-position lots and non-default m
     universe = c("AAA", "BBB"),
     metric_context = context
   )
-  grid <- ledgr_param_grid(opening_partial = list())
+  grid <- ledgr_grid_named(opening_partial = list(strategy = list()))
 
   results <- ledgr_sweep(exp, grid, seed = 90210L)
   testthat::expect_s3_class(results, "ledgr_sweep_results")
@@ -381,7 +381,7 @@ testthat::test_that("seeded stochastic sweep promotion reproduces the selected c
     universe = "AAA",
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(candidate = list(qty = 3, threshold = 0.35))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 3, threshold = 0.35)))
 
   results <- ledgr_sweep(exp, grid, seed = 123L)
   candidate <- ledgr_candidate(results, "candidate")
@@ -425,9 +425,9 @@ testthat::test_that("pulse_seed sweep promotion reproduces the selected candidat
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
     universe = "AAA",
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(candidate = list(qty = 3, modulus = 3L))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 3, modulus = 3L)))
 
   results <- ledgr_sweep(exp, grid, seed = 123L)
   candidate <- ledgr_candidate(results, "candidate")
@@ -474,7 +474,7 @@ testthat::test_that("feature-factory sweep parity covers candidate-varying featu
     universe = "AAA",
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(short = list(n = 2, qty = 1), longer = list(n = 3, qty = 2))
+  grid <- ledgr_grid_named(short = list(strategy = list(n = 2, qty = 1)), longer = list(strategy = list(n = 3, qty = 2)))
 
   results <- ledgr_sweep(exp, grid, seed = 77L)
   feature_hashes <- vapply(results$provenance, `[[`, character(1), "feature_set_hash")

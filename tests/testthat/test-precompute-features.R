@@ -13,9 +13,9 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
     strategy = strategy,
     universe = c("AAA", "BBB"),
     features = list(ledgr_ind_sma(3), ledgr_ind_returns(2)),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   precomputed <- ledgr_precompute_features(exp, grid)
 
@@ -86,9 +86,9 @@ testthat::test_that("feature factories resolve per candidate and dedupe by finge
     strategy = strategy,
     universe = "AAA",
     features = feature_factory,
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(a = list(n = 2), b = list(n = 2), c = list(n = 4))
+  grid <- ledgr_grid_named(a = list(strategy = list(n = 2)), b = list(strategy = list(n = 2)), c = list(strategy = list(n = 4)))
 
   precomputed <- ledgr_precompute_features(exp, grid)
 
@@ -128,9 +128,9 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
     strategy = strategy,
     universe = "AAA",
     features = list(ledgr_ind_sma(6)),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(a = list(qty = 1))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)))
 
   precomputed <- ledgr_precompute_features(
     exp,
@@ -178,7 +178,7 @@ testthat::test_that("windowed sweeps validate precomputed scoring and hydration 
     features = list(feature),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(low = list(qty = 1, threshold = 103), high = list(qty = 2, threshold = 106))
+  grid <- ledgr_grid_named(low = list(strategy = list(qty = 1, threshold = 103)), high = list(strategy = list(qty = 2, threshold = 106)))
   window <- ledgr:::ledgr_experiment_window(exp, "2020-01-04", "2020-01-08")
 
   # A dense payload whose feature state starts before the window refuses;
@@ -229,9 +229,9 @@ testthat::test_that("runtime projection flattens bundle outputs to concrete feat
     strategy = strategy,
     universe = "AAA",
     features = list(bundle),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(a = list(qty = 1))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)))
 
   precomputed <- ledgr_precompute_features(exp, grid)
   expected_ids <- unname(ledgr_feature_id(bundle))
@@ -256,9 +256,9 @@ testthat::test_that("precompute aborts on static scoring coverage gaps", {
     strategy = strategy,
     universe = c("AAA", "BBB"),
     features = list(ledgr_ind_returns(1)),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(a = list(qty = 1))
+  grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)))
 
   testthat::expect_error(
     ledgr_precompute_features(exp, grid),
@@ -282,9 +282,9 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     strategy = strategy,
     universe = c("AAA", "BBB"),
     features = feature_factory,
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(a = list(n = 2), b = list(n = 3))
+  grid <- ledgr_grid_named(a = list(strategy = list(n = 2)), b = list(strategy = list(n = 3)))
   precomputed <- ledgr_precompute_features(exp, grid)
 
   changed_bars <- bars
@@ -301,7 +301,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     strategy = strategy,
     universe = c("AAA", "BBB"),
     features = feature_factory,
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
   testthat::expect_error(
     ledgr:::ledgr_validate_precomputed_features(precomputed, other_exp, grid),
@@ -313,7 +313,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     strategy = strategy,
     universe = "AAA",
     features = feature_factory,
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
   testthat::expect_error(
     ledgr:::ledgr_validate_precomputed_features(precomputed, one_universe_exp, grid),
@@ -325,7 +325,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     class = "ledgr_precomputed_range_mismatch"
   )
 
-  relabeled_grid <- ledgr_param_grid(a = list(n = 2), c = list(n = 3))
+  relabeled_grid <- ledgr_grid_named(a = list(strategy = list(n = 2)), c = list(strategy = list(n = 3)))
   testthat::expect_error(
     ledgr:::ledgr_validate_precomputed_features(precomputed, exp, relabeled_grid),
     class = "ledgr_precomputed_grid_mismatch"
@@ -338,7 +338,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     class = "ledgr_precomputed_engine_mismatch"
   )
 
-  changed_grid <- ledgr_param_grid(a = list(n = 2), b = list(n = 4))
+  changed_grid <- ledgr_grid_named(a = list(strategy = list(n = 2)), b = list(strategy = list(n = 4)))
   testthat::expect_error(
     ledgr:::ledgr_validate_precomputed_features(precomputed, exp, changed_grid),
     class = "ledgr_precomputed_feature_mismatch"
@@ -372,7 +372,7 @@ testthat::test_that("precomputed features refuse after a direct capture changes"
       cost_model = ledgr_cost_zero()
     )
   }
-  grid <- ledgr_param_grid(one = list(threshold = 0))
+  grid <- ledgr_grid_named(one = list(strategy = list(threshold = 0)))
   original <- experiment(1)
   changed <- experiment(2)
   precomputed <- ledgr_precompute_features(original, grid)
@@ -424,9 +424,9 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
     },
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(
-    fast = list(speed = "fast"),
-    slow = list(speed = "slow")
+  grid <- ledgr_grid_named(
+    fast = list(strategy = list(speed = "fast")),
+    slow = list(strategy = list(speed = "slow"))
   )
   precomputed <- ledgr_precompute_features(exp, grid)
   original_union <- sort(precomputed$feature_union$fingerprint, method = "radix")
@@ -434,7 +434,9 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   windows <- c(fast = 20, slow = 5)
   con <- ledgr:::get_connection(snapshot)
   count_rows <- function(table) {
-    if (!DBI::dbExistsTable(con, table)) return(0L)
+    if (!DBI::dbExistsTable(con, table)) {
+      return(0L)
+    }
     DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n[[1L]]
   }
   runs_before <- count_rows("runs")
@@ -562,9 +564,9 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   )
   testthat::expect_identical(alias_with_precompute$n_trades, alias_fresh$n_trades)
 
-  reordered_grid <- ledgr_param_grid(
-    slow = list(speed = "slow"),
-    fast = list(speed = "fast")
+  reordered_grid <- ledgr_grid_named(
+    slow = list(strategy = list(speed = "slow")),
+    fast = list(strategy = list(speed = "fast"))
   )
   reordered_precomputed <- ledgr_precompute_features(alias_exp, reordered_grid)
   testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(
@@ -595,9 +597,9 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
     ),
     cost_model = ledgr_cost_zero()
   )
-  parameterized_grid <- ledgr_param_grid(
-    short = list(n = 5L),
-    long = list(n = 20L)
+  parameterized_grid <- ledgr_grid_named(
+    short = list(feature = list(n = 5L)),
+    long = list(feature = list(n = 20L))
   )
   parameterized_precomputed <- ledgr_precompute_features(
     parameterized_exp,
@@ -611,10 +613,7 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
 })
 
 testthat::test_that("large grids without precomputed features warn through the reserved sweep helper", {
-  grid <- do.call(
-    ledgr_param_grid,
-    lapply(seq_len(21), function(i) list(qty = i))
-  )
+  grid <- ledgr:::ledgr_executable_grid_normalize(data.frame(qty = seq_len(21)))
 
   testthat::expect_warning(
     ledgr:::ledgr_warn_large_grid_without_precomputed_features(grid, NULL),
@@ -639,9 +638,9 @@ testthat::test_that("candidate feature resolution captures candidate-specific fa
     strategy = strategy,
     universe = "AAA",
     features = function(params) list(ledgr_ind_sma(params$n)),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(good = list(n = 2), bad = list(n = 0), also_good = list(n = 4))
+  grid <- ledgr_grid_named(good = list(strategy = list(n = 2)), bad = list(strategy = list(n = 0)), also_good = list(strategy = list(n = 4)))
 
   resolved <- ledgr:::ledgr_resolve_feature_candidates(exp, grid, stop_on_error = FALSE)
 
@@ -674,7 +673,7 @@ testthat::test_that("structural feature-factory invalidity aborts before candida
       strategy = strategy,
       universe = "AAA",
       features = function() list(ledgr_ind_sma(2)),
-    cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_experiment_features"
   )
@@ -714,7 +713,7 @@ testthat::test_that("future-only bar changes preserve eligible feature prefixes"
       features = list(ledgr_ind_sma(3)),
       cost_model = ledgr_cost_zero()
     )
-    ledgr_precompute_features(exp, ledgr_param_grid(only = list(qty = 0)))
+    ledgr_precompute_features(exp, ledgr_grid_named(only = list(strategy = list(qty = 0))))
   }
 
   first_path <- tempfile(fileext = ".duckdb")

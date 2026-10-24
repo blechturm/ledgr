@@ -7,7 +7,8 @@
 #' train score to the selected test score before secondary result surfaces.
 #'
 #' @param exp A `ledgr_experiment`.
-#' @param grid A `ledgr_param_grid`.
+#' @param grid An ordinary rectangular data frame, a `ledgr_strategy_grid`, or
+#'   a `ledgr_executable_grid`.
 #' @param folds A `ledgr_fold_list`.
 #' @param selection_rule A rule created by [ledgr_rule_argmax()] or
 #'   [ledgr_rule_argmin()].
@@ -94,9 +95,7 @@ ledgr_walk_forward <- function(exp,
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
-  if (!inherits(grid, "ledgr_param_grid")) {
-    rlang::abort("`grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
-  }
+  grid <- ledgr_executable_grid_normalize(grid, arg = "grid")
   if (!is.null(seed)) {
     had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
     old_seed <- if (had_seed) {
@@ -104,13 +103,16 @@ ledgr_walk_forward <- function(exp,
     } else {
       NULL
     }
-    on.exit({
-      if (had_seed) {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      }
-    }, add = TRUE)
+    on.exit(
+      {
+        if (had_seed) {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv)
+        } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+          rm(".Random.seed", envir = .GlobalEnv)
+        }
+      },
+      add = TRUE
+    )
   }
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
@@ -208,9 +210,9 @@ ledgr_walk_forward <- function(exp,
       completed_folds <- completed_folds + 1L
       carried_opening <- result$carried_opening
       if (is.numeric(interrupt_after_completed_folds) &&
-          length(interrupt_after_completed_folds) == 1L &&
-          !is.na(interrupt_after_completed_folds) &&
-          completed_folds >= as.integer(interrupt_after_completed_folds)) {
+        length(interrupt_after_completed_folds) == 1L &&
+        !is.na(interrupt_after_completed_folds) &&
+        completed_folds >= as.integer(interrupt_after_completed_folds)) {
         terminal_status <- "PARTIAL"
         terminal_error <- structure(
           list(message = "simulated walk-forward interrupt", call = NULL),
@@ -298,8 +300,10 @@ print.ledgr_walk_forward_results <- function(x, ...) {
   if (nrow(folds) > 0L && "selection_source" %in% names(folds)) {
     source <- as.character(folds$selection_source)
     counts <- c(train = sum(source %in% "train"), previous = sum(source %in% "previous"), none = sum(source %in% "none"))
-    cat(sprintf("Fold selections: %d from training, %d reused from an earlier fold, %d without a candidate.\n",
-                counts[["train"]], counts[["previous"]], counts[["none"]]))
+    cat(sprintf(
+      "Fold selections: %d from training, %d reused from an earlier fold, %d without a candidate.\n",
+      counts[["train"]], counts[["previous"]], counts[["none"]]
+    ))
     if (counts[["none"]] > 0L) {
       cat(sprintf("Health warning: %d fold(s) had no candidate before any training selection and ran no test window.\n", counts[["none"]]))
     }
@@ -335,10 +339,14 @@ print.ledgr_walk_forward_results <- function(x, ...) {
 # One count line per window over distinct fold-candidate evaluations. The
 # long score table repeats each evaluation once per metric.
 ledgr_walk_forward_selection_lines <- function(scores) {
-  if (is.null(scores) || nrow(scores) == 0L) return(character())
+  if (is.null(scores) || nrow(scores) == 0L) {
+    return(character())
+  }
   scores <- ledgr_add_completion_columns(scores)
   key <- c("fold_seq", "window", "candidate_key")
-  if (!all(key %in% names(scores))) return(character())
+  if (!all(key %in% names(scores))) {
+    return(character())
+  }
   rows <- scores[!duplicated(as.data.frame(scores)[key]), , drop = FALSE]
   out <- character()
   for (window in intersect(c("train", "test"), unique(as.character(rows$window)))) {
@@ -690,7 +698,7 @@ ledgr_walk_forward_eval_fold <- function(exp,
         test_window = test_window,
         opening_state_policy = opening_state_policy,
         selected_candidate_key = selected_train_identity$candidate_key[[1]],
-      selection_source = selection_source,
+        selection_source = selection_source,
         selected_at_utc = selected_at,
         test_run_id = test_run_id,
         status = "PARTIAL"
@@ -1163,7 +1171,9 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
 # session's open; the last keeps the terminal rule. Windows are already
 # contiguous here, so that open is the next window's first session open.
 ledgr_walk_forward_continue_windows <- function(fold_windows, history_substrate) {
-  if (is.null(history_substrate) || length(fold_windows) < 2L) return(fold_windows)
+  if (is.null(history_substrate) || length(fold_windows) < 2L) {
+    return(fold_windows)
+  }
   sessions <- history_substrate$sessions
   open <- sessions[sessions$status == "open" & !is.na(sessions$session_close), , drop = FALSE]
   closes <- as.numeric(as.POSIXct(open$session_close, tz = "UTC"))
@@ -1266,7 +1276,9 @@ ledgr_walk_forward_pending_entitlements <- function(exp, events, pulses, history
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   rows <- ledgr_corporate_action_rows(get_connection(exp$snapshot), exp$snapshot$snapshot_id)
-  if (is.null(rows) || nrow(rows) == 0L) return(NULL)
+  if (is.null(rows) || nrow(rows) == 0L) {
+    return(NULL)
+  }
   pulses <- as.POSIXct(pulses, tz = "UTC")
   axis <- history_substrate$axis
   last <- match(as.numeric(pulses[[length(pulses)]]), as.numeric(axis))
@@ -1282,9 +1294,13 @@ ledgr_walk_forward_pending_entitlements <- function(exp, events, pulses, history
     dispositions_active = TRUE,
     carried = if (is.null(carried)) NULL else as.data.frame(carried, stringsAsFactors = FALSE)
   )
-  if (is.null(plan)) return(NULL)
+  if (is.null(plan)) {
+    return(NULL)
+  }
   pending <- plan$carry_out(length(pulses))
-  if (is.null(pending)) return(NULL)
+  if (is.null(pending)) {
+    return(NULL)
+  }
   list(
     fact_id = pending$fact_id,
     quantity = pending$quantity,
@@ -1294,7 +1310,9 @@ ledgr_walk_forward_pending_entitlements <- function(exp, events, pulses, history
 
 ledgr_walk_forward_frozen_at_end <- function(exp, con, run_id, pulses, history_substrate) {
   exhausted <- ledgr_availability_exhausted_choice(exp$valuation_policy)
-  if (!identical(exhausted, "freeze")) return(character())
+  if (!identical(exhausted, "freeze")) {
+    return(character())
+  }
   snapshot_hash <- history_substrate$snapshot_hash
   provider <- ledgr_availability_provider_from_substrate(
     history_substrate,

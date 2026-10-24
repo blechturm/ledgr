@@ -1,104 +1,104 @@
 testthat::test_that("walk-forward candidate identity uses canonical fields and deterministic seeds", {
   local({
-  fields <- list(
-    params_hash = digest::digest("params", algo = "sha256"),
-    feature_params_hash = digest::digest("feature-params", algo = "sha256"),
-    strategy_hash = digest::digest("strategy", algo = "sha256"),
-    feature_set_hash = digest::digest("feature-set", algo = "sha256"),
-    alias_map_hash = digest::digest("alias-map", algo = "sha256"),
-    metric_context_hash = digest::digest("metric-context", algo = "sha256"),
-    cost_model_hash = digest::digest("cost-model", algo = "sha256"),
-    risk_chain_hash = digest::digest("risk-chain", algo = "sha256")
-  )
-
-  payload <- do.call(ledgr:::ledgr_walk_forward_candidate_payload, fields)
-  testthat::expect_identical(
-    names(payload),
-    c(
-      "params_hash", "feature_params_hash", "strategy_hash",
-      "feature_set_hash", "alias_map_hash", "metric_context_hash",
-      "cost_model_hash", "risk_chain_hash", "execution_seed",
-      "candidate_schema_version"
+    fields <- list(
+      params_hash = digest::digest("params", algo = "sha256"),
+      feature_params_hash = digest::digest("feature-params", algo = "sha256"),
+      strategy_hash = digest::digest("strategy", algo = "sha256"),
+      feature_set_hash = digest::digest("feature-set", algo = "sha256"),
+      alias_map_hash = digest::digest("alias-map", algo = "sha256"),
+      metric_context_hash = digest::digest("metric-context", algo = "sha256"),
+      cost_model_hash = digest::digest("cost-model", algo = "sha256"),
+      risk_chain_hash = digest::digest("risk-chain", algo = "sha256")
     )
-  )
-  testthat::expect_true(is.na(payload$execution_seed))
-  testthat::expect_identical(payload$candidate_schema_version, "v1")
 
-  key_a <- do.call(ledgr:::ledgr_walk_forward_candidate_key, fields)
-  key_b <- do.call(ledgr:::ledgr_walk_forward_candidate_key, fields)
-  changed_cost <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_key,
-    utils::modifyList(fields, list(cost_model_hash = digest::digest("cost-model-b", algo = "sha256")))
-  )
-  changed_risk <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_key,
-    utils::modifyList(fields, list(risk_chain_hash = digest::digest("risk-chain-b", algo = "sha256")))
-  )
+    payload <- do.call(ledgr:::ledgr_walk_forward_candidate_payload, fields)
+    testthat::expect_identical(
+      names(payload),
+      c(
+        "params_hash", "feature_params_hash", "strategy_hash",
+        "feature_set_hash", "alias_map_hash", "metric_context_hash",
+        "cost_model_hash", "risk_chain_hash", "execution_seed",
+        "candidate_schema_version"
+      )
+    )
+    testthat::expect_true(is.na(payload$execution_seed))
+    testthat::expect_identical(payload$candidate_schema_version, "v1")
 
-  testthat::expect_match(key_a, "^[0-9a-f]{64}$")
-  testthat::expect_identical(key_a, key_b)
-  testthat::expect_false(identical(key_a, changed_cost))
-  testthat::expect_false(identical(key_a, changed_risk))
+    key_a <- do.call(ledgr:::ledgr_walk_forward_candidate_key, fields)
+    key_b <- do.call(ledgr:::ledgr_walk_forward_candidate_key, fields)
+    changed_cost <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_key,
+      utils::modifyList(fields, list(cost_model_hash = digest::digest("cost-model-b", algo = "sha256")))
+    )
+    changed_risk <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_key,
+      utils::modifyList(fields, list(risk_chain_hash = digest::digest("risk-chain-b", algo = "sha256")))
+    )
+
+    testthat::expect_match(key_a, "^[0-9a-f]{64}$")
+    testthat::expect_identical(key_a, key_b)
+    testthat::expect_false(identical(key_a, changed_cost))
+    testthat::expect_false(identical(key_a, changed_risk))
   })
 
   # Also covers: walk-forward candidate identity derives deterministic per-row seeds
   local({
-  fields <- list(
-    params_hash = digest::digest("params", algo = "sha256"),
-    feature_params_hash = digest::digest("feature-params", algo = "sha256"),
-    strategy_hash = digest::digest("strategy", algo = "sha256"),
-    feature_set_hash = digest::digest("feature-set", algo = "sha256"),
-    alias_map_hash = digest::digest("alias-map", algo = "sha256"),
-    metric_context_hash = digest::digest("metric-context", algo = "sha256"),
-    cost_model_hash = digest::digest("cost-model", algo = "sha256"),
-    risk_chain_hash = digest::digest("risk-chain", algo = "sha256")
-  )
+    fields <- list(
+      params_hash = digest::digest("params", algo = "sha256"),
+      feature_params_hash = digest::digest("feature-params", algo = "sha256"),
+      strategy_hash = digest::digest("strategy", algo = "sha256"),
+      feature_set_hash = digest::digest("feature-set", algo = "sha256"),
+      alias_map_hash = digest::digest("alias-map", algo = "sha256"),
+      metric_context_hash = digest::digest("metric-context", algo = "sha256"),
+      cost_model_hash = digest::digest("cost-model", algo = "sha256"),
+      risk_chain_hash = digest::digest("risk-chain", algo = "sha256")
+    )
 
-  seeded <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_identity,
-    c(fields, list(master_seed = 42L, fold_seq = 2L, window = "train"))
-  )
-  same <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_identity,
-    c(fields, list(master_seed = 42L, fold_seq = 2L, window = "train"))
-  )
-  changed_window <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_identity,
-    c(fields, list(master_seed = 42L, fold_seq = 2L, window = "test"))
-  )
-  changed_fold <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_identity,
-    c(fields, list(master_seed = 42L, fold_seq = 3L, window = "train"))
-  )
-  unseeded <- do.call(
-    ledgr:::ledgr_walk_forward_candidate_identity,
-    c(fields, list(master_seed = NULL, fold_seq = 2L, window = "train"))
-  )
+    seeded <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_identity,
+      c(fields, list(master_seed = 42L, fold_seq = 2L, window = "train"))
+    )
+    same <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_identity,
+      c(fields, list(master_seed = 42L, fold_seq = 2L, window = "train"))
+    )
+    changed_window <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_identity,
+      c(fields, list(master_seed = 42L, fold_seq = 2L, window = "test"))
+    )
+    changed_fold <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_identity,
+      c(fields, list(master_seed = 42L, fold_seq = 3L, window = "train"))
+    )
+    unseeded <- do.call(
+      ledgr:::ledgr_walk_forward_candidate_identity,
+      c(fields, list(master_seed = NULL, fold_seq = 2L, window = "train"))
+    )
 
-  testthat::expect_match(seeded$unseeded_candidate_key, "^[0-9a-f]{64}$")
-  testthat::expect_match(seeded$candidate_key, "^[0-9a-f]{64}$")
-  testthat::expect_type(seeded$execution_seed, "integer")
-  testthat::expect_identical(seeded, same)
-  testthat::expect_false(identical(seeded$execution_seed, changed_window$execution_seed))
-  testthat::expect_false(identical(seeded$execution_seed, changed_fold$execution_seed))
-  testthat::expect_false(identical(seeded$candidate_key, changed_window$candidate_key))
-  testthat::expect_true(is.na(unseeded$execution_seed))
+    testthat::expect_match(seeded$unseeded_candidate_key, "^[0-9a-f]{64}$")
+    testthat::expect_match(seeded$candidate_key, "^[0-9a-f]{64}$")
+    testthat::expect_type(seeded$execution_seed, "integer")
+    testthat::expect_identical(seeded, same)
+    testthat::expect_false(identical(seeded$execution_seed, changed_window$execution_seed))
+    testthat::expect_false(identical(seeded$execution_seed, changed_fold$execution_seed))
+    testthat::expect_false(identical(seeded$candidate_key, changed_window$candidate_key))
+    testthat::expect_true(is.na(unseeded$execution_seed))
   })
 })
 
 
 testthat::test_that("walk-forward param grid hash excludes labels and row order", {
-  grid_ab <- ledgr_param_grid(
-    a = list(qty = 1, threshold = 2),
-    b = list(qty = 2, threshold = 3)
+  grid_ab <- ledgr_grid_named(
+    a = list(strategy = list(qty = 1, threshold = 2)),
+    b = list(strategy = list(qty = 2, threshold = 3))
   )
-  grid_ba <- ledgr_param_grid(
-    second = list(qty = 2, threshold = 3),
-    first = list(qty = 1, threshold = 2)
+  grid_ba <- ledgr_grid_named(
+    second = list(strategy = list(qty = 2, threshold = 3)),
+    first = list(strategy = list(qty = 1, threshold = 2))
   )
-  grid_changed <- ledgr_param_grid(
-    a = list(qty = 1, threshold = 2),
-    b = list(qty = 3, threshold = 3)
+  grid_changed <- ledgr_grid_named(
+    a = list(strategy = list(qty = 1, threshold = 2)),
+    b = list(strategy = list(qty = 3, threshold = 3))
   )
 
   hash_ab <- ledgr:::ledgr_walk_forward_param_grid_hash(grid_ab)

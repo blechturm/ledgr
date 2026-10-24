@@ -53,7 +53,8 @@ selection_visibility_params <- function() {
 }
 
 selection_visibility_grid <- function(ids = names(selection_visibility_params())) {
-  do.call(ledgr_param_grid, selection_visibility_params()[ids])
+  specs <- lapply(selection_visibility_params()[ids], function(x) list(strategy = x))
+  do.call(ledgr_grid_named, specs)
 }
 
 # The expected surface, derived from the fixture by hand: clean trades CLK

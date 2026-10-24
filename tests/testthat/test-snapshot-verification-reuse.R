@@ -457,10 +457,10 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   sweep_count <- verification_count_hashes({
     sweep <- ledgr_sweep(
       exp,
-      ledgr_param_grid(
-        a = list(qty = 0),
-        b = list(qty = 1),
-        c = list(qty = 2)
+      ledgr_grid_named(
+        a = list(strategy = list(qty = 0)),
+        b = list(strategy = list(qty = 1)),
+        c = list(strategy = list(qty = 2))
       )
     )
     testthat::expect_equal(nrow(sweep), 3L)
@@ -539,7 +539,7 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   walk_count <- verification_count_hashes({
     wf <- suppressWarnings(ledgr_walk_forward(
       exp,
-      grid = ledgr_param_grid(a = list(qty = 0), b = list(qty = 1)),
+      grid = ledgr_grid_named(a = list(strategy = list(qty = 0)), b = list(strategy = list(qty = 1))),
       folds = folds,
       selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       opening_state_policy = "flat_test_state",

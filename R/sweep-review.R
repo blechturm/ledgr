@@ -59,6 +59,7 @@ ledgr_sweep_review <- function(sweep, rank_by, n = 5L) {
   names(top_data) <- names(ranked)
   top_view <- tibble::as_tibble(top_data)
   top <- top_view[seq_len(min(n, nrow(top_view))), intersect(top_cols, names(top_view)), drop = FALSE]
+  top <- ledgr_sweep_review_parameter_view(top)
   issues <- ledgr_sweep_review_issue_rows(view)
   counts <- ledgr_selection_counts(
     view$status,
@@ -137,12 +138,31 @@ ledgr_sweep_review_issue_rows <- function(view) {
     warned <- vapply(view$warnings, function(x) length(x) > 0L, logical(1))
   }
   issues <- view[failed | warned, , drop = FALSE]
-  issues[, intersect(ledgr_sweep_review_issue_cols(), names(issues)), drop = FALSE]
+  issues <- issues[, intersect(ledgr_sweep_review_issue_cols(), names(issues)), drop = FALSE]
+  ledgr_sweep_review_parameter_view(issues)
+}
+
+ledgr_sweep_review_parameter_view <- function(x) {
+  if (!"params" %in% names(x)) {
+    return(x)
+  }
+  strategy <- vapply(x$params, ledgr_sweep_params_summary, character(1))
+  feature <- if ("feature_params" %in% names(x)) {
+    vapply(x$feature_params, ledgr_sweep_params_summary, character(1))
+  } else {
+    rep("{}", nrow(x))
+  }
+  x$params <- NULL
+  x$feature_params <- NULL
+  x$strategy_params <- strategy
+  x$feature_params <- feature
+  front <- c("rank", "strategy_params", "feature_params", "candidate_id")
+  x[, c(intersect(front, names(x)), setdiff(names(x), front)), drop = FALSE]
 }
 
 ledgr_sweep_review_top_cols <- function() {
   c(
-    "rank", "candidate_id", "candidate_row", "status", "final_equity",
+    "rank", "params", "feature_params", "candidate_id", "candidate_row", "status", "final_equity",
     "total_return", "sharpe_ratio", "max_drawdown", "n_trades",
     "valuation_state", "max_frozen_equity_weight", "frozen_at_end_value",
     "assumed_terminal_outcomes", "execution_seed", "params", "feature_params"
@@ -151,8 +171,8 @@ ledgr_sweep_review_top_cols <- function() {
 
 ledgr_sweep_review_issue_cols <- function() {
   c(
-    "candidate_id", "candidate_row", "status", "stop_reason", "affected_instrument_ids",
-    "error_class", "error_msg", "warnings"
+    "params", "feature_params", "candidate_id", "candidate_row", "status",
+    "stop_reason", "affected_instrument_ids", "error_class", "error_msg", "warnings"
   )
 }
 

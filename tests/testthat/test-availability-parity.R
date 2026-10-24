@@ -385,7 +385,8 @@ testthat::test_that("complete availability runs recover finalization without str
   testthat::expect_identical(failed$run_completion$intended_terminal_status, "DONE")
   failed_inventory <- ledgr_run_list(snapshot)
   failed_row <- failed_inventory[
-    failed_inventory$run_id == "complete-terminal-recovery", , drop = FALSE
+    failed_inventory$run_id == "complete-terminal-recovery", ,
+    drop = FALSE
   ]
   testthat::expect_true(failed_row$completion_evidence_available[[1L]])
   testthat::expect_identical(failed_row$completion_status[[1L]], "DONE")
@@ -521,7 +522,7 @@ testthat::test_that("availability completion propagates through sweep persistenc
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(one = list(qty = 1))
+  grid <- ledgr_grid_named(one = list(strategy = list(qty = 1)))
   sweep <- ledgr_sweep(
     exp,
     grid,
@@ -566,7 +567,7 @@ testthat::test_that("parallel availability sweeps return the same compact termin
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(one = list(qty = 1), two = list(qty = 2))
+  grid <- ledgr_grid_named(one = list(strategy = list(qty = 1)), two = list(strategy = list(qty = 2)))
   sequential <- ledgr_sweep(exp, grid, seed = 31L)
   parallel <- ledgr_sweep(exp, grid, seed = 31L, workers = 2L)
   direct <- ledgr_run(exp, params = list(qty = 1), run_id = "direct-parity")
@@ -621,7 +622,7 @@ testthat::test_that("direct and sweep paths both apply the opening-time status c
 
   direct <- ledgr_run(exp, params = list(qty = 1), run_id = "opening-cutoff-direct")
   on.exit(close(direct), add = TRUE)
-  sweep <- ledgr_sweep(exp, ledgr_param_grid(one = list(qty = 1)), seed = 99L)
+  sweep <- ledgr_sweep(exp, ledgr_grid_named(one = list(strategy = list(qty = 1))), seed = 99L)
 
   testthat::expect_equal(nrow(ledgr_results(direct, "fills")), 0L)
   testthat::expect_identical(sweep$status, "DONE")
@@ -664,14 +665,12 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
   availability <- tibble::as_tibble(bt, what = "availability")
   first_availability <- availability[
     availability$instrument_id == "AAA" &
-      availability$ts_utc == min(availability$ts_utc),
-    ,
+      availability$ts_utc == min(availability$ts_utc), ,
     drop = FALSE
   ]
   last_availability <- availability[
     availability$instrument_id == "AAA" &
-      availability$ts_utc == max(availability$ts_utc),
-    ,
+      availability$ts_utc == max(availability$ts_utc), ,
     drop = FALSE
   ]
   testthat::expect_identical(first_availability$member, TRUE)
@@ -682,8 +681,7 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
   testthat::expect_identical(last_availability$member, TRUE)
   testthat::expect_identical(last_availability$held, TRUE)
   decision <- diagnostics[
-    diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA",
-    ,
+    diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA", ,
     drop = FALSE
   ][1L, ]
   filtered_counts <- new.env(parent = emptyenv())
@@ -751,8 +749,7 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
   testthat::expect_lt(filtered_counts$availability_rows, nrow(availability))
   history <- ledgr_run_explain(bt, "AAA")
   decision_rows <- diagnostics[
-    diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA",
-    ,
+    diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA", ,
     drop = FALSE
   ]
   testthat::expect_identical(nrow(history), nrow(decision_rows))
@@ -880,16 +877,18 @@ testthat::test_that("walk-forward stops a carry-state chain on incomplete test e
   folds <- ledgr:::ledgr_fold_list(list(
     ledgr_fold(
       "2020-01-01T16:00:00Z", "2020-01-04T16:00:00Z",
-      "2020-01-05T16:00:00Z", "2020-01-07T16:00:00Z", fold_seq = 1L
+      "2020-01-05T16:00:00Z", "2020-01-07T16:00:00Z",
+      fold_seq = 1L
     ),
     ledgr_fold(
       "2020-01-04T16:00:00Z", "2020-01-07T16:00:00Z",
-      "2020-01-08T16:00:00Z", "2020-01-10T16:00:00Z", fold_seq = 2L
+      "2020-01-08T16:00:00Z", "2020-01-10T16:00:00Z",
+      fold_seq = 2L
     )
   ), constructor = list(type_id = "explicit"))
   wf <- ledgr_walk_forward(
     exp,
-    grid = ledgr_param_grid(one = list(dummy = 1)),
+    grid = ledgr_grid_named(one = list(strategy = list(dummy = 1))),
     folds = folds,
     selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 44L
@@ -964,7 +963,7 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
     valuation_policy = ledgr_valuation_stale(3, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(one = list(qty = 2))
+  grid <- ledgr_grid_named(one = list(strategy = list(qty = 2)))
   folds <- ledgr:::ledgr_fold_list(
     list(
       # Contiguous test windows: carry_test_state refuses a session between

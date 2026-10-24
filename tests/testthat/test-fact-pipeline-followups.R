@@ -167,14 +167,16 @@ testthat::test_that("[LTB-0352] tied-source conflicts with corrections equal a p
     ends <- as.numeric(rows$effective_to)
     ends[is.na(ends)] <- Inf
     n <- nrow(rows)
-    for (i in seq_len(n)) for (j in seq_len(n)) {
-      if (i < j && !related[i, j] &&
+    for (i in seq_len(n)) {
+      for (j in seq_len(n)) {
+        if (i < j && !related[i, j] &&
           rows$instrument_id[[i]] == rows$instrument_id[[j]] &&
           rows$source[[i]] == rows$source[[j]] &&
           rows$precedence[[i]] == rows$precedence[[j]] &&
           rows$status[[i]] != rows$status[[j]] &&
           starts[[i]] < ends[[j]] && starts[[j]] < ends[[i]]) {
-        return("conflict")
+          return("conflict")
+        }
       }
     }
     "ok"
@@ -516,13 +518,15 @@ ws45_unentitled_fixture <- function(subtype, effective, known = NA_integer_) {
       ledgr_facts_equity_corporate_actions(action),
       ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
       ledgr_facts_membership_snapshots(
-        membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+        membership,
+        universe_id = "u", complete = TRUE, knowledge = "assume_effective"
       )
     ),
     price_basis = "split_adjusted"
   )
   exp <- ledgr_experiment(
-    snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
+    snapshot, function(ctx, params) ctx$hold(),
+    universe = ledgr_universe_members("u"),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2, BBB = 1), cost_basis = c(AAA = 10, BBB = 21)),
     corporate_action_policy = ledgr_corporate_actions_research()
@@ -558,7 +562,8 @@ testthat::test_that("[LTB-0357] an effective-only disposition or quantity effect
   late <- ws45_unentitled_fixture("cash_acquisition", effective = 4L, known = 7L)
   on.exit(ledgr_snapshot_close(late$snapshot), add = TRUE)
   one <- refusal(ledgr:::ledgr_run_window(
-    late$exp, params = list(),
+    late$exp,
+    params = list(),
     window = ledgr:::ledgr_experiment_window(late$exp, late$days[[3L]], late$days[[8L]]),
     run_id = "ws45-unentitled-single"
   ))
@@ -578,13 +583,14 @@ testthat::test_that("[LTB-0357] an effective-only disposition or quantity effect
   # knowledge clock, so it completes; the carried chain refuses in the
   # second window, as the single run does.
   first <- ledgr:::ledgr_run_window(
-    late$exp, params = list(),
+    late$exp,
+    params = list(),
     window = ledgr:::ledgr_experiment_window(late$exp, late$days[[3L]], late$days[[5L]]),
     run_id = "ws45-unentitled-first"
   )
   on.exit(close(first), add = TRUE)
   chain <- refusal(suppressWarnings(ledgr_walk_forward(
-    late$exp, ledgr_param_grid(list()), late$folds,
+    late$exp, ledgr_grid_named(candidate_1 = list(strategy = list())), late$folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )))
   testthat::expect_s3_class(chain, "ledgr_corporate_action_entitlement_missing")
@@ -600,7 +606,7 @@ testthat::test_that("[LTB-0357] an effective-only disposition or quantity effect
     as.numeric(ws45_utc("2021-01-12 21:00:00"))
   )
   inside_chain <- refusal(suppressWarnings(ledgr_walk_forward(
-    inside$exp, ledgr_param_grid(list()), inside$folds,
+    inside$exp, ledgr_grid_named(candidate_1 = list(strategy = list())), inside$folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )))
   testthat::expect_identical(inside_chain$fact_id, inside_one$fact_id)
@@ -700,7 +706,8 @@ testthat::test_that("[LTB-0359] an effective-only cash dividend refuses in every
   late <- ws45_unentitled_fixture("ordinary_cash_dividend", effective = 4L, known = 7L)
   on.exit(ledgr_snapshot_close(late$snapshot), add = TRUE)
   one <- refusal(ledgr:::ledgr_run_window(
-    late$exp, params = list(),
+    late$exp,
+    params = list(),
     window = ledgr:::ledgr_experiment_window(late$exp, late$days[[3L]], late$days[[8L]]),
     run_id = "ws45-unentitled-dividend"
   ))
@@ -710,7 +717,7 @@ testthat::test_that("[LTB-0359] an effective-only cash dividend refuses in every
     as.numeric(ws45_utc("2021-01-12 14:30:00"))
   )
   chain <- refusal(suppressWarnings(ledgr_walk_forward(
-    late$exp, ledgr_param_grid(list()), late$folds,
+    late$exp, ledgr_grid_named(candidate_1 = list(strategy = list())), late$folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
   )))
   testthat::expect_identical(chain$fact_id, one$fact_id)

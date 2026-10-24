@@ -156,6 +156,7 @@
 \alias{ledgr_duplicate_fact_family}
 \alias{ledgr_duplicate_feature_id}
 \alias{ledgr_duplicate_grid_labels}
+\alias{ledgr_duplicate_grid_rows}
 \alias{ledgr_duplicate_param_grid_labels}
 \alias{ledgr_empty_warmup_input}
 \alias{ledgr_event_buffer_capacity_exceeded}
@@ -214,6 +215,8 @@
 \alias{ledgr_invalid_fill_intent}
 \alias{ledgr_invalid_fold_execution}
 \alias{ledgr_invalid_grid}
+\alias{ledgr_invalid_grid_column}
+\alias{ledgr_invalid_grid_value}
 \alias{ledgr_invalid_history_policy}
 \alias{ledgr_invalid_history_substrate}
 \alias{ledgr_invalid_history_treatment}
@@ -1002,6 +1005,8 @@ grid labels evidence.
 \item \code{ledgr_duplicate_fact_family} reports duplicate fact family evidence.
 \item \code{ledgr_duplicate_feature_id} reports duplicate feature id evidence.
 \item \code{ledgr_duplicate_grid_labels} reports duplicate grid labels evidence.
+\item \code{ledgr_duplicate_grid_rows} reports duplicate rectangular-grid row
+evidence.
 \item \code{ledgr_duplicate_param_grid_labels} reports duplicate param grid labels
 evidence.
 \item \code{ledgr_empty_warmup_input} reports the empty warmup input boundary.
@@ -1084,6 +1089,10 @@ input.
 \item \code{ledgr_invalid_fill_intent} reports invalid fill intent input.
 \item \code{ledgr_invalid_fold_execution} reports invalid fold execution input.
 \item \code{ledgr_invalid_grid} reports invalid grid input.
+\item \code{ledgr_invalid_grid_column} reports a rectangular-grid column whose
+type or class is unsupported.
+\item \code{ledgr_invalid_grid_value} reports a missing or non-finite
+rectangular-grid value.
 \item \code{ledgr_invalid_indicator_bundle} reports invalid indicator bundle input.
 \item \code{ledgr_invalid_ledger_event} reports invalid ledger event input.
 \item \code{ledgr_invalid_ledger_meta} reports invalid ledger meta input.

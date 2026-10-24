@@ -1,9 +1,13 @@
 ws42_integration_reader <- function(ctx) {
   list(
-    close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-      instruments = "decision_axis", min_observations = 0L),
-    close_long = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-      instruments = "decision_axis", min_observations = 0L, layout = "long"),
+    close = ledgr_history_frame(ctx,
+      bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L
+    ),
+    close_long = ledgr_history_frame(ctx,
+      bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L, layout = "long"
+    ),
     fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
     fast_matrix = ledgr_history_matrix(ctx, feature = "fast", lookback = 2L),
     bbb_fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, instruments = "BBB"),
@@ -33,12 +37,12 @@ testthat::test_that("[LTB-0300] run, sweep, window, precompute and inspection re
   at <- function(tag, session) seen[[paste(tag, ws42_iso(axis[[session]]))]]
 
   close(ledgr_run(exp, params = list(tag = "run"), run_id = "run"))
-  ledgr_sweep(exp, ledgr_param_grid(list(tag = "sweep")))
-  pre_grid <- ledgr_param_grid(list(tag = "precompute"))
+  ledgr_sweep(exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "sweep"))))
+  pre_grid <- ledgr_grid_named(candidate_1 = list(strategy = list(tag = "precompute")))
   ledgr_sweep(exp, pre_grid, precomputed_features = ledgr_precompute_features(exp, pre_grid))
   window <- ledgr:::ledgr_experiment_window(exp, axis[[1L]], axis[[8L]])
   close(ledgr:::ledgr_run_window(exp, params = list(tag = "run_window"), window = window, run_id = "run_window"))
-  ledgr:::ledgr_sweep_window(exp, ledgr_param_grid(list(tag = "sweep_window")), window)
+  ledgr:::ledgr_sweep_window(exp, ledgr_grid_named(candidate_1 = list(strategy = list(tag = "sweep_window"))), window)
 
   # Literal session-6 history: CCC's close is carried from session 5 because
   # its inactivity is not known until session 7; AAA's dividend posts at
@@ -114,7 +118,8 @@ testthat::test_that("[LTB-0300] run, sweep, window, precompute and inspection re
     opening = opening, history_policy = ledgr_history_policy(price_carry = NULL)
   )
   strict_close <- ledgr_history_frame(
-    ledgr_pulse_snapshot(strict, ts_utc = axis[[6L]]), bar = "close",
+    ledgr_pulse_snapshot(strict, ts_utc = axis[[6L]]),
+    bar = "close",
     lookback = Inf, instruments = "decision_axis", min_observations = 0L
   )
   testthat::expect_identical(strict_close$BBB, c(21, 22, NA, NA, 25, 26))
@@ -153,7 +158,7 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   exp <- fixture$exp
   axis <- fixture$axis
-  grid <- ledgr_param_grid(list(tag = "a"), list(tag = "b"))
+  grid <- ledgr_grid_named(candidate_1 = list(strategy = list(tag = "a")), candidate_2 = list(strategy = list(tag = "b")))
 
   # Backward and reordered requests are pure: a later cutoff, an earlier one
   # and the later one again give identical payloads, and the earlier payload
@@ -190,14 +195,16 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
   forged$history_axis$axis_hash <- "different"
   refuses(ledgr_sweep(exp, grid, precomputed_features = forged), "ledgr_precomputed_history_mismatch")
   carry2 <- ledgr_experiment(
-    fixture$snapshot, counting, universe = ledgr_universe_members("u"),
+    fixture$snapshot, counting,
+    universe = ledgr_universe_members("u"),
     features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000), history_policy = ledgr_history_policy(price_carry = 2L)
   )
   refuses(ledgr_sweep(carry2, grid, precomputed_features = full), "ledgr_precomputed_history_mismatch")
   sma3 <- ledgr_experiment(
-    fixture$snapshot, counting, universe = ledgr_universe_members("u"),
+    fixture$snapshot, counting,
+    universe = ledgr_universe_members("u"),
     features = ledgr_feature_map(fast = ledgr_ind_sma(3)),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
@@ -223,7 +230,8 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
   dense_snapshot <- ws42_dense_snapshot()
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   dense <- ledgr_experiment(
-    dense_snapshot, counting, cost_model = ledgr_cost_zero(),
+    dense_snapshot, counting,
+    cost_model = ledgr_cost_zero(),
     features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
     opening = ledgr_opening(cash = 1000)
   )
@@ -237,19 +245,24 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
   # pulse or candidate.
   seen <- new.env()
   mutating <- function(ctx, params) {
-    first <- ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-      instruments = "decision_axis", min_observations = 0L)
+    first <- ledgr_history_frame(ctx,
+      bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L
+    )
     m <- ledgr_history_matrix(first)
     seen[[paste(params$tag, ctx$ts_utc)]] <- first
     first$AAA[] <- -1
     m[] <- -1
-    again <- ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-      instruments = "decision_axis", min_observations = 0L)
+    again <- ledgr_history_frame(ctx,
+      bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L
+    )
     if (!identical(again, seen[[paste(params$tag, ctx$ts_utc)]])) stop("history read changed")
     ctx$hold()
   }
   mutation_exp <- ledgr_experiment(
-    fixture$snapshot, mutating, universe = ledgr_universe_members("u"),
+    fixture$snapshot, mutating,
+    universe = ledgr_universe_members("u"),
     features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
     valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
@@ -294,8 +307,10 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   testthat::expect_s3_class(ctx$.history, "ledgr_history_view")
   testthat::expect_identical(
     names(formals(ledgr_history_frame)),
-    c("ctx", "feature", "bar", "lookback", "instruments", "min_observations",
-      "min_instruments", "layout")
+    c(
+      "ctx", "feature", "bar", "lookback", "instruments", "min_observations",
+      "min_instruments", "layout"
+    )
   )
 
   # A strategy context is never built from an experiment by the strategy:
@@ -313,10 +328,14 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   )
   strategy_bodies <- function(text) {
     starts <- gregexpr("function\\s*\\(\\s*ctx", text, perl = TRUE)[[1L]]
-    if (starts[[1L]] == -1L) return(character())
+    if (starts[[1L]] == -1L) {
+      return(character())
+    }
     vapply(starts, function(start) {
       open <- regexpr("\\{", substring(text, start))
-      if (open == -1L) return("")
+      if (open == -1L) {
+        return("")
+      }
       chars <- strsplit(substring(text, start + open - 1L), "")[[1L]]
       depth <- cumsum((chars == "{") - (chars == "}"))
       paste(chars[seq_len(which(depth == 0L)[[1L]])], collapse = "")
@@ -333,7 +352,8 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   dense_snapshot <- ws42_dense_snapshot()
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   dense <- ledgr_experiment(
-    dense_snapshot, function(ctx, params) ctx$hold(), cost_model = ledgr_cost_zero(),
+    dense_snapshot, function(ctx, params) ctx$hold(),
+    cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
   testthat::expect_error(
@@ -341,7 +361,8 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
     class = "ledgr_pulse_snapshot_availability_required"
   )
   pulse <- ledgr_pulse_snapshot(
-    dense_snapshot, universe = c("AAA", "BBB"), ts_utc = "2021-01-06T21:00:00Z"
+    dense_snapshot,
+    universe = c("AAA", "BBB"), ts_utc = "2021-01-06T21:00:00Z"
   )
   on.exit(close(pulse), add = TRUE)
   testthat::expect_identical(pulse$close("BBB"), 23)

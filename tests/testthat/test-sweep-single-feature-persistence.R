@@ -87,11 +87,11 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
     ),
     concrete_map = list(
       features = ledgr_feature_map(signal = ledgr_ind_sma(2L)),
-      grid = ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+      grid = ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
     ),
     plain_list = list(
       features = list(ledgr_ind_sma(2L)),
-      grid = ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+      grid = ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
     )
   )
 
@@ -192,7 +192,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
   )
   featureless_sweep <- ledgr_sweep(
     featureless,
-    ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+    ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   )
   ledgr_sweep_save(featureless_sweep, snapshot, sweep_id = "featureless")
 
@@ -204,7 +204,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
   )
   multi_sweep <- ledgr_sweep(
     multi_feature,
-    ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+    ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   )
   ledgr_sweep_save(multi_sweep, snapshot, sweep_id = "multi_feature")
 

@@ -181,9 +181,9 @@ testthat::test_that("[LTB-0055] memory failure discards disposition artifacts on
   exp <- corporate_action_recovery_experiment(fixture, strategy)
   sweep <- ledgr_sweep(
     exp,
-    ledgr_param_grid(
-      sibling = list(fail = FALSE),
-      failed = list(fail = TRUE)
+    ledgr_grid_named(
+      sibling = list(strategy = list(fail = FALSE)),
+      failed = list(strategy = list(fail = TRUE))
     ),
     stop_on_error = FALSE,
     retain = ledgr_sweep_retention("completed")

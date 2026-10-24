@@ -318,7 +318,7 @@ testthat::test_that("timing version enters active identity and stays absent from
     )
     ledgr_sweep(
       exp,
-      ledgr_param_grid(one = list(qty = 1)),
+      ledgr_grid_named(one = list(strategy = list(qty = 1))),
       seed = 71L,
       retain = ledgr_sweep_retention(trades = "closed")
     )

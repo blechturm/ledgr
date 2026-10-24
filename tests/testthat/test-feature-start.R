@@ -48,7 +48,8 @@ feature_start_availability <- function(closes) {
   facts <- ledgr_facts(
     ledgr_facts_sessions(sessions, venue_id = "V", knowledge = "assume_effective"),
     ledgr_facts_membership_snapshots(
-      membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective"
+      membership,
+      universe_id = "u", complete = TRUE, knowledge = "assume_effective"
     )
   )
   snapshot <- ledgr_snapshot_from_df(
@@ -57,7 +58,8 @@ feature_start_availability <- function(closes) {
   )
   experiment <- function(strategy, opening) {
     ledgr_experiment(
-      snapshot, strategy, universe = ledgr_universe_members("u"),
+      snapshot, strategy,
+      universe = ledgr_universe_members("u"),
       features = ledgr_feature_map(window = ledgr_ind_sma(3L)),
       valuation_policy = ledgr_valuation_stale(3), cost_model = ledgr_cost_zero(),
       opening = opening
@@ -96,7 +98,7 @@ testthat::test_that("[LTB-0196] availability features carry their state from the
     if (!is.na(value)) target[["AAA"]] <- 1
     target
   }
-  grid <- ledgr_param_grid(only = list())
+  grid <- ledgr_grid_named(only = list(strategy = list()))
   final <- function(bt) {
     equity <- ledgr_results(bt, "equity")
     equity$equity[[nrow(equity)]]
@@ -180,16 +182,18 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
     target
   }
   dated <- ledgr_experiment(
-    snapshot, strategy, features = features,
+    snapshot, strategy,
+    features = features,
     opening = ledgr_opening(cash = 1000, date = feature_start_iso(6L)),
     cost_model = ledgr_cost_zero()
   )
   undated <- ledgr_experiment(
-    snapshot, strategy, features = features,
+    snapshot, strategy,
+    features = features,
     opening = ledgr_opening(cash = 1000),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(only = list())
+  grid <- ledgr_grid_named(only = list(strategy = list()))
   restart_final <- 1000 - 9 + 10
 
   run <- ledgr_run(dated, run_id = "feature-start-run")
@@ -233,7 +237,9 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
   # cannot fill inside the window, exactly like a test window restarting on 9.
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(feature_start_iso(6L), feature_start_iso(8L),
-                    feature_start_iso(9L), feature_start_iso(10L), fold_seq = 1L)),
+      feature_start_iso(9L), feature_start_iso(10L),
+      fold_seq = 1L
+    )),
     constructor = list(type_id = "explicit")
   )
   walk_forward <- suppressWarnings(ledgr_walk_forward(
@@ -260,12 +266,14 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
     target
   }
   sma_dated <- ledgr_experiment(
-    snapshot, sma_strategy, features = features,
+    snapshot, sma_strategy,
+    features = features,
     opening = ledgr_opening(cash = 1000, date = feature_start_iso(6L)),
     cost_model = ledgr_cost_zero()
   )
   sma_undated <- ledgr_experiment(
-    snapshot, sma_strategy, features = features,
+    snapshot, sma_strategy,
+    features = features,
     opening = ledgr_opening(cash = 1000),
     cost_model = ledgr_cost_zero()
   )
@@ -276,7 +284,8 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
     run = final(sma_run),
     sweep = ledgr_sweep(sma_dated, grid, workers = 1L, seed = 1L)$final_equity[[1L]],
     precomputed_sweep = ledgr_sweep(
-      sma_dated, grid, precomputed_features = sma_precomputed, workers = 1L, seed = 1L
+      sma_dated, grid,
+      precomputed_features = sma_precomputed, workers = 1L, seed = 1L
     )$final_equity[[1L]],
     window_sweep = ledgr:::ledgr_sweep_window(
       sma_undated, grid,
@@ -320,7 +329,7 @@ testthat::test_that("[LTB-0197] history has one start and no hydration seam rema
     opening = ledgr_opening(cash = 1000),
     cost_model = ledgr_cost_zero()
   )
-  grid <- ledgr_param_grid(only = list())
+  grid <- ledgr_grid_named(only = list(strategy = list()))
 
   window <- ledgr:::ledgr_experiment_window(experiment, feature_start_iso(6L), feature_start_iso(10L))
   testthat::expect_false("hydration_start_utc" %in% names(window))
@@ -356,7 +365,8 @@ testthat::test_that("[LTB-0197] history has one start and no hydration seam rema
   pulse <- ledgr_pulse_snapshot(fixture$exp, ts_utc = fixture$axis[[2L]])
   testthat::expect_identical(pulse$feature("AAA", "fast"), 11.5)
   windowed <- ledgr_precompute_features(
-    fixture$exp, ledgr_param_grid(only = list()), start = fixture$days[[6L]]
+    fixture$exp, ledgr_grid_named(only = list(strategy = list())),
+    start = fixture$days[[6L]]
   )
   testthat::expect_identical(
     windowed$history_axis$calculation_start_utc,

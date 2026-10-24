@@ -261,7 +261,7 @@ testthat::test_that("direct run, sweep candidate, and promotion preserve cost id
   }
   cost <- ledgr_cost_chain(ledgr_cost_spread_bps(25), ledgr_cost_fixed_fee(1))
   exp <- ledgr_experiment(snapshot, strategy, cost_model = cost)
-  grid <- ledgr_param_grid(candidate = list(qty = 1))
+  grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1)))
 
   sweep <- ledgr_sweep(exp, grid, seed = 123L)
   candidate <- ledgr_candidate(sweep, "candidate")

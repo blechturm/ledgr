@@ -43,7 +43,7 @@ strategy <- function(ctx, params) {
   targets
 }
 exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-grid <- ledgr_param_grid(small = list(qty = 1), large = list(qty = 2))
+grid <- data.frame(qty = c(1, 2))
 folds <- ledgr_folds_rolling(
   start = min(bars$ts_utc),
   end = max(bars$ts_utc),
