@@ -133,6 +133,14 @@ its mode-branch self-test pass, as does the fold-phase contract checker. The
 causal-history article was executed, regenerated and verified against its GFM
 render.
 
+After the final sparse-boundary correction, the registered profiles were run
+again. Fast passed 578 of 578 blocks in 113.62 seconds; this is a functional
+pass and an honestly recorded 1.62-second miss of the 112-second advisory
+timing hint. Review passed 430 of 430 blocks in 447.74 seconds with one expected
+optional-package skip. Heavy protocol passed 192 of 192 blocks in 205.68
+seconds. The independent final focused reviewer also reran the affected suites,
+mutated all four corrected boundaries and returned PASS at `2fa2ca3d`.
+
 The committed candidate passes the full package suite: 1,200 blocks, no
 failure or error and one optional-package skip. That run exposed a pre-existing
 LTB-0182 oracle mismatch: the current terminal-release record nests result
