@@ -455,23 +455,27 @@ if (self_test) {
   expect_mutation("native identity drift", function(path) {
     measurements <- read_measurements(path)
     target <- which(measurements$arm == "candidate" &
-                    measurements$attempt == "initial" &
-                    measurements$shape_id == "feature_gaps")[[1L]]
+                    measurements$attempt == "initial")[[1L]]
     case_path <- file.path(path, "raw", measurements$file[[target]])
     case <- jsonlite::read_json(case_path, simplifyVector = FALSE)
-    case$cold$native_identity$config_hash <- "gutted"
+    case$cold$native_identity$snapshot_hash <- "gutted"
     jsonlite::write_json(case, case_path, auto_unbox = TRUE, pretty = TRUE,
                          null = "null", digits = 16)
-  }, "Native identity drift")
+  }, "Native snapshot identity disagrees")
 
   expect_mutation("missing generated native id", function(path) {
     measurements <- read_measurements(path)
     target <- which(measurements$arm == "candidate" &
-                    measurements$attempt == "initial" &
-                    measurements$shape_id == "availability_sweep")[[1L]]
+                    measurements$attempt == "initial")[[1L]]
     case_path <- file.path(path, "raw", measurements$file[[target]])
     case <- jsonlite::read_json(case_path, simplifyVector = FALSE)
-    case$cold$native_identity$sweep_id <- ""
+    field <- switch(
+      case$cold$native_identity$kind,
+      run = "run_id",
+      sweep = "sweep_id",
+      walk_forward = "session_id"
+    )
+    case$cold$native_identity[[field]] <- ""
     jsonlite::write_json(case, case_path, auto_unbox = TRUE, pretty = TRUE,
                          null = "null", digits = 16)
   }, "Incomplete native identity")
