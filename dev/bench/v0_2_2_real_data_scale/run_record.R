@@ -145,7 +145,7 @@ run_families <- function(tag, bt) {
   family(paste0(tag, "_run_info"), s3list(run_info))
   family(paste0(tag, "_completion"), DBI::dbGetQuery(con, "SELECT * FROM run_completion WHERE run_id = ?", params = list(bt$run_id)))
   family(paste0(tag, "_metrics"), ledgr_compute_metrics(bt))
-  family(paste0(tag, "_valuation_summary"), ledgr_valuation_summary(bt))
+  family(paste0(tag, "_valuation_summary"), s3list(ledgr_valuation_summary(bt)))
   family(paste0(tag, "_ca_summary"), s3list(ledgr_corporate_action_summary(bt)))
   family(paste0(tag, "_strategy_state"), DBI::dbGetQuery(con, "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc", params = list(bt$run_id)))
 }

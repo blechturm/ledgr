@@ -111,6 +111,25 @@ teaching, integration, integrated-proof, indicator-history, causality,
 documentation-contract and control-plane suites pass. The codebase census and
 its mode-branch self-test pass, as does the fold-phase contract checker. The
 causal-history article was executed, regenerated and verified against its GFM
-render. The full package suite, fixture ladder and `R CMD check` are recorded
-after the product and evidence commits, before independent close review.
+render.
 
+The committed candidate passes the full package suite: 1,200 blocks, no
+failure or error and one optional-package skip. That run exposed a pre-existing
+LTB-0182 oracle mismatch: the current terminal-release record nests result
+fields under `outputs`, while the block still read the former top-level shape.
+Commit `d3a83cc6` repairs only that read; the focused block and the full suite
+then pass.
+
+The established fixture lane was first made runnable against both arms by
+serializing the now-nested valuation summary through the recorder's existing
+`s3list()` adapter. Against the accepted pre-implementation tree `a2375f41`,
+the candidate has 50 of 50 gated families byte-identical and the informational
+identity family identical. The checker self-test detects 51 of 51 isolated
+family mutations. Full records remain local scratch evidence because their
+diagnostic families are large.
+
+A clean `git archive` source build compiles the new C++ path and builds every
+vignette with the host Quarto executable. `R CMD check --no-manual
+--no-build-vignettes` on that source tarball finishes `Status: OK`, including
+installed tests, examples, code, Rd, installed vignette outputs and execution
+of every vignette's R code.
