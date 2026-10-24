@@ -22,33 +22,54 @@ tag <- args[[8L]]
 self <- Sys.getpid()
 parent <- tryCatch(ps::ps_ppid(ps::ps_handle()), error = function(e) NA_integer_)
 r_names <- c("r.exe", "rterm.exe", "rscript.exe", "rsession.exe")
-all_processes <- function() {
-  pids <- ps::ps_pids()
-  rows <- lapply(pids, function(pid) {
-    handle <- tryCatch(ps::ps_handle(pid), error = function(e) NULL)
-    if (is.null(handle)) return(NULL)
-    data.frame(
-      pid = pid,
-      ppid = tryCatch(ps::ps_ppid(handle), error = function(e) NA_integer_),
-      name = tolower(tryCatch(ps::ps_name(handle), error = function(e) "unknown")),
-      stringsAsFactors = FALSE
+ppid_of <- new.env(parent = emptyenv())
+name_of <- new.env(parent = emptyenv())
+handle_of <- new.env(parent = emptyenv())
+previous_pids <- character()
+refresh_pids <- function() {
+  pids <- as.character(ps::ps_pids())
+  fresh <- setdiff(pids, previous_pids)
+  for (pid in fresh) {
+    handle <- tryCatch(ps::ps_handle(as.integer(pid)), error = function(e) NULL)
+    if (is.null(handle)) next
+    assign(pid, handle, envir = handle_of)
+    assign(
+      pid,
+      tryCatch(as.character(ps::ps_ppid(handle)), error = function(e) NA_character_),
+      envir = ppid_of
     )
-  })
-  do.call(rbind, rows)
+    assign(
+      pid,
+      tolower(tryCatch(ps::ps_name(handle), error = function(e) "unknown")),
+      envir = name_of
+    )
+  }
+  previous_pids <<- pids
+  pids
 }
-descendants <- function(root, table) {
-  out <- integer()
-  frontier <- as.integer(root)
+descendants <- function(root, alive) {
+  out <- character()
+  frontier <- as.character(root)
+  ppids <- vapply(
+    alive,
+    function(pid) get0(pid, envir = ppid_of, ifnotfound = NA_character_),
+    ""
+  )
   repeat {
-    children <- setdiff(table$pid[table$ppid %in% frontier], c(out, root))
+    children <- setdiff(alive[!is.na(ppids) & ppids %in% frontier], c(out, root))
     if (!length(children)) break
     out <- c(out, children)
     frontier <- children
   }
   out
 }
-initial <- all_processes()
-foreign <- initial$pid[initial$name %in% r_names & !initial$pid %in% c(self, parent)]
+initial <- refresh_pids()
+initial_names <- vapply(
+  initial,
+  function(pid) get0(pid, envir = name_of, ifnotfound = ""),
+  ""
+)
+foreign <- initial[initial_names %in% r_names & !initial %in% as.character(c(self, parent))]
 if (length(foreign)) stop("Foreign R processes are active; retry on a quiet host.", call. = FALSE)
 affinity <- system2(
   "powershell",
@@ -75,16 +96,16 @@ rows <- list()
 sample_id <- 0L
 repeat {
   sample_started <- as.numeric(Sys.time())
-  table <- all_processes()
-  tree <- c(root_pid, descendants(root_pid, table))
+  alive <- refresh_pids()
+  tree <- c(as.character(root_pid), descendants(root_pid, alive))
   sample_id <- sample_id + 1L
   for (pid in tree) {
-    handle <- tryCatch(ps::ps_handle(pid), error = function(e) NULL)
+    handle <- get0(pid, envir = handle_of)
     if (is.null(handle)) next
     mem <- tryCatch(ps::ps_memory_info(handle), error = function(e) NULL)
     if (is.null(mem)) next
-    name <- table$name[match(pid, table$pid)]
-    is_parent <- identical(as.integer(pid), as.integer(root_pid))
+    name <- get0(pid, envir = name_of, ifnotfound = "unknown")
+    is_parent <- identical(pid, as.character(root_pid))
     role <- if (is_parent) "parent" else if (name %in% r_names) "daemon" else "child"
     rows[[length(rows) + 1L]] <- data.frame(
       tag = tag,
