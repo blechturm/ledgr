@@ -49,7 +49,7 @@ ledgr_test_old_equity_stats <- function(equity, run_ids) {
 ledgr_test_body_occurrences <- function(fun, token) {
   text <- paste(deparse(body(fun)), collapse = "\n")
   hits <- gregexpr(token, text, fixed = TRUE)[[1L]]
-  if (identical(hits, -1L)) 0L else length(hits)
+  if (hits[[1L]] == -1L) 0L else length(hits)
 }
 
 testthat::test_that("[LTB-0484] candidate features are grouped once with exact rows", {
