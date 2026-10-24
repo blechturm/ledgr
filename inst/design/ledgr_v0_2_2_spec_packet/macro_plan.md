@@ -1128,6 +1128,68 @@ The feature/strategy namespace helpers remain for composed feature sweeps,
 and sweep printing exposes readable strategy and feature parameters before
 the candidate hash.
 
+<a id="history-manifestation-correction"></a>
+
+**History manifestation correction (maintainer, 2026-10-24).** Workstream
+55's implementation record is retained as evidence, but its ordinary-read
+cost is not accepted as the final history design. The earlier context-frame
+and projection spikes measured manifestation from prepared numeric primitives
+in tens to hundreds of microseconds. The Research Strategy UX Brief recorded
+about 55 milliseconds for an approximately 8.6-million-cell wide frame. By
+contrast, the Workstream 42 and Workstream 55 records measure 54.7
+milliseconds for a 1,166 by 252 rich read and 22.5 milliseconds for a 500 by
+252 direct matrix read, respectively. Those later paths eagerly reconstruct
+aligned evidence and, in Workstream 55, seal the temporary values; they do not
+measure only the cheap view promised by the prepare-once architecture.
+
+The correction keeps v12's causal cutoff, hydration, carry, missingness,
+selection and readiness semantics. It reopens only the public result boundary
+and its manifestation cost. An ordinary history matrix and wide frame should
+be direct sibling manifestations of one prepared substrate. Neither is built
+through the other. Ordinary reads carry values, identity, selection and the
+small compact provenance needed to disclose the request; they do not eagerly
+construct cell-aligned diagnostic planes or cryptographically seal an
+ephemeral result derived from an already sealed snapshot. No replacement rich
+diagnostic API is designed unless a concrete workflow demonstrates that it is
+needed and cannot be served by the existing sealed inputs and prepared
+substrate.
+
+The work proceeds in this order:
+
+1. Run one bounded, no-product-change manifestation spike on the current
+   substrate. Compare the current rich read, raw slice and transpose, a
+   history-native orientation, direct classed matrix and frame construction,
+   complete-case selection and sparse carry overlay. Measure elapsed time,
+   allocation, retained size and growth at 50 by 252, 500 by 252, 1,166 by
+   252 and one full-history shape.
+2. Write a focused amendment to the accepted historical-projection synthesis.
+   It binds the slim ordinary result, the compact provenance boundary, direct
+   sibling manifestations and cost scaling. It does not reopen causal or
+   economic semantics.
+3. Give that amendment an adversarial Type 2 review. The review challenges
+   whether any removed evidence is needed for an auditable strategy decision,
+   whether diagnostics remain reproducible, whether frame and matrix stay
+   value-identical and whether the proposal introduces unsafe mutable or
+   cached views.
+4. Amend Cut 19 and reopen or replace the Workstream 55 implementation tickets
+   against the accepted correction. Implement direct manifestation, then run
+   an adversarial Type 1 review with mutations that restore eager evidence,
+   per-read hashing, frame-through-matrix or matrix-through-frame conversion,
+   name rematching, whole-snapshot scans and divergent selection semantics.
+5. Resume the history-dependent Workstream 58 teaching and minimum-variance
+   article only after the corrected API is accepted. Workstreams 56 and 57
+   remain semantically independent and may proceed if their merges do not
+   obscure the Workstream 55 correction.
+
+The spike sets the binding gates. The design objective is sub-millisecond
+ordinary manifestation at 500 instruments by 252 sessions, with the frame in
+the same performance class as the matrix. Runtime and allocation must grow
+with returned cells, not total snapshot length or prior pulses; increasing the
+snapshot while holding the requested window fixed must not materially change
+latency. The correction does not authorize full-history result caches,
+duplicate prepared frame collections, unsafe mutable buffers, ALTREP machinery
+or a new causality policy.
+
 **Minimum-variance article modernization, routed 2026-10-23.** Cut 17 closes
 against the accepted Workstream 48 article and the strategy source hash used
 by its Workstream 50 private evidence; do not silently rewrite that accepted
@@ -1173,7 +1235,10 @@ Cut 16 decision (17) routes these beyond WS46:
   implementation is not scheduled before that decision. Maintainer,
   2026-10-22: parked, with WS7 as the trigger. The short RFC opens only if the
   WS7 estimator needs full-history reads; finite-lookback teaching (decision
-  17) covers the other cases.
+  17) covers the other cases. Superseded by the 2026-10-24 history
+  manifestation correction: Workstream 55 showed that eager evidence also
+  dominates an ordinary finite 252-session read, so the bounded spike and
+  focused synthesis amendment now precede history-dependent Cut 19 teaching.
 - **Shared memory reopened as a question (maintainer).** After the single
   substrate, LDG-3069 measured the v12 Section 7 (E6) trigger on the H1
   workload: `(workers - 1) * staged_invariant_bytes / total_private_commit =
