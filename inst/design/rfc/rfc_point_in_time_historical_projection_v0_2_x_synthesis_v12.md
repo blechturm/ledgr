@@ -5,6 +5,13 @@ Status: accepted by the maintainer on 2026-10-16; H5 ticket cut is current.
 Authority: accepted synthesis. This document supersedes v11 within its stated
 scope; v11 remains the derivation record.
 
+**2026-10-24 focused amendment:** the accepted
+[ordinary-history manifestation amendment](rfc_point_in_time_historical_projection_v0_2_x_manifestation_amendment.md)
+supersedes only the Section 3, 5, 7, 10 and 12 clauses named in its Section 8.
+It replaces eager cell evidence and transient value authentication on ordinary
+matrix and wide-frame results with compact provenance and sibling direct
+manifestations. All causal and economic decisions in this synthesis remain.
+
 **Mode:** Decision synthesis. **Author:** Codex, at maintainer request.
 **Date:** 2026-10-16.
 **Inputs:** accepted v11, the reviewed current-tree drift map, the completed

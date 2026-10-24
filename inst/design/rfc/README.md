@@ -45,8 +45,11 @@ the [accepted synthesis](rfc_feature_map_read_surface_v0_2_x_synthesis.md).
 <a id="history-wave"></a><a id="point-in-time-historical-projection"></a>
 **Historical-projection redirect:** v12 is accepted and implementation is
 owned by packet Cut 16, Workstreams 40 through 44 and LDG-3057 through
-LDG-3071. Durable design authority remains in the
-[accepted v12 synthesis](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md).
+LDG-3071. The accepted
+[ordinary-history manifestation amendment](rfc_point_in_time_historical_projection_v0_2_x_manifestation_amendment.md)
+has the narrow Cut 19 implementation owner LDG-3105. Durable design authority
+is the [accepted v12 synthesis](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md)
+as amended.
 
 <a id="recursive-indicator-semantics"></a>**Recursive-indicator redirect:**
 the source, trigger and Cut 16 owner are consolidated by historical-projection
@@ -60,6 +63,7 @@ historical-projection v12 and LDG-3059.
 
 | Cycle or obligation | State | Latest operative artifact | Next action or trigger |
 | --- | --- | --- | --- |
+| <a id="history-manifestation"></a>Ordinary causal-history manifestation | **Implementation owned** | [Accepted focused amendment](rfc_point_in_time_historical_projection_v0_2_x_manifestation_amendment.md); [Type 2 review and focused confirmation](rfc_point_in_time_historical_projection_v0_2_x_manifestation_amendment_review.md); [GREEN spike closeout](../../../dev/spikes/history-manifestation/spike_closeout.md) | Cut 19 LDG-3105 owns implementation and is an explicit dependency of LDG-3104 before Workstream 58. Remove this row when the ticket is accepted and the contract is consolidated. |
 | <a id="governance-lifecycle"></a>Authority and lifecycle of governance documents | **Obligations open** | [Accepted synthesis Sections 5-7](rfc_governance_lifecycle_v0_2_2_synthesis.md); implementation is owned by packet Cut 15 Workstreams 32-35 | **Trigger:** after Cut 15 normalizes headers and establishes reviewed report-mode fixtures, or at v0.2.2 closeout for the M1 reassessment. **Route:** a later ticket cut may decide whether to activate check mode; at closeout the maintainer chooses keep, revise or drop for M1 from the recorded cut-level measurements. The history wave owns the first application-specific supersession carrier. |
 | <a id="documentation-roles-pin-reset"></a>Documentation roles and pin reset | **Due** | [v0.2.2 teaching and reference audit](../audits/v0_2_2_teaching_reference_audit.md) (agent audit, not reviewed); [Documentation Contract](../contracts.md#documentation-contract) | **Trigger:** first cut of the release after v0.2.2 (maintainer, 2026-10-06; deferred because v0.2.2 is already large). **Route:** a Type 2 decision on page roles (teaching, reference, design) and the pin types each role may carry, amending the Documentation Contract and settling the `ttr-indicators` contradiction (audit TR-1); then direct tickets for the audit's TR-2 to TR-6. Keep executing articles and the claim-boundary pins. |
 | <a id="persisted-data-execution-placement"></a>Persisted-data execution placement and DuckDB boundary | **Parked** | [Next-release theme](../ledgr_roadmap.md#next-release); [exact verification spike](../spikes/fact_integrity_verification_spike/closeout.md); [membership-resolution spike](../spikes/duckdb_membership_resolution_spike/closeout.md); [rule-3 retrieval-memory evidence](../../../dev/bench/v0_2_2_snapshot_hash_rule3/evidence/ldg3019/summary.md) | **Trigger:** after v0.2.2 and before any broad migration of hashing, fact resolution, validation, data preparation or result projection into DuckDB. **Route:** a focused RFC must bind R/DuckDB placement criteria and parity, identity and fallback gates before subsystem migration. Its inputs include the rule-3 close-review finding that whole-process verification peak grows about 125 MB per million bars at DuckDB retrieval rather than in the fixed-block R encoder. |

@@ -1206,6 +1206,14 @@ choose a memory-bounded summary or a fused one-pass count, and must settle the
 compact exclusion-reason and `used_before_window` provenance before Cut 19 is
 amended.
 
+**Accepted amendment, 2026-10-24.** The focused manifestation amendment passed
+adversarial Type 2 review after six bounded corrections. It chooses
+provenance-only structural identity for transient results, retains the ordered
+axis and full compact selection disclosure, uses one bounded semantic scan as
+the least-machinery baseline, preserves the explicit long diagnostic layout,
+and gates matrix and wide-frame growth separately by instrument and session
+axes. Cut 19 LDG-3105 owns implementation and LDG-3104 depends on it.
+
 **Minimum-variance article modernization, routed 2026-10-23.** Cut 17 closes
 against the accepted Workstream 48 article and the strategy source hash used
 by its Workstream 50 private evidence; do not silently rewrite that accepted
