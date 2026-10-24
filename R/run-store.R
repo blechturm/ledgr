@@ -251,34 +251,29 @@ ledgr_run_store_equity_stats <- function(equity, run_ids) {
     factor(run_key, levels = run_ids),
     drop = FALSE
   )
-  stats <- lapply(seq_along(run_ids), function(i) {
-    id <- run_ids[[i]]
-    rows <- equity[row_groups[[i]], , drop = FALSE]
-    if (nrow(rows) == 0L) {
-      return(data.frame(
-        run_id = id,
-        first_equity = NA_real_,
-        final_equity = NA_real_,
-        max_drawdown = NA_real_
-      ))
-    }
-    eq <- as.numeric(rows$equity)
+  first_equity <- rep(NA_real_, length(run_ids))
+  final_equity <- rep(NA_real_, length(run_ids))
+  max_drawdown <- rep(NA_real_, length(run_ids))
+  for (i in seq_along(run_ids)) {
+    eq <- as.numeric(equity$equity[row_groups[[i]]])
+    if (length(eq) == 0L) next
     running_max <- cummax(eq)
     drawdown <- ifelse(
       is.na(running_max) | running_max == 0,
       NA_real_,
       eq / running_max - 1
     )
-    data.frame(
-      run_id = id,
-      first_equity = eq[[1L]],
-      final_equity = eq[[length(eq)]],
-      max_drawdown = suppressWarnings(min(drawdown, na.rm = TRUE))
-    )
-  })
-  stats <- do.call(rbind, stats)
-  stats$max_drawdown[is.infinite(stats$max_drawdown)] <- NA_real_
-  stats
+    first_equity[[i]] <- eq[[1L]]
+    final_equity[[i]] <- eq[[length(eq)]]
+    max_drawdown[[i]] <- suppressWarnings(min(drawdown, na.rm = TRUE))
+  }
+  max_drawdown[is.infinite(max_drawdown)] <- NA_real_
+  data.frame(
+    run_id = run_ids,
+    first_equity = first_equity,
+    final_equity = final_equity,
+    max_drawdown = max_drawdown
+  )
 }
 
 ledgr_run_store_config_feature_set_hash <- function(config_json) {

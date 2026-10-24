@@ -646,7 +646,6 @@ ledgr_backtest_availability_filtered <- function(bt,
                                                  con,
                                                  instrument_ids,
                                                  times) {
-  ledgr_backtest_ensure_snapshot(bt, con)
   if (ledgr_availability_config_active(bt$config)) {
     diagnostics <- data.frame(ts_utc = as.POSIXct(times, tz = "UTC"))
     ledgr_backtest_availability_active(
