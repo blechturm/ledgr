@@ -365,10 +365,10 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   seen <- new.env()
   reader <- function(ctx) {
     list(
-      level = attr(ledgr_history_frame(ctx, feature = "level", lookback = Inf,
-        min_observations = 0L), "ledgr_history")$evidence,
-      ret = attr(ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
-        min_observations = 0L), "ledgr_history")$evidence,
+      level = ledgr_history_frame(ctx, feature = "level", lookback = Inf,
+        min_observations = 0L, layout = "long"),
+      ret = ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
+        min_observations = 0L, layout = "long"),
       values = ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
         min_observations = 0L)
     )
@@ -389,7 +389,11 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   )
   at <- function(tag) seen[[paste(tag, ws42_iso(axis[[5L]]))]]
   run <- at("run")
-  plane <- function(evidence, field, id = "BBB") unname(evidence[[field]][, id])
+  plane <- function(evidence, field, id = "BBB") {
+    out <- evidence[[field]][evidence$instrument_id == id]
+    if (identical(field, "source_ts_utc")) out <- as.numeric(out)
+    unname(out)
+  }
 
   testthat::expect_identical(plane(run$level, "input_carried"), c(FALSE, FALSE, TRUE, TRUE, FALSE))
   # Column meanings follow v12 Sections 5-6 (close review F2): `calculated`

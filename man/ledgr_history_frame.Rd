@@ -41,16 +41,18 @@ included instrument) or \code{"long"} (one row per session and instrument with
 \code{ts_utc}, \code{instrument_id}, \code{source}, \code{value} and the cell evidence).}
 }
 \value{
-A \code{ledgr_history} data frame. Its \code{"ledgr_history"} attribute
+A \code{ledgr_history} data frame. Its \code{"ledgr_history"} attribute is
+structural provenance for the originating read, not authentication of
+the current numeric cells. It
 records the data start, returned-window start and cutoff, requested and
 available lookback, source, policy identity and recorded requirements,
 the selection table
 (requested, included and excluded instruments with reasons and carried
-input counts), whether any value used observations before the window,
-and, for the wide layout, the aligned cell evidence matrices.
+input counts) and whether any value used observations before the window.
+Only the explicit long layout contains cell-aligned diagnostic evidence.
 }
 \description{
-\code{ledgr_history_frame()} returns one immutable \code{ledgr_history} result for one
+\code{ledgr_history_frame()} returns one fresh \code{ledgr_history} result for one
 bar field or one registered feature, read causally at the context's pulse.
 Every returned value is observed at or before that cutoff, with facts known
 by it. History is available in availability-aware contexts only: strategy
@@ -78,8 +80,9 @@ cell is computed with the interval known.
 
 Bar values follow the experiment's \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}: open, high,
 low and close carry forward within the declared expected-session horizon;
-volume never carries. Carried cells are disclosed in the evidence. Feature
-evidence is the evidence the feature preparation produced: \code{calculated}
+volume never carries. The ordinary wide result records compact carried
+counts per instrument. The explicit long diagnostic layout adds cell
+evidence from the feature preparation: \code{calculated}
 means the required inputs were admitted, \code{ready} that the cell reached its
 segment's first-valid row, and \code{calculation_valid} a ready, finite value.
 A cell whose own required input was carried is \code{input_carried}; a value

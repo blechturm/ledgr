@@ -37,6 +37,7 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_identical(close5$BBB, c(21, 22, 22, 22, 25))
   testthat::expect_identical(close5$CCC, c(31, 32, 33, 34, 35))
   meta5 <- attr(close5, "ledgr_history")
+  long5 <- at5$close_long
   testthat::expect_identical(meta5$source$id, "close")
   testthat::expect_identical(as.numeric(meta5$data_start_utc), as.numeric(axis[[1L]]))
   testthat::expect_identical(as.numeric(meta5$window_start_utc), as.numeric(axis[[1L]]))
@@ -45,19 +46,19 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_identical(meta5$available_lookback, 5L)
   testthat::expect_identical(meta5$policy_identity$price_carry, 5L)
   testthat::expect_identical(
-    unname(meta5$evidence$input_carried[, "BBB"]),
+    long5$input_carried[long5$instrument_id == "BBB"],
     c(FALSE, FALSE, TRUE, TRUE, FALSE)
   )
   testthat::expect_identical(
-    unname(meta5$evidence$carry_age_sessions[, "BBB"]),
+    long5$carry_age_sessions[long5$instrument_id == "BBB"],
     c(0L, 0L, 1L, 2L, 0L)
   )
   testthat::expect_identical(
-    unname(meta5$evidence$source_ts_utc[3:4, "BBB"]),
+    as.numeric(long5$source_ts_utc[long5$instrument_id == "BBB"])[3:4],
     rep(as.numeric(axis[[2L]]), 2L)
   )
   testthat::expect_identical(
-    unname(meta5$evidence$is_missing[, "BBB"]),
+    long5$is_missing[long5$instrument_id == "BBB"],
     c(FALSE, FALSE, TRUE, TRUE, FALSE)
   )
   testthat::expect_identical(meta5$selection$carried_input_count, c(0L, 2L, 0L))
@@ -79,7 +80,6 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_identical(ledgr_history_info(direct5), ledgr_history_info(matrix5))
 
   # Long layout carries the same values, source identity and evidence.
-  long5 <- at5$close_long
   testthat::expect_identical(
     names(long5)[1:4], c("ts_utc", "instrument_id", "source", "value")
   )
@@ -273,7 +273,9 @@ ws42_read <- function(service, cutoff_col, field, lookback = Inf, ids = c("AAA",
     decision_planes = list(
       member = rep(TRUE, length(ids)), admissible = rep(TRUE, length(ids)),
       target_restriction_reason = rep("", length(ids))
-    )
+    ),
+    diagnostic = identical(layout, "long"),
+    manifestation = if (identical(layout, "long")) "long" else "wide"
   )
   ledgr:::ledgr_history_plan_frame(plan, layout)
 }
@@ -294,16 +296,16 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
           hostile$substrate, field, cutoff = hostile$axis[[cutoff_col]],
           observation_idx = seq_len(cutoff_col)
         )
-        read <- ws42_read(service, cutoff_col, field)
-        evidence <- attr(read, "ledgr_history")$evidence
-        for (plane in setdiff(names(evidence), "source_ts_utc")) {
+        read <- ws42_read(service, cutoff_col, field, layout = "long")
+        for (plane in setdiff(ledgr:::ledgr_history_cell_fields(), "source_ts_utc")) {
           testthat::expect_identical(
-            unname(evidence[[plane]]), unname(t(oracle[[plane]])),
+            unname(read[[plane]]), unname(as.vector(oracle[[plane]])),
             info = paste(field, cutoff_col, plane)
           )
         }
         testthat::expect_identical(
-          unname(evidence$source_ts_utc), unname(t(oracle$source_ts_utc)),
+          unname(as.numeric(read$source_ts_utc)),
+          unname(as.vector(oracle$source_ts_utc)),
           info = paste(field, cutoff_col, "source_ts_utc")
         )
         print_cell <- !oracle$expected & oracle$observed
@@ -327,17 +329,17 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   before <- ws42_read(service, 5L, "close", ids = "AAA")
   before_bytes <- serialize(before, NULL)
   after <- ws42_read(service, 6L, "close", ids = "AAA")
+  after_long <- ws42_read(service, 6L, "close", ids = "AAA", layout = "long")
   testthat::expect_identical(before$AAA, c(101, 101, 101, 110, 113))
   testthat::expect_identical(after$AAA, c(101, 101, 101, 110, 113, NA))
-  after_evidence <- attr(after, "ledgr_history")$evidence
   testthat::expect_identical(
-    unname(after_evidence$missing_reason[4:6, "AAA"]),
+    after_long$missing_reason[4:6],
     c("inactive_interval_print", "inactive_interval_print", "not_expected")
   )
-  testthat::expect_identical(unname(after_evidence$expected[4:6, "AAA"]), rep(FALSE, 3L))
-  testthat::expect_identical(unname(after_evidence$calculation_valid[4:6, "AAA"]), rep(FALSE, 3L))
+  testthat::expect_identical(after_long$expected[4:6], rep(FALSE, 3L))
+  testthat::expect_identical(after_long$calculation_valid[4:6], rep(FALSE, 3L))
   testthat::expect_identical(
-    unname(after_evidence$barrier_reason[4:6, "AAA"]),
+    after_long$barrier_reason[4:6],
     rep("lifetime_inactive", 3L)
   )
   testthat::expect_identical(serialize(before, NULL), before_bytes)
@@ -350,7 +352,11 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
     list(
       inf = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
         instruments = "decision_axis", min_observations = 0L),
+      inf_long = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+        instruments = "decision_axis", min_observations = 0L, layout = "long"),
       tail3 = ledgr_history_frame(ctx, bar = "close", lookback = 3L, instruments = "decision_axis"),
+      tail3_long = ledgr_history_frame(ctx, bar = "close", lookback = 3L,
+        instruments = "decision_axis", layout = "long"),
       tail1 = ledgr_history_frame(ctx, bar = "close", lookback = 1L, instruments = "decision_axis"),
       fast_inf = ledgr_history_frame(ctx, feature = "fast", lookback = Inf,
         min_observations = 0L),
@@ -372,8 +378,11 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
     as.matrix(ledgr_history_matrix(at5$tail3)),
     ledgr_history_matrix(at5$inf)[3:5, , drop = FALSE]
   )
-  for (plane in names(inf$evidence)) {
-    testthat::expect_identical(tail3$evidence[[plane]], inf$evidence[[plane]][3:5, , drop = FALSE])
+  for (plane in ledgr:::ledgr_history_cell_fields()) {
+    testthat::expect_identical(
+      at5$tail3_long[[plane]],
+      at5$inf_long[[plane]][at5$inf_long$ts_utc %in% at5$tail3_long$ts_utc]
+    )
   }
   testthat::expect_false(inf$used_before_window)
   testthat::expect_true(tail3$used_before_window)
@@ -387,10 +396,14 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   # rewrites only the later read. The earlier object is unchanged.
   six_bytes <- serialize(at6$inf, NULL)
   testthat::expect_identical(at6$inf$CCC[[6L]], 35)
-  testthat::expect_true(attr(at6$inf, "ledgr_history")$evidence$input_carried[6L, "CCC"])
+  testthat::expect_true(at6$inf_long$input_carried[
+    at6$inf_long$instrument_id == "CCC" & at6$inf_long$ts_utc == axis[[6L]]
+  ])
   testthat::expect_identical(at7$inf$CCC[6:7], c(NA_real_, NA_real_))
   testthat::expect_identical(
-    unname(attr(at7$inf, "ledgr_history")$evidence$missing_reason[6:7, "CCC"]),
+    at7$inf_long$missing_reason[
+      at7$inf_long$instrument_id == "CCC" & at7$inf_long$ts_utc %in% axis[6:7]
+    ],
     c("not_expected", "not_expected")
   )
   testthat::expect_identical(serialize(at6$inf, NULL), six_bytes)
@@ -407,7 +420,6 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   # Mutating a returned result leaves later reads unchanged.
   mutated <- at5$inf
   mutated$AAA[] <- -1
-  attr(mutated, "ledgr_history")$evidence$input_carried[] <- TRUE
   testthat::expect_identical(
     ledgr_history_frame(at5$ctx, bar = "close", lookback = Inf,
       instruments = "decision_axis", min_observations = 0L),

@@ -364,9 +364,9 @@ ledgr_passed_warmup <- function(x, values) {
   }
   if (inherits(x, "ledgr_history") || inherits(x, "ledgr_history_matrix")) {
     # Readiness is a recorded property of the causal sample. Keep this guard
-    # constant-time; value-consuming helpers verify the matrix value seal.
+    # constant-time; the history metadata is provenance, not a value seal.
     return(isTRUE(
-      ledgr_history_require_consistent(x, verify_values = FALSE)$meta$passed_warmup
+      ledgr_history_require_consistent(x)$meta$passed_warmup
     ))
   }
   if (!is.numeric(x)) {

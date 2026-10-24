@@ -40,6 +40,14 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
   testthat::expect_s3_class(direct, "ledgr_history_matrix")
   testthat::expect_true(is.matrix(direct) && is.double(direct))
   testthat::expect_null(attr(direct, "ledgr_history")$evidence)
+  testthat::expect_null(attr(wide, "ledgr_history")$evidence)
+  testthat::expect_true(all(ledgr:::ledgr_history_cell_fields() %in% names(long)))
+  testthat::expect_false("matrix_value_sha256" %in%
+    names(attr(direct, "ledgr_history")))
+  testthat::expect_false(exists(
+    "ledgr_history_matrix_value_sha256", envir = asNamespace("ledgr"),
+    inherits = FALSE
+  ))
   testthat::expect_false(any(c("frame", "data") %in%
     names(attr(direct, "ledgr_history"))))
   testthat::expect_identical(dim(stats::cov(direct)), c(3L, 3L))
@@ -75,18 +83,96 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
   preserved <- pmax(direct, max(direct, na.rm = TRUE) + 1)
   replaced <- direct
   replaced[1L, 1L] <- replaced[1L, 1L]
-  for (x in list(changed, math_changed, row_subset, column_subset, replaced, preserved)) {
+  for (x in list(changed, math_changed, row_subset, column_subset, replaced)) {
     testthat::expect_error(
       ledgr_history_info(x), class = "ledgr_invalid_history_result"
     )
   }
-  testthat::expect_error(
-    ledgr_align_weights(rep(1 / 3, 3L), preserved),
-    class = "ledgr_invalid_history_result"
+  # Attribute-preserving base transforms remain ordinary R objects with
+  # provenance about the originating read. The metadata is structural, not
+  # an authentication seal over the transformed values.
+  testthat::expect_identical(
+    ledgr_history_info(preserved), ledgr_history_info(direct)
   )
-  # Readiness is deliberately read from the recorded requirement result and
-  # does not rescan matrix cells; value-consuming helpers enforce the seal.
+  testthat::expect_identical(
+    ledgr_align_weights(rep(1 / 3, 3L), preserved),
+    ledgr_weights(c(AAA = 1 / 3, BBB = 1 / 3, CCC = 1 / 3),
+      origin = "ledgr_align_weights")
+  )
+  testthat::expect_false(identical(as.double(preserved), as.double(direct)))
+  # Readiness and alignment use the structural provenance and do not rescan
+  # or hash transient values.
   testthat::expect_true(ledgr_passed_warmup(preserved))
+
+  local({
+    testthat::local_mocked_bindings(
+      ledgr_history_bar_evidence = function(...) stop("ordinary bar built evidence"),
+      ledgr_history_feature_evidence = function(...) stop("ordinary feature built evidence"),
+      .package = "ledgr"
+    )
+    testthat::expect_silent(ledgr_history_matrix(
+      ctx, bar = "close", lookback = 2L, min_observations = 0L
+    ))
+    testthat::expect_silent(ledgr_history_frame(
+      ctx, bar = "close", lookback = 2L, min_observations = 0L
+    ))
+    testthat::expect_silent(ledgr_history_matrix(
+      ctx, feature = "fast", lookback = 2L, min_observations = 0L
+    ))
+  })
+
+  local({
+    original_slice <- ledgr:::ledgr_history_value_slice
+    seen <- list()
+    testthat::local_mocked_bindings(
+      ledgr_history_value_slice = function(stored, rows, columns, masks,
+                                           max_carry_sessions,
+                                           axis_names, instrument_ids,
+                                           manifestation = "matrix") {
+        seen[[length(seen) + 1L]] <<- list(rows = rows, columns = columns)
+        original_slice(
+          stored, rows, columns, masks, max_carry_sessions,
+          axis_names, instrument_ids,
+          manifestation = manifestation
+        )
+      },
+      .package = "ledgr"
+    )
+    bounded <- ledgr_history_matrix(
+      ctx, bar = "close", lookback = 2L, min_observations = 0L
+    )
+    testthat::expect_length(seen, 1L)
+    testthat::expect_identical(seen[[1L]]$columns, 4:5)
+    testthat::expect_identical(nrow(bounded), 2L)
+  })
+
+  local({
+    testthat::local_mocked_bindings(
+      ledgr_history_matrix_from_plan = function(...) {
+        stop("wide frame built a matrix")
+      },
+      .package = "ledgr"
+    )
+    sibling <- ledgr_history_frame(
+      ctx, bar = "close", lookback = 2L, min_observations = 0L
+    )
+    testthat::expect_identical(names(sibling), c("ts_utc", "AAA", "BBB", "CCC"))
+  })
+
+  memo_names <- ls(ledgr:::ledgr_history_memo(
+    ledgr:::ledgr_history_context_view(ctx)$service$substrate
+  ))
+  testthat::expect_false(any(grepl("finite.*count|count.*finite", memo_names)))
+
+  isolated <- ledgr_history_matrix(
+    ctx, bar = "close", lookback = 2L, min_observations = 0L
+  )
+  expected_fresh <- as.double(isolated)
+  isolated[1L, 1L] <- -999
+  fresh <- ledgr_history_matrix(
+    ctx, bar = "close", lookback = 2L, min_observations = 0L
+  )
+  testthat::expect_identical(as.double(fresh), expected_fresh)
 })
 
 testthat::test_that("[LTB-0489] history requirements count treated finite values and drive one readiness predicate", {

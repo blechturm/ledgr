@@ -227,6 +227,10 @@ returns
     [1] "2020-06-24 16:00:00 UTC" "2020-06-25 16:00:00 UTC" "2020-06-26 16:00:00 UTC"
     [4] "2020-06-29 16:00:00 UTC" "2020-06-30 16:00:00 UTC"
 
+    attr(,"ledgr_history")$axis_names
+    [1] "2020-06-24T16:00:00Z" "2020-06-25T16:00:00Z" "2020-06-26T16:00:00Z"
+    [4] "2020-06-29T16:00:00Z" "2020-06-30T16:00:00Z"
+
     attr(,"ledgr_history")$instrument_ids
     [1] "DEMO_02" "DEMO_03" "DEMO_04" "DEMO_05" "DEMO_06" "DEMO_07" "DEMO_08"
 
@@ -262,9 +266,6 @@ returns
     attr(,"ledgr_history")$used_before_window
     [1] TRUE
 
-    attr(,"ledgr_history")$matrix_value_sha256
-    [1] "5e343f0a3e637eae3945c6bd7b9175c4e11503382e317ac8396bb8b3681f6410"
-
 ``` r
 return_frame <- ctx |>
   ledgr_history_frame(feature = "return_20", lookback = 5L)
@@ -296,6 +297,13 @@ ledgr_history_info(returns)
 `Used before window: yes` says that some returned value depends on
 sessions before the returned window: each 20-session return in these
 five rows was computed from closes up to 20 sessions earlier.
+
+The ordinary matrix and wide frame are intentionally light. They retain
+the axis, instrument selection, policy and admission summary, but do not
+hash the transient values or retain a second cell-evidence payload. That
+metadata is provenance for the originating read, not a seal over later R
+transformations. Ask for `layout = "long"` when you need per-cell
+diagnostic evidence.
 
 ## Choose The Instruments And The Required Observations
 
@@ -352,8 +360,8 @@ barrier, here `DEMO_01`’s delisting, rather than a missing observation
 Leaving an instrument out of an estimate is an estimation choice only.
 It creates no target, no zero target and no order.
 
-The long layout returns one row per session and instrument, with the
-evidence for each cell next to its value.
+The explicit long diagnostic layout returns one row per session and
+instrument, with the evidence for each cell next to its value.
 
 ``` r
 long <- ctx |> ledgr_history_frame(bar = "close", lookback = 3L, layout = "long")
@@ -902,8 +910,8 @@ vapply(list(full = full, last_60 = last_60),
        function(x) format(utils::object.size(x), units = "Kb"), character(1))
 ```
 
-          full    last_60
-    "152.9 Kb" "115.8 Kb"
+         full   last_60
+    "24.6 Kb" "22.1 Kb"
 
 Both reads end at the same pulse and agree on every session they share;
 the first grows with every pulse of a run, the second does not.

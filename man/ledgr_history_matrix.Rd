@@ -43,10 +43,11 @@ columns are included instrument IDs.
 With a pulse context, \code{ledgr_history_matrix()} reads the same causal plan as
 \code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and manifests only a sessions-by-instruments double
 matrix. With an existing history frame it is an adapter over that result and
-reads no data. Both forms return an ordinary matrix with immutable ledgr
-history identity for \code{\link[=ledgr_history_info]{ledgr_history_info()}}, \code{\link[=ledgr_align_weights]{ledgr_align_weights()}} and
-\code{\link[=ledgr_passed_warmup]{ledgr_passed_warmup()}}. Arithmetic, replacement or subsetting returns an
-ordinary object without that identity.
+reads no data. Both forms return an ordinary matrix with structural ledgr
+provenance for \code{\link[=ledgr_history_info]{ledgr_history_info()}}, \code{\link[=ledgr_align_weights]{ledgr_align_weights()}} and
+\code{\link[=ledgr_passed_warmup]{ledgr_passed_warmup()}}. Registered arithmetic, replacement or subsetting
+methods drop that provenance. Base or third-party operations that preserve
+attributes may preserve it; ledgr does not authenticate transformed values.
 }
 \section{Articles}{
 

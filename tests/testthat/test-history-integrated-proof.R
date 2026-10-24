@@ -60,11 +60,11 @@ ws44_late_fixture <- function(strategy = function(ctx, params) ctx$hold(),
 
 ws44_iso <- function(x) format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 
-# Evidence columns of one instrument in a wide history result, as a data frame.
+# Evidence rows of one instrument in an explicit long diagnostic result.
 ws44_cells <- function(result, id) {
-  evidence <- attr(result, "ledgr_history")$evidence
-  out <- data.frame(value = result[[id]], stringsAsFactors = FALSE)
-  for (field in names(evidence)) out[[field]] <- unname(evidence[[field]][, id])
+  out <- result[result$instrument_id == id,
+    c("value", ledgr:::ledgr_history_cell_fields()), drop = FALSE]
+  out$source_ts_utc <- as.numeric(out$source_ts_utc)
   out
 }
 
@@ -176,14 +176,14 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
   read <- function(ctx) {
     list(
       close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-        instruments = "DDD", min_observations = 0L),
+        instruments = "DDD", min_observations = 0L, layout = "long"),
       sma = ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
-        instruments = "DDD", min_observations = 0L),
+        instruments = "DDD", min_observations = 0L, layout = "long"),
       bytes = serialize(list(
         ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-          instruments = "DDD", min_observations = 0L),
+          instruments = "DDD", min_observations = 0L, layout = "long"),
         ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
-          instruments = "DDD", min_observations = 0L)
+          instruments = "DDD", min_observations = 0L, layout = "long")
       ), NULL),
       scalar = ctx$feature("DDD", "sma"),
       vec = ctx$vec$feature("sma")
@@ -557,9 +557,9 @@ testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's kn
   spy <- function(ctx, params) {
     seen[[ctx$ts_utc]] <- list(
       sma = ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
-        instruments = "DDD", min_observations = 0L),
+        instruments = "DDD", min_observations = 0L, layout = "long"),
       close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
-        instruments = "DDD", min_observations = 0L)
+        instruments = "DDD", min_observations = 0L, layout = "long")
     )
     ctx$hold()
   }
@@ -625,7 +625,7 @@ testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's kn
   window <- ledgr_history_frame(
     ledgr_pulse_snapshot(reach$exp, ts_utc = reach$axis[[7L]]),
     feature = "sma", lookback = 3L, instruments = "DDD",
-    min_observations = 0L
+    min_observations = 0L, layout = "long"
   )
   cells <- ws44_cells(window, "DDD")
   testthat::expect_identical(cells$value, c(na, na, 59))

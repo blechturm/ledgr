@@ -74,6 +74,13 @@
 
 ## Causal history foundation
 
+- Ordinary causal-history matrices and wide frames are now direct sibling
+  manifestations of the verified run substrate. They retain the ordered axis,
+  selection and policy provenance, but no longer build cell-evidence planes or
+  hash transient values; request `layout = "long"` for cell diagnostics.
+  Metadata is provenance for the originating read, not authentication of
+  values after an attribute-preserving R transformation.
+
 - Availability-aware runs, sweeps and walk-forward sessions now prepare one
   immutable causal-history substrate from the snapshot's first session. It
   owns the common venue axis, one bar representation, separate observation

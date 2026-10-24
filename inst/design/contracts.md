@@ -1856,7 +1856,8 @@ and `AAA` a held nonmember, each holding 5:
   start (the first session of the experiment's snapshot) through the cutoff,
   with one cutoff-resolved expected-session mask per instrument for bar
   reads. `lookback = Inf` returns the whole axis; a finite lookback returns the last `lookback`
-  sessions and is the exact values-and-evidence suffix of the `Inf` result.
+  sessions and is the exact value suffix of the `Inf` result. An explicit
+  long diagnostic request is also the exact cell-evidence suffix.
   `lookback = 0` returns the empty axis. Bar values follow the experiment's
   history policy: open, high, low and close carry forward within the declared
   expected-session horizon from their original source, volume never carries,
@@ -1889,10 +1890,13 @@ and `AAA` a held nonmember, each holding 5:
   segment spans, reason runs and carry exceptions; a read derives warm-up and
   `calculation_non_finite` by index and locates its cells by binary search;
   nothing is recomputed per read.
-- Wide results have `ts_utc` plus one numeric column per included
-  instrument; long results have `ts_utc`, `instrument_id`, `source`
-  (`bar:<field>` or `feature:<id>`), `value` and the cell evidence columns.
-  The `ledgr_history` attribute records the data start, returned-window start,
+- Ordinary wide results have `ts_utc` plus one numeric column per included
+  instrument and retain no cell-aligned evidence. Explicit long diagnostic
+  results have `ts_utc`, `instrument_id`, `source` (`bar:<field>` or
+  `feature:<id>`), `value` and the cell evidence columns. The
+  `ledgr_history` attribute records structural provenance for the originating
+  read, not authentication of the current numeric cells: the data start,
+  returned-window start,
   cutoff, requested and available lookback, source and policy identity, the
   selection table, `used_before_window` (whether any returned value used an
   observation or calculation state before the returned window; for a
@@ -1901,10 +1905,8 @@ and `AAA` a held nonmember, each holding 5:
   (its window and the segment readiness it depends on) reaches a leading
   run of input-carried sessions or does not fit inside the window's
   expected sessions, for example across a lifetime-inactive interval, and
-  any history-dependent
-  value when the window does not start at the data start) and, for the
-  wide layout, the cell evidence as sessions-by-instruments matrices. Cell
-  evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
+  any history-dependent value when the window does not start at the data
+  start). Long-layout cell evidence uses `expected`, `observed`, `is_missing`, `input_carried`,
   `calculated`, `output_carried`, `source_ts_utc`, `carry_age_sessions`,
   `ready`, `calculation_valid`, `missing_reason` and `barrier_reason`;
   selection evidence uses `requested`, `included`, `exclusion_reason`,
@@ -1921,10 +1923,13 @@ and `AAA` a held nonmember, each holding 5:
   it adapts that result and reads no data. Row names are ISO 8601 UTC session
   stamps and column names are included instrument IDs (R stores a zero-length
   dimension's names as `NULL`). The classed result remains compatible with
-  ordinary matrix estimators; arithmetic, replacement and subsetting remove
-  ledgr identity. Both forms own no separate cutoff, axis, treatment or
-  missingness logic and transformed results refuse in ledgr metadata helpers
-  with `ledgr_invalid_history_result`.
+  ordinary matrix estimators. Registered ledgr arithmetic, replacement and
+  subsetting methods remove the provenance. Attribute-preserving base or
+  third-party transforms may retain it; metadata helpers validate structural
+  provenance and shape, not numeric-cell equality. Both forms own no separate
+  cutoff, axis, treatment or missingness logic. A result whose structure no
+  longer matches its recorded axis and instruments refuses with
+  `ledgr_invalid_history_result`.
 - `min_observations` is the per-instrument estimator admission rule. `NULL`
   means the finite lookback, or every returned session for `lookback = Inf`;
   an explicit non-negative integer may be smaller but may not exceed a finite
@@ -1940,8 +1945,8 @@ and `AAA` a held nonmember, each holding 5:
   requested and available lookback, selector, `min_observations`,
   `min_instruments`, `passed_warmup`, layout,
   `used_before_window`, included and excluded instrument IDs, the selection
-  table as a tibble, policy identity, snapshot hash and, for the wide layout,
-  the cell evidence) after the same consistency check as
+  table as a tibble, policy identity and snapshot hash) after the same
+  structural consistency check as
   `ledgr_history_matrix()`; `print()` of a `ledgr_history` names it in a
   footer. `ledgr_align_weights(solution, history)` turns estimator output
   into `ledgr_weights` with origin `ledgr_align_weights`, named by the

@@ -75,9 +75,9 @@ testthat::test_that("[LTB-0391] unread membership columns and per-field barrier 
     )
   )
 
-  # F04: one last-barrier plane per mask, shared by every bar field; field
-  # entries keep only their carry sources. AAA is inactive from session 6,
-  # known only at session 7, so cutoff 6 reads a late overlay.
+  # F04: ordinary manifestation reads the prepared masks directly and builds
+  # neither whole-history carry-source nor patch caches. AAA is inactive from
+  # session 6, known only at session 7, so cutoff 6 reads a late overlay.
   close <- c(10, 11, NA, 13, 14, 15, 16, 17)
   late <- ledgr_facts_lifetime(data.frame(
     instrument_id = "AAA",
@@ -88,12 +88,18 @@ testthat::test_that("[LTB-0391] unread membership columns and per-field barrier 
   ))
   substrate <- ws43_history_substrate(close, lifetime = late)
   service <- ledgr:::ledgr_history_read_service(substrate)
-  read <- function(field, col) {
-    ledgr:::ledgr_history_read(
-      ledgr:::ledgr_history_view(service, col), "bar", field, Inf, "AAA",
-      "keep", "wide", "AAA",
-      list(member = TRUE, admissible = TRUE, target_restriction_reason = "")
+  read <- function(field, col, layout = "wide") {
+    plan <- ledgr:::ledgr_history_read_plan(
+      view = ledgr:::ledgr_history_view(service, col),
+      kind = "bar", name = field, lookback = Inf, instruments = "AAA",
+      min_observations = 0L, min_instruments = 1L, decision_ids = "AAA",
+      decision_planes = list(
+        member = TRUE, admissible = TRUE, target_restriction_reason = ""
+      ),
+      diagnostic = identical(layout, "long"),
+      manifestation = if (identical(layout, "long")) "long" else "wide"
     )
+    ledgr:::ledgr_history_plan_frame(plan, layout)
   }
   for (field in c("close", "open", "volume")) {
     read(field, 6L)
@@ -102,24 +108,18 @@ testthat::test_that("[LTB-0391] unread membership columns and per-field barrier 
   memo <- substrate$history_memo
   keys <- ls(memo)
   field_keys <- grep("_(open|high|low|close|volume)$", keys, value = TRUE)
+  field_keys <- field_keys[!grepl("_patch_", field_keys, fixed = TRUE)]
+  patch_keys <- grep("_patch_(open|high|low|close|volume)$", keys, value = TRUE)
   mask_keys <- c("base_masks", grep("^overlay_[0-9]+_[0-9]+$", keys, value = TRUE))
-  testthat::expect_identical(
-    sort(field_keys),
-    sort(c("base_close", "base_open", "base_volume",
-           "overlay_1_0_close", "overlay_1_0_open", "overlay_1_0_volume"))
-  )
+  testthat::expect_identical(field_keys, character())
+  testthat::expect_identical(patch_keys, character())
   testthat::expect_identical(sort(mask_keys), c("base_masks", "overlay_1_0"))
   for (key in field_keys) {
     testthat::expect_identical(names(memo[[key]]), "source", info = key)
   }
   for (key in mask_keys) {
-    testthat::expect_true("last_barrier" %in% names(memo[[key]]), info = key)
+    testthat::expect_false("last_barrier" %in% names(memo[[key]]), info = key)
   }
-  testthat::expect_identical(
-    memo$base_masks$last_barrier[1L, ],
-    c(rep(NA_integer_, 5L), 6L, 7L, 8L)
-  )
-  testthat::expect_identical(memo$overlay_1_0$last_barrier[1L, ], rep(NA_integer_, 8L))
 
   # Each mask's own barrier decides the reasons. AAA has no print before
   # session 4 and a late-known inactive session 2 (known at session 6):
@@ -138,7 +138,7 @@ testthat::test_that("[LTB-0391] unread membership columns and per-field barrier 
     ws43_history_substrate(c(NA, NA, NA, 13, 14, 15, 16, 17), lifetime = restart)
   )
   barrier_reason <- function(col) {
-    as.vector(attr(read("close", col), "ledgr_history")$evidence$barrier_reason)
+    as.character(read("close", col, "long")$barrier_reason)
   }
   testthat::expect_identical(
     barrier_reason(8L),

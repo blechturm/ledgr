@@ -47,7 +47,9 @@ testthat::test_that("[LTB-0407] history results expose requirements, align weigh
   testthat::expect_true(nzchar(info$selection$exclusion_reason[[3L]]))
   testthat::expect_identical(info$selection$admissibility_reason[[3L]], "lifetime_inactive")
   testthat::expect_true(is.logical(info$used_before_window) && length(info$used_before_window) == 1L)
-  testthat::expect_identical(dim(info$evidence$calculation_valid), c(2L, 2L))
+  # Ordinary wide and matrix reads carry structural selection provenance,
+  # not the diagnostic cell planes exposed by the explicit long request.
+  testthat::expect_null(info$evidence)
   testthat::expect_identical(info$policy_identity$price_carry, 5L)
   # The accessor returns the recorded metadata, not a second reading.
   meta <- attr(fast, "ledgr_history")
@@ -55,6 +57,7 @@ testthat::test_that("[LTB-0407] history results expose requirements, align weigh
   testthat::expect_identical(info$used_before_window, meta$used_before_window)
   testthat::expect_identical(ledgr_history_info(at7$fast_long)$included_ids, c("AAA", "BBB"))
   testthat::expect_null(ledgr_history_info(at7$fast_long)$evidence)
+  testthat::expect_true("calculation_valid" %in% names(at7$fast_long))
   info_printed <- utils::capture.output(print(info))
   testthat::expect_true("Excluded:     CCC (" %in% substr(info_printed, 1L, 19L))
   testthat::expect_true("# i Selection table: info$selection" %in% info_printed)

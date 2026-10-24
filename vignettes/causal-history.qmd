@@ -187,6 +187,12 @@ ledgr_history_info(returns)
 before the returned window: each 20-session return in these five rows was
 computed from closes up to 20 sessions earlier.
 
+The ordinary matrix and wide frame are intentionally light. They retain the
+axis, instrument selection, policy and admission summary, but do not hash the
+transient values or retain a second cell-evidence payload. That metadata is
+provenance for the originating read, not a seal over later R transformations.
+Ask for `layout = "long"` when you need per-cell diagnostic evidence.
+
 ## Choose The Instruments And The Required Observations
 
 The defaults can be replaced one at a time. `instruments = "decision_axis"`
@@ -215,8 +221,8 @@ barrier, here `DEMO_01`'s delisting, rather than a missing observation
 Leaving an instrument out of an estimate is an estimation choice only. It
 creates no target, no zero target and no order.
 
-The long layout returns one row per session and instrument, with the evidence
-for each cell next to its value.
+The explicit long diagnostic layout returns one row per session and
+instrument, with the evidence for each cell next to its value.
 
 ```{r}
 #| label: long-layout

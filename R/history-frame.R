@@ -1,6 +1,7 @@
-# Public causal history (v12 Section 3). One immutable `ledgr_history` result
-# is built from the shared substrate; its frame and matrix manifestations own
-# no separate cutoff, axis, treatment or missingness logic.
+# Public causal history (v12 Section 3 and the manifestation amendment).
+# Ordinary frame and matrix results are direct sibling manifestations of the
+# shared verified substrate; neither owns a separate cutoff, treatment rule,
+# value seal or cell-evidence plane.
 
 ledgr_history_bar_fields <- function() {
   c("open", "high", "low", "close", "volume")
@@ -47,6 +48,7 @@ ledgr_history_late_epochs <- function(substrate) {
     names(out) <- NULL
   }
   memo$late_epochs <- out
+  memo$late_instruments <- as.integer(which(lengths(out) > 0L))
   out
 }
 
@@ -497,6 +499,255 @@ ledgr_history_validate_lookback <- function(lookback) {
   if (is.finite(lookback)) as.integer(lookback) else Inf
 }
 
+# Ordinary matrix and wide reads need values plus row-level admission facts,
+# not the twelve cell-evidence planes owned by the explicit long diagnostic
+# layout. These compact readers derive that smaller result directly from the
+# verified fold substrate. They do not seal, hash or authenticate a transient
+# manifestation: snapshot verification and substrate ownership are the trust
+# boundary.
+ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
+                                        max_carry_sessions) {
+  masks <- ledgr_history_base_masks(substrate)
+  dependency_first <- if (length(columns) > 0L) {
+    max(1L, columns[[1L]] - max_carry_sessions)
+  } else {
+    1L
+  }
+  dependency_columns <- if (length(columns) > 0L) {
+    seq.int(dependency_first, columns[[length(columns)]])
+  } else {
+    integer()
+  }
+  late <- ledgr_history_late_epochs(substrate)
+  late_rows <- match(
+    ledgr_history_memo(substrate)$late_instruments, rows, nomatch = 0L
+  )
+  late_rows <- late_rows[late_rows > 0L]
+  override_expected <- matrix(
+    TRUE, nrow = length(late_rows), ncol = length(dependency_columns)
+  )
+  override_terminal <- rep.int(length(substrate$axis) + 1L, length(late_rows))
+  keep <- logical(length(late_rows))
+  cutoff <- if (length(late_rows) > 0L) {
+    as.numeric(substrate$axis[[cutoff_col]])
+  } else {
+    NA_real_
+  }
+  for (at in seq_along(late_rows)) {
+    local_row <- late_rows[[at]]
+    instrument <- rows[[local_row]]
+    epochs <- late[[instrument]]
+    epoch <- findInterval(cutoff, epochs)
+    if (epoch >= length(epochs)) next
+    overlay <- ledgr_history_overlay_masks(substrate, instrument, epoch, epochs)
+    keep[[at]] <- TRUE
+    override_expected[at, ] <- overlay$expected[1L, dependency_columns]
+    override_terminal[[at]] <- overlay$terminal_first[[1L]]
+  }
+  list(
+    expected = masks$expected,
+    terminal_first = masks$terminal_first,
+    dependency_first = as.integer(dependency_first),
+    override_row = as.integer(late_rows[keep]),
+    override_expected = override_expected[keep, , drop = FALSE],
+    override_terminal = as.integer(override_terminal[keep])
+  )
+}
+
+ledgr_history_value_slice <- function(stored, rows, columns, masks,
+                                      max_carry_sessions,
+                                      axis_names, instrument_ids,
+                                      manifestation = "matrix") {
+  ledgr_cpp_history_bar_compact(
+    stored, as.integer(rows), as.integer(columns),
+    masks$expected, as.integer(masks$terminal_first),
+    as.integer(masks$dependency_first), as.integer(masks$override_row),
+    masks$override_expected, as.integer(masks$override_terminal),
+    as.integer(max_carry_sessions),
+    as.character(axis_names), as.character(instrument_ids),
+    identical(manifestation, "wide")
+  )
+}
+
+ledgr_history_bar_compact <- function(substrate, field, rows, columns, cutoff_col,
+                                      min_observations,
+                                      manifestation = "matrix") {
+  stored <- substrate$bars[[field]]
+  n_rows <- length(rows)
+  n_cols <- length(columns)
+  max_carry_sessions <- if (identical(field, "volume")) {
+    0L
+  } else {
+    substrate$history_policy$price_carry %||% 0L
+  }
+  masks <- ledgr_history_bar_mask_view(
+    substrate, rows, columns, cutoff_col, max_carry_sessions
+  )
+  # One fused bounded pass emits the returned sessions x instruments payload,
+  # counts finite cells and applies only the prepared sparse treatment delta.
+  # No opposite-orientation plane or count index is retained.
+  compact <- ledgr_history_value_slice(
+    stored, rows, columns, masks, max_carry_sessions,
+    names(substrate$pulse_index)[columns], substrate$instrument_ids[rows],
+    manifestation = manifestation
+  )
+  value <- compact$value
+  finite_count <- compact$finite_observation_count
+
+  # Structural and expiry reasons affect only excluded instruments. Derive
+  # them from the diagnostic oracle for that bounded subset; the ordinary
+  # hot path does not allocate evidence for included instruments.
+  excluded <- finite_count < min_observations
+  structural <- expired <- rep.int(FALSE, n_rows)
+  if (any(excluded)) {
+    evidence <- ledgr_history_bar_evidence(
+      substrate, field, rows[excluded], columns, cutoff_col
+    )
+    structural[excluded] <- rowSums(
+      !evidence$calculation_valid & nzchar(evidence$barrier_reason)
+    ) > 0L
+    expired[excluded] <- rowSums(
+      !evidence$calculation_valid & evidence$missing_reason == "carry_expired"
+    ) > 0L
+  }
+
+  list(
+    value = value,
+    calculation_valid = NULL,
+    finite_observation_count = finite_count,
+    required_input_count = rep.int(n_cols, n_rows),
+    carried_input_count = compact$carried_input_count,
+    structural = structural,
+    expired = expired,
+    used_before_row = compact$used_before_row
+  )
+}
+
+ledgr_history_feature_compact <- function(substrate, feature_id, rows, columns,
+                                          definition,
+                                          manifestation = "matrix") {
+  planes <- ledgr_history_vintage_planes(substrate, rows, columns)
+  projection <- substrate$feature_projection
+  retained <- projection$feature_planes[[feature_id]]
+  if (is.null(retained)) {
+    rlang::abort(
+      sprintf("Feature `%s` has no prepared evidence planes.", feature_id),
+      class = c("ledgr_invalid_history_substrate", "ledgr_invalid_fold_execution")
+    )
+  }
+  value <- projection$feature_values[[feature_id]][rows, columns, drop = FALSE]
+  dimnames(value) <- NULL
+  n_rows <- length(rows)
+  n_cols <- length(columns)
+  if (n_rows == 0L || n_cols == 0L) {
+    return(list(
+      value = if (identical(manifestation, "wide")) {
+        collapse::mrtl(value)
+      } else {
+        t(value)
+      },
+      calculation_valid = matrix(FALSE, n_rows, n_cols),
+      finite_observation_count = rep.int(0L, n_rows),
+      required_input_count = rep.int(n_cols, n_rows),
+      carried_input_count = rep.int(0L, n_rows),
+      structural = rep.int(FALSE, n_rows),
+      expired = rep.int(FALSE, n_rows),
+      used_before_row = rep.int(FALSE, n_rows)
+    ))
+  }
+
+  shape <- function(x) matrix(x, nrow = n_rows, ncol = n_cols)
+  column <- rep(as.integer(columns), each = n_rows)
+  key <- as.numeric(rep(as.integer(rows), times = n_cols) - 1L) *
+    retained$n_pulse + column
+  in_range <- shape(column >= retained$calc_from & column <= retained$calc_to)
+  input_carried <- shape(
+    ledgr_history_plane_lookup(retained$input_carried, key) > 0L
+  )
+  carried_at <- ledgr_history_plane_lookup(retained$output_carried, key)
+  output_carried <- shape(carried_at > 0L)
+  segment_at <- ledgr_history_plane_run(
+    retained$segment_start, retained$segment_end, key
+  )
+  ready_col <- rep(NA_integer_, length(key))
+  ready_col[segment_at > 0L] <-
+    retained$segment_ready[segment_at[segment_at > 0L]]
+  calculated <- shape(segment_at > 0L) & planes$expected & in_range
+  ready <- calculated & shape(!is.na(ready_col) & column >= ready_col)
+  calculation_valid <- ready & is.finite(value) & !output_carried
+  reason_at <- ledgr_history_plane_run(
+    retained$reason_start, retained$reason_end, key
+  )
+  code <- integer(length(key))
+  code[reason_at > 0L] <- retained$reason_code[reason_at[reason_at > 0L]]
+  code <- shape(code)
+  source_before <- matrix(FALSE, nrow = n_rows, ncol = n_cols)
+  carried_cells <- which(carried_at > 0L)
+  if (length(carried_cells) > 0L) {
+    source <- retained$output_source_ts[carried_at[carried_cells]]
+    source_before[carried_cells] <- !is.na(source) &
+      source < as.numeric(substrate$axis[[columns[[1L]]]])
+  }
+
+  width <- ledgr_history_feature_width(definition)
+  if (is.na(width)) {
+    if (columns[[1L]] > 1L) {
+      source_before <- source_before | calculation_valid | output_carried
+    }
+  } else if (any(calculation_valid)) {
+    expected <- planes$expected
+    stop_at <- expected & !input_carried
+    first_stop <- ifelse(
+      rowSums(stop_at) > 0L,
+      max.col(stop_at, ties.method = "first"),
+      n_cols + 1L
+    )
+    leading <- ifelse(
+      first_stop > 1L,
+      planes$reach_seen[cbind(seq_len(n_rows), pmax(first_stop - 1L, 1L))],
+      0L
+    )
+    source_before <- source_before |
+      (calculation_valid & (planes$reach_seen - width < leading))
+  }
+
+  list(
+    value = if (identical(manifestation, "wide")) {
+      collapse::mrtl(value)
+    } else {
+      t(value)
+    },
+    calculation_valid = calculation_valid,
+    finite_observation_count = as.integer(rowSums(is.finite(value))),
+    required_input_count = rep.int(n_cols, n_rows),
+    carried_input_count = as.integer(rowSums(input_carried)),
+    structural = rowSums(!calculation_valid &
+      (!planes$expected | planes$terminal)) > 0L,
+    expired = rowSums(!calculation_valid & code == 3L & !output_carried) > 0L,
+    used_before_row = rowSums(source_before) > 0L
+  )
+}
+
+ledgr_history_compact_admission <- function(compact, min_observations) {
+  included <- compact$finite_observation_count >= min_observations
+  exclusion_reason <- rep("", length(included))
+  excluded <- !included
+  exclusion_reason[excluded] <- "insufficient_observations"
+  exclusion_reason[excluded & compact$expired] <- "carry_expired"
+  exclusion_reason[excluded & compact$structural] <- "structural_exclusion"
+  required <- as.integer(compact$required_input_count)
+  carried <- as.integer(compact$carried_input_count)
+  list(
+    requested = rep(TRUE, length(included)),
+    included = included,
+    exclusion_reason = exclusion_reason,
+    required_input_count = required,
+    carried_input_count = carried,
+    carried_input_share = ifelse(required > 0L, carried / required, 0),
+    finite_observation_count = as.integer(compact$finite_observation_count)
+  )
+}
+
 ledgr_history_validate_requirement <- function(value, argument) {
   if (!is.numeric(value) || length(value) != 1L || is.na(value) ||
       !is.finite(value) || value < 0 || value != floor(value) ||
@@ -571,7 +822,7 @@ ledgr_history_context_view <- function(ctx) {
 
 #' Read causal history from a strategy context
 #'
-#' `ledgr_history_frame()` returns one immutable `ledgr_history` result for one
+#' `ledgr_history_frame()` returns one fresh `ledgr_history` result for one
 #' bar field or one registered feature, read causally at the context's pulse.
 #' Every returned value is observed at or before that cutoff, with facts known
 #' by it. History is available in availability-aware contexts only: strategy
@@ -598,8 +849,9 @@ ledgr_history_context_view <- function(ctx) {
 #'
 #' Bar values follow the experiment's [ledgr_history_policy()]: open, high,
 #' low and close carry forward within the declared expected-session horizon;
-#' volume never carries. Carried cells are disclosed in the evidence. Feature
-#' evidence is the evidence the feature preparation produced: `calculated`
+#' volume never carries. The ordinary wide result records compact carried
+#' counts per instrument. The explicit long diagnostic layout adds cell
+#' evidence from the feature preparation: `calculated`
 #' means the required inputs were admitted, `ready` that the cell reached its
 #' segment's first-valid row, and `calculation_valid` a ready, finite value.
 #' A cell whose own required input was carried is `input_carried`; a value
@@ -643,13 +895,15 @@ ledgr_history_context_view <- function(ctx) {
 #' @param layout `"wide"` (one row per session, `ts_utc` plus one column per
 #'   included instrument) or `"long"` (one row per session and instrument with
 #'   `ts_utc`, `instrument_id`, `source`, `value` and the cell evidence).
-#' @return A `ledgr_history` data frame. Its `"ledgr_history"` attribute
+#' @return A `ledgr_history` data frame. Its `"ledgr_history"` attribute is
+#'   structural provenance for the originating read, not authentication of
+#'   the current numeric cells. It
 #'   records the data start, returned-window start and cutoff, requested and
 #'   available lookback, source, policy identity and recorded requirements,
 #'   the selection table
 #'   (requested, included and excluded instruments with reasons and carried
-#'   input counts), whether any value used observations before the window,
-#'   and, for the wide layout, the aligned cell evidence matrices.
+#'   input counts) and whether any value used observations before the window.
+#'   Only the explicit long layout contains cell-aligned diagnostic evidence.
 #' @seealso [ledgr_history_matrix()], [ledgr_passed_warmup()],
 #'   [ledgr_history_policy()]
 #' @examples
@@ -682,7 +936,9 @@ ledgr_history_frame <- function(ctx,
   }
   layout <- ledgr_history_choice(layout, c("wide", "long"), "layout")
   plan <- ledgr_history_request_plan(
-    ctx, feature, bar, lookback, instruments, min_observations, min_instruments
+    ctx, feature, bar, lookback, instruments, min_observations, min_instruments,
+    diagnostic = identical(layout, "long"),
+    manifestation = if (identical(layout, "long")) "long" else "wide"
   )
   ledgr_history_plan_frame(plan, layout)
 }
@@ -693,7 +949,9 @@ ledgr_history_request_plan <- function(ctx,
                                        lookback,
                                        instruments,
                                        min_observations,
-                                       min_instruments) {
+                                       min_instruments,
+                                       diagnostic = FALSE,
+                                       manifestation = if (diagnostic) "long" else "matrix") {
   view <- ledgr_history_context_view(ctx)
   if (is.null(feature) == is.null(bar)) {
     ledgr_history_request_error("Supply exactly one of `feature` and `bar`.")
@@ -718,7 +976,9 @@ ledgr_history_request_plan <- function(ctx,
     min_observations = min_observations,
     min_instruments = min_instruments,
     decision_ids = as.character(ctx$universe),
-    decision_planes = ctx$vec
+    decision_planes = ctx$vec,
+    diagnostic = diagnostic,
+    manifestation = manifestation
   )
 }
 
@@ -756,7 +1016,9 @@ ledgr_history_read_plan <- function(view,
                                     min_observations,
                                     min_instruments,
                                     decision_ids,
-                                    decision_planes) {
+                                    decision_planes,
+                                    diagnostic = FALSE,
+                                    manifestation = if (diagnostic) "long" else "matrix") {
   service <- view$service
   substrate <- service$substrate
   cutoff_col <- view$cutoff_col
@@ -797,33 +1059,51 @@ ledgr_history_read_plan <- function(view,
   requirements <- ledgr_history_requirements(
     lookback, min_observations, min_instruments, length(columns)
   )
-  evidence <- if (identical(kind, "bar")) {
+  result <- if (isTRUE(diagnostic) && identical(kind, "bar")) {
     ledgr_history_bar_evidence(substrate, source_id, rows, columns, cutoff_col)
-  } else {
+  } else if (isTRUE(diagnostic)) {
     ledgr_history_feature_evidence(substrate, source_id, rows, columns, cutoff_col)
+  } else if (identical(kind, "bar")) {
+    ledgr_history_bar_compact(
+      substrate, source_id, rows, columns, cutoff_col,
+      requirements$min_observations, manifestation = manifestation
+    )
+  } else {
+    ledgr_history_feature_compact(
+      substrate, source_id, rows, columns, service$feature_defs[[source_id]],
+      manifestation = manifestation
+    )
   }
-  admission <- ledgr_history_estimator_admission(
-    list(
-      value = evidence$value,
-      calculation_valid = evidence$calculation_valid,
-      input_carried = evidence$input_carried,
-      output_carried = evidence$output_carried,
-      barrier_reason = evidence$barrier_reason,
-      missing_reason = evidence$missing_reason
-    ),
-    requested = rep(TRUE, length(rows)),
-    min_observations = requirements$min_observations
-  )
+  admission <- if (isTRUE(diagnostic)) {
+    ledgr_history_estimator_admission(
+      list(
+        value = result$value,
+        calculation_valid = result$calculation_valid,
+        input_carried = result$input_carried,
+        output_carried = result$output_carried,
+        barrier_reason = result$barrier_reason,
+        missing_reason = result$missing_reason
+      ),
+      requested = rep(TRUE, length(rows)),
+      min_observations = requirements$min_observations
+    )
+  } else {
+    ledgr_history_compact_admission(result, requirements$min_observations)
+  }
   included <- admission$included
   exclusion_reason <- admission$exclusion_reason
 
   window_start <- if (length(columns) > 0L) substrate$axis[[columns[[1L]]]] else
     as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
   keep <- which(included)
-  used_before <- ledgr_history_used_before_window(
-    kind, evidence, keep, columns, service$feature_defs[[source_id]],
-    as.numeric(window_start)
-  )
+  used_before <- if (isTRUE(diagnostic)) {
+    ledgr_history_used_before_window(
+      kind, result, keep, columns, service$feature_defs[[source_id]],
+      as.numeric(window_start)
+    )
+  } else {
+    any(result$used_before_row[keep])
+  }
   selection_table <- ledgr_history_selection_table(
     requested_ids = requested_ids,
     included = included,
@@ -833,15 +1113,29 @@ ledgr_history_read_plan <- function(view,
     decision_planes = decision_planes
   )
   axis <- substrate$axis[columns]
+  axis_names <- names(substrate$pulse_index)[columns]
   ids <- requested_ids[keep]
   all_kept <- length(keep) == length(rows)
-  value <- if (all_kept) evidence$value else evidence$value[keep, , drop = FALSE]
-  cells <- lapply(
-    stats::setNames(ledgr_history_cell_fields(), ledgr_history_cell_fields()),
-    function(field) {
-      if (all_kept) evidence[[field]] else evidence[[field]][keep, , drop = FALSE]
-    }
-  )
+  value_layout <- if (isTRUE(diagnostic)) "diagnostic" else manifestation
+  value <- if (all_kept) {
+    result$value
+  } else if (identical(value_layout, "matrix")) {
+    result$value[, keep, drop = FALSE]
+  } else if (identical(value_layout, "wide")) {
+    result$value[keep]
+  } else {
+    result$value[keep, , drop = FALSE]
+  }
+  cells <- if (isTRUE(diagnostic)) {
+    lapply(
+      stats::setNames(ledgr_history_cell_fields(), ledgr_history_cell_fields()),
+      function(field) {
+        if (all_kept) result[[field]] else result[[field]][keep, , drop = FALSE]
+      }
+    )
+  } else {
+    NULL
+  }
   source_label <- paste0(kind, ":", source_id)
   meta <- list(
     source = list(kind = kind, name = name, id = source_id, label = source_label),
@@ -858,6 +1152,7 @@ ledgr_history_read_plan <- function(view,
     passed_warmup = isTRUE(sum(included) >= requirements$min_instruments),
     layout = NULL,
     axis = axis,
+    axis_names = axis_names,
     instrument_ids = ids,
     selection = selection_table,
     used_before_window = used_before
@@ -868,6 +1163,7 @@ ledgr_history_read_plan <- function(view,
     axis = axis,
     ids = ids,
     source_label = source_label,
+    value_layout = value_layout,
     meta = meta
   )
 }
@@ -936,11 +1232,15 @@ ledgr_history_selection_table <- function(requested_ids,
                                           admission,
                                           decision_ids,
                                           decision_planes) {
-  others <- decision_ids[!decision_ids %in% requested_ids]
+  requested_pos <- match(requested_ids, decision_ids)
+  requested_on_axis <- rep.int(FALSE, length(decision_ids))
+  requested_on_axis[requested_pos[!is.na(requested_pos)]] <- TRUE
+  other_pos <- which(!requested_on_axis)
+  others <- decision_ids[other_pos]
   ids <- c(requested_ids, others)
   n_req <- length(requested_ids)
   n_other <- length(others)
-  axis_pos <- match(ids, decision_ids)
+  axis_pos <- c(requested_pos, other_pos)
   on_axis <- !is.na(axis_pos)
   member <- rep(FALSE, length(ids))
   member[on_axis] <- as.logical(decision_planes$member[axis_pos[on_axis]])
@@ -959,21 +1259,32 @@ ledgr_history_selection_table <- function(requested_ids,
     restriction[restricted],
     "target_restricted"
   )
-  data.frame(
-    instrument_id = ids,
-    requested = c(rep(TRUE, n_req), rep(FALSE, n_other)),
-    included = c(as.logical(included), rep(FALSE, n_other)),
-    exclusion_reason = c(as.character(exclusion_reason), rep("not_requested", n_other)),
-    on_decision_axis = on_axis,
-    admissible = admissible,
-    admissibility_reason = reason,
-    required_input_count = c(admission$required_input_count, rep(NA_integer_, n_other)),
-    carried_input_count = c(admission$carried_input_count, rep(NA_integer_, n_other)),
-    carried_input_share = c(as.numeric(admission$carried_input_share), rep(NA_real_, n_other)),
-    finite_observation_count = c(
-      admission$finite_observation_count, rep(NA_integer_, n_other)
+  structure(
+    list(
+      instrument_id = ids,
+      requested = c(rep(TRUE, n_req), rep(FALSE, n_other)),
+      included = c(as.logical(included), rep(FALSE, n_other)),
+      exclusion_reason = c(
+        as.character(exclusion_reason), rep("not_requested", n_other)
+      ),
+      on_decision_axis = on_axis,
+      admissible = admissible,
+      admissibility_reason = reason,
+      required_input_count = c(
+        admission$required_input_count, rep(NA_integer_, n_other)
+      ),
+      carried_input_count = c(
+        admission$carried_input_count, rep(NA_integer_, n_other)
+      ),
+      carried_input_share = c(
+        as.numeric(admission$carried_input_share), rep(NA_real_, n_other)
+      ),
+      finite_observation_count = c(
+        admission$finite_observation_count, rep(NA_integer_, n_other)
+      )
     ),
-    stringsAsFactors = FALSE
+    class = "data.frame",
+    row.names = .set_row_names(length(ids))
   )
 }
 
@@ -983,19 +1294,12 @@ ledgr_history_time_names <- function(axis) {
 
 ledgr_history_wide <- function(value, cells, axis, ids, meta) {
   n_time <- length(axis)
-  # Columns are instruments; the stored planes are instrument x session.
-  value_t <- t(value)
-  dim(value_t) <- c(n_time, length(ids))
-  columns <- if (length(ids) > 0L) collapse::mctl(value_t) else list()
+  # The wide sibling is emitted as its final column list by the bounded
+  # manifestation pass; it is not split from the matrix sibling.
+  columns <- value
   names(columns) <- ids
   out <- c(list(ts_utc = as.POSIXct(axis, tz = "UTC")), columns)
-  time_names <- ledgr_history_time_names(axis)
-  meta$evidence <- lapply(cells, function(plane) {
-    plane_t <- t(plane)
-    dim(plane_t) <- c(n_time, length(ids))
-    dimnames(plane_t) <- list(time_names, ids)
-    plane_t
-  })
+  meta$evidence <- NULL
   structure(
     out,
     names = c("ts_utc", ids),
@@ -1053,7 +1357,7 @@ ledgr_history_require_result <- function(x) {
 # The result's metadata after checking that its columns still match the
 # recorded axis and instruments, as every adapter over a result does. For the
 # long layout it also returns each row's session and instrument position.
-ledgr_history_require_consistent <- function(x, verify_values = TRUE) {
+ledgr_history_require_consistent <- function(x) {
   meta <- ledgr_history_require_result(x)
   axis <- meta$axis
   ids <- as.character(meta$instrument_ids)
@@ -1066,11 +1370,10 @@ ledgr_history_require_consistent <- function(x, verify_values = TRUE) {
   if (inherits(x, "ledgr_history_matrix")) {
     if (!identical(meta$layout, "matrix") ||
         !identical(dim(x), c(length(axis), length(ids))) ||
-        !identical(dimnames(x), ledgr_history_matrix_dimnames(axis, ids))) {
-      mismatch()
-    }
-    if (isTRUE(verify_values) &&
-        !identical(meta$matrix_value_sha256, ledgr_history_matrix_value_sha256(x))) {
+        !identical(
+          dimnames(x),
+          ledgr_history_matrix_dimnames(axis, ids, meta$axis_names)
+        )) {
       mismatch()
     }
     return(list(meta = meta, row = NULL, col = NULL))
@@ -1096,10 +1399,11 @@ ledgr_history_require_consistent <- function(x, verify_values = TRUE) {
 #' With a pulse context, `ledgr_history_matrix()` reads the same causal plan as
 #' [ledgr_history_frame()] and manifests only a sessions-by-instruments double
 #' matrix. With an existing history frame it is an adapter over that result and
-#' reads no data. Both forms return an ordinary matrix with immutable ledgr
-#' history identity for [ledgr_history_info()], [ledgr_align_weights()] and
-#' [ledgr_passed_warmup()]. Arithmetic, replacement or subsetting returns an
-#' ordinary object without that identity.
+#' reads no data. Both forms return an ordinary matrix with structural ledgr
+#' provenance for [ledgr_history_info()], [ledgr_align_weights()] and
+#' [ledgr_passed_warmup()]. Registered arithmetic, replacement or subsetting
+#' methods drop that provenance. Base or third-party operations that preserve
+#' attributes may preserve it; ledgr does not authenticate transformed values.
 #'
 #' @param x A pulse context or an existing `ledgr_history` frame.
 #' @inheritParams ledgr_history_frame
@@ -1140,16 +1444,19 @@ ledgr_history_matrix <- function(x,
     )
   }
   plan <- ledgr_history_request_plan(
-    x, feature, bar, lookback, instruments, min_observations, min_instruments
+    x, feature, bar, lookback, instruments, min_observations, min_instruments,
+    diagnostic = FALSE, manifestation = "matrix"
   )
   ledgr_history_matrix_from_plan(plan)
 }
 
 ledgr_history_matrix_result <- function(out, meta) {
-  storage.mode(out) <- "double"
+  # The direct manifestation is already double. Avoid duplicating its full
+  # payload merely to re-assert the storage mode; adapters still normalize
+  # a non-double input at this boundary.
+  if (!is.double(out)) storage.mode(out) <- "double"
   meta$layout <- "matrix"
   meta$evidence <- NULL
-  meta$matrix_value_sha256 <- ledgr_history_matrix_value_sha256(out)
   structure(
     out,
     class = c("ledgr_history_matrix", "matrix", "array"),
@@ -1157,21 +1464,21 @@ ledgr_history_matrix_result <- function(out, meta) {
   )
 }
 
-ledgr_history_matrix_value_sha256 <- function(x) {
-  digest::digest(as.double(x), algo = "sha256")
-}
-
-ledgr_history_matrix_dimnames <- function(axis, ids) {
+ledgr_history_matrix_dimnames <- function(axis, ids, axis_names = NULL) {
   list(
-    if (length(axis) > 0L) ledgr_history_time_names(axis) else NULL,
+    if (length(axis) > 0L) axis_names %||% ledgr_history_time_names(axis) else NULL,
     if (length(ids) > 0L) ids else NULL
   )
 }
 
 ledgr_history_matrix_from_plan <- function(plan) {
-  out <- t(plan$value)
-  dim(out) <- c(length(plan$axis), length(plan$ids))
-  dimnames(out) <- ledgr_history_matrix_dimnames(plan$axis, plan$ids)
+  out <- if (identical(plan$value_layout, "matrix")) plan$value else t(plan$value)
+  expected_dim <- c(length(plan$axis), length(plan$ids))
+  expected_dimnames <- ledgr_history_matrix_dimnames(
+    plan$axis, plan$ids, plan$meta$axis_names
+  )
+  if (!identical(dim(out), expected_dim)) dim(out) <- expected_dim
+  if (!identical(dimnames(out), expected_dimnames)) dimnames(out) <- expected_dimnames
   ledgr_history_matrix_result(out, plan$meta)
 }
 
@@ -1184,7 +1491,7 @@ ledgr_history_matrix_from_frame <- function(x) {
     NA_real_,
     nrow = length(axis),
     ncol = length(ids),
-    dimnames = ledgr_history_matrix_dimnames(axis, ids)
+    dimnames = ledgr_history_matrix_dimnames(axis, ids, meta$axis_names)
   )
   if (identical(meta$layout, "wide")) {
     if (length(ids) > 0L && length(axis) > 0L) {
@@ -1267,9 +1574,9 @@ as.matrix.ledgr_history_matrix <- function(x, ...) {
 #'   decision-axis instrument: `requested`, `included`, `exclusion_reason`,
 #'   `on_decision_axis`, `admissible`, `admissibility_reason`,
 #'   `required_input_count`, `carried_input_count` and
-#'   `carried_input_share`), `policy_identity`, `snapshot_hash` and, for the
-#'   wide layout, `evidence`, the sessions-by-instruments cell evidence
-#'   matrices.
+#'   `carried_input_share`), `policy_identity` and `snapshot_hash`. Ordinary
+#'   results contain no cell-aligned evidence; request `layout = "long"` when
+#'   cell diagnostics are needed.
 #' @seealso [ledgr_history_frame()], [ledgr_history_matrix()],
 #'   [ledgr_align_weights()]
 #' @examples

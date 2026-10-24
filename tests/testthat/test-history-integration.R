@@ -2,6 +2,8 @@ ws42_integration_reader <- function(ctx) {
   list(
     close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
       instruments = "decision_axis", min_observations = 0L),
+    close_long = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L, layout = "long"),
     fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
     fast_matrix = ledgr_history_matrix(ctx, feature = "fast", lookback = 2L),
     bbb_fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, instruments = "BBB"),
@@ -46,7 +48,7 @@ testthat::test_that("[LTB-0300] run, sweep, window, precompute and inspection re
   testthat::expect_identical(run6$close$BBB, c(21, 22, 22, 22, 25, 26))
   testthat::expect_identical(run6$close$CCC, c(31, 32, 33, 34, 35, 35))
   testthat::expect_identical(
-    unname(attr(run6$close, "ledgr_history")$evidence$input_carried[, "CCC"]),
+    run6$close_long$input_carried[run6$close_long$instrument_id == "CCC"],
     c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
   )
   testthat::expect_identical(as.numeric(run6$close$ts_utc), as.numeric(axis[1:6]))
@@ -241,7 +243,6 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
     seen[[paste(params$tag, ctx$ts_utc)]] <- first
     first$AAA[] <- -1
     m[] <- -1
-    attr(first, "ledgr_history")$evidence$input_carried[] <- TRUE
     again <- ledgr_history_frame(ctx, bar = "close", lookback = Inf,
       instruments = "decision_axis", min_observations = 0L)
     if (!identical(again, seen[[paste(params$tag, ctx$ts_utc)]])) stop("history read changed")

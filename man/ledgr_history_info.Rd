@@ -21,9 +21,9 @@ included), \code{selection} (a tibble with one row per requested or
 decision-axis instrument: \code{requested}, \code{included}, \code{exclusion_reason},
 \code{on_decision_axis}, \code{admissible}, \code{admissibility_reason},
 \code{required_input_count}, \code{carried_input_count} and
-\code{carried_input_share}), \code{policy_identity}, \code{snapshot_hash} and, for the
-wide layout, \code{evidence}, the sessions-by-instruments cell evidence
-matrices.
+\code{carried_input_share}), \code{policy_identity} and \code{snapshot_hash}. Ordinary
+results contain no cell-aligned evidence; request \code{layout = "long"} when
+cell diagnostics are needed.
 }
 \description{
 \code{ledgr_history_info()} returns what a \code{\link[=ledgr_history_frame]{ledgr_history_frame()}} result

@@ -5,6 +5,13 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
+// history_compact.cpp
+SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp, SEXP rows_sxp, SEXP columns_sxp, SEXP expected_sxp, SEXP terminal_first_sxp, SEXP dependency_first_sxp, SEXP override_row_sxp, SEXP override_expected_sxp, SEXP override_terminal_sxp, SEXP max_carry_sessions_sxp, SEXP axis_names_sxp, SEXP instrument_ids_sxp, SEXP wide_sxp);
+extern "C" SEXP _ledgr_ledgr_cpp_history_bar_compact(SEXP stored_sxp, SEXP rows_sxp, SEXP columns_sxp, SEXP expected_sxp, SEXP terminal_first_sxp, SEXP dependency_first_sxp, SEXP override_row_sxp, SEXP override_expected_sxp, SEXP override_terminal_sxp, SEXP max_carry_sessions_sxp, SEXP axis_names_sxp, SEXP instrument_ids_sxp, SEXP wide_sxp) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(ledgr_cpp_history_bar_compact(cpp11::as_cpp<cpp11::decay_t<SEXP>>(stored_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rows_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(columns_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(expected_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(terminal_first_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(dependency_first_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(override_row_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(override_expected_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(override_terminal_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(max_carry_sessions_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(axis_names_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(instrument_ids_sxp), cpp11::as_cpp<cpp11::decay_t<SEXP>>(wide_sxp)));
+  END_CPP11
+}
 // spot_fifo.cpp
 SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp, SEXP fill_inst_idx_sxp, SEXP fill_instrument_id_sxp, SEXP fill_side_sxp, SEXP fill_qty_sxp, SEXP fill_price_sxp, SEXP fill_fee_sxp, SEXP fill_ts_utc_sxp, SEXP event_seq_start_sxp, SEXP positions_sxp, SEXP cash_sxp, SEXP lot_inst_idx_sxp, SEXP lot_qty_sxp, SEXP lot_price_sxp, SEXP cost_basis_by_inst_sxp, SEXP total_cost_basis_sxp, SEXP realized_pnl_sxp, SEXP realized_comp_sxp);
 extern "C" SEXP _ledgr_ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp, SEXP fill_inst_idx_sxp, SEXP fill_instrument_id_sxp, SEXP fill_side_sxp, SEXP fill_qty_sxp, SEXP fill_price_sxp, SEXP fill_fee_sxp, SEXP fill_ts_utc_sxp, SEXP event_seq_start_sxp, SEXP positions_sxp, SEXP cash_sxp, SEXP lot_inst_idx_sxp, SEXP lot_qty_sxp, SEXP lot_price_sxp, SEXP cost_basis_by_inst_sxp, SEXP total_cost_basis_sxp, SEXP realized_pnl_sxp, SEXP realized_comp_sxp) {
@@ -15,7 +22,8 @@ extern "C" SEXP _ledgr_ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp, SEXP fill_inst
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_ledgr_ledgr_cpp_spot_fifo_batch", (DL_FUNC) &_ledgr_ledgr_cpp_spot_fifo_batch, 18},
+    {"_ledgr_ledgr_cpp_history_bar_compact", (DL_FUNC) &_ledgr_ledgr_cpp_history_bar_compact, 13},
+    {"_ledgr_ledgr_cpp_spot_fifo_batch",     (DL_FUNC) &_ledgr_ledgr_cpp_spot_fifo_batch,     18},
     {NULL, NULL, 0}
 };
 }
