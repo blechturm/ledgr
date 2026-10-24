@@ -749,11 +749,11 @@ workstreams:
   - id: 53
     name: "Residual cost and memory decisions"
     cut: 18
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 52
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 53", verdict: "CHANGES_REQUIRED; correction awaiting focused re-review", artifact: "close_review_53.md", result: "The first record's numerical conclusions held, but its acquisition code and checker were not frozen before every arm, the repeated arms retained only a partial native oracle, and the checker trusted raw and derived files independently. The correction freezes the complete acquisition and checker first, reruns every arm, records the complete native oracle and makes three raw-to-summary corruptions fail.", reason: "One claim: remaining time and memory costs are attributed on current public paths, only candidates that clear their gates are implemented, and every architecture trigger receives an explicit disposition."}
-    accepted: null
+    review: {mode: "Type 1", point: "close of workstream 53", verdict: "PASS after one focused correction review", artifact: "close_review_53.md", result: "The first review found acquisition-order, partial-oracle and checker-independence defects. Correction f348f391 froze the acquisition and checker before every retained arm, reran the complete matrix with native run and sweep oracles, and added three raw-to-summary corruption self-tests. The independent focused re-review returned finding-free PASS under M2; no second artifact was created.", reason: "One claim: remaining time and memory costs are attributed on current public paths, only candidates that clear their gates are implemented, and every architecture trigger receives an explicit disposition."}
+    accepted: "2026-10-24 by the maintainer after the focused Type 1 re-review returned PASS"
   - id: 54
     name: "Integrated release evidence"
     cut: 18
@@ -2529,7 +2529,7 @@ tickets:
   - id: "LDG-3095"
     title: "Profile residual public-path costs and decide conditional optimizations"
     workstream: 53
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3093", "LDG-3094"]
@@ -2539,7 +2539,7 @@ tickets:
   - id: "LDG-3096"
     title: "Attribute dividend and installed-library memory and measure worker scaling"
     workstream: 53
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3093", "LDG-3094"]
