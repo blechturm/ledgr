@@ -784,7 +784,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 55", verdict: null, artifact: null, result: null, reason: "One claim: a strategy obtains one identity-preserving ordinary R matrix directly from the causal history service, states its sample and panel requirements once, and checks them with the same readiness predicate used for indicators, without a second reader, full-frame transient or hidden fallback."}
+    review: {mode: "Type 1", point: "close of workstream 55", verdict: "NEEDS_TYPE_2 followed by finding-free focused PASS", artifact: "close_review_55.md", result: "The adversarial review found that base pmax() could change matrix values while preserving arbitrary attributes, three missing mutation witnesses and one stale teaching reason. Correction 73174ff3 added a private value seal for value-consuming identity helpers while keeping ledgr_passed_warmup() free of cell rescans, strengthened all three detectors, corrected and rerendered the article, and re-recorded the benchmark. A new clean-context focused reviewer returned PASS at b2bc1ccb with every original finding resolved and no new finding; under M2 no second artifact was created.", reason: "One claim: a strategy obtains one identity-preserving ordinary R matrix directly from the causal history service, states its sample and panel requirements once, and checks them with the same readiness predicate used for indicators, without a second reader, full-frame transient or hidden fallback."}
   - id: 56
     name: "Optional strategy intent evidence"
     cut: 19
