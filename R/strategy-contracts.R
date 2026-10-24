@@ -100,6 +100,18 @@ ledgr_validate_strategy_targets <- function(targets, universe, allow_empty = FAL
   targets[universe]
 }
 
+ledgr_validate_strategy_intent_reason <- function(reason) {
+  if (is.null(reason)) return(NULL)
+  if (!is.character(reason) || length(reason) != 1L ||
+      is.na(reason) || !nzchar(reason)) {
+    rlang::abort(
+      "`intent_reason` must be NULL or one non-empty character scalar.",
+      class = "ledgr_invalid_strategy_result"
+    )
+  }
+  as.character(reason)
+}
+
 ledgr_strategy_hold_zero <- function(ctx, params) {
   targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   list(targets = targets, state_update = list())

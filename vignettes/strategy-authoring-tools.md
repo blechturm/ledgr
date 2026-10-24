@@ -532,7 +532,13 @@ Strategy state is that memory:
 - Instead of a bare target, return
   `list(targets = ..., state_update = ...)`. `state_update` is a list of
   plain data you choose: numbers, strings, logical values, and lists of
-  them.
+  them. You may also add one short optional decision note, for example
+  `intent_reason = "monthly_rebalance"`. ledgr retains that note once for
+  the pulse in `ledgr_results(run, "diagnostics")`; on availability-aware
+  runs it also appears in `ledgr_run_explain()`. This is a reason for the
+  submitted portfolio intent, not a general store for factors,
+  predictions, ranks, selections or weights. Prefer short snake-case values
+  so the reasons remain easy to group later.
 - At the next pulse, that list arrives as `ctx$state_prev`. On the first
   pulse there is nothing to remember yet, so
   `ctx$state_prev$pulses_seen` is `NULL`.

@@ -1429,6 +1429,13 @@ Accepted change pending:
 
 - Strategy output is a full named numeric target vector, a `ledgr_target`, or a
   list containing `targets`.
+- A structured result may also contain `intent_reason = NULL` or one non-empty
+  character scalar. When supplied, it is retained once at portfolio level for
+  that invoked pulse as a `strategy_intent` diagnostic; it does not alter
+  state, risk, execution, accounting, configuration or identity. The value is
+  free text, with short snake-case values recommended for analysis, while the
+  diagnostic reason vocabulary remains closed. This is a narrow decision note,
+  not a durable factor, prediction, rank, selection or weight evidence surface.
 - History estimation exclusion is not a target. An instrument that a
   history read excludes for failing `min_observations` from an
   estimator sample still receives a target like every decision-axis

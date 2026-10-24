@@ -1,5 +1,14 @@
 # ledgr (development version)
 
+## Optional strategy intent evidence
+
+- A structured strategy result may include `intent_reason`, one non-empty
+  character scalar. ledgr records it once for that invoked pulse in
+  `ledgr_results(run, "diagnostics")`; availability-aware
+  `ledgr_run_explain()` joins the note to its instrument rows. Omitting it
+  preserves the existing result and writes no extra diagnostic. This is a
+  narrow portfolio-intent note, not a general factor or prediction store.
+
 ## A long-only minimum-variance strategy
 
 - New article `vignette("minimum-variance", package = "ledgr")`: a long-only

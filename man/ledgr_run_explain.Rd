@@ -23,8 +23,10 @@ retained trace returns a zero-row tibble in history mode. Columns are:
 \item identifiers: \code{run_id}, \code{ts_utc}, and \code{instrument_id};
 \item availability: \code{member}, \code{held}, \code{target_restricted},
 \code{target_restriction_reason}, and \code{target_restriction_reasons};
-\item decision evidence: \code{feature_identity_json}, \code{quantity},
-\code{target_before_risk}, and \code{target_after_risk};
+\item decision evidence: \code{feature_identity_json}, \code{intent_reason}, \code{quantity},
+\code{target_before_risk}, and \code{target_after_risk}; \code{intent_reason} is the
+optional portfolio-level note returned by the strategy at that decision
+pulse and is \code{NA_character_} when none was supplied;
 \item execution evidence: \code{execution_outcome}, \code{execution_reason},
 \code{execution_reasons}, and \code{resulting_position};
 \item valuation evidence: \code{mark_source} and \code{mark_age}; and

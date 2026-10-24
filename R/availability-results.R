@@ -60,8 +60,10 @@ ledgr_backtest_diagnostics_filtered <- function(con,
     con,
     paste(
       "SELECT * FROM run_diagnostics",
-      "WHERE run_id = ? AND instrument_id = ?",
-      "AND stage IN ('decision', 'execution')",
+      "WHERE run_id = ?",
+      "AND ((instrument_id = ? AND stage IN ('decision', 'execution'))",
+      "OR (instrument_id = '' AND stage = 'decision'",
+      "AND reason_code = 'strategy_intent'))",
       where_time,
       "ORDER BY diagnostic_seq"
     ),
@@ -681,8 +683,10 @@ ledgr_backtest_availability_filtered <- function(bt,
 #' - identifiers: `run_id`, `ts_utc`, and `instrument_id`;
 #' - availability: `member`, `held`, `target_restricted`,
 #'   `target_restriction_reason`, and `target_restriction_reasons`;
-#' - decision evidence: `feature_identity_json`, `quantity`,
-#'   `target_before_risk`, and `target_after_risk`;
+#' - decision evidence: `feature_identity_json`, `intent_reason`, `quantity`,
+#'   `target_before_risk`, and `target_after_risk`; `intent_reason` is the
+#'   optional portfolio-level note returned by the strategy at that decision
+#'   pulse and is `NA_character_` when none was supplied;
 #' - execution evidence: `execution_outcome`, `execution_reason`,
 #'   `execution_reasons`, and `resulting_position`;
 #' - valuation evidence: `mark_source` and `mark_age`; and
@@ -743,6 +747,41 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     ]
   }
   decision_time <- as.POSIXct(decision$ts_utc, tz = "UTC")
+  intent <- diagnostics[
+    diagnostics$stage == "decision" &
+      diagnostics$instrument_id == "" &
+      diagnostics$reason_code == "strategy_intent",
+    ,
+    drop = FALSE
+  ]
+  intent_time <- as.numeric(as.POSIXct(intent$ts_utc, tz = "UTC"))
+  if (anyDuplicated(intent_time)) {
+    rlang::abort(
+      "The retained decision trace has duplicate strategy intent evidence.",
+      class = "ledgr_run_explanation_unavailable"
+    )
+  }
+  intent_idx <- match(as.numeric(decision_time), intent_time)
+  intent_reason <- rep(NA_character_, length(intent_idx))
+  found_intent <- !is.na(intent_idx)
+  if (any(found_intent)) {
+    intent_reason[found_intent] <- vapply(
+      intent$detail_json[intent_idx[found_intent]],
+      function(value) {
+        parsed <- ledgr_json_read_nested(value)
+        reason <- parsed$intent_reason
+        if (!is.character(reason) || length(reason) != 1L ||
+            is.na(reason) || !nzchar(reason)) {
+          rlang::abort(
+            "The retained strategy intent evidence is malformed.",
+            class = "ledgr_run_explanation_unavailable"
+          )
+        }
+        as.character(reason)
+      },
+      character(1)
+    )
+  }
   available <- if (nrow(decision) == 0L) {
     ledgr_availability_result_empty()
   } else {
@@ -798,6 +837,7 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     target_restriction_reason = as.character(available$target_restriction_reason),
     target_restriction_reasons = as.character(available$target_restriction_reasons),
     feature_identity_json = feature_identity,
+    intent_reason = intent_reason,
     quantity = as.numeric(decision$quantity),
     target_before_risk = as.numeric(decision$target_before_risk),
     target_after_risk = as.numeric(decision$target_after_risk),

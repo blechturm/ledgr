@@ -808,12 +808,25 @@ ledgr_fold_stage_decide <- function(
     )
   }
 
+  intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
+
   targets <- ledgr_validate_strategy_targets(
     result$targets,
     context_ids,
     allow_empty = services$availability_active
   )
   strategy_targets <- targets
+  if (!is.null(intent_reason)) {
+    add_segment(list(
+      n = 1L,
+      instrument_id = "",
+      stage = "decision",
+      outcome = "recorded",
+      reason_code = "strategy_intent",
+      reasons = "strategy_intent",
+      detail_json = canonical_json(list(intent_reason = intent_reason))
+    ))
+  }
   append_decision_trace <- function(target_after = NULL) {
     if (length(context_ids) == 0L) {
       add_segment(list(
@@ -1421,6 +1434,15 @@ ledgr_fold_stage_commit <- function(
       ts
     )
   }
+  if (!services$availability_active &&
+      length(fold_state$pending_segments) > 0L) {
+    ledgr_fold_flush_pulse_block(
+      fold_state,
+      services$diagnostic_writer,
+      services$run_id,
+      ts
+    )
+  }
 
   if (services$availability_active) {
     if (is.null(state_update)) {
@@ -1788,6 +1810,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
       # A resume after the last pulse values nothing new; an availability run
       # still closes with its completion row, from the seeded prefix.
+      diagnostics <- diagnostic_writer$drain()
       if (availability_active && length(pulses_posix) > 0L) {
         output_handler$write_run_evidence(
           ledgr_availability_completion_row(
@@ -1799,10 +1822,12 @@ ledgr_fold_envelope <- function(execution, output_handler) {
             last_fully_valued_ts_utc = fold_state$last_fully_valued,
             last_executed_ts_utc = fold_state$last_executed
           ),
-          diagnostic_writer$drain()
+          diagnostics
         )
-        diagnostic_writer$release()
+      } else {
+        output_handler$write_run_diagnostics(diagnostics)
       }
+      diagnostic_writer$release()
       return(invisible(NULL))
     }
 
@@ -1923,8 +1948,8 @@ ledgr_fold_envelope <- function(execution, output_handler) {
          output_handler$pending_state_count() > 0L)) {
       output_handler$flush_pending()
     }
+    diagnostics <- diagnostic_writer$drain()
     if (availability_active) {
-      diagnostics <- diagnostic_writer$drain()
       if (isTRUE(fold_state$full_run)) {
         completion <- ledgr_availability_completion_row(
           run_id = run_id,
@@ -1939,8 +1964,10 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       } else {
         output_handler$write_run_diagnostics(diagnostics)
       }
-      diagnostic_writer$release()
+    } else {
+      output_handler$write_run_diagnostics(diagnostics)
     }
+    diagnostic_writer$release()
     invisible(NULL)
   }
 

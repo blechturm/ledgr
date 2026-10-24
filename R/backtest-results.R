@@ -1240,9 +1240,12 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
 #' `NA_real_`; later rows use the same adjacent-equity return formula as
 #' ledgr-owned metrics and retained sweep returns.
 #'
-#' `what = "diagnostics"` returns the ordered durable decision, risk,
-#' execution, reconciliation, and stop evidence recorded by an
-#' availability-aware run. Dense runs return the same typed zero-row schema.
+#' `what = "diagnostics"` returns ordered durable decision, risk, execution,
+#' reconciliation, and stop evidence. A structured strategy result may add
+#' `intent_reason`, one non-empty character scalar; when supplied it is
+#' retained once at portfolio level for that invoked pulse in dense and
+#' availability-aware runs. Dense runs otherwise return the same typed
+#' zero-row schema.
 #' `what = "availability"` reconstructs the per-pulse availability plane from
 #' sealed facts, the effective plan, and ledger holdings. It does not execute
 #' strategy code or invent targets.

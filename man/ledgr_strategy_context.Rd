@@ -93,6 +93,15 @@ entries for instruments that leave the axis are dropped, returning instruments
 start from \code{list()}, and a returned entry for an ID outside the axis fails
 with \code{ledgr_invalid_strategy_state}.
 
+The structured result may also include \code{intent_reason}, either \code{NULL}
+or one non-empty character scalar. When supplied, ledgr records the value once
+at portfolio level for that invoked pulse in
+\code{ledgr_results(run, "diagnostics")}; availability-aware
+\code{ledgr_run_explain()} joins it to the existing instrument explanation.
+Prefer short snake-case values. This optional note does not change strategy
+state, targets, execution, accounting or identity, and is not a general factor
+or prediction store.
+
 Strategies should return full named numeric target vectors. The helpers
 \code{ctx$flat()} and \code{ctx$hold()} are the safest starting points because
 they already have one entry for every instrument in \code{ctx$universe}.
