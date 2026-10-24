@@ -262,6 +262,9 @@ returns
     attr(,"ledgr_history")$used_before_window
     [1] TRUE
 
+    attr(,"ledgr_history")$matrix_value_sha256
+    [1] "5e343f0a3e637eae3945c6bd7b9175c4e11503382e317ac8396bb8b3681f6410"
+
 ``` r
 return_frame <- ctx |>
   ledgr_history_frame(feature = "return_20", lookback = 5L)
@@ -345,7 +348,7 @@ info$selection[, c("instrument_id", "requested", "included", "exclusion_reason")
 
 `structural_exclusion` means the window crosses a lifetime or terminal
 barrier, here `DEMO_01`’s delisting, rather than a missing observation
-(`missing_required_input`) or a carry that ran out (`carry_expired`).
+(`insufficient_observations`) or a carry that ran out (`carry_expired`).
 Leaving an instrument out of an estimate is an estimation choice only.
 It creates no target, no zero target and no order.
 

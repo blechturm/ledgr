@@ -1053,7 +1053,7 @@ ledgr_history_require_result <- function(x) {
 # The result's metadata after checking that its columns still match the
 # recorded axis and instruments, as every adapter over a result does. For the
 # long layout it also returns each row's session and instrument position.
-ledgr_history_require_consistent <- function(x) {
+ledgr_history_require_consistent <- function(x, verify_values = TRUE) {
   meta <- ledgr_history_require_result(x)
   axis <- meta$axis
   ids <- as.character(meta$instrument_ids)
@@ -1067,6 +1067,10 @@ ledgr_history_require_consistent <- function(x) {
     if (!identical(meta$layout, "matrix") ||
         !identical(dim(x), c(length(axis), length(ids))) ||
         !identical(dimnames(x), ledgr_history_matrix_dimnames(axis, ids))) {
+      mismatch()
+    }
+    if (isTRUE(verify_values) &&
+        !identical(meta$matrix_value_sha256, ledgr_history_matrix_value_sha256(x))) {
       mismatch()
     }
     return(list(meta = meta, row = NULL, col = NULL))
@@ -1145,11 +1149,16 @@ ledgr_history_matrix_result <- function(out, meta) {
   storage.mode(out) <- "double"
   meta$layout <- "matrix"
   meta$evidence <- NULL
+  meta$matrix_value_sha256 <- ledgr_history_matrix_value_sha256(out)
   structure(
     out,
     class = c("ledgr_history_matrix", "matrix", "array"),
     ledgr_history = meta
   )
+}
+
+ledgr_history_matrix_value_sha256 <- function(x) {
+  digest::digest(as.double(x), algo = "sha256")
 }
 
 ledgr_history_matrix_dimnames <- function(axis, ids) {

@@ -69,14 +69,24 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
   )
 
   changed <- direct + 0
-  subset <- direct[, 1:2, drop = FALSE]
+  math_changed <- abs(direct)
+  row_subset <- direct[1:2, , drop = FALSE]
+  column_subset <- direct[, 1:2, drop = FALSE]
+  preserved <- pmax(direct, max(direct, na.rm = TRUE) + 1)
   replaced <- direct
   replaced[1L, 1L] <- replaced[1L, 1L]
-  for (x in list(changed, subset, replaced)) {
+  for (x in list(changed, math_changed, row_subset, column_subset, replaced, preserved)) {
     testthat::expect_error(
       ledgr_history_info(x), class = "ledgr_invalid_history_result"
     )
   }
+  testthat::expect_error(
+    ledgr_align_weights(rep(1 / 3, 3L), preserved),
+    class = "ledgr_invalid_history_result"
+  )
+  # Readiness is deliberately read from the recorded requirement result and
+  # does not rescan matrix cells; value-consuming helpers enforce the seal.
+  testthat::expect_true(ledgr_passed_warmup(preserved))
 })
 
 testthat::test_that("[LTB-0489] history requirements count treated finite values and drive one readiness predicate", {
@@ -138,6 +148,10 @@ testthat::test_that("[LTB-0489] history requirements count treated finite values
   )
   testthat::expect_error(
     ledgr_history_matrix(ctx, feature = "fast"),
+    class = "ledgr_invalid_history_request"
+  )
+  testthat::expect_error(
+    ledgr_history_frame(ctx, feature = "fast"),
     class = "ledgr_invalid_history_request"
   )
 

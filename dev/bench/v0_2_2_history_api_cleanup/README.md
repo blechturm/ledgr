@@ -29,11 +29,12 @@ the clocks.
 
 ## Recorded result
 
-Recorded on 2026-10-24 on the local Windows development host. The direct arm's
-median was 0.0190 seconds per read versus 0.0320 for the frame adapter, a ratio
-of 0.594. Median incremental heap peaks were 97.2 and 97.1 MB respectively;
+Recorded on 2026-10-24 on the local Windows development host after the matrix
+value-seal correction. The direct arm's median was 0.0225 seconds per read
+versus 0.0320 for the frame adapter, a ratio of 0.703. Median incremental heap
+peaks were 97.3 and 97.1 MB respectively;
 that counter is dominated by the reusable R heap and is disclosed rather than
 claimed as a peak-memory saving. The retained result sizes show the material
-difference: 1,164,664 bytes for the direct matrix versus 10,554,672 bytes while
+difference: 1,164,992 bytes for the direct matrix versus 10,555,000 bytes while
 the adapter's frame and matrix are both live. All arms returned 252 by 500
 matrices, included all 500 instruments and passed the recorded requirements.

@@ -31,7 +31,11 @@ extra conversion. `ledgr_history_info()` and `ledgr_align_weights()` accept
 an intact frame or matrix. Arithmetic, mathematical transforms, replacement
 and row or column subsets deliberately drop the ledgr history identity;
 passing such a result to an identity-aware helper refuses with
-`ledgr_invalid_history_result`.
+`ledgr_invalid_history_result`. Base helpers such as `pmax()` can preserve
+arbitrary attributes without dispatching the matrix methods, so matrices
+carry an internal value seal. Value-consuming identity helpers verify it;
+the readiness predicate deliberately does not scan cells and reads only the
+recorded sample requirement result.
 
 ## Requirements and readiness
 
@@ -61,13 +65,14 @@ examples and current package call sites, with no alias, parser or warning.
 
 `dev/bench/v0_2_2_history_api_cleanup/` records three alternating 20-read
 arms on one prepared, vendor-neutral 500-instrument by 252-session history.
-The median direct read is 0.0190 seconds versus 0.0320 seconds through the
-frame adapter, a ratio of 0.594 against the 1.05 no-regression boundary.
+After the matrix value-seal correction, the median direct read is 0.0225
+seconds versus 0.0320 seconds through the frame adapter, a ratio of 0.703
+against the 1.05 no-regression boundary.
 
-The R heap peak counter is effectively tied (97.2 MB direct, 97.1 MB
+The R heap peak counter is effectively tied (97.3 MB direct, 97.1 MB
 adapter) and is disclosed without a memory-saving claim. Retained object
-size captures the intended structural difference: 1,164,664 bytes for the
-direct matrix versus 10,554,672 bytes while the adapter frame and matrix are
+size captures the intended structural difference: 1,164,992 bytes for the
+direct matrix versus 10,555,000 bytes while the adapter frame and matrix are
 both live. Snapshot construction and P1/P2 preparation are outside both
 arms.
 
