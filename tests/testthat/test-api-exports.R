@@ -61,7 +61,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_history_info",
     "ledgr_history_matrix",
     "ledgr_history_policy",
-    "ledgr_history_sufficient",
     "ledgr_k_ratio",
     "ledgr_objective_diagnostic_threshold",
     "ledgr_objective_even_profit",

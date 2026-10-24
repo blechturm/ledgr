@@ -76,9 +76,9 @@
 #' unsupported bar field. `ledgr_history_unavailable` refuses a history read
 #' from a dense or snapshot-and-universe pulse context, which has no causal
 #' history. `ledgr_invalid_history_request` refuses malformed
-#' [ledgr_history_frame()] and [ledgr_history_sufficient()] arguments,
-#' including a sufficiency query without `lookback` on a result read with
-#' `lookback = Inf`, and `ledgr_invalid_history_result` refuses a matrix,
+#' [ledgr_history_frame()] and [ledgr_history_matrix()] request arguments,
+#' including a missing required `lookback`, and `ledgr_invalid_history_result`
+#' refuses a matrix,
 #' metadata, weights or sufficiency query on a value that is not, or no longer
 #' matches, a `ledgr_history` result. `ledgr_weight_alignment_mismatch`
 #' refuses [ledgr_align_weights()] solver output whose length, names or shape

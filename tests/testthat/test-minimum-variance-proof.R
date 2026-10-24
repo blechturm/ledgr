@@ -268,7 +268,9 @@ testthat::test_that("[LTB-0433] an instrument with fewer than min_obs valid retu
   params <- list(lookback = 10L, min_obs = 5L, shrink = 0.5)
 
   ctx <- ledgr_pulse_snapshot(flat$exp, ts_utc = as.Date("2021-03-01"), params = params)
-  returns <- ledgr_history_frame(ctx, feature = "return_1", lookback = 10L, na_action = "keep")
+  returns <- ledgr_history_frame(
+    ctx, feature = "return_1", lookback = 10L, min_observations = 0L
+  )
   valid <- colSums(is.finite(ledgr_history_matrix(returns)))
   close(ctx)
   testthat::expect_identical(unname(valid), c(10, 10, 10, 4))
@@ -572,11 +574,12 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
   for (call in c(
     "ledgr_history_frame(bar = \"close\", lookback = 2L, instruments = character())",
     "format(axis$ts_utc, \"%Y-%m\", tz = \"UTC\")",
-    "ledgr_history_frame(bar = \"close\", lookback = lookback)",
+    "ledgr_history_frame(bar = \"close\", lookback = lookback,",
+    "min_instruments = 2L",
     "selection$carried_input_share <= threshold",
-    "instruments = candidates, na_action = \"keep\"",
+    "instruments = candidates, min_observations = 0L",
     "valid >= min_obs",
-    "instruments = estimated, na_action = \"keep\"",
+    "instruments = estimated, min_observations = 0L",
     "use = \"pairwise.complete.obs\"",
     "quadprog::solve.QP(",
     "ledgr_align_weights(returns)",

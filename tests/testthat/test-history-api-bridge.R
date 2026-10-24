@@ -1,15 +1,16 @@
 # ledgr-test-file-profile: review
 
-testthat::test_that("[LTB-0407] history results expose their metadata, align solver weights and default the sufficiency lookback", {
+testthat::test_that("[LTB-0407] history results expose requirements, align weights and share readiness", {
   captured <- ws42_capture_run(reader = function(ctx) {
     list(
       fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
-        instruments = "decision_axis", na_action = "drop_instruments"),
+        instruments = "decision_axis"),
       fast_long = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
-        instruments = "decision_axis", na_action = "drop_instruments", layout = "long"),
-      close_all = ledgr_history_frame(ctx, bar = "close"),
-      fast_admissible = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
-        na_action = "drop_instruments")
+        instruments = "decision_axis", layout = "long"),
+      close_all = ledgr_history_frame(ctx, bar = "close", lookback = Inf),
+      fast_admissible = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
+      fast_three = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
+        instruments = "decision_axis", min_instruments = 3L)
     )
   })
   on.exit({
@@ -34,7 +35,9 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   testthat::expect_identical(info$requested_lookback, 2L)
   testthat::expect_identical(info$available_lookback, 2L)
   testthat::expect_identical(info$instruments, "decision_axis")
-  testthat::expect_identical(info$na_action, "drop_instruments")
+  testthat::expect_identical(info$min_observations, 2L)
+  testthat::expect_identical(info$min_instruments, 1L)
+  testthat::expect_true(info$passed_warmup)
   testthat::expect_identical(info$layout, "wide")
   testthat::expect_identical(info$included_ids, c("AAA", "BBB"))
   testthat::expect_identical(info$excluded_ids, "CCC")
@@ -68,21 +71,21 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   testthat::expect_error(ledgr_history_info(broken), class = "ledgr_invalid_history_result")
   testthat::expect_error(ledgr_align_weights(c(0.5, 0.5), broken), class = "ledgr_invalid_history_result")
   testthat::expect_error(ledgr_history_info(data.frame(x = 1)), class = "ledgr_invalid_history_result")
-  # Sufficiency refuses the same stale results (close review 44a F3): a
+  # Readiness refuses the same stale results (close review 44a F3): a
   # result whose rows were filtered keeps its class and metadata but no
   # longer matches its recorded two sessions.
   filtered <- fast[2L, , drop = FALSE]
   attr(filtered, "ledgr_history") <- attr(fast, "ledgr_history")
   class(filtered) <- class(fast)
-  testthat::expect_error(ledgr_history_sufficient(filtered), class = "ledgr_invalid_history_result")
-  testthat::expect_error(ledgr_history_sufficient(broken, lookback = 1L), class = "ledgr_invalid_history_result")
+  testthat::expect_error(ledgr_passed_warmup(filtered), class = "ledgr_invalid_history_result")
+  testthat::expect_error(ledgr_passed_warmup(broken), class = "ledgr_invalid_history_result")
   # The long layout is checked the same way (re-review 1 R3): keeping only
   # AAA's rows leaves a result that no longer holds its recorded instruments.
   long_filtered <- at7$fast_long[at7$fast_long$instrument_id == "AAA", , drop = FALSE]
   attr(long_filtered, "ledgr_history") <- attr(at7$fast_long, "ledgr_history")
   class(long_filtered) <- class(at7$fast_long)
   testthat::expect_error(
-    ledgr_history_sufficient(long_filtered, min_instruments = 2L),
+    ledgr_passed_warmup(long_filtered),
     class = "ledgr_invalid_history_result"
   )
   # Under the "admissible" selector CCC is not requested at session 7, so it
@@ -123,18 +126,14 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
     ledgr_weights(c(AAA = 0.5, BBB = 0.2, CCC = 0.3), origin = "ledgr_align_weights")
   )
 
-  # Sufficiency defaults to the finite lookback the result was read with and
-  # refuses to guess one for a full-lookback read.
-  testthat::expect_true(ledgr_history_sufficient(fast))
-  testthat::expect_true(ledgr_history_sufficient(fast, min_instruments = 2L))
-  testthat::expect_false(ledgr_history_sufficient(fast, min_instruments = 3L))
-  testthat::expect_false(ledgr_history_sufficient(fast, lookback = 3L))
-  testthat::expect_error(ledgr_history_sufficient(at7$close_all), class = "ledgr_invalid_history_request")
-  testthat::expect_true(ledgr_history_sufficient(at7$close_all, lookback = 7L))
-  testthat::expect_false(ledgr_history_sufficient(at7$close_all, lookback = 8L))
+  # The result records its complete requirement once, and the shared warmup
+  # predicate reads that decision without accepting another threshold.
+  testthat::expect_true(ledgr_passed_warmup(fast))
+  testthat::expect_false(ledgr_passed_warmup(at7$fast_three))
+  testthat::expect_true(ledgr_passed_warmup(at7$close_all))
   at1 <- captured$seen[[ws42_iso(axis[[1L]])]]
   # Session 1 holds one of the two requested sessions.
-  testthat::expect_false(ledgr_history_sufficient(at1$fast))
+  testthat::expect_false(ledgr_passed_warmup(at1$fast))
 
   # A strategy using all three runs at Tier 1 and turns weights into targets.
   # At session 6 CCC's inactivity is not yet known, so it is admissible and
@@ -145,8 +144,9 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
   # skipped and not redistributed.
   strategy <- function(ctx, params) {
     if (!identical(ctx$ts_utc, "2021-01-11T21:00:00Z")) return(ctx$hold())
-    returns <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments")
-    if (!ledgr_history_sufficient(returns, min_instruments = 2L)) return(ctx$hold())
+    returns <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
+      min_instruments = 2L)
+    if (!ledgr_passed_warmup(returns)) return(ctx$hold())
     n <- length(ledgr_history_info(returns)$included_ids)
     ledgr_target_rebalance(ledgr_align_weights(rep(1 / n, n), returns), ctx, equity_fraction = 1)
   }
@@ -164,7 +164,7 @@ testthat::test_that("[LTB-0407] history results expose their metadata, align sol
 testthat::test_that("[LTB-0417] ledgr_align_weights takes the solution first and refuses missing names and non-finite weights by their own classes", {
   captured <- ws42_capture_run(reader = function(ctx) {
     ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
-      instruments = "decision_axis", na_action = "drop_instruments")
+      instruments = "decision_axis")
   })
   on.exit({
     close(captured$bt)

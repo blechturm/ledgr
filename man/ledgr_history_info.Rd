@@ -14,7 +14,8 @@ A \code{ledgr_history_info} list with \code{source} (the \verb{bar:<field>} or
 \verb{feature:<id>} label), \code{source_kind}, \code{source_id}, \code{cutoff_utc},
 \code{data_start_utc}, \code{window_start_utc}, \code{requested_lookback},
 \code{available_lookback}, \code{instruments} (the selector: \code{"admissible"},
-\code{"decision_axis"} or \code{"explicit"}), \code{na_action}, \code{layout},
+\code{"decision_axis"} or \code{"explicit"}), \code{min_observations},
+\code{min_instruments}, \code{passed_warmup}, \code{layout},
 \code{used_before_window}, \code{included_ids}, \code{excluded_ids} (requested but not
 included), \code{selection} (a tibble with one row per requested or
 decision-axis instrument: \code{requested}, \code{included}, \code{exclusion_reason},
@@ -37,7 +38,7 @@ instruments, and it reads no data.
 }
 \details{
 Excluded instruments are estimation evidence only. An instrument that
-\code{na_action = "drop_instruments"} left out of the estimator sample still
+\code{min_observations} left out of the estimator sample still
 needs a target: \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} targets a held instrument that
 is not in its weights to zero unless the strategy passes it in \code{keep}, and
 \code{excluded_ids} is the list to consult for that choice.
@@ -54,7 +55,7 @@ Reading causal history:
 strategy <- function(ctx, params) {
   returns <- ctx |>
     ledgr_history_frame(feature = "return_1", lookback = 20L,
-                        na_action = "drop_instruments")
+                        min_instruments = 3L)
   info <- ledgr_history_info(returns)
   info$excluded_ids
   ctx$hold()

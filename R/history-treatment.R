@@ -4,7 +4,7 @@ ledgr_history_evidence_fields <- function() {
     "output_carried", "source_ts_utc", "carry_age_sessions", "ready",
     "calculation_valid", "missing_reason", "barrier_reason", "requested",
     "included", "exclusion_reason", "required_input_count",
-    "carried_input_count", "carried_input_share"
+    "carried_input_count", "carried_input_share", "finite_observation_count"
   )
 }
 
@@ -498,7 +498,8 @@ ledgr_history_output_carry <- function(value,
 }
 
 ledgr_history_estimator_admission <- function(evidence,
-                                              requested = TRUE) {
+                                              requested = TRUE,
+                                              min_observations = NULL) {
   calculation_valid <- evidence$calculation_valid
   input_carried <- evidence$input_carried
   if (is.null(dim(calculation_valid))) {
@@ -544,7 +545,31 @@ ledgr_history_estimator_admission <- function(evidence,
     ncol = ncol(calculation_valid)
   ))
   carried_input_count <- rowSums(input_carried)
-  included <- requested & rowSums(!calculation_valid) == 0L
+  value <- evidence$value
+  if (is.null(value)) {
+    output_carried <- evidence$output_carried
+    if (is.null(output_carried)) {
+      output_carried <- matrix(FALSE, nrow = nrow(calculation_valid),
+                               ncol = ncol(calculation_valid))
+    } else if (is.null(dim(output_carried))) {
+      output_carried <- matrix(as.logical(output_carried), nrow = 1L)
+    }
+    value <- ifelse(calculation_valid | output_carried, 0, NA_real_)
+  } else if (is.null(dim(value))) {
+    value <- matrix(as.numeric(value), nrow = 1L)
+  }
+  if (!identical(dim(value), dim(calculation_valid))) {
+    rlang::abort(
+      "History estimator values must align with their evidence.",
+      class = c("ledgr_invalid_history_treatment", "ledgr_invalid_config")
+    )
+  }
+  if (is.null(min_observations)) min_observations <- ncol(calculation_valid)
+  min_observations <- ledgr_history_validate_requirement(
+    min_observations, "min_observations"
+  )
+  finite_observation_count <- rowSums(is.finite(value))
+  included <- requested & finite_observation_count >= min_observations
   exclusion_reason <- rep("", n_instruments)
   exclusion_reason[!requested] <- "not_requested"
   excluded <- requested & !included
@@ -553,7 +578,7 @@ ledgr_history_estimator_admission <- function(evidence,
     !calculation_valid & missing_reason %in%
       c("carry_expired", "output_carry_expired")
   ) > 0L
-  exclusion_reason[excluded] <- "missing_required_input"
+  exclusion_reason[excluded] <- "insufficient_observations"
   exclusion_reason[excluded & expired] <- "carry_expired"
   exclusion_reason[excluded & structural] <- "structural_exclusion"
   list(
@@ -566,6 +591,7 @@ ledgr_history_estimator_admission <- function(evidence,
       required_input_count > 0L,
       carried_input_count / required_input_count,
       0
-    )
+    ),
+    finite_observation_count = as.integer(finite_observation_count)
   )
 }

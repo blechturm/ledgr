@@ -108,8 +108,10 @@ min_variance <- function(ctx, params) {
 
   # 2. Read closes over the window and screen out instruments whose window
   #    holds too many carried prices.
-  closes <- ctx |> ledgr_history_frame(bar = "close", lookback = lookback)
-  if (!ledgr_history_sufficient(closes)) {
+  closes <- ctx |>
+    ledgr_history_frame(bar = "close", lookback = lookback,
+                        min_instruments = 2L)
+  if (!ledgr_passed_warmup(closes)) {
     return(hold("insufficient_history"))
   }
   selection <- ledgr_history_info(closes)$selection
@@ -121,7 +123,7 @@ min_variance <- function(ctx, params) {
   #    the final read holds exactly the instruments that are estimated.
   returns <- ctx |>
     ledgr_history_frame(feature = "return_1", lookback = lookback,
-                        instruments = candidates, na_action = "keep")
+                        instruments = candidates, min_observations = 0L)
   valid <- colSums(is.finite(ledgr_history_matrix(returns)))
   estimated <- ledgr_history_info(returns)$included_ids[valid >= min_obs]
   if (length(estimated) < 2L) {
@@ -129,7 +131,7 @@ min_variance <- function(ctx, params) {
   }
   returns <- ctx |>
     ledgr_history_frame(feature = "return_1", lookback = lookback,
-                        instruments = estimated, na_action = "keep")
+                        instruments = estimated, min_observations = 0L)
 
   # 4. Estimate a pairwise covariance and shrink it toward its diagonal. A
   #    pairwise estimate need not be positive definite, so floor its
@@ -265,7 +267,7 @@ candidates <- selection$instrument_id[selection$requested &
                                         selection$carried_input_share <= 0.2]
 returns <- november |>
   ledgr_history_frame(feature = "return_1", lookback = 252L,
-                      instruments = candidates, na_action = "keep")
+                      instruments = candidates, min_observations = 0L)
 colSums(is.finite(ledgr_history_matrix(returns)))
 ```
 
@@ -553,7 +555,7 @@ sweep <- ledgr_sweep(exp, grid, workers = 2L, seed = 1L)
 sweep
 ```
 
-    # ledgr sweep -- sweep_7349bd2b047d2b7c
+    # ledgr sweep -- sweep_8afcb31bcb203857
     # A tibble: 4 x 8
       candidate_id        candidate_row status sharpe_ratio total_return max_drawdown n_trades
       <chr>                       <int> <chr>         <dbl> <chr>        <chr>           <int>

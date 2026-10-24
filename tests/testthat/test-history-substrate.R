@@ -756,7 +756,7 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
       "output_carried", "source_ts_utc", "carry_age_sessions", "ready",
       "calculation_valid", "missing_reason", "barrier_reason", "requested",
       "included", "exclusion_reason", "required_input_count",
-      "carried_input_count", "carried_input_share"
+      "carried_input_count", "carried_input_share", "finite_observation_count"
     )
   )
 

@@ -175,11 +175,15 @@ testthat::test_that("[LTB-0408] the Cut 16 evidence-owner map resolves to regist
 testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads only, against a hand oracle", {
   read <- function(ctx) {
     list(
-      close = ledgr_history_frame(ctx, bar = "close", instruments = "DDD"),
-      sma = ledgr_history_frame(ctx, feature = "sma", instruments = "DDD"),
+      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+        instruments = "DDD", min_observations = 0L),
+      sma = ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
+        instruments = "DDD", min_observations = 0L),
       bytes = serialize(list(
-        ledgr_history_frame(ctx, bar = "close", instruments = "DDD"),
-        ledgr_history_frame(ctx, feature = "sma", instruments = "DDD")
+        ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+          instruments = "DDD", min_observations = 0L),
+        ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
+          instruments = "DDD", min_observations = 0L)
       ), NULL),
       scalar = ctx$feature("DDD", "sma"),
       vec = ctx$vec$feature("sma")
@@ -309,9 +313,13 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
   reader <- function(ctx) {
     sma <- ledgr_history_frame(ctx, feature = "sma", lookback = 1L, instruments = c("AAA", "DDD"))
     list(
-      close = ledgr_history_frame(ctx, bar = "close", instruments = "DDD")$DDD,
+      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+        instruments = "DDD", min_observations = 0L)$DDD,
       sma = c(AAA = sma$AAA, DDD = sma$DDD),
       matrix = ledgr_history_matrix(sma),
+      direct_matrix = ledgr_history_matrix(
+        ctx, feature = "sma", lookback = 1L, instruments = c("AAA", "DDD")
+      ),
       scalar = c(ctx$feature("AAA", "sma"), ctx$feature("DDD", "sma")),
       vec = ctx$vec$feature("sma"),
       bar = ctx$close("DDD")
@@ -359,8 +367,14 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
     testthat::expect_identical(got$close, want$close, info = info)
     testthat::expect_identical(got$sma, want$sma, info = info)
     testthat::expect_identical(
-      got$matrix,
+      as.matrix(got$matrix),
       matrix(unname(want$sma), nrow = 1L, dimnames = list(ws44_iso(axis[[session]]), c("AAA", "DDD"))),
+      info = info
+    )
+    testthat::expect_identical(as.matrix(got$direct_matrix), as.matrix(got$matrix),
+                               info = info)
+    testthat::expect_identical(
+      ledgr_history_info(got$direct_matrix), ledgr_history_info(got$matrix),
       info = info
     )
     testthat::expect_identical(got$scalar, unname(want$sma), info = info)
@@ -542,8 +556,10 @@ testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's kn
   seen <- new.env()
   spy <- function(ctx, params) {
     seen[[ctx$ts_utc]] <- list(
-      sma = ledgr_history_frame(ctx, feature = "sma", instruments = "DDD"),
-      close = ledgr_history_frame(ctx, bar = "close", instruments = "DDD")
+      sma = ledgr_history_frame(ctx, feature = "sma", lookback = Inf,
+        instruments = "DDD", min_observations = 0L),
+      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+        instruments = "DDD", min_observations = 0L)
     )
     ctx$hold()
   }
@@ -608,7 +624,8 @@ testthat::test_that("[LTB-0413] vintage feature evidence follows each pulse's kn
   on.exit(ledgr_snapshot_close(reach$snapshot), add = TRUE)
   window <- ledgr_history_frame(
     ledgr_pulse_snapshot(reach$exp, ts_utc = reach$axis[[7L]]),
-    feature = "sma", lookback = 3L, instruments = "DDD"
+    feature = "sma", lookback = 3L, instruments = "DDD",
+    min_observations = 0L
   )
   cells <- ws44_cells(window, "DDD")
   testthat::expect_identical(cells$value, c(na, na, 59))

@@ -8,9 +8,10 @@ ledgr_history_frame(
   ctx,
   feature = NULL,
   bar = NULL,
-  lookback = Inf,
+  lookback,
   instruments = "admissible",
-  na_action = c("keep", "drop_instruments"),
+  min_observations = NULL,
+  min_instruments = 1L,
   layout = c("wide", "long")
 )
 }
@@ -22,15 +23,18 @@ ledgr_history_frame(
 \item{bar}{One bar field: \code{"open"}, \code{"high"}, \code{"low"}, \code{"close"} or
 \code{"volume"}. Supply exactly one of \code{feature} and \code{bar}.}
 
-\item{lookback}{\code{Inf} for all history from the data start, or a
+\item{lookback}{Required. \code{Inf} for all history from the data start, or a
 non-negative whole number of expected venue sessions ending at the cutoff.}
 
 \item{instruments}{\code{"admissible"}, \code{"decision_axis"}, or a character
 vector of known instrument IDs.}
 
-\item{na_action}{\code{"keep"} keeps every requested instrument;
-\code{"drop_instruments"} excludes requested instruments with incomplete
-values in the window.}
+\item{min_observations}{Minimum finite treated values required per
+instrument. \code{NULL} requires the finite \code{lookback}, or every returned
+session for \code{lookback = Inf}.}
+
+\item{min_instruments}{Minimum included instruments required for
+\code{\link[=ledgr_passed_warmup]{ledgr_passed_warmup()}} to return \code{TRUE}. It does not filter columns.}
 
 \item{layout}{\code{"wide"} (one row per session, \code{ts_utc} plus one column per
 included instrument) or \code{"long"} (one row per session and instrument with
@@ -39,7 +43,8 @@ included instrument) or \code{"long"} (one row per session and instrument with
 \value{
 A \code{ledgr_history} data frame. Its \code{"ledgr_history"} attribute
 records the data start, returned-window start and cutoff, requested and
-available lookback, source and policy identity, the selection table
+available lookback, source, policy identity and recorded requirements,
+the selection table
 (requested, included and excluded instruments with reasons and carried
 input counts), whether any value used observations before the window,
 and, for the wide layout, the aligned cell evidence matrices.
@@ -94,11 +99,13 @@ sessions.
 admissible at the cutoff, \code{"decision_axis"} adds held nonmembers and
 restricted members, and a character vector requests known instrument IDs
 explicitly; unknown IDs refuse and known IDs are never dropped for current
-inadmissibility. \code{na_action = "drop_instruments"} excludes requested
-instruments whose window is incomplete after treatment from the estimator
-sample and records the reason. Exclusion is estimation only: it creates no
-target, zero target, liquidation or fill. The strategy still returns a
-target for every instrument on its decision axis.
+inadmissibility. \code{min_observations} excludes requested instruments with too
+few finite values after treatment and records the count and reason. Input-
+and output-carried finite values count. \code{min_instruments} records the panel
+readiness requirement without filtering another instrument. Exclusion is
+estimation only: it creates no target, zero target, liquidation or fill.
+The strategy still returns a target for every instrument on its decision
+axis.
 }
 \section{Articles}{
 
@@ -112,13 +119,13 @@ Reading causal history:
 strategy <- function(ctx, params) {
   returns <- ctx |>
     ledgr_history_frame(feature = "return_1", lookback = 20L,
-                        na_action = "drop_instruments")
+                        min_instruments = 3L)
   x <- ledgr_history_matrix(returns)
   ctx$hold()
 }
 }
 }
 \seealso{
-\code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}}, \code{\link[=ledgr_history_sufficient]{ledgr_history_sufficient()}},
+\code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}}, \code{\link[=ledgr_passed_warmup]{ledgr_passed_warmup()}},
 \code{\link[=ledgr_history_policy]{ledgr_history_policy()}}
 }

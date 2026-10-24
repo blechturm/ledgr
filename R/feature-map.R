@@ -309,8 +309,10 @@ print.ledgr_feature_map <- function(x, ...) {
 #'
 #' `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
 #' returned by `ctx$features(id, feature_map)`. For those vectors, `TRUE` means
-#' every requested feature is usable at the current pulse. For arbitrary
-#' vectors, it is only an `all(!is.na(x))` predicate.
+#' every requested feature is usable at the current pulse. For an intact
+#' `ledgr_history` frame or `ledgr_history_matrix`, it returns the recorded
+#' `min_observations` and `min_instruments` result without rescanning values.
+#' For arbitrary vectors, it is only an `all(!is.na(x))` predicate.
 #'
 #' `ledgr_passed_warmup()` is not a signal pipeline transformation. It is a guard for
 #' strategy conditions after feature values have been read. Zero-length input
@@ -328,7 +330,7 @@ print.ledgr_feature_map <- function(x, ...) {
 #' instrument. Non-numeric `values`, or `values` with an `x` that is not a pulse
 #' context, abort with class `ledgr_invalid_warmup_input`.
 #'
-#' @param x A numeric vector, typically returned by `ctx$features()`; or, when
+#' @param x A numeric vector, an intact ledgr history frame or matrix; or, when
 #'   `values` is supplied, the pulse context.
 #' @param values Optional numeric decision-axis values or a context signal.
 #' @return A logical scalar.
@@ -342,6 +344,11 @@ print.ledgr_feature_map <- function(x, ...) {
 #'
 #' `vignette("indicators", package = "ledgr")`
 #' `system.file("doc", "indicators.html", package = "ledgr")`
+#'
+#' Causal history requirements are covered in:
+#'
+#' `vignette("causal-history", package = "ledgr")`
+#' `system.file("doc", "causal-history.html", package = "ledgr")`
 #' @examples
 #' ledgr_passed_warmup(c(ret_5 = NA_real_, sma_10 = 101))
 #' ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
@@ -354,6 +361,9 @@ print.ledgr_feature_map <- function(x, ...) {
 ledgr_passed_warmup <- function(x, values) {
   if (!missing(values)) {
     return(ledgr_passed_warmup_context(x, values))
+  }
+  if (inherits(x, "ledgr_history") || inherits(x, "ledgr_history_matrix")) {
+    return(isTRUE(ledgr_history_require_consistent(x)$meta$passed_warmup))
   }
   if (!is.numeric(x)) {
     rlang::abort(

@@ -178,13 +178,15 @@
 ## Public causal history
 
 - `ledgr_history_frame()` reads one bar field or one feature as causal
-  history from an availability-aware strategy context: full or finite
-  lookback, admissible, decision-axis or explicit instruments, `"keep"` or
-  `"drop_instruments"` and wide or long layout. The result records its data
-  start, window, cutoff, source and policy identity, the selection table and
-  the missingness and carry evidence. `ledgr_history_matrix()` adapts it to an
-  identified sessions-by-instruments matrix and `ledgr_history_sufficient()`
-  answers structural sufficiency. Estimation exclusion never changes a target.
+  history from an availability-aware strategy context with an explicit full
+  or finite lookback, admissible, decision-axis or explicit instruments, a
+  finite-observation requirement and wide or long layout. The result records
+  its data start, window, cutoff, source and policy identity, the selection
+  table, requirements and missingness and carry evidence.
+- `ledgr_history_matrix()` now reads the same causal plan directly from a
+  pulse context without first allocating a data frame. Its one-argument frame
+  adapter remains available. Both forms return an identified ordinary double
+  matrix; transformations deliberately remove ledgr identity.
 
 - `ledgr_history_info()` returns what a history result recorded about itself:
   its cutoff, window and lookback, the selection table with every exclusion
@@ -195,9 +197,10 @@
   instruments, without rebuilding column names, and refuses a length, names
   or shape that do not match (`ledgr_weight_alignment_mismatch`); it pipes as
   `solution |> ledgr_align_weights(history) |> ledgr_target_rebalance(ctx)`.
-  `ledgr_history_sufficient()` now uses
-  the lookback the result was read with when `lookback` is omitted, and
-  refuses to guess one for a full-lookback read.
+  `ledgr_passed_warmup()` now also accepts an intact history frame or matrix
+  and returns its recorded `min_observations`/`min_instruments` readiness
+  result without rescanning cells. The former `na_action` argument and
+  `ledgr_history_sufficient()` helper are removed before CRAN.
 
 - Feature history from `ledgr_history_frame()` is a vintage view: after a
   lifetime fact becomes known late, earlier feature cells keep the value and

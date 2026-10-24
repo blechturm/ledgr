@@ -365,9 +365,12 @@ testthat::test_that("[LTB-0318] history frames report the prepared feature carry
   seen <- new.env()
   reader <- function(ctx) {
     list(
-      level = attr(ledgr_history_frame(ctx, feature = "level"), "ledgr_history")$evidence,
-      ret = attr(ledgr_history_frame(ctx, feature = "ret"), "ledgr_history")$evidence,
-      values = ledgr_history_frame(ctx, feature = "ret")
+      level = attr(ledgr_history_frame(ctx, feature = "level", lookback = Inf,
+        min_observations = 0L), "ledgr_history")$evidence,
+      ret = attr(ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
+        min_observations = 0L), "ledgr_history")$evidence,
+      values = ledgr_history_frame(ctx, feature = "ret", lookback = Inf,
+        min_observations = 0L)
     )
   }
   fixture <- ws42_history_fixture(

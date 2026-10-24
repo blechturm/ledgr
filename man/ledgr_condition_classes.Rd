@@ -481,9 +481,9 @@ membership, trading-status or lifetime facts lack a knowledge time.
 unsupported bar field. \code{ledgr_history_unavailable} refuses a history read
 from a dense or snapshot-and-universe pulse context, which has no causal
 history. \code{ledgr_invalid_history_request} refuses malformed
-\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and \code{\link[=ledgr_history_sufficient]{ledgr_history_sufficient()}} arguments,
-including a sufficiency query without \code{lookback} on a result read with
-\code{lookback = Inf}, and \code{ledgr_invalid_history_result} refuses a matrix,
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and \code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}} request arguments,
+including a missing required \code{lookback}, and \code{ledgr_invalid_history_result}
+refuses a matrix,
 metadata, weights or sufficiency query on a value that is not, or no longer
 matches, a \code{ledgr_history} result. \code{ledgr_weight_alignment_mismatch}
 refuses \code{\link[=ledgr_align_weights]{ledgr_align_weights()}} solver output whose length, names or shape

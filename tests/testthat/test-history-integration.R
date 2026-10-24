@@ -1,7 +1,9 @@
 ws42_integration_reader <- function(ctx) {
   list(
-    close = ledgr_history_frame(ctx, bar = "close", instruments = "decision_axis"),
-    fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments"),
+    close = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L),
+    fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
+    fast_matrix = ledgr_history_matrix(ctx, feature = "fast", lookback = 2L),
     bbb_fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, instruments = "BBB"),
     planes = ctx$vec[c("id", "member", "admissible", "target_restriction_reason", "close", "position")],
     cash = ctx$cash,
@@ -110,7 +112,8 @@ testthat::test_that("[LTB-0300] run, sweep, window, precompute and inspection re
     opening = opening, history_policy = ledgr_history_policy(price_carry = NULL)
   )
   strict_close <- ledgr_history_frame(
-    ledgr_pulse_snapshot(strict, ts_utc = axis[[6L]]), bar = "close", instruments = "decision_axis"
+    ledgr_pulse_snapshot(strict, ts_utc = axis[[6L]]), bar = "close",
+    lookback = Inf, instruments = "decision_axis", min_observations = 0L
   )
   testthat::expect_identical(strict_close$BBB, c(21, 22, NA, NA, 25, 26))
   testthat::expect_identical(strict_close$CCC[[6L]], NA_real_)
@@ -232,13 +235,15 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
   # pulse or candidate.
   seen <- new.env()
   mutating <- function(ctx, params) {
-    first <- ledgr_history_frame(ctx, bar = "close", instruments = "decision_axis")
+    first <- ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L)
     m <- ledgr_history_matrix(first)
     seen[[paste(params$tag, ctx$ts_utc)]] <- first
     first$AAA[] <- -1
     m[] <- -1
     attr(first, "ledgr_history")$evidence$input_carried[] <- TRUE
-    again <- ledgr_history_frame(ctx, bar = "close", instruments = "decision_axis")
+    again <- ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L)
     if (!identical(again, seen[[paste(params$tag, ctx$ts_utc)]])) stop("history read changed")
     ctx$hold()
   }
@@ -288,7 +293,8 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   testthat::expect_s3_class(ctx$.history, "ledgr_history_view")
   testthat::expect_identical(
     names(formals(ledgr_history_frame)),
-    c("ctx", "feature", "bar", "lookback", "instruments", "na_action", "layout")
+    c("ctx", "feature", "bar", "lookback", "instruments", "min_observations",
+      "min_instruments", "layout")
   )
 
   # A strategy context is never built from an experiment by the strategy:
@@ -339,7 +345,10 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   on.exit(close(pulse), add = TRUE)
   testthat::expect_identical(pulse$close("BBB"), 23)
   testthat::expect_null(pulse$.history)
-  testthat::expect_error(ledgr_history_frame(pulse, bar = "close"), class = "ledgr_history_unavailable")
+  testthat::expect_error(
+    ledgr_history_frame(pulse, bar = "close", lookback = Inf),
+    class = "ledgr_history_unavailable"
+  )
   testthat::expect_error(ledgr_pulse_snapshot("not a snapshot"), class = "ledgr_invalid_args")
   testthat::expect_error(
     ledgr_pulse_snapshot(dense_snapshot, universe = "AAA", ts_utc = "2021-01-06T21:00:00Z", params = list()),

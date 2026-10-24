@@ -1,0 +1,7 @@
+"pair","order","arm","iterations","elapsed_seconds_per_read","peak_increment_mb","matrix_bytes","retained_bytes","rows","columns","included","passed_warmup"
+1,1,"direct",20,0.0215,69.6,1164312,1164664,252,500,500,TRUE
+1,2,"adapter",20,0.032,102.8,1164312,10554672,252,500,500,TRUE
+2,1,"adapter",20,0.029,97.1,1164312,10554672,252,500,500,TRUE
+2,2,"direct",20,0.019,97.2,1164312,1164664,252,500,500,TRUE
+3,1,"direct",20,0.0175,97.2,1164312,1164664,252,500,500,TRUE
+3,2,"adapter",20,0.032,97.1,1164312,10554672,252,500,500,TRUE

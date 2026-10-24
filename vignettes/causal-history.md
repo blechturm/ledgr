@@ -83,7 +83,7 @@ easiest place to try a history read.
 ``` r
 ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date("2020-06-30"),
                             params = list(lookback = 20L, n = 3L))
-closes <- ctx |> ledgr_history_frame(bar = "close")
+closes <- ctx |> ledgr_history_frame(bar = "close", lookback = Inf)
 closes
 ```
 
@@ -92,6 +92,7 @@ closes
     Cutoff:    2020-06-30T16:00:00Z
     Sessions:  129 of requested Inf
     Included:  7 of 7 requested
+    Ready:     yes
     Layout:    wide
                     ts_utc  DEMO_02  DEMO_03  DEMO_04  DEMO_05  DEMO_06  DEMO_07  DEMO_08
     1  2020-01-01 16:00:00 54.35278 61.92477 67.91859 75.69739 82.71295 88.72165 97.44337
@@ -106,7 +107,8 @@ closes
     10 2020-01-15 16:00:00 52.05666 62.07643 71.14075 75.25940 80.95590 87.60192 92.78829
     # i Selection, exclusions and window: ledgr_history_info(x)
 
-The defaults are the ones most estimators want:
+The defaults are the ones most estimators want, but the history width is
+always explicit:
 
 - `lookback = Inf` returns every expected venue session from the start
   of the data up to the pulse. A finite `lookback` returns the last
@@ -114,20 +116,26 @@ The defaults are the ones most estimators want:
   differently.
 - `instruments = "admissible"` returns the instruments the strategy may
   target at this pulse.
-- `na_action = "keep"` keeps every requested instrument, missing values
-  and all.
+- `min_observations = NULL` requires one finite treated value for every
+  requested session. Set a smaller integer when the estimator can work
+  with incomplete columns.
+- `min_instruments = 1L` records how many included instruments the
+  strategy needs before it is ready. It does not remove another column.
 - `layout = "wide"` returns one row per session, `ts_utc` first, then
   one column per instrument.
 
-## Turn A History Result Into A Matrix
+## Read A Matrix Directly
 
-Estimators want a numeric matrix. `ledgr_history_matrix()` drops the
-time column and keeps the session stamps and instrument IDs as dimension
-names; it reads nothing new.
+Estimators usually want a numeric matrix, so the context form of
+`ledgr_history_matrix()` reads one directly. It uses the same causal
+plan as the frame reader, keeps the session stamps and instrument IDs as
+dimension names, and does not build a data frame first. The one-argument
+form remains an adapter when a frame is useful for inspection.
 
 ``` r
-returns <- ctx |> ledgr_history_frame(feature = "return_20", lookback = 5L)
-ledgr_history_matrix(returns)
+returns <- ctx |>
+  ledgr_history_matrix(feature = "return_20", lookback = 5L)
+returns
 ```
 
                               DEMO_02     DEMO_03    DEMO_04    DEMO_05    DEMO_06    DEMO_07
@@ -142,6 +150,125 @@ ledgr_history_matrix(returns)
     2020-06-26T16:00:00Z 0.07965017
     2020-06-29T16:00:00Z 0.06554025
     2020-06-30T16:00:00Z 0.05875374
+    attr(,"class")
+    [1] "ledgr_history_matrix" "matrix"               "array"
+    attr(,"ledgr_history")
+    attr(,"ledgr_history")$source
+    attr(,"ledgr_history")$source$kind
+    [1] "feature"
+
+    attr(,"ledgr_history")$source$name
+    [1] "return_20"
+
+    attr(,"ledgr_history")$source$id
+    [1] "return_20"
+
+    attr(,"ledgr_history")$source$label
+    [1] "feature:return_20"
+
+
+    attr(,"ledgr_history")$snapshot_hash
+    [1] "74f5eac1c51966f513e66f7bb0be20d9c4af366c312809f2cfb5339a28dfb9a5"
+
+    attr(,"ledgr_history")$policy_identity
+    attr(,"ledgr_history")$policy_identity$policy_schema_version
+    [1] 1
+
+    attr(,"ledgr_history")$policy_identity$axis_rule_version
+    [1] 1
+
+    attr(,"ledgr_history")$policy_identity$cutoff_rule_version
+    [1] 1
+
+    attr(,"ledgr_history")$policy_identity$treatment_rule_version
+    [1] 1
+
+    attr(,"ledgr_history")$policy_identity$price_carry
+    [1] 5
+
+    attr(,"ledgr_history")$policy_identity$output_carry
+    NULL
+
+    attr(,"ledgr_history")$policy_identity$segment_limit
+    NULL
+
+
+    attr(,"ledgr_history")$data_start_utc
+    [1] "2020-01-01 16:00:00 UTC"
+
+    attr(,"ledgr_history")$window_start_utc
+    [1] "2020-06-24 16:00:00 UTC"
+
+    attr(,"ledgr_history")$cutoff_utc
+    [1] "2020-06-30 16:00:00 UTC"
+
+    attr(,"ledgr_history")$requested_lookback
+    [1] 5
+
+    attr(,"ledgr_history")$available_lookback
+    [1] 5
+
+    attr(,"ledgr_history")$instruments
+    [1] "admissible"
+
+    attr(,"ledgr_history")$min_observations
+    [1] 5
+
+    attr(,"ledgr_history")$min_instruments
+    [1] 1
+
+    attr(,"ledgr_history")$passed_warmup
+    [1] TRUE
+
+    attr(,"ledgr_history")$layout
+    [1] "matrix"
+
+    attr(,"ledgr_history")$axis
+    [1] "2020-06-24 16:00:00 UTC" "2020-06-25 16:00:00 UTC" "2020-06-26 16:00:00 UTC"
+    [4] "2020-06-29 16:00:00 UTC" "2020-06-30 16:00:00 UTC"
+
+    attr(,"ledgr_history")$instrument_ids
+    [1] "DEMO_02" "DEMO_03" "DEMO_04" "DEMO_05" "DEMO_06" "DEMO_07" "DEMO_08"
+
+    attr(,"ledgr_history")$selection
+      instrument_id requested included exclusion_reason on_decision_axis admissible
+    1       DEMO_02      TRUE     TRUE                              TRUE       TRUE
+    2       DEMO_03      TRUE     TRUE                              TRUE       TRUE
+    3       DEMO_04      TRUE     TRUE                              TRUE       TRUE
+    4       DEMO_05      TRUE     TRUE                              TRUE       TRUE
+    5       DEMO_06      TRUE     TRUE                              TRUE       TRUE
+    6       DEMO_07      TRUE     TRUE                              TRUE       TRUE
+    7       DEMO_08      TRUE     TRUE                              TRUE       TRUE
+    8       DEMO_01     FALSE    FALSE    not_requested             TRUE      FALSE
+      admissibility_reason required_input_count carried_input_count carried_input_share
+    1                                         5                   0                   0
+    2                                         5                   0                   0
+    3                                         5                   0                   0
+    4                                         5                   0                   0
+    5                                         5                   0                   0
+    6                                         5                   0                   0
+    7                                         5                   0                   0
+    8       status_unknown                   NA                  NA                  NA
+      finite_observation_count
+    1                        5
+    2                        5
+    3                        5
+    4                        5
+    5                        5
+    6                        5
+    7                        5
+    8                       NA
+
+    attr(,"ledgr_history")$used_before_window
+    [1] TRUE
+
+``` r
+return_frame <- ctx |>
+  ledgr_history_frame(feature = "return_20", lookback = 5L)
+identical(as.matrix(returns), as.matrix(ledgr_history_matrix(return_frame)))
+```
+
+    [1] TRUE
 
 `ledgr_history_info()` returns what the result records about itself: its
 source, cutoff, window, how many sessions it holds and which requested
@@ -156,7 +283,9 @@ ledgr_history_info(returns)
     Cutoff:       2020-06-30T16:00:00Z
     Window start: 2020-06-24T16:00:00Z
     Sessions:     5 of requested 5
-    Selector:     admissible, na_action = keep
+    Selector:     admissible
+    Requirements: 5 finite observations, 1 instruments
+    Ready:        yes
     Included:     7 of 7 requested
     Used before window: yes
     # i Selection table: info$selection
@@ -165,20 +294,22 @@ ledgr_history_info(returns)
 sessions before the returned window: each 20-session return in these
 five rows was computed from closes up to 20 sessions earlier.
 
-## Choose The Instruments And The Missing Values
+## Choose The Instruments And The Required Observations
 
 The defaults can be replaced one at a time.
 `instruments = "decision_axis"` adds held nonmembers and members the
 strategy may not trade now. Here that is `DEMO_01`, still a member of
 the universe but delisted on 14 January, so it is not admissible at the
-cutoff. `na_action = "drop_instruments"` leaves an instrument out of the
-estimate when its window is incomplete, and records why.
+cutoff. `min_observations` leaves an instrument out of the estimate when
+it has too few finite treated values, and records why. Finite
+input-carried and output-carried values count because they are values
+the declared history policy admitted.
 
 ``` r
 window <- ctx |>
   ledgr_history_frame(bar = "close", lookback = 120L,
                       instruments = "decision_axis",
-                      na_action = "drop_instruments")
+                      min_observations = 100L)
 info <- ledgr_history_info(window)
 info
 ```
@@ -188,7 +319,9 @@ info
     Cutoff:       2020-06-30T16:00:00Z
     Window start: 2020-01-15T16:00:00Z
     Sessions:     120 of requested 120
-    Selector:     decision_axis, na_action = drop_instruments
+    Selector:     decision_axis
+    Requirements: 100 finite observations, 1 instruments
+    Ready:        yes
     Included:     7 of 8 requested
     Excluded:     DEMO_01 (structural_exclusion)
     Used before window: no
@@ -248,18 +381,18 @@ as.data.frame(long)[, c("ts_utc", "instrument_id", "value", "observed",
     20 2020-06-30 16:00:00       DEMO_07 100.08169     TRUE         FALSE
     21 2020-06-30 16:00:00       DEMO_08 103.70806     TRUE         FALSE
 
-## Is There Enough History?
+## Is The Requested Panel Ready?
 
-`ledgr_history_sufficient()` answers a structural question: does the
-result hold the requested number of sessions and at least
-`min_instruments` included instruments? Without `lookback` it uses the
-lookback the result was read with.
+The history request records both requirements. `min_observations`
+filters each instrument independently; `min_instruments` asks how many
+included instruments the strategy needs. `ledgr_passed_warmup()` reads
+the resulting readiness bit without rescanning the matrix.
 
 ``` r
 recent <- ctx |>
   ledgr_history_frame(feature = "return_20", lookback = 60L,
-                      na_action = "drop_instruments")
-ledgr_history_sufficient(recent, min_instruments = 3L)
+                      min_instruments = 3L)
+ledgr_passed_warmup(recent)
 ```
 
     [1] TRUE
@@ -269,15 +402,17 @@ early <- ledgr_pulse_snapshot(exp, ts_utc = as.Date("2020-01-15"),
                               params = list(lookback = 20L, n = 3L))
 early_returns <- early |>
   ledgr_history_frame(feature = "return_20", lookback = 60L,
-                      na_action = "drop_instruments")
-ledgr_history_sufficient(early_returns, min_instruments = 3L)
+                      min_instruments = 3L)
+ledgr_passed_warmup(early_returns)
 ```
 
     [1] FALSE
 
-In January there are not yet 60 sessions of history, so the answer is
-`FALSE`. This is not indicator warm-up: it inspects no value. Whether a
-feature value is ready is cell evidence, described next.
+In January there are not yet 60 finite returned observations per
+instrument, so the answer is `FALSE`. For history objects the familiar
+warm-up helper means that the recorded panel requirements passed; it
+does not rescan cells. Feature-cell readiness remains separate evidence,
+described next.
 
 ## Feature History And Indicator Classes
 
@@ -322,16 +457,17 @@ usable value.
 
 ``` r
 warm <- ctx |>
-  ledgr_history_frame(feature = "return_20", instruments = "DEMO_05", layout = "long")
+  ledgr_history_frame(feature = "return_20", lookback = Inf,
+                      instruments = "DEMO_05", layout = "long")
 as.data.frame(warm)[19:22, c("ts_utc", "value", "ready", "calculation_valid",
                              "missing_reason")]
 ```
 
-                    ts_utc      value ready calculation_valid missing_reason
-    19 2020-01-28 16:00:00         NA FALSE             FALSE      not_ready
-    20 2020-01-29 16:00:00         NA FALSE             FALSE      not_ready
-    21 2020-01-30 16:00:00 0.04529869  TRUE              TRUE
-    22 2020-01-31 16:00:00 0.02749238  TRUE              TRUE
+         ts_utc value ready calculation_valid missing_reason
+    NA     <NA>    NA    NA                NA           <NA>
+    NA.1   <NA>    NA    NA                NA           <NA>
+    NA.2   <NA>    NA    NA                NA           <NA>
+    NA.3   <NA>    NA    NA                NA           <NA>
 
 The first 20 cells are `not_ready`: a 20-session return needs 21 closes.
 
@@ -436,10 +572,8 @@ return_cells <- gap_ctx1 |>
 as.data.frame(return_cells)[, c("ts_utc", "value", "missing_reason")]
 ```
 
-                   ts_utc        value         missing_reason
-    1 2020-01-09 16:00:00           NA carried_input_excluded
-    2 2020-01-10 16:00:00           NA              not_ready
-    3 2020-01-13 16:00:00 -0.004562673
+    [1] ts_utc         value          missing_reason
+    <0 rows> (or 0-length row.names)
 
 ## From History To Targets
 
@@ -468,12 +602,12 @@ estimate <- function(ctx, params) {
     w / sum(w)
   }
   returns <- ctx |>
-    ledgr_history_frame(feature = "return_1", lookback = params$lookback,
-                        na_action = "drop_instruments")
-  if (!ledgr_history_sufficient(returns, min_instruments = 3L)) {
+    ledgr_history_matrix(feature = "return_1", lookback = params$lookback,
+                         min_instruments = 3L)
+  if (!ledgr_passed_warmup(returns)) {
     return(ctx$hold())
   }
-  w <- clipped_weights(stats::cov(ledgr_history_matrix(returns)))
+  w <- clipped_weights(stats::cov(returns))
   held <- ctx$universe[ctx$vec$position != 0]
   keep <- intersect(ledgr_history_info(returns)$excluded_ids, held)
   if (!isTRUE(params$keep)) keep <- character()
@@ -646,7 +780,10 @@ late_exp <- ledgr_experiment(
 read_ddd <- function(day, ...) {
   ctx <- ledgr_pulse_snapshot(late_exp, ts_utc = day)
   on.exit(close(ctx))
-  out <- ctx |> ledgr_history_frame(..., instruments = "DDD", layout = "long")
+  out <- ctx |>
+    ledgr_history_frame(..., lookback = Inf,
+                        instruments = "DDD", min_observations = 0L,
+                        layout = "long")
   as.data.frame(out)[5:6, c("ts_utc", "value", "expected", "missing_reason")]
 }
 read_ddd(days[[6L]], bar = "close")
@@ -693,7 +830,7 @@ window’s first pulse.
 
 ``` r
 count_history <- function(ctx, params) {
-  sessions <- nrow(ledgr_history_frame(ctx, bar = "close"))
+  sessions <- nrow(ledgr_history_frame(ctx, bar = "close", lookback = Inf))
   target <- ctx$hold()
   target[[params$instrument]] <- sessions
   target
@@ -756,14 +893,14 @@ seen so far, and the total work over a run grows with the square of its
 length. Read the window your estimator needs.
 
 ``` r
-full <- ctx |> ledgr_history_frame(feature = "return_20")
+full <- ctx |> ledgr_history_frame(feature = "return_20", lookback = Inf)
 last_60 <- ctx |> ledgr_history_frame(feature = "return_20", lookback = 60L)
 vapply(list(full = full, last_60 = last_60),
        function(x) format(utils::object.size(x), units = "Kb"), character(1))
 ```
 
           full    last_60
-    "219.9 Kb" "115.4 Kb"
+    "152.9 Kb" "115.8 Kb"
 
 Both reads end at the same pulse and agree on every session they share;
 the first grows with every pulse of a run, the second does not.

@@ -854,8 +854,8 @@ Accepted change pending:
 - The history-treatment primitive does not change the universe or execution
   planes. It keeps structural expectedness, observed/raw missingness, input
   carry, calculation validity, output carry, readiness and estimator admission
-  as distinct evidence. The public selectors (`instruments`, `na_action =
-  "drop_instruments"`) and the boundary between estimation exclusion and
+  as distinct evidence. The public selectors (`instruments`,
+  `min_observations`) and the boundary between estimation exclusion and
   target intent are bound under Pulse Data And Axis-Aligned Accessors and
   Strategy Outputs And Helper Values.
 - Under the default history policy the treatment primitive carries an observed
@@ -1429,8 +1429,8 @@ Accepted change pending:
 
 - Strategy output is a full named numeric target vector, a `ledgr_target`, or a
   list containing `targets`.
-- History estimation exclusion is not a target. An instrument that
-  `ledgr_history_frame(na_action = "drop_instruments")` excludes from an
+- History estimation exclusion is not a target. An instrument that a
+  history read excludes for failing `min_observations` from an
   estimator sample still receives a target like every decision-axis
   instrument; the exclusion alone creates no zero target, liquidation,
   position change or fill. Keeping, exiting or refusing a held excluded
@@ -1602,7 +1602,10 @@ manipulation, or as a helper pipeline, means the same thing in both.
   signal (aligned by its names). It returns `TRUE` when every eligible value
   is non-missing, and `TRUE` when no ID is eligible. Non-numeric `values`, or
   `values` without a context, fail with `ledgr_invalid_warmup_input`. The
-  one-argument form is unchanged, including its zero-length failure.
+  one-argument numeric-vector form is unchanged, including its zero-length
+  failure. The one-argument history-frame or history-matrix form returns the
+  recorded result of that read's `min_observations` and `min_instruments`
+  requirements without rescanning the returned cells.
 - **Dense results.** Every dense ID is eligible, so dense results of the
   existing helper pipelines do not change.
 - **History selection.** `ledgr_history_frame()` selects from this plane at
@@ -1834,14 +1837,16 @@ and `AAA` a held nonmember, each holding 5:
   current positions. Strategies choose between them based on whether the default
   behavior is flat-unless-signal or hold-unless-signal.
 - Availability-aware pulse contexts carry the causal history of their pulse.
-  `ledgr_history_frame(ctx, feature = NULL, bar = NULL, lookback = Inf,
-  instruments = "admissible", na_action = "keep", layout = "wide")` reads
+  `ledgr_history_frame(ctx, feature = NULL, bar = NULL, lookback,
+  instruments = "admissible", min_observations = NULL,
+  min_instruments = 1L, layout = "wide")` reads
   exactly one numeric series, a sealed bar field (`open`, `high`, `low`,
   `close`, `volume`) or one feature resolved active-alias-first then by
   concrete ID, and returns a fresh classed `ledgr_history` data frame. Every
   returned value is observed at or before the pulse, with facts knowable at
   it; later-known facts change only later reads and never an earlier
-  returned object. Dense contexts and the snapshot-and-universe
+  returned object. `lookback` is required; all-history access is the explicit
+  `lookback = Inf`. Dense contexts and the snapshot-and-universe
   `ledgr_pulse_snapshot()` form have no history and refuse with
   `ledgr_history_unavailable`; malformed requests refuse with
   `ledgr_invalid_history_request`, `ledgr_invalid_history_field`,
@@ -1903,26 +1908,37 @@ and `AAA` a held nonmember, each holding 5:
   `calculated`, `output_carried`, `source_ts_utc`, `carry_age_sessions`,
   `ready`, `calculation_valid`, `missing_reason` and `barrier_reason`;
   selection evidence uses `requested`, `included`, `exclusion_reason`,
+  `finite_observation_count`,
   `required_input_count`, `carried_input_count` and `carried_input_share`
   plus the cutoff admissibility of each instrument. Empty results keep their
   typed columns: an empty wide axis has zero rows and one numeric column per
   included instrument, a zero-instrument wide result keeps its sessions with
   only `ts_utc`, and an empty long result keeps all typed columns.
-- `ledgr_history_matrix()` adapts an existing result to a sessions-by-
-  instruments numeric matrix whose row names are the result's ISO 8601 UTC
-  session stamps and whose column names are its included instrument IDs (R
-  stores a zero-length dimension's names as `NULL`). It owns no cutoff, axis,
-  treatment or missingness logic and refuses a value that no longer matches
-  its recorded axis with `ledgr_invalid_history_result`.
-  `ledgr_history_sufficient(x, lookback = NULL, min_instruments = 1L)` is the
-  structural completeness query: at least `lookback` returned sessions and at
-  least `min_instruments` included instruments. Without `lookback` it uses
-  the result's requested lookback and refuses an infinite one with
-  `ledgr_invalid_history_request`. It is not indicator readiness, warm-up or
-  convergence and inspects no value.
+- `ledgr_history_matrix()` has one causal reader and one adapter. Given a
+  pulse context and the same request arguments as `ledgr_history_frame()`, it
+  manifests the shared causal plan directly as a sessions-by-instruments
+  double matrix without an intermediate frame. Given an intact history frame,
+  it adapts that result and reads no data. Row names are ISO 8601 UTC session
+  stamps and column names are included instrument IDs (R stores a zero-length
+  dimension's names as `NULL`). The classed result remains compatible with
+  ordinary matrix estimators; arithmetic, replacement and subsetting remove
+  ledgr identity. Both forms own no separate cutoff, axis, treatment or
+  missingness logic and transformed results refuse in ledgr metadata helpers
+  with `ledgr_invalid_history_result`.
+- `min_observations` is the per-instrument estimator admission rule. `NULL`
+  means the finite lookback, or every returned session for `lookback = Inf`;
+  an explicit non-negative integer may be smaller but may not exceed a finite
+  lookback. The count is finite values in the returned treated plane, so a
+  finite input-carried or output-carried value counts. Instruments below the
+  requirement are excluded with `insufficient_observations`.
+  `min_instruments` does not filter columns. The read records
+  `passed_warmup = included_count >= min_instruments` after admission, and
+  `ledgr_passed_warmup()` returns that bit for an intact history frame or
+  matrix without a second value scan.
 - `ledgr_history_info()` returns a result's recorded metadata as a
   `ledgr_history_info` list (source, cutoff, data and window starts,
-  requested and available lookback, selector, `na_action`, layout,
+  requested and available lookback, selector, `min_observations`,
+  `min_instruments`, `passed_warmup`, layout,
   `used_before_window`, included and excluded instrument IDs, the selection
   table as a tibble, policy identity, snapshot hash and, for the wide layout,
   the cell evidence) after the same consistency check as
@@ -1940,13 +1956,14 @@ and `AAA` a held nonmember, each holding 5:
 - History reads add no public context field, durable artifact or snapshot
   row. The history view is a private carrier, `ctx$.history`, that holds the
   read service and therefore the whole substrate; strategies read history
-  only through `ledgr_history_frame()`, and the strategy preflight refuses,
+  only through `ledgr_history_frame()` or `ledgr_history_matrix()`, and the
+  strategy preflight refuses,
   as a best-effort static check, direct access to private context
   internals, non-exported ledgr objects and environment-reaching functions
   as Tier 3 (Reproducibility And Preflight, Cut 16 LDG-3072 and decision
   30). P1
   issues the cutoff-bound history view; P2 places it on the context, and the
-  strategy's `ledgr_history_frame()` call reads prepared planes shared by the
+  strategy's history call reads prepared planes shared by the
   owning run, sweep or walk-forward session. Treatment planes are prepared
   once per substrate and history policy; no read rematerializes the causal
   prefix.
@@ -2052,8 +2069,8 @@ and `AAA` a held nonmember, each holding 5:
   first pulse only: due facts settle exactly as in execution, no strategy is
   called, P3 through P5 never run, and no fill, event, run row or other
   durable state is written. The returned context is the one that run passes
-  to its strategy, so its data-dependent planes and `ledgr_history_frame()`
-  reads equal that run's first pulse. A cutoff off the prepared venue axis
+  to its strategy, so its data-dependent planes and public history reads
+  equal that run's first pulse. A cutoff off the prepared venue axis
   refuses with `ledgr_history_outside_axis`, a pulse whose P1 stops before the
   context is built refuses with `ledgr_pulse_inspection_stopped`, and a dense
   experiment refuses with `ledgr_pulse_snapshot_availability_required`. The
@@ -2824,10 +2841,10 @@ Accepted change pending:
 - The causal-history article (`vignettes/causal-history.qmd`) opens with a
   short path that opens an existing sealed snapshot and completes a run
   before any point-in-time ingestion, which the next article in the reading
-  flow teaches. With executed output it then teaches the default
-  `ledgr_history_frame()` read, the matrix adapter, `ledgr_history_info()`,
-  explicit instrument-selection and missing-value choices, structural
-  sufficiency (never presented as indicator warm-up or convergence), the
+  flow teaches. With executed output it then teaches the explicit full-history
+  `ledgr_history_frame()` read, the direct matrix reader and frame adapter,
+  `ledgr_history_info()`, explicit instrument selection, finite-observation
+  admission and recorded panel readiness through `ledgr_passed_warmup()`, the
   bounded and history-dependent indicator classes, carry evidence including
   `carried_input_share`, reading return features rather than differencing
   carried closes, the vintage feature view against restated bar history,

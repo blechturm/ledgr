@@ -2,24 +2,51 @@
 % Please edit documentation in R/history-frame.R
 \name{ledgr_history_matrix}
 \alias{ledgr_history_matrix}
-\title{Convert a history result to an identified matrix}
+\title{Read or convert causal history as an identified matrix}
 \usage{
-ledgr_history_matrix(x)
+ledgr_history_matrix(
+  x,
+  feature = NULL,
+  bar = NULL,
+  lookback,
+  instruments = "admissible",
+  min_observations = NULL,
+  min_instruments = 1L
+)
 }
 \arguments{
-\item{x}{A \code{ledgr_history} result.}
+\item{x}{A pulse context or an existing \code{ledgr_history} frame.}
+
+\item{feature}{One active feature alias or registered feature ID.}
+
+\item{bar}{One bar field: \code{"open"}, \code{"high"}, \code{"low"}, \code{"close"} or
+\code{"volume"}. Supply exactly one of \code{feature} and \code{bar}.}
+
+\item{lookback}{Required. \code{Inf} for all history from the data start, or a
+non-negative whole number of expected venue sessions ending at the cutoff.}
+
+\item{instruments}{\code{"admissible"}, \code{"decision_axis"}, or a character
+vector of known instrument IDs.}
+
+\item{min_observations}{Minimum finite treated values required per
+instrument. \code{NULL} requires the finite \code{lookback}, or every returned
+session for \code{lookback = Inf}.}
+
+\item{min_instruments}{Minimum included instruments required for
+\code{\link[=ledgr_passed_warmup]{ledgr_passed_warmup()}} to return \code{TRUE}. It does not filter columns.}
 }
 \value{
-A numeric matrix with \code{dimnames} equal to the result's session
-timestamps and included instrument IDs.
+A classed double matrix whose rows are expected sessions and whose
+columns are included instrument IDs.
 }
 \description{
-\code{ledgr_history_matrix()} is an adapter over an existing \code{\link[=ledgr_history_frame]{ledgr_history_frame()}}
-result. It returns the values as a sessions-by-instruments numeric matrix
-whose row names are the result's session timestamps (ISO 8601 UTC) and whose
-column names are its included instrument IDs, ready for an ordinary R
-estimator. It reads no data and owns no cutoff, axis, treatment or
-missingness logic.
+With a pulse context, \code{ledgr_history_matrix()} reads the same causal plan as
+\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} and manifests only a sessions-by-instruments double
+matrix. With an existing history frame it is an adapter over that result and
+reads no data. Both forms return an ordinary matrix with immutable ledgr
+history identity for \code{\link[=ledgr_history_info]{ledgr_history_info()}}, \code{\link[=ledgr_align_weights]{ledgr_align_weights()}} and
+\code{\link[=ledgr_passed_warmup]{ledgr_passed_warmup()}}. Arithmetic, replacement or subsetting returns an
+ordinary object without that identity.
 }
 \section{Articles}{
 

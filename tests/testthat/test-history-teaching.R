@@ -53,18 +53,19 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
   testthat::expect_identical(shown[[first_ingest]]$label, "late-fact")
 
   # Defaults first, explicit choices second.
-  testthat::expect_match(code("default-read"), "ledgr_history_frame(bar = \"close\")", fixed = TRUE)
+  testthat::expect_match(code("default-read"),
+                         "ledgr_history_frame(bar = \"close\", lookback = Inf)", fixed = TRUE)
   explicit <- code("explicit-choices")
   testthat::expect_lt(
     match("default-read", vapply(shown, `[[`, "", "label")),
     match("explicit-choices", vapply(shown, `[[`, "", "label"))
   )
   testthat::expect_match(explicit, "instruments = \"decision_axis\"", fixed = TRUE)
-  testthat::expect_match(explicit, "na_action = \"drop_instruments\"", fixed = TRUE)
+  testthat::expect_match(explicit, "min_observations = 100L", fixed = TRUE)
   testthat::expect_match(code("long-layout"), "layout = \"long\"", fixed = TRUE)
   testthat::expect_match(code("matrix"), "ledgr_history_matrix(", fixed = TRUE)
   testthat::expect_match(code("info"), "ledgr_history_info(", fixed = TRUE)
-  testthat::expect_match(code("sufficiency"), "ledgr_history_sufficient(", fixed = TRUE)
+  testthat::expect_match(code("sufficiency"), "ledgr_passed_warmup(", fixed = TRUE)
   testthat::expect_match(code("indicator-classes"), "ledgr_ind_ttr(", fixed = TRUE)
   testthat::expect_match(code("carried-share"), "carried_input_share", fixed = TRUE)
   testthat::expect_match(code("returns-not-diff"), "feature = \"return_1\"", fixed = TRUE)
@@ -86,7 +87,7 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
   # rebuilding timestamps or names and without a second reader, and keeps
   # held instruments the estimate dropped.
   portfolio <- code("portfolio")
-  for (call in c("ledgr_history_frame(", "ledgr_history_matrix(", "ledgr_align_weights(",
+  for (call in c("ledgr_history_matrix(", "ledgr_align_weights(",
                  "ledgr_history_info(", "ledgr_target_rebalance(", "keep = keep")) {
     testthat::expect_match(portfolio, call, fixed = TRUE, info = call)
   }
@@ -99,7 +100,7 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
     testthat::expect_false(grepl(forbidden, compact, fixed = TRUE), info = forbidden)
   }
   testthat::expect_false(grepl("(^|[^[:alnum:]_.])(dim)?names\\(", compact), info = "names(")
-  testthat::expect_identical(lengths(regmatches(portfolio, gregexpr("ledgr_history_frame(", portfolio,
+  testthat::expect_identical(lengths(regmatches(portfolio, gregexpr("ledgr_history_matrix(", portfolio,
                                                                       fixed = TRUE))), 1L)
 
   # The rendered article holds the executed output of those chunks.
@@ -145,7 +146,7 @@ testthat::test_that("[LTB-0414] the causal-history article teaches the history f
   testthat::expect_match(without, "2020-01-10 09:30:00 SELL", fixed = TRUE)
   # Help pages point to the article with a browser-free path.
   for (page in c("ledgr_history_frame", "ledgr_history_matrix", "ledgr_history_info",
-                 "ledgr_align_weights", "ledgr_history_sufficient", "ledgr_history_policy")) {
+                 "ledgr_align_weights", "ledgr_passed_warmup", "ledgr_history_policy")) {
     rd <- paste(readLines(file.path(root, "man", paste0(page, ".Rd")), warn = FALSE), collapse = "\n")
     testthat::expect_match(rd, "vignette(\"causal-history\", package = \"ledgr\")", fixed = TRUE, info = page)
     testthat::expect_match(rd, "system.file(\"doc\", \"causal-history.html\", package = \"ledgr\")",

@@ -2,12 +2,14 @@
 testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree with fixture arithmetic", {
   captured <- ws42_capture_run(reader = function(ctx) {
     list(
-      close = ledgr_history_frame(ctx, bar = "close"),
-      close_long = ledgr_history_frame(ctx, bar = "close", layout = "long"),
+      close = ledgr_history_frame(ctx, bar = "close", lookback = Inf),
+      close_long = ledgr_history_frame(ctx, bar = "close", lookback = Inf, layout = "long"),
       fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
       concrete = ledgr_history_frame(ctx, feature = "sma_2", lookback = 2L, layout = "long"),
-      decision = ledgr_history_frame(ctx, bar = "close", lookback = 1L, instruments = "decision_axis"),
-      explicit = ledgr_history_frame(ctx, bar = "close", lookback = 2L, instruments = c("CCC", "AAA")),
+      decision = ledgr_history_frame(ctx, bar = "close", lookback = 1L,
+        instruments = "decision_axis", min_observations = 0L),
+      explicit = ledgr_history_frame(ctx, bar = "close", lookback = 2L,
+        instruments = c("CCC", "AAA"), min_observations = 0L),
       empty = ledgr_history_frame(ctx, bar = "close", lookback = 0L),
       empty_long = ledgr_history_frame(ctx, bar = "close", lookback = 0L, layout = "long"),
       none = ledgr_history_frame(ctx, bar = "close", lookback = 2L, instruments = character()),
@@ -69,6 +71,12 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   )
   testthat::expect_identical(unname(matrix5[, "BBB"]), c(21, 22, 22, 22, 25))
   testthat::expect_identical(ledgr_history_matrix(at5$close_long), matrix5)
+  direct5 <- ledgr_history_matrix(at5$ctx, bar = "close", lookback = Inf)
+  testthat::expect_identical(direct5, matrix5)
+  testthat::expect_s3_class(direct5, "ledgr_history_matrix")
+  testthat::expect_true(is.matrix(direct5))
+  testthat::expect_true(is.double(direct5))
+  testthat::expect_identical(ledgr_history_info(direct5), ledgr_history_info(matrix5))
 
   # Long layout carries the same values, source identity and evidence.
   long5 <- at5$close_long
@@ -99,18 +107,21 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_identical(attr(fast5, "ledgr_history")$source$id, "sma_2")
   testthat::expect_identical(at5$scalar$feature, 14.5)
   testthat::expect_identical(at5$scalar$vec_fast, c(14.5, 23.5, 34.5))
-  testthat::expect_identical(ledgr_history_matrix(at5$concrete), ledgr_history_matrix(fast5))
+  testthat::expect_identical(
+    as.matrix(ledgr_history_matrix(at5$concrete)),
+    as.matrix(ledgr_history_matrix(fast5))
+  )
   testthat::expect_identical(unique(at5$concrete$source), "feature:sma_2")
   testthat::expect_error(
-    ledgr_history_frame(at5$ctx, feature = "slow"),
+    ledgr_history_frame(at5$ctx, feature = "slow", lookback = Inf),
     class = "ledgr_unknown_feature_id"
   )
   testthat::expect_error(
-    ledgr_history_frame(at5$ctx, bar = "close", feature = "fast"),
+    ledgr_history_frame(at5$ctx, bar = "close", feature = "fast", lookback = Inf),
     class = "ledgr_invalid_history_request"
   )
   testthat::expect_error(
-    ledgr_history_frame(at5$ctx, bar = "vwap"),
+    ledgr_history_frame(at5$ctx, bar = "vwap", lookback = Inf),
     class = "ledgr_invalid_history_field"
   )
 
@@ -133,11 +144,13 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_false(bbb$requested)
   testthat::expect_identical(bbb$exclusion_reason, "not_requested")
   testthat::expect_error(
-    ledgr_history_frame(at7$ctx, bar = "close", instruments = c("AAA", "ZZZ")),
+    ledgr_history_frame(at7$ctx, bar = "close", lookback = Inf,
+      instruments = c("AAA", "ZZZ")),
     class = "ledgr_history_unknown_instrument"
   )
   testthat::expect_error(
-    ledgr_history_frame(at7$ctx, bar = "close", instruments = c("AAA", "AAA")),
+    ledgr_history_frame(at7$ctx, bar = "close", lookback = Inf,
+      instruments = c("AAA", "AAA")),
     class = "ledgr_invalid_history_request"
   )
 
@@ -145,7 +158,7 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   outside <- at5$ctx
   outside$.history <- ledgr:::ledgr_history_view(outside$.history$service, length(axis) + 1L)
   testthat::expect_error(
-    ledgr_history_frame(outside, bar = "close"),
+    ledgr_history_frame(outside, bar = "close", lookback = Inf),
     class = "ledgr_history_outside_axis"
   )
 
@@ -183,7 +196,7 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   )
   on.exit(close(dense), add = TRUE)
   testthat::expect_error(
-    ledgr_history_frame(dense, bar = "close"),
+    ledgr_history_frame(dense, bar = "close", lookback = Inf),
     class = "ledgr_history_unavailable"
   )
   testthat::expect_error(
@@ -252,16 +265,17 @@ ws42_hostile_substrate <- function(policy = ledgr_history_policy(price_carry = 2
 }
 
 ws42_read <- function(service, cutoff_col, field, lookback = Inf, ids = c("AAA", "BBB", "CCC"),
-                      layout = "wide", na_action = "keep") {
-  ledgr:::ledgr_history_read(
+                      layout = "wide", min_observations = 0L) {
+  plan <- ledgr:::ledgr_history_read_plan(
     view = ledgr:::ledgr_history_view(service, cutoff_col),
     kind = "bar", name = field, lookback = lookback, instruments = ids,
-    na_action = na_action, layout = layout, decision_ids = ids,
+    min_observations = min_observations, min_instruments = 1L, decision_ids = ids,
     decision_planes = list(
       member = rep(TRUE, length(ids)), admissible = rep(TRUE, length(ids)),
       target_restriction_reason = rep("", length(ids))
     )
   )
+  ledgr:::ledgr_history_plan_frame(plan, layout)
 }
 
 # ledgr-test-profile: review
@@ -297,7 +311,7 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
         raw <- hostile$substrate$bars[[field]][, seq_len(cutoff_col), drop = FALSE]
         value[t(print_cell)] <- t(raw)[t(print_cell)]
         testthat::expect_identical(
-          unname(ledgr_history_matrix(read)), unname(value),
+          unname(as.matrix(ledgr_history_matrix(read))), unname(value),
           info = paste(field, cutoff_col, "value")
         )
       }
@@ -334,10 +348,12 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   # rows never appear and the late-known fact changes only later reads.
   captured <- ws42_capture_run(reader = function(ctx) {
     list(
-      inf = ledgr_history_frame(ctx, bar = "close", instruments = "decision_axis"),
+      inf = ledgr_history_frame(ctx, bar = "close", lookback = Inf,
+        instruments = "decision_axis", min_observations = 0L),
       tail3 = ledgr_history_frame(ctx, bar = "close", lookback = 3L, instruments = "decision_axis"),
       tail1 = ledgr_history_frame(ctx, bar = "close", lookback = 1L, instruments = "decision_axis"),
-      fast_inf = ledgr_history_frame(ctx, feature = "fast"),
+      fast_inf = ledgr_history_frame(ctx, feature = "fast", lookback = Inf,
+        min_observations = 0L),
       fast1 = ledgr_history_frame(ctx, feature = "fast", lookback = 1L),
       ctx = ctx
     )
@@ -353,7 +369,7 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   inf <- attr(at5$inf, "ledgr_history")
   tail3 <- attr(at5$tail3, "ledgr_history")
   testthat::expect_identical(
-    ledgr_history_matrix(at5$tail3),
+    as.matrix(ledgr_history_matrix(at5$tail3)),
     ledgr_history_matrix(at5$inf)[3:5, , drop = FALSE]
   )
   for (plane in names(inf$evidence)) {
@@ -383,7 +399,8 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   reread6$universe <- at6$ctx$universe
   reread6$vec <- at6$ctx$vec
   testthat::expect_identical(
-    ledgr_history_frame(reread6, bar = "close", instruments = "decision_axis"),
+    ledgr_history_frame(reread6, bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L),
     at6$inf
   )
 
@@ -392,13 +409,14 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   mutated$AAA[] <- -1
   attr(mutated, "ledgr_history")$evidence$input_carried[] <- TRUE
   testthat::expect_identical(
-    ledgr_history_frame(at5$ctx, bar = "close", instruments = "decision_axis"),
+    ledgr_history_frame(at5$ctx, bar = "close", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L),
     at5$inf
   )
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusion creates no execution intent", {
+testthat::test_that("[LTB-0299] recorded readiness and estimation exclusion create no execution intent", {
   # A return feature never consumes BBB's carried close (v12 Section 5,
   # LDG-3066), so BBB stays excluded from the estimator sample; an SMA would
   # now be calculated from the carried price.
@@ -406,8 +424,13 @@ testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusi
   captured <- ws42_capture_run(fixture_args = list(features = returns), reader = function(ctx) {
     list(
       close = ledgr_history_frame(ctx, bar = "close", lookback = 3L),
-      fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments"),
-      warmup = ledgr_history_frame(ctx, feature = "fast", lookback = 1L)
+      close4 = ledgr_history_frame(ctx, bar = "close", lookback = 3L,
+        min_instruments = 4L),
+      fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
+      fast3 = ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
+        min_instruments = 3L),
+      warmup = ledgr_history_frame(ctx, feature = "fast", lookback = 1L,
+        min_observations = 0L, min_instruments = 3L)
     )
   })
   on.exit({
@@ -417,26 +440,30 @@ testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusi
   axis <- captured$fixture$axis
   at5 <- captured$seen[[ws42_iso(axis[[5L]])]]
   at1 <- captured$seen[[ws42_iso(axis[[1L]])]]
-  testthat::expect_true(ledgr_history_sufficient(at5$close, 3L, 3L))
-  testthat::expect_false(ledgr_history_sufficient(at5$close, 4L, 3L))
-  testthat::expect_false(ledgr_history_sufficient(at5$close, 3L, 4L))
+  testthat::expect_true(ledgr_passed_warmup(at5$close))
+  testthat::expect_false(ledgr_passed_warmup(at5$close4))
   testthat::expect_identical(names(at5$fast), c("ts_utc", "AAA", "CCC"))
   selection <- attr(at5$fast, "ledgr_history")$selection
   testthat::expect_identical(
     selection$exclusion_reason[selection$instrument_id == "BBB"],
-    "missing_required_input"
+    "insufficient_observations"
   )
-  testthat::expect_true(ledgr_history_sufficient(at5$fast, 2L, 2L))
-  testthat::expect_false(ledgr_history_sufficient(at5$fast, 2L, 3L))
-  # Warm-up NA values are not structural insufficiency.
+  testthat::expect_true(ledgr_passed_warmup(at5$fast))
+  testthat::expect_false(ledgr_passed_warmup(at5$fast3))
+  # An explicit zero-observation requirement is recorded once; readiness does
+  # not rescan the warm-up NA cells.
   testthat::expect_true(all(is.na(unlist(at1$warmup[-1L]))))
-  testthat::expect_true(ledgr_history_sufficient(at1$warmup, 1L, 3L))
+  testthat::expect_true(ledgr_passed_warmup(at1$warmup))
   testthat::expect_error(
-    ledgr_history_sufficient(at5$close, -1),
+    ledgr:::ledgr_history_requirements(2L, 3L, 1L, 2L),
     class = "ledgr_invalid_history_request"
   )
   testthat::expect_error(
-    ledgr_history_sufficient(data.frame(), 1L),
+    ledgr_passed_warmup(data.frame()),
+    class = "ledgr_invalid_warmup_input"
+  )
+  testthat::expect_error(
+    ledgr_history_info(ledgr_history_matrix(at5$close)[, 1L, drop = FALSE]),
     class = "ledgr_invalid_history_result"
   )
 
@@ -446,7 +473,7 @@ testthat::test_that("[LTB-0299] sufficiency is structural and estimation exclusi
   # history: one AAA fill of one share at session 4's open (14).
   decided <- new.env()
   reads_history <- function(ctx, params) {
-    h <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments")
+    h <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L)
     target <- ctx$hold()
     if (identical(substr(ctx$ts_utc, 1, 10), "2021-01-06")) target[["AAA"]] <- 1
     decided[[ctx$ts_utc]] <- list(ids = names(h)[-1L], bbb = target[["BBB"]])

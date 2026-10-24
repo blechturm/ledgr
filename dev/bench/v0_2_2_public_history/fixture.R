@@ -109,10 +109,11 @@ public_history_equal_weight <- function(ctx, params) {
 # The same rebalance, but each pulse reads 21 sessions of close history and
 # each rebalance a 252-session window with drop_instruments.
 public_history_reader <- function(ctx, params) {
-  short <- ledgr_history_frame(ctx, bar = "close", lookback = 21L)
+  short <- ledgr_history_frame(ctx, bar = "close", lookback = 21L,
+                               min_observations = 0L)
   month <- substr(ctx$ts_utc, 1L, 7L)
   if (identical(ctx$state_prev$month, month)) return(ctx$hold())
-  long <- ledgr_history_frame(ctx, bar = "close", lookback = 252L, na_action = "drop_instruments")
+  long <- ledgr_history_frame(ctx, bar = "close", lookback = 252L)
   x <- ledgr_history_matrix(long)
   target <- ctx |> ledgr_selection() |> ledgr_weight_equal() |>
     ledgr_target_rebalance(ctx, equity_fraction = params$f)

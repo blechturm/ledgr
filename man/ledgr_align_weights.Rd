@@ -12,15 +12,16 @@ numeric matrix, with one weight per included instrument. A missing or
 non-finite weight refuses with \code{ledgr_invalid_strategy_type}, as
 \code{\link[=ledgr_weights]{ledgr_weights()}} does.}
 
-\item{history}{The \code{ledgr_history} result the solution was estimated from.}
+\item{history}{The intact history frame or matrix the solution was estimated
+from.}
 }
 \value{
 A \code{ledgr_weights} object named by the included instrument IDs.
 }
 \description{
 \code{ledgr_align_weights()} turns the numeric output of an estimator or
-solver into \code{\link[=ledgr_weights]{ledgr_weights()}} identified by the instruments of the
-\code{\link[=ledgr_history_frame]{ledgr_history_frame()}} result it was estimated from, so no column names
+solver into \code{\link[=ledgr_weights]{ledgr_weights()}} identified by the instruments of the intact
+history frame or matrix it was estimated from, so no column names
 have to be rebuilt by hand. The solver output comes first, so it pipes:
 \code{solution |> ledgr_align_weights(history) |> ledgr_target_rebalance(ctx)}.
 An unnamed vector is read in the order of the result's included
@@ -47,9 +48,9 @@ Reading causal history:
 \dontrun{
 strategy <- function(ctx, params) {
   returns <- ctx |>
-    ledgr_history_frame(feature = "return_1", lookback = 60L,
-                        na_action = "drop_instruments")
-  x <- ledgr_history_matrix(returns)
+    ledgr_history_matrix(feature = "return_1", lookback = 60L,
+                         min_instruments = 3L)
+  x <- returns
   w <- 1 / apply(x, 2L, stats::sd)
   unname(w / sum(w)) |>
     ledgr_align_weights(returns) |>

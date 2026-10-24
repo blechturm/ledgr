@@ -133,33 +133,44 @@ try a history read.
 
 ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date("2020-06-30"),
                             params = list(lookback = 20L, n = 3L))
-closes <- ctx |> ledgr_history_frame(bar = "close")
+closes <- ctx |> ledgr_history_frame(bar = "close", lookback = Inf)
 closes
 ```
 
-The defaults are the ones most estimators want:
+The defaults are the ones most estimators want, but the history width is
+always explicit:
 
 - `lookback = Inf` returns every expected venue session from the start of the
   data up to the pulse. A finite `lookback` returns the last sessions of that
   same history, so a shorter read is never computed differently.
 - `instruments = "admissible"` returns the instruments the strategy may
   target at this pulse.
-- `na_action = "keep"` keeps every requested instrument, missing values and
-  all.
+- `min_observations = NULL` requires one finite treated value for every
+  requested session. Set a smaller integer when the estimator can work with
+  incomplete columns.
+- `min_instruments = 1L` records how many included instruments the strategy
+  needs before it is ready. It does not remove another column.
 - `layout = "wide"` returns one row per session, `ts_utc` first, then one
   column per instrument.
 
-## Turn A History Result Into A Matrix
+## Read A Matrix Directly
 
-Estimators want a numeric matrix. `ledgr_history_matrix()` drops the time
-column and keeps the session stamps and instrument IDs as dimension names; it
-reads nothing new.
+Estimators usually want a numeric matrix, so the context form of
+`ledgr_history_matrix()` reads one directly. It uses the same causal plan as
+the frame reader, keeps the session stamps and instrument IDs as dimension
+names, and does not build a data frame first. The one-argument form remains an
+adapter when a frame is useful for inspection.
 
 ```{r}
 #| label: matrix
 
-returns <- ctx |> ledgr_history_frame(feature = "return_20", lookback = 5L)
-ledgr_history_matrix(returns)
+returns <- ctx |>
+  ledgr_history_matrix(feature = "return_20", lookback = 5L)
+returns
+
+return_frame <- ctx |>
+  ledgr_history_frame(feature = "return_20", lookback = 5L)
+identical(as.matrix(returns), as.matrix(ledgr_history_matrix(return_frame)))
 ```
 
 `ledgr_history_info()` returns what the result records about itself: its
@@ -176,14 +187,15 @@ ledgr_history_info(returns)
 before the returned window: each 20-session return in these five rows was
 computed from closes up to 20 sessions earlier.
 
-## Choose The Instruments And The Missing Values
+## Choose The Instruments And The Required Observations
 
 The defaults can be replaced one at a time. `instruments = "decision_axis"`
 adds held nonmembers and members the strategy may not trade now. Here that
 is `DEMO_01`, still a member of the universe but delisted on 14 January, so it
-is not admissible at the cutoff. `na_action = "drop_instruments"` leaves an
-instrument out of the estimate when its window is incomplete, and records
-why.
+is not admissible at the cutoff. `min_observations` leaves an instrument out
+of the estimate when it has too few finite treated values, and records why.
+Finite input-carried and output-carried values count because they are values
+the declared history policy admitted.
 
 ```{r}
 #| label: explicit-choices
@@ -191,7 +203,7 @@ why.
 window <- ctx |>
   ledgr_history_frame(bar = "close", lookback = 120L,
                       instruments = "decision_axis",
-                      na_action = "drop_instruments")
+                      min_observations = 100L)
 info <- ledgr_history_info(window)
 info
 info$selection[, c("instrument_id", "requested", "included", "exclusion_reason")]
@@ -214,32 +226,33 @@ as.data.frame(long)[, c("ts_utc", "instrument_id", "value", "observed",
                         "input_carried", "missing_reason")]
 ```
 
-## Is There Enough History?
+## Is The Requested Panel Ready?
 
-`ledgr_history_sufficient()` answers a structural question: does the result
-hold the requested number of sessions and at least `min_instruments`
-included instruments? Without `lookback` it uses the lookback the result was
-read with.
+The history request records both requirements. `min_observations` filters each
+instrument independently; `min_instruments` asks how many included instruments
+the strategy needs. `ledgr_passed_warmup()` reads the resulting readiness bit
+without rescanning the matrix.
 
 ```{r}
 #| label: sufficiency
 
 recent <- ctx |>
   ledgr_history_frame(feature = "return_20", lookback = 60L,
-                      na_action = "drop_instruments")
-ledgr_history_sufficient(recent, min_instruments = 3L)
+                      min_instruments = 3L)
+ledgr_passed_warmup(recent)
 
 early <- ledgr_pulse_snapshot(exp, ts_utc = as.Date("2020-01-15"),
                               params = list(lookback = 20L, n = 3L))
 early_returns <- early |>
   ledgr_history_frame(feature = "return_20", lookback = 60L,
-                      na_action = "drop_instruments")
-ledgr_history_sufficient(early_returns, min_instruments = 3L)
+                      min_instruments = 3L)
+ledgr_passed_warmup(early_returns)
 ```
 
-In January there are not yet 60 sessions of history, so the answer is
-`FALSE`. This is not indicator warm-up: it inspects no value. Whether a
-feature value is ready is cell evidence, described next.
+In January there are not yet 60 finite returned observations per instrument,
+so the answer is `FALSE`. For history objects the familiar warm-up helper
+means that the recorded panel requirements passed; it does not rescan cells.
+Feature-cell readiness remains separate evidence, described next.
 
 ## Feature History And Indicator Classes
 
@@ -265,7 +278,8 @@ finite, and `missing_reason` says why any other cell has no usable value.
 #| label: feature-evidence
 
 warm <- ctx |>
-  ledgr_history_frame(feature = "return_20", instruments = "DEMO_05", layout = "long")
+  ledgr_history_frame(feature = "return_20", lookback = Inf,
+                      instruments = "DEMO_05", layout = "long")
 as.data.frame(warm)[19:22, c("ts_utc", "value", "ready", "calculation_valid",
                              "missing_reason")]
 ```
@@ -368,12 +382,12 @@ estimate <- function(ctx, params) {
     w / sum(w)
   }
   returns <- ctx |>
-    ledgr_history_frame(feature = "return_1", lookback = params$lookback,
-                        na_action = "drop_instruments")
-  if (!ledgr_history_sufficient(returns, min_instruments = 3L)) {
+    ledgr_history_matrix(feature = "return_1", lookback = params$lookback,
+                         min_instruments = 3L)
+  if (!ledgr_passed_warmup(returns)) {
     return(ctx$hold())
   }
-  w <- clipped_weights(stats::cov(ledgr_history_matrix(returns)))
+  w <- clipped_weights(stats::cov(returns))
   held <- ctx$universe[ctx$vec$position != 0]
   keep <- intersect(ledgr_history_info(returns)$excluded_ids, held)
   if (!isTRUE(params$keep)) keep <- character()
@@ -515,7 +529,10 @@ late_exp <- ledgr_experiment(
 read_ddd <- function(day, ...) {
   ctx <- ledgr_pulse_snapshot(late_exp, ts_utc = day)
   on.exit(close(ctx))
-  out <- ctx |> ledgr_history_frame(..., instruments = "DDD", layout = "long")
+  out <- ctx |>
+    ledgr_history_frame(..., lookback = Inf,
+                        instruments = "DDD", min_observations = 0L,
+                        layout = "long")
   as.data.frame(out)[5:6, c("ts_utc", "value", "expected", "missing_reason")]
 }
 read_ddd(days[[6L]], bar = "close")
@@ -545,7 +562,7 @@ pulse.
 #| label: walk-forward
 
 count_history <- function(ctx, params) {
-  sessions <- nrow(ledgr_history_frame(ctx, bar = "close"))
+  sessions <- nrow(ledgr_history_frame(ctx, bar = "close", lookback = Inf))
   target <- ctx$hold()
   target[[params$instrument]] <- sessions
   target
@@ -589,7 +606,7 @@ the window your estimator needs.
 ```{r}
 #| label: finite-lookback
 
-full <- ctx |> ledgr_history_frame(feature = "return_20")
+full <- ctx |> ledgr_history_frame(feature = "return_20", lookback = Inf)
 last_60 <- ctx |> ledgr_history_frame(feature = "return_20", lookback = 60L)
 vapply(list(full = full, last_60 = last_60),
        function(x) format(utils::object.size(x), units = "Kb"), character(1))

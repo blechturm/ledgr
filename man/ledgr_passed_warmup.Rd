@@ -7,7 +7,7 @@
 ledgr_passed_warmup(x, values)
 }
 \arguments{
-\item{x}{A numeric vector, typically returned by \code{ctx$features()}; or, when
+\item{x}{A numeric vector, an intact ledgr history frame or matrix; or, when
 \code{values} is supplied, the pulse context.}
 
 \item{values}{Optional numeric decision-axis values or a context signal.}
@@ -18,8 +18,10 @@ A logical scalar.
 \description{
 \code{ledgr_passed_warmup()} is a strategy-authoring guard for named numeric vectors
 returned by \code{ctx$features(id, feature_map)}. For those vectors, \code{TRUE} means
-every requested feature is usable at the current pulse. For arbitrary
-vectors, it is only an \code{all(!is.na(x))} predicate.
+every requested feature is usable at the current pulse. For an intact
+\code{ledgr_history} frame or \code{ledgr_history_matrix}, it returns the recorded
+\code{min_observations} and \code{min_instruments} result without rescanning values.
+For arbitrary vectors, it is only an \code{all(!is.na(x))} predicate.
 }
 \details{
 \code{ledgr_passed_warmup()} is not a signal pipeline transformation. It is a guard for
@@ -49,6 +51,11 @@ Indicator warmup is covered in:
 
 \code{vignette("indicators", package = "ledgr")}
 \code{system.file("doc", "indicators.html", package = "ledgr")}
+
+Causal history requirements are covered in:
+
+\code{vignette("causal-history", package = "ledgr")}
+\code{system.file("doc", "causal-history.html", package = "ledgr")}
 }
 
 \examples{

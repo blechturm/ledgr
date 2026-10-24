@@ -271,8 +271,9 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
   # and exported helpers stay Tier 1, a package-qualified call stays Tier 2,
   # and a strategy's own list members are not context internals.
   history_strategy <- function(ctx, params) {
-    returns <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L, na_action = "drop_instruments")
-    if (!ledgr_history_sufficient(returns, min_instruments = 2L)) return(ctx$hold())
+    returns <- ledgr_history_frame(ctx, feature = "fast", lookback = 2L,
+      min_instruments = 2L)
+    if (!ledgr_passed_warmup(returns)) return(ctx$hold())
     x <- ledgr_history_matrix(returns)
     info <- ledgr_history_info(returns)
     w <- rep(1 / ncol(x), ncol(x))
