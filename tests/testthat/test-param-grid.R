@@ -300,16 +300,19 @@ testthat::test_that("[LTB-0495] sweep prints show readable parameter namespaces"
   sweep_id <- ledgr_sweep_save(sweep, snapshot, sweep_id = "print_namespaces")
   reopened <- ledgr_sweep_open(snapshot, sweep_id)
   testthat::expect_identical(reopened$status, sweep$status)
-  reopened_text <- utils::capture.output(print(reopened, width = 60L))
-  expect_namespace_rows(reopened_text)
-
-  candidate_text <- utils::capture.output(print(ledgr_candidate(sweep, 4L)))
-  testthat::expect_lt(
-    which(grepl("Strategy params", candidate_text, fixed = TRUE))[[1L]],
-    which(grepl("Candidate ID", candidate_text, fixed = TRUE))[[1L]]
-  )
-  testthat::expect_true(any(grepl("Strategy params:  {\"qty\":2}", candidate_text, fixed = TRUE)))
-  testthat::expect_true(any(grepl("Feature params:   {\"n\":3}", candidate_text, fixed = TRUE)))
+  for (width in c(60L, 140L)) {
+    reopened_text <- utils::capture.output(print(reopened, width = width))
+    expect_namespace_rows(reopened_text)
+    for (source in list(sweep, reopened)) {
+      candidate_text <- utils::capture.output(print(ledgr_candidate(source, 4L), width = width))
+      testthat::expect_lt(
+        which(grepl("Strategy params", candidate_text, fixed = TRUE))[[1L]],
+        which(grepl("Candidate ID", candidate_text, fixed = TRUE))[[1L]]
+      )
+      testthat::expect_true(any(grepl("Strategy params:  {\"qty\":2}", candidate_text, fixed = TRUE)))
+      testthat::expect_true(any(grepl("Feature params:   {\"n\":3}", candidate_text, fixed = TRUE)))
+    }
+  }
   review <- ledgr_sweep_review(sweep, rank_by = desc(total_return), n = 4L)
   reopened_review <- ledgr_sweep_review(reopened, rank_by = desc(total_return), n = 4L)
   for (name in names(review$top)) {

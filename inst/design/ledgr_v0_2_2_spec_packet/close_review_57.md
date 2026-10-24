@@ -1,7 +1,7 @@
 # Workstream 57 close review
 
-**Mode:** Type 1, independent clean-context close review  
-**Range:** `ee7fc5d3..40137092`  
+**Mode:** Type 1, independent clean-context close review
+**Range:** `ee7fc5d3..40137092`
 **Verdict:** `CHANGES_REQUIRED`
 
 The accepted rectangular-grid design is necessary and sufficient; no Type 2
