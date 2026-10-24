@@ -1,0 +1,2 @@
+"product_commit","r_version","platform","collapse_version","microbenchmark_version","gut_hash","snapshot_sessions","snapshot_instruments","power_plan","process_affinity"
+"4988bfd014cd7fa37b9f4a342956d1875624ccb9","R version 4.6.1 (2026-06-24 ucrt)","x86_64-w64-mingw32","2.1.8","1.5.0",FALSE,1260,1166,"High performance","0xFFFF"

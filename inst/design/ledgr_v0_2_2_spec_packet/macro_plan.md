@@ -1194,6 +1194,18 @@ latency. The correction does not authorize full-history result caches,
 duplicate prepared frame collections, unsafe mutable buffers, ALTREP machinery
 or a new causality policy.
 
+**Spike result, 2026-10-24.** The bounded spike is GREEN under its revised
+charter at `dev/spikes/history-manifestation/`. On the registered reference
+host, its exact 500 by 252 matrix and wide frame measure 0.427 and 0.405 ms,
+allocate about two returned-payload copies, invoke no digest and scale with
+returned cells. The first candidate correctly stopped because it rescanned the
+window for completeness; v2 supplies a prepared finite-observation summary
+and uses `collapse::mrtl()` to manifest frame columns directly from the stored
+instrument rows. The spike does not authorize a dense count plane. Step 2 must
+choose a memory-bounded summary or a fused one-pass count, and must settle the
+compact exclusion-reason and `used_before_window` provenance before Cut 19 is
+amended.
+
 **Minimum-variance article modernization, routed 2026-10-23.** Cut 17 closes
 against the accepted Workstream 48 article and the strategy source hash used
 by its Workstream 50 private evidence; do not silently rewrite that accepted
