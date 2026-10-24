@@ -1,8 +1,8 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-15 are complete and accepted. The WS3/WS4 history wave is the current work.
-Its shared history-start decision replaces Cut 9's temporary rule.
+18 are complete and accepted. The pre-CRAN research-strategy API cleanup is
+the current release work.
 
 **Date:** 2026-10-03
 
@@ -1082,6 +1082,51 @@ history proof:
 - show each sweep candidate's parameters in the printed sweep table instead
   of only a hashed `candidate_id`, with `params` currently among the hidden
   columns.
+
+**Cut 19 design boundary (maintainer, 2026-10-24).** The cleanup has four
+parts. First, a strategy may request a classed numeric history matrix directly
+from its context. The frame and matrix forms share one private causal read and
+selection plan; the matrix form is not a second reader and does not build a
+full temporary data frame. It remains an ordinary R matrix for estimators but
+retains the history identity and selection evidence used by
+`ledgr_history_info()` and `ledgr_align_weights()`.
+
+Second, history selection states its requirements once. `lookback` is required
+and `Inf` means the complete causal history. `min_observations` defaults to the
+requested finite lookback, or all returned sessions for `lookback = Inf`, and
+filters the estimation columns; `min_instruments` defaults to one and records
+the panel-level readiness requirement. `ledgr_passed_warmup()` becomes the one
+strategy predicate for both indicator values and classed history results.
+`ledgr_history_sufficient()` and the overlapping `na_action` selection switch
+are removed before CRAN. An insufficient panel remains a valid inspectable
+object; the strategy chooses `ctx$hold()`, `ctx$flat()` or another explicit
+fallback.
+
+Third, the existing structured strategy return may add an optional scalar
+`intent_reason`. It is a stable evidence code, recommended in snake case, and
+does not affect target sizing, risk, execution or experiment identity. When
+supplied in either execution mode it is recorded once as portfolio-level
+pulse evidence through the existing diagnostic store and is visible after
+reopen through the diagnostics result. Availability-aware explain may attach
+the reason to its existing instrument rows; dense explain remains unchanged
+and does not synthesize an instrument trace. Omission writes no intent row and
+an existing explanation row reads typed missing. This is a narrow
+decision-label surface, not durable factor, rank, selection or weight
+evidence, so it does not close ledgr-research LFB-028.
+
+Fourth, an ordinary rectangular data frame, including a tibble produced by
+`tidyr::crossing()`, is accepted as a simple strategy-parameter sweep when
+its columns are unclassed logical, integer, double or character vectors.
+Every cell must be non-missing and every double cell finite; `NA`, `Inf`,
+`-Inf`, `NaN`, factors, dates, other S3 columns and list columns refuse before
+execution;
+structured and feature-parameter sweeps keep the namespaced helpers rather
+than introducing tagged persistence. One zero-column row is the empty
+candidate, zero rows refuse and duplicate rows refuse. The old public
+`ledgr_param_grid()` compatibility constructor is deleted without an alias.
+The feature/strategy namespace helpers remain for composed feature sweeps,
+and sweep printing exposes readable strategy and feature parameters before
+the candidate hash.
 
 **Minimum-variance article modernization, routed 2026-10-23.** Cut 17 closes
 against the accepted Workstream 48 article and the strategy source hash used
