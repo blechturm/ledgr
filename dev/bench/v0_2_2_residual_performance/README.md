@@ -106,3 +106,27 @@ An attempted full fixture-lane parity record stopped in its unchanged
 owned independently by the four focused pre-rule comparisons, the existing
 sweep-persistence, run-store, pulse-snapshot and corporate-action suites, and
 the scalar/history/reopen explanation differential.
+
+## Workstream 53: residual cost and memory decisions
+
+`evidence/ws53_profile/` contains the aggregate-only current H1 profile,
+held-pulse diagnostic, four one-worker contrasts, four two-worker contrasts,
+and the single 4- and 8-worker trigger arms. The preregistration and complete
+dispositions are in
+`inst/design/ledgr_v0_2_2_spec_packet/residual_cost_memory_closeout.md`.
+
+Reproduce the committed summaries and checks from the package root:
+
+```powershell
+& "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
+  dev/bench/v0_2_2_residual_performance/summarize_ws53.R `
+  dev/bench/v0_2_2_residual_performance/evidence/ws53_profile
+& "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
+  dev/bench/v0_2_2_residual_performance/check_ws53.R `
+  dev/bench/v0_2_2_residual_performance/evidence/ws53_profile
+```
+
+The checker returns `WS53_CHECK_OK`. The record is internal release evidence,
+not a peer-speed claim. Its scheduler result advances the staged scheduler
+RFC to a Type 2 response; no scheduler behavior or telemetry contract changes
+in this workstream.

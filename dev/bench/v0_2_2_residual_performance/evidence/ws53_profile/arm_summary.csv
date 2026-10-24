@@ -1,0 +1,9 @@
+"arm","repeats","elapsed_s","parent_private_mib","tree_private_mib"
+"attrib_sweep_base_la",3,57.8,2211.7,3982.9
+"attrib_sweep_v003_la",3,60.55,2305.4,4071.6
+"attrib_sweep_v004_la",3,66.81,2538.6,4469.1
+"attrib_sweep_v004_lib",3,61.85,2547.2,4223
+"attrib_v003_la",3,61.97,1864.5,1864.5
+"attrib_v003_lib",3,56.66,2145.4,2145.4
+"attrib_v004_la",3,73.34,1904.7,1904.7
+"attrib_v004_lib",3,68.53,2602.8,2602.8

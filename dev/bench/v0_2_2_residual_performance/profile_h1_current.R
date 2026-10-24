@@ -39,6 +39,16 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 suppressMessages(pkgload::load_all(ledgr_src, quiet = TRUE, compile = FALSE))
 ns <- asNamespace("ledgr")
 commit <- system2("git", c("-C", shQuote(ledgr_src), "rev-parse", "HEAD"), stdout = TRUE)
+affinity <- system2(
+  "powershell",
+  c("-NoProfile", "-Command", shQuote(sprintf(
+    "$p = Get-Process -Id %d; $p.ProcessorAffinity = 0xFFFF; [string]$p.ProcessorAffinity",
+    Sys.getpid()
+  ), type = "cmd")),
+  stdout = TRUE,
+  stderr = TRUE
+)
+power <- system2("powercfg", "/getactivescheme", stdout = TRUE, stderr = TRUE)
 
 store <- file.path(work_dir, paste0("ws53-", mode, ".duckdb"))
 if (file.exists(store)) unlink(store, force = TRUE)
@@ -53,14 +63,9 @@ if (!identical(info$snapshot_hash[[1L]], expected_hash)) {
   stop("The private snapshot hash differs from the registered H1 input.", call. = FALSE)
 }
 
-strategy_record <- new.env(parent = emptyenv())
-strategy_record$months <- character()
-strategy_record$due <- logical()
 strategy <- function(ctx, params) {
   month <- substr(ctx$ts_utc, 1L, 7L)
   due <- !identical(ctx$state_prev$month, month)
-  strategy_record$months <- c(strategy_record$months, month)
-  strategy_record$due <- c(strategy_record$due, due)
   if (!due) return(ctx$hold())
   target <- ctx |>
     ledgr::ledgr_signal_return(params$lookback) |>
@@ -108,15 +113,39 @@ bt <- ledgr::ledgr_run(
 elapsed <- proc.time()[["elapsed"]] - started
 if (identical(mode, "profile")) utils::Rprof(NULL)
 
-run_info <- ledgr::ledgr_run_info(snapshot, bt$run_id)
-fills <- ledgr::ledgr_results(bt, "fills")
-equity <- ledgr::ledgr_results(bt, "equity")
-trades <- ledgr::ledgr_results(bt, "trades")
+time_read <- function(label, fn) {
+  started <- proc.time()[["elapsed"]]
+  value <- fn()
+  list(label = label, elapsed_s = proc.time()[["elapsed"]] - started, value = value)
+}
+reads <- list(
+  time_read("run_info", function() ledgr::ledgr_run_info(snapshot, bt$run_id)),
+  time_read("fills", function() ledgr::ledgr_results(bt, "fills")),
+  time_read("equity", function() ledgr::ledgr_results(bt, "equity")),
+  time_read("trades", function() ledgr::ledgr_results(bt, "trades")),
+  time_read("summary", function() summary(bt)),
+  time_read("print_summary", function() capture.output(print(summary(bt))))
+)
+run_info <- reads[[1L]]$value
+fills <- reads[[2L]]$value
+equity <- reads[[3L]]$value
+trades <- reads[[4L]]$value
+utils::write.csv(
+  data.frame(
+    operation = vapply(reads, `[[`, "", "label"),
+    elapsed_s = vapply(reads, `[[`, 0, "elapsed_s"),
+    stringsAsFactors = FALSE
+  ),
+  file.path(out_dir, paste0(mode, "_read_clocks.csv")),
+  row.names = FALSE
+)
 telemetry <- get("ledgr_get_run_telemetry", envir = ns)(bt$run_id)
 hash_value <- function(x) digest::digest(x, algo = "sha256", serialize = TRUE)
 stable_fills <- as.data.frame(fills[, setdiff(names(fills), c("run_id", "event_id"))])
 stable_equity <- as.data.frame(equity[, setdiff(names(equity), "run_id")])
 stable_trades <- as.data.frame(trades[, setdiff(names(trades), "run_id")])
+months <- substr(as.character(equity$ts_utc), 1L, 7L)
+due_used <- !duplicated(months)
 
 run_row <- data.frame(
   mode = mode,
@@ -124,9 +153,9 @@ run_row <- data.frame(
   snapshot_hash = expected_hash,
   status = run_info$status[[1L]],
   pulses = run_info$pulse_count[[1L]],
-  strategy_calls = length(strategy_record$due),
-  decision_calls = sum(strategy_record$due),
-  hold_calls = sum(!strategy_record$due),
+  strategy_calls = length(due_used),
+  decision_calls = sum(due_used),
+  hold_calls = sum(!due_used),
   elapsed_s = elapsed,
   t_pre_s = telemetry$t_pre,
   t_loop_s = telemetry$t_loop,
@@ -137,6 +166,12 @@ run_row <- data.frame(
   fills_hash = hash_value(stable_fills),
   equity_hash = hash_value(stable_equity),
   trades_hash = hash_value(stable_trades),
+  affinity = paste(affinity, collapse = " "),
+  power_plan = if (any(grepl("High performance", power, fixed = TRUE))) {
+    "High performance"
+  } else {
+    "other"
+  },
   stringsAsFactors = FALSE
 )
 utils::write.csv(run_row, file.path(out_dir, paste0(mode, "_run.csv")), row.names = FALSE)
@@ -150,7 +185,7 @@ if (identical(mode, "profile")) {
 }
 
 if (identical(mode, "telemetry")) {
-  due <- strategy_record$due
+  due <- due_used
   fields <- c(
     "t_pulse", "t_bars", "t_ctx", "t_fill", "t_state", "t_feats",
     "t_strat", "t_target", "t_event", "t_exec"
@@ -187,4 +222,13 @@ if (identical(mode, "telemetry")) {
 }
 
 close(bt)
+reopen_started <- proc.time()[["elapsed"]]
+reopened <- ledgr::ledgr_run_open(snapshot, run_info$run_id[[1L]])
+reopen_elapsed <- proc.time()[["elapsed"]] - reopen_started
+close(reopened)
+utils::write.csv(
+  data.frame(operation = "run_open", elapsed_s = reopen_elapsed),
+  file.path(out_dir, paste0(mode, "_reopen_clock.csv")),
+  row.names = FALSE
+)
 cat("WS53_PROFILE_OK ", mode, "\n", sep = "")

@@ -397,6 +397,15 @@ workload; the probe still has to show how much of that a scheduler can skip
 while fills, cash, disposition events, valuation ageing and availability
 boundaries stay complete.
 
+Decision input (2026-10-24, Cut 18 Workstream 53): the current dividend H1
+run has 6,868 held pulses and 345 monthly decisions. Context, callback and
+target work on held pulses alone costs 14.27 seconds, 22.9 percent of the
+62.22-second diagnostic wall. This clears the promotion trigger. WS6 advances
+to a Type 2 response; Cut 18 changes no scheduler semantics. The response must
+retain non-decision fills, settlement, valuation, state, diagnostics and
+commit, and must decide the two-clock Momento case rather than infer it from
+the timing result.
+
 ### WS7. One public long-only estimator strategy
 
 - Implement one representative estimator-to-weight strategy, such as long-only
@@ -1184,6 +1193,12 @@ Cut 16 decision (17) routes these beyond WS46:
   Telemetry is unchanged until then, so history-wave baselines stay
   comparable. A change to the contract or public surface is RFC work,
   scheduled when WS8 opens.
+
+  Cut 18 Workstream 53 retains the surface unchanged. The detailed vectors
+  feed `ledgr_backtest_bench()` and registered diagnostics in the current
+  session; the compact durable row feeds run listings, continuity and
+  recovery inspection. Redesign remains a next-version question after fold,
+  output-handler and context unification establish the new shape.
 
 <a id="7-change-control"></a>
 

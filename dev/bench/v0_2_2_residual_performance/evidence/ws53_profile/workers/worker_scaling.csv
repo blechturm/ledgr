@@ -1,0 +1,4 @@
+"tag","workers","exit_status","elapsed_s","samples","effective_interval_s","parent_peak_wset_mib","parent_peak_private_mib","parent_plus_daemon_peak_wset_mib","parent_plus_daemon_peak_private_mib","daemons_seen","other_r_at_start","affinity","power_plan"
+"v004_workers4",4,0,67.0753381252289,330,0.203258600379481,2656.85546875,2734.34375,5803.8125,6085.421875,4,0,"65535","High performance"
+"v004_workers8",8,0,71.0065641403198,349,0.203457203840458,2723.51953125,2978.55859375,8740.39453125,8948.7265625,8,0,"65535","High performance"
+"v003_workers2_census",2,0,59.9268419742584,295,0.203141837200876,1997.99609375,2295.77734375,3596.10546875,3666.81640625,2,0,"65535","High performance"
