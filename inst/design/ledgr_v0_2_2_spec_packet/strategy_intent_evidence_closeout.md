@@ -142,3 +142,6 @@ green. One ordinary fast-profile confirmation executes all 578 blocks in
 114.73 seconds; it exceeds the unchanged 112-second timing hint and is not
 recorded as a gate pass. The registered implementation record above remains
 the binding timing evidence; neither correction touches the run hot path.
+The same independent reviewer mutation-checked both fixes and returned PASS
+with no new finding; under M2 that finding-free confirmation has no separate
+review artifact.
