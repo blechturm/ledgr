@@ -800,10 +800,11 @@ workstreams:
   - id: 57
     name: "Rectangular sweep inputs and readable candidates"
     cut: 19
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 57", verdict: "PASS", artifact: "close_review_57.md", result: "The independent review found the product boundary sound, then exposed an accidentally one-dimensional parity detector, a namespace-swap detector gap, repeated canonical validation, two obsolete condition aliases and record wording defects. Corrections 4c81535b and aa3b4320 closed all findings; the same reviewer confirmed the two-dimensional identity-matched oracle, exact live/reopened/candidate/review namespace mappings at both widths, one canonicalization per rectangular row, forged-grid validation, retired-condition census, focused tests and clean diffs, and returned PASS with no new defect.", reason: "One claim: an ordinary tidy rectangular strategy grid is executable and readable without the pre-CRAN compatibility constructor, while composed feature grids retain their separate namespace and every candidate keeps the same deterministic parameters and identity."}
+    accepted: "2026-10-24 by the maintainer after the independent focused confirmation returned PASS"
   - id: 58
     name: "Minimum-variance teaching and cleanup integration"
     cut: 19
@@ -2668,7 +2669,7 @@ tickets:
   - id: "LDG-3102"
     title: "Accept rectangular strategy grids and remove ledgr_param_grid"
     workstream: 57
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: []
@@ -2678,7 +2679,7 @@ tickets:
   - id: "LDG-3103"
     title: "Print readable sweep parameters before candidate hashes"
     workstream: 57
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3102"]
