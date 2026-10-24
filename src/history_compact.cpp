@@ -2,10 +2,72 @@
 #include <Rinternals.h>
 
 #include <algorithm>
+#include <type_traits>
 #include <vector>
 
 static void ledgr_history_cpp_check(bool ok, const char* message) {
   if (!ok) cpp11::stop("%s", message);
+}
+
+// Sparse maximal runs of non-finite cells. They are prepared once with the
+// immutable substrate, then let an ordinary read distinguish a leading gap
+// from an expired carry without reading any value before its bounded carry
+// dependency. Storage is proportional to gap runs, not source cells.
+[[cpp11::register]]
+SEXP ledgr_cpp_history_gap_runs(SEXP stored_sxp) {
+  ledgr_history_cpp_check(TYPEOF(stored_sxp) == REALSXP &&
+                              Rf_isMatrix(stored_sxp),
+                          "Stored history bars must be a double matrix.");
+  SEXP dim_sxp = Rf_getAttrib(stored_sxp, R_DimSymbol);
+  const int n_row = INTEGER(dim_sxp)[0];
+  const int n_col = INTEGER(dim_sxp)[1];
+  const double* stored = REAL(stored_sxp);
+  std::vector<int> off(n_row);
+  std::vector<int> count(n_row);
+  std::vector<int> start;
+  std::vector<int> end;
+
+  for (int row = 0; row < n_row; ++row) {
+    off[row] = static_cast<int>(start.size()) + 1;
+    int column = 0;
+    while (column < n_col) {
+      while (column < n_col && R_FINITE(
+          stored[row + static_cast<R_xlen_t>(column) * n_row])) {
+        ++column;
+      }
+      if (column == n_col) break;
+      const int first = column;
+      while (column < n_col && !R_FINITE(
+          stored[row + static_cast<R_xlen_t>(column) * n_row])) {
+        ++column;
+      }
+      start.push_back(first + 1);
+      end.push_back(column);
+      count[row] += 1;
+    }
+  }
+
+  SEXP off_sxp = PROTECT(Rf_allocVector(INTSXP, n_row));
+  SEXP count_sxp = PROTECT(Rf_allocVector(INTSXP, n_row));
+  SEXP start_sxp = PROTECT(Rf_allocVector(INTSXP, start.size()));
+  SEXP end_sxp = PROTECT(Rf_allocVector(INTSXP, end.size()));
+  std::copy(off.begin(), off.end(), INTEGER(off_sxp));
+  std::copy(count.begin(), count.end(), INTEGER(count_sxp));
+  std::copy(start.begin(), start.end(), INTEGER(start_sxp));
+  std::copy(end.begin(), end.end(), INTEGER(end_sxp));
+  SEXP out_sxp = PROTECT(Rf_allocVector(VECSXP, 4));
+  SET_VECTOR_ELT(out_sxp, 0, off_sxp);
+  SET_VECTOR_ELT(out_sxp, 1, count_sxp);
+  SET_VECTOR_ELT(out_sxp, 2, start_sxp);
+  SET_VECTOR_ELT(out_sxp, 3, end_sxp);
+  SEXP names_sxp = PROTECT(Rf_allocVector(STRSXP, 4));
+  SET_STRING_ELT(names_sxp, 0, Rf_mkChar("off"));
+  SET_STRING_ELT(names_sxp, 1, Rf_mkChar("count"));
+  SET_STRING_ELT(names_sxp, 2, Rf_mkChar("start"));
+  SET_STRING_ELT(names_sxp, 3, Rf_mkChar("end"));
+  Rf_setAttrib(out_sxp, R_NamesSymbol, names_sxp);
+  UNPROTECT(6);
+  return out_sxp;
 }
 
 #if defined(__GNUC__) && !defined(__clang__)
@@ -28,10 +90,17 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
                                    SEXP override_row_sxp,
                                    SEXP override_expected_sxp,
                                    SEXP override_terminal_sxp,
+                                   SEXP gap_off_sxp,
+                                   SEXP gap_count_sxp,
+                                   SEXP gap_start_sxp,
+                                   SEXP gap_end_sxp,
                                    SEXP max_carry_sessions_sxp,
+                                   SEXP carry_allowed_sxp,
+                                   SEXP min_observations_sxp,
                                    SEXP axis_names_sxp,
                                    SEXP instrument_ids_sxp,
-                                   SEXP wide_sxp) {
+                                   SEXP wide_sxp,
+                                   SEXP trace_access_sxp) {
   ledgr_history_cpp_check(TYPEOF(stored_sxp) == REALSXP &&
                               Rf_isMatrix(stored_sxp),
                           "Stored history bars must be a double matrix.");
@@ -47,6 +116,11 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
                               Rf_isMatrix(override_expected_sxp) &&
                               TYPEOF(override_terminal_sxp) == INTSXP,
                           "History mask overrides have invalid types.");
+  ledgr_history_cpp_check(TYPEOF(gap_off_sxp) == INTSXP &&
+                              TYPEOF(gap_count_sxp) == INTSXP &&
+                              TYPEOF(gap_start_sxp) == INTSXP &&
+                              TYPEOF(gap_end_sxp) == INTSXP,
+                          "History gap summaries have invalid types.");
 
   SEXP stored_dim = Rf_getAttrib(stored_sxp, R_DimSymbol);
   const int source_nrow = INTEGER(stored_dim)[0];
@@ -64,16 +138,22 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
   ledgr_history_cpp_check(dependency_first > 0 && max_carry_sessions >= 0,
                           "History carry bounds are invalid.");
   const int* columns = INTEGER(columns_sxp);
-  const int dependency_width = n_time == 0
-      ? 0
-      : columns[n_time - 1] - dependency_first + 1;
   const int n_override = static_cast<int>(XLENGTH(override_row_sxp));
   SEXP override_dim = Rf_getAttrib(override_expected_sxp, R_DimSymbol);
   ledgr_history_cpp_check(INTEGER(override_dim)[0] == n_override &&
-                              INTEGER(override_dim)[1] == dependency_width &&
+                              INTEGER(override_dim)[1] == source_ncol &&
                               XLENGTH(override_terminal_sxp) == n_override,
                           "History mask overrides must align with the request.");
+  ledgr_history_cpp_check(XLENGTH(gap_off_sxp) == source_nrow &&
+                              XLENGTH(gap_count_sxp) == source_nrow &&
+                              XLENGTH(gap_start_sxp) == XLENGTH(gap_end_sxp),
+                          "History gap summaries must align with the stored bars.");
   const bool wide = Rf_asLogical(wide_sxp) == TRUE;
+  const bool carry_allowed = Rf_asLogical(carry_allowed_sxp) == TRUE;
+  const bool trace_access = Rf_asLogical(trace_access_sxp) == TRUE;
+  const int min_observations = Rf_asInteger(min_observations_sxp);
+  ledgr_history_cpp_check(min_observations >= 0,
+                          "History observation requirement is invalid.");
   ledgr_history_cpp_check(TYPEOF(axis_names_sxp) == STRSXP &&
                               TYPEOF(instrument_ids_sxp) == STRSXP &&
                               XLENGTH(axis_names_sxp) == n_time &&
@@ -100,6 +180,8 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
   SEXP finite_sxp = PROTECT(Rf_allocVector(INTSXP, n_instrument));
   SEXP carried_sxp = PROTECT(Rf_allocVector(INTSXP, n_instrument));
   SEXP used_before_sxp = PROTECT(Rf_allocVector(LGLSXP, n_instrument));
+  SEXP structural_sxp = PROTECT(Rf_allocVector(LGLSXP, n_instrument));
+  SEXP expired_sxp = PROTECT(Rf_allocVector(LGLSXP, n_instrument));
 
   const double* stored = REAL(stored_sxp);
   double* matrix_value = wide ? nullptr : REAL(value_sxp);
@@ -109,9 +191,19 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
   const int* override_row = INTEGER(override_row_sxp);
   const int* override_expected = LOGICAL(override_expected_sxp);
   const int* override_terminal = INTEGER(override_terminal_sxp);
+  const int* gap_off = INTEGER(gap_off_sxp);
+  const int* gap_count = INTEGER(gap_count_sxp);
+  const int* gap_start = INTEGER(gap_start_sxp);
+  const int* gap_end = INTEGER(gap_end_sxp);
   int* finite = INTEGER(finite_sxp);
   int* carried = INTEGER(carried_sxp);
   int* used_before = LOGICAL(used_before_sxp);
+  int* structural = LOGICAL(structural_sxp);
+  int* expired = LOGICAL(expired_sxp);
+  std::vector<int> source_access;
+  if (trace_access) {
+    source_access.reserve(static_cast<size_t>(n_instrument) * n_time);
+  }
 
   std::vector<int> override_map(n_instrument, -1);
   for (int at = 0; at < n_override; ++at) {
@@ -127,10 +219,22 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
                             "History column is outside the stored bar matrix.");
   }
 
+  // Compile distinct traced and ordinary loops. The exact review oracle can
+  // observe every source access, while the production hot path contains no
+  // per-cell tracing branch.
+  auto process = [&](auto trace_tag) {
+  constexpr bool trace = decltype(trace_tag)::value;
+  auto read_source = [&](int row, int column) {
+    const R_xlen_t index = row + static_cast<R_xlen_t>(column) * source_nrow;
+    if constexpr (trace) source_access.push_back(static_cast<int>(index + 1));
+    return stored[index];
+  };
   for (int instrument = 0; instrument < n_instrument; ++instrument) {
     finite[instrument] = 0;
     carried[instrument] = 0;
     used_before[instrument] = FALSE;
+    structural[instrument] = FALSE;
+    expired[instrument] = FALSE;
     const int source_row = rows[instrument] - 1;
     ledgr_history_cpp_check(source_row >= 0 && source_row < source_nrow,
                             "History row is outside the stored bar matrix.");
@@ -141,57 +245,101 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
     double* target = wide
         ? REAL(VECTOR_ELT(value_sxp, instrument))
         : matrix_value + static_cast<R_xlen_t>(instrument) * n_time;
+    auto is_expected = [&](int column) {
+      return override_at >= 0
+          ? override_expected[
+              override_at + static_cast<R_xlen_t>(column) * n_override] == TRUE
+          : expected[source_row + static_cast<R_xlen_t>(column) * source_nrow] == TRUE;
+    };
+
+    const int first_gap = gap_off[source_row] - 1;
+    const int n_gap = gap_count[source_row];
+    int gap_at = first_gap;
 
     for (int time = 0; time < n_time; ++time) {
       const int source_column = columns[time] - 1;
-      const double cell = stored[
-          source_row + static_cast<R_xlen_t>(source_column) * source_nrow];
+      const double cell = read_source(source_row, source_column);
       target[time] = cell;
       if (R_FINITE(cell)) {
         finite[instrument] += 1;
         continue;
       }
+      const bool current_expected = is_expected(source_column);
+      const bool current_terminal = source_column + 1 >= terminal_at;
+      if (!current_expected || current_terminal || !carry_allowed) continue;
 
-      const int dependency_column = source_column + 1 - dependency_first;
-      const bool current_expected = override_at >= 0
-          ? override_expected[
-              override_at + static_cast<R_xlen_t>(dependency_column) * n_override]
-          : expected[source_row + static_cast<R_xlen_t>(source_column) * source_nrow];
-      if (!current_expected || source_column + 1 >= terminal_at) continue;
-
-      const int lower = std::max(0, source_column - max_carry_sessions);
-      for (int candidate = source_column - 1; candidate >= lower; --candidate) {
-        const int dependency_candidate = candidate + 1 - dependency_first;
-        const bool candidate_expected = override_at >= 0
-            ? override_expected[
-                override_at + static_cast<R_xlen_t>(dependency_candidate) * n_override]
-            : expected[source_row + static_cast<R_xlen_t>(candidate) * source_nrow];
-        if (!candidate_expected || candidate + 1 >= terminal_at) break;
-        const double carried_value = stored[
-            source_row + static_cast<R_xlen_t>(candidate) * source_nrow];
-        if (R_FINITE(carried_value)) {
-          target[time] = carried_value;
-          finite[instrument] += 1;
-          carried[instrument] += 1;
-          if (candidate + 1 < columns[0]) used_before[instrument] = TRUE;
+      while (gap_at < first_gap + n_gap && gap_end[gap_at] < source_column + 1) {
+        ++gap_at;
+      }
+      ledgr_history_cpp_check(gap_at < first_gap + n_gap &&
+                                  gap_start[gap_at] <= source_column + 1 &&
+                                  source_column + 1 <= gap_end[gap_at],
+                              "History gap summary does not cover a missing cell.");
+      const int candidate = gap_start[gap_at] - 2;
+      if (candidate < 0 || candidate + 1 >= terminal_at ||
+          !is_expected(candidate)) {
+        continue;
+      }
+      bool barrier = false;
+      for (int column = candidate + 1; column <= source_column; ++column) {
+        if (!is_expected(column) || column + 1 >= terminal_at) {
+          barrier = true;
+          break;
+        }
+      }
+      if (barrier) continue;
+      const int age = source_column - candidate;
+      if (age > max_carry_sessions) {
+        expired[instrument] = TRUE;
+        continue;
+      }
+      ledgr_history_cpp_check(candidate + 1 >= dependency_first,
+                              "History carry source is outside its declared dependency.");
+      const double carried_value = read_source(source_row, candidate);
+      ledgr_history_cpp_check(R_FINITE(carried_value),
+                              "History gap summary names a non-finite carry source.");
+      target[time] = carried_value;
+      finite[instrument] += 1;
+      carried[instrument] += 1;
+      if (candidate + 1 < columns[0]) used_before[instrument] = TRUE;
+    }
+    if (finite[instrument] < min_observations) {
+      for (int time = 0; time < n_time; ++time) {
+        const int source_column = columns[time] - 1;
+        if (!is_expected(source_column) || source_column + 1 >= terminal_at) {
+          structural[instrument] = TRUE;
           break;
         }
       }
     }
   }
+  };
+  if (trace_access) {
+    process(std::true_type{});
+  } else {
+    process(std::false_type{});
+  }
 
-  SEXP out_sxp = PROTECT(Rf_allocVector(VECSXP, 4));
+  SEXP access_sxp = PROTECT(Rf_allocVector(INTSXP, source_access.size()));
+  std::copy(source_access.begin(), source_access.end(), INTEGER(access_sxp));
+  SEXP out_sxp = PROTECT(Rf_allocVector(VECSXP, 7));
   SET_VECTOR_ELT(out_sxp, 0, value_sxp);
   SET_VECTOR_ELT(out_sxp, 1, finite_sxp);
   SET_VECTOR_ELT(out_sxp, 2, carried_sxp);
   SET_VECTOR_ELT(out_sxp, 3, used_before_sxp);
-  SEXP names_sxp = PROTECT(Rf_allocVector(STRSXP, 4));
+  SET_VECTOR_ELT(out_sxp, 4, structural_sxp);
+  SET_VECTOR_ELT(out_sxp, 5, expired_sxp);
+  SET_VECTOR_ELT(out_sxp, 6, access_sxp);
+  SEXP names_sxp = PROTECT(Rf_allocVector(STRSXP, 7));
   SET_STRING_ELT(names_sxp, 0, Rf_mkChar("value"));
   SET_STRING_ELT(names_sxp, 1, Rf_mkChar("finite_observation_count"));
   SET_STRING_ELT(names_sxp, 2, Rf_mkChar("carried_input_count"));
   SET_STRING_ELT(names_sxp, 3, Rf_mkChar("used_before_row"));
+  SET_STRING_ELT(names_sxp, 4, Rf_mkChar("structural"));
+  SET_STRING_ELT(names_sxp, 5, Rf_mkChar("expired"));
+  SET_STRING_ELT(names_sxp, 6, Rf_mkChar("source_access"));
   Rf_setAttrib(out_sxp, R_NamesSymbol, names_sxp);
-  UNPROTECT(6);
+  UNPROTECT(9);
   return out_sxp;
 }
 

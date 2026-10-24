@@ -24,6 +24,8 @@ stopifnot(
   all(focal$median_us <= 750),
   all(focal$payload_copies <= 2.5),
   environment$digest_calls[[1L]] == 0L,
+  all(measurements$owner_prepared),
+  all(measurements$memo_stable),
   nrow(slopes) == 4L,
   all(slopes$exponent >= 0.65 & slopes$exponent <= 1.30),
   all(source_scale$absolute_delta_us <= 100),

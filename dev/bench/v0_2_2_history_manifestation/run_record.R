@@ -102,12 +102,20 @@ close_fixture <- function(x) {
 }
 
 clock_us <- function(fn, times = 40L) {
-  invisible(fn())
   timing <- microbenchmark::microbenchmark(fn(), times = times, unit = "us")
   c(
     median_us = stats::median(timing$time) / 1000,
     p95_us = unname(stats::quantile(timing$time, 0.95)) / 1000
   )
+}
+
+history_memo_names <- function(ctx) {
+  sort(ls(
+    ledgr:::ledgr_history_memo(
+      ledgr:::ledgr_history_context_view(ctx)$service$substrate
+    ),
+    all.names = TRUE
+  ), method = "radix")
 }
 
 allocated_bytes <- function(fn) {
@@ -140,11 +148,20 @@ read_path <- function(ctx, path, instruments, lookback) {
 measure <- function(ctx, path, instruments, lookback, axis, size, replicate,
                     times = 40L) {
   fn <- function() read_path(ctx, path, instruments, lookback)
-  # Preparation memos belong to the run substrate, not to one manifestation.
-  invisible(fn())
+  # The context owner has completed immutable preparation before this public
+  # boundary. The allocation call below is therefore a genuine first read,
+  # not a hidden memo warm-up; no ordinary call may change the owner memo.
+  memo_before <- history_memo_names(ctx)
+  if (!"base_masks" %in% memo_before) {
+    stop("History owner summaries were not prepared before the public read.")
+  }
   allocation <- allocated_bytes(fn)
   value <- allocation$value
   timing <- clock_us(fn, times = times)
+  memo_after <- history_memo_names(ctx)
+  if (!identical(memo_after, memo_before)) {
+    stop("An ordinary public history read performed hidden owner preparation.")
+  }
   cells <- if (identical(path, "matrix")) length(value) else
     nrow(value) * (ncol(value) - 1L)
   payload_bytes <- cells * 8
@@ -168,6 +185,7 @@ measure <- function(ctx, path, instruments, lookback, axis, size, replicate,
     allocated_bytes = allocation$bytes,
     allocated_ratio = if (payload_bytes > 0L) allocation$bytes / payload_bytes else 0,
     payload_copies = payload_copies,
+    owner_prepared = TRUE, memo_stable = TRUE,
     stringsAsFactors = FALSE
   )
 }
@@ -282,8 +300,6 @@ source_scale <- do.call(rbind, lapply(c("matrix", "wide"), function(path) {
   short_fn <- function() read_path(
     short$ctx, path, focal_ids, 252L
   )
-  invisible(full_fn())
-  invisible(short_fn())
   timing <- microbenchmark::microbenchmark(
     source_1260 = full_fn(), source_252 = short_fn(),
     times = 100L, unit = "us"

@@ -432,12 +432,30 @@ ledgr_history_cell_fields <- function() {
   )
 }
 
+# Prepare immutable mask summaries before a pulse context is handed to
+# strategy code. Ordinary public reads therefore never hide owner preparation
+# in their first call. The memo is owner-local and never enters a returned
+# history object.
+ledgr_history_prepare_owner_summaries <- function(substrate) {
+  ledgr_history_base_masks(substrate)
+  late <- ledgr_history_late_epochs(substrate)
+  for (instrument in ledgr_history_memo(substrate)$late_instruments) {
+    epochs <- late[[instrument]]
+    if (length(epochs) == 0L) next
+    for (epoch in seq_len(length(epochs)) - 1L) {
+      ledgr_history_overlay_masks(substrate, instrument, epoch, epochs)
+    }
+  }
+  invisible(substrate)
+}
+
 # A read service over one substrate, prepared once per fold (or inspection)
 # with that consumer's registered features and active aliases.
 ledgr_history_read_service <- function(substrate,
                                        feature_defs = list(),
                                        active_alias_map = NULL) {
   ledgr_history_substrate_require(substrate)
+  ledgr_history_prepare_owner_summaries(substrate)
   feature_ids <- if (length(feature_defs) > 0L) {
     vapply(feature_defs, function(def) def$id, character(1))
   } else {
@@ -513,18 +531,13 @@ ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
   } else {
     1L
   }
-  dependency_columns <- if (length(columns) > 0L) {
-    seq.int(dependency_first, columns[[length(columns)]])
-  } else {
-    integer()
-  }
   late <- ledgr_history_late_epochs(substrate)
   late_rows <- match(
     ledgr_history_memo(substrate)$late_instruments, rows, nomatch = 0L
   )
   late_rows <- late_rows[late_rows > 0L]
   override_expected <- matrix(
-    TRUE, nrow = length(late_rows), ncol = length(dependency_columns)
+    TRUE, nrow = length(late_rows), ncol = length(substrate$axis)
   )
   override_terminal <- rep.int(length(substrate$axis) + 1L, length(late_rows))
   keep <- logical(length(late_rows))
@@ -541,7 +554,7 @@ ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
     if (epoch >= length(epochs)) next
     overlay <- ledgr_history_overlay_masks(substrate, instrument, epoch, epochs)
     keep[[at]] <- TRUE
-    override_expected[at, ] <- overlay$expected[1L, dependency_columns]
+    override_expected[at, ] <- overlay$expected[1L, ]
     override_terminal[[at]] <- overlay$terminal_first[[1L]]
   }
   list(
@@ -554,18 +567,22 @@ ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
   )
 }
 
-ledgr_history_value_slice <- function(stored, rows, columns, masks,
-                                      max_carry_sessions,
+ledgr_history_value_slice <- function(stored, rows, columns, masks, gaps,
+                                      max_carry_sessions, carry_allowed,
+                                      min_observations,
                                       axis_names, instrument_ids,
-                                      manifestation = "matrix") {
+                                      manifestation = "matrix",
+                                      trace_access = FALSE) {
   ledgr_cpp_history_bar_compact(
     stored, as.integer(rows), as.integer(columns),
     masks$expected, as.integer(masks$terminal_first),
     as.integer(masks$dependency_first), as.integer(masks$override_row),
     masks$override_expected, as.integer(masks$override_terminal),
-    as.integer(max_carry_sessions),
+    gaps$off, gaps$count, gaps$start, gaps$end,
+    as.integer(max_carry_sessions), isTRUE(carry_allowed),
+    as.integer(min_observations),
     as.character(axis_names), as.character(instrument_ids),
-    identical(manifestation, "wide")
+    identical(manifestation, "wide"), isTRUE(trace_access)
   )
 }
 
@@ -580,6 +597,8 @@ ledgr_history_bar_compact <- function(substrate, field, rows, columns, cutoff_co
   } else {
     substrate$history_policy$price_carry %||% 0L
   }
+  carry_allowed <- !identical(field, "volume") &&
+    !is.null(substrate$history_policy$price_carry)
   masks <- ledgr_history_bar_mask_view(
     substrate, rows, columns, cutoff_col, max_carry_sessions
   )
@@ -587,29 +606,13 @@ ledgr_history_bar_compact <- function(substrate, field, rows, columns, cutoff_co
   # counts finite cells and applies only the prepared sparse treatment delta.
   # No opposite-orientation plane or count index is retained.
   compact <- ledgr_history_value_slice(
-    stored, rows, columns, masks, max_carry_sessions,
+    stored, rows, columns, masks, substrate$bar_gap_runs[[field]],
+    max_carry_sessions, carry_allowed, min_observations,
     names(substrate$pulse_index)[columns], substrate$instrument_ids[rows],
     manifestation = manifestation
   )
   value <- compact$value
   finite_count <- compact$finite_observation_count
-
-  # Structural and expiry reasons affect only excluded instruments. Derive
-  # them from the diagnostic oracle for that bounded subset; the ordinary
-  # hot path does not allocate evidence for included instruments.
-  excluded <- finite_count < min_observations
-  structural <- expired <- rep.int(FALSE, n_rows)
-  if (any(excluded)) {
-    evidence <- ledgr_history_bar_evidence(
-      substrate, field, rows[excluded], columns, cutoff_col
-    )
-    structural[excluded] <- rowSums(
-      !evidence$calculation_valid & nzchar(evidence$barrier_reason)
-    ) > 0L
-    expired[excluded] <- rowSums(
-      !evidence$calculation_valid & evidence$missing_reason == "carry_expired"
-    ) > 0L
-  }
 
   list(
     value = value,
@@ -617,8 +620,8 @@ ledgr_history_bar_compact <- function(substrate, field, rows, columns, cutoff_co
     finite_observation_count = finite_count,
     required_input_count = rep.int(n_cols, n_rows),
     carried_input_count = compact$carried_input_count,
-    structural = structural,
-    expired = expired,
+    structural = compact$structural,
+    expired = compact$expired,
     used_before_row = compact$used_before_row
   )
 }

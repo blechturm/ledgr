@@ -1796,7 +1796,8 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
       "substrate_version", "snapshot_hash", "policy_identity",
       "history_policy", "source_start_utc", "data_start_utc",
       "instrument_ids", "instrument_index", "axis", "pulse_index", "bars",
-      "segments", "segment_counts", "sessions", "provider_plan", "history_memo"
+      "bar_gap_runs", "segments", "segment_counts", "sessions",
+      "provider_plan", "history_memo"
     )
   )
   # Cut 16 decision (22): membership and trading-status facts are held once,
@@ -1814,6 +1815,15 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
     names(substrate$bars),
     c("open", "high", "low", "close", "volume", "observed")
   )
+  testthat::expect_identical(
+    names(substrate$bar_gap_runs),
+    c("open", "high", "low", "close", "volume")
+  )
+  testthat::expect_true(all(vapply(
+    substrate$bar_gap_runs,
+    function(x) identical(names(x), c("off", "count", "start", "end")),
+    logical(1)
+  )))
   testthat::expect_false("sessions" %in% names(substrate$provider_plan))
 
   # The per-pulse packet carries only what P1-P4 read; ctx$bars derives

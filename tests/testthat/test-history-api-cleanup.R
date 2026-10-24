@@ -119,25 +119,94 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
     testthat::expect_silent(ledgr_history_matrix(
       ctx, feature = "fast", lookback = 2L, min_observations = 0L
     ))
+    # Exclusion is still an ordinary compact read: it may not reacquire the
+    # diagnostic planes merely to name the exclusion reason.
+    testthat::expect_silent(ledgr_history_matrix(
+      ctx, bar = "volume", lookback = 3L, min_observations = 3L
+    ))
   })
+
+  # The owner prepares immutable mask summaries before the first public read.
+  # An excluded read adds no field-position or patch cache.
+  owner_fixture <- ws42_history_fixture(
+    policy = ledgr_history_policy(price_carry = 1L)
+  )
+  on.exit(ledgr_snapshot_close(owner_fixture$snapshot), add = TRUE)
+  owner_ctx <- ledgr_pulse_snapshot(
+    owner_fixture$exp, ts_utc = owner_fixture$axis[[5L]]
+  )
+  owner_substrate <- ledgr:::ledgr_history_context_view(owner_ctx)$service$substrate
+  owner_memo <- ledgr:::ledgr_history_memo(owner_substrate)
+  before_memo <- ls(owner_memo, all.names = TRUE)
+  testthat::expect_true("base_masks" %in% before_memo)
+  expired <- ledgr_history_matrix(
+    owner_ctx, bar = "close", lookback = 3L, min_observations = 3L
+  )
+  after_memo <- ls(owner_memo, all.names = TRUE)
+  testthat::expect_identical(after_memo, before_memo)
+  testthat::expect_false(any(grepl("base_(open|high|low|close|volume)", after_memo)))
+  expired_long <- ledgr_history_frame(
+    owner_ctx, bar = "close", lookback = 3L, min_observations = 3L,
+    layout = "long"
+  )
+  expired_info <- ledgr_history_info(expired)
+  testthat::expect_identical(
+    expired_info$selection$exclusion_reason[
+      expired_info$selection$instrument_id == "BBB"
+    ],
+    "carry_expired"
+  )
+  testthat::expect_identical(
+    ledgr_history_matrix(expired_long), expired
+  )
+
+  # The compiled boundary can expose its exact source-value accesses for a
+  # structural test without retaining them in an ordinary result. BBB has no
+  # sessions 3-4: close carries session 2, while volume reads only 3-5.
+  trace_one <- function(field, carry, allowed) {
+    rows <- unname(owner_substrate$instrument_index["BBB"])
+    columns <- 3:5
+    masks <- ledgr:::ledgr_history_bar_mask_view(
+      owner_substrate, rows, columns, 5L, carry
+    )
+    ledgr:::ledgr_history_value_slice(
+      owner_substrate$bars[[field]], rows, columns, masks,
+      owner_substrate$bar_gap_runs[[field]], carry, allowed, 0L,
+      names(owner_substrate$pulse_index)[columns], "BBB",
+      trace_access = TRUE
+    )$source_access
+  }
+  # Linear indexes in the 3-row source plane: requested 3,4,5 and, for
+  # carried close cells, their session-2 source.
+  testthat::expect_identical(trace_one("close", 5L, TRUE), c(8L, 5L, 11L, 5L, 14L))
+  testthat::expect_identical(trace_one("volume", 0L, FALSE), c(8L, 11L, 14L))
+  compact_source <- readLines(
+    testthat::test_path("..", "..", "src", "history_compact.cpp"), warn = FALSE
+  )
+  start <- grep("SEXP ledgr_cpp_history_bar_compact", compact_source, fixed = TRUE)[[1L]]
+  compact_source <- compact_source[start:length(compact_source)]
+  testthat::expect_identical(sum(grepl("stored[", compact_source, fixed = TRUE)), 1L)
 
   local({
     original_slice <- ledgr:::ledgr_history_value_slice
     seen <- list()
     testthat::local_mocked_bindings(
-      ledgr_history_value_slice = function(stored, rows, columns, masks,
-                                           max_carry_sessions,
+      ledgr_history_value_slice = function(stored, rows, columns, masks, gaps,
+                                           max_carry_sessions, carry_allowed,
+                                           min_observations,
                                            axis_names, instrument_ids,
-                                           manifestation = "matrix") {
+                                           manifestation = "matrix",
+                                           trace_access = FALSE) {
         seen[[length(seen) + 1L]] <<- list(
           rows = rows, columns = columns,
           dependency_first = masks$dependency_first,
           max_carry_sessions = max_carry_sessions
         )
         original_slice(
-          stored, rows, columns, masks, max_carry_sessions,
+          stored, rows, columns, masks, gaps,
+          max_carry_sessions, carry_allowed, min_observations,
           axis_names, instrument_ids,
-          manifestation = manifestation
+          manifestation = manifestation, trace_access = trace_access
         )
       },
       .package = "ledgr"

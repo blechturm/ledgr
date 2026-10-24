@@ -1454,6 +1454,13 @@ ledgr_history_substrate <- function(bars,
   bars_matrix <- ledgr_history_substrate_bar_matrices(
     bars, instrument_ids, axis
   )
+  bar_gap_runs <- stats::setNames(
+    lapply(
+      c("open", "high", "low", "close", "volume"),
+      function(field) ledgr_cpp_history_gap_runs(bars_matrix[[field]])
+    ),
+    c("open", "high", "low", "close", "volume")
+  )
   # The fold reads facts through this diagonal plan. Its declared families
   # and membership headers (with completeness) are the substrate's family
   # metadata; the session calendar is held once, as `sessions` below.
@@ -1475,6 +1482,10 @@ ledgr_history_substrate <- function(bars,
       axis = axis,
       pulse_index = stats::setNames(seq_along(axis), ledgr_projection_pulse_names(axis)),
       bars = bars_matrix,
+      # Sparse maximal non-finite runs are prepared once with the immutable
+      # source. Ordinary reads use them to distinguish leading from expired
+      # gaps without touching source values before the bounded carry range.
+      bar_gap_runs = bar_gap_runs,
       segments = segments,
       segment_counts = segment_counts,
       sessions = availability_data$sessions,
