@@ -64,7 +64,10 @@ ledgr_history_prepare_masks <- function(substrate, knowledge, instrument_idx, bl
   expected <- matrix(TRUE, nrow = n_rows, ncol = n_axis)
   terminal_first <- rep.int(n_axis + 1L, n_rows)
   if (n_rows == 0L || n_axis == 0L) {
-    return(list(expected = expected, terminal_first = terminal_first))
+    return(list(
+      expected = expected, terminal_first = terminal_first,
+      barrier_runs = ledgr_cpp_history_false_runs(expected)
+    ))
   }
   candidates <- function(family, test) {
     segments <- substrate$segments[[family]]
@@ -84,7 +87,11 @@ ledgr_history_prepare_masks <- function(substrate, knowledge, instrument_idx, bl
     )
     terminal_first[rows] <- as.integer(n_axis + 1L - rowSums(terminal))
   }
-  list(expected = expected, terminal_first = terminal_first)
+  list(
+    expected = expected,
+    terminal_first = terminal_first,
+    barrier_runs = ledgr_cpp_history_false_runs(expected)
+  )
 }
 
 # Carry sources for one field over the whole prepared axis, through the
@@ -531,16 +538,22 @@ ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
   } else {
     1L
   }
+  dependency_columns <- if (length(columns) > 0L) {
+    seq.int(dependency_first, columns[[length(columns)]])
+  } else {
+    integer()
+  }
   late <- ledgr_history_late_epochs(substrate)
   late_rows <- match(
     ledgr_history_memo(substrate)$late_instruments, rows, nomatch = 0L
   )
   late_rows <- late_rows[late_rows > 0L]
   override_expected <- matrix(
-    TRUE, nrow = length(late_rows), ncol = length(substrate$axis)
+    TRUE, nrow = length(late_rows), ncol = length(dependency_columns)
   )
   override_terminal <- rep.int(length(substrate$axis) + 1L, length(late_rows))
   keep <- logical(length(late_rows))
+  override_barriers <- vector("list", length(late_rows))
   cutoff <- if (length(late_rows) > 0L) {
     as.numeric(substrate$axis[[cutoff_col]])
   } else {
@@ -554,16 +567,36 @@ ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
     if (epoch >= length(epochs)) next
     overlay <- ledgr_history_overlay_masks(substrate, instrument, epoch, epochs)
     keep[[at]] <- TRUE
-    override_expected[at, ] <- overlay$expected[1L, ]
+    override_expected[at, ] <- overlay$expected[1L, dependency_columns]
     override_terminal[[at]] <- overlay$terminal_first[[1L]]
+    override_barriers[[at]] <- overlay$barrier_runs
+  }
+  override_barriers <- override_barriers[keep]
+  barrier_count <- vapply(
+    override_barriers, function(x) x$count[[1L]], integer(1L)
+  )
+  barrier_off <- if (length(barrier_count) > 0L) {
+    cumsum(c(1L, head(barrier_count, -1L)))
+  } else {
+    integer()
   }
   list(
     expected = masks$expected,
     terminal_first = masks$terminal_first,
+    barrier_runs = masks$barrier_runs,
     dependency_first = as.integer(dependency_first),
     override_row = as.integer(late_rows[keep]),
     override_expected = override_expected[keep, , drop = FALSE],
-    override_terminal = as.integer(override_terminal[keep])
+    override_terminal = as.integer(override_terminal[keep]),
+    override_barrier_runs = list(
+      off = as.integer(barrier_off), count = as.integer(barrier_count),
+      start = as.integer(unlist(lapply(
+        override_barriers, function(x) x$start
+      ), use.names = FALSE)),
+      end = as.integer(unlist(lapply(
+        override_barriers, function(x) x$end
+      ), use.names = FALSE))
+    )
   )
 }
 
@@ -578,6 +611,10 @@ ledgr_history_value_slice <- function(stored, rows, columns, masks, gaps,
     masks$expected, as.integer(masks$terminal_first),
     as.integer(masks$dependency_first), as.integer(masks$override_row),
     masks$override_expected, as.integer(masks$override_terminal),
+    masks$barrier_runs$off, masks$barrier_runs$count,
+    masks$barrier_runs$start, masks$barrier_runs$end,
+    masks$override_barrier_runs$off, masks$override_barrier_runs$count,
+    masks$override_barrier_runs$start, masks$override_barrier_runs$end,
     gaps$off, gaps$count, gaps$start, gaps$end,
     as.integer(max_carry_sessions), isTRUE(carry_allowed),
     as.integer(min_observations),

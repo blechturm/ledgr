@@ -4,8 +4,12 @@ ledgr_cpp_history_gap_runs <- function(stored_sxp) {
   .Call(`_ledgr_ledgr_cpp_history_gap_runs`, stored_sxp)
 }
 
-ledgr_cpp_history_bar_compact <- function(stored_sxp, rows_sxp, columns_sxp, expected_sxp, terminal_first_sxp, dependency_first_sxp, override_row_sxp, override_expected_sxp, override_terminal_sxp, gap_off_sxp, gap_count_sxp, gap_start_sxp, gap_end_sxp, max_carry_sessions_sxp, carry_allowed_sxp, min_observations_sxp, axis_names_sxp, instrument_ids_sxp, wide_sxp, trace_access_sxp) {
-  .Call(`_ledgr_ledgr_cpp_history_bar_compact`, stored_sxp, rows_sxp, columns_sxp, expected_sxp, terminal_first_sxp, dependency_first_sxp, override_row_sxp, override_expected_sxp, override_terminal_sxp, gap_off_sxp, gap_count_sxp, gap_start_sxp, gap_end_sxp, max_carry_sessions_sxp, carry_allowed_sxp, min_observations_sxp, axis_names_sxp, instrument_ids_sxp, wide_sxp, trace_access_sxp)
+ledgr_cpp_history_false_runs <- function(expected_sxp) {
+  .Call(`_ledgr_ledgr_cpp_history_false_runs`, expected_sxp)
+}
+
+ledgr_cpp_history_bar_compact <- function(stored_sxp, rows_sxp, columns_sxp, expected_sxp, terminal_first_sxp, dependency_first_sxp, override_row_sxp, override_expected_sxp, override_terminal_sxp, barrier_off_sxp, barrier_count_sxp, barrier_start_sxp, barrier_end_sxp, override_barrier_off_sxp, override_barrier_count_sxp, override_barrier_start_sxp, override_barrier_end_sxp, gap_off_sxp, gap_count_sxp, gap_start_sxp, gap_end_sxp, max_carry_sessions_sxp, carry_allowed_sxp, min_observations_sxp, axis_names_sxp, instrument_ids_sxp, wide_sxp, trace_access_sxp) {
+  .Call(`_ledgr_ledgr_cpp_history_bar_compact`, stored_sxp, rows_sxp, columns_sxp, expected_sxp, terminal_first_sxp, dependency_first_sxp, override_row_sxp, override_expected_sxp, override_terminal_sxp, barrier_off_sxp, barrier_count_sxp, barrier_start_sxp, barrier_end_sxp, override_barrier_off_sxp, override_barrier_count_sxp, override_barrier_start_sxp, override_barrier_end_sxp, gap_off_sxp, gap_count_sxp, gap_start_sxp, gap_end_sxp, max_carry_sessions_sxp, carry_allowed_sxp, min_observations_sxp, axis_names_sxp, instrument_ids_sxp, wide_sxp, trace_access_sxp)
 }
 
 ledgr_cpp_spot_fifo_batch <- function(run_id_sxp, fill_inst_idx_sxp, fill_instrument_id_sxp, fill_side_sxp, fill_qty_sxp, fill_price_sxp, fill_fee_sxp, fill_ts_utc_sxp, event_seq_start_sxp, positions_sxp, cash_sxp, lot_inst_idx_sxp, lot_qty_sxp, lot_price_sxp, cost_basis_by_inst_sxp, total_cost_basis_sxp, realized_pnl_sxp, realized_comp_sxp) {

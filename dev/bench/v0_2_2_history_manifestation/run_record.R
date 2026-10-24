@@ -37,7 +37,8 @@ days <- calendar[as.integer(format(calendar, "%u")) <= 5L][seq_len(n_session)]
 pulses <- as.POSIXct(paste(days, "21:00:00"), tz = "UTC")
 ids <- sprintf("I%04d", seq_len(n_instrument_max))
 
-make_fixture <- function(source_columns, label, instrument_ids) {
+make_fixture <- function(source_columns, label, instrument_ids,
+                         long_gap_restart = FALSE) {
   n_time <- length(source_columns)
   n_instrument <- length(instrument_ids)
   instrument <- rep(seq_len(n_instrument), each = n_time)
@@ -46,6 +47,13 @@ make_fixture <- function(source_columns, label, instrument_ids) {
   close_value <- 50 + instrument / 100 + global_session / 1000
   keep <- global_session <= 5L |
     ((instrument * 131L + global_session * 17L) %% 997L != 0L)
+  if (isTRUE(long_gap_restart)) {
+    if (length(instrument_ids) != 2L || length(source_columns) < 4L) {
+      stop("The long-gap fixture requires two instruments and four sessions.")
+    }
+    keep <- (instrument == 1L & global_session == source_columns[[1L]]) |
+      (instrument == 2L & global_session %in% source_columns[c(1L, length(source_columns))])
+  }
   bars <- data.frame(
     instrument_id = instrument_ids[instrument[keep]],
     ts_utc = pulses[global_session[keep]],
@@ -77,12 +85,36 @@ make_fixture <- function(source_columns, label, instrument_ids) {
   membership <- ledgr_facts_membership_snapshots(
     members, universe_id = "U", complete = TRUE
   )
+  lifetime <- if (isTRUE(long_gap_restart)) {
+    ledgr_facts_lifetime(data.frame(
+      instrument_id = rep(instrument_ids[[1L]], 2L),
+      effective_from = c(
+        pulses[source_columns[[2L]]] - 6.5 * 3600,
+        pulses[source_columns[[4L]]] - 6.5 * 3600
+      ),
+      effective_to = c(
+        pulses[source_columns[[3L]]] - 6.5 * 3600,
+        pulses[source_columns[[length(source_columns)]]] - 6.5 * 3600
+      ),
+      knowledge_time = c(
+        pulses[source_columns[[1L]]] - 6.5 * 3600,
+        pulses[source_columns[[length(source_columns)]]] + 86400
+      ),
+      assertion = "known_inactive", terminal_event = NA_character_,
+      source = "history_manifestation_long_gap",
+      stringsAsFactors = FALSE
+    ))
+  } else {
+    NULL
+  }
   db_path <- tempfile(pattern = paste0("ledgr-history-", label, "-"),
                       fileext = ".duckdb")
   snapshot <- ledgr_snapshot_from_df(
     bars, data.frame(instrument_id = instrument_ids), db_path = db_path,
     snapshot_id = paste0("history-manifestation-", label),
-    facts = ledgr_facts(sessions, membership),
+    facts = do.call(ledgr_facts, Filter(Negate(is.null), list(
+      sessions, membership, lifetime
+    ))),
     price_basis = "split_adjusted"
   )
   experiment <- ledgr_experiment(
@@ -118,6 +150,18 @@ history_memo_names <- function(ctx) {
   ), method = "radix")
 }
 
+history_memo_state <- function(ctx) {
+  memo <- ledgr:::ledgr_history_memo(
+    ledgr:::ledgr_history_context_view(ctx)$service$substrate
+  )
+  keys <- sort(ls(memo, all.names = TRUE), method = "radix")
+  # Round-trip once to break aliases, then compare semantic R values. Raw
+  # serialization bytes can change when an ALTREP is merely materialized.
+  unserialize(serialize(
+    mget(keys, envir = memo, inherits = FALSE), NULL, version = 3L
+  ))
+}
+
 allocated_bytes <- function(fn) {
   path <- tempfile(fileext = ".mem")
   on.exit(unlink(path), add = TRUE)
@@ -151,14 +195,15 @@ measure <- function(ctx, path, instruments, lookback, axis, size, replicate,
   # The context owner has completed immutable preparation before this public
   # boundary. The allocation call below is therefore a genuine first read,
   # not a hidden memo warm-up; no ordinary call may change the owner memo.
-  memo_before <- history_memo_names(ctx)
-  if (!"base_masks" %in% memo_before) {
+  memo_names_before <- history_memo_names(ctx)
+  memo_before <- history_memo_state(ctx)
+  if (!"base_masks" %in% memo_names_before) {
     stop("History owner summaries were not prepared before the public read.")
   }
   allocation <- allocated_bytes(fn)
   value <- allocation$value
   timing <- clock_us(fn, times = times)
-  memo_after <- history_memo_names(ctx)
+  memo_after <- history_memo_state(ctx)
   if (!identical(memo_after, memo_before)) {
     stop("An ordinary public history read performed hidden owner preparation.")
   }
@@ -293,28 +338,53 @@ rownames(slopes) <- NULL
 # Select the instrument-axis 500 x 252 observations, which are unambiguous.
 short <- make_fixture((n_session - 251L):n_session, "short", focal_ids)
 on.exit(close_fixture(short), add = TRUE)
-source_scale <- do.call(rbind, lapply(c("matrix", "wide"), function(path) {
-  full_fn <- function() read_path(
-    full$ctx, path, focal_ids, 252L
-  )
-  short_fn <- function() read_path(
-    short$ctx, path, focal_ids, 252L
-  )
+gap_full <- make_fixture(
+  seq_len(n_session), "gap-full", ids[1:2], long_gap_restart = TRUE
+)
+gap_short <- make_fixture(
+  (n_session - 251L):n_session, "gap-short", ids[1:2],
+  long_gap_restart = TRUE
+)
+on.exit(close_fixture(gap_full), add = TRUE)
+on.exit(close_fixture(gap_short), add = TRUE)
+
+source_scale_pair <- function(full_ctx, short_ctx, instruments, lookback,
+                              path, scenario) {
+  full_fn <- function() read_path(full_ctx, path, instruments, lookback)
+  short_fn <- function() read_path(short_ctx, path, instruments, lookback)
+  full_memo <- history_memo_state(full_ctx)
+  short_memo <- history_memo_state(short_ctx)
+  if (!"base_masks" %in% history_memo_names(full_ctx) ||
+      !"base_masks" %in% history_memo_names(short_ctx)) {
+    stop("Source-scale contexts were not owner-prepared before public reads.")
+  }
   timing <- microbenchmark::microbenchmark(
     source_1260 = full_fn(), source_252 = short_fn(),
     times = 100L, unit = "us"
   )
+  if (!identical(full_memo, history_memo_state(full_ctx)) ||
+      !identical(short_memo, history_memo_state(short_ctx))) {
+    stop("A source-scale public read changed nested owner memo state.")
+  }
   medians <- stats::aggregate(time ~ expr, data = timing, FUN = stats::median)
   full_us <- medians$time[medians$expr == "source_1260"] / 1000
   short_us <- medians$time[medians$expr == "source_252"] / 1000
   data.frame(
-    path = path,
+    scenario = scenario, path = path,
     median_us_source_1260 = full_us,
     median_us_source_252 = short_us,
     absolute_delta_us = abs(full_us - short_us),
     stringsAsFactors = FALSE
   )
-}))
+}
+source_scale <- do.call(rbind, c(
+  lapply(c("matrix", "wide"), function(path) source_scale_pair(
+    full$ctx, short$ctx, focal_ids, 252L, path, "complete"
+  )),
+  lapply(c("matrix", "wide"), function(path) source_scale_pair(
+    gap_full$ctx, gap_short$ctx, ids[[1L]], 1L, path, "gap_restart"
+  ))
+))
 
 environment <- data.frame(
   product_commit = Sys.getenv("LEDGR_PRODUCT_COMMIT"),

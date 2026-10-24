@@ -180,12 +180,75 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
   # carried close cells, their session-2 source.
   testthat::expect_identical(trace_one("close", 5L, TRUE), c(8L, 5L, 11L, 5L, 14L))
   testthat::expect_identical(trace_one("volume", 0L, FALSE), c(8L, 11L, 14L))
+  late_row <- unname(owner_substrate$instrument_index["CCC"])
+  late_masks <- ledgr:::ledgr_history_bar_mask_view(
+    owner_substrate, late_row, 5L, 5L, 0L
+  )
+  testthat::expect_identical(ncol(late_masks$override_expected), 1L)
+  testthat::expect_lt(ncol(late_masks$override_expected), length(owner_substrate$axis))
   compact_source <- readLines(
     testthat::test_path("..", "..", "src", "history_compact.cpp"), warn = FALSE
   )
   start <- grep("SEXP ledgr_cpp_history_bar_compact", compact_source, fixed = TRUE)[[1L]]
   compact_source <- compact_source[start:length(compact_source)]
-  testthat::expect_identical(sum(grepl("stored[", compact_source, fixed = TRUE)), 1L)
+  source_mentions <- trimws(compact_source[
+    grepl("stored_sxp", compact_source, fixed = TRUE)
+  ])
+  testthat::expect_identical(source_mentions, c(
+    "SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,",
+    "ledgr_history_cpp_check(TYPEOF(stored_sxp) == REALSXP &&",
+    "Rf_isMatrix(stored_sxp),",
+    "SEXP stored_dim = Rf_getAttrib(stored_sxp, R_DimSymbol);",
+    "return REAL_ELT(stored_sxp, index);"
+  ))
+
+  # A requested session after a known inactive interval is a lifetime restart,
+  # even when the interval itself lies outside the returned window. The compact
+  # selection reason must match explicit long for carry, no-carry and volume.
+  restart_axis <- ws43_history_axis(4L)
+  restart_lifetime <- ledgr_facts_lifetime(data.frame(
+    instrument_id = "AAA",
+    effective_from = restart_axis[[2L]] - 6.5 * 3600,
+    effective_to = restart_axis[[3L]] - 6.5 * 3600,
+    knowledge_time = restart_axis[[1L]] - 6.5 * 3600,
+    assertion = "known_inactive",
+    terminal_event = NA_character_, source = "LTB-0488"
+  ))
+  restart_reason <- function(field, policy) {
+    substrate <- ws43_history_substrate(
+      c(10, NA, NA, 13),
+      lifetime = restart_lifetime, policy = policy
+    )
+    service <- ledgr:::ledgr_history_read_service(substrate)
+    view <- ledgr:::ledgr_history_view(service, 3L)
+    compact_plan <- ledgr:::ledgr_history_read_plan(
+      view, "bar", field, 1L, "AAA", 1L, 1L, "AAA",
+      list(member = TRUE, admissible = TRUE, target_restriction_reason = ""),
+      diagnostic = FALSE,
+      manifestation = "matrix"
+    )
+    diagnostic_plan <- ledgr:::ledgr_history_read_plan(
+      view, "bar", field, 1L, "AAA", 1L, 1L, "AAA",
+      list(member = TRUE, admissible = TRUE, target_restriction_reason = ""),
+      diagnostic = TRUE,
+      manifestation = "long"
+    )
+    compact <- ledgr:::ledgr_history_matrix_from_plan(compact_plan)
+    diagnostic <- ledgr:::ledgr_history_plan_frame(diagnostic_plan, "long")
+    c(
+      compact = ledgr_history_info(compact)$selection$exclusion_reason,
+      diagnostic = ledgr_history_info(diagnostic)$selection$exclusion_reason
+    )
+  }
+  for (answer in list(
+    restart_reason("close", ledgr_history_policy(price_carry = 5L)),
+    restart_reason("close", ledgr_history_policy(price_carry = NULL)),
+    restart_reason("volume", ledgr_history_policy(price_carry = 5L))
+  )) {
+    testthat::expect_identical(
+      unname(answer), c("structural_exclusion", "structural_exclusion")
+    )
+  }
 
   local({
     original_slice <- ledgr:::ledgr_history_value_slice

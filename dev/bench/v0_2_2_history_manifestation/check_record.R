@@ -28,6 +28,9 @@ stopifnot(
   all(measurements$memo_stable),
   nrow(slopes) == 4L,
   all(slopes$exponent >= 0.65 & slopes$exponent <= 1.30),
+  identical(sort(unique(source_scale$scenario), method = "radix"),
+            c("complete", "gap_restart")),
+  all(table(source_scale$scenario, source_scale$path) == 1L),
   all(source_scale$absolute_delta_us <= 100),
   all(unlist(parity, use.names = FALSE))
 )
