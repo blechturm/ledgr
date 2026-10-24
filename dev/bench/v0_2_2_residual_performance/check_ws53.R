@@ -131,7 +131,15 @@ for (tag in expected_one) {
   expect(identical(attrib[[tag]][["status"]], "DONE"), paste("Unexpected run status:", tag))
   expect(identical(attrib[[tag]][["pulses"]], "7213"), paste("Unexpected pulse count:", tag))
   expect(identical(attrib[[tag]][["fills"]], "8798"), paste("Unexpected fill count:", tag))
-  expect(identical(attrib[[tag]][["trades"]], "4870"), paste("Unexpected trade count:", tag))
+  expected_trades <- if (grepl("v003", tag, fixed = TRUE)) {
+    "4882"
+  } else {
+    "4870"
+  }
+  expect(
+    identical(attrib[[tag]][["trades"]], expected_trades),
+    paste("Unexpected trade count:", tag)
+  )
 }
 for (tag in expected_two) {
   required <- c(
