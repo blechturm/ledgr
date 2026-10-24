@@ -1,0 +1,5 @@
+"scenario","path","median_us_source_1260","median_us_source_252","absolute_delta_us"
+"complete","matrix",601.3,610.35,9.05000000000007
+"complete","wide",688.2,682.45,5.75
+"gap_restart","matrix",137.3,136.3,1
+"gap_restart","wide",141.05,138.4,2.65000000000001

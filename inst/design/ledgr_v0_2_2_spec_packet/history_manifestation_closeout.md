@@ -2,7 +2,7 @@
 
 ## Outcome
 
-LDG-3105 is implemented at `a22381d5` and corrected at `00a3d5bf`. Ordinary
+LDG-3105 is implemented at `a22381d5` and corrected through `19e65491`. Ordinary
 `ledgr_history_matrix()` and `ledgr_history_frame(..., layout = "wide")`
 reads are direct sibling manifestations of one causal request. They retain
 the values, ordered axis, included IDs, complete selection table, policy and
@@ -25,15 +25,18 @@ implemented correction therefore fuses the bounded bar copy, permitted carry,
 finite counts, carried counts and before-window flag in one compiled pass.
 
 The context owner prepares immutable lifetime, terminal and late-knowledge
-mask summaries before a public pulse context is exposed. The substrate also
-holds sparse maximal non-finite bar runs, whose storage grows with gaps rather
-than source cells. The compiled pass reads requested cells and, only for a
-missing price cell, the one finite source named by a gap run when it falls
-inside the declared carry horizon. It does not create a dense count plane, a
-prepared count index, field-position evidence, an opposite-orientation plane,
-a result cache or a second whole-history carry patch. The final matrix receives
-its dimensions and names at allocation, avoiding an otherwise unnecessary full
-numeric copy. Wide output allocates its final numeric columns directly.
+mask summaries before a public pulse context is exposed. Lifetime barriers and
+non-finite bars are stored as sparse maximal runs. Their storage grows with
+intervals and gaps rather than source cells, and the compiled reader queries
+them without walking across an omitted interval. Only dependency columns
+receive late-knowledge override state. The compiled pass reads requested cells
+through one traceable source handle and, only for a missing price cell, the one
+finite source named by a gap run when it falls inside the declared carry
+horizon. It does not create a dense count plane, a prepared count index,
+field-position evidence, an opposite-orientation plane, a result cache or a
+second whole-history carry patch. The final matrix receives its dimensions and
+names at allocation, avoiding an otherwise unnecessary full numeric copy. Wide
+output allocates its final numeric columns directly.
 
 Feature manifestation uses the prepared feature values and sparse projection
 records over the requested rows and columns. It derives compact admission and
@@ -42,24 +45,27 @@ columns. The long bar and feature paths retain the existing diagnostic oracle.
 
 ## Binding resource record
 
-The corrected registered installed-package record is
-`dev/bench/v0_2_2_history_manifestation/evidence/00a3d5bf/`. It ran on Windows
+The final registered installed-package record is
+`dev/bench/v0_2_2_history_manifestation/evidence/19e65491/`. It ran on Windows
 11, R 4.6.1, High performance power plan and process affinity `0xFFFF`.
 `check_record.R` returns `LEDGR_HISTORY_MANIFESTATION_OK`.
 
 | Gate | Matrix | Wide | Bound |
 | --- | ---: | ---: | ---: |
-| 500 x 252 median | 0.556 ms | 0.598 ms | <= 0.750 ms |
+| 500 x 252 median | 0.621 ms | 0.658 ms | <= 0.750 ms |
 | returned-payload copies | 1 | 1 | <= 2.5 |
 | digest calls | 0 | 0 | 0 |
-| instrument exponent, 500/1,166/2,332 x 252 | 0.937 | 0.946 | 0.65-1.30 |
-| session exponent, 500 x 252/504/1,260 | 0.826 | 0.720 | 0.65-1.30 |
-| 252-versus-1,260-source median delta | 0.0043 ms | 0.0111 ms | <= 0.100 ms |
+| instrument exponent, 500/1,166/2,332 x 252 | 0.961 | 0.962 | 0.65-1.30 |
+| session exponent, 500 x 252/504/1,260 | 0.946 | 0.817 | 0.65-1.30 |
+| complete 252-versus-1,260-source delta | 0.0091 ms | 0.0058 ms | <= 0.100 ms |
+| long-gap/restart source delta | 0.0010 ms | 0.0027 ms | <= 0.100 ms |
 
-The focal allocation ratios are 1.268 numeric-payload equivalents for matrix
-and 1.312 for wide after the allocation witness. The runner proves that owner
-mask summaries already exist before the first public read and that neither
-that read nor subsequent clocks change the memo. The instrument-growth
+The focal steady-state allocation ratios are 1.264 numeric-payload equivalents
+for matrix and 1.308 for wide after the first-read allocation witness. The
+runner proves that owner mask summaries already exist before the first public
+read and uses semantic deep copies to show that neither that read nor
+subsequent clocks change the memo. It checks both complete and adversarial
+long-gap/restart contexts. The instrument-growth
 fixtures have matching decision
 universe and requested widths, so the retained complete selection table is
 part of each measured shape rather than an unlabelled larger axis.
@@ -81,6 +87,11 @@ LCL-0479 / LTB-0488 now pins:
   memo growth on that read;
 - exact requested source-value accesses at the fused manifestation boundary,
   including bounded carry dependencies;
+- identical compact and explicit-long lifetime-restart classification when an
+  inactive interval lies before the returned window, with and without carry
+  and for a non-price field;
+- sparse lifetime barriers, dependency-width late overlays and one auditable
+  source handle rather than a direct compiled source bypass;
 - structural provenance under registered ledgr transforms and the documented
   attribute-preserving base-operation boundary;
 - absence of a finite-count or whole-history patch memo; and

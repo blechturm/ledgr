@@ -25,7 +25,8 @@ $env:LEDGR_BENCH_LIBRARY = '<candidate-library>'
 
 The checker binds the accepted amendment's three-record median at 500 by 252,
 allocation, zero-digest, two-axis growth, fixed-window source-history
-sensitivity and matrix/wide/long parity gates. `payload_copies` counts the
+sensitivity in both complete and long-gap/restart cases, and matrix/wide/long
+parity gates. `payload_copies` counts the
 returned numeric payload once and every additional
 allocation at least 90 percent of its size. `allocated_ratio` separately
 discloses all smaller allocation overhead recorded by `Rprofmem()`.
