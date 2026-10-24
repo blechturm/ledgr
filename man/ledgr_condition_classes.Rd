@@ -157,7 +157,6 @@
 \alias{ledgr_duplicate_feature_id}
 \alias{ledgr_duplicate_grid_labels}
 \alias{ledgr_duplicate_grid_rows}
-\alias{ledgr_duplicate_param_grid_labels}
 \alias{ledgr_empty_warmup_input}
 \alias{ledgr_event_buffer_capacity_exceeded}
 \alias{ledgr_fact_civil_date_unresolved}
@@ -232,7 +231,6 @@
 \alias{ledgr_invalid_parallel_backend}
 \alias{ledgr_invalid_parallel_workers}
 \alias{ledgr_invalid_param_constructor}
-\alias{ledgr_invalid_param_grid}
 \alias{ledgr_invalid_param_reference}
 \alias{ledgr_invalid_parameterized_bundle}
 \alias{ledgr_invalid_post_risk_targets}
@@ -1007,8 +1005,6 @@ grid labels evidence.
 \item \code{ledgr_duplicate_grid_labels} reports duplicate grid labels evidence.
 \item \code{ledgr_duplicate_grid_rows} reports duplicate rectangular-grid row
 evidence.
-\item \code{ledgr_duplicate_param_grid_labels} reports duplicate param grid labels
-evidence.
 \item \code{ledgr_empty_warmup_input} reports the empty warmup input boundary.
 \item \code{ledgr_event_buffer_capacity_exceeded} reports the event buffer capacity
 exceeded boundary.
@@ -1103,7 +1099,6 @@ rectangular-grid value.
 \item \code{ledgr_invalid_parallel_workers} reports invalid parallel workers input.
 \item \code{ledgr_invalid_param_constructor} reports invalid param constructor
 input.
-\item \code{ledgr_invalid_param_grid} reports invalid param grid input.
 \item \code{ledgr_invalid_param_reference} reports invalid param reference input.
 \item \code{ledgr_invalid_parameterized_bundle} reports invalid parameterized
 bundle input.

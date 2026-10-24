@@ -65,9 +65,19 @@ testthat::test_that("rectangular strategy-grid boundaries fail before execution"
 
 testthat::test_that("[LTB-0496] the retired parameter-grid API is absent", {
   exports <- getNamespaceExports("ledgr")
-  retired <- paste0("ledgr_", "param_grid")
-  testthat::expect_false(retired %in% exports)
-  testthat::expect_false(exists(retired, envir = asNamespace("ledgr"), inherits = FALSE))
+  retired <- c(
+    paste0("ledgr_", "param_grid"),
+    paste0("ledgr_invalid_", "param_grid"),
+    paste0("ledgr_duplicate_", "param_grid", "_labels")
+  )
+  testthat::expect_false(any(retired %in% exports))
+  testthat::expect_false(any(vapply(
+    retired,
+    exists,
+    logical(1),
+    envir = asNamespace("ledgr"),
+    inherits = FALSE
+  )))
   testthat::expect_true("ledgr_sweep" %in% exports)
   testthat::expect_false("ledgr_tune" %in% exports)
 
@@ -82,7 +92,8 @@ testthat::test_that("[LTB-0496] the retired parameter-grid API is absent", {
   )
   files <- files[file.exists(files)]
   occurrences <- vapply(files, function(path) {
-    any(grepl(retired, readLines(path, warn = FALSE), fixed = TRUE))
+    text <- readLines(path, warn = FALSE)
+    any(vapply(retired, function(name) any(grepl(name, text, fixed = TRUE)), logical(1)))
   }, logical(1))
   testthat::expect_false(any(occurrences), info = paste(files[occurrences], collapse = ", "))
 })
@@ -141,10 +152,30 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
     class = "ledgr_invalid_executable_grid"
   )
   rectangular <- tidyr::crossing(
-    n = c(1L, 2L), threshold = 0.1, enabled = TRUE, method = "a"
+    n = c(1L, 2L), threshold = c(0.1, 0.2), enabled = TRUE, method = "a"
   )
   constructed <- ledgr_strategy_grid(
-    n = c(1L, 2L), threshold = 0.1, enabled = TRUE, method = "a"
+    n = c(1L, 2L), threshold = c(0.1, 0.2), enabled = TRUE, method = "a"
+  )
+
+  canonical_calls <- 0L
+  original_canonical_json <- ledgr:::canonical_json
+  normalized <- testthat::with_mocked_bindings(
+    ledgr_executable_grid_normalize(rectangular),
+    canonical_json = function(x, ...) {
+      canonical_calls <<- canonical_calls + 1L
+      original_canonical_json(x, ...)
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_identical(canonical_calls, nrow(rectangular))
+  testthat::expect_identical(
+    vapply(normalized$params, function(x) x$strategy_params$n, integer(1)),
+    c(1L, 1L, 2L, 2L)
+  )
+  testthat::expect_identical(
+    vapply(normalized$params, function(x) x$strategy_params$threshold, double(1)),
+    c(0.1, 0.2, 0.1, 0.2)
   )
 
   calls <- 0L
@@ -159,15 +190,36 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
   from_frame <- ledgr_sweep(exp, rectangular, seed = 901L)
   from_constructor <- ledgr_sweep(exp, constructed, seed = 901L)
   testthat::expect_identical(calls, 1L)
-  testthat::expect_identical(from_frame$candidate_id, from_constructor$candidate_id)
-  testthat::expect_identical(from_frame$params, from_constructor$params)
-  testthat::expect_identical(from_frame$feature_params, list(list(), list()))
-  testthat::expect_identical(from_frame$execution_seed, from_constructor$execution_seed)
-  testthat::expect_identical(from_frame$final_equity, from_constructor$final_equity)
   testthat::expect_identical(
-    ledgr:::ledgr_sweep_storage_candidate_rows(from_frame, sweep_id = "same"),
-    ledgr:::ledgr_sweep_storage_candidate_rows(from_constructor, sweep_id = "same")
+    vapply(from_frame$params, function(x) x$n, integer(1)),
+    c(1L, 1L, 2L, 2L)
   )
+  testthat::expect_identical(
+    vapply(from_constructor$params, function(x) x$n, integer(1)),
+    c(1L, 2L, 1L, 2L)
+  )
+  testthat::expect_setequal(from_frame$candidate_id, from_constructor$candidate_id)
+  constructor_match <- match(from_frame$candidate_id, from_constructor$candidate_id)
+  testthat::expect_false(anyNA(constructor_match))
+  aligned_constructor <- from_constructor[constructor_match, , drop = FALSE]
+  testthat::expect_identical(from_frame$params, aligned_constructor$params)
+  testthat::expect_identical(from_frame$feature_params, rep(list(list()), 4L))
+  testthat::expect_identical(from_frame$execution_seed, aligned_constructor$execution_seed)
+  testthat::expect_identical(from_frame$final_equity, aligned_constructor$final_equity)
+  frame_rows <- ledgr:::ledgr_sweep_storage_candidate_rows(from_frame, sweep_id = "same")
+  constructor_rows <- ledgr:::ledgr_sweep_storage_candidate_rows(from_constructor, sweep_id = "same")
+  constructor_rows <- constructor_rows[
+    match(frame_rows$candidate_id, constructor_rows$candidate_id),
+    ,
+    drop = FALSE
+  ]
+  persisted_payload <- setdiff(names(frame_rows), "candidate_row")
+  testthat::expect_identical(
+    frame_rows[persisted_payload],
+    constructor_rows[persisted_payload]
+  )
+  testthat::expect_identical(frame_rows$candidate_row, seq_len(nrow(frame_rows)))
+  testthat::expect_identical(constructor_rows$candidate_row, constructor_match)
 
   saved_id <- ledgr_sweep_save(from_frame, snapshot, sweep_id = "rectangular")
   reopened <- ledgr_sweep_open(snapshot, saved_id)
@@ -175,8 +227,9 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
   testthat::expect_identical(reopened$feature_params, from_frame$feature_params)
   testthat::expect_identical(reopened$execution_seed, from_frame$execution_seed)
 
-  live_run <- ledgr_promote(exp, ledgr_candidate(from_frame, 1L), run_id = "rect_live")
-  reopened_run <- ledgr_promote(exp, ledgr_candidate(reopened, 1L), run_id = "rect_reopened")
+  promoted_id <- from_frame$candidate_id[[1L]]
+  live_run <- ledgr_promote(exp, ledgr_candidate(from_frame, promoted_id), run_id = "rect_live")
+  reopened_run <- ledgr_promote(exp, ledgr_candidate(reopened, promoted_id), run_id = "rect_reopened")
   live_context <- ledgr_promotion_context(live_run)
   reopened_context <- ledgr_promotion_context(reopened_run)
   ignored <- c("run_id", "promoted_at_utc", "source_sweep")
@@ -217,14 +270,30 @@ testthat::test_that("[LTB-0495] sweep prints show readable parameter namespaces"
   sweep <- ledgr_sweep(exp, grid, seed = 71L)
   sweep$status <- c("DONE", "INCOMPLETE", "FAILED", "DONE")
   before <- serialize(sweep, NULL, version = 3L)
+  expect_namespace_rows <- function(text) {
+    testthat::expect_true(any(grepl(
+      '"{\\"qty\\":1}"   "{}"           strategy_only',
+      text,
+      fixed = TRUE
+    )))
+    testthat::expect_true(any(grepl(
+      '"{}"            "{\\"n\\":2}"    feature_only',
+      text,
+      fixed = TRUE
+    )))
+    testthat::expect_true(any(grepl(
+      '"{\\"qty\\":2}"   "{\\"n\\":3}"    composed',
+      text,
+      fixed = TRUE
+    )))
+  }
   for (width in c(60L, 140L)) {
     printed <- utils::capture.output(print(sweep, width = width))
     testthat::expect_true(any(grepl("strategy_params", printed, fixed = TRUE)))
     testthat::expect_true(any(grepl("feature_params", printed, fixed = TRUE)))
     header <- printed[grepl("candidate_id", printed, fixed = TRUE)][[1L]]
     testthat::expect_lt(regexpr("strategy_params", header, fixed = TRUE)[[1L]], regexpr("candidate_id", header, fixed = TRUE)[[1L]])
-    testthat::expect_true(any(grepl("{\\\"qty\\\":1}", printed, fixed = TRUE)))
-    testthat::expect_true(any(grepl("{\\\"n\\\":2}", printed, fixed = TRUE)))
+    expect_namespace_rows(printed)
   }
   testthat::expect_identical(serialize(sweep, NULL, version = 3L), before)
 
@@ -232,25 +301,29 @@ testthat::test_that("[LTB-0495] sweep prints show readable parameter namespaces"
   reopened <- ledgr_sweep_open(snapshot, sweep_id)
   testthat::expect_identical(reopened$status, sweep$status)
   reopened_text <- utils::capture.output(print(reopened, width = 60L))
-  testthat::expect_true(any(grepl("{\\\"qty\\\":1}", reopened_text, fixed = TRUE)))
-  testthat::expect_true(any(grepl("{\\\"n\\\":2}", reopened_text, fixed = TRUE)))
+  expect_namespace_rows(reopened_text)
 
-  candidate_text <- utils::capture.output(print(ledgr_candidate(sweep, 1L)))
+  candidate_text <- utils::capture.output(print(ledgr_candidate(sweep, 4L)))
   testthat::expect_lt(
     which(grepl("Strategy params", candidate_text, fixed = TRUE))[[1L]],
     which(grepl("Candidate ID", candidate_text, fixed = TRUE))[[1L]]
   )
-  review <- ledgr_sweep_review(sweep, rank_by = desc(total_return), n = 1L)
-  reopened_review <- ledgr_sweep_review(reopened, rank_by = desc(total_return), n = 1L)
+  testthat::expect_true(any(grepl("Strategy params:  {\"qty\":2}", candidate_text, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Feature params:   {\"n\":3}", candidate_text, fixed = TRUE)))
+  review <- ledgr_sweep_review(sweep, rank_by = desc(total_return), n = 4L)
+  reopened_review <- ledgr_sweep_review(reopened, rank_by = desc(total_return), n = 4L)
   for (name in names(review$top)) {
     testthat::expect_identical(reopened_review$top[[name]], review$top[[name]])
   }
   for (name in names(review$issues)) {
     testthat::expect_identical(reopened_review$issues[[name]], review$issues[[name]])
   }
-  review_text <- utils::capture.output(print(review, width = 140L))
-  testthat::expect_true(any(grepl("strategy_params", review_text, fixed = TRUE)))
-  testthat::expect_true(any(grepl("feature_params", review_text, fixed = TRUE)))
+  for (width in c(60L, 140L)) {
+    review_text <- utils::capture.output(print(review, width = width))
+    testthat::expect_true(any(grepl("strategy_params", review_text, fixed = TRUE)))
+    testthat::expect_true(any(grepl("feature_params", review_text, fixed = TRUE)))
+    expect_namespace_rows(review_text)
+  }
 
   long <- ledgr_grid_named(long = list(strategy = list(
     description = paste(rep("long-value", 20L), collapse = "-")

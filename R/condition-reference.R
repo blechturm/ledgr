@@ -692,8 +692,6 @@
 #' - `ledgr_duplicate_grid_labels` reports duplicate grid labels evidence.
 #' - `ledgr_duplicate_grid_rows` reports duplicate rectangular-grid row
 #'   evidence.
-#' - `ledgr_duplicate_param_grid_labels` reports duplicate param grid labels
-#'   evidence.
 #' - `ledgr_empty_warmup_input` reports the empty warmup input boundary.
 #' - `ledgr_event_buffer_capacity_exceeded` reports the event buffer capacity
 #'   exceeded boundary.
@@ -788,7 +786,6 @@
 #' - `ledgr_invalid_parallel_workers` reports invalid parallel workers input.
 #' - `ledgr_invalid_param_constructor` reports invalid param constructor
 #'   input.
-#' - `ledgr_invalid_param_grid` reports invalid param grid input.
 #' - `ledgr_invalid_param_reference` reports invalid param reference input.
 #' - `ledgr_invalid_parameterized_bundle` reports invalid parameterized
 #'   bundle input.
@@ -1036,7 +1033,6 @@
 #' @aliases ledgr_duplicate_feature_id
 #' @aliases ledgr_duplicate_grid_labels
 #' @aliases ledgr_duplicate_grid_rows
-#' @aliases ledgr_duplicate_param_grid_labels
 #' @aliases ledgr_empty_warmup_input
 #' @aliases ledgr_event_buffer_capacity_exceeded
 #' @aliases ledgr_fact_civil_date_unresolved
@@ -1111,7 +1107,6 @@
 #' @aliases ledgr_invalid_parallel_backend
 #' @aliases ledgr_invalid_parallel_workers
 #' @aliases ledgr_invalid_param_constructor
-#' @aliases ledgr_invalid_param_grid
 #' @aliases ledgr_invalid_param_reference
 #' @aliases ledgr_invalid_parameterized_bundle
 #' @aliases ledgr_invalid_post_risk_targets

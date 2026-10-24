@@ -496,7 +496,9 @@ Accepted change pending:
   missing cells. Row order is execution order; row names are not identity.
   Duplicate rows and unsupported or classed columns refuse before execution.
   `ledgr_strategy_grid()` is the constructor form of the same strategy
-  namespace. Only `ledgr_grid_cross()` introduces a non-empty feature namespace.
+  namespace. A direct rectangular or strategy grid never introduces feature
+  parameters. Use `ledgr_grid_cross()` to compose either with a feature grid;
+  `ledgr_grid_named()` remains the explicit structured-candidate alternative.
 - Sweep results are summary outputs, not committed run artifacts. They
   must still carry enough compact candidate identity for deliberate promotion:
   candidate label, params, status, standard summary metrics, warnings, error

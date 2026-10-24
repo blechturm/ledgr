@@ -216,7 +216,7 @@ ledgr_validate_grid_filter_expr <- function(expr, columns) {
   invisible(TRUE)
 }
 
-ledgr_validate_grid_labels <- function(labels, class = "ledgr_duplicate_param_grid_labels") {
+ledgr_validate_grid_labels <- function(labels, class = "ledgr_duplicate_grid_labels") {
   if (!is.character(labels) || anyNA(labels) || any(!nzchar(labels))) {
     rlang::abort("Grid labels must be non-empty strings.", class = c("ledgr_invalid_grid", "ledgr_invalid_args"))
   }
@@ -270,16 +270,21 @@ ledgr_executable_candidate_spec_from_user <- function(spec) {
   )
 }
 
-ledgr_new_executable_grid <- function(labels, params, identity_params = params) {
+ledgr_new_executable_grid <- function(labels, params, identity_params = params, params_validated = FALSE) {
   ledgr_validate_grid_labels(labels, class = "ledgr_duplicate_executable_grid_labels")
   if (!is.list(params) || length(params) != length(labels)) {
     rlang::abort("Executable grid params must match labels.", class = c("ledgr_invalid_executable_grid", "ledgr_invalid_args"))
   }
-  for (param in params) {
-    ledgr_executable_candidate_spec(
-      feature = param$feature_params %||% list(),
-      strategy = param$strategy_params %||% list()
-    )
+  if (!is.logical(params_validated) || length(params_validated) != 1L || is.na(params_validated)) {
+    rlang::abort("`params_validated` must be TRUE or FALSE.", class = c("ledgr_invalid_executable_grid", "ledgr_invalid_args"))
+  }
+  if (!params_validated) {
+    for (param in params) {
+      ledgr_executable_candidate_spec(
+        feature = param$feature_params %||% list(),
+        strategy = param$strategy_params %||% list()
+      )
+    }
   }
   if (!is.list(identity_params) || length(identity_params) != length(labels)) {
     rlang::abort("Executable grid identity params must match labels.", class = c("ledgr_invalid_executable_grid", "ledgr_invalid_args"))
@@ -389,6 +394,7 @@ ledgr_executable_grid_normalize <- function(x, arg = "param_grid") {
   if (inherits(x, "ledgr_executable_grid")) {
     return(x)
   }
+  rectangular <- is.data.frame(x)
   strategy <- ledgr_strategy_grid_normalize(x, arg = arg)
   strategy_params <- lapply(strategy$params, function(row) {
     if (length(row) < 2L) {
@@ -396,13 +402,20 @@ ledgr_executable_grid_normalize <- function(x, arg = "param_grid") {
     }
     row[sort(names(row), method = "radix")]
   })
-  params <- lapply(strategy_params, function(row) {
-    ledgr_executable_candidate_spec(strategy = row)
-  })
+  params <- if (rectangular) {
+    lapply(strategy_params, function(row) {
+      list(feature_params = list(), strategy_params = row)
+    })
+  } else {
+    lapply(strategy_params, function(row) {
+      ledgr_executable_candidate_spec(strategy = row)
+    })
+  }
   ledgr_new_executable_grid(
     strategy$labels,
     params,
-    identity_params = strategy_params
+    identity_params = strategy_params,
+    params_validated = rectangular
   )
 }
 

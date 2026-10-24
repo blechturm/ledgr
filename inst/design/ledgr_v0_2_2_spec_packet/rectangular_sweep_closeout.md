@@ -6,8 +6,9 @@ LDG-3102 and LDG-3103 are implemented in `35456322`, with the final stored-row
 parity witness recorded in the closeout commit. An ordinary rectangular data
 frame or tibble is now a strategy grid: one row is one candidate and one column
 is one strategy parameter. The pre-release `ledgr_param_grid()` surface is
-deleted without an alias. Feature grids remain explicit, and only
-`ledgr_grid_cross()` composes the feature and strategy namespaces.
+deleted without an alias. Feature grids remain explicit:
+`ledgr_grid_cross()` composes generated feature and strategy grids, while
+`ledgr_grid_named()` remains the explicit structured-candidate alternative.
 
 Sweep, saved-sweep and review printing now put compact `strategy_params` and
 `feature_params` summaries before `candidate_id`. Common scalar values are
@@ -30,10 +31,13 @@ content once, and rejects a duplicate before the execution boundary.
 
 The direct rectangular and `ledgr_strategy_grid()` forms are strategy-only.
 Both place the row in `params`, keep `feature_params` exactly `list()`, and
-produce identical candidate IDs, execution seeds, economics and candidate-table
-persistence rows. A parameterized feature map therefore cannot accidentally
-consume a same-named strategy column. Explicit feature candidates arise only
-from `ledgr_feature_grid()` composed through `ledgr_grid_cross()`.
+produce the same candidate IDs, execution seeds, economics and persisted
+candidate content when corresponding candidates are matched by identity. Each
+form preserves its own authored order, so `candidate_row` may differ when
+`tidyr::crossing()` and the constructor enumerate a multi-dimensional grid in
+different orders. A parameterized feature map therefore cannot accidentally
+consume a same-named strategy column. Feature candidates arise from
+`ledgr_feature_grid()` composition or explicit `ledgr_grid_named()` specs.
 
 ## Removed compatibility surface
 
@@ -63,20 +67,22 @@ that hidden sweep parameter columns still exist.
 
 ## Identity and persistence
 
-LCL-0485/LTB-0494 compares a public `tidyr::crossing()` grid with the
-corresponding `ledgr_strategy_grid()` result. It pins row values and types,
-candidate order, parameter namespaces, candidate IDs, seeds, economics,
-save/reopen, promotion context and the complete candidate rows produced for
-durable persistence. Row names are changed independently and have no effect.
-The feature-map witness uses different values under the same name in the two
-namespaces, so a restored plain-list feature fallback fails visibly.
+LCL-0485/LTB-0494 compares a two-dimensional public `tidyr::crossing()` grid
+with the corresponding `ledgr_strategy_grid()` result. It pins each form's
+authored order, then matches by candidate identity to compare row values and
+types, parameter namespaces, IDs, seeds, economics, save/reopen, promotion
+context and durable candidate content other than the intentionally
+order-dependent `candidate_row`. Row names are changed independently and have
+no effect. The feature-map witness uses different values under the same name in
+the two namespaces, so a restored plain-list feature fallback fails visibly.
 
 ## Seven-shape walk
 
 1. Rectangular columns become row parameter lists once at the public sweep
    boundary; candidates do not reconstruct the source frame.
-2. Canonical row content is computed once and reused for duplicate detection
-   and deterministic labels.
+2. Canonical row content is computed once and reused for duplicate detection,
+   deterministic labels and the already-validated executable candidates. A
+   counted detector refuses repeated validation of a rectangular row.
 3. Candidate tasks carry the prepared strategy and feature parameter lists;
    no invariant grid data is rebuilt in the pulse loop.
 4. No database query, append, scalar writer or snapshot verification was added
@@ -114,4 +120,3 @@ present at the workstream base, so WS57 adds no formatting finding.
 - Claims and ticket YAML parse, generated help matches roxygen source,
   `check-codebase-contracts.R --mode=check` passes and `git diff --check` is
   clean. No private data was used.
-
