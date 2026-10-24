@@ -31,31 +31,32 @@ paired clocks are a release regression check rather than a speedup claim.
 
 ### Ordinary shapes
 
-Five alternating fresh-process pairs ran in 499.53 seconds. No retry was
-triggered and every semantic hash agrees.
+Five alternating fresh-process pairs ran in 506.74 seconds from frozen checker
+commit `c378b7df`. No retry was triggered; every stable native identity and
+economic-output hash agrees.
 
 | Shape | Cold accepted | Cold candidate | Cold ratio | Warm ratio | Peak RSS |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| availability sweep | 7.17 s | 7.17 s | 1.003 | 0.974 | 584 MiB |
-| terminal/fact churn | 4.50 s | 4.53 s | 1.004 | 0.994 | 679 MiB |
-| feature gaps | 6.06 s | 6.13 s | 1.010 | 0.983 | 693 MiB |
+| availability sweep | 7.22 s | 7.21 s | 1.003 | 0.992 | 606 MiB |
+| terminal/fact churn | 4.59 s | 4.54 s | 1.002 | 0.978 | 733 MiB |
+| feature gaps | 6.13 s | 6.10 s | 0.995 | 0.975 | 715 MiB |
 
 The ordinary record is
 `dev/bench/v0_2_2_long_window_regression/evidence/ws54_ordinary/`.
 `check_record.R --self-test` recomputes summary clocks and peaks from raw
-records and rejects semantic, status/count, timing, provenance and summary
-resource drift.
+records and rejects native-identity, economic-output, status/count, timing,
+provenance and summary-resource drift.
 
 ### Release-only shapes
 
-The explicitly enabled release run completed in 668.52 seconds. Each shape is
+The explicitly enabled release run completed in 677.46 seconds. Each shape is
 a declared single pair, so the clock is descriptive while its identities,
 statuses, counts and economic hashes are binding.
 
 | Shape | Workload | Cold candidate | Cold ratio | Warm candidate | Warm ratio | Peak RSS |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| EXP-0003 scale | 1,150 instruments x 7,470 sessions | 66.18 s | 1.017 | 62.28 s | 0.979 | 4.83 GiB |
-| walk-forward | 600 instruments x 757 sessions | 46.93 s | 0.996 | 34.05 s | 1.020 | 0.77 GiB |
+| EXP-0003 scale | 1,150 instruments x 7,470 sessions | 66.53 s | 1.015 | 63.47 s | 0.991 | 5.03 GiB |
+| walk-forward | 600 instruments x 757 sessions | 47.69 s | 1.026 | 33.77 s | 0.990 | 0.82 GiB |
 
 The release record is
 `dev/bench/v0_2_2_long_window_regression/evidence/ws54_release/`. The same
@@ -65,12 +66,15 @@ checker validates it and its declared release shapes.
 
 `evidence/ws54_terminal/terminal_release.json` records the maintained
 two-year, 30-instrument terminal fixture. The straight run, durable reopen and
-an interruption during a freeze followed by resume agree exactly. The result
+an interruption during a freeze followed by resume agree exactly in economics
+and in the native identities that should agree. The result
 has 678 events and three dispositions: a frozen bankruptcy write-off, a
 declared acquisition last mark and a merger at the last permissible mark. It
 also crosses a freeze that resumes, a short ordinary gap and one holding still
 frozen at the end. Independent fixture-bar and ledger oracles check disposition
-prices and the frozen-at-end value.
+prices and the frozen-at-end value. `check_terminal_record.R --self-test`
+rejects changed native config identity or economic output in the retained
+record.
 
 The scheduler is deliberately absent. LDG-3095 measured a 14.17-second held-
 pulse lower bound and routed it to the staged-scheduler Type 2 response; Cut 18

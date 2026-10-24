@@ -1,6 +1,57 @@
 {
-  "commit": "3483a688bd8d4afd768e964dadcda84e1e9de865",
+  "commit": "c378b7dfe14efeb332b96f7a5bf2daca5b146549",
   "package_version": "0.2.1.0",
+  "snapshot": {
+    "snapshot_id": "snapshot_20261024_065347_3075",
+    "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
+    "status": "SEALED"
+  },
+  "native_identities": {
+    "straight": {
+      "kind": "run",
+      "run_id": "terminal-straight",
+      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
+      "config_hash": "bfae3ba6bac0953ddba4bdf4ec8d2ff42689ac2757a78e2725f0e42412a18b6d",
+      "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
+      "strategy_source_hash": "0787e0a42783151ef8e7534ea0da8ed215770da6894b9f219ae8d636c7822de8",
+      "strategy_params_hash": "e38c4b72ccb64db384abf65d10a5d7f979366c031478f369c7911470793e0d83",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "reopened": {
+      "kind": "run",
+      "run_id": "terminal-straight",
+      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
+      "config_hash": "bfae3ba6bac0953ddba4bdf4ec8d2ff42689ac2757a78e2725f0e42412a18b6d",
+      "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
+      "strategy_source_hash": "0787e0a42783151ef8e7534ea0da8ed215770da6894b9f219ae8d636c7822de8",
+      "strategy_params_hash": "e38c4b72ccb64db384abf65d10a5d7f979366c031478f369c7911470793e0d83",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "interrupted": {
+      "kind": "run",
+      "run_id": "terminal-resumed",
+      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
+      "config_hash": "93a1556049bb42cb9cbe7f73ad008df1a8610789e90286560d5648cbefd54c5d",
+      "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
+      "strategy_source_hash": "0787e0a42783151ef8e7534ea0da8ed215770da6894b9f219ae8d636c7822de8",
+      "strategy_params_hash": "41f505cddad7d5a02043875956c39b29c3283badf2d86ac8caedc673357c1ab0",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "resumed": {
+      "kind": "run",
+      "run_id": "terminal-resumed",
+      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
+      "config_hash": "93a1556049bb42cb9cbe7f73ad008df1a8610789e90286560d5648cbefd54c5d",
+      "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
+      "strategy_source_hash": "0787e0a42783151ef8e7534ea0da8ed215770da6894b9f219ae8d636c7822de8",
+      "strategy_params_hash": "41f505cddad7d5a02043875956c39b29c3283badf2d86ac8caedc673357c1ab0",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    }
+  },
   "outputs": {
     "status": "DONE",
     "stop_reason": null,

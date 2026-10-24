@@ -1,6 +1,6 @@
 {
   "shape_id": "availability_sweep",
-  "commit": "3483a688bd8d4afd768e964dadcda84e1e9de865",
+  "commit": "c378b7dfe14efeb332b96f7a5bf2daca5b146549",
   "product_tree_status": "",
   "package_version": "0.2.1.0",
   "r_version": "4.6.1",
@@ -13,9 +13,20 @@
   },
   "cold": {
     "status": "DONE+DONE",
-    "elapsed_s": 7.2200000000000006,
+    "elapsed_s": 7.2400000000000002,
     "strategy_calls": 1000,
-    "identities": {
+    "native_identity": {
+      "kind": "sweep",
+      "sweep_id": "sweep_ab5afc8c158b4370",
+      "snapshot_id": "lwreg_availability_sweep",
+      "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+      "identity_rule_version": 4,
+      "candidate_ids": ["first", "second"],
+      "candidate_snapshot_hashes": ["38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7", "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7"],
+      "candidate_feature_set_hashes": ["ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936", "ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936"],
+      "execution_seeds": [1130236483, 2046437906]
+    },
+    "economic_outputs": {
       "candidates": {
         "rows": 2,
         "hash": "fa06b9cbde4035d3007453cba919865cb2341ab94f1988b507a0ce1dea36eaa6"
@@ -29,9 +40,20 @@
   },
   "warm": {
     "status": "DONE+DONE",
-    "elapsed_s": 5.1500000000000004,
+    "elapsed_s": 5.1999999999999993,
     "strategy_calls": 1000,
-    "identities": {
+    "native_identity": {
+      "kind": "sweep",
+      "sweep_id": "sweep_d9b2d1274a2901f4",
+      "snapshot_id": "lwreg_availability_sweep",
+      "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+      "identity_rule_version": 4,
+      "candidate_ids": ["first", "second"],
+      "candidate_snapshot_hashes": ["38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7", "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7"],
+      "candidate_feature_set_hashes": ["ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936", "ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936"],
+      "execution_seeds": [1130236483, 2046437906]
+    },
+    "economic_outputs": {
       "candidates": {
         "rows": 2,
         "hash": "fa06b9cbde4035d3007453cba919865cb2341ab94f1988b507a0ce1dea36eaa6"

@@ -13,9 +13,20 @@
   },
   "cold": {
     "status": "DONE+DONE",
-    "elapsed_s": 7.1500000000000004,
+    "elapsed_s": 7.1099999999999994,
     "strategy_calls": 1000,
-    "identities": {
+    "native_identity": {
+      "kind": "sweep",
+      "sweep_id": "sweep_cf5362e5b4f1556d",
+      "snapshot_id": "lwreg_availability_sweep",
+      "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+      "identity_rule_version": 4,
+      "candidate_ids": ["first", "second"],
+      "candidate_snapshot_hashes": ["38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7", "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7"],
+      "candidate_feature_set_hashes": ["ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936", "ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936"],
+      "execution_seeds": [1130236483, 2046437906]
+    },
+    "economic_outputs": {
       "candidates": {
         "rows": 2,
         "hash": "fa06b9cbde4035d3007453cba919865cb2341ab94f1988b507a0ce1dea36eaa6"
@@ -29,9 +40,20 @@
   },
   "warm": {
     "status": "DONE+DONE",
-    "elapsed_s": 5.3099999999999987,
+    "elapsed_s": 5.25,
     "strategy_calls": 1000,
-    "identities": {
+    "native_identity": {
+      "kind": "sweep",
+      "sweep_id": "sweep_78533a99b94a6c2b",
+      "snapshot_id": "lwreg_availability_sweep",
+      "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+      "identity_rule_version": 4,
+      "candidate_ids": ["first", "second"],
+      "candidate_snapshot_hashes": ["38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7", "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7"],
+      "candidate_feature_set_hashes": ["ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936", "ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936"],
+      "execution_seeds": [1130236483, 2046437906]
+    },
+    "economic_outputs": {
       "candidates": {
         "rows": 2,
         "hash": "fa06b9cbde4035d3007453cba919865cb2341ab94f1988b507a0ce1dea36eaa6"

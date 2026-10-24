@@ -13,12 +13,23 @@
   },
   "cold": {
     "status": "DONE",
-    "elapsed_s": 65.079999999999998,
-    "setup_s": 15.81,
-    "loop_s": 48.18,
-    "finalize_s": 1.0900000000000034,
+    "elapsed_s": 65.52000000000001,
+    "setup_s": 15.720000000000001,
+    "loop_s": 48.749999999999993,
+    "finalize_s": 1.0500000000000114,
     "strategy_calls": 7470,
-    "identities": {
+    "native_identity": {
+      "kind": "run",
+      "run_id": "lwreg_exp0003_scale_cold",
+      "snapshot_id": "lwreg_exp0003_scale",
+      "snapshot_hash": "42c6b49fd36f86e6102326f0b420d4a687bae0da719cffe60ec2134e004586b6",
+      "config_hash": "39366949a4cff85c10631c66885c88ec01dd845b0a67693e2341c9cbb42c7cad",
+      "feature_set_hash": "008eac019880704fb39f508e29b9854295266a45c2947ff8d8a41681d9d12646",
+      "strategy_source_hash": "72977646d48a37a5417893fe58b6fbe66aad45afd1f3c918a54b9281e865645e",
+      "strategy_params_hash": "1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "economic_outputs": {
       "equity": {
         "rows": 7470,
         "hash": "b4f82bf66c488ca0a2ae9dfe7089dbcbdf0a5a0a55e7636be88b2283764152a8"
@@ -43,12 +54,23 @@
   },
   "warm": {
     "status": "DONE",
-    "elapsed_s": 63.61999999999999,
-    "setup_s": 16.200000000000003,
-    "loop_s": 46.109999999999985,
-    "finalize_s": 1.3100000000000023,
+    "elapsed_s": 64.049999999999997,
+    "setup_s": 16.049999999999997,
+    "loop_s": 46.72999999999999,
+    "finalize_s": 1.2700000000000102,
     "strategy_calls": 7470,
-    "identities": {
+    "native_identity": {
+      "kind": "run",
+      "run_id": "lwreg_exp0003_scale_warm",
+      "snapshot_id": "lwreg_exp0003_scale",
+      "snapshot_hash": "42c6b49fd36f86e6102326f0b420d4a687bae0da719cffe60ec2134e004586b6",
+      "config_hash": "39366949a4cff85c10631c66885c88ec01dd845b0a67693e2341c9cbb42c7cad",
+      "feature_set_hash": "008eac019880704fb39f508e29b9854295266a45c2947ff8d8a41681d9d12646",
+      "strategy_source_hash": "72977646d48a37a5417893fe58b6fbe66aad45afd1f3c918a54b9281e865645e",
+      "strategy_params_hash": "1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "economic_outputs": {
       "equity": {
         "rows": 7470,
         "hash": "b4f82bf66c488ca0a2ae9dfe7089dbcbdf0a5a0a55e7636be88b2283764152a8"

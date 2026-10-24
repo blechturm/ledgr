@@ -112,21 +112,25 @@ Workstream 11 focused Type 1 re-review and maintainer acceptance.
 
 The retained `evidence/ws54_ordinary/` record compares accepted Workstream 52
 product commit `0ffaaa0f` with the current release-evidence commit. Five
-alternating pairs completed in 499.53 seconds. All semantic hashes agree. Cold
-candidate/accepted median ratios are 1.010 (`feature_gaps`), 1.004
+alternating pairs completed in 506.74 seconds from frozen checker commit
+`c378b7df`. All native stable identities and economic-output hashes agree.
+Cold candidate/accepted median ratios are 0.995 (`feature_gaps`), 1.002
 (`fact_churn_terminal`) and 1.003 (`availability_sweep`); warm ratios are
-0.983, 0.994 and 0.974. No retry was triggered. Peak child RSS is 693 MiB.
+0.975, 0.978 and 0.992. No retry was triggered. Peak child RSS is 733 MiB.
 
 The explicitly enabled `evidence/ws54_release/` record covers both release
 shapes. EXP-0003 scale is 7,470 sessions by 1,150 instruments and completes at
-66.18 seconds cold and 62.28 warm on the candidate, ratios 1.017 and 0.979,
-with a 4.83 GiB peak. The 757-session, 600-instrument walk-forward completes at
-46.93 seconds cold and 34.05 warm, ratios 0.996 and 1.020, with a 0.77 GiB
+66.53 seconds cold and 63.47 warm on the candidate, ratios 1.015 and 0.991,
+with a 5.03 GiB peak. The 757-session, 600-instrument walk-forward completes at
+47.69 seconds cold and 33.77 warm, ratios 1.026 and 0.990, with a 0.82 GiB
 peak. The single-pair release clocks are descriptive, as declared by the
-manifest; exact identities, statuses and counts are binding.
+manifest; exact native identities, statuses, counts and economic hashes are
+binding.
 
 `evidence/ws54_terminal/terminal_release.json` is the maintained straight,
 reopened and interrupted/resumed terminal fixture. It passes with 678 events
-and three dispositions. `check_record.R` now accepts both declared profiles,
+and three dispositions. `check_record.R` accepts both declared profiles,
 recomputes every summary clock and peak from raw records, and its self-test
-detects semantic, status/count, timing, provenance and summary-resource drift.
+detects native-identity, economic-output, status/count, timing, provenance and
+summary-resource drift. `check_terminal_record.R --self-test` independently
+binds the four terminal run/config identities and its economic oracle.
