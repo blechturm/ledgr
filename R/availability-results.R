@@ -43,6 +43,32 @@ ledgr_backtest_diagnostics <- function(con, run_id) {
   ))
 }
 
+ledgr_backtest_diagnostics_filtered <- function(con,
+                                                run_id,
+                                                instrument_id,
+                                                ts_utc = NULL) {
+  where_time <- ""
+  params <- list(run_id, instrument_id)
+  if (!is.null(ts_utc)) {
+    where_time <- paste(
+      "AND ((stage = 'decision' AND ts_utc = ?)",
+      "OR (stage = 'execution' AND decision_ts_utc = ?))"
+    )
+    params <- c(params, list(ts_utc, ts_utc))
+  }
+  tibble::as_tibble(DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT * FROM run_diagnostics",
+      "WHERE run_id = ? AND instrument_id = ?",
+      "AND stage IN ('decision', 'execution')",
+      where_time,
+      "ORDER BY diagnostic_seq"
+    ),
+    params = params
+  ))
+}
+
 ledgr_run_completion_info_empty <- function() {
   missing_time <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
   list(
@@ -452,8 +478,13 @@ ledgr_availability_marks_state <- function(con,
   )
 }
 
-ledgr_backtest_availability_active <- function(bt, con) {
-  diagnostics <- ledgr_backtest_diagnostics(con, bt$run_id)
+ledgr_backtest_availability_active <- function(bt,
+                                               con,
+                                               diagnostics = NULL,
+                                               instrument_ids = NULL) {
+  if (is.null(diagnostics)) {
+    diagnostics <- ledgr_backtest_diagnostics(con, bt$run_id)
+  }
   if (nrow(diagnostics) == 0L) return(ledgr_availability_result_empty())
 
   snapshot <- ledgr_availability_snapshot_connection(bt, con)
@@ -495,7 +526,11 @@ ledgr_backtest_availability_active <- function(bt, con) {
   # The decision view and the valuation state are sequential per pulse, as in
   # the fold; everything else is read once.
   views <- lapply(seq_along(times), function(i) provider$decision_view(times[[i]], positions_at(i)))
-  axes <- lapply(views, function(view) as.character(view$axis))
+  axes <- lapply(views, function(view) {
+    axis <- as.character(view$axis)
+    if (is.null(instrument_ids)) return(axis)
+    axis[!is.na(match(axis, instrument_ids))]
+  })
   # Mark history starts at the data start, as in the fold: the marks state
   # runs on the session calendar from the snapshot's first bar.
   history_calendar <- ledgr_availability_calendar(
@@ -550,11 +585,24 @@ ledgr_backtest_availability_active <- function(bt, con) {
   ))
 }
 
-ledgr_backtest_availability_dense <- function(bt, con) {
-  equity <- ledgr_compute_equity_curve_impl(bt, con = con)
+ledgr_backtest_availability_dense <- function(bt,
+                                              con,
+                                              instrument_ids = NULL,
+                                              times = NULL) {
   ids <- as.character(bt$config$universe$instrument_ids)
-  if (nrow(equity) == 0L || length(ids) == 0L) return(ledgr_availability_result_empty())
-  times <- as.POSIXct(equity$ts_utc, tz = "UTC")
+  if (!is.null(instrument_ids)) {
+    ids <- ids[!is.na(match(ids, instrument_ids))]
+  }
+  if (is.null(times)) {
+    equity <- ledgr_compute_equity_curve_impl(bt, con = con)
+    if (nrow(equity) == 0L) return(ledgr_availability_result_empty())
+    times <- as.POSIXct(equity$ts_utc, tz = "UTC")
+  } else {
+    times <- as.POSIXct(times, tz = "UTC")
+  }
+  if (length(ids) == 0L || length(times) == 0L) {
+    return(ledgr_availability_result_empty())
+  }
   timeline <- ledgr_availability_positions_timeline(con, bt$run_id, times)
   quantity <- matrix(0, nrow = length(ids), ncol = length(times))
   if (is.null(timeline)) {
@@ -591,6 +639,29 @@ ledgr_backtest_availability <- function(bt, con) {
     ledgr_backtest_availability_active(bt, con)
   } else {
     ledgr_backtest_availability_dense(bt, con)
+  }
+}
+
+ledgr_backtest_availability_filtered <- function(bt,
+                                                 con,
+                                                 instrument_ids,
+                                                 times) {
+  ledgr_backtest_ensure_snapshot(bt, con)
+  if (ledgr_availability_config_active(bt$config)) {
+    diagnostics <- data.frame(ts_utc = as.POSIXct(times, tz = "UTC"))
+    ledgr_backtest_availability_active(
+      bt,
+      con,
+      diagnostics = diagnostics,
+      instrument_ids = instrument_ids
+    )
+  } else {
+    ledgr_backtest_availability_dense(
+      bt,
+      con,
+      instrument_ids = instrument_ids,
+      times = times
+    )
   }
 }
 
@@ -631,7 +702,6 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
-  ledgr_backtest_ensure_snapshot(bt)
   if (!is.character(instrument_id) || length(instrument_id) != 1L ||
       is.na(instrument_id) || !nzchar(instrument_id)) {
     rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
@@ -644,7 +714,15 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
       rlang::abort("`ts_utc` must be one parseable timestamp.", class = "ledgr_invalid_args")
     }
   }
-  diagnostics <- tibble::as_tibble(bt, what = "diagnostics")
+  opened <- ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  ledgr_backtest_ensure_snapshot(bt, opened$con)
+  diagnostics <- ledgr_backtest_diagnostics_filtered(
+    opened$con,
+    bt$run_id,
+    instrument_id,
+    ts
+  )
   decision_idx <- diagnostics$stage == "decision" &
     diagnostics$instrument_id == instrument_id
   if (!history) {
@@ -665,13 +743,17 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
       drop = FALSE
     ]
   }
-  availability <- tibble::as_tibble(bt, what = "availability")
-  available <- availability[
-    availability$instrument_id == instrument_id,
-    ,
-    drop = FALSE
-  ]
   decision_time <- as.POSIXct(decision$ts_utc, tz = "UTC")
+  available <- if (nrow(decision) == 0L) {
+    ledgr_availability_result_empty()
+  } else {
+    ledgr_backtest_availability_filtered(
+      bt,
+      opened$con,
+      instrument_ids = instrument_id,
+      times = decision_time
+    )
+  }
   available_time <- as.POSIXct(available$ts_utc, tz = "UTC")
   available_idx <- match(as.numeric(decision_time), as.numeric(available_time))
   if (anyNA(available_idx) || anyDuplicated(as.numeric(available_time))) {
@@ -691,7 +773,7 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     as.numeric(decision_time),
     as.numeric(as.POSIXct(execution$decision_ts_utc, tz = "UTC"))
   )
-  terminal <- ledgr_backtest_terminal_evidence(bt)
+  terminal <- ledgr_backtest_terminal_evidence(bt, opened$con)
   completion <- terminal$completion
   complete_performance <- if (is.null(completion) || nrow(completion) == 0L) {
     identical(terminal$status, "DONE")

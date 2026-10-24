@@ -686,7 +686,38 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
     ,
     drop = FALSE
   ][1L, ]
+  filtered_counts <- new.env(parent = emptyenv())
+  filtered_counts$diagnostic_calls <- 0L
+  filtered_counts$diagnostic_rows <- 0L
+  filtered_counts$availability_calls <- 0L
+  filtered_counts$availability_rows <- 0L
+  original_diagnostics_filtered <- ledgr:::ledgr_backtest_diagnostics_filtered
+  original_availability_filtered <- ledgr:::ledgr_backtest_availability_filtered
+  filtered_probe <- local({
+    testthat::local_mocked_bindings(
+      ledgr_backtest_diagnostics_filtered = function(...) {
+        out <- original_diagnostics_filtered(...)
+        filtered_counts$diagnostic_calls <- filtered_counts$diagnostic_calls + 1L
+        filtered_counts$diagnostic_rows <- filtered_counts$diagnostic_rows + nrow(out)
+        out
+      },
+      ledgr_backtest_availability_filtered = function(...) {
+        out <- original_availability_filtered(...)
+        filtered_counts$availability_calls <- filtered_counts$availability_calls + 1L
+        filtered_counts$availability_rows <- filtered_counts$availability_rows + nrow(out)
+        out
+      },
+      .package = "ledgr"
+    )
+    ledgr_run_explain(bt, "AAA", decision$ts_utc)
+  })
   explanation <- ledgr_run_explain(bt, "AAA", decision$ts_utc)
+  testthat::expect_identical(filtered_probe, explanation)
+  testthat::expect_identical(filtered_counts$diagnostic_calls, 1L)
+  testthat::expect_identical(filtered_counts$availability_calls, 1L)
+  testthat::expect_lt(filtered_counts$diagnostic_rows, nrow(diagnostics))
+  testthat::expect_identical(filtered_counts$availability_rows, 1L)
+  testthat::expect_lt(filtered_counts$availability_rows, nrow(availability))
   history <- ledgr_run_explain(bt, "AAA")
   decision_rows <- diagnostics[
     diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA",

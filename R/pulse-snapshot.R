@@ -310,28 +310,38 @@ ledgr_open_dedicated_snapshot <- function(snapshot) {
 }
 
 ledgr_fetch_latest_bars <- function(con, snapshot_id, universe, ts_utc) {
-  rows <- lapply(universe, function(inst) {
-    df <- DBI::dbGetQuery(
-      con,
-      "
-      SELECT instrument_id, ts_utc, open, high, low, close, volume
-      FROM snapshot_bars
-      WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc = ?
-      ",
-      params = list(snapshot_id, inst, ts_utc)
+  if (length(universe) == 0L) return(NULL)
+  rows <- ledgr_fetch_latest_bars_query(
+    con, snapshot_id, unique(as.character(universe)), ts_utc
+  )
+  row_index <- match(as.character(universe), as.character(rows$instrument_id))
+  missing <- which(is.na(row_index))
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf(
+        "No bars available for instrument '%s' at ts_utc.",
+        universe[[missing[[1L]]]]
+      ),
+      class = "ledgr_invalid_args"
     )
-    if (nrow(df) == 0) {
-      rlang::abort(
-        sprintf("No bars available for instrument '%s' at ts_utc.", inst),
-        class = "ledgr_invalid_args"
-      )
-    }
-    df$ts_utc <- vapply(df$ts_utc, ledgr_iso_utc, character(1))
-    df
-  })
-  out <- do.call(rbind, rows)
+  }
+  out <- rows[row_index, , drop = FALSE]
+  out$ts_utc <- vapply(out$ts_utc, ledgr_iso_utc, character(1))
   rownames(out) <- NULL
   out
+}
+
+ledgr_fetch_latest_bars_query <- function(con, snapshot_id, universe, ts_utc) {
+  quoted_ids <- paste(DBI::dbQuoteString(con, universe), collapse = ", ")
+  DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
+      "FROM snapshot_bars WHERE snapshot_id = ? ",
+      "AND instrument_id IN (", quoted_ids, ") AND ts_utc = ?"
+    ),
+    params = list(snapshot_id, ts_utc)
+  )
 }
 
 ledgr_compute_pulse_features <- function(con, snapshot_id, universe, ts_utc, features) {

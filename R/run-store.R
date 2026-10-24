@@ -212,23 +212,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
       )
     )
     if (nrow(equity) > 0L) {
-      equity_stats <- lapply(run_ids, function(id) {
-        rows <- equity[as.character(equity$run_id) == id, , drop = FALSE]
-        if (nrow(rows) == 0L) {
-          return(data.frame(run_id = id, first_equity = NA_real_, final_equity = NA_real_, max_drawdown = NA_real_))
-        }
-        eq <- as.numeric(rows$equity)
-        running_max <- cummax(eq)
-        drawdown <- ifelse(is.na(running_max) | running_max == 0, NA_real_, eq / running_max - 1)
-        data.frame(
-          run_id = id,
-          first_equity = eq[[1]],
-          final_equity = eq[[length(eq)]],
-          max_drawdown = suppressWarnings(min(drawdown, na.rm = TRUE))
-        )
-      })
-      equity_stats <- do.call(rbind, equity_stats)
-      equity_stats$max_drawdown[is.infinite(equity_stats$max_drawdown)] <- NA_real_
+      equity_stats <- ledgr_run_store_equity_stats(equity, run_ids)
       eq_idx <- match(as.character(out$run_id), as.character(equity_stats$run_id))
       out$final_equity <- equity_stats$final_equity[eq_idx]
       out$max_drawdown <- equity_stats$max_drawdown[eq_idx]
@@ -258,6 +242,43 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   }
   out <- out[, canonical_cols, drop = FALSE]
   tibble::as_tibble(out)
+}
+
+ledgr_run_store_equity_stats <- function(equity, run_ids) {
+  run_key <- as.character(equity$run_id)
+  row_groups <- split(
+    seq_len(nrow(equity)),
+    factor(run_key, levels = run_ids),
+    drop = FALSE
+  )
+  stats <- lapply(seq_along(run_ids), function(i) {
+    id <- run_ids[[i]]
+    rows <- equity[row_groups[[i]], , drop = FALSE]
+    if (nrow(rows) == 0L) {
+      return(data.frame(
+        run_id = id,
+        first_equity = NA_real_,
+        final_equity = NA_real_,
+        max_drawdown = NA_real_
+      ))
+    }
+    eq <- as.numeric(rows$equity)
+    running_max <- cummax(eq)
+    drawdown <- ifelse(
+      is.na(running_max) | running_max == 0,
+      NA_real_,
+      eq / running_max - 1
+    )
+    data.frame(
+      run_id = id,
+      first_equity = eq[[1L]],
+      final_equity = eq[[length(eq)]],
+      max_drawdown = suppressWarnings(min(drawdown, na.rm = TRUE))
+    )
+  })
+  stats <- do.call(rbind, stats)
+  stats$max_drawdown[is.infinite(stats$max_drawdown)] <- NA_real_
+  stats
 }
 
 ledgr_run_store_config_feature_set_hash <- function(config_json) {

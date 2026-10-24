@@ -81,17 +81,17 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
                                                sweep_id = attr(sweep, "sweep_id", exact = TRUE)) {
   ledgr_sweep_storage_assert_sweep(sweep)
   candidate_features <- tibble::as_tibble(attr(sweep, "candidate_features", exact = TRUE))
+  candidate_rows <- as.integer(sweep$candidate_row)
+  feature_rows <- ledgr_sweep_storage_candidate_feature_rows(
+    candidate_features, candidate_rows
+  )
   cost_model_hash <- attr(sweep, "cost_model_hash", exact = TRUE)
   metric_context_hash <- attr(sweep, "metric_context_hash", exact = TRUE)
   sweep_risk_identity <- ledgr_sweep_storage_sweep_risk_identity(sweep)
   rows <- lapply(seq_len(nrow(sweep)), function(i) {
     row <- sweep[i, , drop = FALSE]
     candidate_row <- as.integer(row$candidate_row[[1]])
-    feature_row <- if ("candidate_row" %in% names(candidate_features)) {
-      candidate_features[candidate_features$candidate_row == candidate_row, , drop = FALSE]
-    } else {
-      candidate_features[i, , drop = FALSE]
-    }
+    feature_row <- feature_rows[[i]]
     provenance <- row$provenance[[1]]
     if (!is.list(provenance)) {
       rlang::abort(
@@ -147,6 +147,31 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
     )
   })
   tibble::as_tibble(do.call(rbind.data.frame, c(rows, stringsAsFactors = FALSE)))
+}
+
+ledgr_sweep_storage_candidate_feature_rows <- function(candidate_features,
+                                                       candidate_rows) {
+  if (!"candidate_row" %in% names(candidate_features)) {
+    return(lapply(seq_along(candidate_rows), function(i) {
+      candidate_features[i, , drop = FALSE]
+    }))
+  }
+  feature_candidate_row <- as.integer(candidate_features$candidate_row)
+  valid <- !is.na(feature_candidate_row)
+  groups <- split(
+    which(valid),
+    as.character(feature_candidate_row[valid]),
+    drop = TRUE
+  )
+  lapply(candidate_rows, function(candidate_row) {
+    if (is.na(candidate_row)) {
+      return(candidate_features[
+        candidate_features$candidate_row == candidate_row, , drop = FALSE
+      ])
+    }
+    index <- groups[[as.character(candidate_row)]] %||% integer()
+    candidate_features[index, , drop = FALSE]
+  })
 }
 
 ledgr_sweep_storage_return_rows <- function(sweep,

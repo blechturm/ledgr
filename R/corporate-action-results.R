@@ -292,21 +292,18 @@ ledgr_corporate_action_composition_report <- function(con,
     ),
     params = list(snapshot_id)
   )
-  time_tokens <- function(value) {
-    value <- as.POSIXct(value, tz = "UTC")
-    vapply(
-      seq_along(value),
-      function(i) ledgr_normalize_ts_utc(value[[i]]),
-      character(1)
-    )
-  }
+  effective <- as.POSIXct(source_rows$effective_time, tz = "UTC")
+  n_bars <- nrow(bar_rows)
+  time_tokens <- ledgr_corporate_action_time_tokens(c(
+    as.POSIXct(bar_rows$ts_utc, tz = "UTC"), effective
+  ))
+  bar_time_token <- time_tokens[seq_len(n_bars)]
+  effective_token <- time_tokens[n_bars + seq_len(length(effective))]
   bar_key <- paste(
     as.character(bar_rows$instrument_id),
-    time_tokens(bar_rows$ts_utc),
+    bar_time_token,
     sep = "\r"
   )
-  effective <- as.POSIXct(source_rows$effective_time, tz = "UTC")
-  effective_token <- time_tokens(effective)
   recipient_key <- paste(
     as.character(source_rows$recipient_instrument_id),
     effective_token,
@@ -360,6 +357,21 @@ ledgr_corporate_action_composition_report <- function(con,
     estimate_label = rep("effective-date estimate", length(selected)),
     affected_marked_exposure = as.numeric(affected),
     stringsAsFactors = FALSE
+  )
+}
+
+ledgr_corporate_action_time_tokens <- function(value) {
+  value <- as.POSIXct(value, tz = "UTC")
+  if (anyNA(value)) {
+    rlang::abort(
+      "`ts_utc` could not be converted to UTC POSIXct.",
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  format(
+    value,
+    "%Y-%m-%dT%H:%M:%SZ",
+    tz = "UTC"
   )
 }
 
