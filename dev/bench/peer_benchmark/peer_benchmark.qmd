@@ -253,16 +253,6 @@ if (!compiled_engine %in% compare$engine) {
     `Backtrader seconds` = fmt_sec(c(
       bt$cold_end_to_end, bt$warm_research_iteration, bt$engine_sec
     )),
-    `B2 / Backtrader` = sprintf("%.2fx", c(
-      b2$cold_end_to_end / bt$cold_end_to_end,
-      b2$warm_research_iteration / bt$warm_research_iteration,
-      b2$engine_sec / bt$engine_sec
-    )),
-    `B2 reduction vs Backtrader` = paste0(sprintf("%.1f", 100 * c(
-      1 - b2$cold_end_to_end / bt$cold_end_to_end,
-      1 - b2$warm_research_iteration / bt$warm_research_iteration,
-      1 - b2$engine_sec / bt$engine_sec
-    )), "%"),
     check.names = FALSE
   )
   knitr::kable(speed_table, row.names = FALSE)
@@ -275,84 +265,14 @@ snapshot. Engine isolates the fold slice replaced by the compiled hot frame.
 The timed sweep results phase uses retained inline facts and public accessors;
 the private full-surface parity oracle runs outside every reported clock.
 
+These are descriptive absolute clocks for the declared surfaces. This report
+does not derive a ratio, percentage reduction, ordering, or rank from them.
+
 ```{r}
 #| echo: false
-#| fig.width: 10
-#| fig.height: 5.4
-if (compiled_engine %in% compare$engine) {
-  timing_plot <- rbind(
-    data.frame(
-      engine = compare$engine,
-      surface = "Cold end to end",
-      seconds = compare$cold_end_to_end
-    ),
-    data.frame(
-      engine = compare$engine,
-      surface = "Warm research iteration",
-      seconds = compare$warm_research_iteration
-    ),
-    data.frame(
-      engine = compare$engine,
-      surface = "Engine phase",
-      seconds = compare$engine_sec
-    )
-  )
-  timing_plot <- timing_plot[is.finite(timing_plot$seconds), , drop = FALSE]
-  timing_plot$label <- unname(engine_labels[timing_plot$engine])
-  timing_plot$label <- factor(
-    timing_plot$label,
-    levels = rev(unname(engine_labels[compare$engine]))
-  )
-  timing_plot$surface <- factor(
-    timing_plot$surface,
-    levels = c("Cold end to end", "Warm research iteration", "Engine phase")
-  )
-  timing_plot$kind <- ifelse(
-    timing_plot$engine == compiled_engine,
-    "Compiled sweep",
-    ifelse(timing_plot$engine == "backtrader", "Backtrader", "Other")
-  )
-  backtrader_lines <- timing_plot[
-    timing_plot$engine == "backtrader",
-    c("surface", "seconds"),
-    drop = FALSE
-  ]
-  print(
-    ggplot2::ggplot(
-      timing_plot,
-      ggplot2::aes(x = seconds, y = label, fill = kind)
-    ) +
-      ggplot2::geom_col(width = 0.72) +
-      ggplot2::geom_text(
-        ggplot2::aes(label = sprintf("%.2fs", seconds)),
-        hjust = -0.08,
-        size = 3
-      ) +
-      ggplot2::geom_vline(
-        data = backtrader_lines,
-        ggplot2::aes(xintercept = seconds),
-        linetype = 2,
-        colour = "#555555",
-        inherit.aes = FALSE
-      ) +
-      ggplot2::facet_wrap(~surface, scales = "free_x", nrow = 1) +
-      ggplot2::scale_fill_manual(values = c(
-        "Compiled sweep" = "#1F77B4",
-        "Backtrader" = "#7F7F7F",
-        "Other" = "#C7C7C7"
-      )) +
-      ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
-      ggplot2::labs(
-        title = "Optional B2 timing on the same fixture",
-        subtitle = "Interpret only after parity; dashed line marks Backtrader",
-        x = "Seconds (lower is better)",
-        y = NULL,
-        fill = NULL
-      ) +
-      ggplot2::theme_minimal(base_size = 10) +
-      ggplot2::theme(legend.position = "bottom")
-  )
-}
+# Keep the historical chunk position stable so unrelated rendered assets retain
+# their tracked names. The comparative chart intentionally no longer exists.
+invisible(NULL)
 ```
 
 ## Indicator source boundary

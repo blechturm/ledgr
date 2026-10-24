@@ -12,9 +12,10 @@ and prose; they do not change `R/`, `src/`, `DESCRIPTION` or `NAMESPACE` from
 that product commit. The retained Workstream 54 evidence first appears at
 `a1f2a708`.
 
-The synthetic records use native snapshot, experiment, run, sweep and
-walk-forward identities. The harness does not replay the ledger, synthesize a
-second identity, or freeze a deterministic intermediate result. Private
+The synthetic records retain native snapshot, run/config, sweep/candidate and
+walk-forward/session identities beside separately named economic-output
+hashes. The harness does not replay the ledger, synthesize a second identity,
+or freeze a deterministic intermediate result. Private
 Sharadar rows, instrument identifiers and paths do not enter the package.
 
 The package version in `DESCRIPTION` remains `0.2.1.0` until the separate
@@ -162,6 +163,8 @@ the broader multi-shape peer suite remains parked.
 | four/eight-worker memory | Single diagnostic peaks are 5.94 and 8.71 GiB parent plus daemons. The eight-worker arm stays below the 12 GiB design trigger, so shared memory remains deferred and eight workers are not advertised. |
 | detailed telemetry | Retained unchanged: session-local diagnostic vectors and compact durable run telemetry have different consumers. Redesign remains after core unification. |
 | scheduler | The 22.6-percent held-pulse lower bound clears its design trigger; routed to the Type 2 response, with no Cut 18 semantic change. |
+| review-profile CI cadence and timing host | Already satisfied by `.github/workflows/R-CMD-check.yaml`: review runs nightly and on release tags. Hosted clocks remain advisory; the pinned local i9-12900K P-core record is binding, as confirmed by LDG-3092. |
+| entitlement-only corporate-action refusal | Deliberately unchanged. Cut 18 decision (5) and its out-of-scope list retain this as a deferred semantic design question; the release continues to disclose such facts without inventing an effective pulse. |
 | peer-workload expansion | Current row is descriptive release evidence only. The broader cold/warm, narrow/wide, pulse/scheduled peer suite stays parked. |
 
 ## Release definition of done
@@ -173,7 +176,7 @@ the broader multi-shape peer suite remains parked.
 | 3. one point-in-time history substrate | Cut 16 and its registered run/sweep/walk-forward oracles; the release walk-forward record passes. |
 | 4. indicator readiness, gaps and scale | Cut 16 history contracts and registered feature blocks; the ordinary feature-gap and release-scale records pass. |
 | 5. public long-only estimator | The minimum-variance article and `LTB-0431`-`LTB-0440`, plus the accepted Cut 17 public run/sweep record. |
-| 6. fail-closed integrity | Current-only store formats and snapshot hash rule 3 from Cuts 13-14, their golden roots and current validation tests. |
+| 6. fail-closed integrity | Current schema 123, identity rule 4 and snapshot hash rule 4, with current validation tests and portable golden roots. Rule 4 retains the accepted rule-3 byte encoding while adding the civil-time fact identity bound in Cut 16. |
 | 7. unambiguous interruption/resume | Cut 11 continuity claims and the Workstream 54 interrupted/resumed terminal fixture. |
 | 8. explicit record boundary | This document and the long-window and peer benchmark methods above. |
 | 9. no false untraded-bar claim | The release keeps the registered exclusion: it does not claim that the Sharadar workflow ages halted or untraded carried prices or prevents fills on them. |

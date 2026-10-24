@@ -79,11 +79,11 @@ seed, shared bars, and SMA crossover strategy as the other rows. If it
 is absent, this section reports that state rather than synthesizing a
 comparison.
 
-| Surface | B2 seconds | Backtrader seconds | B2 / Backtrader | B2 reduction vs Backtrader |
-|:---|:---|:---|:---|:---|
-| Cold end to end | 14.330 | 83.650 | 0.17x | 82.9% |
-| Warm research iteration | 12.120 | 83.086 | 0.15x | 85.4% |
-| Engine phase | 10.840 | 77.169 | 0.14x | 86.0% |
+| Surface                 | B2 seconds | Backtrader seconds |
+|:------------------------|:-----------|:-------------------|
+| Cold end to end         | 14.330     | 83.650             |
+| Warm research iteration | 12.120     | 83.086             |
+| Engine phase            | 10.840     | 77.169             |
 
 The three clocks answer different questions. Cold includes the reusable
 sealed snapshot. Warm measures the public research iteration over that
@@ -92,7 +92,9 @@ compiled hot frame. The timed sweep results phase uses retained inline
 facts and public accessors; the private full-surface parity oracle runs
 outside every reported clock.
 
-![](peer_benchmark_files/figure-commonmark/unnamed-chunk-3-1.png)
+These are descriptive absolute clocks for the declared surfaces. This
+report does not derive a ratio, percentage reduction, ordering, or rank
+from them.
 
 ## Indicator source boundary
 

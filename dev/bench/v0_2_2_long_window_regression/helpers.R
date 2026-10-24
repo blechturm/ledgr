@@ -417,7 +417,7 @@ lwreg_strategy_state_identity <- function(bt) {
   list(rows = nrow(rows), hash = lwreg_hash(value))
 }
 
-lwreg_run_identities <- function(bt) {
+lwreg_run_economic_outputs <- function(bt) {
   list(
     equity = lwreg_identity(ledgr_results(bt, "equity")),
     fills = lwreg_identity(ledgr_results(bt, "fills")),
@@ -428,6 +428,23 @@ lwreg_run_identities <- function(bt) {
     ),
     strategy_state = lwreg_strategy_state_identity(bt)
   )
+}
+
+lwreg_run_native_identity <- function(snapshot, bt) {
+  info <- ledgr_run_info(snapshot, bt$run_id)
+  fields <- c(
+    "run_id", "snapshot_id", "snapshot_hash", "config_hash",
+    "feature_set_hash", "strategy_source_hash", "strategy_params_hash",
+    "risk_chain_hash"
+  )
+  values <- lapply(fields, function(name) {
+    value <- info[[name]]
+    if (is.null(value) || !length(value)) return(NULL)
+    as.character(value[[1L]])
+  })
+  names(values) <- fields
+  values <- values[!vapply(values, is.null, logical(1L))]
+  c(list(kind = "run"), values)
 }
 
 lwreg_experiment <- function(snapshot, row, timing = NULL) {
@@ -463,7 +480,7 @@ lwreg_snapshot_info <- function(snapshot) {
   )
 }
 
-lwreg_sweep_identity <- function(x) {
+lwreg_sweep_economic_outputs <- function(x) {
   keep <- intersect(c(
     "status", "final_equity", "total_return", "annualized_return",
     "volatility", "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
@@ -483,5 +500,50 @@ lwreg_sweep_identity <- function(x) {
       n_trades = x$n_trades
     ))),
     returns = lwreg_identity(returns)
+  )
+}
+
+lwreg_sweep_native_identity <- function(x) {
+  info <- ledgr_sweep_info(x)
+  provenance <- x$provenance
+  list(
+    kind = "sweep",
+    sweep_id = as.character(info$sweep_id),
+    snapshot_id = as.character(info$snapshot_id),
+    snapshot_hash = as.character(info$snapshot_hash),
+    identity_rule_version = as.integer(attr(x, "identity_rule_version", exact = TRUE)),
+    candidate_ids = as.character(info$grid$candidate_ids),
+    candidate_snapshot_hashes = vapply(
+      provenance, `[[`, character(1L), "snapshot_hash"
+    ),
+    candidate_feature_set_hashes = vapply(
+      provenance, `[[`, character(1L), "feature_set_hash"
+    ),
+    execution_seeds = as.integer(x$execution_seed)
+  )
+}
+
+lwreg_walk_forward_native_identity <- function(snapshot, x) {
+  test_run_ids <- unique(as.character(x$folds$test_run_id))
+  test_run_ids <- test_run_ids[!is.na(test_run_ids) & nzchar(test_run_ids)]
+  test_runs <- lapply(test_run_ids, function(run_id) {
+    info <- ledgr_run_info(snapshot, run_id)
+    list(
+      run_id = as.character(info$run_id),
+      snapshot_id = as.character(info$snapshot_id),
+      snapshot_hash = as.character(info$snapshot_hash),
+      config_hash = as.character(info$config_hash)
+    )
+  })
+  list(
+    kind = "walk_forward",
+    session_id = as.character(x$session_id),
+    snapshot_id = as.character(attr(x, "snapshot_id", exact = TRUE)),
+    snapshot_hash = as.character(attr(x, "snapshot_hash", exact = TRUE)),
+    fold_ids = as.character(x$folds$fold_id),
+    selected_candidate_keys = as.character(x$folds$selected_candidate_key),
+    score_candidate_keys = sort(unique(as.character(x$scores$candidate_key)),
+                                method = "radix"),
+    test_runs = test_runs
   )
 }

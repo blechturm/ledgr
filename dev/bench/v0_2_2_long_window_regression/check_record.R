@@ -91,6 +91,72 @@ lwreg_check <- function(path) {
   read_case <- function(file) jsonlite::read_json(
     file.path(path, "raw", file), simplifyVector = FALSE
   )
+  non_empty_scalar <- function(x) {
+    is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
+  }
+  validate_native_identity <- function(value, shape, phase) {
+    native <- value[[phase]]$native_identity
+    if (!is.list(native) || !non_empty_scalar(native$kind)) {
+      fail("Missing native identity: ", shape, " ", phase)
+      return(invisible(NULL))
+    }
+    common <- c("snapshot_id", "snapshot_hash")
+    required <- switch(
+      native$kind,
+      run = c(common, "run_id", "config_hash", "feature_set_hash"),
+      sweep = c(common, "sweep_id", "candidate_ids",
+                "candidate_snapshot_hashes", "candidate_feature_set_hashes"),
+      walk_forward = c(common, "session_id", "fold_ids",
+                       "score_candidate_keys", "test_runs"),
+      character()
+    )
+    if (!length(required)) {
+      fail("Unknown native identity kind: ", shape, " ", phase)
+      return(invisible(NULL))
+    }
+    absent <- required[!vapply(required, function(name) {
+      value <- native[[name]]
+      !is.null(value) && length(value) > 0L &&
+        if (is.character(value)) all(!is.na(value) & nzchar(value)) else TRUE
+    }, logical(1L))]
+    if (length(absent)) {
+      fail("Incomplete native identity: ", shape, " ", phase, " ",
+           paste(absent, collapse = ", "))
+    }
+    if (!identical(native$snapshot_id, value$snapshot$snapshot_id) ||
+        !identical(native$snapshot_hash, value$snapshot$snapshot_hash)) {
+      fail("Native snapshot identity disagrees with the public snapshot: ",
+           shape, " ", phase)
+    }
+    if (identical(native$kind, "sweep")) {
+      n <- length(native$candidate_ids)
+      if (length(native$candidate_snapshot_hashes) != n ||
+          length(native$candidate_feature_set_hashes) != n ||
+          length(native$execution_seeds) != n ||
+          any(native$candidate_snapshot_hashes != native$snapshot_hash)) {
+        fail("Sweep native candidate identity is inconsistent: ", shape,
+             " ", phase)
+      }
+    }
+    if (identical(native$kind, "walk_forward")) {
+      bad_run <- vapply(native$test_runs, function(run) {
+        !is.list(run) ||
+          !all(vapply(c("run_id", "snapshot_id", "snapshot_hash", "config_hash"),
+                      function(name) non_empty_scalar(run[[name]]), logical(1L))) ||
+          !identical(run$snapshot_id, native$snapshot_id) ||
+          !identical(run$snapshot_hash, native$snapshot_hash)
+      }, logical(1L))
+      if (any(bad_run)) {
+        fail("Walk-forward test-run identity is inconsistent: ", shape,
+             " ", phase)
+      }
+    }
+    invisible(NULL)
+  }
+  stable_native_identity <- function(x) {
+    if (identical(x$kind, "sweep")) x$sweep_id <- NULL
+    x
+  }
   measurement_key <- function(shape, arm, pair, attempt) {
     paste(shape, arm, pair, attempt, sep = "|")
   }
@@ -139,6 +205,8 @@ lwreg_check <- function(path) {
       fail("Case product tree is dirty or unrecorded: ",
            measurements$file[[i]])
     }
+    validate_native_identity(value, value$shape_id, "cold")
+    validate_native_identity(value, value$shape_id, "warm")
   }
   expected_pairs <- seq_len(as.integer(suite$pairs))
   for (shape in selected$shape_id) {
@@ -194,9 +262,17 @@ lwreg_check <- function(path) {
         ]
         if (identical(expected_status, "returned")) expected_status <- "DONE"
         for (phase in c("cold", "warm")) {
-          if (!identical(a[[phase]]$identities, c[[phase]]$identities)) {
+          if (!identical(a[[phase]]$economic_outputs,
+                         c[[phase]]$economic_outputs)) {
             fail("Semantic drift: ", shape, " ", pair, " ", attempt,
                  " ", phase)
+          }
+          if (!identical(
+            stable_native_identity(a[[phase]]$native_identity),
+            stable_native_identity(c[[phase]]$native_identity)
+          )) {
+            fail("Native identity drift: ", shape, " ", pair, " ",
+                 attempt, " ", phase)
           }
           if (!identical(a[[phase]]$status, c[[phase]]$status)) {
             fail("Status drift: ", shape, " ", pair, " ", attempt,
@@ -210,15 +286,15 @@ lwreg_check <- function(path) {
         }
         if (identical(shape, "feature_gaps")) {
           for (phase in c("cold", "warm")) {
-            identity <- a[[phase]]$identities
-            if (identity$fills$rows == 0L || identity$trades$rows == 0L) {
+            outputs <- a[[phase]]$economic_outputs
+            if (outputs$fills$rows == 0L || outputs$trades$rows == 0L) {
               fail("Feature shape has vacuous fills or trades: ", phase)
             }
           }
         }
         if (identical(shape, "availability_sweep")) {
           for (phase in c("cold", "warm")) {
-            if (a[[phase]]$identities$distinct_decision_outcomes < 2L) {
+            if (a[[phase]]$economic_outputs$distinct_decision_outcomes < 2L) {
               fail("Sweep candidates do not change decisions: ", phase)
             }
           }
@@ -298,7 +374,7 @@ lwreg_check <- function(path) {
     if (nrow(orientation) != 1L) {
       fail("Missing accepted baseline orientation run")
     } else {
-      value <- read_case(orientation$file[[1L]])$cold$identities
+      value <- read_case(orientation$file[[1L]])$cold$economic_outputs
       expected <- c(equity = 757L, fills = 300L,
                     diagnostics = 379873L, strategy_state = 757L)
       actual <- vapply(names(expected), function(name) {
@@ -371,10 +447,34 @@ if (self_test) {
                        measurements$attempt == "initial")[[1L]]
     case_path <- file.path(path, "raw", measurements$file[[candidate]])
     case <- jsonlite::read_json(case_path, simplifyVector = FALSE)
-    case$cold$identities$equity$hash <- "gutted"
+    case$cold$economic_outputs$equity$hash <- "gutted"
     jsonlite::write_json(case, case_path, auto_unbox = TRUE, pretty = TRUE,
                          null = "null", digits = 16)
   }, "Semantic drift")
+
+  expect_mutation("native identity drift", function(path) {
+    measurements <- read_measurements(path)
+    target <- which(measurements$arm == "candidate" &
+                    measurements$attempt == "initial" &
+                    measurements$shape_id == "feature_gaps")[[1L]]
+    case_path <- file.path(path, "raw", measurements$file[[target]])
+    case <- jsonlite::read_json(case_path, simplifyVector = FALSE)
+    case$cold$native_identity$config_hash <- "gutted"
+    jsonlite::write_json(case, case_path, auto_unbox = TRUE, pretty = TRUE,
+                         null = "null", digits = 16)
+  }, "Native identity drift")
+
+  expect_mutation("missing generated native id", function(path) {
+    measurements <- read_measurements(path)
+    target <- which(measurements$arm == "candidate" &
+                    measurements$attempt == "initial" &
+                    measurements$shape_id == "availability_sweep")[[1L]]
+    case_path <- file.path(path, "raw", measurements$file[[target]])
+    case <- jsonlite::read_json(case_path, simplifyVector = FALSE)
+    case$cold$native_identity$sweep_id <- ""
+    jsonlite::write_json(case, case_path, auto_unbox = TRUE, pretty = TRUE,
+                         null = "null", digits = 16)
+  }, "Incomplete native identity")
 
   if (identical(jsonlite::read_json(
     file.path(record, "suite.json"), simplifyVector = TRUE

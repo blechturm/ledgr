@@ -163,20 +163,26 @@ normalize <- function(bt) {
   )
 }
 
+native_identity <- function(bt) lwreg_run_native_identity(snapshot, bt)
+
 params <- list(rebalance_at = rebalance_at, interrupt_at = interrupt_at)
 options(ledgr.interrupt = FALSE)
 straight_bt <- ledgr_run(exp, params = c(params, interrupt = FALSE), run_id = "terminal-straight")
 straight <- normalize(straight_bt)
+straight_identity <- native_identity(straight_bt)
 close(straight_bt)
 reopened_bt <- ledgr_run_open(snapshot, "terminal-straight")
 reopened <- normalize(reopened_bt)
+reopened_identity <- native_identity(reopened_bt)
 close(reopened_bt)
 first <- ledgr_run(exp, params = c(params, interrupt = TRUE), run_id = "terminal-resumed")
 interrupted_status <- ledgr_run_info(snapshot, "terminal-resumed")$status
+interrupted_identity <- native_identity(first)
 close(first)
 options(ledgr.interrupt = FALSE)
 resumed_bt <- ledgr_run(exp, params = c(params, interrupt = TRUE), run_id = "terminal-resumed")
 resumed <- normalize(resumed_bt)
+resumed_identity <- native_identity(resumed_bt)
 close(resumed_bt)
 
 # Checks --------------------------------------------------------------------
@@ -188,6 +194,10 @@ check <- function(ok, label) {
 check(identical(interrupted_status, "RUNNING"), "the interrupted run did not stop RUNNING")
 check(identical(reopened, straight), "reopened outputs differ from the straight run")
 check(identical(resumed, straight), "resumed outputs differ from the straight run")
+check(identical(reopened_identity, straight_identity),
+      "reopened native identity differs from the straight run")
+check(identical(resumed_identity, interrupted_identity),
+      "resumed native identity differs from the interrupted run")
 
 # Independent oracles from the fixture bars and the ledger.
 events <- do.call(rbind, strsplit(straight$events, "|", fixed = TRUE))
@@ -225,22 +235,31 @@ check(any(grepl("default: assumed worthless", straight$terminal_outcomes, fixed 
 check(length(straight$warning) > 0L, "the result warning is missing")
 
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-record <- list(
-  commit = lwreg_git_commit(repo),
-  package_version = as.character(utils::packageVersion("ledgr")),
+expected_record <- list(
+  snapshot = lwreg_snapshot_info(snapshot),
+  native_identities = list(
+    straight = straight_identity,
+    reopened = reopened_identity,
+    interrupted = interrupted_identity,
+    resumed = resumed_identity
+  ),
   outputs = straight
 )
+record <- c(list(
+  commit = lwreg_git_commit(repo),
+  package_version = as.character(utils::packageVersion("ledgr"))
+), expected_record)
 jsonlite::write_json(record, file.path(out_dir, "terminal_release.json"),
                      auto_unbox = TRUE, pretty = TRUE, null = "null", digits = NA)
 if (accept) {
   dir.create(dirname(expected_path), recursive = TRUE, showWarnings = FALSE)
-  jsonlite::write_json(straight, expected_path, auto_unbox = TRUE, pretty = TRUE,
-                       null = "null", digits = NA)
+  jsonlite::write_json(expected_record, expected_path, auto_unbox = TRUE,
+                       pretty = TRUE, null = "null", digits = NA)
 } else if (!file.exists(expected_path)) {
   failures <- c(failures, "no checked-in expected record")
 } else {
   observed <- jsonlite::fromJSON(jsonlite::toJSON(
-    straight, auto_unbox = TRUE, null = "null", digits = NA
+    expected_record, auto_unbox = TRUE, null = "null", digits = NA
   ), simplifyVector = FALSE)
   expected <- jsonlite::read_json(expected_path, simplifyVector = FALSE)
   check(identical(observed, expected), "outputs differ from the checked-in expected record")

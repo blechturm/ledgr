@@ -34,7 +34,7 @@ run_once <- function(label) {
   start <- proc.time()[["elapsed"]]
   bt <- ledgr_run(
     exp,
-    run_id = sprintf("lwreg_%s_%s_%s", shape_id, label, Sys.getpid())
+    run_id = sprintf("lwreg_%s_%s", shape_id, label)
   )
   elapsed <- proc.time()[["elapsed"]] - start
   on.exit(close(bt), add = TRUE)
@@ -48,7 +48,8 @@ run_once <- function(label) {
       start + elapsed - timing$last
     },
     strategy_calls = timing$calls,
-    identities = lwreg_run_identities(bt)
+    native_identity = lwreg_run_native_identity(snapshot, bt),
+    economic_outputs = lwreg_run_economic_outputs(bt)
   )
 }
 
@@ -74,7 +75,8 @@ sweep_once <- function() {
     status = paste(measured$value$status, collapse = "+"),
     elapsed_s = measured$seconds,
     strategy_calls = timing$calls,
-    identities = lwreg_sweep_identity(measured$value)
+    native_identity = lwreg_sweep_native_identity(measured$value),
+    economic_outputs = lwreg_sweep_economic_outputs(measured$value)
   )
 }
 
@@ -107,7 +109,10 @@ walk_forward_once <- function() {
     status = measured$value$status,
     elapsed_s = measured$seconds,
     strategy_calls = timing$calls,
-    identities = list(
+    native_identity = lwreg_walk_forward_native_identity(
+      snapshot, measured$value
+    ),
+    economic_outputs = list(
       folds = lwreg_identity(measured$value$folds),
       scores = lwreg_identity(measured$value$scores),
       selected = lwreg_identity(measured$value$selected),
