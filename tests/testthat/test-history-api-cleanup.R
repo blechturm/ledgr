@@ -199,8 +199,11 @@ testthat::test_that("[LTB-0488] direct history matrices share one causal read an
     "ledgr_history_cpp_check(TYPEOF(stored_sxp) == REALSXP &&",
     "Rf_isMatrix(stored_sxp),",
     "SEXP stored_dim = Rf_getAttrib(stored_sxp, R_DimSymbol);",
-    "return REAL_ELT(stored_sxp, index);"
+    "const ledgr_history_source source(stored_sxp, source_nrow);"
   ))
+  testthat::expect_identical(
+    sum(grepl("source.read<trace>", compact_source, fixed = TRUE)), 1L
+  )
 
   # A requested session after a known inactive interval is a lifetime restart,
   # even when the interval itself lies outside the returned window. The compact

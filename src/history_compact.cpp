@@ -36,6 +36,23 @@ static SEXP ledgr_history_cpp_run_result(const std::vector<int>& off,
   return out_sxp;
 }
 
+class ledgr_history_source {
+ private:
+  const double* data_;
+  int nrow_;
+
+ public:
+  ledgr_history_source(SEXP source_sxp, int nrow)
+      : data_(REAL(source_sxp)), nrow_(nrow) {}
+
+  template <bool trace>
+  inline double read(int row, int column, std::vector<int>* access) const {
+    const R_xlen_t index = row + static_cast<R_xlen_t>(column) * nrow_;
+    if constexpr (trace) access->push_back(static_cast<int>(index + 1));
+    return data_[index];
+  }
+};
+
 // Sparse maximal runs of non-finite cells. They are prepared once with the
 // immutable substrate, then let an ordinary read distinguish a leading gap
 // from an expired carry without reading any value before its bounded carry
@@ -187,6 +204,7 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
   SEXP stored_dim = Rf_getAttrib(stored_sxp, R_DimSymbol);
   const int source_nrow = INTEGER(stored_dim)[0];
   const int source_ncol = INTEGER(stored_dim)[1];
+  const ledgr_history_source source(stored_sxp, source_nrow);
   const int n_instrument = static_cast<int>(XLENGTH(rows_sxp));
   const int n_time = static_cast<int>(XLENGTH(columns_sxp));
   SEXP expected_dim = Rf_getAttrib(expected_sxp, R_DimSymbol);
@@ -305,9 +323,7 @@ SEXP ledgr_cpp_history_bar_compact(SEXP stored_sxp,
   auto process = [&](auto trace_tag) {
   constexpr bool trace = decltype(trace_tag)::value;
   auto read_source = [&](int row, int column) {
-    const R_xlen_t index = row + static_cast<R_xlen_t>(column) * source_nrow;
-    if constexpr (trace) source_access.push_back(static_cast<int>(index + 1));
-    return REAL_ELT(stored_sxp, index);
+    return source.read<trace>(row, column, &source_access);
   };
   for (int instrument = 0; instrument < n_instrument; ++instrument) {
     finite[instrument] = 0;
