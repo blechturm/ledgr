@@ -164,6 +164,10 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
   testthat::expect_identical(from_frame$feature_params, list(list(), list()))
   testthat::expect_identical(from_frame$execution_seed, from_constructor$execution_seed)
   testthat::expect_identical(from_frame$final_equity, from_constructor$final_equity)
+  testthat::expect_identical(
+    ledgr:::ledgr_sweep_storage_candidate_rows(from_frame, sweep_id = "same"),
+    ledgr:::ledgr_sweep_storage_candidate_rows(from_constructor, sweep_id = "same")
+  )
 
   saved_id <- ledgr_sweep_save(from_frame, snapshot, sweep_id = "rectangular")
   reopened <- ledgr_sweep_open(snapshot, saved_id)

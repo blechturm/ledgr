@@ -800,7 +800,7 @@ workstreams:
   - id: 57
     name: "Rectangular sweep inputs and readable candidates"
     cut: 19
-    status: "pending"
+    status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 57", verdict: null, artifact: null, result: null, reason: "One claim: an ordinary tidy rectangular strategy grid is executable and readable without the pre-CRAN compatibility constructor, while composed feature grids retain their separate namespace and every candidate keeps the same deterministic parameters and identity."}
@@ -2668,23 +2668,23 @@ tickets:
   - id: "LDG-3102"
     title: "Accept rectangular strategy grids and remove ledgr_param_grid"
     workstream: 57
-    status: "open"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: []
     scope: "Let ledgr_sweep() and the strategy side of ledgr_grid_cross() accept an ordinary rectangular data frame or tibble, including tidyr::crossing() output, as one strategy-parameter candidate per row. The simple rectangular form accepts only unclassed logical, integer, double and character columns whose cells are non-missing and, for double columns, finite. Preserve those primitive column types and row order when producing each parameter list and derive deterministic labels and candidate identity from canonical row content, never row names. Refuse duplicate candidate rows, NA of every primitive type, Inf, -Inf, NaN, factors, dates, other classed columns, list columns and other unsupported columns before any candidate runs. Delete the exported ledgr_param_grid() constructor, help and examples without an alias; keep ledgr_strategy_grid(), ledgr_feature_grid(), ledgr_grid_cross(), ledgr_grid_named() and their feature/strategy namespace separation. Convert package internals, tests and articles to current forms."
     acceptance: ["a tidyr::crossing() grid with non-missing unclassed integer, finite double, logical and character columns runs in row order, and each candidate's params, ID, execution seed, results, save/reopen and promotion context equal the corresponding direct ledgr_strategy_grid() candidate", "one row with zero columns is one empty-parameter candidate; zero rows refuse; two zero-column rows are duplicate candidates and refuse; duplicated rows, duplicate or empty column names, NA of each primitive type, Inf, -Inf, NaN, factors, Date/POSIXt and other S3 columns, list columns and other non-JSON-safe values refuse with exact classed failures before execution, with one detector per boundary", "a direct rectangular grid and a direct ledgr_strategy_grid() are strategy-namespace inputs: result rows and promotion contexts contain the row in params and exactly list() in feature_params; a parameterized feature map never receives those columns, and a mutation restoring the current plain-list feature fallback fails", "a rectangular strategy grid composes with ledgr_feature_grid() through ledgr_grid_cross() without merging the feature and strategy namespaces, and only ledgr_grid_cross() supplies a non-empty feature namespace", "ledgr_param_grid is absent from exports, namespace, help, examples, vignettes, tests and package code; an API census and mutation restoring the compatibility helper fail, with no deprecation alias or old-form parser", "equivalent current grid forms preserve candidate ordering, canonical parameter bytes, candidate identity, seeds, economic outputs and stored sweep bytes except for an explicitly enumerated display-only difference", "the grid conversion performs one column-to-row preparation outside the candidate execution loop, walks the seven optimization shapes and adds no per-candidate reconstruction of invariant grid data"]
-    evidence: []
+    evidence: ["Implementation 35456322 plus rectangular_sweep_closeout.md removes ledgr_param_grid without an alias, accepts ordinary rectangular strategy grids, preserves the feature/strategy namespace boundary and normalizes once before candidate execution. LCL-0485/LTB-0494 pins primitive types, row order, ignored row names, every refusal boundary, one empty candidate, tidyr::crossing parity against ledgr_strategy_grid, IDs, seeds, economics, persistence rows, save/reopen, promotion and same-named strategy/feature parameters. LCL-0487/LTB-0496 pins removal from the namespace and every current package, help, pkgdown, example, vignette and test surface.", "All touched suites and the final focused set pass. Ordinary fast executes 577/577 blocks in 111.13 seconds and passes the 112-second checker. The codebase census, YAML, source build and R CMD check pass; the latter reports only the established vignette-packaging warnings and head note. The seven-shape walk records one boundary conversion, one canonicalization per row and no candidate-loop, pulse-loop, store-write or mutable-cache regression."]
   - id: "LDG-3103"
     title: "Print readable sweep parameters before candidate hashes"
     workstream: 57
-    status: "open"
+    status: "review_pending"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3102"]
     scope: "Make print.ledgr_sweep_results(), saved/reopened sweep printing and sweep review show a deterministic compact parameter summary before candidate_id. Keep strategy and feature namespaces visibly distinct. Common scalar candidates must show their names and values without requiring ledgr_candidate(); longer values may be marked as truncated with an explicit extraction hint, but may not silently disappear. Printing changes no stored object, order, identity or canonical parameter bytes."
     acceptance: ["empty, strategy-only, feature-only and composed candidates print their parameter namespaces and common scalar name/value pairs before candidate_id on narrow and ordinary console widths", "a long or nested parameter value is deterministically abbreviated with an explicit ledgr_candidate() hint, while the extracted params remain complete and byte-identical", "live, saved/reopened and review surfaces agree for DONE, INCOMPLETE and FAILED candidates and do not expose private paths or evaluate parameter objects", "candidate rows, ranking, hashes and object bytes are unchanged by print; mutation hiding params or swapping feature and strategy namespaces fails a registered snapshot-style text oracle"]
-    evidence: []
+    evidence: ["Implementation 35456322 plus rectangular_sweep_closeout.md puts deterministic strategy_params and feature_params summaries before candidate_id on live, reopened and review output. LCL-0486/LTB-0495 pins empty, strategy-only, feature-only and composed candidates under narrow and ordinary widths, DONE/INCOMPLETE/FAILED rows, an explicit ledgr_candidate() hint for abbreviated values, namespace order and nonmutation of serialized sweep bytes. Degraded selected tibbles retain ordinary tibble printing.", "The executed sweep article teaches an ordinary tibble and the explicit feature-grid composition boundary, renders successfully and passes Markdown freshness. Focused print, sweep-review, persistence and promotion suites pass, and the installed-package check executes every vignette successfully."]
   - id: "LDG-3104"
     title: "Rewrite the minimum-variance article on the compact research path"
     workstream: 58
