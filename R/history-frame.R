@@ -1454,6 +1454,9 @@ ledgr_history_require_consistent <- function(x) {
 #' Reading causal history:
 #' `vignette("causal-history", package = "ledgr")`
 #' `system.file("doc", "causal-history.html", package = "ledgr")`
+#' A long-only minimum-variance strategy:
+#' `vignette("minimum-variance", package = "ledgr")`
+#' `system.file("doc", "minimum-variance.html", package = "ledgr")`
 #' @export
 ledgr_history_matrix <- function(x,
                                  feature = NULL,

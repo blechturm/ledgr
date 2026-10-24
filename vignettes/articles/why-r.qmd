@@ -59,6 +59,32 @@ That helper pipeline is not a second execution path. It is authoring structure
 for the same pulse contract: code should describe the research idea in the
 order you would explain it to a colleague.
 
+Portfolio research keeps the same boundary between ledgr and ordinary R. A
+strategy can ask for an identified causal matrix, hand it to a familiar R
+estimator, and return the solution without rebuilding instrument names:
+
+```r
+returns <- ctx |>
+  ledgr_history_matrix(
+    feature = "return_1",
+    lookback = params$lookback,
+    min_observations = params$min_observations,
+    min_instruments = params$min_instruments
+  )
+
+if (!ledgr_passed_warmup(returns)) {
+  return(ctx$hold())
+}
+
+solution |>
+  ledgr_align_weights(returns) |>
+  ledgr_target_rebalance(ctx, equity_fraction = params$equity_fraction)
+```
+
+The estimator between those two fragments remains ordinary R. ledgr owns the
+causal read, identity alignment and execution boundary; it does not replace
+the statistical ecosystem with a framework-specific optimizer language.
+
 The same readability argument carries into sweep work. ledgr's exploration path
 is still ordinary R strategy code with memory-backed candidate summaries. R
 remains credible here because the package keeps the contract narrow: readable

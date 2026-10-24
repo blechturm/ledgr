@@ -1960,6 +1960,11 @@ and `AAA` a held nonmember, each holding 5:
   `passed_warmup = included_count >= min_instruments` after admission, and
   `ledgr_passed_warmup()` returns that bit for an intact history frame or
   matrix without a second value scan.
+- One intact matrix therefore carries the admitted column identity and panel
+  readiness needed by an ordinary estimator. Its unnamed solution aligns
+  through `ledgr_align_weights()` without a second history read or manual
+  reconstruction of instrument IDs. An excluded instrument still requires an
+  explicit execution choice; admission alone neither keeps nor liquidates it.
 - `ledgr_history_info()` returns a result's recorded metadata as a
   `ledgr_history_info` list (source, cutoff, data and window starts,
   requested and available lookback, selector, `min_observations`,

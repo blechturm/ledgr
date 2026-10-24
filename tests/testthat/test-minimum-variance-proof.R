@@ -135,6 +135,22 @@ ws48_sigma <- function(x, shrink) {
   (1 - shrink) * sigma + shrink * diag(diag(sigma))
 }
 
+ws48_params <- function(values = list()) {
+  utils::modifyList(
+    list(
+      lookback = 252L,
+      min_observations = 60L,
+      min_instruments = 2L,
+      carry_threshold = 0.2,
+      covariance_shrinkage = 0.5,
+      eigenvalue_floor = 1e-6,
+      equity_fraction = 0.95,
+      keep_excluded = TRUE
+    ),
+    values
+  )
+}
+
 # Expected share targets of the estimated instruments at `day` for a flat
 # 100,000 book (or the allocatable equity given).
 ws48_expected <- function(fx, day, ids, lookback, shrink, allocatable = 100000) {
@@ -145,10 +161,15 @@ ws48_expected <- function(fx, day, ids, lookback, shrink, allocatable = 100000) 
 }
 
 ws48_decide <- function(strategy, exp, day, params) {
+  params <- ws48_params(params)
   ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date(day), params = params)
   on.exit(close(ctx), add = TRUE)
-  target <- strategy(ctx, params)
-  list(target = c(target), outcome = attr(target, "outcome"), hold = c(ctx$hold()))
+  result <- strategy(ctx, params)
+  list(
+    target = c(result$targets),
+    outcome = result$intent_reason,
+    hold = c(ctx$hold())
+  )
 }
 
 ws48_fill_days <- function(bt, id = NULL) {
@@ -161,7 +182,7 @@ testthat::test_that("[LTB-0431] the estimator decides on literal month starts, t
   strategy <- ws48_strategy()
   fx <- ws48_fixture(ws48_closes(), strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  params <- list(lookback = 10L, min_obs = 5L)
+  params <- ws48_params(list(lookback = 10L, min_observations = 5L))
 
   outcomes <- character(length(fx$days))
   for (i in seq_along(fx$days)) {
@@ -191,6 +212,25 @@ testthat::test_that("[LTB-0431] the estimator decides on literal month starts, t
     sort(unique(format(as.Date(fills$ts_utc)))),
     c("2021-02-02", "2021-03-02", "2021-04-02")
   )
+
+  read_reasons <- function(run) {
+    diagnostics <- as.data.frame(ledgr_results(run, "diagnostics"))
+    intent <- diagnostics[diagnostics$reason_code == "strategy_intent", , drop = FALSE]
+    vapply(
+      intent$detail_json,
+      function(x) ledgr:::ledgr_json_read_nested(x)$intent_reason,
+      character(1L)
+    )
+  }
+  live_reasons <- read_reasons(bt)
+  testthat::expect_identical(length(live_reasons), length(fx$days))
+  testthat::expect_identical(
+    sort(unique(live_reasons)),
+    c("insufficient_history", "not_a_decision_date", "solved")
+  )
+  reopened <- ledgr_run_open(fx$snapshot, "ws48-dates")
+  on.exit(close(reopened), add = TRUE, after = FALSE)
+  testthat::expect_identical(read_reasons(reopened), live_reasons)
 })
 
 testthat::test_that("[LTB-0432] the weights change when one instrument's carried share crosses the threshold, in both directions", {
@@ -204,7 +244,10 @@ testthat::test_that("[LTB-0432] the weights change when one instrument's carried
   closes[days %in% as.Date(c("2021-02-18", "2021-02-22", "2021-02-24")), "CCC"] <- NA
   fx <- ws48_fixture(closes, strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  params <- list(lookback = 10L, min_obs = 3L, threshold = 0.2, shrink = 0.5)
+  params <- ws48_params(list(
+    lookback = 10L, min_observations = 3L,
+    carry_threshold = 0.2, covariance_shrinkage = 0.5
+  ))
   all_ids <- c("AAA", "BBB", "CCC", "DDD")
 
   share <- function(day) {
@@ -237,19 +280,25 @@ testthat::test_that("[LTB-0432] the weights change when one instrument's carried
   testthat::expect_gt(apr$target[["CCC"]], 0)
 
   # Moving the threshold across the same share flips the same decision.
-  loose <- ws48_decide(strategy, fx$exp, "2021-03-01", utils::modifyList(params, list(threshold = 0.35)))
+  loose <- ws48_decide(
+    strategy, fx$exp, "2021-03-01",
+    utils::modifyList(params, list(carry_threshold = 0.35))
+  )
   expect_targets(loose, "2021-03-01", all_ids)
   testthat::expect_gt(loose$target[["CCC"]], 0)
   testthat::expect_gt(max(abs(loose$target[c("AAA", "BBB", "DDD")] - mar$target[c("AAA", "BBB", "DDD")])), 1)
   # At the boundary the share (3/10) equals the threshold, and an instrument
   # whose share is at most the threshold is estimated (close review 48 F2).
-  boundary <- ws48_decide(strategy, fx$exp, "2021-03-01", utils::modifyList(params, list(threshold = 0.3)))
+  boundary <- ws48_decide(
+    strategy, fx$exp, "2021-03-01",
+    utils::modifyList(params, list(carry_threshold = 0.3))
+  )
   testthat::expect_identical(boundary$outcome, "solved")
   testthat::expect_gt(boundary$target[["CCC"]], 0)
   expect_targets(boundary, "2021-03-01", all_ids)
 })
 
-testthat::test_that("[LTB-0433] an instrument with fewer than min_obs valid returns is excluded and, if held, kept", {
+testthat::test_that("[LTB-0433] an instrument with fewer than min_observations valid returns is excluded and, if held, kept", {
   strategy <- ws48_strategy()
   closes <- ws48_closes()
   days <- ws48_days()
@@ -265,7 +314,9 @@ testthat::test_that("[LTB-0433] an instrument with fewer than min_obs valid retu
     opening = ledgr_opening(cash = 100000, positions = c(DDD = 100), cost_basis = c(DDD = 80))
   )
   on.exit(ledgr_snapshot_close(held$snapshot), add = TRUE)
-  params <- list(lookback = 10L, min_obs = 5L, shrink = 0.5)
+  params <- ws48_params(list(
+    lookback = 10L, min_observations = 5L, covariance_shrinkage = 0.5
+  ))
 
   ctx <- ledgr_pulse_snapshot(flat$exp, ts_utc = as.Date("2021-03-01"), params = params)
   returns <- ledgr_history_frame(
@@ -293,7 +344,10 @@ testthat::test_that("[LTB-0433] an instrument with fewer than min_obs valid retu
   sold <- ws48_decide(strategy, held$exp, "2021-03-01", utils::modifyList(params, list(keep_excluded = FALSE)))
   testthat::expect_identical(sold$target[["DDD"]], 0)
   # One valid return fewer required, and DDD is estimated again.
-  included <- ws48_decide(strategy, flat$exp, "2021-03-01", utils::modifyList(params, list(min_obs = 4L)))
+  included <- ws48_decide(
+    strategy, flat$exp, "2021-03-01",
+    utils::modifyList(params, list(min_observations = 4L))
+  )
   testthat::expect_gt(included$target[["DDD"]], 0)
 })
 
@@ -305,7 +359,9 @@ testthat::test_that("[LTB-0434] a held instrument outside the estimate keeps its
   closes[days %in% as.Date(c("2021-02-18", "2021-02-22", "2021-02-24")), "CCC"] <- NA
   fx <- ws48_fixture(closes, strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  params <- list(lookback = 10L, min_obs = 3L, threshold = 0.2)
+  params <- ws48_params(list(
+    lookback = 10L, min_observations = 3L, carry_threshold = 0.2
+  ))
   kept <- ledgr_run(fx$exp, params = params, run_id = "ws48-keep")
   on.exit(close(kept), add = TRUE, after = FALSE)
   sold <- ledgr_run(fx$exp, params = utils::modifyList(params, list(keep_excluded = FALSE)),
@@ -371,7 +427,9 @@ testthat::test_that("[LTB-0435] the constrained solution meets the long-only opt
   closes[, "CCC"] <- 70 * cumprod(1 + r_ccc)
   fx <- ws48_fixture(closes, strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  params <- list(lookback = 20L, min_obs = 10L, shrink = 0.05)
+  params <- ws48_params(list(
+    lookback = 20L, min_observations = 10L, covariance_shrinkage = 0.05
+  ))
   ids <- c("AAA", "BBB", "CCC", "DDD")
 
   x <- ws48_window_returns(closes, days, "2021-03-01", 20L, ids)
@@ -404,7 +462,7 @@ testthat::test_that("[LTB-0435] the constrained solution meets the long-only opt
 testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold instead of erroring or returning a partial target", {
   strategy <- ws48_strategy()
   days <- ws48_days()
-  params <- list(lookback = 10L, min_obs = 5L)
+  params <- ws48_params(list(lookback = 10L, min_observations = 5L))
 
   # A covariance the eigenvalue floor cannot repair (Cut 17 decision 20):
   # without input carry, CCC has valid returns only on 24-26 February and
@@ -417,7 +475,7 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
   disjoint[days %in% as.Date(c("2021-02-23", "2021-02-24", "2021-02-25", "2021-02-26")), "DDD"] <- NA
   cx <- ws48_fixture(disjoint, strategy, policy = ledgr_history_policy(price_carry = NULL))
   on.exit(ledgr_snapshot_close(cx$snapshot), add = TRUE)
-  missing_params <- list(lookback = 10L, min_obs = 4L)
+  missing_params <- ws48_params(list(lookback = 10L, min_observations = 4L))
   seen <- ws48_decide(strategy, cx$exp, "2021-03-01", missing_params)
   testthat::expect_identical(seen$outcome, "covariance_not_positive_definite")
   testthat::expect_identical(seen$target, seen$hold)
@@ -470,7 +528,8 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
 
   # A holding the rebalance must value without a permissible mark. A run
   # never reaches the strategy with one (see the run below), so the context
-  # is edited: DDD is held and kept (it fails min_obs as in LTB-0433), or AAA
+  # is edited: DDD is held and kept (it fails min_observations as in
+  # LTB-0433), or AAA
   # is held and weighted without a current close; neither has a mark.
   gap <- ws48_closes()
   gap[days %in% as.Date(c("2021-02-17", "2021-02-18", "2021-02-19", "2021-02-22", "2021-02-23")), "DDD"] <- NA
@@ -484,8 +543,12 @@ testthat::test_that("[LTB-0436] estimation failures and unvalued holdings hold i
     ctx <- ledgr_pulse_snapshot(book$exp, ts_utc = as.Date("2021-03-01"), params = params)
     on.exit(close(ctx), add = TRUE)
     ctx$vec <- edit(ctx$vec, match(c("AAA", "DDD"), ctx$universe))
-    target <- strategy(ctx, params)
-    list(outcome = attr(target, "outcome"), target = c(target), hold = c(ctx$hold()))
+    result <- strategy(ctx, params)
+    list(
+      outcome = result$intent_reason,
+      target = c(result$targets),
+      hold = c(ctx$hold())
+    )
   }
   kept <- unvalued(function(vec, at) {
     vec$risk_mark[at[[2L]]] <- NA_real_
@@ -567,38 +630,47 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
   testthat::expect_false(any(grepl("error:\\s*true", options)))
   testthat::expect_false(grepl("eval\\s*=\\s*FALSE", text))
 
-  # The strategy reads closes for the carried share, then returns of the
-  # retained instruments with missing cells kept, screens by min_obs, reads
-  # again and reaches targets through the alignment bridge with keep.
+  # The strategy reads closes for the carried share, then makes one direct
+  # identified return-matrix read whose requirements perform admission and
+  # record readiness. The solver output reaches targets through the matrix
+  # alignment bridge with keep.
   body <- code("strategy")
   for (call in c(
     "ledgr_history_frame(bar = \"close\", lookback = 2L, instruments = character())",
     "format(axis$ts_utc, \"%Y-%m\", tz = \"UTC\")",
-    "ledgr_history_frame(bar = \"close\", lookback = lookback,",
-    "min_instruments = 2L",
-    "selection$carried_input_share <= threshold",
-    "instruments = candidates, min_observations = 0L",
-    "valid >= min_obs",
-    "instruments = estimated, min_observations = 0L",
+    "ledgr_history_frame(bar = \"close\", lookback = params$lookback,",
+    "selection$carried_input_share <= params$carry_threshold",
+    "ledgr_history_matrix(",
+    "min_observations = params$min_observations",
+    "min_instruments = params$min_instruments",
+    "if (!ledgr_passed_warmup(returns))",
     "use = \"pairwise.complete.obs\"",
     "quadprog::solve.QP(",
     "ledgr_align_weights(returns)",
-    "ledgr_target_rebalance(ctx, equity_fraction = 0.95, keep = held_excluded)",
+    "equity_fraction = params$equity_fraction",
+    "keep = held_excluded",
     "ledgr_target_sizing_unavailable = function(e) NULL",
-    "params$lookback %||% 252L", "params$threshold %||% 0.2",
-    "params$shrink %||% 0.5", "params$min_obs %||% 60L"
+    "list(targets = target, intent_reason = \"solved\")"
   )) {
     testthat::expect_match(body, call, fixed = TRUE, info = call)
   }
   compact <- gsub("[[:space:]]+", "", body)
   for (forbidden in c("colnames(", "rownames(", "setNames(", "pmax(", "ledgr_results(",
-                      "ctx$bars", "ctx$feature_table", "ctx$.", "ledgr_pulse_features(")) {
+                      "ctx$bars", "ctx$feature_table", "ctx$.", "ledgr_pulse_features(",
+                      "%||%", "colSums(", "structure(", "na_action", "ledgr_history_sufficient(")) {
     testthat::expect_false(grepl(forbidden, compact, fixed = TRUE), info = forbidden)
   }
   testthat::expect_false(grepl("(^|[^[:alnum:]_.])(dim)?names\\(", compact), info = "names(")
   testthat::expect_identical(
-    lengths(regmatches(body, gregexpr("feature = \"return_1\"", body, fixed = TRUE))), 2L
+    lengths(regmatches(body, gregexpr("feature = \"return_1\"", body, fixed = TRUE))), 1L
   )
+  params_body <- code("strategy-params")
+  for (name in c(
+    "lookback", "min_observations", "min_instruments", "carry_threshold",
+    "covariance_shrinkage", "eigenvalue_floor", "equity_fraction", "keep_excluded"
+  )) {
+    testthat::expect_match(params_body, paste0(name, " ="), fixed = TRUE, info = name)
+  }
   preflight <- ledgr_strategy_preflight(strategy)
   testthat::expect_identical(preflight$tier, "tier_2")
   testthat::expect_identical(preflight$worker_dependencies$require_namespace, "quadprog")
@@ -610,6 +682,8 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
     "The strategy therefore passes every holding outside the estimate in `keep`",
     "The very first session of the data has no previous session, so it counts as a month start.",
     "Months are taken in UTC.",
+    "This predicate is a workaround until the parked scheduler RFC",
+    "decision evidence, not a general factor or prediction store",
     "so no dividend is posted in this demo"
   )) {
     testthat::expect_match(squished, sentence, fixed = TRUE, info = sentence)
@@ -630,10 +704,10 @@ testthat::test_that("[LTB-0437] the minimum-variance article teaches the execute
   expected <- list(
     "outcome_on(\"2019-11-12\")" = "not_a_decision_date",
     "outcome_on(\"2018-06-01\")" = "insufficient_history",
-    "outcome_on(\"2019-11-01\", list(min_obs = 300L))" = "too_few_instruments",
+    "outcome_on(\"2019-11-01\", list(min_instruments = 9L))" = "too_few_instruments",
     # Cut 17 decision (20): the eigenvalue floor repairs this singular case.
-    "outcome_on(\"2019-11-01\", list(lookback = 5L, min_obs = 2L, shrink = 1e-12))" = "solved",
-    "attr(decision, \"outcome\")" = "solved",
+    "list(lookback = 5L, min_observations = 2L, covariance_shrinkage = 1e-12)" = "solved",
+    "decision$intent_reason" = "solved",
     "check$tier" = "tier_2",
     "check$worker_dependencies$require_namespace" = "quadprog",
     "length(fill_days)" = "[1] 24",
@@ -683,7 +757,7 @@ testthat::test_that("[LTB-0438] a run that stops for a holding without a permiss
     opening = ledgr_opening(cash = 100000, positions = c(DDD = 100), cost_basis = c(DDD = 80))
   )
   on.exit(ledgr_snapshot_close(nx$snapshot), add = TRUE)
-  unpriced <- ledgr_run(nx$exp, params = list(), run_id = "ws48-print-unpriced")
+  unpriced <- ledgr_run(nx$exp, params = ws48_params(), run_id = "ws48-print-unpriced")
   on.exit(close(unpriced), add = TRUE, after = FALSE)
   expected <- paste(
     "Valuation: STOPPED - 1 holding without a permissible mark at 2021-01-13T16:00:00Z (DDD);",
@@ -716,7 +790,7 @@ testthat::test_that("[LTB-0438] a run that stops for a holding without a permiss
     valuation = ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")
   )
   on.exit(ledgr_snapshot_close(rx$snapshot), add = TRUE)
-  refused <- ledgr_run(rx$exp, params = list(), run_id = "ws48-print-refused")
+  refused <- ledgr_run(rx$exp, params = ws48_params(), run_id = "ws48-print-refused")
   on.exit(close(refused), add = TRUE, after = FALSE)
   testthat::expect_identical(ledgr_run_completion(refused)$stop_reason, "valuation_horizon_exhausted")
   testthat::expect_identical(ledgr_valuation_summary(refused)$valuation_state, "stale")
@@ -755,7 +829,7 @@ testthat::test_that("[LTB-0438] a run that stops for a holding without a permiss
   # A run without a valuation stop keeps its ordinary headline.
   cx <- ws48_fixture(ws48_closes(), hold)
   on.exit(ledgr_snapshot_close(cx$snapshot), add = TRUE)
-  clean <- ledgr_run(cx$exp, params = list(), run_id = "ws48-print-clean")
+  clean <- ledgr_run(cx$exp, params = ws48_params(), run_id = "ws48-print-clean")
   on.exit(close(clean), add = TRUE, after = FALSE)
   clean_lines <- lines_of(clean, print)
   testthat::expect_true("Valuation: CURRENT - every held mark was a current close" %in% clean_lines)
@@ -810,7 +884,9 @@ testthat::test_that("[LTB-0439] an indefinite pairwise covariance from short-his
   closes <- ws48_entrant_closes(days)
   fx <- ws48_fixture(closes, strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  params <- list(lookback = 10L, min_obs = 4L, shrink = 0.5)
+  params <- ws48_params(list(
+    lookback = 10L, min_observations = 4L, covariance_shrinkage = 0.5
+  ))
   ids <- c("AAA", "BBB", "CCC", "DDD", "EEE")
 
   # Precondition from the fixture closes: four valid returns for each
@@ -831,7 +907,7 @@ testthat::test_that("[LTB-0439] an indefinite pairwise covariance from short-his
   # A floor large enough to bind on the solution pins the floor's rule and
   # size: relative to the largest eigenvalue and read from eig_floor
   # (re-review 1 N1). The oracle's targets are 653/546/109/119/129.
-  floor_params <- utils::modifyList(params, list(eig_floor = 0.2))
+  floor_params <- utils::modifyList(params, list(eigenvalue_floor = 0.2))
   wide <- ws48_decide(strategy, fx$exp, "2021-03-01", floor_params)
   testthat::expect_identical(wide$outcome, "solved")
   expected_wide <- floor(ws48_long_only(ws48_floor(sigma, 0.2)) * 0.95 * 100000 / price)
@@ -854,7 +930,9 @@ testthat::test_that("[LTB-0440] a held index leaver is sold on the next decision
   closes[days %in% as.Date(c("2021-02-18", "2021-02-22", "2021-02-24")), "CCC"] <- NA
   fx <- ws48_fixture(closes, strategy, membership = membership)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  params <- list(lookback = 10L, min_obs = 3L, threshold = 0.2)
+  params <- ws48_params(list(
+    lookback = 10L, min_observations = 3L, carry_threshold = 0.2
+  ))
 
   ctx <- ledgr_pulse_snapshot(fx$exp, ts_utc = as.Date("2021-03-01"), params = params)
   testthat::expect_true(all(c("AAA", "BBB", "CCC") %in% ctx$members))

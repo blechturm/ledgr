@@ -278,6 +278,12 @@ identical(as.matrix(returns), as.matrix(ledgr_history_matrix(return_frame)))
 source, cutoff, window, how many sessions it holds and which requested
 instruments it includes or left out.
 
+Because `min_observations` performs column admission and the matrix
+retains the admitted instrument identity, an estimator normally needs
+only this one read. Its unnamed solution can go straight through
+`ledgr_align_weights()`; the complete worked example is
+`vignette("minimum-variance", package = "ledgr")`.
+
 ``` r
 ledgr_history_info(returns)
 ```

@@ -88,13 +88,9 @@ the calling session.
 
 ``` r
 min_variance <- function(ctx, params) {
-  lookback <- params$lookback %||% 252L
-  threshold <- params$threshold %||% 0.2
-  shrink <- params$shrink %||% 0.5
-  min_obs <- params$min_obs %||% 60L
-  eig_floor <- params$eig_floor %||% 1e-6
-  keep_excluded <- params$keep_excluded %||% TRUE
-  hold <- function(outcome) structure(ctx$hold(), outcome = outcome)
+  hold <- function(reason) {
+    list(targets = ctx$hold(), intent_reason = reason)
+  }
 
   # 1. Decide only on a month's first session: the session whose UTC month
   #    differs from that of the previous expected venue session. The data
@@ -109,37 +105,45 @@ min_variance <- function(ctx, params) {
   # 2. Read closes over the window and screen out instruments whose window
   #    holds too many carried prices.
   closes <- ctx |>
-    ledgr_history_frame(bar = "close", lookback = lookback,
-                        min_instruments = 2L)
+    ledgr_history_frame(bar = "close", lookback = params$lookback,
+                        min_instruments = 1L)
   if (!ledgr_passed_warmup(closes)) {
     return(hold("insufficient_history"))
   }
   selection <- ledgr_history_info(closes)$selection
   selection <- selection[selection$requested, , drop = FALSE]
-  candidates <- selection$instrument_id[selection$carried_input_share <= threshold]
+  candidates <- selection$instrument_id[
+    selection$carried_input_share <= params$carry_threshold
+  ]
 
-  # 3. Read daily returns of the remaining instruments, missing cells kept,
-  #    and screen out instruments with too few valid returns. Read again, so
-  #    the final read holds exactly the instruments that are estimated.
+  # 3. Read one ordinary matrix of daily returns. The read itself excludes
+  #    instruments with too few usable returns and records whether enough
+  #    instruments remain for the estimator.
   returns <- ctx |>
-    ledgr_history_frame(feature = "return_1", lookback = lookback,
-                        instruments = candidates, min_observations = 0L)
-  valid <- colSums(is.finite(ledgr_history_matrix(returns)))
-  estimated <- ledgr_history_info(returns)$included_ids[valid >= min_obs]
-  if (length(estimated) < 2L) {
-    return(hold("too_few_instruments"))
+    ledgr_history_matrix(
+      feature = "return_1",
+      lookback = params$lookback,
+      instruments = candidates,
+      min_observations = params$min_observations,
+      min_instruments = params$min_instruments
+    )
+  if (!ledgr_passed_warmup(returns)) {
+    reason <- if (ledgr_history_info(returns)$available_lookback < params$lookback) {
+      "insufficient_history"
+    } else {
+      "too_few_instruments"
+    }
+    return(hold(reason))
   }
-  returns <- ctx |>
-    ledgr_history_frame(feature = "return_1", lookback = lookback,
-                        instruments = estimated, min_observations = 0L)
 
   # 4. Estimate a pairwise covariance and shrink it toward its diagonal. A
   #    pairwise estimate need not be positive definite, so floor its
-  #    eigenvalues at eig_floor times the largest one. Hold only when no
+  #    eigenvalues at eigenvalue_floor times the largest one. Hold only when no
   #    repair is possible: a pair without common valid returns, or no
   #    positive variance at all.
-  sigma <- stats::cov(ledgr_history_matrix(returns), use = "pairwise.complete.obs")
-  sigma <- (1 - shrink) * sigma + shrink * diag(diag(sigma))
+  sigma <- stats::cov(returns, use = "pairwise.complete.obs")
+  sigma <- (1 - params$covariance_shrinkage) * sigma +
+    params$covariance_shrinkage * diag(diag(sigma))
   if (anyNA(sigma)) {
     return(hold("covariance_not_positive_definite"))
   }
@@ -148,10 +152,11 @@ min_variance <- function(ctx, params) {
   if (!(largest > 0)) {
     return(hold("covariance_not_positive_definite"))
   }
-  if (min(values) < eig_floor * largest) {
+  if (min(values) < params$eigenvalue_floor * largest) {
     decomposition <- eigen(sigma, symmetric = TRUE)
     floored <- decomposition$values
-    floored[floored < eig_floor * largest] <- eig_floor * largest
+    floored[floored < params$eigenvalue_floor * largest] <-
+      params$eigenvalue_floor * largest
     sigma <- decomposition$vectors %*% (floored * t(decomposition$vectors))
     sigma <- (sigma + t(sigma)) / 2
   }
@@ -173,11 +178,20 @@ min_variance <- function(ctx, params) {
 
   # 6. Keep every holding the estimate left out, and target the rest.
   held <- ctx$universe[ctx$vec$position != 0]
-  held_excluded <- if (isTRUE(keep_excluded)) setdiff(held, estimated) else character()
+  estimated <- ledgr_history_info(returns)$included_ids
+  held_excluded <- if (isTRUE(params$keep_excluded)) {
+    setdiff(held, estimated)
+  } else {
+    character()
+  }
   target <- tryCatch(
     solution |>
       ledgr_align_weights(returns) |>
-      ledgr_target_rebalance(ctx, equity_fraction = 0.95, keep = held_excluded),
+      ledgr_target_rebalance(
+        ctx,
+        equity_fraction = params$equity_fraction,
+        keep = held_excluded
+      ),
     ledgr_target_sizing_unavailable = function(e) NULL
   )
   if (is.null(target)) {
@@ -188,38 +202,61 @@ min_variance <- function(ctx, params) {
   #    universe. The rebalance preserves them, so target them to zero.
   leavers <- ctx$universe[ctx$vec$position != 0 & !ctx$vec$member]
   target[leavers] <- 0
-  structure(target, outcome = "solved")
+  list(targets = target, intent_reason = "solved")
 }
 ```
 
-The parameters and their defaults:
+The callback has no hidden defaults. This visible object is the strategy
+configuration used below and is stored with every run:
+
+``` r
+strategy_params <- list(
+  lookback = 252L,
+  min_observations = 60L,
+  min_instruments = 2L,
+  carry_threshold = 0.2,
+  covariance_shrinkage = 0.5,
+  eigenvalue_floor = 1e-6,
+  equity_fraction = 0.95,
+  keep_excluded = TRUE
+)
+```
+
+Each parameter makes one research choice explicit:
 
 - `lookback = 252`: the estimation window, in expected venue sessions.
   It is finite, so each decision reads the same amount of history
   however long the run is.
-- `threshold = 0.2`: the largest share of carried closes an instrument
-  may have in its window and still be estimated.
-- `shrink = 0.5`: how far the covariance is pulled toward its diagonal,
-  a fixed number in (0, 1\]. Without it, a window with fewer sessions
-  than instruments gives a singular covariance. Half way is a strong
-  pull; it keeps the estimate usable when instruments outnumber
-  sessions.
-- `min_obs = 60`: the fewest valid daily returns an instrument needs,
-  about a quarter of the default window.
-- `eig_floor = 1e-6`: the smallest eigenvalue the covariance may keep,
-  as a fraction of its largest. Each pair’s covariance is estimated from
-  the sessions both instruments have, so instruments with short or
-  different histories, such as recent index entrants, can give a matrix
-  that is not positive definite even after shrinkage. Raising its
-  eigenvalues to the floor is the standard nearest positive definite
+- `carry_threshold = 0.2`: the largest share of carried closes an
+  instrument may have in its window and still be estimated.
+- `covariance_shrinkage = 0.5`: how far the covariance is pulled toward
+  its diagonal, a fixed number in (0, 1\]. Without it, a window with
+  fewer sessions than instruments gives a singular covariance. Half way
+  is a strong pull; it keeps the estimate usable when instruments
+  outnumber sessions.
+- `min_observations = 60`: the fewest valid daily returns an instrument
+  needs, about a quarter of the default window.
+- `min_instruments = 2`: the fewest admitted instruments needed before
+  the optimizer is called. It changes readiness, not which columns are
+  admitted.
+- `eigenvalue_floor = 1e-6`: the smallest eigenvalue the covariance may
+  keep, as a fraction of its largest. Each pair’s covariance is
+  estimated from the sessions both instruments have, so instruments with
+  short or different histories, such as recent index entrants, can give
+  a matrix that is not positive definite even after shrinkage. Raising
+  its eigenvalues to the floor is the standard nearest positive definite
   repair; an estimate whose eigenvalues are all above the floor is left
   unchanged.
 - `keep_excluded = TRUE`: keep holdings the estimate left out. It exists
   so that this article can show what happens without it.
+- `equity_fraction = 0.95`: invest 95% of the capital left after
+  preserved holdings, leaving a small cash buffer.
 
-Every returned target carries an `outcome` attribute that names how the
-pulse ended. A run does not record it, but calling the strategy on one
-pulse shows it.
+The callback returns targets plus an optional `intent_reason`. ledgr
+records that reason once for the decision pulse, so `solved`,
+`insufficient_history` and the other outcomes remain available after the
+run is reopened. This is decision evidence, not a general factor or
+prediction store; that broader surface remains tracked as `LFB-028`.
 
 ## One Decision, Step By Step
 
@@ -234,7 +271,11 @@ exp <- ledgr_experiment(
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
 )
-november <- ledgr_pulse_snapshot(exp, ts_utc = as.Date("2019-11-01"), params = list())
+november <- ledgr_pulse_snapshot(
+  exp,
+  ts_utc = as.Date("2019-11-01"),
+  params = strategy_params
+)
 closes <- november |> ledgr_history_frame(bar = "close", lookback = 252L)
 ledgr_history_info(closes)$selection[, c("instrument_id", "requested",
                                          "carried_input_count", "carried_input_share")]
@@ -266,57 +307,79 @@ selection <- ledgr_history_info(closes)$selection
 candidates <- selection$instrument_id[selection$requested &
                                         selection$carried_input_share <= 0.2]
 returns <- november |>
-  ledgr_history_frame(feature = "return_1", lookback = 252L,
-                      instruments = candidates, min_observations = 0L)
-colSums(is.finite(ledgr_history_matrix(returns)))
+  ledgr_history_matrix(
+    feature = "return_1",
+    lookback = strategy_params$lookback,
+    instruments = candidates,
+    min_observations = strategy_params$min_observations,
+    min_instruments = strategy_params$min_instruments
+  )
+return_selection <- ledgr_history_info(returns)$selection
+return_selection[, c("instrument_id", "finite_observation_count", "included")]
 ```
 
-    DEMO_02 DEMO_03 DEMO_04 DEMO_06 DEMO_07 DEMO_08
-        252     252     252     252     252      43
+    # A tibble: 8 x 3
+      instrument_id finite_observation_count included
+      <chr>                            <int> <lgl>
+    1 DEMO_02                            252 TRUE
+    2 DEMO_03                            252 TRUE
+    3 DEMO_04                            252 TRUE
+    4 DEMO_06                            252 TRUE
+    5 DEMO_07                            252 TRUE
+    6 DEMO_08                             43 FALSE
+    7 DEMO_01                             NA FALSE
+    8 DEMO_05                             NA FALSE
 
 `DEMO_08` has traded for two months, so it has fewer than 60 valid
 returns and is left out too. The five instruments that remain are
 estimated, and the solver’s output becomes share targets:
 
 ``` r
-decision <- min_variance(november, list())
-attr(decision, "outcome")
+decision <- min_variance(november, strategy_params)
+decision$intent_reason
 ```
 
     [1] "solved"
 
 ``` r
-c(decision)
+decision$targets
 ```
 
-    DEMO_01 DEMO_02 DEMO_03 DEMO_04 DEMO_05 DEMO_06 DEMO_07 DEMO_08
-          0     263     341     222       0     189     166       0
+    <ledgr_target> [8 assets]
+    origin: ledgr_align_weights
+    non-NA: 8/8
+    DEMO_01 DEMO_02 DEMO_03 DEMO_04 DEMO_05 DEMO_06
+          0     263     341     222       0     189
 
 `ledgr_align_weights()` names the solver’s unnamed output by the
-instruments of the final return read, in the order of its columns, and
-refuses a vector of the wrong length. That is why the strategy reads
-returns a second time after the screen: the aligned read must hold
-exactly the estimated instruments.
+instruments included by the identified return matrix, in matrix-column
+order, and refuses a vector of the wrong length. No `colnames()` bridge
+is needed: the matrix carries that identity from the causal read through
+the estimator.
 
 ## Decision Dates
 
-The strategy decides on the first session of each month and returns
-`ctx$hold()` on every other session. It finds the first session from a
-two-session history read with no instruments: if the current session and
-the previous expected session fall in the same month, this is not a
-decision date. The very first session of the data has no previous
-session, so it counts as a month start. Months are taken in UTC. That is
-right for this venue, whose sessions close at 16:00 UTC on the venue’s
-own civil date; for a venue whose close falls after midnight UTC, the
-UTC month would differ from the venue’s month.
+The strategy currently decides on the first session of each month and
+returns `ctx$hold()` on every other session. This predicate is a
+workaround until the parked scheduler RFC provides orchestration outside
+the callback; it is not a general scheduling helper or guarantee. It
+finds the first session from a two-session history read with no
+instruments: if the current session and the previous expected session
+fall in the same month, this is not a decision date. The very first
+session of the data has no previous session, so it counts as a month
+start. Months are taken in UTC. That is right for this venue, whose
+sessions close at 16:00 UTC on the venue’s own civil date; for a venue
+whose close falls after midnight UTC, the UTC month would differ from
+the venue’s month.
 
 Before a full window of 252 sessions exists, the strategy holds as well:
 
 ``` r
 outcome_on <- function(date, params = list()) {
+  params <- utils::modifyList(strategy_params, params)
   ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date(date), params = params)
   on.exit(close(ctx))
-  attr(min_variance(ctx, params), "outcome")
+  min_variance(ctx, params)$intent_reason
 }
 outcome_on("2019-11-12")
 ```
@@ -349,7 +412,8 @@ check$worker_dependencies$require_namespace
     [1] "quadprog"
 
 ``` r
-bt <- exp |> ledgr_run(params = list(), run_id = "minimum-variance")
+bt <- exp |>
+  ledgr_run(params = strategy_params, run_id = "minimum-variance")
 fills <- as.data.frame(ledgr_results(bt, "fills"))
 fill_days <- unique(as.Date(fills$ts_utc))
 length(fill_days)
@@ -397,12 +461,22 @@ to five sessions.
 
 ## Holdings The Estimate Leaves Out
 
-Leaving an instrument out of the estimate is an estimation choice. It
-should not sell anything by itself. But `ledgr_target_rebalance()`
-targets every eligible instrument without a weight to zero, so a holding
-the estimate left out would be sold at the next open. The strategy
-therefore passes every holding outside the estimate in `keep`, and the
-rebalance keeps its quantity and sizes the rest around it.
+Three decisions are deliberately separate:
+
+- **Estimation exclusion:** the history read leaves a column out because
+  it fails `min_observations`, or the strategy’s carry screen does not
+  request it.
+- **Allocation output:** the solver returns weights only for the
+  instruments it estimated.
+- **Execution intent:** the strategy must still say whether an omitted
+  holding is kept or liquidated.
+
+Leaving an instrument out of the estimate should not sell anything by
+itself. But `ledgr_target_rebalance()` targets every eligible instrument
+without a weight to zero, so a holding the estimate left out would be
+sold at the next open. The strategy therefore passes every holding
+outside the estimate in `keep`, and the rebalance keeps its quantity and
+sizes the rest around it.
 
 `DEMO_05` is held when its carried share crosses the threshold in
 November 2019. Its share stays above 0.2 until the thin stretch leaves
@@ -410,7 +484,7 @@ the window in July 2020:
 
 ``` r
 share_on <- function(date) {
-  ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date(date), params = list())
+  ctx <- ledgr_pulse_snapshot(exp, ts_utc = as.Date(date), params = strategy_params)
   on.exit(close(ctx))
   selection <- ledgr_history_info(
     ctx |> ledgr_history_frame(bar = "close", lookback = 252L)
@@ -432,7 +506,10 @@ from October 2019 to July 2020:
 
 ``` r
 without_keep <- exp |>
-  ledgr_run(params = list(keep_excluded = FALSE), run_id = "minimum-variance-no-keep")
+  ledgr_run(
+    params = utils::modifyList(strategy_params, list(keep_excluded = FALSE)),
+    run_id = "minimum-variance-no-keep"
+  )
 demo_05_fills <- function(bt) {
   fills <- as.data.frame(ledgr_results(bt, "fills"))
   fills[fills$instrument_id == "DEMO_05" &
@@ -476,15 +553,15 @@ idle until the next decision.
 ## When The Strategy Holds
 
 On a decision date the strategy returns `ctx$hold()` instead of a target
-when it cannot estimate. Each case has its own outcome:
+when it cannot estimate. Each case has its own durable intent reason:
 
 - `not_a_decision_date` and `insufficient_history`, shown above.
-- `too_few_instruments`: fewer than two instruments pass the screens.
-  Here every instrument fails a `min_obs` that is longer than the
-  window:
+- `too_few_instruments`: fewer than the required number of instruments
+  pass the screens. Here the requirement is deliberately larger than the
+  demo universe:
 
 ``` r
-outcome_on("2019-11-01", list(min_obs = 300L))
+outcome_on("2019-11-01", list(min_instruments = 9L))
 ```
 
     [1] "too_few_instruments"
@@ -498,7 +575,10 @@ outcome_on("2019-11-01", list(min_obs = 300L))
   so, yet the strategy still solves:
 
 ``` r
-outcome_on("2019-11-01", list(lookback = 5L, min_obs = 2L, shrink = 1e-12))
+outcome_on(
+  "2019-11-01",
+  list(lookback = 5L, min_observations = 2L, covariance_shrinkage = 1e-12)
+)
 ```
 
     [1] "solved"
@@ -527,7 +607,8 @@ book <- ledgr_experiment(
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
 )
-unpriced <- book |> ledgr_run(params = list(), run_id = "minimum-variance-unpriced")
+unpriced <- book |>
+  ledgr_run(params = strategy_params, run_id = "minimum-variance-unpriced")
 completion <- ledgr_run_completion(unpriced)
 completion$completion_status
 ```
@@ -546,24 +627,34 @@ could not be valued, and the strategy was never asked to decide.
 ## Sweep The Window And The Threshold
 
 The strategy reads its parameters from `params`, so the window and the
-threshold are ordinary sweep parameters. Preflight told the workers to
-load `quadprog`:
+carry threshold are ordinary sweep parameters. Preflight told the
+workers to load `quadprog`:
 
 ``` r
-grid <- ledgr_strategy_grid(lookback = c(126L, 252L), threshold = c(0.1, 0.2))
+grid <- data.frame(
+  lookback = rep(c(126L, 252L), each = 2L),
+  min_observations = rep(60L, 4L),
+  min_instruments = rep(2L, 4L),
+  carry_threshold = rep(c(0.1, 0.2), 2L),
+  covariance_shrinkage = rep(0.5, 4L),
+  eigenvalue_floor = rep(1e-6, 4L),
+  equity_fraction = rep(0.95, 4L),
+  keep_excluded = rep(TRUE, 4L)
+)
 sweep <- ledgr_sweep(exp, grid, workers = 2L, seed = 1L)
 sweep
 ```
 
-    # ledgr sweep -- sweep_8afcb31bcb203857
-    # A tibble: 4 x 8
-      candidate_id        candidate_row status sharpe_ratio total_return max_drawdown n_trades
-      <chr>                       <int> <chr>         <dbl> <chr>        <chr>           <int>
-    1 strategy_0b915b2d8~             1 DONE          0.596 +12.0%       -6.6%              87
-    2 strategy_9dd54882a~             2 DONE          0.632 +11.5%       -6.4%              62
-    3 strategy_06a28d557~             3 DONE          0.596 +12.0%       -6.5%              88
-    4 strategy_68eabcf76~             4 DONE          0.634 +11.5%       -6.3%              65
-    # i 1 more variable: execution_seed <int>
+    # ledgr sweep -- sweep_de1e2f4cdb234c4d
+    # A tibble: 4 x 10
+      strategy_params            feature_params candidate_id candidate_row status sharpe_ratio
+      <chr>                      <chr>          <chr>                <int> <chr>         <dbl>
+    1 <truncated; use ledgr_can~ {}             strategy_31~             1 DONE          0.596
+    2 <truncated; use ledgr_can~ {}             strategy_1c~             2 DONE          0.596
+    3 <truncated; use ledgr_can~ {}             strategy_a4~             3 DONE          0.632
+    4 <truncated; use ledgr_can~ {}             strategy_c8~             4 DONE          0.634
+    # i 4 more variables: total_return <chr>, max_drawdown <chr>, n_trades <int>,
+    #   execution_seed <int>
 
     # i 4 candidates attempted: 4 done, 0 incomplete, 0 failed.
     # i Retention returns: none.
@@ -573,7 +664,7 @@ sweep
     # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
     # i Saved artifact: not saved.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-    # i Hidden columns (25): completion_json, stop_reason, affected_instrument_ids, valuation_state, frozen_instrument_sessions, max_frozen_equity_weight, frozen_at_end_value, assumed_terminal_outcomes, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
+    # i Hidden columns (24): completion_json, stop_reason, affected_instrument_ids, valuation_state, frozen_instrument_sessions, max_frozen_equity_weight, frozen_at_end_value, assumed_terminal_outcomes, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
 
 ## Where Next
 

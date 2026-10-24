@@ -54,6 +54,9 @@ attributes may preserve it; ledgr does not authenticate transformed values.
 Reading causal history:
 \code{vignette("causal-history", package = "ledgr")}
 \code{system.file("doc", "causal-history.html", package = "ledgr")}
+A long-only minimum-variance strategy:
+\code{vignette("minimum-variance", package = "ledgr")}
+\code{system.file("doc", "minimum-variance.html", package = "ledgr")}
 }
 
 \seealso{
