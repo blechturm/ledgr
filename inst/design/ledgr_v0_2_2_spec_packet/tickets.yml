@@ -284,8 +284,9 @@ cuts:
     workstreams: [51, 52, 53, 54]
     closeout: "Each workstream receives an independent clean-context Type 1 close review. Cut close records M1 accounting, every measured rejection or maintainer exception, fast-lane margin, worker-memory guidance, the integrated record and the absence of an unsupported public performance claim."
     review_lifecycle: "The governance-lifecycle synthesis Section 5 applies. Findings receive packet artifacts; a third correction round stops for maintainer disposition. Product changes walk the seven optimization shapes and use the exact-parity proof template."
-    accepted: "2026-10-23 by the maintainer's instruction to complete WS8 in one continuous pass, after the independent clean-context cut review returned CHANGES_REQUIRED and all six bounded Type 1 patches were incorporated. No Type 2 decision was required."
-    status: "open"
+    accepted: "2026-10-23 by the maintainer's instruction to complete WS8 in one continuous pass, after the independent clean-context cut review returned CHANGES_REQUIRED and all six bounded Type 1 patches were incorporated. No Type 2 decision was required. All four workstreams and Cut 18 were fully accepted and closed by the maintainer on 2026-10-24 after the Workstream 54 focused re-review left one exact record-only correction, which was incorporated without another review round."
+    close_review: "M1 close accounting, recorded once after all seven tickets completed. Nine independent Type 1 verdicts count: one cut review and close and focused reviews for Workstreams 51, 52, 53 and 54. Seven finding-bearing verdicts changed ticket specification, a detector, evidence acquisition and checking, operation-boundary detectors, release records, peer-report boundaries or acceptance handling. The focused Workstream 52 and 53 verdicts were finding-free PASS results. Maintainer decision turns were acceptance of the patched cut; acceptance of Workstream 51's 0.48-second secondary-target miss while the binding 112-second gate passed; and acceptance of Workstreams 51, 52, 53 and 54. No ticket was padded or dropped, and the count is not a gate."
+    status: "closed"
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -757,11 +758,11 @@ workstreams:
   - id: 54
     name: "Integrated release evidence"
     cut: 18
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 53
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 54", verdict: "CHANGES_REQUIRED; correction in progress", artifact: "close_review_54.md", result: "The product and release gates were clean. The review required native identity retention and checker mutations, removal of peer ranking cues, two missing WS8 route dispositions, the current rule-4 integrity citation and two stable evidence pointers.", reason: "One claim: one current-tree record exercises the release semantics and scale boundaries end to end, and the peer workload is reported descriptively without an unsupported performance claim."}
-    accepted: null
+    review: {mode: "Type 1", point: "close of workstream 54", verdict: "CHANGES_REQUIRED followed by a record-only focused correction", artifact: "close_review_54.md; close_review_54_rereview_1.md", result: "The first review required native identity retention and checker mutations, removal of peer ranking cues, two missing WS8 route dispositions, the current rule-4 integrity citation and two stable evidence pointers. The focused re-review closed all five and found one stale 4.83 GiB value; the retained record is 5.03 GiB, and the maintainer accepted that exact record correction without another review round.", reason: "One claim: one current-tree record exercises the release semantics and scale boundaries end to end, and the peer workload is reported descriptively without an unsupported performance claim."}
+    accepted: "2026-10-24 by the maintainer after the focused Type 1 re-review closed the five original findings and its one record-only peak-memory correction was incorporated"
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
@@ -2549,7 +2550,7 @@ tickets:
   - id: "LDG-3097"
     title: "Produce the integrated v0.2.2 release record"
     workstream: 54
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3095", "LDG-3096"]
@@ -2559,7 +2560,7 @@ tickets:
   - id: "LDG-3098"
     title: "Run descriptive peer evidence and close WS8"
     workstream: 54
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3097"]

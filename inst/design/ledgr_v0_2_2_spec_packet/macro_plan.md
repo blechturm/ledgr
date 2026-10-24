@@ -463,11 +463,11 @@ accounting; `keep` makes the estimator/execution boundary explicit.
 
 ### WS8. Residual performance pass and integrated release evidence
 
-Candidate complete 2026-10-24. Cut 18 Workstreams 51-53 are accepted, and
-Workstream 54 has produced the ordinary and release-only long-window records,
-the straight/reopen/resume terminal record, the descriptive peer report and
-the integrated release closeout. Its independent Type 1 close review is the
-remaining WS8 gate; `tickets.yml` owns the live status.
+Complete 2026-10-24. Cut 18 Workstreams 51-54 are accepted. Workstream 54's
+ordinary and release-only long-window records, straight/reopen/resume terminal
+record, descriptive peer report and integrated release closeout passed their
+independent review after bounded evidence corrections. `tickets.yml` owns the
+closed status.
 
 **Early item: long-window baseline and regression suite (after Cut 3 is
 accepted).** Most WS1 and Cut 3 gains are on the availability path: strict
@@ -753,11 +753,10 @@ Cut 16 is closed (2026-10-22): the WS3/WS4 history wave shipped through H5
 and H6, and its design record is reconciled in
 `cut16_decision_reconciliation.md`. Cut 17 closed on 2026-10-23 after the
 WS7 proof, dividend-facts build and private integrated record were accepted.
-WS8 evidence is complete and its independent close review is current.
+WS8 and Cut 18 closed on 2026-10-24. WS6 remains in its Type 2 RFC cycle and
+did not enter the Cut 18 product.
 
-1. Accept the WS8 / Cut 18 close review or correct its bounded findings. WS6
-   remains in its Type 2 RFC cycle and did not enter the Cut 18 product.
-2. The pre-CRAN API cleanup cut, including the routed minimum-variance article
+1. The pre-CRAN API cleanup cut, including the routed minimum-variance article
    modernization below, lands before the first CRAN release.
 
 `tickets.yml` alone binds exact dependencies and status.

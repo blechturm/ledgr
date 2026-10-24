@@ -184,7 +184,7 @@ the broader multi-shape peer suite remains parked.
 | 7. unambiguous interruption/resume | Cut 11 continuity claims and the Workstream 54 interrupted/resumed terminal fixture. |
 | 8. explicit record boundary | This document and the long-window and peer benchmark methods above. |
 | 9. no false untraded-bar claim | The release keeps the registered exclusion: it does not claim that the Sharadar workflow ages halted or untraded carried prices or prevents fills on them. |
-| 10. history and estimator memory | Cut 17 records 1.89 GiB for the H1 run and 4.46 GiB for the two-worker tree; the accepted user-visible parallel-memory limit remains. WS53 adds the 4/8-worker bounds, and the synthetic EXP-0003 release shape peaks at 4.83 GiB. |
+| 10. history and estimator memory | Cut 17 records 1.89 GiB for the H1 run and 4.46 GiB for the two-worker tree; the accepted user-visible parallel-memory limit remains. WS53 adds the 4/8-worker bounds, and the synthetic EXP-0003 release shape peaks at 5.03 GiB. |
 
 All ten conditions are evidenced. Item 10 is an accepted limit, not a claim
 that large parallel workloads are memory-cheap.
@@ -215,18 +215,16 @@ and passes. Those setup failures are not product records.
 
 ## Review accounting
 
-Before the Workstream 54 verdict, Cut 18 has seven independent Type 1
-verdicts: the cut review; close and focused reviews for Workstreams 51, 52 and
-53. Five tickets are complete. The cut review changed the ticket
-specification; the first WS51 review changed a detector and its focused review
-changed only the record; the first WS52 review changed operation-boundary
-detectors and the closeout while its focused review passed; the first WS53
-review rejected and forced a complete evidence rerun while its focused review
-passed.
-
-At cut close, the independent Workstream 54 verdict is added and both WS54
-tickets enter the denominator: eight independent verdicts over seven completed
-tickets. This is M1 accounting, not a gate or breach. Maintainer decision
-turns were the accepted patched cut, the accepted 0.48-second miss against
-WS51's secondary 106.4-second target while the binding 112-second gate passed,
-and the workstream acceptance decisions. No ticket was padded or dropped.
+At cut close, Cut 18 has nine independent Type 1 verdicts over seven completed
+tickets: the cut review and close and focused reviews for Workstreams 51, 52,
+53 and 54. Seven verdicts returned findings and changed an outcome: the cut
+review changed ticket specification; WS51 changed a detector and then its
+record; WS52 changed operation-boundary detectors and the closeout; WS53
+rejected and forced a complete evidence rerun; and WS54 added native identity
+evidence, removed comparative peer claims, repaired routing and integrity
+citations, then corrected the retained EXP-0003 peak. The focused WS52 and
+WS53 verdicts were finding-free PASS results. This is M1 accounting, not a
+gate or breach. Maintainer decision turns were the accepted patched cut, the
+accepted 0.48-second miss against WS51's secondary 106.4-second target while
+the binding 112-second gate passed, and the four workstream acceptances. No
+ticket was padded or dropped.
