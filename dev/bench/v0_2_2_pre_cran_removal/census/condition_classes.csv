@@ -26,7 +26,7 @@
 "ledgr_candidate_snapshot_mismatch","R/sweep.R",1152,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_checkpoint_failed","R/public-api.R",75,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_compiled_availability_unsupported","R/backtest.R",431,3,TRUE,FALSE,TRUE,TRUE,"documented_public"
-"ledgr_compiled_spot_fifo_invalid_input","R/compiled-spot-fifo.R",194,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_compiled_spot_fifo_invalid_input","R/compiled-spot-fifo.R",197,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_compiled_spot_fifo_unavailable","R/compiled-spot-fifo.R",48,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_config_invalid_json","R/config-canonical-json.R",124,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_config_non_deterministic","R/config-canonical-json.R",139,7,TRUE,FALSE,TRUE,TRUE,"documented_public"

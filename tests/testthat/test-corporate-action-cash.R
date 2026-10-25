@@ -228,6 +228,24 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   disposed$meta_json <- '{"position_delta":-10,"cash_delta":500,"source":"delisting"}'
   testthat::expect_identical(bound(bought, 3L), 10)
   testthat::expect_identical(bound(rbind(bought, disposed), 3L), 0)
+  # The entitlement recount agrees with canonical replay for interleaved
+  # whole and fractional fills; it does not maintain a second position model.
+  for (qty in list(c(3, 2, 1, 4), c(0.3, 0.2, 0.1, 0.7))) {
+    mixed <- rbind(
+      fill(1L, open[[2L]], "BUY", qty[[1L]]),
+      fill(2L, open[[2L]] + 1, "BUY", qty[[2L]]),
+      fill(3L, open[[3L]], "SELL", qty[[3L]]),
+      fill(4L, open[[3L]] + 1, "BUY", qty[[4L]])
+    )
+    mixed$instrument_id <- c("AAA", "BBB", "AAA", "BBB")
+    eligible <- mixed[mixed$ts_utc < open[[3L]], , drop = FALSE]
+    prepared <- ledgr:::ledgr_prepare_accounting_events(eligible, c("AAA", "BBB"))
+    replay <- ledgr:::ledgr_replay_accounting_events(prepared)
+    testthat::expect_identical(
+      bound(mixed, 3L),
+      unname(replay$positions[["AAA"]])
+    )
+  }
 })
 
 # ledgr-test-profile: review

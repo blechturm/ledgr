@@ -585,10 +585,10 @@
 "R/compiled-spot-fifo.R",14,"abort_class","ledgr_invalid_execution_spec",TRUE,"c(""ledgr_unsupported_accounting_model"", ""ledgr_invalid_execution_spec"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/compiled-spot-fifo.R",14,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_unsupported_accounting_model"", ""ledgr_invalid_execution_spec"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/compiled-spot-fifo.R",14,"abort_class","ledgr_unsupported_accounting_model",TRUE,"c(""ledgr_unsupported_accounting_model"", ""ledgr_invalid_execution_spec"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
-"R/compiled-spot-fifo.R",184,"abort_wrapper_class","ledgr_invalid_fill_intent",TRUE,"ledgr_ts_utc_posix(fill$ts_exec_utc, label = ""`fill$ts_exec_utc`"", class = ""ledgr_invalid_fill_intent"")",TRUE,TRUE,FALSE
-"R/compiled-spot-fifo.R",184,"abort_wrapper_class","ledgr_invalid_fill_intent",TRUE,"ledgr_ts_utc_posix(fill$ts_exec_utc, label = ""`fill$ts_exec_utc`"", class = ""ledgr_invalid_fill_intent"")",TRUE,TRUE,FALSE
-"R/compiled-spot-fifo.R",194,"abort_class","ledgr_compiled_spot_fifo_invalid_input",TRUE,"c(""ledgr_compiled_spot_fifo_invalid_input"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
-"R/compiled-spot-fifo.R",194,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_compiled_spot_fifo_invalid_input"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
+"R/compiled-spot-fifo.R",187,"abort_wrapper_class","ledgr_invalid_fill_intent",TRUE,"ledgr_ts_utc_posix(fill$ts_exec_utc, label = ""`fill$ts_exec_utc`"", class = ""ledgr_invalid_fill_intent"")",TRUE,TRUE,FALSE
+"R/compiled-spot-fifo.R",187,"abort_wrapper_class","ledgr_invalid_fill_intent",TRUE,"ledgr_ts_utc_posix(fill$ts_exec_utc, label = ""`fill$ts_exec_utc`"", class = ""ledgr_invalid_fill_intent"")",TRUE,TRUE,FALSE
+"R/compiled-spot-fifo.R",197,"abort_class","ledgr_compiled_spot_fifo_invalid_input",TRUE,"c(""ledgr_compiled_spot_fifo_invalid_input"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
+"R/compiled-spot-fifo.R",197,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_compiled_spot_fifo_invalid_input"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/compiled-spot-fifo.R",48,"abort_class","ledgr_compiled_spot_fifo_unavailable",TRUE,"c(""ledgr_compiled_spot_fifo_unavailable"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/compiled-spot-fifo.R",48,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_compiled_spot_fifo_unavailable"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE
 "R/compiled-spot-fifo.R",88,"abort_class","ledgr_invalid_fold_execution",TRUE,"c(""ledgr_invalid_pulse_plan"", ""ledgr_invalid_fold_execution"")",TRUE,TRUE,FALSE

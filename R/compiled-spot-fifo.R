@@ -136,6 +136,10 @@ ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
 
 ledgr_compiled_spot_fifo_unpack_lots <- function(batch, instrument_ids) {
   state <- ledgr_lot_state(instrument_ids)
+  state$net_by_inst <- stats::setNames(
+    as.numeric(batch$net_by_inst),
+    instrument_ids
+  )
   if (length(batch$lot_inst_idx) > 0L) {
     grouped <- split(
       seq_along(batch$lot_inst_idx),
@@ -149,7 +153,6 @@ ledgr_compiled_spot_fifo_unpack_lots <- function(batch, instrument_ids) {
       state$lot_price[[inst_idx]] <- as.numeric(batch$lot_price[rows])
       state$lot_head[[inst_idx]] <- 1L
       state$lot_tail[[inst_idx]] <- length(rows)
-      state$net_by_inst[[inst_idx]] <- sum(state$lot_qty[[inst_idx]])
     }
   }
   state$cost_basis_by_inst <- stats::setNames(
@@ -198,6 +201,15 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
   }
 
   lot_pack <- ledgr_compiled_spot_fifo_pack_lots(state$lot_state, instrument_ids)
+  lot_net <- state$lot_state$net_by_inst
+  lot_net_vec <- rep(0, length(instrument_ids))
+  names(lot_net_vec) <- instrument_ids
+  if (!is.null(names(lot_net))) {
+    matched <- intersect(names(lot_net), instrument_ids)
+    lot_net_vec[matched] <- as.numeric(lot_net[matched])
+  } else if (length(lot_net) == length(instrument_ids)) {
+    lot_net_vec <- as.numeric(lot_net)
+  }
   cost_basis <- state$lot_state$cost_basis_by_inst
   cost_basis_vec <- rep(0, length(instrument_ids))
   names(cost_basis_vec) <- instrument_ids
@@ -219,6 +231,7 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
     as.numeric(fill_ts_utc),
     as.integer(event_seq_start),
     as.numeric(state$positions),
+    as.numeric(lot_net_vec),
     as.numeric(state$cash),
     as.integer(lot_pack$lot_inst_idx),
     as.numeric(lot_pack$lot_qty),

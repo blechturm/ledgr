@@ -16,14 +16,6 @@ struct ledgr_spot_lot {
   double price;
 };
 
-static double ledgr_spot_lot_net(const std::deque<ledgr_spot_lot>& lots) {
-  double out = 0.0;
-  for (const auto& lot : lots) {
-    out += lot.qty;
-  }
-  return out;
-}
-
 static double ledgr_spot_dust_tolerance(double a, double b, double c, double d = 0.0) {
   double scale = std::max({1.0, std::abs(a), std::abs(b), std::abs(c), std::abs(d)});
   return std::numeric_limits<double>::epsilon() * scale;
@@ -60,6 +52,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
                                SEXP fill_ts_utc_sxp,
                                SEXP event_seq_start_sxp,
                                SEXP positions_sxp,
+                               SEXP net_by_inst_sxp,
                                SEXP cash_sxp,
                                SEXP lot_inst_idx_sxp,
                                SEXP lot_qty_sxp,
@@ -89,6 +82,9 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
   ledgr_spot_check(TYPEOF(fill_ts_utc_sxp) == REALSXP && XLENGTH(fill_ts_utc_sxp) == n_fills,
                    "`fill_ts_utc` must align with fills.");
   ledgr_spot_check(TYPEOF(positions_sxp) == REALSXP, "`positions` must be numeric.");
+  ledgr_spot_check(TYPEOF(net_by_inst_sxp) == REALSXP &&
+                     XLENGTH(net_by_inst_sxp) == n_inst,
+                   "`net_by_inst` must align with positions.");
   ledgr_spot_check(TYPEOF(cash_sxp) == REALSXP && XLENGTH(cash_sxp) == 1,
                    "`cash` must be a numeric scalar.");
   ledgr_spot_check(TYPEOF(total_cost_basis_sxp) == REALSXP && XLENGTH(total_cost_basis_sxp) == 1,
@@ -104,8 +100,10 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
                    "`cost_basis_by_inst` must align with positions.");
 
   std::vector<double> positions(n_inst);
+  std::vector<double> net_by_inst(n_inst);
   for (R_xlen_t i = 0; i < n_inst; ++i) {
     positions[static_cast<size_t>(i)] = REAL(positions_sxp)[i];
+    net_by_inst[static_cast<size_t>(i)] = REAL(net_by_inst_sxp)[i];
   }
 
   std::vector<std::deque<ledgr_spot_lot>> lots(static_cast<size_t>(n_inst));
@@ -186,34 +184,28 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     ledgr_spot_check(std::isfinite(ts), "`fill_ts_utc` must be finite.");
 
     auto& inst_lots = lots[static_cast<size_t>(inst_idx)];
-    double net_pos = ledgr_spot_lot_net(inst_lots);
+    double net_pos = net_by_inst[static_cast<size_t>(inst_idx)];
     double net_after = net_pos;
     double old_basis = cost_basis_by_inst[static_cast<size_t>(inst_idx)];
     double basis_delta = 0.0;
     double close_qty = 0.0;
-    if (direction > 0 && net_pos < 0) {
-      close_qty = std::min(qty, std::abs(net_pos));
-    } else if (direction < 0 && net_pos > 0) {
-      close_qty = std::min(qty, net_pos);
-    }
-    double open_qty = qty - close_qty;
-
-    double remaining_close = close_qty;
+    double remaining_fill = qty;
     double realized_close = 0.0;
-    if (remaining_close > 0) {
+    if (remaining_fill > 0) {
       if (direction > 0) {
-        while (remaining_close > 0 && !inst_lots.empty() && inst_lots.front().qty < 0) {
+        while (remaining_fill > 0 && !inst_lots.empty() && inst_lots.front().qty < 0) {
           double old_signed_qty = inst_lots.front().qty;
           double lot_qty = std::abs(old_signed_qty);
           double lot_price = inst_lots.front().price;
-          double take = std::min(lot_qty, remaining_close);
+          double take = std::min(lot_qty, remaining_fill);
           realized_close += (lot_price - price) * take;
           basis_delta += take * lot_price;
           lot_qty -= take;
-          remaining_close -= take;
-          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close, qty);
-          if (std::abs(remaining_close) <= tol) {
-            remaining_close = 0.0;
+          remaining_fill -= take;
+          close_qty += take;
+          double tol = ledgr_spot_dust_tolerance(qty, take, lot_qty, remaining_fill);
+          if (std::abs(remaining_fill) <= tol) {
+            remaining_fill = 0.0;
           }
           if (lot_qty <= tol) {
             inst_lots.pop_front();
@@ -224,18 +216,19 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           }
         }
       } else {
-        while (remaining_close > 0 && !inst_lots.empty() && inst_lots.front().qty > 0) {
+        while (remaining_fill > 0 && !inst_lots.empty() && inst_lots.front().qty > 0) {
           double old_signed_qty = inst_lots.front().qty;
           double lot_qty = old_signed_qty;
           double lot_price = inst_lots.front().price;
-          double take = std::min(lot_qty, remaining_close);
+          double take = std::min(lot_qty, remaining_fill);
           realized_close += (price - lot_price) * take;
           basis_delta -= take * lot_price;
           lot_qty -= take;
-          remaining_close -= take;
-          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close, qty);
-          if (std::abs(remaining_close) <= tol) {
-            remaining_close = 0.0;
+          remaining_fill -= take;
+          close_qty += take;
+          double tol = ledgr_spot_dust_tolerance(qty, take, lot_qty, remaining_fill);
+          if (std::abs(remaining_fill) <= tol) {
+            remaining_fill = 0.0;
           }
           if (lot_qty <= tol) {
             inst_lots.pop_front();
@@ -248,6 +241,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
       }
     }
 
+    double open_qty = remaining_fill;
     if (open_qty > 0) {
       double signed_open = direction > 0 ? open_qty : -open_qty;
       inst_lots.push_back(ledgr_spot_lot{
@@ -273,6 +267,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
 
     double signed_qty = direction > 0 ? qty : -qty;
     double cash_delta = direction > 0 ? -(qty * price + fee) : (qty * price - fee);
+    net_by_inst[static_cast<size_t>(inst_idx)] = new_net;
     positions[static_cast<size_t>(inst_idx)] = new_net;
     cash += cash_delta;
 
@@ -332,7 +327,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     }
   }
 
-  const int n_out = 33;
+  const int n_out = 34;
   SEXP out = PROTECT(Rf_allocVector(VECSXP, n_out));
   SEXP names = PROTECT(Rf_allocVector(STRSXP, n_out));
   int k = 0;
@@ -408,6 +403,15 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     SEXP x = Rf_allocVector(REALSXP, n_inst);
     for (R_xlen_t i = 0; i < n_inst; ++i) {
       REAL(x)[i] = positions[static_cast<size_t>(i)];
+    }
+    SET_VECTOR_ELT(out, k, x);
+    ++k;
+  }
+  set_name("net_by_inst");
+  {
+    SEXP x = Rf_allocVector(REALSXP, n_inst);
+    for (R_xlen_t i = 0; i < n_inst; ++i) {
+      REAL(x)[i] = net_by_inst[static_cast<size_t>(i)];
     }
     SET_VECTOR_ELT(out, k, x);
     ++k;

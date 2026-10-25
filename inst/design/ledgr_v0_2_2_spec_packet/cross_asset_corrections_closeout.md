@@ -22,7 +22,9 @@ lot quantities; canonical position is then projected from that post-transition
 book. An empty book is exactly zero, while a live residual lot remains held.
 There is no independent position tolerance or reader-side cleanup.
 Reconstruction, resume and carried state consume the same canonical replay.
-The compiled batch follows the identical transition.
+The compiled batch carries the canonical per-instrument net across its native
+boundary and through successive batches; it neither reconstructs that value by
+resumming lots nor performs a different floating-point sequence.
 
 The calendar marker is presentation provenance. It is captured when a public
 constructor omits `calendar`, serialized in the existing display label and
@@ -39,8 +41,9 @@ new event semantics remain out of scope.
 - LCL-0488 / LTB-0497 exercises public dense and availability runs with two
   adversarial multi-lot shapes: one truly empty book and one live residual
   lot. It checks reconstruction, replay, reopen and a later lifetime terminal.
-- LCL-0489 / LTB-0498 pins the ordinary and compiled FIFO boundary, direct
-  kernel parity, public compiled-sweep parity and the production call sites.
+- LCL-0489 / LTB-0498 pins the ordinary and compiled FIFO boundary, including
+  an exact five-fill partial close in one native batch and five successive
+  batches, public compiled-sweep parity and the production call sites.
 - LCL-0490 / LTB-0499 covers every public omission and explicit-calendar form,
   payload and hash equality, experiment/run disclosure, persistence, sweep,
   promotion and walk-forward identity.
@@ -76,6 +79,11 @@ allocation-heavy helper as well as semantically stronger.
 - LTB-0209 replaces the former nonzero dust expectation with exact zero and
   retains an independent replay oracle; restoring cumsum-based pulse positions
   remains a detecting mutation.
+- LTB-0019 changes its near-zero accounting comparison from relative equality
+  to an explicit absolute bound, because relative tolerance is undefined at
+  the zero boundary this workstream makes exact.
+- LTB-0217 replaces the deleted private position-only-helper comparison with a
+  canonical replay comparison on interleaved whole and fractional fills.
 - The result-output line count increases only for the accepted `Metric
   Calendar` disclosure line.
 - Metric-context and backtest S3 text fixtures change only the accepted

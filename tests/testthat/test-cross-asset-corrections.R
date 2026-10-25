@@ -80,6 +80,11 @@ ledgr_ws59_multi_lot_experiment <- function(snapshot, case) {
   )
 }
 
+ledgr_ws59_partial_close_strategy <- function(ctx, params) {
+  pulse <- match(as.Date(substr(ctx$ts_utc, 1L, 10L)), params$dates)
+  c(AAA = params$targets[[pulse]])
+}
+
 testthat::test_that("[LTB-0497] fractional lot dust closes one canonical position", {
   values <- ledgr_ws59_dust_values()
   testthat::expect_identical(values$residue, .Machine$double.eps / 2)
@@ -254,6 +259,7 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
     as.double(c(1, 2)),
     1L,
     as.double(0),
+    as.double(0),
     as.double(1000),
     integer(),
     double(),
@@ -270,6 +276,84 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
   testthat::expect_equal(compiled$cash, 1000, tolerance = 0)
   testthat::expect_equal(compiled$realized_pnl, 0, tolerance = 0)
   testthat::expect_identical(compiled$event_qty, c(values$buy, values$sell))
+
+  partial_side <- c("BUY", "BUY", "SELL", "SELL", "SELL")
+  partial_qty <- c(0.1, 0.2, 0.05, 0.1, 0.07)
+  partial_r <- ledgr:::ledgr_lot_state("AAA")
+  for (i in seq_along(partial_qty)) {
+    partial_r <- ledgr:::ledgr_lot_apply_fill(
+      partial_r,
+      "AAA",
+      partial_side[[i]],
+      partial_qty[[i]],
+      100,
+      0
+    )$state
+  }
+  expected_partial <- ledgr:::ledgr_position_from_lots(partial_r, "AAA")
+  partial_all <- ledgr:::ledgr_cpp_spot_fifo_batch(
+    "ws59-compiled-partial-all",
+    rep.int(1L, length(partial_qty)),
+    rep("AAA", length(partial_qty)),
+    partial_side,
+    partial_qty,
+    rep(100, length(partial_qty)),
+    rep(0, length(partial_qty)),
+    as.double(seq_along(partial_qty)),
+    1L,
+    as.double(0),
+    as.double(0),
+    as.double(1000),
+    integer(),
+    double(),
+    double(),
+    as.double(0),
+    as.double(0),
+    as.double(0),
+    as.double(0)
+  )
+  testthat::expect_identical(partial_all$positions[[1L]], expected_partial)
+  testthat::expect_identical(partial_all$net_by_inst[[1L]], expected_partial)
+  testthat::expect_identical(
+    partial_all$lot_qty,
+    ledgr:::ledgr_lot_values(partial_r, "AAA")$qty
+  )
+
+  partial_state <- list(
+    positions = stats::setNames(0, "AAA"),
+    cash = 1000,
+    lot_state = ledgr:::ledgr_lot_state("AAA")
+  )
+  for (i in seq_along(partial_qty)) {
+    fill <- list(list(
+      inst_idx = 1L,
+      instrument_id = "AAA",
+      side = partial_side[[i]],
+      qty = partial_qty[[i]],
+      fill_price = 100,
+      fee = 0,
+      ts_exec_utc = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
+    ))
+    partial_batch <- ledgr:::ledgr_run_compiled_spot_fifo_batch(
+      "ws59-compiled-partial-one",
+      fill,
+      partial_state,
+      "AAA",
+      i
+    )
+    partial_state$positions <- stats::setNames(partial_batch$positions, "AAA")
+    partial_state$cash <- partial_batch$cash
+    partial_state$lot_state <- partial_batch$lot_state
+  }
+  testthat::expect_identical(partial_state$positions[[1L]], expected_partial)
+  testthat::expect_identical(
+    partial_state$lot_state$net_by_inst[[1L]],
+    expected_partial
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_lot_values(partial_state$lot_state, "AAA")$qty,
+    ledgr:::ledgr_lot_values(partial_r, "AAA")$qty
+  )
 
   for (case_name in names(ledgr_ws59_multi_lot_cases())) {
     case <- ledgr_ws59_multi_lot_cases()[[case_name]]
@@ -293,6 +377,7 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
       rep(0, 3L),
       as.double(1:3),
       1L,
+      as.double(0),
       as.double(0),
       as.double(1000),
       integer(),
@@ -347,6 +432,38 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
     )
   }
 
+  public_partial_snapshot <- ledgr_snapshot_from_df(
+    ledgr_ws59_dust_bars(7L),
+    price_basis = "split_adjusted"
+  )
+  on.exit(ledgr_snapshot_close(public_partial_snapshot), add = TRUE)
+  public_partial_exp <- ledgr_experiment(
+    public_partial_snapshot,
+    ledgr_ws59_partial_close_strategy,
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  )
+  public_targets <- c(0.1, 0.3, 0.25, 0.15, 0.08, expected_partial, expected_partial)
+  public_grid <- ledgr_grid_named(one = list(strategy = list(
+    dates = as.Date(ledgr_ws59_dust_bars(7L)$ts_utc),
+    targets = public_targets
+  )))
+  public_r <- ledgr_sweep(public_partial_exp, public_grid, seed = 5901L)
+  public_cpp <- ledgr_sweep(
+    public_partial_exp,
+    public_grid,
+    seed = 5901L,
+    compiled_accounting_model = "spot_fifo"
+  )
+  public_stable <- setdiff(
+    names(public_r),
+    c("t_engine", "t_results", "t_fills_extract")
+  )
+  testthat::expect_identical(
+    as.data.frame(public_cpp)[public_stable],
+    as.data.frame(public_r)[public_stable]
+  )
+
   fold_source <- paste(deparse(body(ledgr:::ledgr_fold_stage_apply)), collapse = "\n")
   replay_source <- paste(
     deparse(body(ledgr:::ledgr_replay_accounting_events)),
@@ -360,6 +477,18 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
     "double new_net = inst_lots.empty() ? 0.0 : net_after",
     fixed = TRUE
   )
+  testthat::expect_match(
+    cpp_source,
+    "double net_pos = net_by_inst[static_cast<size_t>(inst_idx)]",
+    fixed = TRUE
+  )
+  testthat::expect_false(grepl("ledgr_spot_lot_net", cpp_source, fixed = TRUE))
+  unpack_source <- paste(
+    deparse(body(ledgr:::ledgr_compiled_spot_fifo_unpack_lots)),
+    collapse = "\n"
+  )
+  testthat::expect_match(unpack_source, "batch$net_by_inst", fixed = TRUE)
+  testthat::expect_false(grepl("sum(state$lot_qty", unpack_source, fixed = TRUE))
 })
 
 testthat::test_that("[LTB-0499] omitted metric calendars remain visibly defaulted", {
