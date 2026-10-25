@@ -98,6 +98,18 @@ themes; this list is not a within-release sequence:
   and the horizon. These remain scoped inputs, not an invented bundle.
 - **Explicitly deferred:** the remaining Section 5 items stay with their
   named RFC or horizon route until a packet accepts them.
+- **Cross-asset precision design:** after v0.2.2, run the focused
+  [asset-precision and tradability RFC](rfc/README.md#asset-precision-tradability)
+  before changing fixed-decimal price normalization or target quantity
+  granularity. The crypto-readiness evidence is the trigger, not a reason for
+  crypto-specific execution rules.
+- **Promotion proof after the next core release:** keep the completed crypto2
+  readiness work private through v0.2.2 and the next release's performance,
+  memory, execution-core and cleanup work. Once those outcomes are accepted,
+  open a separately versioned public `ledgr.crypto2` sister package with a
+  user-run downloader, local cache, native snapshot adapter, synthetic tests
+  and one point-in-time top-100 article. It publishes no provider rows and is
+  release-adjacent promotion evidence, not a blocker for the core tag.
 
 The [horizon](horizon.md) retains non-binding questions and the
 [RFC pipeline](rfc/README.md) retains accepted obligations.

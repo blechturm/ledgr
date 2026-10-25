@@ -22,11 +22,11 @@
 
 - New article `vignette("minimum-variance", package = "ledgr")`: a long-only
   minimum-variance strategy that decides on the first session of each month,
-  screens instruments by their carried-price share, reads one identified
-  return matrix with explicit observation and panel requirements, solves the
+  reads one identified return matrix with recorded panel readiness, solves the
   constrained problem with `quadprog::solve.QP()`, aligns the unnamed solution
-  without reconstructing IDs, keeps holdings the estimate leaves out, and
-  records an optional intent reason. `quadprog` is a new suggested package.
+  without reconstructing IDs, turns it into full share targets, and records
+  only the two decision notes `insufficient_sample` and `rebalanced`.
+  `quadprog` is a new suggested package.
   The causal-history article's stand-in solver is no longer described as
   long-only minimum variance.
 

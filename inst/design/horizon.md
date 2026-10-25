@@ -29,6 +29,79 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-25 [data] Cross-asset price precision and tradability
+
+The completed spot-crypto readiness spike found that ledgr rounds stored prices
+to eight decimals and that `ledgr_target_rebalance()` floors desired quantities
+to whole units. Those are not crypto-only defects and should not be patched as
+two unrelated special cases. They expose one cross-asset contract covering
+price representation, tick size, quantity step, minimum quantity and notional,
+target normalization, fill/accounting parity, disclosure and identity across
+equities, crypto, FX, futures and other instrument families.
+
+Open a focused asset-precision and tradability RFC after v0.2.2. Use the
+micro-priced-token and fractional-target probes as vendor-neutral evidence.
+Until it is accepted, the current workaround is to re-quote micro-priced assets
+and construct fractional targets explicitly; do not infer granularity from an
+instrument symbol or silently add a crypto exception. Cut 20 owns neither the
+fixed-decimal rule nor quantity-step semantics.
+
+### 2026-10-25 [adapters] Public `ledgr.crypto2` after the promotion-ready core
+
+The three-stage spike on `spike/crypto-readiness` shows that ledgr can already
+run daily, unlevered, long-only spot research with fractional quantities, a
+complete 24/7 calendar, point-in-time membership, lifetime terminals and
+explicit 365-day metrics. Its 2020-2025 CMC exercise covered 484 historical
+top-100 identifiers, 455 with bars, and measured a 2.73 percentage-point annual
+CAGR difference between point-in-time and survivor-only equal-weight universes.
+Because 29 ranked identifiers had no served history, the honest public claim is
+survivorship-bias-aware coverage, not survivorship-bias-free data.
+
+Keep the adapter private through v0.2.2 and the next release's performance,
+memory, execution-core and cleanup work. Then open a separately versioned
+public `ledgr.crypto2` sister package with a user-run resumable downloader,
+local cache, coverage diagnostics, native sealed-snapshot adapter, synthetic
+fixtures and one point-in-time top-100 article. Publish no provider rows. Review
+the upstream endpoints and terms before release, and do not create a generic
+adapter package until multiple public adapters demonstrate the same boundary.
+
+Token unlocks are supply information, not holder accounting events unless the
+simulated portfolio owns the locked allocation. Airdrops, forks, staking,
+rebases, migrations, venue/lifetime changes and non-spot funding remain with
+the cross-asset accounting-critical-events route; this adapter does not invent
+their semantics.
+
+### 2026-10-25 [ux] Advanced portfolio-construction teaching arc
+
+The minimum-variance article now keeps one primary job: causal returns to a
+ready sample, an ordinary R estimator, identified weights and rebalance
+targets. Its October 2026 teaching review deliberately removed carried-price
+screening, retained estimation exclusions and a large decision-outcome
+taxonomy from that introductory path. Those topics remain useful, but they
+should not return as local article plumbing merely because the underlying
+diagnostic surfaces exist.
+
+After the portfolio-construction RFC settles omitted holdings, current
+weights, turnover-aware allocation and universe exits, add one advanced
+portfolio-construction article that distinguishes:
+
+1. data admitted to estimation;
+2. the optimizer's allocation over that sample; and
+3. the strategy's resulting execution intent.
+
+That article may demonstrate an explicit data-quality screen, retaining or
+liquidating an omitted holding, index-leaver policy, turnover constraints,
+no-trade bands and allocation diagnostics. It must consume the settled product
+semantics rather than decide them through example code.
+
+Keep the neighboring subjects in their existing homes. Carried observations
+and missing-return semantics stay in Reading Causal History. Liquidity and
+capacity mean whether an intended quantity can realistically trade and remain
+with the execution-policy RFC. Durable factors, ranks, selections and weights
+remain LFB-028. Numerical covariance repair is ordinary estimator practice and
+needs no ledgr abstraction unless repeated methods expose a product boundary.
+This entry authorizes no API, RFC, article or release scope.
+
 ### 2026-10-21 [execution] Cutoff-bound context internals or a strategy sandbox
 
 Strategy preflight is a best-effort static check, not a sandbox (Cut 16

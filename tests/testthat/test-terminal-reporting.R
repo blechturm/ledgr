@@ -197,6 +197,80 @@ testthat::test_that("[LTB-0174] warnings have no materiality threshold and stay 
 })
 
 # ledgr-test-profile: review
+testthat::test_that("[LTB-0438] stopped valuation headlines replace ordinary mark headlines", {
+  lines_of <- function(run, method) {
+    gsub("[ \t]+$", "", utils::capture.output(method(run)))
+  }
+  assert_stopped <- function(run, reason, day, instrument = "AAA") {
+    expected <- paste(
+      sprintf(
+        "Valuation: STOPPED - 1 holding without a permissible mark at %sT16:00:00Z (%s);",
+        day,
+        instrument
+      ),
+      sprintf("the run is INCOMPLETE (%s)", reason)
+    )
+    for (output in list(lines_of(run, print), lines_of(run, summary))) {
+      testthat::expect_true(expected %in% output)
+      testthat::expect_false(any(grepl("Valuation: (CURRENT|STALE|FROZEN)", output)))
+    }
+    valuation <- ledgr_valuation_summary(run)
+    testthat::expect_identical(valuation$valuation_stop_reason, reason)
+    testthat::expect_identical(valuation$valuation_stop_instruments, instrument)
+  }
+
+  never <- terminal_outcome_snapshot(list(
+    AAA = rep(NA_real_, 3L),
+    CLK = rep(10, 3L)
+  ))
+  on.exit(ledgr_snapshot_close(never), add = TRUE)
+  unpriced <- ledgr_run(terminal_outcome_experiment(never), run_id = "headline-unpriced")
+  on.exit(close(unpriced), add = TRUE, after = FALSE)
+  assert_stopped(unpriced, "valuation_horizon_exhausted", "2020-01-01")
+
+  stale <- terminal_outcome_snapshot(list(
+    AAA = c(100, NA, NA, NA),
+    CLK = rep(10, 4L)
+  ))
+  on.exit(ledgr_snapshot_close(stale), add = TRUE)
+  refused <- ledgr_run(
+    terminal_outcome_experiment(
+      stale,
+      valuation = ledgr_valuation_stale(1L, exhausted = "refuse")
+    ),
+    run_id = "headline-refused"
+  )
+  on.exit(close(refused), add = TRUE, after = FALSE)
+  testthat::expect_identical(ledgr_valuation_summary(refused)$valuation_state, "stale")
+  assert_stopped(refused, "valuation_horizon_exhausted", "2020-01-03")
+
+  no_mark <- terminal_outcome_snapshot(
+    list(AAA = c(100, NA, 103)),
+    lifetime = terminal_outcome_lifetime("AAA", 2L, "bankruptcy")
+  )
+  on.exit(ledgr_snapshot_close(no_mark), add = TRUE)
+  terminal <- ledgr_run(
+    terminal_outcome_experiment(
+      no_mark,
+      valuation = ledgr_valuation_stale(0L, exhausted = "refuse")
+    ),
+    run_id = "headline-terminal"
+  )
+  on.exit(close(terminal), add = TRUE, after = FALSE)
+  assert_stopped(terminal, "terminal_mark_unavailable", "2020-01-02")
+
+  clean_snapshot <- terminal_outcome_snapshot(list(AAA = c(100, 101, 102)))
+  on.exit(ledgr_snapshot_close(clean_snapshot), add = TRUE)
+  clean <- ledgr_run(terminal_outcome_experiment(clean_snapshot), run_id = "headline-clean")
+  on.exit(close(clean), add = TRUE, after = FALSE)
+  clean_lines <- lines_of(clean, print)
+  testthat::expect_true(
+    "Valuation: CURRENT - every held mark was a current close" %in% clean_lines
+  )
+  testthat::expect_false(any(grepl("STOPPED", clean_lines)))
+})
+
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0175] reporting is identical from memory, reopen and resume", {
   snapshot <- terminal_outcome_snapshot(
     list(

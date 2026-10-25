@@ -1,6 +1,40 @@
 # Workstream 58 closeout: compact minimum-variance research path
 
-## Outcome
+## Maintainer teaching amendment (2026-10-25)
+
+The current article narrows its primary job to one complete research path:
+
+```text
+causal returns -> ready sample -> covariance -> long-only weights -> targets
+```
+
+It now uses one estimator matrix, the complete-window admission default, four
+visible choices and only two optional intent reasons: `insufficient_sample`
+and `rebalanced`. It no longer teaches a carried-input threshold, a held
+estimation-exclusion counterfactual, eigenvalue repair or a failure taxonomy.
+Those topics were individually defensible but together obscured the method the
+article is meant to teach. They are routed to causal-history, execution policy
+and the advanced portfolio-construction teaching arc in `horizon.md`.
+
+The strategy still zero-targets a held point-in-time index leaver because that
+is part of the index strategy's economic meaning, not an optional diagnostic.
+The valuation-headline regression formerly hosted in the article proof remains
+registered as LTB-0438 in `test-terminal-reporting.R`.
+
+The clean-context adversarial documentation review is recorded in
+`close_review_58_teaching_amendment.md`. It challenged the statistical
+fixture, every shown API call, the vignette style guide and the publication
+contract. After the recorded corrections and focused confirmations, its final
+verdict is PASS with no open finding.
+
+The sections below record the previously accepted eight-parameter article and
+its private Sharadar run. They remain historical evidence; they do not describe
+or validate the amended teaching strategy, and no equality with that result is
+claimed.
+
+## Historical pre-amendment record
+
+### Outcome
 
 LDG-3104 is implemented in `15b81736`, with the active peer-benchmark cleanup
 in `202ee532`. The executed minimum-variance article now teaches the path Cut
@@ -25,7 +59,7 @@ exclusions are kept. The callback has no hidden `%||%` defaults, manual name
 reconstruction, second return read, retired history helper or transient
 outcome attribute.
 
-## Teaching boundary
+### Teaching boundary
 
 The article separates three decisions that were previously easy to conflate.
 An instrument may be excluded from estimation, the solver allocates only over
@@ -44,7 +78,7 @@ Covariance shrinkage, eigenvalue flooring and solver failures are explained
 after the compact research path. They remain ordinary strategy-side R, not a
 new ledgr estimator or optimizer catalogue.
 
-## Detecting evidence
+### Detecting evidence
 
 The registered minimum-variance source oracle requires exactly one direct
 `return_1` matrix read, all eight visible parameters, the readiness check,
@@ -67,7 +101,7 @@ that active harness in its removal census; the peer-boundary, parameter-grid
 and control-plane tests pass. Historical audits, archived benchmarks and
 spikes retain their old calls as records.
 
-## Current private estimator arm
+### Private estimator arm
 
 Research commits `293d13d` and `937f580` add the minimal
 `experiments/minimum-variance-current-v001` runner, checker and aggregate
@@ -87,7 +121,7 @@ The run persisted 7,213 intent reasons: 333 solved, 12 insufficient history
 and 6,868 non-decision pulses, with every other failure count zero. `check.R`
 returns `LEDGR_MINIMUM_VARIANCE_CURRENT_CHECK_OK` on the local record.
 
-## Seven-shape walk
+### Seven-shape walk
 
 WS58 changes no production hot-path function. The article performs one causal
 return read and one bounded covariance operation per scheduled decision; it
@@ -97,7 +131,7 @@ quadratic validator or environment-held scalar write. The peer-harness repair
 constructs one tiny empty rectangular candidate at the experiment boundary,
 outside pulse and candidate loops.
 
-## Verification
+### Verification
 
 - Focused minimum-variance, history, intent-evidence, documentation-contract,
   API, control-plane, parameter-grid and peer-boundary suites pass.
@@ -121,7 +155,7 @@ outside pulse and candidate loops.
   `ledgr_history_bar_mask_view()`; the same source is present at `25631b55`
   and WS58 does not widen into unrelated code cleanup.
 
-## Close-review corrections
+### Close-review corrections
 
 The independent Type 1 close review is recorded in `close_review_58.md` and
 returned `CHANGES_REQUIRED` on two bounded evidence defects. LTB-0437 now

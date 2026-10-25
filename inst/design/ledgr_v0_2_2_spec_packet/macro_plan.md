@@ -1303,6 +1303,22 @@ Cut 16 decision (17) routes these beyond WS46:
 
 ### Post-gate live routes
 
+- **Quiet cross-asset corrections (maintainer, 2026-10-25):** the completed
+  `dev/spikes/crypto-readiness/` evidence feeds Cut 20 Workstream 59 without
+  publishing an adapter or claiming crypto support. It owns three bounded,
+  vendor-neutral corrections: one shared fractional-dust rule for canonical
+  positions and FIFO lots; explicit `(default)` disclosure for an omitted
+  metric calendar without changing the US-equity computation or identity; and
+  asset-neutral `Economic events` result headlines. The destructive
+  fixed-decimal price rule and whole-unit target sizing do not enter that cut:
+  together they open the cross-asset asset-precision and tradability RFC, which
+  must bind price representation, quantity step, minimum quantity/notional,
+  execution normalization and identity before implementation. The
+  equity-calibrated stale budget remains adapter or strategy policy until more
+  evidence exists. The public `ledgr.crypto2` sister package remains deferred
+  until after the next release's promotion-readiness work and is not a v0.2.2
+  release blocker.
+
 - **Dividend facts:** LFB-013 supplies adapter interpretation. Cut 17
   (maintainer, 2026-10-22) owns them: Workstream 49 the dividend-facts lake
   rebuild, its per-event `closeadj` witness (the unit and date gate),
