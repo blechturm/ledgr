@@ -673,6 +673,7 @@ print.ledgr_backtest <- function(x, ...) {
   on.exit(opened$close(), add = TRUE)
   ledgr_backtest_ensure_snapshot(x, con)
   headline <- ledgr_backtest_headline_metrics(con, x$run_id)
+  metric_context <- ledgr_run_metric_context_from_db(con, x$run_id)
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
   valuation <- ledgr_valuation_summary(x, con = con)
   completion <- ledgr_run_completion_info(con, x$run_id)
@@ -693,7 +694,12 @@ print.ledgr_backtest <- function(x, ...) {
   cat(sprintf("%-34s $%.2f\n", "Final Equity:", headline$final_equity))
   cat(sprintf("%-34s %.2f%%\n", return_label, headline$total_return * 100))
   cat(sprintf("%-34s %.2f%%\n", drawdown_label, headline$max_drawdown * 100))
-  cat(sprintf("%-34s %d\n\n", "Closed Trades:", headline$n_trades))
+  cat(sprintf("%-34s %d\n", "Closed Trades:", headline$n_trades))
+  cat(sprintf(
+    "%-34s %s\n\n",
+    "Metric Calendar:",
+    ledgr_calendar_display(metric_context$calendar)
+  ))
   ledgr_print_corporate_action_headline(corporate_actions)
   valuation_headline <- ledgr_valuation_headline(valuation)
   if (!is.null(valuation_headline)) cat(valuation_headline, "\n", sep = "")

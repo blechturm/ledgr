@@ -41,7 +41,7 @@ ex-date, but makes cash spendable before a broker might actually pay it.
 ## What The Print Lines Say
 
 Every run print and summary ends with two lines about this evidence.
-`Corporate actions: NOT SUPPLIED` means the snapshot holds no corporate-action
+`Economic events: NOT SUPPLIED` means the snapshot holds no corporate-action
 facts, so returns may omit distributions; `MODELED` means supplied evidence was
 applied under the settings the summary lists. `Price basis: UNDECLARED` means
 the bars do not say how they were adjusted: if they already include dividends

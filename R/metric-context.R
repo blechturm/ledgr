@@ -163,7 +163,8 @@ print.ledgr_risk_free_rate <- function(x, ...) {
 #' @details
 #' Constructor fields:
 #' - `risk_free_rate`: scalar annual rate or `ledgr_risk_free_rate()` object.
-#' - `calendar`: `ledgr_calendar()` object; defaults to US equity daily.
+#' - `calendar`: `ledgr_calendar()` object; defaults to US equity daily. The
+#'   display label marks this assumption as `(default)` when it was omitted.
 #' - `benchmark`: reserved for future benchmark-return providers and must be
 #'   `NULL` in v0.1.8.
 #' - `market_factor`: reserved for future market-factor providers and must be
@@ -409,8 +410,12 @@ ledgr_new_metric_context <- function(risk_free_rate = 0,
                                      benchmark = NULL,
                                      market_factor = NULL,
                                      mar = NULL) {
+  calendar_defaulted <- missing(calendar)
   risk_free_rate <- ledgr_normalize_risk_free_rate(risk_free_rate)
   ledgr_validate_calendar_object(calendar)
+  if (calendar_defaulted) {
+    calendar$label <- paste0(calendar$label, " (default)")
+  }
   ledgr_validate_reserved_metric_provider(benchmark, "benchmark")
   ledgr_validate_reserved_metric_provider(market_factor, "market_factor")
   ledgr_validate_reserved_metric_provider(mar, "mar")

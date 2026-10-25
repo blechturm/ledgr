@@ -119,14 +119,14 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
 
   ordinary <- capture.output(print(bars_only$bt))
   testthat::expect_true(any(
-    ordinary == "Corporate actions: NOT SUPPLIED - returns may omit distributions"
+    ordinary == "Economic events: NOT SUPPLIED - returns may omit distributions"
   ))
   testthat::expect_true(any(
     ordinary == "Price basis: UNDECLARED - distribution double counting cannot be ruled out"
   ))
   detailed <- capture.output(summary(supplied$bt))
   expected_lines <- c(
-    "Corporate actions: NONE - supplied facts did not affect held instruments",
+    "Economic events: NONE - supplied facts did not affect held instruments",
     "  Setting cash_amount:               gross",
     "  Identity cash_amount:              ledgr.corporate_action.cash_amount.gross.v001",
     "    cash_amount.gross: 0",

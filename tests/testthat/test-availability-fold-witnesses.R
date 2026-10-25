@@ -96,6 +96,21 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
     )
     actual <- availability_v201_freeze_frame(result[[surface]])
     if (identical(surface, "identity")) {
+      expected_metric <- ledgr:::ledgr_json_read_nested(
+        expected$metric_context_json[[1L]]
+      )
+      actual_metric <- ledgr:::ledgr_json_read_nested(
+        actual$metric_context_json[[1L]]
+      )
+      testthat::expect_identical(
+        expected_metric$calendar$label,
+        "US equity daily"
+      )
+      testthat::expect_identical(
+        actual_metric$calendar$label,
+        "US equity daily (default)"
+      )
+      actual$metric_context_json <- expected$metric_context_json
       testthat::expect_identical(expected$engine_version, "0.2.0.1")
       actual$engine_version <- NULL
       expected$engine_version <- NULL

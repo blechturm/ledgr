@@ -154,7 +154,7 @@ run_v1
     Max Drawdown:                      -1.69%
     Closed Trades:                     29
 
-    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Economic events: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out
 
     Use summary(bt) for metrics and evidence

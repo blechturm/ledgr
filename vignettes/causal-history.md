@@ -60,7 +60,7 @@ bt
     Max Drawdown:                      -6.50%
     Closed Trades:                     369
 
-    Corporate actions: NONE - supplied facts did not affect held instruments
+    Economic events: NONE - supplied facts did not affect held instruments
     Price basis: split_adjusted (declared)
     Valuation: CURRENT - every held mark was a current close
     Point in time: membership rule 'DEMO_UNIVERSE'; valuation stale-mark horizon 5 sessions (default)
@@ -728,7 +728,7 @@ estimated
     Max Drawdown:                      -3.81%
     Closed Trades:                     865
 
-    Corporate actions: MODELED - configured settlement conventions were exercised
+    Economic events: MODELED - configured settlement conventions were exercised
     Price basis: split_adjusted (declared)
     Valuation: STALE - 1 holding valued at a permitted stale close (longest age 1 session)
     Point in time: membership rule 'DEMO_UNIVERSE'; valuation stale-mark horizon 5 sessions (default)

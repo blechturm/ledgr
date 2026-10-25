@@ -585,10 +585,10 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
 ledgr_corporate_action_headline <- function(summary) {
   switch(
     summary$corporate_action_fidelity,
-    not_supplied = "Corporate actions: NOT SUPPLIED - returns may omit distributions",
-    none = "Corporate actions: NONE - supplied facts did not affect held instruments",
-    modeled = "Corporate actions: MODELED - configured settlement conventions were exercised",
-    unsupported = "Corporate actions: UNSUPPORTED - supplied effects were not represented"
+    not_supplied = "Economic events: NOT SUPPLIED - returns may omit distributions",
+    none = "Economic events: NONE - supplied facts did not affect held instruments",
+    modeled = "Economic events: MODELED - configured settlement conventions were exercised",
+    unsupported = "Economic events: UNSUPPORTED - supplied effects were not represented"
   )
 }
 

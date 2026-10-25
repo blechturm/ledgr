@@ -116,6 +116,18 @@ ledgr_lot_dust_tolerance <- function(...) {
   .Machine$double.eps * max(c(1, values))
 }
 
+ledgr_position_apply_delta <- function(current, delta, lot_net = NULL) {
+  next_position <- as.numeric(current) + as.numeric(delta)
+  tolerance <- ledgr_lot_dust_tolerance(
+    current,
+    delta,
+    next_position,
+    lot_net
+  )
+  lot_agrees <- is.null(lot_net) || abs(as.numeric(lot_net)) <= tolerance
+  if (abs(next_position) <= tolerance && lot_agrees) 0 else next_position
+}
+
 ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
   total_qty <- as.numeric(close_qty) + as.numeric(open_qty)
   if (!is.finite(total_qty) || total_qty <= 0) {

@@ -100,7 +100,7 @@ ledgr_corporate_action_past_quantities <- function(events,
       event_num <- as.numeric(ledger$ts_utc)
       position <- vapply(later, function(k) {
         own <- event_instrument == ids[[k]] & event_num <= as.numeric(cum_boundaries[[k]])
-        Reduce(`+`, delta[own], 0)
+        Reduce(ledgr_position_apply_delta, delta[own], init = 0)
       }, numeric(1))
     }
     out[later] <- position

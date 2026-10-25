@@ -2050,7 +2050,7 @@ ledgr_doc_fact_home_problems <- function(root) {
     c("selection-integrity", "Deflated Sharpe Ratio with effective trials"),
     c("walk-forward", "so a good walk-forward result does not prove that the rule generalizes"),
     c("point-in-time-inputs", "An experiment becomes availability-aware when its snapshot declares membership, session, trading-status or lifetime facts, or when the experiment declares a valuation policy."),
-    c("corporate-action-cash", "`Corporate actions: NOT SUPPLIED` means the snapshot holds no corporate-action facts"),
+    c("corporate-action-cash", "`Economic events: NOT SUPPLIED` means the snapshot holds no corporate-action facts"),
     c("corporate-action-cash", "`Price basis: UNDECLARED` means the bars do not say how they were adjusted"),
     c("research-to-production", "Paper/live execution, broker adapters, and operational observability remain roadmap work."),
     c("risk-and-cost", "ledgr has no order management yet, so an intent that cannot execute at its fill opportunity is recorded as not executed rather than queued"),

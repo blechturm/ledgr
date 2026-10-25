@@ -266,6 +266,16 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     double signed_qty = direction > 0 ? qty : -qty;
     double cash_delta = direction > 0 ? -(qty * price + fee) : (qty * price - fee);
     positions[static_cast<size_t>(inst_idx)] += signed_qty;
+    double position_tol = ledgr_spot_dust_tolerance(
+      qty,
+      signed_qty,
+      positions[static_cast<size_t>(inst_idx)],
+      new_net
+    );
+    if (std::abs(positions[static_cast<size_t>(inst_idx)]) <= position_tol &&
+        std::abs(new_net) <= position_tol) {
+      positions[static_cast<size_t>(inst_idx)] = 0.0;
+    }
     cash += cash_delta;
 
     std::string inst_id = CHAR(STRING_ELT(fill_instrument_id_sxp, j));

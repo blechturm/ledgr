@@ -35,7 +35,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "  Max Drawdown:        -0.35%", "",
       "Risk Metrics:",
       "  Risk-Free Rate:      0.00% annual",
-      "  Annualization:       252 periods/year (US equity daily)",
+      "  Annualization:       252 periods/year (US equity daily (default))",
       "  Volatility (annual): 2.66%",
       "  Sharpe Ratio:        -4.958", "",
       "Trade Statistics:",
@@ -47,7 +47,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "Execution Evidence:",
       "  Fill Timing:         dense_bar_timestamp", "",
       "Corporate-Action Evidence:",
-      "Corporate actions: NOT SUPPLIED - returns may omit distributions",
+      "Economic events: NOT SUPPLIED - returns may omit distributions",
       "Price basis: UNDECLARED - distribution double counting cannot be ruled out",
       "  Full policy record: ledgr_corporate_action_summary(bt)"
     )

@@ -922,7 +922,7 @@ point_in_time
 #> Max Drawdown:                      -18.90%
 #> Closed Trades:                     0
 #>
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: split_adjusted (declared)
 #> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
 #> Point in time: membership rule 'demo_members'; valuation stale-mark horizon 2 sessions (declared)
@@ -1107,7 +1107,7 @@ written_off
 #> Max Drawdown:                      -37.80%
 #> Closed Trades:                     0
 #>
-#> Corporate actions: MODELED - configured settlement conventions were exercised
+#> Economic events: MODELED - configured settlement conventions were exercised
 #> Price basis: split_adjusted (declared)
 #> Valuation: STALE - 2 holdings valued at a permitted stale close (longest age 1 session)
 #> Point in time: membership rule 'demo_members'; valuation stale-mark horizon 2 sessions (declared); assumption-backed facts: lifetime (knowledge assumed effective)

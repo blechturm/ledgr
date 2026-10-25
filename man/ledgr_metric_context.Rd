@@ -37,7 +37,8 @@ With a ledgr object as the first argument, it dispatches as an accessor.
 Constructor fields:
 \itemize{
 \item \code{risk_free_rate}: scalar annual rate or \code{ledgr_risk_free_rate()} object.
-\item \code{calendar}: \code{ledgr_calendar()} object; defaults to US equity daily.
+\item \code{calendar}: \code{ledgr_calendar()} object; defaults to US equity daily. The
+display label marks this assumption as \code{(default)} when it was omitted.
 \item \code{benchmark}: reserved for future benchmark-return providers and must be
 \code{NULL} in v0.1.8.
 \item \code{market_factor}: reserved for future market-factor providers and must be

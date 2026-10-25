@@ -418,7 +418,7 @@ tight_run
 #> Max Drawdown:                      0.00%
 #> Closed Trades:                     0
 #>
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: split_adjusted (declared)
 #> Valuation: FROZEN - 1 holding frozen (longest 2 sessions, max 530 or 0.53% of equity)
 #> Point in time: fixed basket; valuation stale-mark horizon 1 session (declared); assumption-backed facts: sessions (knowledge assumed effective, generated schedule); trading_status (knowledge assumed effective)

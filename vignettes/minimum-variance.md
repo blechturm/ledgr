@@ -309,7 +309,7 @@ bt
     Max Drawdown:                      -6.68%
     Closed Trades:                     68
 
-    Corporate actions: NONE - supplied facts did not affect held instruments
+    Economic events: NONE - supplied facts did not affect held instruments
     Price basis: split_adjusted (declared)
     Valuation: CURRENT - every held mark was a current close
     Point in time: membership rule 'DEMO_UNIVERSE'; valuation stale-mark horizon 5 sessions (default)

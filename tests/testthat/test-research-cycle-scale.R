@@ -31,8 +31,9 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
     testthat::expect_identical(timeline$position[, i], full_expected("timeline", timeline$ids, times[[i]]))
   }
 
-  # Ten 0.1 buys and one 1.0 sell: the sequential replay ends at -1.1e-16,
-  # which long-double cumsum() would round to 0, flipping the held flag.
+  # Ten 0.1 buys and one 1.0 sell leave arithmetic dust. Canonical replay now
+  # normalizes that dust at the same transition where FIFO closes its lot;
+  # raw grouped cumsum() would retain a nonzero held position.
   template <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = 'timeline' AND event_type = 'FILL' LIMIT 1")
   synthetic <- template[rep(1L, 11L), , drop = FALSE]
   synthetic$run_id <- "synthetic"
@@ -51,11 +52,14 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   for (i in seq_along(at)) {
     testthat::expect_identical(fractional$position[, i], full_expected("synthetic", fractional$ids, at[[i]]))
   }
-  testthat::expect_true(fractional$position["AAA", 11L] != 0)
+  testthat::expect_identical(unname(fractional$position["AAA", 11L]), 0)
   events <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = 'synthetic' ORDER BY event_seq")
   replay <- ledgr:::ledgr_replay_accounting_events(ledgr:::ledgr_prepare_accounting_events(events))
-  mutant <- ledgr:::ledgr_accounting_positions_at_pulses(replay, at, "AAA")
-  testthat::expect_false(identical(unname(mutant[1L, ]), unname(fractional$position["AAA", ])))
+  from_replay <- ledgr:::ledgr_accounting_positions_at_pulses(replay, at, "AAA")
+  testthat::expect_identical(
+    unname(from_replay[1L, ]),
+    unname(fractional$position["AAA", ])
+  )
 
   # A ledger whose timestamps decrease in event order is refused, so readers
   # replay per time.

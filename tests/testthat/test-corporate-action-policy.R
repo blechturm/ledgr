@@ -100,7 +100,7 @@ testthat::test_that("[LTB-0037] cash-distribution vignette records both presets"
     fixed = TRUE
   )
   expected_output <- c(
-    "Corporate actions: MODELED - configured settlement conventions were exercised",
+    "Economic events: MODELED - configured settlement conventions were exercised",
     "cash_amount.gross: 1",
     "cash_posting.effective_close: 1",
     "Gross cash posted:           2.5",

@@ -100,7 +100,7 @@ testthat::test_that("[LTB-0451] a held refused dividend is counted and reads uns
       info = info
     )
     expected_lines <- c(
-      "Corporate actions: UNSUPPORTED - supplied effects were not represented",
+      "Economic events: UNSUPPORTED - supplied effects were not represented",
       "  Refusal reasons:",
       "    basis_unverified: 1 (entitled quantity 10)",
       "    same_date_unresolved: 0",

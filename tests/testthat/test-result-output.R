@@ -127,7 +127,7 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   output <- utils::capture.output(print(daily$bt))
   blob <- paste(output, collapse = "\n")
 
-  testthat::expect_lte(length(output), 15L)
+  testthat::expect_lte(length(output), 16L)
   testthat::expect_match(blob, "Run ID:", fixed = TRUE)
   testthat::expect_match(blob, "Period:.*2020-01-01 to 2020-01-04")
   testthat::expect_match(blob, "Opening Cash:", fixed = TRUE)
@@ -135,10 +135,11 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   testthat::expect_match(blob, sprintf("%.2f%%", metrics$total_return * 100), fixed = TRUE)
   testthat::expect_match(blob, sprintf("%.2f%%", metrics$max_drawdown * 100), fixed = TRUE)
   testthat::expect_match(blob, sprintf("Closed Trades:.*%d", metrics$n_trades))
+  testthat::expect_match(blob, "US equity daily (default)", fixed = TRUE)
   testthat::expect_false(grepl("Execution Mode:", blob, fixed = TRUE))
   testthat::expect_match(
     blob,
-    "Corporate actions: NOT SUPPLIED - returns may omit distributions",
+    "Economic events: NOT SUPPLIED - returns may omit distributions",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -258,7 +259,7 @@ testthat::test_that("[LTB-0108] summary answers before compact evidence", {
   testthat::expect_identical(
     output[corporate + 1:3],
     c(
-      "Corporate actions: NOT SUPPLIED - returns may omit distributions",
+      "Economic events: NOT SUPPLIED - returns may omit distributions",
       "Price basis: UNDECLARED - distribution double counting cannot be ruled out",
       "  Full policy record: ledgr_corporate_action_summary(bt)"
     )

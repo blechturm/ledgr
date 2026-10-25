@@ -212,7 +212,7 @@ testthat::test_that("summary discloses risk-free rate and annualization assumpti
 
   stored_out <- utils::capture.output(summary(bt))
   testthat::expect_true(any(grepl("Risk-Free Rate:      4.00% annual (stored policy)", stored_out, fixed = TRUE)))
-  testthat::expect_true(any(grepl("Annualization:       252 periods/year (US equity daily)", stored_out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Annualization:       252 periods/year (US equity daily (default))", stored_out, fixed = TRUE)))
 
   override_out <- utils::capture.output(summary(bt, risk_free_rate = 0))
   testthat::expect_true(any(grepl("Risk-Free Rate:      0.00% annual", override_out, fixed = TRUE)))

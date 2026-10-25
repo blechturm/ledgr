@@ -1,5 +1,22 @@
 # ledgr (development version)
 
+## Cross-asset correctness and honest defaults
+
+- Fractional fills that close FIFO lots within the existing machine-epsilon
+  dust tolerance now normalize the matching canonical position to exact zero
+  at the accounting transition. Literal fill and ledger quantities, cash,
+  fees, realized P&L, event order, hashes, and identities are unchanged.
+
+- An omitted metric calendar still uses the 252-session US-equity daily
+  convention, but experiment plans and experiment, run, and summary output
+  now disclose its display label as `(default)`. Explicit US-equity and crypto
+  calendars remain unmarked; the display label stays outside identity.
+
+- Public result output now uses the asset-neutral `Economic events` headline
+  for the existing four corporate-action fidelity states. The API and event
+  support are unchanged; this does not add token, derivative, funding, tax,
+  or other event families.
+
 ## Rectangular sweep inputs
 
 - `ledgr_sweep()` now accepts an ordinary rectangular data frame or tibble as

@@ -97,7 +97,7 @@ single_run
 #> Max Drawdown:                      -0.50%
 #> Closed Trades:                     12
 #>
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>
 #> Use summary(bt) for metrics and evidence
@@ -200,7 +200,7 @@ promoted
 #> Max Drawdown:                      -0.53%
 #> Closed Trades:                     11
 #>
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>
 #> Use summary(bt) for metrics and evidence

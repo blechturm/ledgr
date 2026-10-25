@@ -137,7 +137,7 @@ bt
 #> Max Drawdown:                      -1.34%
 #> Closed Trades:                     38
 #>
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>
 #> Use summary(bt) for metrics and evidence

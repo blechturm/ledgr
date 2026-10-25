@@ -2417,6 +2417,11 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-result-corporate-actions"></a>
 ### Corporate Actions And Valuation
 
+- Public run and summary output labels the four existing fidelity states as
+  `Economic events: NOT SUPPLIED`, `NONE`, `MODELED`, or `UNSUPPORTED`.
+  This asset-neutral headline does not rename
+  `ledgr_corporate_action_summary()` or claim support for token, derivative,
+  funding, tax, or other new event families (Cut 20 LDG-3108).
 - Terminal outcomes extend `ledgr_corporate_action_summary()` and
   `corporate_action_fidelity`; there is no separate terminal headline. Its
   `terminal_outcomes` table lists every scheduled and lifetime `DISPOSITION`
@@ -2535,6 +2540,12 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-result-standard-metrics"></a>
 ### Standard Metrics
 
+- Omitting the calendar from any public metric-context constructor keeps the
+  US-equity daily convention and marks its stored, hash-excluded display label
+  `(default)`. Experiment plans and experiment, run, and summary output carry
+  that marker through durable reopen. Explicit US-equity and crypto calendars
+  remain unmarked; labels never alter metric values or identity (Cut 20
+  LDG-3107).
 - Public standard metrics use the equity rows returned by
   `ledgr_results(bt, what = "equity")` and the closed trade rows returned by
   `ledgr_results(bt, what = "trades")`.

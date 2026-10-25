@@ -296,13 +296,6 @@ ledgr_replay_accounting_events <- function(prepared,
   for (i in seq_len(n)) {
     cash <- cash + prepared$cash_delta[[i]]
     idx <- prepared$instrument_index[[i]]
-    if (!is.na(idx)) {
-      positions[[idx]] <- positions[[idx]] + prepared$position_delta[[i]]
-      position_after[[i]] <- positions[[idx]]
-    } else {
-      position_after[[i]] <- NA_real_
-    }
-
     result <- ledgr_lot_apply_event(
       lot_state,
       event_type = prepared$event_type[[i]],
@@ -314,6 +307,18 @@ ledgr_replay_accounting_events <- function(prepared,
       meta = prepared$meta[[i]]
     )
     lot_state <- result$state
+    if (!is.na(idx)) {
+      lot_idx <- unname(lot_state$instrument_index[[prepared$instrument_id[[i]]]])
+      lot_net <- lot_state$net_by_inst[[lot_idx]]
+      positions[[idx]] <- ledgr_position_apply_delta(
+        positions[[idx]],
+        prepared$position_delta[[i]],
+        lot_net
+      )
+      position_after[[i]] <- positions[[idx]]
+    } else {
+      position_after[[i]] <- NA_real_
+    }
     if (prepared$operation[[i]] %in% c(1L, 4L)) {
       close_qty[[i]] <- result$close_qty
       open_qty[[i]] <- result$open_qty
@@ -343,7 +348,8 @@ ledgr_replay_accounting_events <- function(prepared,
 }
 
 # Each event's position after it, as ledgr_replay_accounting_events() computes
-# it (`positions[[idx]] + position_delta` from zero), without lot accounting.
+# it (`positions[[idx]] + position_delta` from zero), with the same transition
+# dust normalization used by the live fold.
 # Whole-number deltas whose absolute sum stays below 2^53 add exactly in any
 # order and precision, so one grouped cumsum() equals the sequential sum.
 # Other deltas (fractional quantities) are added one event at a time, as the
@@ -369,7 +375,7 @@ ledgr_accounting_position_after <- function(prepared) {
     running <- 0
     for (k in seq_along(d)) {
       if (start[[k]]) running <- 0
-      running <- running + d[[k]]
+      running <- ledgr_position_apply_delta(running, d[[k]])
       after[[k]] <- running
     }
   }
@@ -437,10 +443,9 @@ ledgr_accounting_positions_at_pulses <- function(replay, pulses_posix, instrumen
     idx <- requested_index[[j]]
     rows <- if (is.na(idx)) integer() else event_rows_by_instrument[[idx]]
     if (length(rows) == 0L) next
-    cumulative <- cumsum(prepared$position_delta[rows])
     at <- findInterval(pulse_num, event_num[rows])
     present <- at > 0L
-    out[j, present] <- cumulative[at[present]]
+    out[j, present] <- replay$position_after[rows][at[present]]
   }
   out
 }

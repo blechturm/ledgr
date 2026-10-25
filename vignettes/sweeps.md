@@ -899,7 +899,7 @@ summary(promoted_run)
       Fill Timing:         dense_bar_timestamp
 
     Corporate-Action Evidence:
-    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Economic events: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out
       Full policy record: ledgr_corporate_action_summary(bt)
 
@@ -962,7 +962,7 @@ reopened
     Max Drawdown:                      -0.64%
     Closed Trades:                     3
 
-    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Economic events: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out
 
     Use summary(bt) for metrics and evidence

@@ -454,7 +454,7 @@ summary(bt_first)
 #>   Fill Timing:         dense_bar_timestamp
 #>
 #> Corporate-Action Evidence:
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>   Full policy record: ledgr_corporate_action_summary(bt)
 ```

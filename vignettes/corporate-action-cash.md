@@ -18,7 +18,7 @@ it.
 ## What The Print Lines Say
 
 Every run print and summary ends with two lines about this evidence.
-`Corporate actions: NOT SUPPLIED` means the snapshot holds no
+`Economic events: NOT SUPPLIED` means the snapshot holds no
 corporate-action facts, so returns may omit distributions; `MODELED`
 means supplied evidence was applied under the settings the summary
 lists. `Price basis: UNDECLARED` means the bars do not say how they were
@@ -121,7 +121,7 @@ summary(research_run)
 #>   Fill Timing:         dense_bar_timestamp
 #>
 #> Corporate-Action Evidence:
-#> Corporate actions: MODELED - configured settlement conventions were exercised
+#> Economic events: MODELED - configured settlement conventions were exercised
 #> Price basis: split_adjusted (declared)
 #>   Setting cash_amount:               gross
 #>   Identity cash_amount:              ledgr.corporate_action.cash_amount.gross.v001
