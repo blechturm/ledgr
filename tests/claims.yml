@@ -4399,7 +4399,7 @@ claims:
   - id: "LCL-0490"
     source: "Cut 20 LDG-3107"
     scope: "Every omitted public metric-calendar form carries a durable hash-excluded '(default)' display label while explicit US-equity and crypto calendars remain unmarked and metric identity is unchanged"
-    oracle_class: "Constructor matrix including shorthand forms, payload/hash equality, JSON round-trip, non-flat metric equality, and experiment, run, sweep, promotion and walk-forward output before and after durable reopen"
+    oracle_class: "Constructor matrix including shorthand forms, payload/hash equality, JSON round-trip, non-flat metric equality, experiment and run output before and after durable reopen, sweep save/reopen and promotion, and walk-forward session identity"
     detecting_blocks: ["LTB-0499"]
     promised_profile: "review"
     owner: "maintainer"

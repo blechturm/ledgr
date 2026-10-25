@@ -110,3 +110,9 @@ behind R 4.6 and executes that claim successfully.
 The fold-phase checker and the codebase-contract checker in blocking mode pass;
 the latter records 1,877 helpers with no orphan-helper finding. The claims and
 ticket catalogues parse, and `git diff --check` is clean.
+
+The final focused review of `bf29d7bc` independently reproduced both native
+boundary mutations. Resumming lots at batch entry failed four behavioral
+assertions plus the structural pin; resumming during unpack failed two
+behavioral assertions plus the structural pin. All eight focused suites and
+both structural checkers passed, and the reviewer returned PASS.
