@@ -40,7 +40,9 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
   [`cut_review_15_rereview_2.md`](cut_review_15_rereview_2.md);
 - [`cut_review_16.md`](cut_review_16.md) and
   [`cut_review_16_rereview_1.md`](cut_review_16_rereview_1.md);
-- [`cut_review_20.md`](cut_review_20.md);
+- [`cut_review_20.md`](cut_review_20.md),
+  [`cut_review_21.md`](cut_review_21.md) and
+  [`cut_review_21_rereview_1.md`](cut_review_21_rereview_1.md);
 - [`close_review_59.md`](close_review_59.md) and
   [`close_review_59_rereview_1.md`](close_review_59_rereview_1.md);
 - [`close_review_32.md`](close_review_32.md) and

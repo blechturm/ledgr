@@ -406,6 +406,16 @@ retain non-decision fills, settlement, valuation, state, diagnostics and
 commit, and must decide the two-clock Momento case rather than infer it from
 the timing result.
 
+Accepted authority (2026-10-26): the
+[strategy-scheduler synthesis](../rfc/rfc_strategy_schedule_decorator_v0_1_9_x_synthesis.md)
+binds a classed schedule declaration compiled once over ordered declared-open
+sessions. Scheduled skips run P1, P4 and P5 while skipping only P2 and P3;
+current every-pulse behavior remains unchanged when no schedule is declared.
+Cut 21 Workstreams 60-63 and LDG-3109 through LDG-3114 own the synthesis
+Section 7 questions, the public declarations and compiler, fold integration,
+current-only format bumps, detecting evidence and documentation. LFB-035
+remains a separate defect and must not be folded into scheduler ticket grain.
+
 ### WS7. One public long-only estimator strategy
 
 - Implement one representative estimator-to-weight strategy, such as long-only
@@ -756,13 +766,15 @@ minimum-variance article modernization and its compact public strategy path
 are part of that closed state.
 
 WS6 is the only promoted macro-plan item still open. Its held-pulse probe found
-a 14.17-second lower bound, 22.6 percent of the measured public-run wall, so it
-is no longer merely conditional evidence: the strategy-scheduler RFC is at its
-Type 2 response stage. That review must decide whether v0.2.2 ships a bounded
-decision scheduler or records an explicit deferral. It may not skip fills,
-settlement, valuation, state, diagnostics or commit work on non-decision
-pulses. After that disposition, the remaining work is release closeout rather
-than another pre-planned product workstream.
+a 14.17-second lower bound, 22.6 percent of the measured public-run wall. The
+strategy-scheduler RFC was accepted on 2026-10-26: a schedule is compiled once
+over declared open sessions; only P2 and P3 may be skipped, while P1, P4 and P5
+still run. Cut 21 serializes the work as declaration/compiler/identity (WS60),
+pulse-complete fold execution and persistence (WS61), orchestration formats
+(WS62), then teaching and integrated proof (WS63). LFB-035 stays separate.
+After Cut 21,
+the remaining work is release closeout rather than another pre-planned product
+workstream.
 
 `tickets.yml` alone binds exact dependencies and status.
 
