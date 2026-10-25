@@ -59,6 +59,7 @@ bt
     Total Return:                      7.54%
     Max Drawdown:                      -6.50%
     Closed Trades:                     369
+    Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
     Economic events: NONE - supplied facts did not affect held instruments
     Price basis: split_adjusted (declared)
@@ -727,6 +728,7 @@ estimated
     Total Return:                      14.20%
     Max Drawdown:                      -3.81%
     Closed Trades:                     865
+    Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
     Economic events: MODELED - configured settlement conventions were exercised
     Price basis: split_adjusted (declared)

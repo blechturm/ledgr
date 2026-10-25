@@ -91,7 +91,7 @@ ledgr_snapshot_info(snapshot) |>
     # A tibble: 1 x 6
       status snapshot_hash                      bar_count instrument_count start_date end_date
       <chr>  <chr>                                  <int>            <int> <chr>      <chr>
-    1 SEALED 4f1bf4da9712ff45a0a7d8dae496b2851~        46                2 2019-01-0~ 2019-01~
+    1 SEALED e56c8ddc9d4e3a0aa7363634f6aeba4cc~        46                2 2019-01-0~ 2019-01~
 
 Sealing gives you validated bar keys, an immutable snapshot hash, and a
 stable physical instrument master. It does not invent missing sessions,
@@ -213,7 +213,7 @@ ledgr_snapshot_info(snapshot) |>
     # A tibble: 1 x 3
       status snapshot_hash                                                    bar_count
       <chr>  <chr>                                                                <int>
-    1 SEALED 4f1bf4da9712ff45a0a7d8dae496b285181e96ec2435aaccb6ba5a3a0090fc94        46
+    1 SEALED e56c8ddc9d4e3a0aa7363634f6aeba4cca7edef1d99bcb3e7181eec5b19c1af9        46
 
 For backup, recovery, live handles, and stored runs, continue with
 `vignette("experiment-store", package = "ledgr")`.

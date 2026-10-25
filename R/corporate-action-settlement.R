@@ -42,8 +42,8 @@ ledgr_corporate_action_event_meta <- function(events) {
 # the run's first pulse (NA boundary) binds the opening positions. Only the
 # facts' parent instruments are read. Position deltas come from the caller's
 # parsed `meta` (a fill without one moves by its signed quantity, as the
-# accounting replay reads it), and positions from one position-only
-# sequential pass (ledgr_accounting_position_after()). A ledger whose
+# accounting replay reads it), and positions from one canonical lot-aware
+# replay. A ledger whose
 # timestamps decrease in event order (never written by ledgr) has no prefix to
 # look up, so each boundary then adds its own events in order.
 ledgr_corporate_action_past_quantities <- function(events,
@@ -88,11 +88,31 @@ ledgr_corporate_action_past_quantities <- function(events,
     instrument_ids = parents,
     position_delta = delta
   )
+  replay_rows <- which(delta != 0)
+  if (length(replay_rows) == 0L) {
+    return(out)
+  }
+  replay_events <- data.frame(
+    event_id = paste0("entitlement_replay_", seq_along(replay_rows)),
+    run_id = "entitlement_replay",
+    ts_utc = ledger$ts_utc[replay_rows],
+    event_type = "FILL",
+    instrument_id = event_instrument[replay_rows],
+    side = ifelse(delta[replay_rows] < 0, "SELL", "BUY"),
+    qty = abs(delta[replay_rows]),
+    price = 1,
+    fee = 0,
+    meta_json = "{}",
+    event_seq = seq_along(replay_rows),
+    stringsAsFactors = FALSE
+  )
+  prepared <- ledgr_prepare_accounting_events(replay_events, parents)
+  replay <- ledgr_replay_accounting_events(prepared)
 
   later <- which(known & !is.na(cum_boundaries))
   if (length(later) > 0L) {
     position <- ledgr_accounting_positions_at_pairs(
-      list(prepared = ledger, position_after = ledgr_accounting_position_after(ledger)),
+      replay,
       ids[later],
       cum_boundaries[later]
     )
@@ -100,7 +120,17 @@ ledgr_corporate_action_past_quantities <- function(events,
       event_num <- as.numeric(ledger$ts_utc)
       position <- vapply(later, function(k) {
         own <- event_instrument == ids[[k]] & event_num <= as.numeric(cum_boundaries[[k]])
-        Reduce(ledgr_position_apply_delta, delta[own], init = 0)
+        if (!any(own)) return(0)
+        own_prepared <- ledgr_prepare_accounting_events(
+          replay_events[
+            replay_rows %in% which(own),
+            ,
+            drop = FALSE
+          ],
+          ids[[k]]
+        )
+        own_replay <- ledgr_replay_accounting_events(own_prepared)
+        unname(own_replay$positions[[ids[[k]]]])
       }, numeric(1))
     }
     out[later] <- position

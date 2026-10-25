@@ -629,7 +629,7 @@ warmup value.
 The dense lifecycle above is the entrance. Availability-aware research
 adds a stricter question: which sessions should have contained an
 observation? A missing observation on a declared open session is a gap.
-By default the experiment's history policy carries each price field for
+By default the experiment’s history policy carries each price field for
 up to five expected sessions; `ledgr_history_policy(price_carry = NULL)`
 keeps the strict rule, under which the gap invalidates every bounded
 window that contains it. Return- and volatility-family indicators never
@@ -692,7 +692,7 @@ start or a restart at which ledgr exposes a value. It is not a
 convergence promise. A history-dependent indicator that restarts after a
 gap is valid again once it passes `stable_after`, yet it can still
 differ from the value an uninterrupted series would have produced. In
-ledgr's conformance measurements (TTR 0.24.4, one missing session at
+ledgr’s conformance measurements (TTR 0.24.4, one missing session at
 three positions), the restarted series needed 40 to 47 observations to
 come within a scaled `1e-6` of the uninterrupted series for TTR EMA with
 `n = 10`, 59 to 72 for the MACD outputs with `nFast = 5`, `nSlow = 10`

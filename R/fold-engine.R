@@ -1327,9 +1327,10 @@ ledgr_fold_stage_apply <- function(
       } else {
         fill$qty * fill$fill_price - fill$fee
       }
-      lot_idx <- unname(fold_state$lot_state$instrument_index[[instrument_id]])
-      lot_net <- fold_state$lot_state$net_by_inst[[lot_idx]]
-      positions[[inst_idx]] <- ledgr_position_apply_delta(cur_qty, qty, lot_net)
+      positions[[inst_idx]] <- ledgr_position_from_lots(
+        fold_state$lot_state,
+        instrument_id
+      )
       cash <- cash + cash_delta
       if (sample_telemetry) {
         t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())

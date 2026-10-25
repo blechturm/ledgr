@@ -87,6 +87,12 @@ Use market templates for common assumptions:
 > metric assumptions inspectable instead of hidden in summary output.
 
 
+When a public constructor receives no calendar, ledgr retains its
+established US-equity daily calculation but labels that calendar
+`(default)` in plans and results. Supplying a calendar explicitly
+removes the marker. The marker is display provenance only and does not
+change metric values or identity.
+
 ### Common Contexts
 
 ``` r
@@ -132,7 +138,7 @@ ledgr_metric_context(0.04)
 #> ====================
 #> Version:        1
 #> Risk-free rate: 4.0000%
-#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Calendar:       US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           247dc197ca7e63bd503d5ee7743bb2ff2e2c542ee61a698e94960964ffacffa8
 ```
 
@@ -179,14 +185,14 @@ ledgr_metric_context(stored_metrics)
 #> ====================
 #> Version:        1
 #> Risk-free rate: 0.0000%
-#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Calendar:       US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
 ledgr_metric_context(rf_metrics)
 #> ledgr_metric_context
 #> ====================
 #> Version:        1
 #> Risk-free rate: 4.0000%
-#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Calendar:       US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           247dc197ca7e63bd503d5ee7743bb2ff2e2c542ee61a698e94960964ffacffa8
 identical( # confirm the override did not mutate the stored context on `bt`
   ledgr_metric_context_hash(stored_run_context),
@@ -304,7 +310,7 @@ summary(bt)
 #>
 #> Risk Metrics:
 #>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
+#>   Annualization:       252 periods/year (US equity daily (default))
 #>   Volatility (annual): 3.17%
 #>   Sharpe Ratio:        7.937
 #>
@@ -353,7 +359,7 @@ ledgr_metric_context(metrics)
 #> ====================
 #> Version:        1
 #> Risk-free rate: 0.0000%
-#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Calendar:       US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
 ```
 

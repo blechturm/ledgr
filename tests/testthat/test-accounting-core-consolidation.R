@@ -84,10 +84,9 @@ testthat::test_that("[LTB-0019] flat lot carrier preserves independent FIFO arit
       0
     )$state
     live <- ledgr:::ledgr_lot_values(fractional, "AAA")$qty
-    testthat::expect_equal(
-      fractional$net_by_inst[["AAA"]],
-      sum(live),
-      tolerance = 4 * ledgr:::ledgr_lot_dust_tolerance(
+    testthat::expect_lte(
+      abs(fractional$net_by_inst[["AAA"]] - sum(live)),
+      4 * ledgr:::ledgr_lot_dust_tolerance(
         fractional$net_by_inst[["AAA"]], live
       )
     )

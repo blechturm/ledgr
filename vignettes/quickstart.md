@@ -96,6 +96,7 @@ single_run
 #> Total Return:                      0.42%
 #> Max Drawdown:                      -0.50%
 #> Closed Trades:                     12
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
@@ -131,21 +132,11 @@ sweep |>
   mutate(threshold = vapply(params, function(p) p$threshold, numeric(1))) |>
   select(candidate_id, threshold, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_fa7f1b6bcbd08670
 #> # A tibble: 2 x 5
 #>   candidate_id          threshold status total_return sharpe_ratio
-#>   <chr>                     <dbl> <chr>  <chr>               <dbl>
-#> 1 strategy_7ccbbefd14d1      0.01 DONE   +0.5%               1.25
-#> 2 strategy_86be010cf688      0    DONE   +0.4%               0.838
-#>
-#> # i 2 candidates attempted: 2 done, 0 incomplete, 0 failed.
-#> # i Retention returns: none.
-#> # i Retention trades: none.
-#> # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
-#> # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
-#> # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
-#> # i Saved artifact: not saved.
-#> # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
+#>   <chr>                     <dbl> <chr>         <dbl>        <dbl>
+#> 1 strategy_7ccbbefd14d1      0.01 DONE        0.00529        1.25
+#> 2 strategy_86be010cf688      0    DONE        0.00418        0.838
 ```
 
 Each row is one candidate: the `threshold` it ran with, its status and
@@ -163,14 +154,15 @@ candidate <- ledgr_candidate(
 candidate
 #> ledgr_sweep_candidate
 #> =====================
+#> Strategy params:  {"qty":5.0,"threshold":0.01}
+#> Feature params:   {}
 #> Candidate ID:     strategy_7ccbbefd14d1
 #> Status:           DONE
 #> Execution seed:   603352633
 #> Strategy:         89fb9e6adb02
-#> Snapshot hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Feature-set hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
+#> Snapshot hash:    1f315cc620d0849849114d32cb44b042ec567f9512db99ad802c4ac89efe3a43
+#> Feature-set hash: 790156753ee13f87911742cd1a70cfcf05124271e95c0f352b4ca10370601860
 #> Evaluation scope: exploratory
-#> Params:           {"qty":5.0,"threshold":0.01}
 ```
 
 The candidate carries its parameters and the hashes of the inputs it ran
@@ -199,6 +191,7 @@ promoted
 #> Total Return:                      0.53%
 #> Max Drawdown:                      -0.53%
 #> Closed Trades:                     11
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out

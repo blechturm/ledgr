@@ -402,9 +402,9 @@ ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
 # timestamps never decrease in event order, so the events at or before a time
 # are a prefix of the ledger and the replay's sequential `position_after`
 # values are exactly what replaying that prefix produces (the per-time reader
-# above). ledgr_accounting_positions_at_pulses() is not used: its cumsum()
-# accumulates in long double and can differ from the replay in the last bit.
-# One findInterval() over sorted (instrument, event position) keys
+# above). ledgr_accounting_positions_at_pulses() uses the same replayed
+# position_after vector for an instrument-by-pulse matrix. One findInterval()
+# over sorted (instrument, event position) keys
 # resolves every instrument and time pair. Returns NULL when timestamps do
 # decrease in event order; callers then replay per time.
 ledgr_availability_positions_timeline <- function(con, run_id, times) {

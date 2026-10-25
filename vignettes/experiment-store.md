@@ -191,17 +191,17 @@ info
     Archived:         FALSE
     Tags:             baseline, trend
     Snapshot:         store_demo_snapshot
-    Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
+    Snapshot Hash:    1f315cc620d0849849114d32cb44b042ec567f9512db99ad802c4ac89efe3a43
+    Feature Set Hash: 790156753ee13f87911742cd1a70cfcf05124271e95c0f352b4ca10370601860
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      fe12496547bc0b3dda6f137882b3fd1ea8946b854a16112507544b8288c56304
+    Config Hash:      1909d4e5ecf028b692d41d85bee64ea4e5a1bf880aee5afb3d485b733f5caf99
     Strategy Hash:    2e232e77ee059fecf01d125877ea3b9bca61e6a484825fd059ddd3d50985f3fc
     Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.000
+    Elapsed Sec:      1.060
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution
 mode, compact telemetry, status, identity hashes, and reproducibility
@@ -346,7 +346,7 @@ summary(reopened)
 
     Risk Metrics:
       Risk-Free Rate:      0.00% annual
-      Annualization:       252 periods/year (US equity daily)
+      Annualization:       252 periods/year (US equity daily (default))
       Volatility (annual): 0.98%
       Sharpe Ratio:        0.838
 

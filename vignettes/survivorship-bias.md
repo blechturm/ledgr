@@ -620,6 +620,7 @@ ledgr_experiment_plan(point_in_time_experiment)
 #> ledgr experiment plan
 #> Availability: active
 #> Price basis:  split_adjusted (declared)
+#> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #> Universe:     membership
 #> Valuation:    stale-mark horizon 2 sessions (declared)
 #> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
@@ -921,6 +922,7 @@ point_in_time
 #> Total Return:                      -14.07%
 #> Max Drawdown:                      -18.90%
 #> Closed Trades:                     0
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: split_adjusted (declared)
@@ -1106,6 +1108,7 @@ written_off
 #> Total Return:                      -33.87%
 #> Max Drawdown:                      -37.80%
 #> Closed Trades:                     0
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: MODELED - configured settlement conventions were exercised
 #> Price basis: split_adjusted (declared)

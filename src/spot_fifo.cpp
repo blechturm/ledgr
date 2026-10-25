@@ -187,6 +187,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
 
     auto& inst_lots = lots[static_cast<size_t>(inst_idx)];
     double net_pos = ledgr_spot_lot_net(inst_lots);
+    double net_after = net_pos;
     double old_basis = cost_basis_by_inst[static_cast<size_t>(inst_idx)];
     double basis_delta = 0.0;
     double close_qty = 0.0;
@@ -202,7 +203,8 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     if (remaining_close > 0) {
       if (direction > 0) {
         while (remaining_close > 0 && !inst_lots.empty() && inst_lots.front().qty < 0) {
-          double lot_qty = std::abs(inst_lots.front().qty);
+          double old_signed_qty = inst_lots.front().qty;
+          double lot_qty = std::abs(old_signed_qty);
           double lot_price = inst_lots.front().price;
           double take = std::min(lot_qty, remaining_close);
           realized_close += (lot_price - price) * take;
@@ -215,13 +217,16 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           }
           if (lot_qty <= tol) {
             inst_lots.pop_front();
+            net_after = (net_after - old_signed_qty);
           } else {
             inst_lots.front().qty = -lot_qty;
+            net_after = (net_after - old_signed_qty) - lot_qty;
           }
         }
       } else {
         while (remaining_close > 0 && !inst_lots.empty() && inst_lots.front().qty > 0) {
-          double lot_qty = inst_lots.front().qty;
+          double old_signed_qty = inst_lots.front().qty;
+          double lot_qty = old_signed_qty;
           double lot_price = inst_lots.front().price;
           double take = std::min(lot_qty, remaining_close);
           realized_close += (price - lot_price) * take;
@@ -234,8 +239,10 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           }
           if (lot_qty <= tol) {
             inst_lots.pop_front();
+            net_after = (net_after - old_signed_qty);
           } else {
             inst_lots.front().qty = lot_qty;
+            net_after = (net_after - old_signed_qty) + lot_qty;
           }
         }
       }
@@ -248,10 +255,11 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
         price
       });
       basis_delta += signed_open * price;
+      net_after += signed_open;
     }
 
     double new_basis = old_basis + basis_delta;
-    double new_net = ledgr_spot_lot_net(inst_lots);
+    double new_net = inst_lots.empty() ? 0.0 : net_after;
     double state_tol = ledgr_spot_dust_tolerance(new_basis, new_net, qty, price);
     if (std::abs(new_basis) <= state_tol) new_basis = 0.0;
     cost_basis_by_inst[static_cast<size_t>(inst_idx)] = new_basis;
@@ -265,17 +273,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
 
     double signed_qty = direction > 0 ? qty : -qty;
     double cash_delta = direction > 0 ? -(qty * price + fee) : (qty * price - fee);
-    positions[static_cast<size_t>(inst_idx)] += signed_qty;
-    double position_tol = ledgr_spot_dust_tolerance(
-      qty,
-      signed_qty,
-      positions[static_cast<size_t>(inst_idx)],
-      new_net
-    );
-    if (std::abs(positions[static_cast<size_t>(inst_idx)]) <= position_tol &&
-        std::abs(new_net) <= position_tol) {
-      positions[static_cast<size_t>(inst_idx)] = 0.0;
-    }
+    positions[static_cast<size_t>(inst_idx)] = new_net;
     cash += cash_delta;
 
     std::string inst_id = CHAR(STRING_ELT(fill_instrument_id_sxp, j));

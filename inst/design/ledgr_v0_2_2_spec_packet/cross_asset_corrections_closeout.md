@@ -16,11 +16,13 @@ They do not add crypto-specific policy or claim crypto support.
 
 ## Correctness boundary
 
-Dust normalization happens at the accounting transition, after FIFO state is
-known. It changes neither the literal fill nor the ledger event and introduces
-no reader-side cleanup. Reconstruction, resume and carried state consume that
-canonical result. The compiled batch uses the same scale-sensitive tolerance
-inputs for position and lot net.
+Dust normalization happens inside the FIFO accounting transition. Each lot
+mutation updates the instrument's net from the actual pre- and post-mutation
+lot quantities; canonical position is then projected from that post-transition
+book. An empty book is exactly zero, while a live residual lot remains held.
+There is no independent position tolerance or reader-side cleanup.
+Reconstruction, resume and carried state consume the same canonical replay.
+The compiled batch follows the identical transition.
 
 The calendar marker is presentation provenance. It is captured when a public
 constructor omits `calendar`, serialized in the existing display label and
@@ -34,11 +36,11 @@ new event semantics remain out of scope.
 
 ## Detecting evidence
 
-- LCL-0488 / LTB-0497 exercises public dense and availability runs with the
-  exact fractional residue, reconstruction, replay, reopen and a later
-  lifetime terminal.
-- LCL-0489 / LTB-0498 pins the ordinary and compiled dust boundary and the
-  three production call sites.
+- LCL-0488 / LTB-0497 exercises public dense and availability runs with two
+  adversarial multi-lot shapes: one truly empty book and one live residual
+  lot. It checks reconstruction, replay, reopen and a later lifetime terminal.
+- LCL-0489 / LTB-0498 pins the ordinary and compiled FIFO boundary, direct
+  kernel parity, public compiled-sweep parity and the production call sites.
 - LCL-0490 / LTB-0499 covers every public omission and explicit-calendar form,
   payload and hash equality, experiment/run disclosure, persistence, sweep,
   promotion and walk-forward identity.
@@ -53,17 +55,42 @@ the one calendar marker and the one headline-prefix change.
 
 ## Resource shape
 
-The seven optimization shapes were walked. The accounting change is O(1) per
-existing transition and allocates no growing object. The display changes add
-no fold work. No new scan, query loop, per-row frame, JSON hot path or cache was
-introduced.
+The seven optimization shapes were walked. The accounting change performs one
+existing instrument lookup and scalar updates while each lot is mutated. It
+does not allocate a per-fill vector, add a second lot scan or create a growing
+object. The compiled path reuses the same transition net rather than rescanning
+the book after mutation. The display changes add no fold work. No new query
+loop, per-row frame, JSON hot path or cache was introduced.
+
+The registered 40,000-event replay clock under
+`dev/bench/v0_2_2_cross_asset_corrections/` records a 1.630-second median for
+the first-review implementation and 1.420 seconds after the correction on the
+same host. The correction is therefore about 13% faster than the rejected
+allocation-heavy helper as well as semantically stronger.
+
+## Oracle migrations
+
+- The availability frozen-row fixture parses both metric-context records,
+  normalizes only the accepted calendar display label, and requires every
+  other member to remain identical. Extra record members therefore fail.
+- LTB-0209 replaces the former nonzero dust expectation with exact zero and
+  retains an independent replay oracle; restoring cumsum-based pulse positions
+  remains a detecting mutation.
+- The result-output line count increases only for the accepted `Metric
+  Calendar` disclosure line.
+- Metric-context and backtest S3 text fixtures change only the accepted
+  `(default)` display marker.
+- Corporate-action result and documentation strings change only the accepted
+  `Economic events` headline prefix; state and structured summaries remain
+  pinned separately.
 
 ## Verification
 
-The focused correction file passes 45 expectations. The ordinary fast profile
-passes 577/577 blocks in three runs with a 108.99-second median against the
+The corrected focused file passes 69 expectations. The ordinary fast profile
+passes 577/577 blocks in three runs with a 109.08-second median against the
 unchanged 112-second bound. The review profile passes 437/437 blocks with one
-established optional-path skip, and the heavy profile passes 192/192 blocks.
+established optional-path skip, and the registered full-heavy protocol passes
+192/192 blocks.
 
 The source package builds. `R CMD check --no-manual --no-build-vignettes`
 passes installation, namespace, Rd, examples and tests. It reports the existing
@@ -72,5 +99,6 @@ also reports that the local R 4.6 library lacks the suggested `tidyr` package.
 The separately recorded review profile uses the compatible local R 4.5 library
 behind R 4.6 and executes that claim successfully.
 
-The fold-phase and codebase-contract checkers pass, the claims and ticket
-catalogues parse, and `git diff --check` is clean.
+The fold-phase checker and the codebase-contract checker in blocking mode pass;
+the latter records 1,877 helpers with no orphan-helper finding. The claims and
+ticket catalogues parse, and `git diff --check` is clean.

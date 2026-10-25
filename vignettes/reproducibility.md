@@ -146,17 +146,17 @@ ledgr_run_info(snapshot, "qty_10")
     Archived:         FALSE
     Tags:             NA
     Snapshot:         research_snapshot
-    Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
+    Snapshot Hash:    1f315cc620d0849849114d32cb44b042ec567f9512db99ad802c4ac89efe3a43
+    Feature Set Hash: de5d1af37415a1f7423cff4e673f917b944231a8767977d28edd092a775c9097
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      45e410b7db2b686cc776143779ee89be5a374898dfd2d51447ef15c38ee871ae
+    Config Hash:      37d83c3e5ec60663e37f5a054a745e195977892e347f228a05a255ab69eec579
     Strategy Hash:    bacaf6e70817b64d2a9221bc85f88607caed1e47d1da0e4a1bad4f61567f2989
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.970
+    Elapsed Sec:      1.060
 
 ## Extract Stored Strategy Source
 
@@ -255,6 +255,7 @@ ledgr_run(
     Total Return:                      1.20%
     Max Drawdown:                      -0.82%
     Closed Trades:                     20
+    Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
     Economic events: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out

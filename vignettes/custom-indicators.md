@@ -77,8 +77,8 @@ This path is easy to reason about because the function receives only
 historical rows up to the current decision point. It is the right first
 implementation for most custom features.
 
-`gap_contract = "strict_window"` (or `history_class = "bounded"`) is
-a substantive claim: on an availability-aware run, the function receives
+`gap_contract = "strict_window"` (or `history_class = "bounded"`) is a
+substantive claim: on an availability-aware run, the function receives
 its last `requires_bars` expected sessions and is valid only when each
 of them has an observation, possibly carried by the history policy.
 Without a history declaration ledgr treats a custom indicator as
@@ -189,7 +189,7 @@ function when present, deterministic direct captures of those functions,
 values and deterministic lists can be direct captures; environments,
 connections, and other unsupported session objects refuse as
 non-deterministic. A captured function contributes its own function
-identity, but ledgr does not recursively include that helper function's
+identity, but ledgr does not recursively include that helper function’s
 captures. Put explicitly varying research inputs in `params` so their
 identity stays visible.
 
@@ -327,6 +327,7 @@ custom_bt
 #> Total Return:                      0.55%
 #> Max Drawdown:                      -0.65%
 #> Closed Trades:                     11
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out

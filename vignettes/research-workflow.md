@@ -153,6 +153,7 @@ run_v1
     Total Return:                      4.32%
     Max Drawdown:                      -1.69%
     Closed Trades:                     29
+    Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
     Economic events: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out

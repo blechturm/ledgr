@@ -177,7 +177,7 @@ wf
 #> 3        3 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: 11ae4fd9c9f9b4f991863849361784b6765458f25abc4ce78036d02082f1bd16
+#> Session: d437ccc9af097caeae8515bcd61afe892c145336555ed27eff078cd75dfb6477
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 3
@@ -230,6 +230,8 @@ candidate <- ledgr_candidate(
 candidate
 #> ledgr_sweep_candidate
 #> =====================
+#> Strategy params:  {"qty":5.0,"threshold":0.0}
+#> Feature params:   {"fast_n":10,"slow_n":20}
 #> Candidate ID:     feature_af0f94c90243/strategy_86be010cf688
 #> Status:           DONE
 #> Execution seed:   1554369446
@@ -237,7 +239,6 @@ candidate
 #> Snapshot hash:    7541f794ddcc0be54533f510a911e15af92c60c365957d2ff069d7ceb81685a4
 #> Feature-set hash: f7026cd02411bdc7b52beab150390fc3facb90a9dd7c5c0b419ac4ddee22ee69
 #> Evaluation scope: walk_forward
-#> Params:           {"qty":5.0,"threshold":0.0}
 str(candidate$feature_params)
 #> List of 2
 #>  $ fast_n: int 10
@@ -271,6 +272,7 @@ promoted
 #> Total Return:                      1.88%
 #> Max Drawdown:                      -0.79%
 #> Closed Trades:                     10
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out

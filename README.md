@@ -136,6 +136,7 @@ bt
 #> Total Return:                      3.45%
 #> Max Drawdown:                      -1.34%
 #> Closed Trades:                     38
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
@@ -222,5 +223,4 @@ artifacts, database schemas, and APIs may change without a deprecation
 cycle, so expect to rerun experiments after upgrading.
 
 Contributors can hide the repository-wide formatting commit from blame
-history with
-`git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+history with `git config blame.ignoreRevsFile .git-blame-ignore-revs`.

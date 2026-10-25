@@ -110,6 +110,8 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
         actual_metric$calendar$label,
         "US equity daily (default)"
       )
+      actual_metric$calendar$label <- expected_metric$calendar$label
+      testthat::expect_identical(actual_metric, expected_metric)
       actual$metric_context_json <- expected$metric_context_json
       testthat::expect_identical(expected$engine_version, "0.2.0.1")
       actual$engine_version <- NULL

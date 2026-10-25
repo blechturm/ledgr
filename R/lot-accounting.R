@@ -116,16 +116,9 @@ ledgr_lot_dust_tolerance <- function(...) {
   .Machine$double.eps * max(c(1, values))
 }
 
-ledgr_position_apply_delta <- function(current, delta, lot_net = NULL) {
-  next_position <- as.numeric(current) + as.numeric(delta)
-  tolerance <- ledgr_lot_dust_tolerance(
-    current,
-    delta,
-    next_position,
-    lot_net
-  )
-  lot_agrees <- is.null(lot_net) || abs(as.numeric(lot_net)) <= tolerance
-  if (abs(next_position) <= tolerance && lot_agrees) 0 else next_position
+ledgr_position_from_lots <- function(state, instrument_id) {
+  idx <- unname(state$instrument_index[[instrument_id]])
+  as.numeric(state$net_by_inst[[idx]])
 }
 
 ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
@@ -270,6 +263,7 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
   lot_head <- as.integer(state$lot_head[[idx]])
   lot_tail <- as.integer(state$lot_tail[[idx]])
   net_pos <- as.numeric(state$net_by_inst[[idx]])
+  net_after <- net_pos
   old_basis <- as.numeric(state$cost_basis_by_inst[[idx]])
   basis_delta <- 0
   close_qty <- 0
@@ -278,7 +272,8 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
   if (remaining_fill > 0 && lot_tail >= lot_head) {
     if (direction > 0L) {
       while (remaining_fill > 0 && lot_tail >= lot_head && lot_qty[[lot_head]] < 0) {
-        current_qty <- abs(as.numeric(lot_qty[[lot_head]]))
+        old_signed_qty <- as.numeric(lot_qty[[lot_head]])
+        current_qty <- abs(old_signed_qty)
         current_price <- as.numeric(lot_price[[lot_head]])
         take <- min(current_qty, remaining_fill)
         realized_close <- realized_close + (current_price - price) * take
@@ -294,13 +289,17 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
           lot_qty[[lot_head]] <- NA_real_
           lot_price[[lot_head]] <- NA_real_
           lot_head <- lot_head + 1L
+          new_signed_qty <- 0
         } else {
           lot_qty[[lot_head]] <- -current_qty
+          new_signed_qty <- -current_qty
         }
+        net_after <- (net_after - old_signed_qty) + new_signed_qty
       }
     } else {
       while (remaining_fill > 0 && lot_tail >= lot_head && lot_qty[[lot_head]] > 0) {
-        current_qty <- as.numeric(lot_qty[[lot_head]])
+        old_signed_qty <- as.numeric(lot_qty[[lot_head]])
+        current_qty <- old_signed_qty
         current_price <- as.numeric(lot_price[[lot_head]])
         take <- min(current_qty, remaining_fill)
         realized_close <- realized_close + (price - current_price) * take
@@ -316,9 +315,12 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
           lot_qty[[lot_head]] <- NA_real_
           lot_price[[lot_head]] <- NA_real_
           lot_head <- lot_head + 1L
+          new_signed_qty <- 0
         } else {
           lot_qty[[lot_head]] <- current_qty
+          new_signed_qty <- current_qty
         }
+        net_after <- (net_after - old_signed_qty) + new_signed_qty
       }
     }
   }
@@ -359,17 +361,13 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
     lot_head <- appended$head
     lot_tail <- appended$tail
     basis_delta <- basis_delta + signed_open * price
+    net_after <- net_after + signed_open
   }
 
   new_basis <- old_basis + basis_delta
-  new_net <- if (book_empty_before_open) {
-    direction * open_qty
-  } else {
-    net_pos + direction * qty
-  }
+  new_net <- if (lot_head > lot_tail) 0 else net_after
   tol <- ledgr_lot_dust_tolerance(new_basis, new_net, qty, price)
   if (abs(new_basis) <= tol) new_basis <- 0
-  if (abs(new_net) <= tol) new_net <- 0
   state$lot_qty[[idx]] <- lot_qty
   state$lot_price[[idx]] <- lot_price
   state$lot_head[[idx]] <- lot_head

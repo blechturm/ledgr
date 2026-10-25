@@ -152,7 +152,7 @@ exp
     Opening:     cash=10000, positions=0
     Mode:        audit_log
     Price basis: <undeclared>
-    Metrics:     US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+    Metrics:     US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
 The strategy function itself does not change across candidates. At each
 pulse, ledgr calls the same `function(ctx, params)`: `ctx` contains the
@@ -370,7 +370,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_c2f38c1d7b98b05f
+    # ledgr sweep -- sweep_0e1e5298f6f7fa36
     # A tibble: 16 x 10
        strategy_params           feature_params candidate_id candidate_row status sharpe_ratio
        <chr>                     <chr>          <chr>                <int> <chr>         <dbl>
@@ -482,14 +482,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_efac7d9b06699fbb feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 Each `candidate_id` here is a row of `candidate_table` above, which
 lists the parameters that produced it.
@@ -576,7 +576,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-10-24 19:44:36                    5           16          16
+    1 sma_retained_sweep 2026-10-25 17:11:41                    5           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -603,7 +603,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     8dcc07d45aaa9cfcc74ef1d6cd33e51cae4af2cc1c06b345152c443ae5c303dc
 
     Saved artifact
-    Created At:        2026-10-24 19:44:36.792069
+    Created At:        2026-10-25 17:11:41.320145
     Schema Version:    5
     Engine Version:    0.2.1.0
     Note:              Exploratory SMA sweep with retained return series.
@@ -883,7 +883,7 @@ summary(promoted_run)
 
     Risk Metrics:
       Risk-Free Rate:      0.00% annual
-      Annualization:       252 periods/year (US equity daily)
+      Annualization:       252 periods/year (US equity daily (default))
       Volatility (annual): 1.42%
       Sharpe Ratio:        3.084
 
@@ -961,6 +961,7 @@ reopened
     Total Return:                      2.25%
     Max Drawdown:                      -0.64%
     Closed Trades:                     3
+    Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
     Economic events: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out

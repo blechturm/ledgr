@@ -32,8 +32,23 @@ the three intended changes satisfy those boundaries.
 
 ## Optimization-shape walk
 
-The position correction adds constant-time arithmetic to existing fill and
-replay transitions. It adds no scan, query, growing accumulator, per-row data
-frame, JSON operation, or environment-held user value. The disclosure changes
-format already-held data; run printing reads the existing metric-context row
-once on its already-open connection and does not affect the fold.
+The corrected position path updates one scalar net while it mutates the FIFO
+book and projects canonical position from that post-transition state. It adds
+no second lot scan, query, growing accumulator, per-row data frame, JSON
+operation, or environment-held user value. The compiled path likewise reuses
+the transition net instead of rescanning its lot vector after mutation. The
+disclosure changes format already-held data; run printing reads the existing
+metric-context row once on its already-open connection and does not affect the
+fold.
+
+`run_correction_clock.R` measures 40,000 alternating fractional events after a
+warmup, three times per arm. On the same local host, the rejected first-review
+helper records a 1.630-second median and the corrected FIFO-authoritative path
+records 1.420 seconds. The correction is about 13% faster and removes the
+first helper's per-event scale-vector allocation.
+
+The correction reruns the release lanes under `evidence/correction_*`: three
+ordinary fast runs execute 577/577 blocks with a 109.08-second median against
+the unchanged 112-second bound; review executes 437/437 with the established
+optional Yahoo-path skip; and the registered `full-heavy` protocol executes
+192/192 blocks.

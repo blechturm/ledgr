@@ -264,7 +264,7 @@ ledgr_ind_ttr_warmup_rules() |>
 #>  8 momentum        close n + 1
 #>  9 CCI             hlc   n
 #> 10 BBands          close n
-#> 11 aroon           hl    n
+#> 11 aroon           hl    n + 1
 #> 12 DonchianChannel hl    n
 #> 13 MFI             hlcv  n + 1
 #> 14 CMF             hlcv  n
@@ -351,12 +351,12 @@ directly with a `series_fn`, as
 adapter escape hatch: external logic remains at the boundary, while the
 engine keeps the same deterministic indicator contract.
 
-On availability-aware runs every registered TTR form runs as its
-package catalogue row declares, bounded or history-dependent. An
-unregistered form, such as this DEMA, is history-dependent unless you
-declare otherwise. The support matrix in
-`vignette("indicators", package = "ledgr")` lists the forms. The
-general warmup and zero-trade checklist lives in
+On availability-aware runs every registered TTR form runs as its package
+catalogue row declares, bounded or history-dependent. An unregistered
+form, such as this DEMA, is history-dependent unless you declare
+otherwise. The support matrix in
+`vignette("indicators", package = "ledgr")` lists the forms. The general
+warmup and zero-trade checklist lives in
 `vignette("indicators", package = "ledgr")`.
 
 ## Where Next

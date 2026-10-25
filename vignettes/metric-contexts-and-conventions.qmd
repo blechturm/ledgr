@@ -124,6 +124,11 @@ calendar, annualization, and reserved provider slots. It makes metric
 assumptions inspectable instead of hidden in summary output.
 :::
 
+When a public constructor receives no calendar, ledgr retains its established
+US-equity daily calculation but labels that calendar `(default)` in plans and
+results. Supplying a calendar explicitly removes the marker. The marker is
+display provenance only and does not change metric values or identity.
+
 ### Common Contexts
 
 ```{r}

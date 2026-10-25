@@ -438,7 +438,7 @@ summary(bt_first)
 #>
 #> Risk Metrics:
 #>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
+#>   Annualization:       252 periods/year (US equity daily (default))
 #>   Volatility (annual): 1.75%
 #>   Sharpe Ratio:        1.346
 #>

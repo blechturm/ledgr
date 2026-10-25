@@ -308,12 +308,9 @@ ledgr_replay_accounting_events <- function(prepared,
     )
     lot_state <- result$state
     if (!is.na(idx)) {
-      lot_idx <- unname(lot_state$instrument_index[[prepared$instrument_id[[i]]]])
-      lot_net <- lot_state$net_by_inst[[lot_idx]]
-      positions[[idx]] <- ledgr_position_apply_delta(
-        positions[[idx]],
-        prepared$position_delta[[i]],
-        lot_net
+      positions[[idx]] <- ledgr_position_from_lots(
+        lot_state,
+        prepared$instrument_id[[i]]
       )
       position_after[[i]] <- positions[[idx]]
     } else {
@@ -345,42 +342,6 @@ ledgr_replay_accounting_events <- function(prepared,
     realized_delta = realized_delta,
     event_seq = prepared$event_seq
   )
-}
-
-# Each event's position after it, as ledgr_replay_accounting_events() computes
-# it (`positions[[idx]] + position_delta` from zero), with the same transition
-# dust normalization used by the live fold.
-# Whole-number deltas whose absolute sum stays below 2^53 add exactly in any
-# order and precision, so one grouped cumsum() equals the sequential sum.
-# Other deltas (fractional quantities) are added one event at a time, as the
-# replay does: cumsum() accumulates in long double and can differ in the last
-# bit. NA for events without an instrument.
-ledgr_accounting_position_after <- function(prepared) {
-  inst <- prepared$instrument_index
-  delta <- prepared$position_delta
-  out <- rep(NA_real_, length(delta))
-  has <- which(!is.na(inst))
-  if (length(has) == 0L) {
-    return(out)
-  }
-  ord <- has[order(inst[has], has)]
-  d <- delta[ord]
-  group <- inst[ord]
-  start <- c(TRUE, group[-1L] != group[-length(group)])
-  if (all(d == trunc(d)) && sum(abs(d)) < 2^53) {
-    total <- cumsum(d)
-    after <- total - (total - d)[start][cumsum(start)]
-  } else {
-    after <- numeric(length(d))
-    running <- 0
-    for (k in seq_along(d)) {
-      if (start[[k]]) running <- 0
-      running <- ledgr_position_apply_delta(running, d[[k]])
-      after[[k]] <- running
-    }
-  }
-  out[ord] <- after
-  out
 }
 
 # Each (instrument, time) pair's position after that instrument's last ledger

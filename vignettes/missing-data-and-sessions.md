@@ -417,6 +417,7 @@ tight_run
 #> Total Return:                      0.14%
 #> Max Drawdown:                      0.00%
 #> Closed Trades:                     0
+#> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: split_adjusted (declared)
