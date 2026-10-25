@@ -315,10 +315,10 @@ cuts:
     sequencing: "The start gates are satisfied: Cut 19 is closed and the four crypto-spike commits are integrated through 7a4a1025. LDG-3106, LDG-3107 and LDG-3108 are semantically independent and may be implemented in any order, but their documentation changes are merged deliberately. One independent Type 1 close review covers the single workstream claim. tickets.yml is the sole implementation authority."
     out_of_scope: "Changing stored price precision; quantity-step, tick-size, minimum-quantity or minimum-notional policy; changing ledgr_target_rebalance() whole-unit semantics; a crypto preset for stale valuation; token supply, entitlement, rebase, migration, fork, airdrop, staking, funding, margin or tax behavior; a public downloader or adapter; asset-class inference; a new event table or result API; compatibility code, migrations or legacy readers."
     workstreams: [59]
-    closeout: "Workstream 59 receives one independent Type 1 close review against the combined claim. Finding-bearing reviews use M2. The cut closes with one vendor-neutral reproducer per ticket, exact economic and identity parity outside the intended dust normalization and display text, focused and full package verification, the ordinary release profiles, and M1 accounting recorded once."
+    closeout: "Closed 2026-10-25 after maintainer acceptance of Workstream 59. M1 accounting: five independent verdicts over three completed tickets. Review points: cut_review_20.md PASS_AFTER_PATCHES and its finding-free focused PASS; close_review_59.md CHANGES_REQUIRED, close_review_59_rereview_1.md CHANGES_REQUIRED, and a final finding-free clean-context Opus PASS recorded in the Workstream 59 review field. The three finding-bearing verdicts changed the specification, product boundary, detectors, documentation or native FIFO state carrier; the two finding-free verdicts confirmed those corrections. Maintainer decision turns accepted the patched cut and accepted Workstream 59 after the final PASS. No ticket was added, dropped or padded for review accounting. The cut closes with one vendor-neutral reproducer per ticket, exact economic and identity parity outside the intended dust normalization and display text, focused package verification, and the codebase and fold checkers green."
     review_lifecycle: "The governance-lifecycle synthesis Section 5 applies. The cut review first checks whether each issue is real on the current public surface, whether D4 is honest without inferring an asset class, and whether the asset-neutral headline overclaims no capability. It returns NEEDS_TYPE_2 rather than silently changing the bound decisions."
     accepted: "2026-10-25 by the maintainer after the independent cut review returned CHANGES_REQUIRED, both bounded specification patches were incorporated and the same reviewer returned PASS on focused re-review"
-    status: "open"
+    status: "closed"
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -834,11 +834,11 @@ workstreams:
   - id: 59
     name: "Cross-asset correctness and honest defaults"
     cut: 20
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 58
     requires_review_acceptance: true
     review: {mode: "Type 1 with an independent input check", point: "close of workstream 59", verdict: "PASS after two corrections", artifact: "close_review_59.md and close_review_59_rereview_1.md", result: "The first independent close review rejected the one-lot accounting fix and exposed stale documentation, masked record fields, detector gaps and an allocation-heavy helper. The first correction made the post-transition FIFO book authoritative; focused re-review then found that the native accelerator reconstructed its starting net by summing lots. Correction bf29d7bc carries net_by_inst through one and successive native batches. A final clean-context Opus review reproduced both behavioral mutations, ran all eight focused suites and the codebase and fold checkers, and returned PASS with no blocking finding.", reason: "One claim: fractional arithmetic residue cannot make position state disagree with FIFO lots, and an ordinary user can distinguish a default annualization assumption and asset-neutral economic-event status without any change to economics, identity or supported event semantics. The review reruns the three vendor-neutral public probes, mutation-checks each detector, checks dense and availability parity, and confirms that asset precision, quantity granularity and crypto-specific policy did not leak into this correction cut."}
-    accepted: null
+    accepted: "2026-10-25 by the maintainer after the final independent clean-context Opus review returned PASS; the accepted state includes correction bf29d7bc, which carries canonical net position through one and successive compiled FIFO batches"
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"

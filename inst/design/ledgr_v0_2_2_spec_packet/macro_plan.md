@@ -749,15 +749,20 @@ v0.2.2 is ready for its release gate only when:
 
 ## 7. Remaining order
 
-Cut 16 is closed (2026-10-22): the WS3/WS4 history wave shipped through H5
-and H6, and its design record is reconciled in
-`cut16_decision_reconciliation.md`. Cut 17 closed on 2026-10-23 after the
-WS7 proof, dividend-facts build and private integrated record were accepted.
-WS8 and Cut 18 closed on 2026-10-24. WS6 remains in its Type 2 RFC cycle and
-did not enter the Cut 18 product.
+Cuts 16 through 20 are closed. The history wave, public estimator proof,
+dividend-facts build, residual performance pass, pre-CRAN API cleanup and the
+bounded cross-asset corrections have all been implemented and accepted. The
+minimum-variance article modernization and its compact public strategy path
+are part of that closed state.
 
-1. The pre-CRAN API cleanup cut, including the routed minimum-variance article
-   modernization below, lands before the first CRAN release.
+WS6 is the only promoted macro-plan item still open. Its held-pulse probe found
+a 14.17-second lower bound, 22.6 percent of the measured public-run wall, so it
+is no longer merely conditional evidence: the strategy-scheduler RFC is at its
+Type 2 response stage. That review must decide whether v0.2.2 ships a bounded
+decision scheduler or records an explicit deferral. It may not skip fills,
+settlement, valuation, state, diagnostics or commit work on non-decision
+pulses. After that disposition, the remaining work is release closeout rather
+than another pre-planned product workstream.
 
 `tickets.yml` alone binds exact dependencies and status.
 
