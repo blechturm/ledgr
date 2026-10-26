@@ -200,7 +200,10 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
   strategy_hash <- ledgr_walk_forward_config_strategy_hash(cfg)
   feature_fingerprints <- ledgr_walk_forward_config_feature_fingerprints(cfg)
   provenance <- list(
-    provenance_version = "ledgr_walk_forward_candidate_v1",
+    provenance_version = paste0(
+      "ledgr_walk_forward_candidate_",
+      ledgr_walk_forward_candidate_schema_version
+    ),
     snapshot_hash = data$session$snapshot_hash[[1]],
     strategy_hash = strategy_hash,
     feature_set_hash = train_rows$feature_set_hash[[1]],
@@ -227,6 +230,12 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
       selection_source_fold_seq = source_fold_seq
     )
   )
+  schedule <- cfg$strategy_schedule %||% NULL
+  schedule_identity <- ledgr_strategy_schedule_identity(
+    schedule,
+    cfg$strategy_params %||% list()
+  )
+  if (!is.null(schedule_identity)) provenance <- c(provenance, schedule_identity)
 
   candidate_row <- tibble::tibble(
     candidate_id = candidate_id,
@@ -262,6 +271,10 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
   attr(candidate_row, "seed_contract") <- "ledgr_walk_forward_seed_v1"
   attr(candidate_row, "evaluation_scope") <- "walk_forward"
   attr(candidate_row, "strategy_hash") <- strategy_hash
+  if (!is.null(schedule)) {
+    attr(candidate_row, "strategy_schedule") <- schedule
+    attr(candidate_row, "strategy_schedule_hash") <- schedule_identity$schedule_hash
+  }
   attr(candidate_row, "feature_union") <- feature_fingerprints
   attr(candidate_row, "feature_union_hash") <- cfg$features$feature_set_hash %||% train_rows$feature_set_hash[[1]]
   attr(candidate_row, "feature_engine_version") <- ledgr_feature_engine_version()
@@ -412,6 +425,19 @@ ledgr_walk_forward_parse_session_meta <- function(meta_json) {
   )
   if (!identical(meta$walk_forward_schema_version, ledgr_walk_forward_schema_version)) {
     rlang::abort("Walk-forward session schema version is not supported.", class = "ledgr_walk_forward_invalid_session")
+  }
+  if (!identical(
+    meta$candidate_schema_version,
+    ledgr_walk_forward_candidate_schema_version
+  )) {
+    rlang::abort(
+      sprintf(
+        "Walk-forward candidate schema version %s is not current; required %s.",
+        meta$candidate_schema_version %||% "<missing>",
+        ledgr_walk_forward_candidate_schema_version
+      ),
+      class = "ledgr_walk_forward_invalid_session"
+    )
   }
   if (!identical(meta$identity_rule_version, ledgr_identity_rule_version)) {
     rlang::abort(

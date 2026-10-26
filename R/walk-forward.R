@@ -443,7 +443,8 @@ ledgr_walk_forward_candidate_identities <- function(param_grid,
                                                     risk_chain_hash,
                                                     master_seed,
                                                     fold_seq,
-                                                    window) {
+                                                    window,
+                                                    strategy_schedule = NULL) {
   n <- length(param_grid$params)
   rows <- vector("list", n)
   for (i in seq_len(n)) {
@@ -453,6 +454,10 @@ ledgr_walk_forward_candidate_identities <- function(param_grid,
     feature_params <- ledgr_grid_candidate_feature_params(param_grid$params[[i]])
     params_hash <- ledgr_strategy_params_info(params)$hash
     feature_params_hash <- ledgr_strategy_params_info(feature_params)$hash
+    schedule_identity <- ledgr_strategy_schedule_identity(
+      strategy_schedule,
+      params
+    )
     identity <- ledgr_walk_forward_candidate_identity(
       params_hash = params_hash,
       feature_params_hash = feature_params_hash,
@@ -464,7 +469,8 @@ ledgr_walk_forward_candidate_identities <- function(param_grid,
       risk_chain_hash = risk_chain_hash,
       master_seed = master_seed,
       fold_seq = fold_seq,
-      window = window
+      window = window,
+      schedule_identity = schedule_identity
     )
     rows[[i]] <- data.frame(
       candidate_key = identity$candidate_key,
@@ -478,6 +484,12 @@ ledgr_walk_forward_candidate_identities <- function(param_grid,
       risk_chain_hash = risk_chain_hash,
       strategy_hash = strategy_hash,
       execution_seed = as.integer(identity$execution_seed),
+      strategy_schedule_json = if (is.null(schedule_identity)) NA_character_ else
+        ledgr_strategy_schedule_json(schedule_identity$strategy_schedule),
+      schedule_hash = schedule_identity$schedule_hash %||% NA_character_,
+      resolved_schedule_json = if (is.null(schedule_identity)) NA_character_ else
+        ledgr_strategy_schedule_json(schedule_identity$resolved_schedule),
+      resolved_schedule_hash = schedule_identity$resolved_schedule_hash %||% NA_character_,
       stringsAsFactors = FALSE
     )
   }
@@ -495,6 +507,15 @@ ledgr_walk_forward_alias_map_hash_value <- function(x) {
 }
 
 ledgr_walk_forward_test_identity <- function(train_identity, master_seed, fold_seq) {
+  schedule_identity <- NULL
+  if (!is.na(train_identity$schedule_hash[[1]])) {
+    schedule_identity <- list(
+      strategy_schedule = ledgr_json_read_config(train_identity$strategy_schedule_json[[1]]),
+      schedule_hash = train_identity$schedule_hash[[1]],
+      resolved_schedule = ledgr_json_read_config(train_identity$resolved_schedule_json[[1]]),
+      resolved_schedule_hash = train_identity$resolved_schedule_hash[[1]]
+    )
+  }
   identity <- ledgr_walk_forward_candidate_identity(
     params_hash = train_identity$params_hash[[1]],
     feature_params_hash = train_identity$feature_params_hash[[1]],
@@ -506,7 +527,8 @@ ledgr_walk_forward_test_identity <- function(train_identity, master_seed, fold_s
     risk_chain_hash = train_identity$risk_chain_hash[[1]],
     master_seed = master_seed,
     fold_seq = fold_seq,
-    window = "test"
+    window = "test",
+    schedule_identity = schedule_identity
   )
   out <- train_identity
   out$candidate_key <- identity$candidate_key
@@ -563,7 +585,8 @@ ledgr_walk_forward_eval_fold <- function(exp,
           risk_chain_hash = risk_chain_hash,
           master_seed = seed,
           fold_seq = fold$fold_seq,
-          window = "train"
+          window = "train",
+          strategy_schedule = ledgr_strategy_schedule_declaration(exp$strategy)
         )
         train_identities$execution_seed
       }
@@ -1048,6 +1071,7 @@ ledgr_walk_forward_session_row <- function(identity,
       selection_metric = selection_metric %||% NULL,
       no_selection = no_selection,
       walk_forward_schema_version = ledgr_walk_forward_schema_version,
+      candidate_schema_version = ledgr_walk_forward_candidate_schema_version,
       identity_rule_version = ledgr_identity_rule_version
     ))),
     stringsAsFactors = FALSE

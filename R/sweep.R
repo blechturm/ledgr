@@ -504,7 +504,7 @@ ledgr_sweep_impl <- function(exp,
   if (identical(retain$trades, "closed")) {
     attr(out, "sweep_trades") <- ledgr_sweep_collect_retained_trades(results, sweep_id)
   }
-  attr(out, "execution_assumptions") <- list(
+  execution_assumptions <- list(
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
     execution_timing_version = if (availability_active) {
@@ -519,6 +519,11 @@ ledgr_sweep_impl <- function(exp,
     stop_on_error = stop_on_error,
     promotion_identities = ledgr_promotion_identities(exp, strategy_hash)
   )
+  if (!is.null(strategy_schedule)) {
+    execution_assumptions$strategy_schedule <- strategy_schedule
+    execution_assumptions$schedule_hash <- ledgr_strategy_schedule_hash(strategy_schedule)
+  }
+  attr(out, "execution_assumptions") <- execution_assumptions
   attr(out, "ledgr_complete_names") <- names(out)
   class(out) <- c("ledgr_sweep_results", class(out))
   out
@@ -655,10 +660,24 @@ ledgr_candidate_reproduction_key <- function(candidate) {
   if (!is.list(provenance)) {
     provenance <- list()
   }
+  if (!identical(provenance$provenance_version, ledgr_sweep_provenance_version)) {
+    rlang::abort(
+      sprintf(
+        "Candidate provenance version %s is not current; required %s.",
+        provenance$provenance_version %||% "<missing>",
+        ledgr_sweep_provenance_version
+      ),
+      class = c("ledgr_candidate_provenance_incompatible", "ledgr_invalid_args")
+    )
+  }
+  schedule_identity <- provenance[c(
+    "strategy_schedule", "schedule_hash",
+    "resolved_schedule", "resolved_schedule_hash"
+  )]
+  schedule_identity <- schedule_identity[!vapply(schedule_identity, is.null, logical(1))]
 
-  structure(
-    list(
-      reproduction_key_version = "ledgr_candidate_reproduction_key_v1",
+  out <- list(
+      reproduction_key_version = ledgr_candidate_reproduction_key_version,
       source_sweep = list(
         sweep_id = meta$sweep_id %||% NULL,
         evaluation_scope = meta$evaluation_scope %||% provenance$evaluation_scope %||% NULL
@@ -714,9 +733,11 @@ ledgr_candidate_reproduction_key <- function(candidate) {
         metric_context_version = meta$metric_context_version %||% NULL
       ),
       execution_assumptions = meta$execution_assumptions %||% NULL
-    ),
-    class = c("ledgr_candidate_reproduction_key", "list")
-  )
+    )
+  if (length(schedule_identity) > 0L) {
+    out$strategy_schedule <- schedule_identity
+  }
+  structure(out, class = c("ledgr_candidate_reproduction_key", "list"))
 }
 
 #' Promote a sweep candidate to a committed run
@@ -830,6 +851,11 @@ ledgr_promote <- function(exp,
   candidate_identities <- candidate$sweep_meta$execution_assumptions$promotion_identities %||%
     list(strategy_hash = candidate$sweep_meta$strategy_hash %||% candidate$provenance$strategy_hash)
   candidate_identities$feature_set_hash <- candidate$provenance$feature_set_hash
+  candidate_schedule_hash <- candidate$provenance$schedule_hash %||%
+    candidate$sweep_meta$strategy_schedule_hash
+  if (!is.null(candidate_schedule_hash)) {
+    candidate_identities$schedule_hash <- candidate_schedule_hash
+  }
   # The committed config carries the hash; no store read is needed.
   promoting_identities$feature_set_hash <- bt$config$features$feature_set_hash %||% NA_character_
   identity_check <- ledgr_promotion_identity_check(candidate_identities, promoting_identities)
@@ -1243,6 +1269,11 @@ ledgr_sweep_candidate_tasks <- function(exp,
     label <- param_grid$labels[[i]]
     candidate_spec <- param_grid$params[[i]]
     raw_params <- param_grid$identity_params[[i]]
+    params <- ledgr_grid_candidate_strategy_params(candidate_spec)
+    schedule_identity <- ledgr_strategy_schedule_identity(
+      ledgr_strategy_schedule_declaration(exp$strategy),
+      params
+    )
     tasks[[i]] <- list(
       index = i,
       exp = exp_payload,
@@ -1250,7 +1281,7 @@ ledgr_sweep_candidate_tasks <- function(exp,
       candidate_id = label,
       candidate_row = i,
       raw_params = raw_params,
-      params = ledgr_grid_candidate_strategy_params(candidate_spec),
+      params = params,
       feature_params = ledgr_grid_candidate_feature_params(candidate_spec),
       execution_seed = if (!is.null(execution_seed_override)) {
         execution_seed_override[[i]]
@@ -1272,6 +1303,7 @@ ledgr_sweep_candidate_tasks <- function(exp,
       runtime_projection = if (isTRUE(exp$availability$active)) NULL else runtime_projection,
       snapshot_hash = snapshot_hash,
       strategy_hash = strategy_hash,
+      schedule_identity = schedule_identity,
       master_seed = seed,
       compiled_accounting_model = compiled_accounting_model,
       availability_config = availability_config,
@@ -1449,7 +1481,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         cost_plan_json = task$exp$cost_plan_json %||% NULL,
         risk_chain_hash = task$exp$risk_chain_hash,
         risk_plan_json = task$exp$risk_plan_json,
-        master_seed = task$master_seed
+        master_seed = task$master_seed,
+        schedule_identity = task$schedule_identity
       ),
       warnings = list()
     )
@@ -1526,7 +1559,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
             cost_plan_json = task$exp$cost_plan_json %||% NULL,
             risk_chain_hash = task$exp$risk_chain_hash,
             risk_plan_json = task$exp$risk_plan_json,
-            master_seed = task$master_seed
+            master_seed = task$master_seed,
+            schedule_identity = task$schedule_identity
           ),
           warnings = warnings
         ),
@@ -1894,7 +1928,11 @@ ledgr_sweep_run_candidate <- function(exp,
       cost_plan_json = exp$cost_plan_json %||% NULL,
       risk_chain_hash = exp$risk_chain_hash,
       risk_plan_json = exp$risk_plan_json,
-      master_seed = master_seed
+      master_seed = master_seed,
+      schedule_identity = ledgr_strategy_schedule_identity(
+        ledgr_strategy_schedule_declaration(exp$strategy),
+        params
+      )
     ),
     t_engine = telemetry$t_engine,
     t_results = telemetry$t_results,
@@ -2734,9 +2772,10 @@ ledgr_sweep_provenance <- function(snapshot_hash,
                                    cost_plan_json = NULL,
                                    risk_chain_hash = NULL,
                                    risk_plan_json = NULL,
-                                   master_seed) {
+                                   master_seed,
+                                   schedule_identity = NULL) {
   out <- list(
-    provenance_version = "ledgr_provenance_v1",
+    provenance_version = ledgr_sweep_provenance_version,
     snapshot_hash = snapshot_hash,
     strategy_hash = strategy_hash,
     feature_set_hash = feature_set_hash,
@@ -2751,6 +2790,7 @@ ledgr_sweep_provenance <- function(snapshot_hash,
   if (!is.null(cost_plan_json)) out$cost_plan_json <- cost_plan_json
   if (!is.null(risk_chain_hash)) out$risk_chain_hash <- risk_chain_hash
   if (!is.null(risk_plan_json)) out$risk_plan_json <- risk_plan_json
+  if (!is.null(schedule_identity)) out <- c(out, schedule_identity)
   out
 }
 

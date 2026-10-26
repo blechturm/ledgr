@@ -417,7 +417,7 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   risk controls, cost estimation, or automatic candidate selection. Those
   remain separate future layers or RFC topics.
 - Risk-enabled sweep rows expose `risk_chain_hash`, and row-level provenance
-  carries `risk_plan_json`. Saved sweep schema 5 stores `risk_chain_hash` and
+  carries `risk_plan_json`. Saved sweep schema 6 stores `risk_chain_hash` and
   `risk_plan_json` on `sweeps` and `sweep_candidates`; any other saved-sweep
   schema value refuses with `ledgr_sweep_schema_incompatible`.
   Promotion must preserve the selected candidate's risk identity and re-execute
@@ -469,6 +469,13 @@ Accepted change pending:
   identifies alias declarations and must not change solely because a
   parameterized feature declaration resolves to a different concrete parameter
   value; that concrete identity belongs in `feature_set_hash`.
+- Scheduled sweep and walk-forward candidate identity records the authored
+  `strategy_schedule` and its hash separately from the candidate-resolved rule
+  and its hash. Candidate compilation resolves the declaration from ordinary
+  strategy parameters before execution. The compiled pulse mask is neither an
+  identity input nor a persisted or worker-transported artifact. Candidate
+  reproduction keys use version 2, walk-forward candidate and inspection
+  provenance use version 2, and older versions refuse rather than migrate.
 
 <a id="contract-execution-preflight"></a>
 ### Strategy Preflight
@@ -527,9 +534,10 @@ Accepted change pending:
   snapshot and config.
 - Row-level `provenance` is compact lineage, not full durable run provenance.
   Its structure is versioned by
-  `provenance_version = "ledgr_provenance_v1"` and includes snapshot hash,
+  `provenance_version = "ledgr_provenance_v2"` and includes snapshot hash,
   `strategy_hash`, feature-set hash, master seed, seed contract, and
-  evaluation scope.
+  evaluation scope. For scheduled candidates it additionally carries the
+  authored declaration and candidate-resolved schedule with distinct hashes.
 - `ledgr_candidate()` is the canonical extraction helper for a promotion-ready
   candidate. `ledgr_promote()` is the canonical commit helper and must call
   `ledgr_run()` with the candidate params and execution seed. Users should not
@@ -540,7 +548,7 @@ Accepted change pending:
 
 - Runs created through `ledgr_promote()` store durable selection-audit metadata
   in `run_promotion_context` with
-  `promotion_context_version = "ledgr_promotion_v2"`. Promotion context records
+  `promotion_context_version = "ledgr_promotion_v3"`. Promotion context records
   the selected candidate, `sweep_id`, source sweep metadata, user note, and the
   compact selection-view summary passed to `ledgr_candidate()`. Version 2 adds
   `identity_check` (Cut 12 LDG-3005): the candidate's strategy, feature-set,
@@ -548,8 +556,9 @@ Accepted change pending:
   hashes, recorded by the sweep in its execution assumptions, beside the
   promoting run's, with the fields that differ and those the sweep did not
   record (a walk-forward candidate records only strategy and feature-set
-  identity). A difference warns with `ledgr_promote_identity_mismatch`; it does
-  not refuse. Current promotion records always carry version 2.
+  identity). Version 3 also preserves authored and resolved schedule identity.
+  A difference warns with `ledgr_promote_identity_mismatch`; it does
+  not refuse. Current promotion records always carry version 3.
 - Promotion context is written only after the committed run succeeds. If the
   promotion-context write fails, ledgr warns and returns the committed run; it
   must not roll back a successful run.
@@ -1289,7 +1298,7 @@ Accepted change pending:
 ### Completion And Resume Evidence
 
 - Sweep-candidate and walk-forward score evidence carries nullable canonical
-  `completion_json` and admits `INCOMPLETE` on those rows. Saved-sweep schema 5
+  `completion_json` and admits `INCOMPLETE` on those rows. Saved-sweep schema 6
   and candidate, sweep, run, and walk-forward identity formats remain
   distinct.
 - Availability-aware `DONE` and `INCOMPLETE` completion rows are terminal

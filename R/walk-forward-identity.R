@@ -1,4 +1,4 @@
-ledgr_walk_forward_candidate_schema_version <- "v1"
+ledgr_walk_forward_candidate_schema_version <- "v2"
 
 ledgr_walk_forward_hash_payload <- function(payload) {
   digest::digest(as.character(canonical_json(payload)), algo = "sha256")
@@ -38,8 +38,9 @@ ledgr_walk_forward_candidate_payload <- function(params_hash,
                                                  metric_context_hash,
                                                  cost_model_hash,
                                                  risk_chain_hash,
-                                                 execution_seed = NA_integer_) {
-  list(
+                                                 execution_seed = NA_integer_,
+                                                 schedule_identity = NULL) {
+  out <- list(
     params_hash = ledgr_walk_forward_hash_scalar(params_hash, "`params_hash`"),
     feature_params_hash = ledgr_walk_forward_hash_scalar(feature_params_hash, "`feature_params_hash`"),
     strategy_hash = ledgr_walk_forward_hash_scalar(strategy_hash, "`strategy_hash`"),
@@ -51,6 +52,8 @@ ledgr_walk_forward_candidate_payload <- function(params_hash,
     execution_seed = ledgr_walk_forward_nullable_seed(execution_seed),
     candidate_schema_version = ledgr_walk_forward_candidate_schema_version
   )
+  if (!is.null(schedule_identity)) out$strategy_schedule <- schedule_identity
+  out
 }
 
 ledgr_walk_forward_candidate_key <- function(params_hash,
@@ -61,7 +64,8 @@ ledgr_walk_forward_candidate_key <- function(params_hash,
                                              metric_context_hash,
                                              cost_model_hash,
                                              risk_chain_hash,
-                                             execution_seed = NA_integer_) {
+                                             execution_seed = NA_integer_,
+                                             schedule_identity = NULL) {
   ledgr_walk_forward_hash_payload(ledgr_walk_forward_candidate_payload(
     params_hash = params_hash,
     feature_params_hash = feature_params_hash,
@@ -71,7 +75,8 @@ ledgr_walk_forward_candidate_key <- function(params_hash,
     metric_context_hash = metric_context_hash,
     cost_model_hash = cost_model_hash,
     risk_chain_hash = risk_chain_hash,
-    execution_seed = execution_seed
+    execution_seed = execution_seed,
+    schedule_identity = schedule_identity
   ))
 }
 
@@ -109,7 +114,8 @@ ledgr_walk_forward_candidate_identity <- function(params_hash,
                                                   risk_chain_hash,
                                                   master_seed = NULL,
                                                   fold_seq,
-                                                  window) {
+                                                  window,
+                                                  schedule_identity = NULL) {
   unseeded_candidate_key <- ledgr_walk_forward_candidate_key(
     params_hash = params_hash,
     feature_params_hash = feature_params_hash,
@@ -119,7 +125,8 @@ ledgr_walk_forward_candidate_identity <- function(params_hash,
     metric_context_hash = metric_context_hash,
     cost_model_hash = cost_model_hash,
     risk_chain_hash = risk_chain_hash,
-    execution_seed = NA_integer_
+    execution_seed = NA_integer_,
+    schedule_identity = schedule_identity
   )
   execution_seed <- ledgr_walk_forward_execution_seed(
     master_seed = master_seed,
@@ -136,7 +143,8 @@ ledgr_walk_forward_candidate_identity <- function(params_hash,
     metric_context_hash = metric_context_hash,
     cost_model_hash = cost_model_hash,
     risk_chain_hash = risk_chain_hash,
-    execution_seed = execution_seed
+    execution_seed = execution_seed,
+    schedule_identity = schedule_identity
   )
   list(
     candidate_key = candidate_key,

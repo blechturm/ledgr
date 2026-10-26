@@ -990,3 +990,203 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
   testthat::expect_identical(reference_replay$positions, completed_replay$positions)
   testthat::expect_identical(reference_replay$lot_state, completed_replay$lot_state)
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity", {
+  inner <- function(ctx, params) {
+    target <- ctx$flat()
+    target["AAA"] <- 1
+    target
+  }
+  strategy <- ledgr_strategy_schedule(
+    inner,
+    ledgr_schedule_from_param("when")
+  )
+  fixture <- ws42_history_fixture(
+    strategy = strategy,
+    features = list(),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 1),
+      cost_basis = c(AAA = 11)
+    )
+  )
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  grid <- ledgr_grid_named(
+    month = list(strategy = list(when = "month_start")),
+    week = list(strategy = list(when = "week_start"))
+  )
+
+  sweeps <- lapply(1:3, function(workers) {
+    ledgr_sweep(fixture$exp, grid, seed = 91L, workers = workers)
+  })
+  reference <- sweeps[[1L]]
+  for (sweep in sweeps[-1L]) {
+    testthat::expect_identical(sweep$status, reference$status)
+    testthat::expect_identical(sweep$final_equity, reference$final_equity)
+    testthat::expect_identical(sweep$provenance, reference$provenance)
+  }
+  testthat::expect_identical(names(reference), attr(reference, "ledgr_complete_names"))
+  provenance <- reference$provenance
+  testthat::expect_identical(
+    vapply(provenance, `[[`, character(1), "provenance_version"),
+    rep("ledgr_provenance_v2", 2L)
+  )
+  testthat::expect_identical(
+    provenance[[1L]]$strategy_schedule,
+    provenance[[2L]]$strategy_schedule
+  )
+  testthat::expect_false(identical(
+    provenance[[1L]]$resolved_schedule_hash,
+    provenance[[2L]]$resolved_schedule_hash
+  ))
+
+  task_source <- paste(
+    deparse(body(ledgr:::ledgr_sweep_candidate_tasks)),
+    collapse = "\n"
+  )
+  testthat::expect_match(task_source, "schedule_identity = schedule_identity", fixed = TRUE)
+  testthat::expect_no_match(task_source, "decision_due =", fixed = TRUE)
+  testthat::expect_no_match(task_source, "schedule_mask =", fixed = TRUE)
+  worker_source <- paste(
+    deparse(body(ledgr:::ledgr_sweep_candidate_execution)),
+    collapse = "\n"
+  )
+  testthat::expect_equal(
+    lengths(regmatches(worker_source, gregexpr("ledgr_compile_strategy_schedule", worker_source, fixed = TRUE))),
+    1L
+  )
+
+  ledgr_sweep_save(reference, fixture$snapshot, sweep_id = "scheduled-sweep")
+  reopened <- ledgr_sweep_open(fixture$snapshot, "scheduled-sweep")
+  testthat::expect_identical(
+    ledgr:::ledgr_strategy_schedule_hash(attr(reopened, "strategy_schedule")),
+    ledgr:::ledgr_strategy_schedule_hash(attr(reference, "strategy_schedule"))
+  )
+  testthat::expect_identical(
+    vapply(reopened$provenance, `[[`, character(1), "resolved_schedule_hash"),
+    vapply(reference$provenance, `[[`, character(1), "resolved_schedule_hash")
+  )
+  in_memory <- ledgr_candidate(reference, "week")
+  durable <- ledgr_candidate(reopened, "week")
+  in_memory_key <- ledgr_candidate_reproduction_key(in_memory)
+  durable_key <- ledgr_candidate_reproduction_key(durable)
+  testthat::expect_identical(
+    in_memory_key$strategy_schedule$schedule_hash,
+    durable_key$strategy_schedule$schedule_hash
+  )
+  testthat::expect_identical(
+    in_memory_key$strategy_schedule$resolved_schedule_hash,
+    durable_key$strategy_schedule$resolved_schedule_hash
+  )
+  testthat::expect_identical(
+    in_memory_key$reproduction_key_version,
+    "ledgr_candidate_reproduction_key_v2"
+  )
+  testthat::expect_identical(
+    in_memory_key$strategy_schedule$resolved_schedule$type_id,
+    "week_start"
+  )
+  old_candidate <- in_memory
+  old_candidate$provenance$provenance_version <- "ledgr_provenance_v1"
+  testthat::expect_error(
+    ledgr_candidate_reproduction_key(old_candidate),
+    class = "ledgr_candidate_provenance_incompatible"
+  )
+
+  unscheduled_fixture <- ws42_history_fixture(strategy = inner, features = list())
+  on.exit(ledgr_snapshot_close(unscheduled_fixture$snapshot), add = TRUE)
+  unscheduled <- ledgr_sweep(
+    unscheduled_fixture$exp,
+    ledgr_grid_named(one = list(strategy = list())),
+    seed = 91L
+  )
+  unscheduled_candidate <- ledgr_candidate(unscheduled, "one")
+  testthat::expect_false("strategy_schedule" %in% names(unscheduled_candidate$provenance))
+  testthat::expect_false(
+    "strategy_schedule" %in% names(ledgr_candidate_reproduction_key(unscheduled_candidate))
+  )
+  testthat::expect_false(
+    "strategy_schedule" %in% names(attr(unscheduled, "execution_assumptions"))
+  )
+
+  promoted_a <- ledgr_promote(fixture$exp, in_memory, "scheduled-promote-a")
+  promoted_b <- ledgr_promote(fixture$exp, durable, "scheduled-promote-b")
+  on.exit(close(promoted_a), add = TRUE)
+  on.exit(close(promoted_b), add = TRUE)
+  testthat::expect_identical(promoted_a$config$strategy_schedule, promoted_b$config$strategy_schedule)
+  testthat::expect_identical(ledgr_run_fills(promoted_a), ledgr_run_fills(promoted_b))
+  context <- ledgr_promotion_context(promoted_b)
+  testthat::expect_identical(context$promotion_context_version, "ledgr_promotion_v3")
+  testthat::expect_identical(context$source_sweep$schedule_hash, provenance[[1L]]$schedule_hash)
+
+  folds <- ledgr:::ledgr_fold_list(
+    list(ledgr_fold(
+      fixture$days[[1L]], fixture$days[[4L]],
+      fixture$days[[5L]], fixture$days[[8L]], fold_seq = 1L
+    )),
+    constructor = list(type_id = "explicit")
+  )
+  walk <- suppressWarnings(ledgr_walk_forward(
+    fixture$exp,
+    ledgr_grid_named(week = list(strategy = list(when = "week_start"))),
+    folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"),
+    seed = 91L
+  ))
+  on.exit(lapply(walk$test_runs, close), add = TRUE)
+  wf_candidate <- ledgr_candidate(walk, fold_seq = 1L)
+  testthat::expect_identical(
+    wf_candidate$provenance$provenance_version,
+    "ledgr_walk_forward_candidate_v2"
+  )
+  testthat::expect_identical(
+    wf_candidate$provenance$resolved_schedule$type_id,
+    "week_start"
+  )
+  old_session_meta <- list(
+    status = "DONE",
+    walk_forward_schema_version = ledgr:::ledgr_walk_forward_schema_version,
+    candidate_schema_version = "v1",
+    identity_rule_version = ledgr:::ledgr_identity_rule_version
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_walk_forward_parse_session_meta(
+      as.character(canonical_json(old_session_meta))
+    ),
+    "required v2",
+    class = "ledgr_walk_forward_invalid_session"
+  )
+
+  con <- ledgr:::get_connection(fixture$snapshot)
+  DBI::dbExecute(
+    con,
+    "UPDATE sweeps SET sweep_schema_version = 5 WHERE sweep_id = 'scheduled-sweep'"
+  )
+  testthat::expect_error(
+    ledgr_sweep_open(fixture$snapshot, "scheduled-sweep"),
+    "Saved sweep schema version 5 is not current; required 6.",
+    class = "ledgr_sweep_schema_incompatible",
+    fixed = TRUE
+  )
+  DBI::dbExecute(
+    con,
+    "UPDATE sweeps SET sweep_schema_version = 6 WHERE sweep_id = 'scheduled-sweep'"
+  )
+  stored <- DBI::dbGetQuery(
+    con,
+    "SELECT provenance_json FROM sweep_candidates WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'"
+  )
+  old_provenance <- ledgr:::ledgr_json_read_nested(stored$provenance_json[[1L]])
+  old_provenance$provenance_version <- "ledgr_provenance_v1"
+  DBI::dbExecute(
+    con,
+    "UPDATE sweep_candidates SET provenance_json = ? WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'",
+    params = list(as.character(canonical_json(old_provenance)))
+  )
+  testthat::expect_error(
+    ledgr_sweep_open(fixture$snapshot, "scheduled-sweep"),
+    "required ledgr_provenance_v2",
+    class = "ledgr_sweep_schema_incompatible"
+  )
+})

@@ -1,4 +1,4 @@
-ledgr_promotion_context_version <- "ledgr_promotion_v2"
+ledgr_promotion_context_version <- "ledgr_promotion_v3"
 
 # Identities ledgr_promote() compares between a candidate's sweep and the
 # promoting experiment (LDG-3005). They are hashes, so they survive a saved
@@ -6,7 +6,7 @@ ledgr_promotion_context_version <- "ledgr_promotion_v2"
 # replays the candidate's own.
 ledgr_promotion_identities <- function(exp, strategy_hash = NULL) {
   hash <- function(x) digest::digest(canonical_json(x), algo = "sha256")
-  list(
+  out <- list(
     strategy_hash = strategy_hash %||% ledgr_strategy_source_info(exp$strategy)$hash,
     universe_hash = hash(list(
       instrument_ids = as.character(exp$universe),
@@ -16,6 +16,13 @@ ledgr_promotion_identities <- function(exp, strategy_hash = NULL) {
     corporate_action_policy_hash = hash(ledgr_corporate_action_policy_identity(exp$corporate_action_policy)),
     opening_hash = hash(ledgr_config_normalize_opening(exp$opening, exp$opening$cash))
   )
+  schedule_hash <- ledgr_strategy_schedule_hash(
+    ledgr_strategy_schedule_declaration(exp$strategy)
+  )
+  if (!is.null(schedule_hash)) {
+    out$schedule_hash <- schedule_hash
+  }
+  out
 }
 
 # Compares the candidate's recorded identities with the promoting run's. A
@@ -109,7 +116,7 @@ ledgr_source_sweep_json <- function(candidate, identity_check = NULL) {
   } else {
     NULL
   }
-  canonical_json(list(
+  out <- list(
     sweep_id = meta$sweep_id,
     snapshot_id = meta$snapshot_id,
     snapshot_hash = meta$snapshot_hash %||% candidate$provenance$snapshot_hash,
@@ -128,7 +135,15 @@ ledgr_source_sweep_json <- function(candidate, identity_check = NULL) {
     risk_chain_hash = meta$risk_chain_hash %||% candidate$provenance$risk_chain_hash,
     risk_plan_json = meta$risk_plan_json %||% candidate$provenance$risk_plan_json,
     identity_check = identity_check
-  ))
+  )
+  strategy_schedule <- meta$strategy_schedule %||% candidate$provenance$strategy_schedule
+  if (!is.null(strategy_schedule)) {
+    out$strategy_schedule <- strategy_schedule
+    out$schedule_hash <- meta$strategy_schedule_hash %||% candidate$provenance$schedule_hash
+    out$resolved_schedule <- candidate$provenance$resolved_schedule
+    out$resolved_schedule_hash <- candidate$provenance$resolved_schedule_hash
+  }
+  canonical_json(out)
 }
 
 ledgr_candidate_summary_json <- function(selection_view) {
@@ -258,11 +273,12 @@ ledgr_warning_classes <- function(warnings) {
 #' metric context used to rank the candidate. The committed run's own metric
 #' context remains available from `ledgr_metric_context(bt)`.
 #'
-#' Records written by `ledgr_promotion_v2` carry `identity_check`: the
+#' Records written by `ledgr_promotion_v3` carry `identity_check`: the
 #' candidate's and the promoting run's identity hashes (`candidate`,
 #' `promoting`), the identities that differed (`mismatched`) and those the
 #' candidate's sweep did not record (`not_recorded`). Stored promotion context
-#' records must use the current `ledgr_promotion_v2` representation.
+#' records must use the current `ledgr_promotion_v3` representation. Version 3
+#' also carries authored and candidate-resolved strategy-schedule identity.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -326,7 +342,11 @@ ledgr_parse_promotion_context <- function(row) {
   version <- as.character(row$promotion_context_version[[1L]])
   if (!identical(version, ledgr_promotion_context_version)) {
     rlang::abort(
-      "Stored promotion context does not use ledgr_promotion_v2.",
+      sprintf(
+        "Stored promotion context version %s is not current; required %s.",
+        version,
+        ledgr_promotion_context_version
+      ),
       class = "ledgr_invalid_store"
     )
   }

@@ -25,7 +25,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 4L)
   testthat::expect_identical(
     ledgr:::ledgr_saved_sweep_schema_version,
-    5L
+    6L
   )
   testthat::expect_identical(
     ledgr:::ledgr_sweep_retention_schema_version,

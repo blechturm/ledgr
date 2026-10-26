@@ -536,7 +536,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
   testthat::expect_equal(seeded$t_fills_extract, rep(0, 2L))
 
   versions <- vapply(seeded$provenance, `[[`, character(1), "provenance_version")
-  testthat::expect_identical(versions, rep("ledgr_provenance_v1", 2L))
+  testthat::expect_identical(versions, rep("ledgr_provenance_v2", 2L))
   testthat::expect_true(all(vapply(seeded$provenance, function(row) {
     all(c(
       "snapshot_hash", "strategy_hash", "feature_set_hash", "master_seed",
@@ -734,7 +734,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
 
   testthat::expect_identical(before_counts, after_sweep_counts)
   testthat::expect_s3_class(key, "ledgr_candidate_reproduction_key")
-  testthat::expect_identical(key$reproduction_key_version, "ledgr_candidate_reproduction_key_v1")
+  testthat::expect_identical(key$reproduction_key_version, "ledgr_candidate_reproduction_key_v2")
   testthat::expect_identical(key$source_sweep$sweep_id, attr(results, "sweep_id"))
   testthat::expect_identical(key$candidate$candidate_id, "candidate")
   testthat::expect_identical(key$candidate$candidate_row, 1L)

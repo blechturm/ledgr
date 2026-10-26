@@ -25,11 +25,12 @@ curves for all candidates. For sweep-promoted runs,
 metric context used to rank the candidate. The committed run's own metric
 context remains available from \code{ledgr_metric_context(bt)}.
 
-Records written by \code{ledgr_promotion_v2} carry \code{identity_check}: the
+Records written by \code{ledgr_promotion_v3} carry \code{identity_check}: the
 candidate's and the promoting run's identity hashes (\code{candidate},
 \code{promoting}), the identities that differed (\code{mismatched}) and those the
 candidate's sweep did not record (\code{not_recorded}). Stored promotion context
-records must use the current \code{ledgr_promotion_v2} representation.
+records must use the current \code{ledgr_promotion_v3} representation. Version 3
+also carries authored and candidate-resolved strategy-schedule identity.
 }
 \section{Articles}{
 

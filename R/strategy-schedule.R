@@ -153,6 +153,60 @@ ledgr_strategy_schedule_json <- function(declaration) {
   as.character(canonical_json(unclass(ledgr_schedule_validate(declaration))))
 }
 
+ledgr_strategy_schedule_identity <- function(declaration, strategy_params = list()) {
+  if (is.null(declaration)) return(NULL)
+  declaration <- unclass(ledgr_schedule_validate(declaration))
+  resolved_type <- ledgr_schedule_resolve_type(declaration, strategy_params)
+  resolved <- if (identical(resolved_type, declaration$type_id)) {
+    declaration
+  } else {
+    unclass(ledgr_schedule_rule(resolved_type, list()))
+  }
+  list(
+    strategy_schedule = declaration,
+    schedule_hash = ledgr_strategy_schedule_hash(declaration),
+    resolved_schedule = resolved,
+    resolved_schedule_hash = ledgr_strategy_schedule_hash(resolved)
+  )
+}
+
+ledgr_strategy_schedule_identity_assert <- function(record,
+                                                     declaration,
+                                                     strategy_params = list(),
+                                                     context = "Stored candidate") {
+  expected <- ledgr_strategy_schedule_identity(declaration, strategy_params)
+  fields <- c(
+    "strategy_schedule", "schedule_hash",
+    "resolved_schedule", "resolved_schedule_hash"
+  )
+  present <- fields[vapply(fields, function(field) !is.null(record[[field]]), logical(1))]
+  if (is.null(expected)) {
+    if (length(present) > 0L) {
+      ledgr_schedule_abort(
+        sprintf("%s records a strategy schedule for an unscheduled strategy.", context),
+        "ledgr_schedule_identity_mismatch"
+      )
+    }
+    return(invisible(TRUE))
+  }
+  if (!identical(present, fields)) {
+    ledgr_schedule_abort(
+      sprintf("%s strategy schedule identity is incomplete.", context),
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  actual <- record[fields]
+  actual$strategy_schedule <- unclass(ledgr_schedule_validate(actual$strategy_schedule))
+  actual$resolved_schedule <- unclass(ledgr_schedule_validate(actual$resolved_schedule))
+  if (!identical(actual, expected)) {
+    ledgr_schedule_abort(
+      sprintf("%s strategy schedule identity does not match its parameters.", context),
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  invisible(TRUE)
+}
+
 ledgr_strategy_schedule_label <- function(declaration) {
   if (is.null(declaration)) return("every pulse")
   declaration <- ledgr_schedule_validate(declaration)

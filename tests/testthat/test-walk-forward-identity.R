@@ -22,7 +22,7 @@ testthat::test_that("walk-forward candidate identity uses canonical fields and d
       )
     )
     testthat::expect_true(is.na(payload$execution_seed))
-    testthat::expect_identical(payload$candidate_schema_version, "v1")
+    testthat::expect_identical(payload$candidate_schema_version, "v2")
 
     key_a <- do.call(ledgr:::ledgr_walk_forward_candidate_key, fields)
     key_b <- do.call(ledgr:::ledgr_walk_forward_candidate_key, fields)

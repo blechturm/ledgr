@@ -1050,7 +1050,7 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
   same <- testthat::expect_no_warning(ledgr_promote(experiment(), candidate, run_id = "promote_same"))
   on.exit(close(same), add = TRUE)
   check <- ledgr_promotion_context(same)$identity_check
-  testthat::expect_identical(ledgr_promotion_context(same)$promotion_context_version, "ledgr_promotion_v2")
+  testthat::expect_identical(ledgr_promotion_context(same)$promotion_context_version, "ledgr_promotion_v3")
   testthat::expect_identical(check$mismatched, character())
   testthat::expect_identical(check$not_recorded, character())
   testthat::expect_identical(check$candidate, check$promoting)
@@ -1084,12 +1084,12 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
   v1_sweep$identity_check <- NULL
   DBI::dbExecute(
     con,
-    "UPDATE run_promotion_context SET promotion_context_version = 'ledgr_promotion_v1', source_sweep_json = ? WHERE run_id = 'promote_same'",
+    "UPDATE run_promotion_context SET promotion_context_version = 'ledgr_promotion_v2', source_sweep_json = ? WHERE run_id = 'promote_same'",
     params = list(as.character(ledgr:::canonical_json(v1_sweep)))
   )
   testthat::expect_error(
     ledgr_promotion_context(same),
-    "Stored promotion context does not use ledgr_promotion_v2.",
+    "Stored promotion context version ledgr_promotion_v2 is not current; required ledgr_promotion_v3.",
     class = "ledgr_invalid_store",
     fixed = TRUE
   )

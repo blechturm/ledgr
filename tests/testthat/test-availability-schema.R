@@ -7,7 +7,7 @@ testthat::test_that("current schema retains normalized availability tables", {
     ledgr:::ledgr_experiment_store_version(con),
     ledgr:::ledgr_experiment_store_schema_version
   )
-  testthat::expect_identical(ledgr:::ledgr_saved_sweep_schema_version, 5L)
+  testthat::expect_identical(ledgr:::ledgr_saved_sweep_schema_version, 6L)
   tables <- DBI::dbGetQuery(
     con,
     "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
