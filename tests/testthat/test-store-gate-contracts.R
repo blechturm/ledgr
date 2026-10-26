@@ -149,33 +149,35 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
   # Cut 17 LDG-3085 changed the stored meaning of corporate-action knowledge
   # provenance: schema-122 stores are older.
   expect_cause(marker_store("122"), "older", 122L)
-  expect_cause(marker_store("123"), "missing_marker", 123L)
-  expect_cause(marker_store("123", "not-json"), "invalid_marker", 123L)
+  # Cut 21 LDG-3112 added schedule provenance and telemetry: schema 123 is older.
+  expect_cause(marker_store("123"), "older", 123L)
+  expect_cause(marker_store("124"), "missing_marker", 124L)
+  expect_cause(marker_store("124", "not-json"), "invalid_marker", 124L)
 
   current <- ledgr:::ledgr_store_format_bindings()
   prior_universe_rule <- current
   prior_universe_rule[["ledgr_universe_rule_schema_version"]] <- NULL
   expect_cause(
-    marker_store("123", ledgr:::ledgr_store_format_json(prior_universe_rule)),
+    marker_store("124", ledgr:::ledgr_store_format_json(prior_universe_rule)),
     "fingerprint_mismatch",
-    123L,
+    124L,
     "ledgr_universe_rule_schema_version"
   )
   prior_ordering <- current
   prior_ordering[["ledgr_canonical_json_rule_version"]] <- NULL
   expect_cause(
-    marker_store("123", ledgr:::ledgr_store_format_json(prior_ordering)),
+    marker_store("124", ledgr:::ledgr_store_format_json(prior_ordering)),
     "fingerprint_mismatch",
-    123L,
+    124L,
     "ledgr_canonical_json_rule_version"
   )
   changed <- current
   changed[["ledgr_cost_schema_version"]] <- 999L
   changed[["ledgr_business_objective_schema_version"]] <- 999L
   expect_cause(
-    marker_store("123", ledgr:::ledgr_store_format_json(changed)),
+    marker_store("124", ledgr:::ledgr_store_format_json(changed)),
     "fingerprint_mismatch",
-    123L,
+    124L,
     c(
       "ledgr_business_objective_schema_version",
       "ledgr_cost_schema_version"

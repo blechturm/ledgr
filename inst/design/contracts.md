@@ -138,6 +138,18 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   reference. Cursor-bearing provider and history readers are declared fold
   services and remain local to one daemon/consumer; they are not stored in or
   shared through the immutable substrate.
+- A declared strategy schedule is compiled once against the authoritative
+  parent session axis before fold entry. On a due pulse P1 through P5 run as
+  usual. On a scheduled skip P1 still observes and settles, P4 still binds the
+  next corporate-action boundary and applies an empty plan, and P5 still
+  reconciles, persists carried strategy state, advances resume progress and
+  commits evidence. Only P2 context/callback work and P3 planning are skipped.
+  The skip writes one pulse diagnostic with stage `decision`, outcome
+  `skipped`, reason `scheduled_skip`, empty instrument ID and `{}` detail;
+  it is not an explicit strategy hold and creates no target or instrument
+  decision trace. A resolved schedule with no due pulse refuses a flat run,
+  but a run with opening or carried positions remains valid and processes its
+  economic events on every pulse.
 
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
@@ -1192,10 +1204,14 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-- Experiment-store schema 123 is the sole current store schema; it stores no
+- Experiment-store schema 124 is the sole current store schema. It adds the
+  canonical strategy-schedule declaration and hash to `run_provenance`, and
+  the compiled decision-pulse and scheduled-skip counts to `run_telemetry`;
+  readers recover and verify the declaration rather than inferring it from
+  diagnostics. It stores no
   `walk_forward_folds.hydration_start_utc` column, and its sealed
   corporate-action provenance distinguishes assumed from evidenced knowledge
-  (Cut 17 LDG-3085). Schema-120, schema-121 and schema-122 stores are older
+  (Cut 17 LDG-3085). Schema-120 through schema-123 stores are older
   stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an

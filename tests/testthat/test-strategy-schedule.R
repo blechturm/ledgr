@@ -339,19 +339,16 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
     ledgr:::ledgr_strategy_schedule_inner(strategy),
     ledgr_schedule_year_start()
   )
-  year_run <- ledgr_run(year_exp, run_id = "schedule-year-run")
+  testthat::expect_error(
+    ledgr_run(year_exp, run_id = "schedule-year-run"),
+    class = "ledgr_schedule_no_decision"
+  )
   year_sweep <- ledgr_sweep(
     year_exp,
     ledgr_grid_named(one = list(strategy = list()))
   )
-  testthat::expect_false(identical(
-    ledgr:::config_hash(run$config),
-    ledgr:::config_hash(year_run$config)
-  ))
-  testthat::expect_false(identical(
-    attr(sweep, "strategy_schedule_hash"),
-    attr(year_sweep, "strategy_schedule_hash")
-  ))
+  testthat::expect_identical(year_sweep$status, "FAILED")
+  testthat::expect_match(year_sweep$error_class, "ledgr_schedule_no_decision", fixed = TRUE)
   candidate <- ledgr_candidate(sweep, "one")
   testthat::expect_identical(
     candidate$sweep_meta$strategy_schedule,
@@ -439,5 +436,285 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
   testthat::expect_error(
     ledgr_experiment(dense, strategy, cost_model = ledgr_cost_zero()),
     class = "ledgr_schedule_sessions_required"
+  )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan stages", {
+  counts <- new.env(parent = emptyenv())
+  for (stage in c("p1", "p2", "p3", "p4", "p5")) counts[[stage]] <- 0L
+  originals <- list(
+    p1 = ledgr:::ledgr_fold_stage_observe_settle,
+    p2 = ledgr:::ledgr_fold_stage_decide,
+    p3 = ledgr:::ledgr_fold_stage_plan,
+    p4 = ledgr:::ledgr_fold_stage_apply,
+    p5 = ledgr:::ledgr_fold_stage_commit
+  )
+  count_stage <- function(name, fn) {
+    force(name)
+    force(fn)
+    function(...) {
+      counts[[name]] <- counts[[name]] + 1L
+      fn(...)
+    }
+  }
+  testthat::local_mocked_bindings(
+    ledgr_fold_stage_observe_settle = count_stage("p1", originals$p1),
+    ledgr_fold_stage_decide = count_stage("p2", originals$p2),
+    ledgr_fold_stage_plan = count_stage("p3", originals$p3),
+    ledgr_fold_stage_apply = count_stage("p4", originals$p4),
+    ledgr_fold_stage_commit = count_stage("p5", originals$p5),
+    .package = "ledgr"
+  )
+
+  strategy <- ledgr_strategy_schedule(
+    function(ctx, params) {
+      previous <- ctx$state_prev
+      n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
+      list(
+        targets = ctx$hold(),
+        state_update = list(n = n + 1L),
+        intent_reason = "rebalanced"
+      )
+    },
+    ledgr_schedule_week_start()
+  )
+  fixture <- ws42_history_fixture(strategy = strategy, features = list())
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  run <- ledgr_run(fixture$exp, run_id = "scheduled-stage-gate")
+  on.exit(close(run), add = TRUE)
+
+  info <- ledgr_run_info(fixture$snapshot, run$run_id)
+  testthat::expect_identical(counts$p1, info$pulse_count)
+  testthat::expect_identical(counts$p4, info$pulse_count)
+  testthat::expect_identical(counts$p5, info$pulse_count)
+  testthat::expect_identical(counts$p2, info$decision_pulse_count)
+  testthat::expect_identical(counts$p3, info$decision_pulse_count)
+  testthat::expect_identical(
+    info$decision_pulse_count + info$scheduled_skip_count,
+    info$pulse_count
+  )
+
+  opened <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  diagnostics <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT instrument_id, stage, outcome, reason_code, reasons, detail_json FROM run_diagnostics WHERE run_id = ? AND reason_code = 'scheduled_skip' ORDER BY diagnostic_seq",
+    params = list(run$run_id)
+  )
+  testthat::expect_identical(nrow(diagnostics), info$scheduled_skip_count)
+  testthat::expect_identical(unique(diagnostics$instrument_id), "")
+  testthat::expect_identical(unique(diagnostics$stage), "decision")
+  testthat::expect_identical(unique(diagnostics$outcome), "skipped")
+  testthat::expect_identical(unique(diagnostics$reasons), "scheduled_skip")
+  testthat::expect_identical(unique(diagnostics$detail_json), "{}")
+
+  states <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+    params = list(run$run_id)
+  )
+  state_n <- vapply(
+    states$state_json,
+    function(json) {
+      value <- ledgr:::ledgr_json_read_config(json)$n
+      if (length(value) != 1L) 0L else as.integer(value)
+    },
+    integer(1)
+  )
+  testthat::expect_identical(length(state_n), info$pulse_count)
+  testthat::expect_identical(max(state_n), info$decision_pulse_count)
+  testthat::expect_identical(sum(diff(state_n) != 0L), info$decision_pulse_count)
+
+  year_strategy <- ledgr_strategy_schedule(
+    ledgr:::ledgr_strategy_schedule_inner(strategy),
+    ledgr_schedule_year_start()
+  )
+  year_exp <- fixture$exp
+  year_exp$strategy <- year_strategy
+  testthat::expect_error(
+    ledgr_run(year_exp, run_id = "scheduled-zero-flat"),
+    class = "ledgr_schedule_no_decision"
+  )
+  year_exp$opening$positions <- c(AAA = 1)
+  year_exp$opening$cost_basis <- c(AAA = 100)
+  opened_run <- ledgr_run(year_exp, run_id = "scheduled-zero-opening")
+  on.exit(close(opened_run), add = TRUE)
+  opened_info <- ledgr_run_info(fixture$snapshot, opened_run$run_id)
+  testthat::expect_identical(opened_info$decision_pulse_count, 0L)
+  testthat::expect_identical(opened_info$scheduled_skip_count, opened_info$pulse_count)
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses schedules", {
+  strategy <- ledgr_strategy_schedule(
+    function(ctx, params) list(targets = ctx$hold(), intent_reason = "rebalanced"),
+    ledgr_schedule_week_start()
+  )
+  fixture <- ws42_history_fixture(strategy = strategy, features = list())
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  run <- ledgr_run(fixture$exp, run_id = "scheduled-persistence")
+  on.exit(close(run), add = TRUE)
+
+  opened <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
+  provenance <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT schedule_json, schedule_hash FROM run_provenance WHERE run_id = ?",
+    params = list(run$run_id)
+  )
+  telemetry <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT pulse_count, decision_pulse_count, scheduled_skip_count FROM run_telemetry WHERE run_id = ?",
+    params = list(run$run_id)
+  )
+  ledgr:::ledgr_run_store_close(opened)
+  declaration <- unclass(ledgr_schedule_week_start())
+  testthat::expect_identical(
+    provenance$schedule_json[[1]],
+    ledgr:::ledgr_strategy_schedule_json(declaration)
+  )
+  testthat::expect_identical(
+    provenance$schedule_hash[[1]],
+    ledgr:::ledgr_strategy_schedule_hash(declaration)
+  )
+  testthat::expect_identical(
+    as.integer(telemetry$decision_pulse_count + telemetry$scheduled_skip_count),
+    as.integer(telemetry$pulse_count)
+  )
+
+  info <- ledgr_run_info(fixture$snapshot, run$run_id)
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(info$strategy_schedule)),
+    unclass(ledgr:::ledgr_schedule_validate(declaration))
+  )
+  recovered <- ledgr_run_strategy(fixture$snapshot, run$run_id, trust = TRUE)
+  testthat::expect_identical(
+    ledgr:::ledgr_strategy_schedule_declaration(recovered$strategy_function),
+    declaration
+  )
+  reopened <- ledgr_run_open(fixture$snapshot, run$run_id)
+  on.exit(close(reopened), add = TRUE)
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(reopened$config$strategy_schedule)),
+    unclass(ledgr:::ledgr_schedule_validate(declaration))
+  )
+
+  schedule_surfaces <- list(
+    experiment = capture.output(print(fixture$exp)),
+    plan = capture.output(print(ledgr_experiment_plan(fixture$exp))),
+    info = capture.output(print(info)),
+    run = capture.output(print(reopened)),
+    summary = capture.output(summary(reopened))
+  )
+  for (surface in names(schedule_surfaces)) {
+    text <- schedule_surfaces[[surface]]
+    testthat::expect_true(
+      any(grepl("Strategy schedule: week start", text, fixed = TRUE)),
+      info = surface
+    )
+  }
+  for (text in schedule_surfaces[c("info", "run", "summary")]) {
+    testthat::expect_true(any(grepl("Decision pulses:", text, fixed = TRUE)))
+    testthat::expect_true(any(grepl("scheduled skips:", text, fixed = TRUE)))
+  }
+
+  opened <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_provenance SET schedule_hash = 'wrong' WHERE run_id = ?",
+    params = list(run$run_id)
+  )
+  ledgr:::ledgr_run_store_close(opened)
+  testthat::expect_error(
+    ledgr_run_strategy(fixture$snapshot, run$run_id),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume state", {
+  opening <- ledgr_opening(
+    cash = 1000,
+    positions = c(AAA = 1),
+    cost_basis = c(AAA = 10)
+  )
+  plain_strategy <- function(ctx, params) ctx$hold()
+  scheduled_strategy <- ledgr_strategy_schedule(
+    plain_strategy,
+    ledgr_schedule_week_start()
+  )
+  plain <- ws42_history_fixture(
+    strategy = plain_strategy,
+    features = list(),
+    opening = opening,
+    dividend = c(2L, 3L)
+  )
+  scheduled <- ws42_history_fixture(
+    strategy = scheduled_strategy,
+    features = list(),
+    opening = opening,
+    dividend = c(2L, 3L)
+  )
+  on.exit(ledgr_snapshot_close(plain$snapshot), add = TRUE)
+  on.exit(ledgr_snapshot_close(scheduled$snapshot), add = TRUE)
+  plain_run <- ledgr_run(plain$exp, run_id = "schedule-economic-plain")
+  scheduled_run <- ledgr_run(scheduled$exp, run_id = "schedule-economic-gated")
+  on.exit(close(plain_run), add = TRUE)
+  on.exit(close(scheduled_run), add = TRUE)
+
+  economic_rows <- function(fixture, run_id) {
+    opened <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
+    on.exit(ledgr:::ledgr_run_store_close(opened))
+    DBI::dbGetQuery(
+      opened$con,
+      paste(
+        "SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json",
+        "FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
+      ),
+      params = list(run_id)
+    )
+  }
+  testthat::expect_identical(
+    economic_rows(plain, plain_run$run_id),
+    economic_rows(scheduled, scheduled_run$run_id)
+  )
+
+  state_strategy <- ledgr_strategy_schedule(
+    function(ctx, params) {
+      previous <- ctx$state_prev
+      n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
+      list(targets = ctx$hold(), state_update = list(n = n + 1L))
+    },
+    ledgr_schedule_week_start()
+  )
+  resumed <- ws42_history_fixture(strategy = state_strategy, features = list())
+  on.exit(ledgr_snapshot_close(resumed$snapshot), add = TRUE)
+  reference <- ledgr_run(resumed$exp, run_id = "schedule-resume-reference")
+  on.exit(close(reference), add = TRUE)
+  old_interrupt <- getOption("ledgr.interrupt")
+  on.exit(options(ledgr.interrupt = old_interrupt), add = TRUE)
+  options(ledgr.interrupt = TRUE)
+  partial <- ledgr_run(resumed$exp, run_id = "schedule-resume")
+  close(partial)
+  options(ledgr.interrupt = FALSE)
+  completed <- ledgr_run(resumed$exp, run_id = "schedule-resume")
+  on.exit(close(completed), add = TRUE)
+
+  opened <- ledgr:::ledgr_run_store_open(resumed$snapshot$db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  fetch <- function(table, run_id, order) {
+    DBI::dbGetQuery(
+      opened$con,
+      sprintf("SELECT * EXCLUDE(run_id) FROM %s WHERE run_id = ? ORDER BY %s", table, order),
+      params = list(run_id)
+    )
+  }
+  testthat::expect_identical(
+    fetch("equity_curve", reference$run_id, "ts_utc"),
+    fetch("equity_curve", completed$run_id, "ts_utc")
+  )
+  testthat::expect_identical(
+    fetch("strategy_state", reference$run_id, "ts_utc"),
+    fetch("strategy_state", completed$run_id, "ts_utc")
   )
 })

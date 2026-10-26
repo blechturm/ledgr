@@ -1,5 +1,22 @@
 # ledgr (development version)
 
+## Declarative strategy schedules
+
+- Scheduled strategies now skip only decision-context construction, callback
+  invocation, and execution planning on non-decision pulses. Observation,
+  corporate-action settlement and boundary binding, reconciliation, strategy
+  state persistence, interruption, checkpointing, and commit processing still
+  run on every pulse. Skips are recorded as `scheduled_skip`, distinct from an
+  explicit strategy hold. A flat run whose resolved schedule has no decision
+  pulse refuses before fold entry; an opening or carried portfolio may still
+  run and hold through the range.
+
+- Experiment-store schema 124 persists the canonical schedule declaration and
+  hash together with decision-pulse and scheduled-skip counts. Experiment and
+  run output disclose the schedule, while run output and summaries disclose
+  the counts. Schema-123 stores are older and refuse; rebuild them with the
+  current package.
+
 ## Cross-asset correctness and honest defaults
 
 - Fractional fills that close FIFO lots within the existing machine-epsilon

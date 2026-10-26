@@ -668,6 +668,15 @@ print.ledgr_experiment <- function(x, ...) {
   # basis, as the plan discloses them (LDG-3081).
   cat(ledgr_experiment_plan_policy_lines(ledgr_experiment_plan(x), width = 13L), sep = "")
   cat("Metrics:     ", ledgr_calendar_display(x$metric_context$calendar), "\n", sep = "")
+  strategy_schedule <- ledgr_strategy_schedule_declaration(x$strategy)
+  if (!is.null(strategy_schedule)) {
+    cat(
+      "Strategy schedule: ",
+      ledgr_strategy_schedule_label(strategy_schedule),
+      "\n",
+      sep = ""
+    )
+  }
   invisible(x)
 }
 

@@ -98,6 +98,7 @@ ledgr_current_schema_definition <- function() {
         "strategy_source VARCHAR, strategy_source_hash VARCHAR,",
         "strategy_source_capture_method VARCHAR,",
         "strategy_params_json VARCHAR, strategy_params_hash VARCHAR,",
+        "schedule_json VARCHAR, schedule_hash VARCHAR,",
         "reproducibility_level VARCHAR, ledgr_version VARCHAR,",
         "R_version VARCHAR, dependency_versions_json VARCHAR,",
         "created_at_utc TIMESTAMP)"
@@ -106,6 +107,7 @@ ledgr_current_schema_definition <- function() {
         "CREATE TABLE run_telemetry(",
         "run_id VARCHAR PRIMARY KEY, status VARCHAR, execution_mode VARCHAR,",
         "elapsed_sec DOUBLE, pulse_count INTEGER,",
+        "decision_pulse_count INTEGER, scheduled_skip_count INTEGER,",
         "updated_at_utc TIMESTAMP,",
         "CHECK(((execution_mode IS NULL) OR",
         "(execution_mode IN ('audit_log', 'db_live')))))"

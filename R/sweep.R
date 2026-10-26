@@ -1702,6 +1702,14 @@ ledgr_sweep_candidate_execution <- function(exp,
     sessions = if (isTRUE(exp$availability$active)) history_substrate$sessions else NULL,
     pulses_posix = pulses_posix
   )
+  if (!is.null(schedule$decision_due) &&
+      identical(schedule$decision_pulse_count, 0L) &&
+      !any(as.numeric(initial_positions) != 0)) {
+    ledgr_schedule_abort(
+      "The resolved strategy schedule has no decision pulse and the run has no opening or carried position.",
+      "ledgr_schedule_no_decision"
+    )
+  }
   corporate_action_plan <- ledgr_corporate_action_plan(
     rows = corporate_action_rows,
     policy_identity = ledgr_corporate_action_policy_identity(

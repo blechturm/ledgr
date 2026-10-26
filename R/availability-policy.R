@@ -349,6 +349,7 @@ ledgr_experiment_plan <- function(x, ...) {
       valuation_policy = x$valuation_policy,
       history_policy = x$history_policy,
       metric_calendar = ledgr_calendar_display(x$metric_context$calendar),
+      strategy_schedule = ledgr_strategy_schedule_declaration(x$strategy),
       checks = tibble::as_tibble(checks),
       assumptions = ledgr_experiment_plan_assumptions(
         x$valuation_policy,
@@ -367,6 +368,14 @@ print.ledgr_experiment_plan <- function(x, ...) {
   cat("Availability: ", if (isTRUE(x$availability_active)) "active" else "dense", "\n", sep = "")
   cat("Price basis:  ", ledgr_price_basis_display(x$price_basis %||% "undeclared", x$price_basis_default), "\n", sep = "")
   cat("Metrics:      ", x$metric_calendar, "\n", sep = "")
+  if (!is.null(x$strategy_schedule)) {
+    cat(
+      "Strategy schedule: ",
+      ledgr_strategy_schedule_label(x$strategy_schedule),
+      "\n",
+      sep = ""
+    )
+  }
   if (isTRUE(x$availability_active)) {
     cat("Universe:     ", x$universe_type, "\n", sep = "")
     cat(ledgr_experiment_plan_policy_lines(x, width = 14L), sep = "")

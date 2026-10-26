@@ -30,10 +30,13 @@ ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
       p.strategy_source_capture_method,
       p.strategy_params_json,
       p.strategy_params_hash,
+      p.schedule_json,
+      p.schedule_hash,
       p.reproducibility_level,
       p.ledgr_version,
       p.R_version,
-      p.dependency_versions_json
+      p.dependency_versions_json,
+      r.config_json
     FROM runs r
     LEFT JOIN run_provenance p ON p.run_id = r.run_id
     WHERE %s
@@ -209,6 +212,30 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
     warnings = warnings
   )
 
+  schedule <- ledgr_strategy_schedule_from_json(
+    row$schedule_json[[1]],
+    row$schedule_hash[[1]]
+  )
+  stored_config <- ledgr_strategy_extract_parse_json(
+    row$config_json[[1]],
+    empty = list(),
+    label = "config_json"
+  )
+  config_schedule <- stored_config$strategy_schedule %||% NULL
+  if (!is.null(config_schedule)) {
+    config_schedule <- unclass(ledgr_schedule_validate(config_schedule))
+  }
+  if (!identical(
+    ledgr_strategy_schedule_hash(config_schedule),
+    ledgr_strategy_schedule_hash(schedule)
+  )) {
+    ledgr_schedule_abort(
+      "Stored strategy schedule disagrees with the run configuration.",
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  out$strategy_schedule <- schedule
+
   if (isTRUE(trust)) {
     if (!source_available) {
       rlang::abort(
@@ -241,6 +268,13 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
       rlang::abort(sprintf("Stored strategy source for run '%s' did not evaluate to a function.", run_id), class = "ledgr_strategy_not_function")
     }
     out$strategy_function <- fn
+    if (!is.null(schedule)) {
+      attr(out$strategy_function, "ledgr_schedule") <- schedule
+      class(out$strategy_function) <- unique(c(
+        "ledgr_scheduled_strategy",
+        class(out$strategy_function)
+      ))
+    }
   }
 
   structure(out, class = c("ledgr_extracted_strategy", "list"))

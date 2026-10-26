@@ -20,6 +20,7 @@
 "R/availability-results.R","ledgr_run_explain","flow","availability_active","arg:ledgr_backtest_diagnostics_filtered:include_strategy_intent",1
 "R/availability-results.R","ledgr_run_explain","flow","availability_active","assign_target",1
 "R/availability-results.R","ledgr_run_explain","flow","ledgr_availability_config_active()","assign:availability_active",1
+"R/backtest-config.R","ledgr_config","branch","availability$active","if: !is.null(strat$strategy_schedule) && !isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",2
 "R/backtest-results.R","summary.ledgr_backtest","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(object$config)",1
@@ -64,6 +65,7 @@
 "R/backtest.R","ledgr_run_experiment","branch","availability$active","if: isTRUE(exp$availability$active) && identical(compiled_accounting_model, ""spot_fifo"")",1
 "R/config-validate.R","validate_ledgr_config","branch","availability$active","if: !is.character(final_execution) || length(final_execution) != 1L || !grepl(iso8601_utc, final_execution) || !isTRUE(config$availability$active) || !isTRUE(ledgr_history_utc(final_execution) > ledgr_history_utc(end_ts))",1
 "R/config-validate.R","validate_ledgr_config","branch","availability$active","if: !is.list(availability) || !isTRUE(availability$active) || !is.character(availability$declared_families) || anyNA(availability$declared_families) || anyDuplicated(availability$declared_families) || !all(availability$declared_families %in% allowed_families) || !""sessions"" %in% availability$declared_families || !is.list(availability$valuation_policy) || !identical(availability$provider_version, ledgr_availability_provider_version())",1
+"R/config-validate.R","validate_ledgr_config","branch","availability$active","if: !isTRUE(config$availability$active)",1
 "R/corporate-action-results.R","ledgr_corporate_action_summary","branch","alias:dispositions_active","if: !dispositions_active",1
 "R/corporate-action-results.R","ledgr_corporate_action_summary","flow","alias:dispositions_active","assign_target",1
 "R/corporate-action-results.R","ledgr_corporate_action_summary","flow","availability$active","assign:dispositions_active",1
@@ -77,6 +79,7 @@
 "R/execution-spec.R","ledgr_execution_spec","branch","is.null(availability_provider)","if: is.null(availability_provider) && !is.null(execution_opportunities_posix)",1
 "R/execution-timing.R","ledgr_execution_timing_provenance","branch","availability$active","if: !is.list(availability) || !isTRUE(availability$active)",1
 "R/execution-timing.R","ledgr_execution_timing_require_current","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
+"R/experiment.R","ledgr_experiment","branch","availability$active","if: !is.null(ledgr_strategy_schedule_declaration(strategy)) && !isTRUE(availability$active)",1
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active)",1
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active)",2
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active) && !is.null(opening$date_civil)",1
@@ -183,6 +186,7 @@
 "R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: !isTRUE(exp$availability$active)",1
 "R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: isTRUE(exp$availability$active)",2
+"R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active","if: isTRUE(exp$availability$active)",3
 "R/sweep.R","ledgr_sweep_candidate_execution","branch","availability$active+is.null(availability_provider)","if: isTRUE(exp$availability$active) && is.null(availability_provider)",1
 "R/sweep.R","ledgr_sweep_candidate_execution","flow","availability$active","arg:ledgr_corporate_action_plan:dispositions_active",1
 "R/sweep.R","ledgr_sweep_candidate_tasks","branch","availability$active","if: isTRUE(exp$availability$active)",1

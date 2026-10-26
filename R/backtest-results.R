@@ -630,6 +630,44 @@ ledgr_backtest_headline_metrics <- function(con, run_id) {
   )
 }
 
+ledgr_run_schedule_evidence <- function(con, run_id) {
+  row <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT p.schedule_json, p.schedule_hash,",
+      "t.decision_pulse_count, t.scheduled_skip_count",
+      "FROM run_provenance p",
+      "LEFT JOIN run_telemetry t ON t.run_id = p.run_id",
+      "WHERE p.run_id = ?"
+    ),
+    params = list(run_id)
+  )
+  if (nrow(row) != 1L) return(NULL)
+  declaration <- ledgr_strategy_schedule_from_json(
+    row$schedule_json[[1]],
+    row$schedule_hash[[1]]
+  )
+  if (is.null(declaration)) return(NULL)
+  list(
+    label = ledgr_strategy_schedule_label(declaration),
+    decision_pulse_count = as.integer(row$decision_pulse_count[[1]]),
+    scheduled_skip_count = as.integer(row$scheduled_skip_count[[1]])
+  )
+}
+
+ledgr_print_run_schedule_evidence <- function(evidence, indent = "") {
+  if (is.null(evidence)) return(invisible(FALSE))
+  cat(indent, "Strategy schedule: ", evidence$label, "\n", sep = "")
+  cat(
+    indent,
+    "Decision pulses: ", evidence$decision_pulse_count,
+    "; scheduled skips: ", evidence$scheduled_skip_count,
+    "\n",
+    sep = ""
+  )
+  invisible(TRUE)
+}
+
 #' Print a backtest result
 #'
 #' @param x A `ledgr_backtest` object.
@@ -660,6 +698,7 @@ ledgr_backtest_headline_metrics <- function(con, run_id) {
 #' print(bt)
 #' close(bt)
 #' @export
+
 print.ledgr_backtest <- function(x, ...) {
   if (!inherits(x, "ledgr_backtest")) {
     rlang::abort("`x` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
@@ -677,6 +716,7 @@ print.ledgr_backtest <- function(x, ...) {
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
   valuation <- ledgr_valuation_summary(x, con = con)
   completion <- ledgr_run_completion_info(con, x$run_id)
+  schedule_evidence <- ledgr_run_schedule_evidence(con, x$run_id)
   prefix_only <- ledgr_summary_prefix_only(completion)
   period <- ledgr_result_period_label(
     headline$start_ts_utc,
@@ -695,6 +735,7 @@ print.ledgr_backtest <- function(x, ...) {
   cat(sprintf("%-34s %.2f%%\n", return_label, headline$total_return * 100))
   cat(sprintf("%-34s %.2f%%\n", drawdown_label, headline$max_drawdown * 100))
   cat(sprintf("%-34s %d\n", "Closed Trades:", headline$n_trades))
+  ledgr_print_run_schedule_evidence(schedule_evidence)
   cat(sprintf(
     "%-34s %s\n\n",
     "Metric Calendar:",
@@ -847,6 +888,13 @@ summary.ledgr_backtest <- function(object,
 
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
+  if (!is.null(object$config$strategy_schedule)) {
+    opened <- ledgr_backtest_read_connection(object)
+    on.exit(opened$close(), add = TRUE)
+    ledgr_print_run_schedule_evidence(
+      ledgr_run_schedule_evidence(opened$con, object$run_id)
+    )
+  }
   corporate_actions <- ledgr_corporate_action_summary(object)
   valuation <- ledgr_valuation_summary(object)
   ledgr_print_result_assumption_warning(valuation, corporate_actions)

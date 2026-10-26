@@ -111,10 +111,12 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     "status", "archived", "archived_at_utc", "archive_reason", "tags",
     "reproducibility_level", "strategy_type", "strategy_source_hash",
     "strategy_source_capture_method", "strategy_params_json",
-    "strategy_params_hash", "ledgr_version", "R_version",
+    "strategy_params_hash", "schedule_json", "schedule_hash",
+    "ledgr_version", "R_version",
     "dependency_versions_json", "config_hash", "execution_mode",
     "feature_set_hash",
-    "elapsed_sec", "pulse_count", "error_msg", "final_equity", "max_drawdown",
+    "elapsed_sec", "pulse_count", "decision_pulse_count",
+    "scheduled_skip_count", "error_msg", "final_equity", "max_drawdown",
     "total_return", "n_trades", "config_json", "schema_version"
   )
 
@@ -172,7 +174,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     prov_cols <- c(
       "run_id", "reproducibility_level", "strategy_type",
       "strategy_source_hash", "strategy_source_capture_method",
-      "strategy_params_json", "strategy_params_hash", "ledgr_version",
+      "strategy_params_json", "strategy_params_hash", "schedule_json",
+      "schedule_hash", "ledgr_version",
       "R_version", "dependency_versions_json"
     )
     provenance <- DBI::dbGetQuery(
@@ -189,7 +192,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     }
 
     telem_cols <- c(
-      "run_id", "execution_mode", "elapsed_sec", "pulse_count"
+      "run_id", "execution_mode", "elapsed_sec", "pulse_count",
+      "decision_pulse_count", "scheduled_skip_count"
     )
     telemetry <- DBI::dbGetQuery(
       con,
@@ -233,6 +237,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   }
   if ("archived" %in% names(out)) out$archived <- as.logical(out$archived)
   if ("pulse_count" %in% names(out)) out$pulse_count <- as.integer(out$pulse_count)
+  if ("decision_pulse_count" %in% names(out)) out$decision_pulse_count <- as.integer(out$decision_pulse_count)
+  if ("scheduled_skip_count" %in% names(out)) out$scheduled_skip_count <- as.integer(out$scheduled_skip_count)
   if ("n_trades" %in% names(out)) out$n_trades <- as.integer(out$n_trades)
   if ("n_trades" %in% names(out)) {
     trade_stats <- ledgr_compare_runs_fill_stats(con, unique(as.character(out$run_id)))
@@ -616,6 +622,10 @@ ledgr_run_info_from_row <- function(row, db_path) {
   info$execution_timing_version <- timing$execution_timing_version
   info$execution_timing_convention <- timing$execution_timing_convention
   info$execution_timing_source <- timing$execution_timing_source
+  info$strategy_schedule <- ledgr_strategy_schedule_from_json(
+    info$schedule_json,
+    info$schedule_hash
+  )
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
     info[c("elapsed_sec", "pulse_count")],
@@ -1020,6 +1030,20 @@ print.ledgr_run_info <- function(x, ...) {
   line("Config Hash", value("config_hash"))
   line("Strategy Hash", value("strategy_source_hash"))
   line("Params Hash", value("strategy_params_hash"))
+  if (!is.null(x$strategy_schedule)) {
+    cat(
+      "Strategy schedule: ",
+      ledgr_strategy_schedule_label(x$strategy_schedule),
+      "\n",
+      sep = ""
+    )
+    cat(
+      "Decision pulses: ", value("decision_pulse_count"),
+      "; scheduled skips: ", value("scheduled_skip_count"),
+      "\n",
+      sep = ""
+    )
+  }
   line("Reproducibility", value("reproducibility_level"))
   line("Execution Mode", value("execution_mode"))
   line("Fill Timing", value("execution_timing_convention"))

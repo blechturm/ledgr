@@ -562,6 +562,7 @@
 #' @aliases ledgr_invalid_strategy_schedule ledgr_schedule_sessions_required
 #' @aliases ledgr_schedule_axis_invalid ledgr_schedule_intraday_unsupported
 #' @aliases ledgr_schedule_date_out_of_range ledgr_schedule_param_unresolved
+#' @aliases ledgr_schedule_no_decision ledgr_schedule_identity_mismatch
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target
 #' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible
 #' @aliases ledgr_short_exposure_unsupported

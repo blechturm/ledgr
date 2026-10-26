@@ -283,8 +283,10 @@ ledgr_fold_stage_observe_settle <- function(
   } else {
     NULL
   }
+  decision_due <- is.null(services$decision_due) ||
+    isTRUE(services$decision_due[[pulse_idx]])
   history_view <- if (services$availability_active) {
-    services$history_reader$view(pulse_idx)
+    if (decision_due) services$history_reader$view(pulse_idx) else NULL
   } else {
     NULL
   }
@@ -624,6 +626,41 @@ ledgr_fold_stage_observe_settle <- function(
     sample_start = sample_start,
     t_feats = t_feats,
     t_bars = t_bars
+  )
+}
+
+ledgr_fold_scheduled_skip_decision <- function(fold_state, observation) {
+  positions <- observation$positions_snapshot
+  list(
+    strategy_targets = positions,
+    targets = positions,
+    state_update = fold_state$state_prev,
+    sample_start = observation$sample_start,
+    t_ctx = 0,
+    t_strat = 0,
+    t_target = 0
+  )
+}
+
+ledgr_fold_scheduled_skip_plan <- function(fold_state, decision) {
+  pulse_plan <- structure(
+    list(
+      targets = decision$targets,
+      actionable_idx = integer(),
+      fills = list(),
+      rejected = list(),
+      economic_event_kinds = character(),
+      expected_final_cash = fold_state$cash
+    ),
+    class = c("ledgr_pulse_plan", "list")
+  )
+  list(
+    pulse_plan = pulse_plan,
+    accounting_events = list(fills = list(), kinds = character()),
+    diagnostic_segments = list(),
+    sample_start = decision$sample_start,
+    t_target = 0,
+    t_fill = 0
   )
 }
 
@@ -1807,6 +1844,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     checkpoint_every = checkpoint_every,
     max_pulses = max_pulses
   )
+  services$decision_due <- execution$decision_due %||% NULL
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
@@ -1874,13 +1912,28 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       }
       sample_start <- observation$sample_start
 
-      decision_result <- ledgr_fold_stage_decide(
-        fold_state = fold_state,
-        services = services,
-        observation = observation,
-        sample_telemetry = sample_telemetry,
-        sample_start = sample_start
-      )
+      decision_due <- is.null(services$decision_due) ||
+        isTRUE(services$decision_due[[i]])
+      decision_result <- if (decision_due) {
+        ledgr_fold_stage_decide(
+          fold_state = fold_state,
+          services = services,
+          observation = observation,
+          sample_telemetry = sample_telemetry,
+          sample_start = sample_start
+        )
+      } else {
+        add_segment(list(
+          n = 1L,
+          instrument_id = "",
+          stage = "decision",
+          outcome = "skipped",
+          reason_code = "scheduled_skip",
+          reasons = "scheduled_skip",
+          detail_json = "{}"
+        ))
+        ledgr_fold_scheduled_skip_decision(fold_state, observation)
+      }
       if (ledgr_is_fold_stop_result(decision_result)) {
         fold_state$status <- decision_result$status
         fold_state$stop_reason <- decision_result$reason_code
@@ -1896,14 +1949,18 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       }
       sample_start <- decision_result$sample_start
 
-      plan_result <- ledgr_fold_stage_plan(
-        fold_state = fold_state,
-        services = services,
-        observation = observation,
-        decision = decision_result,
-        sample_telemetry = sample_telemetry,
-        sample_start = sample_start
-      )
+      plan_result <- if (decision_due) {
+        ledgr_fold_stage_plan(
+          fold_state = fold_state,
+          services = services,
+          observation = observation,
+          decision = decision_result,
+          sample_telemetry = sample_telemetry,
+          sample_start = sample_start
+        )
+      } else {
+        ledgr_fold_scheduled_skip_plan(fold_state, decision_result)
+      }
       if (ledgr_is_fold_stop_result(plan_result)) {
         fold_state$status <- plan_result$status
         fold_state$stop_reason <- plan_result$reason_code
@@ -2012,6 +2069,8 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     state = ledgr_fold_state_value(fold_state),
     state_prev = fold_state$state_prev,
     next_event_seq = fold_state$event_seq,
-    equity_facts = equity_fact_accumulator$collect()
+    equity_facts = equity_fact_accumulator$collect(),
+    decision_pulse_count = as.integer(execution$decision_pulse_count %||% length(pulses_posix)),
+    scheduled_skip_count = as.integer(execution$scheduled_skip_count %||% 0L)
   )
 }

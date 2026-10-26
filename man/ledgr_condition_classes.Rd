@@ -48,6 +48,8 @@
 \alias{ledgr_schedule_intraday_unsupported}
 \alias{ledgr_schedule_date_out_of_range}
 \alias{ledgr_schedule_param_unresolved}
+\alias{ledgr_schedule_no_decision}
+\alias{ledgr_schedule_identity_mismatch}
 \alias{ledgr_target_sizing_unavailable}
 \alias{ledgr_restricted_target}
 \alias{ledgr_nonmember_exposure_increase}

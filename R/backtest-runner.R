@@ -207,7 +207,9 @@ ledgr_write_run_telemetry <- function(con,
                                       status,
                                       execution_mode,
                                       elapsed_sec,
-                                      pulse_count) {
+                                      pulse_count,
+                                      decision_pulse_count = NA_integer_,
+                                      scheduled_skip_count = NA_integer_) {
   DBI::dbExecute(
     con,
     "
@@ -217,8 +219,10 @@ ledgr_write_run_telemetry <- function(con,
       execution_mode,
       elapsed_sec,
       pulse_count,
+      decision_pulse_count,
+      scheduled_skip_count,
       updated_at_utc
-    ) VALUES (?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ",
     params = list(
       run_id,
@@ -226,6 +230,8 @@ ledgr_write_run_telemetry <- function(con,
       execution_mode,
       elapsed_sec,
       pulse_count,
+      as.integer(decision_pulse_count),
+      as.integer(scheduled_skip_count),
       as.POSIXct(Sys.time(), tz = "UTC")
     )
   )
@@ -258,6 +264,8 @@ ledgr_persistent_output_handler <- function(con,
   state$pending_states <- vector("list", 0)
   state$pending_states_idx <- 0L
   state$next_diagnostic_seq <- NULL
+  state$decision_pulse_count <- NA_integer_
+  state$scheduled_skip_count <- NA_integer_
   pulse_fill_rows <- vector("list", 256L)
   pulse_fill_n <- 0L
 
@@ -295,6 +303,12 @@ ledgr_persistent_output_handler <- function(con,
 
   handler$terminal_status_written <- function() isTRUE(state$terminal_status_written)
 
+  handler$set_schedule_counts <- function(decision_pulse_count, scheduled_skip_count) {
+    state$decision_pulse_count <- as.integer(decision_pulse_count)
+    state$scheduled_skip_count <- as.integer(scheduled_skip_count)
+    invisible(TRUE)
+  }
+
   handler$write_telemetry <- function(status,
                                       strict = TRUE,
                                       telemetry = NULL,
@@ -308,7 +322,9 @@ ledgr_persistent_output_handler <- function(con,
           status = status,
           execution_mode = execution_mode,
           elapsed_sec = elapsed_sec,
-          pulse_count = as.integer(processed)
+          pulse_count = as.integer(processed),
+          decision_pulse_count = state$decision_pulse_count,
+          scheduled_skip_count = state$scheduled_skip_count
         )
         NULL
       },
@@ -1283,6 +1299,18 @@ ledgr_run_fold_impl <- function(config,
     strategy_params = strategy_params,
     sessions = availability_sessions,
     pulses_posix = pulses_posix
+  )
+  if (!is.null(schedule$decision_due) &&
+      identical(schedule$decision_pulse_count, 0L) &&
+      !any(as.numeric(state_env$current$positions) != 0)) {
+    ledgr_schedule_abort(
+      "The resolved strategy schedule has no decision pulse and the run has no opening or carried position.",
+      "ledgr_schedule_no_decision"
+    )
+  }
+  output_handler$set_schedule_counts(
+    schedule$decision_pulse_count,
+    schedule$scheduled_skip_count
   )
   strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
   ledgr_run_resume_preflight(is_resume, strategy_preflight)

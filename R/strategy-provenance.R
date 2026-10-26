@@ -120,6 +120,8 @@ ledgr_write_strategy_provenance <- function(con, run_id, cfg, created_at_utc = N
   provenance <- cfg$strategy$provenance
   params_json <- cfg$strategy_params_json
   params_hash <- cfg$strategy_params_hash
+  schedule_json <- ledgr_strategy_schedule_json(cfg$strategy_schedule)
+  schedule_hash <- ledgr_strategy_schedule_hash(cfg$strategy_schedule)
   if (!is.list(provenance)) {
     rlang::abort(
       "Config field strategy.provenance is required.",
@@ -138,12 +140,14 @@ ledgr_write_strategy_provenance <- function(con, run_id, cfg, created_at_utc = N
       strategy_source_capture_method,
       strategy_params_json,
       strategy_params_hash,
+      schedule_json,
+      schedule_hash,
       reproducibility_level,
       ledgr_version,
       R_version,
       dependency_versions_json,
       created_at_utc
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ",
     params = list(
       run_id,
@@ -153,6 +157,8 @@ ledgr_write_strategy_provenance <- function(con, run_id, cfg, created_at_utc = N
       provenance$strategy_source_capture_method,
       params_json,
       params_hash,
+      schedule_json %||% NA_character_,
+      schedule_hash %||% NA_character_,
       provenance$reproducibility_level,
       as.character(utils::packageVersion("ledgr")),
       as.character(getRversion()),

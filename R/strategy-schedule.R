@@ -144,6 +144,48 @@ ledgr_strategy_schedule_hash <- function(declaration) {
   digest::digest(canonical_json(declaration), algo = "sha256")
 }
 
+ledgr_strategy_schedule_json <- function(declaration) {
+  if (is.null(declaration)) return(NULL)
+  as.character(canonical_json(unclass(ledgr_schedule_validate(declaration))))
+}
+
+ledgr_strategy_schedule_label <- function(declaration) {
+  if (is.null(declaration)) return("every pulse")
+  declaration <- ledgr_schedule_validate(declaration)
+  labels <- c(
+    month_start = "month start",
+    month_end = "month end",
+    week_start = "week start",
+    quarter_start = "quarter start",
+    year_start = "year start"
+  )
+  if (declaration$type_id %in% names(labels)) {
+    return(unname(labels[[declaration$type_id]]))
+  }
+  if (identical(declaration$type_id, "dates")) {
+    return(sprintf("explicit dates (%d)", length(declaration$args$dates)))
+  }
+  sprintf("strategy parameter `%s`", declaration$args$name)
+}
+
+ledgr_strategy_schedule_from_json <- function(json, hash = NULL) {
+  if (is.null(json) || length(json) != 1L || is.na(json) || !nzchar(json)) {
+    return(NULL)
+  }
+  declaration <- ledgr_json_read_config(json)
+  declaration <- unclass(ledgr_schedule_validate(declaration))
+  computed <- ledgr_strategy_schedule_hash(declaration)
+  if (!is.null(hash) &&
+      (!is.character(hash) || length(hash) != 1L || is.na(hash) ||
+       !nzchar(hash) || !identical(computed, hash))) {
+    ledgr_schedule_abort(
+      "Stored strategy schedule does not match its recorded hash.",
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  declaration
+}
+
 ledgr_strategy_schedule_inner <- function(strategy) {
   if (!is.function(strategy)) return(strategy)
   if (is.null(attr(strategy, "ledgr_schedule", exact = TRUE)) &&
