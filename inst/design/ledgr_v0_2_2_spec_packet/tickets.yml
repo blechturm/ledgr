@@ -873,10 +873,11 @@ workstreams:
   - id: 62
     name: "Scheduler orchestration formats"
     cut: 21
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 61
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 62", verdict: "PASS after three bounded correction rounds; ready for maintainer acceptance", artifact: "close_review_62.md, close_review_62_rereview_1.md and close_review_62_rereview_2.md", result: "The initial fresh-context Opus review found promotion, reproduction-key, failed-candidate and detector defects. Correction 77ec5333 closed the product findings. Two focused finding-bearing confirmations narrowed residual detector gaps; corrections 762b551d and 1c675c86 added recursive actual-task inspection, both sides of the FAILED-candidate identity boundary, warning-free matching promotion and the WS63 cost handoff. A final fresh-context Opus confirmation mutation-tested all three final witnesses and returned PASS with no new defect.", reason: "One claim owned by LDG-3113: saved/reopened sweeps, reproduction keys, walk-forward candidates and inspection, promotion and parallel workers retain one schedule declaration and verdict sequence under their current-only formats. The review runs cross-entry identity and parity checks, mutates every old-version refusal and schedule field, verifies no sweep-summary count expansion or LFB-035 absorption and walks the seven optimization shapes."}
+    accepted: "2026-10-26 by the maintainer after the final fresh-context Opus confirmation returned PASS; accepted state 719b0dd8 includes the complete review record"
   - id: 63
     name: "Scheduler teaching and integrated proof"
     cut: 21
@@ -2841,7 +2842,7 @@ tickets:
   - id: "LDG-3113"
     title: "Preserve schedules across research orchestration formats"
     workstream: 62
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3112"]
