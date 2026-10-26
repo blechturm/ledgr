@@ -129,7 +129,14 @@ count check also rejected scheduled `FAILED` and unfinished `RUNNING` rows,
 whose telemetry may legitimately be absent. Correction `4ed7f1cd` limits the
 count requirement to completed `DONE` and `INCOMPLETE` rows while retaining
 schedule provenance/config verification for every status. LTB-0506 now pins a
-real unresolved-parameter failure, a manufactured crashed row, a negative
-count and non-empty strategy state across resume. The correction also removes
-the first review artifact's trailing-space diff. A final fresh confirmation is
-the remaining gate.
+real unresolved-parameter failure, a manufactured crashed row and a negative
+count; LTB-0507 pins non-empty strategy state across resume. The correction also
+removes the first review artifact's trailing-space diff.
+
+The final fresh confirmation returned `PASS_AFTER_PATCHES`: N1 through N3 and
+their mutations are closed, the schedule and six regression suites pass, and
+the correction range is clean. It required only two record attributions,
+applied in place: LCL-0498 now says the run interrupts after its first decision
+and resumes on a skipped pulse, and this closeout credits the non-empty-state
+witness to LTB-0507. No further review round is required. Workstream 61 is
+ready for maintainer acceptance.

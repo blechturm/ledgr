@@ -4500,7 +4500,7 @@ claims:
     promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "Skipping strategy decisions cannot skip economic events or move the durable resume cursor."
-    oracle_independence: "The economic arm compares literal ledger rows from independent snapshots; the resume arm interrupts on a skipped pulse and compares durable current-format records."
+    oracle_independence: "The economic arm compares literal ledger rows from independent snapshots; the resume arm interrupts after the first decision and resumes on a skipped pulse with non-empty carried state, then compares durable current-format records."
     smallest_failing_change: "Skip P1 or P4 on a held pulse, omit the P5 state write, or resume from the next decision rather than the next pulse."
     cheapest_adequate_lane: "Two eight-pulse dividend runs and one interrupted/resumed eight-pulse run; review."
     overlapping_evidence: "Corporate-action and continuity suites own general settlement and resume behavior; this claim owns them across the schedule branch."
