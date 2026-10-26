@@ -416,6 +416,12 @@ Section 7 questions, the public declarations and compiler, fold integration,
 current-only format bumps, detecting evidence and documentation. LFB-035
 remains a separate defect and must not be folded into scheduler ticket grain.
 
+Accepted amendment (2026-10-26): after Cut 21 closes, Cut 22 Workstream 64
+adds `ledgr_schedule_weekday(day)` and `ledgr_schedule_month_day(day)` as two
+version-1 declarations on the same compiler, identity and orchestration paths.
+The rules resolve forward only inside their civil week or month and add no
+pulse-time work or format bump. LDG-3115 is the only implementation owner.
+
 ### WS7. One public long-only estimator strategy
 
 - Implement one representative estimator-to-weight strategy, such as long-only
@@ -772,9 +778,8 @@ over declared open sessions; only P2 and P3 may be skipped, while P1, P4 and P5
 still run. Cut 21 serializes the work as declaration/compiler/identity (WS60),
 pulse-complete fold execution and persistence (WS61), orchestration formats
 (WS62), then teaching and integrated proof (WS63). LFB-035 stays separate.
-After Cut 21,
-the remaining work is release closeout rather than another pre-planned product
-workstream.
+After Cut 22, the remaining work is release closeout rather than another
+pre-planned product workstream.
 
 `tickets.yml` alone binds exact dependencies and status.
 

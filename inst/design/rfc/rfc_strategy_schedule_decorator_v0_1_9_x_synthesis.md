@@ -485,3 +485,26 @@ resolve the Section 7 spec-cut questions.
   acceptance due.
 - 2026-10-26 - Maintainer accepted the synthesis. Section 9 routing completed;
   implementation obligations open.
+
+## 12. Amendment: Common Civil-Calendar Schedules
+
+**Accepted:** 2026-10-26. **Authority:**
+[focused amendment](rfc_strategy_schedule_common_calendar_amendment.md), after
+its Type 2 `ACCEPT_AFTER_PATCHES` review and focused `PASS` confirmation.
+**Owner:** Cut 22, Workstream 64, LDG-3115.
+
+The accepted amendment adds two version-1 tagged declarations to the same
+compiler and identity path: `ledgr_schedule_weekday(day)` and
+`ledgr_schedule_month_day(day)`. Their anchors resolve forward only within the
+same civil week or month. An anchor before the first parent-axis open session
+is unproved and contributes no decision. The compiler retains the normalized
+argument; `month_day` stores an integer; no current format or declaration
+version changes.
+
+| Parent section | Superseded statement | Accepted replacement |
+| --- | --- | --- |
+| Section 2 | The first public family contains eight names. | The public family contains those eight names plus `ledgr_schedule_weekday()` and `ledgr_schedule_month_day()`. |
+| Section 3 | Compiler dispatch covers fixed boundaries, dates and fixed-rule parameters. | The same compiler also covers explicit period-local weekday and numbered-month-day anchors; no pulse-time calendar work is added. |
+| Section 5 | Common calendar recurrence beyond the fixed family uses explicit dates. | Explicit dates remain the escape hatch, while the two common recurrence forms have typed declarations. Parameterized weekday/month-day values remain deferred. |
+
+Every other decision in Sections 2 through 9 remains unchanged.

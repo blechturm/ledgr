@@ -62,7 +62,12 @@ historical-projection v12 and LDG-3059.
 <a id="strategy-scheduler"></a>**Strategy-scheduler redirect:** the accepted
 [decision synthesis](rfc_strategy_schedule_decorator_v0_1_9_x_synthesis.md)
 is implemented by packet Cut 21, Workstreams 60 through 63 and LDG-3109
-through LDG-3114. LFB-035 remains a separate defect owner.
+through LDG-3114. The accepted
+[focused common-calendar amendment](rfc_strategy_schedule_common_calendar_amendment.md)
+received its [Type 2 review](rfc_strategy_schedule_common_calendar_amendment_review.md)
+on 2026-10-26 (`ACCEPT_AFTER_PATCHES`) and focused confirmation `PASS`; the
+maintainer accepted it the same day. Cut 22 Workstream 64 and LDG-3115 own its
+two common-calendar helpers. LFB-035 remains a separate defect owner.
 
 ## RFC Pipeline
 
