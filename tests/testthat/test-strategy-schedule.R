@@ -1074,7 +1074,7 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
       )
   }, logical(1))))
   nested_names <- function(x) {
-    if (!is.list(x) || is.data.frame(x)) return(character())
+    if (!is.list(x)) return(character())
     c(names(x), unlist(lapply(x, nested_names), use.names = FALSE))
   }
   transported_names <- unique(unlist(lapply(captured_tasks, nested_names), use.names = FALSE))
@@ -1164,6 +1164,38 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   mixed_reopened <- ledgr_sweep_open(fixture$snapshot, "scheduled-failed-sweep")
   testthat::expect_identical(mixed_reopened$status, mixed$status)
   testthat::expect_identical(mixed_reopened$error_class, mixed$error_class)
+
+  failed_for_another_reason <- mixed
+  failed_for_another_reason$error_class[[2L]] <- "ledgr_strategy_error"
+  ledgr_sweep_save(
+    failed_for_another_reason,
+    fixture$snapshot,
+    sweep_id = "scheduled-other-failure-sweep"
+  )
+  other_failure_reopened <- ledgr_sweep_open(
+    fixture$snapshot,
+    "scheduled-other-failure-sweep"
+  )
+  testthat::expect_identical(
+    other_failure_reopened$error_class,
+    failed_for_another_reason$error_class
+  )
+  testthat::expect_identical(
+    other_failure_reopened$provenance[[2L]]$schedule_hash,
+    failed_for_another_reason$provenance[[2L]]$schedule_hash
+  )
+
+  resolvable_authored_only <- mixed
+  resolvable_authored_only$params[[2L]]$when <- "week_start"
+  ledgr_sweep_save(
+    resolvable_authored_only,
+    fixture$snapshot,
+    sweep_id = "scheduled-resolvable-authored-only-sweep"
+  )
+  testthat::expect_error(
+    ledgr_sweep_open(fixture$snapshot, "scheduled-resolvable-authored-only-sweep"),
+    class = "ledgr_schedule_identity_mismatch"
+  )
 
   promoted_a <- testthat::expect_no_warning(
     ledgr_promote(fixture$exp, in_memory, "scheduled-promote-a")
