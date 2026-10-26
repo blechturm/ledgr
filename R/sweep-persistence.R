@@ -567,8 +567,7 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
       parent_schedule,
       out$params[[i]],
       sprintf("Saved sweep candidate %s", out$candidate_id[[i]]),
-      allow_unresolved = identical(out$status[[i]], "FAILED") &&
-        grepl("ledgr_schedule_param_unresolved", out$error_class[[i]], fixed = TRUE)
+      allow_unresolved = identical(out$status[[i]], "FAILED")
     )
   }
   first_provenance <- ledgr_sweep_first_reconstructed_provenance(out)

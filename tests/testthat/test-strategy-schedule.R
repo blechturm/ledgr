@@ -1073,9 +1073,13 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
         provenance[[1L]]$schedule_hash
       )
   }, logical(1))))
-  transported_names <- unique(unlist(lapply(captured_tasks, names), use.names = FALSE))
+  nested_names <- function(x) {
+    if (!is.list(x) || is.data.frame(x)) return(character())
+    c(names(x), unlist(lapply(x, nested_names), use.names = FALSE))
+  }
+  transported_names <- unique(unlist(lapply(captured_tasks, nested_names), use.names = FALSE))
   testthat::expect_length(
-    grep("decision|verdict|mask", transported_names, ignore.case = TRUE, value = TRUE),
+    grep("decision|verdict|mask|due", transported_names, ignore.case = TRUE, value = TRUE),
     0L
   )
   worker_source <- paste(
@@ -1161,8 +1165,12 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   testthat::expect_identical(mixed_reopened$status, mixed$status)
   testthat::expect_identical(mixed_reopened$error_class, mixed$error_class)
 
-  promoted_a <- ledgr_promote(fixture$exp, in_memory, "scheduled-promote-a")
-  promoted_b <- ledgr_promote(fixture$exp, durable, "scheduled-promote-b")
+  promoted_a <- testthat::expect_no_warning(
+    ledgr_promote(fixture$exp, in_memory, "scheduled-promote-a")
+  )
+  promoted_b <- testthat::expect_no_warning(
+    ledgr_promote(fixture$exp, durable, "scheduled-promote-b")
+  )
   on.exit(close(promoted_a), add = TRUE)
   on.exit(close(promoted_b), add = TRUE)
   testthat::expect_identical(promoted_a$config$strategy_schedule, promoted_b$config$strategy_schedule)

@@ -1,8 +1,11 @@
 # Workstream 62 close review
 
-**Mode:** Type 1 close review  
-**Range:** `59fcce83..3d3918db`  
-**Reviewer:** fresh-context Claude Opus, high effort  
+**Mode:** Type 1 close review
+
+**Range:** `59fcce83..3d3918db`
+
+**Reviewer:** fresh-context Claude Opus, high effort
+
 **Verdict:** `CHANGES_REQUIRED`
 
 ## Result
