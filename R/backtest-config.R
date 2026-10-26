@@ -34,7 +34,6 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000, final_execu
 ledgr_strategy_spec <- function(strategy) {
   if (is.function(strategy)) {
     strategy_schedule <- ledgr_strategy_schedule_declaration(strategy)
-    strategy <- ledgr_strategy_schedule_inner(strategy)
     signature <- ledgr_strategy_signature(strategy)
     source_info <- ledgr_strategy_source_info(strategy)
     if (!isTRUE(source_info$preflight$allowed)) {

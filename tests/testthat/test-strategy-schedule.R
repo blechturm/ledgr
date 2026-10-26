@@ -208,6 +208,13 @@ testthat::test_that("[LTB-0503] schedule identity is separate from strategy sour
     ledgr_strategy_preflight(month),
     ledgr_strategy_preflight(strategy)
   )
+  for (owner in c(
+    "ledgr_register_strategy_fn", "ledgr_strategy_source_info",
+    "ledgr_strategy_preflight"
+  )) {
+    owner_source <- paste(deparse(body(getFromNamespace(owner, "ledgr"))), collapse = "\n")
+    testthat::expect_match(owner_source, "ledgr_strategy_schedule_inner", fixed = TRUE)
+  }
   tier3 <- ledgr_strategy_schedule(
     function(ctx, params) missing_user_helper(ctx),
     ledgr_schedule_month_start()
