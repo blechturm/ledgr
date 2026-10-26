@@ -88,6 +88,9 @@ ledgr_schedule_validate <- function(schedule) {
   if (!is.list(schedule) || is.data.frame(schedule)) {
     ledgr_schedule_abort("`schedule` must be made by a `ledgr_schedule_*()` helper.")
   }
+  if (!identical(names(schedule), c("type_id", "version", "args"))) {
+    ledgr_schedule_abort("`schedule` must contain exactly `type_id`, `version` and `args`.")
+  }
   type_id <- schedule$type_id
   version <- schedule$version
   args <- schedule$args
@@ -102,12 +105,22 @@ ledgr_schedule_validate <- function(schedule) {
     ledgr_schedule_abort("A fixed schedule declaration must not contain arguments.")
   }
   if (identical(type_id, "dates")) {
-    if (!identical(names(args), "dates") || !is.character(args$dates) ||
-        length(args$dates) < 1L || anyNA(args$dates) || any(!nzchar(args$dates)) ||
-        any(is.na(as.Date(args$dates)))) {
+    dates_are_text <- identical(names(args), "dates") &&
+      is.character(args$dates) && length(args$dates) >= 1L &&
+      !anyNA(args$dates) && all(nzchar(args$dates))
+    parsed_dates <- if (dates_are_text) {
+      suppressWarnings(as.Date(args$dates, format = "%Y-%m-%d"))
+    } else {
+      as.Date(character())
+    }
+    dates_are_canonical <- dates_are_text &&
+      all(grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", args$dates)) &&
+      !anyNA(parsed_dates) &&
+      identical(format(parsed_dates, "%Y-%m-%d"), args$dates)
+    if (!dates_are_canonical) {
       ledgr_schedule_abort("A dates schedule must contain canonical civil dates.")
     }
-    args$dates <- sort(unique(format(as.Date(args$dates), "%Y-%m-%d")))
+    args$dates <- sort(unique(format(parsed_dates, "%Y-%m-%d")))
   }
   if (identical(type_id, "param") &&
       (!identical(names(args), "name") || !is.character(args$name) ||
@@ -229,12 +242,19 @@ ledgr_compile_strategy_schedule <- function(declaration,
   if (anyNA(pulses) || is.unsorted(pulses, strictly = TRUE)) {
     ledgr_schedule_abort("Executable pulses must be unique and increasing.", "ledgr_schedule_axis_invalid")
   }
-  pulse_index <- match(as.numeric(pulses), as.numeric(open$session_close))
+  pulse_num <- as.numeric(pulses)
+  close_num <- as.numeric(open$session_close)
+  pulse_index <- match(pulse_num, close_num)
+  # Classify multiple distinct timestamps that fall before the same session
+  # close as intraday before enforcing today's exact-close pulse contract.
+  pulse_session <- findInterval(pulse_num, close_num)
+  pulse_session[is.na(pulse_index)] <- pulse_session[is.na(pulse_index)] + 1L
+  pulse_session_valid <- pulse_session >= 1L & pulse_session <= length(close_num)
+  if (anyDuplicated(pulse_session[pulse_session_valid])) {
+    ledgr_schedule_abort("Schedules currently support one pulse per session.", "ledgr_schedule_intraday_unsupported")
+  }
   if (anyNA(pulse_index)) {
     ledgr_schedule_abort("Every executable pulse must match one open session close.", "ledgr_schedule_axis_invalid")
-  }
-  if (anyDuplicated(pulse_index)) {
-    ledgr_schedule_abort("Schedules currently support one pulse per session.", "ledgr_schedule_intraday_unsupported")
   }
 
   type_id <- ledgr_schedule_resolve_type(declaration, strategy_params)

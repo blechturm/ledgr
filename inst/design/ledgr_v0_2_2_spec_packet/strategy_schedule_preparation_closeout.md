@@ -91,11 +91,13 @@ source and walk-forward identity returned to their pre-cut bytes.
 
 The compiler constructs no row-at-a-time frames, performs no full-table subset
 inside a pulse loop, parses and orders timestamps once, writes no per-row JSON,
-does no discarded recomputation or quadratic validation, and mutates no vector
-through an environment. Date snapping uses `findInterval()` over atomic date
-vectors. Run and candidate construction call the compiler once; fold stages
-only receive prepared primitives. The execution spec adds fields only when a
-schedule exists, preserving the unscheduled list shape.
+does no quadratic validation, and mutates no vector through an environment.
+Date snapping uses `findInterval()` over atomic date vectors. Run construction
+compiles once and sweep construction compiles once per candidate because a
+parameterized schedule can resolve differently for each candidate; neither
+compiles in the pulse loop. Fold stages only receive prepared primitives. The
+execution spec and live-candidate metadata add fields only when a schedule
+exists, preserving the unscheduled list shape.
 
 The bounded 7,213-session compiler clock in
 `dev/bench/v0_2_2_strategy_schedule/README.md` records a 0.030-second median.

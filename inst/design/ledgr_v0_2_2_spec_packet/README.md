@@ -97,6 +97,7 @@ second status ledger:
   [`history_proof_phase_a_closeout.md`](history_proof_phase_a_closeout.md);
 - [`integrated_release_closeout.md`](integrated_release_closeout.md).
 - [`strategy_schedule_preparation_closeout.md`](strategy_schedule_preparation_closeout.md).
+- [`close_review_60.md`](close_review_60.md).
 
 Other packet files remain historical evidence at their existing paths. Use
 `tickets.yml`, not this index, to decide whether a record is current.

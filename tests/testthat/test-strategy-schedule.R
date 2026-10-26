@@ -51,6 +51,18 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
     ledgr_strategy_schedule(1L, ledgr_schedule_month_start()),
     class = "ledgr_invalid_strategy_schedule"
   )
+  malformed_dates <- list(
+    list(type_id = "dates", version = 1L, args = list(dates = "foo")),
+    list(type_id = "dates", version = 1L, args = list(dates = "2024-13-45")),
+    list(type_id = "dates", version = 1L, args = list(dates = "2024-01-05junk")),
+    list(type_id = "dates", version = 1L, args = list(dates = "2024-01-05"), extra = TRUE)
+  )
+  for (declaration in malformed_dates) {
+    testthat::expect_error(
+      ledgr_strategy_schedule(strategy, declaration),
+      class = "ledgr_invalid_strategy_schedule"
+    )
+  }
 })
 
 # ledgr-test-profile: review
@@ -84,6 +96,27 @@ testthat::test_that("[LTB-0502] compiler binds parent-axis boundary semantics", 
   testthat::expect_identical(
     compile(ledgr_schedule_from_param("when"), list(when = "month_start")),
     compile(ledgr_schedule_month_start())
+  )
+  compile_slice <- function(rule, pulse_index) {
+    ledgr:::ledgr_compile_strategy_schedule(
+      unclass(rule), list(), sessions, sessions$session_close[pulse_index]
+    )$decision_due
+  }
+  testthat::expect_identical(
+    compile_slice(ledgr_schedule_month_start(), 3:4),
+    c(TRUE, FALSE)
+  )
+  testthat::expect_identical(
+    compile_slice(ledgr_schedule_month_end(), 5:6),
+    c(FALSE, TRUE)
+  )
+  testthat::expect_identical(
+    compile_slice(ledgr_schedule_month_end(), 8L),
+    FALSE
+  )
+  testthat::expect_identical(
+    compile(ledgr_schedule_dates(sessions$session_date[[1L]])),
+    rep(FALSE, length(pulses))
   )
 
   boundary_sessions <- data.frame(
@@ -162,6 +195,13 @@ testthat::test_that("[LTB-0502] compiler binds parent-axis boundary semantics", 
     ),
     class = "ledgr_schedule_intraday_unsupported"
   )
+  distinct_intraday <- sort(c(pulses[[1L]] - 60, pulses[[1L]]))
+  testthat::expect_error(
+    ledgr:::ledgr_compile_strategy_schedule(
+      unclass(ledgr_schedule_month_start()), list(), sessions, distinct_intraday
+    ),
+    class = "ledgr_schedule_intraday_unsupported"
+  )
   duplicate_sessions <- rbind(sessions, sessions[1L, , drop = FALSE])
   testthat::expect_error(
     ledgr:::ledgr_compile_strategy_schedule(
@@ -220,6 +260,19 @@ testthat::test_that("[LTB-0503] schedule identity is separate from strategy sour
     ledgr_schedule_month_start()
   )
   testthat::expect_false(ledgr_strategy_preflight(tier3)$allowed)
+
+  date_a <- unclass(ledgr_schedule_dates(as.Date("2024-01-05")))
+  date_b <- unclass(ledgr_schedule_dates(as.Date("2024-01-08")))
+  param_a <- unclass(ledgr_schedule_from_param("when"))
+  param_b <- unclass(ledgr_schedule_from_param("rebalance_when"))
+  testthat::expect_false(identical(
+    ledgr:::ledgr_strategy_schedule_hash(date_a),
+    ledgr:::ledgr_strategy_schedule_hash(date_b)
+  ))
+  testthat::expect_false(identical(
+    ledgr:::ledgr_strategy_schedule_hash(param_a),
+    ledgr:::ledgr_strategy_schedule_hash(param_b)
+  ))
 })
 
 # ledgr-test-profile: review
@@ -291,9 +344,22 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
     candidate$sweep_meta$strategy_schedule,
     unclass(ledgr_schedule_week_start())
   )
+  config_with <- function(declaration) {
+    out <- run$config
+    out$strategy_schedule <- declaration
+    ledgr:::config_hash(out)
+  }
+  testthat::expect_false(identical(
+    config_with(unclass(ledgr_schedule_dates(fixture$days[[2L]]))),
+    config_with(unclass(ledgr_schedule_dates(fixture$days[[3L]])))
+  ))
+  testthat::expect_false(identical(
+    config_with(unclass(ledgr_schedule_from_param("when"))),
+    config_with(unclass(ledgr_schedule_from_param("rebalance_when")))
+  ))
 
   window <- ledgr:::ledgr_experiment_window(
-    fixture$exp, fixture$days[[2L]], fixture$days[[7L]]
+    fixture$exp, fixture$days[[6L]], fixture$days[[8L]]
   )
   window_run <- ledgr:::ledgr_run_window(
     fixture$exp, window = window, run_id = "schedule-window-run"
@@ -305,12 +371,20 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
     window = window
   )
   testthat::expect_identical(window_sweep$status, "DONE")
-  # The window reads a slice of the same parent-axis verdict: its first pulse
-  # cannot manufacture a weekly boundary.
   testthat::expect_identical(
-    counter$calls[[5L]],
-    counter$calls[[6L]]
+    counter$calls[[5L]], c(TRUE, FALSE, FALSE)
   )
+  testthat::expect_identical(
+    counter$calls[[6L]], c(TRUE, FALSE, FALSE)
+  )
+
+  plain_sweep <- ledgr_sweep(
+    plain_exp,
+    ledgr_grid_named(one = list(strategy = list()))
+  )
+  plain_candidate <- ledgr_candidate(plain_sweep, "one")
+  testthat::expect_false("strategy_schedule" %in% names(plain_candidate$sweep_meta))
+  testthat::expect_false("strategy_schedule_hash" %in% names(plain_candidate$sweep_meta))
 
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(

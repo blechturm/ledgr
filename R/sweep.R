@@ -997,6 +997,11 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "metric_context_hash", "metric_context_version", "risk_chain_hash", "risk_plan_json",
     "execution_assumptions"
   )
+  schedule_keys <- c("strategy_schedule", "strategy_schedule_hash")
+  keys <- keys[
+    !keys %in% schedule_keys |
+      vapply(keys, function(key) !is.null(attr(results, key, exact = TRUE)), logical(1))
+  ]
   stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
 }
 
