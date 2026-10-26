@@ -130,8 +130,17 @@ ledgr_strategy_schedule_hash <- function(declaration) {
 
 ledgr_strategy_schedule_inner <- function(strategy) {
   if (!is.function(strategy)) return(strategy)
+  if (is.null(attr(strategy, "ledgr_schedule", exact = TRUE)) &&
+      !inherits(strategy, "ledgr_scheduled_strategy")) {
+    return(strategy)
+  }
   attr(strategy, "ledgr_schedule") <- NULL
-  class(strategy) <- setdiff(class(strategy), "ledgr_scheduled_strategy")
+  remaining_class <- setdiff(class(strategy), "ledgr_scheduled_strategy")
+  if (identical(remaining_class, "function")) {
+    attr(strategy, "class") <- NULL
+  } else {
+    class(strategy) <- remaining_class
+  }
   strategy
 }
 
