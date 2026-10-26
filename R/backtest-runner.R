@@ -1278,6 +1278,12 @@ ledgr_run_fold_impl <- function(config,
   }
   strategy_params <- strategy$params
   strategy_call_signature <- strategy$signature
+  schedule <- ledgr_compile_strategy_schedule(
+    declaration = cfg$strategy_schedule,
+    strategy_params = strategy_params,
+    sessions = availability_sessions,
+    pulses_posix = pulses_posix
+  )
   strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
   ledgr_run_resume_preflight(is_resume, strategy_preflight)
   output_handler$record_run_status("RUNNING", NA_character_)
@@ -1375,7 +1381,10 @@ ledgr_run_fold_impl <- function(config,
       )$ts_utc
     } else {
       NULL
-    }
+    },
+    decision_due = schedule$decision_due,
+    decision_pulse_count = schedule$decision_pulse_count,
+    scheduled_skip_count = schedule$scheduled_skip_count
   )
 
   fold_result <- tryCatch(

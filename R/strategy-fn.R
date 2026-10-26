@@ -5,6 +5,7 @@ ledgr_register_strategy_fn <- function(fn, include_captures = TRUE, key = NULL) 
   if (!is.function(fn)) {
     rlang::abort("`strategy` must be a function.", class = "ledgr_invalid_args")
   }
+  fn <- ledgr_strategy_schedule_inner(fn)
   ledgr_strategy_signature(fn)
   if (is.null(key)) {
     key <- ledgr_function_fingerprint(fn, include_captures = include_captures, label = "`strategy`", allow_rng = TRUE)

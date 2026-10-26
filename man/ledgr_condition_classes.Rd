@@ -42,6 +42,12 @@
 \alias{ledgr_indicator_history_contradiction}
 \alias{ledgr_invalid_strategy_state}
 \alias{ledgr_strategy_error}
+\alias{ledgr_invalid_strategy_schedule}
+\alias{ledgr_schedule_sessions_required}
+\alias{ledgr_schedule_axis_invalid}
+\alias{ledgr_schedule_intraday_unsupported}
+\alias{ledgr_schedule_date_out_of_range}
+\alias{ledgr_schedule_param_unresolved}
 \alias{ledgr_target_sizing_unavailable}
 \alias{ledgr_restricted_target}
 \alias{ledgr_nonmember_exposure_increase}

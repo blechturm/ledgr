@@ -33,13 +33,15 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000, final_execu
 
 ledgr_strategy_spec <- function(strategy) {
   if (is.function(strategy)) {
+    strategy_schedule <- ledgr_strategy_schedule_declaration(strategy)
+    strategy <- ledgr_strategy_schedule_inner(strategy)
     signature <- ledgr_strategy_signature(strategy)
     source_info <- ledgr_strategy_source_info(strategy)
     if (!isTRUE(source_info$preflight$allowed)) {
       ledgr_abort_strategy_preflight(source_info$preflight)
     }
     key <- ledgr_register_strategy_fn(strategy)
-    return(list(
+    out <- list(
       id = "functional",
       params = list(strategy_key = key, call_signature = signature),
       provenance = list(
@@ -49,7 +51,9 @@ ledgr_strategy_spec <- function(strategy) {
         strategy_source_capture_method = source_info$capture_method,
         reproducibility_level = ledgr_strategy_reproducibility_level("functional", signature, source_info)
       )
-    ))
+    )
+    if (!is.null(strategy_schedule)) out$strategy_schedule <- strategy_schedule
+    return(out)
   }
 
   if (is.list(strategy) && is.character(strategy$id)) {
@@ -172,6 +176,12 @@ ledgr_config <- function(snapshot,
   feature_params_info <- ledgr_strategy_params_info(feature_params)
   alias_map_info <- ledgr_alias_map_storage(alias_map, identity_map = alias_identity_map)
   strat <- ledgr_strategy_spec(strategy)
+  if (!is.null(strat$strategy_schedule) && !isTRUE(availability$active)) {
+    ledgr_schedule_abort(
+      "A strategy schedule requires an availability-aware experiment with declared sessions.",
+      "ledgr_schedule_sessions_required"
+    )
+  }
   opening <- ledgr_config_normalize_opening(opening, backtest$initial_cash)
 
   engine <- list(
@@ -293,6 +303,10 @@ ledgr_config <- function(snapshot,
       provider_version = ledgr_availability_provider_version(),
       execution_timing_version = ledgr_availability_execution_timing_rule_version
     )
+  }
+
+  if (!is.null(strat$strategy_schedule)) {
+    config$strategy_schedule <- strat$strategy_schedule
   }
 
   if (!is.null(run_id)) config$run_id <- run_id

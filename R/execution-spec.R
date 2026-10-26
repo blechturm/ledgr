@@ -78,7 +78,10 @@ ledgr_execution_spec <- function(run_id,
                                  corporate_action_policy = NULL,
                                  frozen_at_resume = NULL,
                                  last_executed_at_resume = NULL,
-                                 final_execution_posix = NULL) {
+                                 final_execution_posix = NULL,
+                                 decision_due = NULL,
+                                 decision_pulse_count = NULL,
+                                 scheduled_skip_count = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
@@ -140,6 +143,11 @@ ledgr_execution_spec <- function(run_id,
       spec$final_execution_posix <- as.POSIXct(final_execution_posix, tz = "UTC")
     }
   }
+  if (!is.null(decision_due)) {
+    spec$decision_due <- decision_due
+    spec$decision_pulse_count <- as.integer(decision_pulse_count)
+    spec$scheduled_skip_count <- as.integer(scheduled_skip_count)
+  }
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
 }
@@ -192,6 +200,27 @@ ledgr_validate_execution_spec <- function(spec) {
     inherits(spec$pulses_posix, "POSIXct"),
     "`execution$pulses_posix` must be POSIXct."
   )
+  if (!is.null(spec$decision_due)) {
+    ledgr_execution_spec_check(
+      is.logical(spec$decision_due) &&
+        length(spec$decision_due) == length(spec$pulses_posix) &&
+        !anyNA(spec$decision_due),
+      "`execution$decision_due` must be a non-missing logical vector aligned to pulses."
+    )
+    ledgr_execution_spec_check(
+      ledgr_execution_spec_is_integer_like(spec$decision_pulse_count, min = 0L) &&
+        identical(as.integer(spec$decision_pulse_count), as.integer(sum(spec$decision_due))),
+      "`execution$decision_pulse_count` must count scheduled decision pulses."
+    )
+    ledgr_execution_spec_check(
+      ledgr_execution_spec_is_integer_like(spec$scheduled_skip_count, min = 0L) &&
+        identical(
+          as.integer(spec$scheduled_skip_count),
+          as.integer(length(spec$decision_due) - sum(spec$decision_due))
+        ),
+      "`execution$scheduled_skip_count` must count scheduled skips."
+    )
+  }
   ledgr_execution_spec_check(
     is.character(spec$pulses_iso) && length(spec$pulses_iso) == length(spec$pulses_posix),
     "`execution$pulses_iso` must align with `execution$pulses_posix`."

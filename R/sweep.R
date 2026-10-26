@@ -469,6 +469,11 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "seed_contract") <- "ledgr_seed_v1"
   attr(out, "evaluation_scope") <- "exploratory"
   attr(out, "strategy_hash") <- strategy_hash
+  strategy_schedule <- ledgr_strategy_schedule_declaration(exp$strategy)
+  if (!is.null(strategy_schedule)) {
+    attr(out, "strategy_schedule") <- strategy_schedule
+    attr(out, "strategy_schedule_hash") <- ledgr_strategy_schedule_hash(strategy_schedule)
+  }
   attr(out, "strategy_name") <- strategy_name
   attr(out, "strategy_source_capture_method") <- source_info$capture_method
   attr(out, "strategy_preflight") <- preflight
@@ -987,6 +992,7 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "sweep_id", "snapshot_id", "snapshot_hash", "scoring_range", "universe",
     "master_seed", "seed_contract", "evaluation_scope", "strategy_hash",
     "strategy_name", "strategy_source_capture_method", "strategy_preflight",
+    "strategy_schedule", "strategy_schedule_hash",
     "feature_union", "feature_union_hash", "feature_engine_version", "metric_context",
     "metric_context_hash", "metric_context_version", "risk_chain_hash", "risk_plan_json",
     "execution_assumptions"
@@ -1683,7 +1689,14 @@ ledgr_sweep_candidate_execution <- function(exp,
   telemetry <- ledgr_sweep_telemetry_env()
   cost_resolver <- ledgr_cost_resolver_from_plan_json(exp$cost_plan_json)
   risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
-  signature <- ledgr_strategy_signature(exp$strategy)
+  strategy_fn <- ledgr_strategy_schedule_inner(exp$strategy)
+  signature <- ledgr_strategy_signature(strategy_fn)
+  schedule <- ledgr_compile_strategy_schedule(
+    declaration = ledgr_strategy_schedule_declaration(exp$strategy),
+    strategy_params = params,
+    sessions = if (isTRUE(exp$availability$active)) history_substrate$sessions else NULL,
+    pulses_posix = pulses_posix
+  )
   corporate_action_plan <- ledgr_corporate_action_plan(
     rows = corporate_action_rows,
     policy_identity = ledgr_corporate_action_policy_identity(
@@ -1698,7 +1711,7 @@ ledgr_sweep_candidate_execution <- function(exp,
   execution <- ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = exp$universe,
-    strategy_fn = exp$strategy,
+    strategy_fn = strategy_fn,
     strategy_params = params,
     strategy_call_signature = signature,
     strategy_is_functional = TRUE,
@@ -1729,7 +1742,10 @@ ledgr_sweep_candidate_execution <- function(exp,
     availability_provider = availability_provider,
     execution_opportunities_posix = execution_opportunities_posix,
     corporate_action_plan = corporate_action_plan,
-    corporate_action_policy = exp$corporate_action_policy
+    corporate_action_policy = exp$corporate_action_policy,
+    decision_due = schedule$decision_due,
+    decision_pulse_count = schedule$decision_pulse_count,
+    scheduled_skip_count = schedule$scheduled_skip_count
   )
   list(
     execution = execution,

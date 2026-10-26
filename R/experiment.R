@@ -285,6 +285,13 @@ ledgr_experiment <- function(snapshot,
     universe_all
   }
   ledgr_experiment_validate_strategy(strategy)
+  if (!is.null(ledgr_strategy_schedule_declaration(strategy)) &&
+      !isTRUE(availability$active)) {
+    ledgr_schedule_abort(
+      "A strategy schedule requires an availability-aware experiment with declared sessions.",
+      "ledgr_schedule_sessions_required"
+    )
+  }
   features_mode <- ledgr_experiment_validate_features(features)
   features <- ledgr_experiment_copy_features(features, features_mode)
   if (isTRUE(availability$active)) {

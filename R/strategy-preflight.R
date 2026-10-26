@@ -82,6 +82,7 @@ ledgr_strategy_preflight <- function(strategy) {
   if (!is.function(strategy)) {
     rlang::abort("`strategy` must be a function.", class = "ledgr_invalid_strategy_preflight")
   }
+  strategy <- ledgr_strategy_schedule_inner(strategy)
   ledgr_strategy_signature(strategy)
 
   if (isTRUE(attr(strategy, "ledgr_signal_strategy_wrapper", exact = TRUE))) {

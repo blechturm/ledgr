@@ -305,6 +305,15 @@ validate_ledgr_config <- function(config) {
 
   strategy_id <- cfg_get(c("strategy", "id"))
   assert_scalar_chr(strategy_id, "strategy.id")
+  if (!is.null(config$strategy_schedule)) {
+    ledgr_schedule_validate(config$strategy_schedule)
+    if (!isTRUE(config$availability$active)) {
+      ledgr_schedule_abort(
+        "A strategy schedule requires an availability-aware config with declared sessions.",
+        "ledgr_schedule_sessions_required"
+      )
+    }
+  }
   if (!is.null(config$strategy$params$call_signature)) {
     assert_scalar_chr(config$strategy$params$call_signature, "strategy.params.call_signature")
     if (!config$strategy$params$call_signature %in% c("ctx", "ctx_params")) {

@@ -57,6 +57,7 @@ ledgr_strategy_params_info <- function(strategy_params = list()) {
 }
 
 ledgr_strategy_source_info <- function(fn) {
+  fn <- ledgr_strategy_schedule_inner(fn)
   source <- tryCatch(ledgr_deparse_one(fn), error = function(e) NA_character_)
   preflight <- ledgr_strategy_preflight(fn)
   if (!is.character(source) || length(source) != 1 || is.na(source) || !nzchar(source)) {
