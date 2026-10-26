@@ -121,5 +121,21 @@ The independent Type 1 review in `close_review_62.md` returned
 The corrected scheduler block and fifteen surrounding promotion, sweep,
 persistence, walk-forward, current-format, documentation, control-plane and
 codebase-contract suites pass. The fold-phase checker and YAML parse pass, and
-`git diff --check` is clean. A fresh focused confirmation is the remaining
-workstream gate.
+`git diff --check` is clean.
+
+## Focused confirmations
+
+The first focused re-review is recorded in `close_review_62_rereview_1.md`.
+It found all original product findings resolved and requested three low
+detector or record patches. Corrections `762b551d` and `1c675c86` make the
+task-field scan recursive through data frames, prove that every genuinely
+unresolvable FAILED candidate can reopen regardless of its primary failure
+class, prove that a resolvable FAILED candidate cannot use authored-only
+identity, pin warning-free matching promotion and route the bounded identity
+cost to LDG-3114 as an acceptance item.
+
+A final fresh-context Claude Opus confirmation returned `PASS`. Its three
+mutants independently showed that a nested data-frame `decision_due` field,
+the former error-class-specific reader gate and acceptance of authored-only
+identity for a resolvable FAILED candidate each fail LTB-0508. The schedule
+suite, YAML parse and range diff check pass. No new product defect remains.
