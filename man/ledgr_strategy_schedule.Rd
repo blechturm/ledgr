@@ -51,10 +51,13 @@ schedule does not wrap or call it.
 \details{
 Fixed calendar rules select real boundaries on the complete parent session
 axis. They do not manufacture a boundary at the start or end of a partial
-run. Explicit civil dates snap forward to the next open session; a date that
-cannot resolve inside the executable axis is refused. A parameter schedule
-resolves a named scalar character strategy parameter to one of the fixed
-rule names before execution.
+run; in particular, the first parent-axis session is not automatically a
+start boundary. Explicit civil dates snap forward to the next open session;
+a date outside the declared parent axis is refused, while a date inside that
+axis but outside the executable window is simply not due. A parameter
+schedule resolves a named scalar character strategy parameter to one of
+\code{"month_start"}, \code{"month_end"}, \code{"week_start"}, \code{"quarter_start"}, or
+\code{"year_start"} before execution.
 
 Schedules currently require an availability-aware axis with exactly one
 pulse per expected venue session. Dense and multi-pulse intraday runs refuse

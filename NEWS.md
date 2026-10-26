@@ -2,6 +2,13 @@
 
 ## Declarative strategy schedules
 
+- Added `ledgr_strategy_schedule()` with declarative
+  `ledgr_schedule_month_start()`, `ledgr_schedule_month_end()`,
+  `ledgr_schedule_week_start()`, `ledgr_schedule_quarter_start()`,
+  `ledgr_schedule_year_start()`, `ledgr_schedule_dates()`, and
+  `ledgr_schedule_from_param()` rules. Rules compile once against the declared
+  session calendar before execution.
+
 - Scheduled strategies now skip only decision-context construction, callback
   invocation, and execution planning on non-decision pulses. Observation,
   corporate-action settlement and boundary binding, reconciliation, strategy

@@ -2166,21 +2166,42 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   help_flat <- gsub("\\s+", " ", help)
   news_flat <- gsub("\\s+", " ", news)
 
-  testthat::expect_match(minimum_variance, "ledgr_schedule_month_start()", fixed = TRUE)
-  testthat::expect_no_match(minimum_variance, "months <- format(axis$ts_utc", fixed = TRUE)
-  testthat::expect_no_match(minimum_variance, "not_a_decision_date", fixed = TRUE)
-  testthat::expect_match(authoring, "ledgr_schedule_week_start()", fixed = TRUE)
-  testthat::expect_no_match(authoring, "pulses_seen %%", fixed = TRUE)
+  qmd_chunk <- function(path, label) {
+    lines <- readLines(file.path(root, path), warn = FALSE, encoding = "UTF-8")
+    label_line <- which(trimws(lines) == paste0("#| label: ", label))
+    testthat::expect_length(label_line, 1L)
+    tail <- lines[seq.int(label_line + 1L, length(lines))]
+    close <- which(trimws(tail) == "```")[[1L]]
+    paste(lines[seq.int(label_line, label_line + close)], collapse = "\n")
+  }
+  minimum_variance_experiment <- qmd_chunk(
+    "vignettes/minimum-variance.qmd",
+    "experiment"
+  )
+  weekly_run <- qmd_chunk("vignettes/strategy-authoring-tools.qmd", "run-weekly")
+
+  testthat::expect_match(minimum_variance_experiment, "ledgr_schedule_month_start()", fixed = TRUE)
+  testthat::expect_no_match(minimum_variance_experiment, "months <- format", fixed = TRUE)
+  testthat::expect_no_match(minimum_variance_experiment, "not_a_decision_date", fixed = TRUE)
+  testthat::expect_match(weekly_run, "ledgr_schedule_week_start()", fixed = TRUE)
+  testthat::expect_no_match(weekly_run, "pulses_seen %%", fixed = TRUE)
   testthat::expect_match(authoring, "A scheduled skip and `ctx$hold()`", fixed = TRUE)
   testthat::expect_match(reproducibility, "the schedule contributes\\s+separately")
   testthat::expect_match(store, "`decision_pulse_count`, `scheduled_skip_count`", fixed = TRUE)
   testthat::expect_match(help_flat, "exactly one pulse per expected venue session", fixed = TRUE)
   testthat::expect_match(help_flat, "do not manufacture a boundary", fixed = TRUE)
+  testthat::expect_match(help_flat, "first parent-axis session is not automatically", fixed = TRUE)
   testthat::expect_match(help_flat, "Explicit civil dates snap forward", fixed = TRUE)
+  testthat::expect_match(help_flat, "outside the declared parent axis is refused", fixed = TRUE)
   testthat::expect_match(help_flat, "resolves a named scalar character strategy parameter", fixed = TRUE)
+  for (token in c("month_start", "month_end", "week_start", "quarter_start", "year_start")) {
+    testthat::expect_match(help, token, fixed = TRUE)
+  }
   testthat::expect_match(help_flat, "resolves to no decision pulses", fixed = TRUE)
   testthat::expect_match(help_flat, "inner strategy's source identity remains", fixed = TRUE)
   testthat::expect_match(reference, "- ledgr_strategy_schedule", fixed = TRUE)
+  testthat::expect_match(news_flat, "ledgr_strategy_schedule()", fixed = TRUE)
+  testthat::expect_match(news_flat, "schema 124", fixed = TRUE)
   for (version in c(
     "saved-sweep format 6", "provenance format 2",
     "reproduction-key format 2", "walk-forward candidate and inspection formats 2",

@@ -46,9 +46,44 @@ bars <- ledgr_demo_bars |>
 ```
 
 The weekly example later in the article needs an authoritative
-venue-session axis. The fixture derives and declares that calendar here;
-the construction is hidden because
-`vignette("point-in-time-inputs", package = "ledgr")` owns that topic.
+venue-session axis. The fixture derives and declares that calendar here.
+The setup is folded because
+`vignette("point-in-time-inputs", package = "ledgr")` owns the topic,
+but it remains visible and copyable so the snapshot code below is
+complete.
+
+<details class="code-fold">
+<summary>Show session-calendar setup</summary>
+
+``` r
+bar_times <- sort(unique(bars$ts_utc))
+bar_dates <- as.Date(bar_times, tz = "UTC")
+session_dates <- seq(min(bar_dates), max(bar_dates), by = "day")
+close_seconds <- tapply(as.numeric(bar_times), as.character(bar_dates), max)
+session_close <- as.POSIXct(
+  unname(close_seconds[match(as.character(session_dates), names(close_seconds))]),
+  origin = "1970-01-01",
+  tz = "UTC"
+)
+is_open <- !is.na(session_close)
+session_open <- session_close - 6 * 60 * 60
+session_rows <- data.frame(
+  session_date = session_dates,
+  status = ifelse(is_open, "open", "closed"),
+  session_open = session_open,
+  session_close = session_close
+)
+demo_session_facts <- ledgr_facts(
+  ledgr_facts_sessions(
+    session_rows,
+    venue_id = "DEMO_VENUE",
+    knowledge = "assume_effective",
+    timezone = "UTC"
+  )
+)
+```
+
+</details>
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(
@@ -91,8 +126,8 @@ params <- list(n = 2, invested = 0.5)
 The next section takes that pipeline apart. First, check what it
 decides. `ledgr_pulse_snapshot()` builds an inspection context for one
 timestamp. Its cash, positions, and equity follow the same rules as the
-`ctx` a dense backtest passes in; equity is cash plus the current value
-of the supplied positions. You can therefore call the strategy yourself.
+`ctx` passed to the strategy; equity is cash plus the current value of
+the supplied positions. You can therefore call the strategy yourself.
 Start by looking at the inputs:
 
 ``` r
@@ -526,8 +561,6 @@ Strategy state is for information the strategy itself must carry from
 one decision to the next. This example counts its decisions so the
 distinction is visible:
 
-Strategy state is that memory:
-
 - Instead of a bare target, return
   `list(targets = ..., state_update = ...)`. `state_update` is a list of
   plain data you choose: numbers, strings, logical values, and lists of
@@ -689,13 +722,14 @@ work of the run. The schedule is part of run identity and provenance, so
 changing the cadence creates a distinct experiment rather than an
 invisible callback rule.
 
-## In Availability-Aware Runs
+## With A Changing Investment Universe
 
-Everything above uses a dense panel, where every instrument can be
-selected at every pulse. In an availability-aware run, the set of
-instruments you may invest in changes over time;
-`vignette("survivorship-bias", package = "ledgr")` shows one end to end.
-Four things then work differently:
+The examples above are already availability-aware because the snapshot
+declares its expected session calendar. Their four-instrument universe
+is constant, however. When membership changes over time, the set of
+instruments you may invest in changes too;
+`vignette("survivorship-bias", package = "ledgr")` shows one such run
+end to end. Four things then work differently:
 
 - `ctx$universe` can include an instrument you still hold but may no
   longer select, a *held nonmember*. `ctx$members` lists the instruments

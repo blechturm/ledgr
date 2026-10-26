@@ -5,7 +5,6 @@ if (length(args) != 2L) stop("Usage: identity_cost.R <ledgr_src> <output.csv>", 
 ledgr_src <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
 output <- args[[2L]]
 dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)
-.libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
 suppressMessages(pkgload::load_all(ledgr_src, quiet = TRUE, compile = FALSE))
 
 declaration <- unclass(ledgr::ledgr_schedule_from_param("when"))

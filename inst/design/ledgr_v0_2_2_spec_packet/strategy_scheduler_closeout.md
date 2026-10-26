@@ -1,7 +1,7 @@
 # Strategy Scheduler Closeout
 
-Status: Workstream 63 implementation complete; awaiting independent Type 1
-close review.
+Status: Workstream 63 corrections complete; awaiting focused Type 1
+confirmation.
 
 Implementation: `f9b8a093` over accepted Workstream 62 state `97bf51fa`.
 
@@ -54,8 +54,11 @@ is roxygen teaching for the already-reviewed Workstreams 60 through 62 product.
   reproduction-key format 2, walk-forward candidate and inspection formats 2,
   and promotion-context format 3.
 
-LCL-0500/LTB-0509 pins those surfaces and rejects both retired executable
-workarounds. LCL-0421/LTB-0431 was corrected with the teaching change: a
+LCL-0500/LTB-0509 pins the labelled executable chunks, generated help,
+reference index, NEWS API names and current format names, and rejects both
+retired executable workarounds. `research-workflow.qmd` and
+`causal-history.qmd` contain no periodic strategy guard and require no further
+rewrite. LCL-0421/LTB-0431 was corrected with the teaching change: a
 weekday fixture beginning mid-month waits for the next true month boundary,
 decides on 1 February, 1 March and 1 April, records every other pulse as a
 scheduled skip, fills on the next sessions and preserves its three sparse
@@ -96,16 +99,23 @@ The ratio of medians is 0.664, while the ticket's binding statistic is the
 median of within-pair ratios, 0.670. The 21.80-second median saving is 1.54
 times the earlier 14.17-second diagnostic lower bound. This does not revise the
 older decomposition: it shows that the lower-bound arm did not account for all
-work avoided by preventing P2 and P3 from running.
+work avoided by preventing P2 and P3 from running. The inputs are close but not
+identical: this paired record has 7,193 pulses and 344 true month starts after
+moving the opening to the shared 1998-02-02 boundary, whereas the earlier
+diagnostic arm had 7,213 pulses and 345 monthly decisions. The comparison is a
+recovered-share orientation, not a same-window subtraction.
 
-The checker requires six summaries in the registered alternating order, DONE
+The timing checker requires six summaries in the registered alternating order, DONE
 status, one input and inner-source identity, schedule identity only on the
 scheduled arms, exact decision/skip partitioning, exact economic and carried
-state hashes, and six equal literal due-date files. The only accepted
-off-date delta is one `scheduled_skip` diagnostic per skipped scheduled pulse
-and none in the manual arms. Its self-test independently corrupts an economic
-hash, one literal due date, a skip count and all scheduled clocks; all four are
-rejected after a passing baseline.
+state hashes, and six equal literal due-date files. The accepted off-date delta
+is the absent P2 decision/risk trace from explicit manual holds, replaced by one
+`scheduled_skip` diagnostic per skipped scheduled pulse. The untimed correction
+record in `evidence/ws63_diagnostic_parity` removes only those P2 rows and then
+requires every retained P1/P4/P5 row and every retained reason count to match.
+The two checker self-tests independently corrupt economic, date, count, clock,
+retained-row and retained-hash evidence; every mutation is rejected after a
+passing baseline.
 
 ## Identity cost kept outside H1
 
@@ -134,8 +144,9 @@ The accepted Section 5 matrix is continuous across the four Cut 21 claims:
   and one-, two- and three-worker identity and verdict parity, plus every old
   orchestration-format refusal.
 - LTB-0509 owns public teaching and current format names.
-- The H1 checker owns exact large-input economics, carried state, literal due
-  dates, accepted diagnostic delta and the 0.90 material timing gate.
+- The H1 timing checker owns exact large-input economics, carried state,
+  literal due dates and the 0.90 material timing gate. Its untimed correction
+  checker owns the exact accepted off-date diagnostic delta.
 
 The Workstreams 60 through 62 closeouts and independent reviews record the
 condition, phase, identity, recovery, worker and old-version mutations. WS63

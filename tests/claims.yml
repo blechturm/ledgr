@@ -4011,7 +4011,7 @@ claims:
     oracle_independence: "The decision dates are literals from the fixture calendar, not derived from the strategy or from ledgr's axis."
     smallest_failing_change: "Manufacture a boundary at the partial data start, decide weekly, invoke the callback on skipped pulses, change the literal counts or lose reasons after reopen; LTB-0431 fails."
     cheapest_adequate_lane: "Review: one 63-session scheduled run plus reopen."
-    overlapping_evidence: "LTB-0437 checks the article uses one declared month-start schedule and contains no manual calendar guard."
+    overlapping_evidence: "LTB-0509 checks the article uses one declared month-start schedule and contains no manual calendar guard."
   - id: "LCL-0423"
     source: "Cut 19 LDG-3104; maintainer teaching amendment 2026-10-25"
     scope: "Without input carry, missing DDD sessions make its ten-session daily-return window incomplete; the article's one return-matrix read excludes DDD, retains AAA, BBB and CCC and assigns zero to the flat omitted instrument while producing positive targets for the admitted sample"

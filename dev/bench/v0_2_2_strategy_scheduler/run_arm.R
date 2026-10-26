@@ -29,7 +29,6 @@ if (!file.exists(file.path(private_root, ".ledgr-sharadar-private-root")) ||
 dir.create(work_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-.libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
 suppressMessages(pkgload::load_all(ledgr_src, quiet = TRUE, compile = FALSE))
 product_commit <- system2("git", c("-C", shQuote(ledgr_src), "rev-parse", "HEAD"), stdout = TRUE)
 affinity <- system2(
@@ -130,6 +129,34 @@ diagnostic_ts <- format(as.POSIXct(diagnostics$ts_utc, tz = "UTC"), "%Y-%m-%dT%H
 due_diagnostics <- diagnostics[diagnostic_ts %in% due_tokens, , drop = FALSE]
 off_diagnostics <- diagnostics[!diagnostic_ts %in% due_tokens, , drop = FALSE]
 diag_columns <- setdiff(names(due_diagnostics), c("run_id", "diagnostic_seq"))
+retained_off_diagnostics <- off_diagnostics[
+  !off_diagnostics$stage %in% c("decision", "risk"),
+  diag_columns,
+  drop = FALSE
+]
+off_counts <- stats::aggregate(
+  rep.int(1L, nrow(off_diagnostics)),
+  by = off_diagnostics[c("stage", "outcome", "reason_code")],
+  FUN = sum
+)
+names(off_counts)[[4L]] <- "n"
+off_counts <- off_counts[order(
+  off_counts$stage,
+  off_counts$outcome,
+  off_counts$reason_code
+), , drop = FALSE]
+utils::write.csv(
+  cbind(
+    data.frame(
+      pair = rep.int(pair, nrow(off_counts)),
+      arm = rep.int(arm, nrow(off_counts)),
+      stringsAsFactors = FALSE
+    ),
+    off_counts
+  ),
+  file.path(out_dir, paste0(tag, "_off_diagnostic_counts.csv")),
+  row.names = FALSE
+)
 
 row <- data.frame(
   pair = pair,
@@ -153,6 +180,8 @@ row <- data.frame(
   lots_hash = digest::digest(reconstructed$lots, algo = "sha256", serialize = TRUE),
   state_hash = stable_hash(states),
   due_diagnostics_hash = stable_hash(due_diagnostics[, diag_columns, drop = FALSE]),
+  retained_off_diagnostics_hash = stable_hash(retained_off_diagnostics),
+  retained_off_diagnostic_rows = nrow(retained_off_diagnostics),
   off_diagnostic_rows = nrow(off_diagnostics),
   off_scheduled_skip_rows = sum(off_diagnostics$reason_code == "scheduled_skip"),
   final_equity = tail(equity$equity, 1L),
