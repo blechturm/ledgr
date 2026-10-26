@@ -2,8 +2,8 @@
 
 **Cut:** 22. **Workstream:** 64. **Ticket:** LDG-3115.
 **Implementation:** `0bd1ad01` on `v0.2.2`.
-**Status:** Independent Type 1 close review passed after two focused
-corrections; awaiting maintainer acceptance.
+**Status:** Accepted and closed by the maintainer on 2026-10-26 after the
+final finding-free confirmation and teaching compression.
 
 ## Result
 
@@ -33,9 +33,10 @@ unchanged.
   promotion and reproduction key, then carries `month_day` and both hashes
   through a real walk-forward candidate.
 - Generated help, the pkgdown reference index, the API export lock, NEWS and
-  the article name both helpers. Executed article chunks print the exact
-  Wednesday and month-day-15 plan labels and show that a closed Friday yields
-  no decision; the prose also covers weekend-only venues, same-month
+  the article name both helpers. The article executes the constructors, pins
+  their exact Wednesday and month-day-15 display labels in a compact cadence
+  table and keeps an executable hidden fixture showing that a closed Friday
+  yields no decision. The prose also covers weekend-only venues, same-month
   resolution and the parent-start difference from month start.
 
 ## Optimization-Shape Walk
@@ -70,3 +71,12 @@ specification.
   no-built-vignette warnings and the pre-existing unqualified `head` NOTE.
   A final static check after removing Cut 22's temporary `head`/`tail` use
   reports only that pre-existing NOTE.
+
+## Acceptance
+
+The maintainer accepted Workstream 64 and Cut 22 on 2026-10-26. Commit
+`70890b18` then compressed the public lesson without weakening its executable
+boundary proof: the real scheduled strategy now leads, the cadence menu is a
+small table and the closed-Friday fixture remains executed but hidden from
+the teaching flow. Rendered-Markdown freshness and the documentation-contract
+suite pass on that accepted form.

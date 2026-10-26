@@ -416,8 +416,9 @@ Section 7 questions, the public declarations and compiler, fold integration,
 current-only format bumps, detecting evidence and documentation. LFB-035
 remains a separate defect and must not be folded into scheduler ticket grain.
 
-Accepted amendment (2026-10-26): after Cut 21 closes, Cut 22 Workstream 64
-adds `ledgr_schedule_weekday(day)` and `ledgr_schedule_month_day(day)` as two
+Accepted and completed amendment (2026-10-26): after Cut 21 closed, Cut 22
+Workstream 64 added `ledgr_schedule_weekday(day)` and
+`ledgr_schedule_month_day(day)` as two
 version-1 declarations on the same compiler, identity and orchestration paths.
 The rules resolve forward only inside their civil week or month and add no
 pulse-time work or format bump. LDG-3115 is the only implementation owner.
@@ -771,14 +772,14 @@ bounded cross-asset corrections have all been implemented and accepted. The
 minimum-variance article modernization and its compact public strategy path
 are part of that closed state.
 
-WS6 is the only promoted macro-plan item still open. Its held-pulse probe found
-a 14.17-second lower bound, 22.6 percent of the measured public-run wall. The
-strategy-scheduler RFC was accepted on 2026-10-26: a schedule is compiled once
-over declared open sessions; only P2 and P3 may be skipped, while P1, P4 and P5
-still run. Cut 21 serializes the work as declaration/compiler/identity (WS60),
-pulse-complete fold execution and persistence (WS61), orchestration formats
-(WS62), then teaching and integrated proof (WS63). LFB-035 stays separate.
-After Cut 22, the remaining work is release closeout rather than another
+WS6 is complete. Its held-pulse probe found a 14.17-second lower bound, 22.6
+percent of the measured public-run wall. The accepted implementation compiles
+a schedule once over declared open sessions; only P2 and P3 may be skipped,
+while P1, P4 and P5 still run. Cut 21 delivered declaration, compiler and
+identity (WS60), pulse-complete fold execution and persistence (WS61),
+orchestration formats (WS62), then teaching and integrated proof (WS63). Cut
+22 added the two common civil-calendar declarations in WS64. LFB-035 stays
+separate. The remaining work is release closeout rather than another
 pre-planned product workstream.
 
 `tickets.yml` alone binds exact dependencies and status.
