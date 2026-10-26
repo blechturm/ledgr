@@ -692,6 +692,10 @@ one. `ledgr_schedule_month_day(1L)` can decide on an open first session;
 `ledgr_schedule_month_start()` requires a provable boundary from the preceding
 month.
 
+In v0.2.2, these declarations require an availability-aware axis with exactly
+one pulse per expected venue session. Dense runs and multi-pulse intraday runs
+refuse them rather than silently choosing which pulse represents the session.
+
 The following executable check uses a calendar with Thursday and Monday open,
 but Friday and the weekend closed. Its complete decision table is empty:
 

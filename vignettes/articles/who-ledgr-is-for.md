@@ -67,10 +67,11 @@ documentation, ledgr aims to meet that bar.
 
 ## Who ledgr is not for
 
-**High-frequency traders.** ledgr is end-of-day by default. The
-architecture is intraday-capable, but the v0.x focus is daily/EOD
-strategies. If you need microsecond execution or tick-by-tick
-backtesting, NautilusTrader or institutional platforms are better fits.
+**High-frequency traders.** ledgr v0.2.2 supports the daily/EOD research
+path; it does not claim first-class intraday execution. Declarative
+schedules require exactly one pulse per expected venue session. If you
+need microsecond execution or tick-by-tick backtesting, NautilusTrader
+or institutional platforms are better fits.
 
 **Quants who need to scan thousands of parameter combinations in
 seconds.** VectorBT is purpose-built for this. It packs configurations

@@ -56,6 +56,11 @@ If you need any of those today, another backtester will serve you
 better. If you need daily research you can trust and reopen later, that
 is what ledgr is built for.
 
+Parallel sweeps trade time for memory because each worker receives prepared
+run state. The retained v0.2.2 long-window record peaked at 4.46 GiB with two
+workers. Use `workers = 1L` when memory is the tighter constraint; parallel
+dispatch does not change strategy semantics.
+
 ## Install
 
 ledgr needs R 4.6.0 or later. Install it from GitHub. The install needs
@@ -206,7 +211,9 @@ takes that rule through code iterations, sweeps and promotion. The
 [article index](https://blechturm.github.io/ledgr/) covers data
 preparation, indicators, accounting, costs, walk-forward evaluation, and
 durable stores. Installed help is available through
-`vignette(package = "ledgr")` and `help(package = "ledgr")`.
+`vignette(package = "ledgr")` and `help(package = "ledgr")`. In a
+noninteractive session, `system.file("doc", package = "ledgr")` gives the
+directory containing the installed articles.
 
 ledgr works with the rest of the R ecosystem: indicators from TTR or
 your own functions, market data from any source you can put in a data

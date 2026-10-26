@@ -597,6 +597,12 @@ discard the partial table instead of returning partially promotable rows.
 That means parallel sweep execution is a dispatch choice over independent
 candidate rows, not a second execution engine.
 
+Workers are not memory-free. Each process receives prepared run state, so peak
+memory rises with the worker count. The retained v0.2.2 long-window record
+peaked at 1.89 GiB for one H1 run and 4.46 GiB for the two-worker tree. Treat
+those as workload-specific sizing evidence, not a universal estimate, and use
+`workers = 1L` when memory is the tighter constraint.
+
 ## Failure Rows And Contract Errors
 
 By default, candidate-level failures become rows with `status = "FAILED"`.

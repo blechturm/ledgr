@@ -520,11 +520,11 @@ execution behaviour later depends on it.
 - An unfilled target does **not** persist. It is not a standing order
   waiting for liquidity.
 
-The strategy below is deliberately plain: rebalance on January 6 and
-again when the declared membership changes on January 13. The second
-decision makes the point-in-time availability change part of the
-executed strategy path rather than merely something inspected after the
-run.
+The strategy below is deliberately plain. Its portfolio rule has no
+calendar branch. The experiment attaches an explicit two-date schedule:
+January 6 and the membership change on January 13. The second decision
+makes the point-in-time availability change part of the executed
+strategy path rather than merely something inspected after the run.
 
 What happens to a departed holding depends on how the rule is written.
 `ctx$flat()` is literal, so a rule starting from it sells a departed
@@ -534,15 +534,19 @@ with an error. What ledgr should do by default here is open design work.
 
 ``` r
 rebalance_declared_members <- function(ctx, params) {
-  rebalance_dates <- c("2020-01-06", "2020-01-13")
-  if (!format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC") %in% rebalance_dates) {
-    return(ctx$hold())
-  }
   ctx |>
     ledgr_selection() |>
     ledgr_weight_equal() |>
     ledgr_target_rebalance(ctx, equity_fraction = params$invested)
 }
+
+rebalance_schedule <- ledgr_schedule_dates(
+  as.Date(c("2020-01-06", "2020-01-13"))
+)
+scheduled_rebalance <- ledgr_strategy_schedule(
+  rebalance_declared_members,
+  rebalance_schedule
+)
 ```
 
 In this availability-aware experiment, `equity_fraction` is deliberately
@@ -598,7 +602,7 @@ about it. Here is the whole thing, written out once:
 ``` r
 point_in_time_experiment <- ledgr_experiment(
   snapshot,
-  rebalance_declared_members,
+  scheduled_rebalance,
   universe = ledgr_universe_members("demo_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2),
   cost_model = ledgr_cost_zero(),
@@ -621,6 +625,7 @@ ledgr_experiment_plan(point_in_time_experiment)
 #> Availability: active
 #> Price basis:  split_adjusted (declared)
 #> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
+#> Strategy schedule: explicit dates (2)
 #> Universe:     membership
 #> Valuation:    stale-mark horizon 2 sessions (declared)
 #> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
@@ -657,7 +662,7 @@ marks the ones you did not set yourself.
 universe_experiment <- function(universe) {
   ledgr_experiment(
     snapshot,
-    rebalance_declared_members,
+    scheduled_rebalance,
     universe = universe,
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     cost_model = ledgr_cost_zero(),
@@ -922,6 +927,8 @@ point_in_time
 #> Total Return:                      -14.07%
 #> Max Drawdown:                      -18.90%
 #> Closed Trades:                     0
+#> Strategy schedule: explicit dates (2)
+#> Decision pulses: 2; scheduled skips: 8
 #> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: NOT SUPPLIED - returns may omit distributions
@@ -1052,7 +1059,7 @@ conservative alternative, a write-off for the `"delisted"` label:
 terminal_experiment <- function(policy) {
   ledgr_experiment(
     terminal_snapshot,
-    rebalance_declared_members,
+    scheduled_rebalance,
     universe = ledgr_universe_members("demo_members"),
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     corporate_action_policy = policy,
@@ -1108,6 +1115,8 @@ written_off
 #> Total Return:                      -33.87%
 #> Max Drawdown:                      -37.80%
 #> Closed Trades:                     0
+#> Strategy schedule: explicit dates (2)
+#> Decision pulses: 2; scheduled skips: 8
 #> Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 #>
 #> Economic events: MODELED - configured settlement conventions were exercised

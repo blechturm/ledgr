@@ -865,11 +865,9 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
   testthat::expect_match(indicators, "#| eval: !expr requireNamespace(\"TTR\"", fixed = TRUE)
   testthat::expect_match(leakage, "lead(close)", fixed = TRUE)
   testthat::expect_no_match(strategy_basics, "tomorrow_close = lead(close)", fixed = TRUE)
-  testthat::expect_match(
-    survivorship,
-    'rebalance_dates <- c("2020-01-06", "2020-01-13")',
-    fixed = TRUE
-  )
+  testthat::expect_match(survivorship, "ledgr_schedule_dates(", fixed = TRUE)
+  testthat::expect_match(survivorship, "ledgr_strategy_schedule(", fixed = TRUE)
+  testthat::expect_no_match(survivorship, "if (!format(ledgr_utc(ctx$ts_utc)", fixed = TRUE)
   testthat::expect_match(survivorship, "availability-aware execution outcome", fixed = TRUE)
   testthat::expect_match(sweeps, "business-objective helpers", fixed = TRUE)
   testthat::expect_no_match(

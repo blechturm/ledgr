@@ -370,7 +370,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_0e1e5298f6f7fa36
+    # ledgr sweep -- sweep_22261a7c7fc7e3a8
     # A tibble: 16 x 10
        strategy_params           feature_params candidate_id candidate_row status sharpe_ratio
        <chr>                     <chr>          <chr>                <int> <chr>         <dbl>
@@ -482,14 +482,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_d371f02ee237df61 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_891dc08c997a9d8e feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 Each `candidate_id` here is a row of `candidate_table` above, which
 lists the parameters that produced it.
@@ -576,7 +576,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-10-25 17:11:41                    5           16          16
+    1 sma_retained_sweep 2026-10-26 21:30:15                    6           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -603,8 +603,8 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     8dcc07d45aaa9cfcc74ef1d6cd33e51cae4af2cc1c06b345152c443ae5c303dc
 
     Saved artifact
-    Created At:        2026-10-25 17:11:41.320145
-    Schema Version:    5
+    Created At:        2026-10-26 21:30:15.43301
+    Schema Version:    6
     Engine Version:    0.2.1.0
     Note:              Exploratory SMA sweep with retained return series.
 
@@ -723,6 +723,13 @@ semantics; interrupted parallel sweeps discard the partial table instead
 of returning partially promotable rows. That means parallel sweep
 execution is a dispatch choice over independent candidate rows, not a
 second execution engine.
+
+Workers are not memory-free. Each process receives prepared run state,
+so peak memory rises with the worker count. The retained v0.2.2
+long-window record peaked at 1.89 GiB for one H1 run and 4.46 GiB for
+the two-worker tree. Treat those as workload-specific sizing evidence,
+not a universal estimate, and use `workers = 1L` when memory is the
+tighter constraint.
 
 ## Failure Rows And Contract Errors
 
