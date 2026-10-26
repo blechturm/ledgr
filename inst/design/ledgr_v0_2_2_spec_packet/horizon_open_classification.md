@@ -4,12 +4,13 @@
 **Status:** accepted
 **Authority:** None. The table records dispositions and destinations only.
 **Source population:** `1cbc5166:inst/design/horizon.md`, the 73 dated
-entries under `Open` before Workstream 34 changed the file.
+entries under `Open` before Workstream 34 changed the file, plus six later
+Open entries classified as H074 through H079.
 
 The scan compared every entry with current contracts, shipped packets, Cut 15
 tickets, and the RFC pipeline. A mixed entry remains `genuine` whenever any
 unowned design question survives. This prevents a shipped subpart from
-downgrading unresolved debt. The result is 67 genuine entries, three promoted
+downgrading unresolved debt. The result is 73 genuine entries, three promoted
 entries, two shipped entries, and one superseded entry.
 
 <a id="classification-table"></a>
@@ -89,11 +90,17 @@ entries, two shipped entries, and one superseded entry.
 | H071 | 2026-05-27 [execution] Intraday support arc and pre-v0.2.x architectural footguns | genuine | The multi-cycle arc is not committed; its live routes are the OMS-lifecycle, execution-policy and instrument-specific-session-axis pipeline rows, with other extensions parked here. | [full body](../horizon.md) |
 | H072 | 2026-05-28 [data] Live bad-data resilience and sim-to-real backtest fidelity | genuine | No binding receiver or shipped disposition; the non-binding trigger and route remain live. | [full body](../horizon.md) |
 | H073 | 2026-05-28 [adapters] External-package output adapters (PerformanceAnalytics first) | genuine | No current packet, roadmap or RFC-pipeline row commits output adapters; this design stays parked until a concrete consumer workflow triggers a focused RFC. | [full body](../horizon.md) |
+| H074 | 2026-10-21 [execution] Cheap, versioned pulse-seed derivation | genuine | The roadmap commits a next-release optimization, while the exact counter mapping, identity treatment and measured cut remain unbound. | [full body](../horizon.md) |
+| H075 | 2026-10-21 [execution] Typed P3-P5 execution batch | genuine | The roadmap commits a next-release workstream, while its typed representation and measured cut remain unbound; compiled widening retains its RFC owner. | [full body](../horizon.md) |
+| H076 | 2026-10-20 [data] Raw bars with point-in-time adjustment | genuine | As-traded storage and decision-time adjustment remain unbound; the current split-adjusted limitation is only documented. | [full body](../horizon.md) |
+| H077 | 2026-10-15 [execution] Fused plan-plus-apply compiled kernel and a unified stop-or-abort type | genuine | Both alternatives remain speculative; the compiled-envelope RFC and a future stop-result decision retain their separate routes. | [full body](../horizon.md) |
+| H078 | 2026-10-21 [execution] Cutoff-bound context internals or a strategy sandbox | genuine | The untrusted-strategy trigger has not fired; neither cutoff-bound private carriers nor process isolation is currently committed. | [full body](../horizon.md) |
+| H079 | 2026-10-21 [infrastructure] Execution extension guide after consolidation | genuine | The trigger is deliberately post-consolidation and post-first-extension; no current manual should codify the transitional execution architecture. | [full body](../horizon.md) |
 
 ## Reconciliation checks
 
-- All 73 source headings occur exactly once in this table.
-- The 67 genuine entries remain in full under `horizon.md#Open`.
+- All 79 source headings occur exactly once in this table.
+- The 73 genuine entries remain in full under `horizon.md#Open`.
 - H006, H009 and H015 are concise redirects to one current owner; their original
   prose is historical evidence.
 - H022 and H044 are shipped and H049 is superseded; each exact heading

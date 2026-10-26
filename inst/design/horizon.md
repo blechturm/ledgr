@@ -101,6 +101,93 @@ with the execution-policy RFC. Durable factors, ranks, selections and weights
 remain LFB-028. Numerical covariance repair is ordinary estimator practice and
 needs no ledgr abstraction unless repeated methods expose a product boundary.
 This entry authorizes no API, RFC, article or release scope.
+### 2026-10-21 [execution] Cheap, versioned pulse-seed derivation
+
+The seeded fold currently derives every `ctx$pulse_seed` by canonicalizing a
+list containing the execution seed and pulse index, hashing it with SHA-256,
+splitting the hexadecimal result and combining the chunks. An exploratory
+v0.2.2 narrow-long clock (10 instruments, 7,200 pulses) measured about 1.35
+seconds between the seeded and unseeded engine arms, or roughly 0.19 ms per
+pulse. The strategy did not consume randomness, so the difference isolates
+the cost of supplying deterministic pulse seeds closely enough to justify a
+dedicated follow-up; it is not release-grade benchmark evidence.
+
+The contract needs a deterministic, ambient-RNG-independent mapping from
+`(execution_seed, pulse_idx)` to one valid R integer seed. It does not need
+cryptographic unpredictability, JSON or SHA-256. The next release should bind
+a versioned, platform-independent counter rule: either direct normalized
+integer arithmetic or a small integer mixer that avoids adjacent execution
+seeds becoming shifted copies of one another. Derivation may be constant-time
+at the pulse or batched during preparation; a stored vector is not required
+when the scalar rule is already negligible. Scheduled-out callbacks need no
+strategy-visible seed.
+
+Changing the mapping intentionally changes stochastic results. The owning cut
+must pin exact values on supported platforms, include the rule in execution
+semantics or identity, and prove continuous/resumed, run/sweep/promotion and
+serial/parallel parity while leaving the caller's `.Random.seed` unchanged.
+Measure total run time as well as the fold-loop reduction so moving identical
+hash work out of the loop cannot be presented as a speedup. This note does not
+select the arithmetic, authorize a compatibility path or bundle the separate
+target/fill/event optimization investigation.
+
+### 2026-10-21 [execution] Typed P3-P5 execution batch
+
+The extracted fold stages expose the target-to-event path clearly: P3 computes
+target deltas, resolves fills and affordability, and builds diagnostics; P4
+applies lot, cash and position transitions; P5 publishes the staged event
+rows. The current path is linear and preallocated, but one fill crosses several
+nested R representations and some primitives are derived more than once.
+Repeated work includes rebuilding instrument indices already present in the P1
+packet, constructing proposal and execution-context lists per fill, extracting
+the same fields through several `vapply()` passes, deriving cash and position
+deltas for affordability, event materialization and state mutation, and
+packing then unpacking the whole lot carrier around the compiled batch.
+
+The next release should investigate one typed internal batch carried across P3,
+P4 and P5 on the surviving availability execution path. Candidate reductions
+are reuse of P1's prepared indices, a no-action fast path, one canonical cash
+and position delta computation, prepared or vectorized built-in cost
+resolution, and direct typed writes into the unified output handler. Dense mode
+is frozen and should not receive an independent optimization.
+
+The evidence should distinguish many-pulse/no-fill, sparse-rebalance and wide
+all-fill workloads and report total run time, stage time, allocations and peak
+memory. Economic outputs remain exact: targets, fills, ordered ledger events,
+trades, equity, metrics, continuous/resumed execution, run/sweep/promotion and
+serial/parallel behavior. The existing fold-phase synthesis already owns the
+single-delta and leg-fee-projection obligation; an internal typed-R
+representation therefore needs no new RFC merely for being faster.
+
+Implementation follows both output-handler consolidation and execution-core
+consolidation so the representation is built once for one handler and one
+execution path. A persistent compiled lot carrier, a P3-plus-P4 compiled
+kernel, another compiled call site or a compiled-default change remains behind
+the existing compiled-execution-envelope RFC. This route is promoted to the
+next-release roadmap; the next version's macro plan should assign the
+workstream and its measurement gate.
+
+### 2026-10-21 [infrastructure] Execution extension guide after consolidation
+
+Once execution-core consolidation, output-handler unification, context cleanup
+and the typed P3-P5 representation have landed, survived profiling and carried
+at least one real extension, capture the resulting practice in an internal
+execution-extension manual beside the optimization coding guide. The manual
+should explain phase ownership, the stable typed fields and invariants,
+optional companion blocks, fill versus non-fill economic events, validation
+boundaries, and the parity, mutation, performance and memory evidence expected
+from a new execution or accounting extension. It should also name prohibited
+shapes such as parallel execution paths, per-fill data frames, growing nested
+lists, repeated identity resolution and duplicated delta calculations.
+
+The same pass should refresh the maintainer-facing documentation into a concise
+navigation layer linking contracts, accepted RFC decisions, manuals, tests and
+implementation entry points, and remove or archive descriptions of the retired
+execution paths. Contracts remain the authority and the implementation remains
+the executable truth; the manual records proven extension practice rather than
+freezing the transitional architecture. Do not begin this documentation pass
+until the unification work and its first extension demonstrate that the
+boundary is stable.
 
 ### 2026-10-21 [execution] Cutoff-bound context internals or a strategy sandbox
 

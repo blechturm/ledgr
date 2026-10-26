@@ -4,6 +4,9 @@
 **Status:** working
 **Authority:** Release scope only. The active packet's `tickets.yml` is the
 sole within-release sequencing authority.
+**Scope update, 2026-10-16:** Maintainer-selected next-release goal and
+[scope dispositions](#next-release-scope-dispositions); no package semantics
+or implementation tickets are changed.
 
 This page answers which releases exist, what each release delivered or owns,
 and where its packet lives. It does not duplicate ticket order, RFC
@@ -63,8 +66,42 @@ v0.2.0.2 planning path used when that release was cut.
 
 ## Next release
 
-After v0.2.2 closes, the next bounded packet is selected from these live
-themes; this list is not a within-release sequence:
+**Maintainer decision, 2026-10-16:** The release after v0.2.2 will complete
+the ordinary research-authoring workflow, consolidate execution onto the
+availability path, and resolve the accumulated maintenance work explicitly
+deferred to this release. The version number remains unassigned.
+
+The intended user outcome is a coherent path from declared features and causal
+history, through reusable ordinary-R strategy code and explicit scheduling,
+to portfolio targets and inspectable results. Structural memory reduction and
+practical parallel-worker budgets remain major release outcomes alongside
+that UX goal, retaining the memory direction recorded in the
+[history-wave register's Resume here section](rfc/rfc_history_wave_v0_2_2_decisions.md#resume-here).
+
+This decision replaces the former theme-selection wording, with the
+[dispositions below](#next-release-scope-dispositions). It binds release scope,
+not exact APIs, package behavior or within-release order. The owning RFCs
+settle design; the next packet's macro plan and `tickets.yml` settle uncut
+order and cut implementation respectively.
+
+### Research UX completion
+
+- Use the [Research Strategy UX Brief](ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)
+  as design input, not as a wholesale accepted API. Reconcile its goals with
+  the completed v0.2.2 tree before cutting work.
+- Consume the existing [Portfolio Method UX Exercises](ledgr_v0_2_2_spec_packet/portfolio_method_ux_exercises.md),
+  including the [Momento application case](ledgr_v0_2_2_spec_packet/portfolio_method_ux_exercises.md#application-case-momento-cross-sectional-momentum),
+  and the implementation evidence produced by
+  [WS7's public estimator proof](ledgr_v0_2_2_spec_packet/macro_plan.md#ws7-one-public-long-only-estimator-strategy).
+  Address the remaining demonstrated gaps rather than repeating the broad
+  design exercise. History interoperability and interactive inspection checks
+  stay with their owning workstreams.
+- Address the remaining reusable strategy-helper, scheduling and bounded
+  portfolio-construction gaps exposed by real research workflows. Keep their
+  separate design routes; this scope does not authorize an optimizer catalogue
+  or trained-model lifecycle.
+
+### Existing commitments carried forward
 
 - **Committed before the first CRAN release:** consolidate the execution core
   onto the availability path. Dense mode is frozen meanwhile. The later
@@ -75,6 +112,16 @@ themes; this list is not a within-release sequence:
   [context-frame retirement RFC row](rfc/README.md#ctx-frame-retirement), and
   decide persisted-data execution placement through its
   [focused RFC row](rfc/README.md#persisted-data-execution-placement).
+- **Pulse-seed hot path (maintainer, 2026-10-21):** replace per-pulse canonical
+  JSON plus SHA-256 derivation with a cheap, versioned and platform-independent
+  counter rule while preserving deterministic resume, sweep, promotion and
+  parallel behavior and isolation from the caller's RNG. Gate the work on
+  total-run improvement, not merely moving the same hash work into preparation.
+  The exact mapping belongs to the owning cut. Source: the horizon note
+  ["Cheap, versioned pulse-seed derivation"](horizon.md#2026-10-21-execution-cheap-versioned-pulse-seed-derivation).
+- **Memory:** structural memory reduction, phase-level measurements and
+  parallel-worker budgets remain in scope. The persisted-data placement
+  decision above is substantive design work, not a documentation chore.
 - **One output handler (maintainer, 2026-10-20):** replace the persistent and
   memory output handlers, which stage the same fill events, equity and
   diagnostics and are held equal by parity tests, with one handler behind a
@@ -84,6 +131,23 @@ themes; this list is not a within-release sequence:
   independent of execution-core consolidation and may go first. Source: lever 2
   of the horizon entry
   ["Where the package's weight is"](horizon.md#2026-10-12-architecture-where-the-packages-weight-is-and-the-four-levers-that-reduce-it).
+- **Typed P3-P5 execution batch (maintainer, 2026-10-21):** after the one-output-
+  handler work and execution-core consolidation, remove representation churn
+  across target-delta planning, fill and affordability resolution, accounting
+  application and event publication on the surviving availability path. Start
+  from a bounded comparison of no-fill pulse-heavy, sparse-rebalance and wide
+  all-fill workloads. Candidate changes are reuse of prepared indices, a
+  no-action fast path, one typed pulse batch, one cash/position delta
+  computation, prepared built-in cost resolution and direct typed sink writes.
+  The next macro plan must name the workstream and an end-to-end runtime plus
+  allocation/memory gate; an isolated microbenchmark is not sufficient.
+  Canonical economic output remains exact. An internal typed-R rewrite consumes
+  the existing [fold-phase obligations](rfc/README.md#fold-execution-phase-ownership)
+  without a new RFC. A persistent compiled carrier, fused P3-plus-P4 kernel,
+  new compiled call site or compiled-default change remains with the
+  [compiled-execution-envelope RFC](rfc/README.md#compiled-execution-envelope).
+  Source:
+  ["Typed P3-P5 execution batch"](horizon.md#2026-10-21-execution-typed-p3-p5-execution-batch).
 - **One result reader (maintainer, 2026-10-20):** after execution-core
   consolidation leaves one run shape, merge the three result-reader families
   (`R/backtest-results.R`, `R/availability-results.R`,
@@ -111,14 +175,37 @@ themes; this list is not a within-release sequence:
   and one point-in-time top-100 article. It publishes no provider rows and is
   release-adjacent promotion evidence, not a blocker for the core tag.
 
+### Deferred maintenance inventory
+
+Carry forward the plotting, print/result-reader and symbol-surface work, and
+every item explicitly deferred to this release in
+[macro-plan Section 5](ledgr_v0_2_2_spec_packet/macro_plan.md#5-explicit-non-goals)
+and the horizon. At packet preparation, reconcile each against the completed
+v0.2.2 tree and record one disposition: already completed, included,
+superseded with a named replacement, or explicitly deferred again by the
+maintainer with a reason and route. Inclusion in the inventory does not turn
+a design question into a cleanup ticket. Other v0.2.2 non-goals and parked
+horizon ideas are not automatically promoted.
+
+<a id="next-release-scope-dispositions"></a>
+
+| Target artifact | Addressed section/group | Disposition | Replacement or retained address |
+| --- | --- | --- | --- |
+| `ledgr_roadmap.md` | Next release: selection from themes | amended | Next release: dated goal, UX scope, carried commitments and maintenance inventory above |
+| `ledgr_roadmap.md` | Later direction: portfolio construction | amended | Next release owns bounded research-authoring gaps; Later direction retains broader portfolio construction |
+| `rfc/rfc_history_wave_v0_2_2_decisions.md` | Resume here: structural memory reduction and Session E budget work | unchanged | Resume here; memory remains a major next-release outcome and the WS3/WS4 budget decisions stay with Session E |
+
 The [horizon](horizon.md) retains non-binding questions and the
 [RFC pipeline](rfc/README.md) retains accepted obligations.
 
 ## Later direction
 
+The [2026-10-16 scope decision](#next-release-scope-dispositions) promotes only
+the bounded portfolio-authoring work named above from this later direction.
+
 Later releases may take exact equity quantity settlement, opt-in factor or
 prediction evidence (LFB-028), fitted-transform and ML lifecycle work,
-portfolio construction, external point-in-time regressors, liquidity and
+broader portfolio construction, external point-in-time regressors, liquidity and
 capacity, OMS/paper trading, and production observability. The accepted
 [OMS synthesis sequencing](rfc/rfc_ledgr_oms_seed_synthesis.md#2-roadmap-sequencing)
 still places a paper adapter before a live adapter and small-scale live trading
