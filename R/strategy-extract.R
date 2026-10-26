@@ -212,28 +212,11 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
     warnings = warnings
   )
 
-  schedule <- ledgr_strategy_schedule_from_json(
+  schedule <- ledgr_strategy_schedule_from_record(
     row$schedule_json[[1]],
-    row$schedule_hash[[1]]
+    row$schedule_hash[[1]],
+    row$config_json[[1]]
   )
-  stored_config <- ledgr_strategy_extract_parse_json(
-    row$config_json[[1]],
-    empty = list(),
-    label = "config_json"
-  )
-  config_schedule <- stored_config$strategy_schedule %||% NULL
-  if (!is.null(config_schedule)) {
-    config_schedule <- unclass(ledgr_schedule_validate(config_schedule))
-  }
-  if (!identical(
-    ledgr_strategy_schedule_hash(config_schedule),
-    ledgr_strategy_schedule_hash(schedule)
-  )) {
-    ledgr_schedule_abort(
-      "Stored strategy schedule disagrees with the run configuration.",
-      "ledgr_schedule_identity_mismatch"
-    )
-  }
   out$strategy_schedule <- schedule
 
   if (isTRUE(trust)) {

@@ -443,12 +443,14 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
 testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan stages", {
   counts <- new.env(parent = emptyenv())
   for (stage in c("p1", "p2", "p3", "p4", "p5")) counts[[stage]] <- 0L
+  counts$history_view <- 0L
   originals <- list(
     p1 = ledgr:::ledgr_fold_stage_observe_settle,
     p2 = ledgr:::ledgr_fold_stage_decide,
     p3 = ledgr:::ledgr_fold_stage_plan,
     p4 = ledgr:::ledgr_fold_stage_apply,
-    p5 = ledgr:::ledgr_fold_stage_commit
+    p5 = ledgr:::ledgr_fold_stage_commit,
+    history_reader = ledgr:::ledgr_history_substrate_fold_reader
   )
   count_stage <- function(name, fn) {
     force(name)
@@ -464,6 +466,15 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
     ledgr_fold_stage_plan = count_stage("p3", originals$p3),
     ledgr_fold_stage_apply = count_stage("p4", originals$p4),
     ledgr_fold_stage_commit = count_stage("p5", originals$p5),
+    ledgr_history_substrate_fold_reader = function(...) {
+      reader <- originals$history_reader(...)
+      original_view <- reader$view
+      reader$view <- function(...) {
+        counts$history_view <- counts$history_view + 1L
+        original_view(...)
+      }
+      reader
+    },
     .package = "ledgr"
   )
 
@@ -490,6 +501,7 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   testthat::expect_identical(counts$p5, info$pulse_count)
   testthat::expect_identical(counts$p2, info$decision_pulse_count)
   testthat::expect_identical(counts$p3, info$decision_pulse_count)
+  testthat::expect_identical(counts$history_view, info$decision_pulse_count)
   testthat::expect_identical(
     info$decision_pulse_count + info$scheduled_skip_count,
     info$pulse_count
@@ -499,7 +511,7 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
   diagnostics <- DBI::dbGetQuery(
     opened$con,
-    "SELECT instrument_id, stage, outcome, reason_code, reasons, detail_json FROM run_diagnostics WHERE run_id = ? AND reason_code = 'scheduled_skip' ORDER BY diagnostic_seq",
+    "SELECT ts_utc, instrument_id, stage, outcome, reason_code, reasons, detail_json FROM run_diagnostics WHERE run_id = ? AND reason_code = 'scheduled_skip' ORDER BY diagnostic_seq",
     params = list(run$run_id)
   )
   testthat::expect_identical(nrow(diagnostics), info$scheduled_skip_count)
@@ -508,6 +520,34 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   testthat::expect_identical(unique(diagnostics$outcome), "skipped")
   testthat::expect_identical(unique(diagnostics$reasons), "scheduled_skip")
   testthat::expect_identical(unique(diagnostics$detail_json), "{}")
+  all_decisions <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT ts_utc, reason_code FROM run_diagnostics WHERE run_id = ? AND stage = 'decision' ORDER BY diagnostic_seq",
+    params = list(run$run_id)
+  )
+  skipped_key <- vapply(
+    diagnostics$ts_utc,
+    ledgr:::ledgr_normalize_ts_utc,
+    character(1)
+  )
+  decision_key <- vapply(
+    all_decisions$ts_utc,
+    ledgr:::ledgr_normalize_ts_utc,
+    character(1)
+  )
+  at_skips <- all_decisions[
+    decision_key %in% skipped_key,
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_identical(nrow(at_skips), info$scheduled_skip_count)
+  testthat::expect_identical(unique(at_skips$reason_code), "scheduled_skip")
+  reconciliation <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT COUNT(*) AS n FROM run_diagnostics WHERE run_id = ? AND stage = 'reconciliation'",
+    params = list(run$run_id)
+  )
+  testthat::expect_identical(as.integer(reconciliation$n[[1L]]), info$pulse_count)
 
   states <- DBI::dbGetQuery(
     opened$con,
@@ -543,6 +583,22 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   opened_info <- ledgr_run_info(fixture$snapshot, opened_run$run_id)
   testthat::expect_identical(opened_info$decision_pulse_count, 0L)
   testthat::expect_identical(opened_info$scheduled_skip_count, opened_info$pulse_count)
+
+  old_interrupt <- getOption("ledgr.interrupt")
+  on.exit(options(ledgr.interrupt = old_interrupt), add = TRUE)
+  options(ledgr.interrupt = TRUE)
+  carried_partial <- ledgr_run(year_exp, run_id = "scheduled-zero-carried")
+  close(carried_partial)
+  options(ledgr.interrupt = FALSE)
+  carried_done <- ledgr_run(year_exp, run_id = "scheduled-zero-carried")
+  on.exit(close(carried_done), add = TRUE)
+  carried_info <- ledgr_run_info(fixture$snapshot, carried_done$run_id)
+  testthat::expect_identical(carried_info$status, "DONE")
+  testthat::expect_identical(carried_info$decision_pulse_count, 0L)
+  testthat::expect_identical(
+    carried_info$scheduled_skip_count,
+    opened_info$scheduled_skip_count
+  )
 })
 
 # ledgr-test-profile: review
@@ -614,21 +670,142 @@ testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses sched
     )
   }
   for (text in schedule_surfaces[c("info", "run", "summary")]) {
-    testthat::expect_true(any(grepl("Decision pulses:", text, fixed = TRUE)))
-    testthat::expect_true(any(grepl("scheduled skips:", text, fixed = TRUE)))
+    expected_counts <- sprintf(
+      "Decision pulses: %d; scheduled skips: %d",
+      info$decision_pulse_count,
+      info$scheduled_skip_count
+    )
+    testthat::expect_true(expected_counts %in% text)
   }
 
-  opened <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
-  DBI::dbExecute(
-    opened$con,
-    "UPDATE run_provenance SET schedule_hash = 'wrong' WHERE run_id = ?",
-    params = list(run$run_id)
+  mutate_store <- function(sql, params = list()) {
+    store <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
+    on.exit(ledgr:::ledgr_run_store_close(store))
+    DBI::dbExecute(store$con, sql, params = c(params, list(run$run_id)))
+    invisible(NULL)
+  }
+  restore_provenance <- function() {
+    mutate_store(
+      "UPDATE run_provenance SET schedule_json = ?, schedule_hash = ? WHERE run_id = ?",
+      list(provenance$schedule_json[[1L]], provenance$schedule_hash[[1L]])
+    )
+    mutate_store(
+      "UPDATE run_telemetry SET decision_pulse_count = ?, scheduled_skip_count = ? WHERE run_id = ?",
+      list(telemetry$decision_pulse_count[[1L]], telemetry$scheduled_skip_count[[1L]])
+    )
+  }
+  expect_readers_refuse <- function() {
+    testthat::expect_error(
+      ledgr_run_info(fixture$snapshot, run$run_id),
+      class = "ledgr_schedule_identity_mismatch"
+    )
+    testthat::expect_error(
+      ledgr_run_open(fixture$snapshot, run$run_id),
+      class = "ledgr_schedule_identity_mismatch"
+    )
+    testthat::expect_error(
+      ledgr_run_strategy(fixture$snapshot, run$run_id),
+      class = "ledgr_schedule_identity_mismatch"
+    )
+    testthat::expect_error(
+      print(run),
+      class = "ledgr_schedule_identity_mismatch"
+    )
+    testthat::expect_error(
+      summary(run),
+      class = "ledgr_schedule_identity_mismatch"
+    )
+  }
+
+  mutate_store(
+    "UPDATE run_provenance SET schedule_json = NULL WHERE run_id = ?"
   )
-  ledgr:::ledgr_run_store_close(opened)
+  expect_readers_refuse()
+  restore_provenance()
+
+  mutate_store(
+    "UPDATE run_provenance SET schedule_hash = NULL WHERE run_id = ?"
+  )
+  expect_readers_refuse()
+  restore_provenance()
+
+  mutate_store(
+    "UPDATE run_provenance SET schedule_json = '{' WHERE run_id = ?"
+  )
+  expect_readers_refuse()
+  restore_provenance()
+
+  forged <- unclass(ledgr_schedule_month_start())
+  mutate_store(
+    "UPDATE run_provenance SET schedule_json = ?, schedule_hash = ? WHERE run_id = ?",
+    list(
+      ledgr:::ledgr_strategy_schedule_json(forged),
+      ledgr:::ledgr_strategy_schedule_hash(forged)
+    )
+  )
+  expect_readers_refuse()
+  restore_provenance()
+
+  mutate_store(
+    "UPDATE run_telemetry SET decision_pulse_count = NULL WHERE run_id = ?"
+  )
   testthat::expect_error(
-    ledgr_run_strategy(fixture$snapshot, run$run_id),
+    ledgr_run_info(fixture$snapshot, run$run_id),
     class = "ledgr_schedule_identity_mismatch"
   )
+  testthat::expect_error(
+    ledgr_run_open(fixture$snapshot, run$run_id),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  testthat::expect_error(
+    print(run),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  testthat::expect_error(
+    summary(run),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  restore_provenance()
+
+  mutate_store(
+    "UPDATE run_telemetry SET scheduled_skip_count = NULL WHERE run_id = ?"
+  )
+  testthat::expect_error(
+    ledgr_run_info(fixture$snapshot, run$run_id),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  restore_provenance()
+
+  mutate_store("UPDATE runs SET status = 'RUNNING' WHERE run_id = ?")
+  finalized <- ledgr_run(fixture$exp, run_id = run$run_id)
+  on.exit(close(finalized), add = TRUE)
+  finalized_info <- ledgr_run_info(fixture$snapshot, run$run_id)
+  testthat::expect_identical(
+    finalized_info$decision_pulse_count,
+    as.integer(telemetry$decision_pulse_count[[1L]])
+  )
+  testthat::expect_identical(
+    finalized_info$scheduled_skip_count,
+    as.integer(telemetry$scheduled_skip_count[[1L]])
+  )
+
+  plain <- ws42_history_fixture(
+    strategy = function(ctx, params) ctx$hold(),
+    features = list()
+  )
+  on.exit(ledgr_snapshot_close(plain$snapshot), add = TRUE)
+  plain_run <- ledgr_run(plain$exp, run_id = "unscheduled-print-no-schedule-read")
+  on.exit(close(plain_run), add = TRUE)
+  schedule_reads <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_run_schedule_evidence = function(...) {
+      schedule_reads <<- schedule_reads + 1L
+      stop("unscheduled print read schedule evidence")
+    },
+    .package = "ledgr"
+  )
+  invisible(capture.output(print(plain_run)))
+  testthat::expect_identical(schedule_reads, 0L)
 })
 
 # ledgr-test-profile: review
@@ -687,7 +864,12 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     },
     ledgr_schedule_week_start()
   )
-  resumed <- ws42_history_fixture(strategy = state_strategy, features = list())
+  resumed <- ws42_history_fixture(
+    strategy = state_strategy,
+    features = list(),
+    opening = opening,
+    dividend = c(2L, 3L)
+  )
   on.exit(ledgr_snapshot_close(resumed$snapshot), add = TRUE)
   reference <- ledgr_run(resumed$exp, run_id = "schedule-resume-reference")
   on.exit(close(reference), add = TRUE)
@@ -717,4 +899,31 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     fetch("strategy_state", reference$run_id, "ts_utc"),
     fetch("strategy_state", completed$run_id, "ts_utc")
   )
+  fetch_events <- function(run_id) {
+    DBI::dbGetQuery(
+      opened$con,
+      paste(
+        "SELECT event_id, run_id, event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json",
+        "FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
+      ),
+      params = list(run_id)
+    )
+  }
+  reference_events <- fetch_events(reference$run_id)
+  completed_events <- fetch_events(completed$run_id)
+  economic_columns <- setdiff(names(reference_events), c("event_id", "run_id"))
+  testthat::expect_identical(
+    reference_events[economic_columns],
+    completed_events[economic_columns]
+  )
+  reference_replay <- ledgr:::ledgr_replay_accounting_events(
+    ledgr:::ledgr_prepare_accounting_events(reference_events, "AAA"),
+    initial_cash = 1000
+  )
+  completed_replay <- ledgr:::ledgr_replay_accounting_events(
+    ledgr:::ledgr_prepare_accounting_events(completed_events, "AAA"),
+    initial_cash = 1000
+  )
+  testthat::expect_identical(reference_replay$positions, completed_replay$positions)
+  testthat::expect_identical(reference_replay$lot_state, completed_replay$lot_state)
 })

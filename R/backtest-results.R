@@ -634,24 +634,30 @@ ledgr_run_schedule_evidence <- function(con, run_id) {
   row <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT p.schedule_json, p.schedule_hash,",
+      "SELECT p.schedule_json, p.schedule_hash, r.config_json,",
       "t.decision_pulse_count, t.scheduled_skip_count",
-      "FROM run_provenance p",
-      "LEFT JOIN run_telemetry t ON t.run_id = p.run_id",
-      "WHERE p.run_id = ?"
+      "FROM runs r",
+      "LEFT JOIN run_provenance p ON p.run_id = r.run_id",
+      "LEFT JOIN run_telemetry t ON t.run_id = r.run_id",
+      "WHERE r.run_id = ?"
     ),
     params = list(run_id)
   )
   if (nrow(row) != 1L) return(NULL)
-  declaration <- ledgr_strategy_schedule_from_json(
+  declaration <- ledgr_strategy_schedule_from_record(
     row$schedule_json[[1]],
-    row$schedule_hash[[1]]
+    row$schedule_hash[[1]],
+    row$config_json[[1]]
   )
   if (is.null(declaration)) return(NULL)
+  counts <- ledgr_strategy_schedule_counts(
+    row$decision_pulse_count[[1]],
+    row$scheduled_skip_count[[1]]
+  )
   list(
     label = ledgr_strategy_schedule_label(declaration),
-    decision_pulse_count = as.integer(row$decision_pulse_count[[1]]),
-    scheduled_skip_count = as.integer(row$scheduled_skip_count[[1]])
+    decision_pulse_count = counts$decision_pulse_count,
+    scheduled_skip_count = counts$scheduled_skip_count
   )
 }
 
@@ -698,7 +704,6 @@ ledgr_print_run_schedule_evidence <- function(evidence, indent = "") {
 #' print(bt)
 #' close(bt)
 #' @export
-
 print.ledgr_backtest <- function(x, ...) {
   if (!inherits(x, "ledgr_backtest")) {
     rlang::abort("`x` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
@@ -716,7 +721,11 @@ print.ledgr_backtest <- function(x, ...) {
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
   valuation <- ledgr_valuation_summary(x, con = con)
   completion <- ledgr_run_completion_info(con, x$run_id)
-  schedule_evidence <- ledgr_run_schedule_evidence(con, x$run_id)
+  schedule_evidence <- if (!is.null(cfg$strategy_schedule)) {
+    ledgr_run_schedule_evidence(con, x$run_id)
+  } else {
+    NULL
+  }
   prefix_only <- ledgr_summary_prefix_only(completion)
   period <- ledgr_result_period_label(
     headline$start_ts_utc,

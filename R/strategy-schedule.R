@@ -72,9 +72,13 @@ ledgr_schedule_fixed_types <- c(
   "month_start", "month_end", "week_start", "quarter_start", "year_start"
 )
 
-ledgr_schedule_abort <- function(message, child = NULL) {
+ledgr_schedule_abort <- function(message, child = NULL, parent = NULL) {
   classes <- c(child, "ledgr_invalid_strategy_schedule")
-  rlang::abort(message, class = classes[!is.na(classes) & nzchar(classes)])
+  rlang::abort(
+    message,
+    class = classes[!is.na(classes) & nzchar(classes)],
+    parent = parent
+  )
 }
 
 ledgr_schedule_rule <- function(type_id, args = list()) {
@@ -169,21 +173,100 @@ ledgr_strategy_schedule_label <- function(declaration) {
 }
 
 ledgr_strategy_schedule_from_json <- function(json, hash = NULL) {
-  if (is.null(json) || length(json) != 1L || is.na(json) || !nzchar(json)) {
+  json_missing <- is.null(json) || length(json) != 1L || is.na(json) || !nzchar(json)
+  hash_missing <- is.null(hash) || length(hash) != 1L || is.na(hash) || !nzchar(hash)
+  if (json_missing && hash_missing) {
     return(NULL)
   }
-  declaration <- ledgr_json_read_config(json)
-  declaration <- unclass(ledgr_schedule_validate(declaration))
+  if (json_missing || hash_missing || !is.character(json) || !is.character(hash)) {
+    ledgr_schedule_abort(
+      "Stored strategy schedule JSON and hash must either both be present or both be absent.",
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  declaration <- tryCatch(
+    ledgr_json_read_config(json),
+    error = function(e) {
+      ledgr_schedule_abort(
+        "Stored strategy schedule JSON could not be parsed.",
+        "ledgr_schedule_identity_mismatch",
+        parent = e
+      )
+    }
+  )
+  declaration <- tryCatch(
+    unclass(ledgr_schedule_validate(declaration)),
+    error = function(e) {
+      ledgr_schedule_abort(
+        "Stored strategy schedule declaration is invalid.",
+        "ledgr_schedule_identity_mismatch",
+        parent = e
+      )
+    }
+  )
   computed <- ledgr_strategy_schedule_hash(declaration)
-  if (!is.null(hash) &&
-      (!is.character(hash) || length(hash) != 1L || is.na(hash) ||
-       !nzchar(hash) || !identical(computed, hash))) {
+  if (!identical(computed, hash)) {
     ledgr_schedule_abort(
       "Stored strategy schedule does not match its recorded hash.",
       "ledgr_schedule_identity_mismatch"
     )
   }
   declaration
+}
+
+ledgr_strategy_schedule_from_record <- function(json, hash, config_json) {
+  schedule <- ledgr_strategy_schedule_from_json(json, hash)
+  stored_config <- tryCatch(
+    ledgr_json_read_config(config_json),
+    error = function(e) {
+      ledgr_schedule_abort(
+        "Stored run configuration could not be parsed while verifying its strategy schedule.",
+        "ledgr_schedule_identity_mismatch",
+        parent = e
+      )
+    }
+  )
+  config_schedule <- stored_config$strategy_schedule %||% NULL
+  if (!is.null(config_schedule)) {
+    config_schedule <- tryCatch(
+      unclass(ledgr_schedule_validate(config_schedule)),
+      error = function(e) {
+        ledgr_schedule_abort(
+          "Stored run configuration contains an invalid strategy schedule.",
+          "ledgr_schedule_identity_mismatch",
+          parent = e
+        )
+      }
+    )
+  }
+  if (!identical(
+    ledgr_strategy_schedule_hash(config_schedule),
+    ledgr_strategy_schedule_hash(schedule)
+  )) {
+    ledgr_schedule_abort(
+      "Stored strategy schedule disagrees with the run configuration.",
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  schedule
+}
+
+ledgr_strategy_schedule_counts <- function(decision_pulse_count, scheduled_skip_count) {
+  values <- list(
+    decision_pulse_count = decision_pulse_count,
+    scheduled_skip_count = scheduled_skip_count
+  )
+  valid <- vapply(values, function(value) {
+    is.numeric(value) && length(value) == 1L && !is.na(value) &&
+      is.finite(value) && value >= 0 && value == floor(value)
+  }, logical(1))
+  if (!all(valid)) {
+    ledgr_schedule_abort(
+      "Stored strategy schedule counts are missing or invalid.",
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
+  lapply(values, as.integer)
 }
 
 ledgr_strategy_schedule_inner <- function(strategy) {

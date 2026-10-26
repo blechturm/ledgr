@@ -14,8 +14,10 @@
 - Experiment-store schema 124 persists the canonical schedule declaration and
   hash together with decision-pulse and scheduled-skip counts. Experiment and
   run output disclose the schedule, while run output and summaries disclose
-  the counts. Schema-123 stores are older and refuse; rebuild them with the
-  current package.
+  the counts. `ledgr_run_list()` exposes the physical `schedule_json`,
+  `schedule_hash`, `decision_pulse_count`, and `scheduled_skip_count` columns;
+  run information verifies them against the canonical configuration.
+  Schema-123 stores are older and refuse; rebuild them with the current package.
 
 ## Cross-asset correctness and honest defaults
 

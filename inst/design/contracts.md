@@ -901,6 +901,12 @@ Accepted change pending:
 <a id="contract-availability-disclosure"></a>
 ### Plan And Result Disclosure
 
+- A scheduled experiment plan exposes the canonical declaration as
+  `strategy_schedule`. Experiment and plan printing use exactly
+  `Strategy schedule: <label>`. Scheduled run information, backtest printing
+  and summary printing use the same line and additionally print exactly
+  `Decision pulses: <n>; scheduled skips: <n>`. Unscheduled result printing
+  omits both lines and does not read schedule evidence from the store.
 - `ledgr_experiment_plan()` is read-only disclosure of effective availability,
   universe, valuation, and fact-family checks. It distinguishes disabled,
   omitted, declared, and assumption-backed families without executing a
@@ -1347,6 +1353,14 @@ Accepted change pending:
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. In a current store, row absence for unfinished telemetry is
   missing/`NA`, not corruption.
+- The current run inventory includes physical `schedule_json`,
+  `schedule_hash`, `decision_pulse_count`, and `scheduled_skip_count` columns.
+  `ledgr_run_info()` additionally exposes the verified canonical declaration
+  as `strategy_schedule`. For a scheduled terminal run, readers require both
+  provenance fields, exact agreement with `config_json`, and finite
+  non-negative integer counts; missing, malformed or inconsistent evidence
+  refuses with `ledgr_schedule_identity_mismatch` rather than hiding the
+  schedule or printing unknown counts.
 - `ledgr_run_list()` appends the recorded completion projection in this order:
   `completion_evidence_available`, `completion_status`,
   `requested_start_utc`, `requested_end_utc`, `achieved_start_utc`,

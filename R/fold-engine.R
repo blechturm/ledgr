@@ -634,7 +634,7 @@ ledgr_fold_scheduled_skip_decision <- function(fold_state, observation) {
   list(
     strategy_targets = positions,
     targets = positions,
-    state_update = fold_state$state_prev,
+    state_update = NULL,
     sample_start = observation$sample_start,
     t_ctx = 0,
     t_strat = 0,
@@ -2069,8 +2069,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     state = ledgr_fold_state_value(fold_state),
     state_prev = fold_state$state_prev,
     next_event_seq = fold_state$event_seq,
-    equity_facts = equity_fact_accumulator$collect(),
-    decision_pulse_count = as.integer(execution$decision_pulse_count %||% length(pulses_posix)),
-    scheduled_skip_count = as.integer(execution$scheduled_skip_count %||% 0L)
+    equity_facts = equity_fact_accumulator$collect()
   )
 }

@@ -1244,6 +1244,22 @@ ledgr_run_fold_impl <- function(config,
   run_feature_matrix <- NULL
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
+  schedule_params <- if (identical(cfg$strategy$id, "functional")) {
+    cfg$strategy_params %||% list()
+  } else {
+    cfg$strategy$params %||% list()
+  }
+  schedule <- ledgr_compile_strategy_schedule(
+    declaration = cfg$strategy_schedule,
+    strategy_params = schedule_params,
+    sessions = availability_sessions,
+    pulses_posix = pulses_posix
+  )
+  output_handler$set_schedule_counts(
+    schedule$decision_pulse_count,
+    schedule$scheduled_skip_count
+  )
+
   if (isTRUE(terminal_recovery)) {
     recovery_equity <- ledgr_run_terminal_recovery_equity(
       con = con,
@@ -1294,12 +1310,6 @@ ledgr_run_fold_impl <- function(config,
   }
   strategy_params <- strategy$params
   strategy_call_signature <- strategy$signature
-  schedule <- ledgr_compile_strategy_schedule(
-    declaration = cfg$strategy_schedule,
-    strategy_params = strategy_params,
-    sessions = availability_sessions,
-    pulses_posix = pulses_posix
-  )
   if (!is.null(schedule$decision_due) &&
       identical(schedule$decision_pulse_count, 0L) &&
       !any(as.numeric(state_env$current$positions) != 0)) {
@@ -1308,10 +1318,6 @@ ledgr_run_fold_impl <- function(config,
       "ledgr_schedule_no_decision"
     )
   }
-  output_handler$set_schedule_counts(
-    schedule$decision_pulse_count,
-    schedule$scheduled_skip_count
-  )
   strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
   ledgr_run_resume_preflight(is_resume, strategy_preflight)
   output_handler$record_run_status("RUNNING", NA_character_)

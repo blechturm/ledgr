@@ -622,10 +622,18 @@ ledgr_run_info_from_row <- function(row, db_path) {
   info$execution_timing_version <- timing$execution_timing_version
   info$execution_timing_convention <- timing$execution_timing_convention
   info$execution_timing_source <- timing$execution_timing_source
-  info$strategy_schedule <- ledgr_strategy_schedule_from_json(
+  info$strategy_schedule <- ledgr_strategy_schedule_from_record(
     info$schedule_json,
-    info$schedule_hash
+    info$schedule_hash,
+    info$config_json
   )
+  if (!is.null(info$strategy_schedule)) {
+    counts <- ledgr_strategy_schedule_counts(
+      info$decision_pulse_count,
+      info$scheduled_skip_count
+    )
+    info[names(counts)] <- counts
+  }
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
     info[c("elapsed_sec", "pulse_count")],
@@ -1103,7 +1111,14 @@ ledgr_run_open <- function(snapshot, run_id) {
 
   row <- DBI::dbGetQuery(
     opened$con,
-    "SELECT run_id, status, config_json FROM runs WHERE run_id = ? AND snapshot_id = ?",
+    paste(
+      "SELECT r.run_id, r.status, r.config_json, p.schedule_json, p.schedule_hash,",
+      "t.decision_pulse_count, t.scheduled_skip_count",
+      "FROM runs r",
+      "LEFT JOIN run_provenance p ON p.run_id = r.run_id",
+      "LEFT JOIN run_telemetry t ON t.run_id = r.run_id",
+      "WHERE r.run_id = ? AND r.snapshot_id = ?"
+    ),
     params = list(run_id, snapshot_id)
   )
   if (nrow(row) != 1L) {
@@ -1127,6 +1142,17 @@ ledgr_run_open <- function(snapshot, run_id) {
       rlang::abort(sprintf("Run '%s' has invalid config_json and cannot be reopened.", run_id), class = "ledgr_invalid_run", parent = e)
     }
   )
+  stored_schedule <- ledgr_strategy_schedule_from_record(
+    row$schedule_json[[1]],
+    row$schedule_hash[[1]],
+    config_json
+  )
+  if (!is.null(stored_schedule)) {
+    ledgr_strategy_schedule_counts(
+      row$decision_pulse_count[[1]],
+      row$scheduled_skip_count[[1]]
+    )
+  }
   cfg$db_path <- db_path
   if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
     cfg$alias_map_order <- character()
