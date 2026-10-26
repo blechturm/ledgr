@@ -116,3 +116,25 @@ preflight, sweep, documentation-contract and test-control-plane suites pass.
 The codebase census runs and the fold-phase checker prints
 `LEDGR_FOLD_PHASE_CONTRACT_OK`. `git diff --check` is clean. The independent
 Type 1 close review remains the workstream acceptance gate.
+
+## Close-review correction
+
+The first independent review returned `PASS_AFTER_PATCHES`. Correction
+`791f6e38` removes the two explicit `NULL` schedule fields from unscheduled
+live candidates, makes declaration names and civil-date text exact, classifies
+two distinct pulses assigned to one session as unsupported intraday input, and
+strengthens the parent-axis and identity detectors.
+
+Five disposable mutations were detected by the registered schedule suite:
+
+- truncating the parent axis to the visible pulse range failed five literal
+  boundary and date assertions;
+- restoring explicit `NULL` candidate fields failed two assertions;
+- hashing only the declaration type failed both argument-identity assertions;
+- accepting an extra declaration field failed the malformed-input assertion;
+- removing distinct same-session pulse classification failed the typed
+  intraday assertion.
+
+The corrected focused schedule, sweep, config, execution-spec, preflight,
+export and control-plane suites pass. The independent focused re-review remains
+the acceptance gate.
