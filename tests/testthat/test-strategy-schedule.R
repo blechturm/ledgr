@@ -19,6 +19,7 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
     ledgr_schedule_month_start(), ledgr_schedule_month_end(),
     ledgr_schedule_week_start(), ledgr_schedule_quarter_start(),
     ledgr_schedule_year_start(),
+    ledgr_schedule_weekday("wednesday"), ledgr_schedule_month_day(15),
     ledgr_schedule_dates(as.Date(c("2024-02-03", "2024-02-03"))),
     ledgr_schedule_from_param("when")
   )
@@ -231,6 +232,220 @@ testthat::test_that("[LTB-0502] compiler binds parent-axis boundary semantics", 
   compiler_source <- paste(deparse(body(ledgr:::ledgr_compile_strategy_schedule)), collapse = "\n")
   testthat::expect_false(grepl("bars", compiler_source, fixed = TRUE))
   testthat::expect_false(grepl("format.POSIX", compiler_source, fixed = TRUE))
+  testthat::expect_false(grepl("for (", compiler_source, fixed = TRUE))
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0510] common calendar schedules stay inside their period", {
+  sessions_from_dates <- function(dates) {
+    data.frame(
+      session_date = dates,
+      status = "open",
+      session_close = as.POSIXct(paste(dates, "21:00:00"), tz = "UTC"),
+      stringsAsFactors = FALSE
+    )
+  }
+  due_dates <- function(rule, dates, pulse_dates = dates) {
+    sessions <- sessions_from_dates(dates)
+    pulse_index <- match(pulse_dates, dates)
+    compiled <- ledgr:::ledgr_compile_strategy_schedule(
+      unclass(rule), list(), sessions, sessions$session_close[pulse_index]
+    )
+    as.Date(format(pulse_dates[compiled$decision_due], "%Y-%m-%d"))
+  }
+
+  seven_day_dates <- seq(as.Date("2024-01-01"), as.Date("2024-01-07"), by = "day")
+  for (index in seq_along(ledgr:::ledgr_schedule_weekday_tokens)) {
+    token <- ledgr:::ledgr_schedule_weekday_tokens[[index]]
+    testthat::expect_identical(
+      due_dates(ledgr_schedule_weekday(token), seven_day_dates),
+      as.Date(format(seven_day_dates[index], "%Y-%m-%d")),
+      info = token
+    )
+  }
+
+  weekday_dates <- as.Date(c(
+    "2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04",
+    "2024-01-08", "2024-01-09", "2024-01-10", "2024-01-11"
+  ))
+  testthat::expect_identical(
+    due_dates(ledgr_schedule_weekday("friday"), weekday_dates),
+    as.Date(character())
+  )
+  testthat::expect_identical(
+    due_dates(ledgr_schedule_weekday("monday"), weekday_dates),
+    as.Date(c("2024-01-01", "2024-01-08"))
+  )
+  testthat::expect_identical(
+    due_dates(
+      ledgr_schedule_weekday("wednesday"),
+      as.Date(c("2024-01-01", "2024-01-02", "2024-01-04", "2024-01-05"))
+    ),
+    as.Date("2024-01-04")
+  )
+  testthat::expect_identical(
+    due_dates(
+      ledgr_schedule_weekday("wednesday"),
+      as.Date(c("2024-01-04", "2024-01-05", "2024-01-08", "2024-01-10"))
+    ),
+    as.Date("2024-01-10")
+  )
+  testthat::expect_identical(
+    due_dates(
+      ledgr_schedule_weekday("wednesday"),
+      as.Date(c("2024-01-03", "2024-01-04", "2024-01-08", "2024-01-10"))
+    ),
+    as.Date(c("2024-01-03", "2024-01-10"))
+  )
+  long_weekdays <- seq(as.Date("2024-01-01"), as.Date("2024-01-18"), by = "day")
+  long_weekdays <- long_weekdays[as.integer(format(long_weekdays, "%u")) <= 5L]
+  testthat::expect_identical(
+    due_dates(
+      ledgr_schedule_weekday("wednesday"),
+      long_weekdays,
+      long_weekdays[long_weekdays >= as.Date("2024-01-11")]
+    ),
+    as.Date("2024-01-17")
+  )
+
+  calendar_dates <- seq(as.Date("2024-01-01"), as.Date("2024-04-30"), by = "day")
+  calendar_dates <- calendar_dates[as.integer(format(calendar_dates, "%u")) <= 5L]
+  month_cases <- list(
+    `1` = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01")),
+    `15` = as.Date(c("2024-01-15", "2024-02-15", "2024-03-15", "2024-04-15")),
+    `28` = as.Date(c("2024-01-29", "2024-02-28", "2024-03-28", "2024-04-29")),
+    `29` = as.Date(c("2024-01-29", "2024-02-29", "2024-03-29", "2024-04-29")),
+    `30` = as.Date(c("2024-01-30", "2024-04-30")),
+    `31` = as.Date("2024-01-31")
+  )
+  for (day in names(month_cases)) {
+    testthat::expect_identical(
+      due_dates(ledgr_schedule_month_day(as.integer(day)), calendar_dates),
+      month_cases[[day]],
+      info = day
+    )
+  }
+  testthat::expect_identical(
+    due_dates(
+      ledgr_schedule_month_day(15),
+      calendar_dates[calendar_dates >= as.Date("2024-01-16")]
+    )[1L],
+    as.Date("2024-02-15")
+  )
+  testthat::expect_identical(
+    due_dates(
+      ledgr_schedule_month_day(15),
+      calendar_dates[calendar_dates >= as.Date("2024-01-15")]
+    )[1L],
+    as.Date("2024-01-15")
+  )
+  january <- calendar_dates[format(calendar_dates, "%Y-%m") == "2024-01"]
+  testthat::expect_identical(
+    due_dates(ledgr_schedule_month_day(1), january),
+    as.Date("2024-01-01")
+  )
+  testthat::expect_identical(
+    due_dates(ledgr_schedule_month_start(), january),
+    as.Date(character())
+  )
+
+  testthat::expect_identical(
+    unclass(ledgr_schedule_month_day(15)),
+    unclass(ledgr_schedule_month_day(15L))
+  )
+  round_trip <- ledgr:::ledgr_json_read_nested(as.character(canonical_json(
+    unclass(ledgr_schedule_month_day(15))
+  )))
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(round_trip)),
+    unclass(ledgr_schedule_month_day(15L))
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_strategy_schedule_label(ledgr_schedule_weekday("wednesday")),
+    "wednesday"
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_strategy_schedule_label(ledgr_schedule_month_day(15)),
+    "month day 15"
+  )
+
+  for (bad in list("Wednesday", "funday", NA_character_, c("monday", "tuesday"))) {
+    testthat::expect_error(
+      ledgr_schedule_weekday(bad),
+      "exactly one of: monday, tuesday, wednesday, thursday, friday, saturday, sunday",
+      class = "ledgr_invalid_strategy_schedule"
+    )
+  }
+  for (bad in list(0, 32, 1.5, NA_real_, "15", c(15, 16))) {
+    testthat::expect_error(
+      ledgr_schedule_month_day(bad),
+      "one whole number from 1 through 31",
+      class = "ledgr_invalid_strategy_schedule"
+    )
+  }
+  testthat::expect_error(
+    ledgr:::ledgr_schedule_validate(list(
+      type_id = "weekday", version = 1L, args = list(day = "Wednesday")
+    )),
+    class = "ledgr_invalid_strategy_schedule"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_schedule_validate(list(
+      type_id = "month_day", version = 1L, args = list(day = 32)
+    )),
+    class = "ledgr_invalid_strategy_schedule"
+  )
+
+  old_rules <- list(
+    month_start = ledgr_schedule_month_start(),
+    month_end = ledgr_schedule_month_end(),
+    week_start = ledgr_schedule_week_start(),
+    quarter_start = ledgr_schedule_quarter_start(),
+    year_start = ledgr_schedule_year_start(),
+    dates = ledgr_schedule_dates(as.Date("2024-01-05")),
+    param = ledgr_schedule_from_param("when")
+  )
+  old_json <- c(
+    month_start = '{"args":[],"type_id":"month_start","version":1}',
+    month_end = '{"args":[],"type_id":"month_end","version":1}',
+    week_start = '{"args":[],"type_id":"week_start","version":1}',
+    quarter_start = '{"args":[],"type_id":"quarter_start","version":1}',
+    year_start = '{"args":[],"type_id":"year_start","version":1}',
+    dates = '{"args":{"dates":"2024-01-05"},"type_id":"dates","version":1}',
+    param = '{"args":{"name":"when"},"type_id":"param","version":1}'
+  )
+  old_hashes <- c(
+    month_start = "2764ab3064839f43dc7bff55101ce2da5bef1b7aba95344b8a647ee8c795c432",
+    month_end = "06b70481ba748ef9f0dac2c5d47d7bcf6195894474de8144aa87578aace43504",
+    week_start = "223c74557f761049094c7dc391327c134b68c218b43b41a64c518c932075a55e",
+    quarter_start = "93df3cb4e876a4706a75cd23ad91903c553771cdf31c26e05aedc0de1fe659e8",
+    year_start = "2df9e2d9bf595db35a967cb902bacf45b008f72302e4a3c297aad7d1a409c661",
+    dates = "29701d4a33267c968d9caf36dd5096f072cff76c11ee643692895c53d7f516cb",
+    param = "fce98ddc8161d67402fff61e67b7863f774eb46da56da510f9dc0ed0dcec6bfb"
+  )
+  testthat::expect_identical(
+    vapply(old_rules, function(rule) as.character(canonical_json(unclass(rule))), character(1)),
+    old_json
+  )
+  testthat::expect_identical(
+    vapply(old_rules, ledgr:::ledgr_strategy_schedule_hash, character(1)),
+    old_hashes
+  )
+  testthat::expect_false(identical(
+    ledgr:::ledgr_strategy_schedule_hash(ledgr_schedule_weekday("monday")),
+    ledgr:::ledgr_strategy_schedule_hash(ledgr_schedule_weekday("tuesday"))
+  ))
+  testthat::expect_false(identical(
+    ledgr:::ledgr_strategy_schedule_hash(ledgr_schedule_month_day(15)),
+    ledgr:::ledgr_strategy_schedule_hash(ledgr_schedule_month_day(16))
+  ))
+
+  compiler_source <- paste(
+    deparse(body(ledgr:::ledgr_compile_strategy_schedule)),
+    collapse = "\n"
+  )
+  testthat::expect_false(grepl("grepl(\"_start$\"", compiler_source, fixed = TRUE))
+  testthat::expect_false(grepl("weekdays(", compiler_source, fixed = TRUE))
   testthat::expect_false(grepl("for (", compiler_source, fixed = TRUE))
 })
 
@@ -1412,5 +1627,116 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     "Saved sweep candidate provenance version ledgr_provenance_v1 is not current; required ledgr_provenance_v2.",
     class = "ledgr_sweep_schema_incompatible",
     fixed = TRUE
+  )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0511] common calendar schedules use generic orchestration carriers", {
+  inner <- function(ctx, params) {
+    target <- ctx$flat()
+    target["AAA"] <- params$qty
+    target
+  }
+  weekday_strategy <- ledgr_strategy_schedule(
+    inner,
+    ledgr_schedule_weekday("monday")
+  )
+  fixture <- ws42_history_fixture(
+    strategy = weekday_strategy,
+    features = list(),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 1),
+      cost_basis = c(AAA = 11)
+    )
+  )
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  grid <- ledgr_grid_named(one = list(strategy = list(qty = 2)))
+
+  run <- ledgr_run(fixture$exp, params = list(qty = 2), seed = 3115L)
+  on.exit(close(run), add = TRUE)
+  sweep <- ledgr_sweep(fixture$exp, grid, seed = 3115L, workers = 2L)
+  candidate <- ledgr_candidate(sweep, "one")
+  run_info <- ledgr_run_info(fixture$snapshot, run$run_id)
+  testthat::expect_identical(run_info$strategy_schedule$type_id, "weekday")
+  testthat::expect_identical(run_info$strategy_schedule$args$day, "monday")
+  testthat::expect_identical(
+    candidate$provenance$resolved_schedule,
+    run_info$strategy_schedule
+  )
+  testthat::expect_identical(
+    candidate$provenance$resolved_schedule_hash,
+    run_info$schedule_hash
+  )
+  run_equity <- ledgr_results(run, "equity")
+  testthat::expect_equal(
+    sweep$final_equity[[1L]],
+    run_equity$equity[[nrow(run_equity)]]
+  )
+
+  ledgr_sweep_save(sweep, fixture$snapshot, sweep_id = "calendar-sweep")
+  reopened <- ledgr_sweep_open(fixture$snapshot, "calendar-sweep")
+  reopened_candidate <- ledgr_candidate(reopened, "one")
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(
+      reopened_candidate$provenance$strategy_schedule
+    )),
+    unclass(ledgr:::ledgr_schedule_validate(
+      candidate$provenance$strategy_schedule
+    ))
+  )
+  reopened_key <- ledgr_candidate_reproduction_key(reopened_candidate)
+  in_memory_key <- ledgr_candidate_reproduction_key(candidate)
+  testthat::expect_identical(
+    reopened_key$strategy_schedule$schedule_hash,
+    in_memory_key$strategy_schedule$schedule_hash
+  )
+  testthat::expect_identical(
+    reopened_key$strategy_schedule$resolved_schedule_hash,
+    in_memory_key$strategy_schedule$resolved_schedule_hash
+  )
+  promoted <- testthat::expect_no_warning(ledgr_promote(
+    fixture$exp,
+    reopened_candidate,
+    "calendar-promoted"
+  ))
+  on.exit(close(promoted), add = TRUE)
+  testthat::expect_identical(
+    ledgr_run_info(fixture$snapshot, promoted$run_id)$strategy_schedule,
+    run_info$strategy_schedule
+  )
+
+  month_day_exp <- fixture$exp
+  month_day_exp$strategy <- ledgr_strategy_schedule(
+    inner,
+    ledgr_schedule_month_day(4L)
+  )
+  folds <- ledgr:::ledgr_fold_list(
+    list(ledgr_fold(
+      fixture$days[[1L]], fixture$days[[4L]],
+      fixture$days[[5L]], fixture$days[[8L]], fold_seq = 1L
+    )),
+    constructor = list(type_id = "explicit")
+  )
+  walk <- suppressWarnings(ledgr_walk_forward(
+    month_day_exp,
+    grid,
+    folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"),
+    seed = 3115L
+  ))
+  on.exit(lapply(walk$test_runs, close), add = TRUE)
+  walk_candidate <- ledgr_candidate(walk, fold_seq = 1L)
+  testthat::expect_identical(
+    walk_candidate$provenance$resolved_schedule$type_id,
+    "month_day"
+  )
+  testthat::expect_identical(
+    walk_candidate$provenance$resolved_schedule$args$day,
+    4L
+  )
+  testthat::expect_identical(
+    ledgr_candidate_reproduction_key(walk_candidate)$strategy_schedule$resolved_schedule$args$day,
+    4L
   )
 })

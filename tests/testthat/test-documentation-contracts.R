@@ -2187,13 +2187,22 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
     "weekly-trend-momentum"
   )
   weekly_run <- qmd_chunk("vignettes/strategy-authoring-tools.qmd", "run-weekly")
+  common_calendar <- qmd_chunk(
+    "vignettes/strategy-authoring-tools.qmd",
+    "common-calendar-schedules"
+  )
 
   testthat::expect_match(minimum_variance_experiment, "ledgr_schedule_month_start()", fixed = TRUE)
   testthat::expect_no_match(minimum_variance_strategy, "months <- format", fixed = TRUE)
   testthat::expect_no_match(minimum_variance_strategy, "not_a_decision_date", fixed = TRUE)
   testthat::expect_match(weekly_run, "ledgr_schedule_week_start()", fixed = TRUE)
+  testthat::expect_match(common_calendar, 'ledgr_schedule_weekday("wednesday")', fixed = TRUE)
+  testthat::expect_match(common_calendar, "ledgr_schedule_month_day(15)", fixed = TRUE)
   testthat::expect_no_match(weekly_strategy, "pulses_seen %%", fixed = TRUE)
   testthat::expect_match(authoring, "A scheduled skip and `ctx$hold()`", fixed = TRUE)
+  testthat::expect_match(authoring, "does not turn into a Monday decision", fixed = TRUE)
+  testthat::expect_match(authoring, '"saturday"` and `"sunday"` decide only', fixed = TRUE)
+  testthat::expect_match(authoring, "ledgr_schedule_month_day(1L)", fixed = TRUE)
   testthat::expect_match(reproducibility, "the schedule contributes\\s+separately")
   testthat::expect_match(store, "`decision_pulse_count`, `scheduled_skip_count`", fixed = TRUE)
   testthat::expect_match(help_flat, "exactly one pulse per expected venue session", fixed = TRUE)
@@ -2202,6 +2211,15 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(help_flat, "Explicit civil dates snap forward", fixed = TRUE)
   testthat::expect_match(help_flat, "outside the declared parent axis is refused", fixed = TRUE)
   testthat::expect_match(help_flat, "resolves a named scalar character strategy parameter", fixed = TRUE)
+  testthat::expect_match(help_flat, "a closed Friday does not move a Friday decision into Monday", fixed = TRUE)
+  testthat::expect_match(help_flat, "Saturday or Sunday rules decide only on venues that actually open then", fixed = TRUE)
+  testthat::expect_match(help_flat, "ledgr_schedule_month_day(1)", fixed = TRUE)
+  for (helper in c("ledgr_schedule_weekday", "ledgr_schedule_month_day")) {
+    testthat::expect_match(help, paste0("\\alias{", helper, "}"), fixed = TRUE)
+    testthat::expect_match(help, paste0(helper, "("), fixed = TRUE)
+  }
+  testthat::expect_match(help, 'ledgr_schedule_weekday("wednesday")', fixed = TRUE)
+  testthat::expect_match(help, "ledgr_schedule_month_day(15)", fixed = TRUE)
   for (token in c("month_start", "month_end", "week_start", "quarter_start", "year_start")) {
     testthat::expect_match(help, paste0("\\code{\"", token, "\"}"), fixed = TRUE)
   }
@@ -2209,6 +2227,8 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(help_flat, "inner strategy's source identity remains", fixed = TRUE)
   testthat::expect_match(reference, "- ledgr_strategy_schedule", fixed = TRUE)
   testthat::expect_match(news_flat, "ledgr_strategy_schedule()", fixed = TRUE)
+  testthat::expect_match(news_flat, "ledgr_schedule_weekday()", fixed = TRUE)
+  testthat::expect_match(news_flat, "ledgr_schedule_month_day()", fixed = TRUE)
   testthat::expect_match(news_flat, "schema 124", fixed = TRUE)
   for (version in c(
     "saved-sweep format 6", "provenance format 2",

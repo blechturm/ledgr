@@ -150,6 +150,16 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   decision trace. A resolved schedule with no due pulse refuses a flat run,
   but a run with opening or carried positions remains valid and processes its
   economic events on every pulse.
+- Strategy-schedule declaration version 1 contains the five fixed boundary
+  rules, explicit dates, fixed-rule parameter lookup, exact lowercase weekday
+  and numbered month-day rules. Adding a tagged variant is additive and does
+  not bump the declaration version; changing the meaning or normalized
+  arguments of an existing variant does. Weekday and month-day anchors resolve
+  to the first declared open session on or after the anchor only inside the
+  same Monday-Sunday week or calendar month. An anchor before the first open
+  session on the parent axis is unproved and contributes no decision. Their
+  normalized argument remains in compiled identity; no pulse evaluates civil
+  calendar rules.
 
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start

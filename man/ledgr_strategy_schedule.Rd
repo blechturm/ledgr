@@ -8,6 +8,8 @@
 \alias{ledgr_schedule_quarter_start}
 \alias{ledgr_schedule_year_start}
 \alias{ledgr_schedule_dates}
+\alias{ledgr_schedule_weekday}
+\alias{ledgr_schedule_month_day}
 \alias{ledgr_schedule_from_param}
 \title{Declare when a strategy should make decisions}
 \usage{
@@ -25,6 +27,10 @@ ledgr_schedule_year_start()
 
 ledgr_schedule_dates(dates)
 
+ledgr_schedule_weekday(day)
+
+ledgr_schedule_month_day(day)
+
 ledgr_schedule_from_param(name)
 }
 \arguments{
@@ -34,6 +40,10 @@ ledgr_schedule_from_param(name)
 
 \item{dates}{Civil dates. Each date is snapped forward to the next open
 venue session; duplicates after snapping are removed.}
+
+\item{day}{For \code{ledgr_schedule_weekday()}, one exact lowercase English
+weekday name from \code{"monday"} through \code{"sunday"}. For
+\code{ledgr_schedule_month_day()}, one whole number from 1 through 31.}
 
 \item{name}{Name of a scalar character strategy parameter resolving to one
 of the fixed schedule names.}
@@ -52,12 +62,18 @@ schedule does not wrap or call it.
 Fixed calendar rules select real boundaries on the complete parent session
 axis. They do not manufacture a boundary at the start or end of a partial
 run; in particular, the first parent-axis session is not automatically a
-start boundary. Explicit civil dates snap forward to the next open session;
-a date outside the declared parent axis is refused, while a date inside that
-axis but outside the executable window is simply not due. A parameter
-schedule resolves a named scalar character strategy parameter to one of
-\code{"month_start"}, \code{"month_end"}, \code{"week_start"}, \code{"quarter_start"}, or
-\code{"year_start"} before execution.
+start boundary. Weekday and numbered month-day rules select the first open
+session on or after their anchor, but only inside the same civil week or
+month. Thus a closed Friday does not move a Friday decision into Monday, and
+Saturday or Sunday rules decide only on venues that actually open then. A
+numbered day before the first open session on the parent axis is unproved
+and does not manufacture a decision; this is why \code{ledgr_schedule_month_day(1)}
+can differ from \code{ledgr_schedule_month_start()}. Explicit civil dates snap
+forward to the next open session; a date outside the declared parent axis is
+refused, while a date inside that axis but outside the executable window is
+simply not due. A parameter schedule resolves a named scalar character
+strategy parameter to one of \code{"month_start"}, \code{"month_end"},
+\code{"week_start"}, \code{"quarter_start"}, or \code{"year_start"} before execution.
 
 Schedules currently require an availability-aware axis with exactly one
 pulse per expected venue session. Dense and multi-pulse intraday runs refuse
@@ -73,4 +89,15 @@ fold entry. A run with opening or carried positions may proceed and carry
 them. The canonical declaration and hash are part of configuration and
 orchestration identity, while the inner strategy's source identity remains
 unchanged. The compiled decision mask is ephemeral and is not persisted.
+}
+\examples{
+strategy <- function(ctx, params) ctx$hold()
+wednesday_strategy <- ledgr_strategy_schedule(
+  strategy,
+  ledgr_schedule_weekday("wednesday")
+)
+monthly_strategy <- ledgr_strategy_schedule(
+  strategy,
+  ledgr_schedule_month_day(15)
+)
 }

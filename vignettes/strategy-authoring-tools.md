@@ -175,25 +175,26 @@ pulse’s default of 100,000 in cash. Calling a strategy on a pulse is the
 fastest way to catch a wrong feature ID, a reversed comparison, or an
 unexpected position size before you run months of bars.
 
-> [!TIP]
->
-> ### Read whole vectors, not one instrument at a time
->
-> `ctx$vec$close` and `ctx$vec$feature()` return one value per instrument
-> in a single read. The scalar forms `ctx$close(id)`,
-> `ctx$feature(id, feature_id)`, and `ctx$position(id)` are for an
-> instrument you have already singled out. Calling them in a loop over
-> `ctx$universe` repeats per-instrument work at every pulse and is the
-> most common way to make a strategy slow. Singular feature reads accept
-> either an active alias or a concrete feature ID. For universes of at
-> least 100 instruments, a loop over the bar, price, position, scalar
-> feature, or active-map bundle accessor triggers one
-> `ledgr_scalar_accessor_loop` warning per run when its calls reach the
-> axis size and names the vector replacement; the warning changes no
-> result. Read each required active alias once with
-> `ctx$vec$feature("alias")`. Explicit-map bundle calls stay unrecorded
-> because the plane does not accept an explicit map.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Read whole vectors, not one instrument at a time**
+
+`ctx$vec$close` and `ctx$vec$feature()` return one value per instrument
+in a single read. The scalar forms `ctx$close(id)`,
+`ctx$feature(id, feature_id)`, and `ctx$position(id)` are for an
+instrument you have already singled out. Calling them in a loop over
+`ctx$universe` repeats per-instrument work at every pulse and is the
+most common way to make a strategy slow. Singular feature reads accept
+either an active alias or a concrete feature ID. For universes of at
+least 100 instruments, a loop over the bar, price, position, scalar
+feature, or active-map bundle accessor triggers one
+`ledgr_scalar_accessor_loop` warning per run when its calls reach the
+axis size and names the vector replacement; the warning changes no
+result. Read each required active alias once with
+`ctx$vec$feature("alias")`. Explicit-map bundle calls stay unrecorded
+because the plane does not accept an explicit map.
+
+</div>
 
 ## From Scores To Shares
 
@@ -557,6 +558,25 @@ it with `ledgr_schedule_week_start()`. ledgr resolves the rule against
 the snapshot’s open-session calendar before the run and invokes the
 strategy only when a decision is due.
 
+Two helpers cover other common civil-calendar cadences without expanding
+them into a list of dates:
+
+``` r
+wednesday_schedule <- ledgr_schedule_weekday("wednesday")
+month_day_15_schedule <- ledgr_schedule_month_day(15)
+```
+
+Both move forward only within the period they name. If Friday is closed
+and Thursday was the week’s last open session,
+`ledgr_schedule_weekday("friday")` does not turn into a Monday decision.
+`"saturday"` and `"sunday"` decide only on venues that actually open on
+those days. Likewise, a closed 15th may use a later open session in that
+month, but never one in the next month. At the start of the parent
+calendar, `ledgr_schedule_month_day(1L)` decides when the first session
+is an open first of the month; `ledgr_schedule_month_start()`
+deliberately does not manufacture that first boundary because it cannot
+prove a preceding month.
+
 Strategy state is for information the strategy itself must carry from
 one decision to the next. This example counts its decisions so the
 distinction is visible:
@@ -687,15 +707,16 @@ over six months say nothing reliable about performance.
 `vignette("selection-integrity", package = "ledgr")` covers how to
 compare candidates without fooling yourself.
 
-> [!TIP]
->
-> ### Try it
->
-> Decorate the same strategy with `ledgr_schedule_month_start()` under a
-> new `run_id`, since a store keeps one run per ID. Compare the decision
-> and skip counts with the weekly run. Checks like this are a cheap way to
-> confirm that a new cadence changed only what you meant to change.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Decorate the same strategy with `ledgr_schedule_month_start()` under a
+new `run_id`, since a store keeps one run per ID. Compare the decision
+and skip counts with the weekly run. Checks like this are a cheap way to
+confirm that a new cadence changed only what you meant to change.
+
+</div>
 
 The fills show the trades caused by weekly decisions:
 

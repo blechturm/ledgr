@@ -5,9 +5,11 @@
 - Added `ledgr_strategy_schedule()` with declarative
   `ledgr_schedule_month_start()`, `ledgr_schedule_month_end()`,
   `ledgr_schedule_week_start()`, `ledgr_schedule_quarter_start()`,
-  `ledgr_schedule_year_start()`, `ledgr_schedule_dates()`, and
-  `ledgr_schedule_from_param()` rules. Rules compile once against the declared
-  session calendar before execution.
+  `ledgr_schedule_year_start()`, `ledgr_schedule_weekday()`,
+  `ledgr_schedule_month_day()`, `ledgr_schedule_dates()`, and
+  `ledgr_schedule_from_param()` rules. Weekday and month-day anchors move only
+  to the next open session inside the same civil week or month. Rules compile
+  once against the declared session calendar before execution.
 
 - Scheduled strategies now skip only decision-context construction, callback
   invocation, and execution planning on non-decision pulses. Observation,

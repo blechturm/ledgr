@@ -543,6 +543,26 @@ week. Decision timing is not strategy memory: declare it with
 open-session calendar before the run and invokes the strategy only when a
 decision is due.
 
+Two helpers cover other common civil-calendar cadences without expanding them
+into a list of dates:
+
+```{r}
+#| label: common-calendar-schedules
+
+wednesday_schedule <- ledgr_schedule_weekday("wednesday")
+month_day_15_schedule <- ledgr_schedule_month_day(15)
+```
+
+Both move forward only within the period they name. If Friday is closed and
+Thursday was the week's last open session, `ledgr_schedule_weekday("friday")`
+does not turn into a Monday decision. `"saturday"` and `"sunday"` decide only
+on venues that actually open on those days. Likewise, a closed 15th may use a
+later open session in that month, but never one in the next month. At the
+start of the parent calendar, `ledgr_schedule_month_day(1L)` decides when the
+first session is an open first of the month;
+`ledgr_schedule_month_start()` deliberately does not manufacture that first
+boundary because it cannot prove a preceding month.
+
 Strategy state is for information the strategy itself must carry from one
 decision to the next. This example counts its decisions so the distinction is
 visible:

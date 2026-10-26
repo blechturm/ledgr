@@ -8,12 +8,18 @@
 #' Fixed calendar rules select real boundaries on the complete parent session
 #' axis. They do not manufacture a boundary at the start or end of a partial
 #' run; in particular, the first parent-axis session is not automatically a
-#' start boundary. Explicit civil dates snap forward to the next open session;
-#' a date outside the declared parent axis is refused, while a date inside that
-#' axis but outside the executable window is simply not due. A parameter
-#' schedule resolves a named scalar character strategy parameter to one of
-#' `"month_start"`, `"month_end"`, `"week_start"`, `"quarter_start"`, or
-#' `"year_start"` before execution.
+#' start boundary. Weekday and numbered month-day rules select the first open
+#' session on or after their anchor, but only inside the same civil week or
+#' month. Thus a closed Friday does not move a Friday decision into Monday, and
+#' Saturday or Sunday rules decide only on venues that actually open then. A
+#' numbered day before the first open session on the parent axis is unproved
+#' and does not manufacture a decision; this is why `ledgr_schedule_month_day(1)`
+#' can differ from `ledgr_schedule_month_start()`. Explicit civil dates snap
+#' forward to the next open session; a date outside the declared parent axis is
+#' refused, while a date inside that axis but outside the executable window is
+#' simply not due. A parameter schedule resolves a named scalar character
+#' strategy parameter to one of `"month_start"`, `"month_end"`,
+#' `"week_start"`, `"quarter_start"`, or `"year_start"` before execution.
 #'
 #' Schedules currently require an availability-aware axis with exactly one
 #' pulse per expected venue session. Dense and multi-pulse intraday runs refuse
@@ -70,6 +76,19 @@ ledgr_schedule_year_start <- function() ledgr_schedule_rule("year_start")
 
 #' @param dates Civil dates. Each date is snapped forward to the next open
 #'   venue session; duplicates after snapping are removed.
+#' @param day For `ledgr_schedule_weekday()`, one exact lowercase English
+#'   weekday name from `"monday"` through `"sunday"`. For
+#'   `ledgr_schedule_month_day()`, one whole number from 1 through 31.
+#' @examples
+#' strategy <- function(ctx, params) ctx$hold()
+#' wednesday_strategy <- ledgr_strategy_schedule(
+#'   strategy,
+#'   ledgr_schedule_weekday("wednesday")
+#' )
+#' monthly_strategy <- ledgr_strategy_schedule(
+#'   strategy,
+#'   ledgr_schedule_month_day(15)
+#' )
 #' @rdname ledgr_strategy_schedule
 #' @export
 ledgr_schedule_dates <- function(dates) {
@@ -78,6 +97,32 @@ ledgr_schedule_dates <- function(dates) {
     ledgr_schedule_abort("`dates` must be a non-empty Date vector without missing values.")
   }
   ledgr_schedule_rule("dates", list(dates = sort(unique(format(dates, "%Y-%m-%d")))))
+}
+
+#' @rdname ledgr_strategy_schedule
+#' @export
+ledgr_schedule_weekday <- function(day) {
+  if (!is.character(day) || length(day) != 1L || is.na(day) ||
+      !day %in% ledgr_schedule_weekday_tokens) {
+    ledgr_schedule_abort(
+      paste0(
+        "`day` must be exactly one of: ",
+        paste(ledgr_schedule_weekday_tokens, collapse = ", "), "."
+      )
+    )
+  }
+  ledgr_schedule_rule("weekday", list(day = day))
+}
+
+#' @rdname ledgr_strategy_schedule
+#' @export
+ledgr_schedule_month_day <- function(day) {
+  valid <- is.numeric(day) && length(day) == 1L && !is.na(day) &&
+    is.finite(day) && day == floor(day) && day >= 1 && day <= 31
+  if (!valid) {
+    ledgr_schedule_abort("`day` must be one whole number from 1 through 31.")
+  }
+  ledgr_schedule_rule("month_day", list(day = as.integer(day)))
 }
 
 #' @param name Name of a scalar character strategy parameter resolving to one
@@ -96,6 +141,12 @@ ledgr_schedule_version <- 1L
 ledgr_schedule_fixed_types <- c(
   "month_start", "month_end", "week_start", "quarter_start", "year_start"
 )
+
+ledgr_schedule_weekday_tokens <- c(
+  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+)
+
+ledgr_schedule_argument_types <- c("weekday", "month_day")
 
 ledgr_schedule_abort <- function(message, child = NULL, parent = NULL) {
   classes <- c(child, "ledgr_invalid_strategy_schedule")
@@ -127,7 +178,9 @@ ledgr_schedule_validate <- function(schedule) {
   version <- schedule$version
   args <- schedule$args
   if (!is.character(type_id) || length(type_id) != 1L || is.na(type_id) ||
-      !type_id %in% c(ledgr_schedule_fixed_types, "dates", "param") ||
+      !type_id %in% c(
+        ledgr_schedule_fixed_types, ledgr_schedule_argument_types, "dates", "param"
+      ) ||
       !is.numeric(version) || length(version) != 1L || is.na(version) ||
       !is.finite(version) || version != floor(version) ||
       as.integer(version) != ledgr_schedule_version || !is.list(args)) {
@@ -153,6 +206,30 @@ ledgr_schedule_validate <- function(schedule) {
       ledgr_schedule_abort("A dates schedule must contain canonical civil dates.")
     }
     args$dates <- sort(unique(format(parsed_dates, "%Y-%m-%d")))
+  }
+  if (identical(type_id, "weekday")) {
+    valid_weekday <- identical(names(args), "day") &&
+      is.character(args$day) && length(args$day) == 1L &&
+      !is.na(args$day) && args$day %in% ledgr_schedule_weekday_tokens
+    if (!valid_weekday) {
+      ledgr_schedule_abort(
+        paste0(
+          "`day` must be exactly one of: ",
+          paste(ledgr_schedule_weekday_tokens, collapse = ", "), "."
+        )
+      )
+    }
+    args$day <- as.character(args$day)
+  }
+  if (identical(type_id, "month_day")) {
+    valid_month_day <- identical(names(args), "day") &&
+      is.numeric(args$day) && length(args$day) == 1L &&
+      !is.na(args$day) && is.finite(args$day) &&
+      args$day == floor(args$day) && args$day >= 1 && args$day <= 31
+    if (!valid_month_day) {
+      ledgr_schedule_abort("`day` must be one whole number from 1 through 31.")
+    }
+    args$day <- as.integer(args$day)
   }
   if (identical(type_id, "param") &&
       (!identical(names(args), "name") || !is.character(args$name) ||
@@ -281,6 +358,12 @@ ledgr_strategy_schedule_label <- function(declaration) {
   if (identical(declaration$type_id, "dates")) {
     return(sprintf("explicit dates (%d)", length(declaration$args$dates)))
   }
+  if (identical(declaration$type_id, "weekday")) {
+    return(unname(declaration$args$day))
+  }
+  if (identical(declaration$type_id, "month_day")) {
+    return(sprintf("month day %d", declaration$args$day))
+  }
   sprintf("strategy parameter `%s`", declaration$args$name)
 }
 
@@ -398,10 +481,10 @@ ledgr_strategy_schedule_inner <- function(strategy) {
 }
 
 ledgr_schedule_period_key <- function(dates, type_id) {
-  if (identical(type_id, "week_start")) {
+  if (type_id %in% c("week_start", "weekday")) {
     return((as.integer(dates) - 4L) %/% 7L)
   }
-  if (identical(type_id, "month_start") || identical(type_id, "month_end")) {
+  if (type_id %in% c("month_start", "month_end", "month_day")) {
     return(format(dates, "%Y-%m"))
   }
   if (identical(type_id, "quarter_start")) {
@@ -513,12 +596,44 @@ ledgr_compile_strategy_schedule <- function(declaration,
     exact <- snapped > 0L & open_num[pmax.int(snapped, 1L)] == requested_num
     snapped[!exact] <- snapped[!exact] + 1L
     due_parent[unique(snapped)] <- TRUE
+  } else if (type_id %in% c("weekday", "month_day")) {
+    period <- ledgr_schedule_period_key(open$session_date, type_id)
+    open_num <- as.numeric(open$session_date)
+    anchor_num <- if (identical(type_id, "weekday")) {
+      period * 7L + 4L + match(
+        declaration$args$day,
+        ledgr_schedule_weekday_tokens
+      ) - 1L
+    } else {
+      as.numeric(suppressWarnings(as.Date(
+        paste0(period, "-", sprintf("%02d", declaration$args$day)),
+        format = "%Y-%m-%d"
+      )))
+    }
+    eligible <- !is.na(anchor_num) & open_num >= anchor_num
+    prior_eligible_same_period <- rep(FALSE, length(eligible))
+    if (length(eligible) > 1L) {
+      current <- seq.int(2L, length(eligible))
+      previous <- current - 1L
+      prior_eligible_same_period[current] <- eligible[previous] &
+        period[previous] == period[current]
+    }
+    due_parent <- eligible & !prior_eligible_same_period
+    if (!is.na(anchor_num[[1L]]) && anchor_num[[1L]] < open_num[[1L]]) {
+      due_parent[period == period[[1L]]] <- FALSE
+    }
   } else {
     period <- ledgr_schedule_period_key(open$session_date, type_id)
-    if (grepl("_start$", type_id)) {
-      due_parent[-1L] <- period[-1L] != period[-length(period)]
-    } else {
-      due_parent[-length(period)] <- period[-length(period)] != period[-1L]
+    if (length(period) > 1L) {
+      if (type_id %in% c(
+        "month_start", "week_start", "quarter_start", "year_start"
+      )) {
+        due_parent[-1L] <- period[-1L] != period[-length(period)]
+      } else if (identical(type_id, "month_end")) {
+        due_parent[-length(period)] <- period[-length(period)] != period[-1L]
+      } else {
+        ledgr_schedule_abort("The resolved schedule type is unsupported.")
+      }
     }
   }
   decision_due <- unname(due_parent[pulse_index])
@@ -526,6 +641,13 @@ ledgr_compile_strategy_schedule <- function(declaration,
     decision_due = decision_due,
     decision_pulse_count = as.integer(sum(decision_due)),
     scheduled_skip_count = as.integer(length(decision_due) - sum(decision_due)),
-    resolved_schedule = unclass(ledgr_schedule_rule(type_id, if (identical(type_id, "dates")) declaration$args else list()))
+    resolved_schedule = unclass(ledgr_schedule_rule(
+      type_id,
+      if (type_id %in% c("dates", ledgr_schedule_argument_types)) {
+        declaration$args
+      } else {
+        list()
+      }
+    ))
   )
 }
