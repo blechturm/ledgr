@@ -115,15 +115,16 @@ The focused schedule, export, config, config-object, execution-spec, strategy
 preflight, sweep, documentation-contract and test-control-plane suites pass.
 The codebase census runs and the fold-phase checker prints
 `LEDGR_FOLD_PHASE_CONTRACT_OK`. `git diff --check` is clean. The independent
-Type 1 close review remains the workstream acceptance gate.
+Type 1 close review was the next workstream gate.
 
 ## Close-review correction
 
-The first independent review returned `PASS_AFTER_PATCHES`. Correction
-`791f6e38` removes the two explicit `NULL` schedule fields from unscheduled
-live candidates, makes declaration names and civil-date text exact, classifies
-two distinct pulses assigned to one session as unsupported intraday input, and
-strengthens the parent-axis and identity detectors.
+The first independent review returned `PASS_AFTER_PATCHES`. Corrections
+`791f6e38` and `4470a5ab` remove the two explicit `NULL` schedule fields from
+unscheduled live candidates, make declaration names and civil-date text exact
+across constructor and stored key order, classify two distinct pulses assigned
+to one session as unsupported intraday input, pin public scheduled-run
+reopening, and strengthen the parent-axis and identity detectors.
 
 Six disposable mutations were detected by the registered schedule suite:
 
@@ -133,10 +134,12 @@ Six disposable mutations were detected by the registered schedule suite:
 - hashing only the declaration type failed both argument-identity assertions;
 - accepting an extra declaration field failed the malformed-input assertion;
 - removing distinct same-session pulse classification failed the typed
-  intraday assertion.
+  intraday assertion;
 - restoring constructor-order-only declaration validation failed both the
   canonical JSON round trip and public scheduled-run reopening assertions.
 
 The corrected focused schedule, sweep, config, execution-spec, preflight,
-export, run-store, persistence and control-plane suites pass. The independent
-focused re-review remains the acceptance gate.
+export, run-store, persistence and control-plane suites pass. A final fresh
+Opus confirmation reproduced the JSON and public-reopen mutation, ran the
+focused suites and returned `PASS`; maintainer acceptance is the remaining
+workstream gate.
