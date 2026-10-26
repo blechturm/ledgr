@@ -5,6 +5,28 @@
 #' The decorated strategy remains an ordinary `function(ctx, params)`; the
 #' schedule does not wrap or call it.
 #'
+#' Fixed calendar rules select real boundaries on the complete parent session
+#' axis. They do not manufacture a boundary at the start or end of a partial
+#' run. Explicit civil dates snap forward to the next open session; a date that
+#' cannot resolve inside the executable axis is refused. A parameter schedule
+#' resolves a named scalar character strategy parameter to one of the fixed
+#' rule names before execution.
+#'
+#' Schedules currently require an availability-aware axis with exactly one
+#' pulse per expected venue session. Dense and multi-pulse intraday runs refuse
+#' the declaration. On a non-decision pulse ledgr skips decision-context
+#' construction, callback invocation and execution planning, but still performs
+#' observation, economic-event settlement, reconciliation, strategy-state
+#' persistence, interruption checks, checkpoints and commit processing. This
+#' `scheduled_skip` is distinct from an explicit `ctx$hold()` returned by an
+#' invoked strategy.
+#'
+#' A schedule that resolves to no decision pulses refuses a flat run before
+#' fold entry. A run with opening or carried positions may proceed and carry
+#' them. The canonical declaration and hash are part of configuration and
+#' orchestration identity, while the inner strategy's source identity remains
+#' unchanged. The compiled decision mask is ephemeral and is not persisted.
+#'
 #' @param strategy A strategy function with signature `function(ctx, params)`.
 #' @param schedule A schedule made by one of the `ledgr_schedule_*()` helpers.
 #' @return `strategy`, with class `ledgr_scheduled_strategy` and a declarative

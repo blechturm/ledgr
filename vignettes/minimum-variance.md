@@ -96,25 +96,13 @@ purpose is to make the method auditable.
 
 ## Write The Strategy
 
-The strategy decides on the first expected session of each UTC month.
-The two-session, zero-instrument read at the top is a temporary
-scheduling workaround: it compares the current session with the previous
-expected session. The workaround is kept separate so calendar scheduling
-does not obscure the portfolio method.
+The strategy body describes one portfolio decision. A declarative
+schedule, attached when the experiment is built, asks ledgr to invoke
+that body on the first open session of each month. Calendar logic
+therefore stays out of the portfolio method.
 
 ``` r
 min_variance <- function(ctx, params) {
-  axis <- ctx |>
-    ledgr_history_frame(
-      bar = "close",
-      lookback = 2L,
-      instruments = character()
-    )
-  months <- format(axis$ts_utc, "%Y-%m", tz = "UTC")
-  if (length(months) == 2L && months[[1L]] == months[[2L]]) {
-    return(ctx$hold())
-  }
-
   returns <- ctx |>
     ledgr_history_matrix(
       feature = "return_1",
@@ -177,9 +165,9 @@ strategy never reconstructs names from matrix columns.
 
 The two intent reasons are deliberately sparse. `insufficient_sample`
 means a scheduled decision lacked enough usable data. `rebalanced` means
-the strategy submitted a new target. Ordinary non-decision pulses simply
-return `ctx$hold()` and write no strategy-intent note. A genuine solver
-failure is an error rather than a silent hold.
+the strategy submitted a new target. On other sessions ledgr does not
+invoke the strategy, and records a scheduled skip rather than a strategy
+hold. A genuine solver failure is an error rather than a silent hold.
 
 ## Build The Experiment
 
@@ -191,7 +179,10 @@ covariance estimate.
 ``` r
 exp <- ledgr_experiment(
   snapshot,
-  min_variance,
+  ledgr_strategy_schedule(
+    min_variance,
+    ledgr_schedule_month_start()
+  ),
   features = list(ledgr_ind_returns(1L)),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
@@ -308,6 +299,8 @@ bt
     Total Return:                      9.19%
     Max Drawdown:                      -6.68%
     Closed Trades:                     68
+    Strategy schedule: month start
+    Decision pulses: 35; scheduled skips: 748
     Metric Calendar:                   US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
 
     Economic events: NONE - supplied facts did not affect held instruments

@@ -127,6 +127,14 @@ where available, source hash, parameter JSON and parameter hash,
 dependency-version metadata, ledgr version, R version, and
 reproducibility tier.
 
+If the strategy has a declarative schedule, provenance also stores its
+canonical declaration and schedule hash. The inner strategy source hash
+stays the identity of the decision function itself; the schedule
+contributes separately to run and candidate identity. A parameterized
+schedule records both what the author declared and the fixed rule
+resolved for that candidate. The compiled decision mask is temporary
+execution state and is not persisted.
+
 Those fields do not make every run perfectly replayable. They make the
 claim inspectable. A run should be explainable later: what source text
 ledgr captured, which parameters were supplied, whether the source hash
@@ -156,7 +164,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.060
+    Elapsed Sec:      1.140
 
 ## Extract Stored Strategy Source
 

@@ -18,6 +18,9 @@
   `schedule_hash`, `decision_pulse_count`, and `scheduled_skip_count` columns;
   run information verifies them against the canonical configuration.
   Schema-123 stores are older and refuse; rebuild them with the current package.
+  Current scheduler-aware research artifacts use saved-sweep format 6,
+  provenance format 2, reproduction-key format 2, walk-forward candidate and
+  inspection formats 2, and promotion-context format 3; older formats refuse.
 
 ## Cross-asset correctness and honest defaults
 

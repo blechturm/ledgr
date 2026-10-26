@@ -100,7 +100,7 @@ ws58_fixture <- function(closes, strategy, days = ws58_days(),
   )
   experiment <- ledgr_experiment(
     snapshot,
-    strategy,
+    ledgr_strategy_schedule(strategy, ledgr_schedule_month_start()),
     features = list(ledgr_ind_returns(1L)),
     universe = ledgr_universe_members("u"),
     cost_model = ledgr_cost_zero(),
@@ -185,23 +185,6 @@ testthat::test_that("[LTB-0431] the strategy acts on month starts and writes spa
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   params <- ws58_params()
 
-  seen <- lapply(fixture$days, function(day) {
-    ws58_decide(strategy, fixture$exp, day, params)
-  })
-  reasons <- vapply(seen, `[[`, character(1L), "reason")
-  decisions <- !is.na(reasons)
-  testthat::expect_identical(
-    format(fixture$days[decisions]),
-    c("2021-01-13", "2021-02-01", "2021-03-01", "2021-04-01")
-  )
-  testthat::expect_identical(
-    reasons[decisions],
-    c("insufficient_sample", "rebalanced", "rebalanced", "rebalanced")
-  )
-  for (i in which(!decisions)) {
-    testthat::expect_identical(seen[[i]]$target, seen[[i]]$hold)
-  }
-
   run <- ledgr_run(fixture$exp, params = params, run_id = "ws58-schedule")
   on.exit(close(run), add = TRUE, after = FALSE)
   fills <- as.data.frame(ledgr_results(run, "fills"))
@@ -222,7 +205,19 @@ testthat::test_that("[LTB-0431] the strategy acts on month starts and writes spa
   live <- read_reasons(run)
   testthat::expect_identical(
     unname(live),
-    c("insufficient_sample", "rebalanced", "rebalanced", "rebalanced")
+    rep("rebalanced", 3L)
+  )
+  diagnostics <- as.data.frame(ledgr_results(run, "diagnostics"))
+  intent <- diagnostics[diagnostics$reason_code == "strategy_intent", , drop = FALSE]
+  testthat::expect_identical(
+    format(as.Date(intent$ts_utc)),
+    c("2021-02-01", "2021-03-01", "2021-04-01")
+  )
+  info <- ledgr_run_info(fixture$snapshot, "ws58-schedule")
+  testthat::expect_identical(info$decision_pulse_count[[1L]], 3L)
+  testthat::expect_identical(
+    info$scheduled_skip_count[[1L]],
+    length(fixture$days) - 3L
   )
   reopened <- ledgr_run_open(fixture$snapshot, "ws58-schedule")
   on.exit(close(reopened), add = TRUE, after = FALSE)

@@ -217,7 +217,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
     'feature_signal <- ledgr_signal_feature(pulse, "return_5")',
     'ledgr_target_rebalance(keep_pulse, keep = "DEMO_04")',
     'ledgr_selection(where = rising, missing = "exclude")',
-    "state_prev = list(pulses_seen = 1)",
+    "ledgr_schedule_week_start()",
     "weights |>\n    ledgr_target_rebalance(ctx"
   )) {
     testthat::expect_match(authoring_qmd, needle, fixed = TRUE, info = needle)
@@ -236,11 +236,8 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
     'ledgr_select_top_n(n = params$n, partial = "allow")',
     fixed = TRUE
   )
-  testthat::expect_match(
-    weekly_chunk,
-    'exits <- ledgr_selection(ctx, where = close < trend, missing = "exclude")',
-    fixed = TRUE
-  )
+  testthat::expect_match(weekly_chunk, "decisions_seen", fixed = TRUE)
+  testthat::expect_no_match(weekly_chunk, "pulses_seen %%", fixed = TRUE)
   testthat::expect_no_match(weekly_chunk, "as.logical(exits)", fixed = TRUE)
   testthat::expect_match(cleanup_chunk, "close(keep_pulse)", fixed = TRUE)
   testthat::expect_no_match(
@@ -272,17 +269,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
       "#> <ledgr_selection> [4 assets]\n",
       "#> 1 selected"
     ),
-    "#>       0       8       0       4",
-    paste0(
-      "weekly_trend_momentum(exit_pulse, weekly_params)\n",
-      "#> $targets\n",
-      "#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n",
-      "#>       0      10       0       0\n",
-      "#>\n",
-      "#> $state_update\n",
-      "#> $state_update$pulses_seen\n",
-      "#> [1] 2"
-    )
+    "#>       0       8       0       4"
   )) {
     testthat::expect_match(authoring_md, outcome, fixed = TRUE, info = outcome)
   }
@@ -353,7 +340,7 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
     testthat::expect_match(strategy_doc, "rising <- momentum > 0 & close > trend", fixed = TRUE)
     testthat::expect_match(
       strategy_doc,
-      "targets[exits] <- 0",
+      "ledgr_schedule_week_start()",
       fixed = TRUE
     )
     testthat::expect_no_match(strategy_doc, "rising <- !is.na", fixed = TRUE)
@@ -767,8 +754,8 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "ledgr_signal_return(lookback = 5) |>", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "it never\\s+registers a feature for you")
     testthat::expect_match(strategy_authoring_doc, "ledgr_run_compare(snapshot)", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "Give The Strategy A Memory", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "`ctx$state_prev$pulses_seen` is `NULL`", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "Schedule Decisions And Keep Strategy Memory", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "`ctx$state_prev$decisions_seen` is `NULL`", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "\n## Remembering Between Pulses\n", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "check each\\s+field for `NULL` before using it")
     testthat::expect_match(strategy_development_doc, "`?ledgr_strategy_context` states the full rules", fixed = TRUE)
@@ -794,7 +781,7 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(context_help, "carries\\s+\\\\code\\{asset_state\\}")
     testthat::expect_match(context_help, "NULL_on_first_dense_pulse", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Returning a bare target keeps the previous state unchanged.", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "state_update = list(pulses_seen = pulses_seen + 1)", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "state_update = list(decisions_seen = decisions_seen + 1L)", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Read whole vectors, not one instrument at a time", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "`ledgr_scalar_accessor_loop` warning", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "The optimization manual carries the measurements", fixed = TRUE)
@@ -1609,8 +1596,8 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
         "#> 2 DEMO_03        25000  81.8    305    305",
         "#> 1 v1_ranking <NA>        11372.",
         "#> 2 v2_rule    <NA>        10874.",
-        "#> 3 v3_weekly  <NA>        10577.",
-        "#> 3 2019-01-30 DEMO_01       SELL     15",
+        "#> 3 v3_weekly  <NA>         9913.",
+        "#> 1 2019-01-29 10:00:00 DEMO_01       BUY      27",
         "trend_momentum(holding_pulse, params)\n#> <ledgr_target> [4 assets]\n#> non-NA: 4/4\n#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n#>       0       0       0       0",
         "holding_pulse$hold()\n#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n#>       0      40       0       0"
       )
@@ -1619,7 +1606,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
       }
       testthat::expect_match(docs$strategy, "76 69.7%", fixed = TRUE)
       testthat::expect_match(docs$strategy, "93 63.4%", fixed = TRUE)
-      testthat::expect_match(docs$strategy, "36 55.6%", fixed = TRUE)
+      testthat::expect_match(docs$strategy, "26 69.2%", fixed = TRUE)
       testthat::expect_no_match(
         paste(docs$readme_rmd, docs$readme, docs$strategy_qmd, docs$strategy, sep = "\n"),
         "unclass(target)",
@@ -2159,4 +2146,46 @@ testthat::test_that("[LTB-0129] the ledgr_indicator help documents both scalar a
   testthat::expect_match(help, "\\verb{function(window, params)}", fixed = TRUE)
   testthat::expect_match(help, "ledgr also passes the indicator's \\code{params}", fixed = TRUE)
   testthat::expect_match(help, "fn = function(window, params) mean(tail(window$close, params$n))", fixed = TRUE)
+})
+
+testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surface", {
+  root <- testthat::test_path("..", "..")
+  if (!ledgr_test_checkout_context(root)) {
+    return(invisible(NULL))
+  }
+  read <- function(path) {
+    paste(readLines(file.path(root, path), warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  }
+  minimum_variance <- read("vignettes/minimum-variance.qmd")
+  authoring <- read("vignettes/strategy-authoring-tools.qmd")
+  reproducibility <- read("vignettes/reproducibility.qmd")
+  store <- read("vignettes/experiment-store.qmd")
+  help <- read("man/ledgr_strategy_schedule.Rd")
+  reference <- read("_pkgdown.yml")
+  news <- read("NEWS.md")
+  help_flat <- gsub("\\s+", " ", help)
+  news_flat <- gsub("\\s+", " ", news)
+
+  testthat::expect_match(minimum_variance, "ledgr_schedule_month_start()", fixed = TRUE)
+  testthat::expect_no_match(minimum_variance, "months <- format(axis$ts_utc", fixed = TRUE)
+  testthat::expect_no_match(minimum_variance, "not_a_decision_date", fixed = TRUE)
+  testthat::expect_match(authoring, "ledgr_schedule_week_start()", fixed = TRUE)
+  testthat::expect_no_match(authoring, "pulses_seen %%", fixed = TRUE)
+  testthat::expect_match(authoring, "A scheduled skip and `ctx$hold()`", fixed = TRUE)
+  testthat::expect_match(reproducibility, "the schedule contributes\\s+separately")
+  testthat::expect_match(store, "`decision_pulse_count`, `scheduled_skip_count`", fixed = TRUE)
+  testthat::expect_match(help_flat, "exactly one pulse per expected venue session", fixed = TRUE)
+  testthat::expect_match(help_flat, "do not manufacture a boundary", fixed = TRUE)
+  testthat::expect_match(help_flat, "Explicit civil dates snap forward", fixed = TRUE)
+  testthat::expect_match(help_flat, "resolves a named scalar character strategy parameter", fixed = TRUE)
+  testthat::expect_match(help_flat, "resolves to no decision pulses", fixed = TRUE)
+  testthat::expect_match(help_flat, "inner strategy's source identity remains", fixed = TRUE)
+  testthat::expect_match(reference, "- ledgr_strategy_schedule", fixed = TRUE)
+  for (version in c(
+    "saved-sweep format 6", "provenance format 2",
+    "reproduction-key format 2", "walk-forward candidate and inspection formats 2",
+    "promotion-context format 3"
+  )) {
+    testthat::expect_match(news_flat, version, fixed = TRUE)
+  }
 })

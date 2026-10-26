@@ -97,6 +97,7 @@ reference:
     contents:
       - ledgr_experiment
       - print.ledgr_experiment
+      - ledgr_strategy_schedule
       - ledgr_universe_members
       - ledgr_valuation_stale
       - ledgr_experiment_plan

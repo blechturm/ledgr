@@ -15,8 +15,7 @@ fixes a problem the previous one showed:
 
 1.  rank the instruments and hold the top two;
 2.  hold only the instruments that are actually rising;
-3.  rebalance once a week, but exit a position early when it breaks its
-    trend.
+3.  rebalance once a week and keep a small piece of decision state.
 
 By the end you will have tested each version on one pulse, checked its
 share sizing by hand, run all three, and compared how often they trade.
@@ -42,11 +41,21 @@ bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% instruments,
     between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
-  )
+  ) |>
+  mutate(ts_utc = ts_utc + 16 * 60 * 60)
+```
 
+The weekly example later in the article needs an authoritative
+venue-session axis. The fixture derives and declares that calendar here;
+the construction is hidden because
+`vignette("point-in-time-inputs", package = "ledgr")` owns that topic.
+
+``` r
 snapshot <- ledgr_snapshot_from_df(
   bars,
-  snapshot_id = "strategy_authoring_snapshot"
+  snapshot_id = "strategy_authoring_snapshot",
+  facts = demo_session_facts,
+  price_basis = "split_adjusted"
 )
 
 features <- list(ledgr_ind_returns(5), ledgr_ind_sma(10))
@@ -90,7 +99,7 @@ Start by looking at the inputs:
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = instruments,
-  ts_utc = ledgr_utc("2019-03-12"),
+  ts_utc = ledgr_utc("2019-03-12 16:00:00"),
   features = features
 )
 
@@ -281,13 +290,15 @@ Sometimes you want to rebalance around a position you already own. Name
 it in `keep`: ledgr keeps its current quantity, reserves its value once,
 and sizes the new weights from the capital that remains. This pulse
 holds four shares of `DEMO_04` and has 600 in cash. Keeping `DEMO_04`
-leaves that 600 for the new position:
+leaves that 600 for the new position. This is a concise hold-then-edit
+pattern: retain the named holding, then size the rest of the portfolio
+around it.
 
 ``` r
 keep_pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = instruments,
-  ts_utc = ledgr_utc("2019-03-12"),
+  ts_utc = ledgr_utc("2019-03-12 16:00:00"),
   features = features,
   cash = 600,
   positions = c(DEMO_04 = 4)
@@ -319,14 +330,6 @@ top_momentum_run <- ledgr_experiment(
   cost_model = ledgr_cost_zero()
 ) |>
   ledgr_run(params = params, run_id = "v1_ranking")
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 top_momentum_fills <- ledgr_results(top_momentum_run, what = "fills")
 nrow(top_momentum_fills)
@@ -336,14 +339,14 @@ top_momentum_fills |>
   select(ts_utc, instrument_id, side, qty) |>
   slice_head(n = 6)
 #> # A tibble: 6 x 4
-#>   ts_utc     instrument_id side    qty
-#>   <date>     <chr>         <chr> <dbl>
-#> 1 2019-01-09 DEMO_02       BUY      33
-#> 2 2019-01-09 DEMO_03       BUY      30
-#> 3 2019-01-10 DEMO_02       SELL     33
-#> 4 2019-01-10 DEMO_04       BUY      25
-#> 5 2019-01-11 DEMO_02       BUY      33
-#> 6 2019-01-11 DEMO_03       SELL     30
+#>   ts_utc              instrument_id side    qty
+#>   <dttm>              <chr>         <chr> <dbl>
+#> 1 2019-01-09 10:00:00 DEMO_02       BUY      33
+#> 2 2019-01-09 10:00:00 DEMO_03       BUY      30
+#> 3 2019-01-10 10:00:00 DEMO_02       SELL     33
+#> 4 2019-01-10 10:00:00 DEMO_04       BUY      25
+#> 5 2019-01-11 10:00:00 DEMO_02       BUY      33
+#> 6 2019-01-11 10:00:00 DEMO_03       SELL     30
 ```
 
 Nothing trades during the first week. Until five prior bars exist, every
@@ -447,14 +450,6 @@ trend_momentum_run <- ledgr_experiment(
   cost_model = ledgr_cost_zero()
 ) |>
   ledgr_run(params = params, run_id = "v2_rule")
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 nrow(ledgr_results(trend_momentum_run, what = "fills"))
 #> [1] 177
@@ -518,14 +513,18 @@ if (!ledgr_passed_warmup(ctx$vec$feature("sma_10"))) return(ctx$hold())
 
 The third version uses it.
 
-## Give The Strategy A Memory
+## Schedule Decisions And Keep Strategy Memory
 
 `trend_momentum()` still decides from scratch every day, so it trades
 whenever an instrument crosses its trend line. Suppose you want to
-rebalance only every fifth pulse, roughly once a week on daily bars, but
-still exit a position early if it drops below its trend. The strategy
-then needs to remember something between pulses: how many pulses have
-passed.
+rebalance once a week. Decision timing is not strategy memory: declare
+it with `ledgr_schedule_week_start()`. ledgr resolves the rule against
+the snapshot’s open-session calendar before the run and invokes the
+strategy only when a decision is due.
+
+Strategy state is for information the strategy itself must carry from
+one decision to the next. This example counts its decisions so the
+distinction is visible:
 
 Strategy state is that memory:
 
@@ -539,9 +538,9 @@ Strategy state is that memory:
   is a reason for the submitted portfolio intent, not a general store
   for factors, predictions, ranks, selections or weights. Prefer short
   snake-case values so the reasons remain easy to group later.
-- At the next pulse, that list arrives as `ctx$state_prev`. On the first
-  pulse there is nothing to remember yet, so
-  `ctx$state_prev$pulses_seen` is `NULL`.
+- At the next scheduled decision, that list arrives as `ctx$state_prev`.
+  On the first decision there is nothing to remember yet, so
+  `ctx$state_prev$decisions_seen` is `NULL`.
 - Returning a bare target keeps the previous state unchanged.
 - ledgr stores the state with the run but does not interpret it. The
   names inside it are yours.
@@ -550,8 +549,8 @@ Strategy state is that memory:
 
 ``` r
 weekly_trend_momentum <- function(ctx, params) {
-  pulses_seen <- ctx$state_prev$pulses_seen
-  if (is.null(pulses_seen)) pulses_seen <- 0
+  decisions_seen <- ctx$state_prev$decisions_seen
+  if (is.null(decisions_seen)) decisions_seen <- 0L
 
   momentum <- ctx$vec$feature("return_5")
   trend <- ctx$vec$feature("sma_10")
@@ -559,33 +558,30 @@ weekly_trend_momentum <- function(ctx, params) {
 
   if (!ledgr_passed_warmup(trend)) {
     targets <- ctx$hold()
-  } else if (pulses_seen %% params$every == 0) {
+  } else {
     rising <- momentum > 0 & close > trend
     weights <- ctx |>
       ledgr_selection(where = rising, missing = "exclude") |>
       ledgr_weight_equal()
     targets <- weights |>
       ledgr_target_rebalance(ctx, equity_fraction = params$invested)
-  } else {
-    exits <- ledgr_selection(ctx, where = close < trend, missing = "exclude")
-    targets <- ctx$hold()
-    targets[exits] <- 0
   }
 
-  list(targets = targets, state_update = list(pulses_seen = pulses_seen + 1))
+  list(
+    targets = targets,
+    state_update = list(decisions_seen = decisions_seen + 1L)
+  )
 }
 
-weekly_params <- list(invested = 0.5, every = 5)
+weekly_params <- list(invested = 0.5)
 ```
 
-`pulses_seen` counts pulses. While the trend line is still warming up,
-the strategy holds. On every fifth pulse it rebalances with the rule
-from the second version. In between, it starts from `ctx$hold()`, keeps
-every position, and changes one thing: an instrument that closed below
-its trend is set to zero. The exits are a selection, so
-`missing = "exclude"` states the missing case: an instrument without a
-close is neither bought nor sold. That is the hold-then-edit pattern:
-start from what you own and change only what today’s evidence justifies.
+`decisions_seen` counts callback invocations, not market sessions. While
+the trend line is still warming up, the strategy explicitly holds.
+Between weekly decisions the callback is not invoked: ledgr records a
+scheduled skip, carries strategy state forward unchanged, and still
+processes economic events, accounting and checkpoints. A scheduled skip
+and `ctx$hold()` therefore mean different things.
 
 You might be tempted to call `trend_momentum()` from inside
 `weekly_trend_momentum()` instead of repeating the rule. Don’t: ledgr
@@ -594,9 +590,8 @@ defined outside the strategy, such as `trend_momentum()`, is rejected
 before the run starts. `vignette("reproducibility", package = "ledgr")`
 explains why.
 
-Calling the strategy on the study pulse shows the shape it returns.
-There is no previous state, so `pulses_seen` starts at zero and this is
-a rebalance pulse:
+Calling the undecorated strategy on the study pulse tests one decision.
+There is no previous state, so `decisions_seen` starts at zero:
 
 ``` r
 weekly_trend_momentum(pulse, weekly_params)
@@ -607,41 +602,20 @@ weekly_trend_momentum(pulse, weekly_params)
 #>       0     739       0       0
 #>
 #> $state_update
-#> $state_update$pulses_seen
+#> $state_update$decisions_seen
 #> [1] 1
 ```
 
-Supply previous state and holdings to test the other branch without
-running a backtest. Here `pulses_seen = 1` makes this a holding pulse;
-the strategy keeps the book except for a position whose close broke
-below its trend:
-
-``` r
-exit_pulse <- ledgr_pulse_snapshot(
-  snapshot,
-  universe = instruments,
-  ts_utc = ledgr_utc("2019-03-12"),
-  features = features,
-  positions = c(DEMO_02 = 10, DEMO_03 = 10),
-  state_prev = list(pulses_seen = 1)
-)
-
-weekly_trend_momentum(exit_pulse, weekly_params)
-#> $targets
-#> DEMO_01 DEMO_02 DEMO_03 DEMO_04
-#>       0      10       0       0
-#>
-#> $state_update
-#> $state_update$pulses_seen
-#> [1] 2
-```
-
-Now run it and compare the three versions:
+The decorator supplies timing when the strategy enters a real
+experiment. Now run it and compare the three versions:
 
 ``` r
 weekly_run <- ledgr_experiment(
   snapshot = snapshot,
-  strategy = weekly_trend_momentum,
+  strategy = ledgr_strategy_schedule(
+    weekly_trend_momentum,
+    ledgr_schedule_week_start()
+  ),
   features = features,
   opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
@@ -653,9 +627,9 @@ ledgr_run_compare(snapshot)
 #> # A tibble: 3 x 11
 #>   run_id     label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
 #>   <chr>      <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
-#> 1 v1_ranking <NA>        11372. +13.7%               2.63 -4.2%              76 69.7%
-#> 2 v2_rule    <NA>        10874. +8.7%                1.88 -3.7%              93 63.4%
-#> 3 v3_weekly  <NA>        10577. +5.8%                1.46 -3.3%              36 55.6%
+#> 1 v1_ranking <NA>        11372. +13.7%              2.63  -4.2%              76 69.7%
+#> 2 v2_rule    <NA>        10874. +8.7%               1.88  -3.7%              93 63.4%
+#> 3 v3_weekly  <NA>         9913. -0.9%              -0.173 -7.0%              26 69.2%
 #> # i 3 more variables: valuation_state <chr>, assumed_terminal_outcomes <int>,
 #> #   reproducibility_level <chr>
 #>
@@ -672,11 +646,11 @@ purchases alone are not counted, so it is smaller than the number of
 fills.
 
 Each change did what it was designed to do: the rule stopped buying
-falling instruments, and the schedule cut the number of trades by more
-than half. That is not evidence that the weekly version is a better
-strategy; in this sample the plain ranking even finished with the most
-equity. Three variants of one idea on four instruments over six months
-say nothing reliable about performance.
+falling instruments, and the weekly schedule reduced how often it
+reconsidered the portfolio. That is not evidence that the weekly version
+is a better strategy; in this sample the plain ranking even finished
+with the most equity. Three variants of one idea on four instruments
+over six months say nothing reliable about performance.
 `vignette("selection-integrity", package = "ledgr")` covers how to
 compare candidates without fooling yourself.
 
@@ -684,37 +658,36 @@ compare candidates without fooling yourself.
 >
 > ### Try it
 >
-> Run `weekly_trend_momentum()` with `every = 1` under a new `run_id`,
-> since a store keeps one run per ID. It should reproduce
-> `trend_momentum()` fill for fill. Why? Checks like this are a cheap way
-> to confirm that a rewrite changed only what you meant to change.
+> Decorate the same strategy with `ledgr_schedule_month_start()` under a
+> new `run_id`, since a store keeps one run per ID. Compare the decision
+> and skip counts with the weekly run. Checks like this are a cheap way to
+> confirm that a new cadence changed only what you meant to change.
 
 
-The fills show both kinds of pulse:
+The fills show the trades caused by weekly decisions:
 
 ``` r
 ledgr_results(weekly_run, what = "fills") |>
   select(ts_utc, instrument_id, side, qty) |>
   slice_head(n = 8)
 #> # A tibble: 8 x 4
-#>   ts_utc     instrument_id side    qty
-#>   <date>     <chr>         <chr> <dbl>
-#> 1 2019-01-23 DEMO_01       BUY      28
-#> 2 2019-01-23 DEMO_04       BUY      25
-#> 3 2019-01-30 DEMO_01       SELL     15
-#> 4 2019-01-30 DEMO_02       BUY      17
-#> 5 2019-01-30 DEMO_03       BUY      16
-#> 6 2019-01-30 DEMO_04       SELL     13
-#> 7 2019-02-01 DEMO_02       SELL     17
-#> 8 2019-02-04 DEMO_04       SELL     12
+#>   ts_utc              instrument_id side    qty
+#>   <dttm>              <chr>         <chr> <dbl>
+#> 1 2019-01-29 10:00:00 DEMO_01       BUY      27
+#> 2 2019-01-29 10:00:00 DEMO_04       BUY      24
+#> 3 2019-02-05 10:00:00 DEMO_01       SELL      1
+#> 4 2019-02-05 10:00:00 DEMO_03       BUY      31
+#> 5 2019-02-05 10:00:00 DEMO_04       SELL     24
+#> 6 2019-02-12 10:00:00 DEMO_01       SELL     26
+#> 7 2019-02-12 10:00:00 DEMO_03       SELL     31
+#> 8 2019-02-19 10:00:00 DEMO_01       BUY      12
 ```
 
-Purchases happen only after rebalance pulses, because between them the
-strategy can only keep or exit. On 30 January two more instruments
-qualified, so the budget was split four ways instead of two: `DEMO_01`
-and `DEMO_04` were cut roughly in half to make room for `DEMO_02` and
-`DEMO_03`. The sales on 1 and 4 February are early exits: those
-instruments closed below their trend between rebalances.
+Purchases happen only after scheduled decision pulses. Between them the
+strategy is not called, but ledgr continues the economic and accounting
+work of the run. The schedule is part of run identity and provenance, so
+changing the cadence creates a distinct experiment rather than an
+invisible callback rule.
 
 ## In Availability-Aware Runs
 
@@ -758,7 +731,6 @@ close(pulse)
 close(first_pulse)
 close(holding_pulse)
 close(keep_pulse)
-close(exit_pulse)
 ledgr_snapshot_close(snapshot)
 ```
 
@@ -771,6 +743,6 @@ ledgr_snapshot_close(snapshot)
 - `vignette("strategy-development", package = "ledgr")` covers the
   strategy contract, `ctx$flat()` and `ctx$hold()`, and a first run.
 - `vignette("sweeps", package = "ledgr")` compares parameter values such
-  as `invested` and `every` systematically.
+  as `invested` and parameterized schedules systematically.
 - `vignette("reproducibility", package = "ledgr")` explains preflight
   tiers and why strategies must be self-contained.

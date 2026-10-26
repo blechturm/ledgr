@@ -216,9 +216,17 @@ Useful fields include:
 | `run_id`, `status`, `label`, `tags`, `archived` | mutable and immutable run organization fields |
 | `snapshot_id`, `snapshot_hash` | sealed data identity |
 | `strategy_source_hash`, `strategy_params_hash`, `config_hash` | strategy, parameter, and run-configuration identity |
+| `strategy_schedule`, `schedule_hash` | canonical decision schedule and its identity |
 | `reproducibility_level` | strategy preflight tier recorded with the run |
 | `execution_mode`, `elapsed_sec`, `pulse_count` | execution telemetry |
+| `decision_pulse_count`, `scheduled_skip_count` | invoked decisions and schedule-controlled skips |
 | `error_msg` | failure diagnostic for non-completed runs |
+
+A scheduled skip means ledgr deliberately did not construct a decision
+context or invoke the callback on that pulse. It is not an explicit
+`ctx$hold()` from the strategy. Economic events, reconciliation,
+strategy-state persistence and checkpointing still run, so the two
+counts describe callback cadence rather than missing market time.
 
 ``` r
 comparison <- ledgr_run_compare(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
