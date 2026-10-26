@@ -125,7 +125,7 @@ live candidates, makes declaration names and civil-date text exact, classifies
 two distinct pulses assigned to one session as unsupported intraday input, and
 strengthens the parent-axis and identity detectors.
 
-Five disposable mutations were detected by the registered schedule suite:
+Six disposable mutations were detected by the registered schedule suite:
 
 - truncating the parent axis to the visible pulse range failed five literal
   boundary and date assertions;
@@ -134,7 +134,9 @@ Five disposable mutations were detected by the registered schedule suite:
 - accepting an extra declaration field failed the malformed-input assertion;
 - removing distinct same-session pulse classification failed the typed
   intraday assertion.
+- restoring constructor-order-only declaration validation failed both the
+  canonical JSON round trip and public scheduled-run reopening assertions.
 
 The corrected focused schedule, sweep, config, execution-spec, preflight,
-export and control-plane suites pass. The independent focused re-review remains
-the acceptance gate.
+export, run-store, persistence and control-plane suites pass. The independent
+focused re-review remains the acceptance gate.
