@@ -147,7 +147,11 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   The skip writes one pulse diagnostic with stage `decision`, outcome
   `skipped`, reason `scheduled_skip`, empty instrument ID and `{}` detail;
   it is not an explicit strategy hold and creates no target or instrument
-  decision trace. A resolved schedule with no due pulse refuses a flat run,
+  decision trace. When a held mark on that pulse is `stale_close` or
+  `frozen_close`, the skip also writes its valuation evidence with stage
+  `valuation`, outcome `marked` and an empty reason; it writes no current
+  marks, and run and sweep valuation readers count these rows with ordinary
+  decision evidence. A resolved schedule with no due pulse refuses a flat run,
   but a run with opening or carried positions remains valid and processes its
   economic events on every pulse.
 - Strategy-schedule declaration version 1 contains the five fixed boundary

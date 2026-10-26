@@ -2524,8 +2524,9 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
     )
   }
   # A memory candidate keeps only the diagnostic rows its candidate row reads:
-  # held decisions on stale or frozen marks (valuation summary), terminal
-  # dispositions (assumed outcomes) and stopped rows (stopped instrument IDs).
+  # held decision or scheduled-skip valuation rows on stale or frozen marks
+  # (valuation summary), terminal dispositions (assumed outcomes) and stopped
+  # rows (stopped instrument IDs).
   # The full decision trace grows with members times pulses and is never
   # held. Rows are numbered as if every row were kept, so diagnostic_seq is
   # unchanged, and kept chunks are bound once when read.
@@ -2533,7 +2534,9 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   state$diagnostic_parts <- vector("list", 64L)
   state$diagnostic_part_n <- 0L
   keep_summary_rows <- function(diagnostics) {
-    keep <- (diagnostics$stage %in% "decision" & !is.na(diagnostics$quantity) & diagnostics$quantity != 0 &
+    valued <- diagnostics$stage %in% "decision" |
+      (diagnostics$stage %in% "valuation" & diagnostics$outcome %in% "marked")
+    keep <- (valued & !is.na(diagnostics$quantity) & diagnostics$quantity != 0 &
       diagnostics$mark_source %in% c("stale_close", "frozen_close")) |
       (diagnostics$stage %in% "valuation" & diagnostics$reason_code %in% "terminal_disposition") |
       diagnostics$outcome %in% "stopped"

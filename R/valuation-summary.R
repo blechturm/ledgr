@@ -163,8 +163,8 @@ ledgr_valuation_summary_add_basis <- function(out, config, con) {
 
 # Shared arithmetic for durable runs and in-memory sweep candidates. `stale`
 # holds sessions, instruments and longest_age; `frozen` holds held frozen
-# decision rows (ts_utc, instrument_id, quantity, price); `equity` holds the
-# accepted equity rows (ts_utc, equity).
+# decision or scheduled-skip valuation rows (ts_utc, instrument_id, quantity,
+# price); `equity` holds the accepted equity rows (ts_utc, equity).
 ledgr_valuation_summary_compute <- function(policy, stale, frozen, equity) {
   equity <- equity[is.finite(equity$equity), , drop = FALSE]
   frozen <- frozen[order(as.character(frozen$instrument_id), as.numeric(as.POSIXct(frozen$ts_utc, tz = "UTC")), method = "radix"), , drop = FALSE]
@@ -240,11 +240,13 @@ ledgr_valuation_summary_compute <- function(policy, stale, frozen, equity) {
 # Valuation inputs from an in-memory diagnostics table (sweep candidates).
 ledgr_valuation_inputs_from_diagnostics <- function(diagnostics) {
   if (is.null(diagnostics) || nrow(diagnostics) == 0L) {
-    diagnostics <- data.frame(stage = character(), quantity = numeric(), mark_source = character(),
+    diagnostics <- data.frame(stage = character(), outcome = character(), quantity = numeric(), mark_source = character(),
                               mark_age = integer(), instrument_id = character(), price = numeric(),
                               ts_utc = as.POSIXct(character(), tz = "UTC"), stringsAsFactors = FALSE)
   }
-  held <- diagnostics$stage == "decision" & !is.na(diagnostics$quantity) & diagnostics$quantity != 0
+  held <- (diagnostics$stage == "decision" |
+    (diagnostics$stage == "valuation" & diagnostics$outcome %in% "marked")) &
+    !is.na(diagnostics$quantity) & diagnostics$quantity != 0
   stale <- held & diagnostics$mark_source %in% "stale_close"
   frozen <- held & diagnostics$mark_source %in% "frozen_close"
   list(

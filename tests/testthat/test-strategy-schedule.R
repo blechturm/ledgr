@@ -176,8 +176,20 @@ testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
   listed_values <- selected_values(listed)
   compared_values <- selected_values(compared)
   testthat::expect_identical(listed_values, compared_values)
+  for (nm in selected) {
+    testthat::expect_identical(compared_values[[nm]][[1L]], compared_values[[nm]][[2L]])
+  }
   testthat::expect_identical(compared[[selected[[1L]]]], rep("frozen", 2L))
   testthat::expect_identical(compared[[selected[[2L]]]], rep(1L, 2L))
+  testthat::expect_gt(compared_values$max_frozen_equity_weight[[2L]], 0)
+
+  grid <- ledgr_grid_named(one = list(strategy = list(due = due)))
+  manual_sweep <- ledgr_sweep(fixture$exp, grid, seed = 3119L)
+  scheduled_sweep <- ledgr_sweep(scheduled_exp, grid, seed = 3119L)
+  for (nm in selected) {
+    testthat::expect_identical(manual_sweep[[nm]], scheduled_sweep[[nm]])
+    testthat::expect_identical(scheduled_sweep[[nm]], compared_values[[nm]][[2L]])
+  }
   warning_line <- "WARNING: this result relies on declared valuation or terminal assumptions."
   testthat::expect_true(warning_line %in% utils::capture.output(print(scheduled)))
   testthat::expect_true("Valuation Evidence:" %in% utils::capture.output(summary(scheduled)))
@@ -186,6 +198,35 @@ testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
   reopened <- ledgr_run_open(fixture$snapshot, "schedule-valuation-declared")
   on.exit(close(reopened), add = TRUE)
   testthat::expect_identical(ledgr_valuation_summary(reopened), manual_valuation)
+
+  stale_fixture <- ws42_history_fixture(
+    strategy = manual_strategy, features = list(), opening = opening,
+    valuation_policy = ledgr_valuation_stale(3)
+  )
+  on.exit(ledgr_snapshot_close(stale_fixture$snapshot), add = TRUE)
+  stale_due <- ws42_iso(stale_fixture$axis[[6L]])
+  stale_manual <- ledgr_run(
+    stale_fixture$exp, params = list(due = stale_due), run_id = "schedule-stale-manual"
+  )
+  stale_scheduled_exp <- stale_fixture$exp
+  stale_scheduled_exp$strategy <- scheduled_strategy
+  stale_scheduled <- ledgr_run(
+    stale_scheduled_exp, params = list(due = stale_due), run_id = "schedule-stale-declared"
+  )
+  on.exit(close(stale_manual), add = TRUE)
+  on.exit(close(stale_scheduled), add = TRUE)
+  testthat::expect_identical(
+    ledgr_valuation_summary(stale_scheduled), ledgr_valuation_summary(stale_manual)
+  )
+  testthat::expect_identical(ledgr_valuation_summary(stale_scheduled)$valuation_state, "stale")
+  stale_list <- ledgr_run_list(stale_fixture$snapshot)
+  stale_at <- match(c(stale_manual$run_id, stale_scheduled$run_id), stale_list$run_id)
+  testthat::expect_identical(stale_list$valuation_state[stale_at], rep("stale", 2L))
+  stale_grid <- ledgr_grid_named(one = list(strategy = list(due = stale_due)))
+  stale_manual_sweep <- ledgr_sweep(stale_fixture$exp, stale_grid, seed = 3119L)
+  stale_scheduled_sweep <- ledgr_sweep(stale_scheduled_exp, stale_grid, seed = 3119L)
+  testthat::expect_identical(stale_manual_sweep$valuation_state, "stale")
+  testthat::expect_identical(stale_scheduled_sweep$valuation_state, "stale")
 })
 
 # ledgr-test-profile: review
