@@ -156,6 +156,29 @@ order and cut implementation respectively.
   Acceptance: every public result table and print is byte-identical or each
   difference is decided by the maintainer, and no reader re-derives state
   another already provides. Source: lever 4 of the same horizon entry.
+- **Explicit export tiering (maintainer, 2026-10-26):** after this release's
+  cleanup work (the prove-or-retire pass over thin surfaces, the
+  one-result-reader merge and the export-shape repairs) and before the first
+  CRAN tag, decide one tier for every export: ordinary research surface,
+  low-level and recovery, or fixtures and simulation. Express it through one
+  mechanism (`@keywords internal`, a named reference group per tier, or
+  unexport) rather than through the pkgdown grouping that holds the
+  distinction today, and let the export lock test encode the tier so no
+  export lands untiered. Source: the horizon entry
+  ["Explicit export tiering before CRAN"](horizon.md#2026-10-26-ux-explicit-export-tiering-before-cran).
+- **Core boundary and sister packages (maintainer, 2026-10-26):** measure,
+  then decide, what stays in core and what incubates as a private sister
+  package in ledgr-research.
+  - Measure four inputs: an export census, a coupling and size map per
+    candidate sister package, a seam audit of the private adapters and an
+    inventory of public seams.
+  - Then decide in one core-boundary ADR: the core list, the seams, the
+    one-way rule that sister packages use only public API, versioning and
+    graduation criteria.
+  - The decision precedes export tiering and moves no code by itself.
+
+  Source: the horizon entry
+  ["Core boundary and incubated sister packages"](horizon.md#2026-10-26-architecture-core-boundary-and-incubated-sister-packages).
 - **Still-live chores:** phase-level memory and parallel-worker budgets, plus
   the plotting, print/result-reader, and symbol-surface work retained by
   [macro-plan Section 5](ledgr_v0_2_2_spec_packet/macro_plan.md#5-explicit-non-goals)
@@ -186,6 +209,14 @@ superseded with a named replacement, or explicitly deferred again by the
 maintainer with a reason and route. Inclusion in the inventory does not turn
 a design question into a cleanup ticket. Other v0.2.2 non-goals and parked
 horizon ideas are not automatically promoted.
+
+The [export shape audit](audits/v0_2_2_export_shape_audit.md) of 2026-10-26
+is a named input to this inventory. Its nine findings carry their routes in
+its Section 6 and in the horizon entry
+["Export shape audit findings and their routes"](horizon.md#2026-10-26-ux-export-shape-audit-findings-and-their-routes);
+the five that ride the result-reader and symbol-surface work are reconciled
+here like every other item, and the tiering follow-up is the carried
+commitment above.
 
 <a id="next-release-scope-dispositions"></a>
 
