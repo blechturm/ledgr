@@ -113,9 +113,12 @@ is the absent P2 decision/risk trace from explicit manual holds, replaced by one
 `scheduled_skip` diagnostic per skipped scheduled pulse. The untimed correction
 record in `evidence/ws63_diagnostic_parity` removes only those P2 rows and then
 requires every retained P1/P4/P5 row and every retained reason count to match.
-The two checker self-tests independently corrupt economic, date, count, clock,
-retained-row and retained-hash evidence; every mutation is rejected after a
-passing baseline.
+At `20c1fc21`, both arms retain the same 16,043 off-date P1/P4/P5 rows with the
+same hash. The manual arm additionally records 3,610,355 P2 decision/risk rows;
+the scheduled arm records 6,849 `scheduled_skip` rows instead. The two checker
+self-tests independently corrupt economic, date, count, clock, retained-row
+and retained-hash evidence; every mutation is rejected after a passing
+baseline.
 
 ## Identity cost kept outside H1
 
@@ -174,6 +177,10 @@ hidden in the fold ratio.
 - minimum-variance proof: six blocks PASS after moving its experiment onto the
   public decorator;
 - documentation contracts: all blocks PASS, including LTB-0509;
+- focused correction suites (`strategy-schedule`, `minimum-variance-proof`
+  and `documentation-contracts`): PASS at `20c1fc21`;
+- untimed off-date diagnostic parity: PASS, 16,043 retained rows exact and
+  both registered mutations rejected;
 - four changed GFM articles: execute and freshness-check PASS;
 - ordinary fast: three runs, 577/577 each, median 109.71 seconds against 112;
 - ordinary review: 446/446, 477.02 seconds, one established optional-path skip;
