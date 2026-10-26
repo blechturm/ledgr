@@ -551,6 +551,26 @@ into a list of dates:
 
 wednesday_schedule <- ledgr_schedule_weekday("wednesday")
 month_day_15_schedule <- ledgr_schedule_month_day(15)
+
+calendar_probe <- function(ctx, params) {
+  list(targets = ctx$hold(), intent_reason = "calendar_probe")
+}
+
+wednesday_experiment <- ledgr_experiment(
+  snapshot,
+  ledgr_strategy_schedule(calendar_probe, wednesday_schedule),
+  universe = instruments,
+  cost_model = ledgr_cost_zero()
+)
+month_day_15_experiment <- ledgr_experiment(
+  snapshot,
+  ledgr_strategy_schedule(calendar_probe, month_day_15_schedule),
+  universe = instruments,
+  cost_model = ledgr_cost_zero()
+)
+
+ledgr_experiment_plan(wednesday_experiment)
+ledgr_experiment_plan(month_day_15_experiment)
 ```
 
 Both move forward only within the period they name. If Friday is closed and
@@ -562,6 +582,66 @@ start of the parent calendar, `ledgr_schedule_month_day(1L)` decides when the
 first session is an open first of the month;
 `ledgr_schedule_month_start()` deliberately does not manufacture that first
 boundary because it cannot prove a preceding month.
+
+The period boundary is executable behavior, not just a label. This tiny
+calendar declares Thursday and Monday open but Friday and the weekend closed.
+A Friday schedule therefore makes no decision instead of moving it to Monday:
+
+```{r}
+#| label: common-calendar-boundaries
+
+calendar_dates <- seq(as.Date("2019-04-18"), as.Date("2019-04-22"), by = "day")
+calendar_open <- calendar_dates %in% as.Date(c("2019-04-18", "2019-04-22"))
+calendar_sessions <- data.frame(
+  session_date = calendar_dates,
+  status = ifelse(calendar_open, "open", "closed"),
+  session_open = ifelse(calendar_open, "09:30:00", NA_character_),
+  session_close = ifelse(calendar_open, "16:00:00", NA_character_)
+)
+calendar_bars <- data.frame(
+  instrument_id = "AAA",
+  ts_utc = as.POSIXct(
+    c("2019-04-18 16:00:00", "2019-04-22 16:00:00"),
+    tz = "UTC"
+  ),
+  open = c(100, 101), high = c(100, 101), low = c(100, 101),
+  close = c(100, 101), volume = c(1000, 1000)
+)
+calendar_snapshot <- ledgr_snapshot_from_df(
+  calendar_bars,
+  facts = ledgr_facts(ledgr_facts_sessions(
+    calendar_sessions,
+    venue_id = "DEMO_FRIDAY",
+    knowledge = "assume_effective",
+    timezone = "UTC"
+  )),
+  price_basis = "split_adjusted"
+)
+friday_experiment <- ledgr_experiment(
+  calendar_snapshot,
+  ledgr_strategy_schedule(
+    calendar_probe,
+    ledgr_schedule_weekday("friday")
+  ),
+  universe = "AAA",
+  opening = ledgr_opening(
+    cash = 900,
+    positions = c(AAA = 1),
+    cost_basis = c(AAA = 100)
+  ),
+  cost_model = ledgr_cost_zero()
+)
+friday_run <- ledgr_run(friday_experiment, run_id = "calendar-friday")
+friday_decisions <- ledgr_results(friday_run, "diagnostics") |>
+  as_tibble() |>
+  filter(reason_code == "strategy_intent") |>
+  transmute(decision_date = as.Date(ts_utc))
+
+friday_decisions |>
+  filter(decision_date == as.Date("2019-04-19"))
+close(friday_run)
+ledgr_snapshot_close(calendar_snapshot)
+```
 
 Strategy state is for information the strategy itself must carry from one
 decision to the next. This example counts its decisions so the distinction is

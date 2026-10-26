@@ -98,6 +98,8 @@ reference:
       - ledgr_experiment
       - print.ledgr_experiment
       - ledgr_strategy_schedule
+      - ledgr_schedule_weekday
+      - ledgr_schedule_month_day
       - ledgr_universe_members
       - ledgr_valuation_stale
       - ledgr_experiment_plan

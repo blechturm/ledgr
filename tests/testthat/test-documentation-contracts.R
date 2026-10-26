@@ -2158,6 +2158,7 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   }
   minimum_variance <- read("vignettes/minimum-variance.qmd")
   authoring <- read("vignettes/strategy-authoring-tools.qmd")
+  rendered_authoring <- read("vignettes/strategy-authoring-tools.md")
   reproducibility <- read("vignettes/reproducibility.qmd")
   store <- read("vignettes/experiment-store.qmd")
   help <- read("man/ledgr_strategy_schedule.Rd")
@@ -2191,6 +2192,10 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
     "vignettes/strategy-authoring-tools.qmd",
     "common-calendar-schedules"
   )
+  common_calendar_boundaries <- qmd_chunk(
+    "vignettes/strategy-authoring-tools.qmd",
+    "common-calendar-boundaries"
+  )
 
   testthat::expect_match(minimum_variance_experiment, "ledgr_schedule_month_start()", fixed = TRUE)
   testthat::expect_no_match(minimum_variance_strategy, "months <- format", fixed = TRUE)
@@ -2198,6 +2203,14 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(weekly_run, "ledgr_schedule_week_start()", fixed = TRUE)
   testthat::expect_match(common_calendar, 'ledgr_schedule_weekday("wednesday")', fixed = TRUE)
   testthat::expect_match(common_calendar, "ledgr_schedule_month_day(15)", fixed = TRUE)
+  testthat::expect_match(common_calendar, "ledgr_experiment_plan(wednesday_experiment)", fixed = TRUE)
+  testthat::expect_match(common_calendar, "ledgr_experiment_plan(month_day_15_experiment)", fixed = TRUE)
+  testthat::expect_match(common_calendar_boundaries, 'ledgr_schedule_weekday("friday")', fixed = TRUE)
+  testthat::expect_match(common_calendar, 'intent_reason = "calendar_probe"', fixed = TRUE)
+  testthat::expect_match(common_calendar_boundaries, 'as.Date("2019-04-19")', fixed = TRUE)
+  testthat::expect_match(rendered_authoring, "#> Strategy schedule: wednesday", fixed = TRUE)
+  testthat::expect_match(rendered_authoring, "#> Strategy schedule: month day 15", fixed = TRUE)
+  testthat::expect_match(rendered_authoring, "#> # A tibble: 0 x 1", fixed = TRUE)
   testthat::expect_no_match(weekly_strategy, "pulses_seen %%", fixed = TRUE)
   testthat::expect_match(authoring, "A scheduled skip and `ctx$hold()`", fixed = TRUE)
   testthat::expect_match(authoring, "does not turn into a Monday decision", fixed = TRUE)
@@ -2225,7 +2238,12 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   }
   testthat::expect_match(help_flat, "resolves to no decision pulses", fixed = TRUE)
   testthat::expect_match(help_flat, "inner strategy's source identity remains", fixed = TRUE)
-  testthat::expect_match(reference, "- ledgr_strategy_schedule", fixed = TRUE)
+  for (topic in c(
+    "ledgr_strategy_schedule", "ledgr_schedule_weekday",
+    "ledgr_schedule_month_day"
+  )) {
+    testthat::expect_match(reference, paste0("- ", topic), fixed = TRUE)
+  }
   testthat::expect_match(news_flat, "ledgr_strategy_schedule()", fixed = TRUE)
   testthat::expect_match(news_flat, "ledgr_schedule_weekday()", fixed = TRUE)
   testthat::expect_match(news_flat, "ledgr_schedule_month_day()", fixed = TRUE)

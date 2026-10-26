@@ -27,13 +27,15 @@ unchanged.
   JSON round trips and distinct identities.
 - The seven pre-Cut-22 declarations are pinned to literal canonical JSON and
   SHA-256 values captured from detached commit `946078d9`; all are unchanged.
-- LCL-0502/LTB-0511 carries `weekday` through an independent public run,
-  two-worker sweep, save/reopen and promotion, and carries `month_day` through
-  a real walk-forward candidate and reproduction key. Run and sweep economics
-  agree.
-- The shared generated help and the executable Strategy Authoring Tools
-  article teach Wednesday, month day 15, a closed Friday, weekend-only venues,
-  same-month resolution and the parent-start difference from month start.
+- LCL-0502/LTB-0511 carries `weekday` through an independent stateful public
+  run, recovery, two-worker sweep with retained-equity parity, save/reopen,
+  promotion and reproduction key, then carries `month_day` and both hashes
+  through a real walk-forward candidate.
+- Generated help, the pkgdown reference index, the API export lock, NEWS and
+  the article name both helpers. Executed article chunks print the exact
+  Wednesday and month-day-15 plan labels and show that a closed Friday yields
+  no decision; the prose also covers weekend-only venues, same-month
+  resolution and the parent-start difference from month start.
 
 ## Optimization-Shape Walk
 
@@ -54,11 +56,12 @@ specification.
 
 ## Verification
 
-- `test-strategy-schedule.R`: 330 expectations, zero failures or skips.
-- `test-api-exports.R`: 21 expectations; `test-documentation-contracts.R`:
-  1,084; `test-test-control-plane.R`: 76; all pass.
-- The strategy-authoring vignette executes all 49 chunks and renders its
-  tracked Markdown output.
+- The focused strategy-schedule, API-export, documentation-contract and
+  test-control-plane suites pass. The documentation suite has 1,101
+  expectations after the close-review corrections.
+- The strategy-authoring vignette executes all 51 chunks and renders its
+  tracked Markdown output. The output contains both exact plan labels and a
+  zero-row closed-Friday decision table.
 - Codebase contract check, fold-phase check, both YAML files and
   `git diff --check` pass.
 - A source build followed by `R CMD check --no-manual --no-build-vignettes`
@@ -66,4 +69,3 @@ specification.
   no-built-vignette warnings and the pre-existing unqualified `head` NOTE.
   A final static check after removing Cut 22's temporary `head`/`tail` use
   reports only that pre-existing NOTE.
-

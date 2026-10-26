@@ -1633,9 +1633,15 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0511] common calendar schedules use generic orchestration carriers", {
   inner <- function(ctx, params) {
+    previous <- ctx$state_prev
+    decision_n <- if (is.null(previous) || is.null(previous$decision_n)) {
+      1L
+    } else {
+      previous$decision_n + 1L
+    }
     target <- ctx$flat()
-    target["AAA"] <- params$qty
-    target
+    target["AAA"] <- if (decision_n %% 2L == 1L) params$qty else 0
+    list(targets = target, state_update = list(decision_n = decision_n))
   }
   weekday_strategy <- ledgr_strategy_schedule(
     inner,
@@ -1655,7 +1661,13 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
 
   run <- ledgr_run(fixture$exp, params = list(qty = 2), seed = 3115L)
   on.exit(close(run), add = TRUE)
-  sweep <- ledgr_sweep(fixture$exp, grid, seed = 3115L, workers = 2L)
+  sweep <- ledgr_sweep(
+    fixture$exp,
+    grid,
+    seed = 3115L,
+    workers = 2L,
+    retain = ledgr_sweep_retention(returns = "completed")
+  )
   candidate <- ledgr_candidate(sweep, "one")
   run_info <- ledgr_run_info(fixture$snapshot, run$run_id)
   testthat::expect_identical(run_info$strategy_schedule$type_id, "weekday")
@@ -1669,9 +1681,20 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
     run_info$schedule_hash
   )
   run_equity <- ledgr_results(run, "equity")
+  sweep_equity <- ledgr_sweep_returns(sweep)
+  testthat::expect_identical(sweep_equity$ts_utc, run_equity$ts_utc)
+  testthat::expect_identical(sweep_equity$equity, run_equity$equity)
   testthat::expect_equal(
     sweep$final_equity[[1L]],
     run_equity$equity[[nrow(run_equity)]]
+  )
+  testthat::expect_identical(run_info$decision_pulse_count, 2L)
+  testthat::expect_identical(run_info$scheduled_skip_count, 6L)
+
+  recovered <- ledgr_run_strategy(fixture$snapshot, run$run_id, trust = TRUE)
+  testthat::expect_identical(
+    ledgr:::ledgr_strategy_schedule_declaration(recovered$strategy_function),
+    unclass(ledgr_schedule_weekday("monday"))
   )
 
   ledgr_sweep_save(sweep, fixture$snapshot, sweep_id = "calendar-sweep")
@@ -1734,6 +1757,16 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
   testthat::expect_identical(
     walk_candidate$provenance$resolved_schedule$args$day,
     4L
+  )
+  testthat::expect_identical(
+    walk_candidate$provenance$resolved_schedule_hash,
+    ledgr:::ledgr_strategy_schedule_hash(
+      walk_candidate$provenance$resolved_schedule
+    )
+  )
+  testthat::expect_identical(
+    walk_candidate$provenance$schedule_hash,
+    ledgr:::ledgr_strategy_schedule_hash(ledgr_schedule_month_day(4L))
   )
   testthat::expect_identical(
     ledgr_candidate_reproduction_key(walk_candidate)$strategy_schedule$resolved_schedule$args$day,

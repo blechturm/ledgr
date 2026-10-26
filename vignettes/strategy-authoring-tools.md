@@ -175,26 +175,25 @@ pulse’s default of 100,000 in cash. Calling a strategy on a pulse is the
 fastest way to catch a wrong feature ID, a reversed comparison, or an
 unexpected position size before you run months of bars.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Read whole vectors, not one instrument at a time
+>
+> `ctx$vec$close` and `ctx$vec$feature()` return one value per instrument
+> in a single read. The scalar forms `ctx$close(id)`,
+> `ctx$feature(id, feature_id)`, and `ctx$position(id)` are for an
+> instrument you have already singled out. Calling them in a loop over
+> `ctx$universe` repeats per-instrument work at every pulse and is the
+> most common way to make a strategy slow. Singular feature reads accept
+> either an active alias or a concrete feature ID. For universes of at
+> least 100 instruments, a loop over the bar, price, position, scalar
+> feature, or active-map bundle accessor triggers one
+> `ledgr_scalar_accessor_loop` warning per run when its calls reach the
+> axis size and names the vector replacement; the warning changes no
+> result. Read each required active alias once with
+> `ctx$vec$feature("alias")`. Explicit-map bundle calls stay unrecorded
+> because the plane does not accept an explicit map.
 
-**Read whole vectors, not one instrument at a time**
-
-`ctx$vec$close` and `ctx$vec$feature()` return one value per instrument
-in a single read. The scalar forms `ctx$close(id)`,
-`ctx$feature(id, feature_id)`, and `ctx$position(id)` are for an
-instrument you have already singled out. Calling them in a loop over
-`ctx$universe` repeats per-instrument work at every pulse and is the
-most common way to make a strategy slow. Singular feature reads accept
-either an active alias or a concrete feature ID. For universes of at
-least 100 instruments, a loop over the bar, price, position, scalar
-feature, or active-map bundle accessor triggers one
-`ledgr_scalar_accessor_loop` warning per run when its calls reach the
-axis size and names the vector replacement; the warning changes no
-result. Read each required active alias once with
-`ctx$vec$feature("alias")`. Explicit-map bundle calls stay unrecorded
-because the plane does not accept an explicit map.
-
-</div>
 
 ## From Scores To Shares
 
@@ -564,6 +563,74 @@ them into a list of dates:
 ``` r
 wednesday_schedule <- ledgr_schedule_weekday("wednesday")
 month_day_15_schedule <- ledgr_schedule_month_day(15)
+
+calendar_probe <- function(ctx, params) {
+  list(targets = ctx$hold(), intent_reason = "calendar_probe")
+}
+
+wednesday_experiment <- ledgr_experiment(
+  snapshot,
+  ledgr_strategy_schedule(calendar_probe, wednesday_schedule),
+  universe = instruments,
+  cost_model = ledgr_cost_zero()
+)
+month_day_15_experiment <- ledgr_experiment(
+  snapshot,
+  ledgr_strategy_schedule(calendar_probe, month_day_15_schedule),
+  universe = instruments,
+  cost_model = ledgr_cost_zero()
+)
+
+ledgr_experiment_plan(wednesday_experiment)
+#> ledgr experiment plan
+#> Availability: active
+#> Price basis:  split_adjusted (declared)
+#> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
+#> Strategy schedule: wednesday
+#> Universe:     fixed
+#> Valuation:    stale-mark horizon 5 sessions (default)
+#> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
+#> Checks:
+#> # A tibble: 4 x 3
+#>   family         status            assumption_reasons
+#>   <chr>          <chr>             <chr>
+#> 1 membership     omitted           ""
+#> 2 sessions       assumption_backed "knowledge_assume_effective"
+#> 3 trading_status omitted           ""
+#> 4 lifetime       omitted           ""
+#> Declared assumptions:
+#>   valuation.max_sessions          5 (default)
+#>   valuation.exhausted             freeze (default)
+#>   history.price_carry             5 sessions (default)
+#>   history.output_carry            off (default)
+#>   history.segment_limit           4 per fact, at least 16 (default)
+#>   held_terminal_position.default  last_permissible (default)
+#>   frozen_terminal_position        write_off (default)
+ledgr_experiment_plan(month_day_15_experiment)
+#> ledgr experiment plan
+#> Availability: active
+#> Price basis:  split_adjusted (declared)
+#> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
+#> Strategy schedule: month day 15
+#> Universe:     fixed
+#> Valuation:    stale-mark horizon 5 sessions (default)
+#> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
+#> Checks:
+#> # A tibble: 4 x 3
+#>   family         status            assumption_reasons
+#>   <chr>          <chr>             <chr>
+#> 1 membership     omitted           ""
+#> 2 sessions       assumption_backed "knowledge_assume_effective"
+#> 3 trading_status omitted           ""
+#> 4 lifetime       omitted           ""
+#> Declared assumptions:
+#>   valuation.max_sessions          5 (default)
+#>   valuation.exhausted             freeze (default)
+#>   history.price_carry             5 sessions (default)
+#>   history.output_carry            off (default)
+#>   history.segment_limit           4 per fact, at least 16 (default)
+#>   held_terminal_position.default  last_permissible (default)
+#>   frozen_terminal_position        write_off (default)
 ```
 
 Both move forward only within the period they name. If Friday is closed
@@ -576,6 +643,67 @@ calendar, `ledgr_schedule_month_day(1L)` decides when the first session
 is an open first of the month; `ledgr_schedule_month_start()`
 deliberately does not manufacture that first boundary because it cannot
 prove a preceding month.
+
+The period boundary is executable behavior, not just a label. This tiny
+calendar declares Thursday and Monday open but Friday and the weekend
+closed. A Friday schedule therefore makes no decision instead of moving
+it to Monday:
+
+``` r
+calendar_dates <- seq(as.Date("2019-04-18"), as.Date("2019-04-22"), by = "day")
+calendar_open <- calendar_dates %in% as.Date(c("2019-04-18", "2019-04-22"))
+calendar_sessions <- data.frame(
+  session_date = calendar_dates,
+  status = ifelse(calendar_open, "open", "closed"),
+  session_open = ifelse(calendar_open, "09:30:00", NA_character_),
+  session_close = ifelse(calendar_open, "16:00:00", NA_character_)
+)
+calendar_bars <- data.frame(
+  instrument_id = "AAA",
+  ts_utc = as.POSIXct(
+    c("2019-04-18 16:00:00", "2019-04-22 16:00:00"),
+    tz = "UTC"
+  ),
+  open = c(100, 101), high = c(100, 101), low = c(100, 101),
+  close = c(100, 101), volume = c(1000, 1000)
+)
+calendar_snapshot <- ledgr_snapshot_from_df(
+  calendar_bars,
+  facts = ledgr_facts(ledgr_facts_sessions(
+    calendar_sessions,
+    venue_id = "DEMO_FRIDAY",
+    knowledge = "assume_effective",
+    timezone = "UTC"
+  )),
+  price_basis = "split_adjusted"
+)
+friday_experiment <- ledgr_experiment(
+  calendar_snapshot,
+  ledgr_strategy_schedule(
+    calendar_probe,
+    ledgr_schedule_weekday("friday")
+  ),
+  universe = "AAA",
+  opening = ledgr_opening(
+    cash = 900,
+    positions = c(AAA = 1),
+    cost_basis = c(AAA = 100)
+  ),
+  cost_model = ledgr_cost_zero()
+)
+friday_run <- ledgr_run(friday_experiment, run_id = "calendar-friday")
+friday_decisions <- ledgr_results(friday_run, "diagnostics") |>
+  as_tibble() |>
+  filter(reason_code == "strategy_intent") |>
+  transmute(decision_date = as.Date(ts_utc))
+
+friday_decisions |>
+  filter(decision_date == as.Date("2019-04-19"))
+#> # A tibble: 0 x 1
+#> # i 1 variable: decision_date <date>
+close(friday_run)
+ledgr_snapshot_close(calendar_snapshot)
+```
 
 Strategy state is for information the strategy itself must carry from
 one decision to the next. This example counts its decisions so the
@@ -707,16 +835,15 @@ over six months say nothing reliable about performance.
 `vignette("selection-integrity", package = "ledgr")` covers how to
 compare candidates without fooling yourself.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Decorate the same strategy with `ledgr_schedule_month_start()` under a
+> new `run_id`, since a store keeps one run per ID. Compare the decision
+> and skip counts with the weekly run. Checks like this are a cheap way to
+> confirm that a new cadence changed only what you meant to change.
 
-**Try it**
-
-Decorate the same strategy with `ledgr_schedule_month_start()` under a
-new `run_id`, since a store keeps one run per ID. Compare the decision
-and skip counts with the weekly run. Checks like this are a cheap way to
-confirm that a new cadence changed only what you meant to change.
-
-</div>
 
 The fills show the trades caused by weekly decisions:
 
