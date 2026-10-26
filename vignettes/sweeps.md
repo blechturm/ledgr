@@ -605,7 +605,7 @@ ledgr_sweep_info(reopened_sweep)
     Saved artifact
     Created At:        2026-10-26 21:30:15.43301
     Schema Version:    6
-    Engine Version:    0.2.1.0
+    Engine Version:    0.2.2
     Note:              Exploratory SMA sweep with retained return series.
 
 Reopened sweeps behave like sweep result objects for candidate

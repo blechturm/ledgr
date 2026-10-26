@@ -1058,7 +1058,7 @@ testthat::test_that("cost documentation contains runnable examples and the curre
         testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
         testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
         testthat::expect_match(doc, "walk-forward evaluation runs over the existing sweep and run surfaces", fixed = TRUE)
-        testthat::expect_match(doc, "The v0.2.1.0 release line is a correctness-first research layer", fixed = TRUE)
+        testthat::expect_match(doc, "The v0.2.2 release line is a correctness-first research layer", fixed = TRUE)
         testthat::expect_match(doc, "DSR, PBO/CSCV, MinTRL", fixed = TRUE)
         testthat::expect_match(doc, "Paper/live execution, broker adapters, and operational observability[[:space:]]+remain")
         testthat::expect_match(doc, "no[[:space:]]+release date or operational capability is implied")

@@ -23,11 +23,9 @@ Public changes that require source edits include:
 
 - replace `ledgr_param_grid()` with an ordinary data frame,
   `ledgr_strategy_grid()`, or the feature/strategy grid helpers;
-- replace the removed history `na_action` argument and
-  `ledgr_history_sufficient()` with `min_observations`, `min_instruments`, and
-  `ledgr_passed_warmup()`;
-- remove `persist_features` and calls to the removed feature-cache clearing
-  helper; features are computed on the uncached path and are not persisted;
+- remove `persist_features` and calls to the removed
+  `ledgr_feature_cache_clear()`; features are computed on the uncached path
+  and are not persisted;
 - replace the removed `fill_model` argument with `timing_model` and a classed
   `cost_model`, and replace the `type` alias of
   `as_tibble.ledgr_backtest()` with `what`;
@@ -326,8 +324,7 @@ memory is the tighter constraint.
   `solution |> ledgr_align_weights(history) |> ledgr_target_rebalance(ctx)`.
   `ledgr_passed_warmup()` now also accepts an intact history frame or matrix
   and returns its recorded `min_observations`/`min_instruments` readiness
-  result without rescanning cells. The former `na_action` argument and
-  `ledgr_history_sufficient()` helper are removed before CRAN.
+  result without rescanning cells.
 
 - Feature history from `ledgr_history_frame()` is a vintage view: after a
   lifetime fact becomes known late, earlier feature cells keep the value and

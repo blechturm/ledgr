@@ -98,7 +98,7 @@ teaches the spread convention, fees and target-risk layers.
 
 ## What The Current Research Layer Delivers
 
-The v0.2.1.0 release line is a correctness-first research layer. It
+The v0.2.2 release line is a correctness-first research layer. It
 covers:
 
 - sealed snapshots, hash verification, and deterministic replay across

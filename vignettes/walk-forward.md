@@ -177,7 +177,7 @@ wf
 #> 3        3 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: d437ccc9af097caeae8515bcd61afe892c145336555ed27eff078cd75dfb6477
+#> Session: a9625b75cfc7ac7ea0a73c74af4d0cd75865e88621a94ebc6c195c559e1e0a93
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 3

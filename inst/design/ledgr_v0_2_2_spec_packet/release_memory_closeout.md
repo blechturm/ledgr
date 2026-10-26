@@ -126,3 +126,15 @@ release-claim-boundary and documentation-contract suites, both YAML parses,
 local-link checks for every touched document and `git diff --check`. The
 independent Workstream 66 Type 1 review records those results and challenges
 the receiver and version inventories before maintainer acceptance.
+
+The first close review found three bounded record defects. The version bump
+left the executable Sweeps render at engine 0.2.1.0, the current-layer article
+still named v0.2.1.0, and the upgrade guide named two history surfaces that
+never shipped in v0.2.1.0 while leaving `ledgr_feature_cache_clear()` unnamed.
+The correction rerenders Sweeps under 0.2.2, updates the article and its
+documentation-contract pin, and narrows the upgrade list. The pin changes only
+because its exact prior version literal became the stale claim being fixed; it
+still requires the current-layer sentence in both source and rendered article.
+The complete `render-vignettes-gfm.R --check --all` gate then exposed and
+confirmed the one other version-derived render change: the walk-forward
+session ID. All 28 tracked article renders are fresh after that correction.
