@@ -776,6 +776,15 @@ testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses sched
   )
   restore_provenance()
 
+  mutate_store(
+    "UPDATE run_telemetry SET decision_pulse_count = -1 WHERE run_id = ?"
+  )
+  testthat::expect_error(
+    ledgr_run_info(fixture$snapshot, run$run_id),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  restore_provenance()
+
   mutate_store("UPDATE runs SET status = 'RUNNING' WHERE run_id = ?")
   finalized <- ledgr_run(fixture$exp, run_id = run$run_id)
   on.exit(close(finalized), add = TRUE)
@@ -787,6 +796,47 @@ testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses sched
   testthat::expect_identical(
     finalized_info$scheduled_skip_count,
     as.integer(telemetry$scheduled_skip_count[[1L]])
+  )
+
+  mutate_store("UPDATE runs SET status = 'RUNNING' WHERE run_id = ?")
+  mutate_store("DELETE FROM run_telemetry WHERE run_id = ?")
+  unfinished_info <- ledgr_run_info(fixture$snapshot, run$run_id)
+  testthat::expect_identical(unfinished_info$status, "RUNNING")
+  testthat::expect_true(is.na(unfinished_info$decision_pulse_count))
+  testthat::expect_true(is.na(unfinished_info$scheduled_skip_count))
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(unfinished_info$strategy_schedule)),
+    declaration
+  )
+
+  unresolved_strategy <- ledgr_strategy_schedule(
+    function(ctx, params) ctx$hold(),
+    ledgr_schedule_from_param("when")
+  )
+  unresolved <- ws42_history_fixture(
+    strategy = unresolved_strategy,
+    features = list()
+  )
+  on.exit(ledgr_snapshot_close(unresolved$snapshot), add = TRUE)
+  testthat::expect_error(
+    ledgr_run(
+      unresolved$exp,
+      params = list(when = "bogus"),
+      run_id = "scheduled-failed-before-counts"
+    ),
+    class = "ledgr_schedule_param_unresolved"
+  )
+  failed_info <- ledgr_run_info(
+    unresolved$snapshot,
+    "scheduled-failed-before-counts"
+  )
+  testthat::expect_identical(failed_info$status, "FAILED")
+  testthat::expect_match(failed_info$error_msg, "supported fixed schedule")
+  testthat::expect_true(is.na(failed_info$decision_pulse_count))
+  testthat::expect_true(is.na(failed_info$scheduled_skip_count))
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(failed_info$strategy_schedule)),
+    unclass(ledgr_schedule_from_param("when"))
   )
 
   plain <- ws42_history_fixture(
@@ -860,6 +910,9 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     function(ctx, params) {
       previous <- ctx$state_prev
       n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
+      if (isTRUE(getOption("ledgr.schedule.interrupt_on_decision", FALSE)) && n == 0L) {
+        options(ledgr.interrupt = TRUE)
+      }
       list(targets = ctx$hold(), state_update = list(n = n + 1L))
     },
     ledgr_schedule_week_start()
@@ -874,11 +927,21 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
   reference <- ledgr_run(resumed$exp, run_id = "schedule-resume-reference")
   on.exit(close(reference), add = TRUE)
   old_interrupt <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = old_interrupt), add = TRUE)
-  options(ledgr.interrupt = TRUE)
+  old_schedule_interrupt <- getOption("ledgr.schedule.interrupt_on_decision")
+  on.exit(options(
+    ledgr.interrupt = old_interrupt,
+    ledgr.schedule.interrupt_on_decision = old_schedule_interrupt
+  ), add = TRUE)
+  options(
+    ledgr.interrupt = FALSE,
+    ledgr.schedule.interrupt_on_decision = TRUE
+  )
   partial <- ledgr_run(resumed$exp, run_id = "schedule-resume")
   close(partial)
-  options(ledgr.interrupt = FALSE)
+  options(
+    ledgr.interrupt = FALSE,
+    ledgr.schedule.interrupt_on_decision = FALSE
+  )
   completed <- ledgr_run(resumed$exp, run_id = "schedule-resume")
   on.exit(close(completed), add = TRUE)
 

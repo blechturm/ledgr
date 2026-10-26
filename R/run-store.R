@@ -627,7 +627,8 @@ ledgr_run_info_from_row <- function(row, db_path) {
     info$schedule_hash,
     info$config_json
   )
-  if (!is.null(info$strategy_schedule)) {
+  if (!is.null(info$strategy_schedule) &&
+      info$status %in% c("DONE", "INCOMPLETE")) {
     counts <- ledgr_strategy_schedule_counts(
       info$decision_pulse_count,
       info$scheduled_skip_count

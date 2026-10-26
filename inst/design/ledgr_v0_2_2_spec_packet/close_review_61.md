@@ -1,8 +1,8 @@
 # Workstream 61 close review
 
-**Mode:** Type 1 close review with independent input check  
-**Range:** `e95e966f..5e834841`  
-**Reviewer:** fresh-context Claude Opus, high effort  
+**Mode:** Type 1 close review with independent input check
+**Range:** `e95e966f..5e834841`
+**Reviewer:** fresh-context Claude Opus, high effort
 **Verdict:** `CHANGES_REQUIRED`
 
 The fold architecture held. A not-due pulse skipped exactly P2 and P3 while

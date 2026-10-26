@@ -1356,11 +1356,14 @@ Accepted change pending:
 - The current run inventory includes physical `schedule_json`,
   `schedule_hash`, `decision_pulse_count`, and `scheduled_skip_count` columns.
   `ledgr_run_info()` additionally exposes the verified canonical declaration
-  as `strategy_schedule`. For a scheduled terminal run, readers require both
-  provenance fields, exact agreement with `config_json`, and finite
+  as `strategy_schedule`. For a scheduled completed (`DONE` or `INCOMPLETE`)
+  run, readers require both provenance fields, exact agreement with
+  `config_json`, and finite
   non-negative integer counts; missing, malformed or inconsistent evidence
   refuses with `ledgr_schedule_identity_mismatch` rather than hiding the
-  schedule or printing unknown counts.
+  schedule or printing unknown counts. Failed and unfinished scheduled runs
+  keep verified schedule provenance but may expose missing counts so
+  `ledgr_run_info()` can report their status and original error.
 - `ledgr_run_list()` appends the recorded completion projection in this order:
   `completion_evidence_available`, `completion_status`,
   `requested_start_utc`, `requested_end_utc`, `achieved_start_utc`,
