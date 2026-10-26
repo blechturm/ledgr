@@ -925,7 +925,7 @@ workstreams:
   - id: 68
     name: "Scheduled valuation evidence blocker"
     cut: 23
-    status: "in_progress"
+    status: "review_pending"
     depends_on_workstream: 64
     requires_review_acceptance: true
     review: {mode: "Type 1 with an independent input check", point: "close of workstream 68", verdict: "pending", reason: "One claim owned by LDG-3119: skipping a scheduled strategy decision cannot omit held stale or frozen marks from durable valuation summaries, inventories or warnings, while schedule counts, economics, identity and the closed reason-code vocabulary stay unchanged."}
@@ -2947,13 +2947,13 @@ tickets:
   - id: "LDG-3119"
     title: "Preserve valuation evidence across scheduled skips"
     workstream: 68
-    status: "in_progress"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3115"]
     scope: "Fix the release-blocking scheduler defect found by LDG-3116's public-API probe. On an availability-aware scheduled run, P1 already advances valuation and P4/P5 already preserve economics and progress on every pulse, but a skipped P2/P3 emits only the one scheduler row, so ledgr_valuation_summary(), run inventories and warnings omit held stale and frozen instrument-sessions. Persist only the missing held stale/frozen mark evidence on scheduled skips through the existing diagnostic block, without adding a reason token or changing the one scheduled_skip row. Make the single-run and grouped valuation readers consume normal decision evidence plus this skip-only valuation evidence. Do not recompute from the snapshot at result-read time, change fills/equity/state/schedule identity, add a schema or format version, or emit current-close rows."
     acceptance: ["one vendor-neutral availability fixture run through a manual date guard and the equivalent ledgr_strategy_schedule() declaration has byte-identical fills, equity, strategy state and terminal status, and identical complete ledgr_valuation_summary() values including stale/frozen counts, longest ages, maximum exposure, frozen-at-end value and worthless bound", "each skipped pulse still has exactly one decision-stage scheduled_skip row with empty instrument ID and the recorded telemetry counts still reconcile; skip-only valuation evidence contains only held stale_close or frozen_close rows, uses no new reason token and is absent from dense, unscheduled and due-decision pulses", "ledgr_run_list(), ledgr_run_compare(), print() and summary() expose the same valuation state and assumption warning for the scheduled and manual-guard runs; durable reopen preserves the result", "a mutation that removes the skip valuation segment or excludes it from either the single-run or grouped reader fails a registered detector, while existing LTB-0505 schedule-stage/count assertions pass unchanged", "focused scheduler, terminal-reporting, selection-visibility, run-store and documentation-contract suites pass; the seven optimization shapes are walked and the final ordinary fast profile remains within its unchanged bound"]
-    evidence: []
+    evidence: ["Implementation 29aacf19. LCL-0503/LTB-0512 compares equivalent manual-guard and declared-schedule public runs on one availability fixture: ledger economics, equity, strategy state and terminal status are exact; complete valuation summaries, grouped inventory/comparison flags, warning and reopen evidence agree; each of seven skipped pulses retains exactly one scheduled_skip decision row, while two skip-only marked rows carry only BBB's stale_close and frozen_close evidence with an empty reason token. The public survivorship fixture probe now reports identical FROZEN summaries, fills and equity where the pre-fix scheduled arm reported STALE with three frozen sessions missing.", "Focused scheduler, terminal-reporting, selection-visibility and run-store suites pass. Removing the skip valuation segment produces ten LTB-0512 failures across the direct summary, diagnostic rows, grouped flags, warning and reopen; restoring the grouped reader's decision-only filters produces two LTB-0512 failures. The implementation uses one vectorized held/source selection and one typed segment per skipped pulse, emits no current-close rows and introduces none of the seven registered optimization shapes. YAML parsing and git diff --check pass."]
   - id: "LDG-3117"
     title: "Freeze v0.2.2 identity, release notes and design memory"
     workstream: 66
