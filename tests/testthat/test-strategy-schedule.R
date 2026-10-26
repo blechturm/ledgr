@@ -254,6 +254,8 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
   plain_exp$strategy <- ledgr:::ledgr_strategy_schedule_inner(strategy)
   plain_run <- ledgr_run(plain_exp, run_id = "plain-run")
   testthat::expect_null(plain_run$config$strategy_schedule)
+  testthat::expect_false("strategy_schedule" %in% names(plain_run$config))
+  testthat::expect_false("decision_due" %in% names(run$config))
   testthat::expect_false(identical(
     ledgr:::config_hash(run$config),
     ledgr:::config_hash(plain_run$config)
@@ -319,6 +321,24 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
   ))
   on.exit(lapply(walk_forward$test_runs, close), add = TRUE)
   testthat::expect_s3_class(walk_forward, "ledgr_walk_forward_results")
+
+  runner_source <- paste(deparse(body(ledgr:::ledgr_run_fold_impl)), collapse = "\n")
+  sweep_source <- paste(deparse(body(ledgr:::ledgr_sweep_candidate_execution)), collapse = "\n")
+  testthat::expect_identical(
+    lengths(regmatches(runner_source, gregexpr("ledgr_compile_strategy_schedule", runner_source, fixed = TRUE))),
+    1L
+  )
+  testthat::expect_identical(
+    lengths(regmatches(sweep_source, gregexpr("ledgr_compile_strategy_schedule", sweep_source, fixed = TRUE))),
+    1L
+  )
+  for (stage in c(
+    "ledgr_fold_stage_observe_settle", "ledgr_fold_stage_decide",
+    "ledgr_fold_stage_plan", "ledgr_fold_stage_apply", "ledgr_fold_stage_commit"
+  )) {
+    stage_source <- paste(deparse(body(getFromNamespace(stage, "ledgr"))), collapse = "\n")
+    testthat::expect_false(grepl("ledgr_compile_strategy_schedule", stage_source, fixed = TRUE))
+  }
 
   dense <- ws42_dense_snapshot()
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
