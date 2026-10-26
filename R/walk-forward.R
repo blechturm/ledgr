@@ -454,7 +454,7 @@ ledgr_walk_forward_candidate_identities <- function(param_grid,
     feature_params <- ledgr_grid_candidate_feature_params(param_grid$params[[i]])
     params_hash <- ledgr_strategy_params_info(params)$hash
     feature_params_hash <- ledgr_strategy_params_info(feature_params)$hash
-    schedule_identity <- ledgr_strategy_schedule_identity(
+    schedule_identity <- ledgr_strategy_schedule_identity_or_authored(
       strategy_schedule,
       params
     )
@@ -487,7 +487,7 @@ ledgr_walk_forward_candidate_identities <- function(param_grid,
       strategy_schedule_json = if (is.null(schedule_identity)) NA_character_ else
         ledgr_strategy_schedule_json(schedule_identity$strategy_schedule),
       schedule_hash = schedule_identity$schedule_hash %||% NA_character_,
-      resolved_schedule_json = if (is.null(schedule_identity)) NA_character_ else
+      resolved_schedule_json = if (is.null(schedule_identity$resolved_schedule)) NA_character_ else
         ledgr_strategy_schedule_json(schedule_identity$resolved_schedule),
       resolved_schedule_hash = schedule_identity$resolved_schedule_hash %||% NA_character_,
       stringsAsFactors = FALSE

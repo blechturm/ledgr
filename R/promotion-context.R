@@ -29,11 +29,18 @@ ledgr_promotion_identities <- function(exp, strategy_hash = NULL) {
 # field either side did not record (a sweep saved before LDG-3005) is not
 # compared.
 ledgr_promotion_identity_check <- function(candidate, promoting) {
-  fields <- names(promoting)
+  fields <- union(names(promoting), names(candidate))
   recorded <- vapply(fields, function(f) is.character(candidate[[f]]) && length(candidate[[f]]) == 1L, logical(1))
   differs <- vapply(fields, function(f) recorded[[f]] && !identical(candidate[[f]], promoting[[f]]), logical(1))
+  if ("schedule_hash" %in% fields) {
+    recorded[["schedule_hash"]] <- TRUE
+    differs[["schedule_hash"]] <- !identical(
+      candidate$schedule_hash,
+      promoting$schedule_hash
+    )
+  }
   list(
-    candidate = candidate[fields[recorded]],
+    candidate = candidate[intersect(fields[recorded], names(candidate))],
     promoting = promoting,
     mismatched = fields[differs],
     not_recorded = fields[!recorded]

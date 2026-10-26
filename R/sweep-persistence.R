@@ -522,9 +522,11 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     character(1)
   )
   if (anyNA(versions) || any(versions != ledgr_sweep_provenance_version)) {
+    received <- unique(ifelse(is.na(versions), "<missing>", versions))
     rlang::abort(
       sprintf(
-        "Saved sweep candidate provenance is not current; required %s.",
+        "Saved sweep candidate provenance version %s is not current; required %s.",
+        paste(received, collapse = ", "),
         ledgr_sweep_provenance_version
       ),
       class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
@@ -564,7 +566,9 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
       out$provenance[[i]],
       parent_schedule,
       out$params[[i]],
-      sprintf("Saved sweep candidate %s", out$candidate_id[[i]])
+      sprintf("Saved sweep candidate %s", out$candidate_id[[i]]),
+      allow_unresolved = identical(out$status[[i]], "FAILED") &&
+        grepl("ledgr_schedule_param_unresolved", out$error_class[[i]], fixed = TRUE)
     )
   }
   first_provenance <- ledgr_sweep_first_reconstructed_provenance(out)

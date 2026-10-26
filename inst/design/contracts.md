@@ -555,8 +555,9 @@ Accepted change pending:
   universe, valuation-policy, corporate-action-policy and opening identity
   hashes, recorded by the sweep in its execution assumptions, beside the
   promoting run's, with the fields that differ and those the sweep did not
-  record (a walk-forward candidate records only strategy and feature-set
-  identity). Version 3 also preserves authored and resolved schedule identity.
+  record (a walk-forward candidate records strategy and feature-set identity,
+  plus schedule identity when scheduled). Version 3 also preserves authored
+  and resolved schedule identity.
   A difference warns with `ledgr_promote_identity_mismatch`; it does
   not refuse. Current promotion records always carry version 3.
 - Promotion context is written only after the committed run succeeds. If the

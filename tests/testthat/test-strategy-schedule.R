@@ -995,7 +995,7 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
 testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity", {
   inner <- function(ctx, params) {
     target <- ctx$flat()
-    target["AAA"] <- 1
+    target["AAA"] <- params$qty
     target
   }
   strategy <- ledgr_strategy_schedule(
@@ -1013,10 +1013,19 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   grid <- ledgr_grid_named(
-    month = list(strategy = list(when = "month_start")),
-    week = list(strategy = list(when = "week_start"))
+    month = list(strategy = list(when = "month_start", qty = 2)),
+    week = list(strategy = list(when = "week_start", qty = 2))
   )
 
+  captured_tasks <- list()
+  original_eval <- ledgr:::ledgr_sweep_eval_candidate_task
+  testthat::local_mocked_bindings(
+    ledgr_sweep_eval_candidate_task = function(task, stop_on_error = FALSE) {
+      captured_tasks[[length(captured_tasks) + 1L]] <<- task
+      original_eval(task, stop_on_error = stop_on_error)
+    },
+    .package = "ledgr"
+  )
   sweeps <- lapply(1:3, function(workers) {
     ledgr_sweep(fixture$exp, grid, seed = 91L, workers = workers)
   })
@@ -1026,7 +1035,20 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     testthat::expect_identical(sweep$final_equity, reference$final_equity)
     testthat::expect_identical(sweep$provenance, reference$provenance)
   }
-  testthat::expect_identical(names(reference), attr(reference, "ledgr_complete_names"))
+  testthat::expect_identical(
+    names(reference),
+    c(
+      "candidate_id", "candidate_row", "status", "completion_json",
+      "stop_reason", "affected_instrument_ids", "valuation_state",
+      "frozen_instrument_sessions", "max_frozen_equity_weight",
+      "frozen_at_end_value", "assumed_terminal_outcomes", "final_equity", "total_return",
+      "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
+      "n_trades", "win_rate", "avg_trade", "time_in_market",
+      "execution_seed", "error_class", "error_msg", "params",
+      "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash",
+      "provenance", "t_engine", "t_results", "t_fills_extract"
+    )
+  )
   provenance <- reference$provenance
   testthat::expect_identical(
     vapply(provenance, `[[`, character(1), "provenance_version"),
@@ -1041,13 +1063,21 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     provenance[[2L]]$resolved_schedule_hash
   ))
 
-  task_source <- paste(
-    deparse(body(ledgr:::ledgr_sweep_candidate_tasks)),
-    collapse = "\n"
+  testthat::expect_length(captured_tasks, 2L)
+  testthat::expect_true(all(vapply(captured_tasks, function(task) {
+    inherits(task$exp$strategy, "ledgr_scheduled_strategy") &&
+      identical(
+        ledgr:::ledgr_strategy_schedule_hash(
+          ledgr:::ledgr_strategy_schedule_declaration(task$exp$strategy)
+        ),
+        provenance[[1L]]$schedule_hash
+      )
+  }, logical(1))))
+  transported_names <- unique(unlist(lapply(captured_tasks, names), use.names = FALSE))
+  testthat::expect_length(
+    grep("decision|verdict|mask", transported_names, ignore.case = TRUE, value = TRUE),
+    0L
   )
-  testthat::expect_match(task_source, "schedule_identity = schedule_identity", fixed = TRUE)
-  testthat::expect_no_match(task_source, "decision_due =", fixed = TRUE)
-  testthat::expect_no_match(task_source, "schedule_mask =", fixed = TRUE)
   worker_source <- paste(
     deparse(body(ledgr:::ledgr_sweep_candidate_execution)),
     collapse = "\n"
@@ -1091,14 +1121,14 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   old_candidate$provenance$provenance_version <- "ledgr_provenance_v1"
   testthat::expect_error(
     ledgr_candidate_reproduction_key(old_candidate),
-    class = "ledgr_candidate_provenance_incompatible"
+    class = "ledgr_sweep_schema_incompatible"
   )
 
-  unscheduled_fixture <- ws42_history_fixture(strategy = inner, features = list())
-  on.exit(ledgr_snapshot_close(unscheduled_fixture$snapshot), add = TRUE)
+  unscheduled_exp <- fixture$exp
+  unscheduled_exp$strategy <- inner
   unscheduled <- ledgr_sweep(
-    unscheduled_fixture$exp,
-    ledgr_grid_named(one = list(strategy = list())),
+    unscheduled_exp,
+    ledgr_grid_named(one = list(strategy = list(qty = 2))),
     seed = 91L
   )
   unscheduled_candidate <- ledgr_candidate(unscheduled, "one")
@@ -1110,6 +1140,27 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     "strategy_schedule" %in% names(attr(unscheduled, "execution_assumptions"))
   )
 
+  mixed_grid <- ledgr_grid_named(
+    valid = list(strategy = list(when = "week_start", qty = 2)),
+    invalid = list(strategy = list(when = "fortnight", qty = 3))
+  )
+  mixed <- testthat::expect_no_error(ledgr_sweep(
+    fixture$exp,
+    mixed_grid,
+    seed = 91L,
+    stop_on_error = FALSE
+  ))
+  testthat::expect_identical(mixed$status, c("DONE", "FAILED"))
+  testthat::expect_match(
+    mixed$error_class[[2L]],
+    "ledgr_schedule_param_unresolved",
+    fixed = TRUE
+  )
+  ledgr_sweep_save(mixed, fixture$snapshot, sweep_id = "scheduled-failed-sweep")
+  mixed_reopened <- ledgr_sweep_open(fixture$snapshot, "scheduled-failed-sweep")
+  testthat::expect_identical(mixed_reopened$status, mixed$status)
+  testthat::expect_identical(mixed_reopened$error_class, mixed$error_class)
+
   promoted_a <- ledgr_promote(fixture$exp, in_memory, "scheduled-promote-a")
   promoted_b <- ledgr_promote(fixture$exp, durable, "scheduled-promote-b")
   on.exit(close(promoted_a), add = TRUE)
@@ -1120,6 +1171,40 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   testthat::expect_identical(context$promotion_context_version, "ledgr_promotion_v3")
   testthat::expect_identical(context$source_sweep$schedule_hash, provenance[[1L]]$schedule_hash)
 
+  week_exp <- fixture$exp
+  week_exp$strategy <- ledgr_strategy_schedule(inner, ledgr_schedule_week_start())
+  month_exp <- fixture$exp
+  month_exp$strategy <- ledgr_strategy_schedule(inner, ledgr_schedule_month_start())
+  fixed_grid <- ledgr_grid_named(one = list(strategy = list(qty = 2)))
+  testthat::expect_warning(
+    scheduled_into_plain <- ledgr_promote(
+      unscheduled_exp,
+      in_memory,
+      "scheduled-into-plain"
+    ),
+    "schedule_hash",
+    class = "ledgr_promote_identity_mismatch"
+  )
+  on.exit(close(scheduled_into_plain), add = TRUE)
+  testthat::expect_warning(
+    plain_into_scheduled <- ledgr_promote(
+      week_exp,
+      unscheduled_candidate,
+      "plain-into-scheduled"
+    ),
+    "schedule_hash",
+    class = "ledgr_promote_identity_mismatch"
+  )
+  on.exit(close(plain_into_scheduled), add = TRUE)
+  testthat::expect_identical(
+    ledgr_promotion_context(scheduled_into_plain)$identity_check$mismatched,
+    "schedule_hash"
+  )
+  testthat::expect_identical(
+    ledgr_promotion_context(plain_into_scheduled)$identity_check$mismatched,
+    "schedule_hash"
+  )
+
   folds <- ledgr:::ledgr_fold_list(
     list(ledgr_fold(
       fixture$days[[1L]], fixture$days[[4L]],
@@ -1127,15 +1212,37 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     )),
     constructor = list(type_id = "explicit")
   )
-  walk <- suppressWarnings(ledgr_walk_forward(
-    fixture$exp,
-    ledgr_grid_named(week = list(strategy = list(when = "week_start"))),
-    folds,
-    selection_rule = ledgr_rule_argmax("annualized_return"),
-    seed = 91L
+  walk_week <- suppressWarnings(ledgr_walk_forward(
+    week_exp, fixed_grid, folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 91L
   ))
-  on.exit(lapply(walk$test_runs, close), add = TRUE)
-  wf_candidate <- ledgr_candidate(walk, fold_seq = 1L)
+  walk_month <- suppressWarnings(ledgr_walk_forward(
+    month_exp, fixed_grid, folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 91L
+  ))
+  walk_mixed <- testthat::expect_no_error(suppressWarnings(ledgr_walk_forward(
+    fixture$exp, mixed_grid, folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 91L
+  )))
+  on.exit(lapply(walk_week$test_runs, close), add = TRUE)
+  on.exit(lapply(walk_month$test_runs, close), add = TRUE)
+  on.exit(lapply(walk_mixed$test_runs, close), add = TRUE)
+  testthat::expect_setequal(
+    unique(walk_mixed$scores$status[walk_mixed$scores$window == "train"]),
+    c("DONE", "FAILED")
+  )
+  testthat::expect_false(identical(
+    walk_week$scores$candidate_key,
+    walk_month$scores$candidate_key
+  ))
+  for (window in c("train", "test")) {
+    testthat::expect_false(identical(
+      walk_week$scores$candidate_key[walk_week$scores$window == window],
+      walk_month$scores$candidate_key[walk_month$scores$window == window]
+    ))
+  }
+  wf_candidate <- ledgr_candidate(walk_week, fold_seq = 1L)
+  month_wf_candidate <- ledgr_candidate(walk_month, fold_seq = 1L)
   testthat::expect_identical(
     wf_candidate$provenance$provenance_version,
     "ledgr_walk_forward_candidate_v2"
@@ -1144,6 +1251,28 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     wf_candidate$provenance$resolved_schedule$type_id,
     "week_start"
   )
+  testthat::expect_identical(
+    wf_candidate$provenance$strategy_hash,
+    month_wf_candidate$provenance$strategy_hash
+  )
+  testthat::expect_false(identical(
+    wf_candidate$provenance$schedule_hash,
+    month_wf_candidate$provenance$schedule_hash
+  ))
+  testthat::expect_false(identical(
+    ledgr_candidate_reproduction_key(wf_candidate)$strategy_schedule$schedule_hash,
+    ledgr_candidate_reproduction_key(month_wf_candidate)$strategy_schedule$schedule_hash
+  ))
+  testthat::expect_warning(
+    fixed_schedule_mismatch <- ledgr_promote(
+      month_exp,
+      wf_candidate,
+      "fixed-schedule-mismatch"
+    ),
+    "schedule_hash",
+    class = "ledgr_promote_identity_mismatch"
+  )
+  on.exit(close(fixed_schedule_mismatch), add = TRUE)
   old_session_meta <- list(
     status = "DONE",
     walk_forward_schema_version = ledgr:::ledgr_walk_forward_schema_version,
@@ -1159,6 +1288,55 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   )
 
   con <- ledgr:::get_connection(fixture$snapshot)
+  stored_parent <- DBI::dbGetQuery(
+    con,
+    "SELECT execution_assumptions_json FROM sweeps WHERE sweep_id = 'scheduled-sweep'"
+  )
+  parent_assumptions <- ledgr:::ledgr_json_read_nested(
+    stored_parent$execution_assumptions_json[[1L]]
+  )
+  tampered_parent <- parent_assumptions
+  tampered_parent$schedule_hash <- paste0("bad-", tampered_parent$schedule_hash)
+  DBI::dbExecute(
+    con,
+    "UPDATE sweeps SET execution_assumptions_json = ? WHERE sweep_id = 'scheduled-sweep'",
+    params = list(as.character(canonical_json(tampered_parent)))
+  )
+  testthat::expect_error(
+    ledgr_sweep_open(fixture$snapshot, "scheduled-sweep"),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  DBI::dbExecute(
+    con,
+    "UPDATE sweeps SET execution_assumptions_json = ? WHERE sweep_id = 'scheduled-sweep'",
+    params = list(stored_parent$execution_assumptions_json[[1L]])
+  )
+  stored_candidate <- DBI::dbGetQuery(
+    con,
+    "SELECT provenance_json FROM sweep_candidates WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'"
+  )
+  candidate_provenance <- ledgr:::ledgr_json_read_nested(
+    stored_candidate$provenance_json[[1L]]
+  )
+  tampered_candidate <- candidate_provenance
+  tampered_candidate$resolved_schedule_hash <- paste0(
+    "bad-",
+    tampered_candidate$resolved_schedule_hash
+  )
+  DBI::dbExecute(
+    con,
+    "UPDATE sweep_candidates SET provenance_json = ? WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'",
+    params = list(as.character(canonical_json(tampered_candidate)))
+  )
+  testthat::expect_error(
+    ledgr_sweep_open(fixture$snapshot, "scheduled-sweep"),
+    class = "ledgr_schedule_identity_mismatch"
+  )
+  DBI::dbExecute(
+    con,
+    "UPDATE sweep_candidates SET provenance_json = ? WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'",
+    params = list(stored_candidate$provenance_json[[1L]])
+  )
   DBI::dbExecute(
     con,
     "UPDATE sweeps SET sweep_schema_version = 5 WHERE sweep_id = 'scheduled-sweep'"
@@ -1175,18 +1353,24 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   )
   stored <- DBI::dbGetQuery(
     con,
-    "SELECT provenance_json FROM sweep_candidates WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'"
+    "SELECT candidate_id, provenance_json FROM sweep_candidates WHERE sweep_id = 'scheduled-sweep' ORDER BY candidate_row"
   )
-  old_provenance <- ledgr:::ledgr_json_read_nested(stored$provenance_json[[1L]])
-  old_provenance$provenance_version <- "ledgr_provenance_v1"
-  DBI::dbExecute(
-    con,
-    "UPDATE sweep_candidates SET provenance_json = ? WHERE sweep_id = 'scheduled-sweep' AND candidate_id = 'week'",
-    params = list(as.character(canonical_json(old_provenance)))
-  )
+  for (i in seq_len(nrow(stored))) {
+    old_provenance <- ledgr:::ledgr_json_read_nested(stored$provenance_json[[i]])
+    old_provenance$provenance_version <- "ledgr_provenance_v1"
+    DBI::dbExecute(
+      con,
+      "UPDATE sweep_candidates SET provenance_json = ? WHERE sweep_id = 'scheduled-sweep' AND candidate_id = ?",
+      params = list(
+        as.character(canonical_json(old_provenance)),
+        stored$candidate_id[[i]]
+      )
+    )
+  }
   testthat::expect_error(
     ledgr_sweep_open(fixture$snapshot, "scheduled-sweep"),
-    "required ledgr_provenance_v2",
-    class = "ledgr_sweep_schema_incompatible"
+    "Saved sweep candidate provenance version ledgr_provenance_v1 is not current; required ledgr_provenance_v2.",
+    class = "ledgr_sweep_schema_incompatible",
+    fixed = TRUE
   )
 })

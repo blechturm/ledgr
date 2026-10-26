@@ -660,14 +660,21 @@ ledgr_candidate_reproduction_key <- function(candidate) {
   if (!is.list(provenance)) {
     provenance <- list()
   }
-  if (!identical(provenance$provenance_version, ledgr_sweep_provenance_version)) {
+  current_provenance_versions <- c(
+    ledgr_sweep_provenance_version,
+    paste0("ledgr_walk_forward_candidate_", ledgr_walk_forward_candidate_schema_version)
+  )
+  provenance_version <- provenance$provenance_version
+  if (!is.character(provenance_version) || length(provenance_version) != 1L ||
+      is.na(provenance_version) ||
+      !provenance_version %in% current_provenance_versions) {
     rlang::abort(
       sprintf(
-        "Candidate provenance version %s is not current; required %s.",
-        provenance$provenance_version %||% "<missing>",
-        ledgr_sweep_provenance_version
+        "Candidate provenance version %s is not current; required one of %s.",
+        provenance_version %||% "<missing>",
+        paste(current_provenance_versions, collapse = ", ")
       ),
-      class = c("ledgr_candidate_provenance_incompatible", "ledgr_invalid_args")
+      class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_args")
     )
   }
   schedule_identity <- provenance[c(
@@ -1270,10 +1277,6 @@ ledgr_sweep_candidate_tasks <- function(exp,
     candidate_spec <- param_grid$params[[i]]
     raw_params <- param_grid$identity_params[[i]]
     params <- ledgr_grid_candidate_strategy_params(candidate_spec)
-    schedule_identity <- ledgr_strategy_schedule_identity(
-      ledgr_strategy_schedule_declaration(exp$strategy),
-      params
-    )
     tasks[[i]] <- list(
       index = i,
       exp = exp_payload,
@@ -1303,7 +1306,6 @@ ledgr_sweep_candidate_tasks <- function(exp,
       runtime_projection = if (isTRUE(exp$availability$active)) NULL else runtime_projection,
       snapshot_hash = snapshot_hash,
       strategy_hash = strategy_hash,
-      schedule_identity = schedule_identity,
       master_seed = seed,
       compiled_accounting_model = compiled_accounting_model,
       availability_config = availability_config,
@@ -1456,6 +1458,7 @@ ledgr_sweep_exp_payload <- function(exp) {
 
 ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
   feature_row <- task$candidate_feature_row
+  strategy_schedule <- ledgr_strategy_schedule_declaration(task$exp$strategy)
   if (identical(feature_row$status[[1]], "failed")) {
     if (isTRUE(stop_on_error)) {
       stop(task$candidate$error)
@@ -1482,7 +1485,10 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         risk_chain_hash = task$exp$risk_chain_hash,
         risk_plan_json = task$exp$risk_plan_json,
         master_seed = task$master_seed,
-        schedule_identity = task$schedule_identity
+        schedule_identity = ledgr_strategy_schedule_identity_or_authored(
+          strategy_schedule,
+          task$params
+        )
       ),
       warnings = list()
     )
@@ -1497,36 +1503,44 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
 
   warnings <- list()
   err <- NULL
+  schedule_identity <- NULL
   candidate_result <- tryCatch(
     withCallingHandlers(
-      ledgr_sweep_run_candidate(
-        exp = task$exp,
-        run_id = task$run_id,
-        candidate_id = task$candidate_id,
-        candidate_row = task$candidate_row,
-        params = task$params,
-        feature_params = task$feature_params,
-        execution_seed = task$execution_seed,
-        bars_by_id = task$bars_by_id,
-        bars_mat = task$bars_mat,
-        static_bars_views = task$static_bars_views,
-        history_substrate = task$history_substrate,
-        pulses_posix = task$pulses_posix,
-        pulses_iso = task$pulses_iso,
-        metric_kernel = task$metric_kernel,
-        candidate = task$candidate,
-        candidate_feature_row = feature_row,
-        runtime_projection = task$runtime_projection,
-        snapshot_hash = task$snapshot_hash,
-        strategy_hash = task$strategy_hash,
-        master_seed = task$master_seed,
-        retain = task$retain,
-        compiled_accounting_model = task$compiled_accounting_model,
-        availability_provider = task$availability_provider,
-        availability_config = task$availability_config,
-        execution_opportunities_posix = task$execution_opportunities_posix,
-        corporate_action_rows = task$corporate_action_rows
-      ),
+      {
+        schedule_identity <- ledgr_strategy_schedule_identity(
+          strategy_schedule,
+          task$params
+        )
+        ledgr_sweep_run_candidate(
+          exp = task$exp,
+          run_id = task$run_id,
+          candidate_id = task$candidate_id,
+          candidate_row = task$candidate_row,
+          params = task$params,
+          feature_params = task$feature_params,
+          execution_seed = task$execution_seed,
+          bars_by_id = task$bars_by_id,
+          bars_mat = task$bars_mat,
+          static_bars_views = task$static_bars_views,
+          history_substrate = task$history_substrate,
+          pulses_posix = task$pulses_posix,
+          pulses_iso = task$pulses_iso,
+          metric_kernel = task$metric_kernel,
+          candidate = task$candidate,
+          candidate_feature_row = feature_row,
+          runtime_projection = task$runtime_projection,
+          snapshot_hash = task$snapshot_hash,
+          strategy_hash = task$strategy_hash,
+          master_seed = task$master_seed,
+          retain = task$retain,
+          compiled_accounting_model = task$compiled_accounting_model,
+          availability_provider = task$availability_provider,
+          availability_config = task$availability_config,
+          execution_opportunities_posix = task$execution_opportunities_posix,
+          corporate_action_rows = task$corporate_action_rows,
+          schedule_identity = schedule_identity
+        )
+      },
       warning = function(w) {
         warnings <<- c(warnings, list(w))
         invokeRestart("muffleWarning")
@@ -1560,7 +1574,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
             risk_chain_hash = task$exp$risk_chain_hash,
             risk_plan_json = task$exp$risk_plan_json,
             master_seed = task$master_seed,
-            schedule_identity = task$schedule_identity
+            schedule_identity = schedule_identity %||%
+              ledgr_strategy_schedule_authored_identity(strategy_schedule)
           ),
           warnings = warnings
         ),
@@ -1827,7 +1842,8 @@ ledgr_sweep_run_candidate <- function(exp,
                                       compiled_accounting_model = NULL,
                                       availability_config = NULL,
                                       execution_opportunities_posix = NULL,
-                                      corporate_action_rows = NULL) {
+                                      corporate_action_rows = NULL,
+                                      schedule_identity = NULL) {
   prepared <- ledgr_sweep_candidate_execution(
     exp = exp,
     run_id = run_id,
@@ -1929,10 +1945,7 @@ ledgr_sweep_run_candidate <- function(exp,
       risk_chain_hash = exp$risk_chain_hash,
       risk_plan_json = exp$risk_plan_json,
       master_seed = master_seed,
-      schedule_identity = ledgr_strategy_schedule_identity(
-        ledgr_strategy_schedule_declaration(exp$strategy),
-        params
-      )
+      schedule_identity = schedule_identity
     ),
     t_engine = telemetry$t_engine,
     t_results = telemetry$t_results,

@@ -170,11 +170,41 @@ ledgr_strategy_schedule_identity <- function(declaration, strategy_params = list
   )
 }
 
+ledgr_strategy_schedule_authored_identity <- function(declaration) {
+  if (is.null(declaration)) return(NULL)
+  declaration <- unclass(ledgr_schedule_validate(declaration))
+  list(
+    strategy_schedule = declaration,
+    schedule_hash = ledgr_strategy_schedule_hash(declaration)
+  )
+}
+
+ledgr_strategy_schedule_identity_or_authored <- function(declaration,
+                                                          strategy_params = list()) {
+  tryCatch(
+    ledgr_strategy_schedule_identity(declaration, strategy_params),
+    ledgr_schedule_param_unresolved = function(e) {
+      ledgr_strategy_schedule_authored_identity(declaration)
+    }
+  )
+}
+
 ledgr_strategy_schedule_identity_assert <- function(record,
                                                      declaration,
                                                      strategy_params = list(),
-                                                     context = "Stored candidate") {
-  expected <- ledgr_strategy_schedule_identity(declaration, strategy_params)
+                                                     context = "Stored candidate",
+                                                     allow_unresolved = FALSE) {
+  resolution_error <- NULL
+  expected <- tryCatch(
+    ledgr_strategy_schedule_identity(declaration, strategy_params),
+    ledgr_schedule_param_unresolved = function(e) {
+      resolution_error <<- e
+      ledgr_strategy_schedule_authored_identity(declaration)
+    }
+  )
+  if (!is.null(resolution_error) && !isTRUE(allow_unresolved)) {
+    stop(resolution_error)
+  }
   fields <- c(
     "strategy_schedule", "schedule_hash",
     "resolved_schedule", "resolved_schedule_hash"
@@ -189,15 +219,18 @@ ledgr_strategy_schedule_identity_assert <- function(record,
     }
     return(invisible(TRUE))
   }
-  if (!identical(present, fields)) {
+  expected_fields <- names(expected)
+  if (!identical(present, expected_fields)) {
     ledgr_schedule_abort(
       sprintf("%s strategy schedule identity is incomplete.", context),
       "ledgr_schedule_identity_mismatch"
     )
   }
-  actual <- record[fields]
+  actual <- record[expected_fields]
   actual$strategy_schedule <- unclass(ledgr_schedule_validate(actual$strategy_schedule))
-  actual$resolved_schedule <- unclass(ledgr_schedule_validate(actual$resolved_schedule))
+  if (!is.null(actual$resolved_schedule)) {
+    actual$resolved_schedule <- unclass(ledgr_schedule_validate(actual$resolved_schedule))
+  }
   if (!identical(actual, expected)) {
     ledgr_schedule_abort(
       sprintf("%s strategy schedule identity does not match its parameters.", context),
