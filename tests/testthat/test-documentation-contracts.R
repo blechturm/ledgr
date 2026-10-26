@@ -2203,17 +2203,15 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(weekly_run, "ledgr_schedule_week_start()", fixed = TRUE)
   testthat::expect_match(common_calendar, 'ledgr_schedule_weekday("wednesday")', fixed = TRUE)
   testthat::expect_match(common_calendar, "ledgr_schedule_month_day(15)", fixed = TRUE)
-  testthat::expect_match(common_calendar, "ledgr_experiment_plan(wednesday_experiment)", fixed = TRUE)
-  testthat::expect_match(common_calendar, "ledgr_experiment_plan(month_day_15_experiment)", fixed = TRUE)
   testthat::expect_match(common_calendar_boundaries, 'ledgr_schedule_weekday("friday")', fixed = TRUE)
-  testthat::expect_match(common_calendar, 'intent_reason = "calendar_probe"', fixed = TRUE)
+  testthat::expect_match(common_calendar_boundaries, 'intent_reason = "calendar_probe"', fixed = TRUE)
   testthat::expect_match(common_calendar_boundaries, "friday_decisions", fixed = TRUE)
-  testthat::expect_match(rendered_authoring, "#> Strategy schedule: wednesday", fixed = TRUE)
-  testthat::expect_match(rendered_authoring, "#> Strategy schedule: month day 15", fixed = TRUE)
+  testthat::expect_match(authoring, "| Every Wednesday |", fixed = TRUE)
+  testthat::expect_match(authoring, "| `wednesday` |", fixed = TRUE)
+  testthat::expect_match(authoring, "| `month day 15` |", fixed = TRUE)
   testthat::expect_match(
     rendered_authoring,
-    "friday_decisions\n#> # A tibble: 0 x 1\n#> # i 1 variable: decision_date <date>",
-    fixed = TRUE
+    "#> # A tibble: 0 x 1\\s+#> # i 1 variable: decision_date <date>"
   )
   testthat::expect_no_match(weekly_strategy, "pulses_seen %%", fixed = TRUE)
   testthat::expect_match(authoring, "A scheduled skip and `ctx$hold()`", fixed = TRUE)

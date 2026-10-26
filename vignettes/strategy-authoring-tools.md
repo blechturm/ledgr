@@ -550,182 +550,21 @@ The third version uses it.
 
 ## Schedule Decisions And Keep Strategy Memory
 
-`trend_momentum()` still decides from scratch every day, so it trades
-whenever an instrument crosses its trend line. Suppose you want to
-rebalance once a week. Decision timing is not strategy memory: declare
-it with `ledgr_schedule_week_start()`. ledgr resolves the rule against
-the snapshot’s open-session calendar before the run and invokes the
-strategy only when a decision is due.
+`trend_momentum()` still decides every day. Suppose you want to
+reconsider the portfolio only once a week. Keep that timing rule outside
+the strategy: ledgr can resolve it once against the snapshot’s
+open-session calendar and call the strategy only when a decision is due.
 
-Two helpers cover other common civil-calendar cadences without expanding
-them into a list of dates:
+Scheduling and strategy memory solve different problems. The schedule
+decides *when* the strategy runs. State carries information the strategy
+itself needs from one decision to the next. This final version counts
+its decisions so the difference stays visible.
 
-``` r
-wednesday_schedule <- ledgr_schedule_weekday("wednesday")
-month_day_15_schedule <- ledgr_schedule_month_day(15)
-
-calendar_probe <- function(ctx, params) {
-  list(targets = ctx$hold(), intent_reason = "calendar_probe")
-}
-
-wednesday_experiment <- ledgr_experiment(
-  snapshot,
-  ledgr_strategy_schedule(calendar_probe, wednesday_schedule),
-  universe = instruments,
-  cost_model = ledgr_cost_zero()
-)
-month_day_15_experiment <- ledgr_experiment(
-  snapshot,
-  ledgr_strategy_schedule(calendar_probe, month_day_15_schedule),
-  universe = instruments,
-  cost_model = ledgr_cost_zero()
-)
-
-ledgr_experiment_plan(wednesday_experiment)
-#> ledgr experiment plan
-#> Availability: active
-#> Price basis:  split_adjusted (declared)
-#> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
-#> Strategy schedule: wednesday
-#> Universe:     fixed
-#> Valuation:    stale-mark horizon 5 sessions (default)
-#> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
-#> Checks:
-#> # A tibble: 4 x 3
-#>   family         status            assumption_reasons
-#>   <chr>          <chr>             <chr>
-#> 1 membership     omitted           ""
-#> 2 sessions       assumption_backed "knowledge_assume_effective"
-#> 3 trading_status omitted           ""
-#> 4 lifetime       omitted           ""
-#> Declared assumptions:
-#>   valuation.max_sessions          5 (default)
-#>   valuation.exhausted             freeze (default)
-#>   history.price_carry             5 sessions (default)
-#>   history.output_carry            off (default)
-#>   history.segment_limit           4 per fact, at least 16 (default)
-#>   held_terminal_position.default  last_permissible (default)
-#>   frozen_terminal_position        write_off (default)
-ledgr_experiment_plan(month_day_15_experiment)
-#> ledgr experiment plan
-#> Availability: active
-#> Price basis:  split_adjusted (declared)
-#> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
-#> Strategy schedule: month day 15
-#> Universe:     fixed
-#> Valuation:    stale-mark horizon 5 sessions (default)
-#> History:      price carry 5 sessions (default); output carry off (default); segment limit 4 per fact, at least 16 (default)
-#> Checks:
-#> # A tibble: 4 x 3
-#>   family         status            assumption_reasons
-#>   <chr>          <chr>             <chr>
-#> 1 membership     omitted           ""
-#> 2 sessions       assumption_backed "knowledge_assume_effective"
-#> 3 trading_status omitted           ""
-#> 4 lifetime       omitted           ""
-#> Declared assumptions:
-#>   valuation.max_sessions          5 (default)
-#>   valuation.exhausted             freeze (default)
-#>   history.price_carry             5 sessions (default)
-#>   history.output_carry            off (default)
-#>   history.segment_limit           4 per fact, at least 16 (default)
-#>   held_terminal_position.default  last_permissible (default)
-#>   frozen_terminal_position        write_off (default)
-```
-
-Both move forward only within the period they name. If Friday is closed
-and Thursday was the week’s last open session,
-`ledgr_schedule_weekday("friday")` does not turn into a Monday decision.
-`"saturday"` and `"sunday"` decide only on venues that actually open on
-those days. Likewise, a closed 15th may use a later open session in that
-month, but never one in the next month. At the start of the parent
-calendar, `ledgr_schedule_month_day(1L)` decides when the first session
-is an open first of the month; `ledgr_schedule_month_start()`
-deliberately does not manufacture that first boundary because it cannot
-prove a preceding month.
-
-The period boundary is executable behavior, not just a label. This tiny
-calendar declares Thursday and Monday open but Friday and the weekend
-closed. A Friday schedule therefore makes no decision instead of moving
-it to Monday:
-
-``` r
-calendar_dates <- seq(as.Date("2019-04-18"), as.Date("2019-04-22"), by = "day")
-calendar_open <- calendar_dates %in% as.Date(c("2019-04-18", "2019-04-22"))
-calendar_sessions <- data.frame(
-  session_date = calendar_dates,
-  status = ifelse(calendar_open, "open", "closed"),
-  session_open = ifelse(calendar_open, "09:30:00", NA_character_),
-  session_close = ifelse(calendar_open, "16:00:00", NA_character_)
-)
-calendar_bars <- data.frame(
-  instrument_id = "AAA",
-  ts_utc = as.POSIXct(
-    c("2019-04-18 16:00:00", "2019-04-22 16:00:00"),
-    tz = "UTC"
-  ),
-  open = c(100, 101), high = c(100, 101), low = c(100, 101),
-  close = c(100, 101), volume = c(1000, 1000)
-)
-calendar_snapshot <- ledgr_snapshot_from_df(
-  calendar_bars,
-  facts = ledgr_facts(ledgr_facts_sessions(
-    calendar_sessions,
-    venue_id = "DEMO_FRIDAY",
-    knowledge = "assume_effective",
-    timezone = "UTC"
-  )),
-  price_basis = "split_adjusted"
-)
-friday_experiment <- ledgr_experiment(
-  calendar_snapshot,
-  ledgr_strategy_schedule(
-    calendar_probe,
-    ledgr_schedule_weekday("friday")
-  ),
-  universe = "AAA",
-  opening = ledgr_opening(
-    cash = 900,
-    positions = c(AAA = 1),
-    cost_basis = c(AAA = 100)
-  ),
-  cost_model = ledgr_cost_zero()
-)
-friday_run <- ledgr_run(friday_experiment, run_id = "calendar-friday")
-friday_decisions <- ledgr_results(friday_run, "diagnostics") |>
-  as_tibble() |>
-  filter(reason_code == "strategy_intent") |>
-  transmute(decision_date = as.Date(ts_utc))
-
-friday_decisions
-#> # A tibble: 0 x 1
-#> # i 1 variable: decision_date <date>
-close(friday_run)
-ledgr_snapshot_close(calendar_snapshot)
-```
-
-Strategy state is for information the strategy itself must carry from
-one decision to the next. This example counts its decisions so the
-distinction is visible:
-
-- Instead of a bare target, return
-  `list(targets = ..., state_update = ...)`. `state_update` is a list of
-  plain data you choose: numbers, strings, logical values, and lists of
-  them. You may also add one short optional decision note, for example
-  `intent_reason = "monthly_rebalance"`. ledgr retains that note once
-  for the pulse in `ledgr_results(run, "diagnostics")`; on
-  availability-aware runs it also appears in `ledgr_run_explain()`. This
-  is a reason for the submitted portfolio intent, not a general store
-  for factors, predictions, ranks, selections or weights. Prefer short
-  snake-case values so the reasons remain easy to group later.
-- At the next scheduled decision, that list arrives as `ctx$state_prev`.
-  On the first decision there is nothing to remember yet, so
-  `ctx$state_prev$decisions_seen` is `NULL`.
-- Returning a bare target keeps the previous state unchanged.
-- ledgr stores the state with the run but does not interpret it. The
-  names inside it are yours.
-- State records decisions, not fills. A target returned at one pulse
-  fills at the next open.
+Return `state_update` beside the targets. At the next decision it
+arrives as `ctx$state_prev`; on the first decision,
+`ctx$state_prev$decisions_seen` is `NULL`. Returning a bare target keeps
+the previous state unchanged. State records decisions, not fills: a
+target returned at one pulse still fills at the next open.
 
 ``` r
 weekly_trend_momentum <- function(ctx, params) {
@@ -756,12 +595,9 @@ weekly_trend_momentum <- function(ctx, params) {
 weekly_params <- list(invested = 0.5)
 ```
 
-`decisions_seen` counts callback invocations, not market sessions. While
-the trend line is still warming up, the strategy explicitly holds.
-Between weekly decisions the callback is not invoked: ledgr records a
-scheduled skip, carries strategy state forward unchanged, and still
-processes economic events, accounting and checkpoints. A scheduled skip
-and `ctx$hold()` therefore mean different things.
+You may also return one short `intent_reason` with the targets, such as
+`"rebalanced"`. ledgr stores it as a decision note, not as a general
+store for predictions, ranks, selections or weights.
 
 You might be tempted to call `trend_momentum()` from inside
 `weekly_trend_momentum()` instead of repeating the rule. Don’t: ledgr
@@ -770,8 +606,8 @@ defined outside the strategy, such as `trend_momentum()`, is rejected
 before the run starts. `vignette("reproducibility", package = "ledgr")`
 explains why.
 
-Calling the undecorated strategy on the study pulse tests one decision.
-There is no previous state, so `decisions_seen` starts at zero:
+Calling the undecorated function still tests one decision in isolation.
+There is no previous state here, so `decisions_seen` starts at zero:
 
 ``` r
 weekly_trend_momentum(pulse, weekly_params)
@@ -786,8 +622,7 @@ weekly_trend_momentum(pulse, weekly_params)
 #> [1] 1
 ```
 
-The decorator supplies timing when the strategy enters a real
-experiment. Now run it and compare the three versions:
+The decorator supplies timing when the strategy enters the experiment:
 
 ``` r
 weekly_run <- ledgr_experiment(
@@ -820,6 +655,13 @@ ledgr_run_compare(snapshot)
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
+`decisions_seen` now counts scheduled callback invocations, not market
+sessions. During warmup the invoked strategy explicitly returns
+`ctx$hold()`. On other non-decision sessions the callback is not invoked
+at all: ledgr records a scheduled skip, carries state forward, and still
+processes economic events, accounting and checkpoints. A scheduled skip
+and `ctx$hold()` therefore mean different things.
+
 `ledgr_run_compare()` summarizes every run stored with the snapshot.
 `n_trades` counts sales that close earlier purchases, fully or in part;
 purchases alone are not counted, so it is smaller than the number of
@@ -828,9 +670,8 @@ fills.
 Each change did what it was designed to do: the rule stopped buying
 falling instruments, and the weekly schedule reduced how often it
 reconsidered the portfolio. That is not evidence that the weekly version
-is a better strategy; in this sample the plain ranking even finished
-with the most equity. Three variants of one idea on four instruments
-over six months say nothing reliable about performance.
+is better. Three variants on four instruments over six months say
+nothing reliable about performance.
 `vignette("selection-integrity", package = "ledgr")` covers how to
 compare candidates without fooling yourself.
 
@@ -868,6 +709,37 @@ strategy is not called, but ledgr continues the economic and accounting
 work of the run. The schedule is part of run identity and provenance, so
 changing the cadence creates a distinct experiment rather than an
 invisible callback rule.
+
+### Choose Another Calendar Cadence
+
+The same decorator accepts other calendar declarations:
+
+| Desired decision | Declaration | Plan label |
+|----|----|----|
+| First open session of each week | `ledgr_schedule_week_start()` | `week start` |
+| Every Wednesday | `ledgr_schedule_weekday("wednesday")` | `wednesday` |
+| First open session of each month | `ledgr_schedule_month_start()` | `month start` |
+| The 15th, or the next open session that month | `ledgr_schedule_month_day(15)` | `month day 15` |
+
+``` r
+wednesday_schedule <- ledgr_schedule_weekday("wednesday")
+month_day_15_schedule <- ledgr_schedule_month_day(15)
+```
+
+Calendar schedules move forward only inside the period they name. A
+closed Friday does not turn into a Monday decision. `"saturday"` and
+`"sunday"` decide only on venues that actually open then. A closed 15th
+may move to a later open session in that month, never into the next one.
+`ledgr_schedule_month_day(1L)` can decide on an open first session;
+`ledgr_schedule_month_start()` requires a provable boundary from the
+preceding month.
+
+The following executable check uses a calendar with Thursday and Monday
+open, but Friday and the weekend closed. Its complete decision table is
+empty:
+
+    #> # A tibble: 0 x 1
+    #> # i 1 variable: decision_date <date>
 
 ## With A Changing Investment Universe
 
