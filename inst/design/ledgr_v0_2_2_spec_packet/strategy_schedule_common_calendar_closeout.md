@@ -2,7 +2,8 @@
 
 **Cut:** 22. **Workstream:** 64. **Ticket:** LDG-3115.
 **Implementation:** `0bd1ad01` on `v0.2.2`.
-**Status:** Awaiting independent Type 1 close review.
+**Status:** Independent Type 1 close review passed after two focused
+corrections; awaiting maintainer acceptance.
 
 ## Result
 
