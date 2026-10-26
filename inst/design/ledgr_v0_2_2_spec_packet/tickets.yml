@@ -935,7 +935,7 @@ workstreams:
     status: "review_pending"
     depends_on_workstream: 68
     requires_review_acceptance: true
-    review: {mode: "Type 1 with an independent input check", point: "close of workstream 65", verdict: "pending", reason: "One claim owned by LDG-3116: the complete public teaching surface describes one coherent current v0.2.2 workflow, uses shipped APIs and vocabulary, and makes its assumptions and limitations visible without inventing product behavior."}
+    review: {mode: "Type 1 with an independent input check", point: "close of workstream 65", verdict: "PASS after one correction", artifact: "close_review_65.md", result: "The first fresh Claude Opus review accepted the documentation architecture and found six bounded teaching, detector and record corrections plus an invalid whole-CPU timing method for the prerequisite WS68 gate. Correction efb29b78 strengthens LTB-0116, distinguishes callback execution from per-pulse run evidence, repairs the matrix and journey handoffs, qualifies and routes the worker-memory observation, records stale renders and scenario injections, and replaces the invalid timing characterization with an alternating P-core record. A final fresh Opus confirmation mutation-checked the article pin, reran the documentation contract and both timing gates, recomputed every median and paired ratio, and returned finding-free PASS.", reason: "One claim owned by LDG-3116: the complete public teaching surface describes one coherent current v0.2.2 workflow, uses shipped APIs and vocabulary, and makes its assumptions and limitations visible without inventing product behavior."}
   - id: 66
     name: "Version and design-memory freeze"
     cut: 23

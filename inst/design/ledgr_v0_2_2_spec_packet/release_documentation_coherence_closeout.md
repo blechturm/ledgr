@@ -145,6 +145,13 @@ stable execution seed had become stale; LCL-0116/LTB-0116; this closeout; and
 the Workstream 65/68 packet records. Generated cpp11 and pkgdown metadata were
 restored after verification.
 
+The independent close review returned `PASS_AFTER_PATCHES`. Correction
+`efb29b78` applied its six bounded documentation and record fixes and replaced
+the invalid whole-CPU timing characterization with the registered P-core
+comparison. A fresh Claude Opus confirmation mutation-checked LTB-0116,
+reran the documentation-contract suite and both fast-profile gates, recomputed
+the timing record, and returned finding-free `PASS`.
+
 The two other strategy callbacks with civil-date checks are bounded scenario
 injections, not periodic rebalance calendars: `trim_twice` requests trades on
 three named dates to put one fill into a missing-bar interval, and the
