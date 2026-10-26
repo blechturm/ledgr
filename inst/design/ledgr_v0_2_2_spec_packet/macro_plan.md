@@ -1,8 +1,8 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-18 are complete and accepted. The pre-CRAN research-strategy API cleanup is
-the current release work.
+22 are complete and accepted. Cut 23 owns documentation coherence, version and
+design-memory freeze, and the final release gate and publication.
 
 **Date:** 2026-10-03
 
@@ -779,8 +779,9 @@ while P1, P4 and P5 still run. Cut 21 delivered declaration, compiler and
 identity (WS60), pulse-complete fold execution and persistence (WS61),
 orchestration formats (WS62), then teaching and integrated proof (WS63). Cut
 22 added the two common civil-calendar declarations in WS64. LFB-035 stays
-separate. The remaining work is release closeout rather than another
-pre-planned product workstream.
+separate. Cut 23 owns release closeout rather than another pre-planned product
+workstream: public documentation coherence, version and design-memory freeze,
+then the release gate and publication.
 
 `tickets.yml` alone binds exact dependencies and status.
 
