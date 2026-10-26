@@ -164,6 +164,7 @@ and construct fractional targets explicitly; do not infer granularity from an
 instrument symbol or silently add a crypto exception. Cut 20 owns neither the
 fixed-decimal rule nor quantity-step semantics.
 
+<a id="2026-10-25-adapters-public-ledgrcrypto2-after-the-promotion-ready-core"></a>
 ### 2026-10-25 [adapters] Public `ledgr.crypto2` after the promotion-ready core
 
 The three-stage spike on `spike/crypto-readiness` shows that ledgr can already

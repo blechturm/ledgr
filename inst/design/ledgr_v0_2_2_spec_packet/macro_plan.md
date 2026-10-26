@@ -1,8 +1,10 @@
 # ledgr v0.2.2 Macro Plan
 
-**Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-22 are complete and accepted. Cut 23 owns documentation coherence, version and
-design-memory freeze, and the final release gate and publication.
+**Status:** Completed planning record; accepted on 2026-10-03 and frozen at
+the v0.2.2 release-candidate boundary on 2026-10-26. Cuts 1 through 22 are
+complete and accepted. Cut 23 owns documentation coherence, version and
+design-memory freeze, and the final release gate and publication. Its live
+status and remaining release actions are governed only by `tickets.yml`.
 
 **Date:** 2026-10-03
 

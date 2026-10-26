@@ -1,4 +1,57 @@
-# ledgr (development version)
+# ledgr 0.2.2
+
+## Upgrading from 0.2.1.0
+
+ledgr 0.2.2 makes long-window, point-in-time portfolio research a complete
+public workflow. Availability-aware runs now share one causal history
+substrate across runs, sweeps and walk-forward evaluation; strategies can read
+identified history matrices or frames, declare readiness, use point-in-time
+facts and corporate actions, and return targets through the existing risk,
+execution and ledger pipeline. Declarative schedules move recurring decisions
+outside callbacks, and the new minimum-variance article demonstrates the
+intended long-only research path end to end.
+
+This is a current-only, pre-CRAN release. Rebuild snapshots, experiment stores,
+saved sweeps and walk-forward artifacts created by older ledgr versions; no
+migration or compatibility reader is provided. Current persistent identities
+include experiment-store schema 124, snapshot hash rule 4, run identity rule
+4, valuation and corporate-action policy schema 2, saved-sweep format 6,
+retention format 2, provenance and reproduction-key format 2, walk-forward
+candidate and inspection format 2, and promotion-context format 3.
+
+Public changes that require source edits include:
+
+- replace `ledgr_param_grid()` with an ordinary data frame,
+  `ledgr_strategy_grid()`, or the feature/strategy grid helpers;
+- replace the removed history `na_action` argument and
+  `ledgr_history_sufficient()` with `min_observations`, `min_instruments`, and
+  `ledgr_passed_warmup()`;
+- remove `persist_features` and calls to the removed feature-cache clearing
+  helper; features are computed on the uncached path and are not persisted;
+- replace the removed `fill_model` argument with `timing_model` and a classed
+  `cost_model`, and replace the `type` alias of
+  `as_tibble.ledgr_backtest()` with `what`;
+- use `ledgr_experiment()` and `ledgr_run()` for snapshots with point-in-time
+  availability facts; `ledgr_backtest()` remains dense-only.
+
+Important boundaries remain explicit. Strategy schedules currently require
+one pulse per declared open session. The estimator example is long-only; this
+release does not claim shorting, leverage, market-neutral construction, model
+lifecycle, intraday schedules, or paper/live execution. Terminal holdings
+without complete settlement evidence follow the declared corporate-action and
+valuation policies: ledgr either refuses or records the chosen write-off,
+haircut, qualifying-mark, or frozen-value assumption.
+
+Halts and untraded sessions that a data source encodes as zero-volume bars
+carrying the previous close, as the reference Sharadar data does, are still
+read as observed prices: they can fill and they bypass valuation ageing and
+freezing.
+
+Parallel sweeps trade time for memory because each local worker receives its
+own prepared history input. The retained long-window workload peaked at 1.89
+GiB for one run and 4.46 GiB for the two-worker tree. These are workload-
+specific observations, not a general memory bound; use `workers = 1L` when
+memory is the tighter constraint.
 
 ## Declarative strategy schedules
 
@@ -97,9 +150,8 @@
   `knowledge_assume_effective`) instead of `evidenced`, and results of an
   availability-aware run list `equity_corporate_actions` among their
   assumption-backed facts. A supplied knowledge time stays `evidenced`. The
-  fact IDs and family hash of such rows change, so the experiment-store
-  schema moves to 123 and schema-122 stores refuse with
-  `ledgr_store_rebuild_required`; rebuild them.
+  fact IDs and family hash of such rows change. Older experiment stores refuse
+  with `ledgr_store_rebuild_required`; rebuild them.
 
 - A `carry_test_state` walk-forward no longer stops with
   `ledgr_invalid_pulse_context` when two or more corporate-action cash
@@ -246,8 +298,8 @@
   not finite) distinguishes warm-up, missing and excluded
   inputs, expired output carry and sessions outside the calculation.
 
-- Snapshot hash rule 4 and experiment-store schema 121 add the causal civil
-  time representation. Older snapshots, stores and identity-rule artifacts
+- Snapshot hash rule 4 and the current experiment-store schema add the causal
+  civil-time representation. Older snapshots, stores and identity artifacts
   refuse; no migration or compatibility reader is provided before CRAN.
 
 ## Public causal history
@@ -329,8 +381,8 @@
   inspection reads feature, mark and entitlement history from the snapshot's
   first session. `hydration_start_utc`, `ledgr_unsupported_hydration_start`,
   `ledgr_precomputed_hydration_mismatch` and the payload `warmup_range` are
-  removed, and experiment-store schema 122 drops the stored fold column;
-  schema-121 stores refuse.
+  removed, and the current experiment-store schema drops the stored fold
+  column; older stores refuse.
 
 - Under `carry_test_state`, availability walk-forward test windows form one
   economic chain that equals one run with the same parameter switches: each
@@ -342,14 +394,14 @@
 
 ## Current-only experiment stores
 
-- Experiment-store schema 121 is opened through one marker-pair gate. Every
+- Experiment-store schema 124 is opened through one marker-pair gate. Every
   package-owned persistent-store path refuses an older, newer, unmarked,
   malformed, or fingerprint-mismatched store with
   `ledgr_store_rebuild_required`; pre-CRAN migrations and tolerant readers
   have been removed.
 
 - Stored experiment records are current-only as well: run and walk-forward
-  identity rule 4, policy schema 2, saved-sweep schema 5, retention schema 2,
+  identity rule 4, policy schema 2, saved-sweep schema 6, retention schema 2,
   current provenance and execution timing version 2 are required. Older
   records are not inferred, translated or reopened; rebuild the research store
   from its source inputs with this ledgr version.
@@ -365,9 +417,9 @@
   computation now follows the existing uncached production path, and cache
   telemetry is no longer recorded or printed.
 - Removed `persist_features`, durable feature rows, and the unused `features`
-  table. Schema 119 and identity-rule-2 records now refuse through the existing
-  current-only gates; no migration, fallback, ignored argument, or compatibility
-  alias is provided.
+  table. Older stores and identity records refuse through the existing
+  current-only gates; no migration, fallback, ignored argument, or
+  compatibility alias is provided.
 - Indicator and feature fingerprints now bind deterministic direct function
   captures. Unsupported captures refuse as non-deterministic, stale precomputed
   features refuse before execution, and the CSV adapter continues to represent
@@ -431,9 +483,9 @@
   stay dense.
 
 - Run identity now binds snapshot content instead of the store-local snapshot
-  ID. Runs record `identity_rule_version = 2` and the snapshot hash, so the
+  ID. Runs record `identity_rule_version = 4` and the snapshot hash, so the
   same bars sealed under two snapshot IDs give the same `config_hash`, and
-  walk-forward `experiment_hash` and `session_id` follow. Rule 2 is the only
+  walk-forward `experiment_hash` and `session_id` follow. Rule 4 is the only
   readable stored identity; older research stores must be rebuilt. A run whose
   opening is dated before the snapshot now records the snapshot start, where
   it actually begins, as its start.
@@ -443,7 +495,7 @@
   beside the promoting experiment's, in
   `ledgr_promotion_context(bt)$identity_check`, and warns with
   `ledgr_promote_identity_mismatch` when they differ. It still promotes.
-  Promotion context records are now `ledgr_promotion_v2`; other versions
+  Promotion context records are now `ledgr_promotion_v3`; other versions
   refuse rather than being inferred.
 
 - Current run configurations must carry explicit risk and corporate-action
@@ -556,8 +608,7 @@
   runs no test window. Each fold records its `selection_source` (`train`,
   `previous` or `none`), the printed session counts them, and
   `no_selection = "fail"` keeps the old refusal. Default sessions get new
-  session IDs; the experiment store moves to schema 118 and upgrades in
-  place.
+  session IDs; rebuild older experiment stores under the current-only format.
 
 - In an availability-aware run, `ledgr_target_rebalance()` no longer stops the
   run when an eligible member has no current close, which is common in vendor
@@ -619,7 +670,7 @@
   store whose columns, constraints or schema marker differ is validated in
   full, and damage to the required schema still fails.
 
-## Scoring and feature starts
+## Scoring starts
 
 These changes alter results for dated and windowed work; undated runs and
 sweeps are unchanged.
@@ -629,18 +680,6 @@ sweeps are unchanged.
   already did. Sweeps previously scored and traded from the snapshot start.
   Walk-forward training windows no longer execute or score pulses before
   their start, so their scores and selections can change.
-- Feature state now starts at the scoring start on every path. Indicators warm
-  up again in every run, sweep, precompute range and walk-forward training and
-  test window, and no path reads bars before its start. A training window
-  shorter than an indicator's warmup cannot trade; if no candidate trades,
-  `sharpe_ratio` has no finite value and `ledgr_walk_forward()` stops with
-  `ledgr_walk_forward_no_selection`. This is a temporary rule;
-  hydrating features from earlier history is planned with the point-in-time
-  history design.
-- `ledgr_precompute_features()` records `warmup_range$start` equal to its
-  scoring start. A sweep, windowed or not, refuses a precomputed payload whose
-  features start at another time with `ledgr_precomputed_hydration_mismatch`,
-  so payloads saved before this change must be rebuilt.
 - An opening date before the snapshot starts at the first bar in sweeps and
   precompute, as in runs. A sweep whose scoring range has fewer than two
   pulses refuses with `ledgr_run_window_too_short`, as a run does.

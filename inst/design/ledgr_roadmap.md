@@ -69,7 +69,10 @@ v0.2.0.2 planning path used when that release was cut.
 **Maintainer decision, 2026-10-16:** The release after v0.2.2 will complete
 the ordinary research-authoring workflow, consolidate execution onto the
 availability path, and resolve the accumulated maintenance work explicitly
-deferred to this release. The version number remains unassigned.
+deferred to this release. The maintainer assigned version `v0.2.3` on
+2026-10-27; its packet path is reserved as
+`inst/design/ledgr_v0_2_3_spec_packet/` and becomes active only in the
+post-publication navigation switch for v0.2.2.
 
 The intended user outcome is a coherent path from declared features and causal
 history, through reusable ordinary-R strategy code and explicit scheduling,

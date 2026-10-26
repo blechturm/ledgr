@@ -71,11 +71,10 @@ rule from them. `horizon.md` is non-binding parking.
 ## Current release
 
 Release `v0.2.2` is active. Its maintained uncut order is
-[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md). Cuts 1 through 14 are
-complete and accepted. Cut 15 owns the pre-history foundations; its live
-workstream state and sequence are in
-[tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml). The point-in-time history
-wave follows the accepted Cut 15 boundary.
+[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md), now frozen as its
+completed planning record. Cuts 1 through 22 are complete and accepted. Cut 23
+owns release closeout; its live workstream state, release gates and publication
+sequence are in [tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml).
 
 The latest tagged release and older release outcomes remain discoverable in
 the [roadmap](ledgr_roadmap.md) and their versioned packet directories. Those

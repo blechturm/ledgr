@@ -59,7 +59,10 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
   [`close_review_38_rereview_1.md`](close_review_38_rereview_1.md);
 - [`close_review_39.md`](close_review_39.md).
 - [`close_review_64.md`](close_review_64.md) and
-  [`close_review_64_rereview_1.md`](close_review_64_rereview_1.md).
+  [`close_review_64_rereview_1.md`](close_review_64_rereview_1.md);
+- [`cut_review_23.md`](cut_review_23.md),
+  [`close_review_68.md`](close_review_68.md) and
+  [`close_review_65.md`](close_review_65.md).
 
 A finding-free `PASS` is recorded as one line in `tickets.yml` and has no
 separate file. The ticket authority says which reviews are operative.
@@ -97,11 +100,14 @@ second status ledger:
   [`proof_baseline_trims_closeout.md`](proof_baseline_trims_closeout.md)
   and
   [`history_proof_phase_a_closeout.md`](history_proof_phase_a_closeout.md);
-- [`integrated_release_closeout.md`](integrated_release_closeout.md).
-- [`strategy_schedule_preparation_closeout.md`](strategy_schedule_preparation_closeout.md).
-- [`strategy_schedule_common_calendar_closeout.md`](strategy_schedule_common_calendar_closeout.md).
-- [`close_review_60.md`](close_review_60.md).
-- [`close_review_60_rereview_1.md`](close_review_60_rereview_1.md).
+- [`integrated_release_closeout.md`](integrated_release_closeout.md) and
+  [`release_documentation_coherence_closeout.md`](release_documentation_coherence_closeout.md)
+  and [`release_memory_closeout.md`](release_memory_closeout.md);
+- [`strategy_schedule_preparation_closeout.md`](strategy_schedule_preparation_closeout.md)
+  and
+  [`strategy_schedule_common_calendar_closeout.md`](strategy_schedule_common_calendar_closeout.md);
+- [`close_review_60.md`](close_review_60.md) and
+  [`close_review_60_rereview_1.md`](close_review_60_rereview_1.md).
 
 Other packet files remain historical evidence at their existing paths. Use
 `tickets.yml`, not this index, to decide whether a record is current.
