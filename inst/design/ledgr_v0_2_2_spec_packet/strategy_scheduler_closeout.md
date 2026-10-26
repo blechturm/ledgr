@@ -113,12 +113,13 @@ is the absent P2 decision/risk trace from explicit manual holds, replaced by one
 `scheduled_skip` diagnostic per skipped scheduled pulse. The untimed correction
 record in `evidence/ws63_diagnostic_parity` removes only those P2 rows and then
 requires every retained P1/P4/P5 row and every retained reason count to match.
-At `20c1fc21`, both arms retain the same 16,043 off-date P1/P4/P5 rows with the
-same hash. The manual arm additionally records 3,610,355 P2 decision/risk rows;
-the scheduled arm records 6,849 `scheduled_skip` rows instead. The two checker
-self-tests independently corrupt economic, date, count, clock, retained-row
-and retained-hash evidence; every mutation is rejected after a passing
-baseline.
+At `8194e904`, both arms have the same 181,811 decision-date diagnostic rows
+and hash, including P2 decision/risk evidence. They also retain the same 6,893
+off-date P1/P4/P5 rows and hash. The manual arm additionally records 3,437,694
+off-date P2 decision/risk rows; the scheduled arm records 6,849
+`scheduled_skip` rows instead. The checker self-tests independently corrupt
+economic, date, count, clock, retained-row, retained-hash, empty-due and
+dropped-due evidence; every mutation is rejected after a passing baseline.
 
 ## Identity cost kept outside H1
 
@@ -179,8 +180,8 @@ hidden in the fold ratio.
 - documentation contracts: all blocks PASS, including LTB-0509;
 - focused correction suites (`strategy-schedule`, `minimum-variance-proof`
   and `documentation-contracts`): PASS at `20c1fc21`;
-- untimed off-date diagnostic parity: PASS, 16,043 retained rows exact and
-  both registered mutations rejected;
+- untimed diagnostic parity: PASS, 181,811 decision-date and 6,893 retained
+  off-date rows exact, with all four registered mutations rejected;
 - four changed GFM articles: execute and freshness-check PASS;
 - ordinary fast: three runs, 577/577 each, median 109.71 seconds against 112;
 - ordinary review: 446/446, 477.02 seconds, one established optional-path skip;

@@ -1,9 +1,6 @@
 "pair","arm","stage","outcome","reason_code","n"
-1,"manual","decision","recorded","decision_recorded",3609642
-1,"manual","decision","recorded","lifetime_inactive",712
-1,"manual","execution","filled","",8797
-1,"manual","execution","filled","membership_changed_before_execution",1
-1,"manual","execution","no_fill","lifetime_inactive",4
-1,"manual","reconciliation","reconciled","affordability_reconciled",7193
+1,"manual","decision","recorded","decision_recorded",3437055
+1,"manual","decision","recorded","lifetime_inactive",638
+1,"manual","reconciliation","reconciled","affordability_reconciled",6849
 1,"manual","risk","passed","stale_mark_pass_through",1
-1,"manual","valuation","disposed","terminal_disposition",48
+1,"manual","valuation","disposed","terminal_disposition",44

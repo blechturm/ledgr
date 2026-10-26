@@ -1,9 +1,4 @@
 "pair","arm","stage","outcome","reason_code","n"
-1,"scheduled","decision","recorded","decision_recorded",172587
-1,"scheduled","decision","recorded","lifetime_inactive",74
 1,"scheduled","decision","skipped","scheduled_skip",6849
-1,"scheduled","execution","filled","",8797
-1,"scheduled","execution","filled","membership_changed_before_execution",1
-1,"scheduled","execution","no_fill","lifetime_inactive",4
-1,"scheduled","reconciliation","reconciled","affordability_reconciled",7193
-1,"scheduled","valuation","disposed","terminal_disposition",48
+1,"scheduled","reconciliation","reconciled","affordability_reconciled",6849
+1,"scheduled","valuation","disposed","terminal_disposition",44
