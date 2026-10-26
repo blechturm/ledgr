@@ -631,10 +631,32 @@ ledgr_fold_stage_observe_settle <- function(
 
 ledgr_fold_scheduled_skip_decision <- function(fold_state, observation) {
   positions <- observation$positions_snapshot
+  held <- names(positions)[positions != 0]
+  mark_source <- as.character(observation$valuation$source[held])
+  evidenced <- held[mark_source %in% c("stale_close", "frozen_close")]
+  diagnostic_segments <- if (length(evidenced) == 0L) {
+    list()
+  } else {
+    list(list(
+      n = length(evidenced),
+      instrument_id = evidenced,
+      stage = "valuation",
+      outcome = "marked",
+      reason_code = "",
+      reasons = "",
+      quantity = positions[evidenced],
+      price = observation$valuation$mark[evidenced],
+      mark_source = observation$valuation$source[evidenced],
+      mark_age = observation$valuation$age[evidenced],
+      position_before = positions[evidenced],
+      position_after = positions[evidenced]
+    ))
+  }
   list(
     strategy_targets = positions,
     targets = positions,
     state_update = NULL,
+    diagnostic_segments = diagnostic_segments,
     sample_start = observation$sample_start,
     t_ctx = 0,
     t_strat = 0,
@@ -1932,7 +1954,11 @@ ledgr_fold_envelope <- function(execution, output_handler) {
           reasons = "scheduled_skip",
           detail_json = "{}"
         ))
-        ledgr_fold_scheduled_skip_decision(fold_state, observation)
+        skipped <- ledgr_fold_scheduled_skip_decision(fold_state, observation)
+        for (segment in skipped$diagnostic_segments) {
+          add_segment(segment)
+        }
+        skipped
       }
       if (ledgr_is_fold_stop_result(decision_result)) {
         fold_state$status <- decision_result$status

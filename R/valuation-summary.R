@@ -102,7 +102,10 @@ ledgr_valuation_summary_add_stop <- function(out, run_id, con) {
 ledgr_valuation_summary_evidence <- function(bt, con) {
   config <- bt$config
   policy <- config$availability$valuation_policy
-  held <- "run_id = ? AND stage = 'decision' AND quantity <> 0"
+  held <- paste(
+    "run_id = ? AND quantity <> 0 AND",
+    "(stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked'))"
+  )
   stale <- DBI::dbGetQuery(
     con,
     paste(
@@ -629,8 +632,8 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
       paste(
         "SELECT run_id,",
         "COUNT(*) FILTER (WHERE stage = 'decision') AS decisions,",
-        "COUNT(*) FILTER (WHERE stage = 'decision' AND quantity <> 0 AND mark_source = 'stale_close') AS stale,",
-        "COUNT(*) FILTER (WHERE stage = 'decision' AND quantity <> 0 AND mark_source = 'frozen_close') AS frozen,",
+        "COUNT(*) FILTER (WHERE quantity <> 0 AND (stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked')) AND mark_source = 'stale_close') AS stale,",
+        "COUNT(*) FILTER (WHERE quantity <> 0 AND (stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked')) AND mark_source = 'frozen_close') AS frozen,",
         "COUNT(*) FILTER (WHERE stage = 'valuation' AND reason_code = 'terminal_disposition') AS assumed",
         "FROM run_diagnostics WHERE run_id IN (%s) GROUP BY run_id"
       ),
@@ -660,7 +663,8 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
         paste(
           "SELECT run_id, ts_utc, instrument_id, quantity, price",
           "FROM run_diagnostics WHERE run_id IN (%s)",
-          "AND stage = 'decision' AND quantity <> 0",
+          "AND quantity <> 0",
+          "AND (stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked'))",
           "AND mark_source = 'frozen_close'",
           "ORDER BY run_id, instrument_id, ts_utc"
         ),

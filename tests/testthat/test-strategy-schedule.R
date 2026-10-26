@@ -74,6 +74,121 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
 })
 
 # ledgr-test-profile: review
+testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
+  opening <- ledgr_opening(cash = 1000, positions = c(BBB = 2), cost_basis = c(BBB = 42))
+  manual_strategy <- function(ctx, params) {
+    if (!ctx$ts_utc %in% params$due) return(ctx$hold())
+    previous <- ctx$state_prev
+    n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
+    list(targets = ctx$hold(), state_update = list(n = n + 1L), intent_reason = "rebalanced")
+  }
+  scheduled_strategy <- ledgr_strategy_schedule(
+    function(ctx, params) {
+      previous <- ctx$state_prev
+      n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
+      list(targets = ctx$hold(), state_update = list(n = n + 1L), intent_reason = "rebalanced")
+    },
+    ledgr_schedule_week_start()
+  )
+  fixture <- ws42_history_fixture(
+    strategy = manual_strategy, features = list(), opening = opening,
+    valuation_policy = ledgr_valuation_stale(1)
+  )
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  # week_start waits for the first proved boundary, so the partial first week
+  # has no decision and the second Monday is the only due pulse.
+  due <- ws42_iso(fixture$axis[[6L]])
+  manual <- ledgr_run(fixture$exp, params = list(due = due), run_id = "schedule-valuation-manual")
+  scheduled_exp <- fixture$exp
+  scheduled_exp$strategy <- scheduled_strategy
+  scheduled <- ledgr_run(
+    scheduled_exp, params = list(due = due), run_id = "schedule-valuation-declared"
+  )
+  on.exit(close(manual), add = TRUE)
+  on.exit(close(scheduled), add = TRUE)
+
+  opened <- ledgr:::ledgr_run_store_open(fixture$snapshot$db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  rows <- function(table, run_id, order) {
+    DBI::dbGetQuery(
+      opened$con,
+      sprintf("SELECT * EXCLUDE(run_id) FROM %s WHERE run_id = ? ORDER BY %s", table, order),
+      params = list(run_id)
+    )
+  }
+  manual_events <- rows("ledger_events", manual$run_id, "event_seq")
+  scheduled_events <- rows("ledger_events", scheduled$run_id, "event_seq")
+  event_values <- setdiff(names(manual_events), "event_id")
+  testthat::expect_identical(manual_events[event_values], scheduled_events[event_values])
+  testthat::expect_identical(
+    rows("equity_curve", manual$run_id, "ts_utc"),
+    rows("equity_curve", scheduled$run_id, "ts_utc")
+  )
+  testthat::expect_identical(
+    rows("strategy_state", manual$run_id, "ts_utc"),
+    rows("strategy_state", scheduled$run_id, "ts_utc")
+  )
+  testthat::expect_identical(manual$status, scheduled$status)
+
+  manual_valuation <- ledgr_valuation_summary(manual)
+  scheduled_valuation <- ledgr_valuation_summary(scheduled)
+  testthat::expect_identical(scheduled_valuation, manual_valuation)
+  testthat::expect_identical(scheduled_valuation$valuation_state, "frozen")
+  testthat::expect_identical(scheduled_valuation$stale_instrument_sessions, 1L)
+  testthat::expect_identical(scheduled_valuation$frozen_instrument_sessions, 1L)
+
+  diagnostics <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT ts_utc, instrument_id, stage, outcome, reason_code, quantity, mark_source",
+      "FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq"
+    ),
+    params = list(scheduled$run_id)
+  )
+  skips <- diagnostics[diagnostics$reason_code == "scheduled_skip", , drop = FALSE]
+  testthat::expect_identical(nrow(skips), 7L)
+  testthat::expect_identical(unique(skips$instrument_id), "")
+  testthat::expect_identical(unique(skips$stage), "decision")
+  testthat::expect_identical(unique(skips$outcome), "skipped")
+  marks <- diagnostics[
+    diagnostics$stage == "valuation" & diagnostics$outcome == "marked",
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_identical(marks$instrument_id, c("BBB", "BBB"))
+  testthat::expect_identical(marks$mark_source, c("stale_close", "frozen_close"))
+  testthat::expect_true(all(marks$reason_code == ""))
+  testthat::expect_true(all(as.numeric(marks$quantity) != 0))
+  testthat::expect_true(all(ws42_iso(marks$ts_utc) %in% ws42_iso(fixture$axis[-c(1L, 6L)])))
+
+  selected <- c(
+    "valuation_state", "frozen_instrument_sessions",
+    "max_frozen_equity_weight", "frozen_at_end_value"
+  )
+  listed <- ledgr_run_list(fixture$snapshot)
+  compared <- ledgr_run_compare(
+    fixture$snapshot, run_ids = c(manual$run_id, scheduled$run_id)
+  )
+  selected_values <- function(x) {
+    at <- match(c(manual$run_id, scheduled$run_id), x$run_id)
+    stats::setNames(lapply(selected, function(nm) unname(x[[nm]][at])), selected)
+  }
+  listed_values <- selected_values(listed)
+  compared_values <- selected_values(compared)
+  testthat::expect_identical(listed_values, compared_values)
+  testthat::expect_identical(compared[[selected[[1L]]]], rep("frozen", 2L))
+  testthat::expect_identical(compared[[selected[[2L]]]], rep(1L, 2L))
+  warning_line <- "WARNING: this result relies on declared valuation or terminal assumptions."
+  testthat::expect_true(warning_line %in% utils::capture.output(print(scheduled)))
+  testthat::expect_true("Valuation Evidence:" %in% utils::capture.output(summary(scheduled)))
+
+  close(scheduled)
+  reopened <- ledgr_run_open(fixture$snapshot, "schedule-valuation-declared")
+  on.exit(close(reopened), add = TRUE)
+  testthat::expect_identical(ledgr_valuation_summary(reopened), manual_valuation)
+})
+
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0502] compiler binds parent-axis boundary semantics", {
   sessions <- schedule_test_axis()
   pulses <- sessions$session_close[c(2L, 3L, 5L, 6L, 7L)]
