@@ -51,21 +51,25 @@ null, preserving the pre-scheduler unscheduled shape.
 
 ## Parallel boundary
 
-Candidate tasks resolve the declaration from the candidate's strategy params
-before dispatch and transport that small identity record. Each worker invokes
+Candidate tasks transport the classed strategy and its small authored
+declaration, not a resolved identity or verdict. Resolution occurs inside the
+candidate failure boundary so an invalid menu value becomes one failed row
+rather than aborting its sweep or walk-forward session. Each worker invokes
 `ledgr_compile_strategy_schedule()` once inside candidate preparation against
-its own authoritative sessions and pulses. The task contains neither
-`decision_due` nor `schedule_mask`. One-, two- and three-worker runs produce
+its own authoritative sessions and pulses. Actual task objects contain no
+decision, verdict or mask field. One-, two- and three-worker runs produce
 identical statuses, equity and provenance on the registered fixture.
 
 ## Detecting evidence
 
-LCL-0499 / LTB-0508 runs a parameterized two-candidate schedule through one,
-two and three workers, saves and reopens the result, reconstructs both
-candidate keys, promotes the in-memory and durable candidate, and inspects a
-real walk-forward fold. It proves that equal authored declarations retain one
-hash while month-start and week-start resolutions have different hashes. It
-also proves the unscheduled omission rule and the worker's single compile.
+LCL-0499 / LTB-0508 runs a schedule-sensitive parameterized target through
+one, two and three workers, saves and reopens the result, reconstructs both
+candidate keys, and promotes in-memory, durable and schedule-mismatched
+candidates. Fixed week and month declarations with identical params produce
+different train and test keys while retaining the same inner strategy hash.
+The block also proves invalid-menu candidate failure in sweep, save/reopen and
+walk-forward; unscheduled omission; actual task-payload shape; one worker-local
+compile; and independent parent and candidate hash validation.
 
 The block rewrites exact superseded values for saved sweep 5, sweep provenance
 v1 and walk-forward candidate v1. LTB-0235 rewrites promotion v2. Each refuses
@@ -78,11 +82,14 @@ general format and economic oracles.
 
 The changed orchestration paths add no row-at-a-time frame construction,
 full-table subset inside a pulse or instrument loop, scalar timestamp parsing,
-row-at-a-time JSON, discarded candidate-invariant recomputation, quadratic
-validation or scalar write into an environment-held vector. Schedule identity
-is four small list/scalar fields. Resolution is once per candidate; compilation
-is once per execution owner. Save and reopen validate each candidate in one
-linear pass over the candidate table. No work is added to the fold pulse loop.
+row-at-a-time durable write, quadratic validation or scalar write into an
+environment-held vector. Schedule identity is four small list/scalar fields.
+It is canonically serialized and hashed once when candidate identity is built
+and checked again on reopen; the review measured this bounded work at roughly
+140 to 160 microseconds per candidate and routes any consolidation to WS63.
+Resolution stays inside the candidate boundary; compilation is once per
+execution owner. Save and reopen validate candidates in one linear pass. No
+work is added to the fold pulse loop.
 
 ## Verification before close review
 
@@ -94,4 +101,25 @@ test-control-plane suites. The non-writing codebase checker reports
 `LEDGR_FOLD_PHASE_CONTRACT_OK`; tickets YAML parses; and `git diff --check` is
 clean.
 
-The independent Type 1 close review is the remaining workstream gate.
+## Close-review correction
+
+The independent Type 1 review in `close_review_62.md` returned
+`CHANGES_REQUIRED`. Correction `77ec5333`:
+
+- treats scheduled versus unscheduled promotion as a real `schedule_hash`
+  mismatch in both directions;
+- accepts both current sweep and walk-forward provenance when constructing a
+  reproduction key, while retaining exact old-provenance refusal;
+- moves parameter-menu resolution inside the candidate failure boundary and
+  stores authored-only identity for an unresolvable failed candidate;
+- names received and required sweep-provenance versions;
+- replaces source-text mask checks with actual task-object inspection and adds
+  schedule-sensitive economics, fixed-rule train/test identity, both promotion
+  presence directions and independent parent/candidate tamper witnesses; and
+- corrects the promotion contract, LCL-0233 and the seven-shape record.
+
+The corrected scheduler block and fifteen surrounding promotion, sweep,
+persistence, walk-forward, current-format, documentation, control-plane and
+codebase-contract suites pass. The fold-phase checker and YAML parse pass, and
+`git diff --check` is clean. A fresh focused confirmation is the remaining
+workstream gate.
