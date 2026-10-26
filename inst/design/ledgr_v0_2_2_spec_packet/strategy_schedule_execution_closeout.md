@@ -83,15 +83,42 @@ its runner exited on the pre-existing optional `tidyr` absence because the
 control plane rejects a claim guarded only by a skipped block. This is recorded
 as an environment miss, not a passing review-profile gate.
 
-The real-data-scale synthetic fixture compared accepted Workstream 60
-`e95e966f` with `b660cb05`. Forty-eight of 50 gated families were byte-identical
+The corrected real-data-scale synthetic fixture compared clean committed
+worktrees at accepted Workstream 60 `e95e966f` and corrected Workstream 61
+`3c488bc4`. Both `meta.csv` files name those full commits. Forty-eight of 50
+gated families were byte-identical
 and the identity family was identical. The only differences were the two
 run-info families, each containing exactly the intended additions:
 `schedule_json = null`, `schedule_hash = null`, decision count equal to pulse
 count, zero scheduled skips and schema 124 instead of 123. Economics, trades,
 state and identity did not change. The checker detected 51/51 isolated family
 corruptions in self-test. The reproducible records were taken at
-`C:/Users/maxth/ledgr-research/.tmp/ws61/{pre,candidate}` and are not committed
+`C:/Users/maxth/ledgr-research/.tmp/ws61/{clean-pre,clean-candidate}` and are not committed
 because their generated family payloads total roughly 437 MB per arm.
 
-An independent Type 1 close review is the remaining workstream gate.
+## Close-review correction
+
+The first independent clean-context Opus review returned `CHANGES_REQUIRED`
+and is recorded in `close_review_61.md`. It confirmed the stage architecture
+and found two current-reader defects plus detector, disclosure and record gaps.
+Correction `3c488bc4`:
+
+- prepares compiled schedule counts before terminal recovery can finalize and
+  replace telemetry;
+- treats schedule JSON and hash as an inseparable pair, classes parse failures,
+  cross-checks provenance against the canonical config declaration and refuses
+  missing scheduled-run counts in run information, open, print, summary and
+  trusted recovery;
+- avoids the schedule query for unscheduled backtest printing;
+- pins history-view reads, reconciliation, all decision rows at skipped pulses,
+  exact output counts, flat/opening/carried zero-decision cases and a
+  dividend-bearing interrupt/resume ledger, position and lot-state oracle;
+- removes the unused fold-return counts and avoids re-normalizing carried state;
+  and
+- completes the plan, run-discovery and NEWS disclosure.
+
+The corrected schedule suite and thirteen affected persistence, output,
+continuity, corporate-action, documentation and control-plane suites pass.
+Both structural checkers pass. The correction fast profile executes 577/577
+blocks in 108.040 seconds against the unchanged 112-second bound. A fresh
+focused Type 1 confirmation is the remaining workstream gate.
