@@ -697,8 +697,7 @@ friday_decisions <- ledgr_results(friday_run, "diagnostics") |>
   filter(reason_code == "strategy_intent") |>
   transmute(decision_date = as.Date(ts_utc))
 
-friday_decisions |>
-  filter(decision_date == as.Date("2019-04-19"))
+friday_decisions
 #> # A tibble: 0 x 1
 #> # i 1 variable: decision_date <date>
 close(friday_run)
