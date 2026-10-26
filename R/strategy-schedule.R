@@ -88,7 +88,10 @@ ledgr_schedule_validate <- function(schedule) {
   if (!is.list(schedule) || is.data.frame(schedule)) {
     ledgr_schedule_abort("`schedule` must be made by a `ledgr_schedule_*()` helper.")
   }
-  if (!identical(names(schedule), c("type_id", "version", "args"))) {
+  schedule_names <- names(schedule)
+  required_names <- c("type_id", "version", "args")
+  if (length(schedule_names) != length(required_names) ||
+      anyDuplicated(schedule_names) || !setequal(schedule_names, required_names)) {
     ledgr_schedule_abort("`schedule` must contain exactly `type_id`, `version` and `args`.")
   }
   type_id <- schedule$type_id

@@ -32,6 +32,13 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
       unserialize(serialize(attr(scheduled, "ledgr_schedule"), NULL)),
       attr(scheduled, "ledgr_schedule")
     )
+    json_declaration <- ledgr:::ledgr_json_read_nested(
+      as.character(canonical_json(unclass(rule)))
+    )
+    testthat::expect_identical(
+      unclass(ledgr:::ledgr_schedule_validate(json_declaration)),
+      unclass(ledgr:::ledgr_schedule_validate(rule))
+    )
   }
   testthat::expect_error(
     ledgr_strategy_schedule(
@@ -296,12 +303,18 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
   fixture <- ws42_history_fixture(strategy = strategy, features = list())
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   run <- ledgr_run(fixture$exp, run_id = "schedule-run")
+  reopened_run <- ledgr_run_open(fixture$snapshot, "schedule-run")
+  on.exit(close(reopened_run), add = TRUE)
   sweep <- ledgr_sweep(
     fixture$exp,
     ledgr_grid_named(one = list(strategy = list()))
   )
 
   testthat::expect_s3_class(run, "ledgr_run")
+  testthat::expect_identical(
+    unclass(ledgr:::ledgr_schedule_validate(reopened_run$config$strategy_schedule)),
+    unclass(ledgr:::ledgr_schedule_validate(run$config$strategy_schedule))
+  )
   testthat::expect_identical(sweep$status, "DONE")
   testthat::expect_length(counter$calls, 2L)
   testthat::expect_identical(counter$calls[[1L]], counter$calls[[2L]])
