@@ -57,9 +57,12 @@ better. If you need daily research you can trust and reopen later, that
 is what ledgr is built for.
 
 Parallel sweeps trade time for memory because each worker receives prepared
-run state. The retained v0.2.2 long-window record peaked at 4.46 GiB with two
-workers. Use `workers = 1L` when memory is the tighter constraint; parallel
-dispatch does not change strategy semantics.
+run state. In one retained v0.2.2 long-window workload, two workers peaked at
+4.46 GiB. Treat that as workload-specific sizing evidence, and use
+`workers = 1L` when memory is the tighter constraint; parallel dispatch does
+not change strategy semantics. The [Sweeps
+article](https://blechturm.github.io/ledgr/articles/sweeps.html) gives the
+matching single-worker record and context.
 
 ## Install
 

@@ -398,9 +398,10 @@ ledgr_facts_resolve(
 
 `AAA` is not a member at that cutoff, and `reason` records why: the
 applicable list is a complete set and `AAA` is absent from it. `BBB` is
-a member on an explicit assertion. This is the operation a strategy
-performs at every pulse, and it reports only what was knowable at the
-cutoff you asked about.
+a member on an explicit assertion. This is the resolution ledgr performs
+for the run’s pulse, and it reports only what was knowable at the cutoff
+you asked about. A strategy can consume the resolved result when that
+pulse is a decision.
 
 History is the audit view behind that answer. It is retrospective: it
 shows all assertions, including ones that were not usable at an earlier
@@ -548,6 +549,12 @@ scheduled_rebalance <- ledgr_strategy_schedule(
   rebalance_schedule
 )
 ```
+
+Only those two sessions call the portfolio rule. On the other eight
+sessions, ledgr records a scheduled skip while it continues to process
+events, value the holdings, and age stale marks. The scheduling section
+of `vignette("strategy-authoring-tools", package = "ledgr")` develops
+that distinction from a smaller example.
 
 In this availability-aware experiment, `equity_fraction` is deliberately
 below 1. Sizing uses the decision close while execution uses the next
@@ -818,10 +825,11 @@ runs*. The shading marks where the point-in-time number stops being an
 observation and becomes an assumption, which the next sections work
 through.
 
-## What The Strategy Could See
+## What The Run Recorded
 
-The availability view reports, for every instrument at every decision,
-what the configured logic concluded.
+The availability view reports, for every instrument at every pulse, what
+the configured logic concluded. It is run evidence, not proof that the
+strategy callback executed on that pulse.
 
 ``` r
 availability <- ledgr_results(point_in_time, "availability")
@@ -849,7 +857,7 @@ questions:
 
 | Field | The question it answers |
 |----|----|
-| `member` | Does this asset belong to the declared universe at this decision? |
+| `member` | Does this asset belong to the declared universe at this pulse? |
 | `held` | Do I already own a nonzero quantity of it? |
 | `admissible` | Does the configured availability logic permit *new* exposure? |
 | `priced` | Can the valuation policy assign it a permissible mark? |
@@ -1182,6 +1190,11 @@ bind_rows(lapply(
 #> 3 2020-01-10 21:00:00                 50 filled            ""
 #> # i 1 more variable: resulting_position <dbl>
 ```
+
+This date branch injects three specific requests to demonstrate a
+missing-bar execution scenario; it is not a recurring rebalance
+calendar. Periodic strategy scheduling belongs in
+`ledgr_strategy_schedule()` as shown above.
 
 Follow the dates against the contract stated earlier:
 

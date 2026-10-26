@@ -1,8 +1,8 @@
 # Workstream 65: public documentation coherence
 
-**Ticket:** LDG-3116  
+**Ticket:** LDG-3116
 **Candidate:** Cut 23 documentation tree after the accepted Workstream 68
-correction  
+correction
 **Purpose:** verify one coherent reader journey over the shipped v0.2.2
 surface without changing product behavior.
 
@@ -45,7 +45,6 @@ sources. "Next" records the principal handoff, not every optional cross-link.
 | --- | --- | --- | --- | --- | --- | --- |
 | `README.md` | first-time evaluator | R 4.6 and GitHub installation | understand ledgr's scope and run, inspect and reopen one backtest | sealed snapshot, experiment, ledger-derived result, explicit limits | `ledgr_snapshot_from_df()`, `ledgr_experiment()`, `ledgr_run()`, `ledgr_results()`, `ledgr_run_open()` | Quickstart |
 | `articles/who-ledgr-is-for.qmd` | evaluator choosing a framework | none | decide whether ledgr's correctness-first daily research scope fits | audience, non-goals, alternatives | none | Quickstart |
-| `articles/why-r.qmd` | R or Python researcher evaluating the design culture | basic portfolio-research vocabulary | understand why ordinary R objects surround ledgr's causal and accounting boundaries | readable research code, ecosystem composition, portability | `ledgr_history_matrix()`, `ledgr_align_weights()`, `ledgr_target_rebalance()` | Quickstart |
 | `quickstart.qmd` | new user | package installed | complete one run, sweep and promotion | experiment, candidate grid, sweep, promotion | `ledgr_experiment()`, `ledgr_run()`, `ledgr_sweep()`, `ledgr_candidate()`, `ledgr_promote()` | Data input or Strategy Basics |
 | `data-input-and-snapshots.qmd` | researcher bringing bars | tabular OHLCV data | validate, seal, reopen and close a snapshot | bar schema, seal, snapshot identity, persistent store | `ledgr_snapshot_from_df()`, `ledgr_snapshot_from_csv()`, `ledgr_snapshot_open()`, `ledgr_snapshot_info()` | Strategy Basics; Point-In-Time Inputs for richer evidence |
 | `strategy-development.qmd` | first strategy author | sealed snapshot | write and run causal strategies with explicit intent | `ctx`, signal, selection, weights, target, hold | `ledgr_signal_return()`, `ledgr_select_top_n()`, `ledgr_weight_equal()`, `ledgr_target_rebalance()`, `ledgr_run()` | Indicators or Strategy Authoring Tools |
@@ -72,6 +71,7 @@ sources. "Next" records the principal handoff, not every optional cross-link.
 | `metric-contexts-and-conventions.qmd` | advanced metric consumer | Metrics and Accounting | make cadence, calendar and risk-free assumptions explicit and comparable | metric context, annualization, hash, promotion context | `ledgr_metric_context()`, `ledgr_metric_context_hash()`, `ledgr_compute_metrics()` | Sweeps or Selection Integrity |
 | `execution-semantics.qmd` | strategy author debugging fills | targets and accounting basics | understand the target-to-fill boundary and common zero-fill outcomes | desired holdings, next-open fill, dense cash boundary, final bar | `ledgr_results()`, `ledgr_target_rebalance()`, `ledgr_run()` | Risk and Cost; Metrics |
 | `research-to-production.qmd` | reader evaluating the longer architecture | core ledgr concepts | separate the shipped research layer from planned paper/live operations | ledger as bridge, durable evidence, operational boundary | `ledgr_experiment()`, `ledgr_cost_zero()` | Research Workflow; Reproducibility |
+| `articles/why-r.qmd` | R or Python researcher evaluating the design culture | basic portfolio-research vocabulary | understand why ordinary R objects surround ledgr's causal and accounting boundaries | readable research code, ecosystem composition, portability | `ledgr_history_matrix()`, `ledgr_align_weights()`, `ledgr_target_rebalance()` | Quickstart |
 
 ## Six reader journeys
 
@@ -81,8 +81,8 @@ sources. "Next" records the principal handoff, not every optional cross-link.
 | Strategy and indicator authoring | Strategy Basics | Indicators -> Strategy Authoring Tools -> custom/TTR depth as needed | a causal function returns explicit intent from declared features |
 | Point-in-time evidence | Data Input | Point-In-Time Inputs -> Missing Data -> Corporate Actions -> Survivorship Bias | a sealed snapshot distinguishes source evidence, policy and recorded outcome |
 | Research validation | Research Workflow | Sweeps -> Selection Integrity -> Walk-Forward | exploration is separated from explicit selection and held-out evaluation |
-| Portfolio construction and scheduling | Causal History | Minimum Variance -> scheduler section in Strategy Authoring Tools | a causal matrix feeds an ordinary R estimator, identified weights and targets on declared dates |
-| Persistence and reproducibility | Experiment Store | Reproducibility -> Metrics and Accounting | a run can be reopened and interpreted from stored identity and ledger-derived results |
+| Portfolio construction and scheduling | Causal History | Minimum Variance | a causal matrix feeds an ordinary R estimator, identified weights and targets on declared dates |
+| Persistence and reproducibility | Experiment Store | Reproducibility -> Research Workflow | a run can be reopened and interpreted from stored identity and ledger-derived results |
 
 ## Corrections and claim boundaries
 
@@ -93,7 +93,8 @@ sources. "Next" records the principal handoff, not every optional cross-link.
 | `survivorship-bias.qmd` | stale API example | move the two-date guard out of the callback into `ledgr_schedule_dates()` and `ledgr_strategy_schedule()`; use that same scheduled strategy in the terminal examples | rendered output changes only in the strategy definition and experiment wiring; the economic outputs remain unchanged |
 | scheduler valuation evidence | product defect, routed blocker | LDG-3119 / Workstream 68 preserves held stale and frozen mark evidence on skipped pulses for run and sweep readers | LCL-0503/LTB-0512; independently reviewed after correction |
 | `strategy-authoring-tools.qmd`, `articles/who-ledgr-is-for.qmd` | scope wording | state the one-pulse-per-session scheduler boundary and avoid claiming shipped intraday execution | scheduler help and contract remain unchanged |
-| `walk-forward.md` | stale rendered output | refresh the execution seed produced by the unchanged source example | no source, API, identity rule or teaching claim changed |
+| `sweeps.md` | stale rendered output | refresh the sweep ID, run IDs, timestamp and schema-6 output produced by unchanged executable chunks | the earlier freshness gate should have caught this pre-range drift; no source API or teaching claim changed beyond the worker-memory paragraph |
+| `walk-forward.md` | stale rendered output | refresh the execution seed produced by the unchanged source example after the candidate-key change in `032e4c14` | the earlier freshness gate should have caught this pre-range drift; no source, API, identity rule or teaching claim changed |
 | `ttr-indicators.qmd` versus Documentation Contract TR-1 | routed contradiction | retain the shipped page for v0.2.2; the accepted next-release documentation-roles work owns page roles, pin types and retirement | no pin or page-role reset in this cut |
 
 The release claim boundary remains unchanged and visible in both required
@@ -116,7 +117,7 @@ Verification on Windows 11 with R 4.6.1:
 
 - `tools/render-vignettes-gfm.R --check --all` executed all 28 article
   sources and verified every tracked Markdown render in 201.9 seconds;
-- `test-documentation-contracts.R` passed 1,101 expectations, and
+- `test-documentation-contracts.R` passed 1,102 expectations, and
   `tools/check-readme-example.R` installed the package and passed in 19
   seconds;
 - `dev/build-site.R` completed with pkgdown 2.2.1 in 395.9 seconds, built 30
@@ -133,12 +134,18 @@ Verification on Windows 11 with R 4.6.1:
 
 The only changed registered pin is LCL-0116/LTB-0116. Its old assertion
 required the manual two-date guard that this ticket removes. The replacement
-requires `ledgr_schedule_dates()` and `ledgr_strategy_schedule()` and rejects
-the manual calendar branch, so the pin is stronger for the corrected shipped
-behavior. No claim-boundary pin was removed or weakened.
+requires both exact declared dates, `ledgr_schedule_dates()` and
+`ledgr_strategy_schedule()`, and rejects `ctx$ts_utc` from the strategy chunk,
+so removing either date or restoring a callback calendar branch fails. No
+claim-boundary pin was removed or weakened.
 
 Intentional tracked changes are confined to README; the four corrected QMD
 sources and their Markdown renders; the walk-forward Markdown render whose
 stable execution seed had become stale; LCL-0116/LTB-0116; this closeout; and
 the Workstream 65/68 packet records. Generated cpp11 and pkgdown metadata were
 restored after verification.
+
+The two other strategy callbacks with civil-date checks are bounded scenario
+injections, not periodic rebalance calendars: `trim_twice` requests trades on
+three named dates to put one fill into a missing-bar interval, and the
+missing-data article makes one named request inside its constructed hole.
