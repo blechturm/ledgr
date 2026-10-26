@@ -122,3 +122,14 @@ continuity, corporate-action, documentation and control-plane suites pass.
 Both structural checkers pass. The correction fast profile executes 577/577
 blocks in 108.040 seconds against the unchanged 112-second bound. A fresh
 focused Type 1 confirmation is the remaining workstream gate.
+
+The focused confirmation in `close_review_61_rereview_1.md` closed all seven
+original findings and found one new diagnostic-row regression: the strict
+count check also rejected scheduled `FAILED` and unfinished `RUNNING` rows,
+whose telemetry may legitimately be absent. Correction `4ed7f1cd` limits the
+count requirement to completed `DONE` and `INCOMPLETE` rows while retaining
+schedule provenance/config verification for every status. LTB-0506 now pins a
+real unresolved-parameter failure, a manufactured crashed row, a negative
+count and non-empty strategy state across resume. The correction also removes
+the first review artifact's trailing-space diff. A final fresh confirmation is
+the remaining gate.
