@@ -857,10 +857,11 @@ workstreams:
   - id: 60
     name: "Schedule declarations, compilation and identity"
     cut: 21
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 59
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 60", verdict: "PASS after two corrections", artifact: "close_review_60.md and close_review_60_rereview_1.md", result: "The first clean-context Opus review confirmed the architecture and product compiler semantics, then found one live-candidate shape regression plus weak edge, argument-identity, malformed-date and intraday detectors. The first correction closed all seven, but its ordered-name check rejected declarations read from canonical JSON and therefore broke scheduled-run reopening. The second correction accepts exactly the same three unique keys in any order and pins both canonical JSON round trips and public run reopening. A final fresh Opus confirmation reproduced the ordered-key mutation, ran the focused suites and returned PASS with no new finding; under M2 the finding-free PASS has no separate artifact.", reason: "One claim joins LDG-3109 and LDG-3110: every supported public declaration compiles once against the authoritative parent axis into one exact verdict vector shared by run and sweep construction, while the inner strategy retains its source identity and preflight tier and the declaration independently changes config and live-candidate identity. The review probes every boundary rule and refusal, compares both construction sites, mutates each in-memory identity component, verifies unscheduled bytes against the pre-cut tree and walks the seven optimization shapes on the compiler and extraction paths; durable recovery and worker serialization belong to later workstreams."}
+    accepted: "2026-10-26 by the maintainer after the final independent clean-context Opus confirmation returned PASS; accepted state f2ebe169 includes canonical JSON and public scheduled-run reopening detectors"
   - id: 61
     name: "Pulse-complete scheduled execution and persistence"
     cut: 21
@@ -2809,7 +2810,7 @@ tickets:
   - id: "LDG-3110"
     title: "Carry schedule identity through strategy and execution specifications"
     workstream: 60
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3109"]
