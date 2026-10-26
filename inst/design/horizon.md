@@ -29,6 +29,124 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-26 [architecture] Core boundary and incubated sister packages
+
+The wishlist after the first CRAN release cannot all live in one package
+without making the compatibility promise unbounded. It covers point-in-time
+fundamentals, more asset types, shorting and margin, intraday bars, ML,
+portfolio optimizers, selection statistics, an OMS and a live-trading
+adapter. The working shape is a small core plus a few sister packages: the
+"ledgr-verse".
+
+Core keeps what only ledgr can make correct:
+- point-in-time truth: sealed snapshots, facts, knowledge and effective
+  clocks, sessions;
+- the one deterministic fold and event-sourced ledger with its accounting,
+  including future shorting, margin and multipliers and the order and event
+  vocabulary a live runtime would consume;
+- provenance: identities, the experiment store and an honest snapshot-wide
+  trial record;
+- the public seams that sister packages build on.
+
+Candidate sister packages:
+- vendor adapters: `ledgr.crypto2` and the private Sharadar adapter;
+- selection statistics such as PBO, DSR and minimum track record, computed
+  over the trial record rather than over one sweep;
+- portfolio optimizers that emit targets;
+- an ML lifecycle on causal history;
+- a broker, paper and live runtime.
+
+Two rules make this a family rather than a sprawl:
+1. Dependencies point one way. A sister package uses only exported API and
+   never `ledgr:::`; core at most Suggests a sister package.
+2. Sister packages incubate in the private ledgr-research repository until
+   they graduate. Public parallel maintenance then accrues one package at a
+   time, and each incubating sister package is the second consumer that
+   proves a seam before CRAN freezes it. A `ledgr:::` call in an incubating
+   sister package marks a missing seam, not an acceptable workaround.
+
+Measure before deciding. There are four inputs:
+- the export census, starting from the export shape audit's CSV;
+- a coupling and size map per candidate sister package: its code, its tests
+  and the internal calls that would cross the boundary. For example, the
+  validation statistics reach `ledgr_return_panel()` and
+  `ledgr_effective_trials()`, and `R/business-objective.R` consumes them;
+- a seam audit of the private adapters for non-exported use;
+- an inventory of the public seams that exist versus those needed.
+
+One design session then produces a core-boundary ADR: the core list, the
+seams, the dependency and versioning rules, the graduation criteria and the
+naming.
+
+Maintainer, 2026-10-26: scheduled for the next release. The measurement and
+the decision precede export tiering, because tiering a surface that is about
+to move is wasted work. This entry authorizes no package split, unexport,
+move or ticket.
+
+### 2026-10-26 [ux] Export shape audit findings and their routes
+
+The read-only [export shape audit](audits/v0_2_2_export_shape_audit.md) at
+`8a00a3be` asked whether any of the 179 exports violates one of four shapes:
+a layout expressed as a function name, two names for one operation, plumbing
+or placeholders in user-facing groups, and names the bound naming rules
+forbid. Nine findings, none a correctness defect, all at seams between eras
+rather than inside a family. 63 exports postdate the 2026-06 naming
+synthesis and five of them carry a finding. The per-export census is
+`audits/v0_2_2_export_shape_audit_exports.csv`.
+
+Routes, as recorded in the audit's Section 6:
+
+- F1 to F4 and F6 (the five `ledgr_sweep_returns_*` layouts, the two
+  pulse-inspection layouts, the promotion-context pair, `ledgr_run_fills()`
+  beside `ledgr_results(bt, "fills")`, and the `ledgr_opening_from_broker()`
+  placeholder) ride the next release's result-reader and symbol-surface work
+  through the roadmap's deferred maintenance inventory.
+- F5 (`ledgr_backtest()` beside `ledgr_run()`, and the bench helper's stale
+  message) belongs to the execution-core consolidation, whose bars-only
+  acceptance decides what the hello-world path becomes.
+- F7 and F9 (tier placement of three plumbing names; six family help topics
+  named after one member) ride the documentation-surface input already
+  listed for the next release.
+- F8 (three verb-first strategy helpers outside the closed allowlist) needs
+  one contracts amendment decision. The smallest is scoping R1's prohibition
+  to artifact-scoped exports, as the 2026-06 synthesis intended.
+
+The parked questions stay parked: block-level earn-its-keep with the
+2026-10-12 `[research]` entry below, and the usage-based export gate with the
+2026-10-12 `[infrastructure]` entry below. This entry authorizes no removal,
+rename, unexport, contract amendment, ticket or release scope.
+
+### 2026-10-26 [ux] Explicit export tiering before CRAN
+
+Today the pkgdown reference index does a job the export list cannot. Its
+Low-Level Utilities group is the package's de facto internal tier, holding
+the timestamp utilities, `ledgr_db_init()`, `ledgr_temp_store()`,
+`ledgr_validate_schema()`, `ledgr_backtest_bench()` and the two simulation
+fixtures, while three names of the same kind sit in user groups (export
+shape audit, F7). That works while the only readers are the maintainer and
+the vignettes. On CRAN every export is a first-class help page to a
+stranger, so the tier has to become a decision rather than a grouping that
+drifts.
+
+The design question is small but must be answered once for every export:
+which of three tiers it belongs to (ordinary research surface; low-level and
+recovery; fixtures and simulation) and how each tier is expressed. Candidate
+mechanisms are `@keywords internal` (exported, documented, hidden from the
+index), a named reference group per tier, or unexporting with examples
+reaching the helper through `ledgr:::`. The export lock in
+`tests/testthat/test-api-exports.R` and `tests/claims.yml` should encode the
+tier so a new export cannot land untiered, and the contract's Internal Names
+rule group is where the tiers get their sentences. Inputs: the audit's
+per-export census, the 2026-06 naming synthesis Section 4 recovery-pair
+decision, and whatever the prove-or-retire pass removes first, since tiering
+a surface that is about to go is wasted work.
+
+Maintainer, 2026-10-26: scheduled for the next release, after its cleanup
+work (the prove-or-retire pass, the one-result-reader merge and the
+export-shape repairs) and before the first CRAN tag; recorded as a carried
+commitment in the roadmap. This entry authorizes no mechanism choice,
+unexport or ticket.
+
 ### 2026-10-25 [data] Cross-asset price precision and tradability
 
 The completed spot-crypto readiness spike found that ledgr rounds stored prices
