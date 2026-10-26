@@ -23,6 +23,7 @@ if (!identical(as.character(rows$arm), c("manual", "scheduled"))) {
 required <- c(
   "retained_off_diagnostics_hash",
   "retained_off_diagnostic_rows",
+  "due_diagnostic_rows",
   "off_scheduled_skip_rows"
 )
 if (!all(required %in% names(rows))) {
@@ -30,13 +31,17 @@ if (!all(required %in% names(rows))) {
 }
 parity <- c(
   "fills_hash", "ledger_hash", "equity_hash", "positions_hash", "lots_hash",
-  "state_hash", "due_diagnostics_hash", "retained_off_diagnostics_hash",
-  "retained_off_diagnostic_rows", "final_equity", "due_count"
+  "state_hash", "due_diagnostics_hash", "due_diagnostic_rows",
+  "retained_off_diagnostics_hash", "retained_off_diagnostic_rows",
+  "final_equity", "due_count"
 )
 for (field in parity) {
   if (length(unique(rows[[field]])) != 1L) {
     fail(paste("Diagnostic parity failed:", field))
   }
+}
+if (rows$due_diagnostic_rows[[1L]] <= 0L) {
+  fail("Diagnostic parity record has an empty decision-date diagnostic set.")
 }
 scheduled <- rows$arm == "scheduled"
 if (rows$off_scheduled_skip_rows[scheduled] != rows$scheduled_skip_count[scheduled]) {

@@ -116,7 +116,15 @@ if (any(!grepl("^[0-9]{4}-[0-9]{2}$", state_month))) {
   stop("Persisted strategy state does not carry the expected month cursor.", call. = FALSE)
 }
 state_changed <- c(TRUE, state_month[-1L] != state_month[-length(state_month)])
-due_ts <- as.POSIXct(states$ts_utc[state_changed], tz = "UTC")
+due_tokens <- as.character(states$ts_utc[state_changed])
+if (any(!grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", due_tokens))) {
+  stop("Persisted strategy-state timestamps are not canonical UTC strings.", call. = FALSE)
+}
+due_ts <- as.POSIXct(
+  due_tokens,
+  tz = "UTC",
+  format = "%Y-%m-%dT%H:%M:%SZ"
+)
 due_dates <- format(due_ts, "%Y-%m-%d", tz = "UTC")
 utils::write.csv(
   data.frame(pair = pair, arm = arm, due_date = due_dates),
@@ -124,7 +132,6 @@ utils::write.csv(
   row.names = FALSE
 )
 
-due_tokens <- format(due_ts, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 diagnostic_ts <- format(as.POSIXct(diagnostics$ts_utc, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 due_diagnostics <- diagnostics[diagnostic_ts %in% due_tokens, , drop = FALSE]
 off_diagnostics <- diagnostics[!diagnostic_ts %in% due_tokens, , drop = FALSE]
@@ -180,6 +187,7 @@ row <- data.frame(
   lots_hash = digest::digest(reconstructed$lots, algo = "sha256", serialize = TRUE),
   state_hash = stable_hash(states),
   due_diagnostics_hash = stable_hash(due_diagnostics[, diag_columns, drop = FALSE]),
+  due_diagnostic_rows = nrow(due_diagnostics),
   retained_off_diagnostics_hash = stable_hash(retained_off_diagnostics),
   retained_off_diagnostic_rows = nrow(retained_off_diagnostics),
   off_diagnostic_rows = nrow(off_diagnostics),

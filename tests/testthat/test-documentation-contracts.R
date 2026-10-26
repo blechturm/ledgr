@@ -927,7 +927,7 @@ testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
 
   testthat::expect_match(
     strategy_doc,
-    "same feature path as a dense run",
+    "same feature path used by this fixture's availability-aware run",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -2178,13 +2178,21 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
     "vignettes/minimum-variance.qmd",
     "experiment"
   )
+  minimum_variance_strategy <- qmd_chunk(
+    "vignettes/minimum-variance.qmd",
+    "strategy"
+  )
+  weekly_strategy <- qmd_chunk(
+    "vignettes/strategy-authoring-tools.qmd",
+    "weekly-trend-momentum"
+  )
   weekly_run <- qmd_chunk("vignettes/strategy-authoring-tools.qmd", "run-weekly")
 
   testthat::expect_match(minimum_variance_experiment, "ledgr_schedule_month_start()", fixed = TRUE)
-  testthat::expect_no_match(minimum_variance_experiment, "months <- format", fixed = TRUE)
-  testthat::expect_no_match(minimum_variance_experiment, "not_a_decision_date", fixed = TRUE)
+  testthat::expect_no_match(minimum_variance_strategy, "months <- format", fixed = TRUE)
+  testthat::expect_no_match(minimum_variance_strategy, "not_a_decision_date", fixed = TRUE)
   testthat::expect_match(weekly_run, "ledgr_schedule_week_start()", fixed = TRUE)
-  testthat::expect_no_match(weekly_run, "pulses_seen %%", fixed = TRUE)
+  testthat::expect_no_match(weekly_strategy, "pulses_seen %%", fixed = TRUE)
   testthat::expect_match(authoring, "A scheduled skip and `ctx$hold()`", fixed = TRUE)
   testthat::expect_match(reproducibility, "the schedule contributes\\s+separately")
   testthat::expect_match(store, "`decision_pulse_count`, `scheduled_skip_count`", fixed = TRUE)
@@ -2195,7 +2203,7 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(help_flat, "outside the declared parent axis is refused", fixed = TRUE)
   testthat::expect_match(help_flat, "resolves a named scalar character strategy parameter", fixed = TRUE)
   for (token in c("month_start", "month_end", "week_start", "quarter_start", "year_start")) {
-    testthat::expect_match(help, token, fixed = TRUE)
+    testthat::expect_match(help, paste0("\\code{\"", token, "\"}"), fixed = TRUE)
   }
   testthat::expect_match(help_flat, "resolves to no decision pulses", fixed = TRUE)
   testthat::expect_match(help_flat, "inner strategy's source identity remains", fixed = TRUE)

@@ -1070,7 +1070,7 @@ claims:
     overlapping_evidence: "Feature-engine tests protect each computation route and pulse-inspection tests protect view shape, but none previously compared an interactive pulse with the feature values delivered inside a real run."
   - id: "LCL-0101"
     source: "Cut 17 LDG-2876"
-    scope: "Pulse-inspection teaching states that the dense run feature path is authoritative"
+    scope: "Pulse-inspection teaching states that the run feature path is authoritative for the run mode being demonstrated"
     oracle_class: "source documentation pins over three affected articles"
     detecting_blocks: ["LTB-0101"]
     promised_profile: "review"

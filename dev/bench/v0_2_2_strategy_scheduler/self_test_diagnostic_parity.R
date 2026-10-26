@@ -41,5 +41,20 @@ expect_rejected("retained-hash", function(path) {
   x$retained_off_diagnostics_hash <- paste0("bad-", x$retained_off_diagnostics_hash)
   utils::write.csv(x, file, row.names = FALSE)
 })
+expect_rejected("empty-due-set", function(path) {
+  files <- list.files(path, pattern = "_summary[.]csv$", full.names = TRUE)
+  for (file in files) {
+    x <- utils::read.csv(file, stringsAsFactors = FALSE)
+    x$due_diagnostic_rows <- 0L
+    utils::write.csv(x, file, row.names = FALSE)
+  }
+})
+expect_rejected("dropped-due-row", function(path) {
+  file <- list.files(path, pattern = "_scheduled_summary[.]csv$", full.names = TRUE)[[1L]]
+  x <- utils::read.csv(file, stringsAsFactors = FALSE)
+  x$due_diagnostic_rows <- x$due_diagnostic_rows - 1L
+  x$due_diagnostics_hash <- paste0("dropped-", x$due_diagnostics_hash)
+  utils::write.csv(x, file, row.names = FALSE)
+})
 
-cat("LEDGR_SCHEDULER_DIAGNOSTIC_PARITY_SELF_TEST_OK mutations=2\n")
+cat("LEDGR_SCHEDULER_DIAGNOSTIC_PARITY_SELF_TEST_OK mutations=4\n")
