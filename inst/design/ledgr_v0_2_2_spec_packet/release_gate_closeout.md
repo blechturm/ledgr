@@ -12,8 +12,8 @@ not replace the release playbook.
 The frozen product candidate is commit
 `5fb8aad8dc8d0fcc1bb3f6c3a86266c334dbc585`. Release-branch run
 `40503819339` then found one blocking brace-style lint in LTB-0204. Commit
-`7e93e9c4` wraps the two existing local helper expressions without changing
-their values, assertions or product code and records LDG-3123. The focused
+`7e93e9c4` wraps the one multi-line local helper expression without changing
+its value, assertions or product code and records LDG-3123. The focused
 brace linter and complete owning test file pass. The final release commit C is
 therefore `7e93e9c4`; every product gate below applies unchanged because its
 diff from `5fb8aad8` contains no package source, API, generated help, schema,
@@ -81,8 +81,9 @@ lane rather than concentrated in changed code, and that same product lineage
 previously passed at a 111.74-second median. Nevertheless, the binding final
 record exceeds the unchanged 112-second threshold by 1.35 seconds. It is a
 **timing miss**, not a pass. No threshold or profile membership changed.
-Whether this 1.2-percent miss is accepted as a release-specific host-timing
-exception remains a maintainer decision.
+The maintainer accepted this 1.2-percent miss on 2026-10-27 as a
+release-specific host-timing exception. The record remains a timing miss,
+not a pass; the threshold and profile remain unchanged.
 
 ## Long-window and terminal records
 

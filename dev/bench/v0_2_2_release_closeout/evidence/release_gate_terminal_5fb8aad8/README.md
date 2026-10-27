@@ -8,4 +8,3 @@ Candidate: `5fb8aad8dc8d0fcc1bb3f6c3a86266c334dbc585`.
 reopened and interrupted/resumed results retain exact economics and native
 identities under the deterministic fixture snapshot ID
 `terminal-release-v1`.
-

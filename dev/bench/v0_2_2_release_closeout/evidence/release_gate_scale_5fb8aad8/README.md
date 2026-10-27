@@ -11,4 +11,3 @@ and 0.9580 warm for walk-forward. Peak RSS was 5,144,211,456 and 858,382,336
 bytes respectively. Native identities and economic values are exact under
 the cross-version comparison rules recorded by LDG-3121. Clocks and peak RSS
 are workload-specific characterization.
-

@@ -10,4 +10,3 @@ candidate-to-accepted cold and warm median ratios are at most 1.0602, below
 the 1.10 gate. Native identities and economic values are exact under the
 cross-version comparison rules recorded by LDG-3121. Clocks are
 characterization only.
-
