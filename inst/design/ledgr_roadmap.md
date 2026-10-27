@@ -208,6 +208,44 @@ order and cut implementation respectively.
 
   Source: strategy-grammar spike stage 1 (`spike/strategy-grammar` at
   `55511d2f`).
+- **Inventory decisions (maintainer, 2026-10-27):** these come from the
+  [inventory reconciliation](ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
+  - **First CRAN release:** a version below 0.3.0. No version number is
+    committed. Work bound to "the first CRAN release" keys on that release,
+    not on v0.2.3.
+  - **Caller RNG:** with `seed = NULL`, save and restore the caller's RNG
+    around worker start and stop. This is the 2026-10-22 decision that missed
+    its cut.
+  - **Stale RFC states:** persisted-data execution placement and
+    portfolio-construction move from Parked to Due and are taken up in this
+    release.
+  - **Debt:**
+    - the defensive-code and complexity audit, including the large test
+      files;
+    - the documentation surface: Rd pages without examples, `dontrun` pages,
+      `@inheritParams`;
+    - the roxygen collation pin.
+  - **Print:** the run-list "INCOMPLETE" footer prints only when a run is
+    INCOMPLETE. The last-bar no-fill warning is settled within execution-core
+    consolidation.
+  - **Plotting pass:** restored from `7aad7e1f`. It is a direct-ticket
+    documentation workstream, and each plot needs maintainer sign-off at the
+    cut before any is drawn. The six candidates, in priority order:
+    1. *How Targets Become Fills*: decisions at the close and fills at the
+       next open.
+    2. *Selection Integrity*, K-Ratio: smooth and noisy paths with nearly
+       equal endpoints.
+    3. *Selection Integrity*, PBO: in-sample rank per segment for the
+       rotating and stable panels.
+    4. *Indicators And Features*: SMA warmup.
+    5. *Missing Data And Session Calendars*: a session timeline.
+    6. *Risk And Cost*: targets before and after the risk chain.
+
+    Each plot replaces prose or a table, runs from the article's executed
+    objects, follows the existing ggplot2 style, has a caption and alt text,
+    and keeps the article's source length flat. Excluded: a first-run equity
+    plot in the README or Quickstart, a Sweeps parameter heatmap, and a
+    Walk-Forward degradation chart while the example has two folds.
 - **Promotion proof after the next core release:** keep the completed crypto2
   readiness work private through v0.2.2 and the next release's performance,
   memory, execution-core and cleanup work. Once those outcomes are accepted,

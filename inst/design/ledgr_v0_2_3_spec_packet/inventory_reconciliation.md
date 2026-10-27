@@ -1,9 +1,10 @@
 # v0.2.3 Inventory Reconciliation
 
 **Role:** planning input; first planning duty of the v0.2.3 packet README.
-**Status:** provisional. Agent audit (Type 2) from a brief drafted by Claude for
-the maintainer; it binds nothing until the maintainer has read brief and result
-together. Every `proposed` disposition is a maintainer decision.
+**Status:** partly decided. This is an agent audit (Type 2) from a brief
+drafted by Claude for the maintainer. The maintainer decided the items listed
+under "Maintainer decisions, 2026-10-27". Every remaining `proposed`
+disposition is still a maintainer decision.
 **Date:** 2026-10-27.
 
 ## Basis
@@ -24,13 +25,31 @@ together. Every `proposed` disposition is a maintainer decision.
   measurement or chore. "Type 2 at cut" marks a direct ticket whose workstream
   chooses public semantics or identity and so needs Type 2 review first.
 
+## Maintainer decisions, 2026-10-27
+
+The maintainer read this table and decided the following. Rows not named here
+keep their `proposed` marks until decided.
+
+- **H8 (caller RNG with `seed = NULL`):** in scope for v0.2.3.
+- **M2 (CRAN target):** the first CRAN release will be a version below 0.3.0.
+  No version number is committed yet. M4, M6 and R1 key on "the first CRAN
+  release", not on v0.2.3.
+- **M7 and M8a (plotting and print):** in scope for v0.2.3. The plot list is
+  restored to the roadmap from `7aad7e1f`. M8b stays with C1.
+- **C3 and U2 (stale RFC states):** both pipeline rows move from Parked to Due,
+  and both RFCs are taken up in v0.2.3.
+- **M1, M5 and H5b (accumulated debt):** paid in v0.2.3. This covers the
+  defensive-code and complexity audit with the large test files, the
+  documentation surface (missing `\examples`, `dontrun` pages,
+  `@inheritParams`), and the roxygen collation pin.
+
 ## A. Carried commitments
 
 | ID | Item | Source | State in v0.2.2 tree (evidence) | Proposed disposition | Route | Depends on |
 | --- | --- | --- | --- | --- | --- | --- |
 | C1 | Execution-core consolidation onto the availability path: bars-only happy path with a disclosed implied calendar, removal of the WS40-42 branches and collapse primitives where profiled | roadmap:109-113; macro_plan:1048-1089 | Open. `availability_active` occurs 143 times in 14 R files, 48 in `R/fold-engine.R` and 30 in `R/backtest-runner.R`. The dense planner is still selected at `R/fold-engine.R:1096-1097`. Dense-only `ledgr_backtest()` is still exported (`R/backtest.R:86`, `NAMESPACE:99`). | included | direct tickets, Type 2 at cut (implied-calendar disclosure, dense identity bump, fate of `ledgr_backtest()`) | C6 (recommended first, not required); LDG-3074 branch census |
 | C2 | Retire the `ctx` frame views (`ctx$bars`, `ctx$feature_table`, `ctx$features_wide`, `ctx$bar(id)`) | roadmap:114-115; rfc/README:106; macro_plan:696-698 | Open. Views are still built per pulse (`R/pulse-context.R:17-18`, `:329-340`). There is no seed in `rfc/`. | included | RFC (focused inspection-boundary seed) | Feature-map synthesis (accepted). Implementation needs the availability fast context, so it follows or joins C1. |
-| C3 | Persisted-data execution placement and DuckDB boundary | roadmap:115-117, 125-127; rfc/README:87 | Open. No seed exists, and the pipeline row still says Parked although its trigger ("after v0.2.2") has fired. | included; change the row from Parked to Due (proposed) | RFC | none; it precedes any hashing, fact or projection move to DuckDB and feeds C5 |
+| C3 | Persisted-data execution placement and DuckDB boundary | roadmap:115-117, 125-127; rfc/README:87 | Open. No seed exists, and the pipeline row still says Parked although its trigger ("after v0.2.2") has fired. | included; the row moves from Parked to Due (maintainer, 2026-10-27) | RFC | none; it precedes any hashing, fact or projection move to DuckDB and feeds C5 |
 | C4 | Cheap, versioned pulse-seed counter rule | roadmap:118-124; horizon:223-251 | Open. Every pulse runs `canonical_json` plus SHA-256 (`R/rng.R:21-31`, `:33-57`), called from `R/fold-engine.R:766`. | included | direct ticket, Type 2 at cut (changes stochastic results and identity) | Coalesce the identity bump with C1 and C11 to save one lake rebuild (horizon:610-614) |
 | C5 | Structural memory reduction, phase-level measurement and parallel-worker budgets | roadmap:125-127, 185-188; macro_plan:699-704; horizon:744-777; history-wave register E6-E8 | Partly measured. One-/two-worker peaks are 1.89/4.46 GiB and four-/eight-worker diagnostic peaks are 5.94/8.71 GiB (`integrated_release_closeout.md:167`, `:187`). No structural reduction or worker budget exists. | included | measurement, then spike or direct tickets; worker defaults need Type 2 at cut | C3, C6, C1, C2 (views hold 6-8% of the R heap peak) |
 | C6 | One output handler behind a sink interface | roadmap:128-136; horizon:517-525 | Open. Two handlers remain: `ledgr_persistent_output_handler` (`R/backtest-runner.R:252`) and `ledgr_memory_output_handler` (`R/sweep.R:1982`). | included | direct ticket | none; it triggers R3 |
@@ -48,7 +67,7 @@ together. Every `proposed` disposition is a maintainer decision.
 | ID | Item | Source | State in v0.2.2 tree (evidence) | Proposed disposition | Route | Depends on |
 | --- | --- | --- | --- | --- | --- | --- |
 | U1 | Reconcile the Research Strategy UX Brief with the shipped tree | roadmap:92-94 | Its Section 7 table is stale. It lists the alias-aware read and the schedule decorator as "proposed" (`research_strategy_ux_brief.md:445`, `:449`), but both shipped (feature-map synthesis; Cut 21). The history-to-selection bridge shipped as `ledgr_align_weights()` (LDG-3099). Only rows `:451-453` remain parked. | included | chore | none |
-| U2 | Bounded portfolio-construction gaps: Momento transitions, omitted holdings, index leavers, no-trade band, current weights, idle cash | roadmap:95-105; rfc/README:95 | Open. The row's trigger ("after the public historical surface ships") fired with v0.2.2, but the row still says Parked. A rebalance still liquidates unnamed holdings unless they are in `keep` (rfc/README:95). | included; change the row from Parked to Due (proposed) | RFC (no optimizer catalogue) | C12a, C11. The advanced teaching article (horizon:193-222) follows it. |
+| U2 | Bounded portfolio-construction gaps: Momento transitions, omitted holdings, index leavers, no-trade band, current weights, idle cash | roadmap:95-105; rfc/README:95 | Open. The row's trigger ("after the public historical surface ships") fired with v0.2.2, but the row still says Parked. A rebalance still liquidates unnamed holdings unless they are in `keep` (rfc/README:95). | included; the row moves from Parked to Due (maintainer, 2026-10-27) | RFC (no optimizer catalogue) | C12a, C11. The advanced teaching article (horizon:193-222) follows it. |
 | U3 | Declared strategy-helper bundles | rfc/README:96; horizon:1819-1851 | Due; not started. | included | RFC | absorbs R4 |
 | U4 | Scheduling gap exposed by the estimator article | roadmap:102 | Done by Cut 21 and Cut 22. The article uses `ledgr_strategy_schedule(ledgr_schedule_month_start())` (`vignettes/minimum-variance.qmd:289-291`). LFB-035 stays research-side. | completed | none | none |
 
@@ -56,13 +75,13 @@ together. Every `proposed` disposition is a maintainer decision.
 
 | ID | Item | Source | State in v0.2.2 tree (evidence) | Proposed disposition | Route | Depends on |
 | --- | --- | --- | --- | --- | --- | --- |
-| M1 | Defensive-code and complexity audit, including tolerances, the store-open retry and large test files | macro_plan:708-710, 723-725; horizon:567-602 | Open; there is no audit file in `audits/`. The retry still makes 50 attempts with `gc()` (`R/public-api.R:10-33`, `R/store-gate.R:246-256`). Eight test files besides the documentation contracts exceed 1,000 lines, up from five; the largest are `test-history-substrate.R` (2,640) and `test-strategy-schedule.R` (1,933). | included; run after C6 and C1 so it does not audit code they delete (proposed) | audit | C6, C1 |
-| M2 | Adoption item: survivorship-bias article on synthetic data, plus a CRAN target date | macro_plan:711-712 | The article exists (`vignettes/survivorship-bias.qmd:102`, added `562e1196` on 2026-09-12). No release is named as the first CRAN release. | article completed; CRAN target date included as a maintainer decision (proposed) | chore (decision) | It gates M4, M6 and the R1 publication cut |
+| M1 | Defensive-code and complexity audit, including tolerances, the store-open retry and large test files | macro_plan:708-710, 723-725; horizon:567-602 | Open; there is no audit file in `audits/`. The retry still makes 50 attempts with `gc()` (`R/public-api.R:10-33`, `R/store-gate.R:246-256`). Eight test files besides the documentation contracts exceed 1,000 lines, up from five; the largest are `test-history-substrate.R` (2,640) and `test-strategy-schedule.R` (1,933). | included (maintainer, 2026-10-27: debt is paid in v0.2.3); run it after C6 and C1 so it does not audit code they delete (proposed order) | audit | C6, C1 |
+| M2 | Adoption item: survivorship-bias article on synthetic data, plus a CRAN target date | macro_plan:711-712 | The article exists (`vignettes/survivorship-bias.qmd:102`, added `562e1196` on 2026-09-12). No release is named as the first CRAN release. | article completed. CRAN target decided (maintainer, 2026-10-27): the first CRAN release is below 0.3.0, with no version committed. | chore (decision recorded) | M4, M6 and R1 key on the first CRAN release |
 | M3 | v0.2.1.0 packet path (`ledgr_v0_2_0_2_spec_packet/`) | macro_plan:713-714 | Unchanged; the path exists. Cut 23 decision (3) declines mass renames (`tickets.yml:358`); the roadmap Boundary forbids redirect trees. | included as a one-line decision: keep the path (proposed) | chore | none |
 | M4 | Install floor: `R (>= 4.6.0)` plus a hard DuckDB dependency | macro_plan:715-717 | Open. `DESCRIPTION:18` and `:26` require DuckDB `>= 2.0.0`, raised at release by decision 12. `README.md:69` states the floor without a reason. | included | measurement (lowest passing R and DuckDB), then chore | M2, R1 |
-| M5 | Documentation surface, paired with export-audit F7 and F9 | macro_plan:718-720; export audit F7, F9 | Worse than when deferred: 40 of 159 Rd pages lack `\examples` (was 39 of 156), 9 use `dontrun` (was 6), and `@inheritParams` appears in 1 R file. Family topics are still named after one member (audit F9). | included | chore | R2, C9, C10 |
-| M6 | Collapse NEWS.md into one first-release entry | macro_plan:721-722 | Open; NEWS.md has 1,938 lines (was 1,544). | included if v0.2.3 is the CRAN release, otherwise deferred again (proposed) | chore | M2 |
-| M7 | Plotting pass: six plots, each signed off by the maintainer | macro_plan:705; roadmap:185-188; roadmap row added in `7aad7e1f` | Not done. `ggplot(` appears only in the four pre-existing articles (metrics-and-accounting, survivorship-bias, sweeps, walk-forward). The six-plot list survives only in commit `7aad7e1f`. | included (proposed) | chore, with per-plot sign-off at the cut | R2 |
+| M5 | Documentation surface, paired with export-audit F7 and F9 | macro_plan:718-720; export audit F7, F9 | Worse than when deferred: 40 of 159 Rd pages lack `\examples` (was 39 of 156), 9 use `dontrun` (was 6), and `@inheritParams` appears in 1 R file. Family topics are still named after one member (audit F9). | included (maintainer, 2026-10-27: debt is paid in v0.2.3) | chore | R2, C9, C10 |
+| M6 | Collapse NEWS.md into one first-release entry | macro_plan:721-722 | Open; NEWS.md has 1,938 lines (was 1,544). | with the first CRAN release, wherever below 0.3.0 that lands (maintainer, 2026-10-27) | chore | M2 |
+| M7 | Plotting pass: six plots, each signed off by the maintainer | macro_plan:705; roadmap:185-188; roadmap row added in `7aad7e1f` | Not done. `ggplot(` appears only in the four pre-existing articles (metrics-and-accounting, survivorship-bias, sweeps, walk-forward). The six-plot list survives only in commit `7aad7e1f`. | included (maintainer, 2026-10-27). The list is restored to the roadmap. | chore, with per-plot sign-off at the cut | R2 |
 | M8a | Print chore: the run-list footer "INCOMPLETE metrics describe the achieved prefix only" prints even when no run is INCOMPLETE | roadmap:185-188 ("print/result-reader"); roadmap row at `7aad7e1f` | Open; the footer line is unconditional (`R/run-store.R:934-940`). Chore (1) of that row, readable sweep parameters, was completed by LDG-3103. | included | direct ticket | C8 |
 | M8b | Print chore: one named `LEDGR_LAST_BAR_NO_FILL` warning per run | same | Open in dense mode only. The sole caller is the dense planner (`R/fold-engine.R:161`, selected at `:1096-1097`); the availability planner never calls the warning. | superseded by C1 (proposed). C1 must state how the surviving path discloses a final-bar no-fill. | direct ticket within C1 | C1 |
 | M9 | The other Section 5 non-goals: shorting/leverage, model lifecycle, fitted imputation, exact-quantity settlement, portfolio scaffolding/Schur, one store connection per composite call, derivatives/FX, compiled default or expansion, historical-RFC rewrites, broad optimization cleanup | macro_plan:684-706; roadmap:189-190 | Unchanged; each keeps its pipeline row. The one-store-connection item has no pipeline row, only horizon:645-647. Scheduler v2 (macro_plan:690) was completed by Cut 21. | deferred again by the existing roadmap decision (no new proposal); scheduler v2 completed | named RFC rows | none |
@@ -75,10 +94,10 @@ together. Every `proposed` disposition is a maintainer decision.
 | H3 | Export audit F8: three verb-first helpers outside the R1 allowlist | horizon:110-112; export audit F8 | Open. The contract allowlist (`contracts.md:45-48`) omits `ledgr_select_top_n`, `ledgr_passed_warmup` and `ledgr_align_weights`, all exported. | included | RFC (contract amendment decision; option (a) is the smallest) | Precedes C9 |
 | H4 | Prove or retire the thinly used product surfaces on real data | horizon:411-448; named in roadmap:163-164 | Open. All seven files remain: `validation-pbo.R`, `business-objective.R`, `sweep-review.R`, `sim-pit-inputs.R`, `indicator-dev.R`, `signal-strategy.R`, `walk-forward-inspection.R`. | included; each removal is a separate maintainer decision (proposed) | audit (real-data use in ledgr-research, then a per-block decision) | Precedes C9 and informs C10; may make D1 moot |
 | H5a | Export-census gate (unused export becomes internal) | horizon:460-463 | Never built; no export-census tool in `tools/` or `tests/`. | superseded by C9 (the tier enters the export lock test) | none | C9 |
-| H5b | Pin roxygen collation with a `tools/document.R` entry point | horizon:476-490 | Not done; `tools/document.R` is absent. The v0.2.2 hygiene workstream did not take it. | included (proposed) | chore | none; land it before M5's Rd regeneration |
+| H5b | Pin roxygen collation with a `tools/document.R` entry point | horizon:476-490 | Not done; `tools/document.R` is absent. The v0.2.2 hygiene workstream did not take it. | included (maintainer, 2026-10-27: debt is paid in v0.2.3) | chore | none; land it before M5's Rd regeneration |
 | H6 | Gap between committed run and ephemeral sweep | horizon:623-660 | Re-measured on the v0.2.2 peer record: durable 30.02 s against public sweep 18.30 s cold (`integrated_release_closeout.md:135-136`), down from about 3x. Lever 1 (rehash) landed with WS5-A. | superseded by C6, with lever 3 under the compiled-envelope RFC | measurement after C6 | C6 |
 | H7 | Run-telemetry redesign (`ledgr_backtest_bench()`, `telemetry_stride`) | macro_plan:1367-1381; `integrated_release_closeout.md:168` | Kept unchanged by WS53; its trigger is "after fold, output-handler and context unification". | deferred again (proposed), unless C1, C6 and C2 land early in the cycle | RFC | C1, C6, C2 |
-| H8 | With `seed = NULL`, save and restore the caller's RNG around worker start and stop (maintainer: yes, 2026-10-22) | macro_plan:1302-1310 | Open. Cut 19, the cleanup cut the decision named, did not take it. The RNG is restored only when `!is.null(seed)` (`R/sweep.R:157-174`); `ledgr_parallel_mirai_start/stop` save nothing (`R/parallel-workers.R:329-338`). | included | direct ticket | none; ride C6 or any sweep-backend cut |
+| H8 | With `seed = NULL`, save and restore the caller's RNG around worker start and stop (maintainer: yes, 2026-10-22) | macro_plan:1302-1310 | Open. Cut 19, the cleanup cut the decision named, did not take it. The RNG is restored only when `!is.null(seed)` (`R/sweep.R:157-174`); `ledgr_parallel_mirai_start/stop` save nothing (`R/parallel-workers.R:329-338`). | included (maintainer, 2026-10-27) | direct ticket | none; ride C6 or any sweep-backend cut |
 | H9 | Reuse walk-forward daemons across folds | macro_plan:1311-1316 | Open. Each fold calls `ledgr_sweep_window` (`R/walk-forward.R:565`), which starts and stops daemons per sweep (`R/sweep.R:224-225`). | included | direct ticket (owner C1) | C1, C5 |
 | H10 | Corporate-action settlement state carried as data | macro_plan:1317-1323 | Open; listed out of scope in `tickets.yml:283`. | included | direct ticket, Type 2 at cut (fold-output and carried-opening identity) | C1 |
 | H11 | Reopen shared memory (E6) | macro_plan:1291-1301; register E6 | Measured. The 8-worker peak of 8.71 GiB stays below the 12 GiB trigger, so shared memory stays deferred (`integrated_release_closeout.md:167`). | deferred again by the existing WS53 decision; folded into C5 | measurement inside C5 | C5 |
@@ -105,6 +124,5 @@ together. Every `proposed` disposition is a maintainer decision.
 - **Chain 5, documentation and memory:** R2 precedes M5 and M7. The M2 CRAN decision gates M4, M6 and R1. C5 measures after C3, C6, C1 and C2.
 - **Duplicates, part 1:** macro Section 5's context-frame and memory items repeat C2 and C5. Six horizon entries repeat carried rows (export tiering, core boundary, pulse seed, typed batch, asset precision, crypto).
 - **Duplicates, part 2:** export audit F5 sits in C1, and F7 and F9 sit in M5. R4 duplicates U3, H11 duplicates C5 and H6 duplicates C6.
-- **No owner:** the roadmap's "plotting" (M7) and "print/result-reader" (M8a, M8b) have no item list in any current document; it survives only in commit `7aad7e1f`.
-- **No owner:** the H8 seed-RNG decision missed the cut it named.
-- **No owner:** no release is named as the first CRAN release (M2), although C1, C9 and C12a are bound to precede it.
+- **Resolved 2026-10-27:** the plotting list is restored to the roadmap (M7 and M8a are in scope), and H8 is in scope.
+- **Resolved 2026-10-27:** the first CRAN release is below 0.3.0, with no version committed; C1, C9 and C12a still precede it.
