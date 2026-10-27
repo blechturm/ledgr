@@ -841,7 +841,7 @@ testthat::test_that("[LTB-0273] governance report stays deterministic, failure-s
   )
 
   rscript <- file.path(R.home("bin"), "Rscript")
-  cli <- suppressWarnings(system2(
+  cli <- suppressWarnings(ledgr_test_system2(
     rscript,
     c(
       "--vanilla",

@@ -382,7 +382,7 @@ testthat::test_that("snapshot resolution works in a fresh process without a fact
     "result <- ledgr_facts_resolve(snapshot, 'membership', 'research', '2024-01-15T00:00:00Z')",
     "cat(paste(result$rows$instrument_id, collapse = ','))"
   ), script)
-  output <- system2(
+  output <- ledgr_test_system2(
     file.path(R.home("bin"), "Rscript"),
     c(
       shQuote(script), shQuote(root), shQuote(db_path), shQuote(snapshot_id),

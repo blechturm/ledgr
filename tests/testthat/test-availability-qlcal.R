@@ -268,7 +268,7 @@ testthat::test_that("materialized sessions run in a fresh process without loadin
     "stopifnot(!'qlcal' %in% loadedNamespaces())",
     "cat('DONE')"
   ), script)
-  output <- system2(
+  output <- ledgr_test_system2(
     file.path(R.home("bin"), "Rscript"),
     c(
       shQuote(script), shQuote(root), shQuote(db_path), shQuote(snapshot_id),

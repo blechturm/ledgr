@@ -240,7 +240,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   )
 
   checker <- file.path(root, "tools", "check-codebase-contracts.R")
-  checked <- system2(
+  checked <- ledgr_test_system2(
     file.path(R.home("bin"), "Rscript"),
     c("--vanilla", shQuote(checker), "--self-test-current-only"),
     stdout = TRUE,

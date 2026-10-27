@@ -405,7 +405,7 @@ testthat::test_that("[LTB-0256] serialized research objects start cold in a fres
     "close(objects$result)",
     "ledgr_snapshot_close(objects$snapshot)"
   ), script, useBytes = TRUE)
-  output <- system2(
+  output <- ledgr_test_system2(
     file.path(R.home("bin"), "Rscript"),
     c(shQuote(script), shQuote(root), shQuote(object_path)),
     stdout = TRUE,

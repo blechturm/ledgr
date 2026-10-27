@@ -308,6 +308,21 @@ ledgr_test_in_coverage <- function() {
   requireNamespace("covr", quietly = TRUE) && covr::in_covr()
 }
 
+# Fresh R processes inherit covr's instrumented package loader. On Windows,
+# their namespace finalizers can leave truncated trace files when the process
+# exits, which makes the parent collector fail before it can calculate
+# coverage. Keep the subprocess assertion live, but isolate its unusable trace
+# from the parent trace directory. Ordinary test runs are unchanged.
+ledgr_test_system2 <- function(command, args = character(), ...) {
+  run <- function() system2(command, args, ...)
+  if (!ledgr_test_in_coverage()) return(run())
+
+  child_coverage <- tempfile("ledgr-covr-child-")
+  dir.create(child_coverage)
+  on.exit(unlink(child_coverage, recursive = TRUE, force = TRUE), add = TRUE)
+  withr::with_envvar(c(COVERAGE_DIR = child_coverage), run())
+}
+
 ledgr_test_skip_workers_in_coverage <- function() {
   testthat::skip_if(ledgr_test_in_coverage(), "Coverage runs start no worker daemons.")
 }

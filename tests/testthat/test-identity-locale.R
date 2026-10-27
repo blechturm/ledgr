@@ -25,7 +25,7 @@ testthat::test_that("[LTB-0266] identity JSON is locale-independent across proce
     "cat(paste0('LEDGR_HASH=', ledgr:::config_hash(config), '\\n'))"
   ), script, useBytes = TRUE)
   run_locale <- function(locale) {
-    output <- suppressWarnings(system2(
+    output <- suppressWarnings(ledgr_test_system2(
       file.path(R.home("bin"), "Rscript"),
       c("--vanilla", shQuote(script), shQuote(root), shQuote(locale)),
       stdout = TRUE,

@@ -95,7 +95,7 @@ testthat::test_that("[LTB-0154] release-only regression cases stay explicit", {
     testthat::expect_true(file.exists(script))
     build_ignore <- readLines(file.path(repository, ".Rbuildignore"), warn = FALSE)
     testthat::expect_true("^dev(/|$)" %in% build_ignore)
-    result <- suppressWarnings(system2(
+    result <- suppressWarnings(ledgr_test_system2(
       file.path(R.home("bin"), "Rscript"), shQuote(script),
       stdout = TRUE, stderr = TRUE
     ))

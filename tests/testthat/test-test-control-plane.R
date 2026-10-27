@@ -1,3 +1,23 @@
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0513] fresh-process coverage traces are isolated", {
+  testthat::skip_if_not_installed("covr")
+  withr::local_envvar(c(R_COVR = "true", COVERAGE_DIR = NA_character_))
+  output <- ledgr_test_system2(
+    file.path(R.home("bin"), "Rscript"),
+    c("--vanilla", "-e", shQuote("cat(Sys.getenv('COVERAGE_DIR'))")),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  child_coverage <- paste(output, collapse = "")
+  testthat::expect_true(nzchar(child_coverage))
+  testthat::expect_match(
+    basename(child_coverage),
+    "^ledgr-covr-child-",
+    perl = TRUE
+  )
+  testthat::expect_false(dir.exists(child_coverage))
+})
+
 testthat::test_that("control-plane metadata fails closed", {
   test_dir <- tempfile("ledgr-profile-")
   dir.create(test_dir)
@@ -266,7 +286,7 @@ testthat::test_that("[LTB-0082] profile tools identify the exact failing conditi
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
   rscript <- file.path(R.home("bin"), "Rscript")
   run_tool <- function(script, args) {
-    suppressWarnings(system2(
+    suppressWarnings(ledgr_test_system2(
       rscript,
       c("--vanilla", shQuote(script), args),
       stdout = TRUE,
@@ -544,7 +564,7 @@ testthat::test_that("[LTB-0237] check-test-gate accepts the documented record se
         file.path(records, sprintf("run-%d-summary.csv", i)), row.names = FALSE
       )
     }
-    paste(suppressWarnings(system2(
+    paste(suppressWarnings(ledgr_test_system2(
       rscript,
       c("--vanilla", shQuote(file.path(root, "tools", "check-test-gate.R")), "--profile=fast", "--mode=ordinary",
         shQuote(paste0("--records=", records))),
