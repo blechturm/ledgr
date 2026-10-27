@@ -1788,6 +1788,7 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0511] common calendar schedules use generic orchestration carriers", {
+  ledgr_test_skip_workers_in_coverage()
   inner <- function(ctx, params) {
     previous <- ctx$state_prev
     decision_n <- if (is.null(previous) || is.null(previous$decision_n)) {
