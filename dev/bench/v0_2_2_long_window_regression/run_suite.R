@@ -112,19 +112,28 @@ fixture_rows <- rbind(selected, orientation)
 fixture_probes <- list()
 for (i in seq_len(nrow(fixture_rows))) {
   row <- fixture_rows[i, , drop = FALSE]
-  fixture_dir <- file.path(cache_root, row$shape_id)
-  dir.create(fixture_dir, recursive = TRUE, showWarnings = FALSE)
-  # The accepted arm builds the shared fixture: a candidate that advances the
-  # experiment-store schema migrates an older store on open, but the accepted
-  # arm refuses a newer one (Cut 10 moved the store from 117 to 118).
-  run_child(
-    "fixture", row$shape_id, "accepted", 0L, "initial", accepted_repo,
-    c(file.path(script, "build_fixture.R"), accepted_repo,
-      row$shape_id, fixture_dir)
-  )
-  fixture_probes[[row$shape_id]] <- jsonlite::read_json(
-    file.path(fixture_dir, "fixture_probe.json"), simplifyVector = TRUE
-  )
+  probes <- list()
+  repos <- c(accepted = accepted_repo, candidate = candidate_repo)
+  # Each arm builds the same deterministic source fixture in its own current
+  # store format. Pre-CRAN store changes refuse older stores rather than
+  # migrating them, so sharing one arm's database would test compatibility
+  # instead of the declared long-window semantics.
+  for (arm in names(repos)) {
+    fixture_dir <- file.path(cache_root, row$shape_id, arm)
+    dir.create(fixture_dir, recursive = TRUE, showWarnings = FALSE)
+    run_child(
+      "fixture", row$shape_id, arm, 0L, "initial", repos[[arm]],
+      c(file.path(script, "build_fixture.R"), repos[[arm]],
+        row$shape_id, fixture_dir)
+    )
+    probes[[arm]] <- jsonlite::read_json(
+      file.path(fixture_dir, "fixture_probe.json"), simplifyVector = TRUE
+    )
+  }
+  if (!identical(probes$accepted, probes$candidate)) {
+    stop("Accepted and candidate fixture probes differ: ", row$shape_id)
+  }
+  fixture_probes[[row$shape_id]] <- probes$accepted
 }
 jsonlite::write_json(fixture_probes, file.path(out_dir, "fixture_probes.json"),
                      auto_unbox = TRUE, pretty = TRUE, null = "null")
@@ -142,7 +151,7 @@ execute_pair <- function(row, pair, attempt) {
     run_child(
       "case", row$shape_id, arm, pair, attempt, repos[[arm]],
       c(file.path(script, "run_case.R"), repos[[arm]],
-        file.path(cache_root, row$shape_id, "snapshot.duckdb"),
+        file.path(cache_root, row$shape_id, arm, "snapshot.duckdb"),
         row$shape_id, out_json)
     )
   }
@@ -162,7 +171,7 @@ if (nrow(orientation)) {
     "orientation", row$shape_id, "accepted", 1L, "orientation",
     accepted_repo,
     c(file.path(script, "run_case.R"), accepted_repo,
-      file.path(cache_root, row$shape_id, "snapshot.duckdb"),
+      file.path(cache_root, row$shape_id, "accepted", "snapshot.duckdb"),
       row$shape_id, out_json)
   )
 }

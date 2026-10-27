@@ -155,6 +155,12 @@ lwreg_check <- function(path) {
   }
   stable_native_identity <- function(x) {
     if (identical(x$kind, "sweep")) x$sweep_id <- NULL
+    if (identical(x$kind, "walk_forward")) {
+      # Session, candidate, run and config identities are versioned native
+      # evidence. Across releases, compare the stable snapshot and fold axis;
+      # validate each arm's full native identity separately above.
+      x <- x[c("kind", "snapshot_id", "snapshot_hash", "fold_ids")]
+    }
     x
   }
   measurement_key <- function(shape, arm, pair, attempt) {
@@ -250,8 +256,20 @@ lwreg_check <- function(path) {
           fail("Case commit does not match suite provenance: ", shape, " ",
                pair, " ", attempt)
         }
-        environment_fields <- c(
+        version_fields <- c(
           "package_version", "r_version", "duckdb_version", "collapse_version"
+        )
+        if (!all(vapply(c(a[version_fields], c[version_fields]),
+                        non_empty_scalar, logical(1L)))) {
+          fail("Case version provenance is incomplete: ", shape, " ",
+               pair, " ", attempt)
+        }
+        # The two arms intentionally compare different ledgr releases. The R
+        # and dependency versions are the controlled runtime environment;
+        # package_version remains explicit provenance rather than an equality
+        # constraint.
+        environment_fields <- c(
+          "r_version", "duckdb_version", "collapse_version"
         )
         if (!identical(a[environment_fields], c[environment_fields])) {
           fail("Accepted and candidate environments differ: ", shape, " ",

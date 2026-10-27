@@ -59,9 +59,9 @@ sweep_once <- function() {
   timing$last <- NULL
   timing$calls <- 0L
   exp <- lwreg_experiment(snapshot, row, timing)
-  grid <- ledgr_param_grid(
-    first = list(variant = 1L),
-    second = list(variant = 2L)
+  grid <- ledgr_grid_named(
+    first = list(strategy = list(variant = 1L)),
+    second = list(strategy = list(variant = 2L))
   )
   measured <- lwreg_elapsed(ledgr_sweep(
     exp,
@@ -98,8 +98,10 @@ walk_forward_once <- function() {
   )
   measured <- lwreg_elapsed(ledgr_walk_forward(
     exp,
-    ledgr_param_grid(first = list(variant = 1L),
-                     second = list(variant = 2L)),
+    ledgr_grid_named(
+      first = list(strategy = list(variant = 1L)),
+      second = list(strategy = list(variant = 2L))
+    ),
     folds,
     ledgr_rule_argmax("sharpe_ratio"),
     seed = 1L
@@ -112,12 +114,7 @@ walk_forward_once <- function() {
     native_identity = lwreg_walk_forward_native_identity(
       snapshot, measured$value
     ),
-    economic_outputs = list(
-      folds = lwreg_identity(measured$value$folds),
-      scores = lwreg_identity(measured$value$scores),
-      selected = lwreg_identity(measured$value$selected),
-      degradation = lwreg_identity(measured$value$degradation)
-    )
+    economic_outputs = lwreg_walk_forward_economic_outputs(measured$value)
   )
 }
 

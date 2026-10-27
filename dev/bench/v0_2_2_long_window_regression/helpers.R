@@ -503,6 +503,40 @@ lwreg_sweep_economic_outputs <- function(x) {
   )
 }
 
+lwreg_multiset_identity <- function(x) {
+  x <- lwreg_normalize_frame(x)
+  row_hashes <- vapply(seq_len(nrow(x)), function(i) {
+    lwreg_hash(as.list(x[i, , drop = FALSE]))
+  }, character(1L))
+  list(
+    rows = nrow(x),
+    hash = lwreg_hash(sort(row_hashes, method = "radix"))
+  )
+}
+
+lwreg_walk_forward_economic_outputs <- function(x) {
+  without <- function(value, fields) {
+    value <- as.data.frame(value, stringsAsFactors = FALSE)
+    value[setdiff(names(value), intersect(fields, names(value)))]
+  }
+  list(
+    folds = lwreg_identity(without(x$folds, c(
+      "session_id", "selected_candidate_key", "test_run_id"
+    ))),
+    scores = lwreg_multiset_identity(without(x$scores, c(
+      "session_id", "candidate_key", "candidate_label", "params_hash",
+      "feature_params_hash",
+      "feature_set_hash", "alias_map_hash", "metric_context_hash",
+      "cost_model_hash", "risk_chain_hash", "completion_json",
+      "execution_seed"
+    ))),
+    selected = lwreg_identity(without(x$selected, c(
+      "candidate_key", "candidate_id", "test_run_id"
+    ))),
+    degradation = lwreg_identity(without(x$degradation, "selected_candidate"))
+  )
+}
+
 lwreg_sweep_native_identity <- function(x) {
   info <- ledgr_sweep_info(x)
   provenance <- x$provenance
