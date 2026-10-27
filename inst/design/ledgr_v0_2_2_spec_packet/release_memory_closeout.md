@@ -1,7 +1,7 @@
 # v0.2.2 Release-Memory Closeout
 
 **Role:** durable release-closeout evidence.
-**Status:** Workstream 66 independently reviewed; maintainer acceptance pending.
+**Status:** Workstream 66 accepted; publication handoff completed 2026-10-27.
 **Authority:** `tickets.yml` LDG-3117. This record reports reconciliation; it
 does not replace contracts, accepted RFCs or the release playbook.
 **Date:** 2026-10-26.
@@ -138,3 +138,11 @@ still requires the current-layer sentence in both source and rendered article.
 The complete `render-vignettes-gfm.R --check --all` gate then exposed and
 confirmed the one other version-derived render change: the walk-forward
 session ID. All 28 tracked article renders are fresh after that correction.
+
+## Post-publication completion
+
+Tag and GitHub Release `v0.2.2` were published from `7539be45` after mandatory
+tag workflow 40542364504 passed. The untagged post-publication commit activates
+the maintainer-supplied v0.2.3 packet and turns this document's pre-publication
+inventory into historical evidence. Exact remote and M1 records are in
+[release_gate_closeout.md](release_gate_closeout.md).

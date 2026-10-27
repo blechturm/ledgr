@@ -2,8 +2,8 @@
 
 **Role:** living; release-scope front door.
 **Status:** working
-**Authority:** Release scope only. The active packet's `tickets.yml` is the
-sole within-release sequencing authority.
+**Authority:** Release scope only. Once an active cut exists, its packet's
+`tickets.yml` is the sole within-release sequencing authority.
 **Scope update, 2026-10-16:** Maintainer-selected next-release goal and
 [scope dispositions](#next-release-scope-dispositions); no package semantics
 or implementation tickets are changed.
@@ -13,8 +13,8 @@ and where its packet lives. It does not duplicate ticket order, RFC
 obligations, or parked ideas. Historical planning prose is preserved in
 [roadmap history](roadmap_history.md).
 
-**Latest release:** v0.2.1.0, published 2026-10-01. Its packet retains the
-v0.2.0.2 planning path used when that release was cut.
+**Latest release:** v0.2.2, published 2026-10-27. Its tag and GitHub Release
+name commit `7539be45`; its packet is the durable release record.
 
 ## Release sequence
 
@@ -60,19 +60,19 @@ v0.2.0.2 planning path used when that release was cut.
 | v0.2.0.0 | Released | API hardening and point-in-time asset availability. | [packet](ledgr_v0_2_0_0_spec_packet/) |
 | v0.2.0.1 | Released | Availability performance, resume repair, and benchmark closeout. | [packet](ledgr_v0_2_0_1_spec_packet/) |
 | v0.2.1.0 | Released 2026-10-01 | Accounting consolidation, equity events, strategy context, and release hardening. | [packet](ledgr_v0_2_0_2_spec_packet/) |
-| v0.2.2 | Active | Long-window point-in-time research, pre-history foundations, historical projection, recursive-indicator semantics, and release evidence. | [packet](ledgr_v0_2_2_spec_packet/); [tickets](ledgr_v0_2_2_spec_packet/tickets.yml) |
+| v0.2.2 | Released 2026-10-27 | Long-window point-in-time research, causal history, recursive indicators, scheduling, current-only persistence, and release evidence. | [packet](ledgr_v0_2_2_spec_packet/); [tickets](ledgr_v0_2_2_spec_packet/tickets.yml) |
+| v0.2.3 | Active planning | Research-authoring completion, availability-only execution consolidation, structural memory reduction, and cleanup. | [packet](ledgr_v0_2_3_spec_packet/) |
 
 <a id="next-release"></a>
 
-## Next release
+## Current planning release
 
-**Maintainer decision, 2026-10-16:** The release after v0.2.2 will complete
+**Maintainer decision, 2026-10-16; activated 2026-10-27:** v0.2.3 will complete
 the ordinary research-authoring workflow, consolidate execution onto the
 availability path, and resolve the accumulated maintenance work explicitly
-deferred to this release. The maintainer assigned version `v0.2.3` on
-2026-10-27; its packet path is reserved as
-`inst/design/ledgr_v0_2_3_spec_packet/` and becomes active only in the
-post-publication navigation switch for v0.2.2.
+deferred to this release. Its active packet is
+`inst/design/ledgr_v0_2_3_spec_packet/`; no cut or executable ticket is
+accepted yet.
 
 The intended user outcome is a coherent path from declared features and causal
 history, through reusable ordinary-R strategy code and explicit scheduling,

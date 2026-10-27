@@ -1,13 +1,14 @@
 # ledgr Design Memory
 
-Role: living; current design-memory front door for release `v0.2.2`.
+Role: living; current design-memory front door for release `v0.2.3`.
 Status: working
 Authority: routing map only under the accepted governance-lifecycle synthesis
 [Sections 2 and 7](rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md#2-authority-and-document-lifetime-s-r1-r2).
 This file does not create package behavior, accept a decision or authorize
 implementation.
-Current packet: [ledgr v0.2.2](ledgr_v0_2_2_spec_packet/README.md).
-Its `tickets.yml` is the sole ticket and sequencing authority for cut work.
+Current packet: [ledgr v0.2.3](ledgr_v0_2_3_spec_packet/README.md).
+No v0.2.3 cut is open yet. Once a cut is accepted, its `tickets.yml` becomes
+the sole ticket and sequencing authority for that cut.
 
 Use this page to identify the shortest authoritative route. Do not infer
 authority from a filename, version number, modification date or proximity to
@@ -20,8 +21,8 @@ the current release.
 | Current package behavior or an internal invariant | [contracts.md](contracts.md) and its H2 topic links |
 | Accepted choice not yet consolidated | [decisions.md](decisions.md), then the exact linked source sections |
 | Active or owed RFC work | [RFC pipeline](rfc/README.md#rfc-pipeline) |
-| Current release goal and dependency order | [v0.2.2 macro plan](ledgr_v0_2_2_spec_packet/macro_plan.md) and [roadmap](ledgr_roadmap.md) |
-| Executable implementation work | The owning packet's `tickets.yml`; for the current release, [v0.2.2 tickets](ledgr_v0_2_2_spec_packet/tickets.yml) |
+| Current release goal and dependency order | [v0.2.3 packet](ledgr_v0_2_3_spec_packet/README.md) and [roadmap](ledgr_roadmap.md) |
+| Executable implementation work | The owning packet's `tickets.yml`; v0.2.3 has no accepted cut yet |
 | Uncommitted future idea | [horizon.md](horizon.md) |
 | Research, audit or spike evidence | [research](research/README.md), [audits](audits/) or [spikes](spikes/) as cited by its consumer |
 | Released history | [roadmap release records](ledgr_roadmap.md), [historical planning context](planning_context_history.md) and the versioned spec-packet directories |
@@ -40,9 +41,8 @@ For RFC work, read [rfc_cycle.md](rfc_cycle.md). For a spike, read
    [decision bridge](decisions.md) points to their exact operative sections;
    it is not authority itself.
 3. [ledgr_roadmap.md](ledgr_roadmap.md) binds release scope and release
-   sequence, not package semantics. The current release's
-   [macro plan](ledgr_v0_2_2_spec_packet/macro_plan.md) binds uncut
-   within-release order.
+   sequence, not package semantics. An accepted current-release macro plan
+   binds uncut within-release order; v0.2.3 does not have one yet.
 4. A versioned packet turns accepted scope into implementation work. Within a
    cut, its `tickets.yml` alone owns ticket detail, state and sequencing.
 5. Incorporated evidence binds only the rule an accepted section expressly
@@ -70,11 +70,14 @@ rule from them. `horizon.md` is non-binding parking.
 
 ## Current release
 
-Release `v0.2.2` is active. Its maintained uncut order is
-[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md), now frozen as its
-completed planning record. Cuts 1 through 22 are complete and accepted. Cut 23
-owns release closeout; its live workstream state, release gates and publication
-sequence are in [tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml).
+Release `v0.2.2` was published on 2026-10-27. Its
+[packet](ledgr_v0_2_2_spec_packet/README.md), frozen
+[macro plan](ledgr_v0_2_2_spec_packet/macro_plan.md) and
+[tickets](ledgr_v0_2_2_spec_packet/tickets.yml) are release evidence.
+
+Release `v0.2.3` is the active planning release. Its
+[packet front door](ledgr_v0_2_3_spec_packet/README.md) starts from the roadmap
+and due RFCs; no implementation cut is open.
 
 The latest tagged release and older release outcomes remain discoverable in
 the [roadmap](ledgr_roadmap.md) and their versioned packet directories. Those

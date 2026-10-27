@@ -1,19 +1,19 @@
 # ledgr v0.2.2 Spec Packet
 
-Role: mixed; current packet front door and index of durable packet records.
-Status: working
+Role: historical; released packet front door and index of durable records.
+Status: released 2026-10-27
 Authority: routing only. `tickets.yml` is the sole ticket, dependency,
 acceptance and sequencing authority.
 
-This packet is the durable home for the v0.2.2 release plan. It deliberately
-does not copy workstream status, ticket dependencies or acceptance state from
-`tickets.yml`.
+This packet is the durable home for the released v0.2.2 plan and evidence. It
+deliberately does not copy workstream status, ticket dependencies or acceptance
+state from `tickets.yml`.
 
 ## Start here
 
 | Need | Source |
 | --- | --- |
-| Current tickets, dependencies and acceptance | [`tickets.yml`](tickets.yml) |
+| Final tickets, dependencies and acceptance | [`tickets.yml`](tickets.yml) |
 | Release scope, order and definition of done | [`macro_plan.md`](macro_plan.md) |
 | Current behavioural authority | [`contracts.md`](../contracts.md) |
 | Accepted decision bridge | [`decisions.md`](../decisions.md) |
@@ -23,9 +23,12 @@ does not copy workstream status, ticket dependencies or acceptance state from
 | Design-memory navigation | [`inst/design/README.md`](../README.md) |
 | History representations, fast paths and execution-mode branches | [`history_representation_map.md`](history_representation_map.md) |
 
-The macro plan does not authorize implementation and does not replace an
+The frozen macro plan does not authorize implementation and does not replace an
 accepted RFC, contract or research finding. Historical planning displaced
 from that file remains in [`macro_plan_history.md`](macro_plan_history.md).
+
+Current planning starts at the
+[v0.2.3 packet](../ledgr_v0_2_3_spec_packet/README.md).
 
 ## Current cut review records
 
@@ -62,7 +65,8 @@ Cut reviews and finding-bearing workstream reviews are durable packet records:
   [`close_review_64_rereview_1.md`](close_review_64_rereview_1.md);
 - [`cut_review_23.md`](cut_review_23.md),
   [`close_review_68.md`](close_review_68.md) and
-  [`close_review_65.md`](close_review_65.md).
+  [`close_review_65.md`](close_review_65.md) and
+  [`close_review_66.md`](close_review_66.md).
 
 A finding-free `PASS` is recorded as one line in `tickets.yml` and has no
 separate file. The ticket authority says which reviews are operative.
@@ -101,7 +105,7 @@ second status ledger:
   and
   [`history_proof_phase_a_closeout.md`](history_proof_phase_a_closeout.md);
 - [`integrated_release_closeout.md`](integrated_release_closeout.md) and
-  [`release_documentation_coherence_closeout.md`](release_documentation_coherence_closeout.md)
+  [`release_documentation_coherence_closeout.md`](release_documentation_coherence_closeout.md),
   [`release_memory_closeout.md`](release_memory_closeout.md) and
   [`release_gate_closeout.md`](release_gate_closeout.md);
 - [`strategy_schedule_preparation_closeout.md`](strategy_schedule_preparation_closeout.md)

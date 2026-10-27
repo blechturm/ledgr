@@ -78,15 +78,15 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-10-14):
+Current planning context (2026-10-27):
 
-- v0.2.1.0 is published. Its packet retains the historical
-  `ledgr_v0_2_0_2_spec_packet/` path and is release evidence, not current
+- v0.2.2 is published. Its packet at
+  `inst/design/ledgr_v0_2_2_spec_packet/` is release evidence, not current
   implementation authority.
-- The current release branch is `v0.2.2`. Its active packet is
-  `inst/design/ledgr_v0_2_2_spec_packet/`; `tickets.yml` is the sole status and
-  sequencing authority. Read that file for live workstream state; this file
-  does not duplicate it.
+- The active planning release is v0.2.3. Its packet front door is
+  `inst/design/ledgr_v0_2_3_spec_packet/`. No cut or executable ticket exists
+  until the maintainer accepts one; use the roadmap and RFC pipeline for the
+  current design order.
 - `inst/design/contracts.md` binds shipped behavior. Accepted sections bind
   their stated pending scope; incorporated evidence binds only the promoted
   rule. Acceptance does not claim implementation.
@@ -105,8 +105,8 @@ planning are evidence, not authorization for new work.
 | Question | Start here |
 | --- | --- |
 | What is current behavior? | `inst/design/contracts.md`, by topic heading |
-| What is being implemented now? | `inst/design/ledgr_v0_2_2_spec_packet/README.md`, then `tickets.yml` |
-| What is the v0.2.2 dependency plan? | `inst/design/ledgr_v0_2_2_spec_packet/macro_plan.md` |
+| What is being planned now? | `inst/design/ledgr_v0_2_3_spec_packet/README.md`, then the roadmap and RFC pipeline |
+| What shipped in v0.2.2? | `inst/design/ledgr_v0_2_2_spec_packet/README.md`, then its frozen macro plan and tickets |
 | Which accepted decisions are pending implementation? | `inst/design/decisions.md`, then the linked accepted source |
 | Which RFC is active or due? | `inst/design/rfc/README.md` |
 | What is decided for the causal-history system? | `inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v12.md` ("As implemented"), then `inst/design/ledgr_v0_2_2_spec_packet/cut16_decision_reconciliation.md` |

@@ -190,6 +190,16 @@ its definition. The other D8 failure conditions remain (G:197-200).
 Every later pilot names owner, exit trigger and dispositions. The guard
 reports overdue pilots; it cannot infer a human reassessment from a date.
 
+**Closeout reassessment, 2026-10-27:** keep M1 unchanged. The complete v0.2.2
+record is 202 independent verdicts over 202 completed tickets, with the
+per-cut counts, finding outcomes and maintainer turns recorded in the
+[release-gate closeout](../ledgr_v0_2_2_spec_packet/release_gate_closeout.md#final-m1-accounting-and-reassessment).
+The equality is incidental and is not a target or quality score. Report-only
+accounting exposed correction cost without encouraging ticket padding, while
+the third-round escalation repeatedly forced an explicit maintainer choice.
+The eight-hour publication path is not an M1 failure; its release-candidate,
+CI-gate and evidence-reuse redesign is routed to a separate v0.2.3 RFC.
+
 ## 6. Guard contract and placement (S Section 4)
 
 Extend the census into a standalone report/check tool; do not treat its

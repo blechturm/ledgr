@@ -1,8 +1,7 @@
 # v0.2.2 Release-Gate Closeout
 
 **Role:** durable release-gate and publication record.
-**Status:** local gates complete under the maintainer's timing exception;
-remote publication gates are pending.
+**Status:** published; all binding remote publication gates complete.
 **Authority:** `tickets.yml` LDG-3118. This record reports evidence and does
 not replace the release playbook.
 **Date:** 2026-10-27.
@@ -167,4 +166,76 @@ matched. The remaining Ubuntu job was cancelled after this decisive failure;
 the workflow is recorded as failed/cancelled, never as a pass. Maintainer
 decision (12) adopts DuckDB 2.0.0 as the release floor, and LDG-3125 owns the
 deliberate equivalent-catalogue re-pin. No merge, tag or GitHub Release has yet
-occurred.
+occurred at that checkpoint.
+
+The deliberate DuckDB 2.0.0 catalogue re-pin landed at `070e0e4d`; the
+pragmatic publication-gate record landed at `7539be45`. Branch
+`refs/heads/v0.2.2` and `refs/heads/main` were fast-forwarded to
+`7539be452ad15f5ee39e408d14c25f83aa58389b`. Their automatically triggered
+duplicate workflows 40542199229, 40542330468 and 40542330103 were cancelled
+under Cut 23 decision (13) and are not cited as passes.
+
+Lightweight tag `refs/tags/v0.2.2` names that same commit. Its mandatory full
+workflow 40542364504 passed the plan, semantic lint, formatting lint, Windows
+release, Ubuntu R 4.6, Ubuntu release, R CMD checks, fast, review,
+isolated-CRAN and coverage jobs. This is the sole final integrated
+confirmation authorized by decision (13). The curated GitHub Release was
+published only after that green result:
+<https://github.com/blechturm/ledgr/releases/tag/v0.2.2>.
+
+## Final M1 accounting and reassessment
+
+The table applies the accepted M1 definition: independent verdicts at cut,
+workstream-close, focused-re-review or final-review points over completed
+tickets. The dropped LDG-3008 enters neither the Cut 12 nor packet ticket
+count. Pre-M1 cuts retain their historical records; this table reconstructs
+their final count without rewriting them.
+
+| Cut | Independent verdicts | Completed tickets |
+| ---: | ---: | ---: |
+| 1 | 8 | 12 |
+| 2 | 8 | 11 |
+| 3 | 2 | 4 |
+| 4 | 3 | 1 |
+| 5 | 4 | 2 |
+| 6 | 6 | 9 |
+| 7 | 3 | 4 |
+| 8 | 2 | 2 |
+| 9 | 5 | 4 |
+| 10 | 5 | 4 |
+| 11 | 9 | 17 |
+| 12 | 21 | 25 |
+| 13 | 6 | 3 |
+| 14 | 8 | 19 |
+| 15 | 25 | 16 |
+| 16 | 23 | 25 |
+| 17 | 9 | 10 |
+| 18 | 9 | 7 |
+| 19 | 15 | 7 |
+| 20 | 5 | 3 |
+| 21 | 16 | 6 |
+| 22 | 3 | 1 |
+| 23 | 7 | 10 |
+| **Packet** | **202** | **202** |
+
+Cut 23's seven independent Type 1 verdicts comprise the cut review and the
+initial and focused verdicts for Workstreams 68, 65 and 66. Four verdicts
+returned findings and changed ticket ownership, product correctness,
+teaching, detectors or release records; three focused confirmations were
+finding-free PASS results. Workstream 67 did not receive an independent close
+verdict: the maintainer's pragmatic-publication decision closed it on the
+green mandatory tag workflow after the preceding independent cut review and
+all registered product gates. Maintainer review-disposition turns were the
+patched cut acceptance; Workstream 68 and 65 acceptance; Workstream 66
+acceptance; the fast-gate timing exception; the release-recovery and DuckDB
+baseline decisions; and authorization to publish on the tag workflow.
+
+The closeout reassessment keeps M1 unchanged: verdict and finding accounting
+remains report-only, and a third correction round still escalates. The exact
+packet total of 202 verdicts over 202 completed tickets is descriptive, not a
+quality score or target. The costly failure was instead the serial release
+process: repeated environment preparation, overlapping local and hosted
+gates, late dependency-baseline discovery and unclear evidence reuse turned
+publication into an eight-hour procedure. A focused v0.2.3 RFC now owns the
+release-candidate, CI-gate and evidence-reuse architecture; M1 is not made a
+proxy for that separate problem.
