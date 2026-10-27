@@ -102,7 +102,8 @@ second status ledger:
   [`history_proof_phase_a_closeout.md`](history_proof_phase_a_closeout.md);
 - [`integrated_release_closeout.md`](integrated_release_closeout.md) and
   [`release_documentation_coherence_closeout.md`](release_documentation_coherence_closeout.md)
-  and [`release_memory_closeout.md`](release_memory_closeout.md);
+  [`release_memory_closeout.md`](release_memory_closeout.md) and
+  [`release_gate_closeout.md`](release_gate_closeout.md);
 - [`strategy_schedule_preparation_closeout.md`](strategy_schedule_preparation_closeout.md)
   and
   [`strategy_schedule_common_calendar_closeout.md`](strategy_schedule_common_calendar_closeout.md);
