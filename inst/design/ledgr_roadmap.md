@@ -193,6 +193,21 @@ order and cut implementation respectively.
   before changing fixed-decimal price normalization or target quantity
   granularity. The crypto-readiness evidence is the trigger, not a reason for
   crypto-specific execution rules.
+- **Affordability and execution policy (maintainer, 2026-10-27):** decide what
+  fills when targets sized at the decision close cannot be afforded at the
+  execution price.
+  - Today the whole cash-consuming fill is rejected, in stable-ID order, and
+    the rejection appears only in diagnostics.
+  - The focused [execution-policy RFC](rfc/README.md#execution-policy)
+    decides the default (rejection or proportional scaling), how it is
+    disclosed, and its OMS lifecycle vocabulary.
+  - It belongs before the first CRAN release because it changes default
+    results for strategies that invest close to fully.
+  - Reporting existing refusals in `print()`, the summary and run completion
+    needs no RFC and may land earlier.
+
+  Source: strategy-grammar spike stage 1 (`spike/strategy-grammar` at
+  `55511d2f`).
 - **Promotion proof after the next core release:** keep the completed crypto2
   readiness work private through v0.2.2 and the next release's performance,
   memory, execution-core and cleanup work. Once those outcomes are accepted,
