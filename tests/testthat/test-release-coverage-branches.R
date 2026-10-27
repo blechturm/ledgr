@@ -76,6 +76,37 @@ testthat::test_that("coverage helper fails after retry budget is exhausted", {
   )
 })
 
+testthat::test_that("ordinary coverage isolates a preceding CRAN-profile environment", {
+  source(ledgr_test_coverage_script())
+
+  vars <- c(
+    "LEDGR_CRAN_LIBRARY",
+    "LEDGR_CRAN_LIBRARY_MANIFEST",
+    "LEDGR_CRAN_WORKDIR"
+  )
+  old <- Sys.getenv(vars, unset = NA_character_)
+  old_warning_length <- getOption("warning.length")
+  on.exit(
+    {
+      Sys.unsetenv(vars)
+      present <- !is.na(old)
+      if (any(present)) do.call(Sys.setenv, as.list(old[present]))
+      options(warning.length = old_warning_length)
+    },
+    add = TRUE
+  )
+  do.call(Sys.setenv, as.list(stats::setNames(rep("cran-only", 3L), vars)))
+
+  observed <- ledgr_with_ordinary_coverage_env(list(
+    values = Sys.getenv(vars, unset = "missing"),
+    warning_length = getOption("warning.length")
+  ))
+
+  testthat::expect_identical(unname(observed$values), rep("missing", 3L))
+  testthat::expect_identical(observed$warning_length, 8170L)
+  testthat::expect_identical(unname(Sys.getenv(vars)), rep("cran-only", 3L))
+})
+
 testthat::test_that("fill event row helper covers no-op and validation branches", {
   none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
   out <- ledgr:::ledgr_fill_event_row("run-1", none, 1L)

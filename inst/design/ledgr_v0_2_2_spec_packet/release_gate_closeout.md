@@ -142,9 +142,17 @@ not age or freeze.
 
 The release branch was pushed explicitly through `refs/heads/v0.2.2` at
 packet-only commit `90e82c49`; quick workflow 40503819339 started from that
-commit. No merge, tag or GitHub Release has occurred. This section will record
-the final branch quick and dispatched-full workflow IDs, the green main
-R-CMD-check and pkgdown runs, the tagged commit, the explicit
+commit and exposed the LDG-3123 formatting-lint blocker. Exact-head quick
+workflow 40506282632 then passed at `c94dd587`. Dispatched full workflow
+40510197118 passed both lints, Windows, Ubuntu R 4.6 and every package-check
+cell, but its Ubuntu release coverage step failed twice after the preceding
+isolated-CRAN profile. LDG-3124 owns that release-harness blocker. No merge,
+tag or GitHub Release has occurred. The maintainer's 2026-10-27 release-recovery
+decision validates the bounded correction through its focused detector and one
+replacement full-tier workflow. It explicitly skips another local coverage
+run, another quick workflow and the separate pre-tag main R-CMD-check and
+pkgdown workflows; none is recorded as passed. This section will record the
+replacement full workflow ID, the tagged commit, the explicit
 `refs/tags/v0.2.2` push, tag workflow and GitHub Release URL. The later
 post-publication commit records navigation to v0.2.3 and is deliberately not
 part of the tag.

@@ -30,6 +30,33 @@ ledgr_collect_coverage <- function(package_coverage = covr::package_coverage,
   stop(last_error)
 }
 
+ledgr_with_ordinary_coverage_env <- function(code) {
+  cran_vars <- c(
+    "LEDGR_CRAN_LIBRARY",
+    "LEDGR_CRAN_LIBRARY_MANIFEST",
+    "LEDGR_CRAN_WORKDIR"
+  )
+  old_cran <- Sys.getenv(cran_vars, unset = NA_character_)
+  old_warning_length <- getOption("warning.length")
+  on.exit(
+    {
+      Sys.unsetenv(cran_vars)
+      present <- !is.na(old_cran)
+      if (any(present)) do.call(Sys.setenv, as.list(old_cran[present]))
+      options(warning.length = old_warning_length)
+    },
+    add = TRUE
+  )
+  # Coverage always runs the ordinary test mode. A preceding isolated-CRAN
+  # profile may have exported its private library paths through GITHUB_ENV;
+  # those paths must not leak into covr's temporary package installation.
+  Sys.unsetenv(cran_vars)
+  # covr reports an installed-test failure through warning.length. Keep enough
+  # output to name the failing block if collection fails again.
+  options(warning.length = 8170L)
+  force(code)
+}
+
 ledgr_check_coverage_main <- function() {
   threshold <- as.numeric(Sys.getenv("LEDGR_COVERAGE_THRESHOLD", "80"))
   if (!is.finite(threshold) || threshold <= 0 || threshold > 100) {
@@ -51,7 +78,7 @@ ledgr_check_coverage_main <- function() {
   # Count every ordinary block, fast and review, as coverage did before the
   # test lanes split them.
   Sys.setenv(LEDGR_TEST_PROFILES = "fast,review")
-  coverage <- ledgr_collect_coverage()
+  coverage <- ledgr_with_ordinary_coverage_env(ledgr_collect_coverage())
   coverage_pct <- covr::percent_coverage(coverage)
 
   message(sprintf("ledgr coverage: %.2f%%", coverage_pct))
