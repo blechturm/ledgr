@@ -1,8 +1,8 @@
 # v0.2.2 Release-Gate Closeout
 
 **Role:** durable release-gate and publication record.
-**Status:** local correctness gates complete; one local timing exception awaits
-maintainer disposition, and remote publication gates are pending.
+**Status:** local gates complete under the maintainer's timing exception;
+remote publication gates are pending.
 **Authority:** `tickets.yml` LDG-3118. This record reports evidence and does
 not replace the release playbook.
 **Date:** 2026-10-27.
@@ -10,18 +10,25 @@ not replace the release playbook.
 ## Candidate
 
 The frozen product candidate is commit
-`5fb8aad8dc8d0fcc1bb3f6c3a86266c334dbc585` (commit C). Changes after C and
-before merge are confined to this packet's evidence and status records plus
-the raw `release_gate_*` records under
-`dev/bench/v0_2_2_release_closeout/evidence/`. The accepted comparison arm is
+`5fb8aad8dc8d0fcc1bb3f6c3a86266c334dbc585`. Release-branch run
+`40503819339` then found one blocking brace-style lint in LTB-0204. Commit
+`7e93e9c4` wraps the two existing local helper expressions without changing
+their values, assertions or product code and records LDG-3123. The focused
+brace linter and complete owning test file pass. The final release commit C is
+therefore `7e93e9c4`; every product gate below applies unchanged because its
+diff from `5fb8aad8` contains no package source, API, generated help, schema,
+identity or benchmark code. The replacement branch CI is the complete test
+confirmation. Further changes before merge are confined to this packet's
+evidence and status records. The accepted comparison arm is
 `0ffaaa0f5c9b913a45b09c935f7110f3c6d11396`.
 
-Two release-harness corrections and one test-harness correction were required
+Two release-harness corrections and two test-harness corrections were required
 before C froze. LDG-3120 isolates coverage subprocess traces. LDG-3121 makes
 the long-window oracle compare two current-format stores and separates stable
 economic identity from release-versioned walk-forward labels. LDG-3122 gives
-the terminal fixture a deterministic public snapshot ID. None changes product
-behavior, a public API, a stored format or an identity rule.
+the terminal fixture a deterministic public snapshot ID. LDG-3123 closes the
+single formatting lint. None changes product behavior, a public API, a stored
+format or an identity rule.
 
 ## Local gates
 
