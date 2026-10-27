@@ -19,6 +19,10 @@ include experiment-store schema 124, snapshot hash rule 4, run identity rule
 retention format 2, provenance and reproduction-key format 2, walk-forward
 candidate and inspection format 2, and promotion-context format 3.
 
+Install DuckDB 2.0.0 or later. The independently normalized schema-124
+catalogue is unchanged from DuckDB 1.5.6, but v0.2.2 uses 2.0.0 as its tested
+and declared dependency floor.
+
 Public changes that require source edits include:
 
 - replace `ledgr_param_grid()` with an ordinary data frame,

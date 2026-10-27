@@ -156,3 +156,15 @@ replacement full workflow ID, the tagged commit, the explicit
 `refs/tags/v0.2.2` push, tag workflow and GitHub Release URL. The later
 post-publication commit records navigation to v0.2.3 and is deliberately not
 part of the tag.
+
+Exact-candidate full workflow 40530236830 ran commit `922e6717`. Both blocking
+linters, the Windows release job and the Ubuntu R 4.6 package check passed.
+The ordinary Ubuntu coverage cell reached the full test suite, confirming the
+LDG-3124 environment isolation, then failed only LTB-0258's two exact-version
+assertions: ordinary dependencies supplied DuckDB 2.0.0 while the schema-124
+golden still named 1.5.6. Every normalized catalogue row and all four digests
+matched. The remaining Ubuntu job was cancelled after this decisive failure;
+the workflow is recorded as failed/cancelled, never as a pass. Maintainer
+decision (12) adopts DuckDB 2.0.0 as the release floor, and LDG-3125 owns the
+deliberate equivalent-catalogue re-pin. No merge, tag or GitHub Release has yet
+occurred.
