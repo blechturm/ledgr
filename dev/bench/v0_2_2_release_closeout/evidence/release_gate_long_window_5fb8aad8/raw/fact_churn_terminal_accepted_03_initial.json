@@ -1,0 +1,124 @@
+{
+  "shape_id": "fact_churn_terminal",
+  "commit": "0ffaaa0f5c9b913a45b09c935f7110f3c6d11396",
+  "product_tree_status": "",
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6",
+  "collapse_version": "2.1.8",
+  "snapshot": {
+    "snapshot_id": "lwreg_fact_churn_terminal",
+    "snapshot_hash": "a16a7a7f6209d579777d32da456c950f3c61a884ea1fdade2eed856ae416bbd3",
+    "status": "SEALED"
+  },
+  "cold": {
+    "status": "DONE",
+    "elapsed_s": 4.7300000000000004,
+    "setup_s": 2.0300000000000002,
+    "loop_s": 2.5299999999999994,
+    "finalize_s": 0.17000000000000082,
+    "strategy_calls": 757,
+    "native_identity": {
+      "kind": "run",
+      "run_id": "lwreg_fact_churn_terminal_cold",
+      "snapshot_id": "lwreg_fact_churn_terminal",
+      "snapshot_hash": "a16a7a7f6209d579777d32da456c950f3c61a884ea1fdade2eed856ae416bbd3",
+      "config_hash": "1ca832f74825013110aa04827e0ac3a7c4f30fd2d205ab72b8491334c14267be",
+      "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
+      "strategy_source_hash": "72977646d48a37a5417893fe58b6fbe66aad45afd1f3c918a54b9281e865645e",
+      "strategy_params_hash": "1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "economic_outputs": {
+      "equity": {
+        "rows": 757,
+        "hash": "2639853852f23ae3c73f9c5852bc795f9208377b701a830f5ef7c3fa7789d990"
+      },
+      "fills": {
+        "rows": 0,
+        "hash": "ea482d8d3d50e661e3ecf6e6089c803e9d91fe05b064e1a47cfeb24b17b09e6e"
+      },
+      "trades": {
+        "rows": 0,
+        "hash": "dd2c0701da67061312b5450440e3796b438eef53d4a962f811170d1a4d944bc6"
+      },
+      "diagnostics": {
+        "rows": 76457,
+        "hash": "6c8af57d7511aa0aa50b5fbe667218b0c688281b6659fb2e65511ab5be18675e"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "9614b1452bad02b44be2aaf0e95c4042955bf27734924eec7004f6640d69036c"
+      }
+    }
+  },
+  "warm": {
+    "status": "DONE",
+    "elapsed_s": 3.7699999999999996,
+    "setup_s": 1.5499999999999989,
+    "loop_s": 1.9199999999999999,
+    "finalize_s": 0.30000000000000071,
+    "strategy_calls": 757,
+    "native_identity": {
+      "kind": "run",
+      "run_id": "lwreg_fact_churn_terminal_warm",
+      "snapshot_id": "lwreg_fact_churn_terminal",
+      "snapshot_hash": "a16a7a7f6209d579777d32da456c950f3c61a884ea1fdade2eed856ae416bbd3",
+      "config_hash": "1ca832f74825013110aa04827e0ac3a7c4f30fd2d205ab72b8491334c14267be",
+      "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
+      "strategy_source_hash": "72977646d48a37a5417893fe58b6fbe66aad45afd1f3c918a54b9281e865645e",
+      "strategy_params_hash": "1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "economic_outputs": {
+      "equity": {
+        "rows": 757,
+        "hash": "2639853852f23ae3c73f9c5852bc795f9208377b701a830f5ef7c3fa7789d990"
+      },
+      "fills": {
+        "rows": 0,
+        "hash": "ea482d8d3d50e661e3ecf6e6089c803e9d91fe05b064e1a47cfeb24b17b09e6e"
+      },
+      "trades": {
+        "rows": 0,
+        "hash": "dd2c0701da67061312b5450440e3796b438eef53d4a962f811170d1a4d944bc6"
+      },
+      "diagnostics": {
+        "rows": 76457,
+        "hash": "6c8af57d7511aa0aa50b5fbe667218b0c688281b6659fb2e65511ab5be18675e"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "9614b1452bad02b44be2aaf0e95c4042955bf27734924eec7004f6640d69036c"
+      }
+    }
+  },
+  "facts_resolve": {
+    "cold_s": 0.39000000000000057,
+    "warm_s": 0.4399999999999995,
+    "cold": {
+      "schema_version": 1,
+      "rows": {
+        "rows": 100,
+        "hash": "c04fd3a569ce2f6853cce937caa526dd15385aba16773812df8811924fce6c57"
+      },
+      "evidence": {
+        "rows": 101,
+        "hash": "42b3a44f4c16b1e4b15b1e33e990b31144075e16752a72edf058b0aa5567c9f6"
+      },
+      "metadata": "e50a10cee7d12a4fe43e6673b2d400dbcb7284e7021a51e736904609a081132c"
+    },
+    "warm": {
+      "schema_version": 1,
+      "rows": {
+        "rows": 100,
+        "hash": "c04fd3a569ce2f6853cce937caa526dd15385aba16773812df8811924fce6c57"
+      },
+      "evidence": {
+        "rows": 101,
+        "hash": "42b3a44f4c16b1e4b15b1e33e990b31144075e16752a72edf058b0aa5567c9f6"
+      },
+      "metadata": "e50a10cee7d12a4fe43e6673b2d400dbcb7284e7021a51e736904609a081132c"
+    }
+  }
+}

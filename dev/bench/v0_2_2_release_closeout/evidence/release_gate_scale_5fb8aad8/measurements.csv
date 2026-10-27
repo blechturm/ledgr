@@ -1,0 +1,5 @@
+"file","shape_id","arm","pair","attempt","cold_s","warm_s"
+"exp0003_scale_accepted_01_initial.json","exp0003_scale","accepted",1,"initial",72.05,67.06
+"exp0003_scale_candidate_01_initial.json","exp0003_scale","candidate",1,"initial",71.64,68.2
+"walk_forward_accepted_01_initial.json","walk_forward","accepted",1,"initial",48.58,36.86
+"walk_forward_candidate_01_initial.json","walk_forward","candidate",1,"initial",49.25,35.31

@@ -1,0 +1,97 @@
+{
+  "shape_id": "baseline_757",
+  "commit": "0ffaaa0f5c9b913a45b09c935f7110f3c6d11396",
+  "product_tree_status": "",
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6",
+  "collapse_version": "2.1.8",
+  "snapshot": {
+    "snapshot_id": "lwreg_baseline_757",
+    "snapshot_hash": "1265088483fe15775bb40667c7a8fdb5a8ada94f28cc69af249cd0719a27b485",
+    "status": "SEALED"
+  },
+  "cold": {
+    "status": "DONE",
+    "elapsed_s": 8.6900000000000013,
+    "setup_s": 3.1899999999999995,
+    "loop_s": 5.0599999999999996,
+    "finalize_s": 0.44000000000000306,
+    "strategy_calls": 757,
+    "native_identity": {
+      "kind": "run",
+      "run_id": "lwreg_baseline_757_cold",
+      "snapshot_id": "lwreg_baseline_757",
+      "snapshot_hash": "1265088483fe15775bb40667c7a8fdb5a8ada94f28cc69af249cd0719a27b485",
+      "config_hash": "f6351bdc27a177ff7cd425cf5b140b4c8e1d3f7ac09a8177df27baf69d7feaa3",
+      "feature_set_hash": "008eac019880704fb39f508e29b9854295266a45c2947ff8d8a41681d9d12646",
+      "strategy_source_hash": "72977646d48a37a5417893fe58b6fbe66aad45afd1f3c918a54b9281e865645e",
+      "strategy_params_hash": "1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "economic_outputs": {
+      "equity": {
+        "rows": 757,
+        "hash": "d3a7dddd5e2f5f57d6614a529e2d1de9ada90f20d686878685e229862f86d66b"
+      },
+      "fills": {
+        "rows": 300,
+        "hash": "d356a95dfcfc14a7ff94f637790e64ac6c172fffd0d0c5838a560d54a05ea8c8"
+      },
+      "trades": {
+        "rows": 170,
+        "hash": "1a1cc69d1a33124ef2bc8bd07a42bbfe2ea7fe26c219af0cd82527130d5f4e2f"
+      },
+      "diagnostics": {
+        "rows": 379873,
+        "hash": "9b63dc6ca9f69eaf9612acd44bb0453bf86329791ce3d65eab76c2e9e7585251"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "e92d83d4e01a634bf842bd62df4d85c177e2402af4a52076caf395ad35856638"
+      }
+    }
+  },
+  "warm": {
+    "status": "DONE",
+    "elapsed_s": 7.740000000000002,
+    "setup_s": 2.5800000000000018,
+    "loop_s": 4.5899999999999999,
+    "finalize_s": 0.57000000000000028,
+    "strategy_calls": 757,
+    "native_identity": {
+      "kind": "run",
+      "run_id": "lwreg_baseline_757_warm",
+      "snapshot_id": "lwreg_baseline_757",
+      "snapshot_hash": "1265088483fe15775bb40667c7a8fdb5a8ada94f28cc69af249cd0719a27b485",
+      "config_hash": "f6351bdc27a177ff7cd425cf5b140b4c8e1d3f7ac09a8177df27baf69d7feaa3",
+      "feature_set_hash": "008eac019880704fb39f508e29b9854295266a45c2947ff8d8a41681d9d12646",
+      "strategy_source_hash": "72977646d48a37a5417893fe58b6fbe66aad45afd1f3c918a54b9281e865645e",
+      "strategy_params_hash": "1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",
+      "risk_chain_hash": "71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11"
+    },
+    "economic_outputs": {
+      "equity": {
+        "rows": 757,
+        "hash": "d3a7dddd5e2f5f57d6614a529e2d1de9ada90f20d686878685e229862f86d66b"
+      },
+      "fills": {
+        "rows": 300,
+        "hash": "d356a95dfcfc14a7ff94f637790e64ac6c172fffd0d0c5838a560d54a05ea8c8"
+      },
+      "trades": {
+        "rows": 170,
+        "hash": "1a1cc69d1a33124ef2bc8bd07a42bbfe2ea7fe26c219af0cd82527130d5f4e2f"
+      },
+      "diagnostics": {
+        "rows": 379873,
+        "hash": "9b63dc6ca9f69eaf9612acd44bb0453bf86329791ce3d65eab76c2e9e7585251"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "e92d83d4e01a634bf842bd62df4d85c177e2402af4a52076caf395ad35856638"
+      }
+    }
+  },
+  "facts_resolve": null
+}

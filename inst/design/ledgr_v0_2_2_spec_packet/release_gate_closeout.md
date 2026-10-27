@@ -1,7 +1,8 @@
 # v0.2.2 Release-Gate Closeout
 
 **Role:** durable release-gate and publication record.
-**Status:** local gates complete; remote publication gates pending.
+**Status:** local correctness gates complete; one local timing exception awaits
+maintainer disposition, and remote publication gates are pending.
 **Authority:** `tickets.yml` LDG-3118. This record reports evidence and does
 not replace the release playbook.
 **Date:** 2026-10-27.
@@ -10,8 +11,9 @@ not replace the release playbook.
 
 The frozen product candidate is commit
 `5fb8aad8dc8d0fcc1bb3f6c3a86266c334dbc585` (commit C). Changes after C and
-before merge are confined to this packet's evidence and status records. The
-accepted comparison arm is
+before merge are confined to this packet's evidence and status records plus
+the raw `release_gate_*` records under
+`dev/bench/v0_2_2_release_closeout/evidence/`. The accepted comparison arm is
 `0ffaaa0f5c9b913a45b09c935f7110f3c6d11396`.
 
 Two release-harness corrections and one test-harness correction were required
@@ -47,27 +49,33 @@ outside that sandbox with the registered RStudio Quarto/Pandoc path. These are
 environment failures, not package failures; both failed attempts are retained
 in the session record rather than described as passing gates.
 
-The local WSL installation has R 4.5.2 while ledgr 0.2.2 requires R 4.6.0, so
-the local WSL package gate is not applicable. The release-branch full workflow
-therefore remains the binding Ubuntu and DuckDB proof.
+The available Ubuntu 24.04 WSL installation does not meet the candidate's
+declared toolchain: it has R 4.5.2 while ledgr requires R 4.6.0, and its
+initial `collapse` 2.1.7 and DuckDB 1.5.2 were below the candidate's 2.1.8
+and 1.5.6 floors. `collapse` upgraded successfully. Building a current DuckDB
+from source exceeded 30 minutes, and the available binary-repository attempt
+also timed out. The package gate is therefore **unavailable, not passed or
+not applicable**. The dispatched full release-branch workflow must supply the
+binding Ubuntu and DuckDB proof before merge.
 
 ## Fast-profile adjudication
 
 The profile, its 577 blocks and its 112-second threshold were not changed.
-The first record contained one valid 111.71-second run followed by two runs
-overlapped by the ordinary long-window benchmark. The replacement record took
-114.68, 115.35 and 120.73 seconds (median 115.35). After that record completed,
-the still-running release-scale process was discovered: its orchestrator had
-started at 13:08 and overlapped all three replacement runs. Block-level deltas
-were distributed across the lane rather than concentrated in changed code.
+The contaminated record contains one 111.71-second run followed by 115.03-
+and 114.40-second runs that overlapped the ordinary long-window benchmark. It
+is retained only as a failed attempt. The first uncontaminated record took
+114.68, 116.00 and 115.11 seconds (median 115.11). A final quiet-host retry on
+the registered P-core mask took 114.98, 113.35 and 113.17 seconds (median
+113.35) while sampled background CPU stayed between 3 and 10 percent.
 
-As an independent control, the exact earlier commit that had passed the same
-577-block lane at a 111.74-second median took 121.21 seconds under the current
-host conditions. No product code changed between that passing record and C
-apart from the already accepted Workstream 68 correction that the earlier
-record included. On 2026-10-27 the maintainer therefore overruled this local
-wall-clock miss as a host-load exception. Every block passed, and the threshold
-and membership remain unchanged. This is not recorded as a gate pass.
+Every run executed all 577 blocks without a failure or skip. Per-file deltas
+against the retained Workstream 68 P-core record are distributed across the
+lane rather than concentrated in changed code, and that same product lineage
+previously passed at a 111.74-second median. Nevertheless, the binding final
+record exceeds the unchanged 112-second threshold by 1.35 seconds. It is a
+**timing miss**, not a pass. No threshold or profile membership changed.
+Whether this 1.2-percent miss is accepted as a release-specific host-timing
+exception remains a maintainer decision.
 
 ## Long-window and terminal records
 
@@ -124,8 +132,11 @@ not age or freeze.
 
 ## Remote publication
 
-Pending. This section will record the explicit `refs/heads/v0.2.2` push, quick
-and dispatched full branch workflow IDs, the green main R-CMD-check and pkgdown
-runs, the tagged commit, the explicit `refs/tags/v0.2.2` push, tag workflow and
-GitHub Release URL. The later post-publication commit records navigation to
-v0.2.3 and is deliberately not part of the tag.
+The release branch was pushed explicitly through `refs/heads/v0.2.2` at
+packet-only commit `90e82c49`; quick workflow 40503819339 started from that
+commit. No merge, tag or GitHub Release has occurred. This section will record
+the final branch quick and dispatched-full workflow IDs, the green main
+R-CMD-check and pkgdown runs, the tagged commit, the explicit
+`refs/tags/v0.2.2` push, tag workflow and GitHub Release URL. The later
+post-publication commit records navigation to v0.2.3 and is deliberately not
+part of the tag.

@@ -1,0 +1,69 @@
+{
+  "shape_id": "availability_sweep",
+  "commit": "5fb8aad8dc8d0fcc1bb3f6c3a86266c334dbc585",
+  "product_tree_status": "",
+  "package_version": "0.2.2",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6",
+  "collapse_version": "2.1.8",
+  "snapshot": {
+    "snapshot_id": "lwreg_availability_sweep",
+    "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+    "status": "SEALED"
+  },
+  "cold": {
+    "status": "DONE+DONE",
+    "elapsed_s": 7.4199999999999999,
+    "strategy_calls": 1000,
+    "native_identity": {
+      "kind": "sweep",
+      "sweep_id": "sweep_77a50a15b4e30109",
+      "snapshot_id": "lwreg_availability_sweep",
+      "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+      "identity_rule_version": 4,
+      "candidate_ids": ["first", "second"],
+      "candidate_snapshot_hashes": ["38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7", "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7"],
+      "candidate_feature_set_hashes": ["ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936", "ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936"],
+      "execution_seeds": [1719961376, 575182751]
+    },
+    "economic_outputs": {
+      "candidates": {
+        "rows": 2,
+        "hash": "e7f989bb9fcdd3e06f3b8613784911f2457fb46a6d866bfaa4d1b709775e87f5"
+      },
+      "distinct_decision_outcomes": 2,
+      "returns": {
+        "rows": 1000,
+        "hash": "dd74650c483186df23f48499d72da27d18440693855fad13149013be63e7c5f0"
+      }
+    }
+  },
+  "warm": {
+    "status": "DONE+DONE",
+    "elapsed_s": 5.4499999999999993,
+    "strategy_calls": 1000,
+    "native_identity": {
+      "kind": "sweep",
+      "sweep_id": "sweep_fc5797731d2810f8",
+      "snapshot_id": "lwreg_availability_sweep",
+      "snapshot_hash": "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7",
+      "identity_rule_version": 4,
+      "candidate_ids": ["first", "second"],
+      "candidate_snapshot_hashes": ["38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7", "38fc8876d5a85ccfcb116e2fa9f383cd3623cf70f4fcde6b5f972f3dd8af27f7"],
+      "candidate_feature_set_hashes": ["ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936", "ae33527138f3e16719ecde590f820affcbe3a7d1f0e1ffa8dac5d97b4f7c9936"],
+      "execution_seeds": [1719961376, 575182751]
+    },
+    "economic_outputs": {
+      "candidates": {
+        "rows": 2,
+        "hash": "e7f989bb9fcdd3e06f3b8613784911f2457fb46a6d866bfaa4d1b709775e87f5"
+      },
+      "distinct_decision_outcomes": 2,
+      "returns": {
+        "rows": 1000,
+        "hash": "dd74650c483186df23f48499d72da27d18440693855fad13149013be63e7c5f0"
+      }
+    }
+  },
+  "facts_resolve": null
+}
