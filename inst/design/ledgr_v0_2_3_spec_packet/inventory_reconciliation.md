@@ -115,6 +115,14 @@ keep their `proposed` marks until decided.
 | D1 | Objective-filtered walk-forward identity | decisions.md:26 | No owner; the trigger has not fired (no workflow lets an objective select). | deferred again (proposed) | RFC when triggered | H4 may retire its surface |
 | D2 | OMS order lifecycle | decisions.md:27 | No owner. | Q16 and Q18 superseded by C12a; the rest deferred again (proposed), behind PIT fundamentals in the long-term order | RFC | C12a |
 
+## F. Added after reconciliation (2026-10-27)
+
+| ID | Item | Source | State in v0.2.2 tree (evidence) | Disposition | Route | Depends on |
+| --- | --- | --- | --- | --- | --- | --- |
+| X1 | RNG reproducibility workstream. It bundles four things: H8 (restore the caller's RNG); pinning the RNG kind wherever ledgr seeds; wider preflight RNG detection; one documented recipe for stochastic strategies. | [NMOF probe findings](../../../dev/spikes/nmof-probe/probe_findings.md) | **Bug.** A strategy that follows the contract's own advice (seed from `ctx$pulse_seed`, here via `withr::with_seed()`) differs between `workers = 1` and `workers = 2`. The fold calls `set.seed(execution_seed)` without a kind (`R/fold-engine.R:1629`); no file in `R/` calls `RNGkind`; mirai workers use L'Ecuyer-CMRG. Preflight counts only `runif`, `rnorm` and `sample` as RNG (`R/strategy-preflight.R`), so `sample.int()` passes as Tier 1, and RNG inside a package is invisible. | included (maintainer, 2026-10-27) | direct tickets, with a 1-versus-2-worker equivalence test | absorbs H8; shares the seeding path with C4 |
+| X2 | NMOF as the reference external estimator | [NMOF probe findings](../../../dev/spikes/nmof-probe/probe_findings.md) | `NMOF::minvar()` replaces the vignette's `quadprog` block with identical fills (833 v 833; weights within 1e-15). The estimator block shrinks from 14 lines to 7. An NMOF heuristic (`LSopt`) is reproducible once the RNG kind is pinned. Preflight lists NMOF but not its runtime dependency `quadprog`. | included as an RFC input (maintainer, 2026-10-27) | input to U2 (portfolio-construction RFC): no optimizer catalogue in ledgr | U2, X1 |
+| X3 | Strategy grammar for the strategy-API RFC | [closeout](strategy_grammar_closeout.md), [UX brief](strategy_grammar_ux_brief.md), [worked examples](strategy_grammar_worked_examples.md), [Type 2 review](strategy_grammar_type2_review.md); spike branch `spike/strategy-grammar` | Spike GREEN after three stages (sixteen strategies). Two maintainer decisions are recorded: capital base only when ambiguous; explicit index exits. | included | RFC (strategy API); consumes H3 (F8 naming) and U3 overlap | C12a, U2, H3 |
+
 ## Dependency chains, duplicates and unowned items
 
 - **Chain 1, execution core:** C6 (with R3), then C1 (with H9, H10, M8b), then C7. C8 follows C1, and C12b and M8a ride C8.

@@ -216,6 +216,16 @@ order and cut implementation respectively.
   - **Caller RNG:** with `seed = NULL`, save and restore the caller's RNG
     around worker start and stop. This is the 2026-10-22 decision that missed
     its cut.
+  - **RNG reproducibility bug (2026-10-27):**
+    - A stochastic strategy seeded from `ctx$pulse_seed`, as the contract
+      advises, differs between one and two workers. ledgr seeds without
+      pinning the RNG kind, and the workers use another generator.
+    - One workstream fixes it together with the caller-RNG item: pin the RNG
+      kind wherever ledgr seeds; widen preflight's RNG detection; document one
+      recipe for stochastic strategies; test 1-worker against 2-worker
+      equivalence.
+
+    Source: [NMOF probe](../../dev/spikes/nmof-probe/probe_findings.md).
   - **Stale RFC states:** persisted-data execution placement and
     portfolio-construction move from Parked to Due and are taken up in this
     release.
