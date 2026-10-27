@@ -94,6 +94,7 @@ snapshot <- ledgr_snapshot_from_df(
     ledgr_facts_lifetime(lifetime)
   ),
   db_path = db_path,
+  snapshot_id = "terminal-release-v1",
   price_basis = "split_adjusted"
 )
 on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

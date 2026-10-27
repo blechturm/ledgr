@@ -1,6 +1,6 @@
 {
   "snapshot": {
-    "snapshot_id": "snapshot_20261024_065347_3075",
+    "snapshot_id": "terminal-release-v1",
     "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
     "status": "SEALED"
   },
@@ -8,7 +8,7 @@
     "straight": {
       "kind": "run",
       "run_id": "terminal-straight",
-      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_id": "terminal-release-v1",
       "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
       "config_hash": "bfae3ba6bac0953ddba4bdf4ec8d2ff42689ac2757a78e2725f0e42412a18b6d",
       "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
@@ -19,7 +19,7 @@
     "reopened": {
       "kind": "run",
       "run_id": "terminal-straight",
-      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_id": "terminal-release-v1",
       "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
       "config_hash": "bfae3ba6bac0953ddba4bdf4ec8d2ff42689ac2757a78e2725f0e42412a18b6d",
       "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
@@ -30,7 +30,7 @@
     "interrupted": {
       "kind": "run",
       "run_id": "terminal-resumed",
-      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_id": "terminal-release-v1",
       "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
       "config_hash": "93a1556049bb42cb9cbe7f73ad008df1a8610789e90286560d5648cbefd54c5d",
       "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
@@ -41,7 +41,7 @@
     "resumed": {
       "kind": "run",
       "run_id": "terminal-resumed",
-      "snapshot_id": "snapshot_20261024_065347_3075",
+      "snapshot_id": "terminal-release-v1",
       "snapshot_hash": "2f25d6217aa3e9f47673f1f90499240fb8465548def71142e26dd6c615f4df93",
       "config_hash": "93a1556049bb42cb9cbe7f73ad008df1a8610789e90286560d5648cbefd54c5d",
       "feature_set_hash": "0a88f6f723b5489a2ceb2496a0031cb4bc8ddb15be59bb362c4c13f72e81d5d4",
