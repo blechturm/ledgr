@@ -1364,6 +1364,7 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity", {
+  ledgr_test_skip_workers_in_coverage()
   inner <- function(ctx, params) {
     target <- ctx$flat()
     target["AAA"] <- params$qty
