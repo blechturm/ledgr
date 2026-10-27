@@ -941,10 +941,11 @@ workstreams:
   - id: 66
     name: "Version and design-memory freeze"
     cut: 23
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 65
     requires_review_acceptance: true
     review: {mode: "Type 1 with an independent input check", point: "close of workstream 66", verdict: "PASS after one correction", artifact: "close_review_66.md", result: "The independent Claude Opus review found no design concern or product defect and verified the format inventory, exact Sharadar and memory wording, branches and tag state, decision receivers, v0.2.3 handoff and all focused gates. It found three release-record defects: the version bump left the executable Sweeps render at engine 0.2.1.0, the research-to-production article called v0.2.1.0 current, and the upgrade guide named two history APIs that never shipped in v0.2.1.0 while leaving ledgr_feature_cache_clear unnamed. Correction 6fa9947a fixes all three and refreshes the version-derived walk-forward session ID. Focused Type 1 confirmation returned PASS: it checked the v0.2.1.0 tag's exports, reran the 14/9/1,103-expectation suites and the all-28-article freshness gate, parsed both YAML files and found no new defect.", reason: "One claim owned by LDG-3117: the frozen candidate has one release identity, complete user-facing notes and no accepted decision, ticket-owned RFC obligation, horizon route or active-navigation pointer left ambiguous."}
+    accepted: "2026-10-27 by the maintainer after the independent Type 1 review and focused confirmation returned PASS"
   - id: 67
     name: "Release gate and publication"
     cut: 23
@@ -2959,7 +2960,7 @@ tickets:
   - id: "LDG-3117"
     title: "Freeze v0.2.2 identity, release notes and design memory"
     workstream: 66
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3116"]
