@@ -100,9 +100,11 @@ testthat::test_that("[LTB-0203] reconstruction rebuilds gap-bearing availability
 
 testthat::test_that("[LTB-0204] the carry-window checker distinguishes gaps, overlaps and contiguous windows", {
   at <- function(x) as.POSIXct(x, tz = "UTC")
-  window <- function(start, end) list(test = list(
-    scoring_start_utc = at(start), scoring_end_utc = at(end)
-  ))
+  window <- function(start, end) {
+    list(test = list(
+      scoring_start_utc = at(start), scoring_end_utc = at(end)
+    ))
+  }
   pulses <- at(c(
     "2020-02-01 16:00:00", "2020-02-02 16:00:00",
     "2020-02-03 16:00:00", "2020-02-04 16:00:00",
