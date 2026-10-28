@@ -97,7 +97,7 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
     }
     ctx$hold()
   }
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-plan-order")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-plan-order"))
   write_fill_events <- handler$write_fill_events
   handler$write_fill_events <- function(...) {
     events_written <<- events_written + 1L
@@ -154,7 +154,7 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
   )
   ledgr:::ledgr_execute_fold(
     execution,
-    ledgr:::ledgr_memory_output_handler("phase-packet-contract")
+    ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("phase-packet-contract"))
   )
   expected_names <- list(
     observe = c(
@@ -198,7 +198,7 @@ testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
     }
     ctx$hold()
   }
-  handler <- ledgr:::ledgr_memory_output_handler("pulse-flush-counter")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-flush-counter"))
   writes <- 0L
   flushes <- 0L
   original_write <- handler$write_fill_events
@@ -234,7 +234,7 @@ testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
     }
     ctx$hold()
   }
-  final_handler <- ledgr:::ledgr_memory_output_handler("pulse-final-flush")
+  final_handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-final-flush"))
   final_execution <- ledgr_risk_fold_test_execution(
     strategy = final_strategy,
     cost_resolver = ledgr_test_cost_resolver(
@@ -409,13 +409,13 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     }
   }
 
-  persistent_factory <- ledgr:::ledgr_persistent_output_handler
+  persistent_factory <- ledgr:::ledgr_output_handler
   for (mode in names(experiments)) {
     run_id <- paste0("handler-fault-", mode)
     testthat::expect_error(
       testthat::with_mocked_bindings(
         ledgr_run(experiments[[mode]], run_id = run_id, seed = 1L),
-        ledgr_persistent_output_handler = fault_factory(
+        ledgr_output_handler = fault_factory(
           persistent_factory,
           "write_fill_events"
         ),
@@ -446,7 +446,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     }
   }
 
-  memory_factory <- ledgr:::ledgr_memory_output_handler
+  memory_factory <- ledgr:::ledgr_output_handler
   for (method in c("write_fill_events", "record_accounting_fact")) {
     for (mode in names(experiments)) {
       sweep <- testthat::with_mocked_bindings(
@@ -455,7 +455,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
           ledgr_grid_named(failed = list(strategy = list())),
           seed = 1L
         ),
-        ledgr_memory_output_handler = fault_factory(memory_factory, method),
+        ledgr_output_handler = fault_factory(memory_factory, method),
         .package = "ledgr"
       )
       testthat::expect_identical(sweep$status, "FAILED", info = paste(method, mode))
@@ -491,7 +491,7 @@ testthat::test_that("no-op feasibility hook does not sequentially reject same-pu
     }
     ctx$hold()
   }
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-rebalance")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-rebalance"))
   execution <- ledgr_risk_fold_test_execution(
     strategy = strategy,
     cost_resolver = cost_resolver,
@@ -533,7 +533,7 @@ testthat::test_that("compiled risk plan transforms targets before timing cost an
     ledgr_risk_max_weight(0.1),
     params = list()
   )
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-risk-before-cost")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-risk-before-cost"))
   execution <- ledgr_risk_fold_test_execution(
     strategy = strategy,
     cost_resolver = cost_resolver,
@@ -571,7 +571,7 @@ testthat::test_that("long-only risk step maps negative targets to zero", {
     ledgr_risk_long_only(),
     params = list()
   )
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-long-only")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-long-only"))
   execution <- ledgr_risk_fold_test_execution(
     strategy = strategy,
     cost_resolver = cost_resolver,
@@ -614,7 +614,7 @@ testthat::test_that("max-weight risk step caps absolute target exposure", {
     ledgr_risk_max_weight(0.1),
     params = list()
   )
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-max-weight")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-max-weight"))
   execution <- ledgr_risk_fold_test_execution(
     strategy = strategy,
     cost_resolver = cost_resolver,
@@ -674,7 +674,7 @@ testthat::test_that("risk chains apply built-in steps in order", {
     ),
     params = list()
   )
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-chain")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-chain"))
   execution <- ledgr_risk_fold_test_execution(
     strategy = strategy,
     cost_resolver = cost_resolver,

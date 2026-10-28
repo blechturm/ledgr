@@ -154,9 +154,9 @@ testthat::test_that("[LTB-0055] memory failure discards disposition artifacts on
   fixture <- corporate_action_recovery_fixture()
   withr::defer(ledgr_snapshot_close(fixture$snapshot))
   observed <- character()
-  original_handler <- ledgr:::ledgr_memory_output_handler
+  original_handler <- ledgr:::ledgr_output_handler
   testthat::local_mocked_bindings(
-    ledgr_memory_output_handler = function(...) {
+    ledgr_output_handler = function(...) {
       handler <- original_handler(...)
       append <- handler$append_event_rows
       handler$append_event_rows <- function(rows) {
@@ -199,7 +199,10 @@ testthat::test_that("[LTB-0055] memory failure discards disposition artifacts on
     class = "ledgr_sweep_returns_candidate_not_completed"
   )
 
-  handler_source <- paste(deparse(ledgr:::ledgr_memory_output_handler), collapse = "\n")
+  handler_source <- paste(
+    c(deparse(ledgr:::ledgr_output_handler), deparse(ledgr:::ledgr_output_sink_memory)),
+    collapse = "\n"
+  )
   testthat::expect_no_match(
     handler_source,
     "begin_transaction|commit_transaction|rollback|reopen",

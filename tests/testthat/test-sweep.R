@@ -44,7 +44,7 @@ ledgr_sweep_artifact_counts <- function(snapshot) {
 }
 
 testthat::test_that("memory output handler stores typed events equivalent to ledger rows", {
-  handler <- ledgr:::ledgr_memory_output_handler("typed-memory")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("typed-memory"))
   opening <- ledgr:::ledgr_opening_position_event_rows(
     run_id = "typed-memory",
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
@@ -90,7 +90,7 @@ testthat::test_that("memory output handler stores typed events equivalent to led
 
 testthat::test_that("memory output handler preserves full event columns across growth", {
   run_id <- "typed-memory-growth"
-  handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory(run_id))
   n_events <- 1025L
   handler$init_buffers(n_events)
   expected <- vector("list", n_events)
@@ -144,7 +144,7 @@ testthat::test_that("memory output handler preserves full event columns across g
 })
 
 testthat::test_that("single-pass sweep summary matches separate reconstruction helpers", {
-  handler <- ledgr:::ledgr_memory_output_handler("single-pass-summary")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("single-pass-summary"))
   pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
   opening <- ledgr:::ledgr_opening_position_event_rows(
     run_id = "single-pass-summary",
@@ -219,7 +219,7 @@ testthat::test_that("single-pass sweep summary matches separate reconstruction h
 
 testthat::test_that("inline accounting summary matches reconstruction with opening and split fill", {
   run_id <- "inline-accounting-summary"
-  handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory(run_id))
   pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
   opening <- ledgr:::ledgr_opening_position_event_rows(
     run_id = run_id,
@@ -1084,7 +1084,7 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
   }
 
   run_fold <- function(use_fast_context = FALSE, prebuilt = FALSE) {
-    handler <- ledgr:::ledgr_memory_output_handler("projection-parity")
+    handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("projection-parity"))
     execution <- ledgr:::ledgr_execution_spec(
       run_id = "projection-parity",
       instrument_ids = "AAA",
@@ -1202,7 +1202,7 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
       ctx$flat()
     }
 
-    handler <- ledgr:::ledgr_memory_output_handler("pulse-view-leak")
+    handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-view-leak"))
     execution <- ledgr:::ledgr_execution_spec(
       run_id = "pulse-view-leak",
       instrument_ids = "AAA",
@@ -1262,7 +1262,7 @@ testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or 
     )
 
     run_direct_fold <- function(strategy, run_id) {
-      handler <- ledgr:::ledgr_memory_output_handler(run_id)
+      handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory(run_id))
       execution <- ledgr:::ledgr_execution_spec(
         run_id = run_id,
         instrument_ids = "AAA",

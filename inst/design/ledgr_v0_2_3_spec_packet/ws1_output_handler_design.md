@@ -310,3 +310,23 @@ reads `inline_summary()`).
   `test-availability-economics.R:1066-1086`) must observe today's capacities.
 - `ledgr_write_fill_events()` uses `canonical_json()` and the payload
   `ledgr_canonical_json_encode()`; the bytes agree and stay as they are.
+
+## 14. Implementation notes (LDG-3130)
+
+Recorded where the implementation chose among options this note left open:
+
+- The handler composes its methods from sink flags set once at construction
+  (`drains`, `requires_init`, `typed_columns`, `serialize_meta_json`,
+  `refresh_seq_on_exception`, `nonwrote_buffer_result`); no mode string is
+  read and no fold, run or sweep code changed.
+- `init_buffers()` keeps the DuckDB argument check exact (`max_events` itself,
+  not a coerced sum) and allocates through `ledgr_event_buffer_next_capacity()`
+  from an empty buffer, which yields today's `min(max_events, initial)`.
+- The memory handler's `abort_run()` now calls its discard `write_telemetry()`
+  inside the same `try()` as the DuckDB handler; the discard makes it a no-op.
+  The memory bookkeeping also records the terminal flag, which only the DuckDB
+  handler exposes.
+- The three Section 12 repairs are implemented and exercised past their
+  growth boundaries by LTB-0521.
+- The maintainer manual's sweep article names the new constructors.
+
