@@ -119,7 +119,8 @@ any ratio counts, it rejects:
 - a failed, skipped or crashed execution;
 - a status or candidate count other than declared;
 - a row or runner not on the registered host settings;
-- different trade counts within a cell (the arms did different work);
+- a missing, non-finite or negative trade count, or different trade counts
+  within a cell (the arms did different work);
 - a smoke record, an unfinished record, a pair count other than eight, or a changed
   protocol file (line-ending-insensitive SHA-256 of `matrix.R`, `measure.R`,
   `runner.R`, `check.R`, A0 `fixtures.R`, A0 `timing.R`, and the `a0_retain`

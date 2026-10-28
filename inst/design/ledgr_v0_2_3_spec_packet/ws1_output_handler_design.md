@@ -65,9 +65,9 @@ are **absent** where unsupported, never a callable no-op.
 catches are the ones that exist today and stay where they are: non-strict
 `write_telemetry()` returns `invisible(FALSE)` instead of raising; `abort_run()`
 wraps its FAILED telemetry write in `try(silent = TRUE)` before raising its own
-condition; DuckDB `run_transaction()` rolls back on any condition and
+condition; DuckDB `run_transaction()` rolls back on an error or interrupt and
 re-raises an interrupt that `DBI::dbWithTransaction()` would otherwise
-swallow. (The fold's own `try()` around `write_exception_diagnostic()` is
+swallow. Warnings propagate as warnings and roll nothing back. (The fold's own `try()` around `write_exception_diagnostic()` is
 fold code and unchanged.) Buffer writes keep raising
 `ledgr_event_buffer_capacity_exceeded` past the cap and `ledgr_invalid_state`
 for out-of-range writes.
@@ -288,6 +288,11 @@ repair keeps the produced frames byte-identical (A0 `memory_equity`,
 - Memory diagnostic retention grows an environment-held list of kept chunks
   (shape 7). It becomes a closure-local list written with `<<-`, like pulse
   staging.
+
+When LDG-3130 implements these repairs, its tests drive each typed buffer
+(strategy states and equity facts) past its initial capacity and compare
+values, classes and row order across the growth boundary with today's
+output.
 
 Left as recorded debt, not multiplied: the per-row `meta_json` parse in
 memory `append_event_rows()` (opening and corporate-action rows only) and the

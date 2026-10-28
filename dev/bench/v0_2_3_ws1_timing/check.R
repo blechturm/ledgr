@@ -156,7 +156,13 @@ ws1_check_record <- function(record, root, exceptions = NULL) {
   exc <- if (is.null(exceptions)) NULL else utils::read.csv(exceptions, colClasses = "character")
   out <- lapply(seq_len(nrow(cells)), function(j) {
     in_cell <- raw$workload == cells$workload[[j]] & raw$path == cells$path[[j]]
-    trades <- unique(raw$n_trades[in_cell])
+    n_trades <- suppressWarnings(as.numeric(raw$n_trades[in_cell]))
+    bad_trades <- is.na(n_trades) | !is.finite(n_trades) | n_trades < 0
+    if (any(bad_trades)) {
+      fail("invalid n_trades", sprintf("%s|%s n_trades=%s", cells$workload[[j]], cells$path[[j]],
+        paste(raw$n_trades[in_cell][bad_trades], collapse = "/")))
+    }
+    trades <- unique(raw$n_trades[in_cell][!bad_trades])
     if (length(trades) > 1L) {
       fail("work differs between rows", sprintf("%s|%s n_trades=%s", cells$workload[[j]], cells$path[[j]],
         paste(trades, collapse = "/")))

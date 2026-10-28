@@ -92,6 +92,12 @@ cases <- list(
     r$meta[["sha256:dev/bench/v0_2_3_ws1_timing/matrix.R"]] <- "0"; r }),
   work_differs = list(expect = "work differs between rows", edit = function(r) {
     r$raw$n_trades[[which(cell_rows(r$raw, "walk_forward", "run", "candidate"))[[1L]]]] <- "8"; r }),
+  missing_n_trades = list(expect = "invalid n_trades", edit = function(r) {
+    i <- cell_rows(r$raw, "avail_acquisition", "sweep")
+    r$raw$n_trades[i] <- NA_character_; r }),
+  negative_n_trades = list(expect = "invalid n_trades", edit = function(r) {
+    i <- cell_rows(r$raw, "dense_cost", "sweep")
+    r$raw$n_trades[i] <- "-1"; r }),
   empty_record = list(expect = "missing row", edit = function(r) { r$raw <- r$raw[0L, ]; r }),
   malformed_arm_commit = list(expect = "arm identity", edit = function(r) {
     r$meta[["candidate_commit"]] <- "HEAD"; r }),

@@ -7,8 +7,8 @@ Authority: routing map only under the accepted governance-lifecycle synthesis
 This file does not create package behavior, accept a decision or authorize
 implementation.
 Current packet: [ledgr v0.2.3](ledgr_v0_2_3_spec_packet/README.md).
-No v0.2.3 cut is open yet. Once a cut is accepted, its `tickets.yml` becomes
-the sole ticket and sequencing authority for that cut.
+v0.2.3 Cut 1 is open; its `tickets.yml` is the sole ticket and sequencing
+authority.
 
 Use this page to identify the shortest authoritative route. Do not infer
 authority from a filename, version number, modification date or proximity to
@@ -78,7 +78,8 @@ Release `v0.2.2` was published on 2026-10-27. Its
 
 Release `v0.2.3` is the active planning release. Its
 [packet front door](ledgr_v0_2_3_spec_packet/README.md) starts from the roadmap
-and due RFCs; no implementation cut is open.
+and due RFCs. v0.2.3 Cut 1 is open; its `tickets.yml` is the sole ticket and
+sequencing authority.
 
 The latest tagged release and older release outcomes remain discoverable in
 the [roadmap](ledgr_roadmap.md) and their versioned packet directories. Those
