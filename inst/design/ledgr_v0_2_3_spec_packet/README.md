@@ -1,7 +1,7 @@
 # ledgr v0.2.3 Spec Packet
 
 Role: living; current packet front door.
-Status: planning; macro plan accepted 2026-10-28; no cut or executable ticket is accepted.
+Status: implementation; macro plan accepted 2026-10-28; cut 1 (one output handler) accepted 2026-10-28 in `tickets.yml`.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and a future `tickets.yml` becomes
 implementation authority only after its cut is accepted.
@@ -17,6 +17,7 @@ copy the large carried inventory from the roadmap or manufacture ticket status.
 | --- | --- |
 | Release goal and carried scope | [Roadmap current-release section](../ledgr_roadmap.md#next-release) |
 | Within-release order (accepted 2026-10-28) | [Macro plan](macro_plan.md) |
+| Cut, workstream and ticket state | [tickets.yml](tickets.yml) |
 | Due, active and parked design work | [RFC pipeline](../rfc/README.md#rfc-pipeline) |
 | Current package behavior | [Contracts](../contracts.md) |
 | Accepted choices awaiting consolidation | [Decisions bridge](../decisions.md) |

@@ -42,7 +42,8 @@ For RFC work, read [rfc_cycle.md](rfc_cycle.md). For a spike, read
    it is not authority itself.
 3. [ledgr_roadmap.md](ledgr_roadmap.md) binds release scope and release
    sequence, not package semantics. An accepted current-release macro plan
-   binds uncut within-release order; v0.2.3 does not have one yet.
+   binds uncut within-release order; v0.2.3's is
+   [ledgr_v0_2_3_spec_packet/macro_plan.md](ledgr_v0_2_3_spec_packet/macro_plan.md).
 4. A versioned packet turns accepted scope into implementation work. Within a
    cut, its `tickets.yml` alone owns ticket detail, state and sequencing.
 5. Incorporated evidence binds only the rule an accepted section expressly
