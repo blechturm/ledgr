@@ -61,24 +61,71 @@ a sink states a policy for them (persist, retain or discard). "Optional"
 capabilities are tested with `is.function()` (or by the compiled guard) and
 are **absent** where unsupported, never a callable no-op.
 
+**Failure rule.** Every method lets an error propagate unchanged. The only
+catches are the ones that exist today and stay where they are: non-strict
+`write_telemetry()` returns `invisible(FALSE)` instead of raising; `abort_run()`
+wraps its FAILED telemetry write in `try(silent = TRUE)` before raising its own
+condition; DuckDB `run_transaction()` rolls back on any condition and
+re-raises an interrupt that `DBI::dbWithTransaction()` would otherwise
+swallow. (The fold's own `try()` around `write_exception_diagnostic()` is
+fold code and unchanged.) Buffer writes keep raising
+`ledgr_event_buffer_capacity_exceeded` past the cap and `ledgr_invalid_state`
+for out-of-range writes.
+
 | Capability | DuckDB sink | Memory sink |
 | --- | --- | --- |
-| Transaction and interrupt re-raise (required: `run_transaction`) | Exists. `DBI::dbWithTransaction()` around `fn()`, re-raises an interrupt after the rollback; returns `fn()`'s value; an error rolls back and propagates. | Policy: no transaction; returns `fn()`; errors propagate. |
-| Run status and completion persistence (required: `record_run_status`, `write_run_evidence`) | Exists. `UPDATE runs`; `DELETE` + append `run_completion`; DB errors propagate. | Policy: retained in bookkeeping only; `completion()` returns it (NULL in dense mode). |
-| Terminal-status query (optional: `terminal_status_written`) | Exists; returns the bookkeeping flag; no side effect. | Absent (as today). |
-| Durable append (required: `append_event_rows`, `flush_pending`, `pending_event_count`, `pending_state_count`) | Exists. `append_event_rows()` appends to `ledger_events` at once; `flush_pending()` drains the buffer and staged states, returns `invisible(TRUE)`; counts are the pending rows. | Policy: retain. `append_event_rows()` appends into the buffer and derives typed values from each row's `meta_json`; counts return `0L`, so the fold never calls `flush_pending()`, which returns `invisible(TRUE)` and writes nothing. |
-| `db_live` immediate write (required: `write_fill_events(..., use_transaction = TRUE)`, `write_strategy_state`) | Exists. Calls `ledgr_write_fill_events(use_transaction = FALSE)` inside the fold transaction and returns its result (no row, nothing staged); `INSERT` into `strategy_state`. Writer validation errors propagate. | Not reachable (the sweep is buffered): `use_transaction` is ignored as today and `write_strategy_state` discards. |
+| Transaction and interrupt re-raise (required: `run_transaction`) | Exists. `DBI::dbWithTransaction()` around `fn()`, re-raises an interrupt after the rollback; returns `fn()`'s value. | Policy: no transaction; returns `fn()`. |
+| Run status and completion persistence (required: `record_run_status`, `write_run_evidence`) | Exists. `UPDATE runs`; `DELETE` + append `run_completion`. | Policy: retained in bookkeeping only; `completion()` returns it. |
+| Terminal-status query (optional: `terminal_status_written`) | Exists. | Absent (as today). |
+| Durable append (required: `append_event_rows`, `flush_pending`, `pending_event_count`, `pending_state_count`) | Exists. `append_event_rows()` appends to `ledger_events` at once; `flush_pending()` drains the buffer, then the staged states. | Policy: retain into the shared buffer; counts are `0L`, so the fold never calls `flush_pending()`. |
+| `db_live` immediate write (required: `write_fill_events(..., use_transaction = TRUE)`, `write_strategy_state`) | Exists. `ledgr_write_fill_events(use_transaction = FALSE)` inside the fold transaction; `INSERT` into `strategy_state`. | Not reachable (the sweep is buffered): `use_transaction` is ignored as today and `write_strategy_state` discards. |
 | Diagnostic seeding and post-failure refresh | Exists (seed by query; refresh for the exception row). | Seed 1; no refresh. |
-| Diagnostic retention (required: `write_run_diagnostics`, `write_exception_diagnostic`) | Keep all: append to `run_diagnostics`; DB errors propagate. | Keep summary rows only (`keep_summary_rows()` predicate unchanged); `diagnostics()` returns the kept rows or NULL. |
-| Telemetry (required: `write_telemetry`, `store_session_telemetry`; DuckDB-only `set_schedule_counts`) | Exists. `INSERT OR REPLACE run_telemetry`, strict errors abort with `ledgr_run_telemetry_failed`, non-strict returns `invisible(FALSE)`; session registry write; schedule counts stored. | Policy: discard (`invisible(TRUE)`); `set_schedule_counts` absent (as today). |
-| Strategy-state persistence (required: `buffer_strategy_state`) | Exists. Buffered rows drained by `flush_pending()`. | Policy: discard. |
-| Inline accounting and equity projections (optional: `record_accounting_fact`, `record_equity_fact`, `inline_summary`) | Absent (as today; the fold guards at `R/fold-engine.R:584`, `:1370`). | Exists. Sets the staged entry's realized P&L and cost basis, stages close/open legs with `ledgr_fill_leg_fees()`, stores equity facts, builds the summary. Returns `invisible(FALSE)` for a non-WROTE result as today. |
-| Typed events (optional: `typed_events`; memory-only `events`, `diagnostics`, `completion`) | Absent (as today). | Exists. Materializes the buffer with the five `ledgr_event_*` attributes; `events()` also serializes `meta_json`. |
-| Compiled spot batch (optional: `append_compiled_spot_batch`) | **Absent.** | Exists. Appends the batch's typed columns into the shared buffer and its legs into the inline fills. |
+| Diagnostic retention (required: `write_run_diagnostics`, `write_exception_diagnostic`) | Keep all: append to `run_diagnostics`. | Keep summary rows only (`keep_summary_rows()` predicate unchanged). |
+| Telemetry (required: `write_telemetry`, `store_session_telemetry`; DuckDB-only `set_schedule_counts`) | Exists. | Policy: discard; `set_schedule_counts` absent (as today). |
+| Strategy-state persistence (required: `buffer_strategy_state`) | Exists; drained by `flush_pending()`. | Policy: discard. |
+| Inline accounting and equity projections (optional: `record_accounting_fact`, `record_equity_fact`, `inline_summary`) | Absent (as today; the fold guards at `R/fold-engine.R:584`, `:1370`). | Exists. |
+| Typed events (optional: `typed_events`; memory-only `events`, `diagnostics`, `completion`) | Absent (as today). | Exists. |
+| Compiled spot batch (optional: `append_compiled_spot_batch`) | **Absent.** | Exists. |
+
+### 4.1 Return and side effect of every method
+
+"Absent" means no binding in the handler list. Returns are today's.
+
+| Method | DuckDB handler | Memory handler |
+| --- | --- | --- |
+| `run_transaction(fn)` | Returns `fn()`'s value; commits on success. | Returns `fn()`'s value. |
+| `record_run_status(status, error_msg)` | Sets bookkeeping (terminal flag for FAILED, DONE, INCOMPLETE), `UPDATE runs`; `invisible(TRUE)`. | Sets bookkeeping; `invisible(TRUE)`. |
+| `terminal_status_written()` | `TRUE` once a terminal status was recorded, else `FALSE`. | Absent. |
+| `set_schedule_counts(d, s)` | Stores both as integers for telemetry; `invisible(TRUE)`. | Absent. |
+| `write_telemetry(status, strict, telemetry, processed)` | `INSERT OR REPLACE run_telemetry`; `invisible(TRUE)` on success; on a DB error `strict = TRUE` aborts with `ledgr_run_telemetry_failed` (parent attached), `strict = FALSE` returns `invisible(FALSE)`. | Discards; `invisible(TRUE)`. |
+| `store_session_telemetry(telemetry)` | Assigns into the session telemetry registry; `invisible(TRUE)`. | Discards; `invisible(TRUE)`. |
+| `record_failure(msg)` | `record_run_status("FAILED", msg)`; `invisible(TRUE)`. | Same; `invisible(TRUE)`. |
+| `abort_run(msg, class)` | Records the failure, tries a non-strict FAILED telemetry write, then raises `msg` with `class`; never returns. | Records the failure, then raises; never returns. |
+| `init_buffers(max_events)` | Allocates `min(max_events, initial)` rows, resets staging and staged states; `invisible(TRUE)`. | Raises the cap to retained rows plus `max_events`, ensures room for one more row, resets staging; `invisible(TRUE)`. |
+| `buffer_event(write_res)` | Non-WROTE: `invisible(FALSE)`, nothing written. WROTE before `init_buffers()`: aborts `ledgr_invalid_state`. Otherwise appends the row; `invisible(TRUE)`. | Appends a WROTE row with its typed values; returns `invisible(TRUE)` for every input. |
+| `flush_pulse_events()` | Writes the staged rows into the buffer by index, clears staging; `invisible(TRUE)` (also when nothing is staged). | Writes staged rows and typed values, then staged legs into the inline fills, clears both; `invisible(TRUE)`. |
+| `pending_event_count()` | Buffered row count (integer). | `0L`. |
+| `pending_state_count()` | Staged strategy-state count (integer). | `0L`. |
+| `write_run_diagnostics(d)` | NULL or zero rows: nothing; otherwise numbers and appends; `invisible(TRUE)`. | NULL or zero rows: nothing; otherwise numbers and retains summary rows; `invisible(TRUE)`. |
+| `write_run_evidence(completion, d)` | Replaces the run's `run_completion` row, then `write_run_diagnostics(d)`; `invisible(TRUE)`. | Stores the completion, then `write_run_diagnostics(d)`; `invisible(TRUE)`. |
+| `write_exception_diagnostic(row)` | Numbers it from a fresh `MAX + 1`, appends; `invisible(TRUE)`. | Numbers it `next`, retains it if a summary row; `invisible(TRUE)`. |
+| `buffer_strategy_state(ts, json)` | Stages the state row; `invisible(TRUE)`. | Discards; `invisible(TRUE)`. |
+| `write_strategy_state(ts, json)` | `INSERT` into `strategy_state`; `invisible(TRUE)`. | Discards; `invisible(TRUE)`. |
+| `write_fill_events(fill, seq, use_transaction)` | `TRUE`: returns `ledgr_write_fill_events()`'s result (WROTE without `row`, or NO_OP), stages nothing. `FALSE`: returns the payload result (`serialize_meta_json = TRUE`) and stages it when WROTE; NO_OP returned unstaged. | Ignores `use_transaction` (also when `TRUE`); returns the payload result (`serialize_meta_json = FALSE`) and stages it with its typed values when WROTE; NO_OP returned unstaged. |
+| `append_event_rows(rows)` | NULL or zero rows: nothing; otherwise appends to `ledger_events`; `invisible(TRUE)`. | NULL or zero rows: nothing; otherwise appends into the buffer with typed values parsed from each row's `meta_json` (realized and cost basis `NA`); `invisible(TRUE)`. |
+| `flush_pending()` | Appends the buffered rows as one frame and resets the count, then appends the staged states and resets them; `invisible(TRUE)`. | Writes nothing; `invisible(TRUE)`. |
+| `append_compiled_spot_batch(batch)` | Absent. | Empty batch: nothing; otherwise appends the batch's columns and typed deltas into the buffer and its fill legs into the inline fills; `invisible(TRUE)` in both cases. |
+| `record_accounting_fact(write_res, lot_res, lot_state)` | Absent. | `invisible(FALSE)` when `write_res` is not a WROTE `ledgr_ledger_write_result` or when neither a staged nor a buffered event exists. Otherwise sets realized P&L and cost basis on the latest staged entry (or, with nothing staged, on the last buffered event), then the close leg if `close_qty > 0`, then the open leg if `open_qty > 0`, each with its `ledgr_fill_leg_fees()` share (staged, or added to the inline fills directly); `invisible(TRUE)`. |
+| `record_equity_fact(ts, cash, positions_value, realized_pnl, cost_basis)` | Absent. | Stores one fact; `invisible(TRUE)`. |
+| `inline_summary(run_id, metric_kernel)` | Absent. | `list(equity, fills, metrics, final_equity)`; with no equity facts `equity` is the empty equity curve and `final_equity = NA_real_`, otherwise the last row's equity. |
+| `completion()` | Absent. | The stored completion, or `NULL` when none was written (dense mode). |
+| `diagnostics()` | Absent. | `NULL` when nothing was written or nothing was kept; otherwise the kept rows bound in emission order. |
+| `typed_events()` | Absent. | No buffered event: `ledgr_empty_event_table()`, with no memory attributes or class. Otherwise a tibble of class `ledgr_memory_events` with the five `ledgr_event_*` attributes and `meta_json` as stored (NA for fills). |
+| `events()` | Absent. | As `typed_events()`, with each missing `meta_json` serialized from the stored `meta` (or from the typed columns when `meta` is NULL). |
 
 Each handler's method set equals today's set for its kind; LDG-3130 adds a
 witness test comparing `sort(names(handler))` per sink with the frozen lists
-below.
+in Section 5.
 
 ## 5. Method map (every method of both handlers, one row each)
 
@@ -202,12 +249,16 @@ of `contract-execution-accounting-events` with:
 > Cost resolution belongs inside the fold before any output handler sees
 > events. Output handlers must not resolve, reinterpret, or rewrite fill
 > prices, fees, cash deltas, or cost metadata. When a handler materializes a
-> fill row, the row's cash and position deltas come only from the one
-> publication computation, `ledgr_fill_publication_deltas()`, applied to the
-> fill's resolved side, quantity, price and fee, and a resolved fee is split
-> across a fill's close and open legs only by `ledgr_fill_leg_fees()`. Both
-> are row projections of the resolved fill, not a second economic
-> computation.
+> fill row from a resolved fill intent on the canonical R path, the row's cash
+> and position deltas come only from the one publication computation,
+> `ledgr_fill_publication_deltas()`, applied to the fill's resolved side,
+> quantity, price and fee. On that path a resolved fee is split across the
+> fill's close and open legs only by `ledgr_fill_leg_fees()`. These are row
+> projections of the resolved fill, not a second economic computation.
+> Compiled spot-FIFO batches supply the fold's already computed typed deltas
+> and leg fees, which the handler publishes unchanged; this clarification
+> changes neither compiled arithmetic nor its parity obligations against
+> canonical R.
 
 LDG-3129 closes only the R3 part of the `fold-execution-phase-ownership`
 pipeline row.

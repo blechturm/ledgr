@@ -68,6 +68,14 @@ Windows `Sys.time()` resolves well below a millisecond, while
 the smallest cells; the runner smoke run showed the 10 ms steps.
 Conditions are muffled with `suppressWarnings()` inside both, as in A0.
 
+**Clock adjustments.** `Sys.time()` is the adjustable civil clock, not a
+monotonic timer, and its resolution does not make 3% repeatable. A time-sync
+step backwards inside a timed section yields non-positive seconds, which the
+checker rejects as an invalid row; a step that leaves a positive value is
+indistinguishable from scheduler noise and falls under the dispositions in
+Records. Neither case is retried: the record is kept, and the affected row is
+named in the disposition.
+
 **Retained result surface.** Run path: each candidate's persisted run in the
 snapshot's DuckDB store as `ledgr_run()` writes it; no reader is called. Sweep
 path: the returned in-memory sweep object with completed returns and closed
@@ -115,7 +123,14 @@ any ratio counts, it rejects:
 - a smoke record, an unfinished record, a pair count other than eight, or a changed
   protocol file (line-ending-insensitive SHA-256 of `matrix.R`, `measure.R`,
   `runner.R`, `check.R`, A0 `fixtures.R`, A0 `timing.R`, and the `a0_retain`
-  definition).
+  definition);
+- malformed arm identities (commit and tree hashes, product digest,
+  library), missing host or toolchain fields, a row whose ledgr came from
+  the other arm's library, or arms that did not alternate as declared.
+
+A checker PASS establishes the record's internal consistency against the
+frozen matrix; it does not authenticate that `runner.R` produced the record.
+Provenance is the committed record together with its meta.csv.
 
 `check_demo.R` shows the checker failing for each of these on a synthetic
 record, including the two the cut requires (a missing row, a ratio of 1.031),
@@ -128,10 +143,31 @@ median.
 
 - **Base record (LDG-3127).** An A/A run: base and candidate are the same
   base commit, installed twice, eight pairs. It gives the base H6 gap per
-  workload and the noise floor of the 1.03 bound on this host before any
-  handler change. Run it only on the maintainer's go-ahead.
+  workload and an observed repeatability check on this host before any
+  handler change; it is not a statistical bound on future noise. Run it
+  only on the maintainer's go-ahead.
 - **Gate record (LDG-3132).** The same runner and checker, unchanged, with
   base = the base commit and candidate = the final candidate commit.
+
+**If the A/A base record has an otherwise valid cell above 1.03**
+(fixed before the first measurement):
+
+1. Keep the record and the checker failure. Do not retry until green,
+   select pairs, add pairs, round, or change the threshold.
+2. Keep record validity separate from the ratio gate. An A/A miss shows
+   variability, not a product regression; LDG-3127 needs a valid base record
+   and H6, not an A/A ratio pass. Keep both arms' H6 and all raw rows.
+3. Record the affected cells and obtain the maintainer's disposition before
+   any product edit. The final paired gate stays unchanged: every over-bound
+   final candidate cell still needs its own linked exception, and a baseline
+   disposition never silently exempts a cell later.
+4. If noise needs a different protocol, the change needs the maintainer's
+   disposition before product edits, a new protocol version (frozen and
+   committed), and a new baseline under it. The first attempt is preserved.
+
+A record that fails for a validity reason (missing row, failed process,
+unpinned host) is also kept and named in the disposition; a new record
+needs a new label, never an overwrite.
 
 Records live in `records/<label>/` (`meta.csv`, `raw.csv`, and `logs/` for
 failed processes only) and are committed as cut release evidence (cut

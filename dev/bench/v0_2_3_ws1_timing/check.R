@@ -7,7 +7,11 @@
 # duplicate or unexpected rows; non-finite or non-positive seconds; failed,
 # skipped or incomplete executions; unexpected statuses or candidate counts;
 # unpinned host rows; differing work between arms; a smoke record; a pair
-# count other than the frozen eight; a changed protocol file. Exit status 0 means PASS, 1 means FAIL.
+# count other than the frozen eight; a changed protocol file; malformed arm
+# identities (commit, tree, product digest, library) or missing host and
+# toolchain fields; a row that loaded ledgr from the other arm's library; arms
+# that do not alternate as declared. A PASS checks the record's internal
+# consistency; it does not authenticate that the runner produced it. Exit status 0 means PASS, 1 means FAIL.
 #
 # Usage: Rscript dev/bench/v0_2_3_ws1_timing/check.R --record=<dir>
 #   [--exceptions=<csv with workload,path,link>] [--out=<summary csv>]
@@ -55,6 +59,26 @@ ws1_check_record <- function(record, root, exceptions = NULL) {
   }
   retain <- digest::digest(ws1_timing_retain_text(root), algo = "sha256", serialize = FALSE)
   if (!identical(m("retain_sha256"), retain)) fail("protocol changed", "A0 a0_retain definition")
+  # Arm identities and host/toolchain fields must be well formed and present.
+  sha <- "^[0-9a-f]{40}$"
+  product <- "^R=[0-9a-f]{40};src=[0-9a-f]{40};DESCRIPTION=[0-9a-f]{40};NAMESPACE=[0-9a-f]{40}$"
+  for (arm in ws1_timing_arms) {
+    for (field in c("commit", "tree")) {
+      key <- paste0(arm, "_", field)
+      if (is.na(m(key)) || !grepl(sha, m(key))) fail("arm identity", sprintf("%s=%s", key, m(key)))
+    }
+    if (is.na(m(paste0(arm, "_product"))) || !grepl(product, m(paste0(arm, "_product")))) {
+      fail("arm identity", sprintf("%s_product=%s", arm, m(paste0(arm, "_product"))))
+    }
+    if (is.na(m(paste0(arm, "_lib"))) || !nzchar(m(paste0(arm, "_lib")))) {
+      fail("arm identity", sprintf("%s_lib is missing", arm))
+    }
+  }
+  if (identical(m("base_lib"), m("candidate_lib"))) fail("arm identity", "both arms name the same library")
+  for (field in c("runner_commit", "started_utc", "R_version", "cxx", "gxx_version", "dependencies",
+                  "library_paths", "cpu", "logical_cores", "power_plan")) {
+    if (is.na(m(field)) || !nzchar(trimws(m(field)))) fail("host or toolchain field missing", field)
+  }
   pairs <- suppressWarnings(as.integer(m("pairs")))
   if (!identical(pairs, ws1_timing_pairs)) {
     fail("pair count", sprintf("record declares %s pairs; the protocol fixes %d", m("pairs"), ws1_timing_pairs))
@@ -76,6 +100,31 @@ ws1_check_record <- function(record, root, exceptions = NULL) {
   for (k in setdiff(expected, got)) fail("missing row", k)
   for (k in unique(got[duplicated(got)])) fail("duplicate row", k)
   for (k in setdiff(got, expected)) fail("unexpected row", k)
+
+  # Alternation: in each cell the two arms are adjacent in sequence, base
+  # first in odd pairs and candidate first in even pairs.
+  seq_no <- suppressWarnings(as.integer(raw$seq))
+  if (anyNA(seq_no) || anyDuplicated(seq_no)) fail("sequence", "seq must be unique integers")
+  cell_key <- paste(raw$pair, raw$workload, raw$path, sep = "|")
+  for (ck in unique(cell_key[!duplicated(got)])) {
+    rows <- which(cell_key == ck)
+    b <- seq_no[rows][raw$arm[rows] == "base"]
+    cn <- seq_no[rows][raw$arm[rows] == "candidate"]
+    if (length(b) != 1L || length(cn) != 1L || anyNA(c(b, cn))) next
+    odd <- as.integer(strsplit(ck, "|", fixed = TRUE)[[1L]][[1L]]) %% 2L == 1L
+    if (abs(b - cn) != 1L || (odd && b > cn) || (!odd && cn > b)) {
+      fail("arm order", sprintf("%s base seq %d, candidate seq %d", ck, b, cn))
+    }
+  }
+
+  # Each row loaded ledgr from its own arm's library.
+  arm_lib <- c(base = m("base_lib"), candidate = m("candidate_lib"))
+  for (i in seq_len(nrow(raw))) {
+    lib <- arm_lib[raw$arm[[i]]]
+    if (is.na(lib) || is.na(raw$ledgr_path[[i]]) || !startsWith(tolower(raw$ledgr_path[[i]]), tolower(lib))) {
+      fail("arm identity", sprintf("%s ledgr_path=%s", got[[i]], raw$ledgr_path[[i]]))
+    }
+  }
 
   # Row validity.
   secs <- suppressWarnings(as.numeric(raw$seconds))

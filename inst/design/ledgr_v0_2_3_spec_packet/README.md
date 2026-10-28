@@ -3,13 +3,14 @@
 Role: living; current packet front door.
 Status: implementation; macro plan accepted 2026-10-28; cut 1 (one output handler) accepted 2026-10-28 in `tickets.yml`.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
-design, contracts bind shipped behavior, and a future `tickets.yml` becomes
-implementation authority only after its cut is accepted.
+design, contracts bind shipped behavior, and `tickets.yml` is implementation
+authority for each accepted cut.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
-the published v0.2.2 point-in-time foundation. This directory is intentionally
-small until the maintainer accepts a macro plan and the first cut. It does not
-copy the large carried inventory from the roadmap or manufacture ticket status.
+the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were
+accepted on 2026-10-28; later cuts are added to `tickets.yml` as the
+maintainer accepts them. The packet does not copy the large carried inventory
+from the roadmap or manufacture ticket status.
 
 ## Start here
 

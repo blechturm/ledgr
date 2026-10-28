@@ -21,7 +21,8 @@ source(file.path(ws1_here, "check.R"))
 synthetic <- function() {
   cells <- ws1_timing_cells()
   grid <- merge(merge(data.frame(pair = seq_len(ws1_timing_pairs)), cells), data.frame(arm = ws1_timing_arms))
-  grid <- grid[order(grid$pair, match(grid$workload, ws1_timing_workloads$workload), grid$path, grid$arm), ]
+  arm_rank <- ifelse(grid$pair %% 2L == 1L, match(grid$arm, ws1_timing_arms), 3L - match(grid$arm, ws1_timing_arms))
+  grid <- grid[order(grid$pair, match(grid$workload, ws1_timing_workloads$workload), grid$path, arm_rank), ]
   decl <- ws1_timing_workloads[match(grid$workload, ws1_timing_workloads$workload), ]
   # Base and candidate share each pair's seconds, so every ratio of medians is 1.
   secs <- 0.5 + 0.01 * grid$pair + 0.1 * match(grid$workload, ws1_timing_workloads$workload)
@@ -29,7 +30,8 @@ synthetic <- function() {
     path = grid$path, seconds = sprintf("%.17g", secs), outcome = "ok", error = NA_character_,
     candidates = decl$candidates, statuses = decl$statuses, n_trades = "7", pid = "1",
     affinity = sprintf("%.17g", ws1_timing_affinity), power_plan_guid = ws1_timing_power_plan_guid,
-    ledgr_path = "synthetic", ledgr_version = "synthetic", started_utc = "synthetic", exit_status = "0",
+    ledgr_path = paste0("C:/synthetic/", grid$arm, "_lib/ledgr"), ledgr_version = "synthetic",
+    started_utc = "synthetic", exit_status = "0",
     stringsAsFactors = FALSE)
   digests <- vapply(ws1_timing_protocol_files, function(f) ws1_timing_file_digest(file.path(root, f)),
     character(1L))
@@ -37,6 +39,16 @@ synthetic <- function() {
     finished_utc = "synthetic", power_plan_guid = ws1_timing_power_plan_guid,
     runner_affinity = sprintf("%.0f", ws1_timing_affinity), runner_worktree_clean_protocol = "TRUE",
     pairs = as.character(ws1_timing_pairs),
+    base_commit = strrep("a", 40), base_tree = strrep("b", 40),
+    base_product = paste0("R=", strrep("1", 40), ";src=", strrep("2", 40), ";DESCRIPTION=", strrep("3", 40),
+      ";NAMESPACE=", strrep("4", 40)),
+    candidate_commit = strrep("c", 40), candidate_tree = strrep("d", 40),
+    candidate_product = paste0("R=", strrep("5", 40), ";src=", strrep("6", 40), ";DESCRIPTION=", strrep("7", 40),
+      ";NAMESPACE=", strrep("8", 40)),
+    base_lib = "C:/synthetic/base_lib", candidate_lib = "C:/synthetic/candidate_lib",
+    runner_commit = strrep("e", 40), started_utc = "synthetic", R_version = "synthetic", cxx = "synthetic",
+    gxx_version = "synthetic", dependencies = "synthetic", library_paths = "synthetic", cpu = "synthetic",
+    logical_cores = "24", power_plan = "synthetic",
     retain_sha256 = digest::digest(ws1_timing_retain_text(root), algo = "sha256", serialize = FALSE),
     stats::setNames(digests, paste0("sha256:", ws1_timing_protocol_files)))
   list(raw = raw, meta = meta)
@@ -80,7 +92,17 @@ cases <- list(
     r$meta[["sha256:dev/bench/v0_2_3_ws1_timing/matrix.R"]] <- "0"; r }),
   work_differs = list(expect = "work differs between rows", edit = function(r) {
     r$raw$n_trades[[which(cell_rows(r$raw, "walk_forward", "run", "candidate"))[[1L]]]] <- "8"; r }),
-  empty_record = list(expect = "missing row", edit = function(r) { r$raw <- r$raw[0L, ]; r })
+  empty_record = list(expect = "missing row", edit = function(r) { r$raw <- r$raw[0L, ]; r }),
+  malformed_arm_commit = list(expect = "arm identity", edit = function(r) {
+    r$meta[["candidate_commit"]] <- "HEAD"; r }),
+  wrong_arm_library = list(expect = "arm identity", edit = function(r) {
+    i <- which(cell_rows(r$raw, "dense_cost", "run", "candidate"))[[1L]]
+    r$raw$ledgr_path[[i]] <- "C:/synthetic/base_lib/ledgr"; r }),
+  missing_toolchain = list(expect = "host or toolchain field missing", edit = function(r) {
+    r$meta[["gxx_version"]] <- ""; r }),
+  arms_not_alternating = list(expect = "arm order", edit = function(r) {
+    i <- which(r$raw$pair == 2L & cell_rows(r$raw, "dense_cost", "run"))
+    r$raw$seq[i] <- rev(r$raw$seq[i]); r })
 )
 
 tmp <- file.path(tempdir(), "ws1_check_demo")

@@ -22,7 +22,7 @@ the current release.
 | Accepted choice not yet consolidated | [decisions.md](decisions.md), then the exact linked source sections |
 | Active or owed RFC work | [RFC pipeline](rfc/README.md#rfc-pipeline) |
 | Current release goal and dependency order | [v0.2.3 packet](ledgr_v0_2_3_spec_packet/README.md) and [roadmap](ledgr_roadmap.md) |
-| Executable implementation work | The owning packet's `tickets.yml`; v0.2.3 has no accepted cut yet |
+| Executable implementation work | The owning packet's `tickets.yml`; v0.2.3 cut 1 (one output handler) was accepted 2026-10-28 |
 | Uncommitted future idea | [horizon.md](horizon.md) |
 | Research, audit or spike evidence | [research](research/README.md), [audits](audits/) or [spikes](spikes/) as cited by its consumer |
 | Released history | [roadmap release records](ledgr_roadmap.md), [historical planning context](planning_context_history.md) and the versioned spec-packet directories |
