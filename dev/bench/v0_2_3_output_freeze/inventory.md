@@ -82,7 +82,7 @@ persisted trace.
 | `dense_cost` | run, run_db_live, sweep_w1, sweep_w2, sweep_compiled | committed run and sweep on one workload; cost chain; last-bar no-fill warning; one and two workers; compiled spot-FIFO memory path; `db_live` persistent mode | `test-sweep-persistence-parity.R` |
 | `dense_risk_features` | run, sweep_w1, sweep_w2 | risk chain (long_only + max_weight with a grid parameter) through both paths; SMA warmup; opening lot; `pulse_seed`; non-default metric context | `test-sweep-parity.R`, `test-sweep-parallel.R` |
 | `dense_dividend_state` | run, sweep_w1 | dense corporate action (cash dividend CASHFLOW); `strategy_state` writes | `test-corporate-action-cash.R` |
-| `avail_terminal_resume` | run, run_resumed, sweep_w1, sweep_w2 | availability mode; stale freeze; bankruptcy write-off; interrupted run resumed by `ledgr.interrupt` | `test-terminal-outcomes.R` LTB-0169 |
+| `avail_terminal_resume` | run, run_interrupted, run_resumed, sweep_w1, sweep_w2 | availability mode; stale freeze; bankruptcy write-off; run soft-stopped by `ledgr.interrupt` (store frozen before the resume) and then resumed | `test-terminal-outcomes.R` LTB-0169 |
 | `avail_acquisition` | run, sweep_w1 | cash acquisition disposition at the deal price | `test-corporate-action-recovery.R` |
 | `avail_incomplete` | run, sweep_w1, sweep_w2 | INCOMPLETE terminal outcome and completion evidence | `test-availability-parity.R` |
 | `walk_forward` | run, sweep_w1, walk_forward | train sweeps (M) and carried test runs (P) on a gapped calendar with fees | `test-availability-parity.R` LTB-0024 |

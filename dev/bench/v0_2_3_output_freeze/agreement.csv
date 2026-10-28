@@ -34,7 +34,7 @@
 "dense_cost","sweep_w2 vs sweep_w1: sweep_returns","","TRUE",""
 "dense_cost","sweep_w2 vs sweep_w1: sweep_trades","","TRUE",""
 "dense_cost","sweep_compiled vs sweep_w1: sweep","","TRUE",""
-"dense_cost","sweep_compiled vs sweep_w1: sweep_attrs","","FALSE","row 5: value (...ed_accounting_model<character>[1]=spot_fifo;/precomputed_features<logic vs ...ed_accounting_model<NULL>;/precomputed_features<logical>[1]=FALSE;/stop)"
+"dense_cost","sweep_compiled vs sweep_w1: sweep_attrs","","FALSE","row 5: value (...led_accounting_modelA9:character[1](9:spot_fifo)@20:precomputed_feature vs ...led_accounting_modelN@20:precomputed_featuresA7:logical[1](5:FALSE)@13:)"
 "dense_cost","sweep_compiled vs sweep_w1: sweep_returns","","TRUE",""
 "dense_cost","sweep_compiled vs sweep_w1: sweep_trades","","TRUE",""
 "dense_cost","sweep_compiled vs sweep_w1: memory_state","","TRUE",""

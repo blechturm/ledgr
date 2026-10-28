@@ -2,14 +2,15 @@
 
 **Answer (green).** Today's tree (`release/v0.2.3` at `20034e00`; this
 harness changes no product file) produces byte-reproducible outputs through
-both output handlers on eight synthetic workloads (15 handler paths).
-`records/` holds them (279 files, 530.6 KB, one SHA-256 each in
-`records/manifest.csv`). `check.R` re-runs everything and passes; all 15
+both output handlers on eight synthetic workloads (16 handler paths).
+`records/` holds them (290 files, 552.0 KB, one SHA-256 each in
+`records/manifest.csv`). `check.R` re-runs everything and passes; all 17
 corruptions in `guts.R` make it fail and name the table or the missing
 observation point. No stop condition in brief section 6 fired: the harness is
-1,383 R lines, the records 0.5 MB, no product file changed and the output is
+1,445 R lines, the records 0.5 MB, no product file changed and the output is
 deterministic. WS1 gate: `Rscript dev/bench/v0_2_3_output_freeze/check.R`
-exits 0 on the WS1 tree. Revision 2 answers `reviews/codex_review_1.md`.
+exits 0 on the WS1 tree. Revision 2 answers `reviews/codex_review_1.md`; revision 3 answers
+`reviews/codex_review_2.md`.
 
 ## Workloads
 
@@ -18,7 +19,9 @@ Reasons and fixture sources are in `inventory.md`. Paths:
 - `run`: `ledgr_run` per candidate (persistent, `audit_log`); expected
   failures are recorded, not raised.
 - `run_db_live`: `ledgr_backtest(execution_mode = "db_live")`.
-- `run_resumed`: soft-stopped by `ledgr.interrupt`, then resumed.
+- `run_interrupted`: the run store right after a `ledgr.interrupt` soft stop,
+  frozen before the resume overwrites it.
+- `run_resumed`: the same run after it is resumed.
 - `run_abort`: a refusal through `abort_run`.
 - `sweep_w1`/`sweep_w2`: `ledgr_sweep` with one or two workers (memory).
 - `sweep_compiled`: the spot-FIFO memory path.
@@ -26,14 +29,14 @@ Reasons and fixture sources are in `inventory.md`. Paths:
 
 | Workload | Paths | Record |
 | --- | --- | --- |
-| dense_cost | run, run_db_live, sweep_w1, sweep_w2, sweep_compiled | 104.2 KB |
-| dense_risk_features | run, sweep_w1, sweep_w2 | 56.0 KB |
-| dense_dividend_state | run, sweep_w1 | 28.8 KB |
-| avail_terminal_resume | run, run_resumed, sweep_w1, sweep_w2 | 61.2 KB |
-| avail_acquisition | run, sweep_w1 | 37.0 KB |
-| avail_incomplete | run, sweep_w1, sweep_w2 | 41.2 KB |
-| walk_forward | run, sweep_w1, walk_forward | 155.3 KB |
-| failures | run, run_abort, sweep_w1, sweep_w2 | 45.6 KB |
+| dense_cost | run, run_db_live, sweep_w1, sweep_w2, sweep_compiled | 105.9 KB |
+| dense_risk_features | run, sweep_w1, sweep_w2 | 57.3 KB |
+| dense_dividend_state | run, sweep_w1 | 29.6 KB |
+| avail_terminal_resume | run, run_interrupted, run_resumed, sweep_w1, sweep_w2 | 75.0 KB |
+| avail_acquisition | run, sweep_w1 | 37.9 KB |
+| avail_incomplete | run, sweep_w1, sweep_w2 | 42.2 KB |
+| walk_forward | run, sweep_w1, walk_forward | 156.1 KB |
+| failures | run, run_abort, sweep_w1, sweep_w2 | 46.7 KB |
 
 What each path records:
 
@@ -63,7 +66,13 @@ How the files are written:
   order.
 - The header carries `name:class`.
 - Present values are quoted; SQL NULL or R `NA` is an unquoted `NA`.
-- Nested values mark missing as `\N` and escape their delimiters.
+- Nested values (list columns, attributes) use a prefix-free encoding.
+  Every string is length-prefixed (`<nchar>:<text>`, `~` when missing).
+  Every list carries its class, its length and explicit boundaries. Named
+  entries (`@<name>`) are marked apart from positional ones (`#`).
+  Distinct structures therefore cannot collide. `serialization_probe.R`
+  checks 15 such cases, for example `list(a = list(b = 1))` against
+  `list("a/b" = 1)`, and `list(1)` against `list("[1]" = 1)`.
 - Text escapes `\` first, then line breaks.
 - Doubles print with `%.17g`, which is lossless.
 - Files are LF and UTF-8, and `.gitattributes` keeps git from converting
@@ -88,8 +97,8 @@ must not change in WS1.
 
 ## Determinism
 
-Three `record.R` runs on the same tree gave identical manifests. That
-includes the final code; the manifest SHA-256 is `21285a80…20b2fb`. The
+Two `record.R` runs on the final code gave identical manifests (SHA-256
+`64b452e7…a239c83`). The
 varying fields found earlier are handled by declaration:
 
 - the random `sweep_id`, which is excluded;
@@ -111,6 +120,8 @@ store, the sweep result, the memory sink's buffers, or a patched handler.
 | two ledger events swapped | dense_dividend_state/run/ledger_events, fills |
 | `runs.error_msg` NULL changed to text 'NA' | avail_terminal_resume/run/runs, error_msg |
 | retained sweep equity moved 1 ulp | dense_cost/sweep_w1/sweep_returns row 19 |
+| sweep attribute `execution_assumptions$opening` replaced by `opening/<field>` siblings | dense_cost/sweep_w1/sweep_attrs |
+| soft-stopped run persists pulse_count -999 before the resume | avail_terminal_resume/run_interrupted/run_telemetry |
 | memory sink: one event_id altered | dense_cost/sweep_w1/memory_events, event_id |
 | memory sink: retained diagnostic's detail_json replaced | avail_terminal_resume/sweep_w1/memory_diagnostics |
 | memory factory absent, no observer | stops: "no memory-sink observation point" |
@@ -205,6 +216,8 @@ Determinism.
    - it runs from a source checkout through pkgload (workers load the source
      tree); `<SRCREF>` assumes rlang adds source references to messages;
    - it uses the internals `ledgr_run_store_open/close` and `ledgr_fold_list`.
-5. A finalization failure is not frozen: only a mocked
-   `DBI::dbWithTransaction` reaches it. Re-run `timing.R` after WS1 on the
-   same host to re-measure H6.
+5. Finalization-failure recovery and the daemon-side buffers of two-worker
+   sweeps are not frozen; only a mocked `DBI::dbWithTransaction` reaches the
+   former. Keep the existing tests for those paths (for example
+   `test-availability-parity.R` 276 and 347) through WS1.
+6. Re-run `timing.R` after WS1 on the same host to re-measure H6.

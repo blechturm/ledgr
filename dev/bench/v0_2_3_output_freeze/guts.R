@@ -62,6 +62,27 @@ a0_guts <- list(
       attr(sw, "sweep_returns") <- returns
       sw
     }),
+  struct_alias = list(workload = "dense_cost", expect = "sweep_attrs",
+    what = "sweep attribute execution_assumptions$opening replaced by sibling fields named opening/<field>",
+    sweep = function(sw) {
+      ea <- attr(sw, "execution_assumptions")
+      opening <- unclass(ea$opening)
+      ea$opening <- NULL
+      for (n in names(opening)) ea[[paste0("opening/", n)]] <- opening[[n]]
+      attr(sw, "execution_assumptions") <- ea
+      sw
+    }),
+  interrupted_telemetry = list(workload = "avail_terminal_resume", expect = "run_telemetry",
+    what = "soft-stopped run: the handler persists pulse_count = -999 before the resume overwrites it",
+    patch_paths = "run_interrupted",
+    patch = list(ledgr_persistent_output_handler = function(original) function(...) {
+      handler <- original(...)
+      write <- handler$write_telemetry
+      handler$write_telemetry <- function(status, strict = TRUE, telemetry = NULL, processed = NA_integer_) {
+        write(status, strict = strict, telemetry = telemetry, processed = -999L)
+      }
+      handler
+    })),
   memory_event = list(workload = "dense_cost", expect = "memory_events",
     what = "memory sink: one buffered event's event_id altered (invisible to the summary projections)",
     memory = function(run_id, handler) {

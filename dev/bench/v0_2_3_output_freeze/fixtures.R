@@ -254,6 +254,7 @@ a0_workloads <- list(
     why = "risk chain (long_only + max_weight with a grid parameter), SMA feature warmup, opening lot, pulse_seed-driven targets, non-default metric context"),
   dense_dividend_state = list(fixture = a0_fx_dense_dividend_state, paths = c("run", "sweep_w1"),
     why = "dense mode corporate action (ordinary cash dividend posting CASHFLOW) and strategy_state writes via state_update"),
+  # run_resumed also records run_interrupted: the store between the two calls.
   avail_terminal_resume = list(fixture = a0_fx_avail_terminal_resume, paths = c("run", "run_resumed", "sweep_w1", "sweep_w2"),
     why = "availability mode: stale-mark freeze, bankruptcy terminal write-off (DISPOSITION), diagnostics and completion; ledgr.interrupt soft stop then resume; one and two workers"),
   avail_acquisition = list(fixture = a0_fx_avail_acquisition, paths = c("run", "sweep_w1"),

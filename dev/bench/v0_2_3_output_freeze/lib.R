@@ -64,33 +64,34 @@ a0_fmt_atomic <- function(x) {
   out
 }
 
-# Inside a flattened nested value, missing is \N and the delimiters
-# \ , ; = < > : are backslash-escaped, so no literal text imitates a marker.
-a0_nest_esc <- function(s) ifelse(is.na(s), "\\N", gsub("([\\\\,;=<>:])", "\\\\\\1", s))
+# Nested values (list columns, attributes) use a prefix-free encoding, so
+# distinct structures can never share bytes:
+#   string    <nchar>:<text>, or ~ when missing (no escaping needed)
+#   NULL      N         function F        environment E
+#   condition C(<classes><message>)
+#   atomic    A<class>[n](<entries>)      list  L<class>[n](<entries>)
+#   entry     @<name><value> when the object has names, #<value> in a list
+#             without names, <value> in an atomic vector without names.
+# Every list boundary is explicit and every name is length-prefixed, so
+# list(a = list(b = 1)), list("a/b" = 1), list(1) and list("[1]" = 1) differ.
+a0_str <- function(s) ifelse(is.na(s), "~", paste0(nchar(s, type = "chars"), ":", s))
 
-# Nested values (list columns, attributes) flatten to path<class>[n]=values
-# pairs; NULL, empty vectors and missing values each keep a distinct form.
-a0_flat <- function(x, prefix = "") {
+a0_flat <- function(x) {
   if (inherits(x, "condition")) {
-    return(sprintf("%s<condition>=%s|%s", prefix, a0_nest_esc(paste(class(x), collapse = "/")),
-      a0_nest_esc(a0_fmt_atomic(conditionMessage(x)))))
+    return(paste0("C(", a0_str(paste(class(x), collapse = "/")), a0_str(a0_fmt_atomic(conditionMessage(x))), ")"))
   }
-  if (is.null(x)) return(sprintf("%s<NULL>", prefix))
-  if (is.function(x)) return(sprintf("%s<function>", prefix))
-  if (is.environment(x)) return(sprintf("%s<environment>", prefix))
-  if (is.data.frame(x)) x <- as.list(x)
+  if (is.null(x)) return("N")
+  if (is.function(x)) return("F")
+  if (is.environment(x)) return("E")
+  cls <- a0_str(class(x)[[1L]])
   if (is.list(x)) {
-    if (length(x) == 0L) return(sprintf("%s<list>[0]", prefix))
-    nm <- names(x)
-    nm <- if (is.null(nm)) rep("\\N", length(x)) else a0_nest_esc(a0_fmt_atomic(nm))
-    blank <- nm == "\\N" | !nzchar(nm)
-    nm[blank] <- sprintf("[%d]", which(blank))
-    parts <- unlist(Map(function(v, n) a0_flat(v, paste0(prefix, "/", n)), x, nm), use.names = FALSE)
-    return(paste(parts, collapse = ";"))
+    items <- if (is.data.frame(x)) as.list(x) else unclass(x)
+    keys <- if (is.null(names(items))) rep("#", length(items)) else paste0("@", a0_str(a0_fmt_atomic(names(items))))
+    vals <- vapply(items, a0_flat, character(1), USE.NAMES = FALSE)
+    return(paste0("L", cls, "[", length(items), "](", paste0(keys, vals, collapse = ""), ")"))
   }
-  vals <- a0_nest_esc(a0_fmt_atomic(x))
-  if (!is.null(names(x))) vals <- paste0(a0_nest_esc(a0_fmt_atomic(names(x))), ":", vals)
-  sprintf("%s<%s>[%d]=%s", prefix, class(x)[[1L]], length(x), paste(vals, collapse = ","))
+  keys <- if (is.null(names(x))) "" else paste0("@", a0_str(a0_fmt_atomic(names(x))))
+  paste0("A", cls, "[", length(x), "](", paste0(keys, a0_str(a0_fmt_atomic(x)), collapse = ""), ")")
 }
 
 a0_fmt_col <- function(x) {
@@ -491,13 +492,18 @@ a0_run_workload <- function(id, work_dir, gut = NULL) {
     persisted$run_abort <- list(ids = rid, done = if (ok) rid else character(), sink = sink)
   }
   if ("run_resumed" %in% paths) {
-    sink <- a0_new_sink()
     params <- utils::modifyList(sw$params[[1L]], list(interrupt = TRUE))
     rid <- a0_run_id(id, "resumed")
-    for (attempt in 1:2) {
-      a0_run_or_record(ledgr_run(fx$exp, params = params, run_id = rid, seed = sw$execution_seed[[1L]]), rid, sink)
-      options(ledgr.interrupt = FALSE)
-    }
+    resume <- function() ledgr_run(fx$exp, params = params, run_id = rid, seed = sw$execution_seed[[1L]])
+    # The soft-stopped run's durable state is frozen before the resume
+    # overwrites it (status, telemetry, ledger, state, equity, diagnostics).
+    sink <- a0_new_sink()
+    in_path("run_interrupted", a0_run_or_record(resume(), rid, sink))
+    options(ledgr.interrupt = FALSE)
+    out$run_interrupted <- c(a0_store_tables(db_path, rid),
+      list(run_conditions = a0_canon(sink$rows, "run_conditions", "seq")))
+    sink <- a0_new_sink()
+    a0_run_or_record(resume(), rid, sink)
     persisted$run_resumed <- list(ids = rid, done = rid, sink = sink)
   }
   if ("walk_forward" %in% paths) {
