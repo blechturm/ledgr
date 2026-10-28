@@ -103,6 +103,18 @@ order and cut implementation respectively.
   portfolio-construction gaps exposed by real research workflows. Keep their
   separate design routes; this scope does not authorize an optimizer catalogue
   or trained-model lifecycle.
+- **Teaching the strategy grammar is a top priority (maintainer,
+  2026-10-28).** Once the [strategy authoring RFC](rfc/README.md#strategy-authoring-api)
+  settles the grammar, it is taught by pattern, not by function: fixed mix,
+  filter, rank and rotate, slots, position rules, memory and preservation.
+  - One patterns article gives each pattern its plain-English rule, the
+    economics of why it is traded, the executed code and what happens to
+    holdings it does not mention. The cold-read strategies are its core.
+  - Teaching is an acceptance criterion of the implementation cut, not a
+    follow-up: a pattern is done when its article example executes and
+    passes the maintainer's cold read.
+  - Guides for users coming from backtrader, bt and zipline follow from the
+    peer suite's authoring lane.
 
 ### Existing commitments carried forward
 

@@ -174,7 +174,7 @@ experiment <- ledgr_experiment(snapshot, strategy = trailing_stop,
   stored form; list-per-ID storage is unchanged (response Q12). The raw
   `list(targets, state_update)` return stays public (response Q2).
 
-### 4.6 Schedule, features, setup and teaching order
+### 4.6 Schedule, setup and teaching
 
 - **The schedule is an experiment argument** (`schedule = month_end`),
   replacing the public `ledgr_strategy_schedule()`. The internal decorator,
@@ -183,8 +183,10 @@ experiment <- ledgr_experiment(snapshot, strategy = trailing_stop,
 - **It gates the whole callback**, stops included. "Monthly allocation, daily
   stops" runs daily and checks the date inside the strategy.
 - Time shape lives in features (`ledgr_ind_lag()`); params stay a list (F6).
-- Teaching order: conditions and named weights; ranking with `within`;
-  `keep`, `index_leavers` and `adjust`; schedules; position facts; state.
+- **Teaching is by pattern (maintainer, 2026-10-28):** fixed mix, filter,
+  rank and rotate, slots, preservation, position rules, memory. A pattern is
+  done when its article example executes and passes the maintainer's cold
+  read; this is an acceptance criterion of the implementation cut.
 
 ### 4.7 Two of the six cold-read strategies
 
@@ -209,9 +211,7 @@ trailing_stop <- function(ctx, params) {
 }
 ```
 
-Spellings changed after stage 5 (`ctx` first, `each =`, declared state,
-`Inf`, `n` of zero or less) are proposals; the implementation cut verifies
-them against the stage 5 fills.
+Spellings changed after stage 5 are proposals, verified against its fills.
 
 ## 5. What it replaces
 
