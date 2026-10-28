@@ -1,5 +1,9 @@
 Verdict: CHANGES_REQUIRED
 
+Role: record; independent clean-context review of WS1 Phase A.
+Status: accepted; review recorded 2026-10-28, answered in 656ee7a5 and 143a4e9e.
+Authority: review evidence against the accepted cut; this file grants no new implementation scope.
+
 Independent review of Phase A, 2026-10-28, branch claude/ws1-output-handler, range 07dbbc87..383545bc. HEAD: 383545bc9e5515d56ba79252d5e4c5f9e4bae9c9. Paths below are relative to the repository.
 
 The shared-handler boundary is sound, and the timing runner is substantially ready for a baseline. Phase A is not yet a sufficient authority for LDG-3129 onward: the proposed contract conflicts with the unchanged compiled path, activation introduces governance findings, and the capability specification and dependency state need correction. The deliberately unrun baseline is missing evidence, not a failed measurement. Product edits must wait for LDG-3127.

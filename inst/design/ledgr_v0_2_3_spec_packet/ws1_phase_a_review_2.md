@@ -1,7 +1,7 @@
 Verdict: PASS
 
 Role: record; independent clean-context review of WS1 Phase A.
-Status: final review, 2026-10-28.
+Status: accepted; final review, 2026-10-28.
 Authority: review evidence against the accepted cut; this file grants no new implementation scope.
 
 Reviewed branch `claude/ws1-output-handler`, range `07dbbc87..143a4e9e`, including correction commits `656ee7a5` and `143a4e9e`. Paths below are repository-relative.

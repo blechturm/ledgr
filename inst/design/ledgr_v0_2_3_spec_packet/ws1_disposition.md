@@ -86,9 +86,17 @@ outside the handler code WS1 consolidated.
 - **R CMD check NOTE:** `ledgr_history_bar_mask_view` in `R/history-frame.R`
   calls `head` without an `utils` import. Pre-existing (file unchanged since
   `07dbbc87`).
-- **Governance debt:** 83 pre-existing header and link findings in v0.2.3
-  packet documents (spike, brief and review files) entered the scan
-  population when the packet became current (LDG-3126).
+- **Governance debt:** activating the v0.2.3 packet (LDG-3126) brought its
+  documents into the scan. At `656ee7a5` the packet's structural findings
+  were 83: 80 inherited (78 header and link findings plus 2 invalid verdicts,
+  in `macro_plan_review.md` and `strategy_grammar_closeout.md`, all present
+  at `07dbbc87`) and 3 missing headers in WS1's own `ws1_phase_a_review.md`.
+  By `d8906f77` WS1's review records carried 7 header findings (three in
+  `ws1_phase_a_review.md`, one invalid Status in `ws1_phase_a_review_2.md`,
+  three in `ws1_phase_b_review.md`); they are this cut's record debt and were
+  repaired with the close-review F2 correction, leaving 0 findings in WS1
+  files (packet header and link findings 85 before, 78 after; 2 verdict
+  findings unchanged). The 80 inherited findings stay outside WS1.
 - **Outside R3:** `R/accounting-replay.R:95`, a reader-side replay fallback,
   computes a cash delta of its own. It is reconstruction, not fill-row
   publication, and stays outside the accepted R3 scope.
