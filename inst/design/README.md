@@ -7,8 +7,9 @@ Authority: routing map only under the accepted governance-lifecycle synthesis
 This file does not create package behavior, accept a decision or authorize
 implementation.
 Current packet: [ledgr v0.2.3](ledgr_v0_2_3_spec_packet/README.md).
-No v0.2.3 cut is open yet. Once a cut is accepted, its `tickets.yml` becomes
-the sole ticket and sequencing authority for that cut.
+Cuts 1 (one output handler) and 2 (WS3 dense oracle/current-tree timing) were
+accepted on 2026-10-28. The packet's `tickets.yml` is their sole ticket and
+sequencing authority; acceptance does not claim implementation.
 
 Use this page to identify the shortest authoritative route. Do not infer
 authority from a filename, version number, modification date or proximity to
@@ -22,7 +23,7 @@ the current release.
 | Accepted choice not yet consolidated | [decisions.md](decisions.md), then the exact linked source sections |
 | Active or owed RFC work | [RFC pipeline](rfc/README.md#rfc-pipeline) |
 | Current release goal and dependency order | [v0.2.3 packet](ledgr_v0_2_3_spec_packet/README.md) and [roadmap](ledgr_roadmap.md) |
-| Executable implementation work | The owning packet's `tickets.yml`; v0.2.3 has no accepted cut yet |
+| Executable implementation work | [Current tickets](ledgr_v0_2_3_spec_packet/tickets.yml), accepted cuts 1 and 2 |
 | Uncommitted future idea | [horizon.md](horizon.md) |
 | Research, audit or spike evidence | [research](research/README.md), [audits](audits/) or [spikes](spikes/) as cited by its consumer |
 | Released history | [roadmap release records](ledgr_roadmap.md), [historical planning context](planning_context_history.md) and the versioned spec-packet directories |
@@ -76,9 +77,9 @@ Release `v0.2.2` was published on 2026-10-27. Its
 [macro plan](ledgr_v0_2_2_spec_packet/macro_plan.md) and
 [tickets](ledgr_v0_2_2_spec_packet/tickets.yml) are release evidence.
 
-Release `v0.2.3` is the active planning release. Its
+Release `v0.2.3` is the active implementation release. Its
 [packet front door](ledgr_v0_2_3_spec_packet/README.md) starts from the roadmap
-and due RFCs; no implementation cut is open.
+and RFC pipeline; `tickets.yml` records accepted cuts and implementation state.
 
 The latest tagged release and older release outcomes remain discoverable in
 the [roadmap](ledgr_roadmap.md) and their versioned packet directories. Those

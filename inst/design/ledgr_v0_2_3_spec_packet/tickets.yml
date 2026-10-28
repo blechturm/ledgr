@@ -14,6 +14,144 @@ cuts:
     out_of_scope: "Execution-core consolidation and dense-mode removal (macro WS4); the result-reader merge and the INCOMPLETE annualized_return fix (macro WS7); the typed P3-P5 batch (macro WS8); planner, fold-state or compiled-batch arithmetic; compiled-envelope expansion, including admitting a DuckDB handler to the compiled path; any change to fold semantics, pulse order, fill timing, costs, state transitions or event meaning; new public API; schema, identity or persisted-format changes; changes to which diagnostics a sweep keeps; editing historical spike or bench records; weakening a test, timing threshold or oracle to obtain green."
     workstreams: [1]
     review_lifecycle: "An independent clean-context Codex cut review first challenges whether the sink boundary is the right seam, whether the ticket grain is honest and whether every gate can fail. The workstream receives one Type 1 close review that walks the seven optimization shapes over the shared handler and every moved sink or projection helper, checks A0 byte identity and the 17 corruptions, the enumerated test migrations, the claim-level retirement map, the final-candidate verification and the timing record. A Type 1 design concern returns NEEDS_TYPE_2. Finding-bearing reviews write a file in this packet; a third correction round stops for maintainer disposition."
+  - id: 2
+    name: "WS3 dense oracle and current-tree timing"
+    cut: "2026-10-28"
+    status: "open"
+    accepted: "2026-10-28 by the maintainer, revision 3.1, after independent Claude reviews and application of the fresh-harness review's exact N1/N2 patches. Acceptance adopts the fresh peer harness/independent A0 direction, N1's implementer-plus-reviewer execution variant, and the stated scope, budget and retirement gates. Implementation begins with LDG-3138; this acceptance commits the supporting RFC and probe evidence."
+    opening: >-
+      Written by Codex at the maintainer's request, 2026-10-28. This cut owns
+      only the accepted peer-suite synthesis's C1 prerequisite: a frozen exact
+      dense oracle and ledgr's current-tree runtime baseline. It does not
+      implement the rest of WS3. Cut 1 and its accepted tickets are unchanged.
+      Accepted 2026-10-28: this entry, workstreams 2-3 and LDG-3133 through
+      LDG-3138 are now the operative implementation brief. Implementation
+      starts with LDG-3138; no implementation is claimed by this acceptance.
+    cut_review: "Green after reviewed patches. Initial review: CHANGES_REQUIRED in cut_review_2.md; F1-F8 addressed. Re-review: PASS_AFTER_PATCHES in cut_review_2_rereview_1.md. The maintainer then directed a fresh peer harness and independent A0. The direction review, cut_review_2_fresh_harness.md, returns PASS_AFTER_PATCHES: prior fixes retained; required N1 (implementer A0 invocation plus independent reviewer rerun) and N2 (plan-stage budget stop) applied verbatim, with no further Claude review required for those patches. Optional fixture/feature-map/reference-pointer precision added. The maintainer accepted revision 3.1 and N1's primary executor variant on 2026-10-28; cut 1 is unchanged and implementation remains pending."
+    revision: "3.1, accepted 2026-10-28 after the fresh-harness review's exact required patches."
+    maintainer_direction: >-
+      The maintainer directed a fresh harness and retirement of the old one
+      once replaced, then explicitly confirmed that the peer harness is the
+      replacement target and A0 remains independent. The new peer harness
+      also supplies C1's dense regression reference. This dispositions the
+      earlier budget/reuse dispute and authorizes a focused review of the new
+      direction without resetting review counts. The later acceptance recorded
+      above accepts this implementation cut; the construction direction alone
+      did not authorize implementation.
+    authority: >-
+      inst/design/rfc/rfc_peer_benchmark_suite_v0_2_3_synthesis.md, accepted
+      2026-10-28, D1-D11 and Sections 4-6, with Amendment 1 (fresh peer harness,
+      independent A0, legacy peer-harness retirement); macro_plan.md WS3/WS4, rules 2/4/5/6;
+      contracts.md#contract-execution-fold-core and
+      #contract-execution-window-start; inst/design/manual/benchmark_methodology.qmd;
+      inst/design/spike_protocol.md. tickets.yml alone sequences implementation.
+    measured_input: >-
+      Product source at c5b34a3c78d35c6cea2d0b78d601bba681dcaa1d on
+      release/v0.2.3 has no textual R/src diff (generated binding line endings
+      were already dirty). HEAD has since moved to 31c546b9 (dev/spikes only,
+      no product diff). Before this cut, peer_suite_response/check.R was
+      rerun: recorded CSVs reproduced and its transition-rule gut was detected.
+      The 12x90 probe supplies current-path and warmup evidence, not timing or
+      new peer parity. A0 already freezes cost/risk/state/refusal outputs,
+      including existing compiled coverage. No new expected numbers are claimed.
+    identity_and_release_impact: >-
+      Snapshot content identity: none. Run-configuration identity: none.
+      Store format fingerprint: none. No compatibility reader or package-runtime edit.
+      Impact: tooling (open-cut evidence scan and focused tests), benchmark
+      sources, public synthetic records and measurement
+      documentation; update the benchmark README/manual and one NEWS line in
+      this cut. No package dependency, public API or taught strategy change.
+    scope_and_budget: >-
+      New maintained sources live under dev/bench/peer_benchmark/dense/; full
+      native oracle files under dense/oracles/<record-id>/, compact timing
+      records under dev/bench/peer_benchmark/records/<record-id>/. Build a fresh
+      peer harness: no source(), copied infrastructure, automatic invocation
+      or private-handler dependency on either old harness. A historical
+      strategy body may be retained verbatim as an attributed fixture.
+      Use public ledgr execution/native facts and a new lossless recorder,
+      checker and timing driver. At most four recipe families: seven fresh
+      runnable configurations (six recipes/windows and one controlled
+      cost/final-pulse case) plus three separate A0 reference controls.
+      The normal 1500-line allowance is available to the new harness, counting
+      all its R files, helpers and subprocess scripts. There is no 299/533-line
+      inherited-code reserve. A0 stays a separately owned regression gate,
+      not an imported or subprocess component of the new peer harness; no
+      new logic may be hidden in A0 to evade the new harness's budget.
+      LDG-3133 lists planned files, responsibilities and estimated sizes before
+      implementation. No line packing. An LDG-3133 plan whose estimated sizes
+      exceed the allowance stops there for maintainer disposition rather than
+      mid-ticket. Stop/recharter at actual budget breach,
+      unavailable native evidence, vacuous witness or unexplained difference.
+    decisions: >-
+      Full native records remain immutable. A0's harness, fixtures,
+      canonicalization, records and WS1 migration allowance stay unchanged.
+      A0 is not deprecated by this cut. Preserve its checks under their own
+      authority rather than porting or weakening them to simplify peer work.
+      New economic projections compare exactly by lossless identity, not
+      all.equal or peer_equity_parity. Stamps, diagnostics, conditions and
+      event order remain observed. This cut records today's dense and
+      fact-bearing behavior; it does not accept a post-C1 timestamp/calendar,
+      diagnostic or late-opening change. C1 owns each decided difference.
+      No WS1 completion dependency is added: freeze/run on a named pre-change
+      product revision, using a separate checkout if concurrent work requires
+      it; never mix product revisions within a record. Existing timing methods
+      and serialization contracts may inform the fresh implementation, but
+      there is no executable dependency on A0 or LDG-3127. Deprecate the old
+      peer driver only in the later replacement cut after equivalent/improved
+      coverage and consumers are reviewed; old reports/records remain evidence.
+    sequencing: >-
+      Workstream 2: LDG-3138 -> LDG-3133 -> LDG-3134 -> LDG-3135, then independent Type 1
+      close review before its records can discharge C1's oracle prerequisite.
+      Workstream 3: LDG-3136 -> LDG-3137 after LDG-3135, then its own Type 1
+      close review. Both accepted close reviews discharge this cut's C1
+      prerequisite. Product deletion remains WS4 and needs its own accepted cut.
+    workstreams: [2, 3]
+    acceptance_record_requirement: >-
+      Cut acceptance binds LDG-3138 to commit peer_suite_seed/ and
+      peer_suite_response/ unchanged with their runners, checks and recorded
+      evidence. Record the resulting SHA before LDG-3133 starts; historical source
+      IDs in that evidence are not rewritten to the new commit. Until LDG-3138
+      fixes selection, a zero-findings scan is not proof cut 1 was checked.
+      This acceptance commit preserves the accepted synthesis with Amendment 1,
+      companion RFC artifacts, both prerequisite probe directories and this
+      cut's reviews. LDG-3138 verifies and records that commit before LDG-3133;
+      committing this evidence does not complete its tooling/test work.
+    out_of_scope: >-
+      Peer installation/qualification or cross-engine timing, the remaining
+      lanes, the Quarto renderer, process-tree memory sampling, WS9a memory
+      baselines, handler/core/reader changes, the WS5 API migration, economics,
+      new execution-mode branches, compatibility code, custom hash registries
+      and any public speed/parity claim. None is a C1 prerequisite added here.
+    review_lifecycle: >-
+      Claude cut review first checks accepted requirement ownership (Type 1),
+      then challenges workstream grain, dependencies, oracle and measurement
+      boundaries (Type 2). Execution reviews are per workstream, not per batch.
+      A design concern during Type 1 returns NEEDS_TYPE_2. Preserve findings
+      and rejection reasons in this packet; a third correction round stops for
+      maintainer disposition. Reviews are measured, never ratio-gated.
+    release_gate_obligations:
+      - id: "WS3-legacy-peer-harness-retirement"
+        owner: "Maintainer until the final WS3 replacement/retirement cut takes ownership"
+        status: "open"
+        source: "Peer-suite synthesis Amendment 1"
+        requirement: >-
+          Inventory the legacy peer driver, commands and consumers; map each
+          useful comparison/measurement to the new suite or an explicit
+          reviewed retirement reason. Once the replacement is accepted,
+          retire the old active peer commands and redirect maintained callers
+          and documentation. Preserve historical reports/records and A0.
+        gate: "Later suite replacement gate, not a C1 prerequisite. No retirement merely because the first dense runner exists; accepted cut 1's maintained-consumer duties remain intact meanwhile."
+      - id: "WS3-all-peers-and-report"
+        owner: "Maintainer until the remaining WS3 lane cuts take named ownership"
+        status: "open"
+        source: "Peer-suite synthesis D1/D5/D10 and Section 6 items 2-5"
+        requirement: >-
+          All six selected peers have a completed informative native row and
+          reproducible provisioning; full-suite reruns follow WS4 and WS8;
+          WS5 migrates recipe generation with economics checked; clocks/labels
+          update the manual when first implemented; complete accepted suite
+          and reproducible self-contained Quarto report precede external claims.
+        gate: "Release-wide and publication gate, not cut-2 closure or a C1 prerequisite. Remaining lane work is uncut; this is ownership, not an executable implementation ticket."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -39,6 +177,20 @@ workstreams:
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 1", reason: "One claim joins LDG-3126 through LDG-3132: ledgr has one output handler whose storage differs only by sink (DuckDB audit_log, DuckDB db_live, memory) and whose shared mechanisms are not duplicated inside the sinks; every A0 record is byte-identical and all 17 corruptions still fail; fill-row publication deltas are computed once; the compiled path admits exactly the handlers it admitted before; no test oracle was weakened and every retired parity claim has matching coverage; the final candidate passes full tests and package check; and committed runs and sweeps meet the timing bound. The review reruns check.R and gut.R on the final candidate, reads every migrated test diff against the enumerated allowance, checks the claim-level retirement map, compares store bindings, walks the seven shapes over the handler and its sink and projection helpers, and audits the timing record and checker."}
+  - id: 2
+    name: "Dense native deletion oracle (macro WS3)"
+    cut: 2
+    status: "planned"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "after LDG-3135, before C1 consumes the oracle", reason: "One claim: frozen native evidence detects unchanged-meaning economic differences, retains representation/state/refusal evidence and does not silently exempt known path differences. Rerun scratch diff, gut the observed surfaces, rerun the separate A0 invocation, check the three reference pointers and exact projection coverage, and verify no fixture/oracle/source identity was weakened. Also verify LDG-3138's small evidence-scan preparation and focused two-open-cut regression tests; it keeps cut 1 visible without changing cut 1."}
+  - id: 3
+    name: "Current-tree public-run runtime baseline (macro WS3)"
+    cut: 2
+    status: "planned"
+    depends_on_workstream: 2
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "after LDG-3137, before C1 consumes the timing baseline", reason: "One claim: complete reproducible baseline clocks include real public execution and required results under declared preparation, host and repeat policies. Inspect timer boundaries, installed source identity, per-process economic controls, raw repetitions, JIT/reuse and censoring; run the record checker and its guts. Review the benchmark manual, README and NEWS diffs against those implemented clocks and labels. Do not rank tiny fixtures, require a speedup or certify future peer comparisons."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -109,4 +261,257 @@ tickets:
     dependencies: ["LDG-3131"]
     scope: "On the final candidate, after all product and test changes, record its commit or source digest and rerun: full package tests, R CMD check --no-manual --no-build-vignettes, A0 check.R and gut.R, the deleted-constructor reference inventory, and the store binding comparison. Earlier evidence is reused only where its declared inputs are unchanged. A skip of a required recovery or worker witness is missing evidence. Then run the LDG-3127 runner and checker unchanged against base and candidate. Write a short workstream disposition with the identity and release-impact declarations of decision (3), the coverage map link, the timing record and open points for macro WS4 and WS7."
     acceptance: ["the final-candidate record names its digest and the exit code of each listed command, all passing", "the timing checker passes: every workload and path ratio of medians is at most 1.03, or that cell has an explicit, linked maintainer exception", "the H6 gap is reported before and after", "the disposition records snapshot, run-configuration and store-fingerprint identity as unchanged, with evidence"]
+    evidence: []
+  - id: "LDG-3133"
+    title: "Declare the dense witness contracts and coverage reuse"
+    workstream: 2
+    status: "planned"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-3138"]
+    scope: >-
+      In dense/protocol.md specify exactly ten configurations: historical SMA
+      first-state at data start; new transition-only SMA; ten-bar positive
+      return filter; mean reversion (enter below 0.99*SMA10, exit at/above SMA10);
+      recursive TTR EMA5 trend (one share above EMA, otherwise zero); historical
+      SMA opening at session 30; a fresh cost/final-pulse control using the
+      A0 dense_cost's two-instrument eight-day bars and the strategy parameters
+      of its open_end grid candidate (aaa_qty 1, aaa_partial_qty 1, bbb_qty 0,
+      close_day5 FALSE, last_bar_qty 3; fixtures.R:12-51), retyped as input
+      fixture data with a fresh target function, never imported helper code;
+      and A0 dense_risk_features,
+      dense_dividend_state and the dense-refusal arm of failures by reference.
+      These are four recipe families plus controlled witnesses. The six
+      recipe/window configurations use the response
+      probe's public 12x90 generator/seed, fast5/slow10 where applicable,
+      explicit opening cash 1e7 and zero costs/no risk. The separate fresh
+      cost/final-pulse control uses cash 10000, spread 5 bps plus fixed fee 1,
+      open_end values and full named targets: it enters before the final bar
+      and requests a different final quantity with no subsequent fill. Warmup
+      holds and full named targets are explicit. Run both
+      dense and fact-bearing arms only for the two historical SMA
+      configurations to retain the observed stamp/history distinction.
+      The historical body stays verbatim, with its old source generation
+      labelled, using the probe's public ledgr_ind_ttr SMA5/SMA10 map and base
+      R's %||% operator, not the driver's definition. New recipes use alias-aware
+      ctx$vec$feature(). Document the
+      tables, exact field/key/order projection, temporary identity exclusions,
+      representation/condition observations and applicable terminal/state
+      evidence for each row. Coverage-by-reference names A0 record tables,
+      matching input conditions and its checker, not just a file title.
+      The two history arms need their own frozen outputs, not a forced equality.
+      List the fresh harness's files and responsibilities, separate from A0.
+      Inventory the old peer driver's active commands/consumers and route their
+      eventual retirement to the final WS3 replacement cut; do not retire A0
+      or make full-suite replacement a C1 prerequisite.
+    acceptance:
+      - "Every synthesis D4 requirement has a native surface and an owning witness/table, or a precise A0 reuse pointer; event order, diagnostics/conditions, state and per-asset quantities are explicit."
+      - "The protocol separates historical first-state and new transition-only recipes, data versus scoring start, and economic versus representation comparison; no C1 difference is pre-accepted."
+      - "The seven new configurations, three independent A0 reference controls, four-family bound, file plan and public execution paths are declared before recording; no expected numeric table is authored before the runnable core."
+    evidence: []
+  - id: "LDG-3134"
+    title: "Run the native witnesses and freeze complete current outputs"
+    workstream: 2
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3133"]
+    scope: >-
+      Build the smallest public ledgr_run recorder before its expected files.
+      Use public snapshot construction/sealing and the canonical fold. Build
+      the new recorder without importing either old harness or its helpers.
+      Store plain native tables/data in a lossless standard representation
+      (for example RDS), with readable evidence/difference CSVs; do not
+      serialize live experiments, connections or closure environments.
+      Verify round-trip preservation of native types, numeric precision,
+      missing values, timestamps and state/metadata. No generic serialization
+      framework or old-format compatibility reader is needed.
+      Execute each newly declared recipe and verify usable signals and actual
+      nonzero economic actions (including exits where the rule has an exit);
+      use native feature/state evidence where available, not a new decision
+      recorder or accounting engine. If a new row is vacuous, stop to amend
+      its proposed input before freezing rather than claiming coverage.
+      Save complete native ledger, fills/trades, equity/cash, applicable
+      strategy state, diagnostics and conditions, with per-asset holdings from
+      native reconstruction/all quantity-changing ledger events, including
+      opening holdings and corporate actions. Freeze explicit economic and
+      representation projections; do not silently discard execution stamps or
+      sort away event order. Retain historical recipe source and native
+      config/snapshot identities in provenance. A0's independent check in
+      LDG-3135 validates the three reference controls; the new recorder neither
+      executes that checker nor refreezes its records. Commit the candidate
+      full synthetic records on a named
+      pre-change revision, naming the intended workstream 2 reviewer with
+      review explicitly pending. LDG-3135's independent close review identifies
+      and accepts that immutable commit as the C1 freeze commit before any
+      product deletion; record its SHA in the later inventory/ticket evidence,
+      not inside the commit itself. No new hash manifest or identity registry.
+    acceptance:
+      - "All seven fresh configurations execute with observed native evidence, including the cost/final-pulse control needed by the warning-suppression gut; three separate A0 reference controls retain exact input/table pointers and independent-check evidence. No missing/unexplained output or hand-narrated oracle."
+      - "Full native evidence and exact projections are reviewable, include per-asset holdings and state/condition evidence, and name the actual source revision plus native identities."
+      - "The two historical SMA arm pairs retain their separate outputs and first divergence evidence; no mapping or normalization turns their known differences into a pass."
+    evidence: []
+  - id: "LDG-3135"
+    title: "Make the oracle reject corruption and hand it to C1"
+    workstream: 2
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3134"]
+    scope: >-
+      Deliver record.R, check.R, gut.R and an inventory under dense/.
+      check.R reruns into scratch, losslessly diffs every declared native
+      surface/projection, and guards package/test/design scope. New native
+      evidence never overwrites the frozen reference as part of checking.
+      It verifies each A0 reference pointer resolves to the named frozen table
+      (path, row count) by reading the file, never by running A0.
+      The implementer runs, and the workstream 2 close reviewer independently
+      reruns, A0's check.R whole as the existing regression gate, by a separate
+      documented command, outside the new peer runner/checker and its call tree,
+      with --records pointing at its existing records
+      and --out plus --agreement both pointing into fresh scratch locations.
+      It has no subset compare and its default agreement path rewrites A0;
+      do not use that default. Run the check.R copy inside the pinned product
+      checkout, or pass --pkg=<that checkout>, so the product it load_all()s
+      is the recorded revision; record the loaded root beside the A0 reuse
+      line in the inventory. Preserve A0's exclusions/fixtures/records.
+      This independent invocation also checks A0 rows beyond the three pointers;
+      it adds no new peer-harness expected cases. Record its evidence separately.
+      The new harness cannot import, wrap or mutate A0 to obtain this result.
+      Demonstrate the new harness's control passes and corruption fails with
+      a named table/key/field: alter one fill quantity while equity stays
+      unchanged; move cash by one representable step; change one asset's
+      quantity while aggregate position value stays unchanged; swap native
+      economic event order; suppress required final-pulse no-fill evidence;
+      remove prior-usable-state from the transition recipe. Mutations touch
+      observed native surfaces before canonicalization, not expected files.
+      Keep the total initial detectors, including timing guts, at ten or fewer.
+      Record reproduction commands, exclusions and reuse in the inventory;
+      list C1's unresolved implied-calendar/stamp/diagnostic/history decisions
+      and final-bar no-fill disclosure (M8b)
+      as receiving-cut duties, never runtime exemptions. Source drift or a
+      required skip is missing evidence. Request workstream 2 close review on
+      the LDG-3134 freeze commit; record its SHA and reviewer acceptance before
+      C1 consumes it, with no post-review oracle-byte edit.
+    acceptance:
+      - "The fresh harness's scratch rerun reproduces its frozen native evidence; A0's separate pinned/scratch invocation passes; its command, loaded root and result pointer are recorded in the inventory, and the close review reruns it. Required witnesses execute rather than skip."
+      - "The control passes and every enumerated native/rule corruption fails for its intended reason, including the quantity-only and one-step-cash corruptions."
+      - "The inventory names all economic and representation fields, exact comparison path, source generations, A0 reuse, budgets, commands and WS4 handoffs; independent workstream 2 review accepts the oracle before C1 uses it."
+    evidence: []
+  - id: "LDG-3136"
+    title: "Freeze public cold/warm timing boundaries and build the runner"
+    workstream: 3
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3135"]
+    scope: >-
+      Freeze timing/protocol inputs and executable runner before promotion.
+      Two new-transition SMA5/10 rows: the 12x90 correctness fixture and the
+      decided 500x1260 daily anchor, deterministic public simulation with seed
+      20260530, opening cash 1e7, fixed one-share positions, zero costs/no risk.
+      Verify affordability and completion; this differs from the historical
+      peer record and cannot inherit its parity or ratios. Use a temporary
+      installation of the pinned product revision; installation is outside
+      both clocks, package import inside cold. Five isolated R processes per
+      row, each with one cold public run then one independently reset warm
+      public run on its unchanged sealed native snapshot. Cold includes process
+      launch/import, raw common input IO, snapshot preparation/sealing,
+      experiment construction, run and required result materialization;
+      warm includes new experiment/book, run and materialization, excluding
+      only truly reusable snapshot preparation and completed first-use work.
+      No precomputed-feature payload crosses from cold to warm: feature
+      hydration remains inside each run's clock. Record configured/observed R
+      compiler JIT level and disclose first-use compilation versus warm state.
+      Required results: fills, equity, cash and asset holdings; any native
+      reconstruction/materialization is timed. Record exact timer endpoints,
+      cleanup/record-writing treatment and the installed-source identity.
+      Each process records full-precision controls from those actual results:
+      fill count, terminal cash/equity, terminal quantities keyed by asset,
+      plus native snapshot/config hashes. Check cold/warm and all five processes
+      against the first baseline's immutable controls. The post-WS4/WS8 protocol
+      checks economic controls before any ratio; native identity changes must
+      be explicitly declared under their receiving cut, never silently ignored.
+      These are result columns, not a new hash registry or a claim of full-path
+      parity for the large timing-only shape.
+      High performance, inherited 0xFFFF P-core affinity, threads and background
+      load are recorded; each arm's phase clocks reconcile or are unavailable
+      with reasons. Record instrument-bars and observed callback/pulse counts;
+      use a labelled untimed validation pass if counting perturbs timing.
+      Engine-only clocks remain diagnostic. No forced 1.03 gate:
+      this cut measures a baseline, not an optimization. No automatic retries.
+      Limits: 20 minutes per attempt, 90 minutes total measured host time;
+      keep censored/invalid attempts and stop for disposition rather than
+      replace a slow or invalid row with a smaller one. Implement the fresh
+      timing driver against these boundaries; old timing methods inform it,
+      but the new harness does not execute/source A0 or the old peer driver.
+    acceptance:
+      - "The installed product revision, two input shapes, seeds, SMA rule, required outputs, five cold/warm pairs, timers, host policy and limits are frozen before a baseline is promoted."
+      - "The runner uses public ledgr_run and separate books, proves reuse is limited to unchanged native preparation, includes every required result in both clocks and records raw seconds at full precision."
+      - "A record checker rejects missing/duplicate cells, non-finite/non-positive times, bad host/JIT/reuse provenance, incomplete/unexpected skips, absent required output/phase evidence and differing economic controls across cold/warm and the five processes; demonstrations cover a missing cell, invalid host, failed/censored execution and altered terminal asset quantity with times/equity unchanged. Six oracle and four timing corruptions total ten detectors."
+    evidence: []
+  - id: "LDG-3137"
+    title: "Record and review the runtime baseline and route the remaining suite"
+    workstream: 3
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3136"]
+    scope: >-
+      Run the frozen protocol on the declared host/revision. Commit compact
+      baseline repetitions, clock/shape/status metadata and environments under
+      records/<id>/, with a pointer to the full oracle. Report medians/min/max
+      per shape/clock and raw observations, including invalid or censored
+      attempts; the 12x90 row measures fixed call overhead and is never a
+      scaling rank. A required unfinished row leaves baseline readiness open
+      pending maintainer disposition. Validate complete results and rerun the
+      oracle check for the measured revision; no peer result or speed claim.
+      Update the
+      active peer README and benchmark manual for the new clocks/exact
+      internal gate, preserve old reports as historical, and add one NEWS
+      line, then request the separate workstream 3 Type 1 close review including
+      those documentation diffs. Record cut identity/release impact and review counts in tickets,
+      not a batch evidence essay. Only after cut acceptance/ownership route
+      this oracle/baseline obligation from the pipeline; the full-suite
+      release gate remains open with its named custodian and triggers for
+      later peer rows, WS4/WS8 reruns, WS5 migration and the Quarto report.
+      The old peer driver is deprecated only after the full replacement
+      coverage and maintained consumers are reviewed in the later WS3 cut;
+      mark it legacy during construction without removing supported commands.
+      A0 and its recorded evidence remain a separate regression tool.
+    acceptance:
+      - "The committed baseline names exact inputs/source/toolchain/host and all five cold/warm pairs for both shapes; checker and its guts pass, or an explicitly linked maintainer disposition leaves readiness accurately incomplete."
+      - "Documentation/NEWS and pipeline ownership agree with the fresh-harness scope and delayed old-peer-driver retirement; A0 stays independent, snapshot/config/store identity impact is none and no product/schema/dependency/example change is claimed."
+      - "Workstream 3 close review accepts the measurement; the C1 readiness record points to both accepted workstream reviews and immutable oracle/baseline inputs, while every remaining suite obligation retains an owner."
+    evidence: []
+  - id: "LDG-3138"
+    title: "Keep every open cut visible and preserve the prerequisite evidence"
+    workstream: 2
+    status: "planned"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      In tools/governance-report.R make governance_scan_ticket_evidence scan
+      the union of workstreams of every cut whose status is not closed,
+      rather than only the highest-numbered cut. Keep closed-cut history out
+      of this active scan and keep all existing evidence validators. Add new
+      focused cases in tests/testthat/test-governance-report.R: two open cuts
+      with a malformed complete/review_pending ticket in the lower-numbered
+      cut must report it even when the higher-numbered cut is merely proposed;
+      both open cuts are checked; a closed-cut ticket is not revalidated;
+      a valid two-open-cut fixture passes. Existing fixtures/oracles do not
+      change. This is narrow evidence tooling, not an execution-core change
+      or an edit to accepted cut 1. Reverting the selection fix must fail the
+      lower-cut witness. Once this cut is accepted, preserve both prerequisite
+      probe directories unchanged in a named commit, with their source IDs
+      and recorded CSVs intact, before LDG-3133 uses them. Retain the accepted
+      RFC/review source pointers, including the accepted synthesis with
+      Amendment 1, its companion artifacts and this cut's reviews, by recording
+      them in the authorized task-owned commit before LDG-3133. Do not rewrite
+      historical evidence source IDs; commit only task-owned paths.
+    acceptance:
+      - "The focused governance tests pass, and the lower-numbered open-cut corruption is detected; reverting the selection fix makes that test fail."
+      - "Both accepted cut 1's data and its ticket evidence checks remain covered; closed-cut history is untouched and the current packet scan has no unexplained findings."
+      - "Both prerequisite probe directories are committed unchanged and their stable commit is recorded before LDG-3133 starts; no package-runtime, identity or stored-format change is introduced."
     evidence: []

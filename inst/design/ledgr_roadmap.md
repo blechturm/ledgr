@@ -239,9 +239,10 @@ order and cut implementation respectively.
   - The dense parity lane is the byte-for-byte regression oracle for
     execution-core consolidation (horizon, 2026-10-12), so it lands before
     dense mode is removed.
-  - Route: the [benchmark-methodology row](rfc/README.md#benchmark-methodology),
-    now Due. A focused seed consolidates the horizon decisions and settles
-    the peer set, workload contracts, parity oracles and timing boundaries.
+  - Route: the [accepted peer-suite synthesis](rfc/rfc_peer_benchmark_suite_v0_2_3_synthesis.md)
+    (2026-10-28), then WS3 lane cuts. The
+    [benchmark-methodology row](rfc/README.md#benchmark-methodology) tracks
+    remaining obligations; synthesis Sections 5-6 own their cut routes.
   - The publication rule is unchanged: no public performance claim until the
     suite exists and its results are accepted.
 - **Inventory decisions (maintainer, 2026-10-27):** these come from the

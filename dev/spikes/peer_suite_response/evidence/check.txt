@@ -1,0 +1,1 @@
+Recorded CSVs reproduce; removing the prior-usable-state requirement from the transition-only rule changes the observations diff and is detected; tracked package/design scope unchanged.

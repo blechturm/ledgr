@@ -2,9 +2,10 @@
 
 Role: living; current packet front door.
 Status: implementation; macro plan accepted 2026-10-28; cut 1 (one output handler) accepted 2026-10-28 in `tickets.yml`.
+Cut 2 (WS3 dense oracle and current-tree timing) was accepted on 2026-10-28 in `tickets.yml`, revision 3.1, after Claude's [fresh-harness review](cut_review_2_fresh_harness.md) and its exact required patches. Implementation starts with LDG-3138; A0 remains independent and the old peer driver retires only after replacement coverage is accepted.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
-design, contracts bind shipped behavior, and a future `tickets.yml` becomes
-implementation authority only after its cut is accepted.
+design, contracts bind shipped behavior, and `tickets.yml` is the sole
+implementation and sequencing authority for accepted cuts.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
 the published v0.2.2 point-in-time foundation. This directory is intentionally

@@ -820,6 +820,8 @@ This entry authorizes no implementation.
 
 ### 2026-10-01 [benchmark] A suite of peer workloads, not one
 
+**Promoted, 2026-10-28:** [accepted peer-suite synthesis](rfc/rfc_peer_benchmark_suite_v0_2_3_synthesis.md); remaining implementation obligations are tracked in the [RFC pipeline](rfc/README.md#benchmark-methodology). The notes and addenda below are historical inputs; the synthesis governs accepted scope.
+
 The maintainer wants the peer benchmark to grow from one workload into a
 suite of workloads and strategies, measured against the same peers. The
 registered record is one shape: 500 instruments, 1,260 daily sessions and one

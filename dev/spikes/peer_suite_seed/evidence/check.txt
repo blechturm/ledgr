@@ -1,0 +1,1 @@
+Recorded CSVs reproduce; removing the exact-fill detector breaks the observations diff; tracked package/design scope unchanged.

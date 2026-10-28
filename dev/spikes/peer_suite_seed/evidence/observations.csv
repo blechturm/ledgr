@@ -1,0 +1,6 @@
+"observation","value"
+"fill_count","22"
+"peer_equity_attribution_after_fill_mutation","passes Tier 1 tolerance"
+"native_fills_equal_after_mutation","FALSE"
+"native_equity_equal_after_fill_mutation","TRUE"
+"unchanged_native_fills_equal","TRUE"

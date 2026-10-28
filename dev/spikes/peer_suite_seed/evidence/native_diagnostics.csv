@@ -1,0 +1,1 @@
+"run_id","diagnostic_seq","ts_utc","instrument_id","stage","outcome","reason_code","reasons","target","quantity","price","mark_source","mark_age","decision_ts_utc","execution_ts_utc","event_seq","target_before_risk","target_after_risk","position_before","position_after","feature_identity_json","detail_json"
