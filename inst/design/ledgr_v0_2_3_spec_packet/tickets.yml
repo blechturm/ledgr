@@ -82,13 +82,17 @@ tickets:
   - id: "LDG-3129"
     title: "Compute fill-row publication deltas once and name the leg-fee projection (R3)"
     workstream: 1
-    status: "planned"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3128"]
     scope: "On the current handlers, before their replacement, discharge the R3 part of the fold-phase synthesis Section 11 obligation as LDG-3128 decided: one canonical computation of fill-row publication cash and position deltas consumed by ledgr_fill_event_payload, ledgr_write_fill_events and the memory path; leg-fee splitting as a projection of resolved fee and lot quantities with unchanged operation order and bytes. Planner, fold-state and compiled arithmetic do not change. Apply the chosen contract sentence to contract-execution-accounting-events if one is needed. Add focused tests for BUY, SELL, fees and NO_OP rows and for the db_live writer's validation and transaction behavior. Record the R3 portion of the fold-execution-phase-ownership pipeline row as discharged by this ticket; its other consumers stay open."
     acceptance: ["one function computes fill-row publication deltas and all three publication consumers call it", "A0 check.R exits 0 and gut.R reports the control passing and all 17 corruptions failing", "the focused delta and db_live writer tests pass and fail when the shared computation is perturbed", "the contract clause and the code agree, and only the R3 portion of the pipeline row is closed"]
-    evidence: []
+    evidence:
+      - "tests/testthat/test-ledger-writer.R#LTB-0515 (claim LCL-0506, commit 7a2bd764): ledgr_fill_publication_deltas() is the one computation; buffered DuckDB, db_live and memory publication each return, persist or buffer the independent-oracle deltas for BUY, SELL and fee-free fills, and a mocked shift of the computation moves all three paths with exactly nine calls (none for NO_OP)."
+      - "Empirical: input A0 records (8 workloads, 290 files) and the 17 A0 corruptions; environment Windows 11 x64, R 4.6.1, pkgload source tree; source commit 7a2bd764 (tree identical to the checked working tree); reproduction command Rscript dev/bench/v0_2_3_output_freeze/check.R --out=<scratch> --agreement=<scratch>, then Rscript dev/bench/v0_2_3_output_freeze/gut.R; reviewed range 0c6ac93a..7a2bd764; result check.R exit 0 with every record byte-identical (agreement 213 checks, 4 known differences) and gut.R exit 0 with the control passing and all 17 corruptions failing check.R with their named table; clock 38 s for check.R and 10 min 42 s for gut.R wall; dev/bench/v0_2_3_output_freeze/closeout.md."
+      - "Empirical: input LTB-0515 and LTB-0516 under the shared computation and two in-process perturbations (cash_delta + 1e-9, position_delta sign flipped); environment Windows 11 x64, R 4.6.1, pkgload; source commit 7a2bd764; reproduction command Rscript dev/ws1/r3_perturbation_demo.R .; reviewed range 0c6ac93a..7a2bd764; result both blocks pass unchanged and fail under each perturbation (39 and 1 failed expectations), and test-ledger-writer.R, test-sweep.R, test-backtest-audit-log-equivalence.R and test-release-coverage-branches.R pass in full; clock 5 s wall for the demo; dev/ws1/r3_perturbation_demo.R."
+      - "inst/design/contracts.md#contract-execution-accounting-events (commit 7a2bd764): the bullet now states the accepted row-materialization sentence, which the code satisfies (both canonical-R fill-row builders call the one computation; compiled batches publish their typed deltas unchanged), and inst/design/rfc/README.md#fold-execution-phase-ownership records only R3 as discharged while the compiled-envelope and context-frame obligations keep their trigger and route."
   - id: "LDG-3130"
     title: "Implement one output handler behind DuckDB and memory sinks"
     workstream: 1
