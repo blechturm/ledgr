@@ -208,6 +208,30 @@ order and cut implementation respectively.
 
   Source: strategy-grammar spike stage 1 (`spike/strategy-grammar` at
   `55511d2f`).
+- **Peer benchmark suite (maintainer, 2026-10-28):** the peer benchmark grows
+  from one workload into the suite parked in horizon "A suite of peer
+  workloads, not one" (2026-10-01, with its memory, parity and PyBroker
+  addenda), in this release.
+  - Lanes: dense conventional parity; scaling geometry, including narrow and
+    long intraday; whole-universe portfolio construction; one point-in-time
+    demonstration that is never ranked; and an authoring lane, the same
+    strategy written for each peer, which the strategy-grammar benchmark
+    (bt, PMwR) started.
+  - Peers, chosen by authoring model (maintainer, 2026-10-28): quantstrat,
+    PMwR, backtrader, bt, zipline-reloaded and PyBroker v2, each in the
+    lanes where it is informative rather than in every lane. TradeStation,
+    Pine and AmiBroker enter only as a non-executed reference table in the
+    authoring lane. vectorbt is rejected: it is a vectorized whole-history
+    engine, so its rows would measure that architectural difference rather
+    than ledgr's parity, cost map or grammar. LEAN stays out on setup cost.
+  - The dense parity lane is the byte-for-byte regression oracle for
+    execution-core consolidation (horizon, 2026-10-12), so it lands before
+    dense mode is removed.
+  - Route: the [benchmark-methodology row](rfc/README.md#benchmark-methodology),
+    now Due. A focused seed consolidates the horizon decisions and settles
+    the peer set, workload contracts, parity oracles and timing boundaries.
+  - The publication rule is unchanged: no public performance claim until the
+    suite exists and its results are accepted.
 - **Inventory decisions (maintainer, 2026-10-27):** these come from the
   [inventory reconciliation](ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
   - **First CRAN release:** a version below 0.3.0. No version number is
