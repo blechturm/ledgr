@@ -1,0 +1,4 @@
+"run_id","status","execution_mode","pulse_count","decision_pulse_count","scheduled_skip_count"
+"a0-dense_cost-flat","DONE","audit_log","8","8","0"
+"a0-dense_cost-open_end","DONE","audit_log","8","8","0"
+"a0-dense_cost-partial","DONE","audit_log","8","8","0"

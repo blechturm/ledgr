@@ -1,0 +1,2 @@
+"event_seq","ts_utc","recording_pulse_ts_utc","instrument_id","side","qty","price","fee","realized_pnl","action","run_id"
+"2","2020-01-02T09:30:00Z","2020-01-02T16:00:00Z","BBB","BUY","3","50","0","0","OPEN","a0-avail_acquisition-some"

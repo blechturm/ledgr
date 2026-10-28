@@ -1,0 +1,7 @@
+"gut","what","expected_table","exit_status","check_failed","names_table","first_report"
+"control","no corruption","","0","FALSE",NA,"a0 check: PASS, every record is byte-identical"
+"fill_qty","one FILL quantity in ledger_events increased by 1 share (partial candidate, first fill)","dense_cost/ledger_events","1","TRUE","TRUE","dense_cost / run / fills: row 2, column qty"
+"equity_ulp","one equity_curve equity value moved by one unit in the last place","dense_risk_features/equity_curve","1","TRUE","TRUE","dense_risk_features / run / equity_curve: row 13, column equity"
+"drop_diagnostic","one run_diagnostics row deleted","avail_terminal_resume/run_diagnostics","1","TRUE","TRUE","avail_terminal_resume / run / run_diagnostics: row 6, column diagnostic_seq|instrument_id|target|quantity|price|mark_source|mark_age|target_before_risk|target_after_risk|position_before|position_after"
+"swap_events","two adjacent ledger events (dividend CASHFLOW, FILL) written in swapped order","dense_dividend_state/ledger_events","1","TRUE","TRUE","dense_dividend_state / run / fills: row 1, column event_seq"
+"sweep_return_ulp","memory path: one retained sweep equity value moved by one unit in the last place","dense_cost/sweep_returns","1","TRUE","TRUE","dense_cost / sweep_w1 / sweep_returns: row 19, column equity"

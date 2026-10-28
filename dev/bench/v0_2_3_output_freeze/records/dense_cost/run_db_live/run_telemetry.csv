@@ -1,0 +1,4 @@
+"run_id","status","execution_mode","pulse_count","decision_pulse_count","scheduled_skip_count"
+"a0-dense_cost-flat-db_live","DONE","db_live","8","8","0"
+"a0-dense_cost-open_end-db_live","DONE","db_live","8","8","0"
+"a0-dense_cost-partial-db_live","DONE","db_live","8","8","0"

@@ -1,0 +1,18 @@
+date: 2026-10-28 14:46:27 CET
+R: R version 4.6.1 (2026-06-24 ucrt)
+ledgr: 0.2.2 (pkgload from C:/Users/maxth/ledgr-wt/a0-output-freeze, HEAD 20034e00)
+duckdb: 2.0.0; collapse: 2.1.8; mirai: 2.7.2
+logical cores: 24
+cpu: 12th Gen Intel(R) Core(TM) i9-12900K
+power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
+top processes by CPU seconds before timing:
+   GalaxyClient        16627.28125    80
+   Positron             9119.65625  1238
+   TotalMixFX          4721.671875    39
+   Positron            4571.296875    94
+   Spotify                4193.375   263
+   codex               3988.984375   379
+   Positron            3756.390625   133
+   GalaxyClient Helper 3466.421875   136
+cpu load % (1 s sample): 4
+cpu load % after timing (1 s sample): 9

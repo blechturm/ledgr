@@ -1,0 +1,2 @@
+"event_seq","ts_utc","recording_pulse_ts_utc","instrument_id","side","qty","price","fee","realized_pnl","action","run_id"
+"3","2020-01-05T09:30:00Z","2020-01-05T16:00:00Z","AAA","SELL","2","90","0","-20","CLOSE","a0-avail_terminal_resume-resumed"

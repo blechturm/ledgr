@@ -1,0 +1,3 @@
+"run_id","intended_start_utc","intended_end_utc","achieved_start_utc","achieved_end_utc","intended_terminal_status","stop_reason","affected_exposure","affected_exposure_ts_utc","affected_exposure_basis","last_fully_valued_ts_utc","last_executed_ts_utc","complete_performance"
+"wf_31c04f40b5d7_fold_1_a083e259fb4a","2020-01-04T16:00:00Z","2020-01-06T16:00:00Z","2020-01-04T16:00:00Z","2020-01-06T16:00:00Z","DONE",NA,NA,NA,NA,"2020-01-06T16:00:00Z","2020-01-05T09:30:00Z","TRUE"
+"wf_31c04f40b5d7_fold_2_aec273e06a72","2020-01-07T16:00:00Z","2020-01-10T16:00:00Z","2020-01-07T16:00:00Z","2020-01-10T16:00:00Z","DONE",NA,NA,NA,NA,"2020-01-10T16:00:00Z",NA,"TRUE"
