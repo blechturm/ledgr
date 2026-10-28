@@ -1,4 +1,4 @@
-"event_seq","ts_utc","recording_pulse_ts_utc","instrument_id","side","qty","price","fee","realized_pnl","action","run_id"
+"event_seq:integer","ts_utc:POSIXct/POSIXt","recording_pulse_ts_utc:POSIXct/POSIXt","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","realized_pnl:numeric","action:character","run_id:character"
 "2","2020-01-02T00:00:00Z","2020-01-02T00:00:00Z","AAA","SELL","5","100.9495","0","9.7475000000000023","CLOSE","a0-dense_risk_features-loose"
 "4","2020-01-05T00:00:00Z","2020-01-05T00:00:00Z","AAA","SELL","30","103.94799999999999","0","56.909999999999741","CLOSE","a0-dense_risk_features-loose"
 "6","2020-01-08T00:00:00Z","2020-01-08T00:00:00Z","AAA","SELL","30","107.946","0","26.774999999999949","CLOSE","a0-dense_risk_features-loose"

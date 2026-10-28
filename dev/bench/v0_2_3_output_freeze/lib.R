@@ -4,7 +4,8 @@
 # runs it through the committed-run path (ledgr_run -> persistent output
 # handler) and the sweep path (ledgr_sweep -> memory output handler), and
 # returns every output table in canonical character form. Records are compared
-# byte for byte, so formatting here is the oracle's precision.
+# byte for byte, so formatting here is the oracle's precision. Fixtures live in
+# fixtures.R, corruptions for gut.R in guts.R.
 
 a0_script_dir <- function() {
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
@@ -28,61 +29,68 @@ a0_load <- function() {
 # Canonical form
 # ---------------------------------------------------------------------------
 
-# Doubles use %.17g, which round-trips every IEEE double, so a one-ulp change
-# is visible. Whole-second timestamps print as ISO UTC; any fractional
-# timestamp falls back to its %.17g epoch value instead of being truncated.
+# Missing values stay NA_character_ through formatting and are written as an
+# unquoted NA; every present value is written quoted, so literal text "NA"
+# stays distinct from SQL NULL. Doubles use %.17g, which round-trips every
+# IEEE double, so a one-ulp change is visible. Whole-second timestamps print
+# as ISO UTC; a fractional timestamp prints its %.17g epoch value. Text
+# escapes backslash first, then newline and carriage return.
 a0_fmt_atomic <- function(x) {
-  if (inherits(x, "POSIXct")) {
-    n <- as.numeric(x)
-    out <- format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    frac <- !is.na(n) & n != floor(n)
-    out[frac] <- sprintf("%.17g", n[frac])
-    out[is.na(n)] <- "NA"
-    return(out)
-  }
-  if (inherits(x, "Date")) {
-    out <- format(x, "%Y-%m-%d")
-    out[is.na(x)] <- "NA"
-    return(out)
-  }
   if (is.factor(x)) x <- as.character(x)
-  if (is.logical(x)) return(ifelse(is.na(x), "NA", ifelse(x, "TRUE", "FALSE")))
-  if (is.integer(x)) return(ifelse(is.na(x), "NA", sprintf("%d", x)))
-  if (is.double(x)) {
-    out <- sprintf("%.17g", x)
-    out[is.na(x) & !is.nan(x)] <- "NA"
-    return(out)
+  miss <- is.na(x)
+  if (is.double(x)) miss <- miss & !is.nan(unclass(x))
+  out <- if (inherits(x, "POSIXct")) {
+    n <- as.numeric(x)
+    o <- format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    frac <- !is.na(n) & n != floor(n)
+    o[frac] <- sprintf("%.17g", n[frac])
+    o
+  } else if (inherits(x, "Date")) {
+    format(x, "%Y-%m-%d")
+  } else if (is.logical(x)) {
+    ifelse(x, "TRUE", "FALSE")
+  } else if (is.integer(x)) {
+    sprintf("%d", x)
+  } else if (is.double(x)) {
+    sprintf("%.17g", x)
+  } else if (is.character(x)) {
+    o <- gsub("\\", "\\\\", enc2utf8(x), fixed = TRUE)
+    gsub("\r", "\\r", gsub("\n", "\\n", o, fixed = TRUE), fixed = TRUE)
+  } else {
+    stop(sprintf("a0: no canonical form for class %s", paste(class(x), collapse = "/")), call. = FALSE)
   }
-  if (is.character(x)) {
-    out <- enc2utf8(x)
-    out <- gsub("\r", "\\r", gsub("\n", "\\n", out, fixed = TRUE), fixed = TRUE)
-    out[is.na(x)] <- "NA"
-    return(out)
-  }
-  if (is.null(x)) return("NULL")
-  stop(sprintf("a0: no canonical form for class %s", paste(class(x), collapse = "/")), call. = FALSE)
+  out <- as.character(out)
+  out[miss] <- NA_character_
+  out
 }
 
-# Nested values (list columns, attributes) flatten to path=value pairs.
+# Inside a flattened nested value, missing is \N and the delimiters
+# \ , ; = < > : are backslash-escaped, so no literal text imitates a marker.
+a0_nest_esc <- function(s) ifelse(is.na(s), "\\N", gsub("([\\\\,;=<>:])", "\\\\\\1", s))
+
+# Nested values (list columns, attributes) flatten to path<class>[n]=values
+# pairs; NULL, empty vectors and missing values each keep a distinct form.
 a0_flat <- function(x, prefix = "") {
   if (inherits(x, "condition")) {
-    return(sprintf("%s<%s>%s", prefix, class(x)[[1L]], a0_fmt_atomic(conditionMessage(x))))
+    return(sprintf("%s<condition>=%s|%s", prefix, a0_nest_esc(paste(class(x), collapse = "/")),
+      a0_nest_esc(a0_fmt_atomic(conditionMessage(x)))))
   }
+  if (is.null(x)) return(sprintf("%s<NULL>", prefix))
   if (is.function(x)) return(sprintf("%s<function>", prefix))
   if (is.environment(x)) return(sprintf("%s<environment>", prefix))
   if (is.data.frame(x)) x <- as.list(x)
   if (is.list(x)) {
-    if (length(x) == 0L) return(sprintf("%s[]", prefix))
+    if (length(x) == 0L) return(sprintf("%s<list>[0]", prefix))
     nm <- names(x)
-    if (is.null(nm)) nm <- rep("", length(x))
-    nm[!nzchar(nm)] <- sprintf("[%d]", which(!nzchar(nm)))
+    nm <- if (is.null(nm)) rep("\\N", length(x)) else a0_nest_esc(a0_fmt_atomic(nm))
+    blank <- nm == "\\N" | !nzchar(nm)
+    nm[blank] <- sprintf("[%d]", which(blank))
     parts <- unlist(Map(function(v, n) a0_flat(v, paste0(prefix, "/", n)), x, nm), use.names = FALSE)
     return(paste(parts, collapse = ";"))
   }
-  vals <- if (length(x) == 0L) "" else paste(a0_fmt_atomic(x), collapse = ",")
-  nm <- names(x)
-  if (!is.null(nm) && length(x) > 0L) vals <- paste(paste0(nm, ":", a0_fmt_atomic(x)), collapse = ",")
-  sprintf("%s=%s", prefix, vals)
+  vals <- a0_nest_esc(a0_fmt_atomic(x))
+  if (!is.null(names(x))) vals <- paste0(a0_nest_esc(a0_fmt_atomic(names(x))), ":", vals)
+  sprintf("%s<%s>[%d]=%s", prefix, class(x)[[1L]], length(x), paste(vals, collapse = ","))
 }
 
 a0_fmt_col <- function(x) {
@@ -95,6 +103,7 @@ a0_fmt_col <- function(x) {
 a0_exclusions <- local({
   version <- "package version string; changes with a version bump, not with handler behavior"
   sweep_id <- "random sweep identifier drawn per call"
+  size <- "object.size() of serialized worker payloads: R representation and transport detail, not handler output"
   rows <- list(
     c("runs", "created_at_utc", "wall clock at registration"),
     c("runs", "engine_version", version),
@@ -110,13 +119,18 @@ a0_exclusions <- local({
     c("sweep", "t_fills_extract", "wall-clock telemetry"),
     c("sweep_attrs", "sweep_id", sweep_id),
     c("sweep_returns", "sweep_id", sweep_id),
-    c("sweep_trades", "sweep_id", sweep_id)
+    c("sweep_trades", "sweep_id", sweep_id),
+    c("sweep_attrs", "staged_invariant_bytes", size),
+    c("sweep_attrs", "staged_payload_census", size)
   )
   m <- do.call(rbind, rows)
   data.frame(table = m[, 1L], column = m[, 2L], reason = m[, 3L], stringsAsFactors = FALSE)
 })
 
-# Absolute temp paths are embedded in config JSON; replace them with a token.
+# Text normalization applied to every string cell: absolute temp DB paths
+# become <DB_PATH>; source references that rlang appends to error messages
+# ("at R/file.R:30:5:") become <SRCREF> because they move with any product
+# edit and name the worktree, not handler behavior.
 a0_path_tokens <- new.env(parent = emptyenv())
 a0_detokenize <- function(x) {
   if (!is.character(x)) return(x)
@@ -126,11 +140,12 @@ a0_detokenize <- function(x) {
     parts <- gsub("([][{}()+*^$|?.\\\\])", "\\\\\\1", parts)
     x <- gsub(paste(parts, collapse = "[/\\\\]+"), a0_path_tokens[[path]], x, perl = TRUE)
   }
-  x
+  gsub(" at [^ \"]+[.][Rr]:[0-9]+(:[0-9]+)?:", " at <SRCREF>:", x, perl = TRUE)
 }
 
 # A canonical table: excluded columns dropped, rows ordered by a declared
-# unique key (radix order, locale independent), every cell a string.
+# unique key (radix order, locale independent), every cell a string or NA,
+# column classes kept for the header.
 a0_canon <- function(df, table, key) {
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   drop <- a0_exclusions$column[a0_exclusions$table == table]
@@ -145,15 +160,19 @@ a0_canon <- function(df, table, key) {
     df <- df[ord, , drop = FALSE]
     if (anyDuplicated(df[, key, drop = FALSE])) stop(sprintf("a0: key (%s) is not unique in %s", paste(key, collapse = ","), table), call. = FALSE)
   }
+  types <- vapply(df, function(col) paste(class(col), collapse = "/"), character(1))
   out <- lapply(df, function(col) a0_detokenize(a0_fmt_col(col)))
   out <- as.data.frame(out, stringsAsFactors = FALSE, check.names = FALSE)
-  attr(out, "a0_key") <- key
+  attr(out, "a0_types") <- unname(types)
   out
 }
 
 a0_csv_text <- function(df) {
-  quote <- function(v) ifelse(v == "NA", "NA", paste0("\"", gsub("\"", "\"\"", v, fixed = TRUE), "\""))
-  header <- paste(quote(names(df)), collapse = ",")
+  quote <- function(v) ifelse(is.na(v), "NA", paste0("\"", gsub("\"", "\"\"", v, fixed = TRUE), "\""))
+  heads <- names(df)
+  types <- attr(df, "a0_types")
+  if (!is.null(types)) heads <- paste0(heads, ":", types)
+  header <- paste(quote(heads), collapse = ",")
   if (nrow(df) == 0L) return(paste0(header, "\n"))
   body <- do.call(paste, c(unname(lapply(df, quote)), list(sep = ",")))
   paste0(paste(c(header, body), collapse = "\n"), "\n")
@@ -189,7 +208,7 @@ a0_write_records <- function(results, out_dir) {
 }
 
 # ---------------------------------------------------------------------------
-# Output collection per handler path
+# Persistent output: run store and public readers
 # ---------------------------------------------------------------------------
 
 a0_run_keys <- list(
@@ -200,65 +219,96 @@ a0_run_keys <- list(
   run_diagnostics = c("run_id", "diagnostic_seq")
 )
 
+a0_with_store <- function(db_path, fn) {
+  opened <- ledgr:::ledgr_run_store_open(db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  fn(opened$con)
+}
+
 # Every run-store table with a run_id column, rows of the given runs. A table
 # the key list does not know fails loudly so a new output is never skipped.
 a0_store_tables <- function(db_path, run_ids) {
-  opened <- ledgr:::ledgr_run_store_open(db_path)
-  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
-  con <- opened$con
-  tabs <- DBI::dbGetQuery(con, paste(
-    "SELECT DISTINCT table_name FROM information_schema.columns",
-    "WHERE column_name = 'run_id' ORDER BY table_name"
-  ))$table_name
-  unknown <- setdiff(tabs, names(a0_run_keys))
-  if (length(unknown)) stop(sprintf("a0: run-store table(s) without a declared key: %s", paste(unknown, collapse = ",")), call. = FALSE)
-  marks <- paste(rep("?", length(run_ids)), collapse = ",")
-  out <- lapply(tabs, function(t) {
-    df <- DBI::dbGetQuery(con, sprintf("SELECT * FROM %s WHERE run_id IN (%s)", t, marks), params = as.list(run_ids))
-    a0_canon(df, t, a0_run_keys[[t]])
+  a0_with_store(db_path, function(con) {
+    tabs <- DBI::dbGetQuery(con, paste(
+      "SELECT DISTINCT table_name FROM information_schema.columns",
+      "WHERE column_name = 'run_id' ORDER BY table_name"
+    ))$table_name
+    unknown <- setdiff(tabs, names(a0_run_keys))
+    if (length(unknown)) stop(sprintf("a0: run-store table(s) without a declared key: %s", paste(unknown, collapse = ",")), call. = FALSE)
+    marks <- paste(rep("?", length(run_ids)), collapse = ",")
+    out <- lapply(tabs, function(t) {
+      df <- DBI::dbGetQuery(con, sprintf("SELECT * FROM %s WHERE run_id IN (%s)", t, marks), params = as.list(run_ids))
+      a0_canon(df, t, a0_run_keys[[t]])
+    })
+    stats::setNames(out, tabs)
   })
-  stats::setNames(out, tabs)
 }
 
-# Public readers over a run: fills, closed trades, metrics, and warnings the
-# run raised. Bound across runs with run_id.
-a0_reader_tables <- function(snapshot, run_ids, warnings) {
+# Public readers over completed runs: fills, closed trades and metrics. Bound
+# across runs with run_id.
+a0_reader_tables <- function(snapshot, run_ids) {
   fills <- list(); trades <- list(); metrics <- list()
   for (id in run_ids) {
     bt <- ledgr_run_open(snapshot, id)
     f <- as.data.frame(ledgr_results(bt, "fills")); f$run_id <- rep(id, nrow(f))
     tr <- as.data.frame(ledgr_results(bt, "trades")); tr$run_id <- rep(id, nrow(tr))
-    m <- tryCatch(unclass(ledgr_compute_metrics(bt)), error = function(e) list(metric_error = conditionMessage(e)))
-    attributes(m) <- list(names = names(m))
-    metrics[[id]] <- data.frame(run_id = id, metric = names(m), value = vapply(m, a0_flat, character(1)), stringsAsFactors = FALSE)
+    m <- tryCatch(unclass(ledgr_compute_metrics(bt)), error = function(e) e)
+    metrics[[id]] <- if (inherits(m, "error")) {
+      data.frame(run_id = id, metric = "<error>", value = NA_real_, error = conditionMessage(m), stringsAsFactors = FALSE)
+    } else {
+      data.frame(run_id = id, metric = names(m), value = vapply(names(m), function(k) as.numeric(m[[k]])[[1L]], numeric(1)),
+        error = NA_character_, stringsAsFactors = FALSE)
+    }
     fills[[id]] <- f; trades[[id]] <- tr
     close(bt)
   }
   bind <- function(x) do.call(rbind, unname(x))
+  if (length(run_ids) == 0L) return(list())
   list(
     fills = a0_canon(bind(fills), "fills", c("run_id", "event_seq", "action")),
     trades = a0_canon(bind(trades), "trades", c("run_id", "event_seq", "action")),
-    metrics = a0_canon(bind(metrics), "metrics", c("run_id", "metric")),
-    run_warnings = a0_canon(warnings, "run_warnings", c("run_id", "seq"))
+    metrics = a0_canon(bind(metrics), "metrics", c("run_id", "metric"))
   )
+}
+
+# Conditions raised by a path, in order: warnings (muffled) and, for expected
+# failures, the error that ended a run.
+a0_new_sink <- function() {
+  sink <- new.env(parent = emptyenv())
+  sink$rows <- data.frame(run_id = character(), seq = integer(), kind = character(), class = character(),
+    message = character(), stringsAsFactors = FALSE)
+  sink
+}
+
+a0_sink_add <- function(sink, run_id, kind, cnd) {
+  sink$rows <- rbind(sink$rows, data.frame(run_id = run_id, seq = nrow(sink$rows) + 1L, kind = kind,
+    class = paste(class(cnd), collapse = "/"), message = conditionMessage(cnd), stringsAsFactors = FALSE))
 }
 
 a0_capture_warnings <- function(expr, run_id, sink) {
   withCallingHandlers(expr, warning = function(w) {
-    n <- nrow(sink$rows) + 1L
-    sink$rows <- rbind(sink$rows, data.frame(
-      run_id = run_id, seq = n, class = class(w)[[1L]],
-      message = conditionMessage(w), stringsAsFactors = FALSE
-    ))
+    a0_sink_add(sink, run_id, "warning", w)
     invokeRestart("muffleWarning")
   })
 }
 
-a0_new_warning_sink <- function() {
-  sink <- new.env(parent = emptyenv())
-  sink$rows <- data.frame(run_id = character(), seq = integer(), class = character(), message = character(), stringsAsFactors = FALSE)
-  sink
+# Runs a committed run; an error is recorded and the run's durable rows are
+# still collected. Returns TRUE when the run returned.
+a0_run_or_record <- function(expr, run_id, sink) {
+  done <- tryCatch({
+    bt <- a0_capture_warnings(expr, run_id, sink)
+    close(bt)
+    TRUE
+  }, error = function(e) {
+    a0_sink_add(sink, run_id, "error", e)
+    FALSE
+  })
+  done
 }
+
+# ---------------------------------------------------------------------------
+# Memory output: sweep result and the memory sink's own buffers
+# ---------------------------------------------------------------------------
 
 a0_sweep_tables <- function(sw) {
   df <- as.data.frame(sw)
@@ -278,267 +328,106 @@ a0_sweep_tables <- function(sw) {
   )
 }
 
-# Today-only observation of the memory handler's internal buffers (events
-# and kept diagnostics). Used for the agreement report, never for records:
-# WS1 removes this factory. Returns NULL when the factory is absent.
-a0_with_memory_capture <- function(expr) {
+# Temporarily replaces ledgr namespace bindings: patches is a named list of
+# function(original) -> replacement. Used by the memory observer and guts.
+a0_with_patches <- function(patches, expr) {
   ns <- asNamespace("ledgr")
-  name <- "ledgr_memory_output_handler"
-  if (!exists(name, envir = ns, inherits = FALSE)) {
-    return(list(value = force(expr), internal = NULL))
+  originals <- lapply(stats::setNames(names(patches), names(patches)), get, envir = ns)
+  locked <- vapply(names(patches), bindingIsLocked, logical(1), env = ns)
+  on.exit(for (name in names(originals)) {
+    assign(name, originals[[name]], envir = ns)
+    if (locked[[name]]) lockBinding(name, ns)
+  }, add = TRUE)
+  for (name in names(patches)) {
+    if (locked[[name]]) unlockBinding(name, ns)
+    assign(name, patches[[name]](originals[[name]]), envir = ns)
   }
-  original <- get(name, envir = ns)
+  force(expr)
+}
+
+# Memory-sink observation boundary: the only part of the harness the WS1 cut
+# may adapt. Per sweep candidate (run_id = candidate label) it must deliver
+# the sink's native output: events() with the typed attributes
+# ledgr_event_{cash_delta,position_delta,realized,cost_basis,meta}, the
+# retained diagnostics() (NULL when none), completion() (NULL in dense mode)
+# and the inline_summary() equity and fills. Today it wraps the memory handler
+# factory. Without an observation point it stops, so check.R fails rather
+# than silently dropping the memory records.
+a0_memory_factory <- "ledgr_memory_output_handler"
+a0_observe_memory <- function(expr, gut = NULL) {
+  factory <- gut$memory_factory %||% a0_memory_factory
+  if (!exists(factory, envir = asNamespace("ledgr"), inherits = FALSE)) {
+    stop(paste0("a0: no memory-sink observation point on this tree (", factory, " is gone). ",
+      "Adapt a0_observe_memory() in lib.R to the replacement sink so it returns the same per-candidate ",
+      "events, diagnostics, completion and summary; do not edit canonicalization or records."), call. = FALSE)
+  }
   registry <- new.env(parent = emptyenv())
-  wrapped <- function(run_id, ...) {
+  summaries <- new.env(parent = emptyenv())
+  patch <- stats::setNames(list(function(original) function(run_id, ...) {
     handler <- original(run_id, ...)
+    summarize <- handler$inline_summary
+    handler$inline_summary <- function(...) {
+      s <- summarize(...)
+      summaries[[run_id]] <- s
+      s
+    }
     registry[[run_id]] <- handler
     handler
-  }
-  unlockBinding(name, ns)
-  assign(name, wrapped, envir = ns)
-  on.exit({ assign(name, original, envir = ns); lockBinding(name, ns) }, add = TRUE)
-  value <- force(expr)
-  internal <- lapply(stats::setNames(ls(registry), ls(registry)), function(id) {
-    h <- registry[[id]]
-    list(events = as.data.frame(h$events()), diagnostics = h$diagnostics(), completion = h$completion())
+  }), factory)
+  value <- a0_with_patches(patch, expr)
+  ids <- ls(registry)
+  observed <- lapply(stats::setNames(ids, ids), function(rid) {
+    h <- registry[[rid]]
+    if (is.function(gut$memory)) gut$memory(rid, h)
+    list(events = h$events(), diagnostics = h$diagnostics(), completion = h$completion(),
+      summary = summaries[[rid]])
   })
-  list(value = value, internal = internal)
+  list(value = value, observed = observed)
 }
 
-# ---------------------------------------------------------------------------
-# Fixtures (synthetic; adapted from the parity tests named in inventory.md)
-# ---------------------------------------------------------------------------
-
-a0_sessions <- function(dates) {
-  ledgr_facts_sessions(data.frame(
-    session_date = dates, status = "open", session_open = "09:30:00", session_close = "16:00:00",
-    knowledge_time = as.POSIXct(dates, tz = "UTC") - 1, stringsAsFactors = FALSE
-  ), venue_id = "XNYS")
-}
-
-a0_dense_bars <- function() {
-  dates <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:7
-  rbind(
-    data.frame(instrument_id = "AAA", ts_utc = dates,
-      open = c(100, 101, 103, 102, 104, 107, 106, 108), high = c(101, 103, 104, 103, 106, 108, 108, 109),
-      low = c(99, 100, 101, 101, 103, 106, 105, 107), close = c(100, 102, 103, 102, 105, 107, 106, 108),
-      volume = 1000, stringsAsFactors = FALSE),
-    data.frame(instrument_id = "BBB", ts_utc = dates,
-      open = c(50, 51, 50, 49, 48, 50, 52, 51), high = c(51, 52, 51, 50, 49, 51, 53, 52),
-      low = c(49, 50, 49, 48, 47, 49, 51, 50), close = c(50, 51, 50, 49, 48, 50, 52, 51),
-      volume = 2000, stringsAsFactors = FALSE)
-  )
-}
-
-a0_fx_dense_cost <- function(db_path) {
-  snapshot <- ledgr_snapshot_from_df(a0_dense_bars(), db_path = db_path, snapshot_id = "a0_dense_cost")
-  strategy <- function(ctx, params) {
-    targets <- ctx$hold()
-    day <- substr(ctx$ts_utc, 1L, 10L)
-    if (identical(day, "2020-01-01")) {
-      targets["AAA"] <- params$aaa_qty
-      targets["BBB"] <- params$bbb_qty
-    } else if (identical(day, "2020-01-03")) {
-      targets["AAA"] <- params$aaa_partial_qty
-    } else if (identical(day, "2020-01-05") && isTRUE(params$close_day5)) {
-      targets["AAA"] <- 0
-      targets["BBB"] <- 0
-    } else if (identical(day, "2020-01-08")) {
-      targets["AAA"] <- params$last_bar_qty
+# Canonical memory tables. A FAILED candidate's buffers are discarded by
+# contract (LTB-0055) and not recorded; its failure is in the sweep row.
+a0_memory_tables <- function(observed, sw) {
+  keep <- intersect(as.character(sw$candidate_id[sw$status != "FAILED"]), names(observed))
+  ev <- list(); dg <- list(); cp <- list(); eq <- list(); fl <- list(); st <- list()
+  for (rid in keep) {
+    o <- observed[[rid]]
+    e <- o$events
+    n <- nrow(e)
+    typed <- function(name, empty) { v <- attr(e, name); if (is.null(v)) rep(empty, n) else v }
+    df <- as.data.frame(e)
+    df$cash_delta <- typed("ledgr_event_cash_delta", NA_real_)
+    df$position_delta <- typed("ledgr_event_position_delta", NA_real_)
+    df$event_realized <- typed("ledgr_event_realized", NA_real_)
+    df$event_cost_basis <- typed("ledgr_event_cost_basis", NA_real_)
+    df$meta <- vapply(typed("ledgr_event_meta", list(NULL)), a0_flat, character(1))
+    ev[[rid]] <- df
+    if (!is.null(o$diagnostics)) dg[[rid]] <- as.data.frame(o$diagnostics)
+    if (!is.null(o$completion)) cp[[rid]] <- as.data.frame(o$completion)
+    if (!is.null(o$summary)) {
+      eq[[rid]] <- as.data.frame(o$summary$equity)
+      f <- as.data.frame(o$summary$fills); f$run_id <- rep(rid, nrow(f)); fl[[rid]] <- f
     }
-    targets
+    st[[rid]] <- data.frame(run_id = rid, events = n, diagnostics_null = is.null(o$diagnostics),
+      completion_null = is.null(o$completion), summary_null = is.null(o$summary), stringsAsFactors = FALSE)
   }
-  exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 10000),
-    universe = c("AAA", "BBB"),
-    cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1)))
-  grid <- ledgr_grid_named(
-    flat = list(strategy = list(aaa_qty = 0, aaa_partial_qty = 0, bbb_qty = 0, close_day5 = TRUE, last_bar_qty = 0)),
-    partial = list(strategy = list(aaa_qty = 4, aaa_partial_qty = 2, bbb_qty = 2, close_day5 = TRUE, last_bar_qty = 0)),
-    open_end = list(strategy = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day5 = FALSE, last_bar_qty = 3))
+  bind <- function(x, key) {
+    if (length(x)) return(do.call(rbind, unname(x)))
+    as.data.frame(stats::setNames(rep(list(character()), length(key)), key), stringsAsFactors = FALSE)
+  }
+  list(
+    memory_state = a0_canon(bind(st, "run_id"), "memory_state", "run_id"),
+    memory_events = a0_canon(bind(ev, c("run_id", "event_seq")), "memory_events", c("run_id", "event_seq")),
+    memory_diagnostics = a0_canon(bind(dg, c("run_id", "diagnostic_seq")), "memory_diagnostics", c("run_id", "diagnostic_seq")),
+    memory_completion = a0_canon(bind(cp, "run_id"), "memory_completion", "run_id"),
+    memory_equity = a0_canon(bind(eq, c("run_id", "ts_utc")), "memory_equity", c("run_id", "ts_utc")),
+    memory_fills = a0_canon(bind(fl, c("run_id", "event_seq", "action")), "memory_fills", c("run_id", "event_seq", "action"))
   )
-  # ledgr_backtest() arguments for the db_live persistent mode (live writes).
-  backtest <- list(snapshot = snapshot, strategy = strategy, universe = c("AAA", "BBB"), initial_cash = 10000,
-    cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1)), execution_mode = "db_live")
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 2591L, backtest = backtest)
-}
-
-a0_fx_dense_risk_features <- function(db_path) {
-  snapshot <- ledgr_snapshot_from_df(a0_dense_bars(), db_path = db_path, snapshot_id = "a0_dense_risk_features")
-  strategy <- function(ctx, params) {
-    targets <- ctx$hold()
-    sma <- ctx$feature("AAA", "sma_3")
-    targets["AAA"] <- if (!is.na(sma) && ctx$close("AAA") > sma) params$qty else 0
-    if (!is.null(ctx$pulse_seed) && (ctx$pulse_seed %% 2L) == 0L) targets["BBB"] <- params$qty_b
-    targets
-  }
-  exp <- ledgr_experiment(snapshot, strategy,
-    features = list(ledgr_ind_sma(3)),
-    opening = ledgr_opening(cash = 10000, positions = c(AAA = 5), cost_basis = c(AAA = 99)),
-    universe = c("AAA", "BBB"),
-    risk_chain = ledgr_risk_chain(ledgr_risk_long_only(), ledgr_risk_max_weight(ledgr_param("cap"))),
-    cost_model = ledgr_cost_spread_bps(10),
-    metric_context = ledgr_metric_context(risk_free_rate = ledgr_risk_free_rate(0.04, label = "a0 policy")))
-  grid <- ledgr_grid_named(
-    tight = list(strategy = list(qty = 30, qty_b = 40, cap = 0.3)),
-    loose = list(strategy = list(qty = 30, qty_b = -5, cap = 0.6))
-  )
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 77L)
-}
-
-a0_fx_dense_dividend_state <- function(db_path) {
-  ts <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:3
-  bars <- data.frame(instrument_id = "AAA", ts_utc = ts, open = c(100, 90, 45, 46),
-    high = c(100, 90, 45, 46), low = c(100, 90, 45, 46), close = c(100, 90, 45, 46),
-    volume = 1000, stringsAsFactors = FALSE)
-  dividend <- data.frame(fact_id = "dividend-1", subtype = "ordinary_cash_dividend",
-    parent_instrument_id = "AAA", entitlement_time = ts[[2L]], effective_time = ts[[4L]],
-    knowledge_time = ts[[1L]], complete = TRUE, provenance_tier = "snapshot_bound",
-    gross_cash_per_parent_unit = 1.25, gross_cash_validated = TRUE,
-    recipient_identity_validated = FALSE, recipient_quantity_validated = FALSE,
-    source = "a0_fixture", stringsAsFactors = FALSE)
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "a0_dense_dividend_state",
-    facts = ledgr_facts(ledgr_facts_equity_corporate_actions(dividend)), price_basis = "split_adjusted")
-  strategy <- function(ctx, params) {
-    targets <- ctx$hold()
-    if (identical(substr(ctx$ts_utc, 1L, 10L), "2020-01-02")) targets["AAA"] <- params$qty
-    list(targets = targets, state_update = list(observed_cash = ctx$cash))
-  }
-  exp <- ledgr_experiment(snapshot, strategy,
-    opening = ledgr_opening(cash = 1000, positions = c(AAA = 2), cost_basis = c(AAA = 100)),
-    cost_model = ledgr_cost_zero())
-  grid <- ledgr_grid_named(hold = list(strategy = list(qty = 2)), add = list(strategy = list(qty = 5)))
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 11L)
-}
-
-a0_fx_avail_terminal_resume <- function(db_path) {
-  day <- function(d) as.POSIXct(paste(as.Date("2020-01-01") + d - 1L, "16:00:00"), tz = "UTC")
-  closes <- list(AAA = c(100, NA, NA, NA, 90, 91), BBB = c(50, NA, NA, NA, NA, NA), CLK = rep(10, 6L))
-  bars <- do.call(rbind, lapply(names(closes), function(id) {
-    keep <- which(!is.na(closes[[id]])); cl <- closes[[id]][keep]
-    data.frame(ts_utc = day(keep), instrument_id = id, open = cl, high = cl + 1, low = cl - 1,
-      close = cl, volume = 1000, stringsAsFactors = FALSE)
-  }))
-  lifetime <- ledgr_facts_lifetime(data.frame(instrument_id = "BBB", effective_from = day(5L),
-    knowledge_time = day(5L) - 1, assertion = "known_inactive", terminal_event = "bankruptcy",
-    stringsAsFactors = FALSE))
-  snapshot <- ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = names(closes)),
-    db_path = db_path, snapshot_id = "a0_avail_terminal_resume",
-    facts = ledgr_facts(a0_sessions(as.Date("2020-01-01") + 0:5), lifetime), price_basis = "split_adjusted")
-  strategy <- function(ctx, params) {
-    if (isTRUE(params$interrupt) && identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
-      options(ledgr.interrupt = TRUE)
-    }
-    target <- ctx$hold()
-    if (ctx$ts_utc >= "2020-01-03T16:00:00Z" && "AAA" %in% names(target)) target[["AAA"]] <- 0
-    target
-  }
-  exp <- ledgr_experiment(snapshot, strategy,
-    opening = ledgr_opening(cash = 1000, positions = c(AAA = 2, BBB = 4), cost_basis = c(AAA = 100, BBB = 100)),
-    valuation_policy = ledgr_valuation_stale(1), corporate_action_policy = ledgr_corporate_actions_research(),
-    cost_model = ledgr_cost_zero())
-  grid <- ledgr_grid_named(straight = list(strategy = list(interrupt = FALSE)))
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 169L)
-}
-
-a0_fx_avail_acquisition <- function(db_path) {
-  dates <- as.Date("2020-01-01") + 0:2
-  pulses <- as.POSIXct(paste(dates, "16:00:00"), tz = "UTC")
-  bars <- rbind(
-    data.frame(instrument_id = "AAA", ts_utc = pulses, open = c(100, 90, 91), high = c(100, 90, 91),
-      low = c(100, 90, 91), close = c(100, 90, 91), volume = 1000),
-    data.frame(instrument_id = "BBB", ts_utc = pulses, open = c(49, 50, 51), high = c(49, 50, 51),
-      low = c(49, 50, 51), close = c(49, 50, 51), volume = 1000))
-  lifetime <- ledgr_facts_lifetime(data.frame(instrument_id = "AAA", effective_from = pulses[[2L]],
-    knowledge_time = pulses[[2L]] - 1, assertion = "known_inactive", terminal_event = "acquired",
-    stringsAsFactors = FALSE))
-  action <- ledgr_facts_equity_corporate_actions(data.frame(fact_id = "a0-acquisition",
-    subtype = "cash_acquisition", parent_instrument_id = "AAA", entitlement_time = pulses[[2L]],
-    effective_time = pulses[[2L]], knowledge_time = pulses[[1L]], complete = TRUE,
-    provenance_tier = "snapshot_bound", gross_cash_per_parent_unit = 120, gross_cash_validated = TRUE,
-    recipient_identity_validated = FALSE, recipient_quantity_validated = FALSE, stringsAsFactors = FALSE))
-  snapshot <- ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
-    db_path = db_path, snapshot_id = "a0_avail_acquisition",
-    facts = ledgr_facts(a0_sessions(dates), lifetime, action), price_basis = "split_adjusted")
-  strategy <- function(ctx, params) {
-    target <- ctx$hold()
-    if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) target[["BBB"]] <- params$qty
-    target
-  }
-  exp <- ledgr_experiment(snapshot, strategy,
-    opening = ledgr_opening(cash = 1000, positions = c(AAA = 2), cost_basis = c(AAA = 100)),
-    valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero(),
-    corporate_action_policy = ledgr_corporate_actions_research())
-  grid <- ledgr_grid_named(none = list(strategy = list(qty = 0)), some = list(strategy = list(qty = 3)))
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 54L)
-}
-
-a0_fx_avail_incomplete <- function(db_path) {
-  dates <- as.Date("2020-01-01") + 0:3
-  bar_days <- c(1L, 2L, 4L)
-  bars <- data.frame(ts_utc = as.POSIXct(paste(dates[bar_days], "16:00:00"), tz = "UTC"),
-    instrument_id = "AAA", open = 100 + bar_days, high = 101 + bar_days, low = 99 + bar_days,
-    close = 100 + bar_days, volume = 1000, stringsAsFactors = FALSE)
-  snapshot <- ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = "AAA"),
-    db_path = db_path, snapshot_id = "a0_avail_incomplete",
-    facts = ledgr_facts(a0_sessions(dates)), price_basis = "split_adjusted")
-  strategy <- function(ctx, params) {
-    target <- ctx$hold()
-    target[["AAA"]] <- params$qty
-    target
-  }
-  exp <- ledgr_experiment(snapshot, strategy,
-    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero())
-  grid <- ledgr_grid_named(one = list(strategy = list(qty = 1)), two = list(strategy = list(qty = 2)))
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 31L)
-}
-
-a0_fx_walk_forward <- function(db_path) {
-  dates <- as.Date("2020-01-01") + 0:9
-  make_bars <- function(id, keep, offset) {
-    data.frame(instrument_id = id, ts_utc = as.POSIXct(paste(dates[keep], "16:00:00"), tz = "UTC"),
-      open = 100 + offset + keep, high = 101 + offset + keep, low = 99 + offset + keep,
-      close = 100 + offset + keep, volume = 1000, stringsAsFactors = FALSE)
-  }
-  bars <- rbind(make_bars("AAA", setdiff(1:10, 5L), 0), make_bars("BBB", setdiff(1:10, 8L), 20))
-  snapshot <- ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
-    db_path = db_path, snapshot_id = "a0_walk_forward",
-    facts = ledgr_facts(a0_sessions(dates)), price_basis = "split_adjusted")
-  strategy <- function(ctx, params) {
-    target <- ctx$hold()
-    target[["BBB"]] <- params$qty
-    target
-  }
-  exp <- ledgr_experiment(snapshot, strategy, universe = c("AAA", "BBB"),
-    opening = ledgr_opening(cash = 10000, positions = c(AAA = 1, BBB = 1), cost_basis = c(AAA = 101, BBB = 121)),
-    valuation_policy = ledgr_valuation_stale(3, exhausted = "refuse"), cost_model = ledgr_cost_fixed_fee(0.5))
-  grid <- ledgr_grid_named(small = list(strategy = list(qty = 2)), large = list(strategy = list(qty = 4)))
-  folds <- ledgr:::ledgr_fold_list(list(
-    ledgr_fold("2020-01-01T16:00:00Z", "2020-01-03T16:00:00Z", "2020-01-04T16:00:00Z", "2020-01-06T16:00:00Z", fold_seq = 1L),
-    ledgr_fold("2020-01-04T16:00:00Z", "2020-01-06T16:00:00Z", "2020-01-07T16:00:00Z", "2020-01-10T16:00:00Z", fold_seq = 2L)
-  ), constructor = list(type_id = "explicit"))
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 24L, folds = folds)
 }
 
 # ---------------------------------------------------------------------------
-# Workloads
+# Workload driver
 # ---------------------------------------------------------------------------
-
-a0_workloads <- list(
-  dense_cost = list(fixture = a0_fx_dense_cost, paths = c("run", "run_db_live", "sweep_w1", "sweep_w2", "sweep_compiled"),
-    why = "parity-suite base case: two instruments, cost chain (spread + fixed fee), flat/partial/open-end candidates, last-bar no-fill warning; one and two workers; compiled spot-FIFO memory path; db_live persistent mode via ledgr_backtest()"),
-  dense_risk_features = list(fixture = a0_fx_dense_risk_features, paths = c("run", "sweep_w1", "sweep_w2"),
-    why = "risk chain (long_only + max_weight with a grid parameter), SMA feature warmup, opening lot, pulse_seed-driven targets, non-default metric context"),
-  dense_dividend_state = list(fixture = a0_fx_dense_dividend_state, paths = c("run", "sweep_w1"),
-    why = "dense mode corporate action (ordinary cash dividend posting CASHFLOW) and strategy_state writes via state_update"),
-  avail_terminal_resume = list(fixture = a0_fx_avail_terminal_resume, paths = c("run", "run_resumed", "sweep_w1", "sweep_w2"),
-    why = "availability mode: stale-mark freeze, bankruptcy terminal write-off (DISPOSITION), diagnostics and completion; ledgr.interrupt soft stop then resume; one and two workers"),
-  avail_acquisition = list(fixture = a0_fx_avail_acquisition, paths = c("run", "sweep_w1"),
-    why = "availability mode cash acquisition: held terminal position disposed at the deal price"),
-  avail_incomplete = list(fixture = a0_fx_avail_incomplete, paths = c("run", "sweep_w1", "sweep_w2"),
-    why = "availability INCOMPLETE terminal outcome (valuation horizon exhausted): completion evidence and stopped diagnostics; one and two workers"),
-  walk_forward = list(fixture = a0_fx_walk_forward, paths = c("run", "sweep_w1", "walk_forward"),
-    why = "walk-forward: train sweeps (memory) and carried test runs (persistent) on a gapped session calendar with fees")
-)
 
 a0_retain <- function() ledgr_sweep_retention(returns = "completed", trades = "closed")
 
@@ -546,150 +435,108 @@ a0_run_id <- function(workload, candidate_id, suffix = NULL) {
   paste(c("a0", workload, candidate_id, suffix), collapse = "-")
 }
 
-# Runs one workload through its handler paths. `gut` (see a0_guts) corrupts
-# raw product output before canonicalization: `store(con, run_ids)` edits the
-# run store after the committed runs, `sweep(sw)` edits the sweep result.
-# Internal memory buffers come back separately and never enter records.
+# Runs one workload through its handler paths, then collects. `gut` (see
+# guts.R) corrupts raw product output before canonicalization: `patch` swaps
+# namespace bindings during `patch_paths`, `memory(run_id, handler)` edits the
+# memory sink's buffers, `sweep(sw)` the sweep result and `store(con)` the run
+# store after every path has executed.
 a0_run_workload <- function(id, work_dir, gut = NULL) {
   w <- a0_workloads[[id]]
   paths <- w$paths
   if (!is.null(gut) && !identical(gut$workload, id)) gut <- NULL
+  in_path <- function(p, expr) if (p %in% gut$patch_paths) a0_with_patches(gut$patch, expr) else expr
   db_path <- file.path(work_dir, paste0(id, ".duckdb"))
   if (file.exists(db_path)) unlink(db_path)
   assign(normalizePath(db_path, winslash = "/", mustWork = FALSE), "<DB_PATH>", envir = a0_path_tokens)
   fx <- w$fixture(db_path)
-  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  on.exit(for (s in c(list(fx$snapshot), fx$close)) ledgr_snapshot_close(s), add = TRUE)
   out <- list()
+  persisted <- list()
   options(ledgr.interrupt = FALSE)
-  captured <- a0_with_memory_capture(ledgr_sweep(fx$exp, fx$grid, seed = fx$seed, retain = a0_retain()))
-  sw <- captured$value
-  out$sweep_w1 <- a0_sweep_tables(if (is.function(gut$sweep)) gut$sweep(sw) else sw)
-  if ("sweep_w2" %in% paths) {
-    out$sweep_w2 <- a0_sweep_tables(ledgr_sweep(fx$exp, fx$grid, seed = fx$seed, retain = a0_retain(), workers = 2L))
-  }
+  sweep <- function(...) ledgr_sweep(fx$exp, fx$grid, seed = fx$seed, retain = a0_retain(), ...)
+
+  obs <- in_path("sweep_w1", a0_observe_memory(sweep(), gut))
+  sw <- obs$value
+  out$sweep_w1 <- c(a0_sweep_tables(if (is.function(gut$sweep)) gut$sweep(sw) else sw), a0_memory_tables(obs$observed, sw))
+  if ("sweep_w2" %in% paths) out$sweep_w2 <- a0_sweep_tables(in_path("sweep_w2", sweep(workers = 2L)))
   if ("sweep_compiled" %in% paths) {
-    out$sweep_compiled <- a0_sweep_tables(ledgr_sweep(fx$exp, fx$grid, seed = fx$seed, retain = a0_retain(),
-      compiled_accounting_model = "spot_fifo"))
+    compiled <- a0_observe_memory(sweep(compiled_accounting_model = "spot_fifo"))
+    out$sweep_compiled <- c(a0_sweep_tables(compiled$value), a0_memory_tables(compiled$observed, compiled$value))
+  }
+  # Candidate rows are read directly: ledgr_candidate() refuses INCOMPLETE and
+  # FAILED rows, which this harness must still run.
+  committed <- function(path, suffix, call) {
+    sink <- a0_new_sink()
+    ids <- character(); done <- character()
+    for (i in seq_len(nrow(sw))) {
+      rid <- a0_run_id(id, as.character(sw$candidate_id[[i]]), suffix)
+      if (in_path(path, a0_run_or_record(call(i, rid), rid, sink))) done <- c(done, rid)
+      ids <- c(ids, rid)
+    }
+    list(ids = ids, done = done, sink = sink)
   }
   if ("run" %in% paths) {
-    sink <- a0_new_warning_sink()
-    run_ids <- character()
-    # Candidate rows are read directly: ledgr_candidate() refuses INCOMPLETE
-    # rows, which this harness must still run.
-    for (i in seq_len(nrow(sw))) {
-      cid <- as.character(sw$candidate_id[[i]])
-      rid <- a0_run_id(id, cid)
-      bt <- a0_capture_warnings(ledgr_run(fx$exp, params = sw$params[[i]], feature_params = sw$feature_params[[i]],
-        run_id = rid, seed = sw$execution_seed[[i]]), rid, sink)
-      close(bt)
-      run_ids <- c(run_ids, rid)
-    }
-    if (is.function(gut$store)) a0_with_store(db_path, function(con) gut$store(con, run_ids))
-    out$run <- c(a0_store_tables(db_path, run_ids), a0_reader_tables(fx$snapshot, run_ids, sink$rows))
+    persisted$run <- committed("run", NULL, function(i, rid) ledgr_run(fx$exp, params = sw$params[[i]],
+      feature_params = sw$feature_params[[i]], run_id = rid, seed = sw$execution_seed[[i]]))
   }
   if ("run_db_live" %in% paths) {
-    sink <- a0_new_warning_sink()
-    live_ids <- character()
-    for (i in seq_len(nrow(sw))) {
-      rid <- a0_run_id(id, as.character(sw$candidate_id[[i]]), "db_live")
-      args <- c(fx$backtest, list(strategy_params = sw$params[[i]], run_id = rid))
-      bt <- a0_capture_warnings(do.call(ledgr_backtest, args), rid, sink)
-      close(bt)
-      live_ids <- c(live_ids, rid)
-    }
-    out$run_db_live <- c(a0_store_tables(db_path, live_ids), a0_reader_tables(fx$snapshot, live_ids, sink$rows))
+    persisted$run_db_live <- committed("run_db_live", "db_live", function(i, rid) {
+      do.call(ledgr_backtest, c(fx$backtest, list(strategy_params = sw$params[[i]], run_id = rid)))
+    })
+  }
+  if ("run_abort" %in% paths) {
+    sink <- a0_new_sink()
+    rid <- a0_run_id(id, "abort")
+    ok <- a0_run_or_record(ledgr_run(fx$abort_exp, params = fx$abort_params, run_id = rid), rid, sink)
+    persisted$run_abort <- list(ids = rid, done = if (ok) rid else character(), sink = sink)
   }
   if ("run_resumed" %in% paths) {
-    sink <- a0_new_warning_sink()
+    sink <- a0_new_sink()
     params <- utils::modifyList(sw$params[[1L]], list(interrupt = TRUE))
     rid <- a0_run_id(id, "resumed")
     for (attempt in 1:2) {
-      bt <- a0_capture_warnings(ledgr_run(fx$exp, params = params, run_id = rid, seed = sw$execution_seed[[1L]]), rid, sink)
-      close(bt)
+      a0_run_or_record(ledgr_run(fx$exp, params = params, run_id = rid, seed = sw$execution_seed[[1L]]), rid, sink)
       options(ledgr.interrupt = FALSE)
     }
-    out$run_resumed <- c(a0_store_tables(db_path, rid), a0_reader_tables(fx$snapshot, rid, sink$rows))
+    persisted$run_resumed <- list(ids = rid, done = rid, sink = sink)
   }
   if ("walk_forward" %in% paths) {
-    wf <- ledgr_walk_forward(fx$exp, grid = fx$grid, folds = fx$folds,
-      selection_rule = ledgr_rule_argmax("sharpe_ratio"), seed = fx$seed)
+    # Warnings raised anywhere inside walk-forward (train sweeps, test runs)
+    # are kept in order; the API does not say which run raised them.
+    sink <- a0_new_sink()
+    wf <- in_path("walk_forward", a0_capture_warnings(ledgr_walk_forward(fx$exp, grid = fx$grid, folds = fx$folds,
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"), seed = fx$seed), "<walk_forward>", sink))
     test_ids <- vapply(wf$test_runs, function(bt) bt$run_id, character(1))
     lapply(wf$test_runs, close)
-    out$walk_forward <- c(
-      list(
-        wf_folds = a0_canon(as.data.frame(wf$folds), "wf_folds", "fold_seq"),
-        wf_scores = a0_canon(as.data.frame(wf$scores), "wf_scores", c("fold_seq", "window", "candidate_key", "metric_name")),
-        wf_status = a0_canon(data.frame(status = wf$status, test_run_ids = paste(test_ids, collapse = ","),
-          stringsAsFactors = FALSE), "wf_status", "status")
-      ),
-      a0_store_tables(db_path, test_ids),
-      a0_reader_tables(fx$snapshot, test_ids, a0_new_warning_sink()$rows)
-    )
+    persisted$walk_forward <- list(ids = test_ids, done = test_ids, sink = sink, extra = list(
+      wf_folds = a0_canon(as.data.frame(wf$folds), "wf_folds", "fold_seq"),
+      wf_scores = a0_canon(as.data.frame(wf$scores), "wf_scores", c("fold_seq", "window", "candidate_key", "metric_name")),
+      wf_status = a0_canon(data.frame(status = wf$status, test_run_ids = paste(test_ids, collapse = ","),
+        stringsAsFactors = FALSE), "wf_status", "status")
+    ))
   }
-  list(tables = out, internal = captured$internal)
+  if (is.function(gut$store)) a0_with_store(db_path, gut$store)
+  for (p in names(persisted)) {
+    x <- persisted[[p]]
+    out[[p]] <- c(x$extra, a0_store_tables(db_path, x$ids), a0_reader_tables(fx$snapshot, x$done),
+      list(run_conditions = a0_canon(x$sink$rows, "run_conditions", c("seq"))))
+  }
+  list(tables = out)
 }
 
 a0_run_all <- function(work_dir, gut = NULL, ids = names(a0_workloads)) {
   dir.create(work_dir, recursive = TRUE, showWarnings = FALSE)
   res <- lapply(stats::setNames(ids, ids), function(id) a0_run_workload(id, work_dir, gut = gut))
-  list(tables = lapply(res, `[[`, "tables"), internal = lapply(res, `[[`, "internal"))
+  list(tables = lapply(res, `[[`, "tables"))
 }
 
-a0_with_store <- function(db_path, fn) {
-  opened <- ledgr:::ledgr_run_store_open(db_path)
-  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
-  fn(opened$con)
-}
-
-# ---------------------------------------------------------------------------
-# Gut corruptions (gut.R): each edits raw product output the way a regressed
-# handler would have written it, before the harness canonicalizes anything.
-# ---------------------------------------------------------------------------
-
-a0_next_ulp <- function(x) x + 2^(floor(log2(abs(x))) - 52)
-
-a0_guts <- list(
-  fill_qty = list(workload = "dense_cost", expect = "ledger_events",
-    what = "one FILL quantity in ledger_events increased by 1 share (partial candidate, first fill)",
-    store = function(con, run_ids) {
-      DBI::dbExecute(con, paste(
-        "UPDATE ledger_events SET qty = qty + 1 WHERE run_id = ? AND event_seq =",
-        "(SELECT MIN(event_seq) FROM ledger_events WHERE run_id = ? AND event_type = 'FILL')"
-      ), params = list("a0-dense_cost-partial", "a0-dense_cost-partial"))
-    }),
-  equity_ulp = list(workload = "dense_risk_features", expect = "equity_curve",
-    what = "one equity_curve equity value moved by one unit in the last place",
-    store = function(con, run_ids) {
-      row <- DBI::dbGetQuery(con, "SELECT ts_utc, equity FROM equity_curve WHERE run_id = ? ORDER BY ts_utc LIMIT 1 OFFSET 4",
-        params = list(run_ids[[1L]]))
-      DBI::dbExecute(con, "UPDATE equity_curve SET equity = ? WHERE run_id = ? AND ts_utc = ?",
-        params = list(a0_next_ulp(row$equity[[1L]]), run_ids[[1L]], row$ts_utc[[1L]]))
-    }),
-  drop_diagnostic = list(workload = "avail_terminal_resume", expect = "run_diagnostics",
-    what = "one run_diagnostics row deleted",
-    store = function(con, run_ids) {
-      DBI::dbExecute(con, paste(
-        "DELETE FROM run_diagnostics WHERE run_id = ? AND diagnostic_seq =",
-        "(SELECT MIN(diagnostic_seq) + 5 FROM run_diagnostics WHERE run_id = ?)"
-      ), params = list(run_ids[[1L]], run_ids[[1L]]))
-    }),
-  swap_events = list(workload = "dense_dividend_state", expect = "ledger_events",
-    what = "two adjacent ledger events (dividend CASHFLOW, FILL) written in swapped order",
-    store = function(con, run_ids) {
-      rid <- "a0-dense_dividend_state-add"
-      rows <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ? AND event_seq IN (2, 3) ORDER BY event_seq",
-        params = list(rid))
-      rows$event_seq <- rev(rows$event_seq)
-      DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND event_seq IN (2, 3)", params = list(rid))
-      DBI::dbAppendTable(con, "ledger_events", rows)
-    }),
-  sweep_return_ulp = list(workload = "dense_cost", expect = "sweep_returns",
-    what = "memory path: one retained sweep equity value moved by one unit in the last place",
-    sweep = function(sw) {
-      returns <- attr(sw, "sweep_returns")
-      i <- which(returns$candidate_id == "partial")[[3L]]
-      returns$equity[[i]] <- a0_next_ulp(returns$equity[[i]])
-      attr(sw, "sweep_returns") <- returns
-      sw
-    })
-)
+# fixtures.R and guts.R sit next to this file; find it through source().
+local({
+  here <- a0_script_dir()
+  for (i in rev(seq_len(sys.nframe()))) {
+    f <- sys.frame(i)$ofile
+    if (is.character(f)) { here <- dirname(normalizePath(f, winslash = "/")); break }
+  }
+  source(file.path(here, "fixtures.R"))
+  source(file.path(here, "guts.R"))
+})

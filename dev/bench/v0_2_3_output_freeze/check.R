@@ -7,7 +7,7 @@
 # Usage: Rscript check.R [--records=<dir>] [--out=<scratch dir>] [--pkg=<root>]
 #                        [--agreement=<file>] [--compare-only] [--gut=<name>]
 #   --compare-only skips the re-run and compares an existing --out directory.
-#   --gut applies one corruption from a0_guts (lib.R); used by gut.R.
+#   --gut applies one corruption from a0_guts (guts.R); used by gut.R.
 
 local({
   file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
@@ -42,32 +42,27 @@ a0_compare_records <- function(expected_dir, actual_dir) {
       next
     }
     if (identical(expected_sha, disk_sha(actual_dir, f))) next
-    read <- function(d) utils::read.csv(file.path(d, f), colClasses = "character", na.strings = character(), check.names = FALSE)
+    # Line-level report: the first differing line, the column it falls in
+    # (counting commas outside quotes) and the text around the first change.
+    read <- function(d) readLines(file.path(d, f), encoding = "UTF-8", warn = FALSE)
     e <- read(expected_dir); a <- read(actual_dir)
-    if (!identical(names(e), names(a))) {
-      add(f, 0L, "<header>", paste(names(e), collapse = ","), paste(names(a), collapse = ","))
+    n <- min(length(e), length(a))
+    i <- which(e[seq_len(n)] != a[seq_len(n)])
+    if (length(i) == 0L) {
+      add(f, if (length(e) == length(a)) NA else n, "<row count>", sprintf("%d rows", length(e) - 1L),
+        sprintf("%d rows", length(a) - 1L))
       next
     }
-    n <- max(nrow(e), nrow(a))
-    found <- FALSE
-    for (i in seq_len(n)) {
-      if (i > nrow(e) || i > nrow(a)) {
-        add(f, i, "<row count>", sprintf("%d rows", nrow(e)), sprintf("%d rows", nrow(a)))
-        found <- TRUE
-        break
-      }
-      bad <- names(e)[unlist(e[i, ]) != unlist(a[i, ])]
-      if (length(bad)) {
-        col <- bad[[1L]]
-        ev <- e[i, col]; av <- a[i, col]
-        at <- which(strsplit(ev, "")[[1L]][seq_len(min(nchar(ev), nchar(av)))] != strsplit(av, "")[[1L]][seq_len(min(nchar(ev), nchar(av)))])
-        start <- if (length(at)) max(1L, at[[1L]] - 30L) else max(1L, min(nchar(ev), nchar(av)) - 30L)
-        add(f, i, paste(bad, collapse = "|"), substring(ev, start), substring(av, start))
-        found <- TRUE
-        break
-      }
-    }
-    if (!found) add(f, NA, "<bytes>", "hash differs", "no cell differs (encoding or line ending)")
+    i <- i[[1L]]
+    ec <- strsplit(e[[i]], "")[[1L]]; ac <- strsplit(a[[i]], "")[[1L]]
+    m <- min(length(ec), length(ac))
+    at <- which(ec[seq_len(m)] != ac[seq_len(m)])
+    at <- if (length(at)) at[[1L]] else m + 1L
+    field <- 1L + sum(ec[seq_len(at - 1L)] == "," & cumsum(ec[seq_len(at - 1L)] == "\"") %% 2L == 0L)
+    header <- strsplit(e[[1L]], "\",\"", fixed = TRUE)[[1L]]
+    column <- if (i == 1L) "<header>" else gsub("^\"|\"$", "", header[[min(field, length(header))]])
+    start <- max(1L, at - 30L)
+    add(f, i - 1L, column, substring(e[[i]], start), substring(a[[i]], start))
   }
   if (length(diffs)) do.call(rbind, diffs) else data.frame()
 }

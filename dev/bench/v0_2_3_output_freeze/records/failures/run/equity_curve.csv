@@ -1,0 +1,5 @@
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
+"a0-failures-ok","2020-01-01T16:00:00Z","100000","0","100000","0","0"
+"a0-failures-ok","2020-01-02T16:00:00Z","99798","202","100000","0","0"
+"a0-failures-ok","2020-01-03T16:00:00Z","99798","204","100002","0","2"
+"a0-failures-ok","2020-01-04T16:00:00Z","99798","206","100004","0","4"

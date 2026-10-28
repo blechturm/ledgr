@@ -1,3 +1,0 @@
-"run_id","seq","class","message"
-"a0-dense_risk_features-loose","2","simpleWarning","LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the next-open fill model requires a following bar. No fill was emitted for this target change. Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
-"a0-dense_risk_features-tight","1","simpleWarning","LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the next-open fill model requires a following bar. No fill was emitted for this target change. Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."

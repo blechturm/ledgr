@@ -35,8 +35,15 @@ rows[[1L]] <- data.frame(gut = "control", what = "no corruption", expected_table
 for (name in names(a0_guts)) {
   g <- a0_guts[[name]]
   res <- run_check(name)
-  report <- grep(" / ", res$output, value = TRUE, fixed = TRUE)
-  names_table <- any(grepl(sprintf("%s / [a-z_0-9]+ / %s:", g$workload, g$expect), report))
+  # A corruption either changes a named record table or, for "<error>", must
+  # stop check.R with the stated message before any record is written.
+  if (identical(g$expect, "<error>")) {
+    report <- grep(g$error_pattern, res$output, value = TRUE, fixed = TRUE)
+    names_table <- length(report) > 0L
+  } else {
+    report <- grep(" / ", res$output, value = TRUE, fixed = TRUE)
+    names_table <- any(grepl(sprintf("%s / [a-z_0-9]+ / %s:", g$workload, g$expect), report))
+  }
   cat(sprintf("%s: exit %d, names %s/%s: %s\n", name, res$status, g$workload, g$expect, names_table))
   writeLines(paste("   ", res$output[grepl("FAIL|/|expected|actual", res$output)]))
   rows[[length(rows) + 1L]] <- data.frame(gut = name, what = g$what,

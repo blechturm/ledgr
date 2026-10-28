@@ -1,4 +1,4 @@
-"candidate_id","candidate_row","trade_seq","close_ts_utc","realized_pnl","win_loss","seq"
+"candidate_id:character","candidate_row:integer","trade_seq:integer","close_ts_utc:POSIXct/POSIXt","realized_pnl:numeric","win_loss:character","seq:integer"
 "loose","2","1","2020-01-02T00:00:00Z","9.7475000000000023","WIN","1"
 "loose","2","2","2020-01-05T00:00:00Z","56.909999999999741","WIN","2"
 "loose","2","3","2020-01-08T00:00:00Z","26.774999999999949","WIN","3"

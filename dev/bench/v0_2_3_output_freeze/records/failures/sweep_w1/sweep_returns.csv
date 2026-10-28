@@ -1,0 +1,5 @@
+"candidate_id:character","status:character","ts_utc:POSIXct/POSIXt","equity:numeric","period_return:numeric"
+"ok","DONE","2020-01-01T16:00:00Z","100000",NA
+"ok","DONE","2020-01-02T16:00:00Z","100000","0"
+"ok","DONE","2020-01-03T16:00:00Z","100002","1.9999999999908979e-05"
+"ok","DONE","2020-01-04T16:00:00Z","100004","1.9999600008091534e-05"

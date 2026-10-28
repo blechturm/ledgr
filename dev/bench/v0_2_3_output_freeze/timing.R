@@ -45,7 +45,9 @@ a0_fx_timing_scale <- function(db_path) {
   list(snapshot = snapshot, exp = exp, grid = grid, seed = 7L)
 }
 
-fixtures <- c(lapply(a0_workloads, `[[`, "fixture"), list(timing_scale = a0_fx_timing_scale))
+# The failures workload ends runs by design and is not timed.
+timed <- Filter(function(w) !isFALSE(w$timing), a0_workloads)
+fixtures <- c(lapply(timed, `[[`, "fixture"), list(timing_scale = a0_fx_timing_scale))
 
 elapsed <- function(expr) {
   start <- proc.time()[["elapsed"]]

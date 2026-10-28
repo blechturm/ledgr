@@ -1,0 +1,3 @@
+"run_id:character","events:integer","diagnostics_null:logical","completion_null:logical","summary_null:logical"
+"add","3","TRUE","TRUE","FALSE"
+"hold","2","TRUE","TRUE","FALSE"

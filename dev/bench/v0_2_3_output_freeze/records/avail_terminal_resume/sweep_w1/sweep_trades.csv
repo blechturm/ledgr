@@ -1,2 +1,2 @@
-"candidate_id","candidate_row","trade_seq","close_ts_utc","realized_pnl","win_loss","seq"
+"candidate_id:character","candidate_row:integer","trade_seq:integer","close_ts_utc:POSIXct/POSIXt","realized_pnl:numeric","win_loss:character","seq:integer"
 "straight","1","1","2020-01-05T09:30:00Z","-20","LOSS","1"

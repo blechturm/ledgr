@@ -1,4 +1,4 @@
-"candidate_id","status","ts_utc","equity","period_return"
+"candidate_id:character","status:character","ts_utc:POSIXct/POSIXt","equity:numeric","period_return:numeric"
 "flat","DONE","2020-01-01T00:00:00Z","10000",NA
 "flat","DONE","2020-01-02T00:00:00Z","10000","0"
 "flat","DONE","2020-01-03T00:00:00Z","10000","0"

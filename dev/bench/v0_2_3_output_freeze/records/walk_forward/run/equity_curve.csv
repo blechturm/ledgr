@@ -1,4 +1,4 @@
-"run_id","ts_utc","cash","positions_value","equity","realized_pnl","unrealized_pnl"
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
 "a0-walk_forward-large","2020-01-01T16:00:00Z","10000","222","10222","0","0"
 "a0-walk_forward-large","2020-01-02T16:00:00Z","9633.5","590","10223.5","-0.5","2"
 "a0-walk_forward-large","2020-01-03T16:00:00Z","9633.5","595","10228.5","-0.5","7"

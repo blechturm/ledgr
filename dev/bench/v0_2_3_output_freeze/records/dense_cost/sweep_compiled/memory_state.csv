@@ -1,0 +1,4 @@
+"run_id:character","events:integer","diagnostics_null:logical","completion_null:logical","summary_null:logical"
+"flat","0","TRUE","TRUE","FALSE"
+"open_end","1","TRUE","TRUE","FALSE"
+"partial","5","TRUE","TRUE","FALSE"

@@ -1,1 +1,1 @@
-"run_id","promotion_context_version","source","promoted_at_utc","note","selected_candidate_json","source_sweep_json","candidate_summary_json"
+"run_id:character","promotion_context_version:character","source:character","promoted_at_utc:POSIXct/POSIXt","note:character","selected_candidate_json:character","source_sweep_json:character","candidate_summary_json:character"

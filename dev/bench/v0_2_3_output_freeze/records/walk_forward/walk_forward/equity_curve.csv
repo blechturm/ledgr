@@ -1,4 +1,4 @@
-"run_id","ts_utc","cash","positions_value","equity","realized_pnl","unrealized_pnl"
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
 "wf_31c04f40b5d7_fold_1_a083e259fb4a","2020-01-04T16:00:00Z","10000","228","10228","0","6"
 "wf_31c04f40b5d7_fold_1_a083e259fb4a","2020-01-05T16:00:00Z","9874.5","354","10228.5","-0.5","7"
 "wf_31c04f40b5d7_fold_1_a083e259fb4a","2020-01-06T16:00:00Z","9874.5","358","10232.5","-0.5","11"

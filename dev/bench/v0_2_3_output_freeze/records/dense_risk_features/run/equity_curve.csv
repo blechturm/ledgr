@@ -1,4 +1,4 @@
-"run_id","ts_utc","cash","positions_value","equity","realized_pnl","unrealized_pnl"
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
 "a0-dense_risk_features-loose","2020-01-01T00:00:00Z","10000","500","10500","0","5"
 "a0-dense_risk_features-loose","2020-01-02T00:00:00Z","10504.747499999999","0","10504.747499999999","9.7475000000000023","0"
 "a0-dense_risk_features-loose","2020-01-03T00:00:00Z","10504.747499999999","0","10504.747499999999","9.7475000000000023","0"

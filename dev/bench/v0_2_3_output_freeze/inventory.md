@@ -86,7 +86,16 @@ persisted trace.
 | `avail_acquisition` | run, sweep_w1 | cash acquisition disposition at the deal price | `test-corporate-action-recovery.R` |
 | `avail_incomplete` | run, sweep_w1, sweep_w2 | INCOMPLETE terminal outcome and completion evidence | `test-availability-parity.R` |
 | `walk_forward` | run, sweep_w1, walk_forward | train sweeps (M) and carried test runs (P) on a gapped calendar with fees | `test-availability-parity.R` LTB-0024 |
+| `failures` | run, run_abort, sweep_w1, sweep_w2 | strategy error mid-run: FAILED run, `error_msg`, exception diagnostic after rollback; FAILED sweep candidate beside a DONE sibling (one and two workers); dense coverage refusal through `abort_run` | `test-sweep-persistence-parity.R` (244), `test-availability-parity.R` |
 
-Demoted: promotion (`ledgr_promote` writes wall-clock and sweep-id
-context; its fold is `ledgr_run`), `ledgr_run_window` and `ledgr_sweep_window`,
-precomputed features, and failed candidates (see closeout open points).
+In-process memory paths (`sweep_w1`, `sweep_compiled`) also record the
+memory sink's own buffers (`memory_events` with typed attributes,
+`memory_diagnostics`, `memory_completion`, `memory_equity`, `memory_fills`,
+`memory_state`); two-worker paths run the sink inside mirai daemons, so only
+their public sweep output is recorded.
+
+Demoted: promotion (`ledgr_promote` writes wall-clock and sweep-id context;
+its fold is `ledgr_run`), `ledgr_run_window` and `ledgr_sweep_window`,
+precomputed features, and a finalization failure (reachable only by mocking
+`DBI::dbWithTransaction`, as `test-availability-parity.R` 276 does; no public
+API reaches it).
