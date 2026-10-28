@@ -43,13 +43,16 @@ tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
     workstream: 1
-    status: "planned"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "Make the governance report treat inst/design/ledgr_v0_2_3_spec_packet/ as the current packet: change both default current_packet values in tools/governance-report.R (about lines 1445 and 1583, still ledgr_v0_2_2_spec_packet) and any test that pins the old default. Add a regression test showing that a malformed completed ticket in a v0.2.3 fixture is detected through each report entry point without a current_packet override. Record the documentation-roles RFC opening in its rfc/README.md row."
     acceptance: ["both report entry points default to the v0.2.3 packet, and the new regression test fails if either default is reverted", "the governance report exits with no structural finding on this cut", "the documentation-roles-pin-reset pipeline row names its next stage"]
-    evidence: []
+    evidence:
+      - "tests/testthat/test-governance-report.R#LTB-0514 (claim LCL-0505, commit eb51c156): governance_report() and governance_main() both report the malformed completed-ticket evidence of a fixture packet at the v0.2.3 path without a current_packet override; dev/governance_guard/default_packet_revert_demo.R shows the block passing unchanged and failing when either default is reverted (line 1445: input error, no tickets; line 1583: 4 failed expectations)."
+      - "Empirical: input tracked design and governance population with the default packet; environment Windows 11 x64 with R 4.6.1; source commit eb51c156 plus this evidence update to tickets.yml; reproduction command Rscript tools/governance-report.R --root=<worktree>; reviewed range 07f91bcf..eb51c156; result exit 0 over 335 sources with zero findings sourced at inst/design/ledgr_v0_2_3_spec_packet/tickets.yml (no incomplete, malformed or empirical evidence-form finding for this cut); the 905 new structural findings are pre-existing header and link debt elsewhere, plus 79 unclassified_horizon_open because this packet has no horizon_open_classification.md (routed to the maintainer in the phase A report); clock 76.275 seconds wall; inst/design/ledgr_v0_2_3_spec_packet/tickets.yml."
+      - "inst/design/rfc/README.md#documentation-roles-pin-reset (commit eb51c156): the row is Active, records its opening with Cut 1 decision (4) without a ticket, and names its next stage, a seed for the Type 2 page-role decision."
   - id: "LDG-3127"
     title: "Freeze the timing protocol and measure the base tree"
     workstream: 1
