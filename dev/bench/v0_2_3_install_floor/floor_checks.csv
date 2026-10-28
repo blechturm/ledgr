@@ -1,0 +1,5 @@
+"step","command","exit_code","seconds","note"
+"0_library_paths","Rscript --vanilla <probe: cat(.libPaths())>",0,0.1,"C:/Users/maxth/ledgr-wt/m4-libs/lib-min | C:/Program Files/R/R-4.6.1/library"
+"1_r_cmd_install","R CMD INSTALL --preclean -l C:/Users/maxth/ledgr-wt/m4-libs/lib-min .",0,20.4,""
+"2_fast_profile_ordinary","Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=C:/Users/maxth/ledgr-wt/m4-libs/records --run-index=1",0,145.2,""
+"3_readme_cold_start","Rscript --vanilla tools/check-readme-example.R",0,19.7,""
