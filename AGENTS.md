@@ -78,15 +78,15 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-10-27):
+Current planning context (2026-10-28):
 
 - v0.2.2 is published. Its packet at
   `inst/design/ledgr_v0_2_2_spec_packet/` is release evidence, not current
   implementation authority.
-- The active planning release is v0.2.3. Its packet front door is
-  `inst/design/ledgr_v0_2_3_spec_packet/`. No cut or executable ticket exists
-  until the maintainer accepts one; use the roadmap and RFC pipeline for the
-  current design order.
+- The active release is v0.2.3 on `release/v0.2.3`; its packet is
+  `inst/design/ledgr_v0_2_3_spec_packet/`. Its accepted `macro_plan.md` binds
+  cuts: measure, cut, Codex cut review, implement; each cut is release-ready
+  and records its identity impact.
 - `inst/design/contracts.md` binds shipped behavior. Accepted sections bind
   their stated pending scope; incorporated evidence binds only the promoted
   rule. Acceptance does not claim implementation.
@@ -105,7 +105,7 @@ planning are evidence, not authorization for new work.
 | Question | Start here |
 | --- | --- |
 | What is current behavior? | `inst/design/contracts.md`, by topic heading |
-| What is being planned now? | `inst/design/ledgr_v0_2_3_spec_packet/README.md`, then the roadmap and RFC pipeline |
+| What is being planned now? | `inst/design/ledgr_v0_2_3_spec_packet/README.md`, then its `macro_plan.md` and the RFC pipeline |
 | What shipped in v0.2.2? | `inst/design/ledgr_v0_2_2_spec_packet/README.md`, then its frozen macro plan and tickets |
 | Which accepted decisions are pending implementation? | `inst/design/decisions.md`, then the linked accepted source |
 | Which RFC is active or due? | `inst/design/rfc/README.md` |
