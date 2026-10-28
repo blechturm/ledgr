@@ -25,7 +25,7 @@ Final candidate: `697f32ee42c395aa6dc282e8a3f05fa8e4ae8d05`.
 | A0 byte identity | `check.R` exit 0 on the final candidate; `gut.R` exit 0, control passes and all 17 corruptions fail naming their table | LDG-3132 evidence |
 | Full tests, build, check | `test_local` exit 0 (1228 blocks, 0 failed, 1 unrelated quantmod skip); `R CMD build` exit 0; `R CMD check --no-manual --no-build-vignettes` exit 0 with 1 NOTE (see below) | LDG-3132 evidence |
 | Parity retirement | All 26 blocks inventoried; none retired; worker native-buffer witness LTB-0519 and cross-sink events LTB-0520 added | [ws1_parity_coverage_map.md](ws1_parity_coverage_map.md) |
-| Timing | Gate record CHECK PASS: all 18 cells at most 1.03 | [gate_final record](../../../dev/bench/v0_2_3_ws1_timing/records/gate_final/raw.csv) |
+| Timing | Gate record CHECK PASS: all 18 cells at most 1.03 (numerical pass; the protocol's background-application instruction was not met, see Timing) | [gate_final record](../../../dev/bench/v0_2_3_ws1_timing/records/gate_final/raw.csv) |
 
 ## Identity and release impact (cut decision (3))
 
@@ -50,8 +50,15 @@ eight alternating pairs, 288 fresh processes each.
   (walk_forward run). The 50x1260 cells came out at 1.011 (run) and 1.017
   (sweep), against 0.995 and 1.007 in the A/A record, so the large workload
   may carry a small cost of about 1%, within the bound. Base medians ran about
-  5 to 7% higher than in the A/A record in both arms; host snapshot and a 30 s
-  CPU trace (mean 16%, max 19%) are kept beside the record.
+  5 to 7% higher than in the A/A record in both arms; a host snapshot and 45
+  valid CPU samples at 30-second intervals over about 22 minutes (total CPU
+  mean 16.1%, max 18.7%) are kept beside the record.
+
+**Host conditions and maintainer disposition.** Both records pass `check.R`
+numerically, but neither met the protocol's instruction to close background
+applications first (close review
+[F1](ws1_close_review.md#f1---p2-numeric-timing-pass-is-presented-as-a-completed-protocol-gate-despite-the-recorded-host-departure)). Maintainer decision,
+2026-10-29 (option A): "The maintainer accepts the timing records base_aa and gate_final under their recorded host conditions (Positron and TotalMixFX open in both, Steam additionally at the gate, Codex processes present but idle, High performance plan and P-core affinity 0xFFFF verified per row). Rationale: alternating base/candidate pairs expose both arms to the same background state; both records pass check.R within the 1.03 bound; the records cannot prove that background load caused any ratio. The protocol's background-application instruction is not amended; future gates follow it." Both records are unchanged.
 
 H6, committed-run median over sweep median, base and candidate:
 
@@ -67,9 +74,9 @@ H6, committed-run median over sweep median, base and candidate:
 | timing_scale | 1.46 | 1.44 |
 | dense_scale_50x1260 | 1.28 | 1.27 |
 
-WS1 does not change the committed-run versus sweep gap. The roadmap's hope
-that one handler would close most of H6 is not borne out: the gap lies
-outside the handler code WS1 consolidated.
+The measured H6 gap remains, with no material closure under the declared
+warm-call boundary; this comparison does not locate the remaining cost. The
+roadmap's hope that one handler would close most of H6 is not borne out.
 
 ## Open points
 
