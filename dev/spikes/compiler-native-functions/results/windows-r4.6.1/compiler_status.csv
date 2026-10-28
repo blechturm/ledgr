@@ -1,0 +1,5 @@
+"compiler","available","version","detail"
+"rcpp",TRUE,"1.1.2","sourceCpp bundle compiled"
+"quickr",TRUE,"0.3.0","all six functions compiled"
+"ast2ast",TRUE,"1.1.1","all five functions compiled"
+"nCompiler",FALSE,"0.1","installed; opt-in compile disabled after the Windows/R 4.6.1 probe failed while building generated Eigen tensor support; set LEDGR_COMPILER_SPIKE_NCOMPILER=1 to retry"

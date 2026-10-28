@@ -1,0 +1,13 @@
+"compiler","compile_sec","first_execution_sec","compile_plus_first_sec"
+"rcpp_bundle",3.21,0,3.21
+"quickr_numerical",5.58,0,5.58
+"quickr_stateful",5.1,0,5.1
+"quickr_batch",5.46,0,5.46
+"quickr_batch_parallel",7.19,0,7.19
+"quickr_masked",5.48,0,5.48
+"quickr_special",5.36,0,5.36
+"ast2ast_numerical",6.06,0,6.06
+"ast2ast_stateful",5.31,0,5.31
+"ast2ast_batch",5.1,0,5.1
+"ast2ast_masked",5.14,0,5.14
+"ast2ast_special",4.73,0,4.73
