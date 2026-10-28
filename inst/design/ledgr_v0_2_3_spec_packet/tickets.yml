@@ -56,13 +56,15 @@ tickets:
   - id: "LDG-3127"
     title: "Freeze the timing protocol and measure the base tree"
     workstream: 1
-    status: "planned"
+    status: "in_progress"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3126"]
     scope: "Before any handler code changes, freeze and commit the timing protocol and runner: the complete workload and path matrix (the A0 timing workloads, the 20x252 workload and one larger dense workload chosen and named here, each through ledgr_run and ledgr_sweep), their inputs, seeds, candidate counts, retained result surface and clock endpoints. Each measurement is one fresh R process; base and candidate alternate in at least five pairs; both arms use the same declared untimed warmup and warm-snapshot policy; raw seconds are kept at full precision; the statistic is the ratio of medians per workload and path. The runner records both source trees (commit or source digest), toolchain and the actual inherited power plan and affinity (High performance, P-core mask 0xFFFF). A checker rejects missing, duplicate, non-finite or non-positive measurements, failed or incomplete executions where completion is expected and unexpected skips, and evaluates the 1.03 bound per cell; its failure on a missing row and on a ratio above 1.03 is demonstrated. No automatic retries. Then measure the base tree and report the committed-run versus sweep gap (inventory H6)."
     acceptance: ["the protocol, runner and checker are committed before any handler change", "the checker's failures on a missing row and on a ratio above 1.03 are demonstrated", "a base-tree record names commit, toolchain, verified power plan and affinity, the full matrix with raw seconds and the H6 gap per workload"]
-    evidence: []
+    evidence:
+      - "dev/bench/v0_2_3_ws1_timing/protocol.md (commit 5771d955): the frozen protocol ws1-timing-1 (matrix.R, measure.R, runner.R, check.R, check_demo.R) is committed while R/, src/, DESCRIPTION and NAMESPACE are unchanged from 07dbbc87; the 9-workload x 2-path matrix, eight alternating fresh-process pairs, warmup, clock endpoints and retained surfaces are named there."
+      - "Empirical: input synthetic full-matrix records built by the demo from the frozen matrix; environment Windows 11 x64 with R 4.6.1; source commit 5771d955; reproduction command Rscript --no-init-file dev/bench/v0_2_3_ws1_timing/check_demo.R; reviewed range 07dbbc87..5771d955; result the clean record passes, a missing row and a 1.031 ratio both fail (check.R command-line exit 1 each), and twelve further corruptions (duplicate, NaN, zero, failed, skipped, unexpected status, unpinned, smoke, five pairs, changed protocol, differing work, empty) fail for their named reason, while a linked exception passes the over-bound cell; clock 1.887 seconds wall; dev/bench/v0_2_3_ws1_timing/check_demo.R."
   - id: "LDG-3128"
     title: "Fix the sink boundary and the R3 contract sentence in writing"
     workstream: 1
