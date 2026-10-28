@@ -1,0 +1,19 @@
+Question: can remaining per-pulse work be shared across candidates enough to improve the existing sweep architecture?
+Prerequisite: exact outputs from one strategy/accounting implementation under both loop orders.
+Kill condition: no integration recommendation without parity and >=10% gains on common-feature and stateful varying-feature representative shapes.
+
+Gutted path:
+- shared pulse preparation adds 1 to the first result cash; C01 fails.
+
+Demoted or deleted:
+- no new execution engine;
+- no pulse synchronization between workers;
+- no native backend;
+- no duplicate accounting implementation;
+- no claim that already-shared bars or feature projections are new savings.
+
+Learned:
+- ledgr already shares sweep-wide bars, pulse views, feature union/projection and worker invariants;
+- loop ordering alone is not a useful speed lever;
+- shared slice extraction helps wide universes but does not meet the integration threshold generally;
+- coarser worker batches reduce dispatch overhead, but Windows process RSS and minimum-work thresholds matter.
