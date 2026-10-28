@@ -56,7 +56,7 @@ tickets:
   - id: "LDG-3127"
     title: "Freeze the timing protocol and measure the base tree"
     workstream: 1
-    status: "in_progress"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3126"]
@@ -65,10 +65,11 @@ tickets:
     evidence:
       - "dev/bench/v0_2_3_ws1_timing/protocol.md (commit 5771d955): the frozen protocol ws1-timing-1 (matrix.R, measure.R, runner.R, check.R, check_demo.R) is committed while R/, src/, DESCRIPTION and NAMESPACE are unchanged from 07dbbc87; the 9-workload x 2-path matrix, eight alternating fresh-process pairs, warmup, clock endpoints and retained surfaces are named there."
       - "Empirical: input synthetic full-matrix records built by the demo from the frozen matrix; environment Windows 11 x64 with R 4.6.1; source commit 656ee7a5; reproduction command Rscript --no-init-file dev/bench/v0_2_3_ws1_timing/check_demo.R; reviewed range 07dbbc87..656ee7a5; result the clean record passes, a missing row and a 1.031 ratio both fail (check.R command-line exit 1 each), and sixteen further corruptions (duplicate, NaN, zero, failed, skipped, unexpected status, unpinned, smoke, five pairs, changed protocol, differing work, empty, malformed arm commit, wrong arm library, missing toolchain field, non-alternating arms) fail for their named reason, while a linked exception passes the over-bound cell; clock 2.224 seconds wall; dev/bench/v0_2_3_ws1_timing/check_demo.R."
+      - "Empirical: input the frozen ws1-timing-1 matrix (9 workloads x run and sweep, 8 alternating pairs, 288 fresh processes), A/A with base = candidate = 07dbbc87 installed twice from git archive; environment i9-12900K, R 4.6.1 ucrt, g++ 14.2.0, duckdb 2.0.0, collapse 2.1.8, mirai 2.7.2, High performance plan and affinity 0xFFFF verified by the runner and every row, CPU about 4 to 8 percent at launch with codex (5 idle processes), TotalMixFX, SpotifyLauncher and an idle Positron still open; source commit 3971cd1f (runner) measuring 07dbbc87; reproduction command runner.R --base=07dbbc87 --candidate=07dbbc87 --label=base_aa from a pinned PowerShell, then check.R --record=dev/bench/v0_2_3_ws1_timing/records/base_aa; reviewed range 07dbbc87..3971cd1f; result CHECK PASS, all 18 A/A ratios of medians 0.925 to 1.021 (walk_forward sweep 0.925 widest; dense_scale_50x1260 0.995 and 1.007), base H6 run/sweep median dense_cost 3.23, dense_risk_features 2.77, dense_dividend_state 2.84, avail_terminal_resume 1.73, avail_acquisition 2.85, avail_incomplete 2.85, walk_forward 2.47, timing_scale 1.44, dense_scale_50x1260 1.28; A/A noise reaches about 7.5 percent below 1.0 on a small sweep cell, so the one-sided 1.03 gate has limited resolution on the sub-second cells, while both 50x1260 cells agreed within 0.7 percent; clock 2026-10-28T18:04:38Z to 18:24:52Z (20 min 14 s wall); dev/bench/v0_2_3_ws1_timing/records/base_aa/raw.csv."
   - id: "LDG-3128"
     title: "Fix the sink boundary and the R3 contract sentence in writing"
     workstream: 1
-    status: "in_progress"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3127"]
@@ -77,7 +78,7 @@ tickets:
     evidence:
       - "inst/design/ledgr_v0_2_3_spec_packet/ws1_output_handler_design.md#5-method-map-every-method-of-both-handlers-one-row-each (commits ee359d08, 656ee7a5): the method map lists all 29 method names (19 shared, 2 persistent-only, 8 memory-only) once each, and Section 6 maps the fold, ledgr_run, ledgr_sweep, walk-forward, ledgr_require_compiled_spot_fifo_dispatch(), tests, the A0 harness and the active peer benchmark in one row each, plus three additional internal consumers."
       - "inst/design/ledgr_v0_2_3_spec_packet/ws1_output_handler_design.md#4-sink-capabilities (commit 656ee7a5, after review F3): a failure-propagation rule, every capability per sink, and Section 4.1 with the return and side effect of every method on both sinks; optional capabilities, including append_compiled_spot_batch on DuckDB, are absent rather than no-ops, and each handler keeps today's method set for its kind, so the compiled guard admits the same handlers."
-      - "inst/design/ledgr_v0_2_3_spec_packet/ws1_output_handler_design.md#10-r3-one-publication-delta-computation (commit 656ee7a5, after review F1): records ledgr_fill_publication_deltas() as the one publication computation for ledgr_fill_event_payload() and ledgr_write_fill_events(), the unchanged planner, fold-state and compiled arithmetic outside it, ledgr_fill_leg_fees() as the named leg projection, and the row-materialization contract sentence limited to the canonical R path (compiled batches publish the fold's typed deltas unchanged), all before any product change. Completion awaits LDG-3127's base measurement and the Phase A re-review (ws1_phase_a_review.md F4)."
+      - "inst/design/ledgr_v0_2_3_spec_packet/ws1_output_handler_design.md#10-r3-one-publication-delta-computation (commit 656ee7a5, after review F1): records ledgr_fill_publication_deltas() as the one publication computation for ledgr_fill_event_payload() and ledgr_write_fill_events(), the unchanged planner, fold-state and compiled arithmetic outside it, ledgr_fill_leg_fees() as the named leg projection, and the row-materialization contract sentence limited to the canonical R path (compiled batches publish the fold's typed deltas unchanged), all before any product change. The Phase A re-review passed (ws1_phase_a_review_2.md) and LDG-3127's base record completed first."
   - id: "LDG-3129"
     title: "Compute fill-row publication deltas once and name the leg-fee projection (R3)"
     workstream: 1
