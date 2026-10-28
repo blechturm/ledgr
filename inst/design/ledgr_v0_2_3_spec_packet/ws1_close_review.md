@@ -411,3 +411,68 @@ The checker output and agreement are in `T/ws1_close_a0` and
 `T/ws1_close_agreement.csv`; the gut result is
 `T/ws1_close_gut_results.csv`. These temporary outputs are not committed.
 Only this review file was intentionally written in the repository.
+
+## Focused re-review
+
+Verdict: PASS
+
+Independent clean-context Type 1 re-review, 2026-10-29. Scope: corrections
+`d2c12e20` and `945a96a4` against F1/F2's exact required changes, plus the two
+optional wording edits. HEAD: `945a96a4bb48977f8b088d9fb8c78c0f5c0021e6`.
+The original product review and its historical verdict above remain intact.
+
+**F1 satisfied.** LDG-3127 and LDG-3132 evidence and `ws1_disposition.md`
+record the same verbatim maintainer decision of 2026-10-29, option A, accepting
+`base_aa` and `gate_final` under their recorded host conditions. All three
+distinguish numerical checker passes from the unmet background-application
+instruction and link F1. This verifies the recorded maintainer disposition;
+the reviewer grants no disposition. Both checkers independently exit 0.
+The records subtree has identical Git tree ID
+`04485e51495a7b22534f40e116c7f72040ccbe72` at `d8906f77` and `945a96a4`,
+establishing byte identity of both committed records. The frozen protocol's
+blob is identically `25a92eee7e2a03c6420fe50b4a7396ce249868c2`; identities,
+eight pairs, alternation and threshold are unchanged.
+
+**F2 satisfied.** Both evidence routes attribute historical 83 to `656ee7a5`:
+80 inherited (78 header/link plus two verdict findings), plus three WS1
+review-header findings. They identify all seven WS1 findings at `d8906f77`
+as this cut's record debt, now repaired, leaving the 80 inherited findings.
+Independent production-scanner header/link/verdict scans reproduce totals
+80, 83, 87 and 80 at `07dbbc87`, `656ee7a5`, `d8906f77` and `945a96a4`,
+respectively, with WS1 counts 0, 3, 7 and 0. The current packet scan covers
+28 documents: 78 header/link findings, two inherited invalid verdicts,
+zero WS1 findings. Exact line comparisons confirm the three earlier review
+files changed only Role/Status/Authority headers and their separating blanks;
+all verdict and finding text is identical.
+
+**Optional wording and scope verified.** The CPU CSV contains 45 valid samples
+at approximately 30-second intervals over 22.01 minutes, mean 16.12481% and
+maximum 18.72992%, matching the revised description. Recomputed H6 values
+support the revised sentence that the gap remains without locating its cost.
+The complete correction range changes only six governance/review files; no
+product, test or timing-record change. Ticket-evidence scan: zero findings.
+
+Commands below use `P` and the explicit read-only `G` expansion defined above;
+each shell call was one command. R stdin probes sourced the unchanged
+`P/tools/governance-report.R`; historical probes supplied Git blob lines and
+each revision's tracked population to the production scanners. No timing
+runner, product tests or package checks were rerun for this bounded review.
+
+| Command/invocation | Exit | Result |
+| --- | ---: | --- |
+| `G log --oneline --stat d8906f77..945a96a4`; `G diff --name-only d8906f77 945a96a4`; scoped evidence/header diffs | 0 each | Exactly the two corrections and six governance/review paths |
+| `G diff --exit-code d8906f77 945a96a4 -- R src tests dev/bench/v0_2_3_ws1_timing` | 0 | Protected sources, records and protocol unchanged |
+| `G rev-parse HEAD d8906f77:dev/bench/v0_2_3_ws1_timing/records 945a96a4:dev/bench/v0_2_3_ws1_timing/records d8906f77:dev/bench/v0_2_3_ws1_timing/protocol.md 945a96a4:dev/bench/v0_2_3_ws1_timing/protocol.md` | 0 | Matching tree/blob identities above |
+| `Rscript P/dev/bench/v0_2_3_ws1_timing/check.R --record=P/dev/bench/v0_2_3_ws1_timing/records/base_aa`; same for `gate_final` | 0 each | CHECK PASS, all 18 cells each |
+| `Rscript -` (current packet: `governance_scan_headers`, `governance_scan_links`, `governance_scan_states_and_verdicts`, `governance_scan_ticket_evidence`; YAML decision equality and CPU assertions) | 0 | 78 + 2 inherited; WS1 0; ticket evidence 0; decision and CPU assertions pass |
+| `Rscript -` (same header/link/verdict scanners over Git sources at the four revisions above; exact three-review line comparisons) | 0 | Historical/current splits reproduced; only headers changed |
+| `G diff --exit-code HEAD -- . ':(exclude)inst/design/ledgr_v0_2_3_spec_packet/ws1_close_review.md'` | 0 | No normalized content change outside this review |
+| `G diff --check -- inst/design/ledgr_v0_2_3_spec_packet/ws1_close_review.md`; final packet/WS1/ticket scans and append-only assertions | 0 each | Review addition clean; WS1 and ticket evidence remain zero |
+
+Tooling notes: initial plain `git -C P status --short --branch` exited 1
+(ownership refusal); the explicit Git-directory form succeeded without a
+configuration change. An initial `rg` included a nonexistent guessed scanner
+path and exited 1; the actual `tools/governance-report.R` was then read.
+R emitted locale startup warnings. Existing line-ending-only status marks in
+`R/cpp11.R` and `src/cpp11.cpp` were present initially and were not edited.
+Only this appended review section was written; no commit was made.
