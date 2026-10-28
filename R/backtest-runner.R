@@ -129,12 +129,9 @@ ledgr_fill_event_payload <- function(run_id,
   fee <- fill_intent$fee
   ts_exec_utc <- fill_intent$ts_exec_utc
 
-  signed_qty <- if (side == "BUY") as.numeric(qty) else -as.numeric(qty)
-  cash_delta <- if (side == "BUY") {
-    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(fee))
-  } else {
-    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(fee))
-  }
+  deltas <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)
+  signed_qty <- deltas$position_delta
+  cash_delta <- deltas$cash_delta
 
   ts_exec_posix <- ledgr_ts_utc_posix(
     ts_exec_utc,

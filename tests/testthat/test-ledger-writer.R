@@ -850,3 +850,234 @@ testthat::test_that("transactionality: failed insert leaves no partial row", {
   testthat::expect_identical(n, 0)
 })
 
+
+testthat::test_that("[LTB-0515] fill-row publication deltas are computed once for every publication path", {
+  # Independent oracle: the resolved fill's side, quantity, price and fee.
+  oracle <- function(fill) {
+    q <- as.numeric(fill$qty)
+    p <- as.numeric(fill$fill_price)
+    f <- as.numeric(fill$fee)
+    if (identical(fill$side, "BUY")) {
+      list(cash_delta = -(q * p + f), position_delta = q)
+    } else {
+      list(cash_delta = q * p - f, position_delta = -q)
+    }
+  }
+  buy <- ledgr_test_next_open_fill(
+    desired_qty_delta = 3,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 101.37),
+    spread_bps = 7,
+    commission_fixed = 1.25
+  )
+  sell <- ledgr_test_next_open_fill(
+    desired_qty_delta = -2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-03T00:00:00Z", open = 99.11),
+    spread_bps = 7,
+    commission_fixed = 0.5
+  )
+  no_fee <- ledgr_test_next_open_fill(
+    desired_qty_delta = 4,
+    next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-02T00:00:00Z", open = 50),
+    spread_bps = 0,
+    commission_fixed = 0
+  )
+  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
+  fills <- list(buy = buy, sell = sell, no_fee = no_fee)
+  testthat::expect_identical(buy$side, "BUY")
+  testthat::expect_identical(sell$side, "SELL")
+  testthat::expect_gt(buy$fee, 0)
+  testthat::expect_identical(no_fee$fee, 0)
+
+  # The shared computation itself.
+  for (name in names(fills)) {
+    fill <- fills[[name]]
+    testthat::expect_identical(
+      ledgr:::ledgr_fill_publication_deltas(fill$side, fill$qty, fill$fill_price, fill$fee),
+      oracle(fill),
+      info = name
+    )
+  }
+
+  publish <- function() {
+    con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+    ledgr_create_schema(con)
+    insert_test_run(con, "r3-durable")
+    insert_test_run(con, "r3-live")
+    durable <- ledgr:::ledgr_persistent_output_handler(
+      con = con,
+      run_id = "r3-durable",
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
+    durable$init_buffers(8L)
+    live <- ledgr:::ledgr_persistent_output_handler(
+      con = con,
+      run_id = "r3-live",
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "db_live"
+    )
+    live$init_buffers(8L)
+    memory <- ledgr:::ledgr_memory_output_handler("r3-memory")
+    memory$init_buffers(8L)
+    out <- list(durable = list(), live = list(), memory = list())
+    seq_no <- 1L
+    for (name in names(fills)) {
+      out$durable[[name]] <- durable$write_fill_events(fills[[name]], seq_no, use_transaction = FALSE)
+      out$live[[name]] <- live$write_fill_events(fills[[name]], seq_no, use_transaction = TRUE)
+      out$memory[[name]] <- memory$write_fill_events(fills[[name]], seq_no, use_transaction = FALSE)
+      seq_no <- seq_no + 1L
+    }
+    out$durable_none <- durable$write_fill_events(none, seq_no, use_transaction = FALSE)
+    out$live_none <- live$write_fill_events(none, seq_no, use_transaction = TRUE)
+    out$memory_none <- memory$write_fill_events(none, seq_no, use_transaction = FALSE)
+    durable$flush_pulse_events()
+    durable$flush_pending()
+    memory$flush_pulse_events()
+    read_meta <- function(run_id) {
+      rows <- DBI::dbGetQuery(
+        con,
+        "SELECT meta_json FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+        params = list(run_id)
+      )
+      lapply(rows$meta_json, parse_meta)
+    }
+    out$durable_meta <- read_meta("r3-durable")
+    out$live_meta <- read_meta("r3-live")
+    events <- memory$typed_events()
+    out$memory_cash <- attr(events, "ledgr_event_cash_delta")
+    out$memory_position <- attr(events, "ledgr_event_position_delta")
+    out
+  }
+
+  check <- function(out, shift) {
+    for (k in seq_along(fills)) {
+      name <- names(fills)[[k]]
+      want <- oracle(fills[[name]])
+      want$cash_delta <- want$cash_delta + shift
+      for (path in c("durable", "live", "memory")) {
+        res <- out[[path]][[name]]
+        testthat::expect_identical(res$status, "WROTE", info = paste(path, name))
+        testthat::expect_identical(res$cash_delta, want$cash_delta, info = paste(path, name))
+        testthat::expect_identical(res$position_delta, want$position_delta, info = paste(path, name))
+      }
+      for (path in c("durable_meta", "live_meta")) {
+        meta <- out[[path]][[k]]
+        testthat::expect_identical(as.numeric(meta$cash_delta), want$cash_delta, info = paste(path, name))
+        testthat::expect_identical(as.numeric(meta$position_delta), want$position_delta, info = paste(path, name))
+        testthat::expect_identical(as.numeric(meta$fee), as.numeric(fills[[name]]$fee), info = paste(path, name))
+      }
+      testthat::expect_identical(out$memory_cash[[k]], want$cash_delta, info = paste("memory", name))
+      testthat::expect_identical(out$memory_position[[k]], want$position_delta, info = paste("memory", name))
+    }
+    for (path in c("durable_none", "live_none", "memory_none")) {
+      testthat::expect_identical(out[[path]]$status, "NO_OP", info = path)
+      testthat::expect_identical(out[[path]]$next_event_seq, 4L, info = path)
+    }
+    testthat::expect_length(out$durable_meta, 3L)
+    testthat::expect_length(out$live_meta, 3L)
+    testthat::expect_length(out$memory_cash, 3L)
+  }
+
+  check(publish(), shift = 0)
+
+  # Perturbing the one computation moves every publication path with it, and
+  # a NO_OP never reaches it.
+  original <- ledgr:::ledgr_fill_publication_deltas
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_fill_publication_deltas = function(side, qty, fill_price, fee) {
+      calls <<- calls + 1L
+      out <- original(side, qty, fill_price, fee)
+      out$cash_delta <- out$cash_delta + 1
+      out
+    },
+    .package = "ledgr"
+  )
+  check(publish(), shift = 1)
+  testthat::expect_identical(calls, 9L)
+})
+
+testthat::test_that("[LTB-0516] the db_live writer keeps its validation and transaction behavior around the shared deltas", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  run_id <- "r3-live-writer"
+  insert_test_run(con, run_id)
+  count <- function() {
+    as.integer(DBI::dbGetQuery(
+      con,
+      "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?",
+      params = list(run_id)
+    )$n[[1L]])
+  }
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = 2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
+    spread_bps = 0,
+    commission_fixed = 0.75
+  )
+
+  calls <- 0L
+  original <- ledgr:::ledgr_fill_publication_deltas
+  testthat::local_mocked_bindings(
+    ledgr_fill_publication_deltas = function(...) {
+      calls <<- calls + 1L
+      original(...)
+    },
+    .package = "ledgr"
+  )
+
+  # Validation runs before the shared computation and writes nothing.
+  bad_side <- fill
+  bad_side$side <- "HOLD"
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, run_id, bad_side, event_seq_start = 1L),
+    class = "ledgr_invalid_fill_intent"
+  )
+  bad_fee <- fill
+  bad_fee$fee <- -1
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, run_id, bad_fee, event_seq_start = 1L),
+    class = "ledgr_invalid_fill_intent"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, "no-such-run", fill, event_seq_start = 1L),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_identical(calls, 0L)
+  testthat::expect_identical(count(), 0L)
+
+  # NO_OP short-circuits before validation and the computation.
+  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
+  testthat::expect_identical(
+    ledgr:::ledgr_write_fill_events(con, run_id, none, event_seq_start = 5L)$next_event_seq,
+    5L
+  )
+  testthat::expect_identical(calls, 0L)
+
+  # A transactional write commits one row; its sequence is chosen from the
+  # table when no start is given.
+  first <- ledgr:::ledgr_write_fill_events(con, run_id, fill, use_transaction = TRUE)
+  testthat::expect_identical(first$event_seq, 1L)
+  second <- ledgr:::ledgr_write_fill_events(con, run_id, fill, use_transaction = TRUE)
+  testthat::expect_identical(second$event_seq, 2L)
+  testthat::expect_identical(calls, 2L)
+  testthat::expect_identical(count(), 2L)
+  meta <- parse_meta(DBI::dbGetQuery(
+    con,
+    "SELECT meta_json FROM ledger_events WHERE run_id = ? AND event_seq = 1",
+    params = list(run_id)
+  )$meta_json[[1L]])
+  testthat::expect_identical(
+    as.numeric(meta$cash_delta),
+    -(as.numeric(fill$qty) * as.numeric(fill$fill_price) + as.numeric(fill$fee))
+  )
+  testthat::expect_identical(as.numeric(meta$position_delta), as.numeric(fill$qty))
+
+  # A failed transactional insert leaves no partial row.
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 2L, use_transaction = TRUE)
+  )
+  testthat::expect_identical(count(), 2L)
+})
