@@ -262,7 +262,9 @@ The rules:
   into the attempt and checks the copies against that commit. Every slot
   executes the copies, never the live files. After the window it checks
   the copies against the commit again, and any departure invalidates the
-  attempt.
+  attempt. The checker compares the saved copies with that commit again
+  whenever it reads the record, so a copy changed after the run also
+  fails.
 - **CPU noise.** CPU load is sampled before, during (before each slot)
   and after the window and recorded as a noise observation. It is not a
   rejection rule.
