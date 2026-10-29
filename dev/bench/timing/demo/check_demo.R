@@ -108,9 +108,9 @@ variant <- function(name, file, f) {
 # `created`, but the affinity came from a process object created later.
 pid_reuse_chain <- function(pid, created) {
   out <- c(sprintf("host,%s,3,demo", timing_plan_guid),
-    "proc,900,4,1699999990000,65535,1699999990000,powershell.exe",
-    "proc,1000,900,1700000000000,65535,1700000000000,Rscript.exe",
-    sprintf("proc,%s,1000,%s,65535,%.0f,Rscript.exe", pid, created, as.numeric(created) + 2500))
+    "proc,900,4,1699999990000,65535,1699999990000,100,powershell.exe",
+    "proc,1000,900,1700000000000,65535,1700000000000,100,Rscript.exe",
+    sprintf("proc,%s,1000,%s,65535,%.0f,100,Rscript.exe", pid, created, as.numeric(created) + 2500))
   probe <- timing_parse_probe(out, at = 1700000000)
   timing_chain(probe$procs, as.numeric(pid))
 }
