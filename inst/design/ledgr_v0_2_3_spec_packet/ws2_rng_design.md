@@ -2,12 +2,14 @@
 
 Role: record; the LDG-3157 design note for v0.2.3 cut 4, workstream 11.
 Status: draft for review, correction round 1 (applies the design review
-`ws2_rng_design_review.md` and maintainer decision (14)); written before any
+`ws2_rng_design_review.md` and maintainer decisions (14), (15) and (16));
+written before any
 product change; it directs LDG-3158 to LDG-3161 once its design review
 accepts it.
-Authority: `tickets.yml` cut 4 (decisions (1) to (13)), maintainer decision
-(14) of 2026-10-29 (caller-isolation boundary, Type 2 on review F1, option
-B) and LDG-3157 scope;
+Authority: `tickets.yml` cut 4: decisions (1) to (13) and the maintainer
+decisions of 2026-10-29, which are (14) (caller-isolation boundary, Type 2
+on review F1, option B), (15) (argument evaluation) and (16) (callables
+ledgr builds and itself runs); and the LDG-3157 scope;
 `contracts.md` rule groups `contract-strategy-reproducibility` and
 `contract-execution-fold-core`; `cut_review_3.md` and
 `cut_review_3_rereview_1.md`; the RNG probe in
@@ -32,8 +34,13 @@ one S3 method, through its generic) are wrapped at their outermost frame by
 `ledgr_rng_preserve_caller()`, which restores after all cleanup. The two
 callables that `ledgr_indicator_dev()` returns restore on their own calls.
 Every other export is RNG-neutral because the store helper covers its only
-possible draw. Argument promises and user-defined S3 methods are the
-caller's own code and sit outside the promise (Section 5.1). Old or missing
+possible draw. A wrapped export forces its caller-supplied ordinary
+arguments before it saves the caller's state, so draws in arguments advance
+the caller's stream (decision (15)). Captured service expressions are not
+forced early, and user S3 methods dispatched after entry are restored. The
+strategy built by `ledgr_signal_strategy()` and the indicator built by
+`ledgr_adapter_r()` are ledgr machinery and do not restore (decision (16)).
+Section 5.1 states the full boundary. Old or missing
 seed-rule markers on candidates, including unseeded walk-forward ones, are
 refused before a snapshot hold or run is created.
 
@@ -304,7 +311,8 @@ an error raised by the append.
 `ledgr_rng_preserve_caller(expr)` captures `ledgr_rng_caller_state()`,
 registers `on.exit(ledgr_rng_restore(state))` and then forces `expr`.
 
-- Each wrapped export's body is
+- Each wrapped export's body has two steps. First it calls
+  `ledgr_rng_force_args()` (Section 5.4, decision (15)). Then it calls
   `ledgr_rng_preserve_caller(<existing implementation call>)`. Every inner
   `on.exit` therefore finishes before the restore: worker stop
   (`R/sweep.R:225`), store closing and snapshot release. The restore runs
@@ -325,30 +333,64 @@ ledgr restores the caller's RNG kind and state around two things.
   - strategies;
   - indicator and feature callbacks;
   - ranking or selection expressions such as `ledgr_sweep_review()`'s
-    `rank_by`;
-  - callables ledgr returns for later use. Each such callable restores on its
-    own calls, and the constructor's wrapper is never claimed to protect
-    later calls.
+    `rank_by` (captured unevaluated and run by ledgr);
+  - helpers ledgr builds for the user to call later, which restore on their
+    own calls. Under decision (16), these are only `ledgr_indicator_dev()`'s
+    `test` and `test_dates`. The constructor's wrapper is never claimed to
+    protect later calls.
 
-Outside the promise are ordinary argument promises (for example
-`ledgr_utc({ sample.int(100, 1); "2020-01-01T00:00:00Z" })`, or forcing `bt`
-in `ledgr_backtest_bench`) and user-defined S3 methods that ledgr dispatches
-to (for example a user's `ledgr_metric_context.myclass`). These are the
-caller's own code. Their draws advance the caller's stream as if run
-directly. This is a documented boundary, not a claim of RNG neutrality.
-The Box-Muller limitation of decisions (5) and (12) is unchanged.
+Outside the promise, as the caller's own code whose draws advance the
+caller's stream as if run directly:
 
-LDG-3160 puts this sentence, or a closer one, in the contract and the owning
+- **Ordinary arguments.** Under decision (15), a wrapped export forces its
+  caller-supplied ordinary arguments as its first step, before saving the
+  caller's state (Section 5.4). So
+  `ledgr_run(exp, seed = sample.int(1e6, 1))` called twice gets two
+  different seeds. An unwrapped export forces its arguments whenever R
+  needs them, also outside any restore (for example
+  `ledgr_utc({ sample.int(100, 1); "2020-01-01T00:00:00Z" })`, or `bt` in
+  `ledgr_backtest_bench`).
+- **User S3 methods reached from an unwrapped export.** For example, a
+  user's `ledgr_metric_context.myclass` called through the N export
+  `ledgr_metric_context()`.
+- **Callables ledgr builds and itself runs (decision (16)).** These are the
+  strategy returned by `ledgr_signal_strategy()` and the indicator function
+  built by `ledgr_adapter_r()`. They are parts of ledgr's machinery and do
+  not restore. Inside a run they draw from the fold's stream like any
+  strategy or indicator code. Called directly, they are the caller's code.
+
+Inside the restore, by contrast:
+
+- user S3 methods that a wrapped export dispatches to after entry (decision
+  (15)), for example an `as_tibble()` method on a user subclass of a sweep
+  result passed to `ledgr_sweep_review()`;
+- captured service expressions (`rank_by`, `.filter`), which are not forced
+  early.
+
+These rules are a documented boundary, not a claim of RNG neutrality for
+caller code. The Box-Muller limitation of decisions (5) and (12) is
+unchanged.
+
+LDG-3160 puts this text, or a closer one, in the contract and the owning
 article:
 
 > ledgr restores your RNG kind and `.Random.seed` (or their absence) around
 > its own work (store writes, seeding, worker start and stop) and around
 > the user code it runs for you: strategies, indicator and feature
-> callbacks, ranking and selection expressions, and functions it returns for
-> later use. Code that R evaluates when ledgr reads an ordinary argument, and
-> S3 methods you define for ledgr generics, are your own code: their random
-> draws advance your stream as if you had run them yourself. A pending
-> Box-Muller normal variate is not preserved.
+> callbacks, ranking and selection expressions such as `rank_by`, and the
+> `test` and `test_dates` helpers of `ledgr_indicator_dev()`, which restore
+> on each call. The arguments you pass are evaluated first, before ledgr
+> saves your random state, so random draws in them advance your stream as
+> if you had made them yourself: two calls of
+> `ledgr_run(exp, seed = sample.int(1e6, 1))` get different seeds.
+> Expressions that ledgr captures and runs later, such as `rank_by` and
+> `.filter`, are restored. An S3 method you define is restored when a
+> restoring ledgr function calls it after entry, and is your own code when
+> another ledgr function calls it. The strategy from
+> `ledgr_signal_strategy()` and the indicator function from
+> `ledgr_adapter_r()` do not restore: inside a run they draw like any
+> strategy or indicator, and when you call them yourself they are your own
+> code. A pending Box-Muller normal variate is not preserved.
 
 ### 5.2 Disposition rule
 
@@ -364,16 +406,19 @@ are assigned in priority order: W, then R, then H, then N.
   export either reaches the feature-callback invokers statically
   (`ledgr_call_feature_fn`, `ledgr_call_feature_series_fn`), or it is one of
   the explicit evaluators found by the source search in Section 5.3.
-- **R, returned callable (restores on its own calls).** A function that ledgr
-  builds, returns for later use, and that evaluates user code when called.
+- **R, returned helper (restores on its own calls).** A helper ledgr builds
+  for the user to call later that evaluates user code when called. Under
+  decision (16), only `ledgr_indicator_dev()`'s `test` and `test_dates`. The
+  callables ledgr builds and itself runs (`ledgr_signal_strategy()`'s
+  strategy, `ledgr_adapter_r()`'s indicator function) are machinery, not R.
+  They do not restore.
 - **H, not wrapped.** The only possible ledgr-owned RNG consumption is a
   nonempty append, which the store helper neutralises. H means the static
   reach includes an append site; H exports get caller-state witnesses.
 - **N, not wrapped.** Everything else.
 
-For every class, argument promises and external S3 methods fall under the
-Section 5.1 boundary. Section 5.4 lists the cases decision (14) does not
-settle; they are not decided here.
+For every class, Section 5.1 governs arguments and S3 methods. Section 5.4
+specifies the entry step of decision (15), and records decision (16).
 
 **W (15 exports).**
 
@@ -415,8 +460,8 @@ hit has one disposition:
 | `R/indicator-dev.R:87,118` | `fn` passed to the returned `test` and `test_dates` | R (review F1) |
 | `R/experiment.R:542` | feature factory `features(params)` | inside W only: reached from `ledgr_run`/`ledgr_backtest` (`R/backtest.R:452`), `ledgr_precompute_features` (`R/precompute-features.R:646`), `ledgr_pulse_snapshot` (`R/pulse-snapshot.R:432`) and the sweep path. `ledgr_experiment()` checks only the signature (`:495`). |
 | `R/features-engine.R:336,340`, `R/history-features.R:309,318,721` | indicator `fn`/`series_fn` | inside W only, through the callback invokers |
-| `R/indicator-adapters.R:67`, `R/indicator-ttr.R:609,859,861` | closures that ledgr builds around a package function (`ledgr_adapter_r`) or TTR (`ledgr_ind_ttr`) | inside W when ledgr evaluates them. Direct calls: Section 5.4, A-2 |
-| `R/signal-strategy.R:61` | strategy closure returned by `ledgr_signal_strategy` that calls the user's signal `fn` | inside W when the fold evaluates it. Direct calls: Section 5.4, A-2 |
+| `R/indicator-adapters.R:67`, `R/indicator-ttr.R:609,859,861` | closures that ledgr builds around a package function (`ledgr_adapter_r`) or TTR (`ledgr_ind_ttr`) | ledgr machinery with no own restore. `ledgr_adapter_r` is named by decision (16); the TTR wrappers run no user code. They run inside W when ledgr evaluates them; a direct call is the caller's own code. |
+| `R/signal-strategy.R:61` | strategy closure returned by `ledgr_signal_strategy` that calls the user's signal `fn` | ledgr machinery (decision (16)): no own restore; inside W when the fold evaluates it; a direct call is the caller's own code |
 | `R/strategy-schedule.R:44-55` | none: returns the user's own strategy function with an attribute | caller's own code when called directly |
 | `R/indicator.R:86-111` | none: stores the user's `fn` unchanged | caller's own code when called directly |
 | `R/strategy-extract.R:272` | evaluates the stored strategy source of a function literal in a `baseenv()` child, which creates a closure and runs no body; reached by `ledgr_run_strategy` | H (no user code runs); the returned reconstruction is the user's own strategy |
@@ -434,40 +479,108 @@ stack is neither a W export nor an R callable:
 - `ledgr_sweep_review_rank`, `ledgr_pbo_metric`'s evaluation site and
   `ledgr_eval_grid_filter`.
 
-### 5.4 Cases decision (14) leaves open (listed, not decided)
+### 5.4 Argument evaluation and built callables (decisions (15) and (16))
 
-- **A-1. Promises and external methods evaluated inside a W wrapper.**
-  Decision (14) says these draws "advance the caller's stream as if run
-  directly". Inside a wrapped export, R forces a lazy argument, or ledgr
-  dispatches to a user method (for example on `exp` in `ledgr_run`), after
-  the caller state has been captured. The restore then undoes those draws.
-  The same promise forced in an N export advances the stream. Two options:
-  - (a) Document that ledgr makes no promise either way for this code.
-  - (b) Force every ordinary (non-NSE) argument at wrapper entry, before the
-    capture. Methods dispatched later would still be undone, and NSE
-    arguments (`rank_by`, `.filter`) cannot be forced early.
+The two cases the first revision left open are ruled. Decision (15) settles
+case A-1, option b; decision (16) settles case A-2, option 1.
 
-  This affects only draws in caller-owned code, which no economic oracle
-  observes. It needs a maintainer wording choice for LDG-3160's sentence.
-- **A-2. ledgr-built callables that ledgr itself also evaluates.**
-  `ledgr_signal_strategy()` returns a strategy closure. Its own example calls
-  it directly (`R/signal-strategy.R:30-33`), and the fold also evaluates it.
-  `ledgr_adapter_r()` returns an indicator whose `fn` is a ledgr-built
-  closure around a user-chosen package function. If these restored on their
-  own calls, as "callables returned for later use", an ambient draw inside
-  them would replay the same values on every pulse or bar when ledgr runs
-  them in a fold or feature pass. That changes ambient-RNG strategy and
-  indicator semantics inside ledgr's own service, which decisions (1) and (3)
-  do not intend. Two options:
-  - (a) Treat them as service artefacts. ledgr's evaluation of them is
-    covered by the W wrappers, and a direct call is the caller's own code.
-  - (b) Restore only on direct calls, which needs an "inside ledgr service"
-    marker.
+**Entry step of a wrapped export (decision (15)).** A wrapped export's body
+has a thin prologue, then the wrapper, then a separate implementation
+function:
 
-  The built-in indicator closures (`ledgr_ind_sma`, `_ema`, `_rsi`,
-  `_returns`) and the TTR wrappers evaluate no user code and are not
-  affected. Until this is decided, A-2 closures get no own wrapper and no
-  neutrality claim.
+```r
+ledgr_run <- function(exp, params = list(), ..., seed = NULL) {
+  ledgr_rng_force_args()                      # step 1, before the save
+  ledgr_rng_preserve_caller(                  # step 2, save and restore
+    ledgr_run_impl(exp = exp, params = params, ..., seed = seed)
+  )
+}
+```
+
+`ledgr_rng_force_args(lazy = character(), env = parent.frame())` does the
+following, in the formals order of the calling export:
+
+- **Supplied ordinary arguments are forced.** For each formal not named in
+  `lazy` and not `...`, it evaluates `missing(<name>)` in `env`. If the
+  caller supplied the argument, it forces the promise (`get(<name>, envir =
+  env)`), so the caller's expression runs in the caller's frame, before
+  `ledgr_rng_caller_state()`.
+- **Missing arguments are not forced.** Their defaults are ledgr code and
+  evaluate lazily inside the restore when the implementation first uses
+  them. A default may therefore reference other arguments, which are already
+  forced or are themselves defaults. Defaults cannot draw: the Section 4
+  source guard forbids every RNG call in `R/` outside its owners.
+- **Dots are forced** with `eval(quote(list(...)), env)` when `...` is a
+  formal and is non-empty.
+- **Captured service expressions are never forced.** Every formal that the
+  export captures unevaluated and later runs as service code must be named
+  in `lazy`. The `lazy` set is exactly:
+  - `rank_by` for `ledgr_sweep_review`;
+  - `.filter` for `ledgr_feature_grid` and `ledgr_strategy_grid`;
+  - nothing for every other wrapped export.
+- **A formal captured only as a label is forced.** `ledgr_pbo`'s
+  `substitute(metric)` (`R/validation-pbo.R:44`) only names the metric.
+  `substitute()` still returns the original expression after the promise is
+  forced, so `metric` is forced.
+- **An error while forcing** surfaces before any state is saved or any
+  ledgr work starts, so there is nothing to restore. This moves argument
+  errors to entry; no ledgr behaviour depends on later forcing.
+
+**What stays in the prologue.** Uses of `missing()` must stay in the
+export's own frame, because the implementation receives explicit arguments.
+That covers `ledgr_backtest`'s `missing(cost_model)` (`R/backtest.R:203`)
+and `ledgr_pulse_snapshot`'s supplied-argument flags
+(`R/pulse-snapshot.R:80-84`). So does `match.arg()` normalisation (for
+example `ledgr_walk_forward`'s `no_selection`). The prologue computes these
+before step 2 and passes the results to the implementation. They are ledgr
+code and draw nothing.
+
+**Why a separate implementation function.** Every `on.exit` cleanup
+(worker stop, store close, snapshot release) must live in the implementation
+function. An `on.exit` written in the export's own frame would run after the
+wrapper's restore, which would break "restoration outside all cleanup".
+
+**S3 generics in W.** `ledgr_candidate` dispatches with `UseMethod()`,
+which must run in the generic's own frame. So the two steps sit in each
+registered method that can run user or store code
+(`ledgr_candidate.default`, `ledgr_candidate.ledgr_walk_forward_results`).
+Dispatch has already forced `results`.
+
+**User S3 methods after entry.** A user method that a wrapped export
+dispatches to after step 1 runs inside the restore. One example is an
+`as_tibble()` method on a user subclass of the sweep passed to
+`ledgr_sweep_review` (`R/sweep-review.R:41`, `tibble::as_tibble(sweep)`).
+
+**Source check (LDG-3158).** The test fails if any of these does not hold:
+
+- every W export body, and every W method body for the generic, begins with
+  `ledgr_rng_force_args()` followed by a single
+  `ledgr_rng_preserve_caller()` call;
+- the `lazy` argument matches the frozen set above;
+- no `on.exit()` appears in a W export's own body.
+
+**Built callables (decision (16)).** The strategy closure returned by
+`ledgr_signal_strategy()` (`R/signal-strategy.R:61`) and the indicator `fn`
+built by `ledgr_adapter_r()` (`R/indicator-adapters.R:64-68`) are ledgr
+machinery. They get no wrapper and no restore. Inside a fold or a feature
+pass they draw from the fold's stream or the caller's stream exactly like a
+hand-written strategy or indicator, and the enclosing W export restores the
+caller. Called directly by the user, they are the caller's own code.
+Decision (14)'s returned callables are only the helpers built for the user to
+call: `ledgr_indicator_dev()`'s `test` and `test_dates` (class R).
+
+**Open point B-1 (listed, not decided).** Decision (15) names "a wrapped
+export". It does not say whether the two R helpers also force their
+ordinary arguments before saving: `fn` and `dates` for `test_dates`, `fn`
+for `test`.
+- Without forcing, a draw inside an argument expression (for example
+  `dates = sample(x, 3)`) is undone by the helper's restore.
+- With forcing, it advances the caller's stream, as in a wrapped export.
+
+`fn` is normally a function value, which draws nothing when forced. The
+consistent choice would apply the same entry step. LDG-3158 needs a ruling
+before it implements these two helpers; the rest of the design does not
+depend on it.
 
 ### 5.5 Witnesses (LDG-3158)
 
@@ -534,8 +647,51 @@ they do not claim neutrality.
 - A user-defined `ledgr_metric_context.review_rng` that draws and returns
   `ledgr_metric_us_equity()` advances the stream the same way.
 
+**Decision (15) witnesses (argument evaluation).**
+
+- **Two-call seed.** From `set.seed(1)`, call
+  `ledgr_run(exp, run_id = "a", seed = sample.int(1e6, 1))` and then the
+  same with `run_id = "b"`. The two runs' `config$engine$seed` values
+  differ and equal the first and second values of `sample.int(1e6, 1)` drawn
+  in an untouched session from `set.seed(1)`. Afterwards the caller's next
+  `runif(1)` equals that session's next draw after the two `sample.int`
+  draws.
+- **A draw in an ordinary argument.** `ledgr_sweep(exp, grid, seed = 7L,
+  retain = { runif(1); ledgr_sweep_retention() })` leaves the caller's next
+  draw equal to that of a session that ran `runif(1)` once. This shows the
+  draw advanced the stream and was not undone.
+- **A user S3 method after entry is restored.** Define
+  `as_tibble.review_rng <- function(x, ...) { runif(1); NextMethod() }`,
+  then pass `structure(sw, class = c("review_rng", class(sw)))` to
+  `ledgr_sweep_review(..., rank_by = desc(sharpe_ratio))`. The caller state
+  is unchanged.
+- **Captured expressions are not forced early.** A `rank_by` that draws is
+  restored, as in the dynamic routes above.
+- **Missing arguments and defaults.** `ledgr_run(exp)` with every optional
+  argument missing behaves as today. An argument whose evaluation errors
+  raises its error before any run row exists.
+- Removing step 1 (`ledgr_rng_force_args()`) must make the two-call seed
+  witness give identical seeds and the ordinary-argument witness fail.
+
+**Decision (16) witnesses (built callables).**
+
+- `strat <- ledgr_signal_strategy(function(ctx) { if (runif(1) > 0.5)
+  c(AAA = "LONG") else c(AAA = "FLAT") })`, run with `ledgr_run(..., seed =
+  7L)` on a one-instrument 30-pulse fixture. The signal sequence (read from
+  fills or positions) is not constant across pulses: the strategy draws a
+  different value on different pulses inside the run, so it has no
+  per-call restore. A second run with the same seed gives identical fills,
+  and the caller state is unchanged by the run.
+- Called directly, `set.seed(1); strat(list(universe = "AAA"), list())`
+  leaves the caller's next `runif(1)` equal to the second draw of an
+  untouched session from `set.seed(1)`.
+- An indicator from `ledgr_adapter_r()` whose package function draws,
+  called directly through `$fn(window)`, likewise advances the caller's
+  stream.
+
 `ledgr_backtest_bench` reads telemetry only (`R/backtest-results.R:322`) and
-is N. Forcing its `bt` argument is caller code (Section 5.1).
+is N. Its `bt` argument is evaluated outside any restore, as caller code
+(Section 5.1).
 
 **Box-Muller limitation (decisions (5) and (12)).** The restored state is
 the kind plus `.Random.seed`, or its absence. A pending Box-Muller normal is
@@ -828,12 +984,12 @@ remain in the original gut list.
 - **Type 2.** Review F1 was settled by maintainer decision (14). The design
   review confirmed the two earlier readings: the run-local axis origin, with
   the same-calendar qualification of Section 2.3, and coverage of callback
-  evaluators. Section 5.4 lists two cases decision (14) does not settle
-  (A-1 promises and methods forced inside a wrapper; A-2 ledgr-built
-  callables that ledgr itself also evaluates). The note does not decide
-  them. LDG-3158 implements neither option for them until the maintainer
-  rules; if no ruling arrives first, LDG-3160's documentation must state
-  the gap.
+  evaluators. The maintainer ruled on the two cases the first revision left
+  open: decision (15) for A-1 and decision (16) for A-2 (Section 5.4). One
+  narrow point remains listed, not decided: B-1, whether
+  `ledgr_indicator_dev()`'s two helpers also force their arguments before
+  saving. LDG-3158 needs a ruling on it before implementing those two
+  helpers.
 
 ## 11. Review response (correction round 1)
 
@@ -843,7 +999,7 @@ The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
 
 | Finding | Response | Where |
 | --- | --- | --- |
-| F1 boundary and partition | Decision (14) is stated as the boundary, with the documentation sentence. The rule now has W own-work, W service-code, R returned callables, H and N classes. `ledgr_sweep_review` moves from H to W. The source search adds `ledgr_pbo`, `ledgr_feature_grid` and `ledgr_strategy_grid` to W. `ledgr_indicator_dev`'s `test` and `test_dates` restore on their own calls; the constructor is H. Promises and external S3 methods are outside the promise. Dynamic-route, error-after-draw, interrupt-after-draw, worker/store-route and boundary witnesses are added. Counts regenerated: W 15, H 55, N 111 exports; S3 W 1, H 42, N 50; R 2. Two cases decision (14) does not settle are listed, not decided. | Sections 1, 5.1-5.5, Appendix A |
+| F1 boundary and partition | Decision (14) is stated as the boundary, with the documentation sentence. The rule now has W own-work, W service-code, R returned callables, H and N classes. `ledgr_sweep_review` moves from H to W. The source search adds `ledgr_pbo`, `ledgr_feature_grid` and `ledgr_strategy_grid` to W. `ledgr_indicator_dev`'s `test` and `test_dates` restore on their own calls; the constructor is H. Promises and external S3 methods are outside the promise. Dynamic-route, error-after-draw, interrupt-after-draw, worker/store-route and boundary witnesses are added. Counts regenerated: W 15, H 55, N 111 exports; S3 W 1, H 42, N 50; R 2. The two cases decision (14) did not settle were listed and are now ruled by decisions (15) and (16) (rows below). | Sections 1, 5.1-5.5, Appendix A |
 | F2 unseeded walk-forward marker | A current `pulse_seed_contract` is required on every walk-forward candidate, seeded or not. It is stamped from the constant on the results object when the results are produced or opened, and copied into the candidate, independent of `engine$pulse_seed_rule`. Refusal comes before the snapshot hold. Old, missing and current cases cover seeded and unseeded sweep and walk-forward candidates. The derivation marker and the unseeded config rule are unchanged. | Section 6, Section 7, gut R10 |
 | F3 census predicates | The new seeding caller, the query/mutation caller roles, the new column schema and an independent expected-call ledger with exact counts are frozen. The observation changes are authorised explicitly. Row 05's positive predicates are kept, there is no wholesale exemption, and the staging after LDG-3158 alone is stated. | Section 8 preamble, 8.2, 8.2.1, gut R9 |
 | F4 `RNGkind` source guard | Exactly the zero-argument query is allowed in `ledgr_rng_caller_state`. Mutations are allowed only in `ledgr_rng_restore` and `ledgr_parallel_worker_rng_pin`. The pass and injected-failure tests are specified. | Sections 3, 4 |
@@ -852,13 +1008,18 @@ The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
 | Optional: walk-forward marker in summaries | Reproduction key and promotion source metadata gain `pulse_seed_contract`. | Section 6 |
 | Reading (i) | Same-calendar equality only. A longer calendar need not agree, walk-forward promotion runs on the full calendar, and LDG-3159 must not assert overlapping-bar equality. | Section 2.3 |
 | Reading (ii) | Confirmed by the review and subsumed by decision (14). | Section 5 |
+| Decision (15), argument evaluation (case A-1, option b) | Each wrapped export has two steps: `ledgr_rng_force_args()` forces caller-supplied ordinary arguments and dots before `ledgr_rng_preserve_caller()` saves the state. Missing arguments and defaults stay lazy. The frozen `lazy` set (`rank_by`, `.filter`) is never forced. `missing()` and `match.arg()` stay in the prologue, all `on.exit` cleanup moves into the implementation, and S3 generics carry the steps in their methods. User S3 methods dispatched after entry are restored. Source check and witnesses are added: two-call seed, draw in an argument, S3 method after entry, missing and default arguments, and a gut that removes step 1. The documentation sentence is rewritten. Counts unchanged. | Sections 1, 5, 5.1, 5.4, 5.5 |
+| Decision (16), built callables (case A-2, option 1) | `ledgr_signal_strategy()`'s strategy and `ledgr_adapter_r()`'s indicator function are machinery with no own restore; a direct call is the caller's own code. R is only `ledgr_indicator_dev()`'s `test` and `test_dates`. Witnesses: a drawing signal strategy varies across pulses inside a run and advances the caller's stream when called directly, and an `ledgr_adapter_r()` indicator called directly advances it too. The documentation sentence is rewritten; counts unchanged. One residual point, B-1 (argument forcing in the two R helpers), is listed, not decided. | Sections 5.1-5.5, 10, Appendix A |
 
 ## Appendix A. Entry-point partition (rule of Section 5.2)
 
 Exports (181): W 15 (listed in Section 5.2, without the S3 method), H 55,
 N 111. Registered S3 methods (93): W 1, H 42, N 50. Returned callables: R 2
-(`ledgr_indicator_dev()`'s `test` and `test_dates`). Section 5.4 lists the
-callables left undecided (A-2). Changes from the first draft: W gains
+(`ledgr_indicator_dev()`'s `test` and `test_dates`). Under decision (16),
+`ledgr_signal_strategy()`'s strategy and `ledgr_adapter_r()`'s indicator
+function are machinery with no restore of their own. They are not exports,
+so the counts are unchanged by decisions (15) and (16). Changes from the
+first draft: W gains
 `ledgr_sweep_review`, `ledgr_pbo`, `ledgr_feature_grid` and
 `ledgr_strategy_grid`; `ledgr_indicator_dev` moves from W to H, and its
 returned methods become R.
