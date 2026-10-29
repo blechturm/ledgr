@@ -1,13 +1,16 @@
 # ledgr v0.2.3 Macro Plan
 
-**Status:** Accepted by the maintainer on 2026-10-28 (revision 3, written by
+**Status:** Accepted by the maintainer on 2026-10-28 (revision 4, written by
 Claude and amended by the maintainer). It is the within-release order for
 uncut work. Revision 2 applies
 the [Type 2 review](macro_plan_review.md) (RESTRUCTURE) as dispositioned in
 the [response](macro_plan_response.md), the maintainer's scope answers of
 2026-10-28 (Section 6) and the release-process proposal of the same day.
 Revision 3 records the accepted typed-accounting synthesis of 2026-10-29 and
-moves WS8 into one ordered cut with WS7 after WS4.
+moves WS8 into one ordered cut with WS7 after execution-core consolidation.
+Revision 4 records the maintainer's 2026-10-29 fold-carrier amendment: the
+dense oracle now precedes a focused design and implementation of common typed
+stage carriers, which precedes removal of the second execution path.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -84,14 +87,15 @@ Phase A (now, parallel)
 |-- WS13 release-candidate CI RFC -> install floor -> CI jobs -> rehearsal
 |-- WS9a memory and worker baselines; C3 placement RFC
 |-- C4 pulse-seed counter (own Type 2 cut)
-|-- RFC track: frame retirement, asset precision, execution policy,
+|-- RFC track: typed fold carrier, frame retirement, asset precision,
+|   execution policy,
 |   portfolio construction, docs roles, helper bundles, C9 mechanism,
 |   typed-accounting boundary (field census, then focused RFC)
 |-- WS11a H4 real-data audit; C10 census and coupling map
 |-- WS5 preparation: spec cut, schema, selection, article drafts
 `-- chores: roxygen pin, UX-brief reconcile, M8a, C12b
                               |
-Phase B   WS4 minimal C1 consolidation
+Phase B   WS4a typed fold carrier -> WS4b minimal C1 consolidation
                               |
 Phase C   WS5 runtime ---> WS6 frame retirement --.
           WS7 -> WS8 typed accounting cut --------+--> J: disclosures,
@@ -100,7 +104,7 @@ Phase C   WS5 runtime ---> WS6 frame retirement --.
                               |
 Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
           WS10 economics implementation (as each RFC is accepted)
-          WS3 full suite timing after WS4 and WS8
+          WS3 full suite timing after WS4b and WS8
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
@@ -110,10 +114,12 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | Edge | Kind |
 | --- | --- |
 | A0 -> WS1 | evidence prerequisite |
-| WS3 dense lane -> WS4 | evidence prerequisite (roadmap, inventory X4) |
-| WS1 -> WS4 | preference (less ownership conflict; both handlers enter one fold) |
-| WS4 -> WS5 runtime | binding constraint: dense is frozen and synthesis D3 authorizes no new execution-mode branch |
-| WS4 -> WS7/WS8 cut | binding constraint (roadmap: merge readers after one run shape) |
+| WS3 dense lane -> WS4a | evidence prerequisite: freeze both current modes before changing the common carrier |
+| typed-fold-carrier RFC -> WS4a | binding constraint: the RFC fixes carrier authority, types, validation and allocation gates |
+| WS1 -> WS4a | preference (less ownership conflict; the shared handler consumes the fold carrier) |
+| WS4a -> WS4b | technical prerequisite: consolidate semantics only after both current modes produce the same typed contract |
+| WS4b -> WS5 runtime | binding constraint: dense is frozen and synthesis D3 authorizes no new execution-mode branch |
+| WS4b -> WS7/WS8 cut | binding constraint (roadmap: merge readers after one run shape) |
 | accepted typed-accounting synthesis -> WS7/WS8 cut | binding constraint: the synthesis binds the authoritative fields, typed replay boundary and ordered workstreams |
 | WS5 -> WS6 | technical prerequisite (synthesis D1 fixes the input layout) |
 | WS5, WS6, WS7 -> J | evidence prerequisite for WS5 acceptance |
@@ -123,8 +129,8 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | H4 -> C10 ADR -> C9 | binding constraint (inventory chain 2) |
 | last identity-changing cut -> lake rebuild | binding constraint (rule 5) |
 
-The critical path is A0 -> WS3 dense lane -> WS4 -> WS5 -> J. WS1 precedes
-WS4 by preference.
+The critical path is A0 -> WS3 dense lane -> WS4a typed carrier -> WS4b one
+execution path -> WS5 -> J. WS1 precedes WS4a by preference.
 
 ## 3. Workstreams
 
@@ -150,17 +156,41 @@ Pin the RNG kind wherever ledgr seeds; restore the caller's RNG with
 Suite seed (lanes, workload contracts, parity oracles, timing boundaries,
 deletion witnesses for C1). Then: dense parity lane and a **baseline timing on
 the current tree**; authoring lane; scaling geometry, whole-universe portfolio
-and the point-in-time demonstration row. All lanes are timed again after WS4
+and the point-in-time demonstration row. All lanes are timed again after WS4b
 and WS8 so the release can see where it stands (maintainer, 2026-10-28). The
 post-WS7/WS8 record includes warm result reads and full run-plus-results time,
 so eliminating accounting representations is measured end to end.
 - **Route:** RFC, then direct tickets per lane. **Rule:** no public
   performance claim until the suite exists and its results are accepted.
 
-### WS4. Minimal execution-core consolidation (C1, M8b)
+### WS4. Typed carrier, then minimal execution-core consolidation (C1, M8b)
 
-One execution path on the availability core, the disclosed implied calendar,
-the fate of `ledgr_backtest()`, and the final-bar no-fill disclosure (M8b).
+**WS4a, typed fold carrier.** Before deleting either current execution path,
+replace their common hot-path list graph with fixed typed stage contracts. The
+public strategy `ctx` and strategy return stay ordinary ergonomic R objects;
+P2 normalizes the return once. The internal boundary uses a fixed fold state,
+a fixed observation made of atomic vectors, indices and shared references, a
+normalized decision, one columnar execution/economic-event batch, a bounded
+columnar diagnostic batch, and small typed stop/status and timing results.
+It does not preserve list-per-fill entries, wrap the same fills in a second
+`accounting_events` list, or repeatedly recover vectors with `lapply()` or
+`vapply()`. Validation belongs at carrier construction boundaries rather than
+inside each field read. No persisted schema or public API changes here.
+
+- **Route:** a bounded allocation/profile probe, then a focused Type 2 RFC and
+  direct tickets. The current dense and availability paths both produce the
+  carrier before either is removed. **Gate:** A0, the dense oracle and the
+  v0.2.2 reference preserve exact economics and event order; registered
+  list-versus-columnar clocks and allocation records cover no-fill,
+  sparse-rebalance and wide all-fill shapes; mutations detect reintroduced
+  list-per-fill and growing diagnostic-segment representations.
+
+**WS4b, one execution path.** With the carrier fixed, consolidate onto one
+execution path on the availability core, settle the disclosed implied
+calendar, decide the fate of `ledgr_backtest()`, and add the final-bar no-fill
+disclosure (M8b). The carrier is the common contract against which the two
+current producers are compared; WS4b does not redesign it.
+
 - **Route:** direct tickets, Type 2 at cut. **Gate:** dense parity lane, A0
   and the v0.2.2 reference unchanged, or each difference decided.
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
@@ -172,7 +202,7 @@ Implement the [accepted synthesis](../rfc/rfc_strategy_authoring_api_v0_2_3_synt
 The spec cut resolves its Section 6 and registers its Section 4 evidence in
 Phase A; schema, selection and article drafts may start then. The runtime
 (flat `ctx`, position facts, verbs, declared state, schedule predicate,
-required capital and costs) follows WS4. H3 is settled in this cut.
+required capital and costs) follows WS4b. H3 is settled in this cut.
 - **Acceptance:** at J, on the merged reader: rounding and refusal
   disclosures, the executed pattern article and the maintainer's cold read.
 
@@ -183,17 +213,19 @@ Focused seed now; implementation after WS5's runtime, before J.
 ### WS7. One result reader and print (C8)
 
 Merge the three reader families behind one chunked, typed accounting projection
-and one print path, as WS5's sibling after WS4. The accepted
+and one print path, as WS5's sibling after WS4b. The accepted
 [typed-accounting synthesis](../rfc/rfc_typed_accounting_event_boundary_v0_2_3_synthesis.md)
-binds the authoritative fields and replay boundary. WS7 is the first
-workstream of one cut with WS8: it leaves one typed carrier, may temporarily
-extract typed evidence from current JSON, and may not leave parsed metadata as
-a second authority. Gate: every public table and print is byte-identical or
-each difference is decided. M8a and C12b may land earlier on the current path.
+binds the authoritative fields and replay boundary. WS7 consumes WS4a's typed
+execution/event carrier rather than defining another one. WS7 is the first
+workstream of one cut with WS8: it leaves one typed replay projection, may
+temporarily extract typed evidence from current JSON, and may not leave parsed
+metadata as a second authority. Gate: every public table and print is
+byte-identical or each difference is decided. M8a and C12b may land earlier on
+the current path.
 
 ### WS8. Typed P3-P5 execution batch (C7)
 
-WS8 is the second workstream of the same ordered cut as WS7, still after WS4.
+WS8 is the second workstream of the same ordered cut as WS7, still after WS4b.
 It replaces the temporary extraction with direct typed publication on every
 producer and durable write path, removes accounting-critical JSON, bumps the
 store format to schema 125 with unconditional old-store refusal, and rebuilds
@@ -206,7 +238,7 @@ part of its evidence.
 ### WS9. Memory and worker budgets (C5, H9, H11; C3 RFC)
 
 - **WS9a, now:** phase-level memory and worker baselines; the C3 placement RFC.
-- **WS9b, after WS4:** structural reduction, then the worker-budget decision
+- **WS9b, after WS4b:** structural reduction, then the worker-budget decision
   (defaults Type 2 at cut), then H9 daemon reuse. Final memory evidence
   follows WS6 and H9. The typed-accounting work must also prove that shared
   result reconstruction is chunk-bounded and report its peak RSS.
@@ -217,7 +249,7 @@ The three RFCs run now in parallel with two local interfaces: precision feeds
 step-based scaling; fill policy feeds execution-sensitive construction. U2 is
 narrowed to what the strategy synthesis left open (current weights, bands,
 separate capital, NMOF as reference estimator). Each implementation follows
-its accepted RFC after WS4, in its own cut (maintainer, 2026-10-28: in
+its accepted RFC after WS4b, in its own cut (maintainer, 2026-10-28: in
 scope). A cut that changes helper granularity, sizing or results updates the
 affected taught examples and parity rows in the same cut.
 
@@ -233,7 +265,7 @@ affected taught examples and parity rows in the same cut.
 
 Roxygen pin (H5b) and UX-brief reconcile (U1) now. R2 opens with the first
 cut and precedes M5 and M7; M5 also waits for H4's decisions. M7: six plots,
-each signed off. M1 audit after WS1 and WS4. M6 NEWS collapse only for the
+each signed off. M1 audit after WS1 and WS4b. M6 NEWS collapse only for the
 CRAN release.
 
 ### WS13. Release-candidate certification (R1, M4)
@@ -263,6 +295,9 @@ rebuilding; site deployed from the built artifact.
   named exception: WS7 and WS8 are two reviewed workstreams in one ordered
   cut and one store rebuild. Low-stakes choices are batched for the maintainer
   at acceptance.
+- WS4a and WS4b are separately reviewed workstreams. Their focused design
+  decides whether they use adjacent cuts or one ordered packet; either way,
+  WS4b cannot begin or inherit evidence until WS4a is accepted.
 - RFC-track work needs no cut; its implementation does.
 - The final cut is the release cut of rule 8.
 
@@ -282,21 +317,31 @@ without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
   keep path; H4 per-block decisions; H7 deferred; R4 absorbed by U3 with its
   obligations; D1 and D2 deferred, Q16/Q18 to execution policy.
 - **Scope, 2026-10-28:** WS8 stays; economics implementation stays; the full
-  peer suite stays, with timings after WS4 and WS8; CRAN-only chores are
+  peer suite stays, with timings after WS4b and WS8; CRAN-only chores are
   conditional on v0.2.3 becoming the CRAN release.
 - **Typed accounting, 2026-10-29:** the maintainer accepted the focused
   synthesis after Type 2 response and Type 1 final review. One wide typed
   ledger, cash authority, lot-derived position authority, one validator and
   replay, the named `inline_summary()` exception and schema-125 refusal bind.
-  WS7 then WS8 form one cut after WS4 with one rebuild; WS3 and WS9 verify the
+  WS7 then WS8 form one cut after WS4b with one rebuild; WS3 and WS9 verify the
   full-workflow runtime and bounded-memory claims.
+- **Typed fold carrier, 2026-10-29:** the maintainer decided that the common
+  P1-P5 representation must be typed and cleaned before the execution paths
+  are consolidated, not after. The dense oracle is frozen first. WS4a then
+  establishes one fixed state/decision/event/diagnostic contract for both
+  existing modes; WS4b removes the redundant path against that contract.
+  WS7 and WS8 consume the carrier but retain ownership of reader consolidation,
+  typed durable storage, schema 125 and removal of accounting-critical JSON.
 
-A, B and the scope answers were accepted with this plan on 2026-10-28.
+A, B and the scope answers were accepted with this plan on 2026-10-28. The
+typed-accounting and typed-fold-carrier amendments were accepted on
+2026-10-29.
 
 ## 7. Release definition of done
 
 - Every accepted cut closed with its evidence in `tickets.yml`.
-- One execution core, one output handler, one result reader, the typed batch.
+- One execution core, one output handler, one typed fold carrier, one result
+  reader and one typed durable accounting batch.
 - The strategy API implemented, its pattern article executed and cold-read.
 - Economics RFCs accepted and implemented.
 - RNG equivalence passing; memory and worker budgets set.
