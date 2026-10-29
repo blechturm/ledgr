@@ -1,9 +1,13 @@
 # WS2 design note: RNG reproducibility and the v2 pulse-seed rule
 
 Role: record; the LDG-3157 design note for v0.2.3 cut 4, workstream 11.
-Status: draft for review, written before any product change; it directs
-LDG-3158 to LDG-3161 once its design review accepts it.
-Authority: `tickets.yml` cut 4 (decisions (1) to (13)) and LDG-3157 scope;
+Status: draft for review, correction round 1 (applies the design review
+`ws2_rng_design_review.md` and maintainer decision (14)); written before any
+product change; it directs LDG-3158 to LDG-3161 once its design review
+accepts it.
+Authority: `tickets.yml` cut 4 (decisions (1) to (13)), maintainer decision
+(14) of 2026-10-29 (caller-isolation boundary, Type 2 on review F1, option
+B) and LDG-3157 scope;
 `contracts.md` rule groups `contract-strategy-reproducibility` and
 `contract-execution-fold-core`; `cut_review_3.md` and
 `cut_review_3_rereview_1.md`; the RNG probe in
@@ -21,12 +25,17 @@ seeding call, in the fold envelope and the two simulators, goes through one
 helper that sets the seed and pins Mersenne-Twister/Inversion/Rejection.
 Workers pin the same kind at start. Every DuckDB append goes through one
 helper, `ledgr_store_append()`, which keeps `.Random.seed` (or its absence)
-as it was. Twelve exported functions (and one S3 method, through its
-generic) are wrapped, at their outermost frame, by
-`ledgr_rng_preserve_caller()`. It restores the caller's kind and
-`.Random.seed`, or their absence, after all cleanup. Every other export is
-RNG-neutral because the store helper covers its only possible draw. Old or
-missing seed-rule markers on candidates are refused before a run is created.
+as it was. Under decision (14), ledgr restores the caller's kind and
+`.Random.seed` (or their absence) around its own work and around the user
+code it evaluates as part of its service. Fifteen exported functions (and
+one S3 method, through its generic) are wrapped at their outermost frame by
+`ledgr_rng_preserve_caller()`, which restores after all cleanup. The two
+callables that `ledgr_indicator_dev()` returns restore on their own calls.
+Every other export is RNG-neutral because the store helper covers its only
+possible draw. Argument promises and user-defined S3 methods are the
+caller's own code and sit outside the promise (Section 5.1). Old or missing
+seed-rule markers on candidates, including unseeded walk-forward ones, are
+refused before a snapshot hold or run is created.
 
 ## 2. (a) Pulse-seed rule v2
 
@@ -102,7 +111,24 @@ The axis is the fold's pulse calendar, `execution$pulses_posix`.
     (`R/walk-forward-identity.R:97`).
   - **Sweeps** (one and two workers) and **promotion** use the same calendar
     as `ledgr_run()` on the same experiment.
-- An unseeded fold builds no vector, and `ctx$pulse_seed` stays NULL.
+- An unseeded fold builds no vector, and `ctx$pulse_seed` stays NULL. The
+  context reads the vector through one accessor,
+  `ledgr_pulse_seed_at(services, pulse_idx)`, which returns NULL when the
+  vector is NULL and element `pulse_idx` otherwise. The census observes
+  that accessor (Section 8.2).
+
+**What is claimed, and what is not (review reading (i)).** The claim is
+equality on the same calendar: a sweep candidate and a committed run or
+promotion on the same experiment, execution seed and scoring calendar get
+the same pulse seeds, and a run window and the corresponding walk-forward
+or sweep window agree when their calendar and execution seed agree. The
+same timestamp in a longer calendar need not agree. With execution seed 7,
+v2 gives 373418371 at local index 1 and 530954868 at index 3 (today's rule
+also differs by index). Promotion of a walk-forward candidate calls ordinary
+`ledgr_run()` on the full experiment calendar (`R/sweep.R:849-855`), not the
+shorter test window, so it does not promise same-bar equality with that
+window. LDG-3159's witnesses must not assert overlapping-bar equality
+between calendars of different length.
 
 ### 2.4 Frozen acceptance bounds and failing controls
 
@@ -117,7 +143,7 @@ production routine. `S = {7, 2591, -1, 2147483647}`. The edge set is
 | B2 seed uniformity | KS D of `(v - 1) / 2147483646` against U(0,1), pulses 1..5000, each seed in S | <= 0.0276 (alpha about 0.001) |
 | B3 first-draw uniformity | KS D of the first MT `runif()`, same seeds and pulses | <= 0.0276 |
 | B4 cross-seed overlap | seeds 1..20 x pulses 1..500: distinct values; values shared by two or more seeds | >= 9999; <= 1 |
-| B5 shifted streams | seeds 1..20, pulses 1..500, shifts k = 1..5: count of `V(s+1, p) == V(s, p+k)` or `V(s, p) == V(s+1, p+k)` | <= 1 |
+| B5 shifted streams | seed pairs `(s, s+1)` for s = 1..19, shifts k = 1..5, pulses p = 1..(500-k), both directions: count of `V(s+1, p) == V(s, p+k)` plus count of `V(s, p) == V(s+1, p+k)`, summed over s, k and p (p + k never exceeds 500) | <= 1 |
 | B6 seed sensitivity | every pair of distinct seeds in E, pulses 1..1000: positions that differ | >= 999 |
 
 Each control must fail at least one bound. Measured on 2026-10-29 with
@@ -192,7 +218,7 @@ call that seeds. There is one state helper pair:
 | `R/fold-engine.R:1615-1629` `ledgr_fold_envelope` | local save/restore of `.Random.seed` only; `set.seed(as.integer(seed))` | `state <- ledgr_rng_caller_state()`; `on.exit(ledgr_rng_restore(state))`; `ledgr_rng_seed_pinned(seed)`, whenever seeded. This is the enforcing point. |
 | `R/sim-bars.R:33-42` `ledgr_sim_bars` | local save/restore; `set.seed(seed)` | the same three lines |
 | `R/sim-pit-inputs.R:401-417` `ledgr_sim_pit_bars` (called by `ledgr_sim_pit_inputs`) | local save/restore; `set.seed(seed)` | the same three lines |
-| worker start, `ledgr_parallel_worker_setup` (`R/parallel-workers.R:202`) | daemons run L'Ecuyer-CMRG | after `ledgr_parallel_mirai_start()`, `everywhere(RNGkind("Mersenne-Twister", "Inversion", "Rejection"))`. This is supplementary; the envelope still enforces the kind for each seeded fold. |
+| worker start, `ledgr_parallel_worker_setup` (`R/parallel-workers.R:202`) | daemons run L'Ecuyer-CMRG | after `ledgr_parallel_mirai_start()`, a new owner `ledgr_parallel_worker_rng_pin(workers)` runs `everywhere(RNGkind("Mersenne-Twister", "Inversion", "Rejection"))` on every daemon. This is supplementary; the envelope still enforces the kind for each seeded fold. |
 
 An unseeded fold sets neither seed nor kind (decision (1)). A strategy that
 pins its own kind inside `withr::with_seed(..., .rng_kind = )` keeps that
@@ -248,12 +274,28 @@ draw nothing from R's RNG and are not sites:
 1. a call to `dbAppendTable`, `DBI::dbAppendTable` or `dbWriteTable` outside
    `ledgr_store_append`;
 2. a call to `set.seed` outside `ledgr_rng_seed_pinned`;
-3. a call to `RNGkind` outside `ledgr_rng_restore` and the worker pin;
+3. an `RNGkind` call that breaks the two `RNGkind` rules (review F4):
+   - **Query:** a zero-argument `RNGkind()` is allowed only inside
+     `ledgr_rng_caller_state`.
+   - **Mutation:** an argument-bearing `RNGkind(...)` is allowed only inside
+     `ledgr_rng_restore` and `ledgr_parallel_worker_rng_pin`, including the
+     quoted expression it sends to the workers.
+   Any other `RNGkind` call, query or mutation, is a finding.
 4. a call to mirai `daemons()` outside `ledgr_parallel_mirai_start` and
    `ledgr_parallel_mirai_stop`.
 
-The inventory is a function over parsed source. Its test feeds it an
-injected `DBI::dbAppendTable(con, "x", df)` and requires a report.
+The inventory is a function over parsed source. Its tests feed it:
+
+- the unmodified package source, which must pass, including the zero-argument
+  query in `ledgr_rng_caller_state`;
+- an injected `DBI::dbAppendTable(con, "x", df)`, which must be reported;
+- an injected `RNGkind("L'Ecuyer-CMRG")` inside `ledgr_rng_caller_state`,
+  which must be reported;
+- an injected zero-argument `RNGkind()` in another function, which must be
+  reported as an unowned query;
+- an injected argument-bearing `RNGkind(...)` in another function, which must
+  be reported as an unowned mutation.
+
 Separately, the helper is tested directly: present state, absent state, and
 an error raised by the append.
 
@@ -273,73 +315,227 @@ registers `on.exit(ledgr_rng_restore(state))` and then forces `expr`.
 - Nested wrappers are harmless: `ledgr_promote` calls `ledgr_run`, and
   `ledgr_backtest` reaches the run path.
 
-**Disposition rule.** The rule is mechanical. It uses a static call graph
-over the ledgr namespace: symbol references, plus edges from every called S3
-generic to all registered ledgr methods of that generic. An export is
-**W (wrapped)** if its reach includes any of:
+### 5.1 The boundary (maintainer decision (14), 2026-10-29)
 
-- `ledgr_fold_envelope`;
-- a seeding site;
-- worker start or stop;
-- the feature-callback invokers `ledgr_call_feature_fn` and
-  `ledgr_call_feature_series_fn`;
-- the direct callback in `ledgr_indicator_dev`.
+ledgr restores the caller's RNG kind and state around two things.
 
-Every other export is **not wrapped**. Its only possible ledgr-owned RNG
-consumption is a nonempty append, which the store helper neutralises. Such an
-export is **H** if its static reach includes an append site (H exports get
-caller-state witnesses), and **N** otherwise. All 181 exports and 93
-registered S3 methods fall in exactly one class (Appendix A). Wrapping
-callback evaluators satisfies decision (4) under its broadest reading: a
-user indicator that draws leaves the caller's stream unchanged. Indicator
-purity stays governed by `R/determinism.R`. LDG-3158 regenerates the
-partition from the same rule. Its test fails if an export that the rule
-puts in W lacks the wrapper. It also traces, during the targeted tests,
-`ledgr_fold_envelope`, `ledgr_rng_seed_pinned` and
-`ledgr_parallel_mirai_start`, and fails if the outermost ledgr export on the
-stack is not in W. That catches dynamic calls the static graph misses.
+- **Its own work:** store writes (Section 4), seeding (Section 3), and
+  worker start and stop.
+- **User code it evaluates as part of its service:**
+  - strategies;
+  - indicator and feature callbacks;
+  - ranking or selection expressions such as `ledgr_sweep_review()`'s
+    `rank_by`;
+  - callables ledgr returns for later use. Each such callable restores on its
+    own calls, and the constructor's wrapper is never claimed to protect
+    later calls.
 
-**W (12 exports):** `ledgr_backtest`, `ledgr_candidate` (and the method
-`ledgr_candidate.ledgr_walk_forward_results` through it),
-`ledgr_candidate_reproduction_key`, `ledgr_indicator_dev`,
-`ledgr_precompute_features`, `ledgr_promote`, `ledgr_pulse_snapshot` (which
-runs an unseeded memory fold with an internal capture callback,
-`R/pulse-snapshot.R:483-518`), `ledgr_run`, `ledgr_sim_bars`,
-`ledgr_sim_pit_inputs`, `ledgr_sweep`, `ledgr_walk_forward`. The private
-windows `ledgr_run_window` and the sweep window run inside
+Outside the promise are ordinary argument promises (for example
+`ledgr_utc({ sample.int(100, 1); "2020-01-01T00:00:00Z" })`, or forcing `bt`
+in `ledgr_backtest_bench`) and user-defined S3 methods that ledgr dispatches
+to (for example a user's `ledgr_metric_context.myclass`). These are the
+caller's own code. Their draws advance the caller's stream as if run
+directly. This is a documented boundary, not a claim of RNG neutrality.
+The Box-Muller limitation of decisions (5) and (12) is unchanged.
+
+LDG-3160 puts this sentence, or a closer one, in the contract and the owning
+article:
+
+> ledgr restores your RNG kind and `.Random.seed` (or their absence) around
+> its own work (store writes, seeding, worker start and stop) and around
+> the user code it runs for you: strategies, indicator and feature
+> callbacks, ranking and selection expressions, and functions it returns for
+> later use. Code that R evaluates when ledgr reads an ordinary argument, and
+> S3 methods you define for ledgr generics, are your own code: their random
+> draws advance your stream as if you had run them yourself. A pending
+> Box-Muller normal variate is not preserved.
+
+### 5.2 Disposition rule
+
+Every export and every callable ledgr returns gets exactly one class. Classes
+are assigned in priority order: W, then R, then H, then N.
+
+- **W, own work (wrapped at the outermost frame).** The export's static reach
+  includes `ledgr_fold_envelope`, a seeding site, or worker start or stop.
+  Static reach is computed on a call graph over the ledgr namespace: symbol
+  references, plus edges from every called S3 generic to all registered ledgr
+  methods of that generic.
+- **W, service-level user code (wrapped at the outermost frame).** The
+  export either reaches the feature-callback invokers statically
+  (`ledgr_call_feature_fn`, `ledgr_call_feature_series_fn`), or it is one of
+  the explicit evaluators found by the source search in Section 5.3.
+- **R, returned callable (restores on its own calls).** A function that ledgr
+  builds, returns for later use, and that evaluates user code when called.
+- **H, not wrapped.** The only possible ledgr-owned RNG consumption is a
+  nonempty append, which the store helper neutralises. H means the static
+  reach includes an append site; H exports get caller-state witnesses.
+- **N, not wrapped.** Everything else.
+
+For every class, argument promises and external S3 methods fall under the
+Section 5.1 boundary. Section 5.4 lists the cases decision (14) does not
+settle; they are not decided here.
+
+**W (15 exports).**
+
+- Own work: `ledgr_backtest`, `ledgr_promote`, `ledgr_pulse_snapshot`
+  (an unseeded memory fold with an internal capture callback,
+  `R/pulse-snapshot.R:483-518`), `ledgr_run`, `ledgr_sim_bars`,
+  `ledgr_sim_pit_inputs`, `ledgr_sweep`, `ledgr_walk_forward`.
+- Service-level user code, by static callback reach:
+  `ledgr_precompute_features`, `ledgr_candidate` (and the method
+  `ledgr_candidate.ledgr_walk_forward_results` through it), and
+  `ledgr_candidate_reproduction_key`. The last two are wrapped
+  conservatively: a static edge cannot be ruled out.
+- Service-level user code, explicit evaluators: `ledgr_sweep_review`
+  (`rank_by`), `ledgr_pbo` (`metric` function), and `ledgr_feature_grid` and
+  `ledgr_strategy_grid` (`.filter`).
+
+The private windows `ledgr_run_window` and the sweep window run inside
 `ledgr_walk_forward`'s wrapper.
 
-**Witnesses (LDG-3158).** The caller's next `runif(1)` and next
-`sample(10)` after the call must equal those of an untouched session, and the
-kind must be unchanged. They are run for every W export and for the H
-representatives that append nonempty frames:
+**R (2 returned callables).** `ledgr_indicator_dev()` returns `e$test` and
+`e$test_dates` (`R/indicator-dev.R:83-121`). Each body becomes
+`ledgr_rng_preserve_caller(...)`, so each call restores after its own
+snapshot release. The constructor evaluates no user code. It is H through
+static append reach, and it is never claimed to protect later calls. `e$plot`
+evaluates no user code.
 
-- `ledgr_snapshot_from_df`;
-- `ledgr_results(bt, "fills")`;
-- `print(bt)`;
-- `ledgr_sweep_save`;
-- `ledgr_state_reconstruct`;
-- `ledgr_snapshot_quarantine`.
+### 5.3 Source search for service-level evaluators
+
+I searched `R/` for `eval`, `evalq`, `eval_tidy`, `eval_bare`, `exec`,
+`do.call`, `match.fun`, `substitute`/`enquo`-style capture, user-function
+parameters (`is.function()` checks) and returned closures. Each operational
+hit has one disposition:
+
+| Site | What it evaluates | Disposition |
+| --- | --- | --- |
+| `R/sweep-review.R:51,111` | `rank_by`, captured and evaluated with the caller frame as parent | W, `ledgr_sweep_review` (review F1) |
+| `R/validation-pbo.R:44,215-232` | user `metric` function over returns | W, `ledgr_pbo` (new) |
+| `R/param-grid.R:32,45,182` | `.filter` expression over the expanded grid | W, `ledgr_feature_grid`, `ledgr_strategy_grid` (new). The allowlist at `:202-215` admits no RNG function and grid values must be atomic (`:165`), so the filter cannot draw today. It is wrapped anyway because decision (14) names selection expressions. |
+| `R/indicator-dev.R:87,118` | `fn` passed to the returned `test` and `test_dates` | R (review F1) |
+| `R/experiment.R:542` | feature factory `features(params)` | inside W only: reached from `ledgr_run`/`ledgr_backtest` (`R/backtest.R:452`), `ledgr_precompute_features` (`R/precompute-features.R:646`), `ledgr_pulse_snapshot` (`R/pulse-snapshot.R:432`) and the sweep path. `ledgr_experiment()` checks only the signature (`:495`). |
+| `R/features-engine.R:336,340`, `R/history-features.R:309,318,721` | indicator `fn`/`series_fn` | inside W only, through the callback invokers |
+| `R/indicator-adapters.R:67`, `R/indicator-ttr.R:609,859,861` | closures that ledgr builds around a package function (`ledgr_adapter_r`) or TTR (`ledgr_ind_ttr`) | inside W when ledgr evaluates them. Direct calls: Section 5.4, A-2 |
+| `R/signal-strategy.R:61` | strategy closure returned by `ledgr_signal_strategy` that calls the user's signal `fn` | inside W when the fold evaluates it. Direct calls: Section 5.4, A-2 |
+| `R/strategy-schedule.R:44-55` | none: returns the user's own strategy function with an attribute | caller's own code when called directly |
+| `R/indicator.R:86-111` | none: stores the user's `fn` unchanged | caller's own code when called directly |
+| `R/strategy-extract.R:272` | evaluates the stored strategy source of a function literal in a `baseenv()` child, which creates a closure and runs no body; reached by `ledgr_run_strategy` | H (no user code runs); the returned reconstruction is the user's own strategy |
+| `R/business-objective.R:353,818` | criterion `evaluate` functions | not user code: only ledgr objective constructors make criteria, validated by id and hash (`:346-360`) |
+| `R/parallel-workers.R:322,344`, `R/collapse-determinism.R:19` | internal expressions | not user code |
+| other `do.call`/`Map`/`Reduce`/`Filter` hits | ledgr constructors (`cost-model.R:347`, `risk-model.R:515`, `feature-map.R:218`, `feature-parameters.R:244,277`, `business-objective.R:438`), `duckdb::duckdb` (`public-api.R:7`), print and data reshaping | not user code |
+
+The LDG-3158 tracer extends the static rule at run time. During the targeted
+tests it traces the following, and fails if the outermost ledgr frame on the
+stack is neither a W export nor an R callable:
+
+- `ledgr_fold_envelope`, `ledgr_rng_seed_pinned` and
+  `ledgr_parallel_mirai_start`;
+- `ledgr_call_feature_fn` and `ledgr_call_feature_series_fn`;
+- `ledgr_sweep_review_rank`, `ledgr_pbo_metric`'s evaluation site and
+  `ledgr_eval_grid_filter`.
+
+### 5.4 Cases decision (14) leaves open (listed, not decided)
+
+- **A-1. Promises and external methods evaluated inside a W wrapper.**
+  Decision (14) says these draws "advance the caller's stream as if run
+  directly". Inside a wrapped export, R forces a lazy argument, or ledgr
+  dispatches to a user method (for example on `exp` in `ledgr_run`), after
+  the caller state has been captured. The restore then undoes those draws.
+  The same promise forced in an N export advances the stream. Two options:
+  - (a) Document that ledgr makes no promise either way for this code.
+  - (b) Force every ordinary (non-NSE) argument at wrapper entry, before the
+    capture. Methods dispatched later would still be undone, and NSE
+    arguments (`rank_by`, `.filter`) cannot be forced early.
+
+  This affects only draws in caller-owned code, which no economic oracle
+  observes. It needs a maintainer wording choice for LDG-3160's sentence.
+- **A-2. ledgr-built callables that ledgr itself also evaluates.**
+  `ledgr_signal_strategy()` returns a strategy closure. Its own example calls
+  it directly (`R/signal-strategy.R:30-33`), and the fold also evaluates it.
+  `ledgr_adapter_r()` returns an indicator whose `fn` is a ledgr-built
+  closure around a user-chosen package function. If these restored on their
+  own calls, as "callables returned for later use", an ambient draw inside
+  them would replay the same values on every pulse or bar when ledgr runs
+  them in a fold or feature pass. That changes ambient-RNG strategy and
+  indicator semantics inside ledgr's own service, which decisions (1) and (3)
+  do not intend. Two options:
+  - (a) Treat them as service artefacts. ledgr's evaluation of them is
+    covered by the W wrappers, and a direct call is the caller's own code.
+  - (b) Restore only on direct calls, which needs an "inside ledgr service"
+    marker.
+
+  The built-in indicator closures (`ledgr_ind_sma`, `_ema`, `_rsi`,
+  `_returns`) and the TTR wrappers evaluate no user code and are not
+  affected. Until this is decided, A-2 closures get no own wrapper and no
+  neutrality claim.
+
+### 5.5 Witnesses (LDG-3158)
+
+**Caller-state witness.** After the call, the caller's next `runif(1)` and
+next `sample(10)` must equal those of an untouched session, and the kind must
+be unchanged.
+
+It runs for every W export, both R callables, and the H representatives that
+append nonempty frames:
+
+- `ledgr_snapshot_from_df`, `ledgr_results(bt, "fills")`, `print(bt)`;
+- `ledgr_sweep_save`, `ledgr_state_reconstruct`,
+  `ledgr_snapshot_quarantine`;
+- the `ledgr_indicator_dev` constructor.
 
 Caller states:
 
 - MT/Inversion/Rejection;
 - L'Ecuyer-CMRG;
 - a non-default sample kind (Rounding);
-- an absent `.Random.seed` under a non-default active kind. For this one
-  the test asserts that the seed is still absent and that the kind is
-  unchanged, because an unseeded next draw has no fixed value.
+- an absent `.Random.seed` under a non-default active kind. For this one the
+  test asserts that the seed is still absent and that the kind is unchanged.
 
 Exits:
 
 - success;
 - a setup failure after RNG state was touched;
-- an interrupt, from a strategy that calls `rlang::interrupt()`, caught by
-  the test with `tryCatch(interrupt = )`;
+- an interrupt from a strategy that calls `rlang::interrupt()`, caught with
+  `tryCatch(interrupt = )`;
 - a two-worker sweep, whose daemon start and stop consume caller RNG.
 
+**Dynamic routes (review F1).** Each case must leave the caller state
+unchanged.
+
+- `ledgr_sweep_review(sw, rank_by = desc(sharpe_ratio) + 0 *
+  runif(length(sharpe_ratio)))`, a `rank_by` that actually draws.
+- `rank_by = { runif(1); stop("boom") }`: error after a draw. Class
+  `ledgr_invalid_sweep_review_rank`.
+- `rank_by = { runif(1); rlang::interrupt() }`: interrupt after a draw,
+  caught by the test.
+- A `rank_by` that calls a user helper. The helper draws, runs
+  `ledgr_sweep(..., workers = 2L)` on a small fixture and
+  `ledgr_sweep_save()` into a temporary store (a real worker operation and a
+  real store write), then draws again.
+- `dev$test(function(w) sample.int(100, 1))` and
+  `dev$test_dates(function(w) sample.int(100, 1), dates)`, each checked
+  after its own call. Then each again with an `fn` that draws and then errors,
+  and one that draws and then interrupts.
+- `ledgr_pbo(x, metric = function(m) colMeans(m) + 0 * runif(ncol(m)))`.
+- `ledgr_strategy_grid(qty = 1:3, .filter = qty > 1)` leaves the state
+  unchanged. `.filter = runif(1) > 0` is refused with
+  `ledgr_grid_filter_invalid`.
+- **Optional R3 witness.** An unseeded `ledgr_run(seed = NULL)` whose strategy
+  draws with `runif()` must leave the caller state unchanged. The strategy
+  draws from the caller's stream, so only the outer wrapper restores it;
+  storage neutrality alone does not.
+
+**Boundary witnesses.** These pin the documented behaviour of Section 5.1;
+they do not claim neutrality.
+
+- `ledgr_utc({ invisible(sample.int(100, 1)); "2020-01-01T00:00:00Z" })`
+  leaves the caller's next draw equal to that of a session that ran
+  `sample.int(100, 1)` itself.
+- A user-defined `ledgr_metric_context.review_rng` that draws and returns
+  `ledgr_metric_us_equity()` advances the stream the same way.
+
 `ledgr_backtest_bench` reads telemetry only (`R/backtest-results.R:322`) and
-is N.
+is N. Forcing its `bt` argument is caller code (Section 5.1).
 
 **Box-Muller limitation (decisions (5) and (12)).** The restored state is
 the kind plus `.Random.seed`, or its absence. A pending Box-Muller normal is
@@ -365,22 +561,38 @@ string marker is derived from it and has no separate literal:
 | sweep attribute `seed_contract` | `R/sweep.R:469` | `ledgr_seed_contract_current()` |
 | sweep candidate provenance `seed_contract` | `R/sweep.R:2179` | the same |
 | copies | `R/sweep-persistence.R:584`, `R/promotion-context.R:133`, `R/sweep.R:736` (reproduction key) | copied, as today |
-| committed configuration | `R/backtest-config.R:186-192` | `engine$pulse_seed_rule <- ledgr_pulse_seed_rule_version`, **only when `seed` is non-NULL** |
+| committed configuration | `R/backtest-config.R:186-192` | `engine$pulse_seed_rule <- ledgr_pulse_seed_rule_version`, **only when `seed` is non-NULL** (unseeded config and hash unchanged) |
 | configuration validation | `R/config-validate.R:70-77` | a seeded config whose `engine$pulse_seed_rule` is not the current integer aborts with `ledgr_seed_rule_mismatch` |
-| walk-forward candidate provenance | `R/walk-forward-inspection.R:217, 271` | `seed_contract` stays `"ledgr_walk_forward_seed_v1"` (derivation, unchanged); new field `pulse_seed_contract` is `paste0("ledgr_seed_v", cfg$engine$pulse_seed_rule)` from the test run's configuration when seeded, absent when unseeded |
+| walk-forward results object | `R/walk-forward.R:290` (`ledgr_walk_forward()`) and `R/walk-forward-inspection.R:76` (`ledgr_walk_forward_open()`) | attribute `pulse_seed_contract <- ledgr_seed_contract_current()`, stamped when the results are produced or opened. Opening passes the store gate, so the store was written under the current constant. This is set for every session, seeded or not, and is independent of `engine$pulse_seed_rule`. |
+| walk-forward candidate provenance and attribute | `R/walk-forward-inspection.R:217, 271` | `seed_contract` stays `"ledgr_walk_forward_seed_v1"` (derivation, unchanged). New field `pulse_seed_contract` is **copied from the results object's attribute**, not re-derived from the constant at candidate time, so a results object or candidate made before the change carries no current marker. Present for every candidate, seeded or not. |
+| reproduction key (`R/sweep.R:733-737`, seed section) | | gains `pulse_seed_contract = provenance$pulse_seed_contract %||% NULL`. Walk-forward keys show both markers; sweep keys show `seed_contract = "ledgr_seed_v2"` only (the field is NULL and dropped). |
+| promotion source metadata (`R/promotion-context.R:132-133`) | | gains `pulse_seed_contract = meta$pulse_seed_contract %||% candidate$provenance$pulse_seed_contract` beside `seed_contract`; the full provenance also travels in `provenance_json`, as today |
 
 **Candidate validation.** `ledgr_candidate_validate_seed_rule(candidate)`
-runs in `ledgr_promote` right after argument checks, before the snapshot
-hold and before `ledgr_run`. Both failure cases abort with class
-`c("ledgr_seed_rule_mismatch", "ledgr_invalid_args")`:
+runs in `ledgr_promote` right after the argument class checks, before
+`ledgr_snapshot_hold()` (`R/sweep.R:819`) and before `ledgr_run`. Both failure
+cases abort with class `c("ledgr_seed_rule_mismatch", "ledgr_invalid_args")`:
 
 - **Sweep candidate.** `provenance$seed_contract` must be
   `ledgr_seed_contract_current()`, seeded or not. Sweeps always carry it. A
   missing marker or `"ledgr_seed_v1"` is refused.
 - **Walk-forward candidate** (`provenance$evaluation_scope ==
-  "walk_forward"`). `seed_contract` must be `"ledgr_walk_forward_seed_v1"`.
-  When `execution_seed` is not NA, `pulse_seed_contract` must also be
-  current. An unseeded candidate runs no pulse seed.
+  "walk_forward"`), seeded or unseeded. `seed_contract` must be
+  `"ledgr_walk_forward_seed_v1"`, and `pulse_seed_contract` must be
+  `ledgr_seed_contract_current()`. A missing pulse marker or one naming
+  another rule is refused, including on an unseeded candidate (review F2).
+
+LDG-3159 tests these cases, each before any snapshot hold or run row:
+
+| Candidate | Current marker | Old marker (`ledgr_seed_v1`) | Missing marker |
+| --- | --- | --- | --- |
+| sweep, seeded | promotes | refused | refused |
+| sweep, unseeded | promotes | refused | refused |
+| walk-forward, seeded | promotes | refused | refused |
+| walk-forward, unseeded | promotes | refused | refused |
+
+A refused case leaves no run row and no snapshot hold. In addition, a
+walk-forward candidate whose derivation marker is changed is refused.
 
 No path other than promotion executes a stored or in-memory candidate.
 `ledgr_walk_forward` runs only the candidates it creates. A store written
@@ -397,7 +609,7 @@ bindings lack the new constant. There is no compatibility path.
 | Generated run ids | seeded runs with `run_id = NULL` change, because `R/run-registration.R:20` hashes `config_hash`; walk-forward test run ids (`R/walk-forward.R:1108`) and sweep ids unchanged | before/after id for one seeded default-id run |
 | Store format fingerprint | `ledgr_store_format_bindings()` gains exactly `ledgr_pulse_seed_rule_version = 2L` | binding diff against `aa2931e9` lists only that name |
 | Candidate and walk-forward seeds | none: `ledgr_derive_seed` and `ledgr_walk_forward_execution_seed` unchanged; walk-forward session id payload unchanged | candidate `execution_seed` columns identical in both successors |
-| Executable candidate markers | sweep `seed_contract` v1 to v2; walk-forward candidates gain `pulse_seed_contract` | successor A0 `sweep_attrs` and `sweep.csv` |
+| Executable candidate markers | sweep `seed_contract` v1 to v2; every walk-forward candidate (seeded or not) gains `pulse_seed_contract = "ledgr_seed_v2"` from its results object; the reproduction key and promotion source metadata expose it | successor A0 `sweep_attrs` and `sweep.csv`; the Section 6 candidate table |
 | Simulated inputs | changed only for callers whose session kind is not the default | a witness under L'Ecuyer-CMRG equals the default-kind output |
 
 ## 8. (g) Successor records
@@ -408,9 +620,17 @@ history, along with their checkers, guts and `gut_results.csv`. Successors
 are recorded on the candidate under `dev/bench/v0_2_3_cut3_successors/a0/`
 and `.../rng/`. A comparator there reads original and successor field by
 field. Every field not named below must be identical. Each named change must
-satisfy its predicate. Any other difference fails. The probes may be adapted
-only where they observe a deleted function (the scalar pulse-seed helper)
-and only to read the vector owner instead.
+satisfy its predicate. Any other difference fails.
+
+The probes may change their observation in exactly these ways and no
+others; fixture semantics stay unchanged:
+
+- the census's pulse-seed observer moves from the deleted scalar helper to
+  the accessor `ledgr_pulse_seed_at`, and the `pulse_seeds`/`rule_overlap`
+  "current" rule reads `ledgr_pulse_seeds`;
+- the census's `RNGkind` trace splits queries from mutations and records
+  their callers;
+- the census adds the new observer columns of Section 8.2.1.
 
 **Pulse-rule model.** A predicate that says "equals the pulse-rule model"
 means the output of the base tree `aa2931e9` run sequentially with
@@ -444,12 +664,107 @@ A1 to A5.
 | --- | --- | --- |
 | `pulse_seeds` | `execution_seed`, `pulse_idx` identical; `pulse_seed` equals the Section 2.5 reference for every row | v2 rule (LDG-3159) |
 | `rule_overlap` | rows for `add`, `stride`, `mixer` identical; every `current` row equals the original `mixer` row of the same metric | v2 rule (LDG-3159) |
-| `census` | `path`, `seed_arg`, `default_seed`, `set_seed_calls`, `set_seed_seeds`, `set_seed_callers`, `pulse_seed_execution_seeds` identical for rows 01-04 and 06-10; `set_seed_kind_args` is `Mersenne-Twister` wherever `set_seed_calls > 0` (LDG-3158, kind pin); row 05 `outcome` is `ok`, `set_seed_calls` 0, `pulse_seed_nonnull` 0 (LDG-3158, unseeded walk-forward). With the observer adapted to count decision-due reads of the pulse-seed vector, `pulse_seed_calls` equals the original for every row except 05, which equals row 10's 19. Every `RNGkind` call has caller `ledgr_rng_restore` (observer extended to record callers) | kind pin, walk-forward fix, caller restore |
+| `census` | the exact field-level predicates and expected-call ledger of Section 8.2.1; no wholesale exemption | kind pin, walk-forward fix, caller restore, v2 rule |
 | `worker_agreement` | `candidate_id`, `pin`, `execution_seed`, `daemon_rng_kind` (the probe starts its own daemon) identical; statuses `DONE`; all four agreement booleans TRUE (LDG-3158); `n_trades_run == n_trades_w1 == n_trades_w2 >= 10`; final equities equal across paths and equal to the pulse-rule model (LDG-3159). After LDG-3158 alone: only the `none` row's `*_w2` fields change, to its `*_w1` values | kind pin; v2 rule |
 | `stochastic_fills`, `stochastic_trades` | `run` and `sweep_w1` rows equal the pulse-rule model (LDG-3159); `sweep_w2` rows equal `sweep_w1` rows for every candidate (LDG-3158); each candidate trades at least two distinct instruments. After LDG-3158 alone: only `sweep_w2`/`none` trades change, to the original `sweep_w1`/`none` rows | kind pin; v2 rule |
-| `caller_rng` | every row `caller_rng_unchanged` TRUE and `after_kind == before_kind`; `after_sha256 == before_sha256` where the state was set; rows 01, 05, 09, 13, 15 change only in those fields; all other rows identical | caller restore (LDG-3158) |
+| `caller_rng` | every row `caller_rng_unchanged` TRUE and `after_kind == before_kind`; `after_sha256 == before_sha256` where the state was set; rows 01, 05, 09, 13, 15 change only in those fields; all other rows identical. Rows 01, 05 and 09 (unseeded `ledgr_run`, flat fixture) are already preserved by RNG-neutral storage; rows 13 and 15 (two-worker sweeps) need the outer wrapper around daemon start and stop | RNG-neutral storage (rows 01, 05, 09) and caller restore (rows 13, 15) (LDG-3158) |
 | `store_rng` | `equity_identical` TRUE and `first_differing_pulse` NA in both rows; row a both equities `99984.34987600008`; row b both `99967.891749199887`; equal to the storage model, executed on 2026-10-29 with exactly these values | RNG-neutral storage (LDG-3158), not the pulse rule |
 | `detection_gap` | identical (decision (11): detection policy unchanged) | none |
+
+#### 8.2.1 Census predicates and expected-call ledger (review F3)
+
+**Fixture fact.** `rp_census` runs right after `rp_rule_overlap`, which ends
+with `rp_clear_seed()`. Every ledgr call restores an absent state as absent,
+so `.Random.seed` is absent at the start of every census case. A new column
+records this, and every count below relies on it.
+
+**New observer columns (successor schema).** They are appended after the
+original 13, in this order:
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `entry_seed_present` | logical | `.Random.seed` exists when the case starts |
+| `preserve_calls` | integer | entries into `ledgr_rng_preserve_caller` |
+| `rngkind_query_calls` | integer | zero-argument `RNGkind()` calls |
+| `rngkind_query_callers` | character | sorted unique immediate callers of those, comma-joined |
+| `rngkind_mutation_calls` | integer | argument-bearing `RNGkind(...)` calls |
+| `rngkind_mutation_callers` | character | sorted unique immediate callers of those, comma-joined |
+| `pulse_seed_vectors` | integer | calls to `ledgr_pulse_seeds` |
+
+In the copy rows 03 and 08 every new column is the empty string, as their
+other observer columns are today.
+
+**Field predicates.** `case`, `path`, `seed_arg`, `default_seed`,
+`set_seed_calls`, `set_seed_seeds` and `pulse_seed_execution_seeds` stay
+identical in every row. The exception is row 05: its outcome changes
+(below), while its `set_seed_calls` stays 0 and its
+`pulse_seed_execution_seeds` stays empty. In operational rows (all except
+03 and 08):
+
+- `outcome` is `ok`. Row 05 changes from `ERROR ledgr_invalid_args: ...` to
+  `ok` (walk-forward fix, LDG-3158).
+- Where `set_seed_calls > 0`, `set_seed_callers` is exactly
+  `ledgr_rng_seed_pinned` (changed from `ledgr_fold_envelope`) and
+  `set_seed_kind_args` is exactly `Mersenne-Twister` (changed from `NULL`).
+  Rows with no `set.seed` call keep empty strings (kind pin, LDG-3158).
+- `entry_seed_present` is FALSE.
+- `rngkind_query_callers` is `ledgr_rng_caller_state`.
+  `rngkind_mutation_callers` is `ledgr_rng_restore`. No other caller is
+  allowed; the worker pin does not run, because the census uses one worker.
+- `rngkind_calls` (original column, total of queries and mutations) equals
+  `rngkind_query_calls + rngkind_mutation_calls`.
+- With E the number of wrapped-export frames entered and S =
+  `set_seed_calls`:
+  - `preserve_calls` = E;
+  - `rngkind_query_calls` = E + S, because every wrapper and every seeded
+    fold envelope captures the state once;
+  - `rngkind_mutation_calls` = E + S, because every capture sees an absent
+    state, so every restore takes the absent branch once.
+- `pulse_seed_calls` counts calls to `ledgr_pulse_seed_at`, one per
+  decision-due pulse. `pulse_seed_nonnull` counts those returning non-NULL.
+  `pulse_seed_vectors` = S.
+
+**Independent expected-call ledger.** E per path is fixed by the source:
+
+- `ledgr_run` 1, `ledgr_sweep` 1, `ledgr_walk_forward` 1;
+- `ledgr_promote` 2, because it calls the exported `ledgr_run`
+  (`R/sweep.R:849`).
+
+No other wrapped export is called internally on these paths: `ledgr_backtest`
+and the windows call internals.
+
+| Row | Path, seed | E | S | `preserve_calls` | query | mutation | `rngkind_calls` | `pulse_seed_calls` | `pulse_seed_nonnull` | `pulse_seed_vectors` |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 01 | run, NULL | 1 | 0 | 1 | 1 | 1 | 2 | 10 | 0 | 0 |
+| 02 | sweep, NULL | 1 | 0 | 1 | 1 | 1 | 2 | 20 | 0 | 0 |
+| 04 | promote, NULL | 2 | 0 | 2 | 2 | 2 | 4 | 10 | 0 | 0 |
+| 05 | walk-forward, NULL | 1 | 0 | 1 | 1 | 1 | 2 | 19 | 0 | 0 |
+| 06 | run, 24 | 1 | 1 | 1 | 2 | 2 | 4 | 10 | 10 | 1 |
+| 07 | sweep, 24 | 1 | 2 | 1 | 3 | 3 | 6 | 20 | 20 | 2 |
+| 09 | promote, 24 | 2 | 1 | 2 | 3 | 3 | 6 | 10 | 10 | 1 |
+| 10 | walk-forward, 24 | 1 | 6 | 1 | 7 | 7 | 14 | 19 | 19 | 6 |
+
+The positive predicates that review F3 required to keep:
+
+- row 05's outcome is `ok`;
+- row 05 has zero seed calls and zero non-NULL pulse seeds;
+- row 05 has 19 decision reads, equal to row 10, which has the same folds
+  and calendar.
+
+Every other `pulse_seed_calls` value equals the original record. The
+`pulse_seed_vectors` values also witness "computed once per fold".
+
+**Ticket staging.**
+
+- After LDG-3158 alone, with the original probe unchanged, the original
+  census differs only in:
+  - `set_seed_callers`, `set_seed_kind_args` and `rngkind_calls`, each as
+    in the ledger;
+  - row 05's `outcome`, `pulse_seed_calls` (19) and `pulse_seed_nonnull`
+    (0). The scalar helper still exists and is still called once per
+    decision-due pulse.
+- After LDG-3159 the successor probe uses the adapted observer and the full
+  schema above.
 
 ### 8.3 Replacement regression guts
 
@@ -463,12 +778,14 @@ predicate. A probe crash or a scope failure does not count.
 | --- | --- | --- |
 | R1 `kind_unpinned` | `ledgr_rng_seed_pinned` seeds without a kind; the worker pin is a no-op | `worker_agreement` booleans; `stochastic_*` w2 equality |
 | R2 `store_unguarded` | `ledgr_store_append` calls `DBI::dbAppendTable` directly | `store_rng` equality |
-| R3 `caller_unrestored` | `ledgr_rng_preserve_caller` forces `expr` without restoring | `caller_rng` rows 01, 05, 09, 13, 15 |
+| R3 `caller_unrestored` | `ledgr_rng_preserve_caller` forces `expr` without restoring; storage neutrality stays in place | `caller_rng` rows 13 and 15. Rows 01, 05 and 09 are not required to change, because storage neutrality protects them. The Section 5.5 drawing unseeded-run witness and the dynamic-route witnesses must fail too. |
 | R4 `wf_seed_na` | `ledgr_walk_forward_run_or_open` passes the NA seed through again | `census` row 05 outcome |
 | R5 `pulse_shift` | `ledgr_pulse_seeds(s, p)` returns v2 at `p + 1` | `pulse_seeds` reference; A4 |
 | R6 `seed_ignoring` | `ledgr_pulse_seeds` ignores the execution seed | `pulse_seeds` reference; `stochastic_*` model equality |
 | R7 `marker_stale` | `ledgr_seed_contract_current()` returns v1 | A1, A2 |
 | R8 `config_rule_dropped` | the seeded config omits `pulse_seed_rule` | A3 |
+| R9 `census_seed_caller` | `ledgr_fold_envelope` calls `set.seed` directly again | Section 8.2.1 `set_seed_callers`/`set_seed_kind_args` |
+| R10 `wf_marker_from_constant` | `ledgr_candidate.ledgr_walk_forward_results` derives `pulse_seed_contract` from the constant instead of the results attribute | the LDG-3159 old/missing walk-forward candidate cases (Section 6) |
 
 `wf_seed` (derivation) and `preflight_wide` (detection) stay meaningful and
 remain in the original gut list.
@@ -502,30 +819,59 @@ remain in the original gut list.
 - **LDG-3159** owns Sections 2, 6 and 7, and A1 to A5 plus the v2 rows of
   Section 8.2.
 - **Seven shapes.** Only the fold envelope changes on the hot path. One
-  O(n_pulses) vector is built once per fold, and the context reads one
-  element by index. There is no new per-pulse work, and the store helper
-  runs per append, not per pulse.
+  O(n_pulses) vector is built once per fold. The context reads one element
+  by index through `ledgr_pulse_seed_at`, which replaces the per-pulse
+  SHA-256 call with one subset. There is no new per-pulse work beyond that
+  read, and the store helper runs per append, not per pulse.
 - **Timing.** Timing is judged under the LDG-3156 protocol on the shared timing
   harness of LDG-3155.
-- **Type 2.** This note leaves no open Type 2 question. Two readings are
-  stated so the review can reject them: the axis origin is the run's own
-  calendar (Section 2.3), and wrapping covers callback evaluators
-  (Section 5).
+- **Type 2.** Review F1 was settled by maintainer decision (14). The design
+  review confirmed the two earlier readings: the run-local axis origin, with
+  the same-calendar qualification of Section 2.3, and coverage of callback
+  evaluators. Section 5.4 lists two cases decision (14) does not settle
+  (A-1 promises and methods forced inside a wrapper; A-2 ledgr-built
+  callables that ledgr itself also evaluates). The note does not decide
+  them. LDG-3158 implements neither option for them until the maintainer
+  rules; if no ruling arrives first, LDG-3160's documentation must state
+  the gap.
 
-## Appendix A. Entry-point partition (static rule of Section 5)
+## 11. Review response (correction round 1)
 
-Exports (181): W 12 (listed in Section 5, without the S3 method), H 56,
-N 113. Registered S3 methods (93): W 1, H 42, N 50.
+The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
+`565e8bbf`, recorded in `607ce382`). The maintainer settled F1 with decision
+(14) (option B).
+
+| Finding | Response | Where |
+| --- | --- | --- |
+| F1 boundary and partition | Decision (14) is stated as the boundary, with the documentation sentence. The rule now has W own-work, W service-code, R returned callables, H and N classes. `ledgr_sweep_review` moves from H to W. The source search adds `ledgr_pbo`, `ledgr_feature_grid` and `ledgr_strategy_grid` to W. `ledgr_indicator_dev`'s `test` and `test_dates` restore on their own calls; the constructor is H. Promises and external S3 methods are outside the promise. Dynamic-route, error-after-draw, interrupt-after-draw, worker/store-route and boundary witnesses are added. Counts regenerated: W 15, H 55, N 111 exports; S3 W 1, H 42, N 50; R 2. Two cases decision (14) does not settle are listed, not decided. | Sections 1, 5.1-5.5, Appendix A |
+| F2 unseeded walk-forward marker | A current `pulse_seed_contract` is required on every walk-forward candidate, seeded or not. It is stamped from the constant on the results object when the results are produced or opened, and copied into the candidate, independent of `engine$pulse_seed_rule`. Refusal comes before the snapshot hold. Old, missing and current cases cover seeded and unseeded sweep and walk-forward candidates. The derivation marker and the unseeded config rule are unchanged. | Section 6, Section 7, gut R10 |
+| F3 census predicates | The new seeding caller, the query/mutation caller roles, the new column schema and an independent expected-call ledger with exact counts are frozen. The observation changes are authorised explicitly. Row 05's positive predicates are kept, there is no wholesale exemption, and the staging after LDG-3158 alone is stated. | Section 8 preamble, 8.2, 8.2.1, gut R9 |
+| F4 `RNGkind` source guard | Exactly the zero-argument query is allowed in `ledgr_rng_caller_state`. Mutations are allowed only in `ledgr_rng_restore` and `ledgr_parallel_worker_rng_pin`. The pass and injected-failure tests are specified. | Sections 3, 4 |
+| Optional: R3 | Rows 01, 05 and 09 are protected by storage neutrality, so R3 must fail rows 13 and 15 plus a drawing unseeded-run witness. | Sections 5.5, 8.2, 8.3 |
+| Optional: B5 endpoints | Seed pairs (s, s+1) for s = 1..19, p = 1..(500-k), both directions; add control 9481. | Section 2.4 |
+| Optional: walk-forward marker in summaries | Reproduction key and promotion source metadata gain `pulse_seed_contract`. | Section 6 |
+| Reading (i) | Same-calendar equality only. A longer calendar need not agree, walk-forward promotion runs on the full calendar, and LDG-3159 must not assert overlapping-bar equality. | Section 2.3 |
+| Reading (ii) | Confirmed by the review and subsumed by decision (14). | Section 5 |
+
+## Appendix A. Entry-point partition (rule of Section 5.2)
+
+Exports (181): W 15 (listed in Section 5.2, without the S3 method), H 55,
+N 111. Registered S3 methods (93): W 1, H 42, N 50. Returned callables: R 2
+(`ledgr_indicator_dev()`'s `test` and `test_dates`). Section 5.4 lists the
+callables left undecided (A-2). Changes from the first draft: W gains
+`ledgr_sweep_review`, `ledgr_pbo`, `ledgr_feature_grid` and
+`ledgr_strategy_grid`; `ledgr_indicator_dev` moves from W to H, and its
+returned methods become R.
 
 **H exports:** ledgr_business_objective, ledgr_compute_metrics, ledgr_dsr,
 ledgr_effective_trials, ledgr_experiment, ledgr_experiment_plan,
 ledgr_facts_history, ledgr_facts_resolve, ledgr_facts_validate,
-ledgr_feature_contract_check, ledgr_feature_contracts, ledgr_history_info,
+ledgr_feature_contract_check, ledgr_feature_contracts, ledgr_history_info, ledgr_indicator_dev,
 ledgr_k_ratio, ledgr_min_track_record, ledgr_objective_diagnostic_threshold,
 ledgr_objective_even_profit, ledgr_objective_even_trades,
 ledgr_objective_max_drawdown, ledgr_objective_min_trades,
 ledgr_objective_positive_trajectory, ledgr_objective_stable_region,
-ledgr_objective_stable_runs, ledgr_parameters, ledgr_pbo, ledgr_results,
+ledgr_objective_stable_runs, ledgr_parameters, ledgr_results,
 ledgr_return_panel, ledgr_run_compare, ledgr_run_explain, ledgr_run_fills,
 ledgr_run_info, ledgr_run_list, ledgr_run_strategy, ledgr_run_tags,
 ledgr_snapshot_from_csv, ledgr_snapshot_from_df, ledgr_snapshot_from_yahoo,
@@ -534,7 +880,7 @@ ledgr_snapshot_quarantine, ledgr_state_reconstruct, ledgr_sweep_filter,
 ledgr_sweep_list, ledgr_sweep_open, ledgr_sweep_returns,
 ledgr_sweep_returns_data_frame, ledgr_sweep_returns_matrix,
 ledgr_sweep_returns_panel, ledgr_sweep_returns_wide, ledgr_sweep_returns_xts,
-ledgr_sweep_review, ledgr_sweep_save, ledgr_sweep_trades,
+ledgr_sweep_save, ledgr_sweep_trades,
 ledgr_walk_forward_folds, ledgr_walk_forward_open, ledgr_walk_forward_scores.
 
 **H S3 methods:** as_tibble for ledgr_backtest, ledgr_dsr,
@@ -563,7 +909,7 @@ ledgr_demo_sma_crossover_strategy, ledgr_facts,
 ledgr_facts_equity_corporate_actions, ledgr_facts_lifetime,
 ledgr_facts_membership_intervals, ledgr_facts_membership_snapshots,
 ledgr_facts_sessions, ledgr_facts_sessions_qlcal,
-ledgr_facts_trading_status, ledgr_feature_grid, ledgr_feature_id,
+ledgr_facts_trading_status, ledgr_feature_id,
 ledgr_feature_map, ledgr_fold, ledgr_folds_anchored, ledgr_folds_rolling,
 ledgr_grid_add_baseline, ledgr_grid_cross, ledgr_grid_named,
 ledgr_history_frame, ledgr_history_matrix, ledgr_history_policy,
@@ -585,7 +931,7 @@ ledgr_schedule_quarter_start, ledgr_schedule_week_start,
 ledgr_schedule_weekday, ledgr_schedule_year_start, ledgr_select_top_n,
 ledgr_selection, ledgr_signal, ledgr_signal_feature, ledgr_signal_return,
 ledgr_signal_strategy, ledgr_snapshot_close, ledgr_snapshot_create,
-ledgr_snapshot_seal, ledgr_strategy_grid, ledgr_strategy_preflight,
+ledgr_snapshot_seal, ledgr_strategy_preflight,
 ledgr_strategy_schedule, ledgr_sweep_info, ledgr_sweep_retention,
 ledgr_target, ledgr_target_quantity, ledgr_target_rebalance,
 ledgr_temp_store, ledgr_timing_next_open, ledgr_universe_members,
@@ -626,3 +972,11 @@ only) was reverted after each run.
   re-review's `flush_keeps_rng` observation.
 - Static call graph over `asNamespace("ledgr")` with S3 dispatch edges:
   the Section 5 and Appendix A partition.
+- Correction round 1: a read-only source search of `R/` at `aa2931e9` for
+  `eval`, `evalq`, `eval_tidy`, `eval_bare`, `exec`, `do.call`,
+  `match.fun`, `substitute`, `enquo`, `is.function()` parameters and
+  returned closures (Section 5.3). The Section 8.2.1 ledger values `E` come
+  from reading the internal calls between wrapped exports (only
+  `ledgr_promote` -> `ledgr_run` on the census paths). The partition was
+  rechecked against `NAMESPACE`: 15 + 55 + 111 = 181, with no overlap and
+  no omission.
