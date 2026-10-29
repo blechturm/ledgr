@@ -76,15 +76,17 @@ guts <- list(
   R7 = list(what = "marker_stale: ledgr_seed_contract_current() returns v1",
     edits = list(edit("R/rng.R", 'paste0("ledgr_seed_v", ledgr_pulse_seed_rule_version)', '"ledgr_seed_v1"')),
     steps = "a0", expect = list(a0_pred("A1"), a0_pred("A2"))),
-  # R8 as Section 8.3 writes it cannot reach A3: the unchanged validator
-  # refuses every seeded configuration before a run row exists, and the A0
-  # harness stops at the missing resumed run. R8v adds the validator's own
-  # revert so the omitted field reaches config_json. R8v is an LDG-3161
-  # proposal that needs a maintainer disposition; it is not counted for R8.
-  R8 = list(what = "config_rule_dropped: the seeded config omits pulse_seed_rule (the configuration validator, unchanged, then refuses it)",
+  # R8 as Section 8.3 writes it cannot reach A3: the shipped validator
+  # refuses every seeded configuration before a run row exists (fail-closed,
+  # as LDG-3159's config_rule_dropped revert also showed), and the A0 harness
+  # stops at the missing resumed run. It is kept as validator evidence.
+  # R8v, the same omission with the validator check reverted, reaches
+  # config_json and is the A3 gut: accepted as the realization of R8 by the
+  # session lead under the maintainer's standing direction (2026-10-29).
+  R8 = list(what = "config_rule_dropped as written: the seeded config omits pulse_seed_rule; the shipped validator refuses it before any run row (validator evidence, not the A3 gut)",
     edits = list(edit("R/backtest-config.R", "  if (!is.null(seed)) {\n    engine$pulse_seed_rule <- ledgr_pulse_seed_rule_version\n  }\n", "")),
-    steps = "a0", expect = list(a0_pred("A3"))),
-  R8v = list(what = "proposed variant of R8, pending maintainer disposition: the seeded config omits pulse_seed_rule and validation no longer requires it (the base configuration)",
+    steps = "a0", expect = list(a0_pred("A3")), role = "validator evidence"),
+  R8v = list(what = "R8 realization (accepted): the seeded config omits pulse_seed_rule and the validator check is reverted (the base configuration)",
     edits = list(edit("R/backtest-config.R", "  if (!is.null(seed)) {\n    engine$pulse_seed_rule <- ledgr_pulse_seed_rule_version\n  }\n", ""),
       edit("R/config-validate.R", "    if (!isTRUE(current_rule)) {", "    if (FALSE) {")),
     steps = "a0", expect = list(a0_pred("A3"))),
@@ -203,7 +205,12 @@ for (g in selected) {
     a0 = paste0("a0 ", p$id), test = paste0("test ", p$file, ": ", p$block)), character(1))
   verdict <- if (g == "control") {
     if (length(failing) == 0L && length(errors) == 0L) "PASS (nothing fails)" else "FAIL"
-  } else if (length(status) && all(status == "FAILED") && length(errors) == 0L) "PASS" else "FAIL"
+  } else if (identical(spec$role, "validator evidence")) {
+    # Expected outcome: the validator refuses before A3, so the recorder stops.
+    if (any(status == "not reached") && length(errors) > 0L) "VALIDATOR EVIDENCE (refused before A3; R8v is the A3 gut)" else "UNEXPECTED"
+  } else if (length(status) && all(status == "FAILED") && length(errors) == 0L) {
+    if (g == "R8v") "PASS (accepted realization of R8)" else "PASS"
+  } else "FAIL"
   rows[[length(rows) + 1L]] <- data.frame(gut = g, mutation = spec$what, steps = paste(spec$steps, collapse = " "),
     expected = paste(sprintf("%s [%s]", label, status), collapse = " | "),
     failing_checks = paste(failing, collapse = " | "),
