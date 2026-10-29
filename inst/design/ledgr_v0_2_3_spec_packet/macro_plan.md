@@ -67,7 +67,8 @@ Phase A (now, parallel)
 |-- WS9a memory and worker baselines; C3 placement RFC
 |-- C4 pulse-seed counter (own Type 2 cut)
 |-- RFC track: frame retirement, asset precision, execution policy,
-|   portfolio construction, docs roles, helper bundles, C9 mechanism
+|   portfolio construction, docs roles, helper bundles, C9 mechanism,
+|   typed-accounting boundary (field census, then focused RFC)
 |-- WS11a H4 real-data audit; C10 census and coupling map
 |-- WS5 preparation: spec cut, schema, selection, article drafts
 `-- chores: roxygen pin, UX-brief reconcile, M8a, C12b
@@ -96,6 +97,7 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS1 -> WS4 | preference (less ownership conflict; both handlers enter one fold) |
 | WS4 -> WS5 runtime | binding constraint: dense is frozen and synthesis D3 authorizes no new execution-mode branch |
 | WS4 -> WS7 | binding constraint (roadmap: merge readers after one run shape) |
+| typed-accounting RFC -> WS7, WS8 | binding constraint: bind the authoritative event fields and typed replay boundary before either implementation |
 | WS5 -> WS6 | technical prerequisite (synthesis D1 fixes the input layout) |
 | WS5, WS6, WS7 -> J | evidence prerequisite for WS5 acceptance |
 | WS1, WS4 -> WS8 | binding constraint (roadmap order) |
@@ -133,7 +135,9 @@ Suite seed (lanes, workload contracts, parity oracles, timing boundaries,
 deletion witnesses for C1). Then: dense parity lane and a **baseline timing on
 the current tree**; authoring lane; scaling geometry, whole-universe portfolio
 and the point-in-time demonstration row. All lanes are timed again after WS4
-and WS8 so the release can see where it stands (maintainer, 2026-10-28).
+and WS8 so the release can see where it stands (maintainer, 2026-10-28). The
+post-WS7/WS8 record includes warm result reads and full run-plus-results time,
+so eliminating accounting representations is measured end to end.
 - **Route:** RFC, then direct tickets per lane. **Rule:** no public
   performance claim until the suite exists and its results are accepted.
 
@@ -162,15 +166,20 @@ Focused seed now; implementation after WS5's runtime, before J.
 
 ### WS7. One result reader and print (C8)
 
-Merge the three reader families into one reader and print path, as WS5's
-sibling after WS4. Gate: every public table and print byte-identical or each
-difference decided. M8a and C12b may land earlier on the current path.
+Merge the three reader families behind one chunked, typed accounting projection
+and one print path, as WS5's sibling after WS4. Before implementation, the
+focused typed-accounting RFC binds the authoritative fields and replay boundary;
+`meta_json` must not become the new internal replay contract. Gate: every public
+table and print byte-identical or each difference decided. M8a and C12b may land
+earlier on the current path.
 
 ### WS8. Typed P3-P5 execution batch (C7)
 
 Bounded comparison of no-fill, sparse-rebalance and wide all-fill workloads,
-then the typed batch on the surviving path. In scope: it also simplifies the
-codebase (maintainer, 2026-10-28).
+then the typed batch on the surviving path. Provisionally, WS8 owns direct
+typed persistence, removal of accounting-critical JSON and the required store
+format bump with old-format refusal; the focused RFC may adjust that ownership.
+In scope: it also simplifies the codebase (maintainer, 2026-10-28).
 - **Gate:** end-to-end runtime plus allocation gate named at the cut.
 
 ### WS9. Memory and worker budgets (C5, H9, H11; C3 RFC)
@@ -178,7 +187,8 @@ codebase (maintainer, 2026-10-28).
 - **WS9a, now:** phase-level memory and worker baselines; the C3 placement RFC.
 - **WS9b, after WS4:** structural reduction, then the worker-budget decision
   (defaults Type 2 at cut), then H9 daemon reuse. Final memory evidence
-  follows WS6 and H9.
+  follows WS6 and H9. The typed-accounting work must also prove that shared
+  result reconstruction is chunk-bounded and report its peak RSS.
 
 ### WS10. Economics (C11, C12a, U2, X2): design and implementation
 
@@ -251,6 +261,13 @@ without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
 - **Scope, 2026-10-28:** WS8 stays; economics implementation stays; the full
   peer suite stays, with timings after WS4 and WS8; CRAN-only chores are
   conditional on v0.2.3 becoming the CRAN release.
+- **Typed accounting, 2026-10-29:** the redundant-accounting spike is an
+  evidence input, not design authority. A field census and focused RFC bind one
+  ordered event vocabulary, authoritative versus derived fields, retained
+  evidence and the typed replay boundary before WS7 or WS8 implementation.
+  WS7 provisionally owns shared chunked replay; WS8 provisionally owns typed
+  persistence and removal of accounting-critical JSON. WS3 and WS9 verify the
+  full-workflow runtime and bounded-memory claims.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28.
 
