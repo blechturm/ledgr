@@ -1,0 +1,8 @@
+"gut","what","expected_tables","exit_status","failed_tables","ok"
+"control","no corruption","",0,"",TRUE
+"pulse_shift","ledgr_derive_pulse_seed uses pulse_idx + 1","pulse_seeds,stochastic_fills,stochastic_trades,rule_overlap",1,"pulse_seeds,rule_overlap,stochastic_fills,stochastic_trades,worker_agreement",TRUE
+"wf_seed","walk-forward test windows reuse the train seed rule","census",1,"census",TRUE
+"worker_kind","workers pinned to Mersenne-Twister after daemon start (the WS2 fix shape)","worker_agreement",1,"stochastic_trades,worker_agreement",TRUE
+"caller_leak","the committed-run entry draws one number from the caller's RNG","caller_rng",1,"caller_rng",TRUE
+"flush_keeps_rng","persistent flushes save and restore .Random.seed (one fix shape)","store_rng",1,"caller_rng,store_rng",TRUE
+"preflight_wide","preflight counts sample.int, rbinom and rexp as ambient RNG","detection_gap",1,"detection_gap,stochastic_trades,worker_agreement",TRUE

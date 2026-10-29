@@ -1,0 +1,14 @@
+"expr","median_us","min_us","times"
+"ledgr_derive_pulse_seed(7, 500) [today, per pulse]",84.4,34.3,2000
+"canonical_json(list(base_seed, salt))",33.4,13.9,2000
+"digest sha256 of the payload",12.5,5.2,2000
+"ledgr_seed_normalize(7)",7.8,2.8,2000
+"rule add, scalar",1.8,0.4,2000
+"rule stride, scalar",1.8,0.4,2000
+"rule mixer, scalar",24.3,12.2,2000
+"rule mixer, vector of 1260 pulses",1604,607.6,2000
+"withr::with_seed(s, NULL) [kind kept]",35.9,15.8,2000
+"withr::with_seed(s, NULL) [3 kinds pinned to MT]",41.7,18.5,2000
+"set.seed(s) [Mersenne-Twister active]",1.5,1.4,2000
+"set.seed(s) [L'Ecuyer-CMRG active]",0.9,0.7,2000
+"set.seed(s, kind = MT, normal.kind, sample.kind) [pinned call]",6.9,6.2,2000

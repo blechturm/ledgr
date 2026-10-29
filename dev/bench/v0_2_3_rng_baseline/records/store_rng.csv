@@ -1,0 +1,3 @@
+"case:character","n_pulses:integer","a:character","b:character","n_a:integer","n_b:integer","final_equity_a:character","final_equity_b:character","equity_identical:logical","first_differing_pulse:integer","id:character"
+"ledgr_backtest, caller set.seed(1), no seed argument","30","checkpoint_every = 10000","checkpoint_every = 5","30","30","99984.34987600008","99992.116441100065","FALSE","8","a"
+"seeded fold, 10010 pulses, default checkpoint_every","10010","ledgr_run (persistent)","ledgr_sweep workers = 1 (memory)","10010","10010","99969.62967899986","99967.891749199887","FALSE","10004","b"
