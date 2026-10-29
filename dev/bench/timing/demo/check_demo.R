@@ -295,6 +295,28 @@ results <- rbind(results,
     expected_exit = NA, exit = NA, expected_reason = "already exists", reasons_found = refused,
     as_expected = grepl("already exists", refused) && kept, stringsAsFactors = FALSE))
 
+# Slot work directories (post-review fix, 2026-10-29): two consecutive slots
+# that write a store under the same PID-derived name each start in an empty
+# directory, a failing slot's directory is removed too, and a leftover slot
+# directory is refused.
+work_root <- file.path(work, "slots")
+seen <- integer()
+for (slot in 1:2) timing_with_slot_dir(work_root, slot, function(dir) {
+  seen <<- c(seen, length(list.files(dir, all.files = TRUE, no.. = TRUE)))
+  writeLines("store", file.path(dir, "ws2_1234.duckdb"))
+})
+failed <- tryCatch(timing_with_slot_dir(work_root, 3, function(dir) stop("slot failed")), error = function(e) "failed")
+left <- list.files(work_root)
+dir.create(file.path(work_root, "slot-0004"))
+occupied <- tryCatch({ timing_with_slot_dir(work_root, 4, function(dir) "ran"); "ran" }, error = function(e) conditionMessage(e))
+results <- rbind(results,
+  data.frame(case = "slot_dir_same_pid_name", demonstrates = "consecutive slots writing the same PID-derived store name each start empty; every slot directory, failed or not, is removed",
+    expected_exit = NA, exit = NA, expected_reason = "0;0 and none left", reasons_found = sprintf("%s; left %d", paste(seen, collapse = ";"), length(left)),
+    as_expected = identical(seen, c(0L, 0L)) && identical(failed, "failed") && !length(left), stringsAsFactors = FALSE),
+  data.frame(case = "slot_dir_occupied", demonstrates = "a leftover slot directory is refused before the slot runs",
+    expected_exit = NA, exit = NA, expected_reason = "already exists", reasons_found = occupied,
+    as_expected = grepl("already exists", occupied), stringsAsFactors = FALSE))
+
 utils::write.csv(results, file.path(here, "check_demo_results.csv"), row.names = FALSE, fileEncoding = "UTF-8")
 print(results[c("case", "exit", "expected_exit", "reasons_found", "as_expected")], row.names = FALSE, right = FALSE)
 quit(save = "no", status = if (all(results$as_expected)) 0L else 1L)

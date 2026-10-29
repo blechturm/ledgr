@@ -28,6 +28,7 @@ row$outcome <- "error"
 row$pid <- as.character(Sys.getpid())
 
 measure <- function() {
+  if (length(list.files(opt("work"), all.files = TRUE, no.. = TRUE))) stop("the slot work directory is not empty")
   probe <- timing_host_probe(here)
   me <- probe$procs[probe$procs$pid == Sys.getpid(), , drop = FALSE]
   if (nrow(me) != 1L) stop("the host probe did not list this process")

@@ -200,9 +200,11 @@ local({
     cmd <- c("--no-init-file", shQuote(file.path(frozen_harness, "measure.R")),
       shQuote(paste0("--protocol=", frozen_protocol)), shQuote(paste0("--lib=", libs[[s$arm]])),
       paste0("--slot=", s$slot), paste0("--pair=", s$pair), paste0("--arm=", s$arm), shQuote(paste0("--cell=", s$cell)),
-      shQuote(paste0("--work=", work_dir)), shQuote(paste0("--out=", out)), if (identical(s$slot, kill_slot)) "--test-kill")
+      shQuote(paste0("--out=", out)), if (identical(s$slot, kill_slot)) "--test-kill")
     launched <- as.double(Sys.time())
-    status <- system2(rscript, cmd, stdout = log, stderr = log)
+    status <- timing_with_slot_dir(work_dir, s$slot, function(slot_dir) {
+      system2(rscript, c(cmd, shQuote(paste0("--work=", slot_dir))), stdout = log, stderr = log)
+    })
     row <- if (file.exists(out)) timing_read_csv(out) else
       blank_row(s, "process_failed", sprintf("measure.R exited with status %s without writing a row", status))
     row$seq <- seq_no

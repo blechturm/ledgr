@@ -96,7 +96,9 @@ ws2_measure <- function(fixture, args, work_dir) {
   if (!args$path %in% c("run", "sweep") || !args$seed_state %in% c("seeded", "unseeded") || !isTRUE(reps >= 1L)) {
     stop("bad cell args")
   }
-  fx <- fixture(file.path(work_dir, sprintf("ws2_%d.duckdb", Sys.getpid())))
+  # The harness gives every slot a fresh, empty work directory, so a fixed
+  # store name is unique to this slot.
+  fx <- fixture(file.path(work_dir, "ws2.duckdb"))
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
   seeded <- identical(args$seed_state, "seeded")
   retain <- ledgr_sweep_retention(returns = "completed", trades = "closed")

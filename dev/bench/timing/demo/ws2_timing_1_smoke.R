@@ -5,10 +5,12 @@
 # as runner.R does), then runs the harness's own measure.R once per cell,
 # one arm, no pairing and no host enforcement. The harness requires at least
 # eight pairs for a window, so a one-pair window is not possible; this
-# exercises the same measurement process instead. Writes
-# demo/ws2_timing_1_smoke.csv; exits 1 unless every cell is ok.
+# exercises the same measurement process instead, each cell in its own
+# fresh slot work directory as the runner gives it. Writes
+# demo/ws2_timing_1_smoke.csv (only when every cell runs); exits 1 unless
+# every cell run is ok.
 #
-# Usage: Rscript dev/bench/timing/demo/ws2_timing_1_smoke.R [--commit=<ref>]
+# Usage: Rscript dev/bench/timing/demo/ws2_timing_1_smoke.R [--commit=<ref>] [--cells=<a,b>]
 
 here <- normalizePath(dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])),
   winslash = "/")
@@ -31,13 +33,18 @@ status <- system2(file.path(R.home("bin"), "R"), c("CMD", "INSTALL", "--no-docs"
 stopifnot(identical(as.integer(status), 0L))
 writeLines(commit, file.path(dir, "lib", "timing_arm.txt"))
 
-rows <- lapply(seq_len(nrow(protocol$cells)), function(i) {
+only <- opt("cells")
+cells <- if (is.character(only)) which(protocol$cells$cell %in% strsplit(only, ",", fixed = TRUE)[[1L]]) else
+  seq_len(nrow(protocol$cells))
+rows <- lapply(cells, function(i) {
   out <- file.path(tempdir(), sprintf("row_%02d.csv", i))
   started <- as.numeric(Sys.time())
-  system2(file.path(R.home("bin"), "Rscript"), c("--no-init-file", shQuote(file.path(harness, "measure.R")),
-    shQuote(paste0("--protocol=", protocol$dir)), shQuote(paste0("--lib=", file.path(dir, "lib"))),
-    paste0("--slot=", i), "--pair=1", "--arm=base", shQuote(paste0("--cell=", protocol$cells$cell[[i]])),
-    shQuote(paste0("--work=", tempdir())), shQuote(paste0("--out=", out))), stdout = FALSE, stderr = FALSE)
+  timing_with_slot_dir(file.path(tempdir(), "work"), i, function(slot_dir) {
+    system2(file.path(R.home("bin"), "Rscript"), c("--no-init-file", shQuote(file.path(harness, "measure.R")),
+      shQuote(paste0("--protocol=", protocol$dir)), shQuote(paste0("--lib=", file.path(dir, "lib"))),
+      paste0("--slot=", i), "--pair=1", "--arm=base", shQuote(paste0("--cell=", protocol$cells$cell[[i]])),
+      shQuote(paste0("--work=", slot_dir)), shQuote(paste0("--out=", out))), stdout = FALSE, stderr = FALSE)
+  })
   row <- if (file.exists(out)) timing_read_csv(out) else data.frame(cell = protocol$cells$cell[[i]], outcome = "no row")
   data.frame(cell = protocol$cells$cell[[i]], clock = row$clock %||% NA, outcome = row$outcome,
     timed_seconds = row$seconds %||% NA, process_seconds = sprintf("%.1f", as.numeric(Sys.time()) - started),
@@ -45,6 +52,8 @@ rows <- lapply(seq_len(nrow(protocol$cells)), function(i) {
 })
 smoke <- do.call(rbind, rows)
 smoke$note <- "not timing evidence: one process per cell, no pairing, host not enforced"
-utils::write.csv(smoke, file.path(here, "ws2_timing_1_smoke.csv"), row.names = FALSE, fileEncoding = "UTF-8")
+if (!is.character(only)) {
+  utils::write.csv(smoke, file.path(here, "ws2_timing_1_smoke.csv"), row.names = FALSE, fileEncoding = "UTF-8")
+}
 print(smoke[c("cell", "outcome", "timed_seconds", "process_seconds", "work")], row.names = FALSE, right = FALSE)
 quit(save = "no", status = if (all(smoke$outcome == "ok")) 0L else 1L)

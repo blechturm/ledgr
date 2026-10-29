@@ -118,6 +118,17 @@ timing_create_attempt <- function(path) {
   normalizePath(path, winslash = "/")
 }
 
+# Runs f(dir) in a fresh, empty slot directory under `work_dir`, removed afterwards whatever f does;
+# an existing one is refused, so no slot opens files another left behind (e.g. a reused PID's store).
+timing_with_slot_dir <- function(work_dir, slot, f) {
+  dir <- file.path(work_dir, sprintf("slot-%04d", as.integer(slot)))
+  if (file.exists(dir) || !dir.create(dir, recursive = TRUE, showWarnings = FALSE)) {
+    stop(sprintf("slot work directory %s already exists or could not be created", dir), call. = FALSE)
+  }
+  on.exit(unlink(dir, recursive = TRUE, force = TRUE), add = TRUE)
+  f(normalizePath(dir, winslash = "/"))
+}
+
 # Execution inputs: the six harness files and four protocol files, as files
 # on disk (`timing_input_files`) and as repository paths at the harness
 # commit (`timing_input_sources`; NA when the folder lies outside the repo).
