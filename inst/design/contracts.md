@@ -347,8 +347,18 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle).
 
 - Cost resolution belongs inside the fold before any output handler sees
-  events. Output handlers must not compute, reinterpret, or rewrite fill prices,
-  fees, cash deltas, or cost metadata.
+  events. Output handlers must not resolve, reinterpret, or rewrite fill
+  prices, fees, cash deltas, or cost metadata. When a handler materializes a
+  fill row from a resolved fill intent on the canonical R path, the row's cash
+  and position deltas come only from the one publication computation,
+  `ledgr_fill_publication_deltas()`, applied to the fill's resolved side,
+  quantity, price and fee. On that path a resolved fee is split across the
+  fill's close and open legs only by `ledgr_fill_leg_fees()`. These are row
+  projections of the resolved fill, not a second economic computation.
+  Compiled spot-FIFO batches supply the fold's already computed typed deltas
+  and leg fees, which the handler publishes unchanged; this clarification
+  changes neither compiled arithmetic nor its parity obligations against
+  canonical R.
 - Pulse plans declare every economic-event kind they carry. Each accounting
   arm must handle every declared kind or fail closed before accounting; neither
   canonical nor compiled execution may complete after silently dropping one.

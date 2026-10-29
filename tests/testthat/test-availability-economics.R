@@ -1063,20 +1063,14 @@ testthat::test_that("prepared valuation and linear event growth coexist in one e
     opening = ledgr_opening(cash = 1000)
   )
 
-  original_handler <- ledgr:::ledgr_persistent_output_handler
+  original_handler <- ledgr:::ledgr_output_handler
   original_capacity <- ledgr:::ledgr_event_buffer_next_capacity
   growths <- 0L
   testthat::local_mocked_bindings(
-    ledgr_persistent_output_handler = function(con,
-                                                run_id,
-                                                run_wall_start,
-                                                execution_mode,
-                                                .event_initial_capacity = 1024L) {
+    ledgr_output_handler = function(sink,
+                                    .event_initial_capacity = 1024L) {
       original_handler(
-        con,
-        run_id,
-        run_wall_start,
-        execution_mode,
+        sink,
         .event_initial_capacity = 2L
       )
     },

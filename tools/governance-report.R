@@ -1442,7 +1442,7 @@ governance_escape <- function(value) {
 
 governance_report <- function(root, baseline_path, claims_path,
                               tracked_path = NULL,
-                              current_packet = "inst/design/ledgr_v0_2_2_spec_packet") {
+                              current_packet = "inst/design/ledgr_v0_2_3_spec_packet") {
   root <- normalizePath(root, winslash = "/", mustWork = TRUE)
   baseline <- governance_read_yaml(baseline_path)
   claims <- governance_read_yaml(claims_path)
@@ -1580,7 +1580,7 @@ governance_parse_args <- function(args) {
     baseline = "dev/governance_guard/baseline.yml",
     claims = "tests/claims.yml",
     tracked = NULL,
-    current_packet = "inst/design/ledgr_v0_2_2_spec_packet"
+    current_packet = "inst/design/ledgr_v0_2_3_spec_packet"
   )
   for (arg in args) {
     matched <- FALSE

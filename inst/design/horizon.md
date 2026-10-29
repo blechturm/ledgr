@@ -29,141 +29,6 @@ an architecture note, or a spec packet.
 
 ## Open
 
-### 2026-10-26 [architecture] Core boundary and incubated sister packages
-
-The wishlist after the first CRAN release cannot all live in one package
-without making the compatibility promise unbounded. It covers point-in-time
-fundamentals, more asset types, shorting and margin, intraday bars, ML,
-portfolio optimizers, selection statistics, an OMS and a live-trading
-adapter. The working shape is a small core plus a few sister packages: the
-"ledgr-verse".
-
-Core keeps what only ledgr can make correct:
-- point-in-time truth: sealed snapshots, facts, knowledge and effective
-  clocks, sessions;
-- the one deterministic fold and event-sourced ledger with its accounting,
-  including future shorting, margin and multipliers and the order and event
-  vocabulary a live runtime would consume;
-- provenance: identities, the experiment store and an honest snapshot-wide
-  trial record;
-- the public seams that sister packages build on.
-
-Candidate sister packages:
-- vendor adapters: `ledgr.crypto2` and the private Sharadar adapter;
-- selection statistics such as PBO, DSR and minimum track record, computed
-  over the trial record rather than over one sweep;
-- portfolio optimizers that emit targets;
-- an ML lifecycle on causal history;
-- a broker, paper and live runtime.
-
-Two rules make this a family rather than a sprawl:
-1. Dependencies point one way. A sister package uses only exported API and
-   never `ledgr:::`; core at most Suggests a sister package.
-2. Sister packages incubate in the private ledgr-research repository until
-   they graduate. Public parallel maintenance then accrues one package at a
-   time, and each incubating sister package is the second consumer that
-   proves a seam before CRAN freezes it. A `ledgr:::` call in an incubating
-   sister package marks a missing seam, not an acceptable workaround.
-
-Measure before deciding. There are four inputs:
-- the export census, starting from the export shape audit's CSV;
-- a coupling and size map per candidate sister package: its code, its tests
-  and the internal calls that would cross the boundary. For example, the
-  validation statistics reach `ledgr_return_panel()` and
-  `ledgr_effective_trials()`, and `R/business-objective.R` consumes them;
-- a seam audit of the private adapters for non-exported use;
-- an inventory of the public seams that exist versus those needed.
-
-One design session then produces a core-boundary ADR: the core list, the
-seams, the dependency and versioning rules, the graduation criteria and the
-naming.
-
-Maintainer, 2026-10-26: scheduled for the next release. The measurement and
-the decision precede export tiering, because tiering a surface that is about
-to move is wasted work. This entry authorizes no package split, unexport,
-move or ticket.
-
-### 2026-10-26 [ux] Export shape audit findings and their routes
-
-The read-only [export shape audit](audits/v0_2_2_export_shape_audit.md) at
-`8a00a3be` asked whether any of the 179 exports violates one of four shapes:
-a layout expressed as a function name, two names for one operation, plumbing
-or placeholders in user-facing groups, and names the bound naming rules
-forbid. Nine findings, none a correctness defect, all at seams between eras
-rather than inside a family. 63 exports postdate the 2026-06 naming
-synthesis and five of them carry a finding. The per-export census is
-`audits/v0_2_2_export_shape_audit_exports.csv`.
-
-Routes, as recorded in the audit's Section 6:
-
-- F1 to F4 and F6 (the five `ledgr_sweep_returns_*` layouts, the two
-  pulse-inspection layouts, the promotion-context pair, `ledgr_run_fills()`
-  beside `ledgr_results(bt, "fills")`, and the `ledgr_opening_from_broker()`
-  placeholder) ride the next release's result-reader and symbol-surface work
-  through the roadmap's deferred maintenance inventory.
-- F5 (`ledgr_backtest()` beside `ledgr_run()`, and the bench helper's stale
-  message) belongs to the execution-core consolidation, whose bars-only
-  acceptance decides what the hello-world path becomes.
-- F7 and F9 (tier placement of three plumbing names; six family help topics
-  named after one member) ride the documentation-surface input already
-  listed for the next release.
-- F8 (three verb-first strategy helpers outside the closed allowlist) needs
-  one contracts amendment decision. The smallest is scoping R1's prohibition
-  to artifact-scoped exports, as the 2026-06 synthesis intended.
-
-The parked questions stay parked: block-level earn-its-keep with the
-2026-10-12 `[research]` entry below, and the usage-based export gate with the
-2026-10-12 `[infrastructure]` entry below. This entry authorizes no removal,
-rename, unexport, contract amendment, ticket or release scope.
-
-### 2026-10-26 [ux] Explicit export tiering before CRAN
-
-Today the pkgdown reference index does a job the export list cannot. Its
-Low-Level Utilities group is the package's de facto internal tier, holding
-the timestamp utilities, `ledgr_db_init()`, `ledgr_temp_store()`,
-`ledgr_validate_schema()`, `ledgr_backtest_bench()` and the two simulation
-fixtures, while three names of the same kind sit in user groups (export
-shape audit, F7). That works while the only readers are the maintainer and
-the vignettes. On CRAN every export is a first-class help page to a
-stranger, so the tier has to become a decision rather than a grouping that
-drifts.
-
-The design question is small but must be answered once for every export:
-which of three tiers it belongs to (ordinary research surface; low-level and
-recovery; fixtures and simulation) and how each tier is expressed. Candidate
-mechanisms are `@keywords internal` (exported, documented, hidden from the
-index), a named reference group per tier, or unexporting with examples
-reaching the helper through `ledgr:::`. The export lock in
-`tests/testthat/test-api-exports.R` and `tests/claims.yml` should encode the
-tier so a new export cannot land untiered, and the contract's Internal Names
-rule group is where the tiers get their sentences. Inputs: the audit's
-per-export census, the 2026-06 naming synthesis Section 4 recovery-pair
-decision, and whatever the prove-or-retire pass removes first, since tiering
-a surface that is about to go is wasted work.
-
-Maintainer, 2026-10-26: scheduled for the next release, after its cleanup
-work (the prove-or-retire pass, the one-result-reader merge and the
-export-shape repairs) and before the first CRAN tag; recorded as a carried
-commitment in the roadmap. This entry authorizes no mechanism choice,
-unexport or ticket.
-
-### 2026-10-25 [data] Cross-asset price precision and tradability
-
-The completed spot-crypto readiness spike found that ledgr rounds stored prices
-to eight decimals and that `ledgr_target_rebalance()` floors desired quantities
-to whole units. Those are not crypto-only defects and should not be patched as
-two unrelated special cases. They expose one cross-asset contract covering
-price representation, tick size, quantity step, minimum quantity and notional,
-target normalization, fill/accounting parity, disclosure and identity across
-equities, crypto, FX, futures and other instrument families.
-
-Open a focused asset-precision and tradability RFC after v0.2.2. Use the
-micro-priced-token and fractional-target probes as vendor-neutral evidence.
-Until it is accepted, the current workaround is to re-quote micro-priced assets
-and construct fractional targets explicitly; do not infer granularity from an
-instrument symbol or silently add a crypto exception. Cut 20 owns neither the
-fixed-decimal rule nor quantity-step semantics.
-
 <a id="2026-10-25-adapters-public-ledgrcrypto2-after-the-promotion-ready-core"></a>
 ### 2026-10-25 [adapters] Public `ledgr.crypto2` after the promotion-ready core
 
@@ -220,71 +85,6 @@ with the execution-policy RFC. Durable factors, ranks, selections and weights
 remain LFB-028. Numerical covariance repair is ordinary estimator practice and
 needs no ledgr abstraction unless repeated methods expose a product boundary.
 This entry authorizes no API, RFC, article or release scope.
-### 2026-10-21 [execution] Cheap, versioned pulse-seed derivation
-
-The seeded fold currently derives every `ctx$pulse_seed` by canonicalizing a
-list containing the execution seed and pulse index, hashing it with SHA-256,
-splitting the hexadecimal result and combining the chunks. An exploratory
-v0.2.2 narrow-long clock (10 instruments, 7,200 pulses) measured about 1.35
-seconds between the seeded and unseeded engine arms, or roughly 0.19 ms per
-pulse. The strategy did not consume randomness, so the difference isolates
-the cost of supplying deterministic pulse seeds closely enough to justify a
-dedicated follow-up; it is not release-grade benchmark evidence.
-
-The contract needs a deterministic, ambient-RNG-independent mapping from
-`(execution_seed, pulse_idx)` to one valid R integer seed. It does not need
-cryptographic unpredictability, JSON or SHA-256. The next release should bind
-a versioned, platform-independent counter rule: either direct normalized
-integer arithmetic or a small integer mixer that avoids adjacent execution
-seeds becoming shifted copies of one another. Derivation may be constant-time
-at the pulse or batched during preparation; a stored vector is not required
-when the scalar rule is already negligible. Scheduled-out callbacks need no
-strategy-visible seed.
-
-Changing the mapping intentionally changes stochastic results. The owning cut
-must pin exact values on supported platforms, include the rule in execution
-semantics or identity, and prove continuous/resumed, run/sweep/promotion and
-serial/parallel parity while leaving the caller's `.Random.seed` unchanged.
-Measure total run time as well as the fold-loop reduction so moving identical
-hash work out of the loop cannot be presented as a speedup. This note does not
-select the arithmetic, authorize a compatibility path or bundle the separate
-target/fill/event optimization investigation.
-
-### 2026-10-21 [execution] Typed P3-P5 execution batch
-
-The extracted fold stages expose the target-to-event path clearly: P3 computes
-target deltas, resolves fills and affordability, and builds diagnostics; P4
-applies lot, cash and position transitions; P5 publishes the staged event
-rows. The current path is linear and preallocated, but one fill crosses several
-nested R representations and some primitives are derived more than once.
-Repeated work includes rebuilding instrument indices already present in the P1
-packet, constructing proposal and execution-context lists per fill, extracting
-the same fields through several `vapply()` passes, deriving cash and position
-deltas for affordability, event materialization and state mutation, and
-packing then unpacking the whole lot carrier around the compiled batch.
-
-The next release should investigate one typed internal batch carried across P3,
-P4 and P5 on the surviving availability execution path. Candidate reductions
-are reuse of P1's prepared indices, a no-action fast path, one canonical cash
-and position delta computation, prepared or vectorized built-in cost
-resolution, and direct typed writes into the unified output handler. Dense mode
-is frozen and should not receive an independent optimization.
-
-The evidence should distinguish many-pulse/no-fill, sparse-rebalance and wide
-all-fill workloads and report total run time, stage time, allocations and peak
-memory. Economic outputs remain exact: targets, fills, ordered ledger events,
-trades, equity, metrics, continuous/resumed execution, run/sweep/promotion and
-serial/parallel behavior. The existing fold-phase synthesis already owns the
-single-delta and leg-fee-projection obligation; an internal typed-R
-representation therefore needs no new RFC merely for being faster.
-
-Implementation follows both output-handler consolidation and execution-core
-consolidation so the representation is built once for one handler and one
-execution path. A persistent compiled lot carrier, a P3-plus-P4 compiled
-kernel, another compiled call site or a compiled-default change remains behind
-the existing compiled-execution-envelope RFC. This route is promoted to the
-next-release roadmap; the next version's macro plan should assign the
-workstream and its measurement gate.
 
 ### 2026-10-21 [infrastructure] Execution extension guide after consolidation
 
@@ -408,218 +208,6 @@ fractional accounting, 24/7 sessions, one venue, one quote currency); the
 one-execution-mode probe's implied calendar may already cover the session
 side. This entry authorizes no adapter, API, data commitment or release scope.
 
-### 2026-10-12 [research] Prove or retire the thinly used product surfaces with real data
-
-A per-file census on 2026-10-12 (117 R files) found that the 23,000 lines no
-article touches are the engine, while about 4,500 lines, 8% of the package,
-sit in product surfaces that are large, thinly taught and separable:
-
-| Block | Lines | Exports | Article uses |
-| --- | ---: | ---: | ---: |
-| Validation toolkit (`validation-pbo`, `-dsr`, `-min-track-record`, `-k-ratio`) | 1,329 | 4 | 15 |
-| `business-objective.R` | 1,343 | 9 | 5 |
-| `sweep-filter.R`, `sweep-review.R`, the three `sweep-retention` projections | about 1,000 | 5 | 9 |
-| `sim-pit-inputs.R`, `indicator-dev.R`, `signal-strategy.R` | 976 | 3 | 0 |
-| `walk-forward-inspection.R` beyond open, scores and folds | part of 782 | 3 | 0 |
-
-Each came from an accepted synthesis (the validation toolkit and business
-objectives from v0.1.9.6), so removing any of them is a product decision
-with its contract sentences, not a cleanup. Article use is a signal, not a
-verdict: the statistics surface is thinly taught because it is statistics,
-and the simulation aids have zero article use and heavy test use.
-
-Maintainer, 2026-10-12: park for the release after v0.2.2. The plan is to
-use every one of these surfaces in actual research on the Sharadar lake
-first, and then be ruthless: a block that did not earn its keep is removed
-under the pre-CRAN policy, one maintainer decision per block, recorded in
-the roadmap as retired before CRAN with the contract sentences it removes,
-riding whichever cut is already deleting surfaces. No deprecation cycle.
-
-Companion package question, same day. Splitting surfaces into a companion
-package is worth it when the satellite has a different dependency profile,
-release cadence or audience, and when the seam between the two is stable.
-Neither holds yet: the heavy optional dependencies (`quantmod`, `qlcal`,
-`TTR`, `xts`, `mirai`) are already in Suggests, the research package already
-holds the vendor adapters, and the public seams the consolidation will
-change (strategy context, result readers, execution mode) are exactly where
-a split would freeze the wrong boundary. Revisit after the real-data pass
-and after the execution-core consolidation, when the surviving surfaces and
-the stable seams are known. This entry authorizes no removal, deprecation,
-package split, ticket or release commitment.
-
-### 2026-10-12 [infrastructure] Structural gates deferred to the release after v0.2.2
-
-The legacy-removal cut carries a codebase-hygiene workstream (macro plan,
-2026-10-12 amendment): report-only census tools, then failing fast-profile
-blocks for uncalled functions and undocumented error classes, a lint job,
-one styler commit, the helper rule in the optimization style manual and one
-Verification Contract clause. Two further gates were measured the same day
-and deliberately left report-only until the execution-core consolidation
-changes the surfaces they would police:
-
-- Export census. 168 exports and 84 S3 methods; an export used by no man
-  example, vignette or article becomes `@keywords internal`. Enforcing it
-  before the strategy-context and result-reader surfaces settle would make
-  the WS3/WS4 cut fight a gate on a surface it is about to replace.
-- Test-oracle rule. 1,096 `test_that()` blocks, 248 with a registered claim.
-  Correction, same day: the accepted testing-architecture synthesis binds
-  that unregistered blocks need no durable ID and leaves undeclared claims
-  to its Shrink, Merge and Delete reviews (Section 2.4 and line 107), so a
-  per-block rule would reopen an accepted decision. The count stays a
-  signal; the 848 blocks are classified through that existing lane when
-  their suites are rewritten, not by a new gate.
-
-The rationale for mechanical gates over more review: the per-ticket review
-loop is strong, but nothing reads the whole package between cuts, so drift
-accumulates exactly where reviews do not look.
-
-**For the hygiene workstream: pin the collation of documentation
-generation (2026-10-12).** Regenerating the man pages with roxygen2 7.3.3
-from a shell whose `LC_COLLATE` differs from the maintainer's usual
-environment reordered `NAMESPACE` (export lines) and 27 unrelated Rd files
-(argument order and blank lines) with no content change; the thirteen-export
-documentation chore (`90a701d1`) kept only its seven intended pages and
-reverted the rest by hand. Same class of defect as the quarantine ordering
-found in the snapshot-verification cycle: a sort that depends on the
-session locale. The workstream adds a `tools/document.R` entry point that
-sets `LC_COLLATE = "C"` (or `Sys.setlocale("LC_COLLATE", "C")`) before
-`roxygen2::roxygenise()`, names the roxygen2 version it expects, and makes
-one such regeneration the committed baseline so later diffs show content
-only. roxygen2 is not installed for the current R; the chore used the copy
-in the previous R version's user library, which the entry point should not
-assume. This entry authorizes no ticket or release commitment.
-
-### 2026-10-12 [architecture] Where the package's weight is, and the four levers that reduce it
-
-Sized on 2026-10-12 at `a2464434`: 121 R files, 54,702 lines; 177 test
-files, 56,536 lines. By subsystem: availability 6,570 lines in 11 files,
-sweep 5,985 in 6 (`R/sweep.R` alone 2,629), features and indicators 5,199
-in 13, backtest 4,588 in 6, strategy context 4,067 in 9, walk-forward 3,087
-in 5. The pre-CRAN legacy removal RFC takes out about 950 R and 1,700 test
-lines, roughly 2% and 3%; it removes code that lies about what a store can
-be, not the weight.
-
-The weight is duplication of paths: the package runs the same economics
-two or three ways and proves them equal. Four levers would reduce it, in
-order of payoff. None is authorized here.
-
-1. One execution mode, dense as a special case of availability (the
-   2026-10-11 execution entry below). Today there are two of almost
-   everything: a dense pulse calendar from bar timestamps and a session
-   calendar; a fast prepared context (`use_fast_context <-
-   !availability_active`) and a general per-pulse helper path; dense and
-   availability coverage checks in the run guard; dense and availability
-   reconstruction in `R/derived-state.R`; `ledgr_backtest()` as a dense-only
-   wrapper with its own validate and guard. A dense snapshot with an implied
-   calendar and no facts deletes one side of each pair. Reading estimate:
-   3,000 to 5,000 lines and one semantics instead of two parity
-   obligations.
-2. One output handler. The persistent and memory handlers stage the same
-   fill events, equity and diagnostics and are held equivalent by contract
-   and parity tests. One handler with a sink interface (DuckDB or memory)
-   removes the second implementation and the suite that guards it, and
-   closes most of the committed-run-versus-sweep gap parked in the
-   2026-10-12 execution entry, because the sweep stops being a separately
-   optimized engine. It does not depend on lever 1: persistent versus
-   memory is a different axis from dense versus availability, so it is the
-   lower-risk lever and may go first after v0.2.2 (review, 2026-10-12).
-3. Retire the context frame views and shrink the context surface
-   (scheduled: RFC pipeline `ctx-frame-retirement`, and the strategy
-   context design session in the roadmap). `R/pulse-context.R` is 1,311
-   lines for a surface of about thirty members; a typical strategy uses
-   six.
-4. Merge the three result-reader families (`R/backtest-results.R`,
-   `R/availability-results.R`, `R/corporate-action-results.R`), which read
-   the ledger and equity with their own helpers and print paths. After
-   lever 1 there is one run shape, so there should be one reader.
-
-Measure before touching: `R/sweep-retention.R` (1,379 lines) and
-`R/business-objective.R` (1,343) are large for what they do and may carry
-their own frame-per-row shapes; the `mirai` parallel sweep path is a second
-execution environment ranked below single-core work. File-count or
-line-count cleanups on their own are not a lever.
-
-Two companions to the levers, from the 2026-10-12 review of this entry:
-
-- **Split the fold into phase functions, before unification.**
-  `ledgr_execute_fold()` (`R/fold-engine.R:238-1417`, 1,180 lines) is about
-  280 lines of setup and one pulse loop whose body runs about 880 lines in a
-  fixed sequence: inputs and corporate actions, the availability decision
-  (176 lines), context build, strategy call and target validation, fill
-  planning, accounting, event emission, availability valuation, then state
-  update, telemetry, checkpoint and interrupt. `availability_active` is
-  tested 29 times in the file and `sample_telemetry` runs through every
-  phase. Extract one phase per commit as top-level package functions
-  (byte-compiled at install; a closure body is JIT-compiled only for its
-  first instance), passing one fold-state environment for scalars, flags
-  and references. Condition from the optimization style manual's shape 7:
-  per-pulse buffers stay written by `collapse::setv()` or outside that
-  environment, because a vector held in an environment is copied whole on
-  every subassignment. Gates: the fixture ladder identical at every commit,
-  paired clocks (about ten extra calls per pulse are microseconds against
-  milliseconds), the seven shapes walked. `ledgr_run_fold_impl()`
-  (`R/backtest-runner.R:698`, 675 lines) gets the same treatment next. After
-  the split, each phase shows its dense-versus-availability fork in one
-  place, so lever 1 becomes a per-phase deletion with a per-phase witness,
-  and the probe's first kill condition becomes legible. The probe itself
-  can run on the unsplit fold, since it only compares outputs, and is the
-  cheaper step.
-- **Audit the defensive code; collapse, do not delete.** There are 1,533
-  `abort` and `stop` calls in `R/`, in three groups: public-function input
-  checks with named classes (about 386, needed, claims test them);
-  validator helpers (173 functions, about 5,680 lines, 352 aborts, mostly
-  needed but called repeatedly, for example `validate_ledgr_config()` from
-  six sites and `ledgr_validate_feature_map_object()` from eleven); and
-  other internal invariants (about 793), the real candidates. Two
-  mechanisms: validate once at construction and mark the object, where the
-  mark is a class, not an attribute (attributes drop through subsetting),
-  and never crosses a persistence boundary, so the store re-validates; and
-  one internal assertion helper, `ledgr_assert(cond, "what broke")`, for
-  impossible states, keeping an error class wherever a registered claim
-  asserts one. Internal invariants stay because much of ledgr is written by
-  agents and these checks fail at the line that caused the mistake rather
-  than three layers later. Route: a Type 2 audit brief producing a table
-  and proposed tickets, per `rfc_cycle.md`; the review's unverified guess is
-  1,000 to 2,000 lines. The same audit carries the complexity review
-  (maintainer, 2026-10-12): candidates come from metrics, not reading
-  (length over 150 lines, more than one `availability_active` fork in a
-  function, argument count, the single-call-site helpers), capped at about
-  twenty functions, each classified as contract-driven complexity (two
-  execution modes, durable atomicity, fail-closed inputs) or accidental
-  (layered validation, carried-forward compatibility, patches on patches);
-  only accidental complexity earns a ticket, and every ticket is a pure
-  refactor under the fixture ladder, paired clocks and the seven shapes,
-  with any behaviour change routed to design instead. Measured on
-  2026-10-12: nine functions over 300 lines and 24 between 150 and 300,
-  led by `ledgr_execute_fold()` (1,180), `ledgr_validate_schema()` (766),
-  `ledgr_run_fold_impl()` (675), the memory handler (615), the legacy
-  schema path (453), `ledgr_snapshot_from_df()` (394),
-  `ledgr_corporate_action_plan()` (392), `validate_ledgr_config()` (366)
-  and the persistent handler (353); nesting is not the problem (nine lines
-  in the package sit six levels deep). Two of those are deleted by the
-  legacy-removal cut and four are already the fold split's and lever 2's
-  targets, so the audit runs after the removal cut and before the fold
-  split, fed by the hygiene workstream's census tool.
-
-Order: lever 1 before lever 4, because one run shape means one reader;
-lever 2 is independent and lower risk; lever 3 is already scheduled. The
-unification probe runs in v0.2.2 between the legacy-removal cut and the
-WS3/WS4 implementation cut (maintainer, 2026-10-12). After v0.2.2 the
-sequence this entry suggests is: lever 2, the fold split, the unification
-slices, with the defensive-code audit alongside.
-Identity: unification moves dense config and snapshot identity, because
-canonical omission is dense mode's identity today. After the pre-CRAN
-legacy-removal cut that costs a version and fingerprint bump plus a lake
-rebuild, so land it in the same release as another format change to save a
-rebuild (review, 2026-10-12). This entry records a direction; it
-authorizes no API, schema, ticket or release commitment.
-
-Current-state route (later accepted release-line authority `4397f58f`): lever
-1 is now committed before first CRAN and owned by
-[execution-core consolidation](ledgr_v0_2_2_spec_packet/macro_plan.md#execution-core-consolidation).
-The output-handler, result-reader and defensive-code questions remain parked
-here with their own triggers.
-
 ### 2026-10-12 [execution] Close the gap between the committed run and the ephemeral sweep
 
 On the v0.2.1.0 peer record (500 instruments, 1,260 sessions, 630,000 bars)
@@ -741,41 +329,6 @@ Evidence and routing:
 "Momento cross-sectional momentum", inspected at upstream commit
 `b7264cd290d717b7bb3fe4f7f8a861c09529a4f4`.
 
-### 2026-10-04 [infrastructure] Long-window memory and parallel workers
-
-The post-Cut-3 long-window record makes memory efficiency a standing design
-concern, but not a v0.2.2 release blocker. Peak working set was about 1.3 GiB
-at 1,514 sessions by 600 instruments, 2.1 GiB at 3,028 by 600, 3.8 GiB at
-6,056 by 600 and 2.3 GiB at 1,514 by 2,300. EXP-0003 previously observed
-about 7 GiB at its larger research shape. The measured growth is not an
-obvious quadratic failure, and one process remains practical on a research
-workstation.
-
-The unresolved product risk is multiplication. Candidate or fold workers can
-each retain hydrated bars, availability state, feature matrices, fold state,
-DuckDB buffers and result materialization. A tolerable single-run peak can
-therefore become unacceptable when multiplied by parallel workers. Parallel
-defaults and worker-count guidance should eventually account for a memory
-budget rather than CPU count alone.
-
-Before changing representation, take a phase-level memory profile that
-separates bar hydration, availability and feature matrices, fold state,
-feature-persistence preparation, database buffers, finalization, result
-materialization and retained caches. Check that sequential candidates and
-walk-forward folds release memory, then measure representative parallel
-worker counts. Feature persistence is already a known contributor, but its
-policy remains a macro-plan WS5 decision and should not be removed merely to
-improve a memory clock.
-
-Evidence: `ledgr_v0_2_2_spec_packet/long_window_cut3_baseline.md` and the
-ledgr-research record at commit `e95a581`, directory `long-window-cut3/`.
-The bounded dead-hydration lifecycle repair is promoted to v0.2.2 Cut 5,
-Workstream 12 and LDG-2951 after a phase profile measured about 14% lower peak
-RSS without a runtime tradeoff. The broader representation, feature-policy,
-sweep, walk-forward and parallel-worker questions remain parked here. This
-entry authorizes no other implementation, memory target, worker default or
-RFC.
-
 ### 2026-10-04 [research] Sweeping experiment assumptions, not only strategy parameters
 
 Parked by the maintainer while scoping the terminal-outcome RFC. Sweeps and
@@ -817,134 +370,6 @@ Open questions:
 
 The terminal-outcome seed must not block templates but does not design them.
 This entry authorizes no implementation.
-
-### 2026-10-01 [benchmark] A suite of peer workloads, not one
-
-**Promoted, 2026-10-28:** [accepted peer-suite synthesis](rfc/rfc_peer_benchmark_suite_v0_2_3_synthesis.md); remaining implementation obligations are tracked in the [RFC pipeline](rfc/README.md#benchmark-methodology). The notes and addenda below are historical inputs; the synthesis governs accepted scope.
-
-The maintainer wants the peer benchmark to grow from one workload into a
-suite of workloads and strategies, measured against the same peers. The
-registered record is one shape: 500 instruments, 1,260 daily sessions and one
-SMA crossover. It is a single point.
-
-Two reasons. Parity across many shapes is a stronger quality signal than
-parity on one: each new workload is another place where ledgr must compute
-what the peers compute or explain the difference. And a cost map across
-shapes gives the optimization work data it does not have today, because
-ledgr's cost floor is per pulse more than per bar. A wide daily universe spreads
-each pulse's fixed cost over many instruments; a narrow and long intraday
-workload, such as 100 instruments over a year of minute bars, has thirty times
-the pulses for the same bar count and has never been measured. Intraday at
-whole-second resolution or coarser is within the timestamp contract; this
-entry is how to learn what it costs.
-
-Candidate shapes: narrow and long intraday, wide and short cross-sectional
-ranking, availability-aware universes with entries and exits, corporate
-actions, multiple feature families, and strategies with state. Each keeps the
-current record's rule that parity is checked before timing is read.
-
-Maintainer, 2026-10-01: ledgr makes no public performance claim, not even a
-same-host version-over-version speedup, until this suite exists; its results
-then become the official comparison. Parity comes first and is the near-term
-interest, also for the API: writing the same strategy for each peer shows where
-ledgr's interface and semantics differ, which could become a guide for users
-coming from those peers.
-
-The release-claim rule is bound in the v0.2.2 macro plan and the RFC
-pipeline's `benchmark-methodology` row. The candidate suite design remains
-parked here.
-
-**Memory as a measured dimension (maintainer, 2026-10-04).** The suite reports
-peak memory per engine and workload row, beside time and parity. Today's
-record samples one combined process-tree peak once per second: 2,284.1 MiB at
-500 instruments × 1,260 days, Python peers included. It cannot say which engine
-used what (`dev/bench/peer_benchmark/peer_benchmark.md`). Each engine row
-therefore runs in its own process with its own peak sampler, like the
-Workstream 11 runner's per-child RSS polling. The suite should include at
-least one long-window, wide-universe shape near the EXP-0003 scale, because
-memory separates engine architectures there. Full-array vectorized engines,
-event-driven engines that keep full per-feed history, and streaming engines
-that keep only lookback windows behave differently as history grows. That
-characterization is general knowledge, not a measurement; the suite is what
-would measure it. The motivation is the
-[next-release memory theme](ledgr_roadmap.md#next-release) and
-`dev/spikes/ctx_frame_views/churn_findings.md`; no 2 GB release promise is
-current. The publication rule above
-applies to memory as well: no comparative memory claim until the suite
-exists.
-
-**Parity as onboarding trust, on dense known shapes (maintainer,
-2026-10-12).** The suite's first job is to give external users a reason to
-trust an implementation built with LLM assistance: on the strategies,
-indicators and shapes they already know, ledgr must produce the same fills
-and equity as the peers or explain every residual, as the current record's
-per-bar divergence attribution already does for backtrader (position sizing)
-and quantstrat (fill timing). The same rows are a testing ground that catches
-implementation errors, and speed claims on them become defensible because the
-parity table proves that the fast number and the slow number compute the same
-thing. The majority of parity shapes therefore stay dense, daily and
-conventional (SMA crossover, momentum, mean reversion, TTR indicators);
-point-in-time universes stay out of the parity majority because
-implementation differences between engines grow large there and would be
-read as ledgr's error. Two consequences recorded the same day: once dense
-becomes a special case of the availability core (the 2026-10-11 execution
-entry above), the dense parity suite is the byte-for-byte regression oracle
-for that unification; and the suite may carry one point-in-time row of a
-different kind, labelled a demonstration and never a parity or speed claim,
-showing what a dense engine computes on a survivorship-free universe with
-listings and delistings and why it is wrong. This addendum changes no
-publication rule above.
-
-**PyBroker v2 and suite ownership (maintainer, 2026-10-20).** Add a pinned
-PyBroker v2 row when this suite is designed. PyBroker is a chronological
-bar-driven engine whose normal execution surface calls a Python strategy once
-per active symbol per bar and schedules later fills; it is neither a
-whole-universe callback nor an event-sourced store. The comparison must measure
-that architecture rather than infer speed from its NumPy and Numba components.
-
-Keep four distinct workload lanes: dense conventional parity, scaling
-geometry, whole-universe portfolio construction, and one point-in-time
-demonstration that is never ranked as a parity or speed row. The first new
-portfolio workload is top-N rotation with the same ranking, rebalance schedule,
-next-bar fills and holdings in PyBroker and ledgr. It should expose the
-per-symbol-callback versus per-pulse-whole-universe crossover. The initial
-shape set is deliberately non-Cartesian: 10 instruments by about 7,200
-sessions, the existing 500 by 1,260 reference, 1,166 by 252, and a separately
-budgeted 1,166 by about 7,200 stress row.
-
-Each engine and workload runs in its own process. Report parity before timing.
-The public timing surface has three distinct views: cold end to end from raw
-input through comparable results; warm end to end with reusable preparation
-retained but a real public experiment still constructed and executed; and an
-engine-only diagnostic that must never replace the public headline. Report
-input preparation, indicator preparation, orchestration, engine time, result
-materialization, instrument-bars and strategy callback count for both the cold
-and warm boundaries.
-
-Setup is normally paid once in an interactive research session, so also report
-an amortized session: one preparation followed by a predeclared sequence of
-real public runs or candidates, initially at 10, 100 and 1,000 repetitions
-where feasible. Peers receive equivalent reuse when their supported public
-APIs permit it; wrappers must not rebuild reusable state merely to make a peer
-look slow. If a framework cannot safely reuse prepared state, record that as
-part of its performance profile rather than silently choosing a private path.
-Measure peak child RSS separately for cold preparation and warm execution.
-
-Warm end-to-end time is the primary research-speed comparison. Cold end to
-end, engine-only diagnostics, amortized session cost and both memory peaks stay
-adjacent so the headline neither penalizes reusable setup as if paid every run
-nor hides its real first-use cost. PyBroker reports cold-JIT and warm-JIT rows
-and distinguishes minimal output from a result-retention boundary comparable
-to the ledgr row. Every peer version, environment and workload contract is
-pinned.
-
-The durable home is this repository under `dev/bench/peer_benchmark/`: workload
-specifications, peer adapters, lockfiles, generators, parity oracles, compact
-promoted evidence and the rendered method report travel with the ledgr source
-they evaluate. `ledgr-research` may hold exploratory probes, private-data runs
-and bulky raw evidence, but it must not become the only home of a release claim
-or its reproducer. This is an amendment to the existing benchmark-methodology
-obligation, not authority to publish a speed claim before the suite exists.
 
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 
@@ -1817,40 +1242,6 @@ require parity evidence, and preserve requested versus effective damping when
 the implementation can cap it. External runtime provenance belongs to the
 research adapter. None of this makes Schur, a Python bridge or a generic method
 catalogue a v0.2.2 commitment.
-
-### 2026-10-05 [strategy] Declared source bundles for reusable user strategy helpers
-
-The strategy tier model currently leaves a usability cliff. An unqualified
-user helper outside `function(ctx, params)` is Tier 3 and refused. Nesting the
-helper inside the strategy makes its source capturable but prevents ordinary
-reuse; putting every emerging estimator in a package is safe but premature.
-The v0.1.7.2 strategy specification anticipated `strategy_helpers` and
-deliberately deferred it until parallel sweeps made dependency transport a
-real product concern. That prerequisite now exists.
-
-Park a focused post-v0.2.2 RFC for an explicit strategy source bundle. Its
-candidate UX is a strategy entry function plus a named list of user functions.
-The mechanism must capture and hash every helper's source, recursively
-preflight declared dependencies, include the bundle in strategy identity,
-store and recover the complete source set, reconstruct the same private
-environment for ordinary runs, resume and parallel workers, record qualified
-package dependencies, and reject undeclared functions and mutable closure
-state. Serializing an arbitrary closure environment is not an acceptable
-shortcut.
-
-This is independent of portfolio optimization. The constrained-optimization
-example exposed the gap, but indicators, schedules and other substantial
-strategies can need the same reusable pure helpers. The RFC should therefore
-remain a strategy reproducibility and transport cycle, not become an optimizer
-API. It is explicitly outside v0.2.2.
-
-Non-commitments:
-
-- no public constructor name or helper-bundle syntax is bound;
-- no Tier 1 promotion occurs until source recovery and worker parity are
-  proven; and
-- this entry does not authorize function objects in JSON strategy parameters
-  or arbitrary environment capture.
 
 ### 2026-06-13 [ux] Walk-forward fold visualization helper and plotting dependency posture
 
@@ -4329,6 +3720,56 @@ This entry records direction, not committed work.
 These exact headings preserve links into bodies moved to
 `horizon_archive.md`. Redirects are navigation, not active parking or
 authority.
+
+### 2026-10-12 [research] Prove or retire the thinly used product surfaces with real data
+
+Promoted: [v0.2.3 macro plan WS11](ledgr_v0_2_3_spec_packet/macro_plan.md#ws11-surface-and-cran-preparation-h4-h1-c10-c9-u3) owns the real-data use audit and the per-block decisions (inventory H4) and the core-boundary coupling map that answers the companion-package question (inventory C10). [Historical body](horizon_archive.md#v023-h003).
+
+### 2026-10-12 [infrastructure] Structural gates deferred to the release after v0.2.2
+
+Promoted: [v0.2.3 macro plan WS11](ledgr_v0_2_3_spec_packet/macro_plan.md#ws11-surface-and-cran-preparation-h4-h1-c10-c9-u3) supersedes the export-census gate with export tiering (inventory H5a, C9), and [v0.2.3 macro plan WS12](ledgr_v0_2_3_spec_packet/macro_plan.md#ws12-documentation-and-debt-r2-m1-m5-m7-h5b-u1-m6) owns the roxygen collation pin (inventory H5b); the test-oracle rule stays with the accepted testing-architecture lane. [Historical body](horizon_archive.md#v023-h004).
+
+### 2026-10-12 [architecture] Where the package's weight is, and the four levers that reduce it
+
+Promoted: The v0.2.3 macro plan owns every lever: [v0.2.3 macro plan WS4](ledgr_v0_2_3_spec_packet/macro_plan.md#ws4-minimal-execution-core-consolidation-c1-m8b) (lever 1), [v0.2.3 macro plan WS1](ledgr_v0_2_3_spec_packet/macro_plan.md#ws1-one-output-handler-c6-r3-h6-measured-after) (lever 2), [WS6](ledgr_v0_2_3_spec_packet/macro_plan.md#ws6-context-frame-retirement-c2) (lever 3), [WS7](ledgr_v0_2_3_spec_packet/macro_plan.md#ws7-one-result-reader-and-print-c8) (lever 4) and [v0.2.3 macro plan WS12](ledgr_v0_2_3_spec_packet/macro_plan.md#ws12-documentation-and-debt-r2-m1-m5-m7-h5b-u1-m6) (the defensive-code and complexity audit, inventory M1). [Historical body](horizon_archive.md#v023-h005).
+
+### 2026-10-04 [infrastructure] Long-window memory and parallel workers
+
+Promoted: [v0.2.3 macro plan WS9](ledgr_v0_2_3_spec_packet/macro_plan.md#ws9-memory-and-worker-budgets-c5-h9-h11-c3-rfc) owns the phase-level memory profile, structural reduction and the worker-budget decision (inventory C5, H11). [Historical body](horizon_archive.md#v023-h012).
+
+### 2026-10-01 [benchmark] A suite of peer workloads, not one
+
+Promoted: [v0.2.3 macro plan WS3](ledgr_v0_2_3_spec_packet/macro_plan.md#ws3-peer-benchmark-suite-x4-full-scope) owns the suite seed and its lanes (inventory X4), routed through [benchmark methodology](rfc/README.md#benchmark-methodology). [Historical body](horizon_archive.md#v023-h016).
+
+**Promoted, 2026-10-28:** [accepted peer-suite synthesis](rfc/rfc_peer_benchmark_suite_v0_2_3_synthesis.md); remaining implementation obligations are tracked in the [RFC pipeline](rfc/README.md#benchmark-methodology). The archived notes and addenda are historical inputs; the synthesis governs accepted scope.
+
+### 2026-10-05 [strategy] Declared source bundles for reusable user strategy helpers
+
+Promoted: [v0.2.3 macro plan WS11](ledgr_v0_2_3_spec_packet/macro_plan.md#ws11-surface-and-cran-preparation-h4-h1-c10-c9-u3) owns the helper-bundles RFC (inventory U3) through [strategy-helper bundles](rfc/README.md#strategy-helper-bundles). [Historical body](horizon_archive.md#v023-h033).
+
+### 2026-10-21 [execution] Cheap, versioned pulse-seed derivation
+
+Promoted: The v0.2.3 macro plan gives the pulse-seed rule its own cut ([v0.2.3 macro plan WS4](ledgr_v0_2_3_spec_packet/macro_plan.md#ws4-minimal-execution-core-consolidation-c1-m8b), inventory C4). [Historical body](horizon_archive.md#v023-h074).
+
+### 2026-10-21 [execution] Typed P3-P5 execution batch
+
+Promoted: [v0.2.3 macro plan WS8](ledgr_v0_2_3_spec_packet/macro_plan.md#ws8-typed-p3-p5-execution-batch-c7) owns the bounded comparison and the typed batch (inventory C7). [Historical body](horizon_archive.md#v023-h075).
+
+### 2026-10-26 [architecture] Core boundary and incubated sister packages
+
+Promoted: [v0.2.3 macro plan WS11](ledgr_v0_2_3_spec_packet/macro_plan.md#ws11-surface-and-cran-preparation-h4-h1-c10-c9-u3) owns the four core-boundary measurements and the ADR (inventory C10). [Historical body](horizon_archive.md#v023-h080).
+
+### 2026-10-26 [ux] Export shape audit findings and their routes
+
+Promoted: Every finding has a v0.2.3 owner: F1 to F4 and F6 in [v0.2.3 macro plan WS11](ledgr_v0_2_3_spec_packet/macro_plan.md#ws11-surface-and-cran-preparation-h4-h1-c10-c9-u3) (inventory H1), F5 in [v0.2.3 macro plan WS4](ledgr_v0_2_3_spec_packet/macro_plan.md#ws4-minimal-execution-core-consolidation-c1-m8b) (inventory C1), F7 and F9 in [v0.2.3 macro plan WS12](ledgr_v0_2_3_spec_packet/macro_plan.md#ws12-documentation-and-debt-r2-m1-m5-m7-h5b-u1-m6) (inventory M5), and F8 in the strategy-authoring cut (inventory H3). [Historical body](horizon_archive.md#v023-h081).
+
+### 2026-10-26 [ux] Explicit export tiering before CRAN
+
+Promoted: [v0.2.3 macro plan WS11](ledgr_v0_2_3_spec_packet/macro_plan.md#ws11-surface-and-cran-preparation-h4-h1-c10-c9-u3) owns the tiering mechanism decision and the tiering itself (inventory C9). [Historical body](horizon_archive.md#v023-h082).
+
+### 2026-10-25 [data] Cross-asset price precision and tradability
+
+Promoted: [v0.2.3 macro plan WS10](ledgr_v0_2_3_spec_packet/macro_plan.md#ws10-economics-c11-c12a-u2-x2-design-and-implementation) owns the focused RFC and its implementation (inventory C11) through [asset precision](rfc/README.md#asset-precision-tradability). [Historical body](horizon_archive.md#v023-h083).
 
 ### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
 

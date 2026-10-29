@@ -85,11 +85,7 @@ testthat::test_that("[LTB-0181] the Sharadar boundary is pinned and frozen equit
   for (path in pinned) {
     testthat::expect_true(grepl(boundary, squish(path), fixed = TRUE), info = basename(path))
   }
-  # The v0.2.2 release notes carry the boundary once they exist.
-  news <- readLines(file.path(root, "NEWS.md"), warn = FALSE, encoding = "UTF-8")
-  first_heading <- news[grep("^# ", news)[[1L]]]
-  if (grepl("0\\.2\\.2", first_heading)) {
-    testthat::expect_true(grepl(boundary, squish(file.path(root, "NEWS.md")), fixed = TRUE))
-  }
+  # The published v0.2.2 NEWS boundary remains pinned under later headings.
+  testthat::expect_true(grepl(boundary, squish(file.path(root, "NEWS.md")), fixed = TRUE))
   testthat::expect_identical(ledgr_doc_terminal_claim_problems(root), character())
 })

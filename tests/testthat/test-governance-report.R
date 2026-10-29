@@ -1072,3 +1072,79 @@ testthat::test_that("[LTB-0275] horizon classification drift stays report-only a
     1L
   )
 })
+
+testthat::test_that("[LTB-0514] both governance report entry points default to the v0.2.3 packet", {
+  package_root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  tool <- file.path(package_root, "tools", "governance-report.R")
+  fixture <- file.path(package_root, "dev", "governance_guard", "fixtures", "reviewed")
+  testthat::skip_if_not(
+    file.exists(tool) && dir.exists(fixture),
+    "governance sources are intentionally absent from an installed package"
+  )
+  guard <- new.env(parent = globalenv())
+  sys.source(tool, envir = guard)
+
+  # The reviewed fixture's packet moves to the v0.2.3 path and no other packet
+  # remains, so neither entry point can find tickets under another default.
+  packet <- "inst/design/ledgr_v0_2_3_spec_packet"
+  parent <- tempfile("ledgr-governance-default-")
+  dir.create(parent)
+  on.exit(unlink(parent, recursive = TRUE), add = TRUE)
+  root <- file.path(parent, "reviewed")
+  dir.create(root)
+  testthat::expect_true(all(file.copy(
+    list.files(fixture, full.names = TRUE, all.files = TRUE, no.. = TRUE),
+    root,
+    recursive = TRUE
+  )))
+  old_packet <- file.path(root, "inst", "design", "current_packet")
+  dir.create(file.path(root, packet))
+  testthat::expect_true(all(file.copy(
+    list.files(old_packet, full.names = TRUE),
+    file.path(root, packet)
+  )))
+  unlink(old_packet, recursive = TRUE)
+  rewrite <- function(path, before, after) {
+    target <- file.path(root, path)
+    lines <- readLines(target, warn = FALSE, encoding = "UTF-8")
+    writeLines(gsub(before, after, lines, fixed = TRUE), target, useBytes = TRUE)
+  }
+  rewrite("tracked.yml", "inst/design/current_packet/", paste0(packet, "/"))
+  rewrite(file.path(packet, "tickets.yml"), "inst/design/current_packet/", paste0(packet, "/"))
+  # Malform one completed-ticket evidence item: a bare pointer has no result.
+  rewrite(
+    file.path(packet, "tickets.yml"),
+    paste0(packet, "/README.md: The fixture result is recorded."),
+    paste0(packet, "/README.md")
+  )
+
+  malformed <- function(lines) {
+    lines[
+      startsWith(lines, "FINDING\t") &
+        grepl("kind=malformed_ticket_evidence\t", lines, fixed = TRUE)
+    ]
+  }
+  expected_source <- paste0("source=", packet, "/tickets.yml\t")
+
+  report <- guard$governance_report(
+    root = root,
+    baseline_path = file.path(root, "baseline.yml"),
+    claims_path = file.path(root, "claims.yml"),
+    tracked_path = file.path(root, "tracked.yml")
+  )
+  testthat::expect_length(malformed(report), 1L)
+  testthat::expect_match(malformed(report), expected_source, fixed = TRUE)
+  testthat::expect_match(malformed(report), "target=LDG-0001:evidence:1", fixed = TRUE)
+
+  status <- NULL
+  cli <- utils::capture.output(status <- guard$governance_main(c(
+    paste0("--root=", root),
+    "--baseline=baseline.yml",
+    "--claims=claims.yml",
+    "--tracked=tracked.yml"
+  )))
+  testthat::expect_identical(status, 0L)
+  testthat::expect_length(malformed(cli), 1L)
+  testthat::expect_match(malformed(cli), expected_source, fixed = TRUE)
+  testthat::expect_identical(cli[nzchar(cli)], report)
+})

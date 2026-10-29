@@ -1,16 +1,17 @@
 # ledgr v0.2.3 Spec Packet
 
 Role: living; current packet front door.
-Status: implementation; macro plan accepted 2026-10-28; cut 1 (one output handler) accepted 2026-10-28 in `tickets.yml`.
+Status: implementation; macro plan accepted 2026-10-28; cut 1 (one output handler) closed 2026-10-29 and cut 2 accepted 2026-10-28 in `tickets.yml`.
 Cut 2 (WS3 dense oracle and current-tree timing) was accepted on 2026-10-28 in `tickets.yml`, revision 3.1, after Claude's [fresh-harness review](cut_review_2_fresh_harness.md) and its exact required patches. Implementation starts with LDG-3138; A0 remains independent and the old peer driver retires only after replacement coverage is accepted.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
-the published v0.2.2 point-in-time foundation. This directory is intentionally
-small until the maintainer accepts a macro plan and the first cut. It does not
-copy the large carried inventory from the roadmap or manufacture ticket status.
+the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were
+accepted on 2026-10-28; later cuts are added to `tickets.yml` as the
+maintainer accepts them. The packet does not copy the large carried inventory
+from the roadmap or manufacture ticket status.
 
 ## Start here
 

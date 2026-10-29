@@ -1,3 +1,9 @@
+# ledgr (development version)
+
+- Committed runs and sweeps now write their output through one internal
+  output handler with a DuckDB or a memory sink, replacing the two separate
+  handlers; run, sweep and walk-forward results are unchanged.
+
 # ledgr 0.2.2
 
 ## Upgrading from 0.2.1.0

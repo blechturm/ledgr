@@ -133,7 +133,7 @@ testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-f
 })
 
 testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows its candidate row reads", {
-  handler <- ledgr:::ledgr_memory_output_handler("scale")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("scale"))
   rows <- data.frame(
     run_id = "scale", diagnostic_seq = 0L, ts_utc = as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:7,
     instrument_id = c("A", "B", "A", "C", "B", "A", "D", "E"),
@@ -159,7 +159,7 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
     ledgr:::ledgr_valuation_inputs_from_diagnostics(full)
   )
   testthat::expect_identical(ledgr:::ledgr_stopped_instrument_ids(kept), ledgr:::ledgr_stopped_instrument_ids(full))
-  testthat::expect_null(ledgr:::ledgr_memory_output_handler("empty")$diagnostics())
+  testthat::expect_null(ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("empty"))$diagnostics())
 })
 
 testthat::test_that("[LTB-0212] vectorised asset-state normalisation equals the per-ID rule", {

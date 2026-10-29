@@ -1,3 +1,20 @@
+# The one publication computation of a fill row's cash and position deltas
+# (fold-phase synthesis Section 11, R3; contract-execution-accounting-events).
+# It projects a fill the fold already resolved: side, quantity, price and fee
+# are inputs, never re-derived. Fill-row builders on the canonical R path use
+# it: ledgr_fill_event_payload() (buffered DuckDB and memory rows) and
+# ledgr_write_fill_events() (db_live rows). Planner affordability, fold state
+# and the compiled spot-FIFO batch keep their own arithmetic.
+ledgr_fill_publication_deltas <- function(side, qty, fill_price, fee) {
+  signed_qty <- if (side == "BUY") as.numeric(qty) else -as.numeric(qty)
+  cash_delta <- if (side == "BUY") {
+    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(fee))
+  } else {
+    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(fee))
+  }
+  list(cash_delta = cash_delta, position_delta = signed_qty)
+}
+
 ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = NULL, use_transaction = TRUE) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
@@ -63,12 +80,9 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
     rlang::abort(sprintf("run_id not found in runs table: %s", run_id), class = "ledgr_invalid_args")
   }
 
-  signed_qty <- if (side == "BUY") as.numeric(qty) else -as.numeric(qty)
-  cash_delta <- if (side == "BUY") {
-    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(fee))
-  } else {
-    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(fee))
-  }
+  deltas <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)
+  signed_qty <- deltas$position_delta
+  cash_delta <- deltas$cash_delta
 
   ts_exec_posix <- ledgr_ts_utc_posix(
     ts_exec_utc,

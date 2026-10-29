@@ -7,8 +7,26 @@
 
 a0_next_ulp <- function(x) x + 2^(floor(log2(abs(x))) - 52)
 
-# The memory sink's state lives in the handler factory's frame.
-a0_sink_state <- function(handler) get("state", envir = environment(handler$events))
+# The memory sink's native state: the event columns live in the one output
+# handler's frame, the retained diagnostic chunks in the memory sink's frame.
+# Active bindings read and write the owners themselves, not copies.
+a0_sink_state <- function(handler) {
+  handler_state <- get("state", envir = environment(handler$events))
+  sink_frame <- environment(handler$diagnostics)
+  view <- new.env(parent = emptyenv())
+  makeActiveBinding("event_cols", function(value) {
+    if (missing(value)) handler_state$event_cols else assign("event_cols", value, envir = handler_state)
+  }, view)
+  for (name in c("diagnostic_parts", "diagnostic_part_n")) {
+    local({
+      field <- name
+      makeActiveBinding(field, function(value) {
+        if (missing(value)) get(field, envir = sink_frame) else assign(field, value, envir = sink_frame)
+      }, view)
+    })
+  }
+  view
+}
 
 a0_guts <- list(
   fill_qty = list(workload = "dense_cost", expect = "ledger_events",
@@ -75,8 +93,9 @@ a0_guts <- list(
   interrupted_telemetry = list(workload = "avail_terminal_resume", expect = "run_telemetry",
     what = "soft-stopped run: the handler persists pulse_count = -999 before the resume overwrites it",
     patch_paths = "run_interrupted",
-    patch = list(ledgr_persistent_output_handler = function(original) function(...) {
-      handler <- original(...)
+    patch = list(ledgr_output_handler = function(original) function(sink, ...) {
+      handler <- original(sink, ...)
+      if (!inherits(sink, "ledgr_output_sink_duckdb")) return(handler)
       write <- handler$write_telemetry
       handler$write_telemetry <- function(status, strict = TRUE, telemetry = NULL, processed = NA_integer_) {
         write(status, strict = strict, telemetry = telemetry, processed = -999L)
@@ -106,8 +125,9 @@ a0_guts <- list(
   wf_warning = list(workload = "walk_forward", expect = "run_conditions",
     what = "walk-forward: the persistent handler raises one extra warning per telemetry write",
     patch_paths = "walk_forward",
-    patch = list(ledgr_persistent_output_handler = function(original) function(...) {
-      handler <- original(...)
+    patch = list(ledgr_output_handler = function(original) function(sink, ...) {
+      handler <- original(sink, ...)
+      if (!inherits(sink, "ledgr_output_sink_duckdb")) return(handler)
       write <- handler$write_telemetry
       handler$write_telemetry <- function(...) {
         warning("a0 gut: injected handler warning", call. = FALSE)

@@ -7,8 +7,8 @@ Authority: routing map only under the accepted governance-lifecycle synthesis
 This file does not create package behavior, accept a decision or authorize
 implementation.
 Current packet: [ledgr v0.2.3](ledgr_v0_2_3_spec_packet/README.md).
-Cuts 1 (one output handler) and 2 (WS3 dense oracle/current-tree timing) were
-accepted on 2026-10-28. The packet's `tickets.yml` is their sole ticket and
+Cut 1 (one output handler) is closed (maintainer acceptance 2026-10-29);
+cut 2 (WS3 dense oracle/current-tree timing) was accepted on 2026-10-28. The packet's `tickets.yml` is their sole ticket and
 sequencing authority; acceptance does not claim implementation.
 
 Use this page to identify the shortest authoritative route. Do not infer
@@ -23,7 +23,7 @@ the current release.
 | Accepted choice not yet consolidated | [decisions.md](decisions.md), then the exact linked source sections |
 | Active or owed RFC work | [RFC pipeline](rfc/README.md#rfc-pipeline) |
 | Current release goal and dependency order | [v0.2.3 packet](ledgr_v0_2_3_spec_packet/README.md) and [roadmap](ledgr_roadmap.md) |
-| Executable implementation work | [Current tickets](ledgr_v0_2_3_spec_packet/tickets.yml), accepted cuts 1 and 2 |
+| Executable implementation work | [Current tickets](ledgr_v0_2_3_spec_packet/tickets.yml), cut 1 complete, cut 2 accepted |
 | Uncommitted future idea | [horizon.md](horizon.md) |
 | Research, audit or spike evidence | [research](research/README.md), [audits](audits/) or [spikes](spikes/) as cited by its consumer |
 | Released history | [roadmap release records](ledgr_roadmap.md), [historical planning context](planning_context_history.md) and the versioned spec-packet directories |

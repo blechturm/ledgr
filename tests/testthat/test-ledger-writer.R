@@ -108,11 +108,13 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
   run_id <- "run-ledger-buffered-handler"
   insert_test_run(con, run_id)
 
-  handler <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = run_id,
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log"
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = run_id,
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
   )
   handler$init_buffers(1L)
 
@@ -167,11 +169,13 @@ testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
     },
     .package = "ledgr"
   )
-  handler <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = run_id,
-    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
-    execution_mode = "audit_log"
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = run_id,
+      run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
   )
   block <- function(reason, n) {
     do.call(rbind, lapply(seq_len(n), function(i) {
@@ -204,7 +208,10 @@ testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
   )
 
   handler_source <- paste(
-    deparse(body(ledgr:::ledgr_persistent_output_handler)),
+    c(
+      deparse(body(ledgr:::ledgr_output_handler)),
+      deparse(body(ledgr:::ledgr_output_sink_duckdb))
+    ),
     collapse = "\n"
   )
   testthat::expect_false(grepl("MAX\\(diagnostic_seq\\)", handler_source))
@@ -234,7 +241,7 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     )
   )
 
-  memory <- ledgr:::ledgr_memory_output_handler("pulse-memory", .event_initial_capacity = 1L)
+  memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-memory"), .event_initial_capacity = 1L)
   memory$init_buffers(2L)
   invisible(memory$write_fill_events(fills[[1L]], 1L))
   invisible(memory$write_fill_events(fills[[2L]], 2L))
@@ -258,11 +265,13 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
   insert_test_run(con, "pulse-durable")
-  durable <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = "pulse-durable",
-    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
-    execution_mode = "audit_log",
+  durable <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = "pulse-durable",
+      run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+      execution_mode = "audit_log"
+    ),
     .event_initial_capacity = 1L
   )
   durable$init_buffers(2L)
@@ -292,11 +301,14 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
 
 testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity", {
   persistent_source <- paste(
-    deparse(body(ledgr:::ledgr_persistent_output_handler)),
+    deparse(body(ledgr:::ledgr_output_handler)),
     collapse = "\n"
   )
   memory_source <- paste(
-    deparse(body(ledgr:::ledgr_memory_output_handler)),
+    c(
+      deparse(body(ledgr:::ledgr_output_handler)),
+      deparse(body(ledgr:::ledgr_output_sink_memory))
+    ),
     collapse = "\n"
   )
   testthat::expect_false(grepl("state\\$pulse_fill_rows", persistent_source))
@@ -317,7 +329,7 @@ testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity",
     commission_fixed = 0
   )
   allocated_for_last_write <- function(capacity) {
-    handler <- ledgr:::ledgr_memory_output_handler("allocation-probe")
+    handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("allocation-probe"))
     handler$init_buffers(capacity)
     for (i in seq_len(capacity - 1L)) {
       handler$write_fill_events(fill, i)
@@ -347,11 +359,13 @@ testthat::test_that("persistent output handler grows event buffer without changi
   run_id <- "run-ledger-buffered-grow"
   insert_test_run(con, run_id)
 
-  handler <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = run_id,
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log"
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = run_id,
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
   )
   n_events <- 1025L
   handler$init_buffers(n_events)
@@ -382,11 +396,13 @@ testthat::test_that("persistent output handler preserves all pending event colum
   run_id <- "run-ledger-buffered-columns"
   insert_test_run(con, run_id)
 
-  handler <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = run_id,
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log"
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = run_id,
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
   )
   handler$init_buffers(3L)
   for (i in seq_len(3L)) {
@@ -431,11 +447,13 @@ testthat::test_that("persistent output handler preserves full columns across gro
   run_id <- "run-ledger-buffered-growth-columns"
   insert_test_run(con, run_id)
 
-  handler <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = run_id,
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log"
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = run_id,
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
   )
   n_events <- 1025L
   handler$init_buffers(n_events)
@@ -488,11 +506,13 @@ testthat::test_that("persistent output handler preserves full columns across gro
 })
 
 testthat::test_that("persistent output handler enforces hard event cap", {
-  handler <- ledgr:::ledgr_persistent_output_handler(
-    con = NULL,
-    run_id = "run-ledger-buffered-cap",
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log"
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = NULL,
+      run_id = "run-ledger-buffered-cap",
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    )
   )
   handler$init_buffers(1L)
   testthat::expect_true(handler$buffer_event(fake_write_result("run-ledger-buffered-cap", 1L)))
@@ -504,7 +524,7 @@ testthat::test_that("persistent output handler enforces hard event cap", {
 
 testthat::test_that("memory output handler grows event buffer and preserves event surface", {
   run_id <- "run-memory-buffered-grow"
-  handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory(run_id))
   n_events <- 1025L
   handler$init_buffers(n_events)
   for (i in seq_len(n_events)) {
@@ -562,8 +582,10 @@ testthat::test_that("both event handlers preserve rows across two injected growt
     fake_write_result("linear-memory", i)
   })
   expected <- do.call(rbind, lapply(expected_writes, `[[`, "row"))
-  memory <- ledgr:::ledgr_memory_output_handler(
-    "linear-memory",
+  memory <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_memory(
+      "linear-memory"
+    ),
     .event_initial_capacity = 2L
   )
   memory$init_buffers(n_events)
@@ -600,11 +622,13 @@ testthat::test_that("both event handlers preserve rows across two injected growt
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
   insert_test_run(con, "linear-durable")
-  durable <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = "linear-durable",
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
+  durable <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = "linear-durable",
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    ),
     .event_initial_capacity = 2L
   )
   durable$init_buffers(n_events)
@@ -641,7 +665,7 @@ testthat::test_that("failed event-buffer writes do not expose a partial active r
     .package = "ledgr"
   )
 
-  memory <- ledgr:::ledgr_memory_output_handler("linear-failure-memory", .event_initial_capacity = 2L)
+  memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("linear-failure-memory"), .event_initial_capacity = 2L)
   memory$init_buffers(2L)
   write <- fake_write_result("linear-failure-memory", 1L)
   testthat::expect_error(memory$buffer_event(write), "injected event-buffer write failure", fixed = TRUE)
@@ -654,11 +678,13 @@ testthat::test_that("failed event-buffer writes do not expose a partial active r
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
   insert_test_run(con, "linear-failure-durable")
-  durable <- ledgr:::ledgr_persistent_output_handler(
-    con = con,
-    run_id = "linear-failure-durable",
-    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-    execution_mode = "audit_log",
+  durable <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = "linear-failure-durable",
+      run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+      execution_mode = "audit_log"
+    ),
     .event_initial_capacity = 2L
   )
   durable$init_buffers(2L)
@@ -850,3 +876,382 @@ testthat::test_that("transactionality: failed insert leaves no partial row", {
   testthat::expect_identical(n, 0)
 })
 
+
+testthat::test_that("[LTB-0515] fill-row publication deltas are computed once for every publication path", {
+  # Independent oracle: the resolved fill's side, quantity, price and fee.
+  oracle <- function(fill) {
+    q <- as.numeric(fill$qty)
+    p <- as.numeric(fill$fill_price)
+    f <- as.numeric(fill$fee)
+    if (identical(fill$side, "BUY")) {
+      list(cash_delta = -(q * p + f), position_delta = q)
+    } else {
+      list(cash_delta = q * p - f, position_delta = -q)
+    }
+  }
+  buy <- ledgr_test_next_open_fill(
+    desired_qty_delta = 3,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 101.37),
+    spread_bps = 7,
+    commission_fixed = 1.25
+  )
+  sell <- ledgr_test_next_open_fill(
+    desired_qty_delta = -2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-03T00:00:00Z", open = 99.11),
+    spread_bps = 7,
+    commission_fixed = 0.5
+  )
+  no_fee <- ledgr_test_next_open_fill(
+    desired_qty_delta = 4,
+    next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-02T00:00:00Z", open = 50),
+    spread_bps = 0,
+    commission_fixed = 0
+  )
+  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
+  fills <- list(buy = buy, sell = sell, no_fee = no_fee)
+  testthat::expect_identical(buy$side, "BUY")
+  testthat::expect_identical(sell$side, "SELL")
+  testthat::expect_gt(buy$fee, 0)
+  testthat::expect_identical(no_fee$fee, 0)
+
+  # The shared computation itself.
+  for (name in names(fills)) {
+    fill <- fills[[name]]
+    testthat::expect_identical(
+      ledgr:::ledgr_fill_publication_deltas(fill$side, fill$qty, fill$fill_price, fill$fee),
+      oracle(fill),
+      info = name
+    )
+  }
+
+  publish <- function() {
+    con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+    ledgr_create_schema(con)
+    insert_test_run(con, "r3-durable")
+    insert_test_run(con, "r3-live")
+    durable <- ledgr:::ledgr_output_handler(
+      ledgr:::ledgr_output_sink_duckdb(
+        con = con,
+        run_id = "r3-durable",
+        run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+        execution_mode = "audit_log"
+      )
+    )
+    durable$init_buffers(8L)
+    live <- ledgr:::ledgr_output_handler(
+      ledgr:::ledgr_output_sink_duckdb(
+        con = con,
+        run_id = "r3-live",
+        run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+        execution_mode = "db_live"
+      )
+    )
+    live$init_buffers(8L)
+    memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("r3-memory"))
+    memory$init_buffers(8L)
+    out <- list(durable = list(), live = list(), memory = list())
+    seq_no <- 1L
+    for (name in names(fills)) {
+      out$durable[[name]] <- durable$write_fill_events(fills[[name]], seq_no, use_transaction = FALSE)
+      out$live[[name]] <- live$write_fill_events(fills[[name]], seq_no, use_transaction = TRUE)
+      out$memory[[name]] <- memory$write_fill_events(fills[[name]], seq_no, use_transaction = FALSE)
+      seq_no <- seq_no + 1L
+    }
+    out$durable_none <- durable$write_fill_events(none, seq_no, use_transaction = FALSE)
+    out$live_none <- live$write_fill_events(none, seq_no, use_transaction = TRUE)
+    out$memory_none <- memory$write_fill_events(none, seq_no, use_transaction = FALSE)
+    durable$flush_pulse_events()
+    durable$flush_pending()
+    memory$flush_pulse_events()
+    read_meta <- function(run_id) {
+      rows <- DBI::dbGetQuery(
+        con,
+        "SELECT meta_json FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+        params = list(run_id)
+      )
+      lapply(rows$meta_json, parse_meta)
+    }
+    out$durable_meta <- read_meta("r3-durable")
+    out$live_meta <- read_meta("r3-live")
+    events <- memory$typed_events()
+    out$memory_cash <- attr(events, "ledgr_event_cash_delta")
+    out$memory_position <- attr(events, "ledgr_event_position_delta")
+    out
+  }
+
+  check <- function(out, shift) {
+    for (k in seq_along(fills)) {
+      name <- names(fills)[[k]]
+      want <- oracle(fills[[name]])
+      want$cash_delta <- want$cash_delta + shift
+      for (path in c("durable", "live", "memory")) {
+        res <- out[[path]][[name]]
+        testthat::expect_identical(res$status, "WROTE", info = paste(path, name))
+        testthat::expect_identical(res$cash_delta, want$cash_delta, info = paste(path, name))
+        testthat::expect_identical(res$position_delta, want$position_delta, info = paste(path, name))
+      }
+      for (path in c("durable_meta", "live_meta")) {
+        meta <- out[[path]][[k]]
+        testthat::expect_identical(as.numeric(meta$cash_delta), want$cash_delta, info = paste(path, name))
+        testthat::expect_identical(as.numeric(meta$position_delta), want$position_delta, info = paste(path, name))
+        testthat::expect_identical(as.numeric(meta$fee), as.numeric(fills[[name]]$fee), info = paste(path, name))
+      }
+      testthat::expect_identical(out$memory_cash[[k]], want$cash_delta, info = paste("memory", name))
+      testthat::expect_identical(out$memory_position[[k]], want$position_delta, info = paste("memory", name))
+    }
+    for (path in c("durable_none", "live_none", "memory_none")) {
+      testthat::expect_identical(out[[path]]$status, "NO_OP", info = path)
+      testthat::expect_identical(out[[path]]$next_event_seq, 4L, info = path)
+    }
+    testthat::expect_length(out$durable_meta, 3L)
+    testthat::expect_length(out$live_meta, 3L)
+    testthat::expect_length(out$memory_cash, 3L)
+  }
+
+  check(publish(), shift = 0)
+
+  # Perturbing the one computation moves every publication path with it, and
+  # a NO_OP never reaches it.
+  original <- ledgr:::ledgr_fill_publication_deltas
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_fill_publication_deltas = function(side, qty, fill_price, fee) {
+      calls <<- calls + 1L
+      out <- original(side, qty, fill_price, fee)
+      out$cash_delta <- out$cash_delta + 1
+      out
+    },
+    .package = "ledgr"
+  )
+  check(publish(), shift = 1)
+  testthat::expect_identical(calls, 9L)
+})
+
+testthat::test_that("[LTB-0516] the db_live writer keeps its validation and transaction behavior around the shared deltas", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  run_id <- "r3-live-writer"
+  insert_test_run(con, run_id)
+  count <- function() {
+    as.integer(DBI::dbGetQuery(
+      con,
+      "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?",
+      params = list(run_id)
+    )$n[[1L]])
+  }
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = 2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
+    spread_bps = 0,
+    commission_fixed = 0.75
+  )
+
+  calls <- 0L
+  original <- ledgr:::ledgr_fill_publication_deltas
+  testthat::local_mocked_bindings(
+    ledgr_fill_publication_deltas = function(...) {
+      calls <<- calls + 1L
+      original(...)
+    },
+    .package = "ledgr"
+  )
+
+  # Validation runs before the shared computation and writes nothing.
+  bad_side <- fill
+  bad_side$side <- "HOLD"
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, run_id, bad_side, event_seq_start = 1L),
+    class = "ledgr_invalid_fill_intent"
+  )
+  bad_fee <- fill
+  bad_fee$fee <- -1
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, run_id, bad_fee, event_seq_start = 1L),
+    class = "ledgr_invalid_fill_intent"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, "no-such-run", fill, event_seq_start = 1L),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_identical(calls, 0L)
+  testthat::expect_identical(count(), 0L)
+
+  # NO_OP short-circuits before validation and the computation.
+  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
+  testthat::expect_identical(
+    ledgr:::ledgr_write_fill_events(con, run_id, none, event_seq_start = 5L)$next_event_seq,
+    5L
+  )
+  testthat::expect_identical(calls, 0L)
+
+  # A transactional write commits one row; its sequence is chosen from the
+  # table when no start is given.
+  first <- ledgr:::ledgr_write_fill_events(con, run_id, fill, use_transaction = TRUE)
+  testthat::expect_identical(first$event_seq, 1L)
+  second <- ledgr:::ledgr_write_fill_events(con, run_id, fill, use_transaction = TRUE)
+  testthat::expect_identical(second$event_seq, 2L)
+  testthat::expect_identical(calls, 2L)
+  testthat::expect_identical(count(), 2L)
+  meta <- parse_meta(DBI::dbGetQuery(
+    con,
+    "SELECT meta_json FROM ledger_events WHERE run_id = ? AND event_seq = 1",
+    params = list(run_id)
+  )$meta_json[[1L]])
+  testthat::expect_identical(
+    as.numeric(meta$cash_delta),
+    -(as.numeric(fill$qty) * as.numeric(fill$fill_price) + as.numeric(fill$fee))
+  )
+  testthat::expect_identical(as.numeric(meta$position_delta), as.numeric(fill$qty))
+
+  # A failed transactional insert leaves no partial row.
+  testthat::expect_error(
+    ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 2L, use_transaction = TRUE)
+  )
+  testthat::expect_identical(count(), 2L)
+})
+
+testthat::test_that("[LTB-0518] one output handler exposes exactly each storage kind's methods and owns the shared mechanisms", {
+  duckdb_methods <- c(
+    "abort_run", "append_event_rows", "buffer_event", "buffer_strategy_state",
+    "flush_pending", "flush_pulse_events", "init_buffers", "pending_event_count",
+    "pending_state_count", "record_failure", "record_run_status", "run_transaction",
+    "set_schedule_counts", "store_session_telemetry", "terminal_status_written",
+    "write_exception_diagnostic", "write_fill_events", "write_run_diagnostics",
+    "write_run_evidence", "write_strategy_state", "write_telemetry"
+  )
+  memory_methods <- c(
+    "abort_run", "append_compiled_spot_batch", "append_event_rows", "buffer_event",
+    "buffer_strategy_state", "completion", "diagnostics", "events", "flush_pending",
+    "flush_pulse_events", "init_buffers", "inline_summary", "pending_event_count",
+    "pending_state_count", "record_accounting_fact", "record_equity_fact",
+    "record_failure", "record_run_status", "run_transaction", "store_session_telemetry",
+    "typed_events", "write_exception_diagnostic", "write_fill_events",
+    "write_run_diagnostics", "write_run_evidence", "write_strategy_state",
+    "write_telemetry"
+  )
+  testthat::expect_length(duckdb_methods, 21L)
+  testthat::expect_length(memory_methods, 27L)
+  testthat::expect_length(intersect(duckdb_methods, memory_methods), 19L)
+
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  for (mode in c("audit_log", "db_live")) {
+    durable <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_duckdb(
+      con = con,
+      run_id = paste0("method-set-", mode),
+      run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+      execution_mode = mode
+    ))
+    testthat::expect_s3_class(durable, "ledgr_output_handler")
+    testthat::expect_identical(sort(names(durable)), sort(duckdb_methods), info = mode)
+    testthat::expect_true(all(vapply(durable, is.function, logical(1))), info = mode)
+  }
+  memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("method-set-memory"))
+  testthat::expect_s3_class(memory, "ledgr_output_handler")
+  testthat::expect_identical(sort(names(memory)), sort(memory_methods))
+  testthat::expect_true(all(vapply(memory, is.function, logical(1))))
+
+  # The shared mechanisms live in the handler only: neither sink allocates an
+  # event column buffer, grows one, or stages fill rows.
+  source_of <- function(fn) paste(deparse(body(fn)), collapse = "\n")
+  shared <- "event_cols|pulse_fill_rows|ensure_event_capacity|init_event_cols|ledgr_fill_event_payload"
+  testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "init_event_cols")
+  testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "pulse_fill_rows")
+  testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_duckdb)))
+  testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_memory)))
+})
+
+testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep values, classes and order across growth", {
+  # Equity facts: 300 crosses the initial capacity of 256 and one doubling.
+  memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("growth-memory"))
+  n <- 300L
+  ts <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * (seq_len(n) - 1L)
+  cash <- 1000 + seq_len(n) / 7
+  value <- 50 + sqrt(seq_len(n))
+  realized <- seq_len(n) / 3
+  basis <- 40 + seq_len(n) / 11
+  for (i in seq_len(n)) {
+    memory$record_equity_fact(ts[[i]], cash[[i]], value[[i]], realized[[i]], basis[[i]])
+  }
+  kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = ts)
+  summary <- memory$inline_summary(run_id = "growth-memory", metric_kernel = kernel)
+  expected <- data.frame(
+    run_id = rep("growth-memory", n),
+    ts_utc = as.POSIXct(as.numeric(ts), origin = "1970-01-01", tz = "UTC"),
+    cash = cash,
+    positions_value = value,
+    equity = cash + value,
+    realized_pnl = realized,
+    unrealized_pnl = value - basis,
+    stringsAsFactors = FALSE
+  )
+  testthat::expect_identical(summary$equity, expected)
+  testthat::expect_identical(attr(summary$equity$ts_utc, "tzone"), "UTC")
+  testthat::expect_identical(summary$final_equity, expected$equity[[n]])
+  empty <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("growth-empty"))
+  empty_summary <- empty$inline_summary(run_id = "growth-empty", metric_kernel = kernel)
+  testthat::expect_identical(empty_summary$equity, ledgr:::ledgr_empty_equity_curve())
+  testthat::expect_identical(empty_summary$final_equity, NA_real_)
+
+  # Retained diagnostic chunks: 70 kept chunks cross the initial 64 slots.
+  rows <- function(k) {
+    data.frame(
+      run_id = "growth-memory", diagnostic_seq = 0L,
+      ts_utc = as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * k,
+      instrument_id = "A", stage = "valuation", outcome = "stopped",
+      reason_code = "valuation_horizon_exhausted", quantity = as.numeric(k), price = 1,
+      mark_source = "", mark_age = NA_integer_, stringsAsFactors = FALSE
+    )
+  }
+  for (k in seq_len(70L)) memory$write_run_diagnostics(rows(k))
+  kept <- memory$diagnostics()
+  testthat::expect_identical(kept$diagnostic_seq, seq_len(70L))
+  testthat::expect_identical(kept$quantity, as.numeric(seq_len(70L)))
+  testthat::expect_identical(kept, do.call(rbind, lapply(seq_len(70L), function(k) {
+    r <- rows(k)
+    r$diagnostic_seq <- k
+    r
+  })))
+
+  # Strategy states: 2,500 rows cross the initial 1,000 slots and one
+  # doubling before the flush manifests them as one frame.
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  insert_test_run(con, "growth-durable")
+  durable <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_duckdb(
+    con = con,
+    run_id = "growth-durable",
+    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+    execution_mode = "audit_log"
+  ))
+  durable$init_buffers(10L)
+  m <- 2500L
+  state_ts <- format(as.POSIXct("2020-01-01", tz = "UTC") + 60 * seq_len(m), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  state_json <- sprintf("{\"k\":%d}", seq_len(m))
+  for (i in seq_len(m)) durable$buffer_strategy_state(state_ts[[i]], state_json[[i]])
+  testthat::expect_identical(durable$pending_state_count(), m)
+  durable$flush_pending()
+  testthat::expect_identical(durable$pending_state_count(), 0L)
+  stored <- DBI::dbGetQuery(
+    con,
+    "SELECT run_id, ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+    params = list("growth-durable")
+  )
+  reference <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(reference, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(reference)
+  # The pre-WS1 manifest: one frame per state row bound at the flush.
+  DBI::dbAppendTable(reference, "strategy_state", do.call(rbind, lapply(seq_len(m), function(i) {
+    data.frame(run_id = "growth-durable", ts_utc = state_ts[[i]], state_json = state_json[[i]],
+      stringsAsFactors = FALSE)
+  })))
+  expected_rows <- DBI::dbGetQuery(
+    reference,
+    "SELECT run_id, ts_utc, state_json FROM strategy_state ORDER BY ts_utc"
+  )
+  testthat::expect_identical(nrow(stored), m)
+  testthat::expect_identical(stored, expected_rows)
+})

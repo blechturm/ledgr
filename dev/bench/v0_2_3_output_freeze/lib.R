@@ -351,10 +351,11 @@ a0_with_patches <- function(patches, expr) {
 # the sink's native output: events() with the typed attributes
 # ledgr_event_{cash_delta,position_delta,realized,cost_basis,meta}, the
 # retained diagnostics() (NULL when none), completion() (NULL in dense mode)
-# and the inline_summary() equity and fills. Today it wraps the memory handler
-# factory. Without an observation point it stops, so check.R fails rather
-# than silently dropping the memory records.
-a0_memory_factory <- "ledgr_memory_output_handler"
+# and the inline_summary() equity and fills. Since WS1 it wraps the one
+# output handler and observes only handlers built on a memory sink. Without an
+# observation point it stops, so check.R fails rather than silently dropping
+# the memory records.
+a0_memory_factory <- "ledgr_output_handler"
 a0_observe_memory <- function(expr, gut = NULL) {
   factory <- gut$memory_factory %||% a0_memory_factory
   if (!exists(factory, envir = asNamespace("ledgr"), inherits = FALSE)) {
@@ -364,8 +365,10 @@ a0_observe_memory <- function(expr, gut = NULL) {
   }
   registry <- new.env(parent = emptyenv())
   summaries <- new.env(parent = emptyenv())
-  patch <- stats::setNames(list(function(original) function(run_id, ...) {
-    handler <- original(run_id, ...)
+  patch <- stats::setNames(list(function(original) function(sink, ...) {
+    handler <- original(sink, ...)
+    if (!inherits(sink, "ledgr_output_sink_memory")) return(handler)
+    run_id <- sink$run_id
     summarize <- handler$inline_summary
     handler$inline_summary <- function(...) {
       s <- summarize(...)

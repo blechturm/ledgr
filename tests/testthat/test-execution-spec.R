@@ -213,7 +213,7 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
     use_fast_context = TRUE,
     compiled_accounting_model = compiled_accounting_model
   )
-  handler <- ledgr:::ledgr_memory_output_handler("compiled-spot-fifo-parity")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("compiled-spot-fifo-parity"))
   handler$append_event_rows(opening_rows)
   fold <- ledgr:::ledgr_execute_fold(spec, handler)
   metric_kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = pulses_posix)
@@ -342,7 +342,7 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
     use_fast_context = TRUE,
     compiled_accounting_model = compiled_accounting_model
   )
-  handler <- ledgr:::ledgr_memory_output_handler("compiled-spot-fifo-multi-parity")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("compiled-spot-fifo-multi-parity"))
   handler$append_event_rows(opening_rows)
   fold <- ledgr:::ledgr_execute_fold(spec, handler)
   metric_kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = pulses_posix)
@@ -504,7 +504,7 @@ testthat::test_that("compiled accounting model enum fails closed", {
     event_mode = "live",
     compiled_accounting_model = "spot_fifo"
   )
-  handler <- ledgr:::ledgr_memory_output_handler("compiled-spot-fifo-live")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("compiled-spot-fifo-live"))
   testthat::expect_error(
     ledgr:::ledgr_execute_fold(spec, handler),
     class = "ledgr_compiled_spot_fifo_unavailable"
@@ -865,7 +865,7 @@ testthat::test_that("fold position valuation aligns shuffled positions by instru
     strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
     state = list(cash = 1000, positions = c(BBB = 2, AAA = 1))
   )
-  handler <- ledgr:::ledgr_memory_output_handler("position-valuation-alignment")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("position-valuation-alignment"))
 
   ledgr:::ledgr_execute_fold(spec, handler)
 
@@ -884,7 +884,7 @@ testthat::test_that("fold target deltas align shuffled targets by instrument id"
     strategy_fn = strategy,
     strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy)
   )
-  handler <- ledgr:::ledgr_memory_output_handler("target-delta-alignment")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("target-delta-alignment"))
 
   ledgr:::ledgr_execute_fold(spec, handler)
   events <- handler$events()
@@ -911,7 +911,7 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
     strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
     state = list(cash = 1000, positions = c(0, 0))
   )
-  handler <- ledgr:::ledgr_memory_output_handler("primitive-position-snapshot")
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("primitive-position-snapshot"))
 
   ledgr:::ledgr_execute_fold(spec, handler)
 
@@ -971,4 +971,32 @@ testthat::test_that("[LTB-0015] run and sweep share execution construction and f
   testthat::expect_s3_class(sweep, "ledgr_sweep_results")
   testthat::expect_identical(calls, 2L)
   testthat::expect_identical(fold_calls, 2L)
+})
+
+testthat::test_that("[LTB-0517] the compiled dispatch guard refuses a buffered DuckDB handler", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  durable <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_duckdb(
+    con = con,
+    run_id = "compiled-duckdb-refusal",
+    run_wall_start = as.POSIXct("2024-01-01", tz = "UTC"),
+    execution_mode = "audit_log"
+  ))
+  # Absent, not a callable stub.
+  testthat::expect_false("append_compiled_spot_batch" %in% names(durable))
+  spec <- ledgr_test_execution_spec(compiled_accounting_model = "spot_fifo")
+  testthat::expect_identical(spec$event_mode, "buffered")
+  testthat::expect_error(
+    ledgr:::ledgr_require_compiled_spot_fifo_dispatch(spec, durable),
+    regexp = "memory output handler",
+    class = "ledgr_compiled_spot_fifo_unavailable"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_execute_fold(spec, durable),
+    regexp = "memory output handler",
+    class = "ledgr_compiled_spot_fifo_unavailable"
+  )
+  # The same buffered spec admits the memory handler.
+  memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("compiled-memory-admitted"))
+  testthat::expect_true(ledgr:::ledgr_require_compiled_spot_fifo_dispatch(spec, memory))
 })

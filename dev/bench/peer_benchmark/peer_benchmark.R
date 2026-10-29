@@ -699,7 +699,7 @@ peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy
   t1 <- proc.time()[["elapsed"]]
   prep <- peer_ledgr_ephemeral_experiment_setup(prep, features)
   run_id <- paste0("peer_", engine, "_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
-  output_handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  output_handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory(run_id))
   initial_positions <- stats::setNames(rep(0, length(prep$universe)), prep$universe)
   telemetry <- ledgr:::ledgr_sweep_telemetry_env()
   if (is.null(cost_resolver)) {
