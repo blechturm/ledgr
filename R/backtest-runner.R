@@ -286,7 +286,7 @@ ledgr_write_opening_position_events <- function(con,
     lots = lots
   )
   if (nrow(rows) > 0L) {
-    DBI::dbAppendTable(con, "ledger_events", rows)
+    ledgr_store_append(con, "ledger_events", rows)
   }
   as.integer(event_seq_start) + as.integer(nrow(rows))
 }
@@ -382,22 +382,6 @@ ledgr_run_fold_impl <- function(config,
   compiled_accounting_model <- prepared$compiled_accounting_model
   availability_active <- ledgr_availability_config_active(cfg)
   run_wall_start <- ledgr_time_now()
-
-  if (!is.null(seed)) {
-    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    old_seed <- if (had_seed) {
-      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    } else {
-      NULL
-    }
-    on.exit({
-      if (had_seed) {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      }
-    }, add = TRUE)
-  }
 
   engine <- ledgr_run_prepare_engine(cfg, db_path)
   execution_mode <- engine$execution_mode

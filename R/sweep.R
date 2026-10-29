@@ -99,7 +99,8 @@ ledgr_sweep <- function(exp,
                         workers = 1L,
                         worker_packages = NULL,
                         compiled_accounting_model = NULL) {
-  ledgr_sweep_impl(
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_sweep_impl(
     exp = exp,
     param_grid = param_grid,
     precomputed_features = precomputed_features,
@@ -110,7 +111,7 @@ ledgr_sweep <- function(exp,
     worker_packages = worker_packages,
     compiled_accounting_model = compiled_accounting_model,
     window = NULL
-  )
+  ))
 }
 
 ledgr_sweep_window <- function(exp,
@@ -154,24 +155,6 @@ ledgr_sweep_impl <- function(exp,
                              window = NULL,
                              execution_seed_resolver = NULL,
                              history_substrate = NULL) {
-  if (!is.null(seed)) {
-    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    old_seed <- if (had_seed) {
-      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    } else {
-      NULL
-    }
-    on.exit(
-      {
-        if (had_seed) {
-          assign(".Random.seed", old_seed, envir = .GlobalEnv)
-        } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-          rm(".Random.seed", envir = .GlobalEnv)
-        }
-      },
-      add = TRUE
-    )
-  }
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -571,6 +554,16 @@ ledgr_candidate <- function(results, ...) {
 #' @rdname ledgr_candidate
 #' @export
 ledgr_candidate.default <- function(results, which = 1L, allow_failed = FALSE, ...) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_candidate_default_impl(
+    results = results,
+    which = which,
+    allow_failed = allow_failed,
+    ...
+  ))
+}
+
+ledgr_candidate_default_impl <- function(results, which, allow_failed, ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
     rlang::abort("Unused argument(s) supplied to `ledgr_candidate()`.", class = "ledgr_invalid_args")
@@ -649,6 +642,11 @@ ledgr_candidate.default <- function(results, which = 1L, allow_failed = FALSE, .
 #' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_candidate_reproduction_key <- function(candidate) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_candidate_reproduction_key_impl(candidate = candidate))
+}
+
+ledgr_candidate_reproduction_key_impl <- function(candidate) {
   if (!inherits(candidate, "ledgr_sweep_candidate")) {
     rlang::abort("`candidate` must be a ledgr_sweep_candidate object.", class = "ledgr_invalid_args")
   }
@@ -798,6 +796,21 @@ ledgr_promote <- function(exp,
                           run_id,
                           note = NULL,
                           require_same_snapshot = TRUE) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_promote_impl(
+    exp = exp,
+    candidate = candidate,
+    run_id = run_id,
+    note = note,
+    require_same_snapshot = require_same_snapshot
+  ))
+}
+
+ledgr_promote_impl <- function(exp,
+                               candidate,
+                               run_id,
+                               note,
+                               require_same_snapshot) {
   if (inherits(candidate, "ledgr_sweep_filter_result")) {
     ledgr_sweep_filter_abort_selection("promote")
   }

@@ -17,7 +17,7 @@ ledgr_snapshot_write_availability <- function(con,
   }
   facts <- ledgr_facts_unwrap_validated(facts)
   for (family in facts$families) {
-    DBI::dbAppendTable(
+    ledgr_store_append(
       con,
       "snapshot_fact_families",
       data.frame(
@@ -33,7 +33,7 @@ ledgr_snapshot_write_availability <- function(con,
   }
 
   if (identical(invalid_observations, "quarantine")) {
-    DBI::dbAppendTable(
+    ledgr_store_append(
       con,
       "snapshot_fact_families",
       data.frame(
@@ -57,7 +57,7 @@ ledgr_snapshot_write_availability <- function(con,
         "snapshot_id", "quarantine_id", "supplied_instrument_id",
         "supplied_ts_utc", "reason", "original_row_json", "provenance_json"
       ), drop = FALSE]
-      DBI::dbAppendTable(con, "snapshot_observation_quarantine", rows)
+      ledgr_store_append(con, "snapshot_observation_quarantine", rows)
     }
   }
   # Off-session bars stay sealed in snapshot_bars and are recorded beside the
@@ -71,7 +71,7 @@ ledgr_snapshot_write_availability <- function(con,
       "snapshot_id", "quarantine_id", "supplied_instrument_id",
       "supplied_ts_utc", "reason", "original_row_json", "provenance_json"
     ), drop = FALSE]
-    DBI::dbAppendTable(con, "snapshot_observation_quarantine", rows)
+    ledgr_store_append(con, "snapshot_observation_quarantine", rows)
   }
 
   DBI::dbExecute(
@@ -92,7 +92,7 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
         "snapshot_id", "universe_id", "set_id", "effective_from",
         "knowledge_time", "complete", "civil_time_json", "provenance_json"
       ), drop = FALSE]
-      DBI::dbAppendTable(con, "snapshot_membership_sets", headers)
+      ledgr_store_append(con, "snapshot_membership_sets", headers)
     }
     if (nrow(rows) > 0L) {
       rows$snapshot_id <- snapshot_id
@@ -101,7 +101,7 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
         "effective_from", "effective_to", "knowledge_time", "member",
         "civil_time_json", "provenance_json"
       ), drop = FALSE]
-      DBI::dbAppendTable(con, "snapshot_membership", rows)
+      ledgr_store_append(con, "snapshot_membership", rows)
     }
   } else if (identical(family$family, "trading_status")) {
     rows$snapshot_id <- snapshot_id
@@ -110,7 +110,7 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       "knowledge_time", "status", "source", "precedence", "revision_id",
       "supersedes_fact_id", "civil_time_json", "provenance_json"
     ), drop = FALSE]
-    DBI::dbAppendTable(con, "snapshot_trading_status", rows)
+    ledgr_store_append(con, "snapshot_trading_status", rows)
   } else if (identical(family$family, "lifetime")) {
     rows$snapshot_id <- snapshot_id
     rows <- rows[, c(
@@ -118,7 +118,7 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       "knowledge_time", "assertion", "terminal_event", "civil_time_json",
       "provenance_json"
     ), drop = FALSE]
-    DBI::dbAppendTable(con, "snapshot_lifetime", rows)
+    ledgr_store_append(con, "snapshot_lifetime", rows)
   } else if (identical(family$family, "equity_corporate_actions")) {
     rows$snapshot_id <- snapshot_id
     rows <- rows[, c(
@@ -131,14 +131,14 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       "recipient_quantity_per_parent_unit",
       "recipient_quantity_validated", "civil_time_json", "provenance_json"
     ), drop = FALSE]
-    DBI::dbAppendTable(con, "snapshot_equity_corporate_actions", rows)
+    ledgr_store_append(con, "snapshot_equity_corporate_actions", rows)
   } else if (identical(family$family, "sessions")) {
     rows$snapshot_id <- snapshot_id
     rows <- rows[, c(
       "snapshot_id", "venue_id", "session_date", "effective_from", "effective_to",
       "knowledge_time", "status", "session_open", "session_close", "provenance_json"
     ), drop = FALSE]
-    DBI::dbAppendTable(con, "snapshot_sessions", rows)
+    ledgr_store_append(con, "snapshot_sessions", rows)
   } else {
     rlang::abort(
       sprintf("Unsupported fact family: %s.", family$family),

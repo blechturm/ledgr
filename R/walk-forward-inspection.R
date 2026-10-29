@@ -97,11 +97,29 @@ ledgr_candidate.ledgr_walk_forward_results <- function(results,
                                                        selection_rationale = NULL,
                                                        snapshot = NULL,
                                                        ...) {
+  ledgr_rng_force_args()
+  fold_seq_missing <- missing(fold_seq)
+  ledgr_rng_preserve_caller(ledgr_candidate_walk_forward_impl(
+    results = results,
+    fold_seq = fold_seq,
+    fold_seq_missing = fold_seq_missing,
+    selection_rationale = selection_rationale,
+    snapshot = snapshot,
+    ...
+  ))
+}
+
+ledgr_candidate_walk_forward_impl <- function(results,
+                                              fold_seq,
+                                              fold_seq_missing,
+                                              selection_rationale,
+                                              snapshot,
+                                              ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
     rlang::abort("Unused argument(s) supplied to `ledgr_candidate()`.", class = "ledgr_invalid_args")
   }
-  if (missing(fold_seq)) {
+  if (isTRUE(fold_seq_missing)) {
     rlang::abort("`fold_seq` is required.", class = "ledgr_invalid_args")
   }
   release <- if (is.null(snapshot)) {

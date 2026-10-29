@@ -1613,20 +1613,10 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
   if (!is.null(execution_seed)) {
-    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    old_seed <- if (had_seed) {
-      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    } else {
-      NULL
-    }
-    on.exit({
-      if (had_seed) {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      }
-    }, add = TRUE)
-    set.seed(as.integer(execution_seed))
+    # The enforcing point of the pinned kind (decision (1)).
+    rng_state <- ledgr_rng_caller_state()
+    on.exit(ledgr_rng_restore(rng_state), add = TRUE)
+    ledgr_rng_seed_pinned(as.integer(execution_seed))
   }
   event_mode <- execution$event_mode
   use_fast_context <- isTRUE(execution$use_fast_context)

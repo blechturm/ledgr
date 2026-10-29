@@ -61,19 +61,6 @@ ledgr_run_fills <- function(bt) {
 # `recording_pulse = FALSE` leaves the recording pulse NA for readers that never
 # use it, such as metrics, which then skip resolving it.
 ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
-  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  old_seed <- if (had_seed) {
-    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  } else {
-    NULL
-  }
-  on.exit({
-    if (had_seed) {
-      assign(".Random.seed", old_seed, envir = .GlobalEnv)
-    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-      rm(".Random.seed", envir = .GlobalEnv)
-    }
-  }, add = TRUE)
   if (is.null(con)) {
     opened <- ledgr_backtest_read_connection(bt)
     con <- opened$con
@@ -157,7 +144,7 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
       as.POSIXct(character(), tz = "UTC")
     )
     if (nrow(block_fills) > 0L) {
-      DBI::dbAppendTable(
+      ledgr_store_append(
         con,
         temp_table,
         as.data.frame(block_fills[, setdiff(names(block_fills), "recording_pulse_ts_utc")])

@@ -76,6 +76,35 @@ ledgr_sim_pit_inputs <- function(
   ),
   include_instruments = TRUE
 ) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_sim_pit_inputs_impl(
+    instrument_ids = instrument_ids,
+    from = from,
+    to = to,
+    seed = seed,
+    venue_id = venue_id,
+    universe_id = universe_id,
+    timezone = timezone,
+    session_open = session_open,
+    session_close = session_close,
+    cases = cases,
+    knowledge = knowledge,
+    include_instruments = include_instruments
+  ))
+}
+
+ledgr_sim_pit_inputs_impl <- function(instrument_ids,
+                                      from,
+                                      to,
+                                      seed,
+                                      venue_id,
+                                      universe_id,
+                                      timezone,
+                                      session_open,
+                                      session_close,
+                                      cases,
+                                      knowledge,
+                                      include_instruments) {
   instrument_ids <- ledgr_sim_pit_ids(instrument_ids)
   from <- ledgr_sim_pit_date(from, "from")
   to <- ledgr_sim_pit_date(to, "to")
@@ -398,23 +427,9 @@ ledgr_sim_pit_time_for_date <- function(date, session_close_utc, sessions) {
 }
 
 ledgr_sim_pit_bars <- function(instrument_ids, closes, seed) {
-  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  old_seed <- if (had_seed) {
-    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  } else {
-    NULL
-  }
-  on.exit(
-    {
-      if (had_seed) {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      }
-    },
-    add = TRUE
-  )
-  set.seed(seed)
+  rng_state <- ledgr_rng_caller_state()
+  on.exit(ledgr_rng_restore(rng_state), add = TRUE)
+  ledgr_rng_seed_pinned(seed)
 
   n_session <- length(closes)
   n_instrument <- length(instrument_ids)

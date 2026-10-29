@@ -86,7 +86,33 @@ ledgr_walk_forward <- function(exp,
                                workers = 1L,
                                worker_packages = NULL,
                                ...) {
-  no_selection <- match.arg(no_selection)
+  ledgr_rng_force_args()
+  no_selection_choice <- match.arg(no_selection)
+  opening_state_policy_choice <- match.arg(opening_state_policy)
+  ledgr_rng_preserve_caller(ledgr_walk_forward_impl(
+    exp = exp,
+    grid = grid,
+    folds = folds,
+    selection_rule = selection_rule,
+    seed = seed,
+    opening_state_policy = opening_state_policy_choice,
+    no_selection = no_selection_choice,
+    workers = workers,
+    worker_packages = worker_packages,
+    ...
+  ))
+}
+
+ledgr_walk_forward_impl <- function(exp,
+                                    grid,
+                                    folds,
+                                    selection_rule,
+                                    seed,
+                                    opening_state_policy,
+                                    no_selection,
+                                    workers,
+                                    worker_packages,
+                                    ...) {
   workers <- ledgr_parallel_workers_normalize(workers)
   dots <- list(...)
   if (length(dots) > 0L) {
@@ -96,30 +122,11 @@ ledgr_walk_forward <- function(exp,
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
   grid <- ledgr_executable_grid_normalize(grid, arg = "grid")
-  if (!is.null(seed)) {
-    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    old_seed <- if (had_seed) {
-      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    } else {
-      NULL
-    }
-    on.exit(
-      {
-        if (had_seed) {
-          assign(".Random.seed", old_seed, envir = .GlobalEnv)
-        } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-          rm(".Random.seed", envir = .GlobalEnv)
-        }
-      },
-      add = TRUE
-    )
-  }
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   folds <- ledgr_validate_fold_list(folds)
   selection_rule <- ledgr_validate_selection_rule(selection_rule)
   seed <- ledgr_seed_normalize(seed)
-  opening_state_policy <- match.arg(opening_state_policy)
   opening_state_policy <- ledgr_walk_forward_opening_state_policy(opening_state_policy)
   ledgr_snapshot_ensure_handle(exp$snapshot)
   fold_windows <- lapply(folds, function(fold) {
@@ -1094,12 +1101,12 @@ ledgr_walk_forward_write_session <- function(exp, session_row, fold_rows, score_
     DBI::dbExecute(opened$con, "DELETE FROM walk_forward_scores WHERE session_id = ?", params = list(session_id))
     DBI::dbExecute(opened$con, "DELETE FROM walk_forward_folds WHERE session_id = ?", params = list(session_id))
     DBI::dbExecute(opened$con, "DELETE FROM walk_forward_sessions WHERE session_id = ?", params = list(session_id))
-    DBI::dbAppendTable(opened$con, "walk_forward_sessions", session_row)
+    ledgr_store_append(opened$con, "walk_forward_sessions", session_row)
     if (nrow(fold_rows) > 0L) {
-      DBI::dbAppendTable(opened$con, "walk_forward_folds", as.data.frame(fold_rows))
+      ledgr_store_append(opened$con, "walk_forward_folds", as.data.frame(fold_rows))
     }
     if (nrow(score_rows) > 0L) {
-      DBI::dbAppendTable(opened$con, "walk_forward_scores", as.data.frame(score_rows))
+      ledgr_store_append(opened$con, "walk_forward_scores", as.data.frame(score_rows))
     }
   })
   invisible(TRUE)
@@ -1128,6 +1135,11 @@ ledgr_walk_forward_run_or_open <- function(exp,
   # refuses a run whose configuration no longer matches.
   if (ledgr_walk_forward_run_status(exp, run_id) %in% c("DONE", "INCOMPLETE")) {
     return(ledgr_run_open(exp$snapshot, run_id))
+  }
+  # An unseeded session derives an NA test seed; the window runs unseeded
+  # (decision (6)). The scores keep `execution_seed` NA.
+  if (length(seed) != 1L || is.na(seed)) {
+    seed <- NULL
   }
   ledgr_run_window(
     exp,

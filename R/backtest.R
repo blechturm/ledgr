@@ -101,6 +101,50 @@ ledgr_backtest <- function(snapshot = NULL,
                            run_id = NULL,
                            data = NULL,
                            corporate_action_policy = ledgr_corporate_actions_research()) {
+  ledgr_rng_force_args()
+  cost_model_missing <- missing(cost_model)
+  ledgr_rng_preserve_caller(ledgr_backtest_impl(
+    snapshot = snapshot,
+    strategy = strategy,
+    universe = universe,
+    start = start,
+    end = end,
+    initial_cash = initial_cash,
+    strategy_params = strategy_params,
+    features = features,
+    timing_model = timing_model,
+    cost_model = cost_model,
+    cost_model_missing = cost_model_missing,
+    risk_chain = risk_chain,
+    execution_mode = execution_mode,
+    checkpoint_every = checkpoint_every,
+    db_path = db_path,
+    control = control,
+    run_id = run_id,
+    data = data,
+    corporate_action_policy = corporate_action_policy
+  ))
+}
+
+ledgr_backtest_impl <- function(snapshot,
+                                strategy,
+                                universe,
+                                start,
+                                end,
+                                initial_cash,
+                                strategy_params,
+                                features,
+                                timing_model,
+                                cost_model,
+                                cost_model_missing,
+                                risk_chain,
+                                execution_mode,
+                                checkpoint_every,
+                                db_path,
+                                control,
+                                run_id,
+                                data,
+                                corporate_action_policy) {
   ledgr_set_preflight_start(ledgr_time_now())
   if (!is.null(snapshot) && !is.null(data)) {
     rlang::abort(
@@ -200,7 +244,7 @@ ledgr_backtest <- function(snapshot = NULL,
     }
   }
 
-  if (missing(cost_model) || is.null(cost_model)) {
+  if (isTRUE(cost_model_missing) || is.null(cost_model)) {
     ledgr_cost_model_unspecified()
   }
   timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
@@ -395,6 +439,23 @@ ledgr_run <- function(exp,
                       run_id = NULL,
                       seed = NULL,
                       compiled_accounting_model = NULL) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_run_impl(
+    exp = exp,
+    params = params,
+    feature_params = feature_params,
+    run_id = run_id,
+    seed = seed,
+    compiled_accounting_model = compiled_accounting_model
+  ))
+}
+
+ledgr_run_impl <- function(exp,
+                           params,
+                           feature_params,
+                           run_id,
+                           seed,
+                           compiled_accounting_model) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }

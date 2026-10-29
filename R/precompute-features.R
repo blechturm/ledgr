@@ -55,6 +55,16 @@
 #' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_precompute_features_impl(
+    exp = exp,
+    param_grid = param_grid,
+    start = start,
+    end = end
+  ))
+}
+
+ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
