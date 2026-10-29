@@ -1,0 +1,11 @@
+cell,bound
+dense_run_seeded,0.97
+dense_sweep_seeded,0.97
+dense_run_unseeded,1.03
+dense_sweep_unseeded,1.03
+timing_run_seeded,1.03
+timing_sweep_seeded,1.03
+timing_run_unseeded,1.03
+timing_sweep_unseeded,1.03
+stochastic_run_seeded,1.03
+stochastic_sweep_seeded,1.03
