@@ -29,6 +29,18 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-10-29-execution-typed-accounting-companion-layout"></a>
+### 2026-10-29 [execution] Companion layout for typed accounting evidence
+
+The accepted typed-accounting synthesis binds one wide typed logical event
+carrier and one wide DuckDB table because the executed fill-heavy comparison
+found the companion-table layout larger and no faster. A physical companion
+layout may be reconsidered only if a real corporate-action-heavy workload
+shows a material storage, memory or reader benefit after accounting for joins
+and ordering. Such evidence may change physical storage but not create a
+second logical carrier, event vocabulary or replay authority. This entry does
+not authorize another layout or add work to v0.2.3.
+
 <a id="2026-10-29-execution-ambient-rng-detection-for-strategies"></a>
 ### 2026-10-29 [execution] Ambient RNG detection for strategies
 

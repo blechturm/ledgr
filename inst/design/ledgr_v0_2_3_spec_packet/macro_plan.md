@@ -1,10 +1,13 @@
 # ledgr v0.2.3 Macro Plan
 
-**Status:** Accepted by the maintainer on 2026-10-28 (revision 2, written by
-Claude). It is the within-release order for uncut work. Revision 2 applies
+**Status:** Accepted by the maintainer on 2026-10-28 (revision 3, written by
+Claude and amended by the maintainer). It is the within-release order for
+uncut work. Revision 2 applies
 the [Type 2 review](macro_plan_review.md) (RESTRUCTURE) as dispositioned in
 the [response](macro_plan_response.md), the maintainer's scope answers of
 2026-10-28 (Section 6) and the release-process proposal of the same day.
+Revision 3 records the accepted typed-accounting synthesis of 2026-10-29 and
+moves WS8 into one ordered cut with WS7 after WS4.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -76,12 +79,11 @@ Phase A (now, parallel)
 Phase B   WS4 minimal C1 consolidation
                               |
 Phase C   WS5 runtime ---> WS6 frame retirement --.
-          WS7 one result reader ------------------+--> J: disclosures,
+          WS7 -> WS8 typed accounting cut --------+--> J: disclosures,
           H10 settlement state                         pattern article,
                                                        cold read
                               |
-Phase D   WS8 typed P3-P5 batch
-          WS9b structural memory -> worker budgets -> H9 daemon reuse
+Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
           WS10 economics implementation (as each RFC is accepted)
           WS3 full suite timing after WS4 and WS8
                               |
@@ -96,11 +98,10 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS3 dense lane -> WS4 | evidence prerequisite (roadmap, inventory X4) |
 | WS1 -> WS4 | preference (less ownership conflict; both handlers enter one fold) |
 | WS4 -> WS5 runtime | binding constraint: dense is frozen and synthesis D3 authorizes no new execution-mode branch |
-| WS4 -> WS7 | binding constraint (roadmap: merge readers after one run shape) |
-| typed-accounting RFC -> WS7, WS8 | binding constraint: bind the authoritative event fields and typed replay boundary before either implementation |
+| WS4 -> WS7/WS8 cut | binding constraint (roadmap: merge readers after one run shape) |
+| accepted typed-accounting synthesis -> WS7/WS8 cut | binding constraint: the synthesis binds the authoritative fields, typed replay boundary and ordered workstreams |
 | WS5 -> WS6 | technical prerequisite (synthesis D1 fixes the input layout) |
 | WS5, WS6, WS7 -> J | evidence prerequisite for WS5 acceptance |
-| WS1, WS4 -> WS8 | binding constraint (roadmap order) |
 | WS9b budget decision -> H9 | technical prerequisite (inventory H9) |
 | each economics RFC -> its implementation | binding constraint |
 | R2 -> M5, M7; H4 -> M5 | binding constraint |
@@ -167,20 +168,25 @@ Focused seed now; implementation after WS5's runtime, before J.
 ### WS7. One result reader and print (C8)
 
 Merge the three reader families behind one chunked, typed accounting projection
-and one print path, as WS5's sibling after WS4. Before implementation, the
-focused typed-accounting RFC binds the authoritative fields and replay boundary;
-`meta_json` must not become the new internal replay contract. Gate: every public
-table and print byte-identical or each difference decided. M8a and C12b may land
-earlier on the current path.
+and one print path, as WS5's sibling after WS4. The accepted
+[typed-accounting synthesis](../rfc/rfc_typed_accounting_event_boundary_v0_2_3_synthesis.md)
+binds the authoritative fields and replay boundary. WS7 is the first
+workstream of one cut with WS8: it leaves one typed carrier, may temporarily
+extract typed evidence from current JSON, and may not leave parsed metadata as
+a second authority. Gate: every public table and print is byte-identical or
+each difference is decided. M8a and C12b may land earlier on the current path.
 
 ### WS8. Typed P3-P5 execution batch (C7)
 
-Bounded comparison of no-fill, sparse-rebalance and wide all-fill workloads,
-then the typed batch on the surviving path. Provisionally, WS8 owns direct
-typed persistence, removal of accounting-critical JSON and the required store
-format bump with old-format refusal; the focused RFC may adjust that ownership.
-In scope: it also simplifies the codebase (maintainer, 2026-10-28).
-- **Gate:** end-to-end runtime plus allocation gate named at the cut.
+WS8 is the second workstream of the same ordered cut as WS7, still after WS4.
+It replaces the temporary extraction with direct typed publication on every
+producer and durable write path, removes accounting-critical JSON, bumps the
+store format to schema 125 with unconditional old-store refusal, and rebuilds
+affected stores once after the cut. The compiled execution envelope is not
+edited. Bounded no-fill, sparse-rebalance and wide all-fill comparisons remain
+part of its evidence.
+- **Gate:** the synthesis's Section 6 evidence, end-to-end runtime and an
+  allocation gate named at the cut.
 
 ### WS9. Memory and worker budgets (C5, H9, H11; C3 RFC)
 
@@ -238,7 +244,9 @@ rebuilding; site deployed from the built artifact.
 - First cut: WS1, after A0. WS2, C4 and the Phase A chores may form a second
   small cut.
 - Each later workstream gets its own cut; a cut may split one when its
-  evidence is independent. Low-stakes choices are batched for the maintainer
+  evidence is independent. The accepted typed-accounting synthesis is the
+  named exception: WS7 and WS8 are two reviewed workstreams in one ordered
+  cut and one store rebuild. Low-stakes choices are batched for the maintainer
   at acceptance.
 - RFC-track work needs no cut; its implementation does.
 - The final cut is the release cut of rule 8.
@@ -261,12 +269,11 @@ without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
 - **Scope, 2026-10-28:** WS8 stays; economics implementation stays; the full
   peer suite stays, with timings after WS4 and WS8; CRAN-only chores are
   conditional on v0.2.3 becoming the CRAN release.
-- **Typed accounting, 2026-10-29:** the redundant-accounting spike is an
-  evidence input, not design authority. A field census and focused RFC bind one
-  ordered event vocabulary, authoritative versus derived fields, retained
-  evidence and the typed replay boundary before WS7 or WS8 implementation.
-  WS7 provisionally owns shared chunked replay; WS8 provisionally owns typed
-  persistence and removal of accounting-critical JSON. WS3 and WS9 verify the
+- **Typed accounting, 2026-10-29:** the maintainer accepted the focused
+  synthesis after Type 2 response and Type 1 final review. One wide typed
+  ledger, cash authority, lot-derived position authority, one validator and
+  replay, the named `inline_summary()` exception and schema-125 refusal bind.
+  WS7 then WS8 form one cut after WS4 with one rebuild; WS3 and WS9 verify the
   full-workflow runtime and bounded-memory claims.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28.
