@@ -1,0 +1,2 @@
+"run_id:character","seq:integer","kind:character","class:character","message:character"
+"a0-failures-abort","1","error","LEDGR_SNAPSHOT_COVERAGE_ERROR/rlang_error/error/condition","LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."

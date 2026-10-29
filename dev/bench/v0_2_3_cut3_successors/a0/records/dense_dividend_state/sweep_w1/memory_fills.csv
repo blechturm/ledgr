@@ -1,0 +1,2 @@
+"event_seq:integer","ts_utc:POSIXct/POSIXt","recording_pulse_ts_utc:POSIXct/POSIXt","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","realized_pnl:numeric","action:character","run_id:character"
+"3","2020-01-03T16:00:00Z","2020-01-03T16:00:00Z","AAA","BUY","3","45","0","0","OPEN","add"

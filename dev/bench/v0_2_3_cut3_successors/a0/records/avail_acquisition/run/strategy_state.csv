@@ -1,0 +1,7 @@
+"run_id:character","ts_utc:character","state_json:character"
+"a0-avail_acquisition-none","2020-01-01T16:00:00Z","{""asset_state"":{""AAA"":[],""BBB"":[]}}"
+"a0-avail_acquisition-none","2020-01-02T16:00:00Z","{""asset_state"":{""AAA"":[],""BBB"":[]}}"
+"a0-avail_acquisition-none","2020-01-03T16:00:00Z","{""asset_state"":{""AAA"":[],""BBB"":[]}}"
+"a0-avail_acquisition-some","2020-01-01T16:00:00Z","{""asset_state"":{""AAA"":[],""BBB"":[]}}"
+"a0-avail_acquisition-some","2020-01-02T16:00:00Z","{""asset_state"":{""AAA"":[],""BBB"":[]}}"
+"a0-avail_acquisition-some","2020-01-03T16:00:00Z","{""asset_state"":{""AAA"":[],""BBB"":[]}}"
