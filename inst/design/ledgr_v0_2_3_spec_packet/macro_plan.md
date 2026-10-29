@@ -57,6 +57,21 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
 9. **CRAN is not assumed.** Work that only matters for the CRAN release
    (NEWS collapse, export-tiering timing) is conditional on v0.2.3 becoming
    that release (maintainer, 2026-10-28).
+10. **Measure what is unknown, once.** Probes and spikes measure effects
+    nobody knows yet. A cut cites an effect a spike already measured instead
+    of measuring it again (maintainer, 2026-10-29, after cut 4).
+11. **Measure while drafting the cut.** Before a cut is accepted it runs
+    every oracle and checker it relies on against the unchanged base, on a
+    later day than the recording when clocks can matter, and settles every
+    surprise in the cut text, so implementation raises no new maintainer
+    decision (maintainer, 2026-10-29, after cut 4).
+12. **No separate A/A ticket.** An A/A timing run is needed only when the
+    shared timing harness or the host changes; otherwise a gate's
+    alternating pairs carry their own noise evidence (maintainer,
+    2026-10-29, after cut 4).
+13. **Proportional gates.** A timing gate covers the cells where the cut's
+    changes carry real regression risk; an effect a spike already settled
+    is cited, not gated (maintainer, 2026-10-29, after cut 4).
 
 ## 2. Dependency structure
 
