@@ -29,6 +29,30 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-10-29-execution-ambient-rng-detection-for-strategies"></a>
+### 2026-10-29 [execution] Ambient RNG detection for strategies
+
+The v0.2.3 RNG cut (cut 3) dropped ambient-RNG detection on the maintainer's
+decision of 2026-10-29, after its cut review (`ledgr_v0_2_3_spec_packet/cut_review_3.md`
+F2 and F3). Today preflight lists only `runif`, `rnorm` and `sample`, so
+`sample.int`, `rbinom`, `stats::rexp`, `jitter` and package-internal draws such
+as `stats::kmeans` pass as Tier 1 and are allowed with several workers
+(`dev/bench/v0_2_3_rng_baseline/`, table `detection_gap`).
+
+Two obstacles a future design must solve:
+- Widening the static list refuses the taught recipe
+  `withr::with_seed(ctx$pulse_seed, ...)`, because static analysis does not
+  recognize a seeded scope. Detection needs to tell a scoped draw from an
+  unscoped one without exempting a whole strategy because `with_seed` appears.
+- Comparing the RNG state before and after each strategy call catches every
+  probed gap, but it cannot certify determinism (`with_preserve_seed` hides a
+  draw), and resume can miss a draw made before an interruption unless the
+  observation is durable and checked before recovery; workers must propagate
+  a refusal.
+
+The contract's position stays: ambient RNG is not certified for resume or
+parallel equivalence. This entry authorizes no implementation.
+
 <a id="2026-10-25-adapters-public-ledgrcrypto2-after-the-promotion-ready-core"></a>
 ### 2026-10-25 [adapters] Public `ledgr.crypto2` after the promotion-ready core
 

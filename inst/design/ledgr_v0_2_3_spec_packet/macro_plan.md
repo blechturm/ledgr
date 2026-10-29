@@ -123,6 +123,9 @@ Pin the RNG kind wherever ledgr seeds; restore the caller's RNG with
 `seed = NULL`; widen preflight RNG detection; one documented recipe.
 - **Route:** direct tickets. **Gate:** 1- versus 2-worker equivalence for a
   strategy seeded from `ctx$pulse_seed`; the NMOF `LSopt` probe reproduces.
+- **Amendment (maintainer, 2026-10-29):** widening preflight RNG detection
+  leaves WS2 and is parked in the horizon ("Ambient RNG detection for
+  strategies"); cut 3 decision (11) records why.
 
 ### WS3. Peer benchmark suite (X4, full scope)
 
