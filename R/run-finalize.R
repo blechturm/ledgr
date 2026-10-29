@@ -410,7 +410,7 @@ ledgr_run_equity_prefix_commit <- function(con,
       params = list(run_id)
     )
     if (nrow(merged) > 0L) {
-      DBI::dbAppendTable(con, "equity_curve", merged)
+      ledgr_store_append(con, "equity_curve", merged)
     }
     if (is.function(record_status)) record_status()
     invisible(merged)
@@ -560,7 +560,7 @@ ledgr_run_finalize <- function(con,
       DBI::dbWithTransaction(con, {
         DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
         if (nrow(eq_df) > 0) {
-          DBI::dbAppendTable(con, "equity_curve", eq_df)
+          ledgr_store_append(con, "equity_curve", eq_df)
         }
         output_handler$record_run_status(terminal_status, NA_character_)
       })

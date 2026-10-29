@@ -29,28 +29,31 @@
 #' )
 #' @export
 ledgr_feature_grid <- function(..., .filter = NULL) {
+  ledgr_rng_force_args(lazy = ".filter")
   filter_expr <- substitute(.filter)
-  ledgr_build_cross_grid(
+  filter_missing <- missing(.filter)
+  ledgr_rng_preserve_caller(ledgr_build_cross_grid(
     list(...),
     filter_expr = filter_expr,
-    filter_missing = missing(.filter),
+    filter_missing = filter_missing,
     label_prefix = "feature",
     class = c("ledgr_feature_grid", "list")
-  )
+  ))
 }
 
 #' @rdname ledgr_feature_grid
 #' @export
 ledgr_strategy_grid <- function(..., .filter = NULL) {
+  ledgr_rng_force_args(lazy = ".filter")
   filter_expr <- substitute(.filter)
-  grid <- ledgr_build_cross_grid(
+  filter_missing <- missing(.filter)
+  ledgr_rng_preserve_caller(ledgr_build_cross_grid(
     list(...),
     filter_expr = filter_expr,
-    filter_missing = missing(.filter),
+    filter_missing = filter_missing,
     label_prefix = "strategy",
     class = c("ledgr_strategy_grid", "list")
-  )
-  grid
+  ))
 }
 
 #' @rdname ledgr_feature_grid

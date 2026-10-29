@@ -223,6 +223,10 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
   )
   cfg$identity_rule_version <- 4L
   cfg$history <- ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+  # A seeded configuration names its pulse-seed rule (LDG-3159).
+  if (is.list(cfg$engine) && !is.null(cfg$engine$seed)) {
+    cfg$engine$pulse_seed_rule <- ledgr:::ledgr_pulse_seed_rule_version
+  }
   if (is.list(cfg$strategy) && !is.list(cfg$strategy$provenance)) {
     strategy <- ledgr:::ledgr_strategy_spec(cfg$strategy)
     cfg$strategy$id <- strategy$id

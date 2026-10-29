@@ -1,0 +1,33 @@
+"seq","slot","pair","cell","arm","clock","seconds","outcome","error","work","launched","pid","created","affinity","chain","foreign_r","plan_guid","ledgr_path","ledgr_commit","exit_status"
+1,"1","1","small_cold","base","cold","1.5182209014892578","ok",NA,"1240;1240","1793273038.906640","57464","1793273038907","65535","57464@1793273038907=65535;56516@1793272982245=65535;36468@1793272982069=65535;47040@1793272982039=16777215;3740@1792961457254=16777215;11616@1792959310813=16777215;44192@1792959261344=16777215;13100@1792928851805=16777215","ark.exe:41220@1792959281704;ark.exe:27816@1792959389346","8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c","C:/Users/maxth/AppData/Local/Temp/RtmpYZEWS0/arm_base/lib/ledgr","af58ea35164ae61ee1340ce0a133ec31db2a5ea8",0
+2,"2","1","small_cold","candidate","cold","1.5229029655456543","ok",NA,"1240;1240","1793273045.734456","54340","1793273045735","65535","54340@1793273045735=65535;56516@1793272982245=65535;36468@1793272982069=65535;47040@1793272982039=16777215;3740@1792961457254=16777215;11616@1792959310813=16777215;44192@1792959261344=16777215;13100@1792928851805=16777215","ark.exe:41220@1792959281704;ark.exe:27816@1792959389346","8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c","C:/Users/maxth/AppData/Local/Temp/RtmpYZEWS0/arm_candidate/lib/ledgr","af58ea35164ae61ee1340ce0a133ec31db2a5ea8",0
+3,3,1,"small_warm","base","warm",NA,"process_failed","measure.R exited with status 1 without writing a row",NA,"1793273052.554711",NA,NA,NA,NA,NA,NA,NA,NA,1
+NA,4,1,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,5,2,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,6,2,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,7,2,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,8,2,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,9,3,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,10,3,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,11,3,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,12,3,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,13,4,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,14,4,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,15,4,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,16,4,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,17,5,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,18,5,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,19,5,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,20,5,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,21,6,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,22,6,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,23,6,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,24,6,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,25,7,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,26,7,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,27,7,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,28,7,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,29,8,"small_cold","candidate","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,30,8,"small_cold","base","cold",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,31,8,"small_warm","candidate","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+NA,32,8,"small_warm","base","warm",NA,"not_run","slot 3 process_failed: measure.R exited with status 1 without writing a row",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

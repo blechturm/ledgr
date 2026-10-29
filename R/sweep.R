@@ -17,7 +17,11 @@
 #'   current scalar-only sweep output. Retention metadata is not execution
 #'   identity.
 #' @param seed Optional integer-like master seed. When supplied, each candidate
-#'   receives a deterministic derived execution seed.
+#'   receives a deterministic derived execution seed, used as in
+#'   [ledgr_run()]. A strategy that draws through
+#'   `withr::with_seed(ctx$pulse_seed, ...)` gets the same results for any
+#'   `workers` value. The result and each candidate's provenance record the
+#'   pulse-seed rule as `seed_contract = "ledgr_seed_v2"`.
 #' @param stop_on_error Logical. When `FALSE`, candidate-level execution errors
 #'   are captured as failed rows; when `TRUE`, they are rethrown.
 #' @param workers Whole-number worker count. The default `1` uses the
@@ -99,7 +103,8 @@ ledgr_sweep <- function(exp,
                         workers = 1L,
                         worker_packages = NULL,
                         compiled_accounting_model = NULL) {
-  ledgr_sweep_impl(
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_sweep_impl(
     exp = exp,
     param_grid = param_grid,
     precomputed_features = precomputed_features,
@@ -110,7 +115,7 @@ ledgr_sweep <- function(exp,
     worker_packages = worker_packages,
     compiled_accounting_model = compiled_accounting_model,
     window = NULL
-  )
+  ))
 }
 
 ledgr_sweep_window <- function(exp,
@@ -154,24 +159,6 @@ ledgr_sweep_impl <- function(exp,
                              window = NULL,
                              execution_seed_resolver = NULL,
                              history_substrate = NULL) {
-  if (!is.null(seed)) {
-    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    old_seed <- if (had_seed) {
-      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    } else {
-      NULL
-    }
-    on.exit(
-      {
-        if (had_seed) {
-          assign(".Random.seed", old_seed, envir = .GlobalEnv)
-        } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-          rm(".Random.seed", envir = .GlobalEnv)
-        }
-      },
-      add = TRUE
-    )
-  }
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -466,7 +453,7 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "scoring_range") <- list(start = pulses_iso[[1L]], end = pulses_iso[[length(pulses_iso)]])
   attr(out, "universe") <- exp$universe
   attr(out, "master_seed") <- seed
-  attr(out, "seed_contract") <- "ledgr_seed_v1"
+  attr(out, "seed_contract") <- ledgr_seed_contract_current()
   attr(out, "evaluation_scope") <- "exploratory"
   attr(out, "strategy_hash") <- strategy_hash
   strategy_schedule <- ledgr_strategy_schedule_declaration(exp$strategy)
@@ -571,6 +558,16 @@ ledgr_candidate <- function(results, ...) {
 #' @rdname ledgr_candidate
 #' @export
 ledgr_candidate.default <- function(results, which = 1L, allow_failed = FALSE, ...) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_candidate_default_impl(
+    results = results,
+    which = which,
+    allow_failed = allow_failed,
+    ...
+  ))
+}
+
+ledgr_candidate_default_impl <- function(results, which, allow_failed, ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
     rlang::abort("Unused argument(s) supplied to `ledgr_candidate()`.", class = "ledgr_invalid_args")
@@ -649,6 +646,11 @@ ledgr_candidate.default <- function(results, which = 1L, allow_failed = FALSE, .
 #' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_candidate_reproduction_key <- function(candidate) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_candidate_reproduction_key_impl(candidate = candidate))
+}
+
+ledgr_candidate_reproduction_key_impl <- function(candidate) {
   if (!inherits(candidate, "ledgr_sweep_candidate")) {
     rlang::abort("`candidate` must be a ledgr_sweep_candidate object.", class = "ledgr_invalid_args")
   }
@@ -741,6 +743,11 @@ ledgr_candidate_reproduction_key <- function(candidate) {
       ),
       execution_assumptions = meta$execution_assumptions %||% NULL
     )
+  # A walk-forward candidate also names its pulse-seed rule; a sweep's
+  # `seed_contract` already is that rule, so its key has no second marker.
+  if (!is.null(provenance$pulse_seed_contract)) {
+    out$seed$pulse_seed_contract <- provenance$pulse_seed_contract
+  }
   if (length(schedule_identity) > 0L) {
     out$strategy_schedule <- schedule_identity
   }
@@ -788,6 +795,12 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
 #' test-snapshot experiment and set `require_same_snapshot = FALSE` deliberately.
 #'
+#' Promotion first checks the candidate's pulse-seed rule marker: a sweep
+#' candidate needs `seed_contract = "ledgr_seed_v2"`, a walk-forward candidate
+#' needs `pulse_seed_contract = "ledgr_seed_v2"`. An old or missing marker is
+#' refused with `ledgr_seed_rule_mismatch` before any run is created; re-run
+#' the sweep or walk-forward session with this ledgr version.
+#'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -798,6 +811,21 @@ ledgr_promote <- function(exp,
                           run_id,
                           note = NULL,
                           require_same_snapshot = TRUE) {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_promote_impl(
+    exp = exp,
+    candidate = candidate,
+    run_id = run_id,
+    note = note,
+    require_same_snapshot = require_same_snapshot
+  ))
+}
+
+ledgr_promote_impl <- function(exp,
+                               candidate,
+                               run_id,
+                               note,
+                               require_same_snapshot) {
   if (inherits(candidate, "ledgr_sweep_filter_result")) {
     ledgr_sweep_filter_abort_selection("promote")
   }
@@ -816,6 +844,8 @@ ledgr_promote <- function(exp,
   if (!is.logical(require_same_snapshot) || length(require_same_snapshot) != 1L || is.na(require_same_snapshot)) {
     rlang::abort("`require_same_snapshot` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  # Refuse an old or missing pulse-seed rule marker before any hold or run.
+  ledgr_candidate_validate_seed_rule(candidate)
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   if (identical(candidate$status, "INCOMPLETE")) {
@@ -1030,9 +1060,12 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "metric_context_hash", "metric_context_version", "risk_chain_hash", "risk_plan_json",
     "execution_assumptions"
   )
-  schedule_keys <- c("strategy_schedule", "strategy_schedule_hash")
+  # Optional keys enter the metadata only when the results carry them. A
+  # walk-forward candidate's results carry `pulse_seed_contract`.
+  keys <- c(keys, "pulse_seed_contract")
+  optional_keys <- c("strategy_schedule", "strategy_schedule_hash", "pulse_seed_contract")
   keys <- keys[
-    !keys %in% schedule_keys |
+    !keys %in% optional_keys |
       vapply(keys, function(key) !is.null(attr(results, key, exact = TRUE)), logical(1))
   ]
   stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
@@ -2176,7 +2209,7 @@ ledgr_sweep_provenance <- function(snapshot_hash,
     alias_map_hash = alias_map_hash,
     alias_map_version = alias_map_version,
     master_seed = master_seed,
-    seed_contract = "ledgr_seed_v1",
+    seed_contract = ledgr_seed_contract_current(),
     evaluation_scope = "exploratory"
   )
   if (!is.null(cost_model_hash)) out$cost_model_hash <- cost_model_hash

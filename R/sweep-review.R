@@ -27,7 +27,21 @@
 #' }
 #' @export
 ledgr_sweep_review <- function(sweep, rank_by, n = 5L) {
-  if (missing(rank_by)) {
+  ledgr_rng_force_args(lazy = "rank_by")
+  rank_missing <- missing(rank_by)
+  rank_expr <- substitute(rank_by)
+  rank_env <- parent.frame()
+  ledgr_rng_preserve_caller(ledgr_sweep_review_impl(
+    sweep = sweep,
+    n = n,
+    rank_expr = rank_expr,
+    rank_env = rank_env,
+    rank_missing = rank_missing
+  ))
+}
+
+ledgr_sweep_review_impl <- function(sweep, n, rank_expr, rank_env, rank_missing) {
+  if (isTRUE(rank_missing)) {
     rlang::abort(
       "`rank_by` must be supplied so the ranking rule stays visible.",
       class = "ledgr_invalid_args"
@@ -48,9 +62,8 @@ ledgr_sweep_review <- function(sweep, rank_by, n = 5L) {
     )
   }
 
-  rank_expr <- substitute(rank_by)
   completed <- view[as.character(view$status) == "DONE" & !is.na(view$status), , drop = FALSE]
-  ranked <- ledgr_sweep_review_rank(completed, rank_expr, parent.frame())
+  ranked <- ledgr_sweep_review_rank(completed, rank_expr, rank_env)
   if (inherits(sweep, "ledgr_sweep_results")) {
     ranked <- ledgr_sweep_results_restore(ranked, sweep)
   }

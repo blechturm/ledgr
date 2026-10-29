@@ -200,6 +200,7 @@ ledgr_parallel_worker_setup <- function(workers = 1L,
   )
   if (!isTRUE(dry_run)) {
     ledgr_parallel_mirai_start(workers)
+    ledgr_parallel_worker_rng_pin(workers)
     ledgr_parallel_mirai_everywhere_expr(
       ledgr_parallel_ledgr_load_expr(source_path),
       workers = workers
@@ -330,6 +331,15 @@ ledgr_parallel_mirai_start <- function(workers) {
   daemons <- getExportedValue("mirai", "daemons")
   daemons(workers)
   invisible(TRUE)
+}
+
+# Workers run the same kind as a seeded fold from the start (decision (1)).
+# Supplementary: the fold envelope still pins the kind for each seeded fold.
+ledgr_parallel_worker_rng_pin <- function(workers) {
+  ledgr_parallel_mirai_everywhere_expr(
+    quote(RNGkind("Mersenne-Twister", "Inversion", "Rejection")),
+    workers = workers
+  )
 }
 
 ledgr_parallel_mirai_stop <- function() {

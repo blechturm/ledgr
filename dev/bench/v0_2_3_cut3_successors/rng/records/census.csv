@@ -1,0 +1,11 @@
+"path:character","seed_arg:character","outcome:character","set_seed_calls:character","set_seed_seeds:character","set_seed_kind_args:character","set_seed_callers:character","rngkind_calls:character","pulse_seed_calls:character","pulse_seed_nonnull:character","pulse_seed_execution_seeds:character","default_seed:character","case:character","entry_seed_present:logical","preserve_calls:integer","rngkind_query_calls:integer","rngkind_query_callers:character","rngkind_mutation_calls:integer","rngkind_mutation_callers:character","pulse_seed_vectors:integer"
+"ledgr_run","NULL","ok","0","","","","2","10","0","","NULL","01","FALSE","1","1","ledgr_rng_caller_state","1","ledgr_rng_restore","0"
+"ledgr_sweep","NULL","ok","0","","","","2","20","0","","NULL","02","FALSE","1","1","ledgr_rng_caller_state","1","ledgr_rng_restore","0"
+"ledgr_sweep (stored candidate execution_seed)","NULL","","","NA,NA","","","","","","","NULL","03",NA,NA,NA,"",NA,"",NA
+"ledgr_promote","NULL","ok","0","","","","6","10","0","","<candidate$execution_seed>","04","FALSE","3","3","ledgr_rng_caller_state","3","ledgr_rng_restore","0"
+"ledgr_walk_forward","NULL","ok","0","","","","2","19","0","","NULL","05","FALSE","1","1","ledgr_rng_caller_state","1","ledgr_rng_restore","0"
+"ledgr_run","24","ok","1","24","Mersenne-Twister","ledgr_rng_seed_pinned","4","10","10","24","NULL","06","FALSE","1","2","ledgr_rng_caller_state","2","ledgr_rng_restore","1"
+"ledgr_sweep","24","ok","2","258770037,75664703","Mersenne-Twister","ledgr_rng_seed_pinned","6","20","20","258770037,75664703","NULL","07","FALSE","1","3","ledgr_rng_caller_state","3","ledgr_rng_restore","2"
+"ledgr_sweep (stored candidate execution_seed)","24","","","258770037,75664703","","","","","","","NULL","08",NA,NA,NA,"",NA,"",NA
+"ledgr_promote","24","ok","1","258770037","Mersenne-Twister","ledgr_rng_seed_pinned","8","10","10","258770037","<candidate$execution_seed>","09","FALSE","3","4","ledgr_rng_caller_state","4","ledgr_rng_restore","1"
+"ledgr_walk_forward","24","ok","6","1229997745,1287035753,1409028750,177970735,1815949751,962591457","Mersenne-Twister","ledgr_rng_seed_pinned","14","19","19","1229997745,1287035753,1409028750,177970735,1815949751,962591457","NULL","10","FALSE","1","7","ledgr_rng_caller_state","7","ledgr_rng_restore","6"

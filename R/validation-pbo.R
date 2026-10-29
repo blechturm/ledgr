@@ -36,12 +36,32 @@ ledgr_pbo <- function(x,
                             metric = NULL,
                             metric_name = NULL,
                             threshold = 0) {
+  ledgr_rng_force_args()
+  metric_label <- substitute(metric)
+  ledgr_rng_preserve_caller(ledgr_pbo_impl(
+    x = x,
+    candidates = candidates,
+    S = S,
+    metric = metric,
+    metric_label = metric_label,
+    metric_name = metric_name,
+    threshold = threshold
+  ))
+}
+
+ledgr_pbo_impl <- function(x,
+                           candidates,
+                           S,
+                           metric,
+                           metric_label,
+                           metric_name,
+                           threshold) {
   panel <- ledgr_return_panel_resolve(x, candidates = candidates)
   m <- panel$matrix
   ledgr_pbo_validate_matrix(m)
   S <- ledgr_pbo_validate_s(S, nrow(m))
   threshold <- ledgr_pbo_validate_threshold(threshold)
-  metric_info <- ledgr_pbo_metric(metric, substitute(metric), metric_name)
+  metric_info <- ledgr_pbo_metric(metric, metric_label, metric_name)
 
   cases <- ledgr_pbo_cases(
     m = m,

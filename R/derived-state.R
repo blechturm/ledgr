@@ -212,11 +212,11 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   if (isTRUE(use_transaction)) {
     DBI::dbWithTransaction(con, {
       DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
-      DBI::dbAppendTable(con, "equity_curve", eq_df)
+      ledgr_store_append(con, "equity_curve", eq_df)
     })
   } else {
     DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
-    DBI::dbAppendTable(con, "equity_curve", eq_df)
+    ledgr_store_append(con, "equity_curve", eq_df)
   }
 
   touched_ids <- unique(prepared$instrument_id[

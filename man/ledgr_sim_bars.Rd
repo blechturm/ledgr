@@ -17,7 +17,9 @@ ledgr_sim_bars(
 
 \item{n_days}{Number of business-day bars per instrument.}
 
-\item{seed}{Random seed used for deterministic generation.}
+\item{seed}{Random seed used for deterministic generation. ledgr seeds with
+the kind \code{Mersenne-Twister}/\code{Inversion}/\code{Rejection} whatever kind your
+session uses, and restores your RNG kind and \code{.Random.seed} afterwards.}
 
 \item{start}{First calendar date considered for the business-day sequence.}
 

@@ -1,0 +1,43 @@
+"case","demonstrates","expected_exit","exit","expected_reason","reasons_found","as_expected"
+"control","a clean gate record passes",0,0,"","",TRUE
+"ratio_0.98_on_0.97","0.98 on a 0.97 cell",1,1,"ratio above bound","ratio above bound",TRUE
+"ratio_1.031_on_1.03","1.031 on a 1.03 cell",1,1,"ratio above bound","ratio above bound",TRUE
+"missing_cell","a missing cell",1,1,"missing cell","missing slot; missing row; fewer pairs; missing cell",TRUE
+"duplicate_row","a duplicate row",1,1,"duplicate row","duplicate slot; duplicate row; host snapshots; process identity; executed order",TRUE
+"fewer_pairs","fewer pairs than the protocol states",1,1,"fewer pairs","missing slot; missing row; fewer pairs",TRUE
+"non_alternating","a non-alternating executed order",1,1,"executed order","executed order",TRUE
+"wrong_power_plan","a wrong power plan in one measured process",1,1,"power plan","power plan",TRUE
+"descendant_affinity","wrong affinity on a descendant between a measured process and the root",1,1,"affinity","affinity",TRUE
+"observations_control","a busy foreign process and a foreign R process are observations only",0,0,"","",TRUE
+"aa_as_gate","an A/A record presented as a gate",1,1,"A/A record presented as a gate","A/A record presented as a gate",TRUE
+"aa_control","the same A/A record checked with --aa is valid",0,0,"","",TRUE
+"protocol_pairs_7","a protocol stating fewer than eight pairs",1,1,"protocol","protocol",TRUE
+"threshold_map_omits_cell","a threshold map that omits a cell",1,1,"protocol","protocol; protocol changed",TRUE
+"F1_empty_host","a host file with only its header",1,1,"missing snapshot","host snapshots; missing snapshot; process identity; executed order",TRUE
+"F1_missing_pre_slot_probe","one executed slot without its pre-slot snapshot",1,1,"missing snapshot","missing snapshot; host snapshots",TRUE
+"F1_empty_saved_plan","a saved plan with only its header",1,1,"plan","plan",TRUE
+"F2_root_only_chain","a row with affinity 16777215 whose chain holds only the pinned root",1,1,"affinity","affinity",TRUE
+"F2_contradictory_affinity","a raw affinity that contradicts the chain's first entry",1,1,"affinity","affinity",TRUE
+"F2_different_child","a chain that starts at a different process",1,1,"affinity","affinity",TRUE
+"F5_pid_reuse_mock","an affinity read from a process that reused the measured PID",1,1,"affinity","affinity",TRUE
+"F6_pairs_8.9","a protocol stating 8.9 pairs",1,1,"protocol","protocol",TRUE
+"F6_all_na_work","every work string missing",1,1,"work missing","work missing",TRUE
+"disposition_agent_gate","a later gate attempt under an agent-authored disposition",1,1,"disposition","disposition",TRUE
+"disposition_maintainer_control","a later gate attempt under a maintainer disposition passes",0,0,"","",TRUE
+"N1_frozen_harness_changed","a frozen harness file changed after the run, session untouched",1,1,"inputs changed","inputs changed",TRUE
+"N1_matching_copy_control","a frozen copy with CRLF line endings still matches its commit",0,0,"","",TRUE
+"N2_after_before_last_launch","the 'after' snapshot moved 0.5 s before the last launch",1,1,"host snapshots","host snapshots; process identity; executed order",TRUE
+"N2_during_before_first_launch","every pre-slot snapshot moved to 2 s before the first launch",1,1,"host snapshots","host snapshots",TRUE
+"N2_before_slot_999","a 'before' snapshot naming slot 999",1,1,"unexpected snapshot","unexpected snapshot",TRUE
+"N3_created_999ms_early","a process created 999 ms before its launch",1,1,"process identity","process identity; executed order",TRUE
+"N3_final_created_after_window","the last process created after the 'after' snapshot",1,1,"process identity","host snapshots; process identity; executed order",TRUE
+"N3_submillisecond_floor_control","a creation floored below a launch 0.9 ms into its millisecond",0,0,"","",TRUE
+"N3_pid_reuse_control","a later process reusing an earlier PID with its own creation time",0,0,"","",TRUE
+"N3_delayed_creation_control","a process created 5 s after its launch, before the next launch",0,0,"","",TRUE
+"N4_whitespace_text","a later gate attempt whose disposition text is blank",1,1,"disposition","disposition",TRUE
+"N4_whitespace_ref","a later gate attempt whose decision reference is blank",1,1,"disposition","disposition",TRUE
+"interrupted_record","the runner's interrupted attempt (killed child, unrun slots)",1,1,"unrun slot","attempt status; test hook; failed execution; unrun slot; fewer pairs; host snapshots; missing cell",TRUE
+"F4_noncontiguous_attempt","a label holding only attempt-2 allocates attempt-3 and keeps attempt-2",NA,NA,"attempt-3","attempt-3; attempt-2 kept TRUE",TRUE
+"F4_occupied_destination","creating an attempt directory that already exists is refused",NA,NA,"already exists","attempt directory C:\Users\maxth\AppData\Local\Temp\RtmpOEyBYT/check_demo/alloc/label/attempt-2 already exists or could not be created",TRUE
+"slot_dir_same_pid_name","consecutive slots writing the same PID-derived store name each start empty; every slot directory, failed or not, is removed",NA,NA,"0;0 and none left","0;0; left 0",TRUE
+"slot_dir_occupied","a leftover slot directory is refused before the slot runs",NA,NA,"already exists","slot work directory C:\Users\maxth\AppData\Local\Temp\RtmpOEyBYT/check_demo/slots/slot-0004 already exists or could not be created",TRUE

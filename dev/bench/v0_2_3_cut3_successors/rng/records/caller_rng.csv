@@ -1,0 +1,17 @@
+"case:character","caller_state:character","path:character","seed:character","outcome:character","before_kind:character","after_kind:character","caller_rng_unchanged:logical","before_sha256:character","after_sha256:character"
+"01","absent","run","NULL","ok","absent","absent","TRUE",NA,NA
+"02","absent","run","7","ok","absent","absent","TRUE",NA,NA
+"03","absent","sweep_w1","NULL","ok","absent","absent","TRUE",NA,NA
+"04","absent","sweep_w1","7","ok","absent","absent","TRUE",NA,NA
+"05","MT_123","run","NULL","ok","Mersenne-Twister/4/1","Mersenne-Twister/4/1","TRUE","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da"
+"06","MT_123","run","7","ok","Mersenne-Twister/4/1","Mersenne-Twister/4/1","TRUE","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da"
+"07","MT_123","sweep_w1","NULL","ok","Mersenne-Twister/4/1","Mersenne-Twister/4/1","TRUE","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da"
+"08","MT_123","sweep_w1","7","ok","Mersenne-Twister/4/1","Mersenne-Twister/4/1","TRUE","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da"
+"09","LEcuyer_123","run","NULL","ok","L'Ecuyer-CMRG/4/1","L'Ecuyer-CMRG/4/1","TRUE","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8"
+"10","LEcuyer_123","run","7","ok","L'Ecuyer-CMRG/4/1","L'Ecuyer-CMRG/4/1","TRUE","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8"
+"11","LEcuyer_123","sweep_w1","NULL","ok","L'Ecuyer-CMRG/4/1","L'Ecuyer-CMRG/4/1","TRUE","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8"
+"12","LEcuyer_123","sweep_w1","7","ok","L'Ecuyer-CMRG/4/1","L'Ecuyer-CMRG/4/1","TRUE","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8","00f42b77c29b2198ec3eec77b56396ad8825407d8d14e0b40e3544f63e1130a8"
+"13","absent","sweep_w2","NULL","ok","absent","absent","TRUE",NA,NA
+"14","absent","sweep_w2","7","ok","absent","absent","TRUE",NA,NA
+"15","MT_123","sweep_w2","NULL","ok","Mersenne-Twister/4/1","Mersenne-Twister/4/1","TRUE","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da"
+"16","MT_123","sweep_w2","7","ok","Mersenne-Twister/4/1","Mersenne-Twister/4/1","TRUE","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da","1fc8a9b1bbcd7a29228e1e426cb15bdff031c2017228b17acf02c72e130530da"

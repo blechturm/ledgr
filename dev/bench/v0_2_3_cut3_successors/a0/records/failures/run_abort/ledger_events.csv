@@ -1,0 +1,1 @@
+"event_id:character","run_id:character","ts_utc:POSIXct/POSIXt","event_type:character","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","meta_json:character","event_seq:integer"

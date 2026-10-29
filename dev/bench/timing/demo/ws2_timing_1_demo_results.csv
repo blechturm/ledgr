@@ -1,0 +1,7 @@
+"case","expected_exit","exit","expected_reason","reasons_found","as_expected"
+"control",0,0,"","",TRUE
+"ratio_0.98_on_0.97",1,1,"ratio above bound","ratio above bound",TRUE
+"ratio_1.031_on_1.03",1,1,"ratio above bound","ratio above bound",TRUE
+"missing_seed_state_cell",1,1,"missing cell","missing slot; missing row; fewer pairs; missing cell",TRUE
+"missing_seed_state_row",1,1,"missing row","missing slot; missing row; fewer pairs",TRUE
+"duplicate_row",1,1,"duplicate row","duplicate slot; duplicate row; host snapshots; process identity; executed order",TRUE

@@ -109,12 +109,12 @@ exact-heading redirect remains. Result: 68 genuine, 15 promoted, 2 shipped and 1
 | H083 | 2026-10-25 [data] Cross-asset price precision and tradability | promoted | Added after v0.2.2 classification. Inventory C11 includes the focused RFC (asset-precision-tradability pipeline row) and its implementation. | [WS10](macro_plan.md#ws10-economics-c11-c12a-u2-x2-design-and-implementation) |
 | H084 | 2026-10-25 [adapters] Public `ledgr.crypto2` after the promotion-ready core | genuine | Added after v0.2.2 classification. Inventory C13 defers it again to a separate sister-package packet after the v0.2.3 core outcomes; no cut owns it. | [full body](../horizon.md) |
 | H085 | 2026-10-25 [ux] Advanced portfolio-construction teaching arc | genuine | Added after v0.2.2 classification. Inventory U2 places the article after the portfolio-construction RFC; no workstream schedules it. | [full body](../horizon.md) |
-| H086 | 2026-10-29 [execution] Ambient RNG detection for strategies | genuine | Added after v0.2.2 classification. Removed from v0.2.3 cut 3 and WS2 by the maintainer on 2026-10-29 (cut_review_3.md F2, F3); no cut owns it. | [full body](../horizon.md) |
+| H086 | 2026-10-29 [execution] Ambient RNG detection for strategies | genuine | Added after v0.2.2 classification. Removed from v0.2.3 cut 4 (accepted as cut 3, renumbered) and WS2 by the maintainer on 2026-10-29 (cut_review_3.md F2, F3); no cut owns it. | [full body](../horizon.md) |
 
 ## Reconciliation checks
 
 - All 86 headings occur exactly once in this table: the 79 v0.2.2 rows and H080 to H086.
-- The 68 genuine entries remain in full under `horizon.md#Open` (H086 added 2026-10-29 by maintainer decision on cut 3).
+- The 68 genuine entries remain in full under `horizon.md#Open` (H086 added 2026-10-29 by maintainer decision on cut 4, then numbered cut 3).
 - The eight newly promoted v0.2.2 rows (H003, H004, H005, H012, H016, H033,
   H074, H075) and the four promoted new rows (H080 to H083) redirect by exact
   heading to one archived body under `v023-<id>` anchors.

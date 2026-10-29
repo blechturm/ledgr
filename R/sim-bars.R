@@ -7,7 +7,9 @@
 #'
 #' @param n_instruments Number of synthetic instruments.
 #' @param n_days Number of business-day bars per instrument.
-#' @param seed Random seed used for deterministic generation.
+#' @param seed Random seed used for deterministic generation. ledgr seeds with
+#'   the kind `Mersenne-Twister`/`Inversion`/`Rejection` whatever kind your
+#'   session uses, and restores your RNG kind and `.Random.seed` afterwards.
 #' @param start First calendar date considered for the business-day sequence.
 #' @param instrument_prefix Prefix used for generated instrument IDs.
 #' @return A tibble with `ts_utc`, `instrument_id`, `open`, `high`, `low`,
@@ -21,6 +23,21 @@ ledgr_sim_bars <- function(n_instruments = 10L,
                            seed = 1L,
                            start = "2018-01-01",
                            instrument_prefix = "DEMO_") {
+  ledgr_rng_force_args()
+  ledgr_rng_preserve_caller(ledgr_sim_bars_impl(
+    n_instruments = n_instruments,
+    n_days = n_days,
+    seed = seed,
+    start = start,
+    instrument_prefix = instrument_prefix
+  ))
+}
+
+ledgr_sim_bars_impl <- function(n_instruments,
+                                n_days,
+                                seed,
+                                start,
+                                instrument_prefix) {
   n_instruments <- ledgr_sim_positive_integer(n_instruments, "n_instruments")
   n_days <- ledgr_sim_positive_integer(n_days, "n_days")
   seed <- ledgr_sim_integer_scalar(seed, "seed")
@@ -30,16 +47,9 @@ ledgr_sim_bars <- function(n_instruments = 10L,
     rlang::abort("`instrument_prefix` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
 
-  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  old_seed <- if (had_seed) get(".Random.seed", envir = .GlobalEnv, inherits = FALSE) else NULL
-  on.exit({
-    if (had_seed) {
-      assign(".Random.seed", old_seed, envir = .GlobalEnv)
-    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-      rm(".Random.seed", envir = .GlobalEnv)
-    }
-  }, add = TRUE)
-  set.seed(seed)
+  rng_state <- ledgr_rng_caller_state()
+  on.exit(ledgr_rng_restore(rng_state), add = TRUE)
+  ledgr_rng_seed_pinned(seed)
 
   dates <- ledgr_sim_business_days(start, n_days)
   market_shock <- stats::rnorm(n_days, mean = 0.0002, sd = 0.008)

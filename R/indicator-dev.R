@@ -80,44 +80,16 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   window$ts_utc <- vapply(window$ts_utc, ledgr_iso_utc, character(1))
   e$window <- window
 
+  # Returned helpers restore the caller's RNG on each call (decision (14),
+  # class R); like a wrapped export they force their supplied arguments first.
   e$test <- function(fn) {
-    if (!is.function(fn)) {
-      rlang::abort("`fn` must be a function.", class = "ledgr_invalid_args")
-    }
-    result <- fn(e$window)
-    cat("Result:", result, "\n")
-    invisible(result)
+    ledgr_rng_force_args()
+    ledgr_rng_preserve_caller(ledgr_indicator_dev_test(e, fn))
   }
 
   e$test_dates <- function(fn, dates) {
-    if (!is.function(fn)) {
-      rlang::abort("`fn` must be a function.", class = "ledgr_invalid_args")
-    }
-    if (length(dates) < 1) {
-      rlang::abort("`dates` must contain at least one timestamp.", class = "ledgr_invalid_args")
-    }
-    dates_norm <- vapply(dates, ledgr_normalize_ts_utc, character(1))
-    release <- ledgr_snapshot_hold(e$.snapshot)
-    on.exit(release(), add = TRUE)
-    con <- get_connection(e$.snapshot)
-    values <- lapply(dates_norm, function(date_norm) {
-      window_i <- DBI::dbGetQuery(
-        con,
-        "
-        SELECT instrument_id, ts_utc, open, high, low, close, volume
-        FROM snapshot_bars
-        WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
-        ORDER BY ts_utc DESC
-        LIMIT ?
-        ",
-        params = list(e$.snapshot$snapshot_id, e$instrument_id, date_norm, e$lookback)
-      )
-      if (nrow(window_i) == 0) return(NA_real_)
-      window_i <- window_i[rev(seq_len(nrow(window_i))), , drop = FALSE]
-      window_i$ts_utc <- vapply(window_i$ts_utc, ledgr_iso_utc, character(1))
-      fn(window_i)
-    })
-    tibble::tibble(ts_utc = dates_norm, value = ledgr_simplify_indicator_values(values))
+    ledgr_rng_force_args()
+    ledgr_rng_preserve_caller(ledgr_indicator_dev_test_dates(e, fn, dates))
   }
 
   e$plot <- function() {
@@ -133,6 +105,46 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   }
 
   structure(e, class = "ledgr_indicator_dev")
+}
+
+ledgr_indicator_dev_test <- function(e, fn) {
+  if (!is.function(fn)) {
+    rlang::abort("`fn` must be a function.", class = "ledgr_invalid_args")
+  }
+  result <- fn(e$window)
+  cat("Result:", result, "\n")
+  invisible(result)
+}
+
+ledgr_indicator_dev_test_dates <- function(e, fn, dates) {
+  if (!is.function(fn)) {
+    rlang::abort("`fn` must be a function.", class = "ledgr_invalid_args")
+  }
+  if (length(dates) < 1) {
+    rlang::abort("`dates` must contain at least one timestamp.", class = "ledgr_invalid_args")
+  }
+  dates_norm <- vapply(dates, ledgr_normalize_ts_utc, character(1))
+  release <- ledgr_snapshot_hold(e$.snapshot)
+  on.exit(release(), add = TRUE)
+  con <- get_connection(e$.snapshot)
+  values <- lapply(dates_norm, function(date_norm) {
+    window_i <- DBI::dbGetQuery(
+      con,
+      "
+      SELECT instrument_id, ts_utc, open, high, low, close, volume
+      FROM snapshot_bars
+      WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
+      ORDER BY ts_utc DESC
+      LIMIT ?
+      ",
+      params = list(e$.snapshot$snapshot_id, e$instrument_id, date_norm, e$lookback)
+    )
+    if (nrow(window_i) == 0) return(NA_real_)
+    window_i <- window_i[rev(seq_len(nrow(window_i))), , drop = FALSE]
+    window_i$ts_utc <- vapply(window_i$ts_utc, ledgr_iso_utc, character(1))
+    fn(window_i)
+  })
+  tibble::tibble(ts_utc = dates_norm, value = ledgr_simplify_indicator_values(values))
 }
 
 #' Print an indicator development session

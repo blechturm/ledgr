@@ -546,7 +546,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
 
   testthat::expect_match(attr(seeded, "sweep_id"), "^sweep_[0-9a-f]{16}$")
   testthat::expect_identical(attr(seeded, "master_seed"), 123L)
-  testthat::expect_identical(attr(seeded, "seed_contract"), "ledgr_seed_v1")
+  testthat::expect_identical(attr(seeded, "seed_contract"), "ledgr_seed_v2")
   testthat::expect_identical(attr(seeded, "evaluation_scope"), "exploratory")
   testthat::expect_identical(attr(seeded, "snapshot_id"), snapshot$snapshot_id)
   testthat::expect_match(attr(seeded, "snapshot_hash"), "^[0-9a-f]{64}$")
@@ -570,7 +570,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
     testthat::expect_identical(row$strategy_hash, attr(seeded, "strategy_hash"))
     testthat::expect_match(row$feature_set_hash, "^[0-9a-f]{64}$")
     testthat::expect_identical(row$master_seed, 123L)
-    testthat::expect_identical(row$seed_contract, "ledgr_seed_v1")
+    testthat::expect_identical(row$seed_contract, "ledgr_seed_v2")
     testthat::expect_identical(row$evaluation_scope, "exploratory")
   }
 })
@@ -752,7 +752,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
   testthat::expect_true(nzchar(key$engine$feature_engine_version))
   testthat::expect_identical(key$seed$execution_seed, candidate$execution_seed)
   testthat::expect_identical(key$seed$master_seed, 123L)
-  testthat::expect_identical(key$seed$seed_contract, "ledgr_seed_v1")
+  testthat::expect_identical(key$seed$seed_contract, "ledgr_seed_v2")
   testthat::expect_identical(key$metric_context$metric_context_hash, attr(results, "metric_context_hash"))
 
   bt <- ledgr_promote(exp, candidate, run_id = "materialized-candidate")

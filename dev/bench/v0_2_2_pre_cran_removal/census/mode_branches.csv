@@ -133,17 +133,17 @@
 "R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",1
 "R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",2
 "R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","availability$active","if: !inherits(exp, ""ledgr_experiment"") || !isTRUE(exp$availability$active)",1
-"R/precompute-features.R","ledgr_precompute_features","branch","availability_active","if: availability_active",1
-"R/precompute-features.R","ledgr_precompute_features","flow","availability$active","assign:availability_active",1
-"R/precompute-features.R","ledgr_precompute_features","flow","availability_active","arg:ledgr_feature_engine_version:1",1
-"R/precompute-features.R","ledgr_precompute_features","flow","availability_active","assign_target",1
+"R/precompute-features.R","ledgr_precompute_features_impl","branch","availability_active","if: availability_active",1
+"R/precompute-features.R","ledgr_precompute_features_impl","flow","availability$active","assign:availability_active",1
+"R/precompute-features.R","ledgr_precompute_features_impl","flow","availability_active","arg:ledgr_feature_engine_version:1",1
+"R/precompute-features.R","ledgr_precompute_features_impl","flow","availability_active","assign_target",1
 "R/precompute-features.R","ledgr_precompute_scoring_range","branch","availability$active","if: !is.null(exp) && isTRUE(exp$availability$active)",1
 "R/precompute-features.R","ledgr_resolve_candidate_features","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/precompute-features.R","ledgr_validate_precomputed_features","branch","availability$active","if: !identical(precomputed$feature_engine_version, ledgr_feature_engine_version(isTRUE(exp$availability$active)))",1
 "R/pulse-context.R","ledgr_validate_pulse_context","branch","alias:allow_empty","if: !is.character(ctx$universe) || (!allow_empty && length(ctx$universe) < 1) || anyNA(ctx$universe) || any(!nzchar(ctx$universe))",1
 "R/pulse-context.R","ledgr_validate_pulse_context","flow","$availability_active","assign:allow_empty",1
 "R/pulse-context.R","ledgr_validate_pulse_context","flow","alias:allow_empty","assign_target",1
-"R/pulse-snapshot.R","ledgr_pulse_snapshot","branch","availability$active","if: !isTRUE(snapshot$availability$active)",1
+"R/pulse-snapshot.R","ledgr_pulse_snapshot_impl","branch","availability$active","if: !isTRUE(snapshot$availability$active)",1
 "R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",1
 "R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",2
 "R/run-finalize.R","ledgr_run_finalize","branch","alias:use_fold_equity","if: use_fold_equity",3
@@ -217,9 +217,9 @@
 "R/walk-forward-folds.R","ledgr_experiment_window","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/walk-forward-folds.R","ledgr_experiment_window_validate_pulses","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/walk-forward-folds.R","ledgr_walk_forward_pulse_calendar","branch","availability$active","if: isTRUE(exp$availability$active)",1
-"R/walk-forward.R","ledgr_walk_forward","branch","availability$active","if: !isTRUE(exp$availability$active)",1
-"R/walk-forward.R","ledgr_walk_forward","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/walk-forward.R","ledgr_walk_forward_continue_windows","branch","is.null(history_substrate)","if: is.null(history_substrate) || length(fold_windows) < 2L",1
 "R/walk-forward.R","ledgr_walk_forward_eval_fold","branch","is.null(history_substrate)","if: is.null(history_substrate)",1
+"R/walk-forward.R","ledgr_walk_forward_impl","branch","availability$active","if: !isTRUE(exp$availability$active)",1
+"R/walk-forward.R","ledgr_walk_forward_impl","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/walk-forward.R","ledgr_walk_forward_opening_from_run","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/walk-forward.R","ledgr_walk_forward_opening_from_run","branch","availability$active","if: isTRUE(exp$availability$active)",2

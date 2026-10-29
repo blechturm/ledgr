@@ -3,6 +3,56 @@
 - Committed runs and sweeps now write their output through one internal
   output handler with a DuckDB or a memory sink, replacing the two separate
   handlers; run, sweep and walk-forward results are unchanged.
+- Sweeps with `workers > 1` now give the same results as sequential sweeps for
+  seeded strategies that draw through `withr::with_seed(ctx$pulse_seed, ...)`.
+  Workers used R's `L'Ecuyer-CMRG` kind, so the same pulse seed drew different
+  numbers there. ledgr now seeds every seeded fold with
+  `Mersenne-Twister`/`Inversion`/`Rejection` and sets that kind on every worker
+  at start. Under R's default kind, sequential results are unchanged; a session
+  that uses a non-default kind gets different seeded results than before.
+- `ledgr_sim_bars()` and `ledgr_sim_pit_inputs()` now always generate with
+  `Mersenne-Twister`/`Inversion`/`Rejection`. Their output changes only for a
+  session that uses a non-default RNG kind, which now gets the default-kind
+  output; identical canonical input keeps its snapshot hash.
+- `ctx$pulse_seed` now follows pulse-seed rule v2, an integer mixer of the
+  execution seed and the pulse position computed once per run, in place of one
+  SHA-256 hash per pulse. Seeded strategies that use `ctx$pulse_seed` get
+  different values and therefore different results. A straight run, a resume,
+  a run window, a scheduled skip, a sweep and a promotion still get the same
+  pulse seed at the same position of the same calendar. Sweeps now record
+  `seed_contract = "ledgr_seed_v2"`, and walk-forward results and candidates
+  gain `pulse_seed_contract = "ledgr_seed_v2"`.
+- Strategies that draw ambient random numbers no longer get results that
+  depend on `checkpoint_every` or on `ledgr_run()` versus `ledgr_sweep()`.
+  DuckDB's append drew from R's random stream to name a temporary view, so
+  every store write moved the strategy's stream. Every ledgr store write now
+  leaves `.Random.seed` as it was.
+- ledgr now restores your RNG kind and `.Random.seed` (or their absence) at
+  its entry points, for every seed value and on success, error and interrupt.
+  Before, ledgr restored only `.Random.seed` and only when a seed was given:
+  `ledgr_run(seed = NULL)` and sweeps with several workers could advance or
+  create it. Arguments are evaluated before the state is saved, so draws in
+  them still advance your stream. A pending Box-Muller normal variate is not
+  preserved. See
+  `vignette("reproducibility", package = "ledgr")` for the full boundary.
+- `ledgr_walk_forward(seed = NULL)` now works; it aborted with
+  `ledgr_invalid_args`.
+- `ledgr_promote()` refuses a sweep or walk-forward candidate whose pulse-seed
+  rule marker is old (`ledgr_seed_v1`) or missing, with the new condition class
+  `ledgr_seed_rule_mismatch`, before any run is created; re-run the sweep or
+  walk-forward session. A seeded run configuration without
+  `engine.pulse_seed_rule = 2` is refused with the same class. Experiment
+  stores written by an earlier ledgr are refused with
+  `ledgr_store_rebuild_required`, because the store format now records the
+  pulse-seed rule version.
+- Seeded run configurations now record `engine.pulse_seed_rule = 2`, so their
+  `config_hash` and default generated run IDs change. Unseeded configurations,
+  their run IDs and snapshot hashes are unchanged.
+- The reproducibility article gains an executed recipe for stochastic
+  strategies: `withr::with_seed(ctx$pulse_seed, sample.int(...))` behind a
+  guard that requires a seed. Strategy preflight still detects only direct
+  `runif()`, `rnorm()` and `sample()` calls; other draws such as
+  `sample.int()` are not detected.
 
 # ledgr 0.2.2
 

@@ -1,0 +1,3 @@
+"run_id:character","events:integer","diagnostics_null:logical","completion_null:logical","summary_null:logical"
+"loose","6","TRUE","TRUE","FALSE"
+"tight","8","TRUE","TRUE","FALSE"

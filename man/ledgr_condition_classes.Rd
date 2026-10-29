@@ -76,6 +76,7 @@
 \alias{ledgr_sweep_trades_candidate_not_retained}
 \alias{ledgr_incomplete_sweep_candidate}
 \alias{ledgr_promote_incomplete_candidate}
+\alias{ledgr_seed_rule_mismatch}
 \alias{ledgr_validation_pbo_incomplete_panel}
 \alias{ledgr_missing_package}
 \alias{ledgr_validation_pbo_invalid_s}
@@ -678,6 +679,12 @@ are missing for a completed candidate that reports closed trades.
 requested for an \code{INCOMPLETE} sweep row. \code{ledgr_promote_incomplete_candidate}
 is raised when promotion receives an incomplete candidate. Incomplete
 prefixes remain evidence and never become executable candidates.
+
+\code{ledgr_seed_rule_mismatch} is raised when promotion receives a candidate
+whose pulse-seed rule marker is old or missing, or when a seeded run
+configuration does not name the current pulse-seed rule. Promotion refuses
+before any snapshot hold or run; re-run the sweep or walk-forward session
+with the current ledgr version.
 
 \code{ledgr_validation_pbo_invalid_s} is raised when a PBO/CSCV request supplies
 an invalid \code{S} subset count.

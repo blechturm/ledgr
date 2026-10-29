@@ -25,7 +25,10 @@ ledgr_sim_pit_inputs(
 
 \item{from, to}{Inclusive civil-date bounds.}
 
-\item{seed}{Integer seed controlling only generated numeric bar content.}
+\item{seed}{Integer seed controlling only generated numeric bar content.
+ledgr seeds with the kind \code{Mersenne-Twister}/\code{Inversion}/\code{Rejection}
+whatever kind your session uses, and restores your RNG kind and
+\code{.Random.seed} afterwards.}
 
 \item{venue_id, universe_id}{Stable identifiers for the synthetic venue and
 membership universe.}

@@ -77,9 +77,14 @@ Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the executio
 seed contract for ordinary sequential runs, but they are not certified for
 resume or parallel equivalence. Strategies that need pulse-specific
 stochastic inputs in those paths should derive them from \code{ctx$pulse_seed}
-without reading ambient \code{.Random.seed}. Custom indicator generation has a
-stricter deterministic feature contract; do not infer indicator RNG policy
-from strategy preflight.
+without reading ambient \code{.Random.seed}, for example with
+\code{withr::with_seed(ctx$pulse_seed, sample.int(n, 1))}. Preflight detects only
+direct calls to \code{runif()}, \code{rnorm()} and \code{sample()}, also inside
+\code{with_seed()}, which is why that recipe uses \code{sample.int()}. Other draws,
+such as \code{sample.int()} or \code{rbinom()} outside \code{with_seed()}, are not detected
+and are not certified either. Custom indicator generation has a stricter
+deterministic feature contract; do not infer indicator RNG policy from
+strategy preflight.
 }
 \section{Articles}{
 

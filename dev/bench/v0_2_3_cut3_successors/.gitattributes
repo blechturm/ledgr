@@ -1,0 +1,5 @@
+# Records and models are compared byte for byte; never convert their line endings.
+a0/records/** -text
+a0/model/** -text
+rng/records/** -text
+rng/model/** -text

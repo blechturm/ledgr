@@ -143,6 +143,11 @@ ledgr_source_sweep_json <- function(candidate, identity_check = NULL) {
     risk_plan_json = meta$risk_plan_json %||% candidate$provenance$risk_plan_json,
     identity_check = identity_check
   )
+  # A walk-forward candidate names its pulse-seed rule beside `seed_contract`.
+  pulse_seed_contract <- meta$pulse_seed_contract %||% candidate$provenance$pulse_seed_contract
+  if (!is.null(pulse_seed_contract)) {
+    out$pulse_seed_contract <- pulse_seed_contract
+  }
   strategy_schedule <- meta$strategy_schedule %||% candidate$provenance$strategy_schedule
   if (!is.null(strategy_schedule)) {
     out$strategy_schedule <- strategy_schedule

@@ -60,18 +60,18 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   }
   sink$write_completion <- function(completion) {
     DBI::dbExecute(con, "DELETE FROM run_completion WHERE run_id = ?", params = list(run_id))
-    DBI::dbAppendTable(con, "run_completion", completion)
+    ledgr_store_append(con, "run_completion", completion)
     invisible(TRUE)
   }
   # A failed fold transaction may advance the in-memory counter before the
   # database discards its writes, so the exception row re-reads the store.
   sink$seed_diagnostic_seq <- function() ledgr_next_diagnostic_seq(con, run_id)
   sink$keep_diagnostics <- function(diagnostics) {
-    DBI::dbAppendTable(con, "run_diagnostics", diagnostics)
+    ledgr_store_append(con, "run_diagnostics", diagnostics)
     invisible(TRUE)
   }
   sink$append_events <- function(rows) {
-    DBI::dbAppendTable(con, "ledger_events", rows)
+    ledgr_store_append(con, "ledger_events", rows)
     invisible(TRUE)
   }
   sink$write_fill_live <- function(fill_intent, event_seq) {
@@ -149,7 +149,7 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
     n <- state$state_n
     if (n > 0L) {
       keep <- seq_len(n)
-      DBI::dbAppendTable(con, "strategy_state", data.frame(
+      ledgr_store_append(con, "strategy_state", data.frame(
         run_id = rep(run_id, n),
         ts_utc = state$state_ts[keep],
         state_json = state$state_json[keep],

@@ -1865,7 +1865,100 @@ and `AAA` a held nonmember, each holding 5:
   or parallel equivalence. Resume and parallel equivalence are guaranteed only
   for strategies deterministic in `(ctx, params)`. Strategies needing
   pulse-specific stochastic inputs in those paths should derive them from
-  `ctx$pulse_seed`, not from ambient `.Random.seed`.
+  `ctx$pulse_seed`, not from ambient `.Random.seed`. Preflight detects only
+  direct calls to `runif()`, `rnorm()` and `sample()`: a resume refuses such a
+  strategy with `ledgr_strategy_ambient_rng_resume`, and a sweep with
+  `workers > 1` with `ledgr_strategy_ambient_rng_parallel`. Other draws, such
+  as `sample.int()`, `rbinom()` or draws inside package functions, are not
+  detected, and they are not certified either. Detection is parked in
+  `horizon.md`, "Ambient RNG detection for strategies".
+- The documented recipe for a stochastic strategy draws inside
+  `withr::with_seed(ctx$pulse_seed, ...)` behind a guard that stops when
+  `ctx$pulse_seed` is `NULL` (an unseeded run). Its draw uses a function that
+  preflight does not flag, such as `sample.int()`; a flagged `sample()` call
+  would be refused on resume and with several workers even inside
+  `with_seed()`.
+- Pinned RNG kind: whenever ledgr seeds R's RNG, it sets the seed and the kind
+  `Mersenne-Twister`/`Inversion`/`Rejection` in the same call. That happens
+  in every seeded fold (runs, resumes, windows, sweep candidates, walk-forward
+  and promotion) and in `ledgr_sim_bars()` and `ledgr_sim_pit_inputs()`.
+  Parallel workers set the same kind when they start; the fold envelope remains
+  the enforcing point. An unseeded fold sets neither seed nor kind. A strategy
+  that passes its own kind to `withr::with_seed()` keeps that kind. Under R's
+  default kind the pin leaves sequential results unchanged.
+- Pulse seeds: `ctx$pulse_seed` is `NULL` in an unseeded fold. In a seeded
+  fold it follows pulse-seed rule v2,
+  `fmix32(fmix32(u32(s)) xor u32(p)) mod (2^31 - 1) + 1`, where `s` is the
+  execution seed, `p` is the 1-based position of the pulse on the run's own
+  pulse calendar, `fmix32` is the MurmurHash3 32-bit finalizer and `u32(x)` is
+  `x mod 2^32`. Values lie in `[1, 2147483647]`. ledgr computes the vector
+  once per fold with exact integer arithmetic held in doubles, so the values
+  do not depend on the platform, and reads it by index; there is no per-pulse
+  hashing. The rule passes bounded empirical checks; it is not a claim of
+  independent streams, and two pulses can share a seed.
+- The rule is versioned by one constant, `ledgr_pulse_seed_rule_version = 2`.
+  It is recorded as `seed_contract = "ledgr_seed_v2"` on sweep results and
+  sweep candidates, as `pulse_seed_contract = "ledgr_seed_v2"` on walk-forward
+  results and walk-forward candidates (whose `seed_contract` keeps naming the
+  unchanged candidate-seed derivation, `ledgr_walk_forward_seed_v1`), and as
+  `engine.pulse_seed_rule = 2` in a seeded run configuration. An unseeded
+  configuration carries no rule field. The constant is part of the
+  experiment-store format fingerprint. Changing the rule bumps the constant.
+- For the same execution seed and the same pulse calendar, a straight run, a
+  resume (which continues at its start position and never restarts at 1), a
+  run window, a scheduled skip (whose seed is computed but not read), sweep
+  candidates with any worker count and promotion obtain the same pulse seed at
+  each position. No equality is claimed between calendars of different length:
+  the same bar in a shorter window, such as a walk-forward test window, and in
+  the full-calendar run that promoting its candidate creates need not get the
+  same pulse seed.
+- RNG-neutral storage: every ledgr store write that can consume R's RNG
+  (DuckDB's nonempty `dbAppendTable()` draws to name a temporary view) goes
+  through one helper that leaves `.Random.seed`, or its absence, as it was, on
+  normal and error exits. A strategy's draws therefore see the same stream
+  whether or not ledgr wrote between pulses, so its results do not depend on
+  `checkpoint_every` or on `ledgr_run()` versus `ledgr_sweep()`. The strategy
+  and the fold themselves are not wrapped.
+- Caller restore: ledgr restores the caller's RNG kind and `.Random.seed` (or
+  their absence) around its own work (store writes, seeding, worker start and
+  stop) and around the user code it runs as part of its service: strategies,
+  indicator and feature callbacks, ranking and selection expressions such as
+  `ledgr_sweep_review()`'s `rank_by` and the grid helpers' `.filter`, and the
+  `test` and `test_dates` helpers that `ledgr_indicator_dev()` returns, which
+  restore on each call. The restore runs for every seed value, including
+  `NULL`, on success, error and interrupt, after ledgr's own cleanup (worker
+  stop, store close, snapshot release). Every other exported function draws
+  nothing itself except through the store helper.
+- The boundary of that promise:
+  - Arguments are evaluated first, before ledgr saves the caller's state, so
+    draws in them advance the caller's stream as if made directly: two calls
+    of `ledgr_run(exp, seed = sample.int(1e6, 1))` get different seeds. The
+    same holds for the arguments of `ledgr_indicator_dev()`'s `test` and
+    `test_dates`.
+  - Expressions that ledgr captures and runs later, such as `rank_by` and
+    `.filter`, are not evaluated early and are restored.
+  - A user-defined S3 method is restored when a restoring ledgr function
+    dispatches to it after entry, and is the caller's own code when another
+    ledgr function calls it.
+  - The strategy from `ledgr_signal_strategy()` and the indicator function
+    from `ledgr_adapter_r()` do not restore: inside a run they draw like any
+    strategy or indicator, and called directly they are the caller's own code.
+  - A pending Box-Muller normal variate, and state that a user-supplied
+    generator keeps outside `.Random.seed`, is not part of the restored state
+    and is not preserved: after a ledgr call, a caller using
+    `normal.kind = "Box-Muller"` with an odd number of normals drawn can get a
+    different next `rnorm()` value than an untouched session.
+- Candidate validation: `ledgr_promote()` checks the candidate's pulse-seed
+  rule marker before any snapshot hold or run is created. A sweep candidate
+  needs `seed_contract = "ledgr_seed_v2"`. A walk-forward candidate, seeded or
+  not, needs `seed_contract = "ledgr_walk_forward_seed_v1"` and
+  `pulse_seed_contract = "ledgr_seed_v2"`, copied from its results object. An
+  old or missing marker is refused with `ledgr_seed_rule_mismatch` (also
+  `ledgr_invalid_args`); re-run the sweep or walk-forward session. A seeded run
+  configuration whose `engine.pulse_seed_rule` is not 2 is refused with
+  `ledgr_seed_rule_mismatch` (also `ledgr_invalid_config`). An experiment
+  store written without the current rule constant is refused when opened with
+  `ledgr_store_rebuild_required`. There is no compatibility path.
 - Sweep mode inherits the public preflight semantics. Sweep may accept Tier 1
   and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.

@@ -60,13 +60,13 @@ ledgr_sweep_save <- function(sweep, snapshot, sweep_id = NULL, note = NULL) {
   trades <- ledgr_sweep_storage_trade_rows(sweep, sweep_id = sweep_id)
 
   DBI::dbWithTransaction(opened$con, {
-    DBI::dbAppendTable(opened$con, "sweeps", parent)
-    DBI::dbAppendTable(opened$con, "sweep_candidates", candidates)
+    ledgr_store_append(opened$con, "sweeps", parent)
+    ledgr_store_append(opened$con, "sweep_candidates", candidates)
     if (nrow(returns) > 0L) {
-      DBI::dbAppendTable(opened$con, "sweep_returns", returns)
+      ledgr_store_append(opened$con, "sweep_returns", returns)
     }
     if (nrow(trades) > 0L) {
-      DBI::dbAppendTable(opened$con, "sweep_trades", trades)
+      ledgr_store_append(opened$con, "sweep_trades", trades)
     }
   })
   ledgr_checkpoint_duckdb(opened$con, strict = TRUE)

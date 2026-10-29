@@ -1,0 +1,4 @@
+"candidate_id:character","pin:character","execution_seed:integer","status_w1:character","status_w2:character","n_trades_run:integer","n_trades_w1:integer","n_trades_w2:integer","final_equity_run:character","final_equity_w1:character","final_equity_w2:character","trades_run_vs_w1:logical","trades_w1_vs_w2:logical","equity_run_vs_w1:logical","equity_w1_vs_w2:logical","daemon_rng_kind:character"
+"lecuyer","lecuyer","1300570159","DONE","DONE","33","33","33","99986.212135900059","99986.212135900059","99986.212135900059","TRUE","TRUE","TRUE","TRUE","L'Ecuyer-CMRG/Inversion/Rejection"
+"mt","mt","584670709","DONE","DONE","36","36","36","99980.328097800026","99980.328097800026","99980.328097800026","TRUE","TRUE","TRUE","TRUE","L'Ecuyer-CMRG/Inversion/Rejection"
+"none","none","1186840704","DONE","DONE","39","39","39","99992.889109900018","99992.889109900018","99992.889109900018","TRUE","TRUE","TRUE","TRUE","L'Ecuyer-CMRG/Inversion/Rejection"

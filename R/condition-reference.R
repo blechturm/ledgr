@@ -259,6 +259,12 @@
 #' is raised when promotion receives an incomplete candidate. Incomplete
 #' prefixes remain evidence and never become executable candidates.
 #'
+#' `ledgr_seed_rule_mismatch` is raised when promotion receives a candidate
+#' whose pulse-seed rule marker is old or missing, or when a seeded run
+#' configuration does not name the current pulse-seed rule. Promotion refuses
+#' before any snapshot hold or run; re-run the sweep or walk-forward session
+#' with the current ledgr version.
+#'
 #' `ledgr_validation_pbo_invalid_s` is raised when a PBO/CSCV request supplies
 #' an invalid `S` subset count.
 #'
@@ -582,6 +588,7 @@
 #' @aliases ledgr_sweep_trades_candidate_not_completed
 #' @aliases ledgr_sweep_trades_candidate_not_retained
 #' @aliases ledgr_incomplete_sweep_candidate ledgr_promote_incomplete_candidate
+#' @aliases ledgr_seed_rule_mismatch
 #' @aliases ledgr_validation_pbo_incomplete_panel ledgr_missing_package
 #' @aliases ledgr_validation_pbo_invalid_s
 #' @aliases ledgr_validation_pbo_too_few_candidates

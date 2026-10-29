@@ -1,0 +1,3 @@
+"run_id:character","status:character","execution_mode:character","pulse_count:integer","decision_pulse_count:integer","scheduled_skip_count:integer"
+"wf_31c04f40b5d7_fold_1_a083e259fb4a","DONE","audit_log","3","3","0"
+"wf_31c04f40b5d7_fold_2_aec273e06a72","DONE","audit_log","4","4","0"

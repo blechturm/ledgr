@@ -75,14 +75,43 @@ ledgr_pulse_snapshot <- function(snapshot,
                                  positions = NULL,
                                  state_prev = NULL,
                                  params = NULL) {
-  if (inherits(snapshot, "ledgr_experiment")) {
-    supplied <- c(
-      universe = !missing(universe),
-      features = !missing(features),
-      cash = !missing(cash),
-      positions = !missing(positions),
-      state_prev = !missing(state_prev)
+  ledgr_rng_force_args()
+  universe_missing <- missing(universe)
+  features_missing <- missing(features)
+  cash_missing <- missing(cash)
+  positions_missing <- missing(positions)
+  state_prev_missing <- missing(state_prev)
+  ledgr_rng_preserve_caller(ledgr_pulse_snapshot_impl(
+    snapshot = snapshot,
+    universe = universe,
+    ts_utc = ts_utc,
+    features = features,
+    feature_params = feature_params,
+    cash = cash,
+    positions = positions,
+    state_prev = state_prev,
+    params = params,
+    supplied = c(
+      universe = !universe_missing,
+      features = !features_missing,
+      cash = !cash_missing,
+      positions = !positions_missing,
+      state_prev = !state_prev_missing
     )
+  ))
+}
+
+ledgr_pulse_snapshot_impl <- function(snapshot,
+                                      universe,
+                                      ts_utc,
+                                      features,
+                                      feature_params,
+                                      cash,
+                                      positions,
+                                      state_prev,
+                                      params,
+                                      supplied) {
+  if (inherits(snapshot, "ledgr_experiment")) {
     if (any(supplied)) {
       rlang::abort(
         sprintf(

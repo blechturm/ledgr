@@ -98,7 +98,7 @@ testthat::test_that("risk identity participates in config_hash without a separat
 testthat::test_that("risk config validation fails closed on mismatched or invalid plan identity", {
   cfg <- list(
     db_path = "db.duckdb",
-    engine = list(seed = 1L, tz = "UTC"),
+    engine = list(seed = 1L, tz = "UTC", pulse_seed_rule = 2L),
     universe = list(instrument_ids = c("A")),
     backtest = list(
       start_ts_utc = "2020-01-01T00:00:00Z",
