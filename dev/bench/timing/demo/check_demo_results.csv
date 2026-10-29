@@ -38,4 +38,6 @@
 "N4_whitespace_ref","a later gate attempt whose decision reference is blank",1,1,"disposition","disposition",TRUE
 "interrupted_record","the runner's interrupted attempt (killed child, unrun slots)",1,1,"unrun slot","attempt status; test hook; failed execution; unrun slot; fewer pairs; host snapshots; missing cell",TRUE
 "F4_noncontiguous_attempt","a label holding only attempt-2 allocates attempt-3 and keeps attempt-2",NA,NA,"attempt-3","attempt-3; attempt-2 kept TRUE",TRUE
-"F4_occupied_destination","creating an attempt directory that already exists is refused",NA,NA,"already exists","attempt directory C:\Users\maxth\AppData\Local\Temp\Rtmp4U5PsX/check_demo/alloc/label/attempt-2 already exists or could not be created",TRUE
+"F4_occupied_destination","creating an attempt directory that already exists is refused",NA,NA,"already exists","attempt directory C:\Users\maxth\AppData\Local\Temp\RtmpOEyBYT/check_demo/alloc/label/attempt-2 already exists or could not be created",TRUE
+"slot_dir_same_pid_name","consecutive slots writing the same PID-derived store name each start empty; every slot directory, failed or not, is removed",NA,NA,"0;0 and none left","0;0; left 0",TRUE
+"slot_dir_occupied","a leftover slot directory is refused before the slot runs",NA,NA,"already exists","slot work directory C:\Users\maxth\AppData\Local\Temp\RtmpOEyBYT/check_demo/slots/slot-0004 already exists or could not be created",TRUE
