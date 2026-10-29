@@ -1,15 +1,15 @@
 # WS2 design note: RNG reproducibility and the v2 pulse-seed rule
 
-Role: record; the LDG-3140 design note for v0.2.3 cut 3, workstream 4.
+Role: record; the LDG-3157 design note for v0.2.3 cut 4, workstream 11.
 Status: draft for review, written before any product change; it directs
-LDG-3141 to LDG-3144 once its design review accepts it.
-Authority: `tickets.yml` cut 3 (decisions (1) to (13)) and LDG-3140 scope;
+LDG-3158 to LDG-3161 once its design review accepts it.
+Authority: `tickets.yml` cut 4 (decisions (1) to (13)) and LDG-3157 scope;
 `contracts.md` rule groups `contract-strategy-reproducibility` and
 `contract-execution-fold-core`; `cut_review_3.md` and
 `cut_review_3_rereview_1.md`; the RNG probe in
 `dev/bench/v0_2_3_rng_baseline/`. Source lines cite `release/v0.2.3` at
-`aa2931e9`. Timing refers to the LDG-3139 protocol (pending harness
-consolidation).
+`aa2931e9`. Timing refers to the LDG-3156 protocol on the shared timing
+harness of LDG-3155.
 
 ## 1. The frozen choices in one paragraph
 
@@ -107,7 +107,7 @@ The axis is the fold's pulse calendar, `execution$pulses_posix`.
 ### 2.4 Frozen acceptance bounds and failing controls
 
 These bounds were written before any v2 value was computed beyond the
-probe's recorded seed-7 numbers. LDG-3142 implements them as tests on the
+probe's recorded seed-7 numbers. LDG-3159 implements them as tests on the
 production routine. `S = {7, 2591, -1, 2147483647}`. The edge set is
 `E = {-2147483647, -1, 0, 1, 2, 7, 2591, 2147483646, 2147483647}`.
 
@@ -166,7 +166,7 @@ reproduced the probe's recorded mixer matrix digest
 | 2147483646 | 1557236958 | 1248947313 | 581187014 | 1382106984 | 642208404 | 653509169 | 687568460 |
 | 2147483647 | 513865860 | 60330939 | 914812600 | 1178777718 | 349344874 | 1254035666 | 1019020745 |
 
-LDG-3142 commits this table as a fixed test fixture. It executes
+LDG-3159 commits this table as a fixed test fixture. It executes
 `ledgr_pulse_seeds()` against the table on Windows and on Linux and records
 the platform identities. A skipped platform is missing evidence. Seed
 `-2147483648` is `NA_integer_` and is refused by `ledgr_seed_normalize`, as
@@ -242,7 +242,7 @@ draw nothing from R's RNG and are not sites:
 - `ledgr_generate_sweep_id` (`R/sweep.R:1238`), which hashes the pid, a
   counter and the time.
 
-**Source inventory (LDG-3141 test).** The test parses every file in `R/`
+**Source inventory (LDG-3158 test).** The test parses every file in `R/`
 (parsed expressions, so roxygen is ignored) and fails if it finds:
 
 1. a call to `dbAppendTable`, `DBI::dbAppendTable` or `dbWriteTable` outside
@@ -292,7 +292,7 @@ caller-state witnesses), and **N** otherwise. All 181 exports and 93
 registered S3 methods fall in exactly one class (Appendix A). Wrapping
 callback evaluators satisfies decision (4) under its broadest reading: a
 user indicator that draws leaves the caller's stream unchanged. Indicator
-purity stays governed by `R/determinism.R`. LDG-3141 regenerates the
+purity stays governed by `R/determinism.R`. LDG-3158 regenerates the
 partition from the same rule. Its test fails if an export that the rule
 puts in W lacks the wrapper. It also traces, during the targeted tests,
 `ledgr_fold_envelope`, `ledgr_rng_seed_pinned` and
@@ -309,7 +309,7 @@ runs an unseeded memory fold with an internal capture callback,
 windows `ledgr_run_window` and the sweep window run inside
 `ledgr_walk_forward`'s wrapper.
 
-**Witnesses (LDG-3141).** The caller's next `runif(1)` and next
+**Witnesses (LDG-3158).** The caller's next `runif(1)` and next
 `sample(10)` after the call must equal those of an untouched session, and the
 kind must be unchanged. They are run for every W export and for the H
 representatives that append nonempty frames:
@@ -390,7 +390,7 @@ bindings lack the new constant. There is no compatibility path.
 
 ## 7. (f) Identity declarations
 
-| Axis | Change | Evidence LDG-3142 shows |
+| Axis | Change | Evidence LDG-3159 shows |
 | --- | --- | --- |
 | Snapshot content identity | none: hash rule and canonical input unchanged; simulators produce identical output under the default kind | identical snapshot hash for identical canonical input; `ledgr_snapshot_content_hash_rule_version` unchanged |
 | Run configuration identity | seeded runs: `config_json` gains `engine.pulse_seed_rule = 2`, so `config_hash` changes; unseeded runs unchanged; `ledgr_identity_rule_version` stays 4 | config hash of one seeded run before and after; unseeded hash unchanged |
@@ -423,17 +423,17 @@ by equality with the sequential successor rows.
 
 ### 8.1 A0 successor
 
-LDG-3141 changes no A0 field. A0 strategies draw nothing, so neither kind
-pinning nor RNG-neutral storage can move them. After LDG-3141, the original
+LDG-3158 changes no A0 field. A0 strategies draw nothing, so neither kind
+pinning nor RNG-neutral storage can move them. After LDG-3158, the original
 A0 `check.R` must pass unchanged.
 
 | Id | Field | Predicate | Cause (ticket) |
 | --- | --- | --- | --- |
-| A1 | `sweep_attrs.csv`, row `seed_contract`, all 14 sweep record dirs | `ledgr_seed_v1` becomes `ledgr_seed_v2`; every other row identical | seed-rule version (LDG-3142) |
-| A2 | `sweep.csv`, column `provenance`, all 14 sweep dirs | only the `seed_contract` element changes, v1 to v2 | seed-rule version (LDG-3142) |
-| A3 | `runs.csv`, `config_json` and `config_hash`, the 11 seeded run dirs (all `run/`, `run_interrupted/`, `run_resumed/`, `walk_forward/walk_forward/`) | `engine` gains exactly `"pulse_seed_rule":2`; `config_hash` equals `config_hash()` of the new JSON; `dense_cost/run_db_live` and `failures/run_abort` (unseeded) identical | seed-rule version (LDG-3142) |
-| A4 | `dense_risk_features` economic rows in `run/` and `sweep_w1/` | equal the pulse-rule model. Measured on the model: only candidate `tight` changes, from 2020-01-03 on: `ledger_events` 5 rows, `fills` 5, `equity_curve` 6, `trades` 2, `metrics` 7 values, `memory_events` 6, `memory_fills` 5, `memory_equity` 6, `sweep` 1 row, `sweep_returns` 6, `sweep_trades` 2. `loose` stays identical (its `qty_b = -5` is clamped by long-only). | v2 pulse rule via `ctx$pulse_seed %% 2L` (`fixtures.R:64`) (LDG-3142) |
-| A5 | `dense_risk_features/sweep_w2` economic rows | equal the A4 `sweep_w1` successor rows | v2 pulse rule, worker agreement (LDG-3142) |
+| A1 | `sweep_attrs.csv`, row `seed_contract`, all 14 sweep record dirs | `ledgr_seed_v1` becomes `ledgr_seed_v2`; every other row identical | seed-rule version (LDG-3159) |
+| A2 | `sweep.csv`, column `provenance`, all 14 sweep dirs | only the `seed_contract` element changes, v1 to v2 | seed-rule version (LDG-3159) |
+| A3 | `runs.csv`, `config_json` and `config_hash`, the 11 seeded run dirs (all `run/`, `run_interrupted/`, `run_resumed/`, `walk_forward/walk_forward/`) | `engine` gains exactly `"pulse_seed_rule":2`; `config_hash` equals `config_hash()` of the new JSON; `dense_cost/run_db_live` and `failures/run_abort` (unseeded) identical | seed-rule version (LDG-3159) |
+| A4 | `dense_risk_features` economic rows in `run/` and `sweep_w1/` | equal the pulse-rule model. Measured on the model: only candidate `tight` changes, from 2020-01-03 on: `ledger_events` 5 rows, `fills` 5, `equity_curve` 6, `trades` 2, `metrics` 7 values, `memory_events` 6, `memory_fills` 5, `memory_equity` 6, `sweep` 1 row, `sweep_returns` 6, `sweep_trades` 2. `loose` stays identical (its `qty_b = -5` is clamped by long-only). | v2 pulse rule via `ctx$pulse_seed %% 2L` (`fixtures.R:64`) (LDG-3159) |
+| A5 | `dense_risk_features/sweep_w2` economic rows | equal the A4 `sweep_w1` successor rows | v2 pulse rule, worker agreement (LDG-3159) |
 
 The A0 manifest changes only in the bytes and SHA-256 of files touched by
 A1 to A5.
@@ -442,13 +442,13 @@ A1 to A5.
 
 | Table | Predicate | Cause (ticket) |
 | --- | --- | --- |
-| `pulse_seeds` | `execution_seed`, `pulse_idx` identical; `pulse_seed` equals the Section 2.5 reference for every row | v2 rule (LDG-3142) |
-| `rule_overlap` | rows for `add`, `stride`, `mixer` identical; every `current` row equals the original `mixer` row of the same metric | v2 rule (LDG-3142) |
-| `census` | `path`, `seed_arg`, `default_seed`, `set_seed_calls`, `set_seed_seeds`, `set_seed_callers`, `pulse_seed_execution_seeds` identical for rows 01-04 and 06-10; `set_seed_kind_args` is `Mersenne-Twister` wherever `set_seed_calls > 0` (LDG-3141, kind pin); row 05 `outcome` is `ok`, `set_seed_calls` 0, `pulse_seed_nonnull` 0 (LDG-3141, unseeded walk-forward). With the observer adapted to count decision-due reads of the pulse-seed vector, `pulse_seed_calls` equals the original for every row except 05, which equals row 10's 19. Every `RNGkind` call has caller `ledgr_rng_restore` (observer extended to record callers) | kind pin, walk-forward fix, caller restore |
-| `worker_agreement` | `candidate_id`, `pin`, `execution_seed`, `daemon_rng_kind` (the probe starts its own daemon) identical; statuses `DONE`; all four agreement booleans TRUE (LDG-3141); `n_trades_run == n_trades_w1 == n_trades_w2 >= 10`; final equities equal across paths and equal to the pulse-rule model (LDG-3142). After LDG-3141 alone: only the `none` row's `*_w2` fields change, to its `*_w1` values | kind pin; v2 rule |
-| `stochastic_fills`, `stochastic_trades` | `run` and `sweep_w1` rows equal the pulse-rule model (LDG-3142); `sweep_w2` rows equal `sweep_w1` rows for every candidate (LDG-3141); each candidate trades at least two distinct instruments. After LDG-3141 alone: only `sweep_w2`/`none` trades change, to the original `sweep_w1`/`none` rows | kind pin; v2 rule |
-| `caller_rng` | every row `caller_rng_unchanged` TRUE and `after_kind == before_kind`; `after_sha256 == before_sha256` where the state was set; rows 01, 05, 09, 13, 15 change only in those fields; all other rows identical | caller restore (LDG-3141) |
-| `store_rng` | `equity_identical` TRUE and `first_differing_pulse` NA in both rows; row a both equities `99984.34987600008`; row b both `99967.891749199887`; equal to the storage model, executed on 2026-10-29 with exactly these values | RNG-neutral storage (LDG-3141), not the pulse rule |
+| `pulse_seeds` | `execution_seed`, `pulse_idx` identical; `pulse_seed` equals the Section 2.5 reference for every row | v2 rule (LDG-3159) |
+| `rule_overlap` | rows for `add`, `stride`, `mixer` identical; every `current` row equals the original `mixer` row of the same metric | v2 rule (LDG-3159) |
+| `census` | `path`, `seed_arg`, `default_seed`, `set_seed_calls`, `set_seed_seeds`, `set_seed_callers`, `pulse_seed_execution_seeds` identical for rows 01-04 and 06-10; `set_seed_kind_args` is `Mersenne-Twister` wherever `set_seed_calls > 0` (LDG-3158, kind pin); row 05 `outcome` is `ok`, `set_seed_calls` 0, `pulse_seed_nonnull` 0 (LDG-3158, unseeded walk-forward). With the observer adapted to count decision-due reads of the pulse-seed vector, `pulse_seed_calls` equals the original for every row except 05, which equals row 10's 19. Every `RNGkind` call has caller `ledgr_rng_restore` (observer extended to record callers) | kind pin, walk-forward fix, caller restore |
+| `worker_agreement` | `candidate_id`, `pin`, `execution_seed`, `daemon_rng_kind` (the probe starts its own daemon) identical; statuses `DONE`; all four agreement booleans TRUE (LDG-3158); `n_trades_run == n_trades_w1 == n_trades_w2 >= 10`; final equities equal across paths and equal to the pulse-rule model (LDG-3159). After LDG-3158 alone: only the `none` row's `*_w2` fields change, to its `*_w1` values | kind pin; v2 rule |
+| `stochastic_fills`, `stochastic_trades` | `run` and `sweep_w1` rows equal the pulse-rule model (LDG-3159); `sweep_w2` rows equal `sweep_w1` rows for every candidate (LDG-3158); each candidate trades at least two distinct instruments. After LDG-3158 alone: only `sweep_w2`/`none` trades change, to the original `sweep_w1`/`none` rows | kind pin; v2 rule |
+| `caller_rng` | every row `caller_rng_unchanged` TRUE and `after_kind == before_kind`; `after_sha256 == before_sha256` where the state was set; rows 01, 05, 09, 13, 15 change only in those fields; all other rows identical | caller restore (LDG-3158) |
+| `store_rng` | `equity_identical` TRUE and `first_differing_pulse` NA in both rows; row a both equities `99984.34987600008`; row b both `99967.891749199887`; equal to the storage model, executed on 2026-10-29 with exactly these values | RNG-neutral storage (LDG-3158), not the pulse rule |
 | `detection_gap` | identical (decision (11): detection policy unchanged) | none |
 
 ### 8.3 Replacement regression guts
@@ -490,23 +490,23 @@ remain in the original gut list.
 | `R/run-registration.R:20` | unchanged code; seeded default ids change through `config_hash` (Section 7) |
 | version markers `R/sweep.R:469, 2179`, `R/sweep-persistence.R:584`, `R/promotion-context.R:133` | from the constant (Section 6) |
 | static lists `R/strategy-preflight.R:673-679`, `R/determinism.R:7` | unchanged (decision (11)) |
-| defect: `ledgr_walk_forward(seed = NULL)` (`R/walk-forward.R:676-684` via `:1118-1139`) | `ledgr_walk_forward_run_or_open` maps a missing or NA seed to `NULL` before `ledgr_run_window`; scores keep `execution_seed` NA (LDG-3141) |
+| defect: `ledgr_walk_forward(seed = NULL)` (`R/walk-forward.R:676-684` via `:1118-1139`) | `ledgr_walk_forward_run_or_open` maps a missing or NA seed to `NULL` before `ledgr_run_window`; scores keep `execution_seed` NA (LDG-3158) |
 
 ## 10. Notes for the implementing tickets
 
-- **LDG-3141** owns Sections 3, 4 and 5, the walk-forward fix, the NMOF
+- **LDG-3158** owns Sections 3, 4 and 5, the walk-forward fix, the NMOF
   `LSopt` gate (`dev/spikes/nmof-probe/probe.R`, `mv_card`: plain
   `with_seed` form agreeing across one and two workers, two `seed = 42` runs
   identical, `seed = 43` different; a missing NMOF is missing evidence), and
-  the after-LDG-3141 rows of Section 8.
-- **LDG-3142** owns Sections 2, 6 and 7, and A1 to A5 plus the v2 rows of
+  the after-LDG-3158 rows of Section 8.
+- **LDG-3159** owns Sections 2, 6 and 7, and A1 to A5 plus the v2 rows of
   Section 8.2.
 - **Seven shapes.** Only the fold envelope changes on the hot path. One
   O(n_pulses) vector is built once per fold, and the context reads one
   element by index. There is no new per-pulse work, and the store helper
   runs per append, not per pulse.
-- **Timing.** Timing is judged under the LDG-3139 protocol (pending harness
-  consolidation).
+- **Timing.** Timing is judged under the LDG-3156 protocol on the shared timing
+  harness of LDG-3155.
 - **Type 2.** This note leaves no open Type 2 question. Two readings are
   stated so the review can reject them: the axis origin is the run's own
   calendar (Section 2.3), and wrapping covers callback evaluators

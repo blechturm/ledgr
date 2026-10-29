@@ -32,7 +32,7 @@ an architecture note, or a spec packet.
 <a id="2026-10-29-execution-ambient-rng-detection-for-strategies"></a>
 ### 2026-10-29 [execution] Ambient RNG detection for strategies
 
-The v0.2.3 RNG cut (cut 3) dropped ambient-RNG detection on the maintainer's
+The v0.2.3 RNG cut (cut 4, accepted as cut 3 and renumbered) dropped ambient-RNG detection on the maintainer's
 decision of 2026-10-29, after its cut review (`ledgr_v0_2_3_spec_packet/cut_review_3.md`
 F2 and F3). Today preflight lists only `runif`, `rnorm` and `sample`, so
 `sample.int`, `rbinom`, `stats::rexp`, `jitter` and package-internal draws such

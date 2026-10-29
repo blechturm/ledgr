@@ -127,7 +127,7 @@ Pin the RNG kind wherever ledgr seeds; restore the caller's RNG with
   strategy seeded from `ctx$pulse_seed`; the NMOF `LSopt` probe reproduces.
 - **Amendment (maintainer, 2026-10-29):** widening preflight RNG detection
   leaves WS2 and is parked in the horizon ("Ambient RNG detection for
-  strategies"); cut 3 decision (11) records why.
+  strategies"); cut 4 decision (11) records why (accepted as cut 3, renumbered).
 
 ### WS3. Peer benchmark suite (X4, full scope)
 
