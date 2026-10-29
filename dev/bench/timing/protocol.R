@@ -1,21 +1,10 @@
 # Shared timing harness (LDG-3155): the per-cut protocol folder, the slot
-# plan and record files.
-#
-# A protocol folder is named for its protocol id (for example
-# protocols/ws2-timing-1/) and holds exactly four files:
-#
-#   matrix.csv      cell,workload,clock,args,pairs - one row per cell
-#   thresholds.csv  cell,bound - every matrix cell exactly once
-#   workloads.R     one function per workload, function(args, work_dir)
-#   protocol.md     the human statement: what is measured, clock endpoints,
-#                   inputs, seeds, retained surfaces, why these bounds
-#
-# `pairs` is the pair count, one integer of at least 8 repeated on every row.
-# `args` is "name=value;name=value" (may be empty) and reaches the workload
-# as a named list of strings. A workload returns
-# list(seconds = <named numeric, one entry per clock it measures>,
-#      work = <one string that must be identical for every row of a cell>);
-# the cell's `clock` names the entry that is recorded.
+# plan and record files. The folder layout (matrix.csv, thresholds.csv,
+# workloads.R, protocol.md) is tabled in the benchmark manual's
+# "Before/After Regression Gates". `args` ("name=value;...") reaches a
+# workload as a named list of strings; the workload returns
+# list(seconds = <named clocks>, work = <string>), and the cell's `clock`
+# names the entry recorded.
 
 timing_protocol_files <- c("matrix.csv", "thresholds.csv", "workloads.R", "protocol.md")
 timing_arms <- c("base", "candidate")

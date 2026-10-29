@@ -1,16 +1,9 @@
 # Shared timing harness (LDG-3155): host checks.
 #
-# The registered timing host is the maintainer's i9-12900K: the High
-# performance power plan, every timed process pinned to the performance cores
-# (affinity 0xFFFF), and no other process busy during the window. One
-# PowerShell call (host.ps1) returns the power plan, the CPU load and the
-# process table; the functions below read it. The runner probes before the
-# window, before every slot and after the window; each measured process
-# probes itself once before its timed section.
-#
-# Processes are identified by PID plus creation time, written "pid@created"
-# (creation time in Unix milliseconds), so a reused PID is never mistaken for
-# the process it replaced.
+# One PowerShell call (host.ps1) returns the power plan, CPU load and process
+# table; the functions below read it. Processes are identified by PID plus
+# creation time, "pid@created" (Unix ms), so a reused PID is never mistaken
+# for its predecessor. The host rules are in the benchmark manual.
 
 timing_plan_guid <- "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" # High performance
 timing_affinity <- 65535 # 0xFFFF: performance cores, logical processors 0-15

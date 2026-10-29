@@ -3,13 +3,10 @@
 # Prints one "host" line and one "proc" line per running process:
 #   host,<power plan GUID>,<CPU load percent>,<CPU name>
 #   proc,<pid>,<parent pid>,<created>,<affinity>,<affinity created>,<cpu ms>,<name>
-# <created> is the CIM process creation time. <affinity>, <affinity created>
-# and <cpu ms> come from one Get-Process object: its affinity mask, its own
-# start time and its cumulative CPU time, so host.R can refuse values whose
-# process is not the one CIM listed under that PID (a PID reused between the
-# two enumerations). All are integers (Unix or CPU milliseconds), so no
-# culture-specific decimal separator enters the record. A process that
-# cannot be opened (another user's or an elevated one) reports -1 for each.
+# <created> is the CIM creation time; the next three come from one
+# Get-Process object, so host.R can refuse values from a process that reused
+# the PID. All are integer milliseconds (culture-safe); a process that cannot
+# be opened reports -1 for each.
 
 $plan = (powercfg /getactivescheme) -join ' '
 $guid = ''
