@@ -1,11 +1,12 @@
 # WS2 design note: RNG reproducibility and the v2 pulse-seed rule
 
 Role: record; the LDG-3157 design note for v0.2.3 cut 4, workstream 11.
-Status: draft for review, correction round 2. Round 1 applied the design
-review `ws2_rng_design_review.md` and maintainer decisions (14), (15) and
-(16); round 2 applies the focused re-review `ws2_rng_design_review_2.md`.
-Written before any product change; it directs LDG-3158 to LDG-3161 once its
-design review accepts it.
+Status: accepted design gate. Round 1 applied the design review
+`ws2_rng_design_review.md` and maintainer decisions (14), (15) and (16);
+round 2 applied the focused re-review `ws2_rng_design_review_2.md`; the
+round-2 re-review `ws2_rng_design_review_3.md` returned PASS_AFTER_PATCHES
+and its two exact patches (P1) are applied verbatim. Written before any
+product change; it directs LDG-3158 to LDG-3161.
 Authority: `tickets.yml` cut 4: decisions (1) to (13) and the maintainer
 decisions of 2026-10-29, which are (14) (caller-isolation boundary, Type 2
 on review F1, option B), (15) (argument evaluation) and (16) (callables
@@ -29,11 +30,12 @@ Workers pin the same kind at start. Every DuckDB append goes through one
 helper, `ledgr_store_append()`, which keeps `.Random.seed` (or its absence)
 as it was. Under decision (14), ledgr restores the caller's kind and
 `.Random.seed` (or their absence) around its own work and around the user
-code it evaluates as part of its service. Fifteen exported functions (and
-the two registered `ledgr_candidate` methods `ledgr_candidate.default` and
-`ledgr_candidate.ledgr_walk_forward_results`) are wrapped at their
-outermost frame by
-`ledgr_rng_preserve_caller()`, which restores after all cleanup. The two
+code it evaluates as part of its service. Fifteen exports are W. Fourteen
+put `ledgr_rng_preserve_caller()` in their own outermost frame. The dispatch-only export `ledgr_candidate` carries
+the wrapper in its two operational registered methods,
+`ledgr_candidate.default` and
+`ledgr_candidate.ledgr_walk_forward_results`. Restoration runs after all
+cleanup. The two
 callables that `ledgr_indicator_dev()` returns restore on their own calls.
 Every other export is RNG-neutral because the store helper covers its only
 possible draw. A wrapped export forces its caller-supplied ordinary
@@ -623,15 +625,20 @@ dispatches to after step 1 runs inside the restore. One example is an
 
 **Source check (LDG-3158).** The test fails if any of these does not hold:
 
-- the checked bodies are exactly the 15 W exports (Appendix A), the two W
-  methods `ledgr_candidate.default` and
+- the wrapper-shape bodies are exactly the 14 W exports other than
+  `ledgr_candidate`, the two W methods `ledgr_candidate.default` and
   `ledgr_candidate.ledgr_walk_forward_results`, and the two R helper
-  closures `test` and `test_dates`;
-- each checked body has `ledgr_rng_force_args()` as its first statement and
-  a single `ledgr_rng_preserve_caller()` call as its last statement;
+  closures `test` and `test_dates` (18 bodies total);
+- the generic `ledgr_candidate` is checked separately: its body remains
+  `UseMethod("ledgr_candidate")` in the generic's own frame, with neither
+  force/preserve steps nor cleanup. It remains W in the 15-export
+  partition;
+- each wrapper-shape body has `ledgr_rng_force_args()` as its first
+  statement and exactly one `ledgr_rng_preserve_caller()` call, as its
+  last statement;
 - every statement between them is a permitted prologue assignment (above);
 - the `lazy` argument matches the frozen set above;
-- no `on.exit()` appears in any checked body;
+- no `on.exit()` appears in any wrapper-shape body;
 - no W or R implementation function recaptures a forwarded formal (the
   no-recapture rule above).
 
