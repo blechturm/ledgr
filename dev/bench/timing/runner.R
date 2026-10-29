@@ -167,13 +167,20 @@ local({
   plan <- timing_plan(protocol)
   utils::write.csv(plan, file.path(attempt_dir, "plan.csv"), row.names = FALSE, fileEncoding = "UTF-8")
 
-  host_row <- function(phase, slot, probe) {
+  # Appends one host snapshot with the CPU other processes used since the
+  # previous one, and returns that interval.
+  last_probe <- NULL
+  snapshot <- function(phase, slot, probe) {
     chain <- timing_chain(probe$procs, Sys.getpid())
-    data.frame(phase = phase, slot = slot, at = sprintf("%.6f", probe$at), plan_guid = probe$plan_guid,
+    cpu <- if (is.null(last_probe)) list(max_ms = NA, top = "", unreadable = NA) else
+      timing_cpu_interval(last_probe$procs, probe$procs, timing_parse_chain(chain)$id)
+    last_probe <<- probe
+    timing_append_csv(data.frame(phase = phase, slot = slot, at = sprintf("%.6f", probe$at), plan_guid = probe$plan_guid,
       cpu_percent = probe$cpu_percent, root_chain = chain, foreign_r = timing_foreign_r(probe$procs, chain),
-      stringsAsFactors = FALSE)
+      cpu_max_ms = cpu$max_ms, cpu_top = cpu$top, cpu_unreadable = cpu$unreadable, stringsAsFactors = FALSE), host_path)
+    cpu
   }
-  timing_append_csv(host_row("before", NA, probe), host_path)
+  snapshot("before", NA, probe)
 
   # -------------------------------------------------------------------------
   # The window
@@ -214,9 +221,7 @@ local({
 
   row_problems <- function(row) {
     chain <- timing_chain_problem(row$chain, root$id)
-    c(if (!identical(row$plan_guid, timing_plan_guid)) sprintf("power plan %s", row$plan_guid),
-      if (nzchar(chain)) chain,
-      if (!is.na(row$foreign_r) && nzchar(row$foreign_r)) sprintf("foreign R %s", row$foreign_r))
+    c(if (!identical(row$plan_guid, timing_plan_guid)) sprintf("power plan %s", row$plan_guid), if (nzchar(chain)) chain)
   }
 
   stop_reason <- ""
@@ -226,8 +231,9 @@ local({
     for (i in seq_len(nrow(plan))) {
       s <- plan[i, ]
       probe <- timing_host_probe(probe_dir)
-      timing_append_csv(host_row("during", s$slot, probe), host_path)
+      cpu <- snapshot("during", s$slot, probe)
       problems <- timing_root_problems(probe, Sys.getpid())
+      if (cpu$max_ms > timing_cpu_limit_ms) problems[["busy process"]] <- cpu$top
       if (length(problems) && policy == "enforce") {
         stop_reason <- sprintf("host before slot %d: %s", s$slot, paste(names(problems), problems, collapse = "; "))
         break
@@ -262,7 +268,10 @@ local({
     outcome <- if (identical(s$slot, current)) "interrupted" else "not_run"
     timing_append_csv(blank_row(s, outcome, stop_reason)[timing_raw_fields], raw_path)
   }
-  timing_append_csv(host_row("after", NA, timing_host_probe(probe_dir)), host_path)
+  cpu <- snapshot("after", NA, timing_host_probe(probe_dir))
+  if (!nzchar(stop_reason) && policy == "enforce" && cpu$max_ms > timing_cpu_limit_ms) {
+    stop_reason <- paste("busy process after the last slot:", cpu$top)
+  }
 
   # The final integrity and commit check: the executed copies must still be
   # the commit's files, and the commit must still resolve.

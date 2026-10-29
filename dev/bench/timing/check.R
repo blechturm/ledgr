@@ -7,10 +7,11 @@
 # dropped or re-paired. Before any ratio counts, the record must be valid:
 # the protocol, the attempt and its disposition, the saved inputs against
 # the harness commit, the plan and every slot, the host snapshots' coverage
-# of the window, each process's identity, affinity and power plan, foreign
-# R, the alternating executed order and invariant work. Each section below
-# says what it requires; the benchmark manual's "Before/After Regression
-# Gates" states the rules. CPU load is a noise observation and never fails.
+# of the window, each process's identity, affinity and power plan, no other
+# process above 1.0 CPU-second per interval, the alternating executed order
+# and invariant work. Each section below says what it requires; the manual's
+# "Before/After Regression Gates" states the rules. CPU load and the
+# foreign-R names are observations and never fail.
 #
 # --aa checks a self-versus-self record (both arms one commit): validity
 # only, with each cell's ratio reported as a noise observation. In gate mode
@@ -105,8 +106,7 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
     fail("raw columns", paste(names(raw), collapse = ","))
     return(result())
   }
-  raw$foreign_r[is.na(raw$foreign_r)] <- ""
-  at_plan <- match(raw$slot, as.character(plan$slot))
+  at_plan <-match(raw$slot, as.character(plan$slot))
   for (i in which(is.na(at_plan))) fail("unexpected slot", sprintf("slot %s", raw$slot[[i]]))
   for (sl in unique(raw$slot[duplicated(raw$slot)])) fail("duplicate slot", sprintf("slot %s", sl))
   for (sl in setdiff(as.character(plan$slot), raw$slot)) fail("missing slot", sprintf("slot %s", sl))
@@ -141,8 +141,7 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
   if (!identical(names(host), timing_host_fields)) {
     fail("host snapshots", sprintf("host.csv columns %s", paste(names(host), collapse = ",")))
   } else {
-    host$foreign_r[is.na(host$foreign_r)] <- ""
-    where <- sprintf("host %s slot %s", host$phase, host$slot)
+    where <-sprintf("host %s slot %s", host$phase, host$slot)
     if (sum(host$phase %in% "before") != 1L || !identical(host$phase[1L], "before")) fail("host snapshots", "not exactly one 'before' snapshot first")
     if (sum(host$phase %in% "after") != 1L || !identical(host$phase[nrow(host)], "after")) fail("host snapshots", "not exactly one 'after' snapshot last")
     for (i in which(!host$phase %in% c("before", "during", "after"))) fail("unexpected snapshot", where[[i]])
@@ -174,7 +173,11 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
       if (!isTRUE(e$affinity == timing_affinity)) fail("affinity", paste(where[[i]], "root", e$affinity))
     }
     for (i in which(host$plan_guid != timing_plan_guid | is.na(host$plan_guid))) fail("power plan", where[[i]])
-    for (i in which(nzchar(host$foreign_r))) fail("foreign R", paste(where[[i]], host$foreign_r[[i]]))
+    # Busy processes: every snapshot after the first records the largest CPU
+    # increase of any process outside the measured chain since the previous one.
+    cpu <- suppressWarnings(as.numeric(host$cpu_max_ms))
+    for (i in which(host$phase != "before" & !is.finite(cpu))) fail("host snapshots", paste(where[[i]], "has no CPU interval"))
+    for (i in which(cpu > timing_cpu_limit_ms)) fail("busy process", sprintf("%s +%.0f ms: %s", where[[i]], cpu[[i]], host$cpu_top[[i]]))
   }
 
   # Rows: each measured process.
@@ -191,8 +194,6 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
   wrong_arm <- r$ledgr_commit != arm_commit | tolower(dirname(r$ledgr_path)) != tolower(arm_lib)
   for (i in which(is.na(wrong_arm) | wrong_arm)) fail("arm identity", sprintf("%s loaded %s at %s", k[[i]], r$ledgr_path[[i]], r$ledgr_commit[[i]]))
   for (i in which(r$plan_guid != timing_plan_guid | is.na(r$plan_guid))) fail("power plan", sprintf("%s %s", k[[i]], r$plan_guid[[i]]))
-  for (i in which(nzchar(r$foreign_r))) fail("foreign R", sprintf("%s %s", k[[i]], r$foreign_r[[i]]))
-
   # Process identity: the chain starts at this row's process (PID plus
   # creation time) with this row's affinity, no identity repeats, and the
   # process was created inside its own slot: no earlier than the runner's

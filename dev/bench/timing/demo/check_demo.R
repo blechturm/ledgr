@@ -81,7 +81,8 @@ make_record <- function(dir, ratio = c(small_cold = 1.02, small_warm = 0.96), al
   utils::write.csv(raw, file.path(dir, "raw.csv"), row.names = FALSE)
   host <- data.frame(phase = c("before", rep("during", n), "after"), slot = c(NA, run$slot, NA),
     at = sprintf("%.6f", c(1700000000, launched - 1, launched[n] + 10)), plan_guid = timing_plan_guid, cpu_percent = 3,
-    root_chain = paste0(root_id, "=65535;900@1699999990000=65535"), foreign_r = "")
+    root_chain = paste0(root_id, "=65535;900@1699999990000=65535"), foreign_r = "",
+    cpu_max_ms = c(NA, rep(0, n + 1L)), cpu_top = "", cpu_unreadable = c(NA, rep(0, n + 1L)))
   utils::write.csv(host, file.path(dir, "host.csv"), row.names = FALSE)
 }
 
@@ -155,8 +156,23 @@ cases <- list(
       d$chain[9L] <- sub(";", ";1500@1700000000500=16777215;", d$chain[9L], fixed = TRUE)
       d
     })),
-  list(case = "foreign_r", shows = "a foreign R process seen by a measured process", exit = 1L, reason = "foreign R",
-    edit = list("raw.csv", function(d) { d$foreign_r[11L] <- "ark.exe:27816@1792959389346"; d })),
+  list(case = "busy_process", shows = "a non-measured process using 1.5 CPU-seconds in one interval", exit = 1L,
+    reason = "busy process", edit = list("host.csv", function(d) {
+      d$cpu_max_ms[12L] <- "1500"
+      d$cpu_top[12L] <- "python.exe:5555@1700000005000=+1500"
+      d
+    })),
+  list(case = "idle_foreign_r_control", shows = "an idle foreign R process (0.0 s increase) passes", exit = 0L,
+    edit = list("host.csv", function(d) {
+      d$foreign_r <- "ark.exe:27816@1792959389346"
+      d$cpu_top[-1L] <- "ark.exe:27816@1792959389346=+0"
+      d
+    }),
+    tweak = function(dir) {
+      raw <- timing_read_csv(file.path(dir, "raw.csv"))
+      raw$foreign_r <- "ark.exe:27816@1792959389346"
+      utils::write.csv(raw, file.path(dir, "raw.csv"), row.names = FALSE)
+    }),
   list(case = "aa_as_gate", shows = "an A/A record presented as a gate", exit = 1L,
     reason = "A/A record presented as a gate", same_commit = TRUE),
   list(case = "aa_control", shows = "the same A/A record checked with --aa is valid", exit = 0L, same_commit = TRUE,

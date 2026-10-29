@@ -1,7 +1,8 @@
 # Shared timing harness (LDG-3155): one slot in one fresh R process.
 #
 # Called by runner.R only. In order: probe the host (its own PID, creation
-# time, affinity and ancestor chain, the power plan and foreign R processes);
+# time, affinity and ancestor chain, the power plan and, as an annotation,
+# other R processes);
 # load ledgr from the arm's library and verify the loaded namespace path and
 # the arm's commit stamp; source the protocol's workloads.R; run the cell's
 # workload, which times itself; write one raw row. Errors are written into the

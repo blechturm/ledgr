@@ -2,7 +2,7 @@
 #
 # The registered timing host is the maintainer's i9-12900K: the High
 # performance power plan, every timed process pinned to the performance cores
-# (affinity 0xFFFF), and no R process other than the harness's own. One
+# (affinity 0xFFFF), and no other process busy during the window. One
 # PowerShell call (host.ps1) returns the power plan, the CPU load and the
 # process table; the functions below read it. The runner probes before the
 # window, before every slot and after the window; each measured process
@@ -14,8 +14,12 @@
 
 timing_plan_guid <- "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" # High performance
 timing_affinity <- 65535 # 0xFFFF: performance cores, logical processors 0-15
+# A process outside the measured chain that uses more CPU than this between
+# two consecutive snapshots invalidates the window (maintainer, 2026-10-29).
+timing_cpu_limit_ms <- 1000
 
-# Executable names counted as R sessions. ark.exe is Positron's R kernel.
+# Executable names counted as R sessions; an annotation only, never a
+# rejection reason. ark.exe is Positron's R kernel.
 timing_r_names <- c("r.exe", "rscript.exe", "rterm.exe", "rgui.exe", "rsession.exe",
   "rsession-utf8.exe", "ark.exe")
 
@@ -28,18 +32,19 @@ timing_host_probe <- function(harness_dir) {
   timing_parse_probe(out, at = as.double(Sys.time()))
 }
 
-# Reads host.ps1 output. A process's affinity is kept only when the
-# Get-Process object that reported it has the CIM creation time listed under
-# that PID; otherwise (a reused PID, or a process that could not be opened)
-# it is NA, which every affinity check treats as a failure.
+# Reads host.ps1 output. A process's affinity and CPU time are kept only
+# when the Get-Process object that reported them has the CIM creation time
+# listed under that PID; otherwise (a reused PID, or a process that could not
+# be opened) they are NA. An NA affinity fails every affinity check.
 timing_parse_probe <- function(out, at) {
   host <- strsplit(grep("^host,", out, value = TRUE)[1L], ",", fixed = TRUE)[[1L]]
   proc_lines <- sub("^proc,", "", grep("^proc,", out, value = TRUE))
   procs <- utils::read.csv(text = proc_lines, header = FALSE, stringsAsFactors = FALSE,
-    col.names = c("pid", "ppid", "created", "affinity", "affinity_created", "name"),
-    colClasses = c("numeric", "numeric", "numeric", "numeric", "numeric", "character"))
+    col.names = c("pid", "ppid", "created", "affinity", "affinity_created", "cpu_ms", "name"),
+    colClasses = c("numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "character"))
   same_process <- procs$affinity >= 0 & procs$affinity_created == procs$created
   procs$affinity[!same_process] <- NA_real_
+  procs$cpu_ms[!same_process | procs$cpu_ms < 0] <- NA_real_
   list(
     at = at,
     plan_guid = if (length(host) >= 2L && nzchar(host[[2L]])) host[[2L]] else NA_character_,
@@ -76,13 +81,31 @@ timing_parse_chain <- function(chain) {
 }
 
 # R processes outside the probing process's own ancestor chain, as
-# "name:pid@created" joined by ";" (empty when there are none).
+# "name:pid@created" joined by ";" (an annotation of who was present).
 timing_foreign_r <- function(procs, chain) {
   own <- timing_parse_chain(chain)$id
   r <- procs[tolower(procs$name) %in% timing_r_names, , drop = FALSE]
   ids <- sprintf("%.0f@%.0f", r$pid, r$created)
   foreign <- !(ids %in% own)
   paste(sprintf("%s:%s", r$name[foreign], ids[foreign]), collapse = ";")
+}
+
+# CPU time used between two snapshots by every process present in both
+# (matched by PID plus creation time), except the probing chain `own` and
+# the System Idle Process. Processes whose CPU time is unreadable are counted,
+# not judged; processes that start and exit between the snapshots are not
+# seen. Returns the largest increase (ms), the top five as
+# "name:pid@created=+ms" and the unreadable count.
+timing_cpu_interval <- function(prev, cur, own) {
+  id <- function(p) sprintf("%.0f@%.0f", p$pid, p$created)
+  both <- merge(data.frame(id = id(prev), before = prev$cpu_ms),
+    data.frame(id = id(cur), pid = cur$pid, name = cur$name, after = cur$cpu_ms), by = "id")
+  both <- both[!both$id %in% own & both$pid != 0, , drop = FALSE]
+  both$used <- both$after - both$before
+  seen <- both[!is.na(both$used), , drop = FALSE]
+  seen <- utils::head(seen[order(-seen$used), , drop = FALSE], 5L)
+  list(max_ms = if (nrow(seen)) max(seen$used[[1L]], 0) else 0, unreadable = sum(is.na(both$used)),
+    top = paste(sprintf("%s:%s=+%.0f", seen$name, seen$id, seen$used), collapse = ";"))
 }
 
 # Checks one chain from the measured process up to and including the root
@@ -99,16 +122,13 @@ timing_chain_problem <- function(chain, root_id) {
   ""
 }
 
-# The host problems seen by one probe of the root (the runner): power plan,
-# the root's own affinity, and foreign R processes. Returns a named character
-# vector (empty when the host is fine).
+# The host problems seen by one probe of the root (the runner): the power
+# plan and the root's own affinity. Returns a named character vector (empty
+# when the host is fine). Busy processes are judged per interval instead.
 timing_root_problems <- function(probe, root_pid) {
-  chain <- timing_chain(probe$procs, root_pid)
-  root <- timing_parse_chain(chain)[1L, , drop = FALSE]
+  root <- timing_parse_chain(timing_chain(probe$procs, root_pid))[1L, , drop = FALSE]
   problems <- character()
   if (!identical(probe$plan_guid, timing_plan_guid)) problems[["power plan"]] <- probe$plan_guid
-  if (!isTRUE(root$affinity == timing_affinity)) problems[["affinity"]] <- sprintf("root %s", chain)
-  foreign <- timing_foreign_r(probe$procs, chain)
-  if (nzchar(foreign)) problems[["foreign R"]] <- foreign
+  if (!isTRUE(root$affinity == timing_affinity)) problems[["affinity"]] <- sprintf("root %s", root$id)
   problems
 }

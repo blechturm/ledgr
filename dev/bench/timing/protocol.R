@@ -26,7 +26,8 @@ timing_harness_files <- c("host.ps1", "host.R", "protocol.R", "measure.R", "runn
 
 # Columns of plan.csv and host.csv.
 timing_plan_fields <- c("slot", "pair", "cell", "arm")
-timing_host_fields <- c("phase", "slot", "at", "plan_guid", "cpu_percent", "root_chain", "foreign_r")
+timing_host_fields <- c("phase", "slot", "at", "plan_guid", "cpu_percent", "root_chain", "foreign_r",
+  "cpu_max_ms", "cpu_top", "cpu_unreadable")
 
 # Columns of raw.csv: one row per slot that ran, plus one per unrun slot when
 # a window stops early. `arm` and `clock` are independent fields.

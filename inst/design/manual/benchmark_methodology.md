@@ -240,23 +240,31 @@ The rules:
   checker verifies that order from the operating system’s process
   creation times, not from the runner’s plan.
 - **Host.** Of the conditions in [Timing Gates On The Maintainer
-  Host](#timing-gates-on-the-maintainer-host), the harness enforces
-  three:
+  Host](#timing-gates-on-the-maintainer-host), the harness enforces:
   - the High performance power plan;
   - affinity 0xFFFF;
-  - no other R session (Positron’s `ark` kernels count as R sessions).
+  - no busy process: between two consecutive host snapshots, no process
+    outside the measured chain (the runner, its ancestors and the
+    measured child) may use more than 1.0 CPU-second.
 
-  Closing other background applications remains a maintainer
-  prerequisite that the probe does not verify. The runner refuses to
-  start unless the three hold, and probes again before every slot. Every
-  measured process records the affinity of each process from itself up
-  to the runner. Each process is identified by PID plus creation time,
-  and an affinity counts only when it was read from the process with
-  that creation time. A reused PID is therefore never mistaken for its
-  predecessor, and an unreadable identity fails. A failure invalidates
-  the window. The runner’s `--host-policy=record` only records these
-  problems, for smoke runs and demonstrations; the checker refuses any
-  such record.
+  The busy-process rule measures interference instead of looking for
+  names (maintainer, 2026-10-29): an idle Positron `ark` kernel passes,
+  a busy render or Python job fails. Each process’s CPU-time increase is
+  matched by PID plus creation time. The System Idle Process is
+  excluded, and processes whose CPU time Windows will not report are
+  counted, not judged. A process that starts and exits between two
+  snapshots is not seen; that is a known limit. Each snapshot records
+  the top five processes by CPU-time increase, and other R processes are
+  listed as an annotation only. Closing background applications stays
+  recommended. The runner refuses to start unless the plan and affinity
+  hold, and probes again before every slot. Every measured process
+  records the affinity of each process from itself up to the runner.
+  Each process is identified by PID plus creation time, and an affinity
+  counts only when it was read from the process with that creation time.
+  A reused PID is therefore never mistaken for its predecessor, and an
+  unreadable identity fails. A failure invalidates the window. The
+  runner’s `--host-policy=record` only records these problems, for smoke
+  runs and demonstrations; the checker refuses any such record.
 - **Inputs.** The runner records the commit it runs from. Before the
   first slot it copies the six harness files and the four protocol files
   into the attempt and checks the copies against that commit. Every slot
@@ -303,10 +311,10 @@ The rules:
 
 A raw row records the slot, pair, cell, arm, clock, seconds, outcome and
 work, plus the evidence the checker re-reads: launch time, PID, creation
-time, affinity, the ancestor chain, foreign R processes, power plan,
-loaded namespace path and commit. Arm and clock are independent fields.
-A workload must report a work string, and every row of a cell must
-report the same one. Records live under
+time, affinity, the ancestor chain, other R processes (annotation),
+power plan, loaded namespace path and commit. Arm and clock are
+independent fields. A workload must report a work string, and every row
+of a cell must report the same one. Records live under
 `dev/bench/timing/records/<protocol id>/<label>/attempt-<n>/`, with the
 frozen inputs in its `harness/` and `protocol/` folders. They are
 committed when a cut names them as evidence, which is an exception to

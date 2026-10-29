@@ -58,7 +58,8 @@ make_record <- function(dir, ratio) {
   utils::write.csv(raw, file.path(dir, "raw.csv"), row.names = FALSE)
   host <- data.frame(phase = c("before", rep("during", n), "after"), slot = c(NA, plan$slot, NA),
     at = sprintf("%.6f", c(1700000000, launched - 1, launched[n] + 10)), plan_guid = timing_plan_guid,
-    cpu_percent = 3, root_chain = paste0(root_id, "=65535;900@1699999990000=65535"), foreign_r = "")
+    cpu_percent = 3, root_chain = paste0(root_id, "=65535;900@1699999990000=65535"), foreign_r = "",
+    cpu_max_ms = c(NA, rep(0, n + 1L)), cpu_top = "", cpu_unreadable = c(NA, rep(0, n + 1L)))
   utils::write.csv(host, file.path(dir, "host.csv"), row.names = FALSE)
 }
 
