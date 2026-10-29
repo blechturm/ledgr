@@ -266,6 +266,10 @@ testthat::test_that("a straight run reads the v2 vector over its own calendar", 
   on.exit(close(bt), add = TRUE)
   testthat::expect_length(rec$seed, 12L)
   testthat::expect_identical(rec$seed, ledgr:::ledgr_pulse_seeds(7L, seq_len(12L)))
+  # The fold's context is anchored to the independent golden rows, not only
+  # to the production routine: pulses 1 to 3 of execution seed 7.
+  golden <- ps2_golden()
+  testthat::expect_identical(rec$seed[1:3], golden$pulse_seed[golden$execution_seed == 7 & golden$pulse_idx <= 3])
   ps2_clear(rec)
   unseeded <- suppressWarnings(ledgr_run(fx$exp, params = list(qty = 1), run_id = "ps2-straight-unseeded"))
   on.exit(close(unseeded), add = TRUE)
