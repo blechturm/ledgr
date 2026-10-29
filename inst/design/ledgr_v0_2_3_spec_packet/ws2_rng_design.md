@@ -569,18 +569,14 @@ caller. Called directly by the user, they are the caller's own code.
 Decision (14)'s returned callables are only the helpers built for the user to
 call: `ledgr_indicator_dev()`'s `test` and `test_dates` (class R).
 
-**Open point B-1 (listed, not decided).** Decision (15) names "a wrapped
-export". It does not say whether the two R helpers also force their
-ordinary arguments before saving: `fn` and `dates` for `test_dates`, `fn`
-for `test`.
-- Without forcing, a draw inside an argument expression (for example
-  `dates = sample(x, 3)`) is undone by the helper's restore.
-- With forcing, it advances the caller's stream, as in a wrapped export.
-
-`fn` is normally a function value, which draws nothing when forced. The
-consistent choice would apply the same entry step. LDG-3158 needs a ruling
-before it implements these two helpers; the rest of the design does not
-depend on it.
+**Point B-1 (ruled: decision (15), maintainer 2026-10-29).** The two R
+helpers apply the same entry step as a wrapped export: they force their
+supplied arguments (`fn` and `dates` for `test_dates`, `fn` for `test`)
+before saving the caller's state, so a draw inside an argument expression
+(for example `dates = sample(x, 3)`) advances the caller's stream. Witness:
+`test_dates(fn, dates = sample(x, 3))` called twice after one `set.seed`
+yields the same two date sets as two `sample(x, 3)` draws in an untouched
+session; removing the force step makes it fail.
 
 ### 5.5 Witnesses (LDG-3158)
 
@@ -985,11 +981,9 @@ remain in the original gut list.
   review confirmed the two earlier readings: the run-local axis origin, with
   the same-calendar qualification of Section 2.3, and coverage of callback
   evaluators. The maintainer ruled on the two cases the first revision left
-  open: decision (15) for A-1 and decision (16) for A-2 (Section 5.4). One
-  narrow point remains listed, not decided: B-1, whether
-  `ledgr_indicator_dev()`'s two helpers also force their arguments before
-  saving. LDG-3158 needs a ruling on it before implementing those two
-  helpers.
+  open: decision (15) for A-1 and decision (16) for A-2 (Section 5.4). The
+  follow-up point B-1 is ruled under decision (15): `ledgr_indicator_dev()`'s
+  two helpers force their arguments before saving. No question is open.
 
 ## 11. Review response (correction round 1)
 
@@ -1009,7 +1003,7 @@ The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
 | Reading (i) | Same-calendar equality only. A longer calendar need not agree, walk-forward promotion runs on the full calendar, and LDG-3159 must not assert overlapping-bar equality. | Section 2.3 |
 | Reading (ii) | Confirmed by the review and subsumed by decision (14). | Section 5 |
 | Decision (15), argument evaluation (case A-1, option b) | Each wrapped export has two steps: `ledgr_rng_force_args()` forces caller-supplied ordinary arguments and dots before `ledgr_rng_preserve_caller()` saves the state. Missing arguments and defaults stay lazy. The frozen `lazy` set (`rank_by`, `.filter`) is never forced. `missing()` and `match.arg()` stay in the prologue, all `on.exit` cleanup moves into the implementation, and S3 generics carry the steps in their methods. User S3 methods dispatched after entry are restored. Source check and witnesses are added: two-call seed, draw in an argument, S3 method after entry, missing and default arguments, and a gut that removes step 1. The documentation sentence is rewritten. Counts unchanged. | Sections 1, 5, 5.1, 5.4, 5.5 |
-| Decision (16), built callables (case A-2, option 1) | `ledgr_signal_strategy()`'s strategy and `ledgr_adapter_r()`'s indicator function are machinery with no own restore; a direct call is the caller's own code. R is only `ledgr_indicator_dev()`'s `test` and `test_dates`. Witnesses: a drawing signal strategy varies across pulses inside a run and advances the caller's stream when called directly, and an `ledgr_adapter_r()` indicator called directly advances it too. The documentation sentence is rewritten; counts unchanged. One residual point, B-1 (argument forcing in the two R helpers), is listed, not decided. | Sections 5.1-5.5, 10, Appendix A |
+| Decision (16), built callables (case A-2, option 1) | `ledgr_signal_strategy()`'s strategy and `ledgr_adapter_r()`'s indicator function are machinery with no own restore; a direct call is the caller's own code. R is only `ledgr_indicator_dev()`'s `test` and `test_dates`. Witnesses: a drawing signal strategy varies across pulses inside a run and advances the caller's stream when called directly, and an `ledgr_adapter_r()` indicator called directly advances it too. The documentation sentence is rewritten; counts unchanged. Follow-up point B-1 is ruled under decision (15): the two R helpers force their supplied arguments before saving, with a witness (Section 5.4). | Sections 5.1-5.5, 10, Appendix A |
 
 ## Appendix A. Entry-point partition (rule of Section 5.2)
 
