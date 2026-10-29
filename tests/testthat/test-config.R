@@ -272,7 +272,7 @@ testthat::test_that("validation fails loud on required fields and constraints", 
   cost_cfg <- ledgr_test_cost_config(ledgr_cost_spread_bps(1))
   base_cfg <- list(
     db_path = "db.duckdb",
-    engine = list(seed = 1L, tz = "UTC"),
+    engine = list(seed = 1L, tz = "UTC", pulse_seed_rule = 2L),
     universe = list(instrument_ids = c("A")),
     backtest = list(
       start_ts_utc = "2020-01-01T00:00:00Z",
@@ -360,7 +360,7 @@ testthat::test_that("canonical JSON does not include environment addresses or en
 testthat::test_that("validation passes for a minimal valid config (list and JSON string)", {
   cfg <- list(
     db_path = "db.duckdb",
-    engine = list(seed = 1L, tz = "UTC"),
+    engine = list(seed = 1L, tz = "UTC", pulse_seed_rule = 2L),
     universe = list(instrument_ids = c("A")),
     backtest = list(
       start_ts_utc = "2020-01-01T00:00:00Z",
