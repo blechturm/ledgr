@@ -1,0 +1,3 @@
+cell,workload,clock,args,pairs
+small_cold,small_dense,cold,,8
+small_warm,small_dense,warm,,8
