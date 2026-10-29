@@ -75,6 +75,23 @@ validate_ledgr_config <- function(config) {
       class = "ledgr_invalid_config"
     )
   }
+  if (!is.null(seed)) {
+    # A seeded configuration names the pulse-seed rule it runs under. An old
+    # or missing rule is refused, with no compatibility path (decision (7)).
+    rule <- config$engine$pulse_seed_rule
+    current_rule <- is.numeric(rule) && length(rule) == 1L && !is.na(rule) &&
+      identical(as.numeric(rule), as.numeric(ledgr_pulse_seed_rule_version))
+    if (!isTRUE(current_rule)) {
+      rlang::abort(
+        sprintf(
+          "Config field engine.pulse_seed_rule must be %d for a seeded run; found %s.",
+          ledgr_pulse_seed_rule_version,
+          if (is.null(rule)) "<missing>" else paste(format(rule), collapse = ", ")
+        ),
+        class = c("ledgr_seed_rule_mismatch", "ledgr_invalid_config")
+      )
+    }
+  }
   ledgr_public_compiled_accounting_model(config$engine$compiled_accounting_model)
 
   cfg_get(c("corporate_actions"))

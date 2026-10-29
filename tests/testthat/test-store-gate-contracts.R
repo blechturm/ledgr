@@ -17,6 +17,7 @@ testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
     ledgr_history_treatment_rule_version = "integer",
     ledgr_identity_rule_version = "integer",
     ledgr_objective_criterion_schema_version = "integer",
+    ledgr_pulse_seed_rule_version = "integer",
     ledgr_risk_schema_version = "integer",
     ledgr_saved_sweep_schema_version = "integer",
     ledgr_selection_rule_schema_version = "character",
@@ -71,7 +72,7 @@ testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
     "ledgr_cost_schema_version"
   )
 
-  testthat::expect_identical(length(bindings), 27L)
+  testthat::expect_identical(length(bindings), 28L)
 })
 
 testthat::test_that("[LTB-0260] store gate classifies every marker failure", {

@@ -449,7 +449,7 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "scoring_range") <- list(start = pulses_iso[[1L]], end = pulses_iso[[length(pulses_iso)]])
   attr(out, "universe") <- exp$universe
   attr(out, "master_seed") <- seed
-  attr(out, "seed_contract") <- "ledgr_seed_v1"
+  attr(out, "seed_contract") <- ledgr_seed_contract_current()
   attr(out, "evaluation_scope") <- "exploratory"
   attr(out, "strategy_hash") <- strategy_hash
   strategy_schedule <- ledgr_strategy_schedule_declaration(exp$strategy)
@@ -739,6 +739,11 @@ ledgr_candidate_reproduction_key_impl <- function(candidate) {
       ),
       execution_assumptions = meta$execution_assumptions %||% NULL
     )
+  # A walk-forward candidate also names its pulse-seed rule; a sweep's
+  # `seed_contract` already is that rule, so its key has no second marker.
+  if (!is.null(provenance$pulse_seed_contract)) {
+    out$seed$pulse_seed_contract <- provenance$pulse_seed_contract
+  }
   if (length(schedule_identity) > 0L) {
     out$strategy_schedule <- schedule_identity
   }
@@ -829,6 +834,8 @@ ledgr_promote_impl <- function(exp,
   if (!is.logical(require_same_snapshot) || length(require_same_snapshot) != 1L || is.na(require_same_snapshot)) {
     rlang::abort("`require_same_snapshot` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  # Refuse an old or missing pulse-seed rule marker before any hold or run.
+  ledgr_candidate_validate_seed_rule(candidate)
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
   if (identical(candidate$status, "INCOMPLETE")) {
@@ -1043,9 +1050,12 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "metric_context_hash", "metric_context_version", "risk_chain_hash", "risk_plan_json",
     "execution_assumptions"
   )
-  schedule_keys <- c("strategy_schedule", "strategy_schedule_hash")
+  # Optional keys enter the metadata only when the results carry them. A
+  # walk-forward candidate's results carry `pulse_seed_contract`.
+  keys <- c(keys, "pulse_seed_contract")
+  optional_keys <- c("strategy_schedule", "strategy_schedule_hash", "pulse_seed_contract")
   keys <- keys[
-    !keys %in% schedule_keys |
+    !keys %in% optional_keys |
       vapply(keys, function(key) !is.null(attr(results, key, exact = TRUE)), logical(1))
   ]
   stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
@@ -2189,7 +2199,7 @@ ledgr_sweep_provenance <- function(snapshot_hash,
     alias_map_hash = alias_map_hash,
     alias_map_version = alias_map_version,
     master_seed = master_seed,
-    seed_contract = "ledgr_seed_v1",
+    seed_contract = ledgr_seed_contract_current(),
     evaluation_scope = "exploratory"
   )
   if (!is.null(cost_model_hash)) out$cost_model_hash <- cost_model_hash

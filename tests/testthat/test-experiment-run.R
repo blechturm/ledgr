@@ -154,11 +154,7 @@ testthat::test_that("pulse_seed is exposed as a stable per-pulse strategy input"
   bt <- ledgr_run(exp, run_id = "pulse-seed-context", seed = 2026L)
   on.exit(close(bt), add = TRUE)
 
-  expected <- vapply(
-    seq_along(observed$pulse_seed),
-    function(i) ledgr:::ledgr_derive_pulse_seed(2026L, i),
-    integer(1)
-  )
+  expected <- ledgr:::ledgr_pulse_seeds(2026L, seq_along(observed$pulse_seed))
   testthat::expect_identical(observed$seed, rep(2026L, length(expected)))
   testthat::expect_identical(observed$pulse_seed, expected)
 })

@@ -75,6 +75,9 @@ ledgr_walk_forward_open <- function(snapshot, session_id) {
     ),
     class = c("ledgr_walk_forward_results", "list")
   )
+  # Opening passed the store gate, so the session was written under the
+  # current pulse-seed rule constant.
+  attr(out, "pulse_seed_contract") <- ledgr_seed_contract_current()
   ledgr_walk_forward_attach_locator(out, snapshot, data$session$snapshot_hash[[1]])
 }
 
@@ -136,14 +139,16 @@ ledgr_candidate_walk_forward_impl <- function(results,
     snapshot = resolved$snapshot,
     session_id = results$session_id,
     fold_seq = fold_seq,
-    selection_rationale = selection_rationale
+    selection_rationale = selection_rationale,
+    pulse_seed_contract = attr(results, "pulse_seed_contract", exact = TRUE)
   )
 }
 
 ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
                                                        session_id,
                                                        fold_seq,
-                                                       selection_rationale = NULL) {
+                                                       selection_rationale = NULL,
+                                                       pulse_seed_contract = NULL) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)
   rationale <- ledgr_walk_forward_selection_rationale(selection_rationale)
   fold_seq <- ledgr_walk_forward_resolve_extract_fold(data$folds, fold_seq, rationale)
@@ -248,6 +253,9 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
       selection_source_fold_seq = source_fold_seq
     )
   )
+  # Copied from the results object, never re-derived from the constant, so a
+  # results object without the current marker yields a candidate without it.
+  provenance$pulse_seed_contract <- pulse_seed_contract
   schedule <- cfg$strategy_schedule %||% NULL
   schedule_identity <- ledgr_strategy_schedule_identity(
     schedule,
@@ -287,6 +295,7 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
   attr(candidate_row, "universe") <- cfg$universe$instrument_ids %||% character()
   attr(candidate_row, "master_seed") <- as.integer(data$session$master_seed[[1]])
   attr(candidate_row, "seed_contract") <- "ledgr_walk_forward_seed_v1"
+  attr(candidate_row, "pulse_seed_contract") <- pulse_seed_contract
   attr(candidate_row, "evaluation_scope") <- "walk_forward"
   attr(candidate_row, "strategy_hash") <- strategy_hash
   if (!is.null(schedule)) {

@@ -296,6 +296,9 @@ ledgr_walk_forward_impl <- function(exp,
     ),
     class = c("ledgr_walk_forward_results", "list")
   )
+  # Every session, seeded or not, names the pulse-seed rule its windows ran
+  # under; candidates copy it from here (decision (7), review F2).
+  attr(out, "pulse_seed_contract") <- ledgr_seed_contract_current()
   ledgr_walk_forward_attach_locator(out, exp$snapshot, session_identity$snapshot_hash)
 }
 

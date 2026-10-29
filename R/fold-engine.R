@@ -763,7 +763,7 @@ ledgr_fold_stage_decide <- function(
     cash = fold_state$cash,
     equity = fold_state$cash + observation$positions_value,
     seed = services$execution_seed,
-    pulse_seed = ledgr_derive_pulse_seed(services$execution_seed, pulse_idx),
+    pulse_seed = ledgr_pulse_seed_at(services, pulse_idx),
     state_prev = fold_state$state_prev,
     .safety_state = "GREEN"
   )
@@ -1612,11 +1612,16 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   cost_resolver <- execution$cost_resolver
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
+  # Rule v2 pulse seeds on the run's own calendar, computed once per seeded
+  # fold and read by index; an unseeded fold builds no vector. Resume reads
+  # from `start_idx` on the same calendar.
+  pulse_seeds <- NULL
   if (!is.null(execution_seed)) {
     # The enforcing point of the pinned kind (decision (1)).
     rng_state <- ledgr_rng_caller_state()
     on.exit(ledgr_rng_restore(rng_state), add = TRUE)
     ledgr_rng_seed_pinned(as.integer(execution_seed))
+    pulse_seeds <- ledgr_pulse_seeds(execution_seed, seq_len(length(pulses_posix)))
   }
   event_mode <- execution$event_mode
   use_fast_context <- isTRUE(execution$use_fast_context)
@@ -1828,6 +1833,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     active_alias_map = active_alias_map,
     risk_plan = risk_plan,
     execution_seed = execution_seed,
+    pulse_seeds = pulse_seeds,
     strategy_fn = strategy_fn,
     strategy_params = strategy_params,
     strategy_call_signature = strategy_call_signature,

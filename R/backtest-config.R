@@ -190,6 +190,11 @@ ledgr_config <- function(snapshot,
     checkpoint_every = as.integer(checkpoint_every),
     control = control
   )
+  # A seeded run records the pulse-seed rule it ran under; an unseeded
+  # configuration and its hash are unchanged (decision (7)).
+  if (!is.null(seed)) {
+    engine$pulse_seed_rule <- ledgr_pulse_seed_rule_version
+  }
   if (!is.null(compiled_accounting_model)) {
     engine$compiled_accounting_model <- compiled_accounting_model
   }
