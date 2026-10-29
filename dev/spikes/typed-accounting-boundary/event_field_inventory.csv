@@ -1,0 +1,33 @@
+field,event_kinds,classification,current_origin,current_consumer,typed_candidate
+event_seq,all,primitive_identity,event producer,ordering and replay,INTEGER NOT NULL
+event_id,all,primitive_identity,event producer,event identity,VARCHAR NOT NULL
+run_id,all,primitive_identity,run service,store filtering,VARCHAR NOT NULL
+ts_utc,all,primitive_identity,pulse execution,ordering and as-of replay,TIMESTAMP NOT NULL
+event_type,all,primitive_discriminator,event producer,replay dispatch,VARCHAR NOT NULL
+instrument_id,all,primitive_identity,event producer,position and lot replay,VARCHAR
+side,FILL,primitive_economics,execution fill,fill and lot replay,VARCHAR
+qty,FILL|OPENING|DISPOSITION,primitive_economics,execution or held position,fill and lot replay,DOUBLE
+price,FILL|OPENING|DISPOSITION,primitive_economics,execution or resolved mark,fill and lot replay,DOUBLE
+fee,FILL,primitive_economics,cost model,fill and lot replay,DOUBLE NOT NULL
+cash_delta,all,derived_effect,signed exact event arithmetic,accounting replay,DOUBLE NOT NULL
+position_delta,all,derived_effect,signed exact event arithmetic,accounting replay,DOUBLE NOT NULL
+source,OPENING|CASH|DISPOSITION,durable_discriminator,event policy,opening and corporate-action routing,VARCHAR
+source_fact_id,CASH|DISPOSITION,durable_evidence,sealed fact,duplicate prevention and results,VARCHAR
+cost_basis,OPENING,redundant_value,opening price,lot initialization,derive from price
+entitled_quantity,CASH,durable_evidence,entitlement boundary,corporate-action results,DOUBLE
+gross_cash_per_parent_unit,CASH,durable_evidence,sealed corporate-action fact,corporate-action results,DOUBLE
+amount_policy_id,CASH,durable_policy_evidence,corporate-action policy,corporate-action summary,VARCHAR
+posting_policy_id,CASH,durable_policy_evidence,corporate-action policy,corporate-action summary,VARCHAR
+late_arrival,CASH,durable_evidence,fact timing,corporate-action summary,BOOLEAN
+affected_marked_exposure,CASH|DISPOSITION,derived_diagnostic,held quantity and mark,corporate-action and valuation summary,DOUBLE
+terminal_event,LIFETIME_DISPOSITION,durable_evidence,sealed lifetime fact,terminal summary,VARCHAR
+matched_label,LIFETIME_DISPOSITION,durable_policy_evidence,terminal policy resolution,terminal summary,VARCHAR
+disposition_policy_id,DISPOSITION,durable_policy_evidence,terminal policy resolution,replay validation and results,VARCHAR
+disposition_choice,DISPOSITION,durable_policy_evidence,terminal policy resolution,terminal summary,VARCHAR
+disposition_basis,DISPOSITION,durable_policy_evidence,terminal policy resolution,terminal summary,VARCHAR
+mark_source,DISPOSITION,durable_valuation_evidence,valuation resolution,terminal summary,VARCHAR
+mark_source_ts_utc,DISPOSITION,durable_valuation_evidence,valuation resolution,replay validation,TIMESTAMP
+mark_age,DISPOSITION,durable_valuation_evidence,valuation resolution,replay validation and summary,INTEGER
+haircut_fraction,DISPOSITION,durable_policy_evidence,terminal policy,terminal and corporate-action summary,DOUBLE
+position_before,DISPOSITION,derived_reconciliation,live lot state,replay validation,DOUBLE
+realized_model_pnl,DISPOSITION,derived_reconciliation,lot close,corporate-action results,DOUBLE

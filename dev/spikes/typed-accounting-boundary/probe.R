@@ -1,0 +1,10 @@
+.libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
+pkgload::load_all(".", quiet = TRUE)
+memory <- ledgr:::ledgr_output_sink_memory("probe")
+duckdb <- ledgr:::ledgr_output_sink_duckdb
+cat("memory sink typed columns:\n")
+print(memory$typed_columns)
+cat("memory sink serializes metadata JSON:", memory$serialize_meta_json, "\n")
+cat("DuckDB sink source exists:", is.function(duckdb), "\n")
+cat("durable ledger columns:\n")
+print(ledgr:::ledgr_accounting_event_columns())
