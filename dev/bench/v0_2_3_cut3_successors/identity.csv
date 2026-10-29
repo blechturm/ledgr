@@ -1,5 +1,5 @@
 "field","base","candidate","expectation","status"
-"commit","3a67db60","9f189027","",""
+"commit","3a67db60","a19f7f23","",""
 "store bindings added","","ledgr_pulse_seed_rule_version","exactly ledgr_pulse_seed_rule_version, none removed","PASS"
 "store bindings changed","","","none of the common bindings changes","PASS"
 "ledgr_pulse_seed_rule_version","<absent>","2 (integer)","2 (integer)","PASS"
