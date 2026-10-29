@@ -86,7 +86,7 @@ check_root <- function(when) {
   }
   probe
 }
-check_root("host check before provisioning")
+invisible(check_root("host check before provisioning"))
 
 install_arm <- function(arm, sha) {
   dir <- file.path(tempdir(), paste0("arm_", arm))
