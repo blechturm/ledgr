@@ -17,7 +17,11 @@
 #'   current scalar-only sweep output. Retention metadata is not execution
 #'   identity.
 #' @param seed Optional integer-like master seed. When supplied, each candidate
-#'   receives a deterministic derived execution seed.
+#'   receives a deterministic derived execution seed, used as in
+#'   [ledgr_run()]. A strategy that draws through
+#'   `withr::with_seed(ctx$pulse_seed, ...)` gets the same results for any
+#'   `workers` value. The result and each candidate's provenance record the
+#'   pulse-seed rule as `seed_contract = "ledgr_seed_v2"`.
 #' @param stop_on_error Logical. When `FALSE`, candidate-level execution errors
 #'   are captured as failed rows; when `TRUE`, they are rethrown.
 #' @param workers Whole-number worker count. The default `1` uses the
@@ -790,6 +794,12 @@ ledgr_candidate_reproduction_key_impl <- function(candidate) {
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
 #' test-snapshot experiment and set `require_same_snapshot = FALSE` deliberately.
+#'
+#' Promotion first checks the candidate's pulse-seed rule marker: a sweep
+#' candidate needs `seed_contract = "ledgr_seed_v2"`, a walk-forward candidate
+#' needs `pulse_seed_contract = "ledgr_seed_v2"`. An old or missing marker is
+#' refused with `ledgr_seed_rule_mismatch` before any run is created; re-run
+#' the sweep or walk-forward session with this ledgr version.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:

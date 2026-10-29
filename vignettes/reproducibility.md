@@ -164,7 +164,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.140
+    Elapsed Sec:      1.160
 
 ## Extract Stored Strategy Source
 
@@ -507,6 +507,8 @@ Recommended-R functions such as `stats::median()` remain Tier
 base/recommended namespace. They are not package dependencies outside
 the active R distribution.
 
+## Random Decisions
+
 Ambient strategy RNG calls such as `runif(1)` are a separate case. They
 are allowed as Tier 2 for ordinary sequential runs because ledgr’s
 execution seed contract can make a continuous strategy run repeatable,
@@ -517,17 +519,196 @@ before the next pulse.
 
 Strategies that need pulse-specific stochastic inputs in resume-safe or
 parallel-safe paths should derive those inputs from `ctx$pulse_seed`.
-The field is a stable integer derived from the execution seed and the
-1-based pulse position in the run’s pulse sequence, so it does not
-depend on worker order, timestamps, event sequence numbers, or ambient
-RNG state. `ctx$seed` remains the per-execution seed; `ctx$pulse_seed`
-is the per-pulse derivative.
+The field is an integer computed from the execution seed and the 1-based
+pulse position in the run’s pulse calendar, so it does not depend on
+worker order, timestamps, event sequence numbers, or ambient RNG state.
+A straight run, a resumed run, a sweep candidate and its promoted run
+get the same value at the same position of the same calendar. `ctx$seed`
+remains the per-execution seed; `ctx$pulse_seed` is the per-pulse
+derivative, and it is `NULL` when the run has no seed.
 
 This is different from custom-indicator RNG restrictions: feature
 generation must be deterministic for a given snapshot and feature
 definition. Prefer making random decisions explicit in the research
 design. A seeded decision may be repeatable, but it is still part of the
 decision process.
+
+### The Recipe
+
+Draw inside `withr::with_seed(ctx$pulse_seed, ...)`, and stop when there
+is no seed. This strategy holds 10 shares of one instrument per pulse,
+chosen at random:
+
+``` r
+random_pick <- function(ctx, params) {
+  if (is.null(ctx$pulse_seed)) {
+    stop("random_pick needs a seed: pass `seed =` to ledgr_run() or ledgr_sweep().")
+  }
+  pick <- withr::with_seed(ctx$pulse_seed, sample.int(length(ctx$universe), 1L))
+  targets <- ctx$flat()
+  targets[ctx$universe[pick]] <- params$qty
+  targets
+}
+
+random_exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = random_pick,
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+
+ledgr_strategy_preflight(random_pick)[c("tier", "ambient_rng_symbols")]
+```
+
+    $tier
+    [1] "tier_2"
+
+    $ambient_rng_symbols
+    character(0)
+
+The recipe is Tier 2 because of the `withr::` call, and preflight
+reports no ambient RNG symbol. Use `sample.int()` for the draw, as here.
+Preflight detects direct calls to `runif()`, `rnorm()` and `sample()`,
+even inside `with_seed()`, and refuses them on resume and in sweeps with
+several workers. Other draws, such as `sample.int()`, `rbinom()` or
+draws inside package functions, are not detected. That gap is unchanged:
+an undetected draw outside `with_seed()` is still ambient RNG and still
+not certified. Detection is parked as an open design question ([Ambient
+RNG detection for
+strategies](https://github.com/blechturm/ledgr/blob/main/inst/design/horizon.md#2026-10-29-execution-ambient-rng-detection-for-strategies)).
+
+A seed is required. Without one, the guard stops the run on its first
+pulse:
+
+``` r
+tryCatch(
+  ledgr_run(random_exp, params = list(qty = 10), run_id = "random_unseeded"),
+  ledgr_strategy_error = function(error) conditionMessage(error$parent)
+)
+```
+
+    [1] "random_pick needs a seed: pass `seed =` to ledgr_run() or ledgr_sweep()."
+
+With a seed, the draws move the strategy between instruments. A
+different seed gives different fills. The random switches often change
+the target on the last bar, so these runs raise the
+`LEDGR_LAST_BAR_NO_FILL` warning explained above; this chunk hides it.
+
+``` r
+bt_seed_1 <- ledgr_run(random_exp, params = list(qty = 10), seed = 1L, run_id = "random_seed_1")
+bt_seed_2 <- ledgr_run(random_exp, params = list(qty = 10), seed = 2L, run_id = "random_seed_2")
+
+fills_1 <- ledgr_results(bt_seed_1, "fills")
+fills_2 <- ledgr_results(bt_seed_2, "fills")
+
+head(fills_1[c("ts_utc", "instrument_id", "side", "qty")])
+```
+
+    # A tibble: 6 x 4
+      ts_utc     instrument_id side    qty
+      <date>     <chr>         <chr> <dbl>
+    1 2019-01-02 DEMO_01       BUY      10
+    2 2019-01-07 DEMO_01       SELL     10
+    3 2019-01-07 DEMO_02       BUY      10
+    4 2019-01-10 DEMO_01       BUY      10
+    5 2019-01-10 DEMO_02       SELL     10
+    6 2019-01-11 DEMO_01       SELL     10
+
+``` r
+table(fills_1$instrument_id)
+```
+
+
+    DEMO_01 DEMO_02
+         62      61
+
+``` r
+c(seed_1 = nrow(fills_1), seed_2 = nrow(fills_2))
+```
+
+    seed_1 seed_2
+       123    131
+
+``` r
+identical(
+  fills_1[c("ts_utc", "instrument_id", "side", "qty")],
+  fills_2[c("ts_utc", "instrument_id", "side", "qty")]
+)
+```
+
+    [1] FALSE
+
+The same seeded sweep gives the same candidates with one worker and with
+two. Parallel sweeps need the `mirai` package; each worker loads ledgr
+and `withr`:
+
+``` r
+grid <- data.frame(qty = c(5, 10))
+sweep_1_worker <- ledgr_sweep(random_exp, grid, seed = 2026L, workers = 1L)
+sweep_2_workers <- ledgr_sweep(random_exp, grid, seed = 2026L, workers = 2L)
+
+data.frame(
+  qty = grid$qty,
+  execution_seed = sweep_1_worker$execution_seed,
+  final_equity_1_worker = sweep_1_worker$final_equity,
+  final_equity_2_workers = sweep_2_workers$final_equity,
+  n_trades_1_worker = sweep_1_worker$n_trades,
+  n_trades_2_workers = sweep_2_workers$n_trades
+)
+```
+
+      qty execution_seed final_equity_1_worker final_equity_2_workers n_trades_1_worker
+    1   5      359458135              10018.95               10018.95                56
+    2  10      724846829              10001.72               10001.72                58
+      n_trades_2_workers
+    1                 56
+    2                 58
+
+``` r
+identical(sweep_1_worker$execution_seed, sweep_2_workers$execution_seed) &&
+  identical(sweep_1_worker$final_equity, sweep_2_workers$final_equity) &&
+  identical(sweep_1_worker$n_trades, sweep_2_workers$n_trades)
+```
+
+    [1] TRUE
+
+This works because ledgr seeds every seeded run with one fixed RNG kind,
+Mersenne-Twister with Inversion and Rejection, and workers start with
+the same kind, so `with_seed()` draws the same numbers in every process.
+
+### Your Own Random State
+
+ledgr restores your RNG kind and `.Random.seed` (or their absence)
+around its own work (store writes, seeding, worker start and stop) and
+around the user code it runs for you: strategies, indicator and feature
+callbacks, ranking and selection expressions such as `rank_by`, and the
+`test` and `test_dates` helpers of `ledgr_indicator_dev()`, which
+restore on each call. The arguments you pass are evaluated first, before
+ledgr saves your random state, so random draws in them advance your
+stream as if you had made them yourself: two calls of
+`ledgr_run(exp, seed = sample.int(1e6, 1))` get different seeds.
+Expressions that ledgr captures and runs later, such as `rank_by` and
+`.filter`, are restored. An S3 method you define is restored when a
+restoring ledgr function calls it after entry, and is your own code when
+another ledgr function calls it. The strategy from
+`ledgr_signal_strategy()` and the indicator function from
+`ledgr_adapter_r()` do not restore: inside a run they draw like any
+strategy or indicator, and when you call them yourself they are your own
+code. A pending Box-Muller normal variate is not preserved.
+
+``` r
+set.seed(99)
+untouched <- runif(1)
+
+set.seed(99)
+invisible(ledgr_sim_bars(n_instruments = 1, n_days = 5, seed = 1L))
+identical(runif(1), untouched)
+```
+
+    [1] TRUE
+
+ledgr’s simulator seeded and drew its own numbers, yet your next draw is
+the one you would have got without it.
 
 ## Hidden Mutable State
 

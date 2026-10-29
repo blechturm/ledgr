@@ -59,6 +59,12 @@ recorded, compares only the strategy and feature set and lists the rest as
 The default \code{require_same_snapshot = TRUE} protects same-snapshot replay. For
 train/test evaluation, pass a candidate selected on the train snapshot to a
 test-snapshot experiment and set \code{require_same_snapshot = FALSE} deliberately.
+
+Promotion first checks the candidate's pulse-seed rule marker: a sweep
+candidate needs \code{seed_contract = "ledgr_seed_v2"}, a walk-forward candidate
+needs \code{pulse_seed_contract = "ledgr_seed_v2"}. An old or missing marker is
+refused with \code{ledgr_seed_rule_mismatch} before any run is created; re-run
+the sweep or walk-forward session with this ledgr version.
 }
 \section{Articles}{
 

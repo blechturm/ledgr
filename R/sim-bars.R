@@ -7,7 +7,9 @@
 #'
 #' @param n_instruments Number of synthetic instruments.
 #' @param n_days Number of business-day bars per instrument.
-#' @param seed Random seed used for deterministic generation.
+#' @param seed Random seed used for deterministic generation. ledgr seeds with
+#'   the kind `Mersenne-Twister`/`Inversion`/`Rejection` whatever kind your
+#'   session uses, and restores your RNG kind and `.Random.seed` afterwards.
 #' @param start First calendar date considered for the business-day sequence.
 #' @param instrument_prefix Prefix used for generated instrument IDs.
 #' @return A tibble with `ts_utc`, `instrument_id`, `open`, `high`, `low`,

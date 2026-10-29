@@ -8,6 +8,9 @@
 #' @param instrument_ids Unique, non-empty synthetic instrument identifiers.
 #' @param from,to Inclusive civil-date bounds.
 #' @param seed Integer seed controlling only generated numeric bar content.
+#'   ledgr seeds with the kind `Mersenne-Twister`/`Inversion`/`Rejection`
+#'   whatever kind your session uses, and restores your RNG kind and
+#'   `.Random.seed` afterwards.
 #' @param venue_id,universe_id Stable identifiers for the synthetic venue and
 #'   membership universe.
 #' @param timezone IANA timezone used for the synthetic venue calendar.

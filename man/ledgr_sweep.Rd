@@ -29,7 +29,11 @@ current scalar-only sweep output. Retention metadata is not execution
 identity.}
 
 \item{seed}{Optional integer-like master seed. When supplied, each candidate
-receives a deterministic derived execution seed.}
+receives a deterministic derived execution seed, used as in
+\code{\link[=ledgr_run]{ledgr_run()}}. A strategy that draws through
+\code{withr::with_seed(ctx$pulse_seed, ...)} gets the same results for any
+\code{workers} value. The result and each candidate's provenance record the
+pulse-seed rule as \code{seed_contract = "ledgr_seed_v2"}.}
 
 \item{stop_on_error}{Logical. When \code{FALSE}, candidate-level execution errors
 are captured as failed rows; when \code{TRUE}, they are rethrown.}

@@ -13,6 +13,7 @@
 #' @param selection_rule A rule created by [ledgr_rule_argmax()] or
 #'   [ledgr_rule_argmin()].
 #' @param seed Optional master seed for deterministic per-row execution seeds.
+#'   `NULL` (the default) runs every training and test row unseeded.
 #' @param opening_state_policy Either `"carry_test_state"` or
 #'   `"flat_test_state"`. The default carries selected test-run terminal state
 #'   into the next test run and requires contiguous test windows (see

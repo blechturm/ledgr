@@ -58,9 +58,14 @@
 #' seed contract for ordinary sequential runs, but they are not certified for
 #' resume or parallel equivalence. Strategies that need pulse-specific
 #' stochastic inputs in those paths should derive them from `ctx$pulse_seed`
-#' without reading ambient `.Random.seed`. Custom indicator generation has a
-#' stricter deterministic feature contract; do not infer indicator RNG policy
-#' from strategy preflight.
+#' without reading ambient `.Random.seed`, for example with
+#' `withr::with_seed(ctx$pulse_seed, sample.int(n, 1))`. Preflight detects only
+#' direct calls to `runif()`, `rnorm()` and `sample()`, also inside
+#' `with_seed()`, which is why that recipe uses `sample.int()`. Other draws,
+#' such as `sample.int()` or `rbinom()` outside `with_seed()`, are not detected
+#' and are not certified either. Custom indicator generation has a stricter
+#' deterministic feature contract; do not infer indicator RNG policy from
+#' strategy preflight.
 #'
 #' @param strategy A function with signature `function(ctx, params)`.
 #' @return A `ledgr_strategy_preflight` object with fields `tier`, `allowed`,

@@ -28,7 +28,8 @@ a \code{ledgr_executable_grid}.}
 \item{selection_rule}{A rule created by \code{\link[=ledgr_rule_argmax]{ledgr_rule_argmax()}} or
 \code{\link[=ledgr_rule_argmin]{ledgr_rule_argmin()}}.}
 
-\item{seed}{Optional master seed for deterministic per-row execution seeds.}
+\item{seed}{Optional master seed for deterministic per-row execution seeds.
+\code{NULL} (the default) runs every training and test row unseeded.}
 
 \item{opening_state_policy}{Either \code{"carry_test_state"} or
 \code{"flat_test_state"}. The default carries selected test-run terminal state

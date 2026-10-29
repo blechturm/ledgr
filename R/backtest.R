@@ -385,7 +385,13 @@ ledgr_run_config <- function(config,
 #'   declarations before execution.
 #' @param run_id Optional run identifier.
 #' @param seed Optional integer-like execution seed. When non-`NULL`, ledgr
-#'   applies it at fold entry and stores it in run identity.
+#'   seeds R's RNG with it at fold entry under the kind
+#'   `Mersenne-Twister`/`Inversion`/`Rejection`, derives `ctx$pulse_seed` from
+#'   it by pulse-seed rule v2, and stores the seed and
+#'   `engine.pulse_seed_rule` in run identity. With `NULL`, `ctx$pulse_seed`
+#'   is `NULL` and ledgr sets neither seed nor kind. For every value, your RNG
+#'   kind and `.Random.seed` are restored when the call returns or fails; the
+#'   reproducibility article (see Articles) states the boundary.
 #' @param compiled_accounting_model Optional accounting accelerator selector.
 #'   `NULL` uses the canonical R accounting path. `"spot_fifo"` is a scoped
 #'   spot-asset FIFO accelerator for memory-backed sweep execution; committed
@@ -412,6 +418,10 @@ ledgr_run_config <- function(config,
 #' Metrics and accounting:
 #' `vignette("metrics-and-accounting", package = "ledgr")`
 #' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#'
+#' Seeds and random state:
+#' `vignette("reproducibility", package = "ledgr")`
+#' `system.file("doc", "reproducibility.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

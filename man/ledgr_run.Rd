@@ -24,7 +24,13 @@ declarations before execution.}
 \item{run_id}{Optional run identifier.}
 
 \item{seed}{Optional integer-like execution seed. When non-\code{NULL}, ledgr
-applies it at fold entry and stores it in run identity.}
+seeds R's RNG with it at fold entry under the kind
+\code{Mersenne-Twister}/\code{Inversion}/\code{Rejection}, derives \code{ctx$pulse_seed} from
+it by pulse-seed rule v2, and stores the seed and
+\code{engine.pulse_seed_rule} in run identity. With \code{NULL}, \code{ctx$pulse_seed}
+is \code{NULL} and ledgr sets neither seed nor kind. For every value, your RNG
+kind and \code{.Random.seed} are restored when the call returns or fails; the
+reproducibility article (see Articles) states the boundary.}
 
 \item{compiled_accounting_model}{Optional accounting accelerator selector.
 \code{NULL} uses the canonical R accounting path. \code{"spot_fifo"} is a scoped
@@ -67,6 +73,10 @@ Strategy authoring:
 Metrics and accounting:
 \code{vignette("metrics-and-accounting", package = "ledgr")}
 \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+
+Seeds and random state:
+\code{vignette("reproducibility", package = "ledgr")}
+\code{system.file("doc", "reproducibility.html", package = "ledgr")}
 }
 
 \examples{
