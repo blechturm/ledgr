@@ -1,7 +1,7 @@
 # RNG isolation, kind pinning and RNG-neutral store writes (LDG-3158;
 # inst/design/ledgr_v0_2_3_spec_packet/ws2_rng_design.md Sections 3-5).
-# Each witness draws; the ticket evidence records that each fails when its
-# fix is reverted.
+# Drawing witnesses have fix-revert evidence recorded in the ticket.
+# Source checks, capture checks and identified no-draw cases are guards only.
 
 # ---------------------------------------------------------------------------
 # Section 4: source inventory
@@ -191,13 +191,24 @@ testthat::test_that("ledgr_store_append keeps the caller seed on normal and erro
   ledgr:::ledgr_store_append(con, "t", df)
   testthat::expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 
-  # Error exit: the append draws its view name, then fails on the missing table.
+  # Raw error controls: conversion fails after DuckDB draws its view name.
+  bad <- data.frame(x = "bad")
+  set.seed(12L)
+  raw_before <- ledgr_rng_test_seed()
+  testthat::expect_error(DBI::dbAppendTable(con, "t", bad))
+  testthat::expect_false(identical(ledgr_rng_test_seed(), raw_before))
+  rm(".Random.seed", envir = globalenv())
+  testthat::expect_error(DBI::dbAppendTable(con, "t", bad))
+  testthat::expect_true(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+  rm(".Random.seed", envir = globalenv())
+
+  # The helper restores both caller states on that same error path.
   set.seed(12L)
   before <- ledgr_rng_test_seed()
-  testthat::expect_error(ledgr:::ledgr_store_append(con, "missing_table", df))
+  testthat::expect_error(ledgr:::ledgr_store_append(con, "t", data.frame(x = "bad")))
   testthat::expect_identical(ledgr_rng_test_seed(), before)
   rm(".Random.seed", envir = globalenv())
-  testthat::expect_error(ledgr:::ledgr_store_append(con, "missing_table", df))
+  testthat::expect_error(ledgr:::ledgr_store_append(con, "t", data.frame(x = "bad")))
   testthat::expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
   testthat::expect_identical(DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM t")$n, 9)
 })
@@ -428,6 +439,7 @@ testthat::test_that("wrapped exports restore the caller's RNG on setup failure a
   }
   ledgr_rng_expect_caller_unchanged(function() ledgr_backtest(snapshot = fx$snapshot, strategy = failing,
     cost_model = ledgr_cost_zero(), run_id = next_id("bt-fail")), "ledgr_backtest failure", expect_condition = "error")
+  # No-draw guard: this validation error precedes seeding.
   ledgr_rng_expect_caller_unchanged(function() ledgr_sim_bars(n_instruments = 2, n_days = 10, seed = 4L, instrument_prefix = ""),
     "ledgr_sim_bars setup failure", expect_condition = "error")
 })
