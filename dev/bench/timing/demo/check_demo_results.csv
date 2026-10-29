@@ -1,0 +1,16 @@
+"case","demonstrates","expected_exit","exit","expected_reason","reasons_found","as_expected"
+"control","a clean gate record passes",0,0,"","",TRUE
+"ratio_0.98_on_0.97","0.98 on a 0.97 cell",1,1,"ratio above bound","ratio above bound",TRUE
+"ratio_1.031_on_1.03","1.031 on a 1.03 cell",1,1,"ratio above bound","ratio above bound",TRUE
+"missing_cell","a missing cell",1,1,"missing cell","missing row; fewer pairs; missing cell",TRUE
+"duplicate_row","a duplicate row",1,1,"duplicate row","duplicate row; executed order",TRUE
+"fewer_pairs","fewer pairs than the protocol states",1,1,"fewer pairs","missing row; fewer pairs",TRUE
+"non_alternating","a non-alternating executed order",1,1,"executed order","executed order",TRUE
+"wrong_power_plan","a wrong power plan in one measured process",1,1,"power plan","power plan",TRUE
+"descendant_affinity","wrong affinity on a descendant between a measured process and the root",1,1,"affinity","affinity",TRUE
+"foreign_r","a foreign R process seen by a measured process",1,1,"foreign R","foreign R",TRUE
+"aa_as_gate","an A/A record presented as a gate",1,1,"A/A record presented as a gate","A/A record presented as a gate",TRUE
+"aa_control","the same A/A record checked with --aa is valid",0,0,"","",TRUE
+"protocol_pairs_7","a protocol stating fewer than eight pairs",1,1,"protocol","protocol",TRUE
+"threshold_map_omits_cell","a threshold map that omits a cell",1,1,"protocol","protocol; protocol changed",TRUE
+"interrupted_record","the runner's interrupted attempt (killed child, unrun slots)",1,1,"unrun slot","attempt status; test hook; host policy; foreign R; failed execution; unrun slot; fewer pairs; missing cell",TRUE

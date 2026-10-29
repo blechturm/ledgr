@@ -199,7 +199,8 @@ timing_check_main <- function() {
     cat(if (aa) "\nA/A VALID (validity and noise only; never gate evidence)\n" else "\nCHECK PASS\n")
     return(0L)
   }
-  cat(sprintf("\nCHECK FAIL (%d)\n", nrow(res$failures)))
+  counts <- table(factor(res$failures$reason, levels = unique(res$failures$reason)))
+  cat(sprintf("\nCHECK FAIL (%d): %s\n", nrow(res$failures), paste(names(counts), counts, collapse = "; ")))
   for (i in seq_len(nrow(res$failures))) cat(sprintf("  %s: %s\n", res$failures$reason[[i]], res$failures$detail[[i]]))
   1L
 }
