@@ -135,11 +135,12 @@ testthat::test_that("rule v2 edge cases: seeds, pulse indices and refusals", {
   }
   # The accessor returns NULL for an unseeded fold and one element otherwise.
   testthat::expect_null(ledgr:::ledgr_pulse_seed_at(list(pulse_seeds = NULL), 3L))
-  testthat::expect_identical(ledgr:::ledgr_pulse_seed_at(list(pulse_seeds = vec <- ledgr:::ledgr_pulse_seeds(7L, 1:5)), 3L), vec[[3L]])
+  five <- ledgr:::ledgr_pulse_seeds(7L, 1:5)
+  testthat::expect_identical(ledgr:::ledgr_pulse_seed_at(list(pulse_seeds = five), 3L), five[[3L]])
 })
 
 testthat::test_that("rule v2 meets the frozen bounds B1-B6 and every control fails", {
-  v2 <- ledgr_bounds_v2 <- ps2_bounds(function(s, p) ledgr:::ledgr_pulse_seeds(s, p))
+  v2 <- ps2_bounds(function(s, p) ledgr:::ledgr_pulse_seeds(s, p))
   testthat::expect_true(all(v2$pass), info = paste(names(v2$stats), signif(v2$stats, 4), collapse = "; "))
   testthat::expect_identical(unname(v2$stats[c("B4_distinct", "B4_shared", "B5", "B6")]), c(10000, 0, 0, 1000))
   m <- 2147483647
