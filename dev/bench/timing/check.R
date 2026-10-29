@@ -7,11 +7,11 @@
 # dropped or re-paired. Before any ratio counts, the record must be valid:
 # the protocol, the attempt and its disposition, the saved inputs against
 # the harness commit, the plan and every slot, the host snapshots' coverage
-# of the window, each process's identity, affinity and power plan, no other
-# process above 1.0 CPU-second per interval, the alternating executed order
-# and invariant work. Each section below says what it requires; the manual's
-# "Before/After Regression Gates" states the rules. CPU load and the
-# foreign-R names are observations and never fail.
+# of the window, each process's identity, affinity and power plan, the
+# alternating executed order and invariant work. Each section below says
+# what it requires; the manual's "Before/After Regression Gates" states the
+# rules. Background activity (CPU load, per-interval top processes, other R
+# processes) is recorded as an observation and never fails.
 #
 # --aa checks a self-versus-self record (both arms one commit): validity
 # only, with each cell's ratio reported as a noise observation. In gate mode
@@ -49,7 +49,7 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
 
   # The attempt.
   s <- timing_read_kv(file.path(record, "session.csv"))
-  for (field in c("protocol", "attempt", "mode", "host_policy", "test_hook", "disposition", "status", "status_reason",
+  for (field in c("protocol", "attempt", "mode", "test_hook", "disposition", "status", "status_reason",
                   "harness_commit", "harness_source", "protocol_source", "inputs_start", "inputs_end",
                   "base_commit", "base_product", "base_lib",
                   "candidate_commit", "candidate_product", "candidate_lib", "root_id", "root_affinity", "plan_guid")) {
@@ -71,7 +71,6 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
     }
   }
   if (!identical(s$test_hook, "none")) fail("test hook", s$test_hook)
-  if (!identical(s$host_policy, "enforce")) fail("host policy", sprintf("host checks were %s, not enforced", s$host_policy))
   if (!identical(s$inputs_start, "verified")) fail("inputs changed", sprintf("at start: %s", s$inputs_start))
   if (!identical(s$inputs_end, "verified")) fail("inputs changed", sprintf("at end: %s", s$inputs_end))
   # The saved copies themselves, compared with the recorded commit here and
@@ -173,11 +172,6 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
       if (!isTRUE(e$affinity == timing_affinity)) fail("affinity", paste(where[[i]], "root", e$affinity))
     }
     for (i in which(host$plan_guid != timing_plan_guid | is.na(host$plan_guid))) fail("power plan", where[[i]])
-    # Busy processes: every snapshot after the first records the largest CPU
-    # increase of any process outside the measured chain since the previous one.
-    cpu <- suppressWarnings(as.numeric(host$cpu_max_ms))
-    for (i in which(host$phase != "before" & !is.finite(cpu))) fail("host snapshots", paste(where[[i]], "has no CPU interval"))
-    for (i in which(cpu > timing_cpu_limit_ms)) fail("busy process", sprintf("%s +%.0f ms: %s", where[[i]], cpu[[i]], host$cpu_top[[i]]))
   }
 
   # Rows: each measured process.

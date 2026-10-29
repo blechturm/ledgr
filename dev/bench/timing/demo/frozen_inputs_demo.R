@@ -1,6 +1,6 @@
 # Shared timing harness (LDG-3155, review round 1 F3): frozen inputs.
 #
-# Starts a real smoke-1 window (A/A at HEAD, --host-policy=record; not timing
+# Starts a real smoke-1 window (A/A at HEAD; not timing
 # evidence) and, while it runs:
 #   1. after slot 4, edits the live harness and protocol: measure.R gains a
 #      stop() and workloads.R redefines small_dense to report work "EDITED".
@@ -32,7 +32,7 @@ head <-system2("git", c("-C", shQuote(repo), "rev-parse", "HEAD"), stdout = TRUE
 log <- file.path(tempdir(), "runner.log")
 system2(file.path(R.home("bin"), "Rscript"), c(shQuote(file.path(harness, "runner.R")),
   shQuote(paste0("--protocol=", file.path(harness, "protocols", "smoke-1"))), paste0("--base=", head),
-  paste0("--candidate=", head), "--label=frozen-inputs-demo", "--host-policy=record"),
+  paste0("--candidate=", head), "--label=frozen-inputs-demo"),
   stdout = log, stderr = log, wait = FALSE)
 
 attempt <- file.path(label_dir, "attempt-1")

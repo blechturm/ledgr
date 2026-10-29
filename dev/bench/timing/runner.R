@@ -18,8 +18,6 @@
 #   --disposition=<text>         required for a later attempt under one label: the disposition
 #   --disposition-role=<role>    of the earlier attempt, who wrote it (maintainer or agent) and,
 #   --disposition-ref=<ref>      for a gate, the maintainer decision it rests on
-#   --host-policy=record         record host problems without refusing or invalidating
-#                                (smoke and demonstrations only; the checker refuses the record)
 #   --test-kill-slot=<n>         interruption demonstration: slot n's process kills itself
 #
 # The benchmark manual's "Before/After Regression Gates" states the host,
@@ -53,8 +51,6 @@ local({
   for (name in c("protocol", "base", "candidate", "label")) {
     if (!is.character(opt(name))) refuse("--", name, "=<value> is required")
   }
-  policy <- opt("host-policy", "enforce")
-  if (!policy %in% c("enforce", "record")) refuse("--host-policy must be enforce or record")
   kill_slot <- suppressWarnings(as.integer(opt("test-kill-slot", NA)))
   protocol <- timing_read_protocol(opt("protocol"))
   if (length(protocol$problems)) refuse("invalid protocol: ", paste(protocol$problems, collapse = "; "))
@@ -69,7 +65,7 @@ local({
   protocol_source <- timing_repo_path(protocol$dir, repo)
   sources <- timing_input_sources(harness_source, protocol_source)
   inputs_start <- timing_verify_inputs(repo, harness_commit, timing_input_files(here, protocol$dir), sources)
-  if (inputs_start != "verified" && policy == "enforce") refuse("harness or protocol input ", inputs_start)
+  if (inputs_start != "verified") refuse("harness or protocol input ", inputs_start)
 
   label_dir <- opt("out", file.path(here, "records", protocol$id, opt("label")))
   previous <- list.files(label_dir, pattern = "^attempt-[0-9]+$")
@@ -81,7 +77,7 @@ local({
       refuse(sprintf("%s already holds %d attempt(s); another attempt needs --disposition=<text> and %s",
         label_dir, length(previous), "--disposition-role=maintainer|agent"))
     }
-    if (mode == "gate" && policy == "enforce" && (role != "maintainer" || !is.character(ref) || !nzchar(trimws(ref)))) {
+    if (mode == "gate" && (role != "maintainer" || !is.character(ref) || !nzchar(trimws(ref)))) {
       refuse("another gate attempt needs --disposition-role=maintainer and --disposition-ref=<maintainer decision>")
     }
   }
@@ -94,7 +90,7 @@ local({
   check_root <- function(when) {
     probe <- timing_host_probe(probe_dir)
     problems <- timing_root_problems(probe, Sys.getpid())
-    if (length(problems) && policy == "enforce") {
+    if (length(problems)) {
       refuse(when, ": ", paste(sprintf("%s (%s)", names(problems), problems), collapse = "; "))
     }
     probe
@@ -145,7 +141,7 @@ local({
   product <- function(sha) paste(git("rev-parse", paste0(sha, ":", c("R", "src", "DESCRIPTION", "NAMESPACE"))), collapse = ";")
   session <- list(
     protocol = protocol$id, label = basename(label_dir), attempt = sub("^attempt-", "", basename(attempt_dir)),
-    mode = mode, host_policy = policy, test_hook = if (is.na(kill_slot)) "none" else sprintf("kill slot %d", kill_slot),
+    mode = mode, test_hook = if (is.na(kill_slot)) "none" else sprintf("kill slot %d", kill_slot),
     disposition = if (nzchar(disposition)) disposition else "none",
     disposition_role = if (nzchar(role)) role else "none", disposition_ref = if (nzchar(ref)) ref else "none",
     status = "running", status_reason = "", started_utc = utc(), finished_utc = "",
@@ -231,10 +227,9 @@ local({
     for (i in seq_len(nrow(plan))) {
       s <- plan[i, ]
       probe <- timing_host_probe(probe_dir)
-      cpu <- snapshot("during", s$slot, probe)
+      snapshot("during", s$slot, probe)
       problems <- timing_root_problems(probe, Sys.getpid())
-      if (cpu$max_ms > timing_cpu_limit_ms) problems[["busy process"]] <- cpu$top
-      if (length(problems) && policy == "enforce") {
+      if (length(problems)) {
         stop_reason <- sprintf("host before slot %d: %s", s$slot, paste(names(problems), problems, collapse = "; "))
         break
       }
@@ -249,7 +244,7 @@ local({
         break
       }
       problems <- row_problems(row)
-      if (length(problems) && policy == "enforce") {
+      if (length(problems)) {
         stop_reason <- sprintf("host inside slot %d: %s", s$slot, paste(problems, collapse = "; "))
         break
       }
@@ -268,10 +263,7 @@ local({
     outcome <- if (identical(s$slot, current)) "interrupted" else "not_run"
     timing_append_csv(blank_row(s, outcome, stop_reason)[timing_raw_fields], raw_path)
   }
-  cpu <- snapshot("after", NA, timing_host_probe(probe_dir))
-  if (!nzchar(stop_reason) && policy == "enforce" && cpu$max_ms > timing_cpu_limit_ms) {
-    stop_reason <- paste("busy process after the last slot:", cpu$top)
-  }
+  snapshot("after", NA, timing_host_probe(probe_dir))
 
   # The final integrity and commit check: the executed copies must still be
   # the commit's files, and the commit must still resolve.

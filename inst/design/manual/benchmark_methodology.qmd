@@ -231,30 +231,31 @@ The rules:
   that order from the operating system's process creation times, not from
   the runner's plan.
 - **Host.** Of the conditions in [Timing Gates On The Maintainer
-  Host](#timing-gates-on-the-maintainer-host), the harness enforces:
-  - the High performance power plan;
-  - affinity 0xFFFF;
-  - no busy process: between two consecutive host snapshots, no process
-    outside the measured chain (the runner, its ancestors and the measured
-    child) may use more than 1.0 CPU-second.
+  Host](#timing-gates-on-the-maintainer-host), the harness enforces the
+  High performance power plan and affinity 0xFFFF. The runner refuses to
+  start unless both hold and probes again before every slot. Every measured
+  process records the affinity of each process from itself up to the
+  runner. Each process is identified by PID plus creation time, and an
+  affinity counts only when it was read from the process with that creation
+  time, so a reused PID is never mistaken for its predecessor and an
+  unreadable identity fails. A failure invalidates the window.
+- **Background activity.** Gates run on the normal desktop. Background
+  activity is recorded and never refuses, stops or invalidates a window
+  (maintainer, 2026-10-29). Each host snapshot records:
+  - the CPU load;
+  - the top five processes by CPU-time increase since the previous snapshot
+    (matched by PID plus creation time; processes that start and exit
+    between snapshots are not seen);
+  - other R processes, as an annotation.
 
-  The busy-process rule measures interference instead of looking for names
-  (maintainer, 2026-10-29): an idle Positron `ark` kernel passes, a busy
-  render or Python job fails. Each process's CPU-time increase is matched by
-  PID plus creation time. The System Idle Process is excluded, and processes
-  whose CPU time Windows will not report are counted, not judged. A process
-  that starts and exits between two snapshots is not seen; that is a known
-  limit. Each snapshot records the top five processes by CPU-time increase,
-  and other R processes are listed as an annotation only. Closing background
-  applications stays recommended. The runner refuses to start unless the
-  plan and affinity hold, and probes again before every slot. Every measured process
-  records the affinity of each process from itself up to the runner. Each
-  process is identified by PID plus creation time, and an affinity counts
-  only when it was read from the process with that creation time. A reused
-  PID is therefore never mistaken for its predecessor, and an unreadable
-  identity fails. A failure invalidates the window. The runner's
-  `--host-policy=record` only records these problems, for smoke runs and
-  demonstrations; the checker refuses any such record.
+  A wall-clock probe with alternating fresh-process pairs on a desktop with
+  Positron, Chrome and Codex open gave A/A ratios within about 1%, while
+  process CPU time was noisier (`dev/bench/timing/records/clock-probe/`).
+  The harness therefore keeps wall time.
+- **Short cells.** Under one second a cell swings about 5% per pair, so
+  every timed section should last about 3 s or more. A protocol lengthens a
+  short cell by repeating its timed path a frozen number of times inside one
+  timed section, with distinct run identifiers per repetition.
 - **Inputs.** The runner records the commit it runs from. Before the first
   slot it copies the six harness files and the four protocol files into the
   attempt and checks the copies against that commit. Every slot executes
@@ -262,9 +263,6 @@ The rules:
   against the commit again, and any departure invalidates the attempt.
   The checker compares the saved copies with that commit again whenever it
   reads the record, so a copy changed after the run also fails.
-- **CPU noise.** CPU load is sampled before, during (before each slot) and
-  after the window and recorded as a noise observation. It is not a
-  rejection rule.
 - **Attempts.** A refusal before the window writes nothing, because nothing
   was measured. From the first slot on, the attempt is persisted in a newly
   created directory, numbered above the highest existing attempt:
@@ -291,7 +289,9 @@ The rules:
     maintainer record.
 - **A/A records.** A record whose arms are one commit establishes validity
   and noise only. It is checked with `--aa`, which reports each ratio as a
-  noise observation. In gate mode an A/A record always fails.
+  noise observation. Run on the normal desktop, it calibrates the noise a
+  later gate on that desktop can expect. In gate mode an A/A record always
+  fails.
 - **Memory.** The harness has no memory sampler. Peak-memory gates wait for
   the peer suite's sampler to land on the release branch.
 

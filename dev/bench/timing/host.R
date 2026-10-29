@@ -7,9 +7,6 @@
 
 timing_plan_guid <- "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" # High performance
 timing_affinity <- 65535 # 0xFFFF: performance cores, logical processors 0-15
-# A process outside the measured chain that uses more CPU than this between
-# two consecutive snapshots invalidates the window (maintainer, 2026-10-29).
-timing_cpu_limit_ms <- 1000
 
 # Executable names counted as R sessions; an annotation only, never a
 # rejection reason. ark.exe is Positron's R kernel.
@@ -117,7 +114,7 @@ timing_chain_problem <- function(chain, root_id) {
 
 # The host problems seen by one probe of the root (the runner): the power
 # plan and the root's own affinity. Returns a named character vector (empty
-# when the host is fine). Busy processes are judged per interval instead.
+# when the host is fine). Background activity is recorded, never judged.
 timing_root_problems <- function(probe, root_pid) {
   root <- timing_parse_chain(timing_chain(probe$procs, root_pid))[1L, , drop = FALSE]
   problems <- character()

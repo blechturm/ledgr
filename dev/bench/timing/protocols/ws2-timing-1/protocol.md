@@ -23,6 +23,16 @@ Every cell is one workload, one public path and one seed state:
 | `timing_scale` | A0 `timing.R` | 20 x 252 | `q10`, `q20` | 7 | seeded, unseeded |
 | `stochastic_50x1260` | this protocol | 50 x 1260 | `k5`, `k10` | 11 | seeded |
 
+**Reps.** Every timed section should last about 3 s or more on the
+maintainer host: under one second a cell swings about 5% per pair
+(`dev/bench/timing/records/clock-probe/README.md`). Each cell's `reps` arg,
+frozen in `matrix.csv`, repeats its timed path that many times inside one
+timed section, with the clock around all reps and a distinct run_id per rep.
+From the base-tree smoke timings of one pass: dense run about 4.8 s and
+sweep about 3.8 s, stochastic run about 7.2 s and sweep about 5.9 s (all
+`reps=1`); timing_scale run about 0.88 s (`reps=4`) and sweep about 0.6 s
+(`reps=6`).
+
 Ten cells, eight pairs, 160 fresh processes per window. The fixture
 builders are copied into `workloads.R` unchanged in substance, so the four
 files are the protocol's whole input. All prices are deterministic; only
@@ -39,8 +49,9 @@ or any other; the draws change only which instruments trade. Its work is
 therefore invariant by construction across arms, including after LDG-3159
 replaces the pulse-seed rule.
 
-**Work.** Each process reports its candidates' statuses and trade counts.
-The workload itself fails unless both candidates finish `DONE` with trades,
+**Work.** Each process reports its candidates' statuses and trade counts as
+`DONE;DONE|<trades>;<trades> x<reps>`. The workload itself fails unless
+every rep gives both candidates `DONE` with the same nonzero trade counts,
 and the harness requires every row of a cell, in both arms and every pair,
 to report the same work. The deterministic workloads do not draw, so no
 accepted change of cut 4 changes their trade counts. On the base tree each
@@ -57,18 +68,20 @@ One process per cell and arm. After the harness loads the arm's ledgr:
    fixture's snapshot in a fresh DuckDB file, one sweep (supplying each
    candidate's params and, when seeded, its execution seed), one committed
    run per candidate, then `gc()`;
-2. the timed path, once, in the same seed state;
-3. untimed: the timed runs' statuses and trade counts (`ledgr_run_list()`),
-   or the timed sweep's `status` and `n_trades`.
+2. the timed path, `reps` times, in the same seed state;
+3. untimed: each rep's runs' statuses and trade counts (`ledgr_run_list()`),
+   or each rep's sweep `status` and `n_trades`.
 
 **Clock endpoints** (clock `run` or `sweep`, `as.numeric(Sys.time())`):
-immediately before the first `ledgr_run()` or the `ledgr_sweep()` call, and
-immediately after the last `close()` or the `ledgr_sweep()` return.
+immediately before the first `ledgr_run()` or `ledgr_sweep()` call of the
+first rep, and immediately after the last `close()` or `ledgr_sweep()`
+return of the last rep.
 
 **Retained surfaces.** Run path: each candidate's persisted run in the
-snapshot's DuckDB store as `ledgr_run()` writes it; no reader is called.
-Sweep path: the returned in-memory sweep with completed returns and closed
-trades; it is not saved. The timed snapshot has already been opened and
+snapshot's DuckDB store as `ledgr_run()` writes it, run_id
+`ws2-timed<rep>-<candidate>`; no reader is called. Sweep path: each rep's
+returned in-memory sweep with completed returns and closed trades; it is
+not saved. The timed snapshot has already been opened and
 executed against in both arms.
 
 **Candidate compatibility.** The workloads use only the public calls above,
@@ -91,8 +104,8 @@ cell when the candidate median over the base median is at most its bound.
 - **Gate record (LDG-3161).** The same protocol, unchanged, with the final
   candidate.
 
-Commands, from the package root, after closing Positron and every other
-background application:
+Commands, from the package root, on the normal desktop (power plan and
+affinity are enforced; background activity is recorded, not gated):
 
 ```powershell
 [System.Diagnostics.Process]::GetCurrentProcess().ProcessorAffinity = [IntPtr]0xFFFF; `

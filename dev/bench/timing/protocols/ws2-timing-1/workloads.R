@@ -81,15 +81,21 @@ ws2_fx_stochastic <- function(db_path) {
 # One measurement. Untimed preparation, identical in both arms and both
 # paths, in the cell's seed state: a fresh snapshot, one sweep (which also
 # supplies each candidate's params and, when seeded, its execution seed),
-# one committed run per candidate, gc(). Then the timed path, once. Clock
-# endpoints, as.numeric(Sys.time()): immediately before the first
-# ledgr_run() or the ledgr_sweep() call, immediately after the last close()
-# or the ledgr_sweep() return. Retained surfaces: each run persisted in the
-# snapshot's store (no reader called); the in-memory sweep with completed
-# returns and closed trades (not saved). Work: each candidate's status and
-# trade count; anything but two DONE candidates with trades fails here.
+# one committed run per candidate, gc(). Then the timed path, `reps` times
+# in one timed section (short cells repeat so the section lasts about 3 s or
+# more). Clock endpoints, as.numeric(Sys.time()): immediately before the
+# first ledgr_run() or ledgr_sweep() call of the first rep, immediately
+# after the last close() or ledgr_sweep() return of the last rep. Retained
+# surfaces: each run persisted in the snapshot's store under its own run_id
+# per rep (no reader called); each in-memory sweep with completed returns
+# and closed trades (not saved). Work: each candidate's status and trade
+# count, which every rep must repeat exactly; anything but two DONE
+# candidates with trades fails here.
 ws2_measure <- function(fixture, args, work_dir) {
-  if (!args$path %in% c("run", "sweep") || !args$seed_state %in% c("seeded", "unseeded")) stop("bad cell args")
+  reps <- suppressWarnings(as.integer(args$reps))
+  if (!args$path %in% c("run", "sweep") || !args$seed_state %in% c("seeded", "unseeded") || !isTRUE(reps >= 1L)) {
+    stop("bad cell args")
+  }
   fx <- fixture(file.path(work_dir, sprintf("ws2_%d.duckdb", Sys.getpid())))
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
   seeded <- identical(args$seed_state, "seeded")
@@ -107,27 +113,30 @@ ws2_measure <- function(fixture, args, work_dir) {
   run_path("warm")
   invisible(gc())
 
+  # Each rep's work as "status;status|trades;trades".
+  work <- character(reps)
   if (identical(args$path, "run")) {
     t0 <- as.numeric(Sys.time())
-    run_path("timed")
+    for (r in seq_len(reps)) run_path(paste0("timed", r))
     t1 <- as.numeric(Sys.time())
     runs <- as.data.frame(ledgr_run_list(fx$snapshot))
-    hit <- match(paste("ws2", "timed", sw$candidate_id, sep = "-"), runs$run_id)
-    status <- as.character(runs$status[hit])
-    trades <- as.numeric(runs$n_trades[hit])
+    for (r in seq_len(reps)) {
+      hit <- match(paste("ws2", paste0("timed", r), sw$candidate_id, sep = "-"), runs$run_id)
+      work[r] <- paste(paste(runs$status[hit], collapse = ";"), paste(runs$n_trades[hit], collapse = ";"), sep = "|")
+    }
   } else {
+    timed <- vector("list", reps)
     t0 <- as.numeric(Sys.time())
-    timed <- suppressWarnings(sweep_path())
+    for (r in seq_len(reps)) timed[[r]] <- suppressWarnings(sweep_path())
     t1 <- as.numeric(Sys.time())
-    status <- as.character(timed$status)
-    trades <- as.numeric(timed$n_trades)
+    for (r in seq_len(reps)) {
+      work[r] <- paste(paste(timed[[r]]$status, collapse = ";"), paste(timed[[r]]$n_trades, collapse = ";"), sep = "|")
+    }
   }
-  if (length(status) != 2L || !all(status == "DONE") || !all(trades > 0)) {
-    stop(sprintf("expected two DONE candidates with trades, got %s / %s", paste(status, collapse = ";"),
-      paste(trades, collapse = ";")))
+  if (length(unique(work)) != 1L || !grepl("^DONE;DONE\\|[1-9][0-9]*;[1-9][0-9]*$", work[[1L]])) {
+    stop(sprintf("expected every rep to give two DONE candidates with the same trades, got %s", paste(work, collapse = " / ")))
   }
-  list(seconds = stats::setNames(t1 - t0, args$path),
-    work = paste(paste(status, collapse = ";"), paste(trades, collapse = ";"), sep = "|"))
+  list(seconds = stats::setNames(t1 - t0, args$path), work = sprintf("%s x%d", work[[1L]], reps))
 }
 
 dense_scale_50x1260 <- function(args, work_dir) ws2_measure(ws2_fx_dense_scale, args, work_dir)

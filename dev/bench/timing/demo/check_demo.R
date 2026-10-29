@@ -156,16 +156,12 @@ cases <- list(
       d$chain[9L] <- sub(";", ";1500@1700000000500=16777215;", d$chain[9L], fixed = TRUE)
       d
     })),
-  list(case = "busy_process", shows = "a non-measured process using 1.5 CPU-seconds in one interval", exit = 1L,
-    reason = "busy process", edit = list("host.csv", function(d) {
-      d$cpu_max_ms[12L] <- "1500"
-      d$cpu_top[12L] <- "python.exe:5555@1700000005000=+1500"
-      d
-    })),
-  list(case = "idle_foreign_r_control", shows = "an idle foreign R process (0.0 s increase) passes", exit = 0L,
-    edit = list("host.csv", function(d) {
+  list(case = "observations_control", shows = "a busy foreign process and a foreign R process are observations only",
+    exit = 0L, edit = list("host.csv", function(d) {
       d$foreign_r <- "ark.exe:27816@1792959389346"
-      d$cpu_top[-1L] <- "ark.exe:27816@1792959389346=+0"
+      d$cpu_max_ms[12L] <- "4500"
+      d$cpu_top[12L] <- "python.exe:5555@1700000005000=+4500;ark.exe:27816@1792959389346=+0"
+      d$cpu_percent[12L] <- "60"
       d
     }),
     tweak = function(dir) {
