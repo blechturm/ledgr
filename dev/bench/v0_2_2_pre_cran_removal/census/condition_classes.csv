@@ -262,6 +262,7 @@
 "ledgr_run_terminal_evidence_invalid","R/run-finalize.R",2,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_run_window_too_short","R/availability-provider.R",406,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_scalar_accessor_loop","R/pulse-context.R",644,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_seed_rule_mismatch","R/config-validate.R",85,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_session_adapter_invalid","R/availability-facts.R",875,17,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_session_boundary_unresolved","R/availability-provider.R",431,4,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_session_coverage_incomplete","R/availability-facts.R",738,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
