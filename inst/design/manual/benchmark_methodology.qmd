@@ -230,29 +230,48 @@ The rules:
   first in odd pairs and candidate first in even pairs. The checker verifies
   that order from the operating system's process creation times, not from
   the runner's plan.
-- **Host.** The conditions in [Timing Gates On The Maintainer
-  Host](#timing-gates-on-the-maintainer-host) are enforced, not only
-  recorded. The runner refuses to start unless the plan, its own affinity and
-  the absence of other R sessions hold (Positron's `ark` kernels count as R
-  sessions). Before every slot it probes again, and every measured process
-  checks the affinity of each process from itself up to the runner,
-  identified by PID plus creation time so a reused PID is never mistaken for
-  its predecessor. A failure invalidates the window. The runner's
+- **Host.** Of the conditions in [Timing Gates On The Maintainer
+  Host](#timing-gates-on-the-maintainer-host), the harness enforces three:
+  - the High performance power plan;
+  - affinity 0xFFFF;
+  - no other R session (Positron's `ark` kernels count as R sessions).
+
+  Closing other background applications remains a maintainer prerequisite
+  that the probe does not verify. The runner refuses to start unless the
+  three hold, and probes again before every slot. Every measured process
+  records the affinity of each process from itself up to the runner. Each
+  process is identified by PID plus creation time, and an affinity counts
+  only when it was read from the process with that creation time. A reused
+  PID is therefore never mistaken for its predecessor, and an unreadable
+  identity fails. A failure invalidates the window. The runner's
   `--host-policy=record` only records these problems, for smoke runs and
   demonstrations; the checker refuses any such record.
+- **Inputs.** The runner records the commit it runs from. Before the first
+  slot it copies the six harness files and the four protocol files into the
+  attempt and checks the copies against that commit. Every slot executes
+  the copies, never the live files. After the window it checks the copies
+  against the commit again, and any departure invalidates the attempt.
 - **CPU noise.** CPU load is sampled before, during (before each slot) and
   after the window and recorded as a noise observation. It is not a
   rejection rule.
 - **Attempts.** A refusal before the window writes nothing, because nothing
-  was measured. From the first slot on, the attempt is persisted:
+  was measured. From the first slot on, the attempt is persisted in a newly
+  created directory, numbered above the highest existing attempt:
   - the session, with its status;
   - the full slot plan, written before the first slot;
   - every executed row, including failures;
   - every unrun slot, when the window stops early;
-  - every host snapshot.
-- **Another attempt.** A second attempt under the same label needs the
-  maintainer's disposition of the first, recorded in the new attempt. The
-  first attempt stays in the record.
+  - one host snapshot before the window, one before every executed slot
+    and one after the window;
+  - the frozen inputs.
+
+  The checker refuses a record whose plan, slots or snapshots do not cover
+  the window exactly.
+- **Another attempt.** A second attempt under the same label needs a
+  recorded disposition of the first: its text, who wrote it (`maintainer` or
+  `agent`) and, for a gate, the maintainer decision it rests on. The checker
+  refuses a later gate attempt unless the disposition is the maintainer's and
+  names that decision. The first attempt stays in the record.
 - **Statistic.** For each cell, the candidate median over the base median
   must be at most the cell's bound. One attempt is checked as recorded:
   - no retry, dropped pair or re-pairing;
@@ -268,8 +287,10 @@ The rules:
 A raw row records the slot, pair, cell, arm, clock, seconds, outcome and work,
 plus the evidence the checker re-reads: launch time, PID, creation time,
 affinity, the ancestor chain, foreign R processes, power plan, loaded
-namespace path and commit. Arm and clock are independent fields. Records live
-under `dev/bench/timing/records/<protocol id>/<label>/attempt-<n>/`. They are
+namespace path and commit. Arm and clock are independent fields. A workload
+must report a work string, and every row of a cell must report the same one.
+Records live under `dev/bench/timing/records/<protocol id>/<label>/attempt-<n>/`,
+with the frozen inputs in its `harness/` and `protocol/` folders. They are
 committed when a cut names them as evidence, which is an exception to the
 local-only rule for generated results above.
 
@@ -286,7 +307,9 @@ resolve in PowerShell on the maintainer host.
 ```
 
 `dev/bench/timing/demo/check_demo.R` shows the checker failing on each
-invalid case and passing its controls.
+invalid case and passing its controls. `dev/bench/timing/demo/frozen_inputs_demo.R`
+edits the live harness during a smoke window and shows that later slots are
+unchanged, and that an edit to a frozen copy invalidates the attempt.
 
 ## Release-Gate Checks
 

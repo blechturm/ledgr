@@ -1,8 +1,9 @@
 # Benchmark Methodology
 
 
-**Status:** Maintainer manual updated for the v0.2.0.1 four-phase peer
-clock (LDG-2732).
+**Status:** Maintainer manual, updated for v0.2.3: the shared harness
+for before/after regression gates (LDG-3155). The peer-clock sections
+date from the v0.2.0.1 four-phase peer clock (LDG-2732).
 
 **Authority:** Synthesis plus implementation trace. Binding release
 scope remains in versioned spec packets and release-gate tickets. Public
@@ -172,6 +173,160 @@ The benchmark harnesses guard against stale source where possible. They
 are still local records: hardware, operating system, loaded package
 versions, Python peer environments, and thermal state can change the
 timing rows.
+
+## Timing Gates On The Maintainer Host
+
+The fast-profile gate (`tools/run-test-profile.R`,
+`tools/check-test-gate.R`) compares a wall clock with an absolute bound,
+so the host conditions are part of the measurement. The maintainer host
+is an i9-12900K with performance cores (logical processors 0-15) and
+efficiency cores (16-23). A single-threaded R loop runs in about 2.15
+seconds on a performance core and 5.2 seconds on an efficiency core, and
+the Balanced power plan lets Windows schedule R on the efficiency cores.
+On 2026-10-19 the same accepted tree took 148.88 seconds under Balanced
+and 100.19 seconds pinned under High performance.
+
+Time a gate under these conditions:
+
+- the High performance power plan (`powercfg /getactivescheme`);
+- the process affinity pinned to the performance cores before R starts,
+  so every child inherits it: in PowerShell,
+  `[System.Diagnostics.Process]::GetCurrentProcess().ProcessorAffinity = [IntPtr]0xFFFF`,
+  then call `Rscript` by its full path;
+- background applications closed (audio workstation, launchers, video
+  editors) and no other R session running;
+- base and candidate runs alternating, one each in turn, when the record
+  compares two trees, so drift over the session reaches both.
+
+`run-test-profile.R` writes `power_plan` and `process_affinity` into
+each run summary, so a gate record shows the conditions it was measured
+under. A record whose summaries name another plan or an unpinned mask is
+not gate evidence on this host.
+
+## Before/After Regression Gates
+
+A before/after regression gate asks whether a candidate tree is slower
+than a base tree by more than a stated bound. This section governs those
+paired gates only. It does not change the five-process descriptive
+baseline, the peer-comparison policies or the fast-profile gate above;
+they keep their own rules.
+
+Every such gate uses the shared harness in `dev/bench/timing/` (runner,
+measurement process, host checks and checker). A cut never copies or
+forks it; it adds one protocol folder,
+`dev/bench/timing/protocols/<protocol id>/`, holding exactly four files:
+
+| File | Content |
+|----|----|
+| `matrix.csv` | one row per cell: `cell,workload,clock,args,pairs`; `pairs` is one integer of at least 8 on every row |
+| `thresholds.csv` | `cell,bound`, naming every matrix cell exactly once |
+| `workloads.R` | one function per workload, `function(args, work_dir)`, returning `list(seconds = <named clocks>, work = <string>)` |
+| `protocol.md` | what is measured, clock endpoints, inputs, seeds, retained surfaces and why these bounds |
+
+`dev/bench/timing/protocols/smoke-1/` is the minimal example. A changed
+protocol is a new folder with a new id; an existing one is never edited
+after its first record.
+
+The rules:
+
+- **Arms.** Base and candidate are pinned commits. Each is exported with
+  `git archive` and installed with `R CMD INSTALL` into its own library.
+  Every measured process loads ledgr from its arm’s library and records
+  the loaded namespace path and the arm’s commit stamp; the checker
+  refuses a row that loaded the other arm.
+- **Pairing.** Each slot is one fresh R process for one cell and one
+  arm. Within a pair every cell runs once per arm, the two arms back to
+  back, base first in odd pairs and candidate first in even pairs. The
+  checker verifies that order from the operating system’s process
+  creation times, not from the runner’s plan.
+- **Host.** Of the conditions in [Timing Gates On The Maintainer
+  Host](#timing-gates-on-the-maintainer-host), the harness enforces
+  three:
+  - the High performance power plan;
+  - affinity 0xFFFF;
+  - no other R session (Positron’s `ark` kernels count as R sessions).
+
+  Closing other background applications remains a maintainer
+  prerequisite that the probe does not verify. The runner refuses to
+  start unless the three hold, and probes again before every slot. Every
+  measured process records the affinity of each process from itself up
+  to the runner. Each process is identified by PID plus creation time,
+  and an affinity counts only when it was read from the process with
+  that creation time. A reused PID is therefore never mistaken for its
+  predecessor, and an unreadable identity fails. A failure invalidates
+  the window. The runner’s `--host-policy=record` only records these
+  problems, for smoke runs and demonstrations; the checker refuses any
+  such record.
+- **Inputs.** The runner records the commit it runs from. Before the
+  first slot it copies the six harness files and the four protocol files
+  into the attempt and checks the copies against that commit. Every slot
+  executes the copies, never the live files. After the window it checks
+  the copies against the commit again, and any departure invalidates the
+  attempt.
+- **CPU noise.** CPU load is sampled before, during (before each slot)
+  and after the window and recorded as a noise observation. It is not a
+  rejection rule.
+- **Attempts.** A refusal before the window writes nothing, because
+  nothing was measured. From the first slot on, the attempt is persisted
+  in a newly created directory, numbered above the highest existing
+  attempt:
+  - the session, with its status;
+  - the full slot plan, written before the first slot;
+  - every executed row, including failures;
+  - every unrun slot, when the window stops early;
+  - one host snapshot before the window, one before every executed slot
+    and one after the window;
+  - the frozen inputs.
+
+  The checker refuses a record whose plan, slots or snapshots do not
+  cover the window exactly.
+- **Another attempt.** A second attempt under the same label needs a
+  recorded disposition of the first: its text, who wrote it
+  (`maintainer` or `agent`) and, for a gate, the maintainer decision it
+  rests on. The checker refuses a later gate attempt unless the
+  disposition is the maintainer’s and names that decision. The first
+  attempt stays in the record.
+- **Statistic.** For each cell, the candidate median over the base
+  median must be at most the cell’s bound. One attempt is checked as
+  recorded:
+  - no retry, dropped pair or re-pairing;
+  - an invalid record fails before any ratio counts;
+  - a cell over its bound stays a failure, and any exception is a
+    separate maintainer record.
+- **A/A records.** A record whose arms are one commit establishes
+  validity and noise only. It is checked with `--aa`, which reports each
+  ratio as a noise observation. In gate mode an A/A record always fails.
+- **Memory.** The harness has no memory sampler. Peak-memory gates wait
+  for the peer suite’s sampler to land on the release branch.
+
+A raw row records the slot, pair, cell, arm, clock, seconds, outcome and
+work, plus the evidence the checker re-reads: launch time, PID, creation
+time, affinity, the ancestor chain, foreign R processes, power plan,
+loaded namespace path and commit. Arm and clock are independent fields.
+A workload must report a work string, and every row of a cell must
+report the same one. Records live under
+`dev/bench/timing/records/<protocol id>/<label>/attempt-<n>/`, with the
+frozen inputs in its `harness/` and `protocol/` folders. They are
+committed when a cut names them as evidence, which is an exception to
+the local-only rule for generated results above.
+
+Launch the runner from the package root, in one PowerShell call that
+pins the affinity first. Call `Rscript` by its full path; a bare
+`& Rscript` does not resolve in PowerShell on the maintainer host.
+
+``` powershell
+[System.Diagnostics.Process]::GetCurrentProcess().ProcessorAffinity = [IntPtr]0xFFFF; `
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/timing/runner.R `
+  --protocol=dev/bench/timing/protocols/<id> --base=<commit> --candidate=<commit> --label=<name>
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/timing/check.R `
+  --protocol=dev/bench/timing/protocols/<id> --record=dev/bench/timing/records/<id>/<name>/attempt-1
+```
+
+`dev/bench/timing/demo/check_demo.R` shows the checker failing on each
+invalid case and passing its controls.
+`dev/bench/timing/demo/frozen_inputs_demo.R` edits the live harness
+during a smoke window and shows that later slots are unchanged, and that
+an edit to a frozen copy invalidates the attempt.
 
 ## Release-Gate Checks
 
@@ -376,6 +531,7 @@ Before closing a benchmark-sensitive ticket:
 ## Source Links
 
 - `../../../dev/bench/README.md`
+- `../../../dev/bench/timing/`
 - `../../../dev/bench/shared/run_benchmarks.R`
 - `../../../dev/bench/peer_benchmark/peer_benchmark.R`
 - `performance_arc_v0_1_8_x.qmd`
