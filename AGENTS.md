@@ -113,7 +113,7 @@ planning are evidence, not authorization for new work.
 | Where is a non-binding idea parked? | `inst/design/horizon.md` |
 | What is the cross-version sequence? | `inst/design/ledgr_roadmap.md` |
 | Where is displaced planning history? | `inst/design/roadmap_history.md` and `inst/design/planning_context_history.md` |
-| What governs optimization work? | `inst/design/manual/optimization_coding_style.qmd` and `inst/design/manual/benchmark_methodology.qmd` |
+| What governs optimization work? | `inst/design/manual/optimization_coding_style.qmd` and `inst/design/manual/benchmark_methodology.qmd`; before/after timing gates use the shared harness `dev/bench/timing/` with one protocol folder per cut, never a copy |
 
 ## Local Verification
 
