@@ -54,8 +54,10 @@ measure <- function() {
   result <- get(cell$workload, envir = workloads, inherits = FALSE)(timing_parse_args(cell$args), opt("work"))
   seconds <- result$seconds[cell$clock]
   if (length(seconds) != 1L || is.na(names(seconds))) stop("workload did not report clock ", cell$clock)
+  work <- as.character(result$work)
+  if (length(work) != 1L || is.na(work) || !nzchar(trimws(work))) stop("workload did not report its work string")
   row$seconds <<- sprintf("%.17g", as.double(seconds))
-  row$work <<- as.character(result$work)[[1L]]
+  row$work <<- work
   row$outcome <<- "ok"
 }
 

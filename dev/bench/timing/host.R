@@ -25,13 +25,23 @@ timing_host_probe <- function(harness_dir) {
   out <- suppressWarnings(system2("powershell",
     c("-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
       shQuote(file.path(harness_dir, "host.ps1"))), stdout = TRUE, stderr = FALSE))
+  timing_parse_probe(out, at = as.double(Sys.time()))
+}
+
+# Reads host.ps1 output. A process's affinity is kept only when the
+# Get-Process object that reported it has the CIM creation time listed under
+# that PID; otherwise (a reused PID, or a process that could not be opened)
+# it is NA, which every affinity check treats as a failure.
+timing_parse_probe <- function(out, at) {
   host <- strsplit(grep("^host,", out, value = TRUE)[1L], ",", fixed = TRUE)[[1L]]
   proc_lines <- sub("^proc,", "", grep("^proc,", out, value = TRUE))
   procs <- utils::read.csv(text = proc_lines, header = FALSE, stringsAsFactors = FALSE,
-    col.names = c("pid", "ppid", "created", "affinity", "name"),
-    colClasses = c("numeric", "numeric", "numeric", "numeric", "character"))
+    col.names = c("pid", "ppid", "created", "affinity", "affinity_created", "name"),
+    colClasses = c("numeric", "numeric", "numeric", "numeric", "numeric", "character"))
+  same_process <- procs$affinity >= 0 & procs$affinity_created == procs$created
+  procs$affinity[!same_process] <- NA_real_
   list(
-    at = as.double(Sys.time()),
+    at = at,
     plan_guid = if (length(host) >= 2L && nzchar(host[[2L]])) host[[2L]] else NA_character_,
     cpu_percent = if (length(host) >= 3L) suppressWarnings(as.numeric(host[[3L]])) else NA_real_,
     cpu_name = if (length(host) >= 4L) host[[4L]] else NA_character_,

@@ -20,6 +20,14 @@
 timing_protocol_files <- c("matrix.csv", "thresholds.csv", "workloads.R", "protocol.md")
 timing_arms <- c("base", "candidate")
 
+# The harness files a window executes. The runner freezes copies of these
+# and of the protocol files into the attempt before the first slot.
+timing_harness_files <- c("host.ps1", "host.R", "protocol.R", "measure.R", "runner.R", "check.R")
+
+# Columns of plan.csv and host.csv.
+timing_plan_fields <- c("slot", "pair", "cell", "arm")
+timing_host_fields <- c("phase", "slot", "at", "plan_guid", "cpu_percent", "root_chain", "foreign_r")
+
 # Columns of raw.csv: one row per slot that ran, plus one per unrun slot when
 # a window stops early. `arm` and `clock` are independent fields.
 timing_raw_fields <- c("seq", "slot", "pair", "cell", "arm", "clock", "seconds", "outcome", "error", "work",
@@ -74,12 +82,12 @@ timing_read_protocol <- function(dir) {
   if (any(is.na(m$workload) | !nzchar(m$workload) | is.na(m$clock) | !nzchar(m$clock))) {
     out$problems <- c(out$problems, "matrix.csv: every cell needs a workload and a clock")
   }
-  pairs <- unique(suppressWarnings(as.integer(m$pairs)))
-  if (length(pairs) != 1L || is.na(pairs) || pairs < 8L) {
+  pairs <- unique(trimws(m$pairs))
+  if (length(pairs) != 1L || !grepl("^[0-9]{1,6}$", pairs) || as.integer(pairs) < 8L) {
     out$problems <- c(out$problems, sprintf("matrix.csv pairs must be one integer of at least 8 (found %s)",
-      paste(unique(m$pairs), collapse = ",")))
+      paste(pairs, collapse = ",")))
   } else {
-    out$pairs <- pairs
+    out$pairs <- as.integer(pairs)
   }
   bound <- suppressWarnings(as.numeric(t$bound))
   if (any(!is.finite(bound) | bound <= 0)) out$problems <- c(out$problems, "thresholds.csv bounds must be positive numbers")
@@ -102,6 +110,22 @@ timing_plan <- function(protocol) {
   base_first <- pair %% 2L == 1L
   arm <- ifelse(first == base_first, "base", "candidate")
   data.frame(slot = seq_along(pair), pair = pair, cell = cell, arm = arm, stringsAsFactors = FALSE)
+}
+
+# A new attempt directory under a label: numbered one above the highest
+# existing suffix, so a gap never leads back to an existing attempt, and
+# created exclusively, so nothing is written into a directory that exists.
+timing_new_attempt <- function(label_dir) {
+  dir.create(label_dir, recursive = TRUE, showWarnings = FALSE)
+  existing <- list.files(label_dir, pattern = "^attempt-[0-9]+$")
+  n <- if (length(existing)) max(as.integer(sub("^attempt-", "", existing))) + 1L else 1L
+  timing_create_attempt(file.path(label_dir, sprintf("attempt-%d", n)))
+}
+timing_create_attempt <- function(path) {
+  if (file.exists(path) || !dir.create(path, showWarnings = FALSE)) {
+    stop(sprintf("attempt directory %s already exists or could not be created", path), call. = FALSE)
+  }
+  normalizePath(path, winslash = "/")
 }
 
 # Line-ending-insensitive text of a file, for comparing a record's protocol
