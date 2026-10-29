@@ -64,8 +64,8 @@ is byte-identical to each committed successor.
   - `detection_gap` is identical.
 
   The original RNG checker stops at the deleted scalar helper, as expected.
-- **Guts** run on source copies that the workers load. The control and
-  R1-R7, R8v, R9 and R10 each fail their named predicates with 0 errors.
+- **Guts** run on source copies that the workers load. The control fails
+  nothing; R1-R7, R8v, R9 and R10 each fail their named predicates with 0 errors.
   R8 as written is blocked by the shipped validator, which refuses before
   any run row exists; it is kept as validator evidence. R8v, the same
   omission with the validator check reverted, is the A3 gut. The session
@@ -101,3 +101,10 @@ Rscript processes from another session were present throughout.
 - **R CMD check NOTE:** `head` in `ledgr_history_bar_mask_view` has no
   `utils` import. This is pre-existing and also recorded in
   [ws1_disposition.md](ws1_disposition.md).
+- **Protocol history:** `ws2-timing-1` was edited twice before its first
+  valid record, by maintainer direction: `0de48f7f` lengthened its short
+  cells, and `5638b490` moved its store into the harness's per-slot work
+  directory. Both earlier base attempts (`base-aa` attempts 1 and 2) were
+  invalid and are kept with their dispositions. The valid base (attempt 3)
+  and the gate use identical frozen inputs. The manual's rule that a
+  protocol is never edited after its first record stays as written.
