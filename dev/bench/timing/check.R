@@ -57,9 +57,17 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
 
   # The attempt.
   s <- timing_read_kv(file.path(record, "session.csv"))
+  for (field in c("protocol", "attempt", "mode", "host_policy", "test_hook", "disposition", "status", "status_reason",
+                  "harness_clean", "base_commit", "base_product", "base_lib", "candidate_commit", "candidate_product",
+                  "candidate_lib", "root_id", "root_affinity", "plan_guid")) {
+    if (is.null(s[[field]])) {
+      fail("session field missing", field)
+      s[[field]] <- NA_character_
+    }
+  }
   if (!identical(s$protocol, protocol$id)) fail("protocol changed", sprintf("record ran protocol %s", s$protocol))
   if (!identical(s$status, "complete")) fail("attempt status", sprintf("%s: %s", s$status, s$status_reason))
-  if (!identical(s$attempt, "1") && s$disposition %in% c("none", "")) {
+  if (!identical(s$attempt, "1") && s$disposition %in% c("none", "", NA)) {
     fail("disposition", sprintf("attempt %s has no recorded maintainer disposition", s$attempt))
   }
   if (!identical(s$test_hook, "none")) fail("test hook", s$test_hook)
@@ -101,7 +109,7 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   for (k in setdiff(expected, key)) fail("missing row", k)
   for (k in unique(key[duplicated(key)])) fail("duplicate row", k)
   for (k in setdiff(key, expected)) fail("unexpected row", k)
-  complete_pairs <- sum(table(factor(raw$pair[ok], levels = seq_len(protocol$pairs))) == 2L * nrow(protocol$cells))
+  complete_pairs <- sum(table(factor(raw$pair[ok & !duplicated(key)], levels = seq_len(protocol$pairs))) == 2L * nrow(protocol$cells))
   if (complete_pairs < protocol$pairs) {
     fail("fewer pairs", sprintf("%d complete pairs; the protocol states %d", complete_pairs, protocol$pairs))
   }
@@ -111,9 +119,9 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   k <- key[ok]
   secs <- suppressWarnings(as.numeric(r$seconds))
   for (i in which(!is.finite(secs) | secs <= 0)) fail("invalid seconds", sprintf("%s %s", k[[i]], r$seconds[[i]]))
-  for (i in which(r$exit_status != "0")) fail("failed execution", sprintf("%s exit %s", k[[i]], r$exit_status[[i]]))
+  for (i in which(!r$exit_status %in% "0")) fail("failed execution", sprintf("%s exit %s", k[[i]], r$exit_status[[i]]))
   want_clock <- protocol$cells$clock[match(r$cell, protocol$cells$cell)]
-  for (i in which(r$clock != want_clock)) fail("clock", sprintf("%s clock %s, cell declares %s", k[[i]], r$clock[[i]], want_clock[[i]]))
+  for (i in which(is.na(r$clock) | r$clock != want_clock)) fail("clock", sprintf("%s clock %s, cell declares %s", k[[i]], r$clock[[i]], want_clock[[i]]))
   arm_commit <- ifelse(r$arm == "base", s$base_commit, s$candidate_commit)
   arm_lib <- ifelse(r$arm == "base", s$base_lib, s$candidate_lib)
   wrong_arm <- r$ledgr_commit != arm_commit | tolower(dirname(r$ledgr_path)) != tolower(arm_lib)
