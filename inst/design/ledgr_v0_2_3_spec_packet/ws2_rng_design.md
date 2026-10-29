@@ -1,11 +1,11 @@
 # WS2 design note: RNG reproducibility and the v2 pulse-seed rule
 
 Role: record; the LDG-3157 design note for v0.2.3 cut 4, workstream 11.
-Status: draft for review, correction round 1 (applies the design review
-`ws2_rng_design_review.md` and maintainer decisions (14), (15) and (16));
-written before any
-product change; it directs LDG-3158 to LDG-3161 once its design review
-accepts it.
+Status: draft for review, correction round 2. Round 1 applied the design
+review `ws2_rng_design_review.md` and maintainer decisions (14), (15) and
+(16); round 2 applies the focused re-review `ws2_rng_design_review_2.md`.
+Written before any product change; it directs LDG-3158 to LDG-3161 once its
+design review accepts it.
 Authority: `tickets.yml` cut 4: decisions (1) to (13) and the maintainer
 decisions of 2026-10-29, which are (14) (caller-isolation boundary, Type 2
 on review F1, option B), (15) (argument evaluation) and (16) (callables
@@ -30,7 +30,9 @@ helper, `ledgr_store_append()`, which keeps `.Random.seed` (or its absence)
 as it was. Under decision (14), ledgr restores the caller's kind and
 `.Random.seed` (or their absence) around its own work and around the user
 code it evaluates as part of its service. Fifteen exported functions (and
-one S3 method, through its generic) are wrapped at their outermost frame by
+the two registered `ledgr_candidate` methods `ledgr_candidate.default` and
+`ledgr_candidate.ledgr_walk_forward_results`) are wrapped at their
+outermost frame by
 `ledgr_rng_preserve_caller()`, which restores after all cleanup. The two
 callables that `ledgr_indicator_dev()` returns restore on their own calls.
 Every other export is RNG-neutral because the store helper covers its only
@@ -427,10 +429,13 @@ specifies the entry step of decision (15), and records decision (16).
   `R/pulse-snapshot.R:483-518`), `ledgr_run`, `ledgr_sim_bars`,
   `ledgr_sim_pit_inputs`, `ledgr_sweep`, `ledgr_walk_forward`.
 - Service-level user code, by static callback reach:
-  `ledgr_precompute_features`, `ledgr_candidate` (and the method
-  `ledgr_candidate.ledgr_walk_forward_results` through it), and
+  `ledgr_precompute_features`, `ledgr_candidate`, and
   `ledgr_candidate_reproduction_key`. The last two are wrapped
-  conservatively: a static edge cannot be ruled out.
+  conservatively: a static edge cannot be ruled out. The generic
+  `ledgr_candidate` carries its steps in its two operational methods,
+  `ledgr_candidate.default` and
+  `ledgr_candidate.ledgr_walk_forward_results`. These methods are the
+  two W S3 methods (Section 5.4).
 - Service-level user code, explicit evaluators: `ledgr_sweep_review`
   (`rank_by`), `ledgr_pbo` (`metric` function), and `ledgr_feature_grid` and
   `ledgr_strategy_grid` (`.filter`).
@@ -508,8 +513,16 @@ following, in the formals order of the calling export:
 - **Missing arguments are not forced.** Their defaults are ledgr code and
   evaluate lazily inside the restore when the implementation first uses
   them. A default may therefore reference other arguments, which are already
-  forced or are themselves defaults. Defaults cannot draw: the Section 4
-  source guard forbids every RNG call in `R/` outside its owners.
+  forced or are themselves defaults. The Section 4 source guard does not
+  prove that defaults draw nothing: it forbids unowned `set.seed`,
+  `RNGkind`, appends and `daemons()`, not every RNG function (it would not
+  reject `runif()` in a default). Today's defaults are safe by inspection.
+  In every W export and W method they are literals, arithmetic,
+  lists/vectors, or the constructors `ledgr_timing_next_open()`,
+  `ledgr_risk_none()`, `ledgr_corporate_actions_research()` and
+  `ledgr_sweep_retention()`. Probes confirmed that those four leave the RNG
+  state unchanged, and no default references a supplied argument. A new
+  default that draws would fall inside the restore, as ledgr code.
 - **Dots are forced** with `eval(quote(list(...)), env)` when `...` is a
   formal and is non-empty.
 - **Captured service expressions are never forced.** Every formal that the
@@ -519,32 +532,89 @@ following, in the formals order of the calling export:
   - `.filter` for `ledgr_feature_grid` and `ledgr_strategy_grid`;
   - nothing for every other wrapped export.
 - **A formal captured only as a label is forced.** `ledgr_pbo`'s
-  `substitute(metric)` (`R/validation-pbo.R:44`) only names the metric.
-  `substitute()` still returns the original expression after the promise is
-  forced, so `metric` is forced.
+  `substitute(metric)` (`R/validation-pbo.R:44`) only names the metric, so
+  `metric` is forced. Within the same frame, `substitute()` still returns
+  the original expression after the promise is forced.
 - **An error while forcing** surfaces before any state is saved or any
   ledgr work starts, so there is nothing to restore. This moves argument
   errors to entry; no ledgr behaviour depends on later forcing.
 
-**What stays in the prologue.** Uses of `missing()` must stay in the
-export's own frame, because the implementation receives explicit arguments.
-That covers `ledgr_backtest`'s `missing(cost_model)` (`R/backtest.R:203`)
-and `ledgr_pulse_snapshot`'s supplied-argument flags
-(`R/pulse-snapshot.R:80-84`). So does `match.arg()` normalisation (for
-example `ledgr_walk_forward`'s `no_selection`). The prologue computes these
-before step 2 and passes the results to the implementation. They are ledgr
-code and draw nothing.
+**Capture transport across the split (review round 2, N1).** A promise that
+is never forced still loses its source expression and its caller frame once
+it is forwarded into another function's frame. So every capture is made in
+the export (or W method) frame, between step 1 and step 2, and passed to the
+implementation as an explicit value:
 
-**Why a separate implementation function.** Every `on.exit` cleanup
-(worker stop, store close, snapshot release) must live in the implementation
+- **`ledgr_sweep_review(sweep, rank_by, n)`.** After step 1, the prologue
+  sets `rank_missing <- missing(rank_by)`,
+  `rank_expr <- substitute(rank_by)` and `rank_env <- parent.frame()`. It
+  calls `ledgr_sweep_review_impl(sweep, n, rank_expr, rank_env,
+  rank_missing)` inside the preserve call. The implementation:
+  - aborts when `rank_missing` is TRUE, with today's message and class
+    (`R/sweep-review.R:30-35`);
+  - evaluates `rank_expr` against its completed rows with `rank_env` as the
+    parent of the data mask, exactly as
+    `ledgr_sweep_review_rank(completed, rank_expr, caller_env)` does today
+    (`R/sweep-review.R:104-111`);
+  - takes `all.vars(rank_expr)` for the top columns (`:57`).
+- **`ledgr_feature_grid(..., .filter)` and
+  `ledgr_strategy_grid(..., .filter)`.** After step 1, the prologue sets
+  `filter_expr <- substitute(.filter)` and
+  `filter_missing <- missing(.filter)`. It passes both to
+  `ledgr_build_cross_grid()`, which already takes them as values
+  (`R/param-grid.R:33-36, 46-50`). Any remaining body of
+  `ledgr_strategy_grid` moves inside the preserve call.
+- **`ledgr_pbo(..., metric, metric_name, ...)`.** Step 1 forces `metric`.
+  The prologue then sets `metric_label <- substitute(metric)` in the export
+  frame. The implementation receives both the forced `metric` and
+  `metric_label`, and calls `ledgr_pbo_metric(metric, metric_label,
+  metric_name)` instead of recapturing (`R/validation-pbo.R:44`).
+- **No recapture.** Implementations never apply `substitute()`,
+  `missing()`, `match.call()` or `sys.call()` to a forwarded formal, and
+  never use `parent.frame()` to reach the user's frame. They use only the
+  values passed to them.
+
+**What else stays in the prologue.** Uses of `missing()` and `match.arg()`
+must stay in the export's own frame:
+
+- `ledgr_backtest`'s `missing(cost_model)` (`R/backtest.R:203`);
+- `ledgr_pulse_snapshot`'s supplied-argument flags
+  (`R/pulse-snapshot.R:80-84`);
+- `ledgr_walk_forward`'s `match.arg(no_selection)` (`R/walk-forward.R:89`).
+
+The prologue computes these between step 1 and step 2 and passes the
+results on. Argument checks that abort move into the implementation, driven
+by the passed values: the reserved-dots checks (`R/walk-forward.R:91-93`,
+`R/walk-forward-inspection.R:101-104`) and the missing-`rank_by` abort.
+
+**Permitted prologue.** Between step 1 and step 2, a checked body may
+contain only assignments whose right-hand side is one of:
+
+- `missing(<formal>)`;
+- `match.arg(<formal>)`;
+- `substitute(<formal>)` of a `lazy` formal or of `ledgr_pbo`'s `metric`;
+- `parent.frame()`.
+
+These are inert: none evaluates user code or draws. Export-frame cleanup
+stays forbidden.
+
+**Why a separate implementation function.** Every `on.exit` cleanup (worker
+stop, store close, snapshot release) must live in the implementation
 function. An `on.exit` written in the export's own frame would run after the
-wrapper's restore, which would break "restoration outside all cleanup".
+wrapper's restore, which would break "restoration outside all cleanup". The
+same holds for the R helpers. `test_dates()` registers
+`on.exit(release(), add = TRUE)` for its snapshot hold
+(`R/indicator-dev.R:100-101`), so that hold and release move into the
+function its preserve call evaluates. The helper's own body keeps only the
+force step and the preserve call.
 
 **S3 generics in W.** `ledgr_candidate` dispatches with `UseMethod()`,
-which must run in the generic's own frame. So the two steps sit in each
-registered method that can run user or store code
-(`ledgr_candidate.default`, `ledgr_candidate.ledgr_walk_forward_results`).
-Dispatch has already forced `results`.
+which must run in the generic's own frame, so the generic carries no steps.
+Both operational registered methods carry them and are classified W
+(Appendix A, review round 2 N2): `ledgr_candidate.default` and
+`ledgr_candidate.ledgr_walk_forward_results`. Dispatch has already forced
+`results`. `ledgr_candidate.ledgr_sweep_filter_result` only aborts and stays
+N.
 
 **User S3 methods after entry.** A user method that a wrapped export
 dispatches to after step 1 runs inside the restore. One example is an
@@ -553,11 +623,17 @@ dispatches to after step 1 runs inside the restore. One example is an
 
 **Source check (LDG-3158).** The test fails if any of these does not hold:
 
-- every W export body, and every W method body for the generic, begins with
-  `ledgr_rng_force_args()` followed by a single
-  `ledgr_rng_preserve_caller()` call;
+- the checked bodies are exactly the 15 W exports (Appendix A), the two W
+  methods `ledgr_candidate.default` and
+  `ledgr_candidate.ledgr_walk_forward_results`, and the two R helper
+  closures `test` and `test_dates`;
+- each checked body has `ledgr_rng_force_args()` as its first statement and
+  a single `ledgr_rng_preserve_caller()` call as its last statement;
+- every statement between them is a permitted prologue assignment (above);
 - the `lazy` argument matches the frozen set above;
-- no `on.exit()` appears in a W export's own body.
+- no `on.exit()` appears in any checked body;
+- no W or R implementation function recaptures a forwarded formal (the
+  no-recapture rule above).
 
 **Built callables (decision (16)).** The strategy closure returned by
 `ledgr_signal_strategy()` (`R/signal-strategy.R:61`) and the indicator `fn`
@@ -669,6 +745,28 @@ they do not claim neutrality.
 - Removing step 1 (`ledgr_rng_force_args()`) must make the two-call seed
   witness give identical seeds and the ordinary-argument witness fail.
 
+**Capture-transport witnesses (review round 2, N1).** Each case must give
+output identical to the same call on the base tree `aa2931e9`, and each
+fails if the implementation recaptures a forwarded formal.
+
+- **Column-based ranking.** `ledgr_sweep_review(sw, rank_by =
+  desc(sharpe_ratio))` ranks by the candidate column. The current failure
+  mode is an `object 'sharpe_ratio' not found` error.
+- **Caller-local ranking helper.** Inside a test function that defines
+  `score <- function(x) -x`, `ledgr_sweep_review(sw, rank_by =
+  score(sharpe_ratio))` finds `score` through the captured caller
+  environment.
+- **Both grid filters, and an omitted filter.**
+  `ledgr_feature_grid(n = 1:3, .filter = n > 1)` and
+  `ledgr_strategy_grid(qty = 1:3, .filter = qty > 1)` keep the filtered
+  rows. The same calls without `.filter` keep every row, with the
+  missing-filter path. The current failure mode is a rejection of the
+  unknown symbol `.filter`.
+- **Named PBO callback.** `fun <- function(m) colMeans(m)` and then
+  `ledgr_pbo(x, metric = fun)` keep the existing metadata label `fun`, as
+  `ledgr_pbo_metric()` derives it today (`R/validation-pbo.R:215-232`).
+  The label must not become `metric`.
+
 **Decision (16) witnesses (built callables).**
 
 - `strat <- ledgr_signal_strategy(function(ctx) { if (runif(1) > 0.5)
@@ -745,6 +843,24 @@ LDG-3159 tests these cases, each before any snapshot hold or run row:
 
 A refused case leaves no run row and no snapshot hold. In addition, a
 walk-forward candidate whose derivation marker is changed is refused.
+
+**Walk-forward marker fixture (frozen; review round 2, O2).** The old and
+missing walk-forward cases are built at the **results attribute**, not on a
+finished candidate.
+
+1. For a seeded and an unseeded walk-forward results object, set
+   `attr(wf, "pulse_seed_contract")` to `"ledgr_seed_v1"`, or remove it.
+2. Extract the candidate with `ledgr_candidate(wf, ...)`.
+3. Check that the candidate's `provenance$pulse_seed_contract` (and its
+   attribute) is the copied old value, or is missing.
+4. Check that `ledgr_promote()` refuses it with `ledgr_seed_rule_mismatch`
+   before any snapshot hold or run row.
+
+Corrupting only a finished candidate's provenance tests validation, but
+cannot expose re-derivation from the constant. The fixture above does, and
+gut R10 must make it fail. The sweep cases corrupt
+`provenance$seed_contract` on the candidate, as sweeps carry no results
+attribute.
 
 No path other than promotion executes a stored or in-memory candidate.
 `ledgr_walk_forward` runs only the candidates it creates. A store written
@@ -825,10 +941,23 @@ A1 to A5.
 
 #### 8.2.1 Census predicates and expected-call ledger (review F3)
 
-**Fixture fact.** `rp_census` runs right after `rp_rule_overlap`, which ends
-with `rp_clear_seed()`. Every ledgr call restores an absent state as absent,
-so `.Random.seed` is absent at the start of every census case. A new column
-records this, and every count below relies on it.
+**Successor precondition (not a fact about the original run).** On the
+unchanged base tree, `.Random.seed` is **present** at the start of all eight
+operational census cases. `rp_census()` first builds `a0_fx_walk_forward()`
+(`probe.R:209`), whose persistent appends create the seed before case 01.
+
+On a tree that carries LDG-3158's store helper, wrappers and the
+walk-forward repair, the seed is absent at every case start, with no resets
+between cases:
+
+- `rp_rule_overlap` ends with `rp_clear_seed()`;
+- the fixture's appends keep the seed absent;
+- every ledgr call restores an absent state as absent.
+
+The review executed a model of that successor and observed all eight starts
+absent. The ledger below assumes this precondition and holds only on such a
+tree. The `entry_seed_present` column asserts it in every operational row,
+and the comparator fails if it does not hold.
 
 **New observer columns (successor schema).** They are appended after the
 original 13, in this order:
@@ -843,8 +972,28 @@ original 13, in this order:
 | `rngkind_mutation_callers` | character | sorted unique immediate callers of those, comma-joined |
 | `pulse_seed_vectors` | integer | calls to `ledgr_pulse_seeds` |
 
-In the copy rows 03 and 08 every new column is the empty string, as their
-other observer columns are today.
+**Typed missing cells in the copy rows (review round 2, N3).** The copy rows
+03 and 08 keep the seven declared types:
+
+- `entry_seed_present` is `NA` (logical);
+- `preserve_calls`, `rngkind_query_calls`, `rngkind_mutation_calls` and
+  `pulse_seed_vectors` are `NA_integer_`;
+- only the two character columns, `rngkind_query_callers` and
+  `rngkind_mutation_callers`, are `""`.
+
+The original 13 columns are unchanged, all character and blank in those
+rows as today. The comparator freezes these cells, written by the A0
+canonical writer as unquoted `NA` for the logical and integer columns and
+as `""` for the two character columns. It also freezes the resulting typed
+canonical header for the new columns, exactly:
+
+```
+"entry_seed_present:logical","preserve_calls:integer","rngkind_query_calls:integer","rngkind_query_callers:character","rngkind_mutation_calls:integer","rngkind_mutation_callers:character","pulse_seed_vectors:integer"
+```
+
+These follow the original 13 typed header cells unchanged. Operational rows
+must hold `FALSE` and exact non-missing integer counts. A character-coerced
+header, or a blank string in a logical or integer cell, fails.
 
 **Field predicates.** `case`, `path`, `seed_arg`, `default_seed`,
 `set_seed_calls`, `set_seed_seeds` and `pulse_seed_execution_seeds` stay
@@ -865,8 +1014,10 @@ identical in every row. The exception is row 05: its outcome changes
   allowed; the worker pin does not run, because the census uses one worker.
 - `rngkind_calls` (original column, total of queries and mutations) equals
   `rngkind_query_calls + rngkind_mutation_calls`.
-- With E the number of wrapped-export frames entered and S =
-  `set_seed_calls`:
+- E is the number of entries into `ledgr_rng_preserve_caller` anywhere in
+  the traced case expression. That includes entries made while a step 1
+  forces supplied arguments (review round 2, N2). S = `set_seed_calls`.
+  Then:
   - `preserve_calls` = E;
   - `rngkind_query_calls` = E + S, because every wrapper and every seeded
     fold envelope captures the state once;
@@ -876,24 +1027,37 @@ identical in every row. The exception is row 05: its outcome changes
   decision-due pulse. `pulse_seed_nonnull` counts those returning non-NULL.
   `pulse_seed_vectors` = S.
 
-**Independent expected-call ledger.** E per path is fixed by the source:
+**Independent expected-call ledger.** E per traced case expression is fixed
+by the registered probe (`probe.R:216-232`) and the source:
 
-- `ledgr_run` 1, `ledgr_sweep` 1, `ledgr_walk_forward` 1;
-- `ledgr_promote` 2, because it calls the exported `ledgr_run`
-  (`R/sweep.R:849`).
+- `ledgr_run(...)`: 1;
+- `ledgr_sweep(...)`: 1;
+- `ledgr_walk_forward(..., selection_rule = ledgr_rule_argmax(...))`: 1,
+  because `ledgr_rule_argmax` is N;
+- `ledgr_promote(fx$exp, ledgr_candidate(sw, 1L), run_id = ...)`: 3, in this
+  order:
+  1. `ledgr_promote`'s step 1 forces its supplied `candidate` argument, so
+     the generic dispatches to `ledgr_candidate.default`, which is W and
+     enters its own preserve;
+  2. `ledgr_promote`'s own preserve;
+  3. `ledgr_run` (`R/sweep.R:849`).
 
-No other wrapped export is called internally on these paths: `ledgr_backtest`
-and the windows call internals.
+  The review observed exactly this order in a model of the successor.
+
+No other wrapped export is called on these paths: `ledgr_backtest` and the
+windows call internals. The candidate argument stays inside the observed
+expression. It is not precomputed, and the registered fixture is not
+changed.
 
 | Row | Path, seed | E | S | `preserve_calls` | query | mutation | `rngkind_calls` | `pulse_seed_calls` | `pulse_seed_nonnull` | `pulse_seed_vectors` |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 01 | run, NULL | 1 | 0 | 1 | 1 | 1 | 2 | 10 | 0 | 0 |
 | 02 | sweep, NULL | 1 | 0 | 1 | 1 | 1 | 2 | 20 | 0 | 0 |
-| 04 | promote, NULL | 2 | 0 | 2 | 2 | 2 | 4 | 10 | 0 | 0 |
+| 04 | promote, NULL | 3 | 0 | 3 | 3 | 3 | 6 | 10 | 0 | 0 |
 | 05 | walk-forward, NULL | 1 | 0 | 1 | 1 | 1 | 2 | 19 | 0 | 0 |
 | 06 | run, 24 | 1 | 1 | 1 | 2 | 2 | 4 | 10 | 10 | 1 |
 | 07 | sweep, 24 | 1 | 2 | 1 | 3 | 3 | 6 | 20 | 20 | 2 |
-| 09 | promote, 24 | 2 | 1 | 2 | 3 | 3 | 6 | 10 | 10 | 1 |
+| 09 | promote, 24 | 3 | 1 | 3 | 4 | 4 | 8 | 10 | 10 | 1 |
 | 10 | walk-forward, 24 | 1 | 6 | 1 | 7 | 7 | 14 | 19 | 19 | 6 |
 
 The positive predicates that review F3 required to keep:
@@ -910,8 +1074,13 @@ Every other `pulse_seed_calls` value equals the original record. The
 
 - After LDG-3158 alone, with the original probe unchanged, the original
   census differs only in:
-  - `set_seed_callers`, `set_seed_kind_args` and `rngkind_calls`, each as
-    in the ledger;
+  - `set_seed_callers` (`ledgr_rng_seed_pinned`) and `set_seed_kind_args`
+    (`Mersenne-Twister`), in rows with `set_seed_calls > 0`;
+  - `rngkind_calls`, whose original trace counts queries and mutations
+    together: rows 01, 02, 04, 05, 06, 07, 09, 10 become 2, 2, 6, 2, 4, 6,
+    8, 14. This includes the promotion argument edge in rows 04 and 09, and
+    relies on the successor precondition above, which holds on the LDG-3158
+    tree;
   - row 05's `outcome`, `pulse_seed_calls` (19) and `pulse_seed_nonnull`
     (0). The scalar helper still exists and is still called once per
     decision-due pulse.
@@ -937,7 +1106,7 @@ predicate. A probe crash or a scope failure does not count.
 | R7 `marker_stale` | `ledgr_seed_contract_current()` returns v1 | A1, A2 |
 | R8 `config_rule_dropped` | the seeded config omits `pulse_seed_rule` | A3 |
 | R9 `census_seed_caller` | `ledgr_fold_envelope` calls `set.seed` directly again | Section 8.2.1 `set_seed_callers`/`set_seed_kind_args` |
-| R10 `wf_marker_from_constant` | `ledgr_candidate.ledgr_walk_forward_results` derives `pulse_seed_contract` from the constant instead of the results attribute | the LDG-3159 old/missing walk-forward candidate cases (Section 6) |
+| R10 `wf_marker_from_constant` | `ledgr_candidate.ledgr_walk_forward_results` derives `pulse_seed_contract` from the constant instead of the results attribute | the Section 6 results-attribute fixture: with R10 applied, the candidate extracted from a results object whose attribute was set old or removed carries the current marker and promotes, so the "refused" predicate fails |
 
 `wf_seed` (derivation) and `preflight_wide` (detection) stay meaningful and
 remain in the original gut list.
@@ -985,7 +1154,9 @@ remain in the original gut list.
   follow-up point B-1 is ruled under decision (15): `ledgr_indicator_dev()`'s
   two helpers force their arguments before saving. No question is open.
 
-## 11. Review response (correction round 1)
+## 11. Review response
+
+### 11.0 Correction round 1
 
 The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
 `565e8bbf`, recorded in `607ce382`). The maintainer settled F1 with decision
@@ -993,7 +1164,7 @@ The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
 
 | Finding | Response | Where |
 | --- | --- | --- |
-| F1 boundary and partition | Decision (14) is stated as the boundary, with the documentation sentence. The rule now has W own-work, W service-code, R returned callables, H and N classes. `ledgr_sweep_review` moves from H to W. The source search adds `ledgr_pbo`, `ledgr_feature_grid` and `ledgr_strategy_grid` to W. `ledgr_indicator_dev`'s `test` and `test_dates` restore on their own calls; the constructor is H. Promises and external S3 methods are outside the promise. Dynamic-route, error-after-draw, interrupt-after-draw, worker/store-route and boundary witnesses are added. Counts regenerated: W 15, H 55, N 111 exports; S3 W 1, H 42, N 50; R 2. The two cases decision (14) did not settle were listed and are now ruled by decisions (15) and (16) (rows below). | Sections 1, 5.1-5.5, Appendix A |
+| F1 boundary and partition | Decision (14) is stated as the boundary, with the documentation sentence. The rule now has W own-work, W service-code, R returned callables, H and N classes. `ledgr_sweep_review` moves from H to W. The source search adds `ledgr_pbo`, `ledgr_feature_grid` and `ledgr_strategy_grid` to W. `ledgr_indicator_dev`'s `test` and `test_dates` restore on their own calls; the constructor is H. Promises and external S3 methods are outside the promise. Dynamic-route, error-after-draw, interrupt-after-draw, worker/store-route and boundary witnesses are added. Counts regenerated: W 15, H 55, N 111 exports; S3 W 1, H 42, N 50 (corrected in round 2 to W 2, H 41, N 50); R 2. The two cases decision (14) did not settle were listed and are now ruled by decisions (15) and (16) (rows below). | Sections 1, 5.1-5.5, Appendix A |
 | F2 unseeded walk-forward marker | A current `pulse_seed_contract` is required on every walk-forward candidate, seeded or not. It is stamped from the constant on the results object when the results are produced or opened, and copied into the candidate, independent of `engine$pulse_seed_rule`. Refusal comes before the snapshot hold. Old, missing and current cases cover seeded and unseeded sweep and walk-forward candidates. The derivation marker and the unseeded config rule are unchanged. | Section 6, Section 7, gut R10 |
 | F3 census predicates | The new seeding caller, the query/mutation caller roles, the new column schema and an independent expected-call ledger with exact counts are frozen. The observation changes are authorised explicitly. Row 05's positive predicates are kept, there is no wholesale exemption, and the staging after LDG-3158 alone is stated. | Section 8 preamble, 8.2, 8.2.1, gut R9 |
 | F4 `RNGkind` source guard | Exactly the zero-argument query is allowed in `ledgr_rng_caller_state`. Mutations are allowed only in `ledgr_rng_restore` and `ledgr_parallel_worker_rng_pin`. The pass and injected-failure tests are specified. | Sections 3, 4 |
@@ -1005,10 +1176,29 @@ The review is `ws2_rng_design_review.md` (Codex, NEEDS_TYPE_2, at
 | Decision (15), argument evaluation (case A-1, option b) | Each wrapped export has two steps: `ledgr_rng_force_args()` forces caller-supplied ordinary arguments and dots before `ledgr_rng_preserve_caller()` saves the state. Missing arguments and defaults stay lazy. The frozen `lazy` set (`rank_by`, `.filter`) is never forced. `missing()` and `match.arg()` stay in the prologue, all `on.exit` cleanup moves into the implementation, and S3 generics carry the steps in their methods. User S3 methods dispatched after entry are restored. Source check and witnesses are added: two-call seed, draw in an argument, S3 method after entry, missing and default arguments, and a gut that removes step 1. The documentation sentence is rewritten. Counts unchanged. | Sections 1, 5, 5.1, 5.4, 5.5 |
 | Decision (16), built callables (case A-2, option 1) | `ledgr_signal_strategy()`'s strategy and `ledgr_adapter_r()`'s indicator function are machinery with no own restore; a direct call is the caller's own code. R is only `ledgr_indicator_dev()`'s `test` and `test_dates`. Witnesses: a drawing signal strategy varies across pulses inside a run and advances the caller's stream when called directly, and an `ledgr_adapter_r()` indicator called directly advances it too. The documentation sentence is rewritten; counts unchanged. Follow-up point B-1 is ruled under decision (15): the two R helpers force their supplied arguments before saving, with a witness (Section 5.4). | Sections 5.1-5.5, 10, Appendix A |
 
+### 11.1 Correction round 2
+
+The focused re-review is `ws2_rng_design_review_2.md` (Codex,
+CHANGES_REQUIRED, recorded in `b0659204`), which raised no new Type 2
+question.
+
+| Finding | Response | Where |
+| --- | --- | --- |
+| N1, capture transport across the export/implementation split | The prologue captures after step 1 and passes explicit values: `substitute(rank_by)`, `parent.frame()` and the missing flag for `ledgr_sweep_review`; `substitute(.filter)` and its missing flag for each grid export; `substitute(metric)` as the PBO label, with `metric` itself forced. Implementations never recapture forwarded formals. The permitted prologue is listed exactly and export-frame cleanup stays forbidden. The source check covers the prologue and the no-recapture rule. Witnesses: column-based ranking, caller-local ranking helper, both grid filters plus an omitted filter, and a named PBO callback keeping its label. The cleanup rule now also covers `test_dates()`'s snapshot release. | Section 5.4 (capture transport, permitted prologue, source check), Section 5.5 |
+| N2, candidate-method wrapping, partition and census ledger | `ledgr_candidate.default` is W. The S3 partition is now W 2, H 41, N 50, and exports stay 15/55/111. E is redefined as all preserve entries in the traced expression, including supplied-argument evaluation. Promotion has E 3 through the candidate-argument edge. Rows 04 and 09 are corrected (04: 3/3/3/6; 09: 3/4/4/8, with S 1), as are the after-LDG-3158 `rngkind_calls` staging values. The argument is neither precomputed nor removed from the fixture. The absent-entry precondition is qualified as successor-only: it is false on the base. | Sections 1, 5.2, 5.4, 8.2.1, Appendix A, Section 11 round-1 row |
+| N3, typed copy-row cells | The seven declared types are kept. Copy rows 03 and 08 hold logical `NA` in `entry_seed_present`, `NA_integer_` in the four integer columns, and `""` only in the two caller columns. The comparator freezes the typed missing cells and the canonical header. Operational rows hold `FALSE` and exact counts, and the original 13 fields are unchanged. | Section 8.2.1 |
+| O1, defaults | The overbroad claim that the source guard proves defaults draw nothing is removed. The statement now rests on inspection of the actual defaults and the review's constructor probes. | Section 5.4 |
+| O2, walk-forward marker fixture | The old and missing walk-forward cases are built at the results attribute (seeded and unseeded), then extracted, checked for the copied marker and refused early. Gut R10 must fail this fixture. | Section 6, gut R10 |
+| Spot-check regression notes | None required a change. R3, B5, reading (i), R9, the goldens, the A0 successor and the identity rows were confirmed unchanged. | none |
+
+No optional item was skipped.
+
 ## Appendix A. Entry-point partition (rule of Section 5.2)
 
-Exports (181): W 15 (listed in Section 5.2, without the S3 method), H 55,
-N 111. Registered S3 methods (93): W 1, H 42, N 50. Returned callables: R 2
+Exports (181): W 15 (listed in Section 5.2), H 55, N 111. Registered S3
+methods (93): W 2 (`ledgr_candidate.default`,
+`ledgr_candidate.ledgr_walk_forward_results`), H 41, N 50; round 2 moved
+`ledgr_candidate.default` from H to W (review N2). Returned callables: R 2
 (`ledgr_indicator_dev()`'s `test` and `test_dates`). Under decision (16),
 `ledgr_signal_strategy()`'s strategy and `ledgr_adapter_r()`'s indicator
 function are machinery with no restore of their own. They are not exports,
@@ -1040,7 +1230,7 @@ ledgr_walk_forward_folds, ledgr_walk_forward_open, ledgr_walk_forward_scores.
 
 **H S3 methods:** as_tibble for ledgr_backtest, ledgr_dsr,
 ledgr_effective_trials, ledgr_k_ratio, ledgr_min_track_record, ledgr_pbo,
-ledgr_result_table, ledgr_sweep_filter_result; ledgr_candidate.default;
+ledgr_result_table, ledgr_sweep_filter_result;
 plot.ledgr_backtest; print for ledgr_backtest, ledgr_business_objective,
 ledgr_comparison, ledgr_dsr, ledgr_effective_trials, ledgr_experiment,
 ledgr_experiment_plan, ledgr_facts_history, ledgr_facts_report,
@@ -1130,8 +1320,13 @@ only) was reverted after each run.
 - Correction round 1: a read-only source search of `R/` at `aa2931e9` for
   `eval`, `evalq`, `eval_tidy`, `eval_bare`, `exec`, `do.call`,
   `match.fun`, `substitute`, `enquo`, `is.function()` parameters and
-  returned closures (Section 5.3). The Section 8.2.1 ledger values `E` come
-  from reading the internal calls between wrapped exports (only
-  `ledgr_promote` -> `ledgr_run` on the census paths). The partition was
-  rechecked against `NAMESPACE`: 15 + 55 + 111 = 181, with no overlap and
-  no omission.
+  returned closures (Section 5.3). The partition was rechecked against
+  `NAMESPACE`: 15 + 55 + 111 = 181, with no overlap and no omission.
+- Correction round 2: the Section 8.2.1 ledger values `E` come from reading
+  the registered census expressions (`probe.R:216-232`) and the calls
+  between wrapped entries. On the census paths these are the promotion
+  candidate argument (`ledgr_candidate.default`) and `ledgr_promote` ->
+  `ledgr_run`. The review observed the promotion order in a model of the
+  successor. The copy-row header form follows the A0 canonical writer
+  (`dev/bench/v0_2_3_output_freeze/lib.R:150-182`), whose typed headers
+  read `name:class` and whose missing values are unquoted `NA`.
