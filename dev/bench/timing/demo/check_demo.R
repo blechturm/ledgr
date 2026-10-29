@@ -23,7 +23,17 @@ source(file.path(harness, "protocol.R"))
 protocol_dir <- file.path(harness, "protocols", "smoke-1")
 protocol <- timing_read_protocol(protocol_dir)
 work <- file.path(tempdir(), "check_demo")
-interrupted <- file.path(harness, "records", "smoke-1", "interrupt-demo", "attempt-2")
+interrupted <- file.path(harness, "records", "smoke-1", "interrupt-demo", "attempt-3")
+repo <- normalizePath(file.path(harness, "..", "..", ".."), winslash = "/")
+git <- function(...) system2("git", c("-C", shQuote(repo), ...), stdout = TRUE)
+
+# The synthetic records name a real harness commit (HEAD when the demo
+# runs), and their frozen copies are that commit's files, so the checker's
+# own comparison of saved copies against the commit applies to them too.
+harness_commit <- git("rev-parse", "HEAD")
+harness_source <- "dev/bench/timing"
+protocol_source <- "dev/bench/timing/protocols/smoke-1"
+committed_copy <- function(source, dest) writeLines(git("show", paste0(harness_commit, ":", source)), dest)
 
 root_id <- "1000@1700000000000"
 commit <- c(base = strrep("b", 40), candidate = strrep("c", 40))
@@ -35,12 +45,13 @@ lib <- c(base = "C:/demo/arm_base/lib", candidate = "C:/demo/arm_candidate/lib")
 make_record <- function(dir, ratio = c(small_cold = 1.02, small_warm = 0.96), alternate = TRUE) {
   dir.create(file.path(dir, "protocol"), recursive = TRUE)
   dir.create(file.path(dir, "harness"))
-  file.copy(file.path(protocol_dir, timing_protocol_files), file.path(dir, "protocol"))
-  file.copy(file.path(harness, timing_harness_files), file.path(dir, "harness"))
+  for (f in timing_protocol_files) committed_copy(file.path(protocol_source, f), file.path(dir, "protocol", f))
+  for (f in timing_harness_files) committed_copy(file.path(harness_source, f), file.path(dir, "harness", f))
   timing_write_kv(list(protocol = protocol$id, label = "demo", attempt = "1", mode = "gate", host_policy = "enforce",
     test_hook = "none", disposition = "none", disposition_role = "none", disposition_ref = "none",
     status = "complete", status_reason = "", started_utc = "2023-11-14T22:13:20Z", finished_utc = "2023-11-14T22:23:20Z",
-    harness_commit = strrep("a", 40), inputs_start = "verified", inputs_end = "verified",
+    harness_commit = harness_commit, harness_source = harness_source, protocol_source = protocol_source,
+    inputs_start = "verified", inputs_end = "verified",
     base_commit = commit[["base"]], base_product = "R=1;src=1;DESCRIPTION=1;NAMESPACE=1", base_lib = lib[["base"]],
     candidate_commit = commit[["candidate"]], candidate_product = "R=2;src=1;DESCRIPTION=1;NAMESPACE=1",
     candidate_lib = lib[["candidate"]], root_id = root_id, root_affinity = "65535", plan_guid = timing_plan_guid,
@@ -103,12 +114,23 @@ pid_reuse_chain <- function(pid, created) {
   timing_chain(probe$procs, as.numeric(pid))
 }
 
-later_attempt <- function(role, ref) {
+later_attempt <- function(role, ref, text = "attempt 1 host departure") {
   list("session.csv", function(s) {
-    s[c("attempt", "disposition", "disposition_role", "disposition_ref")] <- list("2", "attempt 1 host departure", role, ref)
+    s[c("attempt", "disposition", "disposition_role", "disposition_ref")] <- list("2", text, role, ref)
     s
   })
 }
+
+# Sets row i's launch time (seconds) and creation time (ms), keeping its
+# chain bound to the row, so only the timing relation under test changes.
+set_times <- function(d, i, launched = d$launched[[i]], created, pid = d$pid[[i]]) {
+  d$launched[i] <- launched
+  d$created[i] <- sprintf("%.0f", created)
+  d$pid[i] <- pid
+  d$chain[i] <- sprintf("%s@%.0f=65535;%s=65535", pid, created, root_id)
+  d
+}
+launch_ms <- function(d, i) 1000 * as.numeric(d$launched[[i]])
 
 cases <- list(
   list(case = "control", shows = "a clean gate record passes", exit = 0L),
@@ -172,6 +194,45 @@ cases <- list(
     reason = "disposition", edit = later_attempt("agent", "none")),
   list(case = "disposition_maintainer_control", shows = "a later gate attempt under a maintainer disposition passes",
     exit = 0L, edit = later_attempt("maintainer", "tickets.yml LDG-0000 disposition 1")),
+  # Round 2 (ldg3155_harness_review_2.md).
+  list(case = "N1_frozen_harness_changed", shows = "a frozen harness file changed after the run, session untouched",
+    exit = 1L, reason = "inputs changed",
+    tweak = function(dir) cat("stop(\"changed\")\n", file = file.path(dir, "harness", "measure.R"), append = TRUE)),
+  list(case = "N1_matching_copy_control", shows = "a frozen copy with CRLF line endings still matches its commit",
+    exit = 0L, tweak = function(dir) {
+      path <- file.path(dir, "harness", "check.R")
+      writeBin(charToRaw(paste0(paste(readLines(path), collapse = "\r\n"), "\r\n")), path)
+    }),
+  list(case = "N2_after_before_last_launch", shows = "the 'after' snapshot moved 0.5 s before the last launch", exit = 1L,
+    reason = "host snapshots", edit = list("host.csv", function(d) {
+      d$at[nrow(d)] <- sprintf("%.6f", as.numeric(d$at[nrow(d) - 1L]) + 0.5)
+      d
+    })),
+  list(case = "N2_during_before_first_launch", shows = "every pre-slot snapshot moved to 2 s before the first launch",
+    exit = 1L, reason = "host snapshots", edit = list("host.csv", function(d) {
+      d$at[d$phase == "during"] <- sprintf("%.6f", 1700000010 - 2)
+      d
+    })),
+  list(case = "N2_before_slot_999", shows = "a 'before' snapshot naming slot 999", exit = 1L, reason = "unexpected snapshot",
+    edit = list("host.csv", function(d) { d$slot[1L] <- "999"; d })),
+  list(case = "N3_created_999ms_early", shows = "a process created 999 ms before its launch", exit = 1L,
+    reason = "process identity", edit = list("raw.csv", function(d) set_times(d, 4L, created = launch_ms(d, 4L) - 999))),
+  list(case = "N3_final_created_after_window", shows = "the last process created after the 'after' snapshot", exit = 1L,
+    reason = "process identity",
+    edit = list("raw.csv", function(d) set_times(d, nrow(d), created = launch_ms(d, nrow(d)) + 11000))),
+  list(case = "N3_submillisecond_floor_control", shows = "a creation floored below a launch 0.9 ms into its millisecond",
+    exit = 0L, edit = list("raw.csv", function(d) {
+      base <- as.numeric(d$launched[[2L]])
+      set_times(d, 2L, launched = sprintf("%.6f", base + 0.0009), created = 1000 * base)
+    })),
+  list(case = "N3_pid_reuse_control", shows = "a later process reusing an earlier PID with its own creation time", exit = 0L,
+    edit = list("raw.csv", function(d) set_times(d, 3L, created = as.numeric(d$created[[3L]]), pid = d$pid[[1L]]))),
+  list(case = "N3_delayed_creation_control", shows = "a process created 5 s after its launch, before the next launch",
+    exit = 0L, edit = list("raw.csv", function(d) set_times(d, 5L, created = launch_ms(d, 5L) + 5000))),
+  list(case = "N4_whitespace_text", shows = "a later gate attempt whose disposition text is blank", exit = 1L,
+    reason = "disposition", edit = later_attempt("maintainer", "tickets.yml LDG-0000 disposition 1", text = "   ")),
+  list(case = "N4_whitespace_ref", shows = "a later gate attempt whose decision reference is blank", exit = 1L,
+    reason = "disposition", edit = later_attempt("maintainer", "   ")),
   list(case = "interrupted_record", shows = "the runner's interrupted attempt (killed child, unrun slots)", exit = 1L,
     reason = "unrun slot", record = interrupted, aa = TRUE)
 )
@@ -190,6 +251,7 @@ results <- do.call(rbind, lapply(cases, function(x) {
       edit(record, "raw.csv", function(d) { d$ledgr_commit <- commit[["base"]]; d })
     }
     if (!is.null(x$edit)) edit(record, x$edit[[1L]], x$edit[[2L]])
+    if (!is.null(x$tweak)) x$tweak(record)
   }
   proto <- if (is.null(x$protocol)) protocol_dir else x$protocol()
   out <- suppressWarnings(system2(rscript, c("--no-init-file", shQuote(file.path(harness, "check.R")),

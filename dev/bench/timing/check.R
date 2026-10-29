@@ -4,34 +4,13 @@
 # mode, applies its threshold map: for every cell, the median of the
 # candidate's seconds over the median of the base's seconds must be at most
 # the cell's bound. One attempt is checked as recorded; nothing is retried,
-# dropped or re-paired. Before any ratio counts, a record fails on:
-#
-#   - an invalid protocol (pairs not an integer of at least 8, a threshold
-#     map that does not name every cell exactly once) or a record whose
-#     protocol copy differs;
-#   - an attempt that did not complete; a later attempt without a recorded
-#     disposition (for a gate, one by the maintainer with a decision
-#     reference); a test hook; unenforced host checks; executed inputs that
-#     were not verified against the harness commit at start and end;
-#   - a saved plan that is not the protocol's plan; a missing, duplicate,
-#     unexpected, failed or unrun slot or row; fewer complete pairs than the
-#     protocol states;
-#   - host snapshots that do not cover the window: exactly one before, one
-#     after and one before each executed slot, each with a valid time and the
-#     session's root first in its chain;
-#   - invalid seconds, a wrong clock, a missing work string, or a row whose
-#     ledgr did not come from its own arm's library and commit;
-#   - a process identity that does not hold together: the chain must start
-#     at the row's PID and creation time, with the row's affinity, and the
-#     process must have been created just after the runner launched it;
-#   - a power plan other than High performance, affinity other than 0xFFFF
-#     on the root or on any process from a measured one up to the root, or a
-#     foreign R process, in any host snapshot or any measured process;
-#   - an executed order (by process creation time) that does not alternate:
-#     the two arms of a cell back to back, base first in odd pairs and
-#     candidate first in even pairs;
-#   - different work reported within a cell.
-# CPU load in the host snapshots is a noise observation and never fails.
+# dropped or re-paired. Before any ratio counts, the record must be valid:
+# the protocol, the attempt and its disposition, the saved inputs against
+# the harness commit, the plan and every slot, the host snapshots' coverage
+# of the window, each process's identity, affinity and power plan, foreign
+# R, the alternating executed order and invariant work. Each section below
+# says what it requires; the benchmark manual's "Before/After Regression
+# Gates" states the rules. CPU load is a noise observation and never fails.
 #
 # --aa checks a self-versus-self record (both arms one commit): validity
 # only, with each cell's ratio reported as a noise observation. In gate mode
@@ -39,7 +18,7 @@
 #
 # Usage: Rscript dev/bench/timing/check.R --protocol=<folder> --record=<attempt dir> [--aa]
 
-timing_check <- function(protocol_dir, record, aa = FALSE) {
+timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
   reasons <- character()
   details <- character()
   fail <- function(reason, detail = "") {
@@ -70,7 +49,8 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   # The attempt.
   s <- timing_read_kv(file.path(record, "session.csv"))
   for (field in c("protocol", "attempt", "mode", "host_policy", "test_hook", "disposition", "status", "status_reason",
-                  "harness_commit", "inputs_start", "inputs_end", "base_commit", "base_product", "base_lib",
+                  "harness_commit", "harness_source", "protocol_source", "inputs_start", "inputs_end",
+                  "base_commit", "base_product", "base_lib",
                   "candidate_commit", "candidate_product", "candidate_lib", "root_id", "root_affinity", "plan_guid")) {
     if (is.null(s[[field]])) {
       fail("session field missing", field)
@@ -80,10 +60,11 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   for (field in c("disposition_role", "disposition_ref")) if (is.null(s[[field]])) s[[field]] <- "none"
   if (!identical(s$protocol, protocol$id)) fail("protocol changed", sprintf("record ran protocol %s", s$protocol))
   if (!identical(s$status, "complete")) fail("attempt status", sprintf("%s: %s", s$status, s$status_reason))
+  blank <- function(x) is.na(x) || !nzchar(trimws(x)) || identical(trimws(x), "none")
   if (!identical(s$attempt, "1")) {
-    if (s$disposition %in% c("none", "", NA) || !s$disposition_role %in% c("maintainer", "agent")) {
+    if (blank(s$disposition) || !s$disposition_role %in% c("maintainer", "agent")) {
       fail("disposition", sprintf("attempt %s has no recorded disposition with an author role", s$attempt))
-    } else if (!aa && (s$disposition_role != "maintainer" || s$disposition_ref %in% c("none", "", NA))) {
+    } else if (!aa && (s$disposition_role != "maintainer" || blank(s$disposition_ref))) {
       fail("disposition", sprintf("gate attempt %s needs a maintainer disposition with a decision reference (role %s, ref %s)",
         s$attempt, s$disposition_role, s$disposition_ref))
     }
@@ -92,6 +73,14 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   if (!identical(s$host_policy, "enforce")) fail("host policy", sprintf("host checks were %s, not enforced", s$host_policy))
   if (!identical(s$inputs_start, "verified")) fail("inputs changed", sprintf("at start: %s", s$inputs_start))
   if (!identical(s$inputs_end, "verified")) fail("inputs changed", sprintf("at end: %s", s$inputs_end))
+  # The saved copies themselves, compared with the recorded commit here and
+  # now, so a copy changed after the runner finished is still caught.
+  commit_found <- is.null(attr(suppressWarnings(system2("git", c("-C", shQuote(repo), "cat-file", "-e",
+    paste0(s$harness_commit, "^{commit}")), stdout = TRUE, stderr = TRUE)), "status"))
+  saved <- if (!commit_found) sprintf("harness commit %s is not available", s$harness_commit) else
+    timing_verify_inputs(repo, s$harness_commit, timing_input_files(file.path(record, "harness"), file.path(record, "protocol")),
+      timing_input_sources(s$harness_source, s$protocol_source))
+  if (saved != "verified") fail("inputs changed", sprintf("saved copies: %s", saved))
   same_tree <- identical(s$base_commit, s$candidate_commit) || identical(s$base_product, s$candidate_product)
   if (aa && !(same_tree && identical(s$mode, "aa"))) fail("not an A/A record", "--aa needs both arms on one commit")
   if (!aa && (same_tree || !identical(s$mode, "gate"))) {
@@ -138,7 +127,16 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
     fail("fewer pairs", sprintf("%d complete pairs; the protocol states %d", complete_pairs, protocol$pairs))
   }
 
-  # Host snapshots: one before, one after, one before each executed slot.
+  # The executed timeline in the runner's launch sequence: each executed
+  # slot's launch and the later of its launch and its process creation.
+  ex <- raw[!raw$outcome %in% "not_run", , drop = FALSE]
+  ex <- ex[order(suppressWarnings(as.numeric(ex$seq))), , drop = FALSE]
+  ex_launch <- suppressWarnings(as.numeric(ex$launched))
+  ex_end <- pmax(ex_launch, suppressWarnings(as.numeric(ex$created)) / 1000, na.rm = TRUE)
+  after_at <- NA_real_
+
+  # Host snapshots: one before the first launch, one before each executed
+  # slot (after the previous slot's launch and creation), one after the last.
   host <- timing_read_csv(file.path(record, "host.csv"))
   if (!identical(names(host), timing_host_fields)) {
     fail("host snapshots", sprintf("host.csv columns %s", paste(names(host), collapse = ",")))
@@ -148,6 +146,7 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
     if (sum(host$phase %in% "before") != 1L || !identical(host$phase[1L], "before")) fail("host snapshots", "not exactly one 'before' snapshot first")
     if (sum(host$phase %in% "after") != 1L || !identical(host$phase[nrow(host)], "after")) fail("host snapshots", "not exactly one 'after' snapshot last")
     for (i in which(!host$phase %in% c("before", "during", "after"))) fail("unexpected snapshot", where[[i]])
+    for (i in which(host$phase %in% c("before", "after") & !is.na(host$slot))) fail("unexpected snapshot", paste(where[[i]], "names a slot"))
     during <- host$slot[host$phase %in% "during"]
     executed <- raw$slot[!raw$outcome %in% "not_run"]
     for (sl in unique(during[duplicated(during)])) fail("duplicate snapshot", sprintf("slot %s", sl))
@@ -155,8 +154,19 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
     for (sl in setdiff(executed, during)) fail("missing snapshot", sprintf("before slot %s", sl))
     at <- suppressWarnings(as.numeric(host$at))
     if (any(!is.finite(at) | at < 1e9) || is.unsorted(at)) fail("host snapshots", "snapshot times missing, invalid or out of order")
-    launched <- suppressWarnings(as.numeric(raw$launched[match(host$slot, raw$slot)]))
-    for (i in which(host$phase %in% "during" & is.finite(launched) & at > launched)) fail("host snapshots", paste(where[[i]], "taken after its slot launched"))
+    after_at <- at[host$phase %in% "after"][1L]
+    if (nrow(ex)) {
+      d_slot <- host$slot[host$phase %in% "during"]
+      if (!identical(d_slot[d_slot %in% ex$slot], ex$slot)) fail("host snapshots", "pre-slot snapshots are not in execution order")
+      d_at <- at[host$phase %in% "during"][match(ex$slot, d_slot)]
+      prev_end <- c(-Inf, ex_end[-nrow(ex)])
+      for (i in which(is.finite(d_at) & ((is.finite(ex_launch) & d_at > ex_launch) | d_at < prev_end))) {
+        fail("host snapshots", sprintf("snapshot before slot %s at %.3f is outside its window (%.3f to %.3f)",
+          ex$slot[[i]], d_at[[i]], prev_end[[i]], ex_launch[[i]]))
+      }
+      if (isTRUE(at[host$phase %in% "before"][1L] > ex_launch[1L])) fail("host snapshots", "the 'before' snapshot follows the first launch")
+      if (!isTRUE(after_at >= max(ex_end, na.rm = TRUE))) fail("host snapshots", "the 'after' snapshot precedes the last launch or creation")
+    }
     root_entry <- lapply(host$root_chain, function(ch) timing_parse_chain(ch)[1L, ])
     for (i in seq_len(nrow(host))) {
       e <- root_entry[[i]]
@@ -184,13 +194,19 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   for (i in which(nzchar(r$foreign_r))) fail("foreign R", sprintf("%s %s", k[[i]], r$foreign_r[[i]]))
 
   # Process identity: the chain starts at this row's process (PID plus
-  # creation time) with this row's affinity, the process was created just
-  # after the runner launched it, and no identity repeats.
+  # creation time) with this row's affinity, no identity repeats, and the
+  # process was created inside its own slot: no earlier than the runner's
+  # launch time and no later than the next launch (or, for the last slot,
+  # the 'after' snapshot). The launch time is a sub-millisecond R clock read;
+  # the creation time is floored to whole milliseconds, so a creation in the
+  # launch's own millisecond can read below it. The allowance is that
+  # flooring plus one millisecond of clock granularity, nothing more.
   launched_ms <- 1000 * suppressWarnings(as.numeric(r$launched))
   created <- ifelse(is_count(r$created), suppressWarnings(as.numeric(r$created)), NA_real_)
+  next_bound <- 1000 * c(ex_launch[-1L], after_at)[match(r$slot, ex$slot)]
   identity <- paste0(r$pid, "@", r$created)
-  identity_ok <- is_count(r$pid) & !is.na(created) & is.finite(launched_ms) &
-    created >= launched_ms - 1000 & created <= launched_ms + 60000 & !duplicated(identity)
+  identity_ok <- is_count(r$pid) & !is.na(created) & is.finite(launched_ms) & created >= floor(launched_ms) - 1 &
+    is.finite(next_bound) & created <= next_bound & !duplicated(identity)
   for (i in which(!identity_ok)) {
     fail("process identity", sprintf("%s pid %s created %s launched %s", k[[i]], r$pid[[i]], r$created[[i]], r$launched[[i]]))
   }
@@ -258,13 +274,14 @@ timing_check <- function(protocol_dir, record, aa = FALSE) {
   result(cells)
 }
 
-timing_check_main <- function() {
+timing_check_main <- function(here) {
   opt <- timing_args()
   if (!is.character(opt("protocol")) || !is.character(opt("record"))) {
     stop("usage: check.R --protocol=<folder> --record=<attempt dir> [--aa]", call. = FALSE)
   }
   aa <- isTRUE(opt("aa"))
-  res <- timing_check(opt("protocol"), opt("record"), aa = aa)
+  res <- timing_check(opt("protocol"), opt("record"), aa = aa,
+    repo = normalizePath(file.path(here, "..", "..", ".."), winslash = "/"))
   options(width = 200)
   if (!is.null(res$cells)) {
     cat(if (aa) "A/A cells (ratio = median candidate / median base; a noise observation, not a gate):\n" else
@@ -286,5 +303,5 @@ if (sys.nframe() == 0L) {
     winslash = "/")
   source(file.path(here, "host.R"))
   source(file.path(here, "protocol.R"))
-  quit(save = "no", status = timing_check_main())
+  quit(save = "no", status = timing_check_main(here))
 }

@@ -128,6 +128,38 @@ timing_create_attempt <- function(path) {
   normalizePath(path, winslash = "/")
 }
 
+# Execution inputs: the six harness files and four protocol files, as files
+# on disk (`timing_input_files`) and as repository paths at the harness
+# commit (`timing_input_sources`; NA when the folder lies outside the repo).
+timing_input_files <- function(harness_dir, protocol_dir) {
+  c(file.path(harness_dir, timing_harness_files), file.path(protocol_dir, timing_protocol_files))
+}
+timing_input_sources <- function(harness_source, protocol_source) {
+  at <- function(dir, files) if (is.na(dir) || dir %in% "NA") rep(NA_character_, length(files)) else file.path(dir, files)
+  c(at(harness_source, timing_harness_files), at(protocol_source, timing_protocol_files))
+}
+timing_repo_path <- function(path, repo) {
+  full <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  if (startsWith(tolower(full), tolower(paste0(repo, "/")))) substring(full, nchar(repo) + 2L) else NA_character_
+}
+
+# The one input check, used by the runner before and after a window and by
+# the checker on a record: each file's text must equal its source's text at
+# `commit` (line endings ignored, as timing_file_text reads them). Returns
+# "verified" or the sources that differ, are missing or cannot be read.
+timing_verify_inputs <- function(repo, commit, files, sources) {
+  bad <- character()
+  for (i in seq_along(files)) {
+    committed <- if (is.na(sources[[i]])) NULL else suppressWarnings(system2("git", c("-C", shQuote(repo), "show",
+      shQuote(paste0(commit, ":", sources[[i]]))), stdout = TRUE, stderr = FALSE))
+    if (is.null(committed) || !is.null(attr(committed, "status")) || !file.exists(files[[i]]) ||
+        !identical(timing_file_text(files[[i]]), paste(committed, collapse = "\n"))) {
+      bad <- c(bad, if (is.na(sources[[i]])) files[[i]] else sources[[i]])
+    }
+  }
+  if (length(bad)) sprintf("differs from %s: %s", substr(commit, 1L, 12L), paste(bad, collapse = ", ")) else "verified"
+}
+
 # Line-ending-insensitive text of a file, for comparing a record's protocol
 # copy with the protocol folder.
 timing_file_text <- function(path) {

@@ -22,26 +22,9 @@
 #                                (smoke and demonstrations only; the checker refuses the record)
 #   --test-kill-slot=<n>         interruption demonstration: slot n's process kills itself
 #
-# Host rule: before provisioning and again before the window, the runner
-# refuses to start unless the power plan is High performance, its own
-# affinity is 0xFFFF and no foreign R process runs; a refusal writes no
-# attempt, because nothing was measured.
-#
-# Inputs: the runner records the commit it runs from and refuses (or, under
-# --host-policy=record, records) harness or protocol files that differ from
-# that commit. Before the first slot it copies the six harness files and the
-# four protocol files into the attempt (harness/ and protocol/) and checks
-# the copies against the commit; every slot executes those copies. After the
-# window it checks them against the commit again, and any departure makes
-# the attempt invalid.
-#
-# Persistence: from the first slot on, the attempt lives in a freshly created
-# <label>/attempt-<n>/ (n one above the highest existing attempt): session.csv,
-# plan.csv (every slot, written before the first one runs), raw.csv, host.csv
-# and the frozen inputs. A host problem before a slot or inside a measured
-# process, a failed process or an interruption stops the window: the attempt
-# is marked invalid and every unrun slot is written to raw.csv as not_run.
-#
+# The benchmark manual's "Before/After Regression Gates" states the host,
+# input, attempt and persistence rules this script applies; the sections
+# below follow them in order. A refusal before the window writes nothing.
 # The whole script is one expression, so R parses all of it before running
 # any of it; an edit to this file during a window cannot change the run.
 
@@ -80,23 +63,12 @@ local({
     candidate = git("rev-parse", "--verify", paste0(opt("candidate"), "^{commit}")))
   mode <- if (identical(shas[["base"]], shas[["candidate"]])) "aa" else "gate"
 
-  # Each input file must equal its text at the harness commit.
+  # Each input file must equal its source's text at the harness commit.
   harness_commit <- git("rev-parse", "HEAD")[[1L]]
-  input_problems <- function(paths) {
-    bad <- character()
-    for (path in paths) {
-      full <- normalizePath(path, winslash = "/", mustWork = FALSE)
-      rel <- if (startsWith(tolower(full), tolower(paste0(repo, "/")))) substring(full, nchar(repo) + 2L) else NA
-      committed <- if (is.na(rel)) NULL else tryCatch(paste(git("show", paste0(harness_commit, ":", rel)), collapse = "\n"),
-        error = function(e) NULL)
-      if (is.null(committed) || !file.exists(path) || !identical(timing_file_text(path), committed)) {
-        bad <- c(bad, if (is.na(rel)) full else rel)
-      }
-    }
-    if (length(bad)) paste("differs from", substr(harness_commit, 1L, 12L), ":", paste(bad, collapse = ", ")) else "verified"
-  }
-  live_inputs <- c(file.path(here, timing_harness_files), file.path(protocol$dir, timing_protocol_files))
-  inputs_start <- input_problems(live_inputs)
+  harness_source <- timing_repo_path(here, repo)
+  protocol_source <- timing_repo_path(protocol$dir, repo)
+  sources <- timing_input_sources(harness_source, protocol_source)
+  inputs_start <- timing_verify_inputs(repo, harness_commit, timing_input_files(here, protocol$dir), sources)
   if (inputs_start != "verified" && policy == "enforce") refuse("harness or protocol input ", inputs_start)
 
   label_dir <- opt("out", file.path(here, "records", protocol$id, opt("label")))
@@ -160,16 +132,8 @@ local({
   file.copy(file.path(here, timing_harness_files), frozen_harness)
   file.copy(file.path(protocol$dir, timing_protocol_files), frozen_protocol)
   # The copies are checked against the commit under their source paths.
-  frozen_inputs <- c(file.path(frozen_harness, timing_harness_files), file.path(frozen_protocol, timing_protocol_files))
   verify_frozen <- function() {
-    bad <- character()
-    for (i in seq_along(frozen_inputs)) {
-      committed <- tryCatch(paste(git("show", paste0(harness_commit, ":",
-        substring(normalizePath(live_inputs[[i]], winslash = "/"), nchar(repo) + 2L))), collapse = "\n"),
-        error = function(e) NA_character_)
-      if (!identical(timing_file_text(frozen_inputs[[i]]), committed)) bad <- c(bad, basename(frozen_inputs[[i]]))
-    }
-    if (length(bad)) paste("frozen copy differs from", substr(harness_commit, 1L, 12L), ":", paste(bad, collapse = ", ")) else "verified"
+    timing_verify_inputs(repo, harness_commit, timing_input_files(frozen_harness, frozen_protocol), sources)
   }
   inputs_frozen <- verify_frozen()
   if (inputs_start == "verified") inputs_start <- inputs_frozen
@@ -185,7 +149,8 @@ local({
     disposition = if (nzchar(disposition)) disposition else "none",
     disposition_role = if (nzchar(role)) role else "none", disposition_ref = if (nzchar(ref)) ref else "none",
     status = "running", status_reason = "", started_utc = utc(), finished_utc = "",
-    harness_commit = harness_commit, inputs_start = inputs_start, inputs_end = "",
+    harness_commit = harness_commit, harness_source = harness_source, protocol_source = protocol_source,
+    inputs_start = inputs_start, inputs_end = "",
     base_commit = shas[["base"]], base_product = product(shas[["base"]]), base_lib = libs[["base"]],
     candidate_commit = shas[["candidate"]], candidate_product = product(shas[["candidate"]]),
     candidate_lib = libs[["candidate"]],
