@@ -29,6 +29,21 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-10-30-data-per-row-json-loops-on-the-seal-path"></a>
+### 2026-10-30 [data] Per-row JSON loops on the snapshot seal path
+
+The 2026-10-30 JSON hot-path audit (`dev/spikes/json-hot-path-audit/`, "Cold
+/ once-per-run") found R loops on the ingest and seal path that run once per
+fact row and parse, re-encode or hash JSON. Examples:
+`availability-facts.R:1783-1836` (provenance parse and re-encode, fact IDs),
+`availability-persistence.R:530/570/691-709` and
+`availability-ingest.R:226-237`. Identity hashing is allowed under macro
+plan rule 14, and these are not fold paths, so they do not block v0.2.3.
+They still break the optimization style's per-row loop rule on a path it
+covers. Code comments route them to v0.2.2 LDG-3080/F05, which no v0.2.3
+workstream owns. Revisit when seal time matters at Sharadar scale. This
+entry authorizes no implementation.
+
 <a id="2026-10-29-execution-typed-accounting-companion-layout"></a>
 ### 2026-10-29 [execution] Companion layout for typed accounting evidence
 

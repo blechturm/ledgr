@@ -209,6 +209,13 @@ current producers are compared; WS4b does not redesign it.
   against dense 2.1 s); a same-strategy no-fill profile attributes about
   2.2 s of the difference to padded state JSON and 1.4 s to context refresh
   (`dev/spikes/pmwr-performance/`).
+- **Amendment (maintainer, 2026-10-30, JSON audit):** "diagnostic flushing"
+  includes the reconciliation's per-pulse `detail_json` encode
+  (`R/fold-engine.R:1462-1483`; audit row H5). The `canonical_json()` cache,
+  which serializes and SHA-256-hashes every argument to look itself up (H4),
+  is retired in the cut that removes its last per-pulse caller (WS4b or
+  WS5, whichever lands last). Retiring it earlier makes the remaining
+  callers pay full encodes. Evidence: `dev/spikes/json-hot-path-audit/`.
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.
 
@@ -228,6 +235,12 @@ required capital and costs) follows WS4b. H3 is settled in this cut.
   persistence and resume checkpoints under the pre-CRAN refusal policy.
   Evidence: `dev/spikes/pmwr-performance/` (named-list state is about 20% of
   a wide run).
+- **Amendment (maintainer, 2026-10-30, JSON audit):** `intent_reason` is
+  stored as a typed string column in the diagnostic batch, not encoded as
+  `canonical_json(list(intent_reason = ...))` every decision pulse
+  (`R/fold-engine.R:886`, audit row H6). `ledgr_run_explain()` reads that
+  column instead of parsing JSON (`R/availability-results.R:85-94`, H13).
+  Evidence: `dev/spikes/json-hot-path-audit/`.
 
 ### WS6. Context frame retirement (C2)
 
@@ -245,6 +258,12 @@ temporarily extract typed evidence from current JSON, and may not leave parsed
 metadata as a second authority. Gate: every public table and print is
 byte-identical or each difference is decided. M8a and C12b may land earlier on
 the current path.
+- **Amendment (maintainer, 2026-10-30, JSON audit):** terminal recovery
+  rebuilds positions with one `ledgr_state_asof()` replay per pulse
+  (`R/run-finalize.R:164-172`; audit row H10c), which is quadratic in pulses
+  times events. WS7 replaces it with one replay scanned across the pulses,
+  in addition to removing the JSON parse. Evidence:
+  `dev/spikes/json-hot-path-audit/`.
 
 ### WS8. Typed P3-P5 execution batch (C7)
 
