@@ -314,10 +314,18 @@ cuts:
       differs only in sweep_candidates.provenance, and a value-free probe
       shows the only differing key in all four rows is seed_contract,
       ledgr_seed_v1 to ledgr_seed_v2: Cut 4's declared marker change (its A0
-      predicate A2). Those six reruns are frozen privately as the pre-WS4a
-      real-data reference (E:/ledgr-data/reference/v0.2.3-base-953338df/,
-      one r1 directory per workload, with the base library and the rebuilt
-      snapshot's build-state.json beside it). Existing
+      predicate A2). The six saved reruns are frozen privately as the
+      pre-WS4a real-data reference at
+      E:/ledgr-data/reference/v0.2.3-base-953338df/, one r1 directory per
+      workload. The base library is E:/ledgr-data/r-lib/ledgr-v0.2.3-base-953338df
+      and the rebuilt snapshot's state file is
+      E:/ledgr-data/sharadar/experiments/v0.2.3-base-953338df-W1/build-state.json
+      (W1 must work beneath the guarded Sharadar root). Before acceptance,
+      LDG-3163 records these paths, their input identities, the fresh-library
+      installation command and the complete unchanged and cost-mutant
+      comparator commands in a private evidence record, with a stable
+      pointer here; the reference is ready to gate a fresh candidate only
+      after those commands pass their positive and negative controls. Existing
       timing evidence, cited and not rerun (rules 10 and 13): the carrier
       probe measured the availability wide sweep at 226.50 us/fill on the
       base and 27.17 / 27.07 us/fill (wide / partial-heavy) for typed R lots
@@ -325,85 +333,130 @@ cuts:
       (dev/spikes/ws4a-carrier-probe/); the WS3 descriptive record measured
       the public dense 500 x 1260 run at 24.53 s warm and 28.34 s cold
       (dev/bench/peer_benchmark/records/20261030-current-tree/), which is
-      not a ratio arm. The new timing protocol, case records and memory
-      record do not exist yet: LDG-3163 builds and runs them on the base
-      before any product change, and implementation waits for the
-      maintainer's confirmation that they raised no surprise (decision 9).
+      not a ratio arm. The new timing protocol, case records, memory method
+      and detector controls do not exist yet: under decision (9) LDG-3162
+      and LDG-3163 build them and run them on the base before this cut can
+      be accepted.
     decisions: >-
-      Proposed for acceptance with the cut. (1) Authority: the synthesis
-      binds the design. A design question the synthesis does not settle
-      stops implementation for a Type 2 checkpoint; the implementer does not
-      decide it. (2) Oracles, all exact: the Cut 4 A0 successor gate (295
-      checks); the dense native oracle at cbf25359 (nine arms, through
-      dense/check.R); the pre-WS4a real-data reference of measured_input,
-      compared exactly with the unchanged compare.R (ref_dir
+      Proposed for acceptance with the cut; revision 2 applies
+      cut_review_5.md F1-F10. (1) Authority: the synthesis binds the design.
+      A design question the synthesis does not settle stops work for a Type 2
+      checkpoint before acceptance; the implementer does not decide it. (2)
+      Oracles, all exact: the Cut 4 A0 successor gate (295 checks); the dense
+      native oracle at cbf25359 (nine arms, through dense/check.R); the
+      pre-WS4a real-data reference of measured_input, compared exactly with
+      the unchanged compare.R (ref_dir
       E:/ledgr-data/reference/v0.2.3-base-953338df, the candidate installed
       into a fresh library, the base-built snapshot reused because WS4a
-      changes no store format), so no predicate is needed; and the case records LDG-3163 adds on
-      the base for synthesis Section 5 rows that no existing oracle or test
-      covers. No oracle, fixture, canonicalisation or expected byte changes.
-      Synthesis Section 5's logical-FIFO comparison replaces raw container
-      comparison only where the book layout changed, with the old logical
-      witness kept. (3) Identity, per macro rule 5: snapshot content identity
-      none; run configuration identity none; store format fingerprint none.
-      Release impact, per macro rule 6: product tests, performance records,
-      internal contract rule groups at close and one NEWS line; no public API,
-      taught behaviour, documentation page or dependency change. (4) Timing
-      gate: protocol ws4a-timing-1 on the shared harness
-      (dev/bench/timing/protocols/ws4a-timing-1/), paired base/candidate,
-      with cells and bounds frozen in LDG-3163 before any product change, in
-      these forms: availability wide all-fill sweep, clock = marginal
-      seconds per fill above that process's own no-fill run, bound = 40e-6
-      divided by the base median marginal from LDG-3163's smoke (the
-      synthesis's 40 us/fill); availability and dense wide all-fill durable
-      runs, 0.60; availability and dense no-fill runs and sweeps, 1.03;
-      availability sparse-rebalance run and sweep, 1.00; warm public reads
-      of fills, trades and equity on a completed wide durable run (the
-      replay path), 1.03. Workloads: the probe's 500 x 1260 SMA 5/10
-      transition on complete facts for availability and on dense bars for
-      dense, the same bars with flat targets for no-fill, and a monthly
-      top-20 rebalance for sparse. (5) Memory: on the wide shape, cumulative
-      Rprofmem bytes per fill no higher than base; on a scale workload of at
-      least 5,000 instruments x 252 sessions and a deep-book variant whose
-      single fills consume more than ten lots, peak R heap (gc max used,
-      reset before the run) no higher than 1.10 x base, both recorded by a
-      memory script in dev/bench/v0_2_3_ws4a/, base values recorded in
-      LDG-3163. (6) Replay: singleton replay calls are kept only if the
-      replay cell and the memory budget pass at LDG-3164's end; otherwise
-      the replay groups consecutive conflict-free blocks through the same
-      implementation in that ticket. (7) The canonical lot kernel uses base
-      copy-on-modify. By-reference lot writes are out of this cut; if the
-      LDG-3169 scale record shows the per-pulse lot copy dominates, they go
-      to a later cut with an ownership proof. (8) Every ticket from LDG-3164
-      on ends with the public oracles of decision (2) passing exactly and
-      the full suite green. Timing may regress between tickets; only LDG-3169
-      gates it. The real-data oracle runs at LDG-3164 and LDG-3169. (9)
-      Implementation gate: LDG-3162 and LDG-3163 change no product code.
-      LDG-3164 starts only after the maintainer confirms their records
-      raised no surprise; a surprise is settled in this cut's text first
-      (macro rule 11). (10) Test migration: a registered test changes only
-      where LDG-3162's migration list names it, with one of these reasons:
-      the inspected owner moved (a structural assertion keeps its predicate
-      and semantic claim and is demonstrated failing on a violation
-      appropriate to it); a private helper was deleted with the named-list
-      FIFO (its economic assertion moves to the typed implementation with
-      the same inputs and expected values); or the fold-state slot census
-      changed by the synthesis's declared retyping. Fixtures, fault
-      locations, expected conditions, numeric oracles and allocation bounds
-      do not change. (11) Contracts: at LDG-3169 the implemented carrier
-      rules enter contracts.md (fold core and event staging rule groups, and
-      a carrier-contract rule group holding synthesis Section 4 as
-      implemented); nothing is promoted before it is implemented. (12)
-      Budget: new maintained R under dev/bench/v0_2_3_ws4a/ and the protocol
-      folder totals at most 1,500 lines (spike_protocol.md Section 4); a plan
-      above it stops at LDG-3162 for maintainer disposition. (13) Release
-      evidence: the LDG-3163 base records, the ws4a-timing-1 gate record and
-      the memory record are the named heavyweight records.
+      changes no store format), so no predicate is needed; and the case
+      records LDG-3163 adds on the base for synthesis Section 5 rows and
+      Section 9 scenarios that no existing oracle or test covers. No economic
+      oracle, fixture value, canonicalisation or expected byte changes. Only
+      the representation and structural-test migrations individually
+      approved under decision (10) are permitted; they preserve the old
+      logical and economic witnesses. Synthesis Section 5's logical-FIFO
+      comparison replaces raw container comparison only where the book
+      layout changed. (3) Identity, per macro rule 5: snapshot content
+      identity none; run configuration identity none; store format
+      fingerprint none. Release impact, per macro rule 6: product tests,
+      performance records, internal contract rule groups at close and one
+      NEWS line; no public API, taught behaviour, documentation page or
+      dependency change. (4) Timing gate: protocol ws4a-timing-1 on the
+      shared harness (dev/bench/timing/protocols/ws4a-timing-1/), paired
+      base/candidate, with every cell, workload and bound frozen before cut
+      acceptance. Workloads: the probe's 500 x 1260 SMA 5/10 transition on
+      complete facts for availability and on dense bars for dense; the same
+      bars with flat targets for no-fill; and a sparse monthly top-20
+      rebalance whose rebalance calendar, selection and tie order, costs,
+      recording policy, warmup and returned-output materialisation are
+      frozen in the workload. Ratio cells: availability and dense wide
+      all-fill durable runs, 0.60 each; a dense wide sweep, 1.03; an
+      availability wide sweep as a fixed relative cell, 1.00; availability
+      and dense no-fill runs and sweeps, 1.03 each; availability and dense
+      sparse-rebalance runs and sweeps, 1.00 each; warm public fills reads and
+      warm public trades reads on a completed wide durable run (the replay
+      path), 1.03 each, each with recorded nonzero replayed rows and a fixed
+      number of complete invocations; warm public equity reads, 1.03, as a
+      result-reader cell and not a replay witness. Absolute cell: the
+      availability wide sweep's candidate median marginal time per executed
+      fill must be at most 40e-6 seconds, where the marginal is that
+      process's wide sweep time minus its matched no-fill sweep time, divided
+      by the repetition count and by the actual executed-fill count. The
+      unchanged shared checker validates the record and the ratio cells; a
+      small WS4a checker reads its per-cell results and fails separately when
+      the candidate median marginal exceeds 40e-6. A nonfinite or
+      nonpositive marginal fails measurement validity and is never clamped,
+      omitted or replaced. Before acceptance the WS4a checker is shown to
+      reject a 45 us candidate with a 240 us paired base, and to accept a
+      30 us one. The shared harness is reused; its collection and validation
+      machinery is not copied. Any numeric revision needs baseline and noise
+      evidence before acceptance. (5) Memory is a pre-acceptance gate
+      specification. For both producers' wide workloads, cumulative Rprofmem
+      bytes per actual fill must be no higher than base. On at least 5,000
+      instruments x 252 sessions, including book growth and a deep-book
+      variant whose fills consume more than ten lots, forward execution and
+      replay are separate measured operations, each with a peak-live budget
+      of at most 1.10 x its matched base. LDG-3163 registers and validates
+      the measuring method, the memory domains it covers, phase boundaries,
+      collection policy, repetitions and byte aggregation; a controlled
+      excess of independently allocated live book storage across growth and
+      replay, of a frozen size at a frozen observation point, must fail the
+      applicable budget. gc() maximum-used R heap is reported separately with
+      its exact calculation and is not relabelled as peak live; RSS and
+      cumulative allocation are not silently substituted. If the peak-live
+      claim cannot be measured, the metric is settled with the maintainer
+      before acceptance. The frozen replay memory budget applies at LDG-3164
+      and LDG-3169. (6) Replay: singleton replay calls are kept only if the
+      replay timing cells and the replay memory budget pass at LDG-3164's
+      end; otherwise the replay groups consecutive conflict-free blocks
+      through the same implementation in that ticket. (7) The canonical lot
+      kernel uses base copy-on-modify. By-reference lot writes are out of
+      this cut; if the LDG-3169 scale record shows the per-pulse lot copy
+      dominates, they go to a later cut with an ownership proof. (8)
+      LDG-3164 through LDG-3168 each end with A0, dense and their applicable
+      case and detector gates exact and the full suite green. The real-data
+      oracle runs at LDG-3164 and LDG-3169. LDG-3164 also gates replay timing
+      and replay memory to settle decision (6); this is an explicit exception
+      to postponing the timing matrix. Other timing cells may regress
+      between tickets. LDG-3169 gates every oracle, timing cell and memory
+      workload on the final candidate. (9) Drafting gate: LDG-3162 and
+      LDG-3163 are pre-acceptance preparation and change no product code.
+      This cut stays draft until both are complete, every proposed oracle and
+      checker has been exercised on the unchanged base with its expected
+      baseline outcome recorded, thresholds and detector controls are frozen,
+      and every surprise is settled in this cut. A subsequent independent
+      cut review must pass before acceptance, and LDG-3164 starts only after
+      acceptance. An open Type 2 question blocks acceptance. (10) Test
+      migration: registered-test migration is limited to the pre-acceptance,
+      per-block list in LDG-3162. Each entry states the representation change
+      the synthesis authorises, the old semantic assertion, its replacement
+      and a demonstrated violation that fails the replacement. Permitted
+      mechanical edits: constructing typed books, positions and equity
+      records instead of removed containers; comparing the same logical FIFO
+      witness; and replacing source predicates that name removed helpers or
+      list traversal with predicates that enforce the same ownership or order
+      claim on columns. This covers test-fold-phase-contract.R's constructor,
+      accumulator and position checks and test-execution-spec.R's old P4
+      source assertions. All economic input values, expected outputs,
+      conditions, fault boundaries and allocation bounds are preserved. No
+      entry may mask a product failure; a semantic or fault-boundary change
+      needs a separately stated, accepted reason before implementation. (11)
+      Contracts: at LDG-3169 the implemented carrier rules enter contracts.md
+      (fold core and event staging rule groups, and a carrier-contract rule
+      group holding synthesis Section 4 as implemented); nothing is promoted
+      before it is implemented. (12) Budget: new maintained R under
+      dev/bench/v0_2_3_ws4a/ and the protocol folder totals at most 1,500
+      lines (spike_protocol.md Section 4); a plan above it stops at LDG-3162
+      for maintainer disposition. (13) Release evidence: the LDG-3163 base
+      records, the ws4a-timing-1 gate record and the memory record are the
+      named heavyweight records.
     sequencing: >-
-      One workstream, serial tickets: LDG-3162 fixes the design in writing
-      and passes its own review; LDG-3163 builds the protocol, case records
-      and memory script and runs them on the base; the maintainer then
-      confirms the implementation gate (decision 9); LDG-3164 introduces the
+      One workstream, serial tickets. Pre-acceptance preparation (decision
+      9): LDG-3162 fixes the design and the obligation register in writing
+      and passes its own review; LDG-3163 builds the protocol, case records,
+      memory method and detector controls and runs them on the base; a
+      subsequent independent cut review must pass before acceptance. The
+      serial product sequence after acceptance: LDG-3164 introduces the
       typed lot book and the one accounting implementation for every
       consumer; LDG-3165 types the observation and the decision; LDG-3166
       types the plan; LDG-3167 batches application and publication; LDG-3168
@@ -430,9 +483,12 @@ cuts:
     review_lifecycle: >-
       An independent clean-context Codex cut review checks the cut against
       the synthesis (Type 1) and challenges ticket grain, dependencies,
-      oracles and whether every gate can fail (Type 2). LDG-3162 is a manual
-      design gate with its own independent clean-context Codex review; an
-      open Type 2 question stops implementation for a checkpoint. The
+      oracles and whether every gate can fail (Type 2). Round 1
+      (cut_review_5.md, CHANGES_REQUIRED, F1-F9 required, F10 optional) is
+      applied in revision 2. LDG-3162 is a manual design gate with its own
+      independent clean-context Codex review; an open Type 2 question blocks
+      acceptance. After LDG-3162 and LDG-3163 complete, a subsequent
+      independent cut review must pass before acceptance (decision 9). The
       workstream receives one Type 1 close review: synthesis conformance,
       the seven optimization shapes walked verbatim over every changed stage,
       the cold-read item of macro rule 15 (a clean-context reviewer explains
@@ -1031,10 +1087,23 @@ tickets:
       codes, mark sources, provider status and lifetime, and economic event
       kinds, each preserving today's tokens and their order of first
       emission; the feature and bar locators; the pulse diagnostic capacity
-      bound as a formula of axis size and known producer counts. (c) Case
-      census: every synthesis Section 5 row maps to an existing oracle or
-      test (file and block), or to a new case LDG-3163 records on the base;
-      new cases are named with their workload and the outputs they freeze.
+      bound as a formula of axis size and known producer counts. (c)
+      Obligation register: enumerate every bound clause in synthesis
+      Sections 2-5, every Section 8 route and every Section 9 scenario. Each
+      indivisible obligation has exactly one implementing ticket, its
+      affected producers and consumers, an oracle or detector (an existing
+      oracle or test by file and block, or a new case LDG-3163 records on the
+      base, named with its workload and the outputs it freezes) and a failing
+      control; cross-references do not create another owner. LDG-3164 owns
+      lot, import, replay and compiled-book ownership; LDG-3165 owns
+      observation and decision alignment and retained-view isolation;
+      LDG-3166 owns plan ordering and effects; LDG-3167 owns the candidate
+      and publication failure boundaries and publication-buffer isolation;
+      LDG-3168 owns diagnostic and equity prefixes and stop handling. Each
+      owner validates the groups it introduces. LDG-3169 owns final route
+      verification and an independent cold reader's explanation of each
+      changed stage from code and the carrier contract. All seven Section 9
+      scenarios are named cases.
       (d) Test-migration list under decision (10): every test that inspects a
       moved internal, a deleted private helper or the slot census, with its
       reason and its failing demonstration. (e) Detector list: each
@@ -1044,7 +1113,7 @@ tickets:
       ws4a-timing-1 matrix and the memory script plan under decisions (4)
       and (5), and the harness budget under decision (12). (g) Per ticket,
       which identity checks run at its end (decision 8).
-    acceptance: ["every synthesis Section 4 group and every source-table consumer has exactly one row in the consumer map", "every synthesis Section 5 row maps to an existing oracle or test or to a named new case", "every planned test change has a decision (10) reason and a failing demonstration", "every dictionary preserves today's tokens and order", "the harness plan is within decision (12)'s budget or stops for maintainer disposition", "an independent clean-context Codex design review passes, or an open Type 2 question is recorded as a checkpoint"]
+    acceptance: ["every synthesis Section 4 group and every source-table consumer has exactly one row in the consumer map", "the obligation register is complete: every bound clause of Sections 2-5, every Section 8 route and every Section 9 scenario has exactly one owning ticket, an oracle or detector and a failing control", "every planned test change is an individual decision (10) entry with its authorised representation change, old assertion, replacement and failing demonstration", "every dictionary preserves today's tokens and order", "the harness plan is within decision (12)'s budget or stops for maintainer disposition", "no design question is unresolved and an independent clean-context Codex design review passes"]
     evidence: []
   - id: "LDG-3163"
     title: "Record the base: protocol, case records and memory"
@@ -1054,22 +1123,30 @@ tickets:
     effort: "M"
     dependencies: ["LDG-3162"]
     scope: >-
-      Before any product change, and changing none: (a) commit
+      Pre-acceptance preparation, changing no product code: (a) commit
       dev/bench/timing/protocols/ws4a-timing-1/ (matrix.csv, thresholds.csv,
-      workloads.R, protocol.md) on the shared harness with the cells and
-      bound forms of decision (4); run a base-only smoke to size reps (each
-      timed section about 3 s or more) and compute the marginal-cell bound
-      from the base median by the decision (4) formula, then freeze
-      thresholds.csv; (b) create dev/bench/v0_2_3_ws4a/ with a recorder,
-      checker and guts for the new cases LDG-3162 names, record them on the
-      base, and show the checker reproduces them into scratch; (c) write the
-      memory script of decision (5) and record the base values for the wide,
-      scale and deep-book workloads; (d) show the pre-WS4a real-data
-      reference works as a gate: an unchanged rerun of one workload against
-      it is IDENTICAL, and a scratch worker with one deliberate cost change
-      DIFFERS, as the v0.2.2 freeze's own gut demonstration did. Report any
-      surprise to the maintainer before LDG-3164 (decision 9).
-    acceptance: ["the protocol folder and thresholds are committed before any product change, with the marginal-cell bound computed by the decision (4) formula", "every new case reproduces from scratch on the base and each of its guts fails", "the memory record holds base values for every decision (5) workload", "the base records name the base commit and change no product file", "the maintainer has confirmed the implementation gate, or a surprise is settled in the cut text"]
+      workloads.R, protocol.md) on the shared harness with every cell and
+      bound of decision (4); run a base-only smoke to size reps (each timed
+      section about 3 s or more) and to record the base marginal, the
+      executed-fill denominators and noise, then freeze thresholds.csv and
+      the matched no-fill subtraction; (b) write the small WS4a absolute
+      checker of decision (4), reading the shared checker's per-cell results
+      without copying its machinery, and show it rejects a 45 us candidate
+      against a 240 us paired base and accepts a 30 us one; (c) create
+      dev/bench/v0_2_3_ws4a/ with a recorder, checker and guts for the new
+      cases of LDG-3162's register, record them on the base, and show the
+      checker reproduces them into scratch; (d) write and validate the memory
+      method of decision (5), record the base values for every memory
+      workload, and show the frozen controlled excess fails its budget; (e)
+      record the private real-data evidence of measured_input (library,
+      state file, input identities, installation and comparator commands),
+      and show an unchanged rerun of one workload is IDENTICAL against the
+      pre-WS4a reference while a scratch worker with one deliberate cost
+      change DIFFERS; (f) run every structural detector and mutation of the
+      register on the base with its expected baseline outcome recorded.
+      Every surprise is settled in this cut's text before the subsequent
+      cut review (decision 9).
+    acceptance: ["the protocol folder and thresholds are committed before cut acceptance, with the matched no-fill subtraction and fill denominators frozen", "the absolute checker rejects the 45 us control and accepts the 30 us control", "every new case reproduces from scratch on the base and each of its guts fails", "the memory method is validated, the base values cover every decision (5) workload and the controlled excess fails", "the real-data evidence record exists and its unchanged and cost-mutant controls pass and fail as specified", "every detector and mutation has its baseline outcome recorded", "the base records name the base commit and change no product file"]
     evidence: []
   - id: "LDG-3164"
     title: "Typed lot book and one lot implementation for every consumer"
@@ -1091,9 +1168,14 @@ tickets:
       and compiled pack and unpack by gather. Delete the named-list FIFO:
       ledgr_lot_state(), ledgr_lot_apply_fill(), ledgr_position_from_lots()
       and their named-list helpers; no second FIFO survives. Settle decision
-      (6) with the replay cell and memory budget. Migrate tests only per
-      LDG-3162's list.
-    acceptance: ["no named-list lot state or per-fill named lookup remains in R/", "the opening Kahan detector and the typed-path LIFO mutation fail as LDG-3162 specifies", "every decision (2) public oracle passes exactly and the real-data oracle passes", "decision (6) is settled with its replay and memory evidence", "the full suite passes"]
+      (6) with the replay timing cells and the replay memory budget. Migrate
+      tests only per LDG-3162's list. This ticket also retypes fold positions,
+      names the E, import and result boundary adapters, and updates
+      construction and E and stop validation for the new positions and book,
+      including types, exact lengths, segment bounds and run-axis mapping. It
+      preserves ordinary copy-on-modify isolation across every migrated book
+      consumer. It does not defer these validators to LDG-3168.
+    acceptance: ["no named-list FIFO implementation remains; the typed lot kernel and migrated book consumers perform no per-fill instrument-name lookup, and the named boundary adapters are individually enumerated (planner representation is gated at LDG-3166)", "the opening Kahan detector and the typed-path LIFO mutation fail as LDG-3162 specifies", "every decision (2) public oracle passes exactly and the real-data oracle passes", "decision (6) is settled with its replay and memory evidence", "the full suite passes"]
     evidence: []
   - id: "LDG-3165"
     title: "Typed observation and decision"
@@ -1115,7 +1197,12 @@ tickets:
       compiled risk plan is validated once in E; decision columns live on
       the context axis with context_pos as the only bridge. Dense joins at
       the normalized decision (Q1): its views and context construction are
-      unchanged. Add the P2 next-bar structural detector.
+      unchanged. Add the P2 next-bar structural detector. Migrate every P3,
+      P4, P5 and E read of the changed observation and decision interface in
+      this ticket, including scheduled-skip and stop paths, and validate each
+      new group at construction. Downstream economic algorithms stay until
+      their owning ticket. No consumer reconstructs the old mixed observation
+      containing next bars for P2.
     acceptance: ["P2's input carries no execution-packet field and the next-bar detector fails on an injected one", "one shape and name normalization of the strategy return remains, and the duplicate-normalization detector fails on an injected second one", "missing targets are refused, never zero-filled", "every decision (2) public oracle passes exactly", "the full suite passes"]
     evidence: []
   - id: "LDG-3166"
@@ -1141,7 +1228,11 @@ tickets:
       before mutation; scheduled skips invoke no planning. The dense
       planner emits the same batch and keeps reading next-bar values from
       bars_mat. No proposal, fill-context or fill-intent object per fill
-      remains on either planner.
+      remains on either planner. Migrate the P4 and P5 plan readers and the
+      compiled wrapper's input to the fill and rejection columns here. An
+      indexed scalar application loop may remain until LDG-3167, through the
+      single typed lot implementation; it must not recreate a list or S3
+      object per fill. Constructors validate the new plan groups now.
     acceptance: ["no per-fill list, S3 object or timestamp parse remains in either planner", "the affordability-order publication mutation fails identity", "the chained-cost and rounding cases of LDG-3163 pass exactly", "every decision (2) public oracle passes exactly", "the full suite passes"]
     evidence: []
   - id: "LDG-3167"
@@ -1161,12 +1252,14 @@ tickets:
       buffers (P18, F3-F6); event IDs are formatted per block; meta_json,
       the memory meta list and the memory auxiliaries keep their bytes; P1
       non-fill builders keep their order and adapt once into the indexed
-      buffer (E6); the compiled path receives the fill batch as columns and
-      keeps state-before-append order. Add the failure-boundary tests: a
+      buffer (E6); the compiled path, whose column input LDG-3166 already
+      migrated, keeps state-before-append order. This ticket owns candidate
+      batching and indexed event and leg publication, not the plan interface
+      migration. Add the failure-boundary tests: a
       candidate-calculation error leaves state and buffers unchanged; an
       injected append or flush error aborts with durable rollback and no
       successful memory result.
-    acceptance: ["no list per fill or per leg remains in publication", "the candidate-error injection leaves the book, cash, positions, event_seq and buffers unchanged", "the append and flush injections abort as Section 3.5 states", "the reorder and dropped-fee mutations through the typed path fail identity", "every decision (2) public oracle passes exactly", "the full suite passes"]
+    acceptance: ["no per-fill economic carrier or per-leg staging list remains in publication; the routed memory meta list, canonical JSON and memory aggregate auxiliaries keep their semantics and bytes; the detector rejects an injected economic staging list and accepts the retained metadata representation","the candidate-error injection leaves the book, cash, positions, event_seq and buffers unchanged", "the append and flush injections abort as Section 3.5 states", "the reorder and dropped-fee mutations through the typed path fail identity", "every decision (2) public oracle passes exactly", "the full suite passes"]
     evidence: []
   - id: "LDG-3168"
     title: "Typed diagnostics, equity record and fold-state validation"
@@ -1187,9 +1280,11 @@ tickets:
       memory sink's growable vectors (P17); E hands a frozen prefix to
       finalisation and the inline summary; finalisation keeps selecting its
       equity source by producer, so durable dense runs stay on event replay.
-      Extend the fold-state validator to the typed book, the run-axis
-      lengths and the new equity slot, at construction and stop application.
-    acceptance: ["the run-long and list-grown diagnostic detectors fail on injected versions", "a durable dense run finalizes equity through event replay, byte-identical, with its fold equity record filled", "the validator refuses a wrong-length book column and a wrong-type equity column", "every decision (2) public oracle passes exactly", "the full suite passes"]
+      Extend the already-migrated E and stop validator for typed pending
+      diagnostics and equity: exact lengths, types, dictionary and bound
+      checks and used-prefix checks. Earlier groups keep their owning
+      tickets' construction validators.
+    acceptance: ["detectors reject list-segment pulse staging and staging retained across pulses, and accept the existing bounded writer and filtered retained-output chunks; the capacity case exceeds a writer chunk, stops early and verifies used prefixes and sequence gaps","a durable dense run finalizes equity through event replay, byte-identical, with its fold equity record filled", "the validator refuses a wrong-length diagnostic staging column and a wrong-type equity column","every decision (2) public oracle passes exactly", "the full suite passes"]
     evidence: []
   - id: "LDG-3169"
     title: "Verify the final candidate, run the gates and close the workstream"
@@ -1207,6 +1302,10 @@ tickets:
       scale and deep-book evidence that decision (7) needs. Promote the
       implemented rules into contracts.md under decision (11). Add one NEWS
       line. Write ws12_disposition.md with the identity declarations and the
-      gate results.
-    acceptance: ["every oracle, case, gut, detector and injection passes or fails as specified, each with its command and exit code in the final-candidate record", "the timing checker passes under thresholds.csv, or every miss has a linked maintainer exception", "the memory record is within decision (5)", "the contract text matches the implemented behaviour and promotes nothing unimplemented", "the disposition records the three identity declarations with evidence"]
+      gate results. Complete the contract and NEWS edits before the final
+      package check. Record the tested source identity and any later
+      evidence-only diff; a later product edit invalidates the affected gate
+      records. Keep generated build and check artifacts outside the tracked
+      tree.
+    acceptance: ["every oracle, case, gut, detector and injection passes or fails as specified, each with its command and exit code in the final-candidate record", "every timing cell passes the thresholds frozen before cut acceptance, including the separate absolute marginal-time check; a miss keeps the ticket and workstream open, a linked exception is not a PASS, and any proposed change to an accepted requirement returns through governance rather than as an implementation-time threshold adjustment","the memory record is within decision (5)", "the contract text matches the implemented behaviour and promotes nothing unimplemented", "the disposition records the three identity declarations with evidence"]
     evidence: []
