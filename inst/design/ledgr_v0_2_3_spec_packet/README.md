@@ -1,8 +1,8 @@
 # ledgr v0.2.3 Spec Packet
 
 Role: living; current packet front door.
-Status: working; macro plan accepted 2026-10-28; cut 1 (one output handler) closed 2026-10-29 and cut 2 accepted 2026-10-28 in `tickets.yml`.
-Cut 2 (WS3 dense oracle and current-tree timing) is accepted at revision 3.2. The 2026-10-30 amendment aligns its descriptive baseline with Cut 4's shared paired-gate harness boundary; its focused [review](cut_review_2_amendment.md) is `PASS`. Workstream 2's dense oracle and immutable freeze `cbf25359` are accepted after the independent [Type 1 close review](ws2_close_review.md) passed on focused confirmation. Workstream 3's descriptive current-tree baseline has an independent [Type 1 close review](ws3_close_review.md) that is green after focused confirmation; maintainer acceptance is next. A0 remains independent and the old peer driver retires only after replacement coverage is accepted.
+Status: working; macro plan accepted 2026-10-28; cuts 1 and 2 are closed in `tickets.yml`.
+Cut 2 (WS3 dense oracle and current-tree timing) is closed and accepted at revision 3.2. The 2026-10-30 amendment aligns its descriptive baseline with Cut 4's shared paired-gate harness boundary; its focused [review](cut_review_2_amendment.md) is `PASS`. Workstream 2's accepted [Type 1 close review](ws2_close_review.md) freezes the dense oracle at `cbf25359`. Workstream 3's accepted [Type 1 close review](ws3_close_review.md) freezes the descriptive [current-tree record](../../../dev/bench/peer_benchmark/records/20261030-current-tree/). Together they discharge C1's oracle/baseline prerequisite. A0 remains independent, the record is not a future ratio arm or public speed claim, and the old peer driver retires only after replacement coverage is accepted.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.

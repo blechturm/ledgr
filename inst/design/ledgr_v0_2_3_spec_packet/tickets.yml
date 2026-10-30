@@ -18,7 +18,8 @@ cuts:
   - id: 2
     name: "WS3 dense oracle and current-tree timing"
     cut: "2026-10-28"
-    status: "open"
+    status: "closed"
+    closed: "2026-10-30 by the maintainer, accepting workstream 3 after its independent Type 1 close review and focused confirmation (ws3_close_review.md: PASS after patches). The C1 prerequisite is discharged by accepted dense-oracle freeze cbf25359 and the accepted descriptive current-tree record at dev/bench/peer_benchmark/records/20261030-current-tree/. Product deletion remains macro WS4 and needs its own accepted cut. M1 accounting: nine independent verdicts over six completed tickets (1.500): five cut-level verdicts and four workstream-close verdicts; one CHANGES_REQUIRED and five PASS_AFTER_PATCHES verdicts changed specification, evidence boundaries, detectors, documentation or records, while three focused PASS verdicts confirmed the corrections. Maintainer decision turns chose the fresh peer harness and independent A0, accepted revisions 3.1 and 3.2, accepted workstream 2, and accepted workstream 3 with cut close. No ticket was added, dropped or padded for review accounting. The legacy-driver retirement and all-peers/report obligations remain open."
     accepted: "2026-10-30 by the maintainer, revision 3.2, after revision 3.1's independent Claude reviews and the post-Cut-4 focused review in cut_review_2_amendment.md (PASS after exact patches). Acceptance keeps the fresh peer harness/independent A0 direction and binds the descriptive-versus-paired timing boundary, live shared-host call and separate peer-suite/WS9 memory ownership. Implementation begins with LDG-3138."
     opening: >-
       Written by Codex at the maintainer's request, 2026-10-28. This cut owns
@@ -242,7 +243,8 @@ workstreams:
   - id: 3
     name: "Current-tree public-run runtime baseline (macro WS3)"
     cut: 2
-    status: "review_pending"
+    status: "complete"
+    accepted: "2026-10-30 by the maintainer after the independent Type 1 close review and focused confirmation (ws3_close_review.md: PASS after patches). The descriptive record at dev/bench/peer_benchmark/records/20261030-current-tree/ is accepted for C1 consumption; it is not a future ratio arm or a public speed claim."
     close_review: "PASS_AFTER_PATCHES in ws3_close_review.md, followed by focused PASS on 2026-10-30 (independent clean-context Claude Type 1): the measurement and all eight corruption witnesses pass; F1 discloses the 10 ms child-clock quantum, F2 marks peer_benchmark.R as the supported legacy driver during replacement and F3 removes premature acceptance wording. Product, timing code and record bytes are unchanged by the corrections; YAML and diff checks pass."
     depends_on_workstream: 2
     requires_review_acceptance: true
@@ -590,7 +592,7 @@ tickets:
   - id: "LDG-3137"
     title: "Record and review the runtime baseline and route the remaining suite"
     workstream: 3
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3136"]

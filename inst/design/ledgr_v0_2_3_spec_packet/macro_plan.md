@@ -160,6 +160,10 @@ and the point-in-time demonstration row. All lanes are timed again after WS4b
 and WS8 so the release can see where it stands (maintainer, 2026-10-28). The
 post-WS7/WS8 record includes warm result reads and full run-plus-results time,
 so eliminating accounting representations is measured end to end.
+- **Current status (2026-10-30):** Cut 2 is closed. The accepted dense oracle
+  at `cbf25359` and the accepted current-tree descriptive record discharge
+  C1's prerequisite. Full peer-lane replacement and post-WS4/WS8 reruns remain
+  WS3 work; product deletion starts only in an accepted WS4 cut.
 - **Route:** RFC, then direct tickets per lane. **Rule:** no public
   performance claim until the suite exists and its results are accepted.
 
