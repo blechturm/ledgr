@@ -1,7 +1,8 @@
 # WS4a Carrier Design Note (LDG-3162)
 
-- Status: revision 2, draft for its independent design review. Revision 2
-  applies `ws4a_design_review_1.md` F1-F13. LDG-3162 is complete only when
+- Status: revision 3, draft for its independent design review. Revision 2
+  applies `ws4a_design_review_1.md` F1-F13; revision 3 applies
+  `ws4a_design_review_1_rereview_1.md` N1-N5. LDG-3162 is complete only when
   a design review passes.
 - Author: Claude, 2026-10-30. Plain-language companion:
   [ws4a_overview.md](ws4a_overview.md).
@@ -123,10 +124,14 @@ the provider/valuation adapter), `ledgr_carrier_compiled_pack()` and
 | E69 | plan (dense) | fe:128-198 | P3 | direct | 3166 |
 | E70 | plan (availability) | ae:391-529 | P3 | direct | 3166 |
 | E71 | plan: affordability | ae:344-389 | availability planner | direct | 3166 |
-| E72 | plan, fill, rejection | P3 | P3 diagnostic rows fe:1171-1271 | direct | 3166 |
-| E73 | plan, fill | P3 | P4 fe:1293-1399 | direct | 3166 (readers), 3167 (block) |
-| E74 | plan, fill | P3 | P5 fe:1434-1468 | direct | 3166 |
-| E75 | plan, fill | P3 | compiled wrapper csf:167-247 | compiled_pack | 3166 |
+| E72a | plan | P3 | P3 affordability reconciliation and stop fe:1140-1169 | direct | 3166 |
+| E72b | rejection | P3 | P3 `no_fill` diagnostic rows fe:1171-1214 | direct | 3166 |
+| E72c | fill | P3 | P3 `filled` diagnostic rows fe:1215-1271 | direct | 3166 |
+| E73a | plan (event kinds) | P3 | P4 kind check and compiled dispatch fe:1115-1125, :1313-1314 | direct | 3166 |
+| E73b | fill | P3 | P4 application fe:1342-1399 | direct | 3166 (interface); 3167 separately owns batching this edge |
+| E74a | plan (`expected_final_cash`) | P3 | P5 reconciliation fe:1445-1457, :1468 | direct | 3166 |
+| E74b | fill (`exec_ts`, `cash_delta`) | P3 | P5 last-executed and reconciliation detail fe:1434-1443, :1463-1467 | direct | 3166 |
+| E75 | fill | P3 | compiled wrapper csf:167-247 | compiled_pack | 3166 |
 | E76 | plan (skip) | fe:668-686 | P4, P5 | direct | 3166 |
 | E77 | fill | P3 | buffered payload br:103-187 | publication helper | 3166 |
 | E78 | fill | P3 | db_live writer lw:18-157 (oh:561-563) | publication helper | 3166 |
@@ -151,6 +156,23 @@ the provider/valuation adapter), `ledgr_carrier_compiled_pack()` and
 | E92 | stop | P3 fe:1162-1169 | E fe:1986-1998 | direct | 3168 |
 | E93 | timing | stage locals | P5 telemetry fe:1535-1551 | direct | unchanged |
 | E94 | telemetry | P5 fe:1535-1551 | E fe:2083-2084 | direct | unchanged |
+
+### 1.5 Lot input and applied row
+
+| # | Group: edge | Producer | Consumer | Via | Ticket |
+| --- | --- | --- | --- | --- | --- |
+| E95 | lot input: opening import | la:182-213 | opening operation la:147-179 | import_state | 3164 |
+| E96 | lot input: replay opening, fill, disposition | prepared columns ar:299-308, la:420-466 | typed operation selected by event kind | named replay adapter | 3164 |
+| E97 | lot input: P4 fill | fe:1344-1355 | typed fill operation | direct positional input | 3164; 3167 separately owns batching this edge |
+| E98 | lot input: P1 disposition | to:159-166 | typed disposition operation | settlement_state | 3164 |
+| E99 | applied row: canonical accounting fact | la:367-388, fe:1349-1357 | oh:787-813 | direct; typed scalar result initially | 3164; 3167 separately owns column batching |
+| E100 | applied row: replay facts | la:434-487 | ar:309-327 | direct | 3164 |
+| E101 | applied row: disposition witness | to:159-169 | to:187-195 | settlement_state | 3164 |
+
+The two sequential changes on an edge are separate obligations: 3164
+migrates operation and result representation; 3167 changes P4 application
+and publication to a block. Neither defers the other's interface work.
+Every Synthesis Section 4 group has at least one row in Sections 1.1-1.5.
 
 **Not carried** (dead today): `pulse_plan$targets` and `$actionable_idx`,
 `fill$ts_signal_utc`, the local `cur_qty` (fe:1347). Bound outputs stay as
@@ -274,7 +296,7 @@ successor and dense oracles.
 | O2.10 | Q6: one equity record for both producers (2) | E37-E39 | 3168 | D10 | keep the accumulator |
 | O3.01 | Run axis is `instrument_ids` (3.1) | E06, E16 | 3164 | V-book (axis length) | wrong-length positions |
 | O3.02 | Context axis in provider order incl. held nonmembers; `context_pos` (3.1) | E52-E54 | 3165 | C15 | M8 |
-| O3.03 | Fill and rejection rows carry `k` and `pos = context_pos[k]` (3.1) | E72-E75 | 3166 | V-fill | `pos` not equal `context_pos[k]` |
+| O3.03 | Fill and rejection rows carry `k` and `pos = context_pos[k]` (3.1) | E72b, E72c, E73b, E74b, E75 | 3166 | V-fill | `pos` not equal `context_pos[k]` |
 | O3.04 | Fold environment locked with its exact slot set (3.1) | fpc | 3164 | V-state (slot set, lock) | add a binding |
 | O3.05 | Positions and book retyped; E/stop validator extended (3.1) | E06-E22 | 3164 | V-book | wrong-length book column |
 | O3.06 | Packet and decision groups validated at construction (3.1) | E52-E68 | 3165 | V-packet, V-decision | NA in `member` |
@@ -285,7 +307,7 @@ successor and dense oracles.
 | O3.11 | Deserialised inputs validated where they enter (E import of resume state and openings) (3.1) | E06, E16, E42-E44 | 3164 | V-book on import | corrupt resume lot row |
 | O3.12 | Named adapters only for book, compiled and settlement (3.1) | E02, E12, E15, E21-E22 | 3164 | D3 | name lookup in kernel |
 | O3.13 | Named adapters only for packet and P2 (3.1) | E07, E52-E54, E60 | 3165 | D3 | ad hoc `match()` in P2 core |
-| O3.14 | Execution view is a declared P3 service (3.1) | E64 | 3166 | D3 | read the provider directly in P4 |
+| O3.14 | Execution view is a declared P3 service (3.1) | E64 | 3166 | D24 (phase service-ownership checker, extended to the named execution-view adapter) | call that service from P4 |
 | O3.15 | Publication via named helpers (3.1) | E77-E81 | 3167 | D3 | name lookup in block builder |
 | O3.16 | Book hand-outs are copies; candidates and workers isolated (3.1) | E12, E15, E21, E41-E51 | 3164 | C14a, A0 `sweep_w2` | write the book by reference |
 | O3.17 | Retained `ctx`, state and corporate-action views unchanged by later pulses (3.1) | E54, E23, E61 | 3165 | C14b | mutate a retained view |
@@ -312,14 +334,15 @@ successor and dense oracles.
 | O3.38 | Execution epochs validated once from the prepared axis (3.3) | E62-E63 | 3166 | D1 | per-fill `as.POSIXct` |
 | O3.39 | Affordability scan: cash-generating reductions first, then C-locale stable-ID order (3.3) | E71 | 3166 | C11 | scan in decision order |
 | O3.40 | Acceptance mask and permutation private to P3 (3.3) | E71 | 3166 | V-plan (fields not returned) | return the permutation |
-| O3.41 | Accepted rows published in decision order (3.3) | E72-E73 | 3166 | C11 | M4 |
-| O3.42 | Early rejections then affordability rejections (3.3) | E72 | 3166 | C11 | merge-sort rejections |
+| O3.41 | Accepted rows published in decision order (3.3) | E72c, E73b | 3166 | C11 | M4 |
+| O3.42 | Early rejections then affordability rejections (3.3) | E72b | 3166 | C11 | merge-sort rejections |
 | O3.43 | Reconciliation calculations and tolerance unchanged, including `sum()` (3.3) | E04, E58, E67 | 3166 | C8a, oracles | ordered scan instead of `sum()` |
-| O3.44 | Planned after-position is diagnostic only (3.3) | E72 | 3166 | C4, C11 (planned and actual compared separately) | use planned as authority |
-| O3.45 | Reasons as ordered code segments; tokens and order preserved (3.3) | E72 | 3166 | oracles (diagnostics), D22 (dictionary fixtures) | bit mask |
-| O3.46 | Empty plans declare no kinds; unsupported kinds refuse before mutation (3.3) | E73 | 3166 | LTB-0026 migration plus empty-plan test | declare FILL on empty |
+| O3.44 | Planned after-position is diagnostic only (3.3) | E72c | 3166 | C4, C11 (planned and actual compared separately) | use planned as authority |
+| O3.45 | Reasons as ordered code segments; tokens and order preserved (3.3) | E72b, E72c | 3166 | oracles (diagnostics), D22 (dictionary fixtures) | bit mask |
+| O3.46 | Empty plans declare no kinds; unsupported kinds refuse before mutation (3.3) | E73a | 3166 | LTB-0026 migration plus empty-plan test | declare FILL on empty |
 | O3.47 | Flat segments; FIFO sequential within an instrument (3.4) | E18, E40 | 3164 | C4 | M1 |
-| O3.48 | Vectorized across distinct instruments (3.4) | E18 | 3164 | D18 | accept duplicates |
+| O3.48a | A kernel call takes distinct instruments (3.4) | E18 | 3164 | D18 | accept duplicates |
+| O3.48b | Vectorized across those instruments; sequential only within an instrument (3.4) | E18 | 3164 | D25 | restore a per-instrument operation loop |
 | O3.49 | Ordered total-basis and Kahan updates in scalar event order (3.4) | E18, E40 | 3164 | C5b, C9 | M11 |
 | O3.50 | Opening: signed quantity, any-sign basis, no cash, no Kahan step (3.4) | E40, E42-E44 | 3164 | C5b, D7 | M6 |
 | O3.51 | Fill: dust, fees and reversal arithmetic (3.4) | E18, E40 | 3164 | C3, C4 | M3 |
@@ -333,11 +356,11 @@ successor and dense oracles.
 | O3.59 | Singleton replay only if the replay gate passes (3.4, decision 6) | E40 | 3164 | reader cells, replay memory | a deliberately slowed replay arm (an injected per-event copy) must fail the reader cell |
 | O3.60 | Compiled pack and unpack by gather; aggregates and Kahan state exact; C++ unchanged (3.4) | E21-E22, E51 | 3164 | C9 | M12 |
 | O3.61 | Bind the next corporate-action boundary before fills (3.5) | E12 | 3167 | A0 `dense_dividend_state`, C12 | bind after fills |
-| O3.62 | Candidate block computed without mutation (3.5) | E73 | 3167 | C13b | install row one before row two validates |
-| O3.63 | Install order: book, publish, sequence, legs, positions and cash (3.5) | E73, E79, E84 | 3167 | C13b, oracles | publish before install |
+| O3.62 | Candidate block computed without mutation (3.5) | E73b | 3167 | C13b | install row one before row two validates |
+| O3.63 | Install order: book, publish, sequence, legs, positions and cash (3.5) | E73b, E79, E84 | 3167 | W1 (application-order witness) | swap each observed pair |
 | O3.64 | Append, fact/leg and flush failures abort; durable rollback; no successful memory result; classes and stage kept; no private-state restore promised (3.5) | E79-E84 | 3167 | C13c, LTB-0280 migration | swallow an injected error |
 | O3.65 | Checkpoint and interrupt behaviour unchanged (3.5) | P5, E | 3167 | existing checkpoint tests, A0 `run_interrupted` | flush checkpoint mid-block |
-| O3.66 | Compiled state-before-append order (3.5) | E80 | 3167 | C9 | append before state |
+| O3.66 | Compiled state-before-append order (3.5) | E80 | 3167 | W1 (at compiled append entry, the compiled lot state and next sequence are installed) | append before state |
 | O3.67 | Fills published as columns; event IDs per block (3.5) | E79 | 3167 | D1, D9 | per-fill list |
 | O3.68 | P1 non-fill builders keep order; adapt once into the indexed buffer (3.5) | E81 | 3167 | A0 `dense_dividend_state`, `avail_acquisition` | defer non-fill rows to P5 |
 | O3.69 | `meta_json`, memory `meta`, auxiliaries and leg-fee arithmetic unchanged (3.5) | E79-E85 | 3167 | oracles | drop the meta list |
@@ -355,11 +378,30 @@ successor and dense oracles.
 
 ### 3.2 Synthesis Section 4 field invariants
 
-Each row is checked by the named group validator (Section 6, V-*); the
-control is a deliberately invalid record of that field, which the validator
-must refuse.
+Structural field controls are refused by construction validators
+(Section 6, V-*). Transition and preservation controls are checked at the
+operation or handoff with their required before/after inputs; they are not
+malformed standalone records. Rows F4.19, F4.35, F4.37 and F4.49 below are
+of that kind and name their check. No extra carrier field or new semantic
+refusal is introduced to make an observation.
 
-| ID | Group: fields (invariant) | Owner | Invalid record |
+**Universal construction rule.** For every column group, construction
+checks the exact declared storage types, axis lengths, bounds and the typed
+length-zero representation with `n = 0` where applicable. The synthesis's
+scalar and opaque exceptions (`state_update`, `affected_exposure`, timing
+scalars) are preserved. One row per owner:
+
+| ID | Groups (constructors and validator) | Owner | Controls (each must fail its check) |
+| --- | --- | --- | --- |
+| U-3164 | book (`ledgr_carrier_book()`, V-book); lot input (V-lot-input); applied row (V-applied-row) | 3164 | replace a storage type; shorten one column; violate a bound; replace a typed empty column with an untyped empty list |
+| U-3165 | decision packet, decision data, execution packet (`ledgr_carrier_packet()`, V-packet with three subgroups); decision (V-decision) | 3165 | same four controls |
+| U-3166 | execution view (V-execution-view); plan (V-plan); fill (V-fill); rejection (V-rejection) | 3166 | same four controls |
+| U-3167 | publication (V-publication); leg (V-leg) | 3167 | same four controls |
+| U-3168 | diagnostics staging (V-diagnostics); equity (V-equity); typed stop payload (V-stop) | 3168 | same four controls |
+
+Field invariants:
+
+| ID | Group: fields (invariant) | Owner | Control (structural: invalid record refused by the group validator; otherwise the named check) |
 | --- | --- | --- | --- |
 | F4.01 | state: cash finite; positions equal lot-derived net | 3164 | NaN cash; positions differ from `net_by_inst` |
 | F4.02 | state: event_seq >= 1; diagnostic_seq >= 0 | 3164 | event_seq 0 |
@@ -379,7 +421,7 @@ must refuse.
 | F4.16 | packet: member, held, buyable, target_restricted logical, no NA; buyable implies member | 3165 | buyable non-member |
 | F4.17 | packet: restriction segment ordered, codes in dictionary | 3165 | code 7 |
 | F4.18 | packet: status, lifetime codes; terminal_event, lifetime_fact_id character with empty strings | 3165 | NA terminal_event |
-| F4.19 | packet: mark, reference, source_ts, mark_age, mark_source independent | 3165 | age erased with mark |
+| F4.19 | packet: mark, reference, source_ts, mark_age, mark_source independent | 3165 | adapter preservation check: provider/valuation inputs compared with the constructed packet field by field, including an expired unpriced mark with retained provenance; control erases age, source or reference in the adapter |
 | F4.20 | packet: priced, permissible, frozen independent flags | 3165 | NA permissible |
 | F4.21 | decision data: current bars only, missing cells retained | 3165 | next-bar column present |
 | F4.22 | decision data: source_row and source_column; feature handles immutable | 3165 | row without column |
@@ -395,9 +437,9 @@ must refuse.
 | F4.32 | fill: info segment ordered and deduplicated | 3166 | duplicate code |
 | F4.33 | rejection: k, pos, emit; reason segment; primary separate | 3166 | emit out of order |
 | F4.34 | rejection: resolved_price, exec_ts NA only when absent; position finite | 3166 | NA position |
-| F4.35 | lot input: per-kind rules (opening signed qty; disposition witnesses) | 3164 | opening with positive cash |
+| F4.35 | lot input: per-kind rules (opening signed qty; disposition witnesses) | 3164 | V-lot-input for the declared operation fields (invalid record: unsigned opening quantity); no cash effect of openings checked by D17 plus an opening caller's cash before/after witness, control: a mutant changes opening cash |
 | F4.36 | applied row: positions actual from lots; open/close zero when inapplicable | 3164 | open_qty on a pure close |
-| F4.37 | applied row: per-event facts; opening does no Kahan step | 3164 | Kahan on opening (M6) |
+| F4.37 | applied row: per-event facts; opening does no Kahan step | 3164 | C5b and D7 invocation check; control: an injected Kahan invocation on openings (M6) |
 | F4.38 | publication: identifiers and tokens, nullability, generated in blocks | 3167 | NA instrument_id on FILL |
 | F4.39 | publication: numeric fields, contiguous fill seq | 3167 | gap in fill seq |
 | F4.40 | publication: meta_json, meta, auxiliaries unchanged | 3167 | missing meta on memory sink |
@@ -409,7 +451,7 @@ must refuse.
 | F4.46 | diagnostics: numeric columns planned/actual meanings | 3168 | actual in place of planned |
 | F4.47 | diagnostics: n <= capacity; reset on drain | 3168 | n not reset |
 | F4.48 | equity: five columns plus n; only first n valid; capacity = pulse count | 3168 | n beyond capacity |
-| F4.49 | stop: class, count and exposure semantics; E applies once | 3168 | applied twice |
+| F4.49 | stop: class, count and exposure semantics; E applies once | 3168 | V-stop for the payload shape (invalid record: non-logical `counts_processed`); an E application counter for "applies once", control: invoke stop application twice |
 | F4.50 | timing: transient stage measurements (unchanged; checked by the existing telemetry tests) | 3168 | negative stage time |
 | F4.51 | telemetry: sample indexing and totals (unchanged; checked by the existing telemetry tests) | 3168 | skip a sample index |
 
@@ -430,7 +472,8 @@ must refuse.
 | E5.06 | Failure boundary | 3167 | C13b, C13c | swallow an error |
 | E5.07 | Representation detectors | the ticket named for each detector in Section 8 | D1-D23 | each detector's own control |
 | E5.08 | Dense finalisation | 3168 | C16 | restore the old decision |
-| E5.09 | Timing and allocation | 3164 (reader cells), 3169 (matrix) | ws4a-timing-1 | absolute-checker controls |
+| E5.09a | Timing and memory of reader and replay paths (decision 6) | 3164 | ws4a-timing-1 reader cells, replay memory | a deliberately slowed replay arm |
+| E5.09b | Timing and allocation, full matrix | 3169 | ws4a-timing-1, absolute checker | absolute-checker controls |
 | E5.10 | Scale | 3169 | memory method (Section 7) | calibrated excess |
 
 ### 3.4 Synthesis Section 8 routes
@@ -466,7 +509,8 @@ change to that boundary.
 | S4 | Repeated opening with residual Kahan compensation | 3164 | C5b |
 | S5 | Later FIFO row fails; handler append fails | 3167 | C13b, C13c |
 | S6 | Diagnostic pulse exceeds a writer chunk; run stops early | 3168 | C18 |
-| S7 | Retained view or compiled input survives another pulse | 3164 (compiled input C14a), 3165 (views C14b) | C14a, C14b |
+| S7a | Compiled input survives another pulse | 3164 | C14a |
+| S7b | Retained view survives another pulse | 3165 | C14b |
 
 ### 3.6 Review obligation
 
@@ -519,7 +563,7 @@ changes are named individually; none is purely mechanical.
 | Test block | Claim | Cat | Change | Keeps | Control |
 | --- | --- | --- | --- | --- | --- |
 | helper-fixtures.R:130 | - | 1 | one-row typed fill batch through the batch resolver | fill values | wrong price |
-| test-accounting-core-consolidation.R:31 | LTB-0019 | 2 | typed book and operations | four literal values, dust bound | M1 |
+| test-accounting-core-consolidation.R:31 | LTB-0019 | 2 | typed book and operations; the original fixture is kept intact | every assertion in the existing block (:36-101), with unchanged inputs and tolerances: all intermediate realized, net and basis values, exact logical live lots, empty live counts, the 512-lot result, no cash or positions fields in the book, per-transition dust and single-sign bounds, and the final fractional P&L, basis and live tuple; only extraction from the container changes | M1 for FIFO; dropped fee for fee-adjusted values; a retained consumed lot for the empty and deep-book results; an injected cash or positions field for book ownership; a corrupted cached net or a retained opposite-sign live quantity for the per-transition invariants; each final fractional value perturbed beyond its existing tolerance |
 | test-accounting-core-consolidation.R:211 | LTB-0022 | 5 | kernel and its rescan mutant rebuilt on the typed book; reason: the measured object moved | thresholds <=0.30 and >0.30 | the rescan mutant |
 | test-lot-accounting.R:1 | - | 4 | typed fill operation | `ledgr_invalid_lot_fill` on the four inputs | accept qty 0 |
 | test-lot-accounting.R:22 | - | 2 | typed book | zero lots, zero basis | tolerance /10 |
@@ -623,7 +667,19 @@ failing control. Another detector's failure is not evidence for it.
 | D21 | No history or substrate access in P3-P5 | phase-ownership checker (`tools/check-fold-phase-contract.R`) | injected P3 history read |
 | D22 | Dictionaries match literal fixtures (tokens and codes) | fixture comparison, separate from diagnostic round-trip bytes | renumber a token |
 | D23 | Replay applies each published cash effect exactly once | replay cash witness on a two-event ledger | apply a delta twice |
-| V-state, V-book, V-packet, V-decision, V-plan, V-fill, V-rejection, V-publication, V-diagnostics, V-equity | Group validators for Section 3.2 | unit tests per group | each F4 invalid record |
+| D24 | Service ownership: the execution view and history services are called only from their declared stages | phase-ownership checker (`tools/check-fold-phase-contract.R:66-81, :149-153`), extended to `ledgr_carrier_execution_view()` | call the execution view from P4 |
+| D25 | The lot kernel has no R-level iteration over the distinct input instrument rows; sequential FIFO consumption within an instrument is permitted | parse region of the kernel | restore a per-instrument operation loop |
+| W1 | Application order: at the canonical publication entry the candidate book is already installed; sequence advance, leg recording and position/cash installation follow in that order; at compiled append entry the compiled lot state and next sequence are installed | runtime witness at those entries | swap each observed pair |
+
+**Validator map** (constructors and validators, `test-ws4a-carrier.R`):
+V-state (fold state, 3164); V-book (3164); V-lot-input (3164);
+V-applied-row (3164); V-packet with three subgroups: decision packet,
+decision data, execution packet (3165); V-decision (3165);
+V-execution-view (3166); V-plan (3166); V-fill (3166); V-rejection (3166);
+V-publication (3167); V-leg (3167); V-diagnostics (3168); V-equity (3168);
+V-stop (3168). Each enforces the universal construction rule and its
+Section 3.2 structural rows; C13b keeps only candidate-calculation
+atomicity and C9 only compiled value parity.
 
 Mutations, applied by `dev/bench/v0_2_3_ws4a/guts.R` and run through the
 typed path: M1 LIFO consumption; M2 reordered fills within a pulse; M3
@@ -703,12 +759,12 @@ Every ticket 3164-3168 also requires the full suite green.
 
 | Ticket | Oracles | Cases | Detectors, validators, mutations | Timing and memory |
 | --- | --- | --- | --- | --- |
-| 3164 | A0, dense, real-data | C3, C4, C5a, C5b, C6, C9, C14a | D3, D7, D11, D12a-c, D12e, D15, D17-D19, D23; V-state, V-book; M1, M3, M5, M6, M7, M11, M12 | reader cells; replay memory (decision 6) |
-| 3165 | A0, dense | C7, C10, C12, C14b, C15, C17 | D3, D4, D5, D12d, D13, D16, D21; V-packet, V-decision; M8 | none |
-| 3166 | A0, dense | C1, C2, C7, C8a, C8b, C11 | D1 (planners), D3, D8, D22; V-plan, V-fill, V-rejection; M4, M9, M10 | none |
-| 3167 | A0, dense | C13a-c, C14c | D1 (publication), D3, D6, D9; V-publication; M2, M3 | none |
-| 3168 | A0, dense | C16, C18 | D2, D10; V-diagnostics, V-equity | none |
-| 3169 | all, real-data | all | all, D20 | full matrix; all memory workloads |
+| 3164 | A0, dense, real-data | C3, C4, C5a, C5b, C6, C9, C14a (S7a) | D3, D7, D11, D12a-c, D12e, D15, D17-D19, D23, D25; U-3164; V-state, V-book, V-lot-input, V-applied-row; M1, M3, M5, M6, M7, M11, M12 | E5.09a: reader cells, replay memory (decision 6) |
+| 3165 | A0, dense | C7, C10, C12, C14b (S7b), C15, C17 | D3, D4, D5, D12d, D13, D16, D21; U-3165; V-packet, V-decision; F4.19 adapter check; M8 | none |
+| 3166 | A0, dense | C1, C2, C7, C8a, C8b, C11 | D1 (planners), D3, D8, D22, D24; U-3166; V-execution-view, V-plan, V-fill, V-rejection; M4, M9, M10 | none |
+| 3167 | A0, dense | C13a-c, C14c | D1 (publication), D3, D6, D9, W1; U-3167; V-publication, V-leg; M2, M3 | none |
+| 3168 | A0, dense | C16, C18 | D2, D10, F4.49 application counter; U-3168; V-diagnostics, V-equity, V-stop | none |
+| 3169 | all, real-data | all | all, D20, W1 | E5.09b: full matrix; all memory workloads |
 
 Before acceptance, LDG-3163 records each representation detector's expected
 baseline outcome. A base failure of a detector that targets the old
