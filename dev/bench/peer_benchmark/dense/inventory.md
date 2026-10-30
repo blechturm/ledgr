@@ -26,6 +26,10 @@ is empty. Public native reconstruction owns positions/cash/pnl; no harness
 accounting. Native final quantities include zero IDs. Opening holdings and
 corporate actions are additionally protected by the independent A0 controls.
 
+The exact representation comparison excludes only four locator/wall-clock
+fields: `runs.created_at_utc`, `run_provenance.created_at_utc`, and
+`runs.config_json` fields `db_path` and `data.snapshot_db_path`.
+
 [First divergences](evidence/first_divergences.csv): the start arms' economic
 fill projection agrees, but the first execution stamps are Jan 15 at 21:00
 versus 14:30 UTC. Late-opening first fill/recording pulse is Feb 25 (dense)
@@ -50,6 +54,10 @@ difference. Cut 4's accepted successor recorder/comparator is therefore the
 current executable gate: [its 295 checks](evidence/a0_successor_compare.csv)
 all pass from scratch. The reviewer must rerun that whole successor gate;
 no new dense driver invokes or imports A0.
+For `dense_risk_features/run`, the reference CSV names original A0 equity,
+fill, ledger, metric and trade tables that the current product intentionally
+does not reproduce after Cut 4. C1 uses the accepted successor gate, never
+those original pointer bytes, as its exact current expectation.
 
 Reproduce from any cwd (use a new scratch --out each time):
 

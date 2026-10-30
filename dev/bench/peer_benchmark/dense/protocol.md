@@ -84,8 +84,9 @@ economics. Terminal quantities are supplemented by the complete native ledger.
 Representation projection also compares the complete frames in their native
 sequence: execution stamps, diagnostics (diagnostic_seq), completion, warning
 order/classes/messages, event IDs, every payload and schema attribute.
-Only runs.created_at_utc is omitted; runs.config_json is parsed to remove
-exactly db_path and data.snapshot_db_path. All other config fields/hashes
+Only `runs.created_at_utc`, `run_provenance.created_at_utc` and the
+`runs.config_json` locator fields `db_path` and `data.snapshot_db_path` are
+omitted. All other config fields/hashes
 and run metadata are checked. Originals remain stored. No numeric tolerance,
 NA/Inf normalization, timestamp mapping or cross-arm equality is permitted.
 Source/harness revision and loaded checkout path are provenance, not economic
