@@ -1,0 +1,11 @@
+# Explicit first freeze only; never overwrites a record directory.
+file <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(dirname(normalizePath(file)), "native.R"))
+pkg <- normalizePath(dense_arg("pkg", file.path(dense_home(), "../../../..")), winslash = "/")
+out <- dense_arg("out")
+if (is.null(out)) stop("Supply --out=<new directory>; there is no implicit freeze destination")
+dense_load(pkg)
+before <- dense_scope(pkg)
+dense_record(out, pkg)
+stopifnot(identical(before, dense_scope(pkg)))
+cat("native recorder: complete, lossless round-trip and package scope unchanged\n")
