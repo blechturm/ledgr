@@ -14,8 +14,9 @@
   the design; cut 5 in `tickets.yml` ("Cut") binds order, oracles and gates.
   This note applies them and adds no design. It pins what Synthesis Section
   7 leaves to the cut (code assignments, locators, pulse capacity, detector
-  names). It is a checklist; the records it calls for do not exist until
-  LDG-3163 builds them.
+  names). It is the implementation checklist; LDG-3163 has completed the
+  base records indexed by its ticket evidence and
+  dev/bench/v0_2_3_ws4a/records/.
 - File aliases: `fe` `R/fold-engine.R`, `ae` `R/availability-economics.R`,
   `ap` `R/availability-provider.R`, `app`
   `R/availability-provider-prepared.R`, `oh` `R/output-handler.R`, `la`
@@ -112,16 +113,16 @@ the provider/valuation adapter), `ledgr_carrier_compiled_pack()` and
 | E55 | decision packet | P1 | P2 target validation fe:872-877, ae:265-267 | direct | 3165 |
 | E56 | decision packet | P1 | P2 decision trace, risk and stale segments fe:889-1026 | direct | 3165 |
 | E57 | decision packet | P1 | P5 state normalization fe:1509-1515 | direct | 3165 |
-| E58 | decision packet | P1 | P5 reconciliation marks fe:1470-1481 | direct | 3166 |
+| E58 | decision packet | P1 | P5 reconciliation marks fe:1470-1481 | direct | 3165 (observation-interface read); 3166 retains ownership of the plan/effects reconciliation change |
 | E59 | decision packet | P1 members fe:619-623 | P2 `ctx$members` fe:772 | P2 input helper | 3165 |
 | E60 | decision data | history reader current bars hs:394-413 | P2 bar frame fe:709-712, hs:347-370 | P2 input helper | 3165 |
 | E61 | decision data | current closes fe:350 | P1 corporate-action marks | settlement_state | 3165 |
-| E62 | execution packet | history reader next bar hs:394-413 (continuation hs:400-412) | P3 availability planner ae:469, :479-482 | direct | 3165 (produce), 3166 (consume) |
+| E62 | execution packet | history reader next bar hs:394-413 (continuation hs:400-412) | P3 availability planner ae:469, :479-482 | direct | 3165 (produce and migrate the P3 input read); 3166 (typed plan construction) |
 | E63 | execution packet (dense) | `bars_mat` at `pulse_idx + 1` | P3 dense planner fe:150-156 | direct | 3166 |
 | E64 | execution view | provider execution view ae:417-420 | P3 ae:460-468 (by name) | execution_view | 3166 |
-| E65 | decision | P2 return fe:1035-1043 | P3 targets fe:1057-1068 (by name today) | direct | 3165 (produce), 3166 (consume) |
+| E65 | decision | P2 return fe:1035-1043 | P3 targets fe:1057-1068 (by name today) | direct | 3165 (produce and migrate the P3 decision read); 3166 (typed plan construction) |
 | E66 | decision | P2 return | P5 state fe:1425, :1509-1527 | direct | 3165 |
-| E67 | decision | P2 return | P5 reconciliation gross fe:1470-1477 | direct | 3166 |
+| E67 | decision | P2 return | P5 reconciliation gross fe:1470-1477 | direct | 3165 (decision-interface read); 3166 retains ownership of the plan/effects reconciliation change |
 | E68 | decision (skip) | skip decision fe:632-664 | E fe:1954-1956; P3 skip plan | direct | 3165 |
 | E69 | plan (dense) | fe:128-198 | P3 | direct | 3166 |
 | E70 | plan (availability) | ae:391-529 | P3 | direct | 3166 |
@@ -137,6 +138,12 @@ the provider/valuation adapter), `ledgr_carrier_compiled_pack()` and
 | E76 | plan (skip) | fe:668-686 | P4, P5 | direct | 3166 |
 | E77 | fill | P3 | buffered payload br:103-187 | publication helper | 3166 |
 | E78 | fill | P3 | db_live writer lw:18-157 (oh:561-563) | publication helper | 3166 |
+
+LDG-3165 completes all consumers of its changed observation and decision
+groups, including P3, P5, E, skips and stops. These interface reads do not
+wait for LDG-3166. The existing planning and reconciliation algorithms
+remain until LDG-3166 changes their plan/effect representation; no mixed
+next-bar observation is reconstructed for P2.
 
 ### 1.4 Publication, legs, diagnostics, stops, timing
 
@@ -728,11 +735,12 @@ month-start decisions, no warmup trades), and reader cells on a completed
   reject 45 us against a 240 us base, accept 30 us, and reject zero,
   negative and nonfinite measurements.
 
-**Memory.** The previously proposed `ps` lifetime-peak subtraction is
+**Historical memory proposal, superseded by the maintainer settlement
+below.** **Memory.** The previously proposed `ps` lifetime-peak subtraction is
 withdrawn as a peak-live measure: `peak_pagefile` is a process-lifetime
 high-water mark, so setup can dominate it, and private commit includes
-allocator-retained storage. Memory-method validation is unresolved and
-blocks cut acceptance. LDG-3163 must demonstrate phase isolation, covered
+allocator-retained storage. At the design-note review, memory-method
+validation was unresolved and blocked cut acceptance. LDG-3163 must demonstrate phase isolation, covered
 memory domains, collection policy and sensitivity before the decision (5)
 budget is assigned to a metric. Its first candidate, to be validated, not
 assumed: the measured operation runs in a fresh child that only loads ledgr
@@ -763,16 +771,19 @@ formula are recorded.
 **Real-data controls.** The private evidence record
 (`E:/ledgr-data/reference/v0.2.3-base-953338df/EVIDENCE.md`) lists the
 library and state paths, commit and adapter identities, the installation
-command and the compare commands. LDG-3163 must show an unchanged
-`w2_minvar` rerun is IDENTICAL and a scratch worker with
-`ledgr_cost_notional_bps_fee(1)` DIFFERS; this note claims neither result.
+command and the compare commands. LDG-3163 recorded an unchanged
+w2_minvar rerun as IDENTICAL and the ledgr_cost_notional_bps_fee(1)
+scratch mutant as DIFFERS; see dev/bench/v0_2_3_ws4a/records/realdata.md.
 
-**Budget** (decision 12, estimated R lines): `workloads.R` 260,
+**Historical budget estimate at LDG-3162** (decision 12, estimated R lines): `workloads.R` 260,
 `timing_absolute.R` 90, `record.R` 420, `check.R` 120, `guts.R` 280,
 `memory.R` 230: about 1,400, under 1,500. Detector and validator tests are
 package tests, outside this budget. Amended 2026-10-30 by the maintainer:
 the full case set needed 962 lines, so decision (12) now allows 2,000
-lines in total.
+lines in total. Current maintained R totals 1,963 lines, including the base
+detector script and protocol workloads, against decision (12)'s 2,000-line
+limit; package tests remain outside that stated path budget. The earlier
+1,400/1,500 figures are historical.
 
 ## 8. Checks per ticket (scope g)
 
@@ -791,15 +802,25 @@ Before acceptance, LDG-3163 records each representation detector's expected
 baseline outcome. A base failure of a detector that targets the old
 representation is expected evidence, not a reason to weaken it.
 
+detectors.R certifies base outcomes, not implementation completion. Each
+owning ticket installs its applicable predicates and controls in
+test-ws4a-carrier.R and requires production PASS for those regions. At
+LDG-3164, D3 covers the kernel and migrated book consumers, and D25 covers
+the typed lot operations, excluding the P4 scalar caller allowed until
+LDG-3167 and replay while decision (6) permits singleton calls. Later
+owners add their stage regions; production attachments may not remain
+NOT_EVALUABLE at their owning ticket's close. Preserve the historical
+baseline record.
+
 ## 9. Status
 
-The dictionaries, the censuses, the test migrations and the memory method
-remain subject to correction and verification. The real-data unchanged and
-cost-mutant runs are LDG-3163 evidence, not results of this note. No
-semantic change beyond the synthesis is authorized. A memory metric that
-cannot meet decision (5), or any proposed weakening of fixture, fault or
-oracle semantics beyond an accepted representation reason, returns to the
-maintainer before acceptance.
+The design gate and LDG-3163 base preparation are complete, subject to the
+prepared-cut review's corrections before acceptance. Their review chains
+and results are recorded in tickets.yml. No semantic change beyond the
+synthesis and the explicit maintainer settlements is authorized. The shape
+and fault-timing changes listed below require acceptance with this cut;
+other proposed weakening of fixtures, fault boundaries or oracles returns
+through governance.
 
 Shape changes that need the cut's acceptance as their stated reason: the
 inverted unnamed-positions witness (LTB-0278); the publication call-count

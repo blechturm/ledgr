@@ -320,12 +320,13 @@ cuts:
       workload. The base library is E:/ledgr-data/r-lib/ledgr-v0.2.3-base-953338df
       and the rebuilt snapshot's state file is
       E:/ledgr-data/sharadar/experiments/v0.2.3-base-953338df-W1/build-state.json
-      (W1 must work beneath the guarded Sharadar root). Before acceptance,
-      LDG-3163 records these paths, their input identities, the fresh-library
-      installation command and the complete unchanged and cost-mutant
-      comparator commands in a private evidence record, with a stable
-      pointer here; the reference is ready to gate a fresh candidate only
-      after those commands pass their positive and negative controls. Existing
+      (W1 must work beneath the guarded Sharadar root). LDG-3163 completed
+      this registration and its controls. The stable value-free pointer is
+      dev/bench/v0_2_3_ws4a/records/realdata.md; the private command and
+      identity record is E:/ledgr-data/reference/v0.2.3-base-953338df/EVIDENCE.md.
+      The unchanged w2_minvar rerun was IDENTICAL (exit 0); the cost-mutant
+      comparator DIFFERS (exit 1), with the snapshot hash unchanged. The
+      reference is ready to gate a freshly installed candidate. Existing
       timing evidence, cited and not rerun (rules 10 and 13): the carrier
       probe measured the availability wide sweep at 226.50 us/fill on the
       base and 27.17 / 27.07 us/fill (wide / partial-heavy) for typed R lots
@@ -333,10 +334,22 @@ cuts:
       (dev/spikes/ws4a-carrier-probe/); the WS3 descriptive record measured
       the public dense 500 x 1260 run at 24.53 s warm and 28.34 s cold
       (dev/bench/peer_benchmark/records/20261030-current-tree/), which is
-      not a ratio arm. The new timing protocol, case records, memory method
-      and detector controls do not exist yet: under decision (9) LDG-3162
-      and LDG-3163 build them and run them on the base before this cut can
-      be accepted.
+      not a ratio arm. LDG-3162 and LDG-3163 are complete. The accepted
+      design gate is ws4a_carrier_design.md, with its recorded third-round
+      maintainer disposition. The protocol is frozen in
+      dev/bench/timing/protocols/ws4a-timing-1/; base case, gut, mutation,
+      detector, memory and timing-smoke records are in
+      dev/bench/v0_2_3_ws4a/records/, indexed by LDG-3163's evidence below.
+      All 23 base cases reproduce; 34 guts and M1-M12 have their expected
+      failures. All 30 detector rows have the expected base outcomes and
+      passing own controls. D2, D16, D18, D22 and W1 have tested predicates
+      but production attachments deferred to their named implementation
+      owners; they are not claimed as production PASSes. C13b is the
+      specified new candidate-atomicity assertion, not a base identity
+      claim. The timing smoke covers all sixteen cells; the base absolute
+      marginal is 215.05-216.95 us/fill and is expected to fail the 40 us
+      bound. Decision (9) now awaits the prepared-cut review's required
+      patches and maintainer acceptance, not another preparation run.
     decisions: >-
       Proposed for acceptance with the cut; revision 2 applies
       cut_review_5.md F1-F10. (1) Authority: the synthesis binds the design.
@@ -390,32 +403,33 @@ cuts:
       reject a 45 us candidate with a 240 us paired base, and to accept a
       30 us one. The shared harness is reused; its collection and validation
       machinery is not copied. Any numeric revision needs baseline and noise
-      evidence before acceptance. (5) Memory is a pre-acceptance gate
-      specification. For both producers' wide workloads, cumulative Rprofmem
-      bytes per actual fill must be no higher than base. On at least 5,000
-      instruments x 252 sessions, including book growth and a deep-book
-      variant whose fills consume more than ten lots, forward execution and
-      replay are separate measured operations, each with a peak-live budget
-      of at most 1.10 x its matched base. LDG-3163 registers and validates
-      the measuring method, the memory domains it covers, phase boundaries,
-      collection policy, repetitions and byte aggregation; a controlled
-      excess of independently allocated live book storage across growth and
-      replay, of a frozen size at a frozen observation point, must fail the
-      applicable budget. If the peak-live claim cannot be measured, the
-      metric is settled with the maintainer before acceptance. Settled
-      2026-10-30 (maintainer, after LDG-3163 found the process peak-commit
-      candidate too noisy: range/median up to 0.15, one unchanged run at
-      1.13 x its median): the gated metric is peak R heap,
-      sum(gc()[, "max used"] * c(56, 8)) in a fresh child after
-      gc(reset = TRUE) at the phase boundary, at most 1.10 x the matched base
-      median. It covers the R heap only (not DuckDB's native memory, which
-      WS4a does not change) and counts garbage awaiting collection, so it is
-      named peak R heap, not peak live. Process peak commit is reported
-      beside it as an observation. Validation on the base
-      (dev/bench/v0_2_3_ws4a/records/memory/): spread at most 0.6% over five
-      repetitions, every frozen control breaches (1.18-1.44 x), the pointer
-      alias never does (1.00 x). The frozen replay memory budget applies at
-      LDG-3164 and LDG-3169. (6) Replay: singleton replay calls are kept only if the
+      evidence before acceptance. The recorded timing deviations in
+      ws4a_carrier_design.md Section 7 are incorporated: the matched untimed
+      durable run supplies the fill denominator, with the registered
+      repetition checks; wide_total and nofill_total are returned clocks but
+      are not persisted by the unchanged shared harness; reader cells use the
+      availability run; run and sweep cells perform their registered untimed
+      warm-up; and the marginal cell also has a 1.00 ratio bound. The frozen
+      base record is the functional and quiet marginal smoke, not an A/A
+      window. These details do not change any bound. (5) Memory: both
+      producers' 500 x 1260 wide sweeps must allocate no more cumulative
+      explicit-size Rprofmem bytes per actual fill than their recorded base.
+      The 5,000 x 252 wide and deep-book workloads measure forward execution
+      and replay separately; the deep case has 250 instruments consuming 15
+      live lots. The gated metric, settled by the maintainer on 2026-10-30,
+      is peak R heap, sum(gc()[, "max used"] * c(56, 8)) in a fresh child
+      after gc(reset = TRUE) at the phase boundary, at most 1.10 x the
+      matched base median. It covers only the R heap and includes garbage
+      awaiting collection; it is not peak live memory. The five repetitions,
+      default collection policy, phase boundaries, frozen control sizes and
+      base values are registered in dev/bench/v0_2_3_ws4a/records/memory/
+      and memory.R. Validation found spread at most 0.6%, every
+      independently allocated live-storage control breached (1.18-1.44 x),
+      and pointer aliases did not breach. The earlier process peak-commit
+      method failed validation (range/median up to 0.15; one unchanged run at
+      1.13 x its median) and remains observational only; method.md preserves
+      the rejection. The frozen replay memory budget applies at LDG-3164 and
+      LDG-3169. (6) Replay: singleton replay calls are kept only if the
       replay timing cells and the replay memory budget pass at LDG-3164's
       end; otherwise the replay groups consecutive conflict-free blocks
       through the same implementation in that ticket. (7) The canonical lot
@@ -466,11 +480,11 @@ cuts:
       12, the typed lot book, owns LDG-3162 through LDG-3164; workstream 13,
       the typed stage carrier, owns LDG-3165 through LDG-3169 and starts only
       after workstream 12's close review is accepted. Pre-acceptance
-      preparation (decision 9): LDG-3162 fixes the design and the obligation
-      register in writing and passes its own review; LDG-3163 builds the
-      protocol, case records, memory method and detector controls and runs
-      them on the base; a subsequent independent cut review must pass before
-      acceptance. The serial product sequence after acceptance: LDG-3164
+      preparation (decision 9) is complete: LDG-3162 fixes the reviewed
+      design and obligation register; LDG-3163 supplies the frozen protocol,
+      reproduced case records, validated memory method and exercised
+      detector controls. The subsequent prepared-cut review and maintainer
+      acceptance remain the implementation gate. The serial product sequence after acceptance: LDG-3164
       introduces the typed lot book and the one accounting implementation
       for every consumer and closes workstream 12; LDG-3165 types the
       observation and the decision; LDG-3166
@@ -503,10 +517,17 @@ cuts:
       applied in revision 2. Round 2 (cut_review_5_rereview_1.md,
       PASS_AFTER_PATCHES: F1 and F3-F10 resolved, F2 resolved by its N1
       patches) is applied verbatim in revision 3; the review states those
-      patches need no further review. LDG-3162 is a manual design gate with its own
-      independent clean-context Codex review; an open Type 2 question blocks
-      acceptance. After LDG-3162 and LDG-3163 complete, a subsequent
-      independent cut review must pass before acceptance (decision 9).
+      patches need no further review. LDG-3162's independent design-review
+      chain closed at PASS_AFTER_PATCHES, with N6, N7, O1 and O2 applied under
+      the recorded third-round maintainer disposition. LDG-3163's review
+      chain closed at PASS_AFTER_PATCHES with its exact N1 memory-integrity
+      patch applied. Both tickets are complete. The subsequent independent
+      prepared-cut review is cut_review_5_prepared.md (4759d253,
+      PASS_AFTER_PATCHES); its required corrections precede maintainer
+      acceptance. An open Type 2 question would still block acceptance.
+      Revision 5 applies that review's required findings 1-2 and optional
+      finding 3 verbatim; the review states its exact patches suffice
+      without a further review.
       Revision 4 splits the work into two workstreams by maintainer
       direction (2026-10-30); the maintainer waived a focused review of that
       regrouping, which changes no ticket scope, acceptance item, oracle or
@@ -1152,7 +1173,7 @@ tickets:
       - "inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md#3-obligation-register-scope-c (commit af5f6fb8): the register lists one-owner rows for Sections 2-3 (O2.01-O3.80), the universal construction rule by owner (U-3164..U-3168), every Section 4 field invariant (F4.01-F4.51), every Section 5 evidence row, the fourteen Section 8 routes and the seven Section 9 scenarios, each with a check and a failing control; the final review confirmed N2-N4 resolved."
       - "inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md#5-test-migration-list-scope-d-decision-10 (commit af5f6fb8): every affected test block (59 plus three conditional, from a read-only census of tests/testthat) is listed individually with category, change, kept assertions and its own control; shape changes needing the cut's acceptance are named in Section 9; the final review confirmed LTB-0019's full witness is preserved (N5)."
       - "inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md#2-pins-scope-b (commit af5f6fb8): the P3 reason, decision-restriction, mark-source, kind and side dictionaries preserve today's tokens and emission order, code 0 decodes to the empty string, open vocabularies stay character; round 1 verified the pins against R/availability-economics.R and R/fold-engine.R (ws4a_design_review_1.md F4)."
-      - "inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md#7-timing-memory-and-budget-scope-f (commit af5f6fb8): the harness plan estimates about 1,400 R lines against the 1,500-line budget of decision (12); round 1 confirmed the estimate sums correctly (ws4a_design_review_1.md F13); the memory method remains for LDG-3163 to validate before acceptance."
+      - "inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md#7-timing-memory-and-budget-scope-f (commit af5f6fb8): the harness plan estimates about 1,400 R lines against the 1,500-line budget of decision (12); round 1 confirmed the estimate sums correctly (ws4a_design_review_1.md F13); the memory method remains for LDG-3163 to validate before acceptance. This is the design-gate estimate at af5f6fb8; LDG-3163's completed record supersedes it: 1,963/2,000 lines and a validated peak-R-heap method."
       - "inst/design/ledgr_v0_2_3_spec_packet/ws4a_design_review_1_rereview_2.md (commit af5f6fb8): the independent clean-context Codex design review chain closes at PASS_AFTER_PATCHES after ws4a_design_review_1.md (CHANGES_REQUIRED, F1-F13) and ws4a_design_review_1_rereview_1.md (CHANGES_REQUIRED, N1-N5); by maintainer disposition of the third correction round (2026-10-30) its exact patches N6, N7, O1 and O2 are applied verbatim with no further review; no design question remains open."
   - id: "LDG-3163"
     title: "Record the base: protocol, case records and memory"
