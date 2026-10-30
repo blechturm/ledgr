@@ -55,6 +55,7 @@ compare <- function(a, b, path) {
       base_last = edge(a, TRUE), fork_last = edge(b, TRUE), stringsAsFactors = FALSE)
   }
 }
+if (arg('addendum', '0') == '1') { source(file.path(folder, 'typed-check.R')); quit(save = 'no') }
 base <- run('wide_base', 'identity', 'base')
 fork <- run('wide_fork', 'identity', 'fork')
 # sweep_id is generated as a local locator. It is the sole exclusion here;

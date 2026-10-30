@@ -61,10 +61,10 @@ suppressPackageStartupMessages(library(ledgr))
 ns <- asNamespace('ledgr')
 source(file.path(folder, 'carrier.R'))
 if (arm != 'base') {
-  stopifnot(arm %in% c('fork', 'fork_r', 'fork_indexed', 'fork_r_indexed'))
+  stopifnot(arm %in% c('fork', 'fork_r', 'fork_indexed', 'fork_r_indexed', 'fork_typed'))
   carrier <- install_carrier(folder, arg('mutation', 'none'),
-    lot = if (arm %in% c('fork_r', 'fork_r_indexed')) 'R' else 'native',
-    indexed = arm %in% c('fork_indexed', 'fork_r_indexed'))
+    lot = if (arm == 'fork_typed') 'typed' else if (arm %in% c('fork_r', 'fork_r_indexed')) 'R' else 'native',
+    indexed = arm %in% c('fork_indexed', 'fork_r_indexed', 'fork_typed'))
 }
 profile <- arg('profile', 'none')
 components <- new.env(parent = emptyenv())
@@ -88,6 +88,7 @@ if (profile == 'components') {
     'ledgr_update_pulse_context_helpers', 'ledgr_validate_strategy_targets', 'ledgr_validate_post_risk_targets'))
     if (exists(name, ns, inherits = FALSE) && !(arm %in% c('fork_r', 'fork_r_indexed') && name == 'ledgr_lot_apply_fill')) instrument(ns, name, name)
   if (arm != 'base') for (name in c('carrier_lots', 'carrier_events', 'carrier_payload', 'carrier_afford')) instrument(carrier, name, name)
+  if (arm == 'fork_typed') for (name in c('carrier_lots_typed', 'typed_lot_kernel', 'typed_lot_import', 'typed_lot_export')) instrument(carrier, name, name)
   original_factory <- ns$ledgr_output_handler
   timed_method <- function(original, label) {
     force(original); force(label)
@@ -144,6 +145,9 @@ strategy <- function(ctx, params) {
   if (params$shape == 'wide') {
     targets[prev_usable & usable & above & !prev_above] <- 1
     targets[prev_usable & usable & !above & prev_above] <- 0
+  } else if (params$shape == 'partial') {
+    targets[prev_usable & usable & above & !prev_above] <- 2
+    targets[prev_usable & usable & !above & prev_above] <- 1
   } else if (params$shape == 'sparse' && tick %% 21L == 0L) {
     # Monthly top-20 momentum spread on the same SMA planes, unit positions.
     targets[] <- 0

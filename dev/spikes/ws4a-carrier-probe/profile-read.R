@@ -22,6 +22,8 @@ read_allocation_profile <- function(directory) {
       inside_fold <- grepl('ledgr_fold_stage_apply|ledgr_fold_stage_commit', lines, perl = TRUE)
       component[event & inside_fold] <- 'event_batch'
       component[grepl('carrier_lots|ledgr_lot_apply_fill', lines, perl = TRUE)] <- 'lot_kernel'
+      component[grepl('carrier_lots_typed', lines, fixed = TRUE)] <- 'lot_boundary'
+      component[grepl('typed_lot_kernel', lines, fixed = TRUE)] <- 'lot_kernel'
       component[grepl('carrier_payload|ledgr_fill_event_payload', lines, perl = TRUE)] <- 'fill_payload'
       valid <- is.finite(size)
       if (any(valid)) accumulated <- add(accumulated, tapply(size[valid], component[valid], sum))

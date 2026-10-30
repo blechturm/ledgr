@@ -11,6 +11,8 @@ install_carrier <- function(folder, mutation = 'none', lot = 'native', indexed =
     e$carrier_lots <- e$carrier_lots_canonical
     e$carrier_afford <- e$carrier_afford_canonical
   }
+  if (lot == 'typed') source(file.path(folder, 'typed-lots.R'), local = e)
+  e$lot_kind <- lot
   e$indexed <- indexed
   e$mutation <- mutation
   e$original_plan <- ns$ledgr_fold_stage_plan
@@ -173,8 +175,10 @@ install_carrier <- function(folder, mutation = 'none', lot = 'native', indexed =
       }
       lot_idx <- as.integer(fold_state$lot_state$instrument_index[b$id])
       if (anyNA(lot_idx)) stop('probe lot axis incomplete')
-      lots <- carrier_lots(fold_state$lot_state, lot_idx, b$qty, b$price, b$fee,
-        as.integer(ifelse(b$signed > 0, 1, -1)), fold_state$cash)
+      lots <- if (lot_kind == 'typed') carrier_lots_typed(fold_state, lot_idx,
+        b$qty, b$price, b$fee, as.integer(ifelse(b$signed > 0, 1, -1)), fold_state$cash) else
+        carrier_lots(fold_state$lot_state, lot_idx, b$qty, b$price, b$fee,
+          as.integer(ifelse(b$signed > 0, 1, -1)), fold_state$cash)
       fold_state$lot_state <- lots$state
       # Position authority is canonical lots, read once after the pulse batch.
       fold_state$positions <- setNames(as.numeric(lots$state$net_by_inst[

@@ -95,3 +95,42 @@ Final evidence uses strict `identical(..., num.eq=FALSE, single.NA=FALSE)`
 for atomic values. The byte-compared CSVs use this Windows checkout's CRLF
 convention (`core.autocrlf=true`). The committed reviewer assignment is pending
 independent review; no acceptance is implied.
+
+## Typed R lot addendum (2026-10-30)
+
+`--arm=fork_typed` changes only the combined arm's lot kernel. It sources
+`typed-lots.R`, uses R affordability and indexed publication, and never loads
+probe C++. The typed core has no names on its primitive columns, per-instrument
+list elements, S3 state or compiled helpers. Import/export adapters preserve
+canonical lot representation for existing fold readers; their cost is included
+in end-to-end clocks and reported separately from the kernel. The cache is
+owned by the probe installation and keyed to one fold environment/event sequence.
+
+The original nine cases also run on this arm. `--shape=partial` adds the tenth:
+SMA transitions alternate targets 1 and 2 on the same bars. Its LIFO gut must
+complete and fail strict identity. The addendum checker reruns the original
+reorder/drop-fee guts too, and byte-diffs separate `typed_identity.csv` and
+`typed_gut.csv`; original evidence remains unchanged.
+
+```powershell
+& 'C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe' C:/Users/maxth/ledgr-wt/ws4a-carrier-probe/dev/spikes/ws4a-carrier-probe/check.R --addendum=1 --out=C:/Users/maxth/AppData/Local/Temp/ws4a-typed-review-new
+& 'C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe' C:/Users/maxth/ledgr-wt/ws4a-carrier-probe/dev/spikes/ws4a-carrier-probe/extensions.R --arms=fork_r_indexed,fork_indexed,fork_typed --workloads=wide,partial --phase=timing --out=C:/Users/maxth/AppData/Local/Temp/ws4a-typed-timing
+& 'C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe' C:/Users/maxth/ledgr-wt/ws4a-carrier-probe/dev/spikes/ws4a-carrier-probe/extensions.R --arms=fork_r_indexed,fork_indexed,fork_typed --workloads=wide,partial --phase=profiles --out=C:/Users/maxth/AppData/Local/Temp/ws4a-typed-profiles
+& 'C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe' C:/Users/maxth/ledgr-wt/ws4a-carrier-probe/dev/spikes/ws4a-carrier-probe/typed-summary.R
+```
+
+These are the same partial-warm sweep/durable boundaries, five alternating
+own-floor/workload pairs, and explicit-size Rprofmem allocation method as the
+recorded arms. Memory profiling is sweep-only; durable gets its own clocks and
+component profiles. New qualification rows also record external R process IDs.
+See [typed_lots_findings.md](typed_lots_findings.md) for the nonbinding result;
+original bounds and the original inconclusive verdict remain in force.
+
+The native wide lot timer initially quantized to zero. A single qualified
+component repeat measured 0.10 s; both observations are retained in
+`typed_component_repeat.csv`, with its qualification appended to `typed_host.csv`.
+Ordinary clocks and original evidence remain unchanged. Reproduce that diagnostic
+with `extensions.R --phase=one_component --arms=fork_indexed --workloads=wide
+--out=<fresh scratch>` (one invocation). `typed_other_host.csv` records CPU deltas
+for surviving processes between PowerShell Get-Process snapshots before/after the
+main matrix; short-lived processes are outside that supplementary record.
