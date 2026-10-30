@@ -214,8 +214,8 @@ cuts:
       synthesis (rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md, accepted
       2026-10-30 at 9aa9b3b5). The synthesis binds the design; this cut adds
       no design. It binds the order of work, the oracles, the gates and the
-      test-migration rule. This cut entry, workstream 12 and LDG-3162 through
-      LDG-3169 become the operative implementation brief once accepted;
+      test-migration rule. This cut entry, workstreams 12 and 13 and LDG-3162
+      through LDG-3169 become the operative implementation brief once accepted;
       tickets.yml is the sole ticket and sequencing authority. The cut is
       Type 1 against the synthesis and Type 2 on ticket grain and gates.
     authority: >-
@@ -451,19 +451,23 @@ cuts:
       records, the ws4a-timing-1 gate record and the memory record are the
       named heavyweight records.
     sequencing: >-
-      One workstream, serial tickets. Pre-acceptance preparation (decision
-      9): LDG-3162 fixes the design and the obligation register in writing
-      and passes its own review; LDG-3163 builds the protocol, case records,
-      memory method and detector controls and runs them on the base; a
-      subsequent independent cut review must pass before acceptance. The
-      serial product sequence after acceptance: LDG-3164 introduces the
-      typed lot book and the one accounting implementation for every
-      consumer; LDG-3165 types the observation and the decision; LDG-3166
+      Two serial workstreams (revision 4, maintainer 2026-10-30): workstream
+      12, the typed lot book, owns LDG-3162 through LDG-3164; workstream 13,
+      the typed stage carrier, owns LDG-3165 through LDG-3169 and starts only
+      after workstream 12's close review is accepted. Pre-acceptance
+      preparation (decision 9): LDG-3162 fixes the design and the obligation
+      register in writing and passes its own review; LDG-3163 builds the
+      protocol, case records, memory method and detector controls and runs
+      them on the base; a subsequent independent cut review must pass before
+      acceptance. The serial product sequence after acceptance: LDG-3164
+      introduces the typed lot book and the one accounting implementation
+      for every consumer and closes workstream 12; LDG-3165 types the
+      observation and the decision; LDG-3166
       types the plan; LDG-3167 batches application and publication; LDG-3168
       types diagnostics, equity and the fold-state validator; LDG-3169
       verifies the final candidate, runs the gates, promotes the contract
-      text and closes the workstream. Ticket dependencies bind. WS4b inherits
-      nothing until workstream 12 is accepted.
+      text and closes workstream 13. Ticket dependencies bind. WS4b inherits
+      nothing until both workstreams are accepted.
     out_of_scope: >-
       Dense-mode removal, the implied-calendar and execution-stamp decisions,
       the final-bar disclosure and ledgr_backtest() (WS4b); provider and
@@ -479,7 +483,7 @@ cuts:
       event order, fill timing, cost semantics, diagnostics retained or event
       meaning; new execution-mode branches; compatibility code; new public
       API; weakening a test, timing threshold or oracle to obtain green.
-    workstreams: [12]
+    workstreams: [12, 13]
     review_lifecycle: >-
       An independent clean-context Codex cut review checks the cut against
       the synthesis (Type 1) and challenges ticket grain, dependencies,
@@ -491,8 +495,16 @@ cuts:
       patches need no further review. LDG-3162 is a manual design gate with its own
       independent clean-context Codex review; an open Type 2 question blocks
       acceptance. After LDG-3162 and LDG-3163 complete, a subsequent
-      independent cut review must pass before acceptance (decision 9). The
-      workstream receives one Type 1 close review: synthesis conformance,
+      independent cut review must pass before acceptance (decision 9).
+      Revision 4 splits the work into two workstreams by maintainer
+      direction (2026-10-30); the maintainer waived a focused review of that
+      regrouping, which changes no ticket scope, acceptance item, oracle or
+      gate. Workstream 12 receives a Type 1 close review after LDG-3164: the
+      one typed lot implementation and every migrated consumer, the deleted
+      named-list FIFO, the decision (6) replay evidence, the seven shapes
+      over the kernel and its consumers, exact oracles and the test-migration
+      entries it used. Workstream 13 receives a Type 1 close review after
+      LDG-3169: synthesis conformance,
       the seven optimization shapes walked verbatim over every changed stage,
       the cold-read item of macro rule 15 (a clean-context reviewer explains
       each changed stage from its code and the carrier contract alone),
@@ -555,12 +567,19 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 11", reason: "One claim joins LDG-3155 through LDG-3161: one fresh shared timing harness gates paired before/after comparisons, and seeded stochastic results are the same for one and two workers and for a committed run and a sweep; storage parameters cannot change them; every exported entry point restores the caller's RNG kind and state on success, error and interrupt, within the documented Box-Muller limitation; pulse seeds come from a versioned, cheap, platform-independent, seed-sensitive rule on the absolute pulse axis; old-rule candidates are refused; simulators and the fold pin the kind; walk-forward works without a seed; the NMOF LSopt gate passes; every successor-oracle difference satisfies its frozen predicate; and seeded runs get faster while other cells stay within their bounds. The review reruns the checkers against original and successor records, runs the witnesses and regression guts, checks the identity declarations and hashes, and audits the timing record."}
   - id: 12
-    name: "Typed fold carrier (macro WS4a)"
+    name: "Typed lot book (macro WS4a, part 1)"
     cut: 5
     status: "planned"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 12", reason: "One claim joins LDG-3162 through LDG-3169: both producers carry one pulse through E and P1-P5 in the typed carrier of the accepted synthesis, with one typed lot implementation for fold, replay, resume and compiled pack/unpack, publication and diagnostics as indexed columns, and outputs exactly equal to the A0 successor, dense and real-data oracles, at the timing and memory bounds of decisions (4) and (5)."}
+    review: {mode: "Type 1", point: "close of workstream 12, after LDG-3164", reason: "One claim joins LDG-3162 through LDG-3164: one typed lot implementation (opening, fill, disposition) serves the fold, replay, the chunked fills reader, opening and resume initialisation, walk-forward carry, terminal dispositions and recovery, the handler's accounting fact and compiled pack/unpack; the named-list FIFO is deleted; outputs are exactly equal to the A0 successor, dense and real-data oracles; and the replay choice of decision (6) is settled within its replay timing and memory budgets."}
+  - id: 13
+    name: "Typed stage carrier (macro WS4a, part 2)"
+    cut: 5
+    status: "planned"
+    depends_on_workstream: 12
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 13, after LDG-3169", reason: "One claim joins LDG-3165 through LDG-3169: both producers carry one pulse through E and P1-P5 in the typed carrier of the accepted synthesis, with publication and diagnostics as indexed columns and one equity record, outputs exactly equal to the A0 successor, dense and real-data oracles, at the timing and memory bounds of decisions (4) and (5), and every changed stage explainable from its code and the carrier contract."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -1182,7 +1201,7 @@ tickets:
     evidence: []
   - id: "LDG-3165"
     title: "Typed observation and decision"
-    workstream: 12
+    workstream: 13
     status: "planned"
     priority: "P0"
     effort: "M"
@@ -1210,7 +1229,7 @@ tickets:
     evidence: []
   - id: "LDG-3166"
     title: "Typed plan batch on both producers"
-    workstream: 12
+    workstream: 13
     status: "planned"
     priority: "P0"
     effort: "M"
@@ -1249,7 +1268,7 @@ tickets:
     evidence: []
   - id: "LDG-3167"
     title: "Batched application and indexed publication"
-    workstream: 12
+    workstream: 13
     status: "planned"
     priority: "P0"
     effort: "L"
@@ -1277,7 +1296,7 @@ tickets:
     evidence: []
   - id: "LDG-3168"
     title: "Typed diagnostics, equity record and fold-state validation"
-    workstream: 12
+    workstream: 13
     status: "planned"
     priority: "P0"
     effort: "M"
@@ -1302,7 +1321,7 @@ tickets:
     evidence: []
   - id: "LDG-3169"
     title: "Verify the final candidate, run the gates and close the workstream"
-    workstream: 12
+    workstream: 13
     status: "planned"
     priority: "P0"
     effort: "M"
