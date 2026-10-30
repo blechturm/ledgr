@@ -187,6 +187,25 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   are the base-R form, not frames. `PMwR::btest` (preallocated matrices, one
   vector update per bar) and collapse (typed vectors, `setv()` by index)
   are the reference pattern (`../../../dev/spikes/pmwr-performance/`).
+- **Clarity is a design goal of every representation change** (maintainer,
+  2026-10-30). Vectorized code is denser than a per-element loop, and
+  positions fail silently where names fail loudly, so clarity is designed in
+  rather than hoped for:
+  1. **One carrier contract.** Every typed column the fold carries is
+     documented in one table (name, type, axis, unit, invariant). The
+     constructor points to it.
+  2. **Axis discipline.** Inside loops, instruments are integer positions on
+     one fixed run axis. ID-to-position and position-to-ID conversion happens
+     only in a few named boundary helpers, never ad hoc mid-path.
+  3. **Validate at construction.** Constructors check lengths, axis and types
+     once; consumers trust them.
+  4. **Canonical R stays readable.** It is the normative oracle, so it is the
+     version people read: plain vector code over cleverness. A later
+     compiled path may be dense; the R path stays explainable.
+  5. **Small stages with explicit inputs and outputs.** Each stage takes the
+     carrier and returns it; no hidden mutation across stages.
+  6. **Explain the indexing.** Every non-obvious mask, offset or segment
+     expression carries a one-line comment saying why.
 - **Preserve the production rule, move the loop to compile time.** When a
   resolver is replaced, resolve each segment once at build time with the
   exact production predicate (applicability, supersession, precedence,
@@ -507,6 +526,10 @@ One diagnostic block per pulse versus one frame per instrument:
 - Inside the loop, does any data frame, per-element list, S3 object,
   POSIXct conversion or name match appear? Which position, mask or typed
   column replaces it?
+- Could a clean-context reader explain each changed stage from its code and
+  the carrier contract alone? Are ID/position conversions confined to the
+  named boundary helpers, and is every non-obvious index expression
+  commented?
 - Is any value computed on a hot path never read on the common branch?
 - Does the change add a second path to an answer the code already computes?
   Name its canonical path, its registered differential test and its removal

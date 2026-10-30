@@ -81,6 +81,15 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     parse inside a loop over pulses, fills or events is a review finding
     (maintainer, 2026-10-30; `manual/optimization_coding_style.qmd`, Rules).
     Every cut touching those paths removes or routes the JSON it meets.
+15. **Clarity is a design goal, reviewed like performance.** Representation
+    changes follow the clarity rule in
+    `manual/optimization_coding_style.qmd` (carrier contract, axis
+    discipline, construction-time validation, readable canonical R, small
+    explicit stages, commented indexing). The WS4a RFC includes the carrier
+    contract table. The close reviews of WS4a, WS4b, WS7 and WS8 carry a
+    cold-read item: a clean-context reviewer explains each changed stage
+    from its code and the carrier contract alone, and a stage that cannot
+    be explained is a finding (maintainer, 2026-10-30).
 
 ## 2. Dependency structure
 
