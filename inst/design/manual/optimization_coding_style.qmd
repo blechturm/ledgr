@@ -206,6 +206,19 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
      carrier and returns it; no hidden mutation across stages.
   6. **Explain the indexing.** Every non-obvious mask, offset or segment
      expression carries a one-line comment saying why.
+- **Compute at the frequency of change** (maintainer, 2026-10-30). Every
+  value is computed once, at the lowest frequency at which it can change
+  (per run, per pulse, per fill, per event), and carried forward from
+  there. It is never recomputed at a higher frequency or by a second
+  consumer. Achieve this by hoisting and carrying, not by caching: a memo
+  whose key costs as much as the work is a finding (the `canonical_json()`
+  cache hashed every argument with SHA-256 to skip an encode). Code DRY
+  means one implementation per concept, not one generic helper for
+  similar-looking code; the clarity rule wins over shared flags. Measured
+  cases: timestamps re-validated per fill, positions recomputed from lots
+  per fill, FIFO replayed in fold, finalisation and every reader, unchanged
+  state re-encoded per pulse, terminal recovery replaying per pulse
+  (`../../../dev/spikes/json-hot-path-audit/`).
 - **Preserve the production rule, move the loop to compile time.** When a
   resolver is replaced, resolve each segment once at build time with the
   exact production predicate (applicability, supersession, precedence,
@@ -530,6 +543,8 @@ One diagnostic block per pulse versus one frame per instrument:
   the carrier contract alone? Are ID/position conversions confined to the
   named boundary helpers, and is every non-obvious index expression
   commented?
+- Is any value computed at a higher frequency than it changes, or computed
+  again by a second consumer? Is a cache standing in for hoisting?
 - Is any value computed on a hot path never read on the common branch?
 - Does the change add a second path to an answer the code already computes?
   Name its canonical path, its registered differential test and its removal
