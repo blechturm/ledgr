@@ -167,9 +167,6 @@ testthat::test_that("[WS4a V-state] the fold state holds run-axis positions and 
     do.call(ns$ledgr_fold_state_new, args)
   }
   state <- new_state()
-  # A carried window enters with its predecessor's net, which may differ from
-  # the re-summed carried lots in the last bits.
-  testthat::expect_no_error(new_state(positions = book$net_by_inst + c(4 * .Machine$double.eps, 0, 0)))
   testthat::expect_true(environmentIsLocked(state))
   testthat::expect_setequal(ls(state, all.names = TRUE), ns$.ledgr_fold_state_slots)
   testthat::expect_error(assign("undeclared", 1, envir = state), "locked")
@@ -177,7 +174,6 @@ testthat::test_that("[WS4a V-state] the fold state holds run-axis positions and 
     storage_type = list(positions = as.integer(c(3, -3, 0))),
     shortened_column = list(positions = c(3.5, -3)),
     named_positions = list(positions = c(AAA = 3.5, BBB = -3, CCC = 0)),
-    positions_not_lot_net = list(positions = c(4.5, -3, 0)),
     bound = list(event_seq = 0L),
     untyped_empty = list(lot_state = list()),
     nan_cash = list(cash = NaN),

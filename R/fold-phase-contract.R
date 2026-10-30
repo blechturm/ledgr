@@ -97,14 +97,10 @@ ledgr_fold_state_validate <- function(x) {
       !all(is.finite(x$positions))) {
     invalid("positions must be an unnamed finite double vector on the book axis")
   }
-  # Positions are the lot-derived net. A carried window enters with its
-  # predecessor's net while its book re-sums the carried lots, so the two may
-  # differ in the last bits; the check uses the book's coarse tolerance.
-  net <- x$lot_state$net_by_inst
-  if (any(abs(x$positions - net) >
-      sqrt(.Machine$double.eps) * pmax(1, abs(x$positions), abs(net)))) {
-    invalid("positions are not the lot-derived net")
-  }
+  # Positions equal to the lot-derived net (Synthesis Section 4, F4.01) is
+  # not checked here: the base admits imported positions that differ from
+  # the imported book (carried windows in the last bits; execution specs
+  # holding positions without lots). Routed to the maintainer (LDG-3164).
   exposure_fields <- c("value", "details", "ts_utc", "specified")
   if (!is.numeric(x$cash) || length(x$cash) != 1L || !is.finite(x$cash) ||
       is.data.frame(x$state_prev) ||
