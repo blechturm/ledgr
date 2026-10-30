@@ -153,3 +153,18 @@ Optional, not conditioning the verdict:
   from the ticket's enumerated detectors.
 
 Count: one independent verdict for workstream 3 (PASS_AFTER_PATCHES), recorded, not gated.
+
+## Focused confirmation (2026-10-30)
+
+**PASS.** A fresh Claude Opus session reviewed correction range
+`fe358783..2121eee3`. F1 is resolved by the matching 10 ms disclosure in the
+protocol, record README and LDG-3137 evidence; the raw record and displayed
+values are unchanged. F2 is resolved by labelling `peer_benchmark.R` the
+legacy active driver whose commands remain supported until the named open
+retirement gate. F3 is resolved by calling the baseline a recorded review
+candidate rather than accepted.
+
+Codex completed the reviewer's unavailable mechanical checks: `git diff
+--check fe358783..2121eee3` passes; `tickets.yml` parses; product, shared timing
+harness and dense timing code are byte-unchanged across the correction; and
+the only changed file under the committed record is its README. No new finding.
