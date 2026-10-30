@@ -50,11 +50,13 @@ corporate_action_disposition_plan <- function(policy = ledgr_corporate_actions()
   list(plan = plan, pulses = pulses)
 }
 
+# LDG-3164 (decision 10, category 1): the settlement state carries a typed
+# lot book (AAA at book position 1).
 corporate_action_disposition_state <- function() {
   list(
     cash = 1000,
     positions = c(AAA = 2),
-    lot_state = ledgr:::ledgr_lot_state_from_opening(
+    lot_state = ledgr:::ledgr_lot_book_from_opening(
       "AAA",
       positions = c(AAA = 2),
       cost_basis = c(AAA = 100)
@@ -122,7 +124,7 @@ testthat::test_that("[LTB-0050] DISPOSITION is prepared, constrained and replays
   testthat::expect_identical(result$state$cash, 1180)
   testthat::expect_identical(unname(result$state$positions), 0)
   testthat::expect_identical(
-    ledgr:::ledgr_lot_count(result$state$lot_state, "AAA"),
+    ledgr:::ledgr_lot_book_live_count(result$state$lot_state, 1L),
     0L
   )
   testthat::expect_identical(result$state$lot_state$realized_pnl, -20)
@@ -143,7 +145,7 @@ testthat::test_that("[LTB-0050] DISPOSITION is prepared, constrained and replays
     prepared,
     initial_cash = 1000,
     initial_positions = c(AAA = 2),
-    lot_state = ledgr:::ledgr_lot_state_from_opening(
+    lot_state = ledgr:::ledgr_lot_book_from_opening(
       "AAA",
       positions = c(AAA = 2),
       cost_basis = c(AAA = 100)

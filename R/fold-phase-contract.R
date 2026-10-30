@@ -87,11 +87,26 @@ ledgr_fold_state_validate <- function(x) {
   if (any(vapply(values, is.data.frame, logical(1L)))) {
     invalid("data-frame slots are forbidden")
   }
-  if (!is.numeric(x$cash) || length(x$cash) != 1L || is.na(x$cash) ||
-      !is.numeric(x$positions) || is.null(names(x$positions)) ||
-      anyNA(names(x$positions)) || any(!nzchar(names(x$positions))) ||
-      anyDuplicated(names(x$positions)) ||
-      !is.list(x$lot_state) ||
+  # The lot book (V-book) and the run-axis positions that its axis defines:
+  # positions are an unnamed finite double vector, one entry per book
+  # instrument (Synthesis 3.1 and Section 4, groups "state" and "book").
+  book_problem <- ledgr_lot_book_problem(x$lot_state)
+  if (!is.null(book_problem)) invalid(paste0("the lot book is invalid: ", book_problem))
+  if (!is.double(x$positions) || !is.null(names(x$positions)) ||
+      length(x$positions) != length(x$lot_state$offset) ||
+      !all(is.finite(x$positions))) {
+    invalid("positions must be an unnamed finite double vector on the book axis")
+  }
+  # Positions are the lot-derived net. A carried window enters with its
+  # predecessor's net while its book re-sums the carried lots, so the two may
+  # differ in the last bits; the check uses the book's coarse tolerance.
+  net <- x$lot_state$net_by_inst
+  if (any(abs(x$positions - net) >
+      sqrt(.Machine$double.eps) * pmax(1, abs(x$positions), abs(net)))) {
+    invalid("positions are not the lot-derived net")
+  }
+  exposure_fields <- c("value", "details", "ts_utc", "specified")
+  if (!is.numeric(x$cash) || length(x$cash) != 1L || !is.finite(x$cash) ||
       is.data.frame(x$state_prev) ||
       !(is.null(x$state_axis) || is.character(x$state_axis)) ||
       !is.integer(x$event_seq) || length(x$event_seq) != 1L ||
@@ -100,6 +115,7 @@ ledgr_fold_state_validate <- function(x) {
       is.na(x$status) || !nzchar(x$status) ||
       !is.character(x$stop_reason) || length(x$stop_reason) != 1L ||
       !is.list(x$affected_exposure) ||
+      !all(exposure_fields %in% names(x$affected_exposure)) ||
       !is.integer(x$processed) || length(x$processed) != 1L ||
       is.na(x$processed) || x$processed < 0L ||
       !is.logical(x$full_run) || length(x$full_run) != 1L ||

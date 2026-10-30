@@ -1,10 +1,15 @@
 # ledgr-test-file-profile: review
 
 testthat::test_that("[LTB-0278] fold state and stop results have one closed typed shape", {
+  # LDG-3164 (decision 10, categories 1 and 5): the fold state is built from
+  # a typed lot book, and positions are the unnamed run-axis vector the book
+  # defines (Synthesis 3.1).
+  book_aaa <- ledgr_lot_opening(ledgr_lot_book(2L), 1L, 1, 10)$book
+  book_one <- ledgr_lot_opening(ledgr_lot_book(1L), 1L, 1, 10)$book
   state <- ledgr_fold_state_new(
     cash = 100,
-    positions = c(AAA = 1, BBB = 0),
-    lot_state = list(AAA = list(), BBB = list()),
+    positions = c(1, 0),
+    lot_state = book_aaa,
     state_prev = list(month = "2026-10"),
     state_axis = c("AAA", "BBB"),
     event_seq = 3L
@@ -23,16 +28,16 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
   testthat::expect_error(
     ledgr_fold_state_new(
       cash = 100,
-      positions = c(AAA = 1),
-      lot_state = list(AAA = list()),
+      positions = 1,
+      lot_state = book_one,
       state_prev = data.frame(value = 1)
     ),
     class = "ledgr_internal_error"
   )
   scalar_state <- ledgr_fold_state_new(
     cash = 100,
-    positions = c(AAA = 1),
-    lot_state = list(AAA = list()),
+    positions = 1,
+    lot_state = book_one,
     state_prev = 5
   )
   testthat::expect_identical(scalar_state$state_prev, 5)
@@ -50,11 +55,28 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
     facts$append(list(ts_utc = 3, cash = 102)),
     class = "ledgr_internal_error"
   )
-  testthat::expect_error(
+  # Inverted by LDG-3164: unnamed run-axis positions are the carrier shape;
+  # named positions and positions of the wrong length are refused.
+  testthat::expect_no_error(
     ledgr_fold_state_new(
       cash = 100,
       positions = unname(c(AAA = 1)),
-      lot_state = list(AAA = list())
+      lot_state = book_one
+    )
+  )
+  testthat::expect_error(
+    ledgr_fold_state_new(
+      cash = 100,
+      positions = c(AAA = 1),
+      lot_state = book_one
+    ),
+    class = "ledgr_internal_error"
+  )
+  testthat::expect_error(
+    ledgr_fold_state_new(
+      cash = 100,
+      positions = c(1, 0),
+      lot_state = book_one
     ),
     class = "ledgr_internal_error"
   )

@@ -231,7 +231,9 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   handler$append_event_rows(opening)
   handler$init_buffers(1L)
 
-  lot_state <- ledgr:::ledgr_lot_state_from_opening(
+  # LDG-3164 (decision 10, categories 1 and 4): the typed opening and the
+  # typed fill operation feed the same handler calls; AAA is book position 1.
+  lot_state <- ledgr:::ledgr_lot_book_from_opening(
     instrument_ids = "AAA",
     positions = c(AAA = 2),
     cost_basis = c(AAA = 10)
@@ -255,17 +257,17 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
     ),
     class = "ledgr_fill_intent"
   )
-  lot_res <- ledgr:::ledgr_lot_apply_fill(
+  lot_res <- ledgr:::ledgr_lot_fill(
     lot_state,
-    instrument_id = fill$instrument_id,
-    side = fill$side,
+    pos = 1L,
+    side = ledgr:::ledgr_lot_side(fill$side),
     qty = fill$qty,
     price = fill$fill_price,
     fee = fill$fee
   )
-  lot_state <- lot_res$state
+  lot_state <- lot_res$book
   write_res <- handler$write_fill_events(fill, 2L)
-  handler$record_accounting_fact(write_res, lot_res, lot_state)
+  handler$record_accounting_fact(write_res, lot_res$applied)
   handler$flush_pulse_events()
   handler$record_equity_fact(
     ts_utc = pulses[[2L]],

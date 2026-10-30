@@ -101,68 +101,37 @@ ledgr_require_compiled_spot_fifo_event_kinds <- function(event_kinds) {
   invisible(TRUE)
 }
 
-ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
-  state_idx <- unname(lot_state$instrument_index[instrument_ids])
-  lot_counts <- vapply(state_idx, function(idx) {
-    if (is.na(idx)) return(0L)
-    max(0L, as.integer(lot_state$lot_tail[[idx]]) -
-      as.integer(lot_state$lot_head[[idx]]) + 1L)
-  }, integer(1))
-  n_lots <- sum(lot_counts)
-  lot_inst_idx <- integer(n_lots)
-  lot_qty <- numeric(n_lots)
-  lot_price <- numeric(n_lots)
-  out_idx <- 0L
-  for (inst_idx in seq_along(instrument_ids)) {
-    state_i <- state_idx[[inst_idx]]
-    count <- lot_counts[[inst_idx]]
-    if (is.na(state_i) || count == 0L) next
-    live <- seq.int(
-      as.integer(lot_state$lot_head[[state_i]]),
-      as.integer(lot_state$lot_tail[[state_i]])
-    )
-    target <- seq.int(out_idx + 1L, out_idx + count)
-    lot_inst_idx[target] <- as.integer(inst_idx)
-    lot_qty[target] <- as.numeric(lot_state$lot_qty[[state_i]][live])
-    lot_price[target] <- as.numeric(lot_state$lot_price[[state_i]][live])
-    out_idx <- out_idx + count
-  }
+# Compiled boundary adapters (transitional; remover: the compiled-envelope
+# RFC). Pack gathers the typed book's live lots in run-axis order, FIFO order
+# within an instrument, as the unchanged C++ batch expects. Unpack gathers the
+# returned lots back into a typed book whose segments hold exactly the live
+# lots, and carries the aggregates and Kahan state as returned.
+ledgr_carrier_compiled_pack <- function(book) {
+  live <- ledgr_lot_book_live(book)
   list(
-    lot_inst_idx = lot_inst_idx,
-    lot_qty = lot_qty,
-    lot_price = lot_price
+    lot_inst_idx = as.integer(live$pos),
+    lot_qty = as.numeric(live$qty),
+    lot_price = as.numeric(live$price)
   )
 }
 
-ledgr_compiled_spot_fifo_unpack_lots <- function(batch, instrument_ids) {
-  state <- ledgr_lot_state(instrument_ids)
-  state$net_by_inst <- stats::setNames(
-    as.numeric(batch$net_by_inst),
-    instrument_ids
-  )
-  if (length(batch$lot_inst_idx) > 0L) {
-    grouped <- split(
-      seq_along(batch$lot_inst_idx),
-      factor(batch$lot_inst_idx, levels = seq_along(instrument_ids)),
-      drop = FALSE
-    )
-    for (inst_idx in seq_along(grouped)) {
-      rows <- grouped[[inst_idx]]
-      if (length(rows) == 0L) next
-      state$lot_qty[[inst_idx]] <- as.numeric(batch$lot_qty[rows])
-      state$lot_price[[inst_idx]] <- as.numeric(batch$lot_price[rows])
-      state$lot_head[[inst_idx]] <- 1L
-      state$lot_tail[[inst_idx]] <- length(rows)
-    }
-  }
-  state$cost_basis_by_inst <- stats::setNames(
-    as.numeric(batch$cost_basis_by_inst),
-    instrument_ids
-  )
-  state$total_cost_basis <- as.numeric(batch$total_cost_basis[[1]])
-  state$realized_pnl <- as.numeric(batch$realized_pnl[[1]])
-  state$realized_comp <- as.numeric(batch$realized_comp[[1]])
-  state
+ledgr_carrier_compiled_unpack <- function(batch, n) {
+  inst <- as.integer(batch$lot_inst_idx)
+  count <- tabulate(inst, nbins = n)
+  # A stable order by instrument keeps each instrument's FIFO order.
+  ord <- order(inst, method = "radix")
+  book <- ledgr_lot_book(n)
+  book$offset <- c(0L, cumsum(count))[seq_len(n)]
+  book$capacity <- as.integer(count)
+  book$tail <- as.integer(count)
+  book$lot_qty <- as.numeric(batch$lot_qty)[ord]
+  book$lot_price <- as.numeric(batch$lot_price)[ord]
+  book$net_by_inst <- as.numeric(batch$net_by_inst)
+  book$cost_basis_by_inst <- as.numeric(batch$cost_basis_by_inst)
+  book$total_cost_basis <- as.numeric(batch$total_cost_basis[[1]])
+  book$realized_pnl <- as.numeric(batch$realized_pnl[[1]])
+  book$realized_comp <- as.numeric(batch$realized_comp[[1]])
+  ledgr_lot_book_validate(book, n)
 }
 
 ledgr_run_compiled_spot_fifo_batch <- function(run_id,
@@ -200,25 +169,8 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
     )
   }
 
-  lot_pack <- ledgr_compiled_spot_fifo_pack_lots(state$lot_state, instrument_ids)
-  lot_net <- state$lot_state$net_by_inst
-  lot_net_vec <- rep(0, length(instrument_ids))
-  names(lot_net_vec) <- instrument_ids
-  if (!is.null(names(lot_net))) {
-    matched <- intersect(names(lot_net), instrument_ids)
-    lot_net_vec[matched] <- as.numeric(lot_net[matched])
-  } else if (length(lot_net) == length(instrument_ids)) {
-    lot_net_vec <- as.numeric(lot_net)
-  }
-  cost_basis <- state$lot_state$cost_basis_by_inst
-  cost_basis_vec <- rep(0, length(instrument_ids))
-  names(cost_basis_vec) <- instrument_ids
-  if (!is.null(names(cost_basis))) {
-    matched <- intersect(names(cost_basis), instrument_ids)
-    cost_basis_vec[matched] <- as.numeric(cost_basis[matched])
-  } else if (length(cost_basis) == length(instrument_ids)) {
-    cost_basis_vec <- as.numeric(cost_basis)
-  }
+  book <- state$lot_state
+  lot_pack <- ledgr_carrier_compiled_pack(book)
 
   batch <- ledgr_cpp_spot_fifo_batch(
     as.character(run_id),
@@ -231,19 +183,19 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
     as.numeric(fill_ts_utc),
     as.integer(event_seq_start),
     as.numeric(state$positions),
-    as.numeric(lot_net_vec),
+    as.numeric(book$net_by_inst),
     as.numeric(state$cash),
     as.integer(lot_pack$lot_inst_idx),
     as.numeric(lot_pack$lot_qty),
     as.numeric(lot_pack$lot_price),
-    as.numeric(cost_basis_vec),
-    as.numeric(state$lot_state$total_cost_basis),
-    as.numeric(state$lot_state$realized_pnl),
-    as.numeric(state$lot_state$realized_comp)
+    as.numeric(book$cost_basis_by_inst),
+    as.numeric(book$total_cost_basis),
+    as.numeric(book$realized_pnl),
+    as.numeric(book$realized_comp)
   )
   batch$positions <- as.numeric(batch$positions)
   batch$cash <- as.numeric(batch$cash[[1]])
-  batch$lot_state <- ledgr_compiled_spot_fifo_unpack_lots(batch, instrument_ids)
+  batch$lot_state <- ledgr_carrier_compiled_unpack(batch, length(instrument_ids))
   batch$next_event_seq <- as.integer(batch$next_event_seq[[1]])
   batch
 }

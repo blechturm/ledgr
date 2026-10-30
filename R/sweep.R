@@ -1768,7 +1768,7 @@ ledgr_sweep_candidate_execution <- function(exp,
   if (length(opening_positions) > 0L) {
     initial_positions[names(opening_positions)] <- as.numeric(opening_positions)
   }
-  initial_lot_state <- ledgr_lot_state_from_opening(
+  initial_lot_state <- ledgr_lot_book_from_opening(
     instrument_ids = exp$universe,
     positions = opening_positions,
     cost_basis = opening_cost_basis

@@ -279,10 +279,12 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
     cost_model = ledgr_cost_zero()
   )
 
-  original_apply <- ledgr:::ledgr_lot_apply_fill
+  # LDG-3164 (decision 10, category 5): ledgr_lot_apply_fill is deleted; the
+  # failure is injected at the second typed fill operation of the pulse.
+  original_apply <- ledgr:::ledgr_lot_fill
   calls <- 0L
   testthat::local_mocked_bindings(
-    ledgr_lot_apply_fill = function(...) {
+    ledgr_lot_fill = function(...) {
       calls <<- calls + 1L
       if (calls == 2L) {
         rlang::abort("injected second-fill failure", class = "ledgr_test_fill_failure")

@@ -1017,13 +1017,15 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
     first_final$ts_utc[[1L]]
   )
   first_positions <- first_positions[abs(first_positions) > 1e-12]
-  first_lots <- ledgr:::ledgr_lot_state_asof(
+  # LDG-3164 (decision 10, category 2): the basis comes from the typed
+  # as-of book, whose axis starts with the universe.
+  first_lots <- ledgr:::ledgr_lot_book_asof(
     opened$con,
     wf$test_runs[[1L]]$run_id,
     exp$universe,
     first_final$ts_utc[[1L]]
   )
-  first_basis <- first_lots$cost_basis_by_inst[names(first_positions)] /
+  first_basis <- first_lots$cost_basis_by_inst[match(names(first_positions), exp$universe)] /
     first_positions
   second_opening <- wf$test_runs[[2L]]$config$opening
 
