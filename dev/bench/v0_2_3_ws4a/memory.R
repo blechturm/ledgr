@@ -200,6 +200,12 @@ if (identical(mode, "summarize")) { # dispatched before any preparation: reads r
 }
 # Record integrity: registered grid, finite metrics, frozen control sizes, live controls, GC policy, replay rows.
 wl <- utils::read.csv(file.path(if (identical(mode, "summarize")) records else prepared, "workloads.csv"))
+required <- function(x, fields) if (!all(fields %in% names(x)))
+  stop("memory records REFUSED: missing columns: ", paste(setdiff(fields, names(x)), collapse = ", "))
+required(all, c("shape", "op", "phase", "rep", "peak_pagefile", "gc_max_used_bytes",
+  "block_bytes", "block_live", "replay_rows", "concurrent_r", "gc_env"))
+required(size, c("shape", "op", "block_bytes"))
+required(wl, c("shape", "fills"))
 grid <- merge(cells, data.frame(phase = c(rep(c("load", "op", "control"), each = reps), "alias"), rep = c(rep(seq_len(reps), 3L), alias_rep)))
 key <- paste(all$shape, all$op, all$phase, all$rep)
 ctl <- all[all$phase %in% "control", ]
