@@ -1,7 +1,7 @@
 # ledgr v0.2.3 Spec Packet
 
 Role: living; current packet front door.
-Status: working; macro plan accepted 2026-10-28; cuts 1 and 2 are closed in `tickets.yml`.
+Status: working; macro plan accepted 2026-10-28; cuts 1, 2 and 4 are closed and cut 5 (WS4a typed fold carrier) is accepted in `tickets.yml`, implementation starting with LDG-3164.
 Cut 2 (WS3 dense oracle and current-tree timing) is closed and accepted at revision 3.2. The 2026-10-30 amendment aligns its descriptive baseline with Cut 4's shared paired-gate harness boundary; its focused [review](cut_review_2_amendment.md) is `PASS`. Workstream 2's accepted [Type 1 close review](ws2_close_review.md) freezes the dense oracle at `cbf25359`. Workstream 3's accepted [Type 1 close review](ws3_close_review.md) freezes the descriptive [current-tree record](../../../dev/bench/peer_benchmark/records/20261030-current-tree/). Together they discharge C1's oracle/baseline prerequisite. A0 remains independent, the record is not a future ratio arm or public speed claim, and the old peer driver retires only after replacement coverage is accepted.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
