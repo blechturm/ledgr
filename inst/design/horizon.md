@@ -29,6 +29,22 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-10-30-execution-imported-positions-versus-lot-net"></a>
+### 2026-10-30 [execution] Imported positions versus the lot-derived net
+
+LDG-3164 (v0.2.3 cut 5) found that the fold admits positions that differ
+from the lot-derived net at import: an execution spec may hold positions
+without lots, and a carried walk-forward window's positions come from the
+predecessor's net while its carried lots are re-summed, so the two can
+differ in the last bits. Enforcing the typed-carrier invariant "positions
+equal lot-derived net" at E would add a refusal or change carried results.
+By maintainer decision (2026-10-30, cut 5 amendment) WS4a keeps imported
+positions as given and checks only types and lengths at import; positions
+of instruments a fill or disposition touches come from the book. Whether
+lots should be the sole position authority from import onward belongs with
+the typed-accounting work (WS7/WS8). This entry authorizes no
+implementation.
+
 <a id="2026-10-30-data-per-row-json-loops-on-the-seal-path"></a>
 ### 2026-10-30 [data] Per-row JSON loops on the snapshot seal path
 
