@@ -1,7 +1,9 @@
 # Peer Parity And Performance Benchmark
 
-This is the current ledgr peer benchmark. It has two separate
-outputs:
+`peer_benchmark.R` is the legacy active peer driver while the fresh suite is
+built under [`dense/`](dense/). Its commands remain supported until the
+`WS3-legacy-peer-harness-retirement` gate reviews replacement coverage and
+maintained consumers. The driver has two separate outputs:
 
 - a parity benchmark: do peer engines agree with the ledgr canonical row?
 - a performance benchmark: how long did each local same-host row take under its

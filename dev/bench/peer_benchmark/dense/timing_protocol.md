@@ -45,6 +45,9 @@ import and harness bootstrap, input read, public snapshot creation/sealing,
 experiment/feature declaration, public run and public result reads. Startup's
 wall-clock precision is 1 ms; other phases use R elapsed-clock resolution.
 This is a process-cold clock, not an OS/filesystem-cache-cold claim.
+On this Windows host the child elapsed clock ticks in 10 ms. Warm clocks and
+all child phases are multiples of 0.01 s; the 12 x 90 warm spread spans only
+two ticks and is not more finely resolved.
 
 Warm starts immediately before a new experiment/feature declaration and ends
 at the same required results. Setup, run and results phases are measured in

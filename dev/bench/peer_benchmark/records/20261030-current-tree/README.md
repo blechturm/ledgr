@@ -30,6 +30,11 @@ cash and keyed holdings.
 | 500 x 1260 | cold | 5 | 28.339860 | 28.108557 | 28.810301 |
 | 500 x 1260 | warm | 5 | 24.530000 | 24.470000 | 24.580000 |
 
+The parent-to-child startup term has millisecond precision. On this host the
+child elapsed clock ticks in 10 ms, so warm clocks and child phases are
+multiples of 0.01 s; in particular, the 12 x 90 warm spread is only two clock
+ticks and is not resolved at the displayed decimal precision.
+
 `record.rds` is the lossless primary record. `raw.csv`, `summary.csv`,
 `attempts.json`, `session.json`, environment files and shared-host summaries
 are readable sidecars. `timing_check.R --gut` passes all four behavioral and

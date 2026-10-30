@@ -75,7 +75,7 @@ lower-cut witnesses. Both prerequisite probes/RFC inputs survive unchanged at
 Fresh maintained source is **1,064 lines** after Workstream 3 (check.R 22,
 gut.R 64, native.R 249, recipes.R 173, record.R 11, timing.R 150,
 timing_check.R 224 and run_timing.ps1 171), below the 1,500-line allowance.
-The accepted descriptive record is
+The recorded descriptive review candidate is
 [`records/20261030-current-tree/`](../records/20261030-current-tree/README.md).
 It uses the shared host probe by reference and imports no old harness or A0
 infrastructure. There is no product/API/schema/identity change and no peer or
