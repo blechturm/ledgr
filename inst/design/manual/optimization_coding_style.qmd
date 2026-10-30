@@ -171,6 +171,22 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   `asset_state` entry for every instrument on the availability path
   (`../../../dev/spikes/pmwr-performance/`,
   `../../../dev/spikes/ws4a-carrier-probe/`).
+- **Base-R representations inside the loop** (maintainer, 2026-10-30).
+  Inside fold, planning, accounting and reader loops, use only:
+  - typed atomic vectors;
+  - matrices, as dense instrument x pulse planes within the memory budget;
+  - flat segment vectors with offsets;
+  - lists only as containers of equal-length typed columns.
+
+  Inside the loop, use no data frames, no per-element lists, no S3 objects,
+  no JSON, no POSIXct conversion and no name matching. Address by position
+  on a fixed run axis, with a membership mask where the universe changes.
+  Names, classes and frames are attached only at the strategy and result
+  boundaries; the public `ctx` and strategy return stay ergonomic R objects,
+  normalized once. Where a dense plane exceeds the memory budget, segments
+  are the base-R form, not frames. `PMwR::btest` (preallocated matrices, one
+  vector update per bar) and collapse (typed vectors, `setv()` by index)
+  are the reference pattern (`../../../dev/spikes/pmwr-performance/`).
 - **Preserve the production rule, move the loop to compile time.** When a
   resolver is replaced, resolve each segment once at build time with the
   exact production predicate (applicability, supersession, precedence,
@@ -488,6 +504,9 @@ One diagnostic block per pulse versus one frame per instrument:
 - Are per-row writes by index into preallocated buffers, with no append?
 - Does any JSON encode or parse run once per pulse, fill or event? If so,
   which typed vector replaces it?
+- Inside the loop, does any data frame, per-element list, S3 object,
+  POSIXct conversion or name match appear? Which position, mask or typed
+  column replaces it?
 - Is any value computed on a hot path never read on the common branch?
 - Does the change add a second path to an answer the code already computes?
   Name its canonical path, its registered differential test and its removal
