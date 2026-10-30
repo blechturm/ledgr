@@ -2,7 +2,7 @@
 
 Frozen before measured attempts or baseline promotion. Authority: cut 2,
 LDG-3136/3137, synthesis D7/D9, benchmark methodology host rules. Canonical
-product source **LDG3136_FREEZE_COMMIT**; accepted native oracle freeze
+product source **5002f8d81f17a81177d4b0cda2fa147d310e5e1c**; accepted native oracle freeze
 **cbf25359**. Independent close reviewer: clean-context Claude, pending.
 This baseline changes no product code and has no speed threshold.
 
@@ -98,7 +98,7 @@ partial cold results and logs, then stop for maintainer disposition.
 ## Runner, checker and failure demonstrations
 
 ```powershell
-& dev/bench/peer_benchmark/dense/run_timing.ps1 -Out dev/bench/peer_benchmark/records/20261030-current-tree -SourceRevision LDG3136_FREEZE_COMMIT
+& dev/bench/peer_benchmark/dense/run_timing.ps1 -Out dev/bench/peer_benchmark/records/20261030-current-tree -SourceRevision 5002f8d81f17a81177d4b0cda2fa147d310e5e1c
 & 'C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe' --vanilla dev/bench/peer_benchmark/dense/timing_check.R --records=dev/bench/peer_benchmark/records/20261030-current-tree --gut
 ```
 
