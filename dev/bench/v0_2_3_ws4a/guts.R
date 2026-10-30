@@ -4,7 +4,7 @@
 # the log where given. Run as a script, it runs each gut and the invalid-ref
 # control; a full run writes records/gut_results.csv and records/mutations.csv.
 #
-# Usage: Rscript guts.R [--out=<scratch dir>] [--guts=<name,name>]
+# Usage: Rscript guts.R [--out=<scratch dir>] [--guts=<name,name>] [--base=<ref>]
 
 ws_ns <- function(name) get(name, envir = asNamespace("ledgr"))
 ws_gut <- new.env()
@@ -208,7 +208,8 @@ if (sys.nframe() == 0L) {
     list(log = log, status = attr(log, "status") %||% 0L, evidence = function(re) grepl(re, paste(log, collapse = "\n")))
   }
   rows <- lapply(names, function(g) {
-    r <- check(c(paste0("--gut=", g), paste0("--out=", file.path(out, g))))
+    # --base reaches check.R's product guard, so a candidate run uses --base=HEAD.
+    r <- check(c(paste0("--gut=", g), paste0("--out=", file.path(out, g)), paste0("--base=", arg("base", "953338df"))))
     ok <- r$status == 1L && r$evidence(ws4a_guts[[g]]$expect %||% "")
     cat(sprintf("%-32s %-5s %s\n", g, ws4a_guts[[g]]$case, if (ok) "FAIL (expected)" else "NOT CAUGHT"))
     first <- paste(trimws(grep("^  ", r$log, value = TRUE)[1:3]), collapse = " | ")

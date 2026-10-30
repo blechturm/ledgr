@@ -100,7 +100,7 @@ ledgr_fold_state_validate <- function(x) {
   # Positions equal to the lot-derived net (Synthesis Section 4, F4.01) is
   # not checked here: the base admits imported positions that differ from
   # the imported book (carried windows in the last bits; execution specs
-  # holding positions without lots). Routed to the maintainer (LDG-3164).
+  # holding positions without lots). Settled by the cut 5 amendment of 2026-10-30 (LDG-3164).
   exposure_fields <- c("value", "details", "ts_utc", "specified")
   if (!is.numeric(x$cash) || length(x$cash) != 1L || !is.finite(x$cash) ||
       is.data.frame(x$state_prev) ||
