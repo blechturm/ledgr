@@ -7,8 +7,8 @@
 # and private observations that are written but never compared.
 #
 # Injection seams are bindings that exist on base 953338df; ws4a_seams names
-# them. A later ticket that moves a seam adds its typed attachment beside the
-# base one and keeps the case's frozen outputs.
+# them. A later ticket that moves a seam adds its typed attachment and keeps
+# the case's frozen outputs; LDG-3164 moved the lot seams to the typed book.
 
 ws_dir <- local({
   files <- Filter(is.character, lapply(seq_len(sys.nframe()), function(i) sys.frame(i)$ofile))
@@ -29,11 +29,11 @@ ws4a_seams <- c(
   p3_return = "ledgr_fold_stage_plan",
   p4 = "ledgr_fold_stage_apply",
   p5 = "ledgr_fold_stage_commit",
-  lot_fill = "ledgr_lot_apply_fill",
-  lot_opening = "ledgr_lot_apply_opening",
+  lot_fill = "ledgr_lot_fill",
+  lot_opening = "ledgr_lot_opening",
   kahan = "ledgr_lot_add_realized",
   compiled_batch = "ledgr_run_compiled_spot_fifo_batch",
-  compiled_unpack = "ledgr_compiled_spot_fifo_unpack_lots",
+  compiled_unpack = "ledgr_carrier_compiled_unpack",
   handler = "ledgr_output_handler",
   diagnostic_writer = "ledgr_fold_diagnostic_writer",
   finalize = "ledgr_run_finalize",
@@ -136,18 +136,16 @@ ws_counter <- function(names) {
   list(hooks = hooks, get = function() unlist(mget(names, counts)))
 }
 
-# Logical FIFO book: live lots per instrument plus exact aggregates.
-ws_book <- function(state) {
-  ids <- state$instrument_ids
-  lots <- do.call(rbind, c(list(data.frame(instrument_id = character(), lot = integer(), qty = numeric(),
-    price = numeric())), lapply(ids, function(id) {
-    v <- ledgr_lot_values(state, id)
-    data.frame(instrument_id = rep(id, length(v$qty)), lot = seq_along(v$qty), qty = v$qty, price = v$price)
-  })))
+# Logical FIFO book: live lots per instrument plus exact aggregates; `ids`
+# name the book's first axis positions.
+ws_book <- function(book, ids) {
+  v <- ledgr_lot_book_live(book, seq_along(ids))
+  lots <- data.frame(instrument_id = ids[v$pos], lot = sequence(ledgr_lot_book_live_count(book, seq_along(ids))),
+    qty = v$qty, price = v$price)
   totals <- data.frame(field = c("total_cost_basis", "realized_pnl", "realized_comp"),
-    value = c(state$total_cost_basis, state$realized_pnl, state$realized_comp))
-  aggr <- data.frame(instrument_id = ids, net = unname(as.numeric(state$net_by_inst[ids])),
-    basis = unname(as.numeric(state$cost_basis_by_inst[ids])))
+    value = c(book$total_cost_basis, book$realized_pnl, book$realized_comp))
+  aggr <- data.frame(instrument_id = ids, net = book$net_by_inst[seq_along(ids)],
+    basis = book$cost_basis_by_inst[seq_along(ids)])
   list(book_lots = ws_frame(lots, "book_lots", c("instrument_id", "lot")),
     book_totals = ws_frame(totals, "book_totals", "field"),
     book_aggregates = ws_frame(aggr, "book_aggregates", "instrument_id"))
@@ -156,7 +154,16 @@ ws_ledger <- function(db, rid) {
   a0_with_store(db, function(con) DBI::dbGetQuery(con,
     "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(rid)))
 }
-ws_replay_book <- function(db, rid, ids) ws_book(ledgr_lot_state_from_events(ws_ledger(db, rid), ids))
+ws_replay_book <- function(db, rid, ids) ws_book(ledgr_lot_book_from_events(ws_ledger(db, rid), ids), ids)
+# The base-shaped container of a typed book (per-instrument capacity, NA
+# slots, head and tail), for C14a's frozen container fingerprints.
+ws_legacy <- function(b, ids) {
+  seg <- function(v) lapply(seq_along(ids), function(i) v[b$offset[i] + seq_len(b$capacity[i])])
+  nm <- function(v) stats::setNames(v, ids)
+  list(instrument_ids = ids, instrument_index = nm(seq_along(ids)), lot_qty = seg(b$lot_qty), lot_price = seg(b$lot_price),
+    lot_head = nm(b$head), lot_tail = nm(b$tail), net_by_inst = nm(b$net_by_inst), cost_basis_by_inst = nm(b$cost_basis_by_inst),
+    total_cost_basis = b$total_cost_basis, realized_pnl = b$realized_pnl, realized_comp = b$realized_comp)
+}
 ws_hex <- function(x) sprintf("%a", x)
 ws_fingerprint <- function(x) digest::digest(a0_flat(x), algo = "sha256")
 
