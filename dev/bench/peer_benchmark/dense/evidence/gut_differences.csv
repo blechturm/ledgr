@@ -1,0 +1,178 @@
+"field","detail","corruption"
+"economic$fills$qty[1]","expected 1; actual 2; event_seq=1; instrument_id=P05","fill_quantity_equity_unchanged"
+"representation$fills$qty[1]","expected 1; actual 2; event_seq=1; ts_utc=2020-01-16 21:00:00; instrument_id=P05","fill_quantity_equity_unchanged"
+"economic$equity$cash[1]","expected 1e+07; actual 10000000.000000002; ts_utc=2020-01-01 21:00:00","one_ulp_cash"
+"representation$equity_curve$cash[1]","expected 1e+07; actual 10000000.000000002; ts_utc=2020-01-01 21:00:00","one_ulp_cash"
+"economic$positions$qty[1]","expected 0; actual 1; instrument_id=P01","asset_quantity_aggregate_unchanged"
+"representation$rebuilt_positions$qty[1]","expected 0; actual 1; instrument_id=P01","asset_quantity_aggregate_unchanged"
+"economic$ledger$instrument_id[1]","expected P05; actual P06; event_seq=1; instrument_id=P05","economic_event_order"
+"economic$ledger$price[1]","expected 74.210644689999995; actual 80.889720639999993; event_seq=1; instrument_id=P05","economic_event_order"
+"economic$ledger$meta_json[1]","expected {""cash_delta"":-74.21064469,""fee"":0.0,""position_delta"":1.0,""realized_pnl"":null}; actual {""cash_delta"":-80.88972064,""fee"":0.0,""position_delta"":1.0,""realized_pnl"":null}; event_seq=1; instrument_id=P05","economic_event_order"
+"representation$ledger_events$ts_utc[1]","expected 2020-01-16 21:00:00; actual 2020-01-17 21:00:00; event_seq=1; ts_utc=2020-01-16 21:00:00; instrument_id=P05","economic_event_order"
+"representation$ledger_events$instrument_id[1]","expected P05; actual P06; event_seq=1; ts_utc=2020-01-16 21:00:00; instrument_id=P05","economic_event_order"
+"representation$ledger_events$price[1]","expected 74.210644689999995; actual 80.889720639999993; event_seq=1; ts_utc=2020-01-16 21:00:00; instrument_id=P05","economic_event_order"
+"representation$ledger_events$meta_json[1]","expected {""cash_delta"":-74.21064469,""fee"":0.0,""position_delta"":1.0,""realized_pnl"":null}; actual {""cash_delta"":-80.88972064,""fee"":0.0,""position_delta"":1.0,""realized_pnl"":null}; event_seq=1; ts_utc=2020-01-16 21:00:00; instrument_id=P05","economic_event_order"
+"representation$conditions$classes","length differs","final_pulse_warning_suppressed"
+"representation$conditions$message","length differs","final_pulse_warning_suppressed"
+"economic$ledger$event_type","length differs","prior_usable_state_removed"
+"economic$ledger$instrument_id","length differs","prior_usable_state_removed"
+"economic$ledger$side","length differs","prior_usable_state_removed"
+"economic$ledger$qty","length differs","prior_usable_state_removed"
+"economic$ledger$price","length differs","prior_usable_state_removed"
+"economic$ledger$fee","length differs","prior_usable_state_removed"
+"economic$ledger$meta_json","length differs","prior_usable_state_removed"
+"economic$ledger$event_seq","length differs","prior_usable_state_removed"
+"economic$ledger$recording_pulse_ts_utc","length differs","prior_usable_state_removed"
+"economic$fills$event_seq","length differs","prior_usable_state_removed"
+"economic$fills$recording_pulse_ts_utc","length differs","prior_usable_state_removed"
+"economic$fills$instrument_id","length differs","prior_usable_state_removed"
+"economic$fills$side","length differs","prior_usable_state_removed"
+"economic$fills$qty","length differs","prior_usable_state_removed"
+"economic$fills$price","length differs","prior_usable_state_removed"
+"economic$fills$fee","length differs","prior_usable_state_removed"
+"economic$fills$realized_pnl","length differs","prior_usable_state_removed"
+"economic$fills$action","length differs","prior_usable_state_removed"
+"economic$trades$event_seq","length differs","prior_usable_state_removed"
+"economic$trades$recording_pulse_ts_utc","length differs","prior_usable_state_removed"
+"economic$trades$instrument_id","length differs","prior_usable_state_removed"
+"economic$trades$side","length differs","prior_usable_state_removed"
+"economic$trades$qty","length differs","prior_usable_state_removed"
+"economic$trades$price","length differs","prior_usable_state_removed"
+"economic$trades$fee","length differs","prior_usable_state_removed"
+"economic$trades$realized_pnl","length differs","prior_usable_state_removed"
+"economic$trades$action","length differs","prior_usable_state_removed"
+"economic$equity$cash[11]","expected 1e+07; actual 9999499.6395754274; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"economic$equity$positions_value[11]","expected 0; actual 500.14671034999998; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"economic$equity$equity[11]","expected 1e+07; actual 9999999.7862857766; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"economic$equity$realized_pnl[12]","expected 0; actual -0.6891845000000032; ts_utc=2020-01-16 21:00:00","prior_usable_state_removed"
+"economic$equity$unrealized_pnl[11]","expected 0; actual -0.21371422000004259; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"economic$cash$cash[11]","expected 1e+07; actual 9999499.6395754274; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"economic$pnl$realized_pnl[12]","expected 0; actual -0.6891845000000032; ts_utc=2020-01-16T21:00:00Z","prior_usable_state_removed"
+"economic$pnl$unrealized_pnl[11]","expected 0; actual -0.21371422000004259; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"economic$rebuilt_equity$cash[11]","expected 1e+07; actual 9999499.6395754274; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"economic$rebuilt_equity$positions_value[11]","expected 0; actual 500.14671034999998; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"economic$rebuilt_equity$equity[11]","expected 1e+07; actual 9999999.7862857766; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"economic$rebuilt_equity$realized_pnl[12]","expected 0; actual -0.6891845000000032; ts_utc=2020-01-16T21:00:00Z","prior_usable_state_removed"
+"economic$rebuilt_equity$unrealized_pnl[11]","expected 0; actual -0.21371422000004259; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"representation$runs$config_json$[[1]]$strategy$params$strategy_key[1]","expected 47d740a85ad38d8d9ef352c633af447e36ebc05abdedfb19f539e12b35427ee7; actual aeb66e5dfee2eeea0816a705392bd5ace0c28f9b78c1f99767d0aeffc2107168","prior_usable_state_removed"
+"representation$runs$config_json$[[1]]$strategy$provenance$strategy_source[1]","expected function (ctx, params) 
+{
+    fast <- ctx$vec$feature(""fast"")
+    slow <- ctx$vec$feature(""slow"")
+    ids <- ctx$universe
+    usable <- is.finite(fast) & is.finite(slow)
+    above <- usable & fast > slow
+    prior_above <- prior_usable <- stats::setNames(rep(FALSE, length(ids)), ids)
+    old_above <- unlist(ctx$state_prev$above)
+    old_usable <- unlist(ctx$state_prev$usable)
+    prior_above[names(old_above)] <- old_above
+    prior_usable[names(old_usable)] <- old_usable
+    targets <- ctx$hold()
+    enter <- prior_usable & usable & above & !prior_above
+    exit <- prior_usable & usable & !above & prior_above
+    targets[enter] <- 1
+    targets[exit] <- 0
+    list(targets = targets, state_update = list(above = as.list(stats::setNames(above, ids)), usable = as.list(stats::setNames(usable, ids))))
+}; actual function (ctx, params) 
+{
+    fast <- ctx$vec$feature(""fast"")
+    slow <- ctx$vec$feature(""slow"")
+    ids <- ctx$universe
+    usable <- is.finite(fast) & is.finite(slow)
+    above <- usable & fast > slow
+    prior_above <- prior_usable <- stats::setNames(rep(FALSE, length(ids)), ids)
+    old_above <- unlist(ctx$state_prev$above)
+    old_usable <- unlist(ctx$state_prev$usable)
+    prior_above[names(old_above)] <- old_above
+    prior_usable[names(old_usable)] <- old_usable
+    targets <- ctx$hold()
+    enter <- usable & above & !prior_above
+    exit <- usable & !above & prior_above
+    targets[enter] <- 1
+    targets[exit] <- 0
+    list(targets = targets, state_update = list(above = as.list(stats::setNames(above, ids)), usable = as.list(stats::setNames(usable, ids))))
+}","prior_usable_state_removed"
+"representation$runs$config_json$[[1]]$strategy$provenance$strategy_source_hash[1]","expected 8dd2b8b93450fb8564a33f7f54c9f7dc6b6acd229295f70200b072c4f756768b; actual 9f48f8730265b112f653eca1845e52884bf05cacb23bc1e525cb4ee6a1952e32","prior_usable_state_removed"
+"representation$runs$config_hash[1]","expected 8b5d913bc76680eb1e5b07e3b262d1412470797f872e37913a6ea8ca0edfa0df; actual 212555bd40a224c116e94b251d57c786e6bb75c61950946fadb2700482f2594b","prior_usable_state_removed"
+"representation$ledger_events$event_id","length differs","prior_usable_state_removed"
+"representation$ledger_events$run_id","length differs","prior_usable_state_removed"
+"representation$ledger_events$ts_utc","length differs","prior_usable_state_removed"
+"representation$ledger_events$event_type","length differs","prior_usable_state_removed"
+"representation$ledger_events$instrument_id","length differs","prior_usable_state_removed"
+"representation$ledger_events$side","length differs","prior_usable_state_removed"
+"representation$ledger_events$qty","length differs","prior_usable_state_removed"
+"representation$ledger_events$price","length differs","prior_usable_state_removed"
+"representation$ledger_events$fee","length differs","prior_usable_state_removed"
+"representation$ledger_events$meta_json","length differs","prior_usable_state_removed"
+"representation$ledger_events$event_seq","length differs","prior_usable_state_removed"
+"representation$equity_curve$cash[11]","expected 1e+07; actual 9999499.6395754274; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"representation$equity_curve$positions_value[11]","expected 0; actual 500.14671034999998; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"representation$equity_curve$equity[11]","expected 1e+07; actual 9999999.7862857766; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"representation$equity_curve$realized_pnl[12]","expected 0; actual -0.6891845000000032; ts_utc=2020-01-16 21:00:00","prior_usable_state_removed"
+"representation$equity_curve$unrealized_pnl[11]","expected 0; actual -0.21371422000004259; ts_utc=2020-01-15 21:00:00","prior_usable_state_removed"
+"representation$run_provenance$strategy_source[1]","expected function (ctx, params) 
+{
+    fast <- ctx$vec$feature(""fast"")
+    slow <- ctx$vec$feature(""slow"")
+    ids <- ctx$universe
+    usable <- is.finite(fast) & is.finite(slow)
+    above <- usable & fast > slow
+    prior_above <- prior_usable <- stats::setNames(rep(FALSE, length(ids)), ids)
+    old_above <- unlist(ctx$state_prev$above)
+    old_usable <- unlist(ctx$state_prev$usable)
+    prior_above[names(old_above)] <- old_above
+    prior_usable[names(old_usable)] <- old_usable
+    targets <- ctx$hold()
+    enter <- prior_usable & usable & above & !prior_above
+    exit <- prior_usable & usable & !above & prior_above
+    targets[enter] <- 1
+    targets[exit] <- 0
+    list(targets = targets, state_update = list(above = as.list(stats::setNames(above, ids)), usable = as.list(stats::setNames(usable, ids))))
+}; actual function (ctx, params) 
+{
+    fast <- ctx$vec$feature(""fast"")
+    slow <- ctx$vec$feature(""slow"")
+    ids <- ctx$universe
+    usable <- is.finite(fast) & is.finite(slow)
+    above <- usable & fast > slow
+    prior_above <- prior_usable <- stats::setNames(rep(FALSE, length(ids)), ids)
+    old_above <- unlist(ctx$state_prev$above)
+    old_usable <- unlist(ctx$state_prev$usable)
+    prior_above[names(old_above)] <- old_above
+    prior_usable[names(old_usable)] <- old_usable
+    targets <- ctx$hold()
+    enter <- usable & above & !prior_above
+    exit <- usable & !above & prior_above
+    targets[enter] <- 1
+    targets[exit] <- 0
+    list(targets = targets, state_update = list(above = as.list(stats::setNames(above, ids)), usable = as.list(stats::setNames(usable, ids))))
+}","prior_usable_state_removed"
+"representation$run_provenance$strategy_source_hash[1]","expected 8dd2b8b93450fb8564a33f7f54c9f7dc6b6acd229295f70200b072c4f756768b; actual 9f48f8730265b112f653eca1845e52884bf05cacb23bc1e525cb4ee6a1952e32","prior_usable_state_removed"
+"representation$fills$event_seq","length differs","prior_usable_state_removed"
+"representation$fills$ts_utc","length differs","prior_usable_state_removed"
+"representation$fills$recording_pulse_ts_utc","length differs","prior_usable_state_removed"
+"representation$fills$instrument_id","length differs","prior_usable_state_removed"
+"representation$fills$side","length differs","prior_usable_state_removed"
+"representation$fills$qty","length differs","prior_usable_state_removed"
+"representation$fills$price","length differs","prior_usable_state_removed"
+"representation$fills$fee","length differs","prior_usable_state_removed"
+"representation$fills$realized_pnl","length differs","prior_usable_state_removed"
+"representation$fills$action","length differs","prior_usable_state_removed"
+"representation$trades$event_seq","length differs","prior_usable_state_removed"
+"representation$trades$ts_utc","length differs","prior_usable_state_removed"
+"representation$trades$recording_pulse_ts_utc","length differs","prior_usable_state_removed"
+"representation$trades$instrument_id","length differs","prior_usable_state_removed"
+"representation$trades$side","length differs","prior_usable_state_removed"
+"representation$trades$qty","length differs","prior_usable_state_removed"
+"representation$trades$price","length differs","prior_usable_state_removed"
+"representation$trades$fee","length differs","prior_usable_state_removed"
+"representation$trades$realized_pnl","length differs","prior_usable_state_removed"
+"representation$trades$action","length differs","prior_usable_state_removed"
+"representation$rebuilt_cash$cash[11]","expected 1e+07; actual 9999499.6395754274; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_pnl$realized_pnl[12]","expected 0; actual -0.6891845000000032; ts_utc=2020-01-16T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_pnl$unrealized_pnl[11]","expected 0; actual -0.21371422000004259; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_equity_curve$cash[11]","expected 1e+07; actual 9999499.6395754274; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_equity_curve$positions_value[11]","expected 0; actual 500.14671034999998; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_equity_curve$equity[11]","expected 1e+07; actual 9999999.7862857766; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_equity_curve$realized_pnl[12]","expected 0; actual -0.6891845000000032; ts_utc=2020-01-16T21:00:00Z","prior_usable_state_removed"
+"representation$rebuilt_equity_curve$unrealized_pnl[11]","expected 0; actual -0.21371422000004259; ts_utc=2020-01-15T21:00:00Z","prior_usable_state_removed"

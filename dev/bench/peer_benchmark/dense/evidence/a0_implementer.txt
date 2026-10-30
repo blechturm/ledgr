@@ -1,0 +1,20 @@
+A0 implementer boundary record, 2026-10-30
+
+Current candidate: cbf25359 (R/src identical to release/v0.2.3 145cc93b)
+Original A0 check.R with explicit --pkg, --records, --out and --agreement:
+exit 1; 52 files differ. Cut 4 records these exact successor categories:
+pulse_seed_rule/seed_contract markers, dense_risk_features pulse-rule rows,
+and the walk-forward wall clock.
+
+Pinned original source: 7879e8ba6272f8639402a4de1cbd545eb889e61b
+Original A0 check.R with explicit scratch paths:
+exit 1; one file differs only at walk_forward/walk_forward/wf_folds.csv
+selected_at_utc (recorded 2026-10-28, executed 2026-10-30). Cut 4 decision
+D17 explicitly removes that wall-clock field from the successor comparison.
+
+Current accepted A0 successor:
+record.R --pkg=. --out=<fresh scratch>: exit 0, 290 files.
+compare.R --pkg=. --original=<original records> --successor=<fresh scratch>
+--model=<accepted model> --result=<fresh CSV>: exit 0, 295 checks, 0 fail.
+The exact result is a0_successor_compare.csv. No original or successor record,
+fixture, canonicalizer, or manifest was changed by this workstream.

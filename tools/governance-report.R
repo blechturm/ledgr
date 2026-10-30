@@ -1090,8 +1090,14 @@ governance_scan_ticket_evidence <- function(root, current_packet) {
   if (!any(!is.na(cut_ids))) {
     governance_abort("current packet tickets.yml has no numbered cut")
   }
-  current_cut <- packet$cuts[[which.max(cut_ids)]]
-  workstreams <- as.integer(unlist(current_cut$workstreams))
+  open_cuts <- packet$cuts[vapply(packet$cuts, function(cut) {
+    status <- if (is.null(cut$status)) "" else as.character(cut$status)
+    !identical(tolower(status), "closed")
+  }, logical(1L))]
+  workstreams <- unique(as.integer(unlist(lapply(
+    open_cuts,
+    function(cut) if (is.null(cut$workstreams)) integer() else cut$workstreams
+  ))))
   lines <- governance_read_lines(path)
   findings <- list()
   for (ticket in packet$tickets) {

@@ -1,0 +1,12 @@
+"corruption","result","reason"
+"missing_cell","detected","nrow(r) == 20L is not TRUE"
+"invalid_host","detected","all(a$child_affinity == 65535) is not TRUE"
+"failed_or_censored","detected","all(a$status == ""complete"") is not TRUE"
+"asset_quantity_equity_times_unchanged","detected","                                   field
+1 12x90/1/warm$terminal_positions$qty[1]
+                                   detail
+1 expected 0; actual 1; instrument_id=P01"
+"shared_call_removed","detected","all(required_timing %in% trimws(timing)) is not TRUE"
+"host_load_local","detected","all(required_timing %in% trimws(timing)) is not TRUE"
+"probe_dir_local","detected","all(required_timing %in% trimws(timing)) is not TRUE"
+"probe_inside_timer","detected","!any(calls > launch & calls < after) is not TRUE"

@@ -1148,3 +1148,76 @@ testthat::test_that("[LTB-0514] both governance report entry points default to t
   testthat::expect_match(malformed(cli), expected_source, fixed = TRUE)
   testthat::expect_identical(cli[nzchar(cli)], report)
 })
+
+testthat::test_that("[LTB-0514] ticket evidence scans every open cut and no closed cut", {
+  package_root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  tool <- file.path(package_root, "tools", "governance-report.R")
+  testthat::skip_if_not(
+    file.exists(tool),
+    "governance sources are intentionally absent from an installed package"
+  )
+  guard <- new.env(parent = globalenv())
+  sys.source(tool, envir = guard)
+
+  root <- tempfile("ledgr-governance-open-cuts-")
+  packet_dir <- file.path(root, "inst", "design", "current_packet")
+  dir.create(packet_dir, recursive = TRUE)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  ticket_path <- file.path(packet_dir, "tickets.yml")
+  write_fixture <- function(lower, higher, closed) {
+    writeLines(c(
+      "packet: fixture",
+      "cuts:",
+      "  - id: 1",
+      "    status: open",
+      "    workstreams: [1]",
+      "  - id: 2",
+      "    status: proposed",
+      "    workstreams: [2]",
+      "  - id: 3",
+      "    status: closed",
+      "    workstreams: [3]",
+      "workstreams:",
+      "  - {id: 1, cut: 1, status: complete}",
+      "  - {id: 2, cut: 2, status: complete}",
+      "  - {id: 3, cut: 3, status: complete}",
+      "tickets:",
+      "  - id: LDG-LOWER",
+      "    workstream: 1",
+      "    status: complete",
+      "    acceptance: [lower cut checked]",
+      paste0("    evidence: [\"", lower, "\"]"),
+      "  - id: LDG-HIGHER",
+      "    workstream: 2",
+      "    status: review_pending",
+      "    acceptance: [higher cut checked]",
+      paste0("    evidence: [\"", higher, "\"]"),
+      "  - id: LDG-CLOSED",
+      "    workstream: 3",
+      "    status: complete",
+      "    acceptance: [closed cut ignored]",
+      paste0("    evidence: [\"", closed, "\"]")
+    ), ticket_path, useBytes = TRUE)
+  }
+  valid <- "inst/design/current_packet/README.md: The fixture passed."
+  invalid <- "inst/design/current_packet/README.md"
+
+  write_fixture(invalid, invalid, invalid)
+  findings <- guard$governance_scan_ticket_evidence(
+    root,
+    "inst/design/current_packet"
+  )
+  malformed <- findings[findings$kind == "malformed_ticket_evidence", , drop = FALSE]
+  testthat::expect_setequal(
+    malformed$target,
+    c("LDG-LOWER:evidence:1", "LDG-HIGHER:evidence:1")
+  )
+  testthat::expect_false(any(grepl("LDG-CLOSED", malformed$target, fixed = TRUE)))
+
+  write_fixture(valid, valid, invalid)
+  findings <- guard$governance_scan_ticket_evidence(
+    root,
+    "inst/design/current_packet"
+  )
+  testthat::expect_equal(nrow(findings), 0L)
+})

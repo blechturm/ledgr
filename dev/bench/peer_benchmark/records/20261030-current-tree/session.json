@@ -1,0 +1,11 @@
+{
+    "measurement_window_sec":  314.2788672,
+    "harness_revision":  "f99e387da42f3fb8ebdf9d488368a63cd5ff604f",
+    "host_r_path":  "dev/bench/timing/host.R",
+    "repetitions":  5,
+    "attempt_limit_sec":  1200,
+    "host_ps1_blob":  "769a7beba003518b01cc88256bb95f15545bda1d",
+    "source_revision":  "5002f8d81f17a81177d4b0cda2fa147d310e5e1c",
+    "host_ps1_path":  "dev/bench/timing/host.ps1",
+    "host_r_blob":  "723453ffad40ec819f8251a351bf58668326237e"
+}

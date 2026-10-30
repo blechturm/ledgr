@@ -1,0 +1,18 @@
+{
+    "harness_revision":  "f99e387da42f3fb8ebdf9d488368a63cd5ff604f",
+    "host_r_path":  "dev/bench/timing/host.R",
+    "parent_affinity":  65535,
+    "scratch":  "C:\\Users\\maxth\\AppData\\Local\\Temp\\ledgr-ws3-timing-baee977a57f845f3902325873c9a1321",
+    "host_ps1_blob":  "769a7beba003518b01cc88256bb95f15545bda1d",
+    "source_revision":  "5002f8d81f17a81177d4b0cda2fa147d310e5e1c",
+    "host":  {
+                 "at":  "1793368881.23934",
+                 "plan_guid":  "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+                 "cpu_percent":  "12",
+                 "cpu_name":  "12th Gen Intel(R) Core(TM) i9-12900K",
+                 "root_chain":  "51952@1793368879006=65535;26700@1792959274173=16777215;44156@1792959262936=16777215;44192@1792959261344=16777215;13100@1792928851805=16777215",
+                 "foreign_r":  "ark.exe:41220@1792959281704;ark.exe:27816@1792959389346;Rscript.exe:61860@1793292920637;Rscript.exe:54644@1793292943835;Rscript.exe:8984@1793368879399"
+             },
+    "host_ps1_path":  "dev/bench/timing/host.ps1",
+    "host_r_blob":  "723453ffad40ec819f8251a351bf58668326237e"
+}

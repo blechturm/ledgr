@@ -1,0 +1,2 @@
+"event_seq","ts_utc","recording_pulse_ts_utc","instrument_id","side","qty","price","fee","realized_pnl","action"
+1,2020-01-02,2020-01-02,"AAA","BUY",1,101.02525,1,0,"OPEN"

@@ -1,7 +1,9 @@
 # Peer Parity And Performance Benchmark
 
-This is the current ledgr peer benchmark. It has two separate
-outputs:
+`peer_benchmark.R` is the legacy active peer driver while the fresh suite is
+built under [`dense/`](dense/). Its commands remain supported until the
+`WS3-legacy-peer-harness-retirement` gate reviews replacement coverage and
+maintained consumers. The driver has two separate outputs:
 
 - a parity benchmark: do peer engines agree with the ledgr canonical row?
 - a performance benchmark: how long did each local same-host row take under its
@@ -19,6 +21,22 @@ Run from the package root:
 
 The record preset is the primary artifact for closeout. It uses 100 instruments
 and 252 daily bars. The smoke preset is only a harness verification.
+
+## v0.2.3 Current-Tree Descriptive Baseline
+
+Cut 2 records a separate public `ledgr_run()` lifecycle baseline at
+[`records/20261030-current-tree/`](records/20261030-current-tree/README.md).
+It covers 12 x 90 and 500 x 1260 daily transition-only SMA5/10 shapes, with
+five isolated processes per shape and cold then warm execution in each. Its
+lossless controls include fills, terminal cash/equity, keyed holdings and
+native snapshot/config hashes. The small row diagnoses fixed call overhead; it
+is not a scaling rank.
+
+This record is descriptive. It is never reused as a base arm for a later
+same-engine ratio. A future before/after gate owns a proportional protocol
+folder under `dev/bench/timing/protocols/` and uses the shared paired harness.
+Cross-engine peer clocks and peer process-tree memory remain later peer-suite
+work; phase-level and worker memory remain macro WS9 work.
 
 ## v0.2.0.1 Closeout Record
 

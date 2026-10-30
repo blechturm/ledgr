@@ -1,0 +1,2 @@
+"event_id","run_id","ts_utc","event_type","instrument_id","side","qty","price","fee","meta_json","event_seq"
+"native_cost_final_00000001","native_cost_final",2020-01-02,"FILL","AAA","BUY",1,101.02525,1,"{""cash_delta"":-102.02525,""fee"":1.0,""position_delta"":1.0,""realized_pnl"":null}",1
