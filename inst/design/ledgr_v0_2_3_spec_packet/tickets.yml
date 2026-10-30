@@ -606,7 +606,7 @@ tickets:
   - id: "LDG-3138"
     title: "Keep every open cut visible and preserve the prerequisite evidence"
     workstream: 2
-    status: "planned"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -633,7 +633,10 @@ tickets:
       - "The focused governance tests pass, and the lower-numbered open-cut corruption is detected; reverting the selection fix makes that test fail."
       - "Both accepted cut 1's data and its ticket evidence checks remain covered; closed-cut history is untouched and the current packet scan has no unexplained findings."
       - "Both prerequisite probe directories are committed unchanged and their stable commit is recorded before LDG-3133 starts; no package-runtime, identity or stored-format change is introduced."
-    evidence: []
+    evidence:
+      - "tests/testthat/test-governance-report.R#LTB-0514 and tests/claims.yml#LCL-0512 (commit 26ea8fb4): the focused file and control-plane file pass; the direct fixture reports malformed evidence from both open cuts, excludes the closed cut and accepts two valid open cuts; restoring highest-cut-only selection fails three expectations and exposes only the closed-cut ticket."
+      - "Empirical: input current v0.2.3 packet and accepted Cut 1 ticket evidence; environment Windows 11 x64 with R 4.6.1; source commit 26ea8fb4; reproduction command Rscript tools/governance-report.R --root=. with ticket-evidence findings selected; reviewed range 0aad4ff9..26ea8fb4; result zero malformed_ticket_evidence and zero incomplete_ticket_evidence findings across both open cuts, while the sole selected packet finding is the pre-existing README status-token finding outside ticket evidence; clock 81.6 seconds wall; tools/governance-report.R#governance_scan_ticket_evidence."
+      - "dev/spikes/peer_suite_seed/ and dev/spikes/peer_suite_response/ (commit 26ea8fb4, inherited unchanged from accepted source commit 7879e8ba): git diff --quiet reports no change; tree identities are 5d000b3c2054115d171487cfb1cadf705f8d52f3 and 8319ac3c5c9f1795ce567279694ec2c496e9670e, so runners, checks, CSV evidence and their historical source IDs remain intact; no R/, identity or stored-format file changed."
   - id: "LDG-3155"
     title: "Write the shared paired timing harness"
     workstream: 11
