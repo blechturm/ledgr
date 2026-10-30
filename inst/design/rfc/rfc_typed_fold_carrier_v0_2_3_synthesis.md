@@ -1,8 +1,9 @@
 # Synthesis: Typed Fold Carrier For v0.2.3
 
 Role: record; decision synthesis, binding in its stated scope once accepted.
-Status: Type 1 final review PASS_AFTER_PATCHES (Claude), P1-P3 applied in
-place 2026-10-30; awaiting maintainer acceptance; not implemented.
+Status: ACCEPTED by the maintainer 2026-10-30, after Type 1 final review
+PASS_AFTER_PATCHES (Claude) with P1-P3 applied in place; binding pending
+WS4a scope; not implemented.
 Mode: Decision synthesis, RFC cycle stage 7. Author: Codex (response author).
 Date: 2026-10-30. Brief: drafted by Claude for, and owned by, the maintainer.
 Baseline: `a86dbc228dae312129da31a6f872d294c00ad57d`; `R/` and contracts have

@@ -215,6 +215,13 @@ inside each field read. No persisted schema or public API changes here.
     with an empty risk plan.
   - **The memory sink's equity record (P17)** is typed, with no
     `as.POSIXct` per pulse.
+- **Amendment (maintainer, 2026-10-30, typed-fold-carrier acceptance):** the
+  [accepted synthesis](../rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md)
+  binds the carrier; the cut follows its Sections 3-5. One fold-owned
+  equity record replaces both the availability accumulator (P4, moved here
+  from WS4b) and P17. Dense emits the carrier from the normalized decision
+  onward; its observation and context path is not retyped. WS4a and WS4b
+  are adjacent cuts.
 
 **WS4b, one execution path.** With the carrier fixed, consolidate onto one
 execution path on the availability core, settle the disclosed implied
@@ -246,7 +253,8 @@ current producers are compared; WS4b does not redesign it.
   - the stale-mark trace's `all.equal()` call per stale instrument
     (`R/fold-engine.R:1002-1007`, I3);
   - the equity-fact accumulator's list per pulse, unpacked with `vapply()`
-    at finalisation (`R/fold-phase-contract.R:164-190`, P4).
+    at finalisation (`R/fold-phase-contract.R:164-190`, P4). Moved to WS4a
+    by the typed-fold-carrier acceptance (2026-10-30).
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.
 
