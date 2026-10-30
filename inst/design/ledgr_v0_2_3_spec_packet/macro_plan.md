@@ -199,6 +199,22 @@ inside each field read. No persisted schema or public API changes here.
   list-versus-columnar clocks and allocation records cover no-fill,
   sparse-rebalance and wide all-fill shapes; mutations detect reintroduced
   list-per-fill and growing diagnostic-segment representations.
+- **Amendment (maintainer, 2026-10-30, shape audit):** the carrier also
+  covers four representations the text above does not name. Evidence:
+  `dev/spikes/shape-audit/`.
+  - **Lot state (F7).** Typed flat segments on the run axis, applied once
+    per pulse. Today it is a named list per instrument, with two axis-wide
+    name lookups and a copy of the instrument-length vectors on every fill;
+    that is 19% of a canonical sweep and 28% of a durable run. Lots stay the
+    only position authority (typed-accounting synthesis 3.2).
+  - **The event-batch buffer (P18).** It writes by index. Today
+    `ledgr_fill_row_buffer_add_many()` copies whole environment-held
+    columns on every call.
+  - **The strategy return is validated once per pulse (P10).** Today
+    `ledgr_validate_post_risk_targets()` repeats the full validation, even
+    with an empty risk plan.
+  - **The memory sink's equity record (P17)** is typed, with no
+    `as.POSIXct` per pulse.
 
 **WS4b, one execution path.** With the carrier fixed, consolidate onto one
 execution path on the availability core, settle the disclosed implied
@@ -225,6 +241,12 @@ current producers are compared; WS4b does not redesign it.
   is retired in the cut that removes its last per-pulse caller (WS4b or
   WS5, whichever lands last). Retiring it earlier makes the remaining
   callers pay full encodes. Evidence: `dev/spikes/json-hot-path-audit/`.
+- **Amendment (maintainer, 2026-10-30, shape audit):** per-pulse valuation
+  includes two more items (evidence: `dev/spikes/shape-audit/`):
+  - the stale-mark trace's `all.equal()` call per stale instrument
+    (`R/fold-engine.R:1002-1007`, I3);
+  - the equity-fact accumulator's list per pulse, unpacked with `vapply()`
+    at finalisation (`R/fold-phase-contract.R:164-190`, P4).
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.
 
@@ -250,6 +272,12 @@ required capital and costs) follows WS4b. H3 is settled in this cut.
   (`R/fold-engine.R:886`, audit row H6). `ledgr_run_explain()` reads that
   column instead of parsing JSON (`R/availability-results.R:85-94`, H13).
   Evidence: `dev/spikes/json-hot-path-audit/`.
+- **Amendment (maintainer, 2026-10-30, shape audit):** the flat `ctx`
+  replaces the eager per-pulse `ctx$vec` / `bar_index` construction and its
+  name matching on both producers (`R/pulse-context.R:804-1005`, P9). That
+  construction is about 19% of the dense no-fill floor, and the WS4b
+  amendment covers only the availability context refresh. Evidence:
+  `dev/spikes/shape-audit/`.
 
 ### WS6. Context frame retirement (C2)
 
