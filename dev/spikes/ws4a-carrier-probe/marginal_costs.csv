@@ -1,0 +1,7 @@
+"producer","arm","shape","pairs","pulses","fills","median_seconds","floor_seconds","marginal_us_per_fill"
+"dense","base","sparse",5,1260,1950,2.5,2.18,148.717948717949
+"dense","base","wide",5,1260,67725,12.16,2.11,148.541897379107
+"availability","base","sparse",5,1260,1950,7.34,6.7,338.461538461539
+"availability","base","wide",5,1260,67725,22.09,6.61,226.504245108896
+"availability","fork","sparse",5,1260,1950,6.99,6.64,164.102564102564
+"availability","fork","wide",5,1260,67725,9.53,6.7,42.2296050203027

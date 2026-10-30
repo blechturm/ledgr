@@ -123,3 +123,14 @@ lines of R, findings one page, at most ten identity cases.
 - Keep large outputs outside the repository.
 - Do not run timing while other heavy R work runs on the host. Record what
   else was running.
+
+## Maintainer follow-up, 2026-10-30 (verbatim)
+
+> Before committing: (1) add one arm where the per-pulse lot batch is canonical R instead of carrier.cpp, and report its lot-kernel time and the resulting per-fill marginal, because v0.2.3 cannot default to native code; (2) add one arm where the event batch writes by index into a preallocated typed buffer instead of copying in ledgr_fill_row_buffer_add_many(), with time and allocation; (3) rerun the durable clocks on a quiet host. Keep the verdict against the original bounds; report the new arms as additional rows, not a re-banding. Then commit on codex/ws4a-carrier-probe.
+
+Reviewer named by the maintainer: Max Thomasberger ("me" in the conversation).
+The commit records the reviewer assignment, not independent acceptance.
+
+## Maintainer's combined-arm follow-up (verbatim)
+
+> Add one combined arm: canonical-R lot batch plus the indexed buffer. It is the configuration v0.2.3 can ship, so the RFC needs it measured directly rather than added up from two arms.
