@@ -1,9 +1,11 @@
 # WS4a Carrier Design Note (LDG-3162)
 
-- Status: revision 3, draft for its independent design review. Revision 2
-  applies `ws4a_design_review_1.md` F1-F13; revision 3 applies
-  `ws4a_design_review_1_rereview_1.md` N1-N5. LDG-3162 is complete only when
-  a design review passes.
+- Status: revision 4, accepted design gate. Revision 2 applies
+  `ws4a_design_review_1.md` F1-F13; revision 3 applies
+  `ws4a_design_review_1_rereview_1.md` N1-N5; revision 4 applies
+  `ws4a_design_review_1_rereview_2.md` (PASS_AFTER_PATCHES) N6, N7, O1 and
+  O2 verbatim, by maintainer disposition of the third correction round
+  (2026-10-30), with no further review.
 - Author: Claude, 2026-10-30. Plain-language companion:
   [ws4a_overview.md](ws4a_overview.md).
 - Base: `release/v0.2.3`; `R/` and `src/` identical to `953338df`.
@@ -127,7 +129,7 @@ the provider/valuation adapter), `ledgr_carrier_compiled_pack()` and
 | E72a | plan | P3 | P3 affordability reconciliation and stop fe:1140-1169 | direct | 3166 |
 | E72b | rejection | P3 | P3 `no_fill` diagnostic rows fe:1171-1214 | direct | 3166 |
 | E72c | fill | P3 | P3 `filled` diagnostic rows fe:1215-1271 | direct | 3166 |
-| E73a | plan (event kinds) | P3 | P4 kind check and compiled dispatch fe:1115-1125, :1313-1314 | direct | 3166 |
+| E73a | plan (event kinds) | P3 | P3 canonical and compiled kind checks fe:1115-1125 | direct | 3166 |
 | E73b | fill | P3 | P4 application fe:1342-1399 | direct | 3166 (interface); 3167 separately owns batching this edge |
 | E74a | plan (`expected_final_cash`) | P3 | P5 reconciliation fe:1445-1457, :1468 | direct | 3166 |
 | E74b | fill (`exec_ts`, `cash_delta`) | P3 | P5 last-executed and reconciliation detail fe:1434-1443, :1463-1467 | direct | 3166 |
@@ -342,7 +344,7 @@ successor and dense oracles.
 | O3.46 | Empty plans declare no kinds; unsupported kinds refuse before mutation (3.3) | E73a | 3166 | LTB-0026 migration plus empty-plan test | declare FILL on empty |
 | O3.47 | Flat segments; FIFO sequential within an instrument (3.4) | E18, E40 | 3164 | C4 | M1 |
 | O3.48a | A kernel call takes distinct instruments (3.4) | E18 | 3164 | D18 | accept duplicates |
-| O3.48b | Vectorized across those instruments; sequential only within an instrument (3.4) | E18 | 3164 | D25 | restore a per-instrument operation loop |
+| O3.48b | Independent lot work vectorized across distinct instruments; FIFO consumption sequential within each instrument; scalar event-order aggregate updates retained (3.4) | E18 | 3164 | D25 | restore a scalar per-instrument lot-operation loop |
 | O3.49 | Ordered total-basis and Kahan updates in scalar event order (3.4) | E18, E40 | 3164 | C5b, C9 | M11 |
 | O3.50 | Opening: signed quantity, any-sign basis, no cash, no Kahan step (3.4) | E40, E42-E44 | 3164 | C5b, D7 | M6 |
 | O3.51 | Fill: dust, fees and reversal arithmetic (3.4) | E18, E40 | 3164 | C3, C4 | M3 |
@@ -437,7 +439,7 @@ Field invariants:
 | F4.32 | fill: info segment ordered and deduplicated | 3166 | duplicate code |
 | F4.33 | rejection: k, pos, emit; reason segment; primary separate | 3166 | emit out of order |
 | F4.34 | rejection: resolved_price, exec_ts NA only when absent; position finite | 3166 | NA position |
-| F4.35 | lot input: per-kind rules (opening signed qty; disposition witnesses) | 3164 | V-lot-input for the declared operation fields (invalid record: unsigned opening quantity); no cash effect of openings checked by D17 plus an opening caller's cash before/after witness, control: a mutant changes opening cash |
+| F4.35 | lot input: per-kind rules (opening signed qty; disposition witnesses) | 3164 | V-lot-input for the declared operation fields (invalid record: operation-row pos = 0L, outside the one-based run-axis bounds); no cash effect of openings checked by D17 plus an opening caller's cash before/after witness, control: a mutant changes opening cash |
 | F4.36 | applied row: positions actual from lots; open/close zero when inapplicable | 3164 | open_qty on a pure close |
 | F4.37 | applied row: per-event facts; opening does no Kahan step | 3164 | C5b and D7 invocation check; control: an injected Kahan invocation on openings (M6) |
 | F4.38 | publication: identifiers and tokens, nullability, generated in blocks | 3167 | NA instrument_id on FILL |
@@ -470,7 +472,7 @@ Field invariants:
 | E5.05b | Mutation strength: affordability-order publication | 3166 | C11 | M4 |
 | E5.05c | Mutation strength: reordered publication, dropped fee | 3167 | oracles through the typed path | M2, M3 |
 | E5.06 | Failure boundary | 3167 | C13b, C13c | swallow an error |
-| E5.07 | Representation detectors | the ticket named for each detector in Section 8 | D1-D23 | each detector's own control |
+| E5.07 | Representation detectors | the ticket named for each detector in Section 8 | D1-D13, D15-D25 | each detector's own control |
 | E5.08 | Dense finalisation | 3168 | C16 | restore the old decision |
 | E5.09a | Timing and memory of reader and replay paths (decision 6) | 3164 | ws4a-timing-1 reader cells, replay memory | a deliberately slowed replay arm |
 | E5.09b | Timing and allocation, full matrix | 3169 | ws4a-timing-1, absolute checker | absolute-checker controls |
@@ -668,7 +670,7 @@ failing control. Another detector's failure is not evidence for it.
 | D22 | Dictionaries match literal fixtures (tokens and codes) | fixture comparison, separate from diagnostic round-trip bytes | renumber a token |
 | D23 | Replay applies each published cash effect exactly once | replay cash witness on a two-event ledger | apply a delta twice |
 | D24 | Service ownership: the execution view and history services are called only from their declared stages | phase-ownership checker (`tools/check-fold-phase-contract.R:66-81, :149-153`), extended to `ledgr_carrier_execution_view()` | call the execution view from P4 |
-| D25 | The lot kernel has no R-level iteration over the distinct input instrument rows; sequential FIFO consumption within an instrument is permitted | parse region of the kernel | restore a per-instrument operation loop |
+| D25 | Independent lot consumption, append, compaction and growth are not dispatched through an R loop one input instrument at a time. Permit FIFO depth iteration and the scalar event-order total-basis/Kahan scan that writes per-event aggregate facts; opening rows perform no Kahan step. Cash remains outside the lot kernel. | parse regions of the kernel, with the ordered aggregate-scan region explicitly identified | restore a scalar per-instrument lot-operation loop: must fail D25; retain the permitted aggregate scan: must pass D25 |
 | W1 | Application order: at the canonical publication entry the candidate book is already installed; sequence advance, leg recording and position/cash installation follow in that order; at compiled append entry the compiled lot state and next sequence are installed | runtime witness at those entries | swap each observed pair |
 
 **Validator map** (constructors and validators, `test-ws4a-carrier.R`):
@@ -759,7 +761,7 @@ Every ticket 3164-3168 also requires the full suite green.
 
 | Ticket | Oracles | Cases | Detectors, validators, mutations | Timing and memory |
 | --- | --- | --- | --- | --- |
-| 3164 | A0, dense, real-data | C3, C4, C5a, C5b, C6, C9, C14a (S7a) | D3, D7, D11, D12a-c, D12e, D15, D17-D19, D23, D25; U-3164; V-state, V-book, V-lot-input, V-applied-row; M1, M3, M5, M6, M7, M11, M12 | E5.09a: reader cells, replay memory (decision 6) |
+| 3164 | A0, dense, real-data | C3, C4, C5a, C5b, C6, C9, C14a (S7a) | D3, D7, D11, D12a-c, D12e, D15, D17-D19, D23, D25; U-3164; V-state, V-book, V-lot-input, V-applied-row; M1, M3, M5, M6, M7, M11, M12; F4.35 opening caller cash-before/after witness | E5.09a: reader cells, replay memory (decision 6) |
 | 3165 | A0, dense | C7, C10, C12, C14b (S7b), C15, C17 | D3, D4, D5, D12d, D13, D16, D21; U-3165; V-packet, V-decision; F4.19 adapter check; M8 | none |
 | 3166 | A0, dense | C1, C2, C7, C8a, C8b, C11 | D1 (planners), D3, D8, D22, D24; U-3166; V-execution-view, V-plan, V-fill, V-rejection; M4, M9, M10 | none |
 | 3167 | A0, dense | C13a-c, C14c | D1 (publication), D3, D6, D9, W1; U-3167; V-publication, V-leg; M2, M3 | none |
