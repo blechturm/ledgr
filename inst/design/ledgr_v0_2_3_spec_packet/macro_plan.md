@@ -205,6 +205,13 @@ Phase A; schema, selection and article drafts may start then. The runtime
 required capital and costs) follows WS4b. H3 is settled in this cut.
 - **Acceptance:** at J, on the merged reader: rounding and refusal
   disclosures, the executed pattern article and the maintainer's cold read.
+- **Amendment (maintainer, 2026-10-30):** declared state keeps D5's
+  author-facing semantics, but its stored form is typed vectors along the
+  decision axis, not list-per-ID canonical JSON written every pulse. This
+  supersedes D5's "retain list-per-ID asset storage". The WS5 cut decides
+  persistence and resume checkpoints under the pre-CRAN refusal policy.
+  Evidence: `dev/spikes/pmwr-performance/` (named-list state is about 20% of
+  a wide run).
 
 ### WS6. Context frame retirement (C2)
 
