@@ -152,3 +152,23 @@ Optional, not conditioning the verdict:
   copying it. No manifest or registry was added.
 
 Count: one independent verdict for workstream 2 (PASS_AFTER_PATCHES), recorded, not gated.
+
+## Focused confirmation
+
+Verdict: **PASS** on 2026-10-30 after corrections through `4c136efc`.
+
+- F1 is resolved by the explicit post-Cut-4 authority reconciliation in
+  LDG-3135 and the matching successor-expectation note in the inventory.
+- F2 is resolved: the direct live `governance_scan_ticket_evidence()` call
+  returns zero rows.
+- F3 is resolved: the protocol and inventory list the same four exclusions.
+- F4 is resolved: the live scan names one open cut and the two-open-cut claim
+  belongs to the focused fixture.
+
+The maintainer's agent then ran the checks unavailable to the focused Claude
+session: `git diff --check ada7c319..4c136efc` passed; the correction diff
+contains only `tickets.yml`, protocol/inventory wording and this review;
+`git diff --quiet cbf25359 4c136efc -- .../oracles` passed; `tickets.yml`
+parsed; and the direct live ticket-evidence scan returned zero findings.
+No new finding remains. Workstream 2 and immutable freeze `cbf25359` are ready
+for maintainer acceptance and then C1 consumption.

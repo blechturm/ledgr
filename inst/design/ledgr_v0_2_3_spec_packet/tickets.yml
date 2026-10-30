@@ -234,6 +234,7 @@ workstreams:
     name: "Dense native deletion oracle (macro WS3)"
     cut: 2
     status: "review_pending"
+    close_review: "PASS_AFTER_PATCHES in ws2_close_review.md, followed by focused PASS on 2026-10-30: F1-F4 are resolved; direct YAML, live ticket-evidence, diff-scope and immutable-freeze checks pass. Freeze cbf25359 is accepted by the reviewer for C1 consumption after maintainer acceptance."
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "after LDG-3135, before C1 consumes the oracle", reason: "One claim: frozen native evidence detects unchanged-meaning economic differences, retains representation/state/refusal evidence and does not silently exempt known path differences. Rerun scratch diff, gut the observed surfaces, rerun the separate A0 invocation, check the three reference pointers and exact projection coverage, and verify no fixture/oracle/source identity was weakened. Also verify LDG-3138's small evidence-scan preparation and focused two-open-cut regression tests; it keeps cut 1 visible without changing cut 1."}
