@@ -20,7 +20,8 @@ dense_git <- function(root, args) {
 
 dense_scope <- function(root) {
   paths <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man", "inst/design")
-  dense_git(root, c("diff", "--no-ext-diff", "HEAD", "--", paths))
+  c(dense_git(root, c("diff", "--no-ext-diff", "HEAD", "--", paths)),
+    dense_git(root, c("status", "--porcelain", "--untracked-files=all", "--", paths)))
 }
 
 dense_load <- function(pkg) {
@@ -144,7 +145,8 @@ dense_references <- function(pkg) {
     file.path(prefix, control, files)
   }), use.names = FALSE)
   data.frame(file = gsub("\\", "/", paths, fixed = TRUE), rows = vapply(paths,
-    function(path) nrow(utils::read.csv(file.path(pkg, path), colClasses = "character")), integer(1L)))
+    function(path) nrow(utils::read.csv(file.path(pkg, path), colClasses = "character")), integer(1L)),
+    row.names = NULL)
 }
 
 dense_record <- function(out, pkg, cases = dense_cases()) {
@@ -183,7 +185,17 @@ dense_diff <- function(expected, actual, path = "") {
     diffs <- lapply(seq_along(expected), function(i) dense_diff(expected[[i]], actual[[i]],
       paste0(path, if (nzchar(path)) "$" else "", if (is.null(names(expected))) paste0("[[", i, "]]") else names(expected)[i])))
     diffs <- diffs[vapply(diffs, nrow, integer(1L)) > 0L]
-    if (length(diffs)) return(do.call(rbind, diffs))
+    if (length(diffs)) {
+      d <- do.call(rbind, diffs)
+      if (is.data.frame(expected)) {
+        index <- suppressWarnings(as.integer(sub(".*\\[([0-9]+)\\]$", "\\1", d$field)))
+        ok <- !is.na(index) & index >= 1L & index <= nrow(expected)
+        keys <- intersect(c("event_seq", "diagnostic_seq", "ts_utc", "instrument_id"), names(expected))
+        for (key in keys) d$detail[ok] <- paste0(d$detail[ok], "; ", key, "=",
+          format(expected[[key]][index[ok]], digits = 17L))
+      }
+      return(d)
+    }
     return(row(path, "attributes differ"))
   }
   if (!identical(attributes(expected), attributes(actual))) return(row(path, "attributes differ"))
@@ -208,4 +220,30 @@ dense_compare <- function(records, scratch) {
   })
   diffs <- diffs[vapply(diffs, nrow, integer(1L)) > 0L]
   if (length(diffs)) do.call(rbind, diffs) else data.frame(case = character(), field = character(), detail = character())
+}
+
+
+# Historical arms are observations beside each other, never an equality gate.
+dense_history_difference <- function(records) {
+  read <- function(label) readRDS(file.path(records, label, "native.rds"))$tables$fills
+  first <- function(pair, view) {
+    a <- read(paste0("historical_", pair, "_dense"))
+    b <- read(paste0("historical_", pair, "_facts"))
+    cols <- if (view == "economic") setdiff(names(a), "ts_utc") else names(a)
+    n <- min(nrow(a), nrow(b))
+    same <- Reduce(`&`, lapply(cols, function(name) {
+      x <- a[[name]][seq_len(n)]; y <- b[[name]][seq_len(n)]
+      (is.na(x) & is.na(y)) | (!is.na(x) & !is.na(y) & x == y)
+    }))
+    i <- which(!same)[1L]
+    if (is.na(i) && nrow(a) != nrow(b)) i <- n + 1L
+    field <- if (!is.na(i) && i <= n) cols[which(!vapply(cols, function(name)
+      identical(a[[name]][i], b[[name]][i]), logical(1L)))[1L]] else NA_character_
+    value <- function(x) if (is.na(i)) "equal" else if (i > nrow(x)) "<absent>" else
+      if (is.na(field)) "<extra row>" else format(x[[field]][i], digits = 17L)
+    data.frame(pair = pair, view = view, dense_fills = nrow(a), facts_fills = nrow(b),
+      first_row = i, field = field, dense = value(a), facts = value(b))
+  }
+  do.call(rbind, lapply(c("start", "late"), function(pair)
+    do.call(rbind, lapply(c("economic", "representation"), function(view) first(pair, view)))))
 }

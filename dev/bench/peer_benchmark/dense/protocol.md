@@ -96,10 +96,15 @@ A0 references point to every CSV under records/dense_risk_features/run/,
 records/dense_dividend_state/run/, records/failures/run_abort/ in the separate
 v0_2_3_output_freeze harness; reference CSV records exact file names and row
 counts. The new checker reads those files, never executes/imports A0.
-Implementer and reviewer independently run A0's whole check.R separately with
---pkg=<pinned checkout>, --records=<existing A0 records>, --out=<fresh scratch>
-and --agreement=<scratch agreement.csv>. Its default agreement path must
-never be used. No A0 file, fixture, canonicalization or frozen byte changes.
+Cut 4 intentionally superseded the executable A0 comparison after this
+protocol was first accepted: its pulse-seed rule changes 52 original files,
+and its accepted successor also excludes the walk-forward wall clock. The
+three reference controls still point at the immutable original A0 tables.
+Implementer and reviewer independently run Cut 4's whole A0 successor
+record.R and compare.R on the current pinned checkout, with all output and
+the result CSV in fresh scratch. The original A0 check.R is also run once to
+show that its failure population is the accepted successor population, not
+used as a pass. No A0 file, fixture, canonicalization or frozen byte changes.
 
 ## File plan and stop signals
 

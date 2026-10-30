@@ -1,0 +1,5 @@
+"pair","view","dense_fills","facts_fills","first_row","field","dense","facts"
+"start","economic",121,121,NA,NA,"equal","equal"
+"start","representation",121,121,1,"ts_utc","2020-01-15 21:00:00","2020-01-15 14:30:00"
+"late","economic",87,89,1,"recording_pulse_ts_utc","2020-02-25 21:00:00","2020-02-12 21:00:00"
+"late","representation",87,89,1,"ts_utc","2020-02-25 21:00:00","2020-02-12 14:30:00"
