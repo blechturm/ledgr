@@ -3,7 +3,8 @@ title: "Optimization Coding Style"
 ---
 
 **Status:** Maintainer coding-style article updated after v0.2.0.1
-productionization (LDG-2732).
+productionization (LDG-2732); rules revised 2026-10-30 after the v0.2.3
+PMwR, JSON and shape audits and an external review.
 
 **Authority:** Synthesis plus implementation trace. Binding rules remain in the
 v0.1.8.9 spec (column-buffer write rule), `../contracts.md`, the accepted RFC
@@ -15,6 +16,12 @@ a shape the arc has already measured and removed.
 **Anchor scope:** `R/...:line` references resolve against branch `v0.2.0.1` at
 commit `0f618fd`, after the three warm seams, finalization repair, and grouped
 seal validators reached production code.
+
+**Which part wins (2026-10-30):** the Rules, Scope Guards and Maintainer
+Checklist are current; AGENTS.md makes them review criteria. Evidence The
+Rules Rest On, the Implementation Trace and the Concrete Examples are
+historical records of the v0.2.0.1 arc. Where a historical passage disagrees
+with a Rule, the Rule wins.
 
 You are about to write or review code that touches bars, facts, pulses,
 instruments, events, or diagnostics, and you need to know which shapes the
@@ -36,9 +43,10 @@ magnitude, never as rankings.
 
 Every discontinuity the arc found was the same thing: R-level iteration over
 a collection whose size grows with the data, doing per-element work that R
-can do once for the whole vector. Architecture was never the problem; the
-event-sourced fold, the sealed snapshot, and the sparse fact tables survived
-every spike. What changed was representation and the placement of loops.
+can do once for the whole vector. In the cases investigated, architecture
+was not the problem; the event-sourced fold, the sealed snapshot, and the
+sparse fact tables survived every spike. Future architectural choices stay
+open to measurement. What changed was representation and the placement of loops.
 
 ## Evidence The Rules Rest On
 
@@ -67,8 +75,9 @@ cite as one.
 
 1. **One-row frame per element, bound at the end.** A `data.frame()` per
    diagnostic, event, state row, or score, collected in a list and joined
-   with `do.call(rbind, ...)`. Cost is quadratic-ish in rows and dominated by
-   attribute handling, not values. Replace with typed column buffers written
+   with `do.call(rbind, ...)`. Cost is dominated by per-frame allocation and
+   attribute handling, not values. It becomes quadratic when the accumulated
+   result is itself rebound on every iteration. Replace with typed column buffers written
    by index and manifested as one frame per chunk or at the persistence
    boundary, or with columns built by `rep()` and one constructor call.
 2. **Full-table subset inside a loop over ids.** `rows[rows$instrument_id == id, , drop = FALSE]`
@@ -110,10 +119,12 @@ cite as one.
    buffer construction quadratic in the rows written. Measured at 630,000
    elements, each base write costs about 1,620 microseconds against about 20
    for `setv()`. Replace with a by-reference write through
-   `collapse::setv()`, or move the buffer out of the environment. The
-   discriminator is the environment, not the temporary name: a locally owned
-   list mutates in place, so `bars_mat$close[j, ] <- v` over a local list is a
-   different shape and carries no penalty.
+   `collapse::setv()`, or move the buffer out of the environment. In the
+   measured cases the environment was the discriminator, not the temporary
+   name: a locally owned list with no other reference was modified in place,
+   so `bars_mat$close[j, ] <- v` over such a list carried no penalty. R copies
+   whenever another reference exists, so check with `tracemem()` rather than
+   assume.
 
 **Helper criterion.** A new internal helper exists because a reviewer can name
 its contract or because it has a second caller. A test-only seam needs a named
@@ -133,13 +144,27 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   chunks, and inspection surfaces are data frames or tibbles. Inside the fold
   and inside compile steps, state lives in typed atomic vectors, matrices, or
   CSR-style flat segment vectors with offsets.
-- **Write by index into preallocated typed buffers.** Every typed column,
-  character and list included, through
-  `collapse::setv(col, i, value, vind1 = TRUE)`. The declared floor is
+- **Write by index into preallocated typed buffers.** Atomic columns
+  (numeric, integer, logical, character, epoch) use
+  `collapse::setv(col, i, value, vind1 = TRUE)`. List columns need
+  `xlist = TRUE`, or `setv()` treats the list as a set of columns and
+  refuses the index: `collapse::setv(col, i, list(value), vind1 = TRUE,
+  xlist = TRUE)` (as in `R/fold-event-buffer.R:66`). The declared floor is
   `collapse (>= 2.1.8)` because 2.1.8 fixed the generational write barrier
   that made character and list `setv()` unsafe under 2.1.7; that bug is why
   earlier guidance sent character writes through base replacement, and that
   detour is what shape 7 describes. Never grow a vector or list by appending.
+- **By-reference writes need exclusive ownership** (2026-10-30). `setv()`
+  changes its target in place for every holder of a reference; a second
+  reference does not preserve the old value (`copyv()` copies first). A
+  buffer written by reference is owned by exactly one fold, candidate or
+  writer, or has a documented shared-mutation contract. Values handed to a
+  strategy (`ctx` views, `state_prev`), published results, retained
+  diagnostic frames and inputs shared across candidates or workers must not
+  change when execution advances or a buffer is reused: hand out a copy or a
+  value that is never written again. Returning a carrier from a stage
+  transfers ownership; the caller does not keep writing to what it passed
+  in.
 - **Advance, do not recompute.** Point-in-time state changes at known
   boundaries. Keep a cursor per instrument or per header over sorted boundary
   times; advance it for non-decreasing cutoffs and re-seek with
@@ -171,22 +196,31 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   `asset_state` entry for every instrument on the availability path
   (`../../../dev/spikes/pmwr-performance/`,
   `../../../dev/spikes/ws4a-carrier-probe/`).
-- **Base-R representations inside the loop** (maintainer, 2026-10-30).
-  Inside fold, planning, accounting and reader loops, use only:
-  - typed atomic vectors;
+- **Base-R representations in the execution kernel** (maintainer,
+  2026-10-30). The rule binds the internal execution kernel of fold,
+  planning, accounting and reader paths: the code between the strategy and
+  result boundaries that runs per pulse, fill, event or instrument. The
+  kernel uses prevalidated positional representations:
+  - typed atomic vectors, with times as numeric epochs;
   - matrices, as dense instrument x pulse planes within the memory budget;
   - flat segment vectors with offsets;
-  - lists only as containers of equal-length typed columns.
+  - lists only as containers of typed columns, where each group of columns
+    declares the axis it lives on (instrument, pulse, fill, lot segment).
 
-  Inside the loop, use no data frames, no per-element lists, no S3 objects,
-  no JSON, no POSIXct conversion and no name matching. Address by position
-  on a fixed run axis, with a membership mask where the universe changes.
-  Names, classes and frames are attached only at the strategy and result
+  On data-scale kernel paths, repeated construction of data frames,
+  per-element lists or S3 objects, generic dispatch, JSON, POSIXct
+  conversion and identifier matching need a stated reason. Address by
+  position on a fixed run axis, with a membership mask where the universe
+  changes. Sequential loops are allowed where the semantics are sequential
+  (FIFO consumption within one instrument, ordered affordability, stateful
+  transitions); vectorize across the independent dimension instead.
+  Names, classes and frames are attached at the strategy and result
   boundaries; the public `ctx` and strategy return stay ergonomic R objects,
-  normalized once. Where a dense plane exceeds the memory budget, segments
-  are the base-R form, not frames. `PMwR::btest` (preallocated matrices, one
-  vector update per bar) and collapse (typed vectors, `setv()` by index)
-  are the reference pattern (`../../../dev/spikes/pmwr-performance/`).
+  normalized once, even though the strategy runs inside the pulse loop.
+  Where a dense plane exceeds the memory budget, segments are the base-R
+  form, not frames. `PMwR::btest` (preallocated matrices, one vector update
+  per bar) and collapse (typed vectors, `setv()` by index) are the reference
+  pattern (`../../../dev/spikes/pmwr-performance/`).
 - **Clarity is a design goal of every representation change** (maintainer,
   2026-10-30). Vectorized code is denser than a per-element loop, and
   positions fail silently where names fail loudly, so clarity is designed in
@@ -206,13 +240,18 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
      carrier and returns it; no hidden mutation across stages.
   6. **Explain the indexing.** Every non-obvious mask, offset or segment
      expression carries a one-line comment saying why.
-- **Compute at the frequency of change** (maintainer, 2026-10-30). Every
-  value is computed once, at the lowest frequency at which it can change
-  (per run, per pulse, per fill, per event), and carried forward from
-  there. It is never recomputed at a higher frequency or by a second
-  consumer. Achieve this by hoisting and carrying, not by caching: a memo
-  whose key costs as much as the work is a finding (the `canonical_json()`
-  cache hashed every argument with SHA-256 to skip an encode). Code DRY
+- **Compute at the frequency of change** (maintainer, 2026-10-30). Compute
+  an expensive value at the lowest frequency at which its inputs can change
+  (per run, per pulse, per fill, per event) and carry it forward, rather
+  than recomputing it at a higher frequency or in a second consumer. Prefer
+  hoisting or incremental maintenance where lifetime, ownership and memory
+  cost stay clear. Recomputing deliberately is acceptable, with a stated
+  reason, when retaining the result costs more: a large plane kept alive
+  across candidates or replicated to workers counts against the memory
+  budget, as do temporary allocations and buffers. Caching is allowed; an
+  expensive cache key is not. A memo whose key costs as much as the work is
+  a finding (the `canonical_json()` cache hashed every argument with
+  SHA-256 to skip an encode). Code DRY
   means one implementation per concept, not one generic helper for
   similar-looking code; the clarity rule wins over shared flags. Measured
   cases: timestamps re-validated per fill, positions recomputed from lots
@@ -233,6 +272,10 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   over the inputs where both apply, including the condition that selects the
   fast path; and a stated removal or merge condition, the measurement or
   simplification under which it goes away or folds into the canonical path.
+  The differential compares error behaviour, missing values and ordering as
+  well as successful values, and states its numeric comparison rule (exact
+  or a named tolerance). A shared production predicate shows the paths
+  agree; it does not show the predicate is right.
   A fast path without both is an unproven duplicate, not an optimization.
   The history system's representations and paths, with their oracles and
   conditions, are listed in
@@ -240,14 +283,18 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   adds a history fast path or representation adds its row there.
 - **Make the identity boundary explicit.** Anything that participates in
   `config_hash`, snapshot hash, or run identity is off limits to an
-  optimization; anything that is a local locator (run ID, store path,
-  creation time) is excluded from parity comparisons, and the exclusion is
-  written down.
+  optimization. Each parity comparison writes down its own exclusions: only
+  fields that legitimately differ between the compared arms (store path,
+  creation time, a generated ID that differs by design). A field that
+  should match, such as a run ID fixed on both arms, is compared.
 - **Measure before and after with the arc's clocks.** Wall around the
   measured call in a fresh process, externally sampled peak working set,
-  profiler shares as a decomposition only (Windows `Rprof()` samples about
-  64% of loop time), and cold versus warm clocks kept separate
-  (`../spike_protocol.md` section 10). Small-fixture numbers never appear in
+  profiler shares as a decomposition only, and cold versus warm clocks kept
+  separate. On the recorded Windows host, `Rprof()` captured about 64% of
+  wall time at a 10 ms interval and about a third at 5 ms, because of the
+  15.6 ms timer; scale stage seconds by wall over sampled time per run, not
+  by a constant. Cold and warm clocks follow `../spike_protocol.md`
+  section 10. Small-fixture numbers never appear in
   a ranking, and no manual article, vignette, or release note turns them into
   a public claim.
 - **Probe before prose.** A performance claim about package behaviour that no
@@ -372,7 +419,7 @@ ingest and seal, the fold, hydration, finalisation, and result readers.
 - **Instrument key.** A stable-sorted character vector of every id any fact
   or the configured universe names, built with `ledgr_availability_stable_ids()`
   (`R/availability-provider.R:9-13`); all planes are indexed by position in
-  it (`R/availability-provider-prepared.R:172-181`, uncommitted).
+  it (`R/availability-provider-prepared.R:172-181`).
 - **Membership plane (production).** Headers in the resolver's
   processing order with eligibility times `max(effective_from, knowledge_time)`,
   per-header member index sets, an eligibility order and its sorted times for
@@ -384,11 +431,13 @@ ingest and seal, the fold, hydration, finalisation, and result readers.
   vectors with `off` and `cnt` per instrument (CSR), values resolved at
   compile time by the production rule; one cursor vector `cur` over all
   instruments (`R/availability-provider-prepared.R:98-165`).
-- **Event buffer (production).** Preallocated typed columns in the durable
-  handler with `collapse::setv` for numeric, integer, and POSIXct fields and
-  base replacement for character fields (`R/backtest-runner.R:379-394`);
-  the sweep memory handler's character and list columns still copy on write
-  (`R/sweep.R:1576-1584`, an open audit item).
+- **Event buffer (v0.2.0.1; superseded).** At v0.2.0.1 the durable handler
+  used `collapse::setv` for numeric, integer, and POSIXct fields and base
+  replacement for character fields (`R/backtest-runner.R:379-394`), and the
+  sweep memory handler's character and list columns copied on write
+  (`R/sweep.R:1576-1584`). The 2.1.8 floor and the v0.2.3 single output
+  handler (`R/fold-event-buffer.R`) replaced both; the current rule is
+  "Write by index into preallocated typed buffers".
 
 ### Code Anchors
 
@@ -433,12 +482,14 @@ ingest and seal, the fold, hydration, finalisation, and result readers.
 ### Edge Cases
 
 - `collapse::setv()` on character vectors under collapse 2.1.7 can skip the
-  generational write barrier; the arc kept character writes on base
-  replacement until the floor moves. Numeric, integer, and POSIXct writes are
-  safe in both versions.
+  generational write barrier, so the arc kept character writes on base
+  replacement. The floor is now 2.1.8, which fixed this: character and list
+  columns use `setv()` (list columns with `xlist = TRUE`). Numeric, integer,
+  and POSIXct writes were safe in both versions.
 - `col[[i]] <- v; assign(name, col, envir)` on a character column copies the
-  whole buffer when the vector is shared; hold buffers in an environment,
-  avoid extra references, and prefer block writes per pulse.
+  whole buffer when the vector is shared. Write environment-held buffers
+  through `setv()` (shape 7), avoid extra references, and prefer block writes
+  per pulse.
 - Stable sort ties: the production lifetime resolver takes the last
   applicable row after `order(effective_from, knowledge_time)`, whose ties
   follow input row order, and the DuckDB read orders rows by
@@ -480,9 +531,17 @@ Per-element timestamp handling versus the vectorised call it already had:
 ```r
 # before: 426,191 iterations, about 17 s
 for (i in seq_along(x)) out[[i]] <- tryCatch(ledgr_fact_time(x[i], "ts_utc", allow_missing = TRUE)[[1L]], error = function(e) NA)
-# after: 0.02 s, then mask failures
+# after: 0.02 s, valid only when x is already adapter-normalized
 out <- ledgr_fact_time(x, "ts_utc", allow_missing = TRUE)
 ```
+
+The two are not equivalent on arbitrary input. The loop turns each
+failing element into `NA`. The vectorised call aborts the whole vector on
+an unparseable string or a sub-second value (`ledgr_fact_time()`,
+`R/availability-facts.R:1671-1697`). The rewrite is correct here because
+adapter normalization already guarantees parseable whole-second values; on
+untrusted input, find the failures explicitly before the vectorised call
+rather than assuming the same per-element behaviour.
 
 A quadratic validator versus a grouped, state-aware sweep (membership shown;
 the same shape applies to status with one running maximum per status value,
@@ -534,6 +593,9 @@ One diagnostic block per pulse versus one frame per instrument:
 - Is state inside the fold held in typed vectors, matrices, or segment tables
   with cursors, and do frames appear only at boundaries?
 - Are per-row writes by index into preallocated buffers, with no append?
+- Who owns each buffer written by reference? Can a strategy, a published
+  result, a retained diagnostic frame or another candidate still hold a
+  reference to it?
 - Does any JSON encode or parse run once per pulse, fill or event? If so,
   which typed vector replaces it?
 - Inside the loop, does any data frame, per-element list, S3 object,
