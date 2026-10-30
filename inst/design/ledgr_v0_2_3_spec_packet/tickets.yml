@@ -233,7 +233,7 @@ workstreams:
   - id: 2
     name: "Dense native deletion oracle (macro WS3)"
     cut: 2
-    status: "planned"
+    status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "after LDG-3135, before C1 consumes the oracle", reason: "One claim: frozen native evidence detects unchanged-meaning economic differences, retains representation/state/refusal evidence and does not silently exempt known path differences. Rerun scratch diff, gut the observed surfaces, rerun the separate A0 invocation, check the three reference pointers and exact projection coverage, and verify no fixture/oracle/source identity was weakened. Also verify LDG-3138's small evidence-scan preparation and focused two-open-cut regression tests; it keeps cut 1 visible without changing cut 1."}
@@ -354,7 +354,7 @@ tickets:
   - id: "LDG-3133"
     title: "Declare the dense witness contracts and coverage reuse"
     workstream: 2
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3138"]
@@ -397,11 +397,14 @@ tickets:
       - "Every synthesis D4 requirement has a native surface and an owning witness/table, or a precise A0 reuse pointer; event order, diagnostics/conditions, state and per-asset quantities are explicit."
       - "The protocol separates historical first-state and new transition-only recipes, data versus scoring start, and economic versus representation comparison; no C1 difference is pre-accepted."
       - "The seven new configurations, three independent A0 reference controls, four-family bound, file plan and public execution paths are declared before recording; no expected numeric table is authored before the runnable core."
-    evidence: []
+    evidence:
+      - "dev/bench/peer_benchmark/dense/protocol.md#native-surfaces-and-exact-comparison (commit b7ccdfd3): every D4 surface is assigned either to a complete native table/projection or to one of the 39 exact A0 table pointers, with event order, diagnostics, state and per-asset quantities explicit."
+      - "dev/bench/peer_benchmark/dense/protocol.md#inputs-and-configurations (commit b7ccdfd3): historical first-state and transition-only rules, data/scoring starts and economic/representation projections are separate, and no difference is pre-accepted."
+      - "dev/bench/peer_benchmark/dense/protocol.md#file-plan-and-stop-signals (commit b7ccdfd3): exactly seven fresh configurations plus three A0 controls, four recipe families and a 1,220-line plan were committed before recorder source or numeric output; actual fresh R source is 519 lines."
   - id: "LDG-3134"
     title: "Run the native witnesses and freeze complete current outputs"
     workstream: 2
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3133"]
@@ -439,11 +442,14 @@ tickets:
       - "All seven fresh configurations execute with observed native evidence, including the cost/final-pulse control needed by the warning-suppression gut; three separate A0 reference controls retain exact input/table pointers and independent-check evidence. No missing/unexplained output or hand-narrated oracle."
       - "Full native evidence and exact projections are reviewable, include per-asset holdings and state/condition evidence, and name the actual source revision plus native identities."
       - "The two historical SMA arm pairs retain their separate outputs and first divergence evidence; no mapping or normalization turns their known differences into a pass."
-    evidence: []
+    evidence:
+      - "dev/bench/peer_benchmark/dense/oracles/20261030-pre-ws4/summary.csv (freeze commit cbf25359, recorder commit 328998db): all nine native arms for seven fresh configurations complete; every recipe has nonzero fills, transition/return/mean-reversion/EMA/historical rules have exits, cost_final has a nonzero fee and the final-pulse no-fill warning, and the three independent A0 controls retain 39 exact file/count pointers."
+      - "dev/bench/peer_benchmark/dense/oracles/20261030-pre-ws4/*/native.rds and readable CSVs (commit cbf25359): recorder round trips are identical and retain complete native ledger, fill/trade, equity/reconstruction, state, diagnostic, completion, condition and provenance surfaces with source commit 328998db and native identities."
+      - "dev/bench/peer_benchmark/dense/evidence/first_divergences.csv (commit 4f49bb7b): both historical dense/fact pairs remain distinct; start differs first in the execution timestamp and late differs first in recording pulse/effective timestamp, with no normalization or cross-arm equality gate."
   - id: "LDG-3135"
     title: "Make the oracle reject corruption and hand it to C1"
     workstream: 2
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3134"]
@@ -486,7 +492,10 @@ tickets:
       - "The fresh harness's scratch rerun reproduces its frozen native evidence; A0's separate pinned/scratch invocation passes; its command, loaded root and result pointer are recorded in the inventory, and the close review reruns it. Required witnesses execute rather than skip."
       - "The control passes and every enumerated native/rule corruption fails for its intended reason, including the quantity-only and one-step-cash corruptions."
       - "The inventory names all economic and representation fields, exact comparison path, source generations, A0 reuse, budgets, commands and WS4 handoffs; independent workstream 2 review accepts the oracle before C1 uses it."
-    evidence: []
+    evidence:
+      - "dev/bench/peer_benchmark/dense/check.R and evidence/differences.csv (commit 4f49bb7b): a fresh current-tree scratch rerun reproduces all nine immutable native arms exactly, resolves all A0 pointers and leaves package/test/design scope unchanged. evidence/a0_implementer.txt and a0_successor_compare.csv record the post-Cut-4 A0 boundary: the accepted current successor gate passes 295/295 checks; original A0 bytes remain untouched."
+      - "dev/bench/peer_benchmark/dense/gut.R and evidence/gut_differences.csv (commit 4f49bb7b): the control reproduces and all six enumerated corruptions fail on their intended native/rule surface, including quantity-only, one-ULP cash, event order, final-warning and prior-usability mutations."
+      - "dev/bench/peer_benchmark/dense/inventory.md (commit 4f49bb7b): fields, projections, source generations, exact commands, 519-line source budget, ten-detector budget and WS4/M8b handoffs are recorded; freeze cbf25359 is immutable and explicitly awaits the independent Workstream 2 review before C1 consumption."
   - id: "LDG-3136"
     title: "Freeze public cold/warm timing boundaries and build the runner"
     workstream: 3
