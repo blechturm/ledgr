@@ -193,6 +193,13 @@ current producers are compared; WS4b does not redesign it.
 
 - **Route:** direct tickets, Type 2 at cut. **Gate:** dense parity lane, A0
   and the v0.2.2 reference unchanged, or each difference decided.
+- **Amendment (maintainer, 2026-10-30):** WS4b also owns the consolidated
+  path's per-pulse floor. Its gate adds a timing comparison against today's
+  dense path on the no-fill, sparse-rebalance and wide all-fill shapes, with
+  bounds set at the cut. The daily reconciliation's per-pulse canonical-JSON
+  detail record, per-pulse diagnostic flushing and per-pulse target
+  validation are in scope. Evidence: `dev/spikes/ws4a-carrier-probe/`
+  (availability floor 6.6 s against dense 2.1 s).
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.
 
