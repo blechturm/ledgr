@@ -1,0 +1,16 @@
+process_id,process_name,surviving_process_cpu_delta_seconds
+51480,Taskmgr,220.578125
+26484,WindowsTerminal,105.453125
+13100,explorer,45.65625
+4176,TotalMixFX,45.203125
+35396,codex,40.921875
+23456,ArmouryCrate.UserSessionHelper,35.6875
+23396,Snagit32,35.46875
+8176,codex,15.0625
+37212,chrome,13.234375
+33972,ArcControlAssist,12.484375
+3740,claude,10.890625
+40592,OpenConsole,8.25
+45516,codex,7.625
+11568,steamwebhelper,7.359375
+60188,OVRServer_x64,7.265625

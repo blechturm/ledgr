@@ -10,6 +10,7 @@ lib <- arg('lib', 'C:/Users/maxth/AppData/Local/Temp/ws4a-lib')
 prepared <- arg('prepared', 'C:/Users/maxth/AppData/Local/Temp/ws4a-evidence')
 phase <- arg('phase', 'timing')
 requested <- arg('arms', '')
+workloads <- strsplit(arg('workloads', 'wide'), ',', fixed = TRUE)[[1L]]
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 rscript <- file.path(R.home('bin'), 'Rscript.exe')
 ps <- 'C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
@@ -41,7 +42,7 @@ run <- function(tag, workflow, arm, shape, profile = 'none') {
     if (file.exists(qfile) && isTRUE(read.csv(qfile)$qualified[[1L]])) return(child)
     if (dir.exists(child)) { attempt <- attempt + 1L; next }
     dir.create(child)
-    quiet()
+    idle <- quiet()
     start <- format(Sys.time(), '%Y-%m-%dT%H:%M:%OS3Z', tz = 'UTC')
     p <- processx::process$new(rscript, c(file.path(folder, 'probe.R'),
       paste0('--out=', child), paste0('--lib=', lib), paste0('--prepared=', prepared),
@@ -58,7 +59,7 @@ run <- function(tag, workflow, arm, shape, profile = 'none') {
     p$wait()
     if (p$get_exit_status() != 0L) stop('child failed: ', child)
     qualified <- foreign_cpu < 0.5
-    write.csv(data.frame(qualified, external_R_cpu_seconds = foreign_cpu, start_utc = start,
+    write.csv(data.frame(qualified, external_R_cpu_seconds = foreign_cpu, external_R_ids = paste(union(names(idle), names(previous)), collapse = ';'), start_utc = start,
       end_utc = format(Sys.time(), '%Y-%m-%dT%H:%M:%OS3Z', tz = 'UTC')),
       qfile, row.names = FALSE)
     if (qualified) {
@@ -68,18 +69,23 @@ run <- function(tag, workflow, arm, shape, profile = 'none') {
     attempt <- attempt + 1L
   }
 }
-if (phase == 'timing') {
+if (phase == 'one_component') {
+  stopifnot(length(workloads) == 1L, nzchar(requested), !grepl(',', requested, fixed = TRUE))
+  run(paste(workloads, requested, 'component_repeat', sep = '_'), 'sweep', requested, workloads, 'components')
+} else if (phase == 'timing') {
   rows <- list(); n <- 0L
   for (workflow in c('sweep', 'durable')) {
     arms <- if (workflow == 'sweep') c('fork_r', 'fork_indexed', 'fork_r_indexed') else c('base', 'fork', 'fork_r', 'fork_indexed', 'fork_r_indexed')
     if (nzchar(requested)) arms <- strsplit(requested, ',', fixed = TRUE)[[1L]]
-    for (arm in arms) for (pair in 1:5) {
+    for (workload in workloads) for (arm in arms) for (pair in 1:5) {
       for (k in if (pair %% 2L) 1:2 else 2:1) {
-        shape <- if (k == 1L) 'floor' else 'wide'
+        shape <- if (k == 1L) 'floor' else workload
         tag <- paste(workflow, arm, pair, shape, sep = '_')
+        if (length(workloads) > 1L) tag <- paste(workload, tag, sep = '_')
         child <- run(tag, workflow, arm, shape)
         z <- read.csv(file.path(child, 'timing.csv'))
         z$workflow <- workflow; z$pair <- pair; z$order <- k
+        z$workload <- workload
         n <- n + 1L; rows[[n]] <- z
         write.csv(do.call(rbind, rows), file.path(out, 'additional_timings.csv'), row.names = FALSE)
       }
@@ -90,15 +96,19 @@ if (phase == 'timing') {
   for (workflow in c('sweep', 'durable')) {
     arms <- if (workflow == 'sweep') c('fork_r', 'fork_indexed', 'fork_r_indexed') else c('base', 'fork', 'fork_r', 'fork_indexed', 'fork_r_indexed')
     if (nzchar(requested)) arms <- strsplit(requested, ',', fixed = TRUE)[[1L]]
-    for (arm in arms) for (shape in if (workflow == 'sweep') c('floor', 'wide') else 'wide') {
+    for (workload in workloads) for (arm in arms) for (shape in if (workflow == 'sweep') c('floor', workload) else workload) {
       tag <- paste(workflow, arm, shape, 'components', sep = '_')
+      if (length(workloads) > 1L) tag <- paste(workload, tag, sep = '_')
       child <- run(tag, workflow, arm, shape, 'components')
       z <- read.csv(file.path(child, 'components.csv'))
-      z$workflow <- workflow; z$arm <- arm; z$shape <- shape
+      z$workflow <- workflow; z$arm <- arm; z$shape <- shape; z$workload <- workload
       n <- n + 1L; rows[[n]] <- z
       write.csv(do.call(rbind, rows), file.path(out, 'additional_components.csv'), row.names = FALSE)
-      if (workflow == 'sweep') run(paste(workflow, arm, shape, 'memory', sep = '_'),
-        workflow, arm, shape, 'memory')
+      if (workflow == 'sweep') {
+        memory_tag <- paste(workflow, arm, shape, 'memory', sep = '_')
+        if (length(workloads) > 1L) memory_tag <- paste(workload, memory_tag, sep = '_')
+        run(memory_tag, workflow, arm, shape, 'memory')
+      }
     }
   }
 }
