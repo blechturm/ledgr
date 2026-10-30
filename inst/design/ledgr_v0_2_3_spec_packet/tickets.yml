@@ -453,6 +453,17 @@ tickets:
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3134"]
+    scope_change: >-
+      Post-Cut-4 authority reconciliation, 2026-10-30. Cut 4 decisions (8)
+      and (17) supersede only this ticket's executable A0 invocation: the
+      current gate is dev/bench/v0_2_3_cut3_successors/a0/record.R followed by
+      compare.R, with output and result CSV in fresh scratch. The original A0
+      check.R remains historical and is run only to confirm that its failures
+      are the accepted successor population; it is no longer required to
+      return zero on the post-Cut-4 product. Original A0 records, fixtures,
+      exclusions and manifests remain unchanged. The three reference pointers
+      still name those original tables, but C1 uses the successor gate as the
+      exact current expectation, especially for dense_risk_features/run.
     scope: >-
       Deliver record.R, check.R, gut.R and an inventory under dense/.
       check.R reruns into scratch, losslessly diffs every declared native
