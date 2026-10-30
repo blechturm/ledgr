@@ -233,7 +233,8 @@ workstreams:
   - id: 2
     name: "Dense native deletion oracle (macro WS3)"
     cut: 2
-    status: "review_pending"
+    status: "complete"
+    accepted: "2026-10-30 by the maintainer after the Type 1 close review and focused re-review (ws2_close_review.md: PASS after patches). Freeze cbf25359 is accepted for C1 consumption."
     close_review: "PASS_AFTER_PATCHES in ws2_close_review.md, followed by focused PASS on 2026-10-30: F1-F4 are resolved; direct YAML, live ticket-evidence, diff-scope and immutable-freeze checks pass. Freeze cbf25359 is accepted by the reviewer for C1 consumption after maintainer acceptance."
     depends_on_workstream: null
     requires_review_acceptance: true
@@ -355,7 +356,7 @@ tickets:
   - id: "LDG-3133"
     title: "Declare the dense witness contracts and coverage reuse"
     workstream: 2
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3138"]
@@ -405,7 +406,7 @@ tickets:
   - id: "LDG-3134"
     title: "Run the native witnesses and freeze complete current outputs"
     workstream: 2
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3133"]
@@ -450,7 +451,7 @@ tickets:
   - id: "LDG-3135"
     title: "Make the oracle reject corruption and hand it to C1"
     workstream: 2
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3134"]
