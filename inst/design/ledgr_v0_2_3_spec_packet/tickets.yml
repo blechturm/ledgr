@@ -485,7 +485,10 @@ cuts:
       the synthesis (Type 1) and challenges ticket grain, dependencies,
       oracles and whether every gate can fail (Type 2). Round 1
       (cut_review_5.md, CHANGES_REQUIRED, F1-F9 required, F10 optional) is
-      applied in revision 2. LDG-3162 is a manual design gate with its own
+      applied in revision 2. Round 2 (cut_review_5_rereview_1.md,
+      PASS_AFTER_PATCHES: F1 and F3-F10 resolved, F2 resolved by its N1
+      patches) is applied verbatim in revision 3; the review states those
+      patches need no further review. LDG-3162 is a manual design gate with its own
       independent clean-context Codex review; an open Type 2 question blocks
       acceptance. After LDG-3162 and LDG-3163 complete, a subsequent
       independent cut review must pass before acceptance (decision 9). The
@@ -1229,11 +1232,20 @@ tickets:
       planner emits the same batch and keeps reading next-bar values from
       bars_mat. No proposal, fill-context or fill-intent object per fill
       remains on either planner. Migrate the P4 and P5 plan readers and the
-      compiled wrapper's input to the fill and rejection columns here. An
-      indexed scalar application loop may remain until LDG-3167, through the
-      single typed lot implementation; it must not recreate a list or S3
-      object per fill. Constructors validate the new plan groups now.
-    acceptance: ["no per-fill list, S3 object or timestamp parse remains in either planner", "the affordability-order publication mutation fails identity", "the chained-cost and rounding cases of LDG-3163 pass exactly", "every decision (2) public oracle passes exactly", "the full suite passes"]
+      compiled wrapper's input to the fill and rejection columns here. This
+      ticket also migrates the canonical handler's fill-input boundary,
+      ledgr_fill_event_payload(), and the db_live sink/writer input from
+      fill-intent objects to typed columns plus an index, or primitive scalar
+      arguments. These consumers reuse P3's computed publication effects;
+      they do not reconstruct a fill intent or recompute cash/position
+      deltas. Preserve sink behavior, metadata bytes, condition semantics and
+      append/flush boundaries. An indexed scalar application loop through the
+      single typed lot implementation may remain until LDG-3167. Existing
+      publication result objects and event/leg staging may remain until that
+      ticket; no per-fill plan or fill-intent object is reconstructed.
+      Constructors validate the new plan groups now. Register the affected
+      internal test migrations under decision (10).
+    acceptance: ["no per-fill list, S3 object or timestamp parse remains in either planner", "buffered durable, memory and db_live publication consume the typed plan without constructing a fill-intent object or recomputing its publication effects; the applicable identity and condition witnesses pass, and an injected reconstruction or duplicate effect computation fails its detector","the affordability-order publication mutation fails identity", "the chained-cost and rounding cases of LDG-3163 pass exactly", "every decision (2) public oracle passes exactly", "the full suite passes"]
     evidence: []
   - id: "LDG-3167"
     title: "Batched application and indexed publication"
@@ -1254,8 +1266,10 @@ tickets:
       non-fill builders keep their order and adapt once into the indexed
       buffer (E6); the compiled path, whose column input LDG-3166 already
       migrated, keeps state-before-append order. This ticket owns candidate
-      batching and indexed event and leg publication, not the plan interface
-      migration. Add the failure-boundary tests: a
+      batching and indexed event and leg publication, including removal of
+      the publication result/staging objects retained at LDG-3166; plan,
+      handler and live-writer input migration is already complete in
+      LDG-3166. Add the failure-boundary tests: a
       candidate-calculation error leaves state and buffers unchanged; an
       injected append or flush error aborts with durable rollback and no
       successful memory result.
