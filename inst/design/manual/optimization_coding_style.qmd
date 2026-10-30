@@ -162,6 +162,15 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   `ledgr_normalize_ts_utc()` element by element over bars, facts, events, or
   instrument-by-pulse axes. If text is genuinely required, format the whole
   vector once and reuse it.
+- **No JSON on per-pulse or per-fill paths** (maintainer, 2026-10-30). Fold,
+  planning, accounting and reader hot paths carry typed vectors. Canonical
+  JSON is allowed only for identity hashing and cold, once-per-run records.
+  A JSON encode or parse inside a loop over pulses, fills or events is a
+  review finding. Three measured cases led here: per-fill `meta_json`
+  payloads, per-pulse strategy state, and per-pulse padding of an empty
+  `asset_state` entry for every instrument on the availability path
+  (`../../../dev/spikes/pmwr-performance/`,
+  `../../../dev/spikes/ws4a-carrier-probe/`).
 - **Preserve the production rule, move the loop to compile time.** When a
   resolver is replaced, resolve each segment once at build time with the
   exact production predicate (applicability, supersession, precedence,
@@ -477,6 +486,8 @@ One diagnostic block per pulse versus one frame per instrument:
 - Is state inside the fold held in typed vectors, matrices, or segment tables
   with cursors, and do frames appear only at boundaries?
 - Are per-row writes by index into preallocated buffers, with no append?
+- Does any JSON encode or parse run once per pulse, fill or event? If so,
+  which typed vector replaces it?
 - Is any value computed on a hot path never read on the common branch?
 - Does the change add a second path to an answer the code already computes?
   Name its canonical path, its registered differential test and its removal

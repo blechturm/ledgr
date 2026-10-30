@@ -95,6 +95,29 @@ order and economics byte-identical. That spike would ask one question with one
 kill condition: does per-fill cost fall below a stated bound on this workload
 with A0 unchanged?
 
+## Addendum: the availability no-fill floor (2026-10-30)
+
+`floor_state_profile.R <out> <lib> availability|dense` runs a no-fill sweep
+whose strategy writes two logical state vectors every pulse. The
+availability snapshot declares complete session and lifetime facts, as the
+WS4a probe did. Wall: availability 7.99 s, dense 2.12 s, single runs. The
+profiles use `event = "elapsed"` at 5 ms. Windows' 15.6 ms timer makes the
+sampled time about a third of wall on both producers (factor 3.1), so the
+stage seconds below are scaled shares. Files:
+`profile_floor_state_{availability,dense}_total.csv`.
+
+| Extra on availability | ~s | Cause |
+| --- | ---: | --- |
+| State JSON | +2.2 | `ledgr_fold_asset_state_normalize()` (`R/fold-engine.R:97`) pads an empty `asset_state` entry for all 500 instruments every pulse; `canonical_json()` then encodes it |
+| Decide | +1.4 | general `ledgr_update_pulse_context_helpers()`, not dense's fast helpers |
+| Feature setup | +0.8 | history-substrate precompute |
+| Observe and settle | +0.7 | per-pulse valuation and carry |
+| Diagnostics | +0.5 | per-pulse block flush, including the reconciliation record |
+| Plan | +0.3 | |
+
+The reconciliation's JSON detail record is small, and target validation
+costs the same on both producers.
+
 ## Open
 
 - Floor profile (`profile_floor_total.csv`, no fills): about 45% is one-off

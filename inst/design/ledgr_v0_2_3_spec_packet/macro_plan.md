@@ -75,6 +75,12 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
 13. **Proportional gates.** A timing gate covers the cells where the cut's
     changes carry real regression risk; an effect a spike already settled
     is cited, not gated (maintainer, 2026-10-29, after cut 4).
+14. **No JSON on per-pulse or per-fill paths.** Fold, planning, accounting
+    and reader hot paths carry typed vectors; canonical JSON is allowed only
+    for identity hashing and cold, once-per-run records. A JSON encode or
+    parse inside a loop over pulses, fills or events is a review finding
+    (maintainer, 2026-10-30; `manual/optimization_coding_style.qmd`, Rules).
+    Every cut touching those paths removes or routes the JSON it meets.
 
 ## 2. Dependency structure
 
@@ -196,10 +202,13 @@ current producers are compared; WS4b does not redesign it.
 - **Amendment (maintainer, 2026-10-30):** WS4b also owns the consolidated
   path's per-pulse floor. Its gate adds a timing comparison against today's
   dense path on the no-fill, sparse-rebalance and wide all-fill shapes, with
-  bounds set at the cut. The daily reconciliation's per-pulse canonical-JSON
-  detail record, per-pulse diagnostic flushing and per-pulse target
-  validation are in scope. Evidence: `dev/spikes/ws4a-carrier-probe/`
-  (availability floor 6.6 s against dense 2.1 s).
+  bounds set at the cut. Per-pulse state normalization and serialization
+  (no per-instrument padding for undeclared asset state), the availability
+  context refresh, per-pulse valuation and diagnostic flushing are in scope.
+  Evidence: `dev/spikes/ws4a-carrier-probe/` (availability floor 6.6 s
+  against dense 2.1 s); a same-strategy no-fill profile attributes about
+  2.2 s of the difference to padded state JSON and 1.4 s to context refresh
+  (`dev/spikes/pmwr-performance/`).
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.
 
