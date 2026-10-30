@@ -1,5 +1,9 @@
 # ledgr (development version)
 
+- Maintainer benchmark evidence now includes a five-process descriptive
+  cold/warm public-run baseline with exact result controls for 12 x 90 and
+  500 x 1260 daily dense workloads; it is not a speed claim or a future ratio
+  arm.
 - Committed runs and sweeps now write their output through one internal
   output handler with a DuckDB or a memory sink, replacing the two separate
   handlers; run, sweep and walk-forward results are unchanged.

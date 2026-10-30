@@ -59,6 +59,15 @@ research question: how long does the next experiment take after the
 snapshot has been ingested, validated, sealed, and prepared once? Both
 matter, and neither may be presented as the other.
 
+A current-tree descriptive baseline records those clocks and exact
+result controls without asserting an improvement. It is not a base arm
+for a later regression ratio. Each same-engine before/after gate owns
+its proportional protocol under `dev/bench/timing/protocols/` and uses
+the shared paired timing harness. Tiny fixtures may diagnose fixed call
+overhead but must not rank scaling. Cross-engine comparisons and
+process-tree memory keep their separate peer-suite owners; phase and
+worker memory keep their release-plan owner.
+
 Reusable preparation is paid again when source data or snapshot facts
 change. Anything rebuilt for each strategy, parameter set, or run
 belongs to the warm clock even if the current implementation calls it

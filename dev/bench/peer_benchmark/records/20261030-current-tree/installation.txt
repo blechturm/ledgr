@@ -1,0 +1,24 @@
+g++ -std=gnu++20  -I"C:/PROGRA~1/R/R-46~1.1/include" -DNDEBUG  -I'C:/Users/maxth/AppData/Local/R/win-library/4.6/cpp11/include'   -I"C:/rtools45/x86_64-w64-mingw32.static.posix/include"      -O2 -Wall -gdwarf-2 -mfpmath=sse -msse2 -mstackrealign    -c cpp11.cpp -o cpp11.o
+g++ -std=gnu++20  -I"C:/PROGRA~1/R/R-46~1.1/include" -DNDEBUG  -I'C:/Users/maxth/AppData/Local/R/win-library/4.6/cpp11/include'   -I"C:/rtools45/x86_64-w64-mingw32.static.posix/include"      -O2 -Wall -gdwarf-2 -mfpmath=sse -msse2 -mstackrealign    -c history_compact.cpp -o history_compact.o
+g++ -std=gnu++20  -I"C:/PROGRA~1/R/R-46~1.1/include" -DNDEBUG  -I'C:/Users/maxth/AppData/Local/R/win-library/4.6/cpp11/include'   -I"C:/rtools45/x86_64-w64-mingw32.static.posix/include"      -O2 -Wall -gdwarf-2 -mfpmath=sse -msse2 -mstackrealign    -c spot_fifo.cpp -o spot_fifo.o
+g++ -std=gnu++20 -shared -static-libgcc -o ledgr.dll tmp.def cpp11.o history_compact.o spot_fifo.o -LC:/rtools45/x86_64-w64-mingw32.static.posix/lib/x64 -LC:/rtools45/x86_64-w64-mingw32.static.posix/lib -LC:/PROGRA~1/R/R-46~1.1/bin/x64 -lR
+* installing *source* package 'ledgr' ...
+** this is package 'ledgr' version '0.2.2'
+** using staged installation
+** libs
+using C++ compiler: 'G__~1.EXE (GCC) 14.2.0'
+installing to C:/Users/maxth/AppData/Local/Temp/ledgr-ws3-timing-baee977a57f845f3902325873c9a1321/library/00LOCK-source/00new/ledgr/libs/x64
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (ledgr)
