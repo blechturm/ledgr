@@ -72,9 +72,14 @@ Scope: package/test/design diff and new-file inventory unchanged across runs.
 LDG-3138's focused full test file passes; reverting the selector fails the
 lower-cut witnesses. Both prerequisite probes/RFC inputs survive unchanged at
 5d28db40 from source commit 7879e8ba.
-Fresh R size: **519 lines** (check.R 22, gut.R 64, native.R 249, recipes.R 173, record.R 11);
-400 timing lines planned, still below 1500. No product/API/schema/identity
-change, no timing or peer result. No old harness infrastructure imported.
+Fresh maintained source is **1,064 lines** after Workstream 3 (check.R 22,
+gut.R 64, native.R 249, recipes.R 173, record.R 11, timing.R 150,
+timing_check.R 224 and run_timing.ps1 171), below the 1,500-line allowance.
+The accepted descriptive record is
+[`records/20261030-current-tree/`](../records/20261030-current-tree/README.md).
+It uses the shared host probe by reference and imports no old harness or A0
+infrastructure. There is no product/API/schema/identity change and no peer or
+speed claim.
 
 Rejected attempts: first scratch cost setup used NULL features and refused;
 fixed to the public empty list before the freeze. First checker attempt

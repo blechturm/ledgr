@@ -242,7 +242,7 @@ workstreams:
   - id: 3
     name: "Current-tree public-run runtime baseline (macro WS3)"
     cut: 2
-    status: "planned"
+    status: "review_pending"
     depends_on_workstream: 2
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "after LDG-3137, before C1 consumes the timing baseline", reason: "One claim: complete reproducible baseline clocks include real public execution and required results under declared preparation, host and repeat policies. Inspect timer boundaries, installed source identity, per-process economic controls, raw repetitions, JIT/reuse and censoring; run the record checker and its guts. Verify that the driver invokes the shared host probe by path, records its identity, contains no copied host parser or paired-gate machinery, and does not present the descriptive record as a later ratio arm. Review the benchmark manual, README and NEWS diffs against those implemented clocks and labels. Do not rank tiny fixtures, require a speedup or certify future peer comparisons."}
@@ -512,7 +512,7 @@ tickets:
   - id: "LDG-3136"
     title: "Freeze public cold/warm timing boundaries and build the runner"
     workstream: 3
-    status: "planned"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3135"]
@@ -582,11 +582,14 @@ tickets:
       - "The installed product revision, two input shapes, seeds, SMA rule, required outputs, five cold/warm pairs, timers, host policy, limits and shared-host-probe commit/file identities are frozen before a baseline is promoted."
       - "The runner uses public ledgr_run and separate books, loads the shared host.R by path, calls its timing_host_probe() with the shared timing directory, keeps that probe outside both clocks, proves reuse is limited to unchanged native snapshot preparation, includes every required result in both clocks and records raw seconds at full precision; the dense timing directory contains no copied host parser or generic paired-gate runner/checker."
       - "A record checker rejects missing/duplicate cells, non-finite/non-positive times, bad or mismatched shared-host/JIT/reuse provenance, incomplete/unexpected skips, absent required output/phase evidence and differing economic controls across cold/warm and the five processes; a structural detector checks the live host.R load and the live harness_dir argument, not merely the presence of a shared-path string. Separate demonstrations make it fail when the actual shared call is removed, when the host.R load is repointed to a dense-local copy, when the probe directory is repointed to a dense-local host.ps1, or when the probe is moved inside either timed interval. Demonstrations also cover a missing cell, invalid host, failed/censored execution and altered terminal asset quantity with times/equity unchanged. Six oracle and four timing corruptions total ten behavioral detectors; the structural demonstrations are additional."
-    evidence: []
+    evidence:
+      - "dev/bench/peer_benchmark/dense/timing_protocol.md, timing.R, run_timing.ps1 and timing_check.R (runner commit 5002f8d8, freeze commit f99e387d): the protocol pins installed product 5002f8d81f17a81177d4b0cda2fa147d310e5e1c, both shapes, seed 20260530, transition-only SMA5/10, five cold/warm pairs, result controls, timer boundaries, 1200-second child and 5400-second window limits, no retry and no speed threshold. The runner installs the pinned archive outside the clocks, uses public ledgr_run with separate run IDs, reuses only the unchanged sealed snapshot and completed first-use state, and times fills, equity, cash and keyed holdings reconstruction in both arms. Maintained dense R/PowerShell source is 1,064 lines, below the 1,500-line budget."
+      - "Empirical: input the frozen timing source and the completed record; environment Windows 11 x64, R 4.6.1; source commit f99e387d; reproduction command Rscript --vanilla dev/bench/peer_benchmark/dense/timing_check.R --records=dev/bench/peer_benchmark/records/20261030-current-tree --gut; result exit 0, all four behavioral corruptions detected (missing cell, invalid host, failed/censored attempt, altered keyed asset quantity with clocks/equity unchanged) and all four structural corruptions detected (shared call removed, host.R load repointed locally, harness_dir repointed locally, probe moved inside the timed interval); dev/bench/peer_benchmark/records/20261030-current-tree/gut_results.csv."
+      - "dev/bench/peer_benchmark/records/20261030-current-tree/session.json and host CSVs (record commit 0d774481): timing.R loads repository-relative dev/bench/timing/host.R and calls timing_host_probe(harness_dir = dev/bench/timing/); all 21 calls occur outside both clocks. The record binds harness commit f99e387da42f3fb8ebdf9d488368a63cd5ff604f and actual Git blobs host.R 723453ffad40ec819f8251a351bf58668326237e and host.ps1 769a7beba003518b01cc88256bb95f15545bda1d. Every observation reports High performance; parent and every measured child use affinity 0xFFFF. CPU and foreign-R values are retained as observations."
   - id: "LDG-3137"
     title: "Record and review the runtime baseline and route the remaining suite"
     workstream: 3
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3136"]
@@ -624,7 +627,10 @@ tickets:
       - "The committed baseline names exact inputs/source/toolchain/host and all five cold/warm pairs for both shapes; checker and its guts pass, or an explicitly linked maintainer disposition leaves readiness accurately incomplete."
       - "Documentation/NEWS and pipeline ownership agree with the fresh-harness scope, the descriptive-versus-paired boundary and delayed old-peer-driver retirement; A0 stays independent, snapshot/config/store identity impact is none and no product/schema/dependency/example change is claimed."
       - "Workstream 3 close review accepts the measurement; the C1 readiness record points to both accepted workstream reviews and immutable oracle/baseline inputs, while every remaining suite obligation retains an owner."
-    evidence: []
+    evidence:
+      - "dev/bench/peer_benchmark/records/20261030-current-tree/ (commit 0d774481): one attempt, ten isolated processes, 20 complete clock cells, no retry or censored row. Median/min/max seconds: 12x90 cold 1.459739/1.449157/1.472072 and warm 0.470000/0.450000/0.470000; 500x1260 cold 28.339860/28.108557/28.810301 and warm 24.530000/24.470000/24.580000. raw.csv retains full-precision clocks and phases; record.rds retains exact fills, terminal cash/equity, keyed holdings and snapshot/config hashes. Every cold/warm arm and process matches its shape's first immutable controls. The small row is labelled fixed-call overhead only; no peer, scaling or speed claim is made."
+      - "Empirical: input accepted dense oracle freeze cbf25359 against the measured product tree, whose R/src/DESCRIPTION/NAMESPACE are identical from installed commit 5002f8d8 through the record commit; environment Windows 11 x64, R 4.6.1; reproduction command Rscript --vanilla dev/bench/peer_benchmark/dense/check.R --pkg=. --records=dev/bench/peer_benchmark/dense/oracles/20261030-pre-ws4 --out=<fresh C:/tmp scratch>; result exit 0, all nine native arms identical, A0 pointers resolve and package scope is unchanged; clock 22 seconds wall."
+      - "dev/bench/peer_benchmark/README.md, inst/design/manual/benchmark_methodology.qmd/.md and NEWS.md (commit 0d774481): document the public cold/warm clocks, exact controls and descriptive-versus-paired boundary. Later same-engine gates own proportional folders under dev/bench/timing/protocols/ and never use this record as a ratio arm; cross-engine peer clocks/process-tree memory and macro WS9 phase/worker memory retain their existing owners; the old peer driver and A0 remain active. Identity and release impact: snapshot content, run configuration and store fingerprint none; benchmark sources/records/manual and one NEWS entry only, with no product, schema, dependency, public API or example change."
   - id: "LDG-3138"
     title: "Keep every open cut visible and preserve the prerequisite evidence"
     workstream: 2
