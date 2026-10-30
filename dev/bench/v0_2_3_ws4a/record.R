@@ -17,5 +17,6 @@ for (id in ids) {
   cat(sprintf("%-6s %-10s %d tables\n", id, ws_cases[[id]]$owner, length(res$tables)))
 }
 base <- system2("git", c("-C", ws_root, "rev-parse", "HEAD"), stdout = TRUE)
-writeLines(c(paste("recorded_on", base), paste("product_base 953338df"), paste("cases", paste(names(ws_cases), collapse = ","))),
-  file.path(out_dir, "base.txt"))
+lines <- c(paste("recorded_on", base), paste("product_base 953338df"), paste("cases", paste(names(ws_cases), collapse = ",")))
+if (!is.null(ws_arg("cases")) && file.exists(file.path(out_dir, "base.txt"))) lines <- c(readLines(file.path(out_dir, "base.txt")), paste("rerecorded", paste(ids, collapse = ","), "on", base))
+writeLines(lines, file.path(out_dir, "base.txt"))

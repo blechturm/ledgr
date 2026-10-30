@@ -1,22 +1,34 @@
 # WS4a case checker: reruns cases into a scratch directory and compares each
 # with records/ exactly (CSV bytes and identical() on case.rds; observations
 # are not compared). Guards that the product files equal --base and that the
-# run left them unchanged. Exit 0 on PASS, 1 on FAIL.
+# run left them unchanged. Exit 0 on PASS, 1 on FAIL (a case difference), 2 on
+# REFUSED (a Git error, an unresolvable --base, or an unknown gut or case).
 #
 # Usage: Rscript check.R [--out=<scratch>] [--records=<dir>] [--cases=C1,C2]
 #                        [--gut=<name>] [--base=<git ref, default 953338df>]
 
 source(file.path(dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])), "lib.R"))
 source(file.path(ws_dir, "guts.R"))
+refuse <- function(...) {
+  cat("ws4a check: REFUSED,", ..., "\n")
+  quit(status = 2L)
+}
 records <- ws_arg("records", file.path(ws_dir, "records"))
 out_dir <- ws_arg("out", file.path(tempdir(), "ws4a_check"))
 gut <- ws4a_guts[[ws_arg("gut", "")]]
+if (nzchar(ws_arg("gut", "")) && is.null(gut)) refuse("unknown gut", ws_arg("gut"))
 ids <- ws_arg("cases", gut$case)
 ids <- if (is.null(ids)) names(ws_cases) else strsplit(ids, ",", fixed = TRUE)[[1L]]
+if (length(ids) == 0L || !all(ids %in% names(ws_cases))) refuse("unknown or empty case selection:", setdiff(ids, names(ws_cases)))
 product <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man")
+git <- function(...) {
+  out <- suppressWarnings(system2("git", c("-C", ws_root, ...), stdout = TRUE, stderr = FALSE))
+  if (!identical(attr(out, "status") %||% 0L, 0L)) refuse("git", ..., "exited", attr(out, "status"))
+  out
+}
+base <- git("rev-parse", "--verify", paste0(ws_arg("base", "953338df"), "^{commit}"))
 guard <- function() {
-  git <- function(...) system2("git", c("-C", ws_root, ...), stdout = TRUE, stderr = FALSE)
-  c(git("diff", "--name-only", ws_arg("base", "953338df"), "--", product),
+  c(git("diff", "--name-only", base, "--", product),
     grep("^[?][?]", git("status", "--porcelain", "--untracked-files=all", "--", product), value = TRUE))
 }
 before <- guard()

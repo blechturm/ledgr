@@ -1,5 +1,6 @@
 # WS4a detector baselines (LDG-3163 scope f; design note Section 6); static parse of <root>/R, runtime on <lib>.
-# Rscript detectors.R --lib=<installed ledgr> [--root=<checkout>] [--out=<dir>] [--freeze=1]
+# Rscript detectors.R --lib=<installed ledgr> [--root=<checkout>] [--out=<dir>] [--freeze=1] [--base=<D20 git ref>]
+# Exit 1 on any unexpected base outcome or a failed or missing required control (expected old-representation FAILs pass).
 a <- commandArgs(TRUE)
 arg <- function(key, default = NULL) {
   z <- grep(paste0("^--", key, "="), a, value = TRUE)
@@ -34,10 +35,12 @@ record <- function(id, predicate, examined, hits, expected, why, control, ctl_pa
     base_hits = paste(head(hits, 4L), collapse = " | "), n_hits = length(hits), control,
     control_compliant_passes = ctl_pass, control_violation_fails = ctl_fail)
 }
-static <- function(id, predicate, check, examined, expected, why, control, good, bad) {
+static <- function(id, predicate, check, examined, expected, why, control, good, bad, more = character(), ctl = TRUE) {
   run <- function(fns) unlist(Map(function(nm, e) { h <- unique(check(e, nm)); if (length(h)) paste0(nm, ": ", h) }, names(fns), fns))
-  record(id, predicate, names(examined), run(examined), expected, why, control,
-    !length(run(list(control = good))), length(run(list(control = bad))) > 0L)
+  set <- function(x) if (is.list(x)) x else list(control = x) # a bare control, or a named owner list
+  bads <- if (is.list(bad) && is.list(bad[[1L]])) bad else list(bad) # every violating control must fail
+  record(id, predicate, names(examined), c(more, run(examined)), expected, why, control, !length(run(set(good))) && ctl[[1L]],
+    all(vapply(bads, function(b) length(run(set(b))) > 0L, NA)) && ctl[[length(ctl)]])
 }
 stages <- paste0("ledgr_fold_stage_", c("observe_settle", "decide", "plan", "apply", "commit"))
 kernel <- names(D)[grepl("^ledgr_(lot_|position_from_lots)", names(D))]
@@ -62,11 +65,23 @@ static("D3", "no character indexing on run/context-axis vectors",
   function(e, nm) unlist(lapply(calls(e), function(x) if (head_of(x) %in% c("[", "[[") && length(x) >= 3L && char_index(x[[3L]])) substr(txt(x), 1L, 50L))),
   pick(c(kernel, "ledgr_replay_accounting_events", "ledgr_fold_stage_decide", "ledgr_fold_stage_plan", "ledgr_fold_build_availability_pulse_plan")),
   "FAIL", old, "net_by_inst[[id]]", str2lang("function(b, pos) b$net_by_inst[[pos]]"), str2lang("function(b, id) b$net_by_inst[[id]]"))
-static("D6", "JSON encode/parse in fold stages only at routed sites (meta_json, H5, intent reason, stop/exception detail)",
-  function(e, nm) { t <- vapply(Filter(function(x) grepl("json|JSON", head_of(x)), calls(e)), txt, "")
-    substr(t[!grepl("intent_reason|risk_step|ledgr_availability_detail_json|virtual_final_cash|exception|meta_json", t)], 1L, 50L) },
-  pick(stages), "FAIL", "P5 serialises strategy state with canonical_json(state_update) each pulse (fe:1521), a site the routed list omits",
-  "new canonical_json call in P3", str2lang("function(x) canonical_json(list(intent_reason = x))"), str2lang("function(x) canonical_json(list(plan = x))"))
+shape <- function(x) paste0(head_of(x), "(", paste(vapply(as.list(x)[-1L], function(y)
+  if (is.call(y) && head_of(y) == "list") paste0("list(", paste(names(y)[-1L], collapse = ","), ")") else txt(y), ""), collapse = "; "), ")")
+json_shapes <- function(e) vapply(Filter(function(x) grepl("json|JSON", head_of(x)), calls(e)), shape, "")
+allow6 <- c(ledgr_fold_stage_observe_settle = "ledgr_availability_detail_json(affected$details[[k]])", # P1 valuation stop detail
+  ledgr_fold_stage_decide = "canonical_json(list(intent_reason))", # intent reason, R8.05
+  ledgr_fold_stage_decide = "canonical_json(list(risk_step))", # P2 risk stop detail
+  ledgr_fold_stage_plan = "canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash))", # P3 affordability stop detail
+  ledgr_fold_stage_commit = paste0("canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash,intended_gross_exposure,",
+    "post_risk_gross_exposure,actual_gross_exposure,exposure_basis))"), # H5 reconciliation, R8.03
+  ledgr_fold_stage_commit = "canonical_json(state_update)") # P5 strategy-state serialization, R8.04
+static("D6", "JSON encode/parse in fold stages only at routed sites, keyed by owning stage and parsed call shape; each extra occurrence counts",
+  function(e, nm) { s <- json_shapes(e); u <- unique(s); n <- vapply(u, function(v) sum(s == v) - sum(allow6[names(allow6) == nm] == v), 0)
+    sprintf("%s (+%d)", u[n > 0], as.integer(n[n > 0])) },
+  pick(stages), "PASS", "every base site is a routed site at its owner (Note D6; P5's canonical_json(state_update) is route R8.04)",
+  "unchanged P5 passes; new P3 call carrying intent_reason; a second P5 state encode", list(ledgr_fold_stage_commit = D$ledgr_fold_stage_commit),
+  list(list(ledgr_fold_stage_plan = inject(D$ledgr_fold_stage_plan, "canonical_json(list(intent_reason = x))")),
+    list(ledgr_fold_stage_commit = inject(D$ledgr_fold_stage_commit, "canonical_json(state_update)"))))
 static("D8", "no fill-intent object in the fold or sinks (static part)",
   function(e, nm) c(intersect(all.names(e), c("fill_intent", "ledgr_fold_pulse_plan_fill_intents")),
     if (grepl('"ledgr_fill_intent"', txt(e), fixed = TRUE)) "class ledgr_fill_intent"),
@@ -77,10 +92,6 @@ static("D9", "no per-fill or per-leg staging list in publication; routed memory 
     grepl('^(c\\(.*)?vector\\("list"', txt(x[[3L]]))) as.character(x[[2L]]))),
   pick(sinks), "FAIL", old, "staged per-fill list",
   str2lang("function(n) { cols <- list(); cols$meta <- vector(\"list\", n) }"), str2lang("function(n) pulse_fill_rows <- vector(\"list\", n)"))
-static("D10", "no equity accumulator in fold or service slots (slot inspection; writer count needs the typed record)",
-  function(e, nm) intersect(all.names(e), c("equity_fact_accumulator", "record_equity_fact")), pick(c(stages, "ledgr_fold_envelope", sinks)),
-  "FAIL", "both current accumulators exist until LDG-3168", "keep the accumulator",
-  str2lang("function(r, i, x) { r$cash[i] <- x; r }"), str2lang("function(services, x) services$equity_fact_accumulator$append(x)"))
 static("D11", "positions read from lot-derived net_by_inst, never positions plus a delta",
   function(e, nm) unlist(lapply(assigns(e), function(x) if ("positions" %in% all.names(x[[2L]]) && any(c("+", "-") %in% all.names(x[[3L]])) &&
     any(grepl("position|qty|delta", setdiff(all.names(x[[3L]]), c("+", "-"))))) txt(x))),
@@ -106,9 +117,45 @@ ph <- list(D21 = c("^substrate_reference:ledgr_fold_stage_(plan|apply|commit)|^s
     "execution view and history services only from declared stages (checker; add ledgr_carrier_execution_view() at LDG-3166)", "call it from P4"))
 for (k in names(ph)) record(k, ph[[k]][4], stages, phase(ph[[k]][1]), "PASS", "the base passes the existing phase checker", ph[[k]][5],
   !length(phase(ph[[k]][1])), length(phase(ph[[k]][1], tmp_def(ph[[k]][2], inject(D[[ph[[k]][2]]], ph[[k]][3])))) > 0L)
+# D20: each Section 3.4 route's named boundary on <root> against the --base commit (git archive), plus check.R on its witness cases.
+bdir <- tempfile("ws4a_base"); dir.create(bdir)
+if (system2("git", c("-C", file.path(here, "../../.."), "archive", "-o", file.path(bdir, "b.tar"), arg("base", "953338df"), "R", "src"))) stop("git archive of the base failed")
+utils::untar(file.path(bdir, "b.tar"), exdir = bdir)
+defs <- function(dir) { # every top-level assignment, constants included
+  e <- Filter(function(x) is.call(x) && identical(x[[1L]], as.name("<-")) && is.symbol(x[[2L]]),
+    do.call(c, lapply(list.files(file.path(dir, "R"), "\\.R$", full.names = TRUE), function(f) as.list(parse(f, keep.source = FALSE)))))
+  stats::setNames(lapply(e, `[[`, 3L), vapply(e, function(x) as.character(x[[2L]]), "")) }
+sig <- function(S, fns) vapply(fns, function(f) if (is.null(S[[f]])) "absent" else txt(S[[f]][[2L]]), "")
+cl <- function(S, fn, rx) grep(rx, json_shapes(S[[fn]]), value = TRUE)
+routes <- function(S, dir) { src <- list.files(file.path(dir, "src"), "\\.(c|cpp|h|hpp)$|^Makevars", full.names = TRUE)
+  meta <- vapply(S, function(f) sum(gregexpr("meta_json (=|<-) [a-z_]*json\\(", txt(f))[[1L]] > 0L), 0)
+  list(R8.01 = sig(S, "ledgr_carrier_provider_view"), # absent on the base; LDG-3165 adds the adapter
+    R8.02 = vapply(Filter(function(x) identical(txt(x[[2L]]), "sink$keep_diagnostics"), assigns(S$ledgr_output_sink_memory)), txt, ""),
+    R8.03 = cl(S, "ledgr_fold_stage_commit", "cash_before"),
+    R8.04 = cl(S, "ledgr_fold_stage_commit", "state_update"),
+    R8.05 = cl(S, "ledgr_fold_stage_decide", "intent_reason"),
+    R8.06 = sig(S, c("ledgr_history_bar_packet_frame", "ledgr_history_feature_frame", "ledgr_bars_pulse_views")),
+    R8.07 = sig(S, "ledgr_prepare_accounting_events"),
+    R8.08 = sig(S, c("ledgr_disposition_post", "ledgr_corporate_action_plan", "ledgr_opening_position_event_rows")),
+    R8.09 = paste(names(meta), meta)[meta > 0],
+    R8.10 = c(txt(S$ledgr_output_typed_columns), sig(S, "ledgr_fill_row_buffer")),
+    R8.11 = cl(S, "ledgr_fold_envelope", "."),
+    R8.12 = vapply(S[c("canonical_json", paste0(".ledgr_json_cache_", c("get", "set", "key")))], txt, ""),
+    R8.13 = paste(basename(src), vapply(src, function(f) digest::digest(readLines(f, warn = FALSE)), "")), # line endings ignored
+    R8.14 = setdiff(names(S$ledgr_fold_state_new[[2L]]), "equity_facts")) }
+S_now <- defs(root); r_base <- routes(defs(bdir), bdir)
+diff20 <- function(S) names(r_base)[!mapply(identical, r_base, routes(S, root))]
+w20 <- c("C1", "C3", "C5b", "C6", "C8a", "C9", "C10", "C11", "C13a", "C15", "C16", "C18") # output witnesses; R8.01, R8.05 have none on the base
+witness <- function(...) system2(file.path(R.home("bin"), "Rscript"), c(shQuote(file.path(here, "check.R")), paste0("--out=", tempfile("d20")), ...), stdout = FALSE, stderr = FALSE)
+S_mut <- S_now; S_mut$ledgr_fold_stage_commit <- inject(S_mut$ledgr_fold_stage_commit, "canonical_json(state_update)")
+record("D20", "each Section 3.4 route's named boundary equals --base's, and its witness cases reproduce (check.R)", c(names(r_base), "witnesses:", w20),
+  c(diff20(S_now), if (witness(paste0("--cases=", paste(w20, collapse = ","))) != 0L) "witness cases differ from their records"), "PASS",
+  "base side; R8.01 ledgr_carrier_provider_view is absent until LDG-3165, R8.05 strategy_intent is in no recorded case",
+  "a second P5 state encode (R8.04); output gut C1_drop_notional", !length(diff20(S_now)),
+  identical(diff20(S_mut), "R8.04") && witness("--gut=C1_drop_notional") == 1L)
 # Frozen-identity detectors: --freeze=1 on the base writes the reference values.
 deps <- function(d) paste(gsub("\\s+", "", d[, intersect(c("Depends", "Imports", "LinkingTo", "Suggests"), colnames(d))]), collapse = ";")
-exports <- function(lines) paste(sort(grep("^(export|S3method)\\(", lines, value = TRUE)), collapse = ";")
+exports <- function(lines) paste(sort(grep("^(export|S3method)\\(", lines, value = TRUE), method = "radix"), collapse = ";") # C order in any locale
 census <- function(fs) paste(basename(fs), vapply(fs, function(f) {
   l <- readLines(f); sum(lengths(regmatches(l, gregexpr("availability_active", l, fixed = TRUE))))
 }, 0), collapse = ";")
@@ -138,12 +185,32 @@ env$ledgr_lot_add_realized <- function(state, delta) { n_k <<- n_k + 1; ns$ledgr
 open_ok <- function(op) {
   environment(op) <- env; n_k <<- 0
   s0 <- ns$ledgr_lot_state("A"); s0$realized_pnl <- 5; s0$realized_comp <- 1e-13
-  n_k == 0 && identical(op(s0, "A", 3, 10)$realized_comp, s0$realized_comp)
+  after <- op(s0, "A", 3, 10)
+  n_k == 0 && identical(after$realized_comp, s0$realized_comp) # counter read after the operation
 }
-op <- ns$ledgr_lot_apply_opening; m6 <- op
-body(m6) <- as.call(c(as.list(body(op))[1L], quote(state <- ledgr_lot_add_realized(state, 0)), as.list(body(op))[-1L]))
+op <- ns$ledgr_lot_apply_opening
+kahan <- function(stmt) { f <- op; body(f) <- as.call(c(as.list(body(op))[1L], stmt, as.list(body(op))[-1L])); f }
+m6 <- kahan(quote(state <- ledgr_lot_add_realized(state, 0))); m6d <- kahan(quote(ledgr_lot_add_realized(state, 0))) # M6; discarded result
 record("D7", "opening performs no Kahan step; nonzero compensation preserved (invocation counter)", "ledgr_lot_apply_opening",
-  if (open_ok(op)) character() else "Kahan step on opening", "PASS", "base openings skip ledgr_lot_add_realized", "M6", open_ok(op), !open_ok(m6))
+  if (open_ok(op)) character() else "Kahan step on opening", "PASS", "base openings skip ledgr_lot_add_realized",
+  "M6; a Kahan call whose result is discarded", open_ok(op), !open_ok(m6) && !open_ok(m6d))
+# D12a: the existing store/config tests, and C1's recorded config_hash recomputed from its recorded config_json.
+c1 <- utils::read.csv(file.path(here, "records", "C1", "run.runs.csv"), colClasses = "character", check.names = FALSE)
+c1_hash <- function(j) ns$config_hash(yyjsonr::read_json_str(gsub("\\\\", "\\", j, fixed = TRUE), # the record doubles backslashes
+  opts = yyjsonr::opts_read_json(arr_of_objs_to_df = FALSE, obj_of_arrs_to_df = FALSE, length1_array_asis = TRUE)))
+w12a <- function(j) if (!identical(c1_hash(j), c1[["config_hash:character"]])) "C1 config hash differs from its record"
+d12a <- function() {
+  r <- do.call(rbind, lapply(paste0("test-", c("config", "store-gate-contracts", "run-store"), ".R"), function(f) as.data.frame(testthat::test_file(
+    file.path(root, "tests", "testthat", f), reporter = "silent", package = "ledgr", load_package = "installed"))[c("file", "test", "failed", "error")]))
+  c(sprintf("%s: %s", r$file, r$test)[r$failed > 0L | r$error], if (!nrow(r)) "no store/config test ran", w12a(c1[["config_json:character"]]))
+}
+h12a <- d12a(); config_hash <- ns$config_hash
+utils::assignInNamespace("config_hash", function(config) digest::digest(ns$canonical_json(config), algo = "sha256"), ns = "ledgr") # payload rule dropped
+m12a <- d12a(); utils::assignInNamespace("config_hash", config_hash, ns = "ledgr")
+record("D12a", "existing store/config tests pass; C1's recorded config_hash equals config_hash() of its recorded config_json",
+  c("tests/testthat/test-{config,store-gate-contracts,run-store}.R", "records/C1/run.runs.csv"), h12a, "PASS", "the base passes both",
+  "changed config-hash rule; one changed C1 config field", !length(h12a),
+  "C1 config hash differs from its record" %in% m12a && length(m12a) > 1L && length(w12a(sub('"initial_cash":100000.0', '"initial_cash":100001.0', c1[["config_json:character"]], fixed = TRUE))) > 0L)
 ev <- list(event_id = c("e1", "e2"), run_id = c("r", "r"), ts_utc = as.POSIXct(c("2020-01-02 21:00:00", "2020-01-03 21:00:00"), tz = "UTC"),
   event_type = c("FILL", "FILL"), instrument_id = c("A", "A"), side = c("BUY", "SELL"), qty = c(2, 1), price = c(10, 12),
   fee = c(1, 1), meta_json = c(NA_character_, NA_character_), event_seq = 1:2)
@@ -168,6 +235,10 @@ hook <- function(name, pre = NULL) {
 }
 hook("ledgr_fold_stage_decide", function(fold_state, services, observation, ...) p2_names <<- unique(c(p2_names, nm_all(observation))))
 for (h in c("ledgr_validate_strategy_targets", "ledgr_validate_post_risk_targets", "ledgr_fill_publication_deltas")) hook(h)
+wrap <- function(name, slot) { orig <- get(name, ns) # count every call of the equity writer this constructor hands out
+  utils::assignInNamespace(name, function(...) { o <- orig(...); f <- o[[slot]]
+    if (is.function(f)) o[[slot]] <- function(...) { cnt$eq <- cnt$eq + 1; f(...) }; o }, ns = "ledgr") }
+cnt$eq <- 0; wrap("ledgr_fold_equity_fact_accumulator", "append"); wrap("ledgr_output_sink_memory", "record_equity_fact")
 bt <- suppressWarnings(ledgr_run(ledgr_experiment(snap, toggle, opening = ledgr_opening(cash = 1e6), cost_model = ledgr_cost_zero()), run_id = "d"))
 counts <- as.list(cnt); fills <- nrow(ledgr_results(bt, "fills")); close(bt)
 once <- function(n, per) if (isTRUE(n == per)) character() else sprintf("%g calls for %g units", n, per)
@@ -181,11 +252,57 @@ record("D5", "P2's input carries no execution-packet field (observation names, d
 record("D8b", "effects computed once: ledgr_fill_publication_deltas calls per actual fill (runtime counter)", "ledgr_fill_publication_deltas",
   once(counts$ledgr_fill_publication_deltas, fills), "PASS", "one helper call per fill; P4's inline cash_delta (fe:1384-1388) is invisible to it",
   "compute twice", !length(once(10, 10)), length(once(20, 10)) > 0L)
-na <- c(D2 = "typed pulse staging does not exist on the base", D12a = "needs scope (c)'s C1 config-hash witness and the existing store tests",
-  D16 = "no provider adapter on the base", D18 = "the base kernel takes one fill per call; no kernel to refuse duplicates",
-  D20 = "a candidate-versus-base route diff; the base side is the A0 and case records", D22 = "no integer dictionaries on the base",
-  W1 = "no candidate book or block publication entry on the base")
-for (k in names(na)) record(k, "design note Section 6", "", character(), "NOT_EVALUABLE", na[[k]], "", NA, NA)
+writers <- function(s, sweep) { # equity-writer calls per valued (decided) pulse on one path
+  e0 <- cnt$eq; p0 <- cnt$ledgr_fold_stage_decide
+  x <- ledgr_experiment(s, toggle, opening = ledgr_opening(cash = 1e6), cost_model = ledgr_cost_zero())
+  if (sweep) suppressWarnings(ledgr_sweep(x, ledgr_grid_named(w = list()), workers = 1L, seed = 1L)) else close(suppressWarnings(ledgr_run(x, run_id = "w")))
+  once(cnt$eq - e0, cnt$ledgr_fold_stage_decide - p0)
+}
+dsnap <- ledgr_snapshot_from_df(pit$bars, db_path = tempfile(fileext = ".duckdb"), snapshot_id = "dd", price_basis = "split_adjusted")
+wc <- unlist(Map(function(s, sw, lab) sprintf("%s: %s", lab, writers(s, sw)), list(snap, snap, dsnap, dsnap), c(FALSE, TRUE, FALSE, TRUE),
+  c("availability run", "availability sweep", "dense run", "dense sweep")))
+static("D10", "exactly one equity writer per valued pulse on both producers' run and sweep (runtime count); no accumulator in fold or service slots",
+  function(e, nm) intersect(all.names(e), c("equity_fact_accumulator", "record_equity_fact")), pick(c(stages, "ledgr_fold_envelope", sinks)),
+  "FAIL", "both current accumulators exist until LDG-3168", "keep the accumulator; a duplicate and a missing writer",
+  str2lang("function(r, i, x) { r$cash[i] <- x; r }"), str2lang("function(services, x) services$equity_fact_accumulator$append(x)"),
+  more = wc, ctl = c(!length(once(43, 43)), length(once(86, 43)) > 0L && length(once(0, 43)) > 0L))
+later <- function(id, predicate, adapter, control, pass, fail) record(id, predicate, adapter, character(), "NOT_EVALUABLE", # own controls run now
+  paste("production attachment absent on the base; adapter:", adapter), control, pass, fail)
+staging <- function(reset, prefix) { buf <- integer(4L); used <- 0L # pulses stage 3, 2, 1 rows at constant capacity 4
+  lapply(1:3, function(p) { buf[used + seq_len(4L - p)] <<- p; used <<- used + 4L - p
+    h <- list(p = p, rows = if (prefix) buf[seq_len(used)] else buf, used = used); if (reset) used <<- 0L; c(h, after = used) }) }
+drained <- function(tr) unlist(lapply(tr, function(x) if (x$after != 0L || length(x$rows) != x$used || any(x$rows != x$p)) paste("pulse", x$p)))
+later("D2", "staging used count is zero after each drain; only the used prefix is handed out; no prior-pulse row is retained",
+  "runtime hooks on the typed pulse staging drains (LDG-3168)", "stale staging (no reset); handing out the unused capacity",
+  !length(drained(staging(TRUE, TRUE))), length(drained(staging(FALSE, TRUE))) > 0L && length(drained(staging(TRUE, FALSE))) > 0L)
+adapter_calls <- function(per_column) { n <- 0; adapt <- function(x) { n <<- n + 1; x }
+  view <- list(open = 1, close = 2); if (per_column) lapply(view, adapt) else adapt(view); once(n, 1) }
+later("D16", "provider adapter called once per produced view (runtime counter)", "counter on ledgr_carrier_provider_view() (LDG-3165)",
+  "per-column conversion repeats the adapter", !length(adapter_calls(FALSE)), length(adapter_calls(TRUE)) > 0L)
+refuses <- function(kernel) inherits(tryCatch(kernel(c(1L, 1L), c(1, 2)), error = identity), "error")
+later("D18", "a kernel call refuses duplicate instruments", "the typed lot kernel entry, ledgr_lot_kernel (LDG-3164)", "accept duplicates",
+  refuses(function(pos, q) { if (anyDuplicated(pos)) stop("duplicate instrument"); q }), !refuses(function(pos, q) q))
+fx22 <- list(p3 = c("", "final_pulse_no_execution", "execution_bar_missing", "insufficient_cash", "membership_changed_before_execution",
+    "trading_halted", "quotation_only", "status_unknown", "status_unknown_or_conflicting", "lifetime_inactive"),
+  restriction = c("", "trading_halted", "quotation_only", "status_unknown", "status_unknown_or_conflicting", "lifetime_inactive", "valuation_frozen"),
+  mark_source = c("", "missing", "expired_close", "current_close", "stale_close", "frozen_close")) # Note 2.1-2.2 literals; code = position - 1
+dict22 <- function(d) names(fx22)[!vapply(names(fx22), function(k) { s <- sort(d[[k]])
+  identical(names(s), fx22[[k]]) && identical(unname(s), seq_along(fx22[[k]]) - 1L) }, NA)]
+good22 <- lapply(fx22, function(f) rev(stats::setNames(seq_along(f) - 1L, f))); bad22 <- good22
+bad22$p3[c("trading_halted", "quotation_only")] <- bad22$p3[c("quotation_only", "trading_halted")]
+later("D22", "dictionaries match the literal fixtures (tokens and codes)", "the carrier dictionaries (LDG-3166; restriction codes LDG-3165)",
+  "renumber a token", !length(dict22(good22)), length(dict22(bad22)) > 0L)
+w1_order <- list(publication = c("candidate_book_installed", "sequence_advanced", "legs_recorded", "positions_cash_installed"),
+  compiled_append = c("compiled_lot_state_installed", "next_sequence_installed"))
+w1 <- function(obs) names(w1_order)[!mapply(identical, obs[names(w1_order)], w1_order)]
+swapped <- unlist(lapply(names(w1_order), function(k) apply(utils::combn(length(w1_order[[k]]), 2L), 2L, function(p) {
+  o <- w1_order; o[[k]] <- replace(o[[k]], p, o[[k]][rev(p)]); length(w1(o)) > 0L })))
+later("W1", "observed application order at the publication and compiled-append entries equals the declared order",
+  "runtime witness at the canonical publication and compiled append entries (LDG-3167)", "swap each observed pair", !length(w1(w1_order)), all(swapped))
 res <- do.call(rbind, rows); res$base_outcome[res$expected_base_outcome == "NOT_EVALUABLE"] <- "NOT_EVALUABLE"
 utils::write.csv(res, file.path(out, "baseline.csv"), row.names = FALSE)
 print(res[c("id", "base_outcome", "expected_base_outcome", "n_hits", "control_compliant_passes", "control_violation_fails")], row.names = FALSE)
+off <- c(setdiff(c(paste0("D", c(1:11, 13L, 15:25)), paste0("D12", letters[1:5]), "W1"), res$id), # every Section 6 detector is required
+  res$id[res$base_outcome != res$expected_base_outcome | !(res$control_compliant_passes %in% TRUE) | !(res$control_violation_fails %in% TRUE)])
+if (length(off)) cat("detectors: unexpected base outcome or a failed or missing control:", off, "\n")
+quit(save = "no", status = as.integer(length(off) > 0L))

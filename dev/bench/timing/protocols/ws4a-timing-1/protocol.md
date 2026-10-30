@@ -1,11 +1,11 @@
 # Protocol ws4a-timing-1
 
-Status: drafted for LDG-3163 (v0.2.3 cut 5, decision (4)); not yet frozen.
-The cells, workloads and bounds are decision (4)'s. The `reps` values and
-`pairs` in `matrix.csv` are placeholders until the maintainer's base-only
-smoke sizes them; that smoke also records the base marginal, the
-executed-fill denominators and noise, and only then are this folder's files
-frozen (decision (4): before cut acceptance). Runs on the shared harness in
+Status: frozen by LDG-3163 (v0.2.3 cut 5, decision (4)), before cut
+acceptance. The cells, workloads and bounds are decision (4)'s. The `reps`
+and `pairs` in `matrix.csv` are frozen as sized by the recorded smoke in
+`dev/bench/v0_2_3_ws4a/records/timing/` (`functional_check.csv`,
+`base_marginal_smoke.csv`); that smoke is a base record, not a completed
+A/A gate window, which macro rule 12 does not require here. Runs on the shared harness in
 `dev/bench/timing/`; the benchmark manual's "Before/After Regression Gates"
 states the harness rules. The executable statement is this folder's
 `matrix.csv`, `thresholds.csv` and `workloads.R`; this page explains them,
@@ -113,7 +113,7 @@ accepts 30 us, and rejects zero, negative and nonfinite values.
 ## Reps
 
 Every timed section should last about 3 s or more on the maintainer host
-(`dev/bench/timing/records/clock-probe/README.md`). The placeholders come
+(`dev/bench/timing/records/clock-probe/README.md`). The frozen reps come
 from one functional pass of every cell at reps 1 on the base (953338df,
 one R process, a possibly shared host, not a timing window): timed
 sections of about 21.9 s (availability wide run), 17.0 (dense wide run),
@@ -123,14 +123,18 @@ sections of about 21.9 s (availability wide run), 17.0 (dense wide run),
 trades read, 0.04 per equity read, and 21.7 wide and 6.4 nofill sweep
 totals in the absolute cell (226.06 us per fill over 67,725 fills, matching
 the carrier probe's 226.50). Cells near 2 s use reps 2 and equity reads
-reps 75. The base smoke replaces these placeholders.
+reps 75. On a quiet host the absolute cell then read 216.95, 215.05 and
+215.83 us per fill (spread 0.9%), with 67,725 fills in every run
+(`base_marginal_smoke.csv`).
 
 ## Records
 
-- **Base record (LDG-3163).** A base-only A/A window, checked with `--aa`
-  by `check.R` and by `timing_absolute.R --aa`, records the base marginal,
-  denominators and noise. The absolute verdict on it is expected to fail:
-  the probe measured the base at about 226 us per fill.
+- **Base record (LDG-3163).** The recorded smoke above
+  (`dev/bench/v0_2_3_ws4a/records/timing/`): every cell's functional pass
+  and three quiet runs of the absolute cell. It is not an A/A gate window;
+  the gate's alternating pairs carry their own noise evidence (macro rule
+  12). The absolute verdict on the base is expected to fail: about 216 us
+  per fill against the 40 us bound.
 - **Gate records (LDG-3164 replay cells, LDG-3169 all cells).** The same
   protocol, unchanged, with the candidate.
 

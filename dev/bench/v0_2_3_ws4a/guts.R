@@ -1,7 +1,8 @@
 # WS4a guts: one product regression per design-note Section 4 gut, applied as
 # an in-memory namespace patch (check.R --gut=<name>) in a fresh process.
-# Every gut must make check.R fail for its case. Run as a script, it runs
-# each gut and writes records/gut_results.csv.
+# Every gut must make check.R fail for its case, with its `expect` evidence in
+# the log where given. Run as a script, it runs each gut and the invalid-ref
+# control; a full run writes records/gut_results.csv and records/mutations.csv.
 #
 # Usage: Rscript guts.R [--out=<scratch dir>] [--guts=<name,name>]
 
@@ -47,7 +48,7 @@ ws4a_guts <- list(
     for (s in setdiff(steps, ws_plain(steps))) fill$fee <- fill$fee + abs(fill$qty * fill$fill_price) * s$args$bps / 10000
     fill
   })),
-  C3_tolerance_x10 = list(case = "C3", patch = list(ledgr_lot_dust_tolerance = function(original) function(...) 10 * original(...))),
+  C3_tolerance_x10 = list(case = "C3", expect = "C3/(book_|run[.])", patch = list(ledgr_lot_dust_tolerance = function(original) function(...) 10 * original(...))),
   C4_lifo = list(case = "C4", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, ...) {
     net <- sum(state$net_by_inst[names(state$net_by_inst) == instrument_id])
     if (net * (if (identical(side, "BUY")) 1 else -1) >= 0) return(original(state, instrument_id, side, ...))
@@ -63,7 +64,7 @@ ws4a_guts <- list(
   C5b_kahan_on_openings = list(case = "C5b", patch = list(ledgr_lot_apply_opening = function(original) function(...) {
     ws_ns("ledgr_lot_add_realized")(original(...), 0)
   })),
-  C6_leave_one_live_lot = list(case = "C6", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, ...,
+  C6_leave_one_live_lot = list(case = "C6", expect = "ledgr_lot_state_invariant.*Disposition left live lots", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, ...,
                                                                                                              allow_zero_price = FALSE) {
     original(state, instrument_id, side, if (allow_zero_price) qty / 2 else qty, ..., allow_zero_price = allow_zero_price)
   })),
@@ -115,10 +116,18 @@ ws4a_guts <- list(
     ws_gut$prev <- ctx$vec$position
     original(fn, ctx, ...)
   })),
-  C14c_reuse_staging = list(case = "C14c", patch = list(ledgr_fill_event_payload = function(original) function(...) {
+  # On the base an OPEN leg's qty is the event row's qty vector (as.numeric does
+  # not copy), so a by-reference qty write reaches both witnesses; the leg-only
+  # gut writes the leg's own fee (a fresh per-leg vector) and must leave the
+  # event witness equal.
+  C14c_reuse_staging = list(case = "C14c", expect = "changed: event_block", patch = list(ledgr_fill_event_payload = function(original) function(...) {
     value <- original(...)
     if (is.null(ws_gut$first)) ws_gut$first <- value else collapse::setv(ws_gut$first$row$qty, 1L, value$row$qty, vind1 = TRUE)
     value
+  })),
+  C14c_reuse_leg_staging = list(case = "C14c", expect = "changed: leg_block[)]", patch = list(ledgr_output_sink_memory = function(original) {
+    ws4a_c14c_legs(function(legs) if (is.null(ws_gut$legs)) ws_gut$legs <- legs else
+      collapse::setv(ws_gut$legs[[1L]]$fee, 1L, legs[[1L]]$fee + 1, vind1 = TRUE))(original)
   })),
   C15_wrong_context_pos = list(case = "C15", patch = list(ledgr_fold_stage_observe_settle = function(original) function(...) {
     obs <- original(...)
@@ -132,7 +141,7 @@ ws4a_guts <- list(
     original(con, output_handler, run, ...)
   })),
   C17_drop_continuation = list(case = "C17", patch = list(ledgr_walk_forward_continue_windows = function(original) function(fold_windows, ...) fold_windows)),
-  C18_drop_split_tail = list(case = "C18", patch = list(ledgr_columnar_diagnostic_writer = function(original) function(run_id, output_handler, chunk_rows) {
+  C18_drop_split_tail = list(case = "C18", expect = "C18/(run|sweep)[.]", patch = list(ledgr_columnar_diagnostic_writer = function(original) function(run_id, output_handler, chunk_rows) {
     writer <- original(run_id, output_handler, chunk_rows)
     append <- writer$append_block
     writer$append_block <- function(fields) append(lapply(fields, function(x) x[seq_len(min(length(x), chunk_rows))]))
@@ -153,22 +162,70 @@ ws4a_guts <- list(
       c(used, rep(list(unused), capacity - length(used)))
     }
     acc
+  })),
+  # Section 6 mutations without a Section 4 gut that already implements them.
+  M2_reorder_pulse_fills = list(case = "C1", patch = list(ledgr_fold_stage_apply = function(original) function(fold_state, services, observation, plan, ...) {
+    if (length(plan$accounting_events$fills) > 1L) plan$accounting_events$fills <- rev(plan$accounting_events$fills)
+    original(fold_state, services, observation, plan, ...)
+  })),
+  M3_drop_lot_fee = list(case = "C4", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, price, fee = 0, ...) {
+    original(state, instrument_id, side, qty, price, fee = 0, ...)
+  })),
+  M5_positions_plus_delta = list(case = "C5a", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, ...) {
+    ws_gut$pos <- sum(state$net_by_inst[names(state$net_by_inst) == instrument_id]) + if (identical(side, "BUY")) qty else -qty
+    original(state, instrument_id, side, qty, ...)
+  }, ledgr_position_from_lots = function(original) function(state, instrument_id) {
+    pos <- ws_gut$pos %||% original(state, instrument_id)
+    ws_gut$pos <- NULL
+    pos
+  })),
+  M7_drop_partial_remainder = list(case = "C4", patch = list(ledgr_lot_dust_tolerance = function(original) function(...) {
+    v <- c(...) # in-loop call (qty, take, remaining lot qty, remaining fill): a partial close drops the lot's remainder
+    if (length(v) == 4L && v[[2L]] > 0 && v[[3L]] > 0 && v[[4L]] == 0) Inf else original(...)
+  })),
+  M11_uncompensated_totals = list(case = "C5b", patch = list(ledgr_lot_add_realized = function(original) function(state, delta) {
+    state$realized_pnl <- state$realized_pnl + delta
+    state
   }))
 )
+
+# Section 6 mutation register: each M-id runs as the named gut on its case.
+ws4a_mutations <- data.frame(id = paste0("M", 1:12), description = c("LIFO consumption", "reordered fills within a pulse",
+  "dropped fee", "affordability-order publication", "positions as positions plus delta", "Kahan step on openings",
+  "skip a partial close's remainder", "wrong context_pos", "notional fee from the rounded price", "drop the notional step",
+  "cumsum totals", "drop realized_comp in unpack"), gut = c("C4_lifo", "M2_reorder_pulse_fills", "M3_drop_lot_fee",
+  "C11_affordability_order", "M5_positions_plus_delta", "C5b_kahan_on_openings", "M7_drop_partial_remainder",
+  "C15_wrong_context_pos", "C2_notional_from_rounded", "C1_drop_notional", "M11_uncompensated_totals", "C9_drop_comp_in_unpack"))
+stopifnot(ws4a_mutations$gut %in% names(ws4a_guts), !anyDuplicated(ws4a_mutations$gut))
 
 if (sys.nframe() == 0L) {
   here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
   arg <- function(name, default) sub(paste0("^--", name, "="), "", grep(paste0("^--", name, "="), c(commandArgs(TRUE), paste0("--", name, "=", default)), value = TRUE)[[1L]])
   out <- arg("out", file.path(tempdir(), "ws4a_guts"))
   names <- strsplit(arg("guts", paste(names(ws4a_guts), collapse = ",")), ",", fixed = TRUE)[[1L]]
+  check <- function(args) {
+    log <- suppressWarnings(system2("Rscript", c(file.path(here, "check.R"), args), stdout = TRUE, stderr = TRUE))
+    list(log = log, status = attr(log, "status") %||% 0L, evidence = function(re) grepl(re, paste(log, collapse = "\n")))
+  }
   rows <- lapply(names, function(g) {
-    log <- system2("Rscript", c(file.path(here, "check.R"), paste0("--gut=", g), paste0("--out=", file.path(out, g))), stdout = TRUE, stderr = TRUE)
-    status <- attr(log, "status") %||% 0L
-    cat(sprintf("%-32s %-5s %s\n", g, ws4a_guts[[g]]$case, if (status == 1L) "FAIL (expected)" else "NOT CAUGHT"))
-    first <- paste(trimws(grep("^  ", log, value = TRUE)[1:3]), collapse = " | ")
-    data.frame(gut = g, case = ws4a_guts[[g]]$case, check_exit = status, outcome = if (status == 1L) "FAIL" else "PASS", first_difference = first)
+    r <- check(c(paste0("--gut=", g), paste0("--out=", file.path(out, g))))
+    ok <- r$status == 1L && r$evidence(ws4a_guts[[g]]$expect %||% "")
+    cat(sprintf("%-32s %-5s %s\n", g, ws4a_guts[[g]]$case, if (ok) "FAIL (expected)" else "NOT CAUGHT"))
+    first <- paste(trimws(grep("^  ", r$log, value = TRUE)[1:3]), collapse = " | ")
+    data.frame(gut = g, case = ws4a_guts[[g]]$case, check_exit = r$status, outcome = if (r$status == 1L) "FAIL" else "PASS",
+      expected_evidence = ok, first_difference = first)
   })
-  res <- do.call(rbind, rows)
-  utils::write.csv(res, file.path(here, "records", "gut_results.csv"), row.names = FALSE)
-  quit(status = if (all(res$outcome == "FAIL")) 0L else 1L)
+  # Control: an unresolvable --base is a refusal (exit 2), not a case difference (exit 1).
+  r <- check(c("--cases=C5b", "--base=LDG3163_NONEXISTENT_REF", paste0("--out=", file.path(out, "invalid_base_ref"))))
+  cat(sprintf("%-32s %-5s %s\n", "control_invalid_base_ref", "C5b", if (r$status == 2L) "REFUSED (expected)" else "NOT REFUSED"))
+  res <- rbind(do.call(rbind, rows), data.frame(gut = "control_invalid_base_ref", case = "C5b", check_exit = r$status,
+    outcome = if (r$status == 2L) "REFUSED" else "NOT REFUSED", expected_evidence = r$status == 2L, first_difference = r$log[[1L]]))
+  mutations <- merge(ws4a_mutations, res[c("gut", "case", "check_exit", "outcome")], by = "gut", sort = FALSE)
+  names(mutations)[names(mutations) == "outcome"] <- "base_outcome"
+  if (!any(grepl("^--guts=", commandArgs(TRUE)))) { # records are written only by a full run
+    utils::write.csv(res, file.path(here, "records", "gut_results.csv"), row.names = FALSE)
+    utils::write.csv(mutations[order(as.integer(sub("M", "", mutations$id))), c("id", "description", "gut", "case", "check_exit", "base_outcome")],
+      file.path(here, "records", "mutations.csv"), row.names = FALSE)
+  }
+  quit(status = if (all(res$expected_evidence)) 0L else 1L)
 }

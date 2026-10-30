@@ -103,7 +103,10 @@ ws_memory <- function(exp, plan, prefix = "sweep", ...) {
 }
 
 ws_frame <- function(df, name, key) a0_canon(df, name, key)
-ws_need <- function(ok, what) if (!isTRUE(all(ok))) stop("ws4a precondition failed: ", what, call. = FALSE)
+# `tables`, when given, are written beside case_error on failure, so a gut that
+# breaks a precondition still shows its observed output differences.
+ws_need <- function(ok, what, tables = NULL) if (!isTRUE(all(ok))) stop(structure(class = c("simpleError", "error", "condition"),
+  list(message = paste0("ws4a precondition failed: ", what), call = NULL, tables = tables)))
 
 # Named arguments of a call to `original`, matched as the product passed them.
 ws_args <- function(original, ...) as.list(match.call(original, as.call(c(list(quote(f)), list(...)))))[-1L]
@@ -169,8 +172,8 @@ ws_run_case <- function(id, work) {
   options(ledgr.interrupt = FALSE)
   on.exit(for (s in ws_env$snaps) try(ledgr_snapshot_close(s), silent = TRUE), add = TRUE)
   res <- tryCatch(ws_cases[[id]]$fn(), error = function(e) {
-    list(tables = list(case_error = data.frame(class = paste(class(e), collapse = "/"),
-      message = a0_detokenize(conditionMessage(e)))), facts = list())
+    list(tables = c(list(case_error = data.frame(class = paste(class(e), collapse = "/"),
+      message = a0_detokenize(conditionMessage(e)))), e$tables), facts = list())
   })
   facts <- res$facts %||% list()
   res$tables$facts <- data.frame(fact = names(facts), value = vapply(facts, a0_flat, character(1)),

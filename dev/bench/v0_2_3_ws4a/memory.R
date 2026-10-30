@@ -6,7 +6,8 @@
 # child after gc(reset = TRUE) at the phase boundary. It covers the R heap only
 # (not DuckDB's native memory) and is a high-water mark, so uncollected garbage
 # counts. Observation only: lifetime peak_pagefile minus a matched load-only
-# child's. --mode=summarize recomputes validation.csv from children.csv.
+# child's. --mode=summarize recomputes validation.csv from children.csv (no preparation). Exit 1 on an
+# integrity refusal, or unless every cell is stable, isolated, its controls breach and its alias does not.
 a <- commandArgs(TRUE)
 arg <- function(key, default = NULL) {
   z <- grep(paste0("^--", key, "="), a, value = TRUE)
@@ -156,10 +157,10 @@ if (mode == "rprofmem") {
 }
 
 # Driver --------------------------------------------------------------------
-dir.create(file.path(scratch, "children"), recursive = TRUE, showWarnings = FALSE)
 dir.create(records, recursive = TRUE, showWarnings = FALSE)
-if (!file.exists(file.path(prepared, "workloads.csv"))) run_child("--mode=prepare", file.path(prepared, "workloads"))
 cells <- expand.grid(op = c("forward", "replay"), shape = c("wide", "deep"), stringsAsFactors = FALSE)
+alias_rep <- 1L
+gc_declared <- "||" # default collection policy: R_GC_MEM_GROW, R_MAX_VSIZE and R_GC_GROWFRAC unset
 child <- function(cell, phase, rep, block = 0) {
   tag <- file.path(scratch, "children", paste(cell$shape, cell$op, phase, rep, sep = "_"))
   z <- run_child(c("--mode=child", paste0("--shape=", cell$shape), paste0("--op=", cell$op), paste0("--phase=", phase),
@@ -173,10 +174,12 @@ pair <- function(x, phase) { # gated metric, plus the matched commit subtraction
   op
 }
 sized <- file.path(records, "control_size.csv")
-if (identical(mode, "summarize")) {
+if (identical(mode, "summarize")) { # dispatched before any preparation: reads records only
   all <- utils::read.csv(file.path(records, "children.csv"))
   size <- utils::read.csv(sized)
 } else {
+  dir.create(file.path(scratch, "children"), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(file.path(prepared, "workloads.csv"))) run_child("--mode=prepare", file.path(prepared, "workloads"))
   rows <- list()
   for (i in seq_len(nrow(cells))) for (r in seq_len(reps)) for (ph in if (r %% 2L) c("load", "op") else c("op", "load"))
     rows[[length(rows) + 1L]] <- child(cells[i, ], ph, r)
@@ -190,11 +193,25 @@ if (identical(mode, "summarize")) {
   for (i in seq_len(nrow(cells))) {
     b <- size$block_bytes[size$shape == cells$shape[i] & size$op == cells$op[i]]
     for (r in seq_len(reps)) rows[[length(rows) + 1L]] <- child(cells[i, ], "control", r, b)
-    rows[[length(rows) + 1L]] <- child(cells[i, ], "alias", 1L)
+    rows[[length(rows) + 1L]] <- child(cells[i, ], "alias", alias_rep)
   }
   all <- do.call(rbind, rows)
   utils::write.csv(all, file.path(records, "children.csv"), row.names = FALSE)
 }
+# Record integrity: registered grid, finite metrics, frozen control sizes, live controls, GC policy, replay rows.
+wl <- utils::read.csv(file.path(if (identical(mode, "summarize")) records else prepared, "workloads.csv"))
+grid <- merge(cells, data.frame(phase = c(rep(c("load", "op", "control"), each = reps), "alias"), rep = c(rep(seq_len(reps), 3L), alias_rep)))
+key <- paste(all$shape, all$op, all$phase, all$rep)
+ctl <- all[all$phase %in% "control", ]
+rp <- all[all$op %in% "replay" & !(all$phase %in% "load"), ]
+bad <- c(if (anyDuplicated(key)) "duplicate rows",
+  if (!setequal(key, paste(grid$shape, grid$op, grid$phase, grid$rep))) "rows differ from the registered grid",
+  if (!isTRUE(all(is.finite(all$gc_max_used_bytes) & all$gc_max_used_bytes > 0 & is.finite(all$peak_pagefile) & all$peak_pagefile > 0))) "nonfinite or nonpositive metric",
+  if (!isTRUE(all(ctl$block_bytes == size$block_bytes[match(paste(ctl$shape, ctl$op), paste(size$shape, size$op))]))) "control bytes differ from control_size.csv",
+  if (!isTRUE(all(ctl$block_live))) "control block not live",
+  if (!isTRUE(all(all$gc_env == gc_declared))) "undeclared GC environment",
+  if (!isTRUE(all(rp$replay_rows == wl$fills[match(rp$shape, wl$shape)]))) "replay rows differ from workloads.csv")
+if (length(bad)) stop("memory records REFUSED: ", paste(bad, collapse = "; ")) # Rscript exits 1
 measured <- rbind(pair(all, "op"), pair(all, "control"), pair(all, "alias"))
 check <- do.call(rbind, lapply(seq_len(nrow(cells)), function(i) {
   k <- measured[measured$shape == cells$shape[i] & measured$op == cells$op[i], ]
@@ -212,7 +229,12 @@ check <- do.call(rbind, lapply(seq_len(nrow(cells)), function(i) {
     concurrent_r_max = max(all$concurrent_r[sel]))
 }))
 utils::write.csv(check, file.path(records, "validation.csv"), row.names = FALSE)
-if (identical(mode, "summarize")) { print(check); quit(save = "no") }
+ok <- all(check$stable & check$isolation & check$control_breaches & !check$alias_breaches)
+if (!ok) cat("memory validation FAILED: a cell is unstable or not isolated, a control misses the budget or an alias breaches it\n")
+if (identical(mode, "summarize")) {
+  print(check)
+  quit(save = "no", status = if (ok) 0L else 1L)
+}
 alloc <- do.call(rbind, lapply(c("dense", "availability"), function(p) {
   tag <- file.path(scratch, "children", paste0("rprofmem_", p))
   run_child(c("--mode=rprofmem", paste0("--producer=", p), paste0("--out=", tag)), tag)
@@ -220,3 +242,4 @@ alloc <- do.call(rbind, lapply(c("dense", "availability"), function(p) {
 utils::write.csv(alloc, file.path(records, "rprofmem.csv"), row.names = FALSE)
 file.copy(file.path(prepared, "workloads.csv"), file.path(records, "workloads.csv"), overwrite = TRUE)
 print(check); print(alloc)
+quit(save = "no", status = if (ok) 0L else 1L)

@@ -60,8 +60,8 @@ ws_case("C3", "3164", function() {
   })
   out <- ws_patches(patches, ws_durable(fx, ws_exp(fx, ledgr_cost_fixed_fee(0.25)), "c3", plan))
   hits <- table(paste(seen$phase, seen$kind))
-  ws_need(c("fold snap", "replay snap", "fold near", "replay near") %in% names(hits), "dust snaps and a near-dust lot in fold and replay")
   out <- c(out[c("run.ledger_events", "run.equity_curve")], ws_replay_book(fx$db, "c3", c("AAA", "BBB")))
+  ws_need(c("fold snap", "replay snap", "fold near", "replay near") %in% names(hits), "dust snaps and a near-dust lot in fold and replay", out)
   list(tables = out, facts = as.list(unclass(hits)))
 })
 
@@ -124,7 +124,7 @@ ws_case("C5a", "3164", function() {
     opening <- ledger[grepl("opening_position", ledger$meta_json, fixed = TRUE), c("event_seq", "instrument_id", "qty", "price", "meta_json")]
     out[[sprintf("w%d.openings", k)]] <- ws_frame(opening, "openings", "event_seq")
     book <- ws_book(ledgr_lot_state_from_events(ledger, c("AAA", "BBB")))
-    out <- c(out, ws_prefix(book, sprintf("w%d", k)))
+    out <- c(out, ws_prefix(c(book, a0_store_tables(wf$fx$db, wf$ids[[k]])["equity_curve"]), sprintf("w%d", k)))
     lots <- c(lots, sum(opening$instrument_id == "AAA"), sum(book$book_lots$instrument_id == "AAA"))
   }
   ws_need(identical(wf$status, "DONE") && length(wf$ids) == 3L, "three carried test windows")
@@ -139,7 +139,7 @@ ws_case("C5b", "3164", function() {
     list("BUY", 1.65, 993.435, 0.54), list("BUY", 2.43, 991.926, 0.962))
   for (f in fills) st <- ledgr_lot_apply_fill(st, "AAA", f[[1]], f[[2]], f[[3]], fee = f[[4]])$state
   comp_before <- st$realized_comp
-  ws_need(comp_before != 0, "nonzero realized_comp before the openings")
+  ws_need(comp_before != 0, "nonzero realized_comp before the openings", ws_book(st))
   ops <- list(list("BBB", 2.5, -3.25), list("BBB", 1.25, 7.5), list("CCC", -1.75, 4.5), list("AAA", 0.4, 11.03))
   kahan <- ws_counter(ws4a_seams[["kahan"]])
   st <- ws_trace(kahan$hooks, {
@@ -183,7 +183,8 @@ ws_case("C6", "3164", function() {
   out <- ws_trace(hooks, ws_durable(d$fx, d$exp, "c6", d$plan))
   ledger <- ws_ledger(d$fx$db, "c6")
   disp <- which(ledger$event_type == "DISPOSITION")
-  ws_need(any(lots >= 2L) && any(ledger$price[disp] == 0 & ledger$fee[disp] == 0), "multi-lot and zero-price dispositions")
+  ws_need(any(lots >= 2L) && any(ledger$price[disp] == 0 & ledger$fee[disp] == 0), "multi-lot and zero-price dispositions",
+    out[c("run.runs", "run.conditions", "run.run_diagnostics")])
   bad <- ledger
   i <- disp[ledger$price[disp] > 0][[1L]]
   meta <- ledgr_lot_parse_meta(bad$meta_json[[i]])
@@ -373,8 +374,14 @@ ws_case("C13a", "3167", function() {
 # base, C13a's observed prefix shows the first fill installed before the fault.
 ws4a_typed_c13b <- function(before, after) {
   fields <- c("book", "cash", "positions", "event_seq", "buffers")
+  for (s in list(before, after)) if (!is.list(s) || !all(fields %in% names(s))) stop("ws4a C13b: a snapshot lacks a field", call. = FALSE)
   identical(before[fields], after[fields])
 }
+local({ # C13b controls, run on every source: equal, one field changed, missing fields refused.
+  s <- list(book = 1, cash = 2, positions = 3, event_seq = 4L, buffers = 5)
+  stopifnot(ws4a_typed_c13b(s, s), !ws4a_typed_c13b(s, replace(s, "cash", list(2.5))),
+    inherits(tryCatch(ws4a_typed_c13b(list(), list()), error = identity), "error"))
+})
 ws4a_typed_c13c <- function(out, durable = TRUE) ws_assert_abort(out, durable)
 ws4a_typed_c14c <- function(retained, frozen_fingerprint) identical(ws_fingerprint(retained), frozen_fingerprint)
 ws4a_typed_c16 <- function(dense_fold_equity_rows, counts) {
@@ -409,7 +416,8 @@ ws_keep <- function(env, name, value) if (is.null(env$print[[name]])) {
 ws_retained <- function(env, n) {
   tab <- data.frame(object = names(env$print), at_capture = unlist(env$print),
     at_end = vapply(names(env$print), function(k) ws_fingerprint(env$value[[k]]), ""))
-  ws_need(nrow(tab) == n && all(tab$at_capture == tab$at_end), "every retained value unchanged")
+  ws_need(nrow(tab) == n && all(tab$at_capture == tab$at_end),
+    paste0("every retained value unchanged (changed: ", paste(tab$object[tab$at_capture != tab$at_end], collapse = ","), ")"))
   list(tables = list(retained = ws_frame(tab, "retained", "object")))
 }
 ws_case("C14a", "3164", function() {
@@ -434,11 +442,32 @@ ws_case("C14b", "3165", function() {
   ws_need(!is.null(keep$value$state_prev), "a retained state_prev")
   ws_retained(keep, 4L)
 })
+# C14c: the published event payload and the memory sink's leg block (the used
+# pulse_fill_legs prefix at flush_legs, before it is copied into the result
+# buffer). LDG-3167 adds the typed publication's event and leg block handouts
+# as the equivalent attachment and keeps both witnesses.
+ws4a_c14c_legs <- function(on_flush) function(original) function(run_id) {
+  sink <- original(run_id)
+  flush <- sink$flush_legs
+  staged <- environment(sink$reset_legs)
+  sink$flush_legs <- function() {
+    if (staged$pulse_fill_leg_n > 0L) on_flush(staged$pulse_fill_legs[seq_len(staged$pulse_fill_leg_n)])
+    flush()
+  }
+  sink
+}
 ws_case("C14c", "3167", function() {
   t <- ws_two_fills("c14c")
   keep <- new.env()
-  ws_trace(list(ledgr_fill_event_payload = function(a, v) ws_keep(keep, "event_block", v)), ws_memory(t$exp, t$plan))
-  ws_retained(keep, 1L)
+  flushes <- 0L
+  legs <- ws4a_c14c_legs(function(block) {
+    flushes <<- flushes + 1L
+    ws_keep(keep, "leg_block", block)
+  })
+  ws_patches(list(ledgr_output_sink_memory = legs),
+    ws_trace(list(ledgr_fill_event_payload = function(a, v) ws_keep(keep, "event_block", v)), ws_memory(t$exp, t$plan)))
+  ws_need(flushes >= 2L, "a later pulse flushes legs after the leg block is retained")
+  c(ws_retained(keep, 2L), list(facts = list(leg_flushes = flushes)))
 })
 
 # v201 availability witness (tests/testthat helper, unchanged).
@@ -520,9 +549,9 @@ ws_case("C18", "3168", function() {
   }), ws4a_seams[["diagnostic_writer"]])
   out <- ws_patches(patch, c(ws_durable(v$fx, v$exp, "c18"), ws_memory(v$exp, NULL)))
   diag <- out[["run.run_diagnostics"]]
-  ws_need(max(table(diag$ts_utc)) > 7L && out[["run.run_completion"]]$intended_terminal_status %in% "INCOMPLETE" &&
-    as.integer(out[["run.run_telemetry"]]$pulse_count) < 12L, "a pulse above the chunk and an early stop")
   keep <- c("run.run_diagnostics", "sweep.memory_diagnostics", "run.equity_curve", "run.run_telemetry", "run.run_completion",
     "sweep.memory_completion", "sweep.memory_equity")
+  ws_need(max(table(diag$ts_utc)) > 7L && out[["run.run_completion"]]$intended_terminal_status %in% "INCOMPLETE" &&
+    as.integer(out[["run.run_telemetry"]]$pulse_count) < 12L, "a pulse above the chunk and an early stop", out[keep])
   list(tables = out[keep], facts = list(max_pulse_rows = max(table(diag$ts_utc))))
 })
