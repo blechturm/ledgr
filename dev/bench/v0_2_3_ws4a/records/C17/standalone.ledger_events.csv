@@ -1,0 +1,2 @@
+"event_id:character","run_id:character","ts_utc:POSIXct/POSIXt","event_type:character","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","meta_json:character","event_seq:integer"
+"c17-standalone_00000001","c17-standalone","2020-01-06T09:30:00Z","FILL","AAA","BUY","0.34999999999999998","101.53","0.51066065000000005","{""cash_delta"":-36.04616065,""fee"":0.51066065,""position_delta"":0.35,""realized_pnl"":null}","1"

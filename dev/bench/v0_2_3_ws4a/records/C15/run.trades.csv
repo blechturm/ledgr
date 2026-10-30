@@ -1,0 +1,5 @@
+"event_seq:integer","ts_utc:POSIXct/POSIXt","recording_pulse_ts_utc:POSIXct/POSIXt","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","realized_pnl:numeric","action:character","run_id:character"
+"16","2021-01-09T14:30:00Z","2021-01-09T21:00:00Z","BBB","SELL","6","102.59999999999999","0","2.3999999999999488","CLOSE","c15"
+"20","2021-01-10T14:30:00Z","2021-01-10T21:00:00Z","BBB","SELL","3","102.7","0","1.5","CLOSE","c15"
+"25","2021-01-11T14:30:00Z","2021-01-11T21:00:00Z","BBB","SELL","2","102.8","0","0.79999999999999716","CLOSE","c15"
+"31","2021-01-12T14:30:00Z","2021-01-12T21:00:00Z","BBB","SELL","1","102.90000000000001","0","0.40000000000000568","CLOSE","c15"

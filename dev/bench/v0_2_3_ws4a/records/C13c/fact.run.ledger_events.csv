@@ -1,0 +1,5 @@
+"event_id:character","run_id:character","ts_utc:POSIXct/POSIXt","event_type:character","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","meta_json:character","event_seq:integer"
+"c13c-fact_00000001","c13c-fact","2020-01-02T09:30:00Z","FILL","AAA","BUY","2","101","0.5","{""cash_delta"":-202.5,""fee"":0.5,""position_delta"":2.0,""realized_pnl"":null}","1"
+"c13c-fact_00000002","c13c-fact","2020-01-02T09:30:00Z","FILL","BBB","BUY","3","51","0.5","{""cash_delta"":-153.5,""fee"":0.5,""position_delta"":3.0,""realized_pnl"":null}","2"
+"c13c-fact_00000003","c13c-fact","2020-01-03T09:30:00Z","FILL","AAA","SELL","1","102","0.5","{""cash_delta"":101.5,""fee"":0.5,""position_delta"":-1.0,""realized_pnl"":null}","3"
+"c13c-fact_00000004","c13c-fact","2020-01-04T09:30:00Z","FILL","BBB","BUY","1","53","0.5","{""cash_delta"":-53.5,""fee"":0.5,""position_delta"":1.0,""realized_pnl"":null}","4"

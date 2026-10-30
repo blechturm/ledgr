@@ -1,0 +1,5 @@
+"event_seq:integer","ts_utc:POSIXct/POSIXt","recording_pulse_ts_utc:POSIXct/POSIXt","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","realized_pnl:numeric","action:character","run_id:character"
+"1","2020-01-02T09:30:00Z","2020-01-02T16:00:00Z","AAA","BUY","2","101","0.5","0","OPEN","c13c-fact"
+"2","2020-01-02T09:30:00Z","2020-01-02T16:00:00Z","BBB","BUY","3","51","0.5","0","OPEN","c13c-fact"
+"3","2020-01-03T09:30:00Z","2020-01-03T16:00:00Z","AAA","SELL","1","102","0.5","1","CLOSE","c13c-fact"
+"4","2020-01-04T09:30:00Z","2020-01-04T16:00:00Z","BBB","BUY","1","53","0.5","0","OPEN","c13c-fact"

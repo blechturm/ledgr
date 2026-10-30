@@ -1,0 +1,2 @@
+"run_id:character","seq:integer","kind:character","class:character","message:character"
+"c13a","1","error","ws4a_injected/rlang_error/error/condition","ws4a injected failure: lot operation"

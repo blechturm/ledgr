@@ -1,0 +1,4 @@
+"event_id:character","run_id:character","ts_utc:POSIXct/POSIXt","event_type:character","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","meta_json:character","event_seq:integer"
+"c11_00000001","c11","2020-01-01T16:00:00Z","CASHFLOW","AAA",NA,"5","30","0","{""cash_delta"":0.0,""cost_basis"":30.0,""opening_position"":true,""position_delta"":5.0,""source"":""opening_position""}","1"
+"c11_00000002","c11","2020-01-03T09:30:00Z","FILL","ZZZ","BUY","2","40","0","{""cash_delta"":-80.0,""fee"":0.0,""position_delta"":2.0,""realized_pnl"":null}","2"
+"c11_00000003","c11","2020-01-03T09:30:00Z","FILL","AAA","SELL","5","30","0","{""cash_delta"":150.0,""fee"":0.0,""position_delta"":-5.0,""realized_pnl"":null}","3"

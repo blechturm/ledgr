@@ -1,0 +1,10 @@
+"run_id:character","metric:character","value:numeric","error:character"
+"c1-dense","annualized_return","-0.0092295697716959779",NA
+"c1-dense","avg_trade","-3.2091032500000054",NA
+"c1-dense","max_drawdown","-0.00026313107441067185",NA
+"c1-dense","n_trades","4",NA
+"c1-dense","sharpe_ratio","-6.3881416461591956",NA
+"c1-dense","time_in_market","0.5714285714285714",NA
+"c1-dense","total_return","-0.00022074768287982938",NA
+"c1-dense","volatility","0.0014513419268086341",NA
+"c1-dense","win_rate","0.25",NA

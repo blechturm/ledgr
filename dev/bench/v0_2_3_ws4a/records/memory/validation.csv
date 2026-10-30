@@ -1,0 +1,5 @@
+"shape","op","metric","base_median","spread","stable","isolation","load_heap_max","block_bytes","control_ratio_min","control_live","control_breaches","alias_ratio","alias_breaches","commit_median_observed","commit_spread_observed","concurrent_r_max"
+"wide","forward","peak_r_heap_bytes",399089216,8.52741658647073e-05,TRUE,TRUE,62361216,51657936,1.18298278448095,TRUE,TRUE,0.999983522481349,FALSE,258289664,0.152412819740243,3
+"wide","replay","peak_r_heap_bytes",258085632,2.18222144191274e-05,TRUE,TRUE,56084592,73477328,1.26788572251864,TRUE,TRUE,0.999999876010145,FALSE,367386624,0.0721006979285125,2
+"deep","forward","peak_r_heap_bytes",426118056,0.00439241654664828,TRUE,TRUE,62361152,57420192,1.2454658715518,TRUE,TRUE,1.00369133384012,FALSE,287100928,0.118257172613528,2
+"deep","replay","peak_r_heap_bytes",321364888,0.00587646028087549,TRUE,TRUE,56083208,74011448,1.44253394602338,TRUE,TRUE,1.00000353492258,FALSE,370057216,0.0388617094281983,2

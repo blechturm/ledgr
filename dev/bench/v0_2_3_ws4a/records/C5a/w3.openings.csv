@@ -1,0 +1,5 @@
+"event_seq:integer","instrument_id:character","qty:numeric","price:numeric","meta_json:character"
+"1","AAA","0.34999999999999998","101.53","{""cash_delta"":0.0,""cost_basis"":101.53,""opening_position"":true,""position_delta"":0.35,""source"":""opening_position""}"
+"2","AAA","0.59999999999999998","102.06999999999999","{""cash_delta"":0.0,""cost_basis"":102.07,""opening_position"":true,""position_delta"":0.6,""source"":""opening_position""}"
+"3","AAA","0.44999999999999996","104.41","{""cash_delta"":0.0,""cost_basis"":104.41,""opening_position"":true,""position_delta"":0.44999999999999996,""source"":""opening_position""}"
+"4","AAA","0.45000000000000018","103.19","{""cash_delta"":0.0,""cost_basis"":103.19,""opening_position"":true,""position_delta"":0.4500000000000002,""source"":""opening_position""}"

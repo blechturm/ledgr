@@ -652,14 +652,14 @@ failing control. Another detector's failure is not evidence for it.
 | D3 | No character indexing on run- or context-axis vectors in the lot kernel, migrated book consumers, P2 core, P3 and the block builder | parse regions listed | `net_by_inst[[id]]` |
 | D4 | Strategy return shape/name normalized once per pulse | runtime counter on the normalizer | a second call |
 | D5 | P2's input carries no execution-packet field | runtime check on the P2 argument | pass `next_bar` |
-| D6 | No JSON encode or parse in the pulse loop beyond the routed sites (fill and non-fill `meta_json`, H5, intent reason, stop and exception detail) | parse-tree allowlist over fold stage functions | new `canonical_json` call in P3 |
+| D6 | No JSON encode or parse in the pulse loop beyond the routed sites (fill and non-fill `meta_json`, H5, intent reason, stop and exception detail, and P5's per-pulse strategy-state serialization `canonical_json(state_update)` at fe:1521, route R8.04) | parse-tree allowlist over fold stage functions | new `canonical_json` call in P3 |
 | D7 | No Kahan step on opening rows; nonzero compensation preserved | runtime counter in the typed operations, C5b | M6 |
 | D8 | No fill-intent object in the fold or sinks; effects computed once | parse regions plus a counter on `ledgr_fill_publication_deltas` | reconstruct an intent; compute twice |
 | D9 | No per-fill economic staging list and no per-leg staging list in publication; routed memory `meta` allowed | parse regions of the handler and memory sink | staged per-fill or per-leg list |
 | D10 | Exactly one equity writer per valued pulse on both producers; no accumulator in fold or service slots | runtime count plus slot inspection | keep the accumulator |
 | D11 | Positions read only from `net_by_inst` | parse regions of P4 and replay | `positions + delta` |
 | D12a-e | Store bindings and config hash; DESCRIPTION; export census; mode-branch census; compiled default | existing contract tests and a C1 config-hash witness | change each |
-| D13 | Dense observe/ctx builders unchanged | source hash of the named dense functions | edit a dense view builder |
+| D13 | Dense observe/ctx builders unchanged | source hash of `ledgr_pulse_context`, `ledgr_update_pulse_context_helpers` and `ledgr_dense_eligibility_planes` (frozen in `records/detectors/frozen.csv`); `ledgr_fold_build_pulse_plan` was also frozen at LDG-3163 but leaves the list when LDG-3166 retypes the dense planner (Q1 freezes observation, not planning) | edit a dense view builder |
 | D15 | No by-reference write on book columns | parse regions of the kernel | `collapse::setv(book$lot_qty, ...)` |
 | D16 | Provider adapter called once per produced view | runtime counter | per-column conversion |
 | D17 | Lot kernel computes no cash | parse region of the kernel | cash inside the kernel |
@@ -670,7 +670,7 @@ failing control. Another detector's failure is not evidence for it.
 | D22 | Dictionaries match literal fixtures (tokens and codes) | fixture comparison, separate from diagnostic round-trip bytes | renumber a token |
 | D23 | Replay applies each published cash effect exactly once | replay cash witness on a two-event ledger | apply a delta twice |
 | D24 | Service ownership: the execution view and history services are called only from their declared stages | phase-ownership checker (`tools/check-fold-phase-contract.R:66-81, :149-153`), extended to `ledgr_carrier_execution_view()` | call the execution view from P4 |
-| D25 | Independent lot consumption, append, compaction and growth are not dispatched through an R loop one input instrument at a time. Permit FIFO depth iteration and the scalar event-order total-basis/Kahan scan that writes per-event aggregate facts; opening rows perform no Kahan step. Cash remains outside the lot kernel. | parse regions of the kernel, with the ordered aggregate-scan region explicitly identified | restore a scalar per-instrument lot-operation loop: must fail D25; retain the permitted aggregate scan: must pass D25 |
+| D25 | Independent lot consumption, append, compaction and growth are not dispatched through an R loop one input instrument at a time. Permit FIFO depth iteration and the scalar event-order total-basis/Kahan scan that writes per-event aggregate facts; opening rows perform no Kahan step. Cash remains outside the lot kernel. | parse regions of the kernel, with the ordered aggregate-scan region explicitly identified; replay is not examined while decision (6) permits singleton replay calls, and LDG-3164 extends the examined list with the typed operation names | restore a scalar per-instrument lot-operation loop: must fail D25; retain the permitted aggregate scan: must pass D25 |
 | W1 | Application order: at the canonical publication entry the candidate book is already installed; sequence advance, leg recording and position/cash installation follow in that order; at compiled append entry the compiled lot state and next sequence are installed | runtime witness at those entries | swap each observed pair |
 
 **Validator map** (constructors and validators, `test-ws4a-carrier.R`):
@@ -707,9 +707,21 @@ month-start decisions, no warmup trades), and reader cells on a completed
 - **Absolute cell.** One workload times matched `wide` and `nofill`
   sweeps in the same child process and returns its own named seconds
   clock: `(wide_total - nofill_total) / reps / fills_per_repetition`. The
-  work string records both totals, reps, the actual fill counts and the
+  work string records reps, the actual fill counts, both outcomes and the
   materialisation policy; unequal fill denominators across repetitions are
-  refused. The shared checker validates that cell's finite positive
+  refused. As built (LDG-3163): the two totals are returned as extra named
+  clocks, because the shared checker requires identical work strings per
+  cell; the harness does not retain them, and keeping them would need a
+  harness change. The fill denominator comes from a matched untimed durable
+  run read through `ledgr_results`, because a sweep reports closed trades
+  but not fills; a repetition whose fills, closed trades or final equity
+  differ from that run is refused. The cell also carries a ratio bound of
+  1.00, because the harness requires one for every cell; it cannot bind
+  before the 40 us check.
+- Reader cells use the availability producer's completed wide run (dense is
+  frozen). Run and sweep cells repeat their own path once, untimed, before
+  the timed reps, as ws2-timing-1 does; a full 8-pair window takes about
+  three hours. The shared checker validates that cell's finite positive
   seconds and computes its candidate median.
   `dev/bench/v0_2_3_ws4a/timing_absolute.R` reads that median and requires
   `<= 40e-6`; it never subtracts medians of separate cells. It is shown to
@@ -731,6 +743,11 @@ succeeds, `ps` private commit and the separately calculated GC maximum
 (`sum(gc()[, "max used"] * c(56, 8))` after `gc(reset = TRUE)`) are
 labelled observations only. If no validated method meets the claim, the
 maintainer decides before acceptance, as decision (5) requires.
+**Settled 2026-10-30 (maintainer):** the commit candidate failed
+validation (range/median up to 0.15); the gated metric is peak R heap, the
+GC maximum above, at most 1.10 x the matched base median, with process
+commit reported as an observation. It passes validation on the base
+(`dev/bench/v0_2_3_ws4a/records/memory/method.md`).
 
 Both memory workloads use at least 5,000 instruments by 252 sessions; the
 deep variant has at least 200 instruments consume 15 live lots in one fill.
@@ -753,7 +770,9 @@ command and the compare commands. LDG-3163 must show an unchanged
 **Budget** (decision 12, estimated R lines): `workloads.R` 260,
 `timing_absolute.R` 90, `record.R` 420, `check.R` 120, `guts.R` 280,
 `memory.R` 230: about 1,400, under 1,500. Detector and validator tests are
-package tests, outside this budget.
+package tests, outside this budget. Amended 2026-10-30 by the maintainer:
+the full case set needed 962 lines, so decision (12) now allows 2,000
+lines in total.
 
 ## 8. Checks per ticket (scope g)
 

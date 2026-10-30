@@ -1,0 +1,5 @@
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
+"c13c-fact","2020-01-01T16:00:00Z","1000","0","1000","0","0"
+"c13c-fact","2020-01-02T16:00:00Z","644","355","999","-1","0"
+"c13c-fact","2020-01-03T16:00:00Z","745.5","258","1003.5","-0.5","4"
+"c13c-fact","2020-01-04T16:00:00Z","692","315","1007","-1","8"

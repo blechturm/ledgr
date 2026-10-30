@@ -1,0 +1,3 @@
+"event_seq:integer","instrument_id:character","qty:numeric","price:numeric","meta_json:character"
+"1","AAA","0.34999999999999998","101.53","{""cash_delta"":0.0,""cost_basis"":101.53,""opening_position"":true,""position_delta"":0.35,""source"":""opening_position""}"
+"2","AAA","0.59999999999999998","102.06999999999999","{""cash_delta"":0.0,""cost_basis"":102.07,""opening_position"":true,""position_delta"":0.6,""source"":""opening_position""}"

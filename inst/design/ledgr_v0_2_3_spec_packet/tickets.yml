@@ -401,12 +401,21 @@ cuts:
       collection policy, repetitions and byte aggregation; a controlled
       excess of independently allocated live book storage across growth and
       replay, of a frozen size at a frozen observation point, must fail the
-      applicable budget. gc() maximum-used R heap is reported separately with
-      its exact calculation and is not relabelled as peak live; RSS and
-      cumulative allocation are not silently substituted. If the peak-live
-      claim cannot be measured, the metric is settled with the maintainer
-      before acceptance. The frozen replay memory budget applies at LDG-3164
-      and LDG-3169. (6) Replay: singleton replay calls are kept only if the
+      applicable budget. If the peak-live claim cannot be measured, the
+      metric is settled with the maintainer before acceptance. Settled
+      2026-10-30 (maintainer, after LDG-3163 found the process peak-commit
+      candidate too noisy: range/median up to 0.15, one unchanged run at
+      1.13 x its median): the gated metric is peak R heap,
+      sum(gc()[, "max used"] * c(56, 8)) in a fresh child after
+      gc(reset = TRUE) at the phase boundary, at most 1.10 x the matched base
+      median. It covers the R heap only (not DuckDB's native memory, which
+      WS4a does not change) and counts garbage awaiting collection, so it is
+      named peak R heap, not peak live. Process peak commit is reported
+      beside it as an observation. Validation on the base
+      (dev/bench/v0_2_3_ws4a/records/memory/): spread at most 0.6% over five
+      repetitions, every frozen control breaches (1.18-1.44 x), the pointer
+      alias never does (1.00 x). The frozen replay memory budget applies at
+      LDG-3164 and LDG-3169. (6) Replay: singleton replay calls are kept only if the
       replay timing cells and the replay memory budget pass at LDG-3164's
       end; otherwise the replay groups consecutive conflict-free blocks
       through the same implementation in that ticket. (7) The canonical lot
@@ -445,9 +454,11 @@ cuts:
       (fold core and event staging rule groups, and a carrier-contract rule
       group holding synthesis Section 4 as implemented); nothing is promoted
       before it is implemented. (12) Budget: new maintained R under
-      dev/bench/v0_2_3_ws4a/ and the protocol folder totals at most 1,500
-      lines (spike_protocol.md Section 4); a plan above it stops at LDG-3162
-      for maintainer disposition. (13) Release evidence: the LDG-3163 base
+      dev/bench/v0_2_3_ws4a/ and the protocol folder totals at most 2,000
+      lines (raised from 1,500 by the maintainer on 2026-10-30, when the
+      full case set of the LDG-3162 register needed 962 lines;
+      spike_protocol.md Section 4); a plan above it stops for maintainer
+      disposition. (13) Release evidence: the LDG-3163 base
       records, the ws4a-timing-1 gate record and the memory record are the
       named heavyweight records.
     sequencing: >-

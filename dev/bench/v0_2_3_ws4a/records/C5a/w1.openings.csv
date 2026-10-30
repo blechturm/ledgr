@@ -1,0 +1,1 @@
+"event_seq:integer","instrument_id:character","qty:numeric","price:numeric","meta_json:character"

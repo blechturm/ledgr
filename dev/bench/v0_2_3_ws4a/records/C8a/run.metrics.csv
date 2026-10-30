@@ -1,0 +1,10 @@
+"run_id:character","metric:character","value:numeric","error:character"
+"c8a","annualized_return",NA,NA
+"c8a","avg_trade",NA,NA
+"c8a","max_drawdown","0",NA
+"c8a","n_trades","0",NA
+"c8a","sharpe_ratio",NA,NA
+"c8a","time_in_market","0",NA
+"c8a","total_return","0",NA
+"c8a","volatility",NA,NA
+"c8a","win_rate",NA,NA

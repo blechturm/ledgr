@@ -1,0 +1,10 @@
+"run_id:character","metric:character","value:numeric","error:character"
+"c13c-fact","annualized_return","0.79669982913980708",NA
+"c13c-fact","avg_trade","1",NA
+"c13c-fact","max_drawdown","-0.0010000000000000009",NA
+"c13c-fact","n_trades","1",NA
+"c13c-fact","sharpe_ratio","12.632300114007903",NA
+"c13c-fact","time_in_market","0.75",NA
+"c13c-fact","total_return","0.0069999999999998952",NA
+"c13c-fact","volatility","0.046496122005981529",NA
+"c13c-fact","win_rate","1",NA
