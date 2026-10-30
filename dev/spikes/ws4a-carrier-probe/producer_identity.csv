@@ -1,0 +1,12 @@
+"surface","identical"
+"fills.event_seq",TRUE
+"fills.ts_utc",FALSE
+"fills.recording_pulse_ts_utc",TRUE
+"fills.instrument_id",TRUE
+"fills.side",TRUE
+"fills.qty",TRUE
+"fills.price",TRUE
+"fills.fee",TRUE
+"fills.realized_pnl",TRUE
+"fills.action",TRUE
+"equity",TRUE
