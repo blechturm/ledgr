@@ -1,0 +1,20 @@
+"run_id","strategy_type","strategy_source","strategy_source_hash","strategy_source_capture_method","strategy_params_json","strategy_params_hash","schedule_json","schedule_hash","reproducibility_level","ledgr_version","R_version","dependency_versions_json","created_at_utc"
+"native_transition","functional","function (ctx, params) 
+{
+    fast <- ctx$vec$feature(""fast"")
+    slow <- ctx$vec$feature(""slow"")
+    ids <- ctx$universe
+    usable <- is.finite(fast) & is.finite(slow)
+    above <- usable & fast > slow
+    prior_above <- prior_usable <- stats::setNames(rep(FALSE, length(ids)), ids)
+    old_above <- unlist(ctx$state_prev$above)
+    old_usable <- unlist(ctx$state_prev$usable)
+    prior_above[names(old_above)] <- old_above
+    prior_usable[names(old_usable)] <- old_usable
+    targets <- ctx$hold()
+    enter <- prior_usable & usable & above & !prior_above
+    exit <- prior_usable & usable & !above & prior_above
+    targets[enter] <- 1
+    targets[exit] <- 0
+    list(targets = targets, state_update = list(above = as.list(stats::setNames(above, ids)), usable = as.list(stats::setNames(usable, ids))))
+}","8dd2b8b93450fb8564a33f7f54c9f7dc6b6acd229295f70200b072c4f756768b","deparse_function","[]","1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",NA,NA,"tier_1","0.2.2","4.6.1","{""DBI"":""1.3.0"",""R"":""4.6.1"",""TTR"":""0.24.4"",""collapse"":""2.1.8"",""digest"":""0.6.39"",""duckdb"":""2.0.0"",""ledgr"":""0.2.2"",""tibble"":""3.3.1"",""yyjsonr"":""0.1.22""}",2026-10-30 13:34:19.130974

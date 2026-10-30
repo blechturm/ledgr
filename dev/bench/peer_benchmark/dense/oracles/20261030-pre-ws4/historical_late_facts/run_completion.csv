@@ -1,0 +1,2 @@
+"run_id","intended_start_utc","intended_end_utc","achieved_start_utc","achieved_end_utc","intended_terminal_status","stop_reason","affected_exposure","affected_exposure_ts_utc","affected_exposure_basis","last_fully_valued_ts_utc","last_executed_ts_utc","complete_performance"
+"native_historical_late_facts",2020-02-11 21:00:00,2020-05-05 21:00:00,2020-02-11 21:00:00,2020-05-05 21:00:00,"DONE",NA,NA,NA,NA,2020-05-05 21:00:00,2020-05-05 14:30:00,TRUE

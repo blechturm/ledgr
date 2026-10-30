@@ -1,0 +1,39 @@
+"run_id","strategy_type","strategy_source","strategy_source_hash","strategy_source_capture_method","strategy_params_json","strategy_params_hash","schedule_json","schedule_hash","reproducibility_level","ledgr_version","R_version","dependency_versions_json","created_at_utc"
+"native_historical_start_dense","functional","function (ctx, params) 
+{
+    targets <- ctx$hold()
+    fw <- ctx$features_wide
+    instruments <- as.character(fw$instrument_id)
+    n <- length(instruments)
+    fast <- if (fast_id %in% names(fw)) {
+        suppressWarnings(as.numeric(fw[[fast_id]]))
+    }
+    else {
+        rep(NA_real_, n)
+    }
+    slow <- if (slow_id %in% names(fw)) {
+        suppressWarnings(as.numeric(fw[[slow_id]]))
+    }
+    else {
+        rep(NA_real_, n)
+    }
+    current_above <- is.finite(fast) & is.finite(slow) & fast > slow
+    prev_above <- ctx$state_prev$above %||% list()
+    was_above <- rep(FALSE, n)
+    prev_names <- names(prev_above)
+    if (length(prev_above) > 0L && length(prev_names) > 0L) {
+        idx <- match(instruments, prev_names)
+        ok <- !is.na(idx)
+        if (any(ok)) {
+            was_above[ok] <- as.logical(unlist(prev_above[idx[ok]], use.names = FALSE))
+            was_above[is.na(was_above)] <- FALSE
+        }
+    }
+    cross_up <- current_above & !was_above
+    cross_down <- !current_above & was_above
+    if (any(cross_up)) 
+        targets[instruments[cross_up]] <- 1
+    if (any(cross_down)) 
+        targets[instruments[cross_down]] <- 0
+    list(targets = targets, state_update = list(above = as.list(stats::setNames(current_above, instruments))))
+}","5ffbaebdef371647dfb46f7036bfa513e305aa55354319a6652e48f7020f4030","deparse_function","[]","1ea0937c818097b81d749096dc3188a84f3b5795bebda75cfcbcd515a20f8f9d",NA,NA,"tier_2","0.2.2","4.6.1","{""DBI"":""1.3.0"",""R"":""4.6.1"",""TTR"":""0.24.4"",""collapse"":""2.1.8"",""digest"":""0.6.39"",""duckdb"":""2.0.0"",""ledgr"":""0.2.2"",""tibble"":""3.3.1"",""yyjsonr"":""0.1.22""}",2026-10-30 13:34:13.546371
