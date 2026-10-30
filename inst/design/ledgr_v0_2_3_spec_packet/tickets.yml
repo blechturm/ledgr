@@ -1157,7 +1157,7 @@ tickets:
   - id: "LDG-3163"
     title: "Record the base: protocol, case records and memory"
     workstream: 12
-    status: "planned"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3162"]
@@ -1186,7 +1186,14 @@ tickets:
       Every surprise is settled in this cut's text before the subsequent
       cut review (decision 9).
     acceptance: ["the protocol folder and thresholds are committed before cut acceptance, with the matched no-fill subtraction and fill denominators frozen", "the absolute checker rejects the 45 us control and accepts the 30 us control", "every new case reproduces from scratch on the base and each of its guts fails", "the memory method is validated, the base values cover every decision (5) workload and the controlled excess fails", "the real-data evidence record exists and its unchanged and cost-mutant controls pass and fail as specified", "every detector and mutation has its baseline outcome recorded", "the base records name the base commit and change no product file"]
-    evidence: []
+    evidence:
+      - "dev/bench/timing/protocols/ws4a-timing-1/matrix.csv and thresholds.csv (commit 7c23d41e): sixteen cells with decision (4)'s bounds are committed before acceptance; the absolute cell subtracts its matched no-fill sweep in the same process and takes its denominator from a matched durable run (67,725 fills, 33,710 closed); dev/bench/v0_2_3_ws4a/records/timing/ records the functional pass of every cell and three quiet base runs of 215.05-216.95 us/fill (spread 0.9%); ldg3163_review_rereview_1.md confirms F10 resolved."
+      - "dev/bench/v0_2_3_ws4a/timing_absolute.R (commit 7c23d41e): the self-test passes all twelve controls, rejecting a 45 us candidate against a 240 us paired base and accepting 30 us and the 40 us boundary, and rejecting zero, negative, nonfinite and invalid-record cases; rerun by the independent review (ldg3163_review.md item 2, re-review F10 row)."
+      - "dev/bench/v0_2_3_ws4a/check.R and guts.R with records/gut_results.csv and records/mutations.csv (commit 7c23d41e): all 23 cases reproduce exactly into scratch, and all 34 guts plus mutations M1-M12 fail their case with the expected evidence while the invalid-ref control is refused; verified by execution in ldg3163_review.md and ldg3163_review_rereview_1.md (F1, F2, F7-F9 resolved)."
+      - "dev/bench/v0_2_3_ws4a/records/memory/method.md and validation.csv (commit 7c23d41e): the process-commit candidate failed validation and, by maintainer decision (decision 5, 2026-10-30), peak R heap is the gated metric; it passes on all four 5,000 x 252 forward and replay cells (spread at most 0.6%, every frozen control breaches at 1.18-1.44 x, the alias never), and memory.R summarize refuses corrupted or incomplete records (re-review N1 applied)."
+      - "dev/bench/v0_2_3_ws4a/records/realdata.md (commit 7c23d41e): the value-free summary records the private evidence file E:/ledgr-data/reference/v0.2.3-base-953338df/EVIDENCE.md; the unchanged w2_minvar rerun is IDENTICAL (exit 0) and the one-line cost mutant DIFFERS on equity, fills and ledger (exit 1) with the snapshot hash unchanged; confirmed by record inspection in ldg3163_review.md item 5."
+      - "dev/bench/v0_2_3_ws4a/records/detectors/baseline.csv and records/mutations.csv (commit 7c23d41e): every detector D1-D25 and W1 records its base outcome with its own compliant and violating controls (old-representation detectors fail as expected; five not evaluable until their production attachment, each with tested predicate controls and a named owner), and every mutation M1-M12 records its base FAIL; detectors.R reproduces the baseline byte for byte under three locales (re-review F2-F5)."
+      - "dev/bench/v0_2_3_ws4a/records/base.txt (commit 7c23d41e): the records name recording commits and product base 953338df; git diff 953338df -- R src tests NAMESPACE DESCRIPTION man is empty, and check.R's product guard fails closed on an invalid base ref (re-review F1)."
   - id: "LDG-3164"
     title: "Typed lot book and one lot implementation for every consumer"
     workstream: 12
