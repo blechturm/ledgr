@@ -1,446 +1,733 @@
 # WS4a Carrier Design Note (LDG-3162)
 
-- Status: draft for its independent design review; LDG-3162 is complete only
-  when that review passes.
-- Author: Claude, 2026-10-30.
+- Status: revision 2, draft for its independent design review. Revision 2
+  applies `ws4a_design_review_1.md` F1-F13. LDG-3162 is complete only when
+  a design review passes.
+- Author: Claude, 2026-10-30. Plain-language companion:
+  [ws4a_overview.md](ws4a_overview.md).
 - Base: `release/v0.2.3`; `R/` and `src/` identical to `953338df`.
 - Authority: the accepted synthesis
   (`../rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md`, "Synthesis") binds
-  the design; cut 5 in `tickets.yml` binds order, oracles and gates. This
-  note applies them and adds no design. Where it pins something the
-  synthesis left to the cut (Synthesis Section 7: code assignments,
-  locators, pulse capacity, detector names), it says so.
-- Inputs: four read-only censuses of the base, run 2026-10-30: carrier
-  fields, vocabularies, test blocks and existing coverage. Their findings
-  are cited by file and line below. Abbreviations: `fe` = `R/fold-engine.R`,
-  `ae` = `R/availability-economics.R`, `oh` = `R/output-handler.R`,
-  `la` = `R/lot-accounting.R`, `csf` = `R/compiled-spot-fifo.R`,
-  `br` = `R/backtest-runner.R`, `lw` = `R/ledger-writer.R`,
-  `adw` = `R/availability-diagnostic-writer.R`, `fpc` =
-  `R/fold-phase-contract.R`, `rf` = `R/run-finalize.R`.
+  the design; cut 5 in `tickets.yml` ("Cut") binds order, oracles and gates.
+  This note applies them and adds no design. It pins what Synthesis Section
+  7 leaves to the cut (code assignments, locators, pulse capacity, detector
+  names). It is a checklist; the records it calls for do not exist until
+  LDG-3163 builds them.
+- File aliases: `fe` `R/fold-engine.R`, `ae` `R/availability-economics.R`,
+  `ap` `R/availability-provider.R`, `app`
+  `R/availability-provider-prepared.R`, `oh` `R/output-handler.R`, `la`
+  `R/lot-accounting.R`, `csf` `R/compiled-spot-fifo.R`, `br`
+  `R/backtest-runner.R`, `lw` `R/ledger-writer.R`, `adw`
+  `R/availability-diagnostic-writer.R`, `fpc` `R/fold-phase-contract.R`,
+  `rf` `R/run-finalize.R`, `to` `R/terminal-outcomes.R`, `cas`
+  `R/corporate-action-settlement.R`, `hs` `R/history-substrate.R`, `ar`
+  `R/accounting-replay.R`, `bf` `R/backtest-fills.R`, `wf`
+  `R/walk-forward.R`, `sw` `R/sweep.R`, `feb` `R/fold-event-buffer.R`.
+  Test files are `tests/testthat/<name>`.
 
-## 1. Consumer map (scope a)
+## 1. Consumer census (scope a)
 
-One row per carrier group of Synthesis Section 4: who produces it today,
-who consumes it, and which ticket changes it. Name-based instrument reads
-are marked "by name".
+One row per edge. "Via" is `direct` or the named adapter. Transitional
+adapters have one remover. Permanent boundary helpers: `ledgr_carrier_import_state()`
+(E import), the P2 input and return helpers, the publication helpers and the
+result helpers. Transitional: `ledgr_carrier_provider_view()` (provider and
+valuation outputs into the packet; remover WS4b),
+`ledgr_carrier_execution_view()` (P3 execution view; remover WS4b),
+`ledgr_carrier_settlement_state()` (corporate-action and disposition state
+in and out; remover WS8, the non-fill accounting boundary; WS4b removes only
+the provider/valuation adapter), `ledgr_carrier_compiled_pack()` and
+`_unpack()` (remover: the compiled-envelope RFC).
 
-| Group | Producers today | Consumers today | Ticket |
-| --- | --- | --- | --- |
-| state: `cash` | E fe:1741; P1 install fe:244-249 (fe:365, :399, :487); P4 fe:1400 (compiled fe:1328) | P1 equity fe:578, :589; P2 ctx fe:763-764; P3 planner fe:1093, recon fe:1140-1166; P4 fe:1298; P5 fe:1446-1469; skip plan fe:675; E return fe:2091 | 3164 (type unchanged; validator) |
-| state: `positions` | E fe:1593-1597 (by name, fe:43-49); P1 install; P4 fe:1389, fe:1324 | P1 fe:298-301, :557-570, :606; P2 fast ctx fe:786; P3 fe:1066; P4 fe:1307-1308; P5 fe:1459; E fe:1895; to:136-142, cas:634-639, cas:465 (by name) | 3164 |
-| state: `lot_state` | E fe:1594-1595; P1 install; P4 fe:1329, :1357 | P1 fe:580-590; P4 fe:1350, :1374, :1390; compiled pack csf:203-242 (by name, la:30, :120) | 3164 |
-| state: `state_prev`, `state_axis`, `event_seq`, `status`, `stop_reason`, `affected_exposure`, `processed`, `full_run`, `last_fully_valued`, `last_executed`, `frozen_set`, `current_stage`, `current_ts`, `diagnostic_seq`, `telemetry_idx` | as Phase 5.1 | as Phase 5.1 | unchanged; validated by 3164 (E/stop) |
-| state: `pending_segments` | P1 fe:293-296; P2 fe:702-705; P5 fe:1484-1491; E fe:1758-1761 | flush fe:256-268 into `ledgr_availability_diagnostic_block` | 3168 |
-| state: `equity_facts` (new) | today the accumulator fpc:164-190 (availability only) and `record_equity_fact` fe:584-592 (both producers) | finalisation rf:449-458, :511-524; prefix commit br:1076-1086; inline summary oh:313-351 | 3168 |
-| book (lot state) consumers outside the fold | replay accounting-replay.R:274-332; chunked fills reader backtest-fills.R:121-166; opening/resume br:643-671, sweep.R:1771-1819; result replay br:1241-1252; walk-forward walk-forward.R:1202-1203, :1281-1290; dispositions terminal-outcomes.R:149-198; recovery rf:164-195; handler fact oh:787-816; compiled csf:104-165, :167-247 | same | 3164 |
-| decision packet | P1 return fe:609-629; provider decision view availability-provider-prepared.R:530-542 plus fe:309-313 | P2 fe:695-1044 (context ids by name throughout); P3 fe:1054-1094; P5 fe:1419-1515 | 3165 |
-| decision data | P2 bar frame from `history_bars$current` fe:709-712; projection views | P2 ctx construction only | 3165 (packet split; ctx unchanged) |
-| execution packet | `history_bars$next_bar` fe:282 (history-substrate.R:394-413) | P3 fe:1094 then ae:469, :479-482 | 3165 (produced), 3166 (consumed) |
-| execution view | provider `execution_view` ae:417-420 | ae:460-468 (by name) | 3166 |
-| decision | P2 fe:1035-1043; skip fe:655-664 | P3 fe:1057-1065 (`id_to_idx[target_names]` by name); P5 fe:1423-1476 | 3165 |
-| plan, fill, rejection | dense fe:128-198; availability ae:391-529; skip fe:668-686; affordability ae:344-389 | P3 segments fe:1171-1271; P4 fe:1293-1399; P5 fe:1434-1468; compiled csf:167-247 | 3166 |
-| lot input, applied row | P4 per-fill call fe:1349-1357; replay accounting-replay.R:296-328 | handler fact oh:787-816; replay outputs | 3164 (implementation), 3167 (P4 block) |
-| publication | payload br:103-187; live lw:18-157; staging oh:532-602; leg staging oh:196-283; compiled oh:738-785 | flush oh:575-602; durable oh:672-695; memory materialisation oh:837-865 | 3166 (input), 3167 (block, staging) |
-| leg | oh:787-816 (CLOSE then OPEN, oh:809-814); compiled src/spot_fifo.cpp:302, :313 | inline summary oh:313-351 | 3167 |
-| diagnostics | 15 segment producers (Section 2.4); block adw:44-92; writer adw:94-171 | handler oh:631-654 (renumbers `diagnostic_seq`); memory filter oh:362-378 | 3168 |
-| stop | fe:337-344 (P1), fe:975-982 (P2), fe:1162-1169 (P3) | E fe:1918-1930, :1959-1971, :1986-1998 | 3168 |
-| timing, telemetry | stage locals; P5 fe:1535-1551 | E fe:2083-2084 | unchanged |
+### 1.1 Fold state
 
-**Transitional adapters,** each named in code with its remover:
-`ledgr_carrier_provider_view()` (P1 provider and valuation outputs to the
-packet; removed by WS4b); `ledgr_carrier_settlement_state()` (the
-corporate-action plan's `post`/`post_disposition` state in and out; WS4b or
-WS8); `ledgr_carrier_compiled_pack()` / `_unpack()` (compiled-envelope RFC).
-Permanent boundary helpers: E import (`ledgr_carrier_import_state()`), P2
-input and return, publication, results.
+| # | Group: field | Producer (stage, site) | Consumer (stage, site) | Via | Ticket |
+| --- | --- | --- | --- | --- | --- |
+| E01 | state: cash | E envelope fe:1741 | P1 equity fe:578, :589 | direct | 3164 |
+| E02 | state: cash | P1 settlement install fe:244-249 (called fe:365, :399, :487) | P1 onward | settlement_state | 3164 |
+| E03 | state: cash | fold state | P2 ctx cash/equity fe:763-764 | direct | 3165 |
+| E04 | state: cash | fold state | P3 planner fe:1093; reconciliation fe:1140-1166; skip plan fe:675 | direct | 3166 |
+| E05 | state: cash | P4 fe:1400 (canonical); fe:1328 (compiled) | P5 fe:1446-1469; E return fe:2091 | direct | 3167 (canonical), 3164 (compiled unpack) |
+| E06 | state: positions | E import fe:1593-1597 (by name, fe:43-49) | fold state | import_state | 3164 |
+| E07 | state: positions | fold state | P1 decision view fe:298-301 (provider by name) | provider_view | 3165 |
+| E08 | state: positions | fold state | P1 positions value fe:557-573 (run-order sum) | direct | 3165 |
+| E09 | state: positions | fold state | P1 context snapshot fe:600-608 | direct | 3165 |
+| E10 | state: positions | fold state | P2 dense fast context fe:786 | P2 input helper | 3164 (dense ctx output unchanged) |
+| E11 | state: positions | fold state | P3 current quantity fe:1066 | direct | 3166 |
+| E12 | state: positions | fold state | P4 boundary bind fe:1307-1308; E bind fe:1895 | settlement_state | 3164 |
+| E13 | state: positions | fold state | P5 actual positions fe:1458-1461 | direct | 3166 |
+| E14 | state: positions | P4 fe:1389 (canonical), fe:1324 (compiled) | fold state | direct | 3167, 3164 |
+| E15 | state: positions | fold state | dispositions to:136-142; corporate actions cas:465, :634-639 (by name) | settlement_state | 3164 |
+| E16 | state: lot_state | E import fe:1594-1595 | fold state | import_state | 3164 |
+| E17 | state: lot_state | fold state | P1 equity realized and basis fe:580-581, :589-590 | direct | 3164 |
+| E18 | state: lot_state | P4 per-fill apply fe:1349-1357 | fold state | direct | 3164 (operations), 3167 (block) |
+| E19 | state: lot_state | fold state | P4 position read fe:1389-1392 | direct | 3164 |
+| E20 | state: lot_state | fold state | handler fact oh:787-816 (called fe:1370-1376) | direct | 3164, 3167 |
+| E21 | state: lot_state | fold state | compiled pack csf:104-135, batch csf:203-242 | compiled_pack | 3164 |
+| E22 | state: lot_state | compiled unpack csf:137-165, :244-247 | fold state fe:1329 | compiled_unpack | 3164 |
+| E23 | state: state_prev | E fe:1744; P1 normalize fe:541; P5 fe:1522 | P2 ctx fe:767; P1 fe:542; P5 carry fe:1511; E return fe:2092 | direct | unchanged (WS5 owns its type) |
+| E24 | state: state_axis | P1 fe:546; P5 fe:1515 | P1 fe:540 | direct | unchanged |
+| E25 | state: event_seq | E fe:1745; P1 fe:366, :400, :488; P4 fe:1330, :1369 | P1 posts fe:360, :394, :481; P3 predicted seq fe:1258; P4 fe:1322, :1366; E fe:2093 | direct | 3166 (P3 prediction), 3167 (P4 block) |
+| E26 | state: status, stop_reason | E fe:1919-1920, :1960-1961, :1987-1988 | completion fe:1877-1878, :2038-2039; return fe:2087 | direct | 3168 |
+| E27 | state: affected_exposure | E fe:1746, :1921, :1962, :1989 | P3 stop fe:1166; completion fe:1879, :2040, ae:551-555 | direct | 3168 |
+| E28 | state: processed | E fe:1926, :1967, :1994; P5 fe:1533 | E fe:1906; P5 fe:1536, :1554, :1562; return fe:2088 | direct | 3168 |
+| E29 | state: full_run | P5 fe:1563, :1567 | E fe:2034, :2089 | direct | unchanged |
+| E30 | state: last_fully_valued | E fe:1722, :1729, :1747; P1 fe:575 | completion fe:1880, :2041 | direct | 3168 |
+| E31 | state: last_executed | E fe:1723, :1731-1732, :1748; P5 fe:1440-1443 | completion fe:1881, :2042 | direct | 3166 (reads plan `exec_ts`) |
+| E32 | state: frozen_set | E fe:1749; P1 fe:539 | P1 fe:517-518 (by name) | direct | 3165 |
+| E33 | state: current_stage, current_ts | E fe:1902-1903; stages fe:280, :833, :985, :1053, :1291 | E exception row fe:2070-2071 | direct | unchanged |
+| E34 | state: pending_segments | P1 fe:293-296; P2 fe:702-705; P5 fe:1484-1491; E fe:1758-1761 | flush fe:251-270 | direct | 3168 |
+| E35 | state: diagnostic_seq | flush fe:266-267 | block first sequence fe:262; handler renumbers oh:631-654 | direct | 3168 |
+| E36 | state: telemetry_idx | E fe:1750; P5 fe:1537 | P5 fe:1538; E fe:2084 | direct | unchanged |
+| E37 | state: equity_facts (new) | accumulator fpc:164-190, appended fe:576-582 (availability) | collect fe:2094; finalisation rf:449-458, :511-524; prefix commit br:1076-1086 | direct | 3168 |
+| E38 | state: equity_facts (new) | `record_equity_fact` fe:584-592 (both producers) | memory sink oh:295-312; inline summary oh:313-351; sweep sw:1917-1921 | direct | 3168 |
+| E39 | state: equity_facts (new) | recovery rf:188-194 | br:931 then finalisation | direct | 3168 |
 
-**Not carried** (dead today, census): `pulse_plan$targets` and
-`$actionable_idx` (no reader), `fill$ts_signal_utc` (no reader), `entry$cur_qty`
-(dead local fe:1347). The stop result's `affected_instrument_ids` and the
-Phase 5.5 fold return (`state`, `state_prev`, `next_event_seq`, read by no
-caller) stay as bound; this note does not change bound returns.
+### 1.2 Lot book outside the fold
+
+| # | Consumer | Site | Via | Ticket |
+| --- | --- | --- | --- | --- |
+| E40 | Replay | ar:274-332 | direct typed operations | 3164 |
+| E41 | Chunked fills reader | bf:121-166 | direct | 3164 |
+| E42 | Run opening | br:643-657 | import_state | 3164 |
+| E43 | Run resume | br:669-671 | import_state | 3164 |
+| E44 | Sweep opening | sw:1771-1819 | import_state | 3164 |
+| E45 | Result replay | br:1241-1252 | direct | 3164 |
+| E46 | Walk-forward as-of | wf:1202-1203, la:224-237 | direct | 3164 |
+| E47 | Walk-forward carry | wf:1281-1304 | result helper | 3164 |
+| E48 | Dispositions | to:149-198 | typed disposition operation via settlement_state | 3164 |
+| E49 | Terminal recovery | rf:164-195 | direct | 3164 |
+| E50 | Handler accounting fact | oh:787-816 | direct | 3164 |
+| E51 | Compiled pack/unpack | csf:104-165, :167-247 | compiled_pack, compiled_unpack | 3164 |
+
+### 1.3 Observation, decision and plan
+
+| # | Group | Producer | Consumer | Via | Ticket |
+| --- | --- | --- | --- | --- | --- |
+| E52 | decision packet | provider decision view app:530-542, fold additions fe:309-313 | P1 packet | provider_view | 3165 |
+| E53 | decision packet | valuation state ae:135-145 | P1 packet | provider_view | 3165 |
+| E54 | decision packet | P1 | P2 ctx construction fe:707-820 | P2 input helper | 3165 |
+| E55 | decision packet | P1 | P2 target validation fe:872-877, ae:265-267 | direct | 3165 |
+| E56 | decision packet | P1 | P2 decision trace, risk and stale segments fe:889-1026 | direct | 3165 |
+| E57 | decision packet | P1 | P5 state normalization fe:1509-1515 | direct | 3165 |
+| E58 | decision packet | P1 | P5 reconciliation marks fe:1470-1481 | direct | 3166 |
+| E59 | decision packet | P1 members fe:619-623 | P2 `ctx$members` fe:772 | P2 input helper | 3165 |
+| E60 | decision data | history reader current bars hs:394-413 | P2 bar frame fe:709-712, hs:347-370 | P2 input helper | 3165 |
+| E61 | decision data | current closes fe:350 | P1 corporate-action marks | settlement_state | 3165 |
+| E62 | execution packet | history reader next bar hs:394-413 (continuation hs:400-412) | P3 availability planner ae:469, :479-482 | direct | 3165 (produce), 3166 (consume) |
+| E63 | execution packet (dense) | `bars_mat` at `pulse_idx + 1` | P3 dense planner fe:150-156 | direct | 3166 |
+| E64 | execution view | provider execution view ae:417-420 | P3 ae:460-468 (by name) | execution_view | 3166 |
+| E65 | decision | P2 return fe:1035-1043 | P3 targets fe:1057-1068 (by name today) | direct | 3165 (produce), 3166 (consume) |
+| E66 | decision | P2 return | P5 state fe:1425, :1509-1527 | direct | 3165 |
+| E67 | decision | P2 return | P5 reconciliation gross fe:1470-1477 | direct | 3166 |
+| E68 | decision (skip) | skip decision fe:632-664 | E fe:1954-1956; P3 skip plan | direct | 3165 |
+| E69 | plan (dense) | fe:128-198 | P3 | direct | 3166 |
+| E70 | plan (availability) | ae:391-529 | P3 | direct | 3166 |
+| E71 | plan: affordability | ae:344-389 | availability planner | direct | 3166 |
+| E72 | plan, fill, rejection | P3 | P3 diagnostic rows fe:1171-1271 | direct | 3166 |
+| E73 | plan, fill | P3 | P4 fe:1293-1399 | direct | 3166 (readers), 3167 (block) |
+| E74 | plan, fill | P3 | P5 fe:1434-1468 | direct | 3166 |
+| E75 | plan, fill | P3 | compiled wrapper csf:167-247 | compiled_pack | 3166 |
+| E76 | plan (skip) | fe:668-686 | P4, P5 | direct | 3166 |
+| E77 | fill | P3 | buffered payload br:103-187 | publication helper | 3166 |
+| E78 | fill | P3 | db_live writer lw:18-157 (oh:561-563) | publication helper | 3166 |
+
+### 1.4 Publication, legs, diagnostics, stops, timing
+
+| # | Group | Producer | Consumer | Via | Ticket |
+| --- | --- | --- | --- | --- | --- |
+| E79 | publication | payload | staging oh:532-559, flush oh:575-602, event buffer feb:49-112 | direct | 3167 |
+| E80 | publication | compiled batch | `append_compiled_spot_batch` oh:738-785 | direct | 3167 |
+| E81 | publication (non-fill) | to:215; cas:603; sw:1765 | `append_event_rows` oh:668-671, :714-736 | publication helper | 3167 (indexed write), WS8 (builders) |
+| E82 | publication | event buffer | durable `flush_pending` oh:672-695 | direct | 3167 |
+| E83 | publication | event buffer | memory materialisation oh:837-865, sw:1923-1926 | direct | 3167 |
+| E84 | leg | handler fact oh:787-816 | memory sink `stage_leg`/`add_leg` oh:196-231, `flush_legs` oh:246-283 (called oh:600) | direct | 3167 |
+| E85 | leg | `inline_fills` | inline summary oh:313-351 and retained fills/trades | direct | 3167 |
+| E86 | leg (compiled) | compiled batch | `add_legs_many` oh:232-245 | direct | 3167 |
+| E87 | diagnostics | 15 segment producers (fe:325-336, :489-497, :520-537, :640-653, :879-1025, :1155-1271, :1484-1491, :1944-1952) | block adw:44-92 | direct | 3168 |
+| E88 | diagnostics | block | writer adw:94-171 | direct | 3168 |
+| E89 | diagnostics | writer drain fe:1871, :2032 | handler oh:631-647; memory filter oh:362-378 | direct | unchanged |
+| E90 | stop | P1 fe:337-344 | E fe:1918-1930 | direct | 3168 |
+| E91 | stop | P2 fe:975-982 | E fe:1959-1971 | direct | 3168 |
+| E92 | stop | P3 fe:1162-1169 | E fe:1986-1998 | direct | 3168 |
+| E93 | timing | stage locals | P5 telemetry fe:1535-1551 | direct | unchanged |
+| E94 | telemetry | P5 fe:1535-1551 | E fe:2083-2084 | direct | unchanged |
+
+**Not carried** (dead today): `pulse_plan$targets` and `$actionable_idx`,
+`fill$ts_signal_utc`, the local `cur_qty` (fe:1347). Bound outputs stay as
+bound: the stop result's `affected_instrument_ids` and the Phase 5.5 fold
+return (`state`, `state_prev`, `next_event_seq`).
 
 ## 2. Pins (scope b)
 
-### 2.1 Reasons
+### 2.1 Reasons and restriction codes
 
-- **P3 fill and rejection rows** carry reasons as a flat segment:
-  `reason_offset`, `reason_count`, `reason_code_list` (integer codes, in
-  the order `ledgr_availability_reason_values()` produces today: blocking
-  tokens, then informational, `unique()` keeping the first occurrence,
-  ae:334-342, :438-454). The row's primary `reason_code` is a **separate
-  integer column**, set where it is set today (`reasons[[1L]]` for
-  rejections, ae:452, :381; first informational value or `""` for fills,
-  fe:1231-1233). The text `reasons` is built only when the diagnostic row
-  is staged, by `paste(dictionary[codes], collapse = "|")`.
-- **Every other diagnostic producer** (decision trace, terminal, stop,
-  skip, reconciliation; vocabulary census item 1) keeps writing its
-  `reason_code` and `reasons` strings directly into the staging block, once
-  per segment as today. Two producers break "primary = first token": the
-  lifetime terminal stop (fe:443-453) and the decision trace with
-  `sizing_unavailable` (fe:907-914). They are not re-encoded.
-- **Static dictionary** (P3 reason codes, ordered as first defined):
-  `final_pulse_no_execution`, `execution_bar_missing`, `insufficient_cash`,
-  `membership_changed_before_execution`, `trading_halted`,
-  `quotation_only`, `status_unknown`, `status_unknown_or_conflicting`,
-  `lifetime_inactive`. Code 0 is `""`. A token outside the dictionary
-  aborts with `ledgr_invalid_pulse_plan`.
-- **Open vocabularies** (terminal-event labels, exception `$reason`,
-  instrument IDs) are never coded at compile time. Where carried, they use
-  a per-run dictionary in first-seen order, as
-  `ledgr_history_segment_dictionary()` does (history-substrate.R:468-505).
+- **P3 fill and rejection reasons** are a flat segment (`reason_offset`,
+  `reason_count`, `reason_code_list`) in the order
+  `ledgr_availability_reason_values()` produces today: blocking tokens, then
+  informational, with `unique()` keeping the first occurrence (ae:334-342,
+  :438-454). The row's primary `reason_code` is a separate integer column,
+  set where it is set today (`reasons[[1L]]` for rejections, ae:381, :452;
+  the first informational value or `""` for fills, fe:1231-1233). The
+  `reasons` text is built when the diagnostic row is staged.
+- **P3 dictionary:** 1 `final_pulse_no_execution`, 2
+  `execution_bar_missing`, 3 `insufficient_cash`, 4
+  `membership_changed_before_execution`, 5 `trading_halted`, 6
+  `quotation_only`, 7 `status_unknown`, 8 `status_unknown_or_conflicting`,
+  9 `lifetime_inactive`; 0 is the empty string. A token outside the
+  dictionary aborts with `ledgr_invalid_pulse_plan`.
+- **Decision-packet restriction codes** have their own levels: 1
+  `trading_halted`, 2 `quotation_only`, 3 `status_unknown`, 4
+  `status_unknown_or_conflicting`, 5 `lifetime_inactive`, 6
+  `valuation_frozen`; 0 is empty. The emitted segment order is preserved,
+  including `valuation_frozen` appended after existing restrictions
+  (ae:171-185; provider ap:241-265), independent of code order.
+- **Code 0** is decoded explicitly as `""`; it is never used as an R index.
+- **Other diagnostic producers** (decision trace, terminal, stop, skip,
+  reconciliation) keep writing their `reason_code` and `reasons` strings
+  into the staging block as today. The lifetime terminal stop (fe:443-453)
+  and the decision trace with `sizing_unavailable` (fe:907-914) do not
+  follow "primary = first token"; they are not re-encoded.
+- **Only fields Synthesis Section 4 declares as integer codes are
+  encoded.** Instrument IDs, `terminal_event`, `lifetime_fact_id` and
+  exception reasons stay character at their declared boundaries. The
+  provider's internal `terminal_levels` stay provider internals.
 
 ### 2.2 Other codes
 
-- **Mark source** (packet `mark_source`): 1 `missing`, 2 `expired_close`,
-  3 `current_close`, 4 `stale_close`, 5 `frozen_close`, 0 `""`
-  (ae:117-126). `write_off` occurs only on disposition meta
-  (terminal-outcomes.R:113-114), which is not a packet field.
-- **Provider status and lifetime**: the provider's own level vectors
-  (availability-provider-prepared.R:373-377, :398-407), carried as integer
-  codes into those levels; `terminal_event` uses the provider's per-run
-  `terminal_levels`.
-- **Economic event kinds** (plan): 1 `FILL`, 2 `CASHFLOW`, 3
-  `DISPOSITION`. The canonical-supported set stays `FILL, CASHFLOW`
-  (fe:1120); compiled stays `FILL` (csf:93); empty plans declare none.
-- **Side**: +1 `BUY`, -1 `SELL` inside the carrier; tokens at publication.
-  **Leg action**: CLOSE before OPEN (oh:809-814).
-- **Condition classes survive.** The column validators raise the classes
-  the removed object validators raised: `ledgr_invalid_fill_intent`,
-  `ledgr_invalid_pulse_plan`, `ledgr_invalid_lot_fill`,
-  `ledgr_lot_state_invariant`, `ledgr_invalid_post_risk_targets`
-  (documented in `R/condition-reference.R` and checked by
-  test-codebase-contracts.R:44, LTB-0271).
+- **Mark source:** 1 `missing`, 2 `expired_close`, 3 `current_close`, 4
+  `stale_close`, 5 `frozen_close`; 0 `""` (ae:117-126). `write_off` is
+  excluded from the packet dictionary but preserved verbatim in disposition
+  metadata and in the diagnostic `mark_source` (fe:489-495).
+- **Provider status and lifetime:** integer codes into the provider's own
+  level vectors (app:373-377, :398-404); `terminal_event` remains character
+  in the carrier.
+- **Economic event kinds:** 1 `FILL`, 2 `CASHFLOW`, 3 `DISPOSITION`. The
+  canonical-supported set stays `FILL, CASHFLOW` (fe:1120) and compiled
+  stays `FILL` (csf:93). Empty plans declare none.
+- **Side:** +1 `BUY`, -1 `SELL` in the carrier, tokens at publication.
+  **Legs:** CLOSE before OPEN (oh:809-814).
+- **Condition classes survive** on the column validators:
+  `ledgr_invalid_fill_intent`, `ledgr_invalid_pulse_plan`,
+  `ledgr_invalid_lot_fill`, `ledgr_lot_state_invariant`,
+  `ledgr_invalid_post_risk_targets` (documented in
+  `R/condition-reference.R`; checked by test-codebase-contracts.R:44,
+  LTB-0271).
 
 ### 2.3 Locators
 
 - `bar_row` is the valuation's `source_row` (run positions, ae:144) and
   `source_column` the history reader's `pulse_columns[pulse_idx]`
-  (history-substrate.R:394-413). A row alone is not a time boundary.
-- Feature access stays the existing cutoff-bound `history_view`
-  (fe:288-292) and projection views, P2-local and unchanged.
+  (hs:394-413). A row alone is not a time boundary.
+- Feature access stays the cutoff-bound `history_view` (fe:288-292) and the
+  projection views, P2-local and unchanged.
 - The execution packet holds `exec_ts`, `has_next` and next-bar OHLCV on
   the run axis from `history_bars$next_bar`, including the continuation
-  column beyond the last pulse (history-substrate.R:400-412).
+  column beyond the last pulse (hs:400-412).
 
 ### 2.4 Pulse diagnostic capacity
 
-From the vocabulary census item 6 (`N` = run-axis size): a due pulse adds
-at most `H + F + max(C, 1) + 2C + 2` rows and every other pulse less, with
-`C, H <= N` and `F <= N`, except two stop producers bounded by `N`
-(corporate-action refusal) and by `Q_pulse` (blocked scheduled dispositions,
-not deduplicated). **Pinned:** the staging block is allocated once in E with
-`capacity = max(5 * N + 3, max(Q_pulse))`, where `Q_pulse` comes from the
-corporate-action plan's due rows per pulse. It is reset, never grown, after
-each drain. A staged row beyond capacity aborts with
-`ledgr_invalid_fold_execution` (a bug, not a data condition). The fold's
-`diagnostic_seq` remains a row counter; the handler renumbers rows at write
-(oh:631-654), unchanged.
+Let `H` be lifetime-disposition rows, `F` freeze-entry plus freeze-exit rows
+(disjoint sets) and `C` the context length. P1 contributes at most `H + F`;
+P2 at most one intent row, `max(C, 1)` decision rows and `C` stale-risk
+rows; P3 at most `C` accepted and rejected rows; P5 one reconciliation row.
+`H, F, C <= N` gives the conservative bound `5N + 3`. Corporate-action
+refusal and blocked scheduled-disposition stops return before the later
+producers; bound them by `N` and `Q_pulse` (blocked due disposition rows,
+not deduplicated). Scheduled-skip pulses fit the bound. **Pinned:**
+allocate once in E with `capacity = max(5N + 3, max(Q_pulse))`, where an
+absent `Q_pulse` is integer 0. Reset after each drain; never grow. A staged
+row beyond capacity is the classed bug refusal
+`ledgr_invalid_fold_execution`. The fold's `diagnostic_seq` stays a row
+counter; the handler renumbers at write (oh:631-654).
 
 ### 2.5 Cash-effect reuse
 
 `ledgr_fill_publication_deltas()` (lw:8-16) and
 `ledgr_availability_fill_cash_delta()` (ae:326-332) evaluate the same
-expressions in the same order, so P3 computes `cash_delta` and
-`position_delta` once and every later reader reuses them. The two
-reconciliation sums (fe:1140-1144, fe:1463-1467) stay `sum()` over the
-reused vector in fill order. LDG-3166 adds a test that the reused values
-are `identical()` to both formulas on the case set.
+expressions in the same order. P3 computes `cash_delta` and
+`position_delta` once and later readers reuse them. Both reconciliation
+sums (fe:1140-1144, :1463-1467) stay `sum()` over the reused vector in fill
+order. LDG-3166 adds a test that the reused values are `identical()` to
+both formulas on every case.
 
 ## 3. Obligation register (scope c)
 
-Each indivisible obligation has one owner. "Control" is the deliberate
-violation that must fail its check. Case IDs `C1`-`C17` are the new cases
-of Section 4; `D` and `M` are the detectors and mutations of Section 6.
-"Oracles" means A0 successor, dense oracle and (where the ticket says so)
-the real-data reference.
+Each row is one indivisible obligation with one implementing ticket. LDG-3169
+verification is a cross-reference, not a second owner. "Check" names the
+case (Section 4), detector or validator (Section 6) or oracle; "control" is
+the deliberate violation that must fail that check. "Oracles" means the A0
+successor and dense oracles.
 
-| ID | Obligation (Synthesis section) | Owner | Check | Control |
+### 3.1 Synthesis Sections 2-3
+
+| ID | Obligation (clause) | Producers / consumers | Owner | Check | Control |
+| --- | --- | --- | --- | --- | --- |
+| O2.01 | Economics, event order, `meta_json`, equity, state, retained diagnostics byte-identical (2) | all | 3169 (whole-candidate verification; each ticket's end check under decision 8 is a gate, not a second owner) | oracles, real-data | M1-M12 |
+| O2.02 | Lots alone determine positions (2) | E14, E19 | 3164 | D11 | M5 |
+| O2.03 | No snapshot, configuration or store identity change (2) | E, finalisation | 3164 | D12a (store bindings and config hash on C1) | add a config field |
+| O2.04 | No dependency change (2) | DESCRIPTION | 3164 | D12b (DESCRIPTION Imports/Suggests unchanged) | add an import |
+| O2.05 | No public API change (2) | NAMESPACE | 3164 | D12c (export census) | add an export |
+| O2.06 | No new execution-mode branch (2) | fold | 3165 | D12d (mode-branch census, LTB-0331) | add a branch |
+| O2.07 | No compiled default (2) | execution spec | 3164 | D12e (default `compiled_accounting_model` unchanged) | flip the default |
+| O2.08 | Release deliverables: tests, performance records, internal contracts, one NEWS entry; public examples and registered oracles preserved (2) | packet | 3169 owns the deliverables | final-candidate record | omit NEWS |
+| O2.09 | Q1: dense joins at the normalized decision; observation frozen (2) | E10, E63, E69 | 3165 | D13 | edit a dense view builder |
+| O2.10 | Q6: one equity record for both producers (2) | E37-E39 | 3168 | D10 | keep the accumulator |
+| O3.01 | Run axis is `instrument_ids` (3.1) | E06, E16 | 3164 | V-book (axis length) | wrong-length positions |
+| O3.02 | Context axis in provider order incl. held nonmembers; `context_pos` (3.1) | E52-E54 | 3165 | C15 | M8 |
+| O3.03 | Fill and rejection rows carry `k` and `pos = context_pos[k]` (3.1) | E72-E75 | 3166 | V-fill | `pos` not equal `context_pos[k]` |
+| O3.04 | Fold environment locked with its exact slot set (3.1) | fpc | 3164 | V-state (slot set, lock) | add a binding |
+| O3.05 | Positions and book retyped; E/stop validator extended (3.1) | E06-E22 | 3164 | V-book | wrong-length book column |
+| O3.06 | Packet and decision groups validated at construction (3.1) | E52-E68 | 3165 | V-packet, V-decision | NA in `member` |
+| O3.07 | Execution view, plan, fill and rejection validated at construction (3.1) | E62-E78 | 3166 | V-plan, V-fill, V-rejection | unsupported kind code |
+| O3.08 | Publication and leg columns validated at construction (3.1) | E79-E86 | 3167 | V-publication | duplicate `event_seq` in a block |
+| O3.09 | Staging, equity and stop validated; E/stop validator extended (3.1) | E34-E39, E90-E92 | 3168 | V-diagnostics, V-equity | wrong-type equity column |
+| O3.10 | Callback outputs validated where they enter (strategy return; feature callbacks unchanged) (3.1) | E65 | 3165 | D4 plus existing strategy-contract tests | skip return validation |
+| O3.11 | Deserialised inputs validated where they enter (E import of resume state and openings) (3.1) | E06, E16, E42-E44 | 3164 | V-book on import | corrupt resume lot row |
+| O3.12 | Named adapters only for book, compiled and settlement (3.1) | E02, E12, E15, E21-E22 | 3164 | D3 | name lookup in kernel |
+| O3.13 | Named adapters only for packet and P2 (3.1) | E07, E52-E54, E60 | 3165 | D3 | ad hoc `match()` in P2 core |
+| O3.14 | Execution view is a declared P3 service (3.1) | E64 | 3166 | D3 | read the provider directly in P4 |
+| O3.15 | Publication via named helpers (3.1) | E77-E81 | 3167 | D3 | name lookup in block builder |
+| O3.16 | Book hand-outs are copies; candidates and workers isolated (3.1) | E12, E15, E21, E41-E51 | 3164 | C14a, A0 `sweep_w2` | write the book by reference |
+| O3.17 | Retained `ctx`, state and corporate-action views unchanged by later pulses (3.1) | E54, E23, E61 | 3165 | C14b | mutate a retained view |
+| O3.18 | Publication buffers exclusive (3.1) | E79-E86 | 3167 | C14c | share a staged buffer |
+| O3.19 | Copy-on-modify lot kernel (3.1, decision 7) | E18 | 3164 | D15 | `setv` on `lot_qty` |
+| O3.20 | P1 order: settlement, disposition, lifetime, re-observation, valuation, equity (3.2) | E02, E52-E53 | 3165 | C12, A0 `avail_*` | swap disposition and valuation |
+| O3.21 | Provider and valuation converted once per produced view, mapping reused (3.2) | E52-E53 | 3165 | D16 | convert per column |
+| O3.22 | Run-order valuation reductions (3.2) | E08 | 3165 | oracles (equity) | sum in context order |
+| O3.23 | Decision packet and private execution packet; P2 gets no next bars (3.2) | E60, E62 | 3165 | D5 | pass `next_bar` to P2 |
+| O3.24 | Locators name row and prepared pulse column (3.2) | E60 | 3165 | V-packet | row without column |
+| O3.25 | Lazy history cutoff-bound and P2-local; no history access in P3-P5 (3.2) | E60 | 3165 | D21 (phase-ownership checker on P3-P5 substrate access) | injected P3 history read |
+| O3.26 | No flat ctx or frame retirement in WS4a (3.2) | P2 | 3165 | D20 (route R8.06) | retire a frame |
+| O3.27 | Strategy return normalized once on the complete context axis (3.2) | E65 | 3165 | D4 | second normalization |
+| O3.28 | Risk on columns; compiled risk plan validated once in E; dynamic mark, equity and short-exposure checks kept (3.2) | E65 | 3165 | test-risk-fold.R:827 migration, A0 `dense_risk_features` | drop the short-exposure check |
+| O3.29 | Raw state update carried unnormalized to P5 (3.2) | E66 | 3165 | oracles (`strategy_state`) | normalize in P2 |
+| O3.30 | Intent placement unchanged (3.2) | P2 | 3165 | oracles (diagnostics) | move the intent row |
+| O3.31 | Scheduled skip: no strategy call (3.2) | E68 | 3165 | C7 (strategy invocation count) | call strategy on skip |
+| O3.32 | Scheduled skip: no planning; still settle, value, bind and commit (3.2) | E76 | 3166 | C7 (planner invocation count) | plan on skip |
+| O3.33 | One candidate row per actionable context ordinal (3.3) | E69-E70 | 3166 | V-plan | duplicate a row |
+| O3.34 | Cost steps vectorized in order (3.3) | E69-E70 | 3166 | C1 | M10 |
+| O3.35 | Notional fee on the unrounded spread price (3.3) | E69-E70 | 3166 | C1, C2 | M9 |
+| O3.36 | Final price rounding last (3.3) | E69-E70 | 3166 | C2 | round before spread |
+| O3.37 | Effects computed once; no sink recomputes (3.3) | E77-E78 | 3166 | D8 | recompute in payload |
+| O3.38 | Execution epochs validated once from the prepared axis (3.3) | E62-E63 | 3166 | D1 | per-fill `as.POSIXct` |
+| O3.39 | Affordability scan: cash-generating reductions first, then C-locale stable-ID order (3.3) | E71 | 3166 | C11 | scan in decision order |
+| O3.40 | Acceptance mask and permutation private to P3 (3.3) | E71 | 3166 | V-plan (fields not returned) | return the permutation |
+| O3.41 | Accepted rows published in decision order (3.3) | E72-E73 | 3166 | C11 | M4 |
+| O3.42 | Early rejections then affordability rejections (3.3) | E72 | 3166 | C11 | merge-sort rejections |
+| O3.43 | Reconciliation calculations and tolerance unchanged, including `sum()` (3.3) | E04, E58, E67 | 3166 | C8a, oracles | ordered scan instead of `sum()` |
+| O3.44 | Planned after-position is diagnostic only (3.3) | E72 | 3166 | C4, C11 (planned and actual compared separately) | use planned as authority |
+| O3.45 | Reasons as ordered code segments; tokens and order preserved (3.3) | E72 | 3166 | oracles (diagnostics), D22 (dictionary fixtures) | bit mask |
+| O3.46 | Empty plans declare no kinds; unsupported kinds refuse before mutation (3.3) | E73 | 3166 | LTB-0026 migration plus empty-plan test | declare FILL on empty |
+| O3.47 | Flat segments; FIFO sequential within an instrument (3.4) | E18, E40 | 3164 | C4 | M1 |
+| O3.48 | Vectorized across distinct instruments (3.4) | E18 | 3164 | D18 | accept duplicates |
+| O3.49 | Ordered total-basis and Kahan updates in scalar event order (3.4) | E18, E40 | 3164 | C5b, C9 | M11 |
+| O3.50 | Opening: signed quantity, any-sign basis, no cash, no Kahan step (3.4) | E40, E42-E44 | 3164 | C5b, D7 | M6 |
+| O3.51 | Fill: dust, fees and reversal arithmetic (3.4) | E18, E40 | 3164 | C3, C4 | M3 |
+| O3.52 | Disposition: zero fee, zero price allowed, exhaustive, witness at dust tolerance (3.4) | E48 | 3164 | C6 | leave one live lot; wrong witness |
+| O3.53 | Cash outside the kernel (3.4) | E18 | 3164 | D17 | cash inside the kernel |
+| O3.54 | Replay adds published effects exactly once (3.4) | E40 | 3164 | D23 (replay cash witness) | apply a delta twice |
+| O3.55 | Conflict-free consecutive blocks; carried openings successive (3.4) | E40, E42-E44 | 3164 | C5a | reorder a block |
+| O3.56 | Dispositions keep their barriers and duplicate refusal (3.4) | E48 | 3164 | test-terminal-outcomes.R, A0 `avail_terminal_resume` | merge two disposition rows |
+| O3.57 | Old named-list FIFO deleted (3.4) | E16-E51 | 3164 | D19 | keep `ledgr_lot_apply_fill` |
+| O3.58 | Metadata preparation kept until WS7 (3.4) | E40 | 3164 | D20 (route R8.07) | remove the preparer |
+| O3.59 | Singleton replay only if the replay gate passes (3.4, decision 6) | E40 | 3164 | reader cells, replay memory | a deliberately slowed replay arm (an injected per-event copy) must fail the reader cell |
+| O3.60 | Compiled pack and unpack by gather; aggregates and Kahan state exact; C++ unchanged (3.4) | E21-E22, E51 | 3164 | C9 | M12 |
+| O3.61 | Bind the next corporate-action boundary before fills (3.5) | E12 | 3167 | A0 `dense_dividend_state`, C12 | bind after fills |
+| O3.62 | Candidate block computed without mutation (3.5) | E73 | 3167 | C13b | install row one before row two validates |
+| O3.63 | Install order: book, publish, sequence, legs, positions and cash (3.5) | E73, E79, E84 | 3167 | C13b, oracles | publish before install |
+| O3.64 | Append, fact/leg and flush failures abort; durable rollback; no successful memory result; classes and stage kept; no private-state restore promised (3.5) | E79-E84 | 3167 | C13c, LTB-0280 migration | swallow an injected error |
+| O3.65 | Checkpoint and interrupt behaviour unchanged (3.5) | P5, E | 3167 | existing checkpoint tests, A0 `run_interrupted` | flush checkpoint mid-block |
+| O3.66 | Compiled state-before-append order (3.5) | E80 | 3167 | C9 | append before state |
+| O3.67 | Fills published as columns; event IDs per block (3.5) | E79 | 3167 | D1, D9 | per-fill list |
+| O3.68 | P1 non-fill builders keep order; adapt once into the indexed buffer (3.5) | E81 | 3167 | A0 `dense_dividend_state`, `avail_acquisition` | defer non-fill rows to P5 |
+| O3.69 | `meta_json`, memory `meta`, auxiliaries and leg-fee arithmetic unchanged (3.5) | E79-E85 | 3167 | oracles | drop the meta list |
+| O3.70 | No Accounting DDL, validator, fallback deletion or reader change (3.5) | all | 3167 | D20 (routes R8.07-R8.10) | add a ledger column |
+| O3.71 | Pulse staging in emission order; reset after P5 or E; pinned capacity; no strategy replay (3.6) | E34, E87 | 3168 | D2, C18 | retain staging |
+| O3.72 | Existing writer splits chunks; no run-long staging; no second writer (3.6) | E88 | 3168 | C18 | drop a split tail |
+| O3.73 | Full logical trace; memory filter and sequence gaps unchanged (3.6) | E89 | 3168 | A0 `memory_diagnostics`, C18 | filter in the fold |
+| O3.74 | Equity record per valued pulse with used-row count; frozen prefix to finalisation and inline summary; no memory replay (3.6) | E37-E39 | 3168 | C18, A0 `avail_incomplete` | expose an unused row |
+| O3.75 | Two clocks distinct (3.6) | E30-E31 | 3168 | C18 | set last_executed from valuation |
+| O3.76 | Finalisation selects equity by producer (3.6) | E37 | 3168 | C16 | restore the old decision |
+| O3.77 | P5 order: flush, reconciliation, state, progress, telemetry, checkpoint (3.6) | P5 | 3168 | oracles | swap state and flush |
+| O3.78 | E alone installs stops; counted pulses kept (3.6) | E90-E92 | 3168 | C8a, A0 `avail_incomplete` | count a non-counting stop |
+| O3.79 | Stop class and affected exposure kept; stop diagnostics staged (3.6) | E90-E92 | 3168 | C8a, C18 | drop the stop segment |
+| O3.80 | Telemetry arrays unchanged (3.6) | E93-E94 | 3168 | existing telemetry tests | drop a sample |
+
+### 3.2 Synthesis Section 4 field invariants
+
+Each row is checked by the named group validator (Section 6, V-*); the
+control is a deliberately invalid record of that field, which the validator
+must refuse.
+
+| ID | Group: fields (invariant) | Owner | Invalid record |
+| --- | --- | --- | --- |
+| F4.01 | state: cash finite; positions equal lot-derived net | 3164 | NaN cash; positions differ from `net_by_inst` |
+| F4.02 | state: event_seq >= 1; diagnostic_seq >= 0 | 3164 | event_seq 0 |
+| F4.03 | state: state_prev, state_axis lifecycle | 3164 | numeric state_axis |
+| F4.04 | state: status, stop_reason, current_stage tokens | 3164 | NA status |
+| F4.05 | state: affected_exposure fields | 3164 | missing `specified` |
+| F4.06 | state: processed, telemetry_idx >= 0; full_run non-missing | 3164 | NA full_run |
+| F4.07 | state: last_fully_valued, last_executed, current_ts POSIXct scalars | 3164 | numeric last_executed |
+| F4.08 | state: frozen_set character IDs | 3164 | NA in frozen_set |
+| F4.09 | state: pending_segments and equity_facts are the typed groups | 3168 | list staging |
+| F4.10 | book: offset, capacity, head, tail integer run axis; disjoint; empty head/tail 1/0 | 3164 | overlapping segments |
+| F4.11 | book: lot_qty, lot_price live finite, dead NA | 3164 | NA in a live slot |
+| F4.12 | book: net_by_inst, cost_basis_by_inst lot-derived | 3164 | net differs from live lots |
+| F4.13 | book: totals scalars finite | 3164 | NaN realized_comp |
+| F4.14 | packet: pulse_idx valid; ts epoch; context_pos unique run positions; empty allowed | 3165 | duplicate context_pos |
+| F4.15 | packet: cash, positions_value, position finite | 3165 | NaN position |
+| F4.16 | packet: member, held, buyable, target_restricted logical, no NA; buyable implies member | 3165 | buyable non-member |
+| F4.17 | packet: restriction segment ordered, codes in dictionary | 3165 | code 7 |
+| F4.18 | packet: status, lifetime codes; terminal_event, lifetime_fact_id character with empty strings | 3165 | NA terminal_event |
+| F4.19 | packet: mark, reference, source_ts, mark_age, mark_source independent | 3165 | age erased with mark |
+| F4.20 | packet: priced, permissible, frozen independent flags | 3165 | NA permissible |
+| F4.21 | decision data: current bars only, missing cells retained | 3165 | next-bar column present |
+| F4.22 | decision data: source_row and source_column; feature handles immutable | 3165 | row without column |
+| F4.23 | execution packet: exec_ts, has_next explicit; continuation preserved | 3165 | has_next NA |
+| F4.24 | execution view: member, restricted, reason segments | 3166 | unequal segment lengths |
+| F4.25 | decision: targets full and finite; actionable_k ordered | 3165 | NA target |
+| F4.26 | decision: state_update opaque; intent_reason existing validation | 3165 | non-character intent |
+| F4.27 | plan: accepted, afford_order private; expected_final_cash (dense unused; skip equals cash) | 3166 | skip cash differs |
+| F4.28 | plan: economic_event_kinds empty or supported | 3166 | unsupported code |
+| F4.29 | fill: k, pos, side (+/-1); distinct pos; decision order | 3166 | side 0 |
+| F4.30 | fill: qty, price, fee, effects, exec_ts valid | 3166 | negative fee |
+| F4.31 | fill: position_before, planned_position_after (planned only) | 3166 | NA planned |
+| F4.32 | fill: info segment ordered and deduplicated | 3166 | duplicate code |
+| F4.33 | rejection: k, pos, emit; reason segment; primary separate | 3166 | emit out of order |
+| F4.34 | rejection: resolved_price, exec_ts NA only when absent; position finite | 3166 | NA position |
+| F4.35 | lot input: per-kind rules (opening signed qty; disposition witnesses) | 3164 | opening with positive cash |
+| F4.36 | applied row: positions actual from lots; open/close zero when inapplicable | 3164 | open_qty on a pure close |
+| F4.37 | applied row: per-event facts; opening does no Kahan step | 3164 | Kahan on opening (M6) |
+| F4.38 | publication: identifiers and tokens, nullability, generated in blocks | 3167 | NA instrument_id on FILL |
+| F4.39 | publication: numeric fields, contiguous fill seq | 3167 | gap in fill seq |
+| F4.40 | publication: meta_json, meta, auxiliaries unchanged | 3167 | missing meta on memory sink |
+| F4.41 | leg: CLOSE then OPEN | 3167 | OPEN before CLOSE |
+| F4.42 | leg: fee split, opening leg P&L 0 | 3167 | nonzero OPEN P&L |
+| F4.43 | diagnostics: character columns exact strings and defaults | 3168 | NA reason_code default |
+| F4.44 | diagnostics: integer columns and NA defaults; logical sequence counts dropped rows | 3168 | sequence gap removed |
+| F4.45 | diagnostics: time columns epoch; decision defaults to pulse | 3168 | NA decision time |
+| F4.46 | diagnostics: numeric columns planned/actual meanings | 3168 | actual in place of planned |
+| F4.47 | diagnostics: n <= capacity; reset on drain | 3168 | n not reset |
+| F4.48 | equity: five columns plus n; only first n valid; capacity = pulse count | 3168 | n beyond capacity |
+| F4.49 | stop: class, count and exposure semantics; E applies once | 3168 | applied twice |
+| F4.50 | timing: transient stage measurements (unchanged; checked by the existing telemetry tests) | 3168 | negative stage time |
+| F4.51 | telemetry: sample indexing and totals (unchanged; checked by the existing telemetry tests) | 3168 | skip a sample index |
+
+### 3.3 Synthesis Section 5 evidence rows
+
+| ID | Evidence row | Owner of the check | Check | Control |
 | --- | --- | --- | --- | --- |
-| R2.1 | Economics, event order, `meta_json`, equity, state and retained diagnostics byte-identical (2) | 3169 (each ticket checks per decision 8) | oracles, C1-C17 | any gut of Section 4 |
-| R2.2 | Lots alone determine positions (2) | 3164 | D11 | M5 (positions + delta) |
-| R2.3 | No schema, public API, execution-mode branch or compiled default change (2) | 3169 | D12 (store bindings, export census, mode-branch census) | add an export |
-| R2.4 | Q1: dense joins at the normalized decision; observation frozen (2, 4 note) | 3165 | D13 (dense observe/ctx functions unchanged) | edit a dense view builder |
-| R2.5 | Q6: one equity record for both representations (2) | 3168 | C16, D10 | restore the accumulator |
-| R3.1a | Run axis; context axis in provider order with held nonmembers; `context_pos` (3.1) | 3165 | C15, v201 witness | M8 (wrong `context_pos`) |
-| R3.1b | Fill and rejection rows carry `k` and `pos = context_pos[k]` (3.1) | 3166 | C15 | M8 |
-| R3.1c | Fold slots: retyped positions and book (3.1) | 3164 | D14 (validator) | wrong-length book column |
-| R3.1d | Fold slots: typed staging and `equity_facts`, accumulator removed (3.1) | 3168 | D14 | wrong-type equity column |
-| R3.1e | Each group validated at construction; E/stop validator extended by its owner (3.1) | per group (3164-3168) | D14 | per group |
-| R3.1f | Named adapters only; no ad hoc name lookup in a positional kernel (3.1) | 3164 (book, compiled, settlement), 3165 (packet, P2), 3166 (execution view), 3167 (publication) | D3 | name lookup in kernel |
-| R3.1g | Ownership: exclusive buffers; copies at hand-out; candidates and workers isolated (3.1) | 3164 (book), 3165 (views), 3167 (publication) | C14, A0 `sweep_w2` | by-reference write to a handed-out book |
-| R3.1h | Copy-on-modify kernel (3.1, decision 7) | 3164 | D15 (no `setv` on book columns) | `setv` on `lot_qty` |
-| R3.2a | P1 order of settlement, disposition, lifetime, re-observation, valuation, equity (3.2) | 3165 | C12, A0 `avail_*` | swap disposition and valuation |
-| R3.2b | Provider and valuation converted once per produced view (3.2) | 3165 | D16 (adapter call count = views) | convert per column |
-| R3.2c | Run-order valuation reductions (3.2) | 3165 | oracles (equity bytes) | sum in context order |
-| R3.2d | Decision packet and private execution packet; P2 gets no next bars (3.2) | 3165 | D5 | pass `next_bar` to P2 |
-| R3.2e | Lazy history cutoff-bound and P2-local; no flat ctx or frame retirement (3.2) | 3165 | D13 | read history in P3 |
-| R3.2f | Strategy return normalized once; risk on columns; compiled risk plan validated once in E; dynamic checks kept (3.2) | 3165 | D4, test-risk-fold.R:827 migration | second normalization |
-| R3.2g | Raw state update unnormalized to P5; intent placement unchanged (3.2) | 3165 | oracles (`strategy_state`) | normalize in P2 |
-| R3.2h | Scheduled skip: no strategy call (3.2) | 3165 | C7 | call strategy on skip |
-| R3.2i | Scheduled skip: no planning, still settle, value, bind and commit (3.2) | 3166 | C7 | plan on skip |
-| R3.3a | One candidate row per actionable context ordinal (3.3) | 3166 | C11 | duplicate a row |
-| R3.3b | Cost steps vectorized in order; unrounded notional; last rounding (3.3) | 3166 | C1, C2 | M9 (notional from rounded price), M10 (drop notional) |
-| R3.3c | Effects computed once; no sink recomputes (3.3) | 3166 | D8, Section 2.5 test | recompute in payload |
-| R3.3d | Execution epochs validated once from the prepared axis; no per-fill parse (3.3) | 3166 | D1 | per-fill `as.POSIXct` |
-| R3.3e | Affordability scan order; private mask and permutation; decision-order publication; early then affordability rejections (3.3) | 3166 | C11 | M4 |
-| R3.3f | Reconciliation calculations and tolerance unchanged, including `sum()` (3.3) | 3166 | C8, oracles | ordered scan in place of `sum()` |
-| R3.3g | Planned after-position is diagnostic only (3.3) | 3166 | C4, C11 (planned and actual compared separately) | use planned as authority |
-| R3.3h | Reasons as ordered code segments; dictionaries keep tokens (3.3, 2.1 here) | 3166 | oracles (diagnostics), C11 | bit mask |
-| R3.3i | Empty plans declare no kinds; unsupported kinds refuse before mutation (3.3) | 3166 | LTB-0026 migration | declare FILL on empty |
-| R3.4a | Flat segments; FIFO sequential within an instrument, vectorized across (3.4) | 3164 | C3, C4, C5 | M1 (LIFO), M7 (skip partial remainder) |
-| R3.4b | Ordered total-basis and Kahan updates in scalar event order (3.4) | 3164 | C5, C9 | M11 (`cumsum` totals) |
-| R3.4c | Opening: signed quantity, any-sign basis, no cash or Kahan (3.4) | 3164 | C5, D7 | M6 |
-| R3.4d | Fill: dust, fees, reversal arithmetic (3.4) | 3164 | C3, C4 | M3 (drop fee) |
-| R3.4e | Disposition: zero fee, zero price allowed, exhaustive, replay witness at dust tolerance (3.4) | 3164 | C6, A0 `avail_terminal_resume` | leave a live lot |
-| R3.4f | Cash outside the kernel; replay adds published effects once (3.4) | 3164 | D17 | add cash in kernel |
-| R3.4g | Distinct instruments per call; conflict-free consecutive blocks; carried openings successive (3.4) | 3164 | C5, D18 | reorder a block |
-| R3.4h | Dispositions keep their barriers and duplicate refusal (3.4) | 3164 | test-terminal-outcomes.R, A0 | merge two disposition rows |
-| R3.4i | Old FIFO deleted; replay and opening/resume use the typed operations; metadata preparation kept (3.4) | 3164 | D19 (no named-list FIFO symbol in R/) | keep `ledgr_lot_apply_fill` |
-| R3.4j | Singleton replay only if the replay gate passes (3.4, decision 6) | 3164 | ws4a-timing-1 reader cells, replay memory | n/a (gate) |
-| R3.4k | Compiled pack and unpack by gather; aggregates and Kahan exact; C++ unchanged (3.4) | 3164 | C9 | M12 (drop `realized_comp` in unpack) |
-| R3.5a | Bind next corporate-action boundary before fills (3.5) | 3167 | A0 `dense_dividend_state`, C12 | bind after fills |
-| R3.5b | Candidate block computed without mutation; failure leaves state and buffers unchanged (3.5) | 3167 | C13 | mutate before success |
-| R3.5c | Install order: book, publish, sequence, legs, positions and cash (3.5) | 3167 | C13, LTB-0137/0280 migrations | publish before install |
-| R3.5d | Append/flush failure aborts; durable rollback; no memory partial; classes, stage, checkpoint and interrupt preserved; compiled state-before-append (3.5) | 3167 | C13, LTB-0280 migration | swallow an append error |
-| R3.5e | Fills published as columns; event IDs per block (3.5) | 3167 | D1, D9 | per-fill list |
-| R3.5f | P1 non-fill builders keep order; adapt once into the indexed buffer (3.5) | 3167 | A0 `dense_dividend_state`, `avail_acquisition` | defer non-fill rows to P5 |
-| R3.5g | `meta_json`, memory `meta`, auxiliaries and leg-fee arithmetic unchanged (3.5) | 3167 | oracles, D9 | drop the meta list |
-| R3.5h | No Accounting DDL, validator, fallback deletion or reader change (3.5) | 3167 | D12, scope diff | add a column |
-| R3.6a | Pulse staging in emission order; reset after P5/E; pinned capacity; no strategy replay (3.6) | 3168 | D2, C17 | grow staging |
-| R3.6b | Existing writer splits chunks; no run-long staging, no second writer (3.6) | 3168 | D2, v201 `chunk_rows = 7` witness | retain staging across pulses |
-| R3.6c | Full logical trace; memory filter and sequence gaps unchanged (3.6) | 3168 | A0 `memory_diagnostics` | filter in the fold |
-| R3.6d | Equity record per valued pulse; used-row count; frozen prefix to finalisation and inline summary; no memory replay; two clocks (3.6) | 3168 | A0 `avail_incomplete`, C16 | replay equity for memory |
-| R3.6e | Finalisation selects equity by producer (3.6, P1 patch) | 3168 | C16 | key on record length |
-| R3.6f | P5 order: flush, reconciliation, state, progress, telemetry, checkpoint (3.6) | 3168 | oracles | swap state and flush |
-| R3.6g | E alone installs stops; counted pulses; stop class and exposure kept; stop diagnostics staged (3.6) | 3168 | A0 `avail_incomplete`, C8 | install stop in P2 |
-| R3.6h | Telemetry arrays unchanged (3.6) | 3168 | existing telemetry tests | n/a |
-| R4.1 | Producer scope line (4) | 3165 | D13 | dense emits packet |
-| R4.2 | Epoch doubles inside the carrier; POSIXct at boundaries (4) | 3165 (packet), 3166 (plan), 3167 (publication) | D1 | POSIXct column |
-| R4.3 | Dictionaries and locators pinned without semantic change (4, 7) | 3162 (this note) | oracles | renumber a token |
-| R5.1 | Section 5 evidence table, each row | 3163 records, owners above check | Section 4 | Section 4 |
-| R5.2 | P2 next-bar detector (5, P3 patch) | 3165 | D5 | as D5 |
-| R5.3 | Dense durable finalisation through event replay (5, P1 patch) | 3168 | C16 | as C16 |
-| R8.x | Section 8 routes stay with WS4b, WS5, WS6, WS7, WS8 and the compiled RFC; no D2 slots; cold stop and exception records keep their encoding; JSON cache untouched | 3169 | D12, D20 (scope diff over the routed files and symbols) | implement a routed item |
-| R9.1-R9.7 | Section 9 scenarios | S1 3165 (C15); S2 3166 (C11); S3 3165 (C12); S4 3164 (C5); S5 3167 (C13); S6 3168 (C17); S7 3164 (C14) | named cases | as cases |
-| RCR | Independent cold read of every changed stage from code and Section 4 of the synthesis | 3169 | workstream 13 close review | n/a |
+| E5.01 | Exact successful outputs | 3169 | oracles, real-data | any M |
+| E5.02a | Cost semantics | 3166 | C1, C2 | M9, M10 |
+| E5.02b | Lot semantics | 3164 | C3-C6 | M1, M3 |
+| E5.03 | Axis and clocks | 3165 | C7, C10, C12, C15, C17 | M8 |
+| E5.04a | Lifecycle and ownership: book, compiled, stops and resume | 3164 | C14a, C9, A0 stops and resume | by-reference book write |
+| E5.04b | Lifecycle and ownership: retained views | 3165 | C14b | mutate a retained view |
+| E5.04c | Lifecycle and ownership: publication buffers | 3167 | C14c | reuse staging |
+| E5.05a | Mutation strength: LIFO, opening Kahan | 3164 | M1, D7 | M1, M6 |
+| E5.05b | Mutation strength: affordability-order publication | 3166 | C11 | M4 |
+| E5.05c | Mutation strength: reordered publication, dropped fee | 3167 | oracles through the typed path | M2, M3 |
+| E5.06 | Failure boundary | 3167 | C13b, C13c | swallow an error |
+| E5.07 | Representation detectors | the ticket named for each detector in Section 8 | D1-D23 | each detector's own control |
+| E5.08 | Dense finalisation | 3168 | C16 | restore the old decision |
+| E5.09 | Timing and allocation | 3164 (reader cells), 3169 (matrix) | ws4a-timing-1 | absolute-checker controls |
+| E5.10 | Scale | 3169 | memory method (Section 7) | calibrated excess |
+
+### 3.4 Synthesis Section 8 routes
+
+All are verified by LDG-3169 with D20: a named-boundary diff of the listed
+operations plus the relevant output witness; the control is a deliberate
+change to that boundary.
+
+| ID | Route (owner) | Boundary watched |
+| --- | --- | --- |
+| R8.01 | Provider/valuation adapters removed (WS4b) | `ledgr_carrier_provider_view()` kept |
+| R8.02 | Selective diagnostic materialisation (WS4b) | memory filter oh:362-378 unchanged |
+| R8.03 | H5 reconciliation JSON (WS4b) | fe:1462-1483 encode kept |
+| R8.04 | State normalization and serialization (WS4b/WS5) | fe:1509-1527 kept |
+| R8.05 | Intent JSON and typed declared state (WS5) | fe:878-888 kept |
+| R8.06 | Context frames (WS6) | bar and feature frames kept |
+| R8.07 | Metadata preparation and read architecture (WS7/WS8) | `ledgr_prepare_accounting_events()` kept |
+| R8.08 | Non-fill builders and evidence (WS7/WS8) | to:126, cas:545, feb:114 builders kept |
+| R8.09 | Fill and non-fill JSON incl. db_live (WS7/WS8) | `meta_json` encode sites kept |
+| R8.10 | Memory meta, aggregate auxiliaries, store change (WS7/WS8) | memory columns and schema kept |
+| R8.11 | Cold stop and exception encoding (unchanged) | fe:2067-2078, stop `detail_json` kept |
+| R8.12 | `canonical_json()` cache retires with its last hot caller (WS4b/WS5) | cache code untouched |
+| R8.13 | Native-resident lot state (compiled-envelope RFC) | `src/` unchanged |
+| R8.14 | D2 position facts consume transitions; no WS4a D2 slots or schema (WS5) | no new slots beyond `equity_facts` |
+
+### 3.5 Synthesis Section 9 scenarios
+
+| ID | Scenario | Owner | Case |
+| --- | --- | --- | --- |
+| S1 | Context reordered, run axis fixed | 3165 | C15 |
+| S2 | Buy before funding sell in decision order | 3166 | C11 |
+| S3 | Unpriced expired holding or disposition followed by fill | 3165 | C12 |
+| S4 | Repeated opening with residual Kahan compensation | 3164 | C5b |
+| S5 | Later FIFO row fails; handler append fails | 3167 | C13b, C13c |
+| S6 | Diagnostic pulse exceeds a writer chunk; run stops early | 3168 | C18 |
+| S7 | Retained view or compiled input survives another pulse | 3164 (compiled input C14a), 3165 (views C14b) | C14a, C14b |
+
+### 3.6 Review obligation
+
+| ID | Obligation | Owner | Check | Control |
+| --- | --- | --- | --- | --- |
+| RCR | Independent cold read of every changed stage from code and Synthesis Section 4 | 3169 | workstream 13 close review | a deliberately omitted stage explanation fails the review item |
 
 ## 4. New cases for LDG-3163 (scope c)
 
-Each is recorded on the base by `dev/bench/v0_2_3_ws4a/record.R`, checked
-exactly by `check.R` (lossless RDS plus `%.17g` CSV, the A0 serialization)
-and has at least one gut in `guts.R` that must fail. Coverage gaps come
-from the coverage census.
+Recorded on the base by `dev/bench/v0_2_3_ws4a/record.R`, checked exactly by
+`check.R` (lossless RDS plus `%.17g` CSV, the A0 serialization). Each gut in
+`guts.R` must fail its case.
 
-| Case | Workload | Frozen outputs | Gut that must fail |
-| --- | --- | --- | --- |
-| C1 | Dense durable run and availability sweep with spread 7 bps, fixed 1.25 and notional 3 bps; BUY, SELL and a reversal that splits the fee | ledger with `meta_json`, fills, trades, legs, equity | drop the notional step |
-| C2 | Prices whose spread-adjusted value has more than 8 decimals, including a near-half tie at digit 9, both sides | fills, ledger | notional from the rounded price |
-| C3 | Fractional fills reaching `ledgr_lot_dust_tolerance` in fold and replay, with fees | ledger, equity, logical FIFO book | tolerance x10 |
-| C4 | Dense long to short to long with chained costs | ledger, CLOSE/OPEN legs, trades, equity; planned and actual positions | LIFO consumption |
-| C5 | Walk-forward carry of several fractional-basis lots per instrument across two boundaries, then partly consumed; nonzero `realized_comp` before the carried openings | opening `meta_json`, replayed book, `realized_comp` | Kahan step on openings |
-| C6 | Disposition of a multi-lot fractional holding | ledger, book after replay | leave one live lot |
-| C7 | Scheduled skips with stale marks and fills on due pulses | diagnostics including skip rows, fills, equity | plan on a skip pulse |
-| C8 | Affordability reconciliation stop, forced by perturbing `expected_final_cash` by +1 at the P3/P4 seam | completion, diagnostics, INCOMPLETE prefix | none (the stop itself is the witness) |
-| C9 | Compiled sweep with fractional quantities and nonzero `realized_comp` over at least two pack/unpack cycles | lot state, events, summaries | drop `realized_comp` in unpack |
-| C10 | Availability run with empty context on some pulses | settlement, valuation, equity, diagnostics | skip valuation on empty context |
-| C11 | Cash-bound pulse where a buy precedes its funding sell in decision order and decision order differs from stable-ID order | ledger order, reconciliation and rejection rows | publish in affordability order |
-| C12 | Disposition cash funding a later fill | ledger, equity | fill before settlement |
-| C13 | Candidate-calculation failure on the second row (dense and availability) and append failure, durable and memory | state, buffers and outputs unchanged; FAILED status | mutate before success |
-| C14 | Retained `ctx$vec` vectors, `state_prev`, an availability context and compiled batch inputs, compared after later pulses | retained values | write the book by reference |
-| C15 | v201 availability witness with a `context_pos` mutation | existing exact outputs | wrong `context_pos` mapping |
-| C16 | Dense durable run whose finalisation route is traced (replay must run; prefix commit must not) | route trace and equity | key the route on record length |
-| C17 | Continued final-window execution (carry chain) with fees and fractional quantities, plus a standalone-window control | ledger, diagnostics | drop the continuation opportunity |
-
-C8, C13 and C16 inject or trace at seams that exist in both the base and
-the typed representation (the P3/P4 plan boundary, the handler's append
-method, the finalisation entry), named in `guts.R` so the same injection
-runs before and after. Real-data controls (scope e of LDG-3163) are in
-Section 7.
+| Case | Owner | Workload | Frozen outputs | Gut |
+| --- | --- | --- | --- | --- |
+| C1 | 3166 | Dense durable run and availability sweep with spread 7 bps, fixed 1.25, notional 3 bps; BUY, SELL and a reversal that splits the fee | ledger with `meta_json`, fills, trades, legs, equity | drop the notional step |
+| C2 | 3166 | Spread-adjusted prices with more than 8 decimals, including a near-half tie at digit 9, both sides | fills, ledger | notional from the rounded price |
+| C3 | 3164 | Fractional fills reaching `ledgr_lot_dust_tolerance` in fold and replay, with fees | ledger, equity, logical FIFO book | tolerance x10 |
+| C4 | 3164 | Dense long to short to long with chained costs; at least two live lots with unequal basis before each partial close | ledger, legs, trades, equity; planned and actual positions | LIFO consumption |
+| C5a | 3164 | Walk-forward carry of several fractional-basis lots across two boundaries, then partly consumed | opening `meta_json`, replayed book | reorder carried openings |
+| C5b | 3164 | Successive opening operations applied to a book with explicitly nonzero `realized_comp`, signed quantities, positive and negative basis | Kahan invocation count 0; bit-identical compensation | Kahan step on openings (M6) |
+| C6 | 3164 | Multi-lot fractional disposition, plus a zero-price, zero-fee exhaustive disposition, plus a deliberately wrong replay `realized_model_pnl` witness | ledger, book after replay; refusal of the wrong witness | leave one live lot |
+| C7 | 3165, 3166 | Scheduled skips with stale marks and fills on due pulses | diagnostics including skip rows, fills, equity; strategy and planner invocation counts | plan on a skip pulse; call strategy on a skip pulse |
+| C8a | 3166 | Small-cash availability fixture; perturb `expected_final_cash` by +1 at the return of `ledgr_fold_build_availability_pulse_plan()` (ae:517-526), before P3's reconciliation; the typed adapter attaches at the equivalent planner return | INCOMPLETE completion, stopped diagnostic and detail, counts, both clocks; injection executed once; mismatch beyond the existing relative tolerance | suppress the stop |
+| C8b | 3166 | Perturb the plan after P3 returns, before P4 | the existing P5 reconciliation exception, invocation rollback, no successful memory result | suppress the exception |
+| C9 | 3164 | Compiled sweep, fractional quantities, nonzero `realized_comp` over at least two pack/unpack cycles | lot state, events, summaries | drop `realized_comp` in unpack (M12) |
+| C10 | 3165 | Availability run with empty context on some pulses | settlement, valuation, equity, diagnostics | skip valuation on empty context |
+| C11 | 3166 | Cash-bound pulse: a buy precedes its funding sell in decision order, and decision order differs from stable-ID order | ledger order, reconciliation and rejection rows | publish in affordability order (M4) |
+| C12 | 3165 | Disposition cash funding a later fill | ledger, equity | fill before settlement |
+| C13a | 3167 | Base: second lot-operation failure | existing external failure class, stage, durable rollback, failed memory result; the observed private prefix recorded, not used as an oracle | swallow the error |
+| C13b | 3167 | Typed: second-row failure during candidate computation | book, cash, positions, `event_seq` and buffers identical to snapshots taken before candidate computation (a new assertion implementing Synthesis 3.5, not a base identity claim) | install or publish row one before row two validates |
+| C13c | 3167 | Both representations: append, accounting-fact/leg and flush failures after successful calculation, each injected separately; named base and typed attachment adapters | abort, whole-invocation durable rollback, condition and stage evidence, no successful memory result; no private-state restore asserted | swallow each injected error |
+| C14a | 3164 | Book and compiled inputs retained across a later pulse | retained values unchanged | write the shared book buffer by reference |
+| C14b | 3165 | Retained `ctx$vec` vectors, `state_prev`, availability context and corporate-action state views | retained values unchanged | write the retained view's buffer |
+| C14c | 3167 | Published event and leg blocks retained across a later pulse | retained blocks unchanged | reuse the staging buffer |
+| C15 | 3165 | v201 availability witness with a `context_pos` mutation | existing exact outputs | wrong `context_pos` (M8) |
+| C16 | 3168 | Dense durable run; trace `ledgr_replay_accounting_events()` and `ledgr_run_equity_prefix_commit()` during `ledgr_run_finalize()` only | replay used, prefix commit unused, equity bytes identical | base: force `use_fold_equity = TRUE` at that decision; typed: restore the old decision after asserting dense populated the record |
+| C17 | 3165 | Continued final-window execution (carry chain), fees and fractional quantities, plus a standalone-window control | ledger, diagnostics | drop the continuation opportunity |
+| C18 | 3168 | Availability run with one pulse larger than an injected writer chunk of 7, followed by an early stop; reuse the v201 fixture and its helper where suitable, without changing its oracle | durable diagnostics, filtered memory diagnostics with sequence gaps, equity used prefix, processed count, both clocks; large pulse and early stop asserted | drop a split tail; retain previous staging; drain unused equity rows |
 
 ## 5. Test-migration list (scope d, decision 10)
 
-Every registered or unregistered test that changes. "Change" is the
-representation change the synthesis authorises; "keeps" is the semantic
-assertion that survives; each replacement must fail on the stated
-violation. Categories: 1 construct typed containers; 2 compare the same
-logical FIFO witness; 3 source predicate restated on columns; 4 economic
-assertion moves to the typed implementation with the same inputs and
-values; 5 shape change with a stated reason.
+One row per block. "Keeps" are the retained assertions; "control" is the
+violation that must fail the migrated block. Categories: 1 construct typed
+containers; 2 same logical FIFO witness; 3 source predicate restated on
+columns; 4 economic assertion moves to the typed implementation with the
+same inputs and values; 5 shape change, reason stated. Fixture or fault
+changes are named individually; none is purely mechanical.
 
-| Test (block) | Claim | Cat | Change | Keeps | Fails on |
+| Test block | Claim | Cat | Change | Keeps | Control |
 | --- | --- | --- | --- | --- | --- |
-| helper-fixtures.R:130 `ledgr_test_next_open_fill` | - | 1 | builds a one-row typed fill batch through the batch resolver | same fill values | wrong price |
-| test-accounting-core-consolidation.R:31 | LTB-0019 | 2 | typed book and operations | the four literal values and the dust bound | M1 |
-| test-accounting-core-consolidation.R:211 | LTB-0022 | 5 | kernel and its rescan mutant rebuilt on the typed book; reason: the measured object moved | same slope thresholds (<=0.30 production, >0.30 mutant) | the rescan mutant |
+| helper-fixtures.R:130 | - | 1 | one-row typed fill batch through the batch resolver | fill values | wrong price |
+| test-accounting-core-consolidation.R:31 | LTB-0019 | 2 | typed book and operations | four literal values, dust bound | M1 |
+| test-accounting-core-consolidation.R:211 | LTB-0022 | 5 | kernel and its rescan mutant rebuilt on the typed book; reason: the measured object moved | thresholds <=0.30 and >0.30 | the rescan mutant |
 | test-lot-accounting.R:1 | - | 4 | typed fill operation | `ledgr_invalid_lot_fill` on the four inputs | accept qty 0 |
-| test-lot-accounting.R:22 | - | 2 | typed book | zero lots and zero basis | tolerance /10 |
-| test-cross-asset-corrections.R:88 | LTB-0497 | 2 | `net_by_inst` and live-lot count read from the typed book | position 0, held flags | tolerance /10 |
-| test-cross-asset-corrections.R:240 | LTB-0498 | 2+3 | R side uses the typed implementation; compiled call takes columns; source predicates name the typed position read and unpack gather | R and C++ identical on every asserted field | M12 |
-| test-execution-spec.R:1 helper `ledgr_expect_lot_states_equivalent` | - | 2 | compares logical live lots and aggregates | same fields | drop `realized_comp` |
-| test-execution-spec.R:115, :239 helpers | - | 1 | typed spec state | same economics | - |
-| test-execution-spec.R:523 | LTB-0026 | 3+5 | mock the typed plan builder; kinds become codes; source predicates name the block application; reason: the pulse-plan object is retired | refusal classes `ledgr_invalid_pulse_plan` and compiled-unavailable | declare FILL on empty |
+| test-lot-accounting.R:22 | - | 2 | typed book | zero lots, zero basis | tolerance /10 |
+| test-cross-asset-corrections.R:88 | LTB-0497 | 2 | `net_by_inst`, live-lot count from the typed book | position 0, held flags | tolerance /10 |
+| test-cross-asset-corrections.R:240 | LTB-0498 | 2+3 | typed R side; compiled call on columns; predicates name the typed position read and unpack gather | R and C++ identical on every field | M12 |
+| test-execution-spec.R:1 helper | - | 2 | logical live lots and aggregates | same fields | drop `realized_comp` |
+| test-execution-spec.R:115 helper | - | 1 | typed spec state | economics | wrong opening |
+| test-execution-spec.R:239 helper | - | 1 | typed spec state | economics | wrong opening |
+| test-execution-spec.R:523 | LTB-0026 | 3+5 | mock the typed plan builder; kinds as codes; reason: the pulse-plan object is retired | all three injected kinds (CASHFLOW, DISPOSITION, SYNTHETIC_UNKNOWN), canonical CASHFLOW acceptance, compiled refusals with their classes | accept SYNTHETIC_UNKNOWN |
+| new block (test-ws4a-carrier.R) | - | - | empty-plan construction declares no kinds | (separate test, not a replacement) | declare FILL on empty |
 | test-execution-spec.R:576 | LTB-0006 | 1+2 | dust seed book built typed | every parity assertion | M12 |
 | test-execution-spec.R:749 | LTB-0013 | 2 | typed state | every parity assertion | M12 |
-| test-fold-phase-contract.R:3 | LTB-0278 | 1+5 | typed constructor; equity record replaces the accumulator; **the unnamed-positions refusal inverts**, reason: positions become an unnamed run-axis vector (Synthesis 3.1); the replacement refuses a wrong-length positions vector | closed slot set; no data-frame slot | wrong length accepted |
-| test-fold-phase-contract.R:85 | LTB-0279 | 3 | `tools/check-fold-phase-contract.R` owner table and method patterns updated for the new slots and methods | one owner per slot | second writer of a slot |
-| test-risk-fold.R:83 | - | 5 | "all costs resolved before any publication" asserted per block; reason: per-fill writes become one block | costs before emission | publish before resolve |
-| test-risk-fold.R:122 | LTB-0281 | 3 | frozen name sets for the typed groups | stage packet order, no data frames | extra field |
-| test-risk-fold.R:192 | LTB-0136 | 5 | write count per block; reason as above | flushes == 3 | extra flush |
-| test-risk-fold.R:255 | LTB-0137 | 5 | injection moves to the second row of the candidate calculation; reason: `ledgr_lot_apply_fill` is deleted | FAILED, zero rows, sibling identical | partial publish |
-| test-risk-fold.R:345 | LTB-0280 | 5 | injection on the block append method, plus a fixture with fills on two pulses; reason: one call per pulse | atomicity on durable and memory | swallow append error |
-| test-risk-fold.R:515 | - | 4+5 | post-risk quantity reaches the batch resolver; resolver call protocol is per batch | qty 10 at cost | pre-risk qty |
-| test-risk-fold.R:827 | - | 5 | retargeted to the surviving post-risk property check, which keeps class `ledgr_invalid_post_risk_targets` with parent `ledgr_invalid_strategy_result`; reason: the duplicate shape/name normalization is deleted (Synthesis 3.2) | class and parent | wrong parent |
-| test-corporate-action-disposition.R:53 helper | - | 1 | typed state | same values | - |
+| test-fold-phase-contract.R:3 | LTB-0278 | 1+5 | typed constructor; equity record replaces the accumulator; the unnamed-positions refusal inverts, reason: positions become an unnamed run-axis vector (Synthesis 3.1) | closed slot set, no data-frame slot; replacement refuses wrong-length positions | accept wrong length |
+| test-fold-phase-contract.R:85 | LTB-0279 | 3 | phase-ownership checker tables updated for new slots and methods | one owner per slot | second writer |
+| test-risk-fold.R:83 | - | 5 | "all costs resolved before any publication" per block; reason: one block per pulse | costs before emission | publish before resolve |
+| test-risk-fold.R:122 | LTB-0281 | 3 | frozen name sets for the typed groups | packet order, no data frames | extra field |
+| test-risk-fold.R:192 | LTB-0136 | 5 | write count per block; reason: one block per pulse | flushes == 3 | extra flush |
+| test-risk-fold.R:255 | LTB-0137 | 5 | injection at the second row of candidate computation; reason: `ledgr_lot_apply_fill` is deleted | FAILED, zero rows, sibling identical | partial publish |
+| test-risk-fold.R:345 | LTB-0280 | 5 | existing fixture and values kept; separate write and accounting-fact failure checks at the corresponding block boundaries; a two-pulse fixture added as an additional rollback witness, not a replacement; reason and the changed fault timing need the cut's acceptance | atomicity on durable and memory | swallow append error |
+| test-risk-fold.R:515 | - | 4+5 | post-risk quantity reaches the batch resolver; per-batch call protocol | qty 10 at cost | pre-risk qty |
+| test-risk-fold.R:827 | - | 5 | missing-target refusal kept at initial normalization; the moved post-risk check injects a nonfinite transformed quantity and keeps `ledgr_invalid_post_risk_targets` with parent `ledgr_invalid_strategy_result`; reason: duplicate shape/name normalization deleted (Synthesis 3.2) | class and parent | wrong parent |
+| test-corporate-action-disposition.R:53 helper | - | 1 | typed state | values | wrong lot |
 | test-corporate-action-disposition.R:108 | LTB-0050 | 1+2 | typed state and book | position 0, no lots, realized -20 | leave a lot |
 | test-corporate-action-disposition.R:177 | LTB-0051 | 1 | no-mutation witness compares the typed carrier | cash 1180/1160/1170 | mutate on refuse |
-| test-sweep.R:46, :91, :146 | - | 1 | one-row typed fill block into the handler | typed events equal ledger rows; growth; summary | wrong column |
-| test-sweep.R:220 | - | 1+4 | typed opening, fill operation and block publication | inline equals reconstructed; legs 2/1 | drop OPEN leg |
-| test-ledger-writer.R:58, :103, :442, :753, :781, :829, :855 | - | 1 | one-row typed fill input | each block's asserted rows, deltas and refusals | wrong delta |
+| test-sweep.R:46 | - | 1 | one-row typed block into the handler | typed events equal ledger rows | wrong column |
+| test-sweep.R:91 | - | 1 | typed blocks, 1025 events | full columns across growth | lose a column at growth |
+| test-sweep.R:146 | - | 1 | typed blocks | single-pass summary equals reconstruction | drop a fill |
+| test-sweep.R:220 | - | 1+4 | typed opening, fill operation, block publication | inline equals reconstructed; legs 2/1; attrs | drop OPEN leg |
+| test-ledger-writer.R:58 | - | 1 | one-row typed input | FILL row and meta deltas | wrong sign |
+| test-ledger-writer.R:103 | - | 1 | one-row typed input | hidden until flush | write through before flush |
 | test-ledger-writer.R:220 | LTB-0135 | 1 | one two-row block | hidden until flush, order | reorder |
-| test-ledger-writer.R:302 | LTB-0188 | 3 | predicates name indexed column writes; allocation probe on a block write | no per-write copy | copy column per write |
-| test-ledger-writer.R:811 | - | 5 | zero-row block is the no-op; reason: `ledgr_fill_none` is retired | NO_OP status and no rows | write a row |
-| test-ledger-writer.R:880 | LTB-0515 | 5 | deltas computed once in P3; per-path call count becomes "one computation per fill, zero in sinks"; reason: Synthesis 3.3 | direct delta oracle values (lines 918-925) | recompute in a sink |
-| test-ledger-writer.R:1031 | LTB-0516 | 1+5 | db_live validation on column input | `ledgr_invalid_fill_intent` on bad side and fee; transaction sequence | accept bad fee |
-| test-ledger-writer.R:1115 | LTB-0518 | 3 | frozen method sets updated for the renamed block methods | shared mechanisms | duplicate mechanism |
-| test-ledger-writer.R:1166 | LTB-0521 | 1 | equity part fed from the equity record | identical frames | drop a row |
-| test-fill-model.R:1, :118, :158, :197 | - | 4 | batch resolver, one row | rounding, symmetry, fee, invalid-input refusals | wrong rounding |
-| test-fill-model.R:27 | - | 5 | epochs inside the carrier, POSIXct at the boundary; reason: Synthesis 4 | boundary output is POSIXct UTC | POSIXct inside |
+| test-ledger-writer.R:302 | LTB-0188 | 3 | predicates name indexed column writes; allocation probe on a block write | no per-write copy | copy a column per write |
+| test-ledger-writer.R:442 | - | 1 | typed blocks | full columns across growth | lose a column at growth |
+| test-ledger-writer.R:753 | - | 1 | one-row typed input | SELL deltas | wrong sign |
+| test-ledger-writer.R:781 | - | 1 | two typed writes | event_seq increments | reuse a sequence |
+| test-ledger-writer.R:811 | - | 5 | zero-row block is the no-op; reason: `ledgr_fill_none` retired | NO_OP status, no rows | write a row |
+| test-ledger-writer.R:829 | - | 1 | typed input | duplicate (run_id, event_seq) refusal, unchanged row count | accept the duplicate |
+| test-ledger-writer.R:855 | - | 1 | typed input | invalid-sequence refusal, zero inserted rows | insert before validation |
+| test-ledger-writer.R:880 | LTB-0515 | 5 | deltas computed once in P3; call count becomes "one computation per fill, zero in sinks"; reason: Synthesis 3.3 | direct delta oracle values (lines 918-925) | recompute in a sink |
+| test-ledger-writer.R:1031 | LTB-0516 | 1+5 | db_live validation on column input | `ledgr_invalid_fill_intent` on bad side and fee; unknown run; NO_OP; transaction sequence | accept a bad fee |
+| test-ledger-writer.R:1115 | LTB-0518 | 3 | frozen method sets updated for the block methods | shared mechanisms | duplicate mechanism |
+| test-ledger-writer.R:1166 | LTB-0521 | 1+5 | equity part reads the preallocated record; equity-buffer growth retired, reason: the record is preallocated | all 300 values, empty-record semantics, diagnostic and state growth assertions | drop a used row; expose an unused row |
+| test-fill-model.R:1 | - | 4 | batch resolver, one row | rounding to 8 digits | round to 7 |
+| test-fill-model.R:27 | - | 5 | epochs inside, POSIXct at the boundary; reason: Synthesis 4 | boundary output POSIXct UTC | POSIXct inside the carrier |
 | test-fill-model.R:46 | - | 4 | refusal at epoch validation | `LEDGR_SUBSECOND_TIMESTAMP` | accept sub-second |
-| test-fill-model.R:59, :96 | - | 5 | retired with the proposal object; their value-level claims move to C1/C2 and the :1 block; reason: proposal and fill-context objects are retired (Synthesis 3.3) | equal fill values | wrong value |
-| test-fill-model.R:184 | LTB-0002 | 4 | `has_next = FALSE` path | NO_FILL with `LEDGR_LAST_BAR_NO_FILL` warning | no warning |
+| test-fill-model.R:59 | - | 5 | instrument, side, quantity and OHLCV values kept as typed-input projection assertions; only proposal/context S3 shape assertions retire | original values | corrupt instrument mapping; corrupt each projected bar field |
+| test-fill-model.R:96 | - | 5 | as :59 for the matrix-backed context | original values | as :59 |
+| test-fill-model.R:118 | - | 4 | batch resolver | spread symmetry | same sign both sides |
+| test-fill-model.R:158 | - | 4 | batch resolver | fee 2.5, `ledgr_invalid_cost_model` | accept negative fee |
+| test-fill-model.R:184 | LTB-0002 | 4 | `has_next = FALSE` path | NO_FILL with `LEDGR_LAST_BAR_NO_FILL` | no warning |
+| test-fill-model.R:197 | - | 4 | batch resolver | Inf, NaN, negative spread refusals | accept Inf |
 | test-cost-model.R:229 | - | 4 | batch resolver | notional on unrounded spread price | M9 |
-| test-derived-state.R:61 | - | 1 | ledger built from typed blocks | deterministic reconstruction | - |
-| test-release-coverage-branches.R:110 | - | 1+5 | branch tests on the column payload builder | refusal class and deltas -21/2, 19/-2 | wrong delta |
-| test-runner.R:252 | - | 5 | spy on the column writer signature | state written after fills | write state first |
-| test-availability-diagnostic-production.R:15 helper, :32, :46, :95 | - | 1 | typed staging block instead of `segments = list(list(...))` | default block, chunk split, survive append failure | lose a row at a split |
-| test-availability-economics.R:303, :379 | - | 4 | typed affordability scan | accepted order, final cash, reasons | M4 |
+| test-derived-state.R:61 | - | 1 | ledger built from typed blocks | deterministic reconstruction | drop a row |
+| test-release-coverage-branches.R:110 | - | 1+5 | branch tests on the column payload builder | refusal class, deltas -21/2 and 19/-2 | wrong delta |
+| test-runner.R:252 | - | 5 | spy on the column writer signature | state written after fills | state first |
+| test-availability-diagnostic-production.R:15 helper | - | 1 | typed staging block | default block | missing column |
+| test-availability-diagnostic-production.R:32 | - | 1 | typed staging block | production default is one block | two blocks |
+| test-availability-diagnostic-production.R:46 | - | 1 | typed staging block | chunk split and types | lose a row at a split |
+| test-availability-diagnostic-production.R:95 | - | 1 | typed staging block | chunk survives append failure | drop the chunk |
+| test-availability-economics.R:303 | - | 4 | typed affordability scan | accepted order, final cash, reasons | M4 |
+| test-availability-economics.R:379 | - | 4 | typed affordability scan | short cover cash | wrong sign |
 | test-availability-parity.R:915 | LTB-0024 | 2 | basis from the typed book | equals the second opening's basis | wrong basis |
-| test-strategy-schedule.R:1233 | LTB-0507 | 2 | logical FIFO witness instead of container identity | economics and resume | M1 |
+| test-strategy-schedule.R:1233 | LTB-0507 | 2 | logical FIFO witness instead of container identity | economics, resume | M1 |
 | test-terminal-outcomes.R:651 | LTB-0171 | 2 | live-lot count from the typed book | one live lot | commit before failure |
-| test-codebase-contracts.R:114 | LTB-0331 | 5 | mode-branch census regenerated; reason: stage bodies rewritten; every remaining branch row keeps its owner | no new mode branch | add a branch |
-| test-codebase-contracts.R:20, :44 | LTB-0270, LTB-0271 | - | no change expected: deleted helpers lose their callers together; condition classes survive (Section 2.2) | as today | orphan helper |
+| test-codebase-contracts.R:114 | LTB-0331 | 5 | mode-branch census regenerated; reason: stage bodies rewritten; every remaining row keeps its owner | no new branch | add a branch |
+| test-codebase-contracts.R:20 | LTB-0270 | - | no change expected; deleted helpers lose their callers together | as today | orphan helper |
+| test-codebase-contracts.R:44 | LTB-0271 | - | no change expected; classes survive (2.2) | as today | remove a class |
 
-Claim prose that names removed constructs is updated in `tests/claims.yml`
-with the same reason: LCL-0022 (`pulse_plan`), LCL-0135 ("fill intents"),
-LCL-0279 ("short-lived list shape"). Watch-list blocks (census) change only
-if a boundary adapter loses names; they are not planned changes.
+Claim prose naming removed constructs is updated in `tests/claims.yml`:
+LCL-0022 (`pulse_plan`), LCL-0135 ("fill intents"), LCL-0279 ("short-lived
+list shape"). Watch-list blocks change only if a boundary adapter loses
+names; they are not planned changes.
 
-## 6. Detectors and mutations (scope e)
+## 6. Detectors, validators and mutations (scope e)
 
-Detectors live in `tests/testthat/test-ws4a-carrier.R` (parse-tree or
-runtime predicates on named functions). Mutations are applied by
-`dev/bench/v0_2_3_ws4a/guts.R` to an archived copy and must fail identity.
+Detectors and validators live in `tests/testthat/test-ws4a-carrier.R`; each
+names the functions or parse regions it examines and demonstrates its own
+failing control. Another detector's failure is not evidence for it.
 
-| ID | Predicate | Where | Violation that must fail it |
+| ID | Predicate | Examines | Own control |
 | --- | --- | --- | --- |
-| D1 | No list, S3 object or POSIXct conversion created per fill in the planners, P3, P4 or publication | parse tree of the named functions | `vector("list", n_fill)` or `as.POSIXct` inside the fill loop |
-| D2 | Diagnostic staging is one pre-allocated typed block per pulse, reset at drain; the writer and the memory sink's retained chunks are allowed | runtime: staging length constant across pulses; parse tree: no `[[length + 1]] <-` on staging | list-segment staging; staging retained across pulses |
-| D3 | No character indexing on a run- or context-axis vector inside the lot kernel and migrated book consumers | parse tree | `net_by_inst[[id]]` |
-| D4 | The strategy return is shape/name normalized once per pulse | runtime counter on the normalizer | a second call |
-| D5 | P2's input carries no execution-packet field | runtime check plus a mutation passing one | `next_bar` reaches P2 |
-| D6 | No JSON encode or parse inside the pulse loop beyond the routed sites (fill and non-fill `meta_json`, H5 reconciliation detail, intent reason, stop and exception detail) | parse-tree allowlist | a new `canonical_json` call in P3 |
-| D7 | No Kahan step on opening rows; nonzero compensation preserved across openings | runtime counter plus C5 | M6 |
-| D8 | No fill-intent object constructed in the fold or sinks; effects computed once | parse tree plus counter on `ledgr_fill_publication_deltas` | reconstruction or a second computation |
-| D9 | No per-fill economic staging list in publication; the routed memory `meta` list is allowed | parse tree | a staged per-fill list |
-| D10 | Finalisation route selected by producer | runtime trace (C16) | key on record length |
-| D11 | Positions read only from `net_by_inst` | parse tree | `positions + delta` |
-| D12 | Store-format bindings, export list and condition classes unchanged | existing contract tests | a binding change |
-| D13 | Dense observe/ctx builders unchanged; dense emits from the decision on | source hash of the named dense functions | edit a dense view builder |
-| D14 | Each group's validator refuses wrong length, type, bound or dictionary code | unit tests per group | accept a wrong-length column |
-| D15 | No by-reference write on book columns | parse tree | `collapse::setv(book$lot_qty, ...)` |
+| D1 | No list, S3 object or POSIXct conversion per fill | parse regions of both planners, P3, P4 and the publication helpers | `vector("list", n_fill)` or `as.POSIXct` in the fill loop |
+| D2 | Staging used count returns to zero at each drain; only the used prefix is handed out; staging from the prior pulse is never retained, even at constant capacity | runtime hooks on the staging object across pulses | retain the prior pulse's rows |
+| D3 | No character indexing on run- or context-axis vectors in the lot kernel, migrated book consumers, P2 core, P3 and the block builder | parse regions listed | `net_by_inst[[id]]` |
+| D4 | Strategy return shape/name normalized once per pulse | runtime counter on the normalizer | a second call |
+| D5 | P2's input carries no execution-packet field | runtime check on the P2 argument | pass `next_bar` |
+| D6 | No JSON encode or parse in the pulse loop beyond the routed sites (fill and non-fill `meta_json`, H5, intent reason, stop and exception detail) | parse-tree allowlist over fold stage functions | new `canonical_json` call in P3 |
+| D7 | No Kahan step on opening rows; nonzero compensation preserved | runtime counter in the typed operations, C5b | M6 |
+| D8 | No fill-intent object in the fold or sinks; effects computed once | parse regions plus a counter on `ledgr_fill_publication_deltas` | reconstruct an intent; compute twice |
+| D9 | No per-fill economic staging list and no per-leg staging list in publication; routed memory `meta` allowed | parse regions of the handler and memory sink | staged per-fill or per-leg list |
+| D10 | Exactly one equity writer per valued pulse on both producers; no accumulator in fold or service slots | runtime count plus slot inspection | keep the accumulator |
+| D11 | Positions read only from `net_by_inst` | parse regions of P4 and replay | `positions + delta` |
+| D12a-e | Store bindings and config hash; DESCRIPTION; export census; mode-branch census; compiled default | existing contract tests and a C1 config-hash witness | change each |
+| D13 | Dense observe/ctx builders unchanged | source hash of the named dense functions | edit a dense view builder |
+| D15 | No by-reference write on book columns | parse regions of the kernel | `collapse::setv(book$lot_qty, ...)` |
 | D16 | Provider adapter called once per produced view | runtime counter | per-column conversion |
-| D17 | Lot kernel computes no cash | parse tree | cash inside the kernel |
+| D17 | Lot kernel computes no cash | parse region of the kernel | cash inside the kernel |
 | D18 | A kernel call refuses duplicate instruments | unit test | accept duplicates |
-| D19 | No named-list FIFO symbol remains in `R/` | parse census of function definitions in `R/` | `ledgr_lot_apply_fill` defined |
-| D20 | Routed files and symbols of Synthesis Section 8 unchanged by the cut | diff census at LDG-3169 | edit a routed symbol |
+| D19 | No named-list FIFO function defined in `R/` | parse census of definitions | define `ledgr_lot_apply_fill` |
+| D20 | Each Section 3.4 route's named operation and its output witness unchanged | per-route boundary diff plus witness | change the boundary |
+| D21 | No history or substrate access in P3-P5 | phase-ownership checker (`tools/check-fold-phase-contract.R`) | injected P3 history read |
+| D22 | Dictionaries match literal fixtures (tokens and codes) | fixture comparison, separate from diagnostic round-trip bytes | renumber a token |
+| D23 | Replay applies each published cash effect exactly once | replay cash witness on a two-event ledger | apply a delta twice |
+| V-state, V-book, V-packet, V-decision, V-plan, V-fill, V-rejection, V-publication, V-diagnostics, V-equity | Group validators for Section 3.2 | unit tests per group | each F4 invalid record |
 
-Mutations: M1 LIFO consumption; M3 dropped fee; M4 affordability-order
-publication; M5 positions as positions + delta; M6 Kahan step on openings;
-M7 skip a partial close's remainder; M8 wrong `context_pos`; M9 notional fee
-from the rounded price; M10 drop the notional step; M11 `cumsum` totals; M12
-drop `realized_comp` in unpack; M2 reordered fills within a pulse.
+Mutations, applied by `dev/bench/v0_2_3_ws4a/guts.R` and run through the
+typed path: M1 LIFO consumption; M2 reordered fills within a pulse; M3
+dropped fee; M4 affordability-order publication; M5 positions as positions
+plus delta; M6 Kahan step on openings; M7 skip a partial close's remainder;
+M8 wrong `context_pos`; M9 notional fee from the rounded price; M10 drop
+the notional step; M11 `cumsum` totals; M12 drop `realized_comp` in unpack.
 
 ## 7. Timing, memory and budget (scope f)
 
-**Protocol `ws4a-timing-1`** (shared harness; `matrix.csv`,
-`thresholds.csv`, `workloads.R`, `protocol.md`). Workloads, all from
+**Protocol `ws4a-timing-1`** on the shared harness. Workloads from
 `ledgr_sim_bars(500, 1260, seed = 20260530)` as the carrier probe used:
+`wide` (SMA 5/10 transition, one unit, zero cost; availability on complete
+facts, dense on the same bars), `nofill` (same bars, flat targets),
+`sparse` (monthly rebalance into the top 20 by 63-session return, ties by
+instrument ID in C-locale order, equal integer quantities, zero cost,
+month-start decisions, no warmup trades), and reader cells on a completed
+`wide` durable run. Ratio cells and bounds: exactly decision (4)'s matrix.
 
-- `wide`: SMA 5/10 transition, one unit, zero cost; availability on complete
-  facts (every instrument a member every session, as the probe's
-  prerequisite established), dense on the same bars;
-- `nofill`: same bars, flat targets;
-- `sparse`: monthly rebalance into the top 20 by 63-session return,
-  ties by instrument ID in C-locale order, equal integer quantities, zero
-  cost, decisions on month-start sessions with no warmup trades, outputs
-  materialised as for `wide`;
-- reader cells: a completed `wide` durable run; warm `ledgr_results(bt,
-  "fills")`, `"trades"` and `"equity"` each in their own cell, with a fixed
-  invocation count and recorded nonzero replayed rows.
+- Fills and trades reader cells record nonzero replayed rows and a fixed
+  count of complete calls. Equity is a result-reader cell, not a replay
+  witness.
+- **Absolute cell.** One workload times matched `wide` and `nofill`
+  sweeps in the same child process and returns its own named seconds
+  clock: `(wide_total - nofill_total) / reps / fills_per_repetition`. The
+  work string records both totals, reps, the actual fill counts and the
+  materialisation policy; unequal fill denominators across repetitions are
+  refused. The shared checker validates that cell's finite positive
+  seconds and computes its candidate median.
+  `dev/bench/v0_2_3_ws4a/timing_absolute.R` reads that median and requires
+  `<= 40e-6`; it never subtracts medians of separate cells. It is shown to
+  reject 45 us against a 240 us base, accept 30 us, and reject zero,
+  negative and nonfinite measurements.
 
-Cells and bounds are those of decision (4). The marginal clock for the
-absolute cell is `(t_wide - t_nofill) / reps / n_fills` measured in one
-process, with `n_fills` read from the run. The small checker
-`dev/bench/v0_2_3_ws4a/timing_absolute.R` reads the shared checker's
-per-cell result and fails when the candidate median exceeds `40e-6`; it is
-shown to reject 45 us against a 240 us base and accept 30 us.
+**Memory.** The previously proposed `ps` lifetime-peak subtraction is
+withdrawn as a peak-live measure: `peak_pagefile` is a process-lifetime
+high-water mark, so setup can dominate it, and private commit includes
+allocator-retained storage. Memory-method validation is unresolved and
+blocks cut acceptance. LDG-3163 must demonstrate phase isolation, covered
+memory domains, collection policy and sensitivity before the decision (5)
+budget is assigned to a metric. Its first candidate, to be validated, not
+assumed: the measured operation runs in a fresh child that only loads ledgr
+and reads prepared inputs from disk; the metric is that child's lifetime
+`peak_pagefile` minus a matched load-only child's, valid only if the
+load-only peak is shown to be below the operation's. Until validation
+succeeds, `ps` private commit and the separately calculated GC maximum
+(`sum(gc()[, "max used"] * c(56, 8))` after `gc(reset = TRUE)`) are
+labelled observations only. If no validated method meets the claim, the
+maintainer decides before acceptance, as decision (5) requires.
 
-**Memory method** (`dev/bench/v0_2_3_ws4a/memory.R`): each measured
-operation runs in a fresh R process. The instrument is
-`ps::ps_memory_info()` (ps 1.9.3): `peak_pagefile` (peak private commit,
-covering the R heap and native allocations such as DuckDB) read
-immediately before and after the operation; the reported peak-live value
-is `peak_after - pagefile_before`. Default GC policy; five repetitions,
-median. Domains: the whole process's private commit. `gc()` "max used" is
-reported beside it with its formula (`sum(gc()[, "max used"] * c(56, 8))`
-after `gc(reset = TRUE)`), never as peak live. Workloads: forward run and,
-separately, a full replay (`ledgr_results(bt, "fills")`) on (i) 5,000
-instruments x 252 sessions with SMA transitions and (ii) a deep-book
-variant where 200 instruments each accumulate 15 single-unit lots and close
-them in one fill. Controlled excess: the gut retains an extra copy of the
-typed book's lot columns for the operation's duration (frozen size: a copy
-of `lot_qty` and `lot_price` at their peak length, observed after the last
-fill); it must exceed 1.10 x base. Rprofmem bytes per actual fill on the
-`wide` workloads as in decision (5). If the instrument fails validation,
-the metric returns to the maintainer before acceptance.
+Both memory workloads use at least 5,000 instruments by 252 sessions; the
+deep variant has at least 200 instruments consume 15 live lots in one fill.
+Forward and replay are separate operations. The controlled excess is a
+byte-sized, independently allocated and touched block, sized from base-only
+calibration, allocated before and released after the measured growth or
+replay, verified live at those points and verified to breach 1.10 x the
+matched base under the validated method. A pointer alias or a copy too
+small to breach is not a successful control. Five repetitions, their
+aggregation, both producers' Rprofmem bytes per actual fill and the GC
+formula are recorded.
 
-**Real-data controls:** the evidence record
-(`E:/ledgr-data/reference/v0.2.3-base-953338df/EVIDENCE.md`, private, with
-a stable pointer from LDG-3163's evidence) lists the library and state
-paths, the commit and adapter identities, the installation command and
-the compare commands; an unchanged `w2_minvar` rerun is IDENTICAL and a
-scratch worker with `ledgr_cost_notional_bps_fee(1)` DIFFERS.
+**Real-data controls.** The private evidence record
+(`E:/ledgr-data/reference/v0.2.3-base-953338df/EVIDENCE.md`) lists the
+library and state paths, commit and adapter identities, the installation
+command and the compare commands. LDG-3163 must show an unchanged
+`w2_minvar` rerun is IDENTICAL and a scratch worker with
+`ledgr_cost_notional_bps_fee(1)` DIFFERS; this note claims neither result.
 
 **Budget** (decision 12, estimated R lines): `workloads.R` 260,
-`timing_absolute.R` 80, `record.R` 380, `check.R` 120, `guts.R` 260,
-`memory.R` 220, detector baselines runner 80: about 1,400, under 1,500.
-Detector predicates themselves live in the package test file, outside this
-budget.
+`timing_absolute.R` 90, `record.R` 420, `check.R` 120, `guts.R` 280,
+`memory.R` 230: about 1,400, under 1,500. Detector and validator tests are
+package tests, outside this budget.
 
-## 8. Identity checks per ticket (scope g)
+## 8. Checks per ticket (scope g)
 
-| Ticket | Oracles | Cases | Detectors and mutations | Timing and memory |
+Every ticket 3164-3168 also requires the full suite green.
+
+| Ticket | Oracles | Cases | Detectors, validators, mutations | Timing and memory |
 | --- | --- | --- | --- | --- |
-| 3164 | A0, dense, real-data | C3, C4, C5, C6, C9, C14 | D3, D7, D11, D14 (book), D15, D17, D18, D19; M1, M3, M5, M6, M7, M11, M12 | reader cells, replay memory (decision 6) |
-| 3165 | A0, dense | C7 (strategy part), C10, C12, C15 | D4, D5, D13, D14, D16; M8 | none |
-| 3166 | A0, dense | C1, C2, C7, C8, C11 | D1 (planners), D8, D14; M4, M9, M10 | none |
-| 3167 | A0, dense | C13 | D1 (publication), D9, D6; M2 | none |
-| 3168 | A0, dense | C16, C17 | D2, D10, D14 | none |
-| 3169 | all, real-data | all | all, D12, D20 | full matrix, all memory workloads |
+| 3164 | A0, dense, real-data | C3, C4, C5a, C5b, C6, C9, C14a | D3, D7, D11, D12a-c, D12e, D15, D17-D19, D23; V-state, V-book; M1, M3, M5, M6, M7, M11, M12 | reader cells; replay memory (decision 6) |
+| 3165 | A0, dense | C7, C10, C12, C14b, C15, C17 | D3, D4, D5, D12d, D13, D16, D21; V-packet, V-decision; M8 | none |
+| 3166 | A0, dense | C1, C2, C7, C8a, C8b, C11 | D1 (planners), D3, D8, D22; V-plan, V-fill, V-rejection; M4, M9, M10 | none |
+| 3167 | A0, dense | C13a-c, C14c | D1 (publication), D3, D6, D9; V-publication; M2, M3 | none |
+| 3168 | A0, dense | C16, C18 | D2, D10; V-diagnostics, V-equity | none |
+| 3169 | all, real-data | all | all, D20 | full matrix; all memory workloads |
 
-## 9. Settled here, and items for the maintainer's attention
+Before acceptance, LDG-3163 records each representation detector's expected
+baseline outcome. A base failure of a detector that targets the old
+representation is expected evidence, not a reason to weaken it.
 
-Pinned by this note (Synthesis Section 7): the dictionaries (2.1-2.2), the
-locators (2.3), the pulse capacity (2.4) and the detector names (6). Timing
-noise and memory base values are recorded by LDG-3163.
+## 9. Status
 
-Shape changes that need the cut's acceptance as their stated reason
-(decision 10's "separately stated, accepted reason"): the inverted
-unnamed-positions witness (LTB-0278), the publication call-count claims
-(LTB-0515, LTB-0136, LTB-0280, test-risk-fold.R:83), the post-risk class
-test (test-risk-fold.R:827), the retired proposal and `ledgr_fill_none`
-tests (test-fill-model.R:59, :96, test-ledger-writer.R:811) and the
-mode-branch census regeneration (LTB-0331). No economic value, fixture or
-oracle changes. No Type 2 question is open.
+The dictionaries, the censuses, the test migrations and the memory method
+remain subject to correction and verification. The real-data unchanged and
+cost-mutant runs are LDG-3163 evidence, not results of this note. No
+semantic change beyond the synthesis is authorized. A memory metric that
+cannot meet decision (5), or any proposed weakening of fixture, fault or
+oracle semantics beyond an accepted representation reason, returns to the
+maintainer before acceptance.
+
+Shape changes that need the cut's acceptance as their stated reason: the
+inverted unnamed-positions witness (LTB-0278); the publication call-count
+claims (LTB-0515, LTB-0136, test-risk-fold.R:83); LTB-0280's added two-pulse
+witness and changed fault timing; the post-risk class test
+(test-risk-fold.R:827); the retired proposal shapes and `ledgr_fill_none`
+(test-fill-model.R:59, :96, test-ledger-writer.R:811); LTB-0521's retired
+equity-buffer growth; and the mode-branch census regeneration (LTB-0331).
