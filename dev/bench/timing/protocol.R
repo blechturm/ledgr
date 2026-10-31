@@ -89,6 +89,24 @@ timing_read_protocol <- function(dir) {
   out
 }
 
+# The cells one attempt times: "all", or a comma-separated subset named with
+# --cells. The runner records the subset in session.csv and the checker
+# applies the same one, so the plan and every per-cell check cover exactly
+# the timed cells; a cell outside the subset is reported as not measured,
+# never as passing. Cells keep matrix order.
+timing_select_cells <- function(protocol, cells) {
+  if (is.null(cells) || is.na(cells) || identical(cells, "all")) return(protocol)
+  want <- unique(trimws(strsplit(cells, ",", fixed = TRUE)[[1L]]))
+  want <- want[nzchar(want)]
+  unknown <- setdiff(want, protocol$cells$cell)
+  if (!length(want) || length(unknown)) {
+    stop(sprintf("--cells names %s", if (length(unknown)) paste("unknown cell(s)", paste(unknown, collapse = ", ")) else
+      "no cell"), call. = FALSE)
+  }
+  protocol$cells <- protocol$cells[protocol$cells$cell %in% want, , drop = FALSE]
+  protocol
+}
+
 # The planned slots. Pair k runs every cell in matrix order; within a cell
 # the two arms run back to back, base first in odd pairs and candidate first
 # in even pairs, so drift over the window reaches both arms equally.
