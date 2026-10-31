@@ -4592,7 +4592,7 @@ claims:
     source: "v0.2.3 Cut 2 LDG-3138"
     scope: "Ticket evidence validation scans the union of workstreams owned by every cut whose status is not closed, regardless of cut number, while closed-cut history stays outside the active scan"
     oracle_class: "A direct three-cut fixture with malformed evidence in two open cuts and a closed cut, followed by a valid two-open-cut fixture"
-    detecting_blocks: ["LTB-0514"]
+    detecting_blocks: ["LTB-0522"]
     promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "Selecting only the highest-numbered cut can hide malformed completed-ticket evidence in an older cut that remains open."

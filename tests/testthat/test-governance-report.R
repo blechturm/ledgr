@@ -1149,7 +1149,7 @@ testthat::test_that("[LTB-0514] both governance report entry points default to t
   testthat::expect_identical(cli[nzchar(cli)], report)
 })
 
-testthat::test_that("[LTB-0514] ticket evidence scans every open cut and no closed cut", {
+testthat::test_that("[LTB-0522] ticket evidence scans every open cut and no closed cut", {
   package_root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
   tool <- file.path(package_root, "tools", "governance-report.R")
   testthat::skip_if_not(

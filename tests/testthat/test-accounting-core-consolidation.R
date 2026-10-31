@@ -27,7 +27,6 @@ ledgr_accounting_test_events <- function() {
   )
 }
 
-# ledgr-test-profile: review
 # LDG-3164 (decision 10, category 2): the same FIFO witnesses on the typed
 # book. AAA is book position 1; live lots and aggregates are read from the
 # book instead of the removed named-list container.
@@ -36,6 +35,7 @@ ledgr_test_book_lots <- function(book, pos = 1L) {
   list(qty = live$qty, price = live$price)
 }
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0019] flat lot carrier preserves independent FIFO arithmetic", {
   state <- ledgr:::ledgr_lot_book(1L)
   state <- ledgr:::ledgr_lot_opening(state, 1L, 10, 100)$book
@@ -217,6 +217,10 @@ testthat::test_that("[LTB-0021] chunked reader is identical across its fetch bou
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0022] depth scaling detector rejects a write-path rescan", {
+  # A per-call timing slope is a normal-runtime invariant: covr's counters add
+  # depth-independent cost to the instrumented kernel calls only, which
+  # flattens the mutant's slope, so it is skipped under coverage only.
+  testthat::skip_on_covr()
   depths <- c(25L, 100L, 400L, 800L)
   noise_allowance <- 0.30
   calls_per_depth <- 1500L

@@ -318,7 +318,11 @@ testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity",
   testthat::expect_false(grepl("state\\$pending_fills", persistent_source))
   testthat::expect_match(persistent_source, "pending_fills <<- block")
   testthat::expect_match(memory_source, "pending_legs <<- legs")
-  testthat::expect_match(persistent_source, "ledgr_event_buffer_setv(cols, name, index, block[[name]])", fixed = TRUE)
+  # covr rewrites function bodies and wraps this statement across deparsed
+  # lines, so its exact source text holds only in ordinary runs.
+  if (!ledgr_test_in_coverage()) {
+    testthat::expect_match(persistent_source, "ledgr_event_buffer_setv(cols, name, index, block[[name]])", fixed = TRUE)
+  }
 
   fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
