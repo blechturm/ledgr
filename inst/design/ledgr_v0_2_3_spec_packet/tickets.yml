@@ -1245,7 +1245,12 @@ tickets:
       preserves ordinary copy-on-modify isolation across every migrated book
       consumer. It does not defer these validators to LDG-3168.
     acceptance: ["no named-list FIFO implementation remains; the typed lot kernel and migrated book consumers perform no per-fill instrument-name lookup, and the named boundary adapters are individually enumerated (planner representation is gated at LDG-3166)", "the opening Kahan detector and the typed-path LIFO mutation fail as LDG-3162 specifies", "every decision (2) public oracle passes exactly and the real-data oracle passes", "decision (6) is settled with its replay and memory evidence", "the full suite passes"]
-    evidence: []
+    evidence:
+      - "claude/ws4a-carrier commits fcd05ba2, 66f3d5eb, 177a8964 and df1b3b62, with tests/testthat/test-ws4a-carrier.R: ledgr_lot_state(), ledgr_lot_apply_fill(), ledgr_position_from_lots() and their named-list helpers are deleted, and the [WS4a D19] test passes. [WS4a D3] passes for the kernel and the migrated book consumers. The boundary adapters are ledgr_carrier_import_state(), ledgr_carrier_settlement_state()/_install(), ledgr_carrier_result_state(), ledgr_carrier_compiled_pack()/_unpack(), ledgr_lot_book_live() and ledgr_lot_book_asof(). Pending the workstream 12 close review."
+      - "dev/bench/v0_2_3_ws4a/records/ldg3164/README.md (commit on claude/ws4a-carrier): guts C4_lifo (M1), C5b_kahan_on_openings (M6) and the other nine LDG-3164 guts and mutations all fail their cases on the typed path, and the [WS4a D7] test passes with its M6 controls."
+      - "dev/bench/v0_2_3_ws4a/records/ldg3164/ (sequence.log, a0-compare.csv, realdata.txt): on df1b3b62 the 23 WS4a cases are identical, A0 passes 295 of 295 checks, the dense oracle's nine native arms are identical, and all six real-data workloads are COMPARE_IDENTICAL against the pre-WS4a reference."
+      - "dev/bench/v0_2_3_ws4a/records/ldg3164/README.md and dev/bench/timing/records/ws4a-timing-1/ldg3164-gate/attempt-1: decision (6) is settled on blocks. Replay applies consecutive conflict-free blocks. Replay peak R heap is 0.92 (wide) and 0.88 (deep) of base, within the 1.10 budget. Reader timing is read_fills 0.408, read_trades 0.405 and read_equity 0.987, and the no-fill cells are at most 1.03, all passing. Fold, sparse and marginal cells (1.02-1.56) and deep-forward memory (1.13, unstable) are not gated until LDG-3169 under decision (8)."
+      - "dev/bench/v0_2_3_ws4a/records/ldg3164/sequence.log: the full suite (testthat::test_local, stop_on_failure) exits 0 on the candidate."
   - id: "LDG-3165"
     title: "Typed observation and decision"
     workstream: 13
