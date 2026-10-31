@@ -1,0 +1,16 @@
+pub1_lot2        run    ledgr_config_non_finite/rlang_error/error/condition | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). | w=0
+pub1_lot2        sweep  ledgr_lot_state_invariant/error/condition | sweep FAILED Invalid applied lot rows. | w=0
+pub1_lot2_live   run    ledgr_config_non_finite/rlang_error/error/condition | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). | w=0
+pub1_lot2_live   sweep  ledgr_lot_state_invariant/error/condition | sweep FAILED Invalid applied lot rows. | w=0
+lot1_pub2        run    ledgr_lot_state_invariant/ledgr_invalid_state/rlang_error/error/condition | Invalid applied lot rows. | w=0
+lot1_pub2        sweep  ledgr_lot_state_invariant/error/condition | sweep FAILED Invalid applied lot rows. | w=0
+pub_only         run    ledgr_config_non_finite/rlang_error/error/condition | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). | w=0
+pub_only         sweep  none |  | w=0
+lot_only         run    ledgr_lot_state_invariant/ledgr_invalid_state/rlang_error/error/condition | Invalid applied lot rows. | w=0
+lot_only         sweep  ledgr_lot_state_invariant/error/condition | sweep FAILED Invalid applied lot rows. | w=0
+ok1_fee2         run    ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. | w=0
+ok1_fee2         sweep  ledgr_invalid_lot_fill/error/condition | sweep FAILED Invalid fill input for lot accounting. | w=0
+nan1_nan2        run    ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. | w=0
+nan1_nan2        sweep  ledgr_invalid_lot_fill/error/condition | sweep FAILED Invalid fill input for lot accounting. | w=0
+nan1_pub2        run    ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. | w=0
+nan1_pub2        sweep  ledgr_invalid_lot_fill/error/condition | sweep FAILED Invalid fill input for lot accounting. | w=0
