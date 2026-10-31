@@ -1,0 +1,22 @@
+MODE base 
+A10 availability, long 1e308 basis 1 at 10, target 0 (review F1) 
+  run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  sweep: FAILED ledgr_config_non_finite canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). final_equity= NA 
+A19 availability, long 1e308 basis 1 at 1.9, target 0 
+  run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  sweep: FAILED ledgr_config_non_finite canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). final_equity= NA 
+H10 availability, long 1e308 basis 1 at 10, hold 
+  run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  sweep: FAILED ledgr_config_non_finite canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). final_equity= NA 
+H19 availability, long 1e308 basis 1 at 1.9, hold 
+  run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  sweep: FAILED ledgr_config_non_finite canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). final_equity= NA 
+C dense, long 1e308 basis 1 at 1.9, hold (item c) 
+  run:   OK 
+  sweep: DONE NA NA final_equity= Inf 
+B1 compiled, buy 1e308 at 10 
+  sweep: DONE NA NA final_equity= NaN 
+B2 compiled, sell long 1e308 basis -1 at 1.5 
+  sweep: DONE NA NA final_equity= 1.5e+308 
+B3 compiled ordinary, buy 5 at 10 
+  sweep: DONE NA NA final_equity= 1000 

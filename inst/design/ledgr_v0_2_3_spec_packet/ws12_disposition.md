@@ -2,10 +2,12 @@
 
 **Role:** record; disposition of v0.2.3 cut 5 (macro WS4a), workstreams 12
 and 13, written by LDG-3169 under the file name its ticket gives.
-**Status:** draft, awaiting the workstream 13 close review.
+**Status:** draft; the workstream 13 close review
+([ws13_close_review.md](ws13_close_review.md)) returned NEEDS_TYPE_2 on F1
+with F2-F4 blocking; correction round 1 (below) awaits the focused re-review.
 **Authority:** `tickets.yml` cut 5, decisions (1)-(13) and the amendments
-`amendment`, `amendment_performance`, `amendment_budget` and
-`amendment_overflow`; LDG-3162 to LDG-3169; the synthesis
+`amendment`, `amendment_performance`, `amendment_budget`,
+`amendment_overflow` and `amendment_valuation`; LDG-3162 to LDG-3169; the synthesis
 [rfc_typed_fold_carrier_v0_2_3_synthesis.md](../rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md)
 Sections 3-5; the design note [ws4a_carrier_design.md](ws4a_carrier_design.md).
 
@@ -30,9 +32,26 @@ The implemented rules are in [contracts.md](../contracts.md), commit
 (retired fill-intent and named-list wording replaced, overflow refusal
 recorded). NEWS.md gains one line.
 
+## Correction round 1 (workstream 13 close review)
+
+[ws13_close_review.md](ws13_close_review.md) returned NEEDS_TYPE_2 on F1
+(decided by the maintainer as `amendment_valuation`) with F2-F4 blocking and
+O1 optional. Product commit `d027c242` is the new final candidate: F1 carries
+non-finite valuations to the base refusal point, F2 extends the overflow
+refusal to the compiled `spot_fifo` path (C++ unchanged), F3 validates
+diagnostic segments and the empty publication block where they are built,
+F4 makes D9 and D10 detect the operations rather than spellings, and O1
+qualifies D20's evidence. Its gates (23 cases identical, 36 of 36 guts,
+dense PASS, A0 295 of 295, full suite, build and check with 0 errors) and the
+base-versus-candidate public outcomes are in
+[records/ldg3169/round3/](../../../dev/bench/v0_2_3_ws4a/records/ldg3169/round3/README.md).
+The sections below keep the round 1 and 2 record; where they name
+`28ad2542` as the final candidate, `d027c242` supersedes it. The real-data
+oracle is the maintainer's to rerun on `d027c242`.
+
 ## Tested source identity
 
-Final candidate `28ad2542`. Its product equals `9b05538f` (the overflow
+Final candidate of round 2: `28ad2542` (superseded by `d027c242`, above). Its product equals `9b05538f` (the overflow
 product): the git object ids of `R`, `src`, `man`, `vignettes`,
 `DESCRIPTION` and `NAMESPACE` are equal, product digest
 `a4a0d4b0ddd8f4c61227a9ce3f86d4ba7625412ddda419ead60161cdf343e1fe` (sha256
@@ -73,7 +92,7 @@ milestone check after WS4b.
 | Guts and mutations | 36 of 36 registered guts fail their case, M1-M12 included; the invalid-base control is refused |
 | Dense native oracle | PASS, nine arms identical |
 | A0 successor | 295 of 295 PASS |
-| D20 (Section 3.4 routes) | R8.02-R8.14 identical to the base and their witness cases identical; R8.01 differs as designed (the provider adapter exists from LDG-3165); both controls fail as specified |
+| D20 (Section 3.4 routes) | by route signatures and call shapes plus the twelve output witnesses, not operation-level equality of every route (close review O1): R8.02-R8.14 identical to the base and their witness cases identical; R8.01 differs as designed (the provider adapter exists from LDG-3165); both controls fail as specified |
 | Identity | 16 of 16 PASS |
 | Detectors, validators, injections | in the suite: the `[WS4a ...]` blocks, C13b, the 3167 precedence and overflow blocks, LTB-0280; cases C13a and C13c with their swallow guts |
 | Full suite (`testthat::test_local`) | exit 0; one existing skip (quantmod missing-package path) |
@@ -84,17 +103,41 @@ milestone check after WS4b.
 
 ## Accepted refusal changes
 
-- **Overflow (cut 5 `amendment_overflow`, product `9b05538f`).** A fill from
-  a valid book whose lot accounting overflows to a non-finite value from
-  finite inputs is refused with `ledgr_invalid_lot_fill`, "Invalid fill
-  input for lot accounting.", in runs and sweeps. The base accepted it (a
-  durable run then failed at metadata encoding with
-  `ledgr_config_non_finite`, a sweep completed with infinite values, and a
-  base run with realized P&L of Inf completed); workstream 12's kernel raised
-  `ledgr_lot_state_invariant`. The LDG-3167 probe differs from the base in
-  exactly six outcomes, all by this decision
-  ([records/overflow/](../../../dev/bench/v0_2_3_ws4a/records/overflow/README.md)).
-  No result with finite accounting changes.
+- **Overflow (cut 5 `amendment_overflow`; canonical fills from product
+  `9b05538f`, compiled `spot_fifo` fills from the close correction
+  `d027c242`).** A fill from a valid book whose lot accounting overflows to a
+  non-finite value from finite inputs is refused with
+  `ledgr_invalid_lot_fill`, "Invalid fill input for lot accounting.", in runs
+  and sweeps, on the canonical and the compiled path, at the earliest
+  failing fill of its batch; nothing of the refused batch is installed or
+  published. The base accepted such a fill: a run or sweep could fail later
+  or complete with non-finite accounting (a durable run failed at metadata
+  encoding with `ledgr_config_non_finite`; a canonical sweep completed with
+  infinite values; a compiled sweep completed with NaN equity for a 1e308
+  buy at 10 and with equity 1.5e308 for a sale realizing Inf). Workstream
+  12's kernel raised `ledgr_lot_state_invariant`. The C++ batch is
+  unchanged: its R wrapper screens each batch and, only on suspicion, asks
+  the canonical typed fill operation for the earliest overflowing fill; a
+  native input refusal keeps its own condition when its fill comes first or
+  is the same fill. The LDG-3167 probe differs from the base in exactly six
+  outcomes, all by this decision
+  ([records/overflow/](../../../dev/bench/v0_2_3_ws4a/records/overflow/README.md));
+  the compiled cases are in
+  [records/ldg3169/round3/](../../../dev/bench/v0_2_3_ws4a/records/ldg3169/round3/README.md).
+  No result with finite accounting changes. Openings and dispositions are
+  not covered.
+- **Valuation (cut 5 `amendment_valuation`, `d027c242`).** Unchanged from
+  the base. A non-finite run-order valuation of finite admitted holdings is
+  carried by the decision packet (and an accepted sale's infinite proceeds by
+  P3's expected final cash) to the base refusal point and condition:
+  holding 1e308 units marked at 10 or 1.9 refuses with
+  `ledgr_config_non_finite` at P5's reconciliation detail on runs and
+  sweeps, selling them at 1.9 at the fill's metadata (run) and P5 (sweep),
+  and a dense holding valued at Inf completes with Inf equity, all as on
+  `953338df`. Selling them at 10 is a fill whose realized P&L overflows, so
+  the overflow refusal above applies (base: `ledgr_config_non_finite`
+  later). From `9b05538f` to the correction the packet had refused these
+  valuations as `ledgr_internal_error` (close review F1).
 - **LDG-3166 checkpoint chain** (`ws13_checkpoint_review.md`,
   `ws13_checkpoint_rereview_1.md`, `ws13_checkpoint_rereview_2.md`: 3
   reviews, 2 correction rounds, PASS on `167dc947`). Public refusals keep
@@ -123,15 +166,19 @@ milestone check after WS4b.
 
 ## Open for the close review
 
-- (a) Selling a 1e308-unit long at 10 on the availability producer raises
-  `ledgr_internal_error`, "Invalid internal decision packet:
-  `positions_value` contains a non-finite value", from the LDG-3165 packet
-  validator. The base raised `ledgr_config_non_finite` later. This refusal
-  change is not covered by an amendment.
-- (b) The overflow refusal does not cover the compiled spot-FIFO path, nor
-  overflowing openings and dispositions.
-- (c) LDG-3168's belief that Inf cannot reach the new used-row checks of the
-  staging and equity record from finite public inputs is untested.
+- (a) Resolved by `amendment_valuation` and correction round 1 (close review
+  F1): see "Valuation" above. The review's own case (selling the 1e308 long
+  at 10) now reaches its fill and refuses by `amendment_overflow`, because
+  the sale's realized P&L overflows; the maintainer's decision names
+  `ledgr_config_non_finite` for it, so this reading is flagged for
+  confirmation.
+- (b) The compiled path: resolved by correction round 1 (close review F2).
+  Openings and dispositions are not fills and remain outside the refusal; their
+  extreme-value semantics are not certified (typed-accounting design).
+- (c) Rejected as a blanket belief (close review item (c)): a dense holding
+  valued at Inf reaches the equity record's used rows and completes with Inf
+  equity, as on the base; a public regression now holds it. The diagnostic
+  staging's predicate is installed at construction (close review F3).
 - (d) Resolved in `28ad2542` by maintainer disposition (2026-10-31). Round 1
   found that `R CMD check` and coverage stopped at the test control plane's
   preflight. Repairs, test infrastructure only, with no setup, fixture,
