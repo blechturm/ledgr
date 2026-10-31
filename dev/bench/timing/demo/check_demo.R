@@ -42,12 +42,13 @@ lib <- c(base = "C:/demo/arm_base/lib", candidate = "C:/demo/arm_candidate/lib")
 # A clean gate record. `ratio` sets each cell's candidate/base median ratio;
 # `alternate = FALSE` runs base first in every pair, as a runner that never
 # alternated would, with every self-report consistent with that order.
-make_record <- function(dir, ratio = c(small_cold = 1.02, small_warm = 0.96), alternate = TRUE) {
+make_record <- function(dir, ratio = c(small_cold = 1.02, small_warm = 0.96), alternate = TRUE, cells = "all") {
   dir.create(file.path(dir, "protocol"), recursive = TRUE)
   dir.create(file.path(dir, "harness"))
   for (f in timing_protocol_files) committed_copy(file.path(protocol_source, f), file.path(dir, "protocol", f))
   for (f in timing_harness_files) committed_copy(file.path(harness_source, f), file.path(dir, "harness", f))
-  timing_write_kv(list(protocol = protocol$id, label = "demo", attempt = "1", mode = "gate", host_policy = "enforce",
+  protocol <- timing_select_cells(protocol, cells)
+  timing_write_kv(list(protocol = protocol$id, label = "demo", attempt = "1", mode = "gate", cells = cells, host_policy = "enforce",
     test_hook = "none", disposition = "none", disposition_role = "none", disposition_ref = "none",
     status = "complete", status_reason = "", started_utc = "2023-11-14T22:13:20Z", finished_utc = "2023-11-14T22:23:20Z",
     harness_commit = harness_commit, harness_source = harness_source, protocol_source = protocol_source,
@@ -245,6 +246,13 @@ cases <- list(
     reason = "disposition", edit = later_attempt("maintainer", "tickets.yml LDG-0000 disposition 1", text = "   ")),
   list(case = "N4_whitespace_ref", shows = "a later gate attempt whose decision reference is blank", exit = 1L,
     reason = "disposition", edit = later_attempt("maintainer", "   ")),
+  # Cell subsets (--cells, 2026-10-31).
+  list(case = "cells_subset_control", shows = "a record that timed one of two cells passes and names the other as not measured",
+    exit = 0L, cells = "small_cold", output = "not measured: small_warm"),
+  list(case = "cells_claimed_subset", shows = "a full record whose session claims a one-cell subset", exit = 1L,
+    reason = "plan", edit = list("session.csv", function(s) { s$cells <- "small_cold"; s })),
+  list(case = "cells_unknown", shows = "a session naming a cell the protocol does not have", exit = 1L,
+    reason = "cells", edit = list("session.csv", function(s) { s$cells <- "no_such_cell"; s })),
   list(case = "interrupted_record", shows = "the runner's interrupted attempt (killed child, unrun slots)", exit = 1L,
     reason = "unrun slot", record = interrupted, aa = TRUE)
 )
@@ -254,7 +262,7 @@ results <- do.call(rbind, lapply(cases, function(x) {
   record <- if (is.null(x$record)) file.path(work, x$case) else x$record
   if (is.null(x$record)) {
     make_record(record, ratio = if (is.null(x$ratio)) c(small_cold = 1.02, small_warm = 0.96) else x$ratio,
-      alternate = !identical(x$alternate, FALSE))
+      alternate = !identical(x$alternate, FALSE), cells = if (is.null(x$cells)) "all" else x$cells)
     if (isTRUE(x[["same_commit"]])) {
       edit(record, "session.csv", function(s) {
         s[c("mode", "candidate_commit", "candidate_product")] <- list("aa", s$base_commit, s$base_product)
@@ -274,7 +282,8 @@ results <- do.call(rbind, lapply(cases, function(x) {
   want <- if (is.null(x$reason)) "" else x$reason
   data.frame(case = x$case, demonstrates = x$shows, expected_exit = x$exit, exit = status, expected_reason = want,
     reasons_found = paste(found, collapse = "; "),
-    as_expected = status == x$exit && (!nzchar(want) || want %in% found), stringsAsFactors = FALSE)
+    as_expected = status == x$exit && (!nzchar(want) || want %in% found) &&
+      (is.null(x$output) || any(grepl(x$output, out, fixed = TRUE))), stringsAsFactors = FALSE)
 }))
 
 # F4: attempt allocation, exercised directly. A label holding only attempt-2

@@ -325,6 +325,12 @@ resolve in PowerShell on the maintainer host.
   --protocol=dev/bench/timing/protocols/<id> --record=dev/bench/timing/records/<id>/<name>/attempt-1
 ```
 
+`--cells=<a,b,...>` times only the named protocol cells. A gate that covers
+only some cells uses it, so it does not spend the window on cells it does not
+gate. The runner records the subset in `session.csv`. The checker applies the
+same subset and lists the other cells as not measured; it never reports them
+as passing.
+
 `dev/bench/timing/demo/check_demo.R` shows the checker failing on each
 invalid case and passing its controls. `dev/bench/timing/demo/frozen_inputs_demo.R`
 edits the live harness during a smoke window and shows that later slots are

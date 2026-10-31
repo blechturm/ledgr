@@ -26,8 +26,10 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
     reasons <<- c(reasons, reason)
     details <<- c(details, detail)
   }
+  not_measured <- character()
   result <- function(cells = NULL) {
-    list(ok = !length(reasons), failures = data.frame(reason = reasons, detail = details), cells = cells)
+    list(ok = !length(reasons), failures = data.frame(reason = reasons, detail = details), cells = cells,
+      not_measured = not_measured)
   }
   is_count <- function(x) !is.na(x) & grepl("^[0-9]+$", x)
 
@@ -89,6 +91,15 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
   if (identical(s$base_lib, s$candidate_lib)) fail("arm identity", "both arms name one library")
   if (!identical(s$plan_guid, timing_plan_guid)) fail("power plan", sprintf("session %s", s$plan_guid))
   if (!identical(s$root_affinity, sprintf("%.0f", timing_affinity))) fail("affinity", sprintf("root %s", s$root_affinity))
+
+  # The recorded cell subset; records written before --cells existed timed
+  # every cell.
+  all_cells <- protocol$cells$cell
+  protocol <- tryCatch(timing_select_cells(protocol, s$cells %||% "all"), error = function(e) {
+    fail("cells", conditionMessage(e))
+    protocol
+  })
+  not_measured <- setdiff(all_cells, protocol$cells$cell)
 
   # The saved plan must be the protocol's plan, slot for slot.
   plan <- timing_plan(protocol)
@@ -283,10 +294,14 @@ timing_check_main <- function(here) {
       "Cells (ratio = median candidate / median base; PASS when ratio <= bound):\n")
     print(res$cells, row.names = FALSE, digits = 7)
   }
+  subset <- if (length(res$not_measured)) {
+    sprintf(" (cell subset; not measured: %s)", paste(res$not_measured, collapse = ", "))
+  } else ""
   if (res$ok) {
-    cat(if (aa) "\nA/A VALID (validity and noise only; never gate evidence)\n" else "\nCHECK PASS\n")
+    cat(if (aa) "\nA/A VALID (validity and noise only; never gate evidence)" else "\nCHECK PASS", subset, "\n", sep = "")
     return(0L)
   }
+  if (nzchar(subset)) cat("\n", trimws(subset), "\n", sep = "")
   counts <- table(factor(res$failures$reason, levels = unique(res$failures$reason)))
   cat(sprintf("\nCHECK FAIL (%d): %s\n", nrow(res$failures), paste(names(counts), counts, collapse = "; ")))
   for (i in seq_len(nrow(res$failures))) cat(sprintf("  %s: %s\n", res$failures$reason[[i]], res$failures$detail[[i]]))

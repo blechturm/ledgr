@@ -90,6 +90,17 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     cold-read item: a clean-context reviewer explains each changed stage
     from its code and the carrier contract alone, and a stage that cannot
     be explained is a finding (maintainer, 2026-10-30).
+16. **Performance is checked at milestones, not gated per workstream.** The
+    fold is rewritten across WS4a, WS4b, WS5 and WS7/WS8, so a timing or
+    memory gate on one workstream measures a state the next one replaces.
+    For the rest of v0.2.3, no workstream has a timing or memory gate; this
+    replaces the timing parts of rules 2 and 13. Performance is checked
+    against v0.2.2 after big milestones: after core unification (WS4b),
+    after the WS7/WS8 cut, and at release certification, using the peer
+    suite and the shared timing harness. A cut may still measure something
+    to settle a design choice; that measurement is evidence, not a gate.
+    Correctness oracles, cases and the real-data oracle run as before
+    (maintainer, 2026-10-31, after workstream 12 timed twice).
 
 ## 2. Dependency structure
 

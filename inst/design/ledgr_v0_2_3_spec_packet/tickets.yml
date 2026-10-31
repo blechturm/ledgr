@@ -210,6 +210,7 @@ cuts:
     status: "accepted"
     accepted: "2026-10-30 by the maintainer, revision 5, after LDG-3162 and LDG-3163 completed and the prepared-cut review (cut_review_5_prepared.md, PASS_AFTER_PATCHES, patches applied verbatim). Decisions (1)-(13) and the shape changes listed in ws4a_carrier_design.md Section 9 are accepted with the cut. Implementation starts with LDG-3164 (workstream 12)."
     amendment: "2026-10-30 by the maintainer, during LDG-3164 (stop rule of decision (1)): the synthesis Section 4 state invariant 'positions equal lot-derived net' (design note F4.01) is not enforced at import. The base admits an execution spec holding positions without lots and carried walk-forward positions that differ from the re-summed carried lots in the last bits; enforcing equality at E would add a refusal or change carried results. Imported positions are kept as given; positions of instruments a fill or disposition touches come from the book (O2.02, D11). The divergence is parked in horizon.md (2026-10-30, imported positions versus the lot-derived net) for the typed-accounting work (WS7/WS8). No identity or result change."
+    amendment_performance: "2026-10-31 by the maintainer (macro plan rule 16): timing and memory are no longer gates in this cut; performance is checked against v0.2.2 after big milestones, first after core unification (WS4b). Decisions (4) and (5) set no pass/fail criterion; protocol ws4a-timing-1, its thresholds, timing_absolute.R and the memory method stay registered as tools for the milestone check. Decision (6) stands as settled on blocks at LDG-3164 by attempt 1 of dev/bench/timing/records/ws4a-timing-1/ldg3164-gate (candidate a6b3643e: read_fills 0.408, read_trades 0.405) and the replay memory record (0.88-0.92 of base); attempt 2 on f4c47b8b was stopped unfinished and is not evidence. Decision (8): LDG-3164 through LDG-3169 end with their correctness gates only, and the real-data oracle still runs at LDG-3164 and LDG-3169. LDG-3169 runs no timing matrix or memory script. Decision (7)'s question, whether the per-pulse lot copy dominates, moves to the milestone check after WS4b. Correctness oracles, cases, guts, detectors and injections are unchanged."
     opening: >-
       Written by Claude on 2026-10-30 at the maintainer's request, after cut 2
       closed (merge 953338df). It implements the accepted typed-fold-carrier
@@ -1373,7 +1374,7 @@ tickets:
     acceptance: ["detectors reject list-segment pulse staging and staging retained across pulses, and accept the existing bounded writer and filtered retained-output chunks; the capacity case exceeds a writer chunk, stops early and verifies used prefixes and sequence gaps","a durable dense run finalizes equity through event replay, byte-identical, with its fold equity record filled", "the validator refuses a wrong-length diagnostic staging column and a wrong-type equity column","every decision (2) public oracle passes exactly", "the full suite passes"]
     evidence: []
   - id: "LDG-3169"
-    title: "Verify the final candidate, run the gates and close the workstream"
+    title: "Verify the final candidate and close the workstream"
     workstream: 13
     status: "planned"
     priority: "P0"
@@ -1383,9 +1384,9 @@ tickets:
       On the final candidate: every decision (2) oracle, including the
       real-data oracle; every LDG-3163 case and its guts; every LDG-3162
       detector and mutation; the failure-boundary injections; the full suite,
-      R CMD check and coverage. Run the ws4a-timing-1 gate on the
-      registered host and the decision (5) memory script, and record the
-      scale and deep-book evidence that decision (7) needs. Promote the
+      R CMD check and coverage. No timing or memory gate runs here
+      (amendment_performance, 2026-10-31); decision (7)'s scale question
+      moves to the milestone check after WS4b. Promote the
       implemented rules into contracts.md under decision (11). Add one NEWS
       line. Write ws12_disposition.md with the identity declarations and the
       gate results. Complete the contract and NEWS edits before the final
@@ -1393,5 +1394,5 @@ tickets:
       evidence-only diff; a later product edit invalidates the affected gate
       records. Keep generated build and check artifacts outside the tracked
       tree.
-    acceptance: ["every oracle, case, gut, detector and injection passes or fails as specified, each with its command and exit code in the final-candidate record", "every timing cell passes the thresholds frozen before cut acceptance, including the separate absolute marginal-time check; a miss keeps the ticket and workstream open, a linked exception is not a PASS, and any proposed change to an accepted requirement returns through governance rather than as an implementation-time threshold adjustment","the memory record is within decision (5)", "the contract text matches the implemented behaviour and promotes nothing unimplemented", "the disposition records the three identity declarations with evidence"]
+    acceptance: ["every oracle, case, gut, detector and injection passes or fails as specified, each with its command and exit code in the final-candidate record", "the contract text matches the implemented behaviour and promotes nothing unimplemented", "the disposition records the three identity declarations with evidence"]
     evidence: []

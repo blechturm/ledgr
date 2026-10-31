@@ -14,6 +14,8 @@
 #     --protocol=<protocol folder> --base=<commit> --candidate=<commit> --label=<name>
 #
 # Options:
+#   --cells=<a,b,...>            time only these protocol cells (default all); recorded in
+#                                session.csv, and the checker reports the others as not measured
 #   --out=<dir>                  label directory (default dev/bench/timing/records/<protocol id>/<label>)
 #   --disposition=<text>         required for a later attempt under one label: the disposition
 #   --disposition-role=<role>    of the earlier attempt, who wrote it (maintainer or agent) and,
@@ -54,6 +56,9 @@ local({
   kill_slot <- suppressWarnings(as.integer(opt("test-kill-slot", NA)))
   protocol <- timing_read_protocol(opt("protocol"))
   if (length(protocol$problems)) refuse("invalid protocol: ", paste(protocol$problems, collapse = "; "))
+  n_protocol_cells <- nrow(protocol$cells)
+  protocol <- tryCatch(timing_select_cells(protocol, opt("cells", "all")), error = function(e) refuse(conditionMessage(e)))
+  cells <- if (nrow(protocol$cells) == n_protocol_cells) "all" else paste(protocol$cells$cell, collapse = ",")
 
   shas <- c(base = git("rev-parse", "--verify", paste0(opt("base"), "^{commit}")),
     candidate = git("rev-parse", "--verify", paste0(opt("candidate"), "^{commit}")))
@@ -141,7 +146,7 @@ local({
   product <- function(sha) paste(git("rev-parse", paste0(sha, ":", c("R", "src", "DESCRIPTION", "NAMESPACE"))), collapse = ";")
   session <- list(
     protocol = protocol$id, label = basename(label_dir), attempt = sub("^attempt-", "", basename(attempt_dir)),
-    mode = mode, test_hook = if (is.na(kill_slot)) "none" else sprintf("kill slot %d", kill_slot),
+    mode = mode, cells = cells, test_hook = if (is.na(kill_slot)) "none" else sprintf("kill slot %d", kill_slot),
     disposition = if (nzchar(disposition)) disposition else "none",
     disposition_role = if (nzchar(role)) role else "none", disposition_ref = if (nzchar(ref)) ref else "none",
     status = "running", status_reason = "", started_utc = utc(), finished_utc = "",
