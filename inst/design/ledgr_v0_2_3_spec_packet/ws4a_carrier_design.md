@@ -247,7 +247,7 @@ Named boundaries of these groups:
 | --- | --- | --- |
 | Provider input | `ledgr_fold_positions_snapshot` in P1's `availability_decision` | run-axis positions named for `decision_view()` |
 | Provider output (transitional, remover WS4b) | `ledgr_carrier_provider_view` | view and valuation planes, keyed by the view's axis in order, unnamed once per produced view |
-| Settlement, terminal and stop paths in P1 | P1 body | keep reading the provider's named view and valuation (settlement boundary, remover WS8) |
+| Settlement, terminal, stop and freeze-transition diagnostic paths in P1 | P1 body | keep reading the provider's named view and valuation (settlement boundary, remover WS8) |
 | P2 input | `ledgr_carrier_p2_input`, `ledgr_fold_positions_snapshot`, `ledgr_history_bar_packet_frame` | the public context's named availability planes, `.positions`, members and bar frame |
 | P2 return | `ledgr_validate_strategy_targets` | the one shape and name normalization; its named result feeds the risk steps and the named availability validators |
 | P2 stop | `ledgr_carrier_p2_valuation` | the affected-exposure record's valuation fields by ID, risk-mark stop only |
@@ -293,8 +293,22 @@ fold cash.
   `execution_epoch_valid` once from `execution_opportunities_posix %||%
   pulses_posix[-1]`. A planner refuses an invalid epoch only where the base
   first parsed it, through `ledgr_plan_refuse_epoch()`, with the base class
-  and message; the refusal order is the base per-row order (availability:
-  epoch before short exposure; dense: first row's open, epoch, later opens).
+  and message.
+- **Refusals (correction round 1, `ws13_checkpoint_review.md` F1):**
+  `ledgr_plan_refuse_first()` refuses the first failing row in decision
+  order with its first failing check, in the base per-row order: dense
+  target delta, next open, epoch (`ledgr_plan_refuse_inputs()`, which also
+  serves the `next_bar$open` input form); on the final pulse each row's delta
+  is checked before its warning; availability, for rows with an execution
+  bar, delta, epoch, then short exposure. Classes and messages are the base
+  ones. A fee that overflows stays in the plan (V-fill admits an infinite fee
+  and cash effect, missingness `inf`): dense refuses it at accounting with
+  `ledgr_invalid_lot_fill`, availability rejects it for cash, as the base
+  did. `records/ldg3166/correction1/` holds the base-versus-candidate probe.
+- **Compiled publication (F2):** the wrapper publishes P3's carried
+  `cash_delta` and `position_delta` and installs the cash they imply
+  (`ledgr_cash_scan()`); native lot positions stay authoritative and the C++
+  is unchanged.
 - **Named boundaries:** `ledgr_carrier_execution_view()` (transitional
   provider adapter, remover WS4b; P3 only, D24); the publication input
   `write_fill_events(fill, i, instrument_id, event_seq, use_transaction)`,

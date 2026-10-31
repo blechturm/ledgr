@@ -55,3 +55,30 @@ the frozen `D13` value with the same method. Historical rows are unchanged.
 
 Harness lines: 2,008 to 2,022 (+14) under the 2,500-line budget
 (cut 5 `amendment_budget`).
+
+## Correction round 1 (`ws13_checkpoint_review.md`, CHANGES_REQUIRED)
+
+Product commit `51be2bbf`, base `7a4f7b01` (the review record). Records in
+`correction1/`: `sequence.log`, `a0-compare.csv`, and the F1 differential
+`probe_f1.R` with its outputs on the base library
+(`E:/ledgr-data/r-lib/ledgr-v0.2.3-base-953338df`) and on the candidate;
+the two outputs are identical across 21 planner and public scenarios
+(refusal order, final-pulse warnings, fee and delta overflow).
+
+| Gate | Outcome on 51be2bbf |
+| --- | --- |
+| Cases | `check.R --base=HEAD`: 23 identical |
+| Guts | the same 26 guts: 26 FAIL (expected); invalid-base control REFUSED |
+| Dense | PASS, nine native arms identical |
+| A0 | 295 of 295 PASS |
+| Suite | `test_local(stop_on_failure=TRUE)` exit 0 (one existing skip) |
+
+Per finding, the control that now fails: F1 `[WS4a F1 base refusals]` (13
+base-literal multi-error cases; a selector checking all deltas first fails;
+public fee overflow refuses with `ledgr_invalid_lot_fill`) and the restored
+`test-fill-model.R` Inf and `next_bar$open` witnesses; F2 `[WS4a D8 handoff]`
+(native-effect substitution in the compiled wrapper fails exactly one path);
+F3 new V-plan/V-rejection controls in `[WS4a V-execution-view ...]`; F4 D1's
+P3 callback control and D8's inline-arithmetic controls (identical numbers)
+and handoff recomputation control; F5 the two restored fill-model witnesses
+with per-field and crossed-mapping controls. Harness 2,022 to 2,148 lines.

@@ -1,0 +1,14 @@
+product 51be2bbf; scratch C:/Users/maxth/AppData/Local/Temp/ws13-3166/gates2
+cases exit 0
+guts exit 0
+dense exit 0
+a0-record exit 0
+a0-compare exit 0
+suite exit 0
+done
+cases: ws4a check: PASS, 23 case(s) identical
+guts: 26 of 26 FAIL (expected); control_invalid_base_ref REFUSED (expected)
+dense: dense native check: PASS; nine native arms identical, A0 pointers resolve, scope unchanged
+a0: a0 successor comparison: PASS (295 checks, 0 fail)
+suite: exit 0; one skip (quantmod missing-package path); expected LEDGR_LAST_BAR_NO_FILL warnings from the ws4a-carrier fixture runs
+f1 probe: probe_f1.R base (E:/ledgr-data/r-lib/ledgr-v0.2.3-base-953338df) and candidate 51be2bbf outputs identical (f1-probe-base.txt, f1-probe-candidate.txt; 21 scenarios)
