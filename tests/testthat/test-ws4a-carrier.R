@@ -2588,10 +2588,12 @@ testthat::test_that("[WS4a 3167 precedence] a batch refuses in the per-fill orde
   }
   applied <- c("ledgr_lot_state_invariant", "Invalid applied lot rows.")
   input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")
+  # The 1e308 rows overflow the lot basis; cut 5 amendment_overflow refuses
+  # them as invalid fill input (they were ledgr_lot_state_invariant).
   cases <- list(
-    applied1_input2 = list(group(c(1e308, 1, 1), c(0, NaN, 0)), c(1, applied)),
+    applied1_input2 = list(group(c(1e308, 1, 1), c(0, NaN, 0)), c(1, input)),
     input2_applied3 = list(group(c(1, 1, 1e308), c(0, NaN, 0)), c(2, input)),
-    applied2_input3 = list(group(c(1, 1e308, 1), c(0, 0, Inf)), c(2, applied)),
+    applied2_input3 = list(group(c(1, 1e308, 1), c(0, 0, Inf)), c(2, input)),
     input3 = list(group(c(1, 1, 1), c(0, 0, NaN)), c(3, input)),
     none = list(group(c(1, 2, 3), c(0, 0.5, 1)), "none")
   )
@@ -2635,7 +2637,7 @@ testthat::test_that("[WS4a 3167 precedence] a batch refuses in the per-fill orde
   testthat::expect_identical(public(list(AAA = 10, BBB = 1.9), ledgr_opening(cash = 1000, positions = c(BBB = 1e308),
     cost_basis = c(BBB = 1)), list(AAA = 1e308, BBB = 0), ledgr_cost_notional_bps_fee(0)), input)
   # Control: without the earlier fills' publication check the later fill's
-  # lot refusal comes first.
+  # lot refusal (amendment_overflow: invalid fill input) comes first.
   handler <- ns$ledgr_output_handler
   testthat::with_mocked_bindings(
     ledgr_output_handler = function(sink, ...) {
@@ -2644,9 +2646,162 @@ testthat::test_that("[WS4a 3167 precedence] a batch refuses in the per-fill orde
       h$write_fill_events <- function(..., stage = TRUE) if (isTRUE(stage)) write(..., stage = stage)
       h
     },
-    testthat::expect_identical(pub1_lot2("audit_log"), applied),
+    testthat::expect_identical(pub1_lot2("audit_log"), input),
     .package = "ledgr"
   )
+})
+
+# Cut 5 amendment_overflow (maintainer, 2026-10-31): a fill whose lot
+# accounting overflows to a non-finite value from finite inputs is refused at
+# the fill as invalid fill input, on runs and sweeps and on both producers.
+# The base accepted it (a durable run failed later at metadata encoding or
+# completed, a sweep completed with infinite values). A corrupt book keeps
+# the applied-row invariant.
+testthat::test_that("[WS4a overflow refusal] a fill whose lot accounting overflows is refused as invalid fill input", {
+  ns <- ws4a_ns()
+  input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")
+  applied <- c("ledgr_lot_state_invariant", "Invalid applied lot rows.")
+  through <- c("ledgr_lot_state_invariant", "Lot accounting cannot open through an unconsumed opposing lot.")
+  condition <- function(expr) {
+    e <- tryCatch({ force(expr); NULL }, error = identity)
+    if (is.null(e)) "none" else c(class(e)[[1L]], conditionMessage(e))
+  }
+  # A two-instrument book whose first instrument holds the given lots. The
+  # cached basis may differ from the lots (V-book checks it only on openings).
+  lots <- function(qty, price, basis = sum(qty * price), realized = 0) {
+    b <- ns$ledgr_lot_book(2L)
+    n <- length(qty)
+    b$capacity <- c(n, 0L); b$offset <- c(0L, n); b$tail <- c(n, 0L)
+    b$lot_qty <- qty; b$lot_price <- price
+    b$net_by_inst <- c(sum(qty), 0); b$cost_basis_by_inst <- c(basis, 0)
+    b$total_cost_basis <- basis; b$realized_pnl <- realized
+    b
+  }
+  # The rows and book the kernel computes with the refusal taken away: the
+  # book reported corrupt and the applied-row check removed.
+  unchecked <- function(b, ...) testthat::with_mocked_bindings(
+    ledgr_lot_book_problem = function(...) "reported corrupt",
+    ledgr_lot_applied = function(input, ...) list(...),
+    ns$ledgr_lot_fill(b, ...),
+    .package = "ledgr"
+  )
+  # Unit controls, one per overflowing field: each refuses, and without the
+  # refusal the named field is non-finite while the fill inputs are finite.
+  fields <- list(
+    opened_basis = list(ns$ledgr_lot_book(2L), 1L, 1L, 1e308, 10, 0, function(o) o$book$cost_basis_by_inst[[1L]]),
+    realized_close = list(lots(-1e308, 1), 1L, 1L, 1e308, 10, 0, function(o) o$applied$realized_close),
+    closing_basis = list(lots(c(-1e300, -1e300), c(1e8, 1e8), basis = -1.7e308), 1L, 1L, 2e300, 1e8, 0,
+      function(o) o$book$cost_basis_by_inst[[1L]]),
+    position = list(lots(1e308, 1e-10), 1L, 1L, 1e308, 1e-10, 0, function(o) o$applied$position_after),
+    realized_after_fee = list(lots(-1e308, 1), 1L, 1L, 1e308, 2, 1e308, function(o) o$applied$realized_delta),
+    realized_total = list(lots(-1, 1, realized = -1.7e308), 1L, 1L, 1, 5e307, 0, function(o) o$applied$event_realized),
+    basis_total = list(ns$ledgr_lot_book(2L), 1:2, c(1L, 1L), c(1e307, 1e307), c(10, 10), 0,
+      function(o) o$applied$event_cost_basis[[2L]])
+  )
+  for (name in names(fields)) {
+    a <- fields[[name]]
+    testthat::expect_null(ns$ledgr_lot_book_problem(a[[1L]], reduction = FALSE), info = name)
+    testthat::expect_identical(condition(ns$ledgr_lot_fill(a[[1L]], a[[2L]], a[[3L]], a[[4L]], a[[5L]], a[[6L]])),
+      input, info = name)
+    o <- unchecked(a[[1L]], a[[2L]], a[[3L]], a[[4L]], a[[5L]], a[[6L]])
+    testthat::expect_false(is.finite(a[[7L]](o)), info = name)
+  }
+  # Only the field named fails in the row-level controls.
+  o <- unchecked(lots(-1e308, 1), 1L, 1L, 1e308, 2, 1e308)
+  testthat::expect_true(is.finite(o$applied$realized_close))
+  o <- unchecked(lots(-1, 1, realized = -1.7e308), 1L, 1L, 1, 5e307)
+  testthat::expect_true(is.finite(o$applied$realized_delta))
+  o <- unchecked(ns$ledgr_lot_book(2L), 1:2, c(1L, 1L), c(1e307, 1e307), c(10, 10))
+  testthat::expect_true(all(is.finite(o$book$cost_basis_by_inst)))
+  # Control: a corrupt book keeps the applied-row invariant (a live lot
+  # without a price; an infinite total), and a valid book reported corrupt
+  # falls back to it too.
+  corrupt <- lots(-1, NA_real_, basis = -1)
+  testthat::expect_false(is.null(ns$ledgr_lot_book_problem(corrupt, reduction = FALSE)))
+  testthat::expect_identical(condition(ns$ledgr_lot_fill(corrupt, 1L, 1L, 1, 10)), applied)
+  infinite <- ns$ledgr_lot_book(2L)
+  infinite$total_cost_basis <- Inf
+  testthat::expect_identical(condition(ns$ledgr_lot_fill(infinite, 1L, 1L, 1, 10)), applied)
+  testthat::with_mocked_bindings(
+    ledgr_lot_book_problem = function(...) "reported corrupt",
+    testthat::expect_identical(condition(ns$ledgr_lot_fill(ns$ledgr_lot_book(2L), 1L, 1L, 1e308, 10)), applied),
+    .package = "ledgr"
+  )
+
+  # Precedence. A zero live lot passes V-book and refuses as an opening
+  # through an opposing lot. Within a row a closing overflow comes before
+  # that check and an opened-basis overflow after it; across rows the
+  # earliest failing row refuses, in the kernel and in P4's candidate.
+  zero <- lots(0, 1, basis = 0)
+  testthat::expect_identical(condition(ns$ledgr_lot_fill(zero, 1L, 1L, 1e308, 10)), through)
+  testthat::expect_identical(condition(ns$ledgr_lot_fill(lots(c(-1e308, 0), c(1, 1), basis = -1e308), 1L, 1L, 1.5e308, 10)),
+    input)
+  testthat::expect_identical(condition(ns$ledgr_lot_fill(zero, 1:2, c(1L, 1L), c(1, 1e308), c(10, 10))), through)
+  testthat::expect_identical(condition(ns$ledgr_lot_fill(zero, 2:1, c(1L, 1L), c(1e308, 1), c(10, 10))), input)
+  batch <- function(pos, qty, fee = c(0, 0)) {
+    out <- ns$ledgr_fold_fill_candidate(zero, list(k = 1:2, pos = pos, side = c(1L, 1L), qty = qty, price = c(10, 10), fee = fee))
+    c(out$failed, condition(stop(out$error)))
+  }
+  testthat::expect_identical(batch(1:2, c(1, 1e308)), c("1", through))
+  testthat::expect_identical(batch(2:1, c(1e308, 1)), c("1", input))
+  testthat::expect_identical(batch(c(2L, 1L), c(1, 1e308), c(NaN, 0)), c("1", input))
+  testthat::expect_identical(batch(c(2L, 1L), c(1, 1), c(0, 0)), c("2", through))
+
+  # Public runs and sweeps with finite inputs (base outcomes in comments).
+  pulses <- as.POSIXct("2024-01-01 16:00:00", tz = "UTC") + 86400 * 0:3
+  public <- function(avail, prices, opening, targets, mode = "audit_log") {
+    bars <- do.call(rbind, lapply(names(prices), function(id) data.frame(ts_utc = pulses, instrument_id = id,
+      open = prices[[id]], high = prices[[id]], low = prices[[id]], close = prices[[id]], volume = 1000,
+      stringsAsFactors = FALSE)))
+    db <- tempfile(fileext = ".duckdb")
+    snap <- if (avail) {
+      sessions <- ledgr_facts_sessions(data.frame(session_date = as.Date(pulses), status = "open",
+        session_open = "09:30:00", session_close = "16:00:00", knowledge_time = pulses - 86400,
+        stringsAsFactors = FALSE), venue_id = "XNYS")
+      ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = names(prices)),
+        facts = ledgr_facts(sessions), price_basis = "split_adjusted", db_path = db)
+    } else {
+      ledgr_snapshot_from_df(bars, db_path = db)
+    }
+    on.exit(ledgr_snapshot_close(snap))
+    exp <- ledgr_experiment(snap, function(ctx, params) {
+      t <- ctx$hold()
+      if (identical(substr(ctx$ts_utc, 1L, 10L), "2024-01-01")) t[names(params$t)] <- unlist(params$t)
+      t
+    }, cost_model = ledgr_cost_zero(), opening = opening, execution_mode = mode)
+    run <- suppressWarnings(condition(close(ledgr_run(exp, params = list(t = targets), run_id = "ovf", seed = 1L))))
+    s <- suppressWarnings(ledgr_sweep(exp, ledgr_grid_named(c = list(strategy = list(t = targets))), seed = 1L))
+    list(run = run, sweep = if (identical(s$status[[1L]], "DONE")) "none" else c(s$error_class[[1L]], s$error_msg[[1L]]))
+  }
+  refused <- list(run = input, sweep = input)
+  cash <- ledgr_opening(cash = 1000)
+  # Buying 1e308 at 10 overflows the opened basis (base: the durable run
+  # refused later as ledgr_config_non_finite, the sweep completed).
+  testthat::expect_identical(public(FALSE, list(AAA = 10), cash, list(AAA = 1e308)), refused)
+  testthat::expect_identical(public(FALSE, list(AAA = 10), cash, list(AAA = 1e308), mode = "db_live")$run, input)
+  # Availability affordability rejects that buy before any fill: the base
+  # behaviour is unchanged (the rejection's metadata refuses as
+  # ledgr_config_non_finite on the run and the sweep).
+  non_finite <- c("ledgr_config_non_finite",
+    "canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).")
+  testthat::expect_identical(public(TRUE, list(AAA = 10), cash, list(AAA = 1e308)),
+    list(run = non_finite, sweep = non_finite))
+  # Selling a long held at a negative basis overflows the realized P&L with a
+  # finite cash effect, reaching the fill on both producers (base: both runs
+  # and sweeps completed with an infinite realized P&L).
+  negative <- ledgr_opening(cash = 1000, positions = c(AAA = 1e308), cost_basis = c(AAA = -1))
+  testthat::expect_identical(public(FALSE, list(AAA = 1.5), negative, list(AAA = 0)), refused)
+  testthat::expect_identical(public(TRUE, list(AAA = 1.5), negative, list(AAA = 0)), refused)
+  # Two fills in one pulse: fill 1 (AAA) publishes an infinite cash effect,
+  # fill 2 (BBB) overflows. The durable run keeps fill 1's earlier
+  # publication refusal; the sweep, which encodes no metadata, refuses fill 2
+  # (base: completed). Reversed, fill 1's overflow refuses first (base: the
+  # durable run refused later as ledgr_config_non_finite).
+  long <- ledgr_opening(cash = 1000, positions = c(AAA = 1e308), cost_basis = c(AAA = 1))
+  testthat::expect_identical(public(FALSE, list(AAA = 1.9, BBB = 10), long, list(AAA = 0, BBB = 1e308)),
+    list(run = non_finite, sweep = input))
+  testthat::expect_identical(public(FALSE, list(AAA = 10, BBB = 1.9),
+    ledgr_opening(cash = 1000, positions = c(BBB = 1e308), cost_basis = c(BBB = 1)), list(AAA = 1e308, BBB = 0)), refused)
 })
 
 # W1: the observed application order. Probes, in time order: the canonical

@@ -481,12 +481,76 @@ ledgr_lot_apply <- function(book, input) {
   head[reset] <- 1L
   tail[reset] <- 0L
   live <- tail - head + 1L
-
-  # Refusals keep the scalar event order: the earliest failing row refuses,
-  # and within a row opening through an opposing lot comes before a
-  # disposition's exhaustion, which comes before its realized witness. The
-  # predicates are vectorized; only the selection is ordered.
   realized_delta <- realized_close - fee
+  # A fill's closing results (realized P&L, closing basis change and the
+  # position after closing) are complete here, before its through check.
+  fill <- op == .ledgr_lot_fill
+  closing_overflow <- fill & !(is.finite(realized_delta) & is.finite(basis_delta) & is.finite(net))
+
+  # The appended lots' basis and positions, the dust rules and the
+  # event-order totals are computed before the refusals; the slots are
+  # written after them.
+  appending <- opening | open_qty > 0
+  a <- which(appending)
+  if (length(a) > 0L) {
+    # An opening's signed quantity, or a fill's unclosed remainder on its own
+    # side. An opening's basis change is its quantity times its basis; a fill
+    # adds the opened lot to its closing basis change.
+    signed <- ifelse(
+      opening[a],
+      quantity[a],
+      ifelse(side[a] > 0L, open_qty[a], -open_qty[a])
+    )
+    basis_delta[a] <- ifelse(
+      opening[a],
+      signed * price[a],
+      basis_delta[a] + signed * price[a]
+    )
+    net[a] <- net[a] + signed
+  }
+
+  new_basis <- old_basis + basis_delta
+  # Fills and dispositions: a flat instrument (an emptied segment that
+  # appends nothing) has net exactly 0, and dust basis snaps to 0. Openings
+  # keep their arithmetic (no dust rule).
+  net[consuming & head > tail & !appending] <- 0
+  f <- which(consuming)
+  if (length(f) > 0L) {
+    tol <- ledgr_lot_dust_tolerance_rows(new_basis[f], net[f], quantity[f], price[f])
+    snap <- abs(new_basis[f]) <= tol
+    new_basis[f[snap]] <- 0
+  }
+
+  # Canonical event-order totals: one scalar scan in row order (sum() and
+  # cumsum() would use a different floating-point order). Openings take no
+  # realized-P&L step.
+  total <- book$total_cost_basis
+  realized <- book$realized_pnl
+  comp <- book$realized_comp
+  event_cost_basis <- numeric(m)
+  event_realized <- numeric(m)
+  for (k in seq_len(m)) {
+    total <- total - old_basis[[k]] + new_basis[[k]]
+    if (consuming[[k]]) {
+      step <- ledgr_lot_add_realized(realized, comp, realized_delta[[k]])
+      realized <- step[[1L]]
+      comp <- step[[2L]]
+    }
+    event_cost_basis[[k]] <- total
+    event_realized[[k]] <- realized
+  }
+  # A fill's opened basis, position and totals come after its through
+  # check. A non-finite compensation reaches the next row's realized total,
+  # so only the last row's is checked here.
+  late_overflow <- fill & !closing_overflow & !(is.finite(new_basis) & is.finite(net) &
+    is.finite(event_cost_basis) & is.finite(event_realized))
+  if (m > 0L && fill[[m]] && !is.finite(comp)) late_overflow[[m]] <- !closing_overflow[[m]]
+
+  # Refusals keep the scalar event order: the earliest failing row refuses.
+  # Within a row, a fill's closing overflow comes before opening through an
+  # opposing lot, which comes before a disposition's exhaustion, its
+  # realized witness, and then a fill's later overflow. The predicates are
+  # vectorized; only the selection is ordered.
   witness <- input$realized_model_pnl
   bad_through <- integer()
   through <- which(consuming & open_qty > 0 & live > 0L)
@@ -495,11 +559,19 @@ ledgr_lot_apply <- function(book, input) {
     bad_through <- through[is.na(front) | front != side[through]]
   }
   d <- which(op == .ledgr_lot_disposition)
-  # Ordinary calls with no through failure and no disposition skip the
+  # A fill whose finite inputs overflow lot accounting to a non-finite
+  # value is refused as invalid fill input (cut 5 amendment_overflow). From
+  # a corrupt book a non-finite result stays a state invariant (V-applied-row).
+  overflow <- which(closing_overflow | late_overflow)
+  if (length(overflow) > 0L && !is.null(ledgr_lot_book_problem(book, reduction = FALSE))) {
+    overflow <- integer()
+  }
+  # Ordinary calls with no through failure, disposition or overflow skip the
   # failure selection.
-  if (length(bad_through) > 0L || length(d) > 0L) {
+  if (length(bad_through) > 0L || length(d) > 0L || length(overflow) > 0L) {
     fail <- integer(m)
     fail[bad_through] <- 1L
+    fail[overflow[fail[overflow] == 0L | closing_overflow[overflow]]] <- 4L
     d <- d[fail[d] == 0L]
     if (length(d) > 0L) {
       # Replay compares the recorded realized model P&L with the canonical FIFO
@@ -517,6 +589,12 @@ ledgr_lot_apply <- function(book, input) {
     first <- which(fail > 0L)
     if (length(first) > 0L) {
       k <- first[[1L]]
+      if (fail[[k]] == 4L) {
+        rlang::abort(
+          "Invalid fill input for lot accounting.",
+          class = "ledgr_invalid_lot_fill"
+        )
+      }
       if (fail[[k]] == 3L) {
         ledgr_accounting_event_error(
           "DISPOSITION realized model PnL does not match canonical FIFO realization.",
@@ -536,7 +614,6 @@ ledgr_lot_apply <- function(book, input) {
     }
   }
 
-  appending <- opening | open_qty > 0
   # Compaction moves the live lots to the segment start: after consumption
   # when dead slots outnumber live ones, and before an append into a full
   # segment whose head has moved.
@@ -588,58 +665,13 @@ ledgr_lot_apply <- function(book, input) {
     off <- new_off
   }
 
-  # Appends: an opening's signed quantity, or a fill's unclosed remainder
-  # on its own side, as a new lot at the segment tail.
+  # Appends: the appended lots computed above, at the segment tails.
   tail_before_append <- tail
-  a <- which(appending)
   if (length(a) > 0L) {
-    signed <- ifelse(
-      opening[a],
-      quantity[a],
-      ifelse(side[a] > 0L, open_qty[a], -open_qty[a])
-    )
     slot <- off[pos[a]] + tail[a] + 1L
     q[slot] <- signed
     p[slot] <- price[a]
     tail[a] <- tail[a] + 1L
-    # An opening's basis change is its quantity times its basis; a fill adds
-    # the opened lot to its closing basis change.
-    basis_delta[a] <- ifelse(
-      opening[a],
-      signed * price[a],
-      basis_delta[a] + signed * price[a]
-    )
-    net[a] <- net[a] + signed
-  }
-
-  new_basis <- old_basis + basis_delta
-  # Fills and dispositions: a flat instrument has net exactly 0, and dust
-  # basis snaps to 0. Openings keep their arithmetic (no dust rule).
-  net[consuming & head > tail] <- 0
-  f <- which(consuming)
-  if (length(f) > 0L) {
-    tol <- ledgr_lot_dust_tolerance_rows(new_basis[f], net[f], quantity[f], price[f])
-    snap <- abs(new_basis[f]) <= tol
-    new_basis[f[snap]] <- 0
-  }
-
-  # Canonical event-order totals: one scalar scan in row order (sum() and
-  # cumsum() would use a different floating-point order). Openings take no
-  # realized-P&L step.
-  total <- book$total_cost_basis
-  realized <- book$realized_pnl
-  comp <- book$realized_comp
-  event_cost_basis <- numeric(m)
-  event_realized <- numeric(m)
-  for (k in seq_len(m)) {
-    total <- total - old_basis[[k]] + new_basis[[k]]
-    if (consuming[[k]]) {
-      step <- ledgr_lot_add_realized(realized, comp, realized_delta[[k]])
-      realized <- step[[1L]]
-      comp <- step[[2L]]
-    }
-    event_cost_basis[[k]] <- total
-    event_realized[[k]] <- realized
   }
 
   book$offset <- off
