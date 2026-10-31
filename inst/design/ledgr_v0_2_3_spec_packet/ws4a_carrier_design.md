@@ -412,7 +412,7 @@ Field invariants:
 
 | ID | Group: fields (invariant) | Owner | Control (structural: invalid record refused by the group validator; otherwise the named check) |
 | --- | --- | --- | --- |
-| F4.01 | state: cash finite; positions equal lot-derived net | 3164 | NaN cash; positions differ from `net_by_inst` |
+| F4.01 | state: cash finite; positions are an unnamed finite run-axis vector; for every instrument a fill or disposition touches, the position is read from the book (clarified by maintainer amendment, 2026-10-30: imported positions are kept as given at E, because the base admits positions without lots and carried walk-forward positions that differ from re-summed carried lots in the last bits; equality is not enforced at import) | 3164 | NaN cash; wrong-length positions; a P4 position not read from `net_by_inst` (D11) |
 | F4.02 | state: event_seq >= 1; diagnostic_seq >= 0 | 3164 | event_seq 0 |
 | F4.03 | state: state_prev, state_axis lifecycle | 3164 | numeric state_axis |
 | F4.04 | state: status, stop_reason, current_stage tokens | 3164 | NA status |

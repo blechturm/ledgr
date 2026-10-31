@@ -209,6 +209,7 @@ cuts:
     cut: "2026-10-30"
     status: "accepted"
     accepted: "2026-10-30 by the maintainer, revision 5, after LDG-3162 and LDG-3163 completed and the prepared-cut review (cut_review_5_prepared.md, PASS_AFTER_PATCHES, patches applied verbatim). Decisions (1)-(13) and the shape changes listed in ws4a_carrier_design.md Section 9 are accepted with the cut. Implementation starts with LDG-3164 (workstream 12)."
+    amendment: "2026-10-30 by the maintainer, during LDG-3164 (stop rule of decision (1)): the synthesis Section 4 state invariant 'positions equal lot-derived net' (design note F4.01) is not enforced at import. The base admits an execution spec holding positions without lots and carried walk-forward positions that differ from the re-summed carried lots in the last bits; enforcing equality at E would add a refusal or change carried results. Imported positions are kept as given; positions of instruments a fill or disposition touches come from the book (O2.02, D11). The divergence is parked in horizon.md (2026-10-30, imported positions versus the lot-derived net) for the typed-accounting work (WS7/WS8). No identity or result change."
     opening: >-
       Written by Claude on 2026-10-30 at the maintainer's request, after cut 2
       closed (merge 953338df). It implements the accepted typed-fold-carrier
