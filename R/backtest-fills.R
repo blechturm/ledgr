@@ -120,7 +120,10 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
   )
   on.exit(DBI::dbClearResult(ledger_res), add = TRUE)
 
-  lot_state <- ledgr_lot_state()
+  # The typed book carries across chunks; each chunk's prepared axis starts
+  # with the previous chunk's, so the book extends by position.
+  lot_state <- ledgr_lot_book(0L)
+  replay_ids <- character()
   replay_positions <- numeric()
   replay_cash <- 0
   fetch_size <- 50000L
@@ -129,7 +132,7 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
     rows <- DBI::dbFetch(ledger_res, n = fetch_size)
     if (nrow(rows) == 0) break
 
-    prepared <- ledgr_prepare_accounting_events(rows, lot_state$instrument_ids)
+    prepared <- ledgr_prepare_accounting_events(rows, replay_ids)
     replay <- ledgr_replay_accounting_events(
       prepared,
       initial_cash = replay_cash,
@@ -137,6 +140,7 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
       lot_state = lot_state
     )
     lot_state <- replay$lot_state
+    replay_ids <- prepared$instrument_ids
     replay_cash <- replay$cash
     replay_positions <- replay$positions
     block_fills <- ledgr_accounting_fills_from_replay(

@@ -1,113 +1,214 @@
-ledgr_lot_state <- function(instrument_ids = character()) {
-  instrument_ids <- as.character(instrument_ids)
-  instrument_ids <- instrument_ids[!is.na(instrument_ids) & nzchar(instrument_ids)]
-  instrument_ids <- unique(instrument_ids)
-  n_inst <- length(instrument_ids)
+# The typed lot book and its one FIFO implementation.
+#
+# Carrier contract: inst/design/rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md
+# Section 4, groups "book", "lot input" and "applied row"; the operations are
+# Section 3.4. Every consumer (fold, replay, readers, opening and resume,
+# walk-forward carry, dispositions, terminal recovery, the handler's accounting
+# fact and the compiled boundary) uses these functions; there is no second
+# FIFO. Instruments are integer positions on the book's axis (the run axis
+# inside the fold). ID-to-position conversion happens only in the named
+# boundary helpers that build books from openings or ledger events.
+#
+# Book layout: flat segments. Instrument i owns the slots
+# offset[i] + 1 .. offset[i] + capacity[i] of lot_qty and lot_price; its live
+# FIFO lots are the segment slots head[i] .. tail[i] (empty: head 1, tail 0).
+# Dead and unused slots hold NA. net_by_inst and cost_basis_by_inst are cached
+# lot-derived aggregates maintained by the operations, never recomputed by a
+# reduction. The kernel copies on modify; no book column is written by
+# reference (decision 7).
+
+# Lot input operation codes. They equal the prepared accounting-event codes of
+# ledgr_prepare_accounting_events() (1 FILL, 3 opening CASHFLOW, 4
+# DISPOSITION), so replay passes its operation column through unchanged.
+.ledgr_lot_fill <- 1L
+.ledgr_lot_opening <- 3L
+.ledgr_lot_disposition <- 4L
+
+ledgr_lot_book <- function(n = 0L) {
+  n <- as.integer(n)
   list(
-    instrument_ids = instrument_ids,
-    instrument_index = stats::setNames(seq_len(n_inst), instrument_ids),
-    lot_qty = rep(list(numeric()), n_inst),
-    lot_price = rep(list(numeric()), n_inst),
-    lot_head = stats::setNames(rep(1L, n_inst), instrument_ids),
-    lot_tail = stats::setNames(rep(0L, n_inst), instrument_ids),
-    net_by_inst = stats::setNames(rep(0, n_inst), instrument_ids),
-    cost_basis_by_inst = stats::setNames(rep(0, n_inst), instrument_ids),
+    offset = integer(n),
+    capacity = integer(n),
+    head = rep(1L, n),
+    tail = integer(n),
+    lot_qty = numeric(),
+    lot_price = numeric(),
+    net_by_inst = numeric(n),
+    cost_basis_by_inst = numeric(n),
     total_cost_basis = 0,
     realized_pnl = 0,
     realized_comp = 0
   )
 }
 
-ledgr_lot_direction <- function(side) {
-  side <- toupper(as.character(side))
-  if (length(side) != 1L || is.na(side)) return(NA_integer_)
-  if (identical(side, "BUY")) return(1L)
-  if (identical(side, "SELL")) return(-1L)
-  NA_integer_
-}
+.ledgr_lot_book_fields <- c(
+  "offset", "capacity", "head", "tail", "lot_qty", "lot_price",
+  "net_by_inst", "cost_basis_by_inst", "total_cost_basis", "realized_pnl",
+  "realized_comp"
+)
 
-ledgr_lot_ensure_instrument <- function(state, instrument_id) {
-  idx <- unname(state$instrument_index[instrument_id])
-  if (length(idx) == 1L && !is.na(idx)) {
-    return(list(state = state, index = as.integer(idx)))
+# V-book: the first violated rule of the book group, or NULL. Types, exact
+# lengths, disjoint prefix segments, live bounds, finite live and NA dead
+# slots, and lot-derived aggregates.
+#
+# How the cached aggregates are derived decides what can be checked. An
+# opening adds its quantity to the net and quantity times basis to the cost
+# basis, so a book built by openings alone (`reduction = TRUE`) caches the
+# left-to-right sums of its live lots in FIFO order, and the same additions
+# repeated here are equal exactly. A fill or disposition instead updates the
+# net as (net - consumed lot) + remainder, so its rounding error accumulates
+# over every update since the instrument was last flat, including lots that
+# are no longer live: buying 1e9, then 0.1, then selling 1e9 leaves a 0.1 lot
+# under a cached net of 0.10000002384 (the base computes the same value).
+# The error is bounded only by the history, which the book does not hold, so
+# no bound in terms of the live lots is sound, and books reached by
+# transitions (`reduction = FALSE`) are checked only where the arithmetic is
+# exact: a flat instrument's net is 0. Transitions are checked where they
+# happen (V-applied-row).
+ledgr_lot_book_problem <- function(book, n = NULL, reduction = TRUE) {
+  if (!is.list(book) || !identical(names(book), .ledgr_lot_book_fields)) {
+    return("the book does not have exactly the typed book fields")
   }
-
-  idx <- length(state$instrument_ids) + 1L
-  state$instrument_ids[[idx]] <- instrument_id
-  state$instrument_index[[instrument_id]] <- idx
-  state$lot_qty[[idx]] <- numeric()
-  state$lot_price[[idx]] <- numeric()
-  state$lot_head[[instrument_id]] <- 1L
-  state$lot_tail[[instrument_id]] <- 0L
-  state$net_by_inst[[instrument_id]] <- 0
-  state$cost_basis_by_inst[[instrument_id]] <- 0
-  list(state = state, index = idx)
-}
-
-ledgr_lot_values <- function(state, instrument_id) {
-  idx <- unname(state$instrument_index[instrument_id])
-  if (length(idx) != 1L || is.na(idx)) {
-    return(list(qty = numeric(), price = numeric()))
+  axis <- list(book$offset, book$capacity, book$head, book$tail)
+  if (!all(vapply(axis, is.integer, logical(1))) ||
+      !is.double(book$lot_qty) || !is.double(book$lot_price) ||
+      !is.double(book$net_by_inst) || !is.double(book$cost_basis_by_inst)) {
+    return("a book column has the wrong storage type")
   }
-  head <- as.integer(state$lot_head[[idx]])
-  tail <- as.integer(state$lot_tail[[idx]])
-  if (tail < head) {
-    return(list(qty = numeric(), price = numeric()))
+  totals <- list(book$total_cost_basis, book$realized_pnl, book$realized_comp)
+  if (!all(vapply(totals, function(v) {
+    is.double(v) && length(v) == 1L && is.finite(v)
+  }, logical(1)))) {
+    return("book totals must be finite double scalars")
   }
-  live <- seq.int(head, tail)
-  list(
-    qty = as.numeric(state$lot_qty[[idx]][live]),
-    price = as.numeric(state$lot_price[[idx]][live])
-  )
-}
-
-ledgr_lot_count <- function(state, instrument_id) {
-  values <- ledgr_lot_values(state, instrument_id)
-  length(values$qty)
-}
-
-ledgr_lot_compact <- function(qty, price, head, tail, force = FALSE) {
-  live_n <- if (tail >= head) tail - head + 1L else 0L
-  if (live_n == 0L) {
-    return(list(qty = qty, price = price, head = 1L, tail = 0L))
+  size <- length(book$offset)
+  if (!is.null(n) && size != n) return("the book axis does not match the run axis")
+  if (any(lengths(axis) != size) || length(book$net_by_inst) != size ||
+      length(book$cost_basis_by_inst) != size) {
+    return("book axis columns have unequal lengths")
   }
-  dead_n <- head - 1L
-  if (!isTRUE(force) && dead_n <= live_n) {
-    return(list(qty = qty, price = price, head = head, tail = tail))
+  if (anyNA(book$capacity) || any(book$capacity < 0L) ||
+      length(book$lot_qty) != sum(as.numeric(book$capacity)) ||
+      length(book$lot_price) != length(book$lot_qty)) {
+    return("book slot columns do not match the segment capacities")
   }
-  live <- seq.int(head, tail)
-  qty[seq_len(live_n)] <- qty[live]
-  price[seq_len(live_n)] <- price[live]
-  if (live_n < length(qty)) {
-    qty[seq.int(live_n + 1L, length(qty))] <- NA_real_
-    price[seq.int(live_n + 1L, length(price))] <- NA_real_
+  # Segments are disjoint and laid out in axis order from slot 1.
+  if (size > 0L && !identical(book$offset, c(0L, cumsum(book$capacity)[-size]))) {
+    return("book segments are not disjoint prefix segments")
   }
-  list(qty = qty, price = price, head = 1L, tail = live_n)
-}
-
-ledgr_lot_append_vectors <- function(qty, price, head, tail, value_qty, value_price) {
-  if (tail >= length(qty) && head > 1L) {
-    compacted <- ledgr_lot_compact(qty, price, head, tail, force = TRUE)
-    qty <- compacted$qty
-    price <- compacted$price
-    head <- compacted$head
-    tail <- compacted$tail
+  if (anyNA(book$head) || anyNA(book$tail) || any(book$head < 1L) ||
+      any(book$tail > book$capacity) || any(book$head > book$tail + 1L)) {
+    return("book live bounds are outside their segments")
   }
-  if (tail >= length(qty)) {
-    old_capacity <- length(qty)
-    new_capacity <- max(4L, old_capacity * 2L)
-    length(qty) <- new_capacity
-    length(price) <- new_capacity
-    if (new_capacity > old_capacity) {
-      idx <- seq.int(old_capacity + 1L, new_capacity)
-      qty[idx] <- NA_real_
-      price[idx] <- NA_real_
+  live_n <- book$tail - book$head + 1L
+  if (any(live_n == 0L & (book$head != 1L | book$tail != 0L))) {
+    return("an empty segment must have head 1 and tail 0")
+  }
+  live <- ledgr_lot_book_live(book)
+  dead <- rep(TRUE, length(book$lot_qty))
+  dead[live$slot] <- FALSE
+  if (!all(is.finite(live$qty)) || !all(is.finite(live$price)) ||
+      !all(is.na(book$lot_qty[dead])) || !all(is.na(book$lot_price[dead]))) {
+    return("live lots must be finite and dead slots NA")
+  }
+  if (!all(is.finite(book$net_by_inst)) || !all(is.finite(book$cost_basis_by_inst))) {
+    return("book aggregates must be finite")
+  }
+  if (any(book$net_by_inst[live_n == 0L] != 0)) {
+    return("a cached net position is not derived from its live lots")
+  }
+  if (isTRUE(reduction)) {
+    net <- numeric(size)
+    basis <- numeric(size)
+    # FIFO depth iteration, vectorized across instruments.
+    for (k in seq_len(max(0L, live_n))) {
+      i <- which(live_n >= k)
+      slot <- book$offset[i] + book$head[i] + k - 1L
+      net[i] <- net[i] + book$lot_qty[slot]
+      basis[i] <- basis[i] + book$lot_qty[slot] * book$lot_price[slot]
+    }
+    if (any(net != book$net_by_inst)) {
+      return("a cached net position is not derived from its live lots")
+    }
+    if (any(basis != book$cost_basis_by_inst)) {
+      return("a cached cost basis is not derived from its live lots")
     }
   }
-  tail <- tail + 1L
-  qty[[tail]] <- as.numeric(value_qty)
-  price[[tail]] <- as.numeric(value_price)
-  list(qty = qty, price = price, head = head, tail = tail)
+  NULL
+}
+
+ledgr_lot_book_validate <- function(book, n = NULL, reduction = TRUE) {
+  problem <- ledgr_lot_book_problem(book, n, reduction)
+  if (!is.null(problem)) {
+    rlang::abort(
+      paste0("Invalid typed lot book: ", problem, "."),
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  invisible(book)
+}
+
+# Appends empty instruments at the end of the axis. Used where a book's axis
+# is a prefix of a longer one (a chunked or seeded replay meeting new IDs).
+ledgr_lot_book_extend <- function(book, n) {
+  size <- length(book$offset)
+  if (n < size) {
+    rlang::abort(
+      "A lot book axis cannot shrink.",
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  if (n == size) return(book)
+  added <- n - size
+  book$offset <- c(book$offset, rep(length(book$lot_qty), added))
+  book$capacity <- c(book$capacity, integer(added))
+  book$head <- c(book$head, rep(1L, added))
+  book$tail <- c(book$tail, integer(added))
+  book$net_by_inst <- c(book$net_by_inst, numeric(added))
+  book$cost_basis_by_inst <- c(book$cost_basis_by_inst, numeric(added))
+  book
+}
+
+# Keeps the first n axis entries. A replay book's axis starts with the run's
+# instrument IDs; any further entry must hold nothing, so truncating it
+# changes no aggregate.
+ledgr_lot_book_restrict <- function(book, n) {
+  size <- length(book$offset)
+  if (size == n) return(book)
+  extra <- seq_len(size)[seq_len(size) > n]
+  if (size < n || any(book$tail[extra] >= book$head[extra]) ||
+      any(book$net_by_inst[extra] != 0) || any(book$cost_basis_by_inst[extra] != 0)) {
+    rlang::abort(
+      "A lot book does not fit the run's instrument axis.",
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  keep <- seq_len(n)
+  slots <- sum(book$capacity[keep])
+  book$offset <- book$offset[keep]
+  book$capacity <- book$capacity[keep]
+  book$head <- book$head[keep]
+  book$tail <- book$tail[keep]
+  book$lot_qty <- book$lot_qty[seq_len(slots)]
+  book$lot_price <- book$lot_price[seq_len(slots)]
+  book$net_by_inst <- book$net_by_inst[keep]
+  book$cost_basis_by_inst <- book$cost_basis_by_inst[keep]
+  book
+}
+
+ledgr_lot_book_live_count <- function(book, pos = seq_along(book$offset)) {
+  pmax(0L, book$tail[pos] - book$head[pos] + 1L)
+}
+
+# Live lots of the axis positions `pos`, in the order of `pos` and FIFO order
+# within each, gathered by slot index.
+ledgr_lot_book_live <- function(book, pos = seq_along(book$offset)) {
+  pos <- as.integer(pos)
+  count <- ledgr_lot_book_live_count(book, pos)
+  owner <- rep.int(pos, count)
+  # The k-th live lot of instrument i sits at offset[i] + head[i] + k - 1.
+  slot <- book$offset[owner] + book$head[owner] + sequence(count) - 1L
+  list(pos = owner, slot = slot, qty = book$lot_qty[slot], price = book$lot_price[slot])
 }
 
 ledgr_lot_dust_tolerance <- function(...) {
@@ -116,9 +217,16 @@ ledgr_lot_dust_tolerance <- function(...) {
   .Machine$double.eps * max(c(1, values))
 }
 
-ledgr_position_from_lots <- function(state, instrument_id) {
-  idx <- unname(state$instrument_index[[instrument_id]])
-  as.numeric(state$net_by_inst[[idx]])
+# Row-wise form of ledgr_lot_dust_tolerance(): element k uses the k-th value
+# of each argument. On scalar arguments the two agree exactly.
+ledgr_lot_dust_tolerance_rows <- function(...) {
+  scale <- 1
+  for (value in list(...)) {
+    value <- abs(as.numeric(value))
+    value[!is.finite(value)] <- 0
+    scale <- pmax(scale, value)
+  }
+  .Machine$double.eps * scale
 }
 
 ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
@@ -136,92 +244,558 @@ ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
   c(close = close_fee, open = open_fee)
 }
 
-ledgr_lot_add_realized <- function(state, delta) {
-  y <- as.numeric(delta) - as.numeric(state$realized_comp)
-  t <- as.numeric(state$realized_pnl) + y
-  state$realized_comp <- (t - as.numeric(state$realized_pnl)) - y
-  state$realized_pnl <- t
-  state
+# One compensated (Kahan) realized-P&L step: returns the new realized value
+# and compensation. Fills and dispositions take one step each, in event
+# order; openings take none.
+ledgr_lot_add_realized <- function(realized, comp, delta) {
+  y <- delta - comp
+  t <- realized + y
+  c(t, (t - realized) - y)
 }
 
-ledgr_lot_apply_opening <- function(state, instrument_id, qty, cost_basis) {
-  if (!is.character(instrument_id) || length(instrument_id) != 1L ||
-    is.na(instrument_id) || !nzchar(instrument_id)) {
-    return(state)
+# Cash after each effect, added in event order. cumsum() accumulates in long
+# double and can differ in the last bit, so this ordered scan stays scalar.
+# It applies effects that were already computed; the lot kernel computes no
+# cash.
+ledgr_cash_scan <- function(cash, effects) {
+  cash <- as.numeric(cash)
+  out <- numeric(length(effects))
+  for (i in seq_along(effects)) {
+    cash <- cash + effects[[i]]
+    out[[i]] <- cash
   }
-  qty <- suppressWarnings(as.numeric(qty))
-  cost_basis <- suppressWarnings(as.numeric(cost_basis))
-  if (length(qty) != 1L || is.na(qty) || !is.finite(qty) || qty == 0 ||
-    length(cost_basis) != 1L || is.na(cost_basis) || !is.finite(cost_basis)) {
-    return(state)
-  }
+  out
+}
 
-  ensured <- ledgr_lot_ensure_instrument(state, instrument_id)
-  state <- ensured$state
-  idx <- ensured$index
-  appended <- ledgr_lot_append_vectors(
-    state$lot_qty[[idx]],
-    state$lot_price[[idx]],
-    as.integer(state$lot_head[[idx]]),
-    as.integer(state$lot_tail[[idx]]),
-    qty,
-    cost_basis
+# Side tokens to carrier sides: BUY +1, SELL -1, anything else NA.
+ledgr_lot_side <- function(side) {
+  c(1L, -1L)[match(toupper(as.character(side)), c("BUY", "SELL"))]
+}
+
+# V-lot-input: one row per operation, distinct axis positions per kernel call.
+# Columns are typed (I operation, pos, side; D qty, price, fee,
+# position_before, realized_model_pnl), one value per row; fee and the two
+# witnesses may be given once for all rows. Openings carry a signed nonzero
+# quantity, a finite basis of either sign and side 0; fills carry side +/-1,
+# positive quantity and price and a non-negative fee; dispositions carry
+# side +/-1, positive quantity, a non-negative price and a zero fee, with an
+# optional replay witness.
+ledgr_lot_input <- function(operation,
+                            pos,
+                            side,
+                            qty,
+                            price,
+                            fee = 0,
+                            position_before = NA_real_,
+                            realized_model_pnl = NA_real_) {
+  invalid <- function() {
+    rlang::abort(
+      "Invalid fill input for lot accounting.",
+      class = "ledgr_invalid_lot_fill"
+    )
+  }
+  m <- length(pos)
+  shared <- list(fee, position_before, realized_model_pnl)
+  if (!is.integer(operation) || length(operation) != 1L ||
+      !is.integer(pos) || !is.integer(side) || length(side) != m ||
+      !is.double(qty) || length(qty) != m ||
+      !is.double(price) || length(price) != m ||
+      !all(vapply(shared, is.double, logical(1))) ||
+      !all(lengths(shared) %in% unique(c(1L, m)))) {
+    invalid()
+  }
+  input <- list(
+    operation = rep_len(operation, m),
+    pos = pos,
+    side = side,
+    qty = qty,
+    price = price,
+    fee = rep_len(fee, m),
+    position_before = rep_len(position_before, m),
+    realized_model_pnl = rep_len(realized_model_pnl, m)
   )
-  state$lot_qty[[idx]] <- appended$qty
-  state$lot_price[[idx]] <- appended$price
-  state$lot_head[[idx]] <- appended$head
-  state$lot_tail[[idx]] <- appended$tail
-  old_basis <- as.numeric(state$cost_basis_by_inst[[idx]])
-  new_basis <- old_basis + qty * cost_basis
-  state$net_by_inst[[idx]] <- as.numeric(state$net_by_inst[[idx]]) + qty
-  state$cost_basis_by_inst[[idx]] <- new_basis
-  state$total_cost_basis <- as.numeric(state$total_cost_basis) - old_basis + new_basis
-  state
+  op <- input$operation
+  opening <- op %in% .ledgr_lot_opening
+  disposition <- op %in% .ledgr_lot_disposition
+  if (!all(op %in% c(.ledgr_lot_fill, .ledgr_lot_opening, .ledgr_lot_disposition)) ||
+      anyNA(input$pos) || any(input$pos < 1L) || anyDuplicated(input$pos) ||
+      anyNA(input$side) || any(input$side[opening] != 0L) ||
+      any(!input$side[!opening] %in% c(-1L, 1L)) ||
+      any(!is.finite(input$qty)) || any(input$qty[!opening] <= 0) ||
+      any(input$qty[opening] == 0) ||
+      any(!is.finite(input$price)) || any(input$price[op == .ledgr_lot_fill] <= 0) ||
+      any(input$price[disposition] < 0) ||
+      any(!is.finite(input$fee)) || any(input$fee < 0) ||
+      any(input$fee[!(op == .ledgr_lot_fill)] != 0)) {
+    invalid()
+  }
+  input
 }
 
-ledgr_lot_state_from_opening <- function(instrument_ids,
-                                         positions = numeric(0),
-                                         cost_basis = numeric(0),
-                                         lots = NULL) {
-  state <- ledgr_lot_state(instrument_ids)
-  if (!is.null(lots) && length(lots$instrument_id) > 0L) {
-    for (k in seq_along(lots$instrument_id)) {
-      state <- ledgr_lot_apply_opening(
-        state,
-        as.character(lots$instrument_id[[k]]),
-        as.numeric(lots$qty[[k]]),
-        as.numeric(lots$price[[k]])
+# V-applied-row: per-event facts of one kernel call, actual positions from
+# lots. Openings close and open nothing; a fill or disposition splits its
+# quantity into a closing and an opening part. `lots`, which the kernel always
+# supplies, holds each row's FIFO step count and the sign of its head lot
+# before and after the operation (0 when flat).
+#
+# The split is checked against the lots, before and after: a row closes iff
+# its head lot opposed it before, and opens iff it appended a lot, after which
+# its head lot is on its own side. The sum of the parts misses the quantity only by rounding and
+# one dust snap: the k FIFO steps add each take to close_qty and subtract it
+# from the remainder (each rounding at most eps/2 of a value no larger than
+# the quantity), and a snapped remainder is at most eps * max(1, quantity).
+# Twice that, 2 * (k + 1) * eps * max(1, quantity), is the allowance.
+ledgr_lot_applied <- function(input,
+                              position_before,
+                              position_after,
+                              close_qty,
+                              open_qty,
+                              realized_close,
+                              realized_delta,
+                              event_realized,
+                              event_cost_basis,
+                              lots = NULL) {
+  out <- list(
+    position_before = position_before,
+    position_after = position_after,
+    close_qty = close_qty,
+    open_qty = open_qty,
+    realized_close = realized_close,
+    realized_delta = realized_delta,
+    event_realized = event_realized,
+    event_cost_basis = event_cost_basis
+  )
+  m <- length(input$pos)
+  opening <- input$operation == .ledgr_lot_opening
+  cons <- !opening
+  steps <- lots$steps %||% integer(m)
+  slack <- 2 * (steps + 1) * .Machine$double.eps * pmax(1, input$qty)
+  split <- if (is.null(lots)) {
+    TRUE
+  } else {
+    (close_qty[cons] > 0) == (lots$before[cons] == -input$side[cons]) &
+      (open_qty[cons] > 0) == lots$appended[cons] &
+      (open_qty[cons] == 0 | lots$after[cons] == input$side[cons])
+  }
+  if (!all(vapply(out, is.double, logical(1))) || any(lengths(out) != m) ||
+      !all(is.finite(unlist(out, use.names = FALSE))) ||
+      any(close_qty < 0) || any(open_qty < 0) ||
+      any(close_qty[opening] != 0) || any(open_qty[opening] != 0) ||
+      any(abs(close_qty + open_qty - input$qty)[cons] > slack[cons]) || !all(split)) {
+    rlang::abort(
+      "Invalid applied lot rows.",
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  out
+}
+
+# The lot kernel: applies one block of operations whose instruments are
+# distinct. Work on different instruments is independent and vectorized;
+# FIFO consumption is sequential within an instrument (the depth loop); the
+# total-basis and realized-P&L updates run as one scalar scan in row order,
+# which is the canonical event order. Returns the new book and the applied
+# rows. The input book is not modified.
+ledgr_lot_apply <- function(book, input) {
+  pos <- input$pos
+  m <- length(pos)
+  if (any(pos > length(book$offset))) {
+    rlang::abort(
+      "A lot operation names a position outside the book axis.",
+      class = "ledgr_invalid_lot_fill"
+    )
+  }
+  op <- input$operation
+  side <- input$side
+  quantity <- input$qty
+  price <- input$price
+  fee <- input$fee
+  opening <- op == .ledgr_lot_opening
+  consuming <- !opening
+
+  q <- book$lot_qty
+  p <- book$lot_price
+  off <- book$offset
+  cap <- book$capacity
+  head <- book$head[pos]
+  tail <- book$tail[pos]
+  net <- book$net_by_inst[pos]
+  old_basis <- book$cost_basis_by_inst[pos]
+  position_before <- net
+  # The sign of each row's head lot before the operation (0 when flat).
+  head_sign <- function(h, t, o) {
+    s <- numeric(m)
+    held <- which(h <= t)
+    s[held] <- sign(q[o[pos[held]] + h[held]])
+    s
+  }
+  before <- head_sign(head, tail, off)
+
+  # Fills and dispositions first consume opposing lots from the segment head.
+  remaining <- ifelse(consuming, quantity, 0)
+  close_qty <- numeric(m)
+  realized_close <- numeric(m)
+  basis_delta <- numeric(m)
+  steps <- integer(m)
+  # A row is active while it has quantity left and its head lot opposes it
+  # (lot sign times side negative).
+  active <- which(consuming & head <= tail & q[off[pos] + head] * side < 0)
+  while (length(active) > 0L) {
+    a <- active
+    steps[a] <- steps[a] + 1L
+    slot <- off[pos[a]] + head[a]
+    old <- q[slot]
+    old_price <- p[slot]
+    buy <- side[a] > 0L
+    current <- abs(old)
+    take <- pmin(current, remaining[a])
+    realized_close[a] <- realized_close[a] +
+      ifelse(buy, old_price - price[a], price[a] - old_price) * take
+    basis_delta[a] <- ifelse(
+      buy,
+      basis_delta[a] + take * old_price,
+      basis_delta[a] - take * old_price
+    )
+    current <- current - take
+    left <- remaining[a] - take
+    close_qty[a] <- close_qty[a] + take
+    tol <- ledgr_lot_dust_tolerance_rows(quantity[a], take, current, left)
+    left[abs(left) <= tol] <- 0
+    remaining[a] <- left
+    consumed <- current <= tol
+    new_signed <- ifelse(consumed, 0, ifelse(buy, -current, current))
+    q[slot] <- ifelse(consumed, NA_real_, new_signed)
+    p[slot[consumed]] <- NA_real_
+    net[a] <- (net[a] - old) + new_signed
+    head[a] <- head[a] + consumed
+    rest <- a[remaining[a] > 0 & head[a] <= tail[a]]
+    active <- rest[which(q[off[pos[rest]] + head[rest]] * side[rest] < 0)]
+  }
+  open_qty <- remaining
+
+  # A consuming row that emptied its segment restarts it at slot 1.
+  reset <- consuming & head > tail
+  head[reset] <- 1L
+  tail[reset] <- 0L
+  live <- tail - head + 1L
+
+  # Refusals keep the scalar event order: the earliest failing row refuses,
+  # and within a row opening through an opposing lot comes before a
+  # disposition's exhaustion, which comes before its realized witness. The
+  # predicates are vectorized; only the selection is ordered.
+  realized_delta <- realized_close - fee
+  witness <- input$realized_model_pnl
+  bad_through <- integer()
+  through <- which(consuming & open_qty > 0 & live > 0L)
+  if (length(through) > 0L) {
+    front <- sign(q[off[pos[through]] + head[through]])
+    bad_through <- through[is.na(front) | front != side[through]]
+  }
+  d <- which(op == .ledgr_lot_disposition)
+  # Ordinary calls with no through failure and no disposition skip the
+  # failure selection.
+  if (length(bad_through) > 0L || length(d) > 0L) {
+    fail <- integer(m)
+    fail[bad_through] <- 1L
+    d <- d[fail[d] == 0L]
+    if (length(d) > 0L) {
+      # Replay compares the recorded realized model P&L with the canonical FIFO
+      # realization at dust tolerance (all.equal() semantics on scalars).
+      target <- realized_delta[d]
+      tol <- ledgr_lot_dust_tolerance_rows(target)
+      diff <- abs(target - witness[d])
+      relative <- is.finite(abs(target)) & abs(target) > tol
+      diff[relative] <- diff[relative] / abs(target[relative])
+      mismatch <- !is.na(witness[d]) & target != witness[d] & (is.na(diff) | diff > tol)
+      # A disposition must leave no live lot: none after consumption and none
+      # appended.
+      fail[d] <- ifelse(live[d] > 0L | open_qty[d] > 0, 2L, ifelse(mismatch, 3L, 0L))
+    }
+    first <- which(fail > 0L)
+    if (length(first) > 0L) {
+      k <- first[[1L]]
+      if (fail[[k]] == 3L) {
+        ledgr_accounting_event_error(
+          "DISPOSITION realized model PnL does not match canonical FIFO realization.",
+          "ledgr_invalid_ledger_meta"
+        )
+      }
+      rlang::abort(
+        if (fail[[k]] == 1L) {
+          "Lot accounting cannot open through an unconsumed opposing lot."
+        } else if (is.na(witness[[k]])) {
+          "Disposition left live lots after reaching zero position."
+        } else {
+          "DISPOSITION must consume the position and every live lot exactly."
+        },
+        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
       )
     }
-    return(state)
   }
-  if (is.null(positions) || length(positions) == 0L) {
-    return(state)
+
+  appending <- opening | open_qty > 0
+  # Compaction moves the live lots to the segment start: after consumption
+  # when dead slots outnumber live ones, and before an append into a full
+  # segment whose head has moved.
+  compact <- which(live > 0L & (
+    (consuming & head - 1L > live) |
+      (appending & tail >= cap[pos] & head > 1L)
+  ))
+  if (length(compact) > 0L) {
+    k <- compact
+    moved <- rep.int(k, live[k])
+    j <- sequence(live[k])
+    src <- off[pos[moved]] + head[moved] + j - 1L
+    dst <- off[pos[moved]] + j
+    q[dst] <- q[src]
+    p[dst] <- p[src]
+    # Clear the segment slots after the moved lots.
+    spare <- cap[pos[k]] - live[k]
+    cleared <- rep.int(k, spare)
+    clear <- off[pos[cleared]] + live[cleared] + sequence(spare)
+    q[clear] <- NA_real_
+    p[clear] <- NA_real_
+    head[k] <- 1L
+    tail[k] <- live[k]
   }
-  position_names <- names(positions)
-  positions <- as.numeric(positions)
-  names(positions) <- position_names %||% character(length(positions))
-  cost_basis_names <- names(cost_basis)
-  cost_basis <- as.numeric(cost_basis)
-  names(cost_basis) <- cost_basis_names %||% character(length(cost_basis))
-  for (id in names(positions)) {
-    if (!nzchar(id)) next
-    qty <- positions[[id]]
-    basis <- if (id %in% names(cost_basis)) cost_basis[[id]] else NA_real_
-    state <- ledgr_lot_apply_opening(state, id, qty, basis)
+
+  # A full segment grows to max(4, 2 x capacity); every slot moves to the
+  # same segment position under the new offsets.
+  grow <- which(appending & tail >= cap[pos])
+  if (length(grow) > 0L) {
+    new_cap <- cap
+    new_cap[pos[grow]] <- pmax(4L, 2L * cap[pos[grow]])
+    if (sum(as.numeric(new_cap)) > .Machine$integer.max) {
+      rlang::abort(
+        "Lot book capacity exceeds the integer slot range.",
+        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+      )
+    }
+    size <- length(new_cap)
+    new_off <- c(0L, cumsum(new_cap)[-size])
+    owner <- rep.int(seq_len(size), cap)
+    dst <- new_off[owner] + sequence(cap)
+    new_q <- rep(NA_real_, sum(new_cap))
+    new_p <- new_q
+    new_q[dst] <- q
+    new_p[dst] <- p
+    q <- new_q
+    p <- new_p
+    cap <- new_cap
+    off <- new_off
   }
-  state
+
+  # Appends: an opening's signed quantity, or a fill's unclosed remainder
+  # on its own side, as a new lot at the segment tail.
+  tail_before_append <- tail
+  a <- which(appending)
+  if (length(a) > 0L) {
+    signed <- ifelse(
+      opening[a],
+      quantity[a],
+      ifelse(side[a] > 0L, open_qty[a], -open_qty[a])
+    )
+    slot <- off[pos[a]] + tail[a] + 1L
+    q[slot] <- signed
+    p[slot] <- price[a]
+    tail[a] <- tail[a] + 1L
+    # An opening's basis change is its quantity times its basis; a fill adds
+    # the opened lot to its closing basis change.
+    basis_delta[a] <- ifelse(
+      opening[a],
+      signed * price[a],
+      basis_delta[a] + signed * price[a]
+    )
+    net[a] <- net[a] + signed
+  }
+
+  new_basis <- old_basis + basis_delta
+  # Fills and dispositions: a flat instrument has net exactly 0, and dust
+  # basis snaps to 0. Openings keep their arithmetic (no dust rule).
+  net[consuming & head > tail] <- 0
+  f <- which(consuming)
+  if (length(f) > 0L) {
+    tol <- ledgr_lot_dust_tolerance_rows(new_basis[f], net[f], quantity[f], price[f])
+    snap <- abs(new_basis[f]) <= tol
+    new_basis[f[snap]] <- 0
+  }
+
+  # Canonical event-order totals: one scalar scan in row order (sum() and
+  # cumsum() would use a different floating-point order). Openings take no
+  # realized-P&L step.
+  total <- book$total_cost_basis
+  realized <- book$realized_pnl
+  comp <- book$realized_comp
+  event_cost_basis <- numeric(m)
+  event_realized <- numeric(m)
+  for (k in seq_len(m)) {
+    total <- total - old_basis[[k]] + new_basis[[k]]
+    if (consuming[[k]]) {
+      step <- ledgr_lot_add_realized(realized, comp, realized_delta[[k]])
+      realized <- step[[1L]]
+      comp <- step[[2L]]
+    }
+    event_cost_basis[[k]] <- total
+    event_realized[[k]] <- realized
+  }
+
+  book$offset <- off
+  book$capacity <- cap
+  book$head[pos] <- head
+  book$tail[pos] <- tail
+  book$lot_qty <- q
+  book$lot_price <- p
+  book$net_by_inst[pos] <- net
+  book$cost_basis_by_inst[pos] <- new_basis
+  book$total_cost_basis <- total
+  book$realized_pnl <- realized
+  book$realized_comp <- comp
+  list(
+    book = book,
+    applied = ledgr_lot_applied(
+      input,
+      position_before = position_before,
+      position_after = net,
+      close_qty = close_qty,
+      open_qty = as.numeric(ifelse(opening, 0, open_qty)),
+      realized_close = realized_close,
+      realized_delta = as.numeric(ifelse(opening, 0, realized_delta)),
+      event_realized = event_realized,
+      event_cost_basis = event_cost_basis,
+      lots = list(steps = steps, before = before, after = head_sign(head, tail, off),
+        appended = tail > tail_before_append)
+    )
+  )
 }
 
-ledgr_lot_state_from_events <- function(events, instrument_ids = character()) {
+# The three operations. Each validates its lot input and calls the kernel.
+ledgr_lot_opening <- function(book, pos, qty, price) {
+  ledgr_lot_apply(
+    book,
+    ledgr_lot_input(.ledgr_lot_opening, pos, rep_len(0L, length(pos)), qty, price)
+  )
+}
+
+ledgr_lot_fill <- function(book, pos, side, qty, price, fee = 0) {
+  ledgr_lot_apply(book, ledgr_lot_input(.ledgr_lot_fill, pos, side, qty, price, fee))
+}
+
+ledgr_lot_disposition <- function(book, pos, side, qty, price,
+                                  position_before = NA_real_,
+                                  realized_model_pnl = NA_real_) {
+  ledgr_lot_apply(
+    book,
+    ledgr_lot_input(
+      .ledgr_lot_disposition, pos, side, qty, price, 0,
+      position_before = position_before,
+      realized_model_pnl = realized_model_pnl
+    )
+  )
+}
+
+# Consecutive conflict-free blocks of a row stream, as block numbers. A block
+# ends where `new_run` starts a run or where an instrument repeats within
+# its run; rows are never reordered, so repeated openings of one instrument
+# stay successive transitions in successive blocks.
+ledgr_lot_blocks <- function(pos, new_run) {
+  n <- length(pos)
+  if (n == 0L) return(integer())
+  run <- cumsum(new_run)
+  # A within-run repeat: the run number and position pair seen before.
+  repeated <- duplicated(as.numeric(run) * (max(pos) + 1) + pos)
+  cumsum(new_run | repeated)
+}
+
+# Applies the rows of one operation kind through the matching operation, in
+# consecutive conflict-free blocks. Returns the final book and the applied
+# rows in input order.
+ledgr_lot_apply_blocks <- function(book, operation, pos, side, qty, price,
+                                   fee, realized_model_pnl, new_run) {
+  block <- ledgr_lot_blocks(pos, new_run)
+  m <- length(pos)
+  applied <- list(
+    position_before = numeric(m), position_after = numeric(m),
+    close_qty = numeric(m), open_qty = numeric(m),
+    realized_close = numeric(m), realized_delta = numeric(m),
+    event_realized = numeric(m), event_cost_basis = numeric(m)
+  )
+  if (m == 0L) return(list(book = book, applied = applied))
+  starts <- which(c(TRUE, block[-1L] != block[-m]))
+  ends <- c(starts[-1L] - 1L, m)
+  for (b in seq_along(starts)) {
+    j <- seq.int(starts[[b]], ends[[b]])
+    op <- operation[[starts[[b]]]]
+    res <- if (op == .ledgr_lot_opening) {
+      ledgr_lot_opening(book, pos[j], qty[j], price[j])
+    } else if (op == .ledgr_lot_fill) {
+      ledgr_lot_fill(book, pos[j], side[j], qty[j], price[j], fee[j])
+    } else {
+      ledgr_lot_disposition(
+        book, pos[j], side[j], qty[j], price[j],
+        realized_model_pnl = realized_model_pnl[j]
+      )
+    }
+    book <- res$book
+    for (field in names(applied)) {
+      applied[[field]][j] <- res$applied[[field]]
+    }
+  }
+  list(book = book, applied = applied)
+}
+
+# Opening and carried-lot import (E boundary): a typed book on the axis
+# `instrument_ids`. Carried lots, when given, are the book; otherwise each
+# opening position with a cost basis becomes one lot. Entries without a
+# usable ID, a nonzero finite quantity or a finite basis carry no lot, as
+# before. Repeated carried lots of one instrument stay successive openings.
+ledgr_lot_book_from_opening <- function(instrument_ids,
+                                        positions = numeric(0),
+                                        cost_basis = numeric(0),
+                                        lots = NULL) {
+  instrument_ids <- as.character(instrument_ids)
+  book <- ledgr_lot_book(length(instrument_ids))
+  if (!is.null(lots) && length(lots$instrument_id) > 0L) {
+    ids <- as.character(lots$instrument_id)
+    qty <- suppressWarnings(as.numeric(lots$qty))
+    price <- suppressWarnings(as.numeric(lots$price))
+  } else {
+    if (is.null(positions) || length(positions) == 0L) return(book)
+    ids <- names(positions) %||% character(length(positions))
+    qty <- suppressWarnings(as.numeric(positions))
+    basis_ids <- names(cost_basis) %||% character(length(cost_basis))
+    price <- suppressWarnings(as.numeric(cost_basis))[match(ids, basis_ids)]
+  }
+  usable <- !is.na(ids) & nzchar(ids) & is.finite(qty) & qty != 0 & is.finite(price)
+  ids <- ids[usable]
+  pos <- match(ids, instrument_ids)
+  if (anyNA(pos)) {
+    rlang::abort(
+      "Opening lots name instruments outside the run's instrument axis.",
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  book <- ledgr_lot_apply_blocks(
+    book, rep(.ledgr_lot_opening, length(pos)), pos, integer(length(pos)),
+    qty[usable], price[usable], numeric(length(pos)), rep(NA_real_, length(pos)),
+    new_run = c(TRUE, logical(max(0L, length(pos) - 1L)))
+  )$book
+  # Construction boundary: openings alone built this book, so its net and
+  # cost basis are exactly the FIFO-order reductions of its lots.
+  ledgr_lot_book_validate(book)
+}
+
+# The book after replaying ledger events. Its axis is the prepared axis:
+# `instrument_ids` first, then any further ledger IDs.
+ledgr_lot_book_from_events <- function(events, instrument_ids = character()) {
   if (is.null(events) || nrow(events) == 0L) {
-    return(ledgr_lot_state(instrument_ids))
+    ids <- unique(as.character(instrument_ids))
+    return(ledgr_lot_book(sum(!is.na(ids) & nzchar(ids))))
   }
   prepared <- ledgr_prepare_accounting_events(events, instrument_ids)
   ledgr_replay_accounting_events(prepared)$lot_state
 }
 
-ledgr_lot_state_asof <- function(con, run_id, instrument_ids, ts_utc) {
+ledgr_lot_book_asof <- function(con, run_id, instrument_ids, ts_utc) {
   rows <- DBI::dbGetQuery(
     con,
     "
@@ -233,159 +807,7 @@ ledgr_lot_state_asof <- function(con, run_id, instrument_ids, ts_utc) {
     ",
     params = list(run_id, ts_utc)
   )
-  ledgr_lot_state_from_events(rows, instrument_ids = instrument_ids)
-}
-
-ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0,
-                                 allow_zero_price = FALSE) {
-  direction <- ledgr_lot_direction(side)
-  qty <- suppressWarnings(as.numeric(qty))
-  price <- suppressWarnings(as.numeric(price))
-  fee <- suppressWarnings(as.numeric(fee))
-  if (is.na(direction) ||
-    !is.character(instrument_id) || length(instrument_id) != 1L ||
-    is.na(instrument_id) || !nzchar(instrument_id) ||
-    length(qty) != 1L || is.na(qty) || !is.finite(qty) || qty <= 0 ||
-    length(price) != 1L || is.na(price) || !is.finite(price) || price < 0 ||
-    (price == 0 && !isTRUE(allow_zero_price)) ||
-    length(fee) != 1L || is.na(fee) || !is.finite(fee) || fee < 0) {
-    rlang::abort(
-      "Invalid fill input for lot accounting.",
-      class = "ledgr_invalid_lot_fill"
-    )
-  }
-
-  ensured <- ledgr_lot_ensure_instrument(state, instrument_id)
-  state <- ensured$state
-  idx <- ensured$index
-  lot_qty <- state$lot_qty[[idx]]
-  lot_price <- state$lot_price[[idx]]
-  lot_head <- as.integer(state$lot_head[[idx]])
-  lot_tail <- as.integer(state$lot_tail[[idx]])
-  net_pos <- as.numeric(state$net_by_inst[[idx]])
-  net_after <- net_pos
-  old_basis <- as.numeric(state$cost_basis_by_inst[[idx]])
-  basis_delta <- 0
-  close_qty <- 0
-  remaining_fill <- qty
-  realized_close <- 0
-  if (remaining_fill > 0 && lot_tail >= lot_head) {
-    if (direction > 0L) {
-      while (remaining_fill > 0 && lot_tail >= lot_head && lot_qty[[lot_head]] < 0) {
-        old_signed_qty <- as.numeric(lot_qty[[lot_head]])
-        current_qty <- abs(old_signed_qty)
-        current_price <- as.numeric(lot_price[[lot_head]])
-        take <- min(current_qty, remaining_fill)
-        realized_close <- realized_close + (current_price - price) * take
-        basis_delta <- basis_delta + take * current_price
-        current_qty <- current_qty - take
-        remaining_fill <- remaining_fill - take
-        close_qty <- close_qty + take
-        tol <- ledgr_lot_dust_tolerance(qty, take, current_qty, remaining_fill)
-        if (abs(remaining_fill) <= tol) {
-          remaining_fill <- 0
-        }
-        if (current_qty <= tol) {
-          lot_qty[[lot_head]] <- NA_real_
-          lot_price[[lot_head]] <- NA_real_
-          lot_head <- lot_head + 1L
-          new_signed_qty <- 0
-        } else {
-          lot_qty[[lot_head]] <- -current_qty
-          new_signed_qty <- -current_qty
-        }
-        net_after <- (net_after - old_signed_qty) + new_signed_qty
-      }
-    } else {
-      while (remaining_fill > 0 && lot_tail >= lot_head && lot_qty[[lot_head]] > 0) {
-        old_signed_qty <- as.numeric(lot_qty[[lot_head]])
-        current_qty <- old_signed_qty
-        current_price <- as.numeric(lot_price[[lot_head]])
-        take <- min(current_qty, remaining_fill)
-        realized_close <- realized_close + (price - current_price) * take
-        basis_delta <- basis_delta - take * current_price
-        current_qty <- current_qty - take
-        remaining_fill <- remaining_fill - take
-        close_qty <- close_qty + take
-        tol <- ledgr_lot_dust_tolerance(qty, take, current_qty, remaining_fill)
-        if (abs(remaining_fill) <= tol) {
-          remaining_fill <- 0
-        }
-        if (current_qty <= tol) {
-          lot_qty[[lot_head]] <- NA_real_
-          lot_price[[lot_head]] <- NA_real_
-          lot_head <- lot_head + 1L
-          new_signed_qty <- 0
-        } else {
-          lot_qty[[lot_head]] <- current_qty
-          new_signed_qty <- current_qty
-        }
-        net_after <- (net_after - old_signed_qty) + new_signed_qty
-      }
-    }
-  }
-
-  open_qty <- remaining_fill
-
-  if (lot_head > lot_tail) {
-    lot_head <- 1L
-    lot_tail <- 0L
-  } else {
-    compacted <- ledgr_lot_compact(lot_qty, lot_price, lot_head, lot_tail)
-    lot_qty <- compacted$qty
-    lot_price <- compacted$price
-    lot_head <- compacted$head
-    lot_tail <- compacted$tail
-  }
-
-  book_empty_before_open <- lot_head > lot_tail
-  if (open_qty > 0 && !book_empty_before_open &&
-      sign(lot_qty[[lot_head]]) != direction) {
-    rlang::abort(
-      "Lot accounting cannot open through an unconsumed opposing lot.",
-      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
-    )
-  }
-  if (open_qty > 0) {
-    signed_open <- if (direction > 0L) open_qty else -open_qty
-    appended <- ledgr_lot_append_vectors(
-      lot_qty,
-      lot_price,
-      lot_head,
-      lot_tail,
-      signed_open,
-      price
-    )
-    lot_qty <- appended$qty
-    lot_price <- appended$price
-    lot_head <- appended$head
-    lot_tail <- appended$tail
-    basis_delta <- basis_delta + signed_open * price
-    net_after <- net_after + signed_open
-  }
-
-  new_basis <- old_basis + basis_delta
-  new_net <- if (lot_head > lot_tail) 0 else net_after
-  tol <- ledgr_lot_dust_tolerance(new_basis, new_net, qty, price)
-  if (abs(new_basis) <= tol) new_basis <- 0
-  state$lot_qty[[idx]] <- lot_qty
-  state$lot_price[[idx]] <- lot_price
-  state$lot_head[[idx]] <- lot_head
-  state$lot_tail[[idx]] <- lot_tail
-  state$net_by_inst[[idx]] <- new_net
-  state$cost_basis_by_inst[[idx]] <- new_basis
-  state$total_cost_basis <- as.numeric(state$total_cost_basis) - old_basis + new_basis
-  realized_delta <- realized_close - fee
-  state <- ledgr_lot_add_realized(state, realized_delta)
-
-  list(
-    state = state,
-    close_qty = close_qty,
-    open_qty = open_qty,
-    realized_close = realized_close,
-    realized_delta = realized_delta,
-    direction = direction
-  )
+  ledgr_lot_book_from_events(rows, instrument_ids = instrument_ids)
 }
 
 ledgr_lot_meta_is_opening <- function(meta) {
@@ -402,93 +824,4 @@ ledgr_lot_parse_meta <- function(meta_json) {
     return(NULL)
   }
   tryCatch(ledgr_json_read_nested(meta_json), error = function(e) NULL)
-}
-
-ledgr_lot_apply_event <- function(state,
-                                  event_type,
-                                  instrument_id,
-                                  side = NA_character_,
-                                  qty = NA_real_,
-                                  price = NA_real_,
-                                  fee = 0,
-                                  meta = NULL) {
-  event_type <- as.character(event_type)
-  if (length(event_type) != 1L || is.na(event_type)) {
-    ledgr_accounting_event_error("Accounting event_type must be a non-missing scalar.")
-  }
-
-  if (identical(event_type, "CASHFLOW") && ledgr_lot_meta_is_opening(meta)) {
-    state <- ledgr_lot_apply_opening(
-      state,
-      instrument_id = instrument_id,
-      qty = meta$position_delta,
-      cost_basis = meta$cost_basis
-    )
-    return(list(state = state, kind = "opening"))
-  }
-
-  if (identical(event_type, "CASHFLOW")) {
-    return(list(state = state, kind = "cashflow"))
-  }
-
-  if (identical(event_type, "FILL")) {
-    out <- ledgr_lot_apply_fill(
-      state,
-      instrument_id = instrument_id,
-      side = side,
-      qty = qty,
-      price = price,
-      fee = fee
-    )
-    out$kind <- "fill"
-    return(out)
-  }
-
-  if (identical(event_type, "DISPOSITION")) {
-    before <- as.numeric(meta$position_before %||% NA_real_)
-    quantity <- as.numeric(meta$quantity %||% NA_real_)
-    mark <- as.numeric(meta$mark %||% NA_real_)
-    if (!is.finite(before) || before == 0 || !is.finite(quantity) ||
-        quantity <= 0 || !isTRUE(all.equal(abs(before), quantity, tolerance = 0)) ||
-        !is.finite(mark) || mark < 0) {
-      ledgr_accounting_event_error(
-        "DISPOSITION lot metadata is malformed.",
-        "ledgr_invalid_ledger_meta"
-      )
-    }
-    out <- ledgr_lot_apply_fill(
-      state,
-      instrument_id = instrument_id,
-      side = if (before > 0) "SELL" else "BUY",
-      qty = quantity,
-      price = mark,
-      fee = 0,
-      allow_zero_price = TRUE
-    )
-    remaining <- as.numeric(out$state$net_by_inst[[instrument_id]] %||% NA_real_)
-    live_lots <- ledgr_lot_count(out$state, instrument_id)
-    if (!identical(remaining, 0) || live_lots != 0L) {
-      rlang::abort(
-        "DISPOSITION must consume the position and every live lot exactly.",
-        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
-      )
-    }
-    if (!isTRUE(all.equal(
-      as.numeric(out$realized_delta),
-      as.numeric(meta$realized_model_pnl),
-      tolerance = ledgr_lot_dust_tolerance(out$realized_delta)
-    ))) {
-      ledgr_accounting_event_error(
-        "DISPOSITION realized model PnL does not match canonical FIFO realization.",
-        "ledgr_invalid_ledger_meta"
-      )
-    }
-    out$kind <- "disposition"
-    return(out)
-  }
-
-  ledgr_accounting_event_error(sprintf(
-    "Unsupported accounting event_type: %s.",
-    event_type
-  ))
 }

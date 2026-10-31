@@ -1,0 +1,5 @@
+"shape","op","base_metric","block_bytes"
+"deep","forward",287100928,57420192
+"wide","forward",258289664,51657936
+"deep","replay",370057216,74011448
+"wide","replay",367386624,73477328

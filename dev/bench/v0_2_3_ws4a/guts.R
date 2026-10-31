@@ -4,7 +4,7 @@
 # the log where given. Run as a script, it runs each gut and the invalid-ref
 # control; a full run writes records/gut_results.csv and records/mutations.csv.
 #
-# Usage: Rscript guts.R [--out=<scratch dir>] [--guts=<name,name>]
+# Usage: Rscript guts.R [--out=<scratch dir>] [--guts=<name,name>] [--base=<ref>]
 
 ws_ns <- function(name) get(name, envir = asNamespace("ledgr"))
 ws_gut <- new.env()
@@ -30,13 +30,13 @@ ws_skip_gut <- function(stage) {
   }
   out
 }
-ws_flip <- function(state, id) {
-  i <- match(id, state$instrument_ids)
-  live <- if (is.na(i)) integer() else seq.int(state$lot_head[[i]], length.out = max(0L, state$lot_tail[[i]] - state$lot_head[[i]] + 1L))
-  if (length(live) < 2L) return(state)
-  state$lot_qty[[i]][live] <- rev(state$lot_qty[[i]][live])
-  state$lot_price[[i]][live] <- rev(state$lot_price[[i]][live])
-  state
+# Reverses the live lots of each book position in `pos` (LIFO through FIFO).
+ws_flip <- function(book, pos) {
+  live <- ws_ns("ledgr_lot_book_live")(book, pos)
+  mirror <- live$slot[stats::ave(seq_along(live$slot), live$pos, FUN = rev)]
+  book$lot_qty[live$slot] <- book$lot_qty[mirror]
+  book$lot_price[live$slot] <- book$lot_price[mirror]
+  book
 }
 
 ws4a_guts <- list(
@@ -48,12 +48,11 @@ ws4a_guts <- list(
     for (s in setdiff(steps, ws_plain(steps))) fill$fee <- fill$fee + abs(fill$qty * fill$fill_price) * s$args$bps / 10000
     fill
   })),
-  C3_tolerance_x10 = list(case = "C3", expect = "C3/(book_|run[.])", patch = list(ledgr_lot_dust_tolerance = function(original) function(...) 10 * original(...))),
-  C4_lifo = list(case = "C4", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, ...) {
-    net <- sum(state$net_by_inst[names(state$net_by_inst) == instrument_id])
-    if (net * (if (identical(side, "BUY")) 1 else -1) >= 0) return(original(state, instrument_id, side, ...))
-    out <- original(ws_flip(state, instrument_id), instrument_id, side, ...)
-    out$state <- ws_flip(out$state, instrument_id)
+  C3_tolerance_x10 = list(case = "C3", expect = "C3/(book_|run[.])", patch = list(ledgr_lot_dust_tolerance_rows = function(original) function(...) 10 * original(...))),
+  C4_lifo = list(case = "C4", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, ...) {
+    closing <- pos[book$net_by_inst[pos] * side < 0]
+    out <- original(ws_flip(book, closing), pos, side, ...)
+    out$book <- ws_flip(out$book, closing)
     out
   })),
   C5a_reorder_carried_openings = list(case = "C5a", patch = list(ledgr_walk_forward_carried_opening = function(original) function(...) {
@@ -61,12 +60,15 @@ ws4a_guts <- list(
     if (!is.null(opening$carried$lots)) opening$carried$lots <- lapply(opening$carried$lots, rev)
     opening
   })),
-  C5b_kahan_on_openings = list(case = "C5b", patch = list(ledgr_lot_apply_opening = function(original) function(...) {
-    ws_ns("ledgr_lot_add_realized")(original(...), 0)
+  C5b_kahan_on_openings = list(case = "C5b", patch = list(ledgr_lot_opening = function(original) function(...) {
+    out <- original(...)
+    step <- ws_ns("ledgr_lot_add_realized")(out$book$realized_pnl, out$book$realized_comp, 0)
+    out$book$realized_pnl <- step[[1L]]
+    out$book$realized_comp <- step[[2L]]
+    out
   })),
-  C6_leave_one_live_lot = list(case = "C6", expect = "ledgr_lot_state_invariant.*Disposition left live lots", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, ...,
-                                                                                                             allow_zero_price = FALSE) {
-    original(state, instrument_id, side, if (allow_zero_price) qty / 2 else qty, ..., allow_zero_price = allow_zero_price)
+  C6_leave_one_live_lot = list(case = "C6", expect = "ledgr_lot_state_invariant.*Disposition left live lots", patch = list(ledgr_lot_disposition = function(original) function(book, pos, side, qty, ...) {
+    original(book, pos, side, qty / 2, ...)
   })),
   C7_plan_on_skip = list(case = "C7", patch = ws_skip_gut("plan")),
   C7_strategy_on_skip = list(case = "C7", patch = ws_skip_gut("decision")),
@@ -74,7 +76,7 @@ ws4a_guts <- list(
   C8b_suppress_exception = list(case = "C8b", patch = list(ledgr_fold_stage_commit = function(original) function(...) {
     tryCatch(original(...), ledgr_affordability_reconciliation_failed = function(e) list(continue = TRUE))
   })),
-  C9_drop_comp_in_unpack = list(case = "C9", patch = list(ledgr_compiled_spot_fifo_unpack_lots = function(original) function(...) {
+  C9_drop_comp_in_unpack = list(case = "C9", patch = list(ledgr_carrier_compiled_unpack = function(original) function(...) {
     state <- original(...)
     state$realized_comp <- 0
     state
@@ -104,11 +106,16 @@ ws4a_guts <- list(
   C13c_swallow_append = list(case = "C13c", patch = ws_swallow("write_fill_events")),
   C13c_swallow_fact = list(case = "C13c", patch = ws_swallow("record_accounting_fact")),
   C13c_swallow_flush = list(case = "C13c", patch = ws_swallow("flush_pulse_events")),
-  C14a_book_by_reference = list(case = "C14a", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, ...) {
-    out <- original(state, instrument_id, ...)
-    i <- match(instrument_id, state$instrument_ids)
-    new <- out$state$lot_qty[[i]]
-    if (length(new) > 0L && length(state$lot_qty[[i]]) == length(new)) collapse::setv(state$lot_qty[[i]], seq_along(new), new, vind1 = TRUE)
+  C14a_book_by_reference = list(case = "C14a", patch = list(ledgr_lot_fill = function(original) function(book, ...) {
+    out <- original(book, ...)
+    new <- out$book$lot_qty
+    if (length(new) > 0L && length(book$lot_qty) == length(new)) collapse::setv(book$lot_qty, seq_along(new), new, vind1 = TRUE)
+    out
+  })),
+  # Invisible to the base-shaped view: names a retained typed column by reference.
+  C14a_rename_by_reference = list(case = "C14a", expect = "retained native book", patch = list(ledgr_lot_fill = function(original) function(book, ...) {
+    out <- original(book, ...)
+    collapse::setattrib(book$net_by_inst, list(names = rep("renamed", length(book$net_by_inst))))
     out
   })),
   C14b_write_retained_view = list(case = "C14b", patch = list(ledgr_call_strategy_fn = function(original) function(fn, ctx, ...) {
@@ -168,24 +175,31 @@ ws4a_guts <- list(
     if (length(plan$accounting_events$fills) > 1L) plan$accounting_events$fills <- rev(plan$accounting_events$fills)
     original(fold_state, services, observation, plan, ...)
   })),
-  M3_drop_lot_fee = list(case = "C4", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, price, fee = 0, ...) {
-    original(state, instrument_id, side, qty, price, fee = 0, ...)
+  M3_drop_lot_fee = list(case = "C4", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, qty, price, fee = 0, ...) {
+    original(book, pos, side, qty, price, fee = 0 * fee, ...)
   })),
-  M5_positions_plus_delta = list(case = "C5a", patch = list(ledgr_lot_apply_fill = function(original) function(state, instrument_id, side, qty, ...) {
-    ws_gut$pos <- sum(state$net_by_inst[names(state$net_by_inst) == instrument_id]) + if (identical(side, "BUY")) qty else -qty
-    original(state, instrument_id, side, qty, ...)
-  }, ledgr_position_from_lots = function(original) function(state, instrument_id) {
-    pos <- ws_gut$pos %||% original(state, instrument_id)
-    ws_gut$pos <- NULL
-    pos
+  # The position read after a fill becomes the position before plus the signed quantity.
+  M5_positions_plus_delta = list(case = "C5a", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, qty, ...) {
+    out <- original(book, pos, side, qty, ...)
+    out$book$net_by_inst[pos] <- book$net_by_inst[pos] + side * qty
+    out
   })),
-  M7_drop_partial_remainder = list(case = "C4", patch = list(ledgr_lot_dust_tolerance = function(original) function(...) {
-    v <- c(...) # in-loop call (qty, take, remaining lot qty, remaining fill): a partial close drops the lot's remainder
-    if (length(v) == 4L && v[[2L]] > 0 && v[[3L]] > 0 && v[[4L]] == 0) Inf else original(...)
+  M7_drop_partial_remainder = list(case = "C4", patch = list(ledgr_lot_dust_tolerance_rows = function(original) function(...) {
+    v <- list(...) # in-loop rows (qty, take, remaining lot qty, remaining fill): a partial close drops the lot's remainder
+    tol <- original(...)
+    if (length(v) == 4L) tol[v[[2L]] > 0 & v[[3L]] > 0 & v[[4L]] == 0] <- Inf
+    tol
   })),
-  M11_uncompensated_totals = list(case = "C5b", patch = list(ledgr_lot_add_realized = function(original) function(state, delta) {
-    state$realized_pnl <- state$realized_pnl + delta
-    state
+  M11_uncompensated_totals = list(case = "C5b", patch = list(ledgr_lot_add_realized = function(original) function(realized, comp, delta) {
+    c(realized + delta, comp)
+  })),
+  # M11: the total basis as one cumsum() over the rows' basis changes instead of the ordered scalar scan.
+  M11_cumsum_total_basis = list(case = "C3", expect = "C3/book_totals", patch = list(ledgr_lot_apply = function(original) function(book, input) {
+    out <- original(book, input)
+    d <- out$book$cost_basis_by_inst[input$pos] - book$cost_basis_by_inst[input$pos]
+    out$applied$event_cost_basis <- cumsum(c(book$total_cost_basis, d))[-1L]
+    if (length(d)) out$book$total_cost_basis <- out$applied$event_cost_basis[[length(d)]]
+    out
   }))
 )
 
@@ -195,7 +209,7 @@ ws4a_mutations <- data.frame(id = paste0("M", 1:12), description = c("LIFO consu
   "skip a partial close's remainder", "wrong context_pos", "notional fee from the rounded price", "drop the notional step",
   "cumsum totals", "drop realized_comp in unpack"), gut = c("C4_lifo", "M2_reorder_pulse_fills", "M3_drop_lot_fee",
   "C11_affordability_order", "M5_positions_plus_delta", "C5b_kahan_on_openings", "M7_drop_partial_remainder",
-  "C15_wrong_context_pos", "C2_notional_from_rounded", "C1_drop_notional", "M11_uncompensated_totals", "C9_drop_comp_in_unpack"))
+  "C15_wrong_context_pos", "C2_notional_from_rounded", "C1_drop_notional", "M11_cumsum_total_basis", "C9_drop_comp_in_unpack"))
 stopifnot(ws4a_mutations$gut %in% names(ws4a_guts), !anyDuplicated(ws4a_mutations$gut))
 
 if (sys.nframe() == 0L) {
@@ -208,7 +222,8 @@ if (sys.nframe() == 0L) {
     list(log = log, status = attr(log, "status") %||% 0L, evidence = function(re) grepl(re, paste(log, collapse = "\n")))
   }
   rows <- lapply(names, function(g) {
-    r <- check(c(paste0("--gut=", g), paste0("--out=", file.path(out, g))))
+    # --base reaches check.R's product guard, so a candidate run uses --base=HEAD.
+    r <- check(c(paste0("--gut=", g), paste0("--out=", file.path(out, g)), paste0("--base=", arg("base", "953338df"))))
     ok <- r$status == 1L && r$evidence(ws4a_guts[[g]]$expect %||% "")
     cat(sprintf("%-32s %-5s %s\n", g, ws4a_guts[[g]]$case, if (ok) "FAIL (expected)" else "NOT CAUGHT"))
     first <- paste(trimws(grep("^  ", r$log, value = TRUE)[1:3]), collapse = " | ")

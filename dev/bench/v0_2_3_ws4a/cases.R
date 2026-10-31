@@ -51,11 +51,11 @@ ws_case("C3", "3164", function() {
     phase <<- "replay"
     on.exit(phase <<- "fold")
     original(...)
-  }, ledgr_lot_dust_tolerance = function(original) function(...) {
-    tol <- original(...)
-    r <- abs(c(...)[3:4])
-    kind <- if (any(r > 0 & r <= tol)) "snap" else if (any(r > tol & r <= 10 * tol)) "near" else ""
-    if (nzchar(kind)) seen[nrow(seen) + 1L, ] <<- c(phase, kind)
+  }, ledgr_lot_dust_tolerance_rows = function(original) function(...) {
+    tol <- original(...) # one evaluation per row; arguments 3:4 are the remaining lot and fill
+    r <- if (...length() >= 4L) abs(cbind(..3, ..4)) else matrix(NA_real_, 0L, 2L)
+    kind <- ifelse(rowSums(r > 0 & r <= tol) > 0, "snap", ifelse(rowSums(r > tol & r <= 10 * tol) > 0, "near", ""))
+    for (k in kind[nzchar(kind)]) seen[nrow(seen) + 1L, ] <<- c(phase, k)
     tol
   })
   out <- ws_patches(patches, ws_durable(fx, ws_exp(fx, ledgr_cost_fixed_fee(0.25)), "c3", plan))
@@ -74,12 +74,11 @@ ws_case("C4", "3164", function() {
     list(AAA = 2), list(AAA = 0))
   partial <- character()
   planned <- list()
-  hooks <- list(ledgr_lot_apply_fill = function(a, v) {
-    net <- sum(a$state$net_by_inst[names(a$state$net_by_inst) == a$instrument_id])
-    dir <- if (identical(a$side, "BUY")) 1 else -1
-    if (net * dir < 0 && a$qty < abs(net)) {
-      lots <- ledgr_lot_values(a$state, a$instrument_id)
-      partial <<- c(partial, sprintf("%s:%d:%d", a$side, length(lots$qty), length(unique(lots$price))))
+  hooks <- list(ledgr_lot_fill = function(a, v) {
+    net <- a$book$net_by_inst[a$pos]
+    for (k in which(net * a$side < 0 & a$qty < abs(net))) {
+      lots <- ledgr_lot_book_live(a$book, a$pos[[k]])
+      partial <<- c(partial, sprintf("%s:%d:%d", if (a$side[[k]] > 0) "BUY" else "SELL", length(lots$qty), length(unique(lots$price))))
     }
   }, ledgr_fold_stage_apply = function(a, v) {
     for (e in a$plan$pulse_plan$fills) planned[[length(planned) + 1L]] <<- data.frame(pulse = a$observation$pulse_idx,
@@ -123,7 +122,7 @@ ws_case("C5a", "3164", function() {
     ledger <- ws_ledger(wf$fx$db, wf$ids[[k]])
     opening <- ledger[grepl("opening_position", ledger$meta_json, fixed = TRUE), c("event_seq", "instrument_id", "qty", "price", "meta_json")]
     out[[sprintf("w%d.openings", k)]] <- ws_frame(opening, "openings", "event_seq")
-    book <- ws_book(ledgr_lot_state_from_events(ledger, c("AAA", "BBB")))
+    book <- ws_book(ledgr_lot_book_from_events(ledger, c("AAA", "BBB")), c("AAA", "BBB"))
     out <- c(out, ws_prefix(c(book, a0_store_tables(wf$fx$db, wf$ids[[k]])["equity_curve"]), sprintf("w%d", k)))
     lots <- c(lots, sum(opening$instrument_id == "AAA"), sum(book$book_lots$instrument_id == "AAA"))
   }
@@ -134,22 +133,20 @@ ws_case("C5a", "3164", function() {
 
 # C5b: successive openings on a book with nonzero realized_comp: no Kahan step.
 ws_case("C5b", "3164", function() {
-  st <- ledgr_lot_state(c("AAA", "BBB", "CCC"))
+  ids <- c("AAA", "BBB", "CCC")
+  st <- ledgr:::ledgr_lot_book(3L)
   fills <- list(list("BUY", 2.97, 997.955, 0.32), list("BUY", 0.67, 994.875, 1.605), list("SELL", 1.35, 1009.441, 0.415),
     list("BUY", 1.65, 993.435, 0.54), list("BUY", 2.43, 991.926, 0.962))
-  for (f in fills) st <- ledgr_lot_apply_fill(st, "AAA", f[[1]], f[[2]], f[[3]], fee = f[[4]])$state
+  for (f in fills) st <- ledgr:::ledgr_lot_fill(st, 1L, ledgr_lot_side(f[[1]]), f[[2]], f[[3]], fee = f[[4]])$book
   comp_before <- st$realized_comp
-  ws_need(comp_before != 0, "nonzero realized_comp before the openings", ws_book(st))
+  ws_need(comp_before != 0, "nonzero realized_comp before the openings", ws_book(st, ids))
   ops <- list(list("BBB", 2.5, -3.25), list("BBB", 1.25, 7.5), list("CCC", -1.75, 4.5), list("AAA", 0.4, 11.03))
   kahan <- ws_counter(ws4a_seams[["kahan"]])
   st <- ws_trace(kahan$hooks, {
-    for (o in ops) {
-      meta <- list(source = "opening_position", position_delta = o[[2]], cost_basis = o[[3]])
-      st <- ledgr_lot_apply_event(st, "CASHFLOW", o[[1]], meta = meta)$state
-    }
+    for (o in ops) st <- ledgr:::ledgr_lot_opening(st, match(o[[1]], ids), o[[2]], o[[3]])$book
     st
   })
-  list(tables = ws_book(st), facts = list(kahan_calls = kahan$get()[[1]], comp_before = ws_hex(comp_before),
+  list(tables = ws_book(st, ids), facts = list(kahan_calls = kahan$get()[[1]], comp_before = ws_hex(comp_before),
     comp_after = ws_hex(st$realized_comp)))
 })
 
@@ -178,7 +175,7 @@ ws_case("C6", "3164", function() {
   d <- ws_disp("c6")
   lots <- integer()
   hooks <- list(ledgr_disposition_post = function(a, v) {
-    lots <<- c(lots, vapply(a$ids, function(id) ledgr_lot_count(a$state_value$lot_state, id), integer(1)))
+    lots <<- c(lots, stats::setNames(ledgr_lot_book_live_count(a$state_value$lot_state, match(a$ids, a$instrument_ids)), a$ids))
   })
   out <- ws_trace(hooks, ws_durable(d$fx, d$exp, "c6", d$plan))
   ledger <- ws_ledger(d$fx$db, "c6")
@@ -190,7 +187,7 @@ ws_case("C6", "3164", function() {
   meta <- ledgr_lot_parse_meta(bad$meta_json[[i]])
   meta$realized_model_pnl <- meta$realized_model_pnl + 1
   bad$meta_json[[i]] <- canonical_json(meta)
-  refusal <- tryCatch(ledgr_lot_state_from_events(bad, c("AAA", "BBB", "CCC", "CLK")), error = function(e) e)
+  refusal <- tryCatch(ledgr_lot_book_from_events(bad, c("AAA", "BBB", "CCC", "CLK")), error = function(e) e)
   ws_need(inherits(refusal, "error"), "the wrong witness is refused")
   out <- c(out["run.ledger_events"], ws_replay_book(d$fx$db, "c6", c("AAA", "BBB", "CCC", "CLK")),
     list(refusal = ws_frame(data.frame(class = paste(class(refusal), collapse = "/"), message = conditionMessage(refusal)), "refusal", "class")))
@@ -276,7 +273,7 @@ ws_case("C9", "3164", function() {
   }), ws4a_seams[["compiled_batch"]])
   out <- ws_trace(hooks, ws_memory(ws_exp(fx, ledgr_cost_fixed_fee(0.37)), plan, compiled_accounting_model = "spot_fifo"))
   ws_need(sum(comps != "0x0p+0") >= 2L, "nonzero realized_comp entering two compiled batches")
-  list(tables = c(out, ws_book(last)), facts = list(comp_in = comps))
+  list(tables = c(out, ws_book(last, "AAA")), facts = list(comp_in = comps))
 })
 
 # C10: an empty decision context on days 3-4 (empty membership set) while a
@@ -355,7 +352,7 @@ ws_case("C13a", "3167", function() {
   snap <- function(fs) list(book = fs$lot_state, cash = fs$cash, positions = fs$positions, event_seq = fs$event_seq)
   inject <- function() {
     n <- 0L
-    list(ledgr_lot_apply_fill = function(original) function(...) {
+    list(ledgr_lot_fill = function(original) function(...) {
       n <<- n + 1L
       if (n == 2L) ws_fault("lot operation")
       original(...)
@@ -409,13 +406,21 @@ ws_case("C13c", "3167", function() {
 })
 
 # C14: retained hand-outs keep their values across later pulses.
-ws_keep <- function(env, name, value) if (is.null(env$print[[name]])) {
+# `view` maps the retained value to its fingerprinted form at capture and at
+# the end (C14a: the base-shaped container of a typed book).
+ws_keep <- function(env, name, value, view = identity) if (is.null(env$print[[name]])) {
   env$value[[name]] <- value
-  env$print[[name]] <- ws_fingerprint(value)
+  # The native typed value is also witnessed whole: the base-shaped view hides
+  # names and empty segments (LDG-3164 close review F5).
+  if (name %in% c("book_handout", "compiled_input", "corporate_action_view")) env$raw[[name]] <- serialize(value, NULL)
+  env$view[[name]] <- view
+  env$print[[name]] <- ws_fingerprint(view(value))
 }
 ws_retained <- function(env, n) {
+  ws_need(all(vapply(names(env$raw), function(k) identical(env$raw[[k]], serialize(env$value[[k]], NULL)), logical(1))),
+    "retained native book representation unchanged")
   tab <- data.frame(object = names(env$print), at_capture = unlist(env$print),
-    at_end = vapply(names(env$print), function(k) ws_fingerprint(env$value[[k]]), ""))
+    at_end = vapply(names(env$print), function(k) ws_fingerprint(env$view[[k]](env$value[[k]])), ""))
   ws_need(nrow(tab) == n && all(tab$at_capture == tab$at_end),
     paste0("every retained value unchanged (changed: ", paste(tab$object[tab$at_capture != tab$at_end], collapse = ","), ")"))
   list(tables = list(retained = ws_frame(tab, "retained", "object")))
@@ -424,8 +429,9 @@ ws_case("C14a", "3164", function() {
   fx <- ws_fixture("c14a", list(AAA = 100 + 0:5), avail = FALSE)
   plan <- ws_days(list(AAA = 1), list(AAA = 2), list(AAA = 3))
   keep <- new.env()
-  hooks <- list(ledgr_lot_apply_fill = function(a, v) ws_keep(keep, "book_handout", v$state))
-  hooks[[ws4a_seams[["compiled_batch"]]]] <- function(a, v) ws_keep(keep, "compiled_input", a$state)
+  hooks <- list(ledgr_lot_fill = function(a, v) ws_keep(keep, "book_handout", v$book, function(b) ws_legacy(b, "AAA")))
+  hooks[[ws4a_seams[["compiled_batch"]]]] <- function(a, v) ws_keep(keep, "compiled_input", a$state, function(s)
+    list(cash = s$cash, positions = stats::setNames(s$positions, "AAA"), lot_state = ws_legacy(s$lot_state, "AAA")))
   ws_trace(hooks, c(ws_durable(fx, ws_exp(fx), "c14a", plan), ws_memory(ws_exp(fx), plan, compiled_accounting_model = "spot_fifo")))
   ws_retained(keep, 2L)
 })
@@ -437,7 +443,10 @@ ws_case("C14b", "3165", function() {
     ws_keep(keep, "ctx_vec", a$ctx$vec)
     ws_keep(keep, "state_prev", a$ctx$state_prev)
     ws_keep(keep, "context", list(a$ctx$universe, a$ctx$members, a$ctx$.positions))
-  }, ledgr_disposition_post = function(a, v) ws_keep(keep, "corporate_action_view", a$state_value))
+  }, ledgr_disposition_post = function(a, v) ws_keep(keep, "corporate_action_view", a$state_value, function(s) {
+    s$lot_state <- ws_legacy(s$lot_state, a$instrument_ids) # typed book in its base-shaped container (LDG-3164)
+    s
+  }))
   ws_trace(hooks, ws_durable(d$fx, d$exp, "c14b", d$plan))
   ws_need(!is.null(keep$value$state_prev), "a retained state_prev")
   ws_retained(keep, 4L)

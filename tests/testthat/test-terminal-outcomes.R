@@ -675,5 +675,7 @@ testthat::test_that("[LTB-0171] a failure before the terminal append commits not
   ledgr_test_close_duckdb(opened$con, opened$drv)
   testthat::expect_equal(unname(state$positions[["AAA"]]), 2)
   testthat::expect_equal(state$cash, 1000)
-  testthat::expect_identical(ledgr:::ledgr_lot_count(state$lot_state, "AAA"), 1L)
+  # LDG-3164 (decision 10, category 2): the live-lot count of AAA (book
+  # position 1) from the typed book.
+  testthat::expect_identical(ledgr:::ledgr_lot_book_live_count(state$lot_state, 1L), 1L)
 })

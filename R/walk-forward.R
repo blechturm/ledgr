@@ -1199,8 +1199,10 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
       class = "ledgr_walk_forward_invalid_opening_state"
     )
   }
-  lot_state <- ledgr_lot_state_asof(opened$con, run_id, exp$universe, final_ts)
-  total_basis <- lot_state$cost_basis_by_inst[names(held)]
+  # The as-of book's axis starts with the universe, so a held ID's book
+  # position is its universe position.
+  book <- ledgr_lot_book_asof(opened$con, run_id, exp$universe, final_ts)
+  total_basis <- book$cost_basis_by_inst[match(names(held), exp$universe)]
   cost_basis <- as.numeric(total_basis) / as.numeric(held)
   names(cost_basis) <- names(held)
   ledgr_opening(cash = final_cash, positions = held, cost_basis = cost_basis)
@@ -1278,24 +1280,19 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
     opening$carried <- list(lots = NULL, pending = pending, frozen = frozen)
     return(opening)
   }
-  lot_state <- replay$lot_state
+  # Result boundary: the replayed book's live lots of each held ID, in
+  # universe order and FIFO order within an ID, gathered by book position.
+  book <- replay$lot_state
+  axis <- replay$prepared$instrument_ids
   ids <- universe[universe %in% names(held)]
-  lots <- lapply(ids, function(id) {
-    idx <- unname(lot_state$instrument_index[[id]])
-    keep <- seq.int(lot_state$lot_head[[idx]], length.out = max(0L, lot_state$lot_tail[[idx]] - lot_state$lot_head[[idx]] + 1L))
-    list(
-      instrument_id = rep(id, length(keep)),
-      qty = as.numeric(lot_state$lot_qty[[idx]][keep]),
-      price = as.numeric(lot_state$lot_price[[idx]][keep])
-    )
-  })
+  live <- ledgr_lot_book_live(book, match(ids, axis))
   lots <- list(
-    instrument_id = unlist(lapply(lots, `[[`, "instrument_id"), use.names = FALSE),
-    qty = unlist(lapply(lots, `[[`, "qty"), use.names = FALSE),
-    price = unlist(lapply(lots, `[[`, "price"), use.names = FALSE)
+    instrument_id = axis[live$pos],
+    qty = as.numeric(live$qty),
+    price = as.numeric(live$price)
   )
   held <- held[ids]
-  basis <- as.numeric(lot_state$cost_basis_by_inst[ids]) / as.numeric(held)
+  basis <- as.numeric(book$cost_basis_by_inst[match(ids, axis)]) / as.numeric(held)
   opening <- ledgr_opening(
     cash = replay$cash,
     positions = held,

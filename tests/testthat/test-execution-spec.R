@@ -1,15 +1,14 @@
+# LDG-3164 (decision 10, category 2): the same logical FIFO witness on typed
+# books: live lots per book position, cached aggregates and Kahan state. The
+# compiled boundary returns segments sized to the live lots, so the raw
+# container layout is not compared.
 ledgr_expect_lot_states_equivalent <- function(actual, expected) {
-  ids <- unique(c(actual$instrument_ids, expected$instrument_ids))
-  for (id in ids) {
-    testthat::expect_identical(
-      ledgr:::ledgr_lot_values(actual, id),
-      ledgr:::ledgr_lot_values(expected, id)
-    )
-  }
-  testthat::expect_identical(actual$net_by_inst[ids], expected$net_by_inst[ids])
+  live <- function(book) ledgr:::ledgr_lot_book_live(book)[c("pos", "qty", "price")]
+  testthat::expect_identical(live(actual), live(expected))
+  testthat::expect_identical(actual$net_by_inst, expected$net_by_inst)
   testthat::expect_identical(
-    actual$cost_basis_by_inst[ids],
-    expected$cost_basis_by_inst[ids]
+    actual$cost_basis_by_inst,
+    expected$cost_basis_by_inst
   )
   testthat::expect_identical(actual$total_cost_basis, expected$total_cost_basis)
   testthat::expect_identical(actual$realized_pnl, expected$realized_pnl)
@@ -183,7 +182,7 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
     state = list(
       cash = 1000,
       positions = opening_positions,
-      lot_state = ledgr:::ledgr_lot_state_from_opening(
+      lot_state = ledgr:::ledgr_lot_book_from_opening(
         instrument_ids = instrument_ids,
         positions = opening_positions,
         cost_basis = opening_cost_basis
@@ -312,7 +311,7 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
     state = list(
       cash = 1000,
       positions = opening_positions,
-      lot_state = ledgr:::ledgr_lot_state_from_opening(
+      lot_state = ledgr:::ledgr_lot_book_from_opening(
         instrument_ids = instrument_ids,
         positions = opening_positions,
         cost_basis = opening_cost_basis
@@ -630,14 +629,14 @@ testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold
   side <- c(rep("SELL", 4), rep("BUY", 2), "SELL")
   qty <- c(2.117, 0.129, 0.520, 2.254, 4.151, 1.016, 0.500)
   price <- c(54.45, 28.01, 29.28, 47.48, 40.96, 16.13, 20)
-  r_fractional <- ledgr:::ledgr_lot_state("AAA")
+  r_fractional <- ledgr:::ledgr_lot_book(1L)
   r_realized <- numeric(length(qty))
   r_basis <- numeric(length(qty))
   for (i in seq_along(qty)) {
-    applied <- ledgr:::ledgr_lot_apply_fill(
-      r_fractional, "AAA", side[[i]], qty[[i]], price[[i]], 0
+    applied <- ledgr:::ledgr_lot_fill(
+      r_fractional, 1L, ledgr:::ledgr_lot_side(side[[i]]), qty[[i]], price[[i]], 0
     )
-    r_fractional <- applied$state
+    r_fractional <- applied$book
     r_realized[[i]] <- r_fractional$realized_pnl
     r_basis[[i]] <- r_fractional$total_cost_basis
   }
@@ -664,7 +663,7 @@ testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold
   )
   testthat::expect_identical(
     compiled_fractional$lot_qty,
-    ledgr:::ledgr_lot_values(r_fractional, "AAA")$qty
+    ledgr:::ledgr_lot_book_live(r_fractional, 1L)$qty
   )
   testthat::expect_identical(compiled_fractional$event_realized, r_realized)
   testthat::expect_identical(compiled_fractional$event_cost_basis, r_basis)
@@ -682,17 +681,19 @@ testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold
   for (dust_case in dust_cases) {
     dust_qty <- dust_case$lot_qty
     dust_basis <- sum(dust_qty * dust_price)
-    r_dust <- ledgr:::ledgr_lot_state("AAA")
-    r_dust$lot_qty[[1L]] <- dust_qty
-    r_dust$lot_price[[1L]] <- dust_price
-    r_dust$lot_head[[1L]] <- 1L
-    r_dust$lot_tail[[1L]] <- length(dust_qty)
+    # The dust seed book, built typed: one segment holding the four lots.
+    r_dust <- ledgr:::ledgr_lot_book(1L)
+    r_dust$capacity[[1L]] <- length(dust_qty)
+    r_dust$lot_qty <- dust_qty
+    r_dust$lot_price <- dust_price
+    r_dust$head[[1L]] <- 1L
+    r_dust$tail[[1L]] <- length(dust_qty)
     r_dust$net_by_inst[[1L]] <- sum(dust_qty)
     r_dust$cost_basis_by_inst[[1L]] <- dust_basis
     r_dust$total_cost_basis <- dust_basis
-    r_dust <- ledgr:::ledgr_lot_apply_fill(
-      r_dust, "AAA", dust_case$side, 6.136, 69.29, 0
-    )$state
+    r_dust <- ledgr:::ledgr_lot_fill(
+      r_dust, 1L, ledgr:::ledgr_lot_side(dust_case$side), 6.136, 69.29, 0
+    )$book
     compiled_dust <- ledgr:::ledgr_cpp_spot_fifo_batch(
       paste0("fractional-dust-scale-", tolower(dust_case$side)),
       1L,
@@ -714,7 +715,7 @@ testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold
       0,
       0
     )
-    r_dust_lots <- ledgr:::ledgr_lot_values(r_dust, "AAA")
+    r_dust_lots <- ledgr:::ledgr_lot_book_live(r_dust, 1L)
     testthat::expect_equal(
       compiled_dust$lot_qty,
       r_dust_lots$qty,

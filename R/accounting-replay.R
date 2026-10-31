@@ -39,7 +39,9 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
       instrument_id = character(), instrument_index = integer(), side = character(),
       qty = numeric(), price = numeric(), fee = numeric(), meta = list(),
       cash_delta = numeric(), position_delta = numeric(), event_seq = integer(),
-      operation = integer(), instrument_ids = ids
+      operation = integer(), lot_side = integer(), lot_qty = numeric(),
+      lot_price = numeric(), position_before = numeric(),
+      realized_model_pnl = numeric(), instrument_ids = ids
     ), class = "ledgr_prepared_accounting_events"))
   }
 
@@ -143,6 +145,16 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
   }
 
   operation <- integer(n)
+  # Typed lot inputs projected from the prepared rows (Synthesis 3.4): a FILL
+  # carries its own side, quantity and price; an opening its signed
+  # position_delta and cost basis; a DISPOSITION its quantity, mark, the
+  # side that closes position_before, and its realized-P&L witness.
+  lot_side <- ledgr_lot_side(side)
+  lot_side[is.na(lot_side)] <- 0L
+  lot_qty <- qty
+  lot_price <- price
+  position_before <- rep(NA_real_, n)
+  realized_model_pnl <- rep(NA_real_, n)
   for (i in seq_len(n)) {
     type <- event_type[[i]]
     if (identical(type, "FILL")) {
@@ -176,8 +188,12 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
           )
         }
         operation[[i]] <- 3L
+        lot_side[[i]] <- 0L
+        lot_qty[[i]] <- as.numeric(meta[[i]]$position_delta)
+        lot_price[[i]] <- as.numeric(meta[[i]]$cost_basis)
       } else {
         operation[[i]] <- 2L
+        lot_side[[i]] <- 0L
       }
     } else if (identical(type, "DISPOSITION")) {
       forbidden <- intersect(
@@ -233,6 +249,11 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
         )
       }
       operation[[i]] <- 4L
+      position_before[[i]] <- as.numeric(meta[[i]]$position_before)
+      lot_side[[i]] <- -as.integer(sign(position_before[[i]]))
+      lot_qty[[i]] <- as.numeric(meta[[i]]$quantity)
+      lot_price[[i]] <- as.numeric(meta[[i]]$mark)
+      realized_model_pnl[[i]] <- as.numeric(meta[[i]]$realized_model_pnl)
     } else {
       ledgr_accounting_event_error(sprintf(
         "Unsupported accounting event_type: %s.",
@@ -264,10 +285,22 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
     position_delta = position_delta,
     event_seq = event_seq,
     operation = operation,
+    lot_side = lot_side,
+    lot_qty = lot_qty,
+    lot_price = lot_price,
+    position_before = position_before,
+    realized_model_pnl = realized_model_pnl,
     instrument_ids = ids
   ), class = "ledgr_prepared_accounting_events")
 }
 
+# Replays prepared events through the typed lot operations. Lot rows (fills,
+# nonzero openings and dispositions) are applied in consecutive
+# conflict-free blocks: one block per run of rows with one operation and one
+# timestamp, split where an instrument repeats (decision 6). Cash is a
+# separate event-order scan of the published effects, each added once.
+# Plain cashflows and zero openings move no lot; their position and
+# aggregate facts are the book's values at their place in the stream.
 ledgr_replay_accounting_events <- function(prepared,
                                            initial_cash = 0,
                                            initial_positions = NULL,
@@ -276,60 +309,105 @@ ledgr_replay_accounting_events <- function(prepared,
     rlang::abort("`prepared` must be prepared accounting events.", class = "ledgr_invalid_args")
   }
   ids <- prepared$instrument_ids
-  if (is.null(lot_state)) lot_state <- ledgr_lot_state(ids)
+  book <- if (is.null(lot_state)) {
+    ledgr_lot_book(length(ids))
+  } else {
+    ledgr_lot_book_extend(lot_state, length(ids))
+  }
+  start_book <- book
   positions <- stats::setNames(rep(0, length(ids)), ids)
   if (!is.null(initial_positions) && length(initial_positions) > 0L) {
     matched <- intersect(names(initial_positions), ids)
     positions[matched] <- as.numeric(initial_positions[matched])
   }
-  cash <- as.numeric(initial_cash)
   n <- length(prepared$event_seq)
-  cash_after <- numeric(n)
-  position_after <- numeric(n)
-  event_realized <- numeric(n)
-  event_cost_basis <- numeric(n)
-  close_qty <- numeric(n)
-  open_qty <- numeric(n)
-  realized_close <- numeric(n)
-  realized_delta <- numeric(n)
+  cash_after <- ledgr_cash_scan(initial_cash, prepared$cash_delta)
+  cash <- if (n > 0L) cash_after[[n]] else as.numeric(initial_cash)
 
-  for (i in seq_len(n)) {
-    cash <- cash + prepared$cash_delta[[i]]
-    idx <- prepared$instrument_index[[i]]
-    result <- ledgr_lot_apply_event(
-      lot_state,
-      event_type = prepared$event_type[[i]],
-      instrument_id = prepared$instrument_id[[i]],
-      side = prepared$side[[i]],
-      qty = prepared$qty[[i]],
-      price = prepared$price[[i]],
-      fee = prepared$fee[[i]],
-      meta = prepared$meta[[i]]
+  op <- prepared$operation
+  idx <- prepared$instrument_index
+  lot_row <- op %in% c(.ledgr_lot_fill, .ledgr_lot_disposition) |
+    (op == .ledgr_lot_opening & prepared$lot_qty != 0)
+  rows <- which(lot_row)
+  disposition <- rows[op[rows] == .ledgr_lot_disposition]
+  malformed <- integer()
+  if (length(disposition) > 0L) {
+    before <- prepared$position_before[disposition]
+    quantity <- prepared$lot_qty[disposition]
+    mark <- prepared$lot_price[disposition]
+    malformed <- disposition[!is.finite(before) | before == 0 | !is.finite(quantity) |
+      quantity <= 0 | abs(before) != quantity | !is.finite(mark) | mark < 0]
+  }
+  # Scalar event order: the lot rows before the first malformed disposition
+  # are applied first and may refuse earlier; otherwise it refuses after them.
+  if (length(malformed) > 0L) rows <- rows[rows < malformed[[1L]]]
+  k <- length(rows)
+  ts <- as.numeric(prepared$ts_utc)[rows]
+  # A run of lot rows continues while rows are adjacent and share their
+  # operation and timestamp.
+  new_run <- c(TRUE, rows[-1L] != rows[-k] + 1L |
+    op[rows][-1L] != op[rows][-k] | ts[-1L] != ts[-k])[seq_len(k)]
+  applied <- ledgr_lot_apply_blocks(
+    book,
+    operation = op[rows],
+    pos = idx[rows],
+    side = prepared$lot_side[rows],
+    qty = prepared$lot_qty[rows],
+    price = prepared$lot_price[rows],
+    fee = ifelse(op[rows] == .ledgr_lot_fill, prepared$fee[rows], 0),
+    realized_model_pnl = prepared$realized_model_pnl[rows],
+    new_run = new_run
+  )
+  if (length(malformed) > 0L) {
+    ledgr_accounting_event_error(
+      "DISPOSITION lot metadata is malformed.",
+      "ledgr_invalid_ledger_meta"
     )
-    lot_state <- result$state
-    if (!is.na(idx)) {
-      positions[[idx]] <- ledgr_position_from_lots(
-        lot_state,
-        prepared$instrument_id[[i]]
-      )
-      position_after[[i]] <- positions[[idx]]
-    } else {
-      position_after[[i]] <- NA_real_
-    }
-    if (prepared$operation[[i]] %in% c(1L, 4L)) {
-      close_qty[[i]] <- result$close_qty
-      open_qty[[i]] <- result$open_qty
-      realized_close[[i]] <- result$realized_close
-      realized_delta[[i]] <- result$realized_delta
-    }
-    cash_after[[i]] <- cash
-    event_realized[[i]] <- lot_state$realized_pnl
-    event_cost_basis[[i]] <- lot_state$total_cost_basis
+  }
+  book <- applied$book
+  applied <- applied$applied
+
+  scatter <- function(values) {
+    out <- numeric(n)
+    out[rows] <- values
+    out
+  }
+  close_qty <- scatter(applied$close_qty)
+  open_qty <- scatter(applied$open_qty)
+  realized_close <- scatter(applied$realized_close)
+  realized_delta <- scatter(applied$realized_delta)
+
+  # Aggregates after each event: a lot row's own values, otherwise those of
+  # the latest earlier lot row (or the starting book).
+  latest <- cummax(ifelse(lot_row, seq_len(n), 0L))
+  event_realized <- rep(start_book$realized_pnl, n)
+  event_cost_basis <- rep(start_book$total_cost_basis, n)
+  event_realized[latest > 0L] <- scatter(applied$event_realized)[latest[latest > 0L]]
+  event_cost_basis[latest > 0L] <- scatter(applied$event_cost_basis)[latest[latest > 0L]]
+
+  # Position after each event with an instrument: a lot row's lot-derived
+  # net, otherwise the net after that instrument's latest earlier lot row
+  # (or the starting book's net). Rows are ordered by (instrument, event)
+  # so a running maximum finds the latest earlier lot row of the same
+  # instrument.
+  position_after <- rep(NA_real_, n)
+  has <- which(!is.na(idx))
+  if (length(has) > 0L) {
+    after <- scatter(applied$position_after)
+    ord <- has[order(idx[has], has, method = "radix")]
+    seen <- cummax(ifelse(lot_row[ord], seq_along(ord), 0L))
+    same <- seen > 0L
+    same[same] <- idx[ord[seen[same]]] == idx[ord[same]]
+    value <- start_book$net_by_inst[idx[ord]]
+    value[same] <- after[ord[seen[same]]]
+    position_after[ord] <- value
+    last <- has[!duplicated(idx[has], fromLast = TRUE)]
+    positions[idx[last]] <- position_after[last]
   }
 
   list(
     prepared = prepared,
-    lot_state = lot_state,
+    lot_state = book,
     cash = cash,
     positions = positions,
     cash_after = cash_after,

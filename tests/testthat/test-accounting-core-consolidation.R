@@ -28,66 +28,74 @@ ledgr_accounting_test_events <- function() {
 }
 
 # ledgr-test-profile: review
+# LDG-3164 (decision 10, category 2): the same FIFO witnesses on the typed
+# book. AAA is book position 1; live lots and aggregates are read from the
+# book instead of the removed named-list container.
+ledgr_test_book_lots <- function(book, pos = 1L) {
+  live <- ledgr:::ledgr_lot_book_live(book, pos)
+  list(qty = live$qty, price = live$price)
+}
+
 testthat::test_that("[LTB-0019] flat lot carrier preserves independent FIFO arithmetic", {
-  state <- ledgr:::ledgr_lot_state("AAA")
-  state <- ledgr:::ledgr_lot_apply_opening(state, "AAA", 10, 100)
-  first <- ledgr:::ledgr_lot_apply_fill(state, "AAA", "SELL", 15, 120, 5)
-  state <- first$state
-  testthat::expect_equal(first$realized_close, 200)
+  state <- ledgr:::ledgr_lot_book(1L)
+  state <- ledgr:::ledgr_lot_opening(state, 1L, 10, 100)$book
+  first <- ledgr:::ledgr_lot_fill(state, 1L, -1L, 15, 120, 5)
+  state <- first$book
+  testthat::expect_equal(first$applied$realized_close, 200)
   testthat::expect_equal(state$realized_pnl, 195)
-  testthat::expect_equal(state$net_by_inst[["AAA"]], -5)
+  testthat::expect_equal(state$net_by_inst[[1L]], -5)
   testthat::expect_equal(state$total_cost_basis, -600)
   testthat::expect_equal(
-    ledgr:::ledgr_lot_values(state, "AAA"),
+    ledgr_test_book_lots(state),
     list(qty = -5, price = 120)
   )
 
-  second <- ledgr:::ledgr_lot_apply_fill(state, "AAA", "BUY", 2, 110, 1)
-  state <- second$state
-  testthat::expect_equal(second$realized_close, 20)
+  second <- ledgr:::ledgr_lot_fill(state, 1L, 1L, 2, 110, 1)
+  state <- second$book
+  testthat::expect_equal(second$applied$realized_close, 20)
   testthat::expect_equal(state$realized_pnl, 214)
-  testthat::expect_equal(state$net_by_inst[["AAA"]], -3)
+  testthat::expect_equal(state$net_by_inst[[1L]], -3)
   testthat::expect_equal(state$total_cost_basis, -360)
 
-  state <- ledgr:::ledgr_lot_apply_fill(state, "AAA", "BUY", 3, 130, 0)$state
+  state <- ledgr:::ledgr_lot_fill(state, 1L, 1L, 3, 130, 0)$book
   testthat::expect_equal(state$realized_pnl, 184)
   testthat::expect_equal(state$total_cost_basis, 0)
-  testthat::expect_equal(state$net_by_inst[["AAA"]], 0)
-  testthat::expect_identical(ledgr:::ledgr_lot_count(state, "AAA"), 0L)
+  testthat::expect_equal(state$net_by_inst[[1L]], 0)
+  testthat::expect_identical(ledgr:::ledgr_lot_book_live_count(state, 1L), 0L)
 
-  deep <- ledgr:::ledgr_lot_state("AAA")
+  deep <- ledgr:::ledgr_lot_book(1L)
   buy_prices <- seq_len(512) + 100
   for (price in buy_prices) {
-    deep <- ledgr:::ledgr_lot_apply_fill(deep, "AAA", "BUY", 1, price, 0)$state
+    deep <- ledgr:::ledgr_lot_fill(deep, 1L, 1L, 1, price, 0)$book
   }
   for (i in seq_along(buy_prices)) {
-    deep <- ledgr:::ledgr_lot_apply_fill(deep, "AAA", "SELL", 1, 1000, 0)$state
+    deep <- ledgr:::ledgr_lot_fill(deep, 1L, -1L, 1, 1000, 0)$book
   }
   testthat::expect_equal(deep$realized_pnl, sum(1000 - buy_prices))
   testthat::expect_equal(deep$total_cost_basis, 0)
-  testthat::expect_identical(ledgr:::ledgr_lot_count(deep, "AAA"), 0L)
+  testthat::expect_identical(ledgr:::ledgr_lot_book_live_count(deep, 1L), 0L)
   testthat::expect_false(any(c("cash", "positions") %in% names(deep)))
 
   # Fractional multi-lot reversal: the lot segment, rather than a separately
   # accumulated scalar, is authoritative for how much of a fill closes.
-  fractional <- ledgr:::ledgr_lot_state("AAA")
+  fractional <- ledgr:::ledgr_lot_book(1L)
   fractional_side <- c(rep("SELL", 4), rep("BUY", 2), "SELL")
   fractional_qty <- c(2.117, 0.129, 0.520, 2.254, 4.151, 1.016, 0.500)
   fractional_price <- c(54.45, 28.01, 29.28, 47.48, 40.96, 16.13, 20)
   for (i in seq_along(fractional_qty)) {
-    fractional <- ledgr:::ledgr_lot_apply_fill(
+    fractional <- ledgr:::ledgr_lot_fill(
       fractional,
-      "AAA",
-      fractional_side[[i]],
+      1L,
+      ledgr:::ledgr_lot_side(fractional_side[[i]]),
       fractional_qty[[i]],
       fractional_price[[i]],
       0
-    )$state
-    live <- ledgr:::ledgr_lot_values(fractional, "AAA")$qty
+    )$book
+    live <- ledgr_test_book_lots(fractional)$qty
     testthat::expect_lte(
-      abs(fractional$net_by_inst[["AAA"]] - sum(live)),
+      abs(fractional$net_by_inst[[1L]] - sum(live)),
       4 * ledgr:::ledgr_lot_dust_tolerance(
-        fractional$net_by_inst[["AAA"]], live
+        fractional$net_by_inst[[1L]], live
       )
     )
     testthat::expect_lte(length(unique(sign(live))), 1L)
@@ -95,7 +103,7 @@ testthat::test_that("[LTB-0019] flat lot carrier preserves independent FIFO arit
   testthat::expect_equal(fractional$realized_pnl, 57.65642, tolerance = 1e-12)
   testthat::expect_equal(fractional$total_cost_basis, -7.06, tolerance = 1e-12)
   testthat::expect_equal(
-    ledgr:::ledgr_lot_values(fractional, "AAA"),
+    ledgr_test_book_lots(fractional),
     list(qty = -0.353, price = 20),
     tolerance = 1e-12
   )
@@ -212,10 +220,13 @@ testthat::test_that("[LTB-0022] depth scaling detector rejects a write-path resc
   depths <- c(25L, 100L, 400L, 800L)
   noise_allowance <- 0.30
   calls_per_depth <- 1500L
+  # LDG-3164 (decision 10, category 5): the kernel and its rescan mutant are
+  # rebuilt on the typed book; the measured object moved, the thresholds
+  # did not.
   measure <- function(kernel) {
     vapply(depths, function(depth) {
-      seed <- ledgr:::ledgr_lot_state("AAA")
-      for (i in seq_len(depth)) seed <- production(seed, "BUY", i)$state
+      seed <- ledgr:::ledgr_lot_book(1L)
+      for (i in seq_len(depth)) seed <- production(seed, "BUY", i)$book
       elapsed <- replicate(3L, {
         unname(system.time({
           for (i in seq_len(calls_per_depth)) kernel(seed, "SELL", i)
@@ -225,15 +236,15 @@ testthat::test_that("[LTB-0022] depth scaling detector rejects a write-path resc
     }, numeric(1))
   }
   production <- function(state, side, i) {
-    ledgr:::ledgr_lot_apply_fill(
-      state, "AAA", side, 1,
+    ledgr:::ledgr_lot_fill(
+      state, 1L, ledgr:::ledgr_lot_side(side), 1,
       if (identical(side, "BUY")) 100 + i / 1000 else 200 + i / 1000,
       0
     )
   }
   mutated <- function(state, side, i) {
     out <- production(state, side, i)
-    values <- ledgr:::ledgr_lot_values(out$state, "AAA")
+    values <- ledgr_test_book_lots(out$book)
     attr(out, "mutated_scan") <- sum(vapply(
       seq_along(values$qty),
       function(j) values$qty[[j]] * values$price[[j]],

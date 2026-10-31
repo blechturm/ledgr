@@ -233,19 +233,62 @@ ledgr_fold_pulse_plan_fill_intents <- function(accounting_events) {
   lapply(accounting_events$fills, function(entry) entry$fill)
 }
 
-ledgr_fold_state_value <- function(fold_state) {
+# E import boundary (Synthesis 3.1): opening, carried or resumed state into
+# the fold's typed state. Named or run-aligned positions become the unnamed
+# run-axis vector; the lot book must be a typed book on the run axis (a
+# replayed book may extend the axis with entries that hold nothing). NULL
+# means an empty book.
+ledgr_carrier_import_state <- function(state, instrument_ids) {
+  n <- length(instrument_ids)
+  book <- state$lot_state %||% ledgr_lot_book(n)
+  problem <- ledgr_lot_book_problem(book, reduction = FALSE)
+  if (!is.null(problem)) {
+    rlang::abort(
+      paste0("Invalid typed lot book at fold entry: ", problem, "."),
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  book <- ledgr_lot_book_restrict(book, n)
+  list(
+    cash = state$cash,
+    positions = as.numeric(ledgr_fold_positions_to_vec(state$positions, instrument_ids)),
+    lot_state = book
+  )
+}
+
+# Transitional settlement boundary (corporate actions and dispositions; the
+# remover is WS8): that code reads positions by instrument ID, so the
+# adapter names them on the way out and installs them back by position.
+ledgr_carrier_settlement_state <- function(fold_state, instrument_ids) {
   list(
     cash = fold_state$cash,
-    positions = fold_state$positions,
+    positions = stats::setNames(fold_state$positions, instrument_ids),
     lot_state = fold_state$lot_state
   )
 }
 
-ledgr_fold_state_install_value <- function(fold_state, value) {
+ledgr_carrier_settlement_install <- function(fold_state, value) {
+  positions <- value$positions
+  if (!is.double(positions) || length(positions) != length(fold_state$positions)) {
+    rlang::abort(
+      "Settlement returned positions that are not on the run axis.",
+      class = "ledgr_invalid_fold_execution"
+    )
+  }
   fold_state$cash <- value$cash
-  fold_state$positions <- value$positions
+  fold_state$positions <- as.numeric(positions)
   fold_state$lot_state <- value$lot_state
   invisible(NULL)
+}
+
+# Result boundary: the fold's returned state names positions by instrument
+# ID; the typed book is handed out and never written again.
+ledgr_carrier_result_state <- function(fold_state, instrument_ids) {
+  list(
+    cash = fold_state$cash,
+    positions = stats::setNames(fold_state$positions, instrument_ids),
+    lot_state = fold_state$lot_state
+  )
 }
 
 ledgr_fold_flush_pulse_block <- function(
@@ -359,10 +402,10 @@ ledgr_fold_stage_observe_settle <- function(
       run_id = services$run_id,
       event_seq = fold_state$event_seq,
       output_handler = services$output_handler,
-      state_value = ledgr_fold_state_value(fold_state),
+      state_value = ledgr_carrier_settlement_state(fold_state, services$instrument_ids),
       marks = marks
     )
-    ledgr_fold_state_install_value(fold_state, posted$state)
+    ledgr_carrier_settlement_install(fold_state, posted$state)
     fold_state$event_seq <- posted$next_event_seq
     refused <- posted$stopped %||%
       services$corporate_action_plan$check_quantity_effects(pulse_idx)
@@ -393,10 +436,10 @@ ledgr_fold_stage_observe_settle <- function(
         run_id = services$run_id,
         event_seq = fold_state$event_seq,
         output_handler = services$output_handler,
-        state_value = ledgr_fold_state_value(fold_state),
+        state_value = ledgr_carrier_settlement_state(fold_state, services$instrument_ids),
         valuation = decision$valuation
       )
-      ledgr_fold_state_install_value(fold_state, disposed$state)
+      ledgr_carrier_settlement_install(fold_state, disposed$state)
       fold_state$event_seq <- disposed$next_event_seq
       if (!is.null(disposed$stopped)) {
         return(stop_valuation(
@@ -480,11 +523,11 @@ ledgr_fold_stage_observe_settle <- function(
         run_id = services$run_id,
         event_seq = fold_state$event_seq,
         output_handler = services$output_handler,
-        state_value = ledgr_fold_state_value(fold_state),
+        state_value = ledgr_carrier_settlement_state(fold_state, services$instrument_ids),
         instrument_ids = services$instrument_ids,
         exposure_mark = resolved$reference
       )
-      ledgr_fold_state_install_value(fold_state, posted$state)
+      ledgr_carrier_settlement_install(fold_state, posted$state)
       fold_state$event_seq <- posted$next_event_seq
       add_segment(list(
         n = length(inactive_ids), instrument_id = inactive_ids, stage = "valuation",
@@ -783,7 +826,7 @@ ledgr_fold_stage_decide <- function(
       bars = bars_current,
       features = features_current,
       features_wide = features_wide_current,
-      positions = fold_state$positions,
+      positions = positions_snapshot,
       universe = services$instrument_ids,
       pulse_idx = pulse_idx,
       active_alias_map = services$active_alias_map,
@@ -1109,7 +1152,7 @@ ledgr_fold_stage_plan <- function(
     )
     ledgr_fold_apply_net_feasibility_noop(
       plan,
-      ledgr_fold_state_value(fold_state)
+      ledgr_carrier_settlement_state(fold_state, services$instrument_ids)
     )
   }
   accounting_events <- ledgr_fold_pulse_plan_accounting_events(
@@ -1317,14 +1360,15 @@ ledgr_fold_stage_apply <- function(
       batch <- ledgr_run_compiled_spot_fifo_batch(
         run_id = services$run_id,
         fills = compiled_fills,
-        state = ledgr_fold_state_value(fold_state),
+        state = list(
+          cash = fold_state$cash,
+          positions = fold_state$positions,
+          lot_state = fold_state$lot_state
+        ),
         instrument_ids = services$instrument_ids,
         event_seq_start = fold_state$event_seq
       )
-      positions <- stats::setNames(
-        as.numeric(batch$positions),
-        services$instrument_ids
-      )
+      positions <- as.numeric(batch$positions)
       cash <- batch$cash
       fold_state$lot_state <- batch$lot_state
       fold_state$event_seq <- batch$next_event_seq
@@ -1342,19 +1386,19 @@ ledgr_fold_stage_apply <- function(
     for (entry in accounting_events$fills) {
       if (sample_telemetry) sample_start <- ledgr_time_now()
       fill <- entry$fill
-      instrument_id <- entry$instrument_id
       inst_idx <- entry$inst_idx
-      cur_qty <- entry$current_qty
 
-      lot_res <- ledgr_lot_apply_fill(
+      # One typed fill operation per fill until LDG-3167 batches the pulse;
+      # the instrument is its run-axis position.
+      lot_res <- ledgr_lot_fill(
         fold_state$lot_state,
-        instrument_id = instrument_id,
-        side = fill$side,
+        pos = inst_idx,
+        side = ledgr_lot_side(fill$side),
         qty = fill$qty,
         price = fill$fill_price,
         fee = fill$fee
       )
-      fold_state$lot_state <- lot_res$state
+      fold_state$lot_state <- lot_res$book
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
         t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
@@ -1370,8 +1414,7 @@ ledgr_fold_stage_apply <- function(
       if (is.function(output_handler$record_accounting_fact)) {
         output_handler$record_accounting_fact(
           write_res = write_res,
-          lot_res = lot_res,
-          lot_state = fold_state$lot_state
+          applied = lot_res$applied
         )
       }
       if (sample_telemetry) {
@@ -1386,10 +1429,8 @@ ledgr_fold_stage_apply <- function(
       } else {
         fill$qty * fill$fill_price - fill$fee
       }
-      positions[[inst_idx]] <- ledgr_position_from_lots(
-        fold_state$lot_state,
-        instrument_id
-      )
+      # Lots alone determine the position.
+      positions[[inst_idx]] <- lot_res$book$net_by_inst[[inst_idx]]
       cash <- cash + cash_delta
       if (sample_telemetry) {
         t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
@@ -1589,12 +1630,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   max_pulses <- execution$max_pulses
   checkpoint_every <- execution$checkpoint_every
   telemetry_stride <- execution$telemetry_stride
-  state <- execution$state
-  state$positions <- ledgr_fold_positions_to_vec(state$positions, instrument_ids)
-  if (!is.list(state$lot_state)) {
-    state$lot_state <- ledgr_lot_state(instrument_ids)
-  }
-  state$positions <- stats::setNames(state$positions, instrument_ids)
+  state <- ledgr_carrier_import_state(execution$state, instrument_ids)
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
   history_substrate <- execution$history_substrate
@@ -1919,6 +1955,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         fold_state$status <- observation$status
         fold_state$stop_reason <- observation$reason_code
         fold_state$affected_exposure <- observation$affected_exposure
+        ledgr_fold_state_validate(fold_state)
         for (segment in observation$diagnostic_segments) {
           add_segment(segment)
         }
@@ -1960,6 +1997,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         fold_state$status <- decision_result$status
         fold_state$stop_reason <- decision_result$reason_code
         fold_state$affected_exposure <- decision_result$affected_exposure
+        ledgr_fold_state_validate(fold_state)
         for (segment in decision_result$diagnostic_segments) {
           add_segment(segment)
         }
@@ -1987,6 +2025,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         fold_state$status <- plan_result$status
         fold_state$stop_reason <- plan_result$reason_code
         fold_state$affected_exposure <- plan_result$affected_exposure
+        ledgr_fold_state_validate(fold_state)
         for (segment in plan_result$diagnostic_segments) {
           add_segment(segment)
         }
@@ -2088,7 +2127,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     processed = fold_state$processed,
     full_run = fold_state$full_run,
     telemetry = telemetry,
-    state = ledgr_fold_state_value(fold_state),
+    state = ledgr_carrier_result_state(fold_state, instrument_ids),
     state_prev = fold_state$state_prev,
     next_event_seq = fold_state$event_seq,
     equity_facts = equity_fact_accumulator$collect()

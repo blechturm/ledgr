@@ -183,6 +183,41 @@ migrates operation and result representation; 3167 changes P4 application
 and publication to a block. Neither defers the other's interface work.
 Every Synthesis Section 4 group has at least one row in Sections 1.1-1.5.
 
+### 1.6 Name-keyed boundaries (LDG-3164 as built)
+
+Added by the workstream 12 correction round (close review F6). These are
+the only places where the lot kernel, the migrated book consumers and the
+book regions of the run, sweep, handler and envelope functions convert
+between instrument IDs and book or run-axis positions. Each one is an
+existing function; no wrapper was added to rename it. `[WS4a D3]` in
+`tests/testthat/test-ws4a-carrier.R` holds the same list as its census
+(`ws4a_d3_census`), and any other name-keyed lookup in those regions is a
+D3 hit. `ledgr_lot_book_live()` is positional and is not a boundary.
+
+| Boundary | Function (file) | Name-keyed lookups | Role |
+| --- | --- | --- | --- |
+| Opening import | `ledgr_lot_book_from_opening` (la) | `match(ids, basis_ids)`, `match(ids, instrument_ids)` | opening positions, cost basis and carried lots onto the run axis; the constructed book is checked against its exact reductions |
+| Opening import | `ledgr_fold_positions_to_vec` (fe), via `ledgr_carrier_import_state` | `intersect(names(positions), ...)`, `match(matched, ...)`, `positions[matched]` | named opening or resumed positions onto the unnamed run axis, kept as given (cut 5 amendment) |
+| Replay import | `ledgr_prepare_accounting_events` (ar) | `match(instrument_id, ids)`; metadata fields by name (`value[[name]]`, `intersect(names(meta[[i]]), ...)`) | ledger rows onto the replay axis (`instrument_index`); field names are metadata, not instruments |
+| Replay initial positions and result | `ledgr_replay_accounting_events` (ar) | `setNames(rep(0, ...), ids)`, `intersect(names(initial_positions), ids)`, `positions[matched]`, `initial_positions[matched]` | chunked and seeded callers pass named positions in; replay returns them named |
+| Settlement out | `ledgr_carrier_settlement_state` (fe) | `setNames(fold_state$positions, instrument_ids)` | corporate actions and dispositions read positions by ID (remover WS8) |
+| Settlement, dispositions | `ledgr_disposition_post` (to) | `match(ids, position_names)` | disposition parent IDs to book and position indexes; the block then runs positionally. The settlement boundary includes this mapping. |
+| Settlement in | `ledgr_carrier_settlement_install` (fe) | none | installs positions by position |
+| Result | `ledgr_carrier_result_state` (fe) | `setNames(fold_state$positions, instrument_ids)` | the fold's returned state, named |
+| Result, resume and readers | `ledgr_state_asof` (br) | `setNames(close, instrument_id)`, `close_by_id[held_ids]` | replayed named positions valued by ID |
+| Result, terminal recovery | `ledgr_run_terminal_recovery_equity` (rf) | `setNames(rep(0, ...), instrument_ids)`, `intersect(names(state$positions), ...)` | recovered equity rows from replayed named positions |
+| Walk-forward as-of opening | `ledgr_walk_forward_opening_from_run` (wf) | `names(held) <- ...`, `match(names(held), exp$universe)`, `names(cost_basis) <- names(held)` | the as-of book's basis by universe position into the next window's named opening |
+| Walk-forward carry | `ledgr_walk_forward_carried_opening` (wf) | `match(ids, axis)`, `held[ids]`, `setNames(basis, ids)` | held IDs to replay-axis positions; carried lots and basis into the next opening |
+| Handler accounting fact | `ledgr_output_handler` (oh), `record_accounting_fact` | `leg_fees[["close"]]`, `leg_fees[["open"]]` | the close/open leg fee pair; no instrument lookup |
+
+The book regions of `ledgr_run_fold_impl` (br), `ledgr_sweep_candidate_execution`
+(sw) and `ledgr_fold_envelope` (fe) hold no name-keyed lookup: they build
+the opening book through `ledgr_lot_book_from_opening` and pass state
+through `ledgr_carrier_import_state` and `ledgr_carrier_result_state`.
+The chunked fills reader (`ledgr_extract_fills_impl`, bf), the result replay
+(`ledgr_lot_book_from_events`, `ledgr_lot_book_asof`), the compiled pack,
+unpack and batch, and P4 are positional.
+
 **Not carried** (dead today): `pulse_plan$targets` and `$actionable_idx`,
 `fill$ts_signal_utc`, the local `cur_qty` (fe:1347). Bound outputs stay as
 bound: the stop result's `affected_instrument_ids` and the Phase 5.5 fold
@@ -807,7 +842,23 @@ owning ticket installs its applicable predicates and controls in
 test-ws4a-carrier.R and requires production PASS for those regions. At
 LDG-3164, D3 covers the kernel and migrated book consumers, and D25 covers
 the typed lot operations, excluding the P4 scalar caller allowed until
-LDG-3167 and replay while decision (6) permits singleton calls. Later
+LDG-3167 and replay while decision (6) permits singleton calls.
+As corrected after the workstream 12 close review: D3 examines the
+kernel, every migrated book consumer and the book regions of the run,
+sweep, handler and envelope functions, against the exact Section 1.6
+census; D11 traces every position write in P4, replay, dispositions and
+the settlement install to `net_by_inst` or a named source; D25 also
+examines replay's block loop (decision 6 settled on blocks) and permits
+only the identified FIFO depth loop, block loop and ordered aggregate
+scan, which may write only totals and per-event aggregate facts; D12a
+adds a production run whose configuration fields, runs-table bindings and
+stored hash match C1's base record. F4.12 is checked exactly where the
+derivation is a reduction (a book built by openings, at
+`ledgr_lot_book_from_opening`); a book reached by fills or dispositions
+carries history-dependent rounding in its cached net, so state validation
+there checks only that a flat instrument's net is exactly 0, and each
+transition is checked by V-applied-row (the close/open split against the
+lots before and after). Later
 owners add their stage regions; production attachments may not remain
 NOT_EVALUABLE at their owning ticket's close. Preserve the historical
 baseline record.

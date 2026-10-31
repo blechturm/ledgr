@@ -179,6 +179,7 @@ if (identical(mode, "summarize")) { # dispatched before any preparation: reads r
   size <- utils::read.csv(sized)
 } else {
   dir.create(file.path(scratch, "children"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(prepared, recursive = TRUE, showWarnings = FALSE) # the child's log is opened here before it runs
   if (!file.exists(file.path(prepared, "workloads.csv"))) run_child("--mode=prepare", file.path(prepared, "workloads"))
   rows <- list()
   for (i in seq_len(nrow(cells))) for (r in seq_len(reps)) for (ph in if (r %% 2L) c("load", "op") else c("op", "load"))

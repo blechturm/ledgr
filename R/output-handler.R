@@ -784,7 +784,10 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     invisible(TRUE)
   }
 
-  handler$record_accounting_fact <- function(write_res, lot_res, lot_state) {
+  # `applied` is the one-row applied lot record of the fill (typed lot
+  # kernel): close and open quantities, realized close and the event's
+  # aggregate facts after the fill.
+  handler$record_accounting_fact <- function(write_res, applied) {
     if (!is_wrote(write_res) || pulse_fill_n == 0L && state$event_count == 0L) {
       return(invisible(FALSE))
     }
@@ -792,25 +795,23 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     if (staged) {
       i <- pulse_fill_n
       entry <- pulse_fill_rows[[i]]
-      entry$event_realized <- as.numeric(lot_state$realized_pnl)[[1L]]
-      entry$event_cost_basis <- as.numeric(lot_state$total_cost_basis)[[1L]]
+      entry$event_realized <- applied$event_realized[[1L]]
+      entry$event_cost_basis <- applied$event_cost_basis[[1L]]
       pulse_fill_rows[[i]] <<- entry
     } else {
       i <- state$event_count
-      set_event_value("event_realized", i, as.numeric(lot_state$realized_pnl))
-      set_event_value("event_cost_basis", i, as.numeric(lot_state$total_cost_basis))
+      set_event_value("event_realized", i, applied$event_realized[[1L]])
+      set_event_value("event_cost_basis", i, applied$event_cost_basis[[1L]])
     }
-    leg_fees <- ledgr_fill_leg_fees(
-      write_res$row$fee,
-      lot_res$close_qty,
-      lot_res$open_qty
-    )
+    close_qty <- applied$close_qty[[1L]]
+    open_qty <- applied$open_qty[[1L]]
+    leg_fees <- ledgr_fill_leg_fees(write_res$row$fee, close_qty, open_qty)
     add <- if (staged) sink$stage_leg else sink$add_leg
-    if (isTRUE(lot_res$close_qty > 0)) {
-      add(write_res$row, lot_res$close_qty, leg_fees[["close"]], lot_res$realized_close, "CLOSE")
+    if (isTRUE(close_qty > 0)) {
+      add(write_res$row, close_qty, leg_fees[["close"]], applied$realized_close[[1L]], "CLOSE")
     }
-    if (isTRUE(lot_res$open_qty > 0)) {
-      add(write_res$row, lot_res$open_qty, leg_fees[["open"]], 0, "OPEN")
+    if (isTRUE(open_qty > 0)) {
+      add(write_res$row, open_qty, leg_fees[["open"]], 0, "OPEN")
     }
     invisible(TRUE)
   }

@@ -153,36 +153,25 @@ ledgr_disposition_post <- function(ids,
     )
   }
 
-  candidate <- state_value
-  realized <- numeric(length(ids))
-  for (k in seq_along(ids)) {
-    lot_result <- ledgr_lot_apply_fill(
-      candidate$lot_state,
-      instrument_id = ids[[k]],
-      side = if (before[[k]] > 0) "SELL" else "BUY",
-      qty = abs(before[[k]]),
-      price = price[[k]],
-      fee = 0,
-      allow_zero_price = TRUE
-    )
-    candidate$lot_state <- lot_result$state
-    realized[[k]] <- as.numeric(lot_result$realized_delta)
-    candidate$positions[[position_index[[k]]]] <- 0
-    candidate$cash <- as.numeric(candidate$cash) + before[[k]] * price[[k]]
-  }
-  remaining_lots <- vapply(
-    ids,
-    function(id) ledgr_lot_count(candidate$lot_state, id),
-    integer(1)
-  )
-  if (any(remaining_lots != 0L)) {
-    rlang::abort(
-      "Disposition left live lots after reaching zero position.",
-      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
-    )
-  }
-
+  # One typed disposition block: the parent IDs are distinct (refused above),
+  # every position closes at its mark with no fee, and the operation refuses
+  # a block that leaves a live lot. Lots alone set the new positions; cash
+  # adds the already computed effects in event order.
   cash_delta <- before * price
+  lot_result <- ledgr_lot_disposition(
+    state_value$lot_state,
+    pos = position_index,
+    side = ifelse(before > 0, -1L, 1L),
+    qty = abs(before),
+    price = price
+  )
+  realized <- lot_result$applied$realized_delta
+  candidate <- state_value
+  candidate$lot_state <- lot_result$book
+  candidate$positions[position_index] <- lot_result$book$net_by_inst[position_index]
+  cash_after <- ledgr_cash_scan(candidate$cash, cash_delta)
+  if (length(cash_after) > 0L) candidate$cash <- cash_after[[length(cash_after)]]
+
   exposure <- abs(before * ifelse(is.finite(exposure_mark), exposure_mark, price))
   meta_json <- vapply(seq_along(ids), function(k) {
     canonical_json(c(meta[[k]], list(

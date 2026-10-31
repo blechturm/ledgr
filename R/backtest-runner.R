@@ -640,7 +640,7 @@ ledgr_run_fold_impl <- function(config,
   telemetry_idx <- 0L
 
   state_env <- new.env(parent = emptyenv())
-  initial_lot_state <- ledgr_lot_state_from_opening(
+  initial_lot_state <- ledgr_lot_book_from_opening(
     instrument_ids = instrument_ids,
     positions = opening_positions,
     cost_basis = opening_cost_basis,
