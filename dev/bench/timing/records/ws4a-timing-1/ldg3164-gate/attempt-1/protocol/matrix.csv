@@ -1,0 +1,17 @@
+cell,workload,clock,args,pairs
+avail_wide_run,ws4a_path,run,producer=availability;shape=wide;path=run;reps=1,8
+dense_wide_run,ws4a_path,run,producer=dense;shape=wide;path=run;reps=1,8
+dense_wide_sweep,ws4a_path,sweep,producer=dense;shape=wide;path=sweep;reps=1,8
+avail_wide_sweep,ws4a_path,sweep,producer=availability;shape=wide;path=sweep;reps=1,8
+avail_nofill_run,ws4a_path,run,producer=availability;shape=nofill;path=run;reps=1,8
+dense_nofill_run,ws4a_path,run,producer=dense;shape=nofill;path=run;reps=2,8
+avail_nofill_sweep,ws4a_path,sweep,producer=availability;shape=nofill;path=sweep;reps=1,8
+dense_nofill_sweep,ws4a_path,sweep,producer=dense;shape=nofill;path=sweep;reps=2,8
+avail_sparse_run,ws4a_path,run,producer=availability;shape=sparse;path=run;reps=1,8
+dense_sparse_run,ws4a_path,run,producer=dense;shape=sparse;path=run;reps=2,8
+avail_sparse_sweep,ws4a_path,sweep,producer=availability;shape=sparse;path=sweep;reps=1,8
+dense_sparse_sweep,ws4a_path,sweep,producer=dense;shape=sparse;path=sweep;reps=2,8
+read_fills,ws4a_reader,read,what=fills;reps=1,8
+read_trades,ws4a_reader,read,what=trades;reps=1,8
+read_equity,ws4a_reader,read,what=equity;reps=75,8
+avail_wide_marginal,ws4a_marginal,marginal,reps=1,8

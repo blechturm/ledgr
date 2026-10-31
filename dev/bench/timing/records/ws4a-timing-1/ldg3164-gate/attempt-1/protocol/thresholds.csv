@@ -1,0 +1,17 @@
+cell,bound
+avail_wide_run,0.60
+dense_wide_run,0.60
+dense_wide_sweep,1.03
+avail_wide_sweep,1.00
+avail_nofill_run,1.03
+dense_nofill_run,1.03
+avail_nofill_sweep,1.03
+dense_nofill_sweep,1.03
+avail_sparse_run,1.00
+dense_sparse_run,1.00
+avail_sparse_sweep,1.00
+dense_sparse_sweep,1.00
+read_fills,1.03
+read_trades,1.03
+read_equity,1.03
+avail_wide_marginal,1.00
