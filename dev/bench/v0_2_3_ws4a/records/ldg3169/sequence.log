@@ -1,0 +1,17 @@
+build exit 1
+build (QUARTO_PATH set) exit 0
+R CMD check exit 1
+coverage exit 1
+cases exit 0
+guts exit 0
+dense exit 0
+a0-record exit 0
+a0-compare exit 0
+d20 exit 0
+identity exit 0
+suite exit 0
+diagnostic check (declaration moved, scratch copy) exit 1
+diagnostic check 2 (declaration moved, LTB-0514 duplicate renamed, scratch copy) exit 0
+diagnostic coverage (scratch archive of HEAD with both metadata fixes) exit 1
+diagnostic coverage 2 (kept install) exit 1
+diagnostic coverage 3 (also LTB-0188 predicate on whitespace-collapsed source) exit 1
