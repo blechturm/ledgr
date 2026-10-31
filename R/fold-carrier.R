@@ -121,6 +121,37 @@
     event_seq = "integer:row:none", instrument_id = "character:row:none", side = "character:row:none",
     action = "character:row:none", ts_utc = "double:row:none", qty = "double:row:none",
     price = "double:row:none", fee = "double:row:none", realized_pnl = "double:row:none"
+  ),
+  # LDG-3168 (Synthesis 3.6): the pulse diagnostic staging, its row axis
+  # preallocated to `capacity` rows of which the first `n` are staged, and
+  # the per-row columns in the writer's order; run_id, diagnostic_seq and
+  # ts_utc are the pulse's constants and logical sequence, added at drain.
+  # Missingness and bounds apply to the used prefix only. Defaults are the
+  # persisted schema's (instrument_id "", stage and outcome NA, reasons the
+  # reason_code, decision time the pulse, detail "{}").
+  diagnostics = c(
+    n = "integer:scalar:none", capacity = "integer:scalar:none",
+    instrument_id = "character:row:none", stage = "character:row:na", outcome = "character:row:na",
+    reason_code = "character:row:none", reasons = "character:row:none",
+    target = "double:row:na", quantity = "double:row:na", price = "double:row:na",
+    mark_source = "character:row:na", mark_age = "integer:row:na",
+    decision_ts_utc = "double:row:none", execution_ts_utc = "double:row:na", event_seq = "integer:row:na",
+    target_before_risk = "double:row:na", target_after_risk = "double:row:na",
+    position_before = "double:row:na", position_after = "double:row:na",
+    feature_identity_json = "character:row:na", detail_json = "character:row:none"
+  ),
+  # One row per valued pulse, preallocated to the fold's pulse count; only
+  # the first `n` rows are valid. Values are kept as valued (`any`).
+  equity = c(
+    ts = "double:row:none", cash = "double:row:any", positions_value = "double:row:any",
+    realized_pnl = "double:row:any", cost_basis = "double:row:any", n = "integer:scalar:none"
+  ),
+  # A stage's stop result, installed only by E; its diagnostics are a fully
+  # used block of the staging schema.
+  stop = c(
+    status = "character:scalar:none", reason_code = "character:scalar:none",
+    affected_instrument_ids = "character:any:none", affected_exposure = "opaque:any:-",
+    diagnostics = "opaque:any:-", counts_processed = "logical:scalar:none"
   )
 )
 # The specifications split once: storage, axis and missingness per field.
@@ -132,7 +163,8 @@
   execution_packet = c(NA, NA), decision = c("context_pos", NA),
   execution_view = c("member", "reason_count"), fill = c("k", "info_count"),
   rejection = c("k", "reason_count"), plan = c(NA, NA),
-  publication = c("event_id", NA), leg = c("event_seq", NA)
+  publication = c("event_id", NA), leg = c("event_seq", NA),
+  diagnostics = c("instrument_id", NA), equity = c("ts", NA), stop = c(NA, NA)
 )
 
 # P3 dictionaries (design note Sections 2.1-2.2): reason tokens of fills and
@@ -161,6 +193,17 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
   } else {
     NA_integer_
   }
+  # The staging and equity groups (LDG-3168) first bound their used-row
+  # count by the row axis; missingness then applies to the used prefix.
+  used <- NULL
+  if (group %in% c("diagnostics", "equity")) {
+    n <- x$n
+    if (!is.integer(n) || length(n) != 1L || !is.null(attributes(n)) || is.na(n) ||
+        n < 0L || n > n_context) {
+      return("`n` is not a used-row count within the capacity")
+    }
+    used <- seq_len(n)
+  }
   # One check per declared field: a fixed census, not a data-sized loop.
   for (k in seq_along(spec)) {
     v <- x[[k]]
@@ -176,11 +219,12 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
     if (is.na(size) || length(v) != size) {
       return(paste0("`", names(spec)[[k]], "` does not have its axis length"))
     }
+    if (!is.null(used) && identical(parts[[k]][[2L]], "row")) v <- v[used]
     if ((identical(parts[[k]][[3L]], "none") && anyNA(v)) ||
         (identical(parts[[k]][[3L]], "inf") && any(is.na(v) & !is.nan(v)))) {
       return(paste0("`", names(spec)[[k]], "` contains a missing value"))
     }
-    if (is.double(v) && !identical(parts[[k]][[3L]], "inf") && any(is.infinite(v))) {
+    if (is.double(v) && !parts[[k]][[3L]] %in% c("inf", "any") && any(is.infinite(v))) {
       return(paste0("`", names(spec)[[k]], "` contains a non-finite value"))
     }
   }
@@ -353,6 +397,24 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
         return("a leg quantity, price or fee is out of range")
       }
       if (any(x$realized_pnl[x$action == "OPEN"] != 0)) return("an OPEN leg realizes P&L")
+      NULL
+    },
+    diagnostics = {
+      if (x$capacity != n_context) return("`capacity` is not the staging's row count")
+      if (any(x$mark_age[used] < 0L, na.rm = TRUE)) return("a mark age is negative")
+      if (any(x$event_seq[used] < 1L, na.rm = TRUE)) return("an event sequence is below 1")
+      NULL
+    },
+    equity = {
+      if (is.unsorted(x$ts[used], strictly = TRUE)) return("the valued pulses are not in time order")
+      NULL
+    },
+    stop = {
+      if (!nzchar(x$status) || !nzchar(x$reason_code)) return("the stop status or reason is empty")
+      if (!is.list(x$affected_exposure)) return("`affected_exposure` is not a list")
+      problem <- ledgr_carrier_problem(x$diagnostics, "diagnostics", n_run)
+      if (!is.null(problem)) return(paste0("diagnostics: ", problem))
+      if (x$diagnostics$n != x$diagnostics$capacity) return("the stop diagnostics are not one fully used block")
       NULL
     }
   )
@@ -672,4 +734,146 @@ ledgr_carrier_p2_valuation <- function(packet, context_ids) {
     age = named(packet$mark_age),
     permissible = named(packet$permissible)
   )
+}
+
+# --- LDG-3168: diagnostics staging, equity record, stop results -----------
+# (Synthesis 3.6 and Section 4; design note Sections 2.4 and 3.2.)
+
+# The per-row staging columns, their defaults and the epoch columns.
+.ledgr_diagnostic_row_fields <- names(.ledgr_carrier_fields$diagnostics)[-(1:2)]
+.ledgr_diagnostic_defaults <- list(
+  instrument_id = "", stage = NA_character_, outcome = NA_character_, reason_code = "",
+  reasons = "", target = NA_real_, quantity = NA_real_, price = NA_real_, mark_source = "",
+  mark_age = NA_integer_, decision_ts_utc = NA_real_, execution_ts_utc = NA_real_,
+  event_seq = NA_integer_, target_before_risk = NA_real_, target_after_risk = NA_real_,
+  position_before = NA_real_, position_after = NA_real_, feature_identity_json = NA_character_,
+  detail_json = "{}"
+)
+.ledgr_diagnostic_epoch_fields <- c("decision_ts_utc", "execution_ts_utc")
+.ledgr_diagnostic_storage <- vapply(.ledgr_carrier_field_parts$diagnostics[.ledgr_diagnostic_row_fields],
+  function(p) p[[1L]], "")
+
+# The pulse staging, allocated once in E (design note 2.4): every column is
+# preallocated to `capacity` rows and nothing is staged.
+ledgr_fold_diagnostic_staging <- function(capacity) {
+  capacity <- as.integer(capacity)
+  columns <- lapply(.ledgr_diagnostic_storage, vector, length = capacity)
+  ledgr_carrier_new(c(list(n = 0L, capacity = capacity), columns), "diagnostics", NA_integer_)
+}
+
+# Design note 2.4's pinned bound: max(5N + 3, Q_pulse), where Q_pulse is the
+# most due disposition rows of any pulse (0 without a corporate-action plan).
+ledgr_fold_diagnostic_capacity <- function(n_inst, corporate_action_plan) {
+  due <- lengths(corporate_action_plan$state$disposition_due_by_pulse)
+  max(5L * as.integer(n_inst) + 3L, due, 0L)
+}
+
+# One producer segment as a fully used block of the staging schema: each
+# field has length 1 or n (absent fields take the defaults), coerced as the
+# persisted diagnostic schema stores it; times are UTC epoch seconds.
+ledgr_fold_diagnostic_rows <- function(segment, ts) {
+  m <- as.integer(segment$n)
+  if (is.null(segment$reasons)) segment$reasons <- if (is.null(segment$reason_code)) "" else segment$reason_code
+  ts_num <- as.numeric(as.POSIXct(ts, tz = "UTC"))
+  out <- list(n = m, capacity = m)
+  # A fixed census of the 19 row fields, not a data-sized loop.
+  for (name in .ledgr_diagnostic_row_fields) {
+    v <- segment[[name]]
+    if (is.null(v)) v <- if (identical(name, "decision_ts_utc")) ts_num else .ledgr_diagnostic_defaults[[name]]
+    if (!length(v) %in% c(1L, m)) {
+      rlang::abort(sprintf("Diagnostic block field `%s` has length %d for a segment of %d rows.", name, length(v), m),
+                   class = "ledgr_invalid_fold_execution")
+    }
+    v <- unname(v)
+    v <- switch(.ledgr_diagnostic_storage[[name]],
+      character = as.character(v),
+      integer = as.integer(v),
+      double = if (name %in% .ledgr_diagnostic_epoch_fields &&
+        !(inherits(v, "POSIXct") || is.numeric(v))) {
+        as.numeric(as.POSIXct(v, tz = "UTC"))
+      } else {
+        as.numeric(v)
+      }
+    )
+    out[[name]] <- rep_len(v, m)
+  }
+  out
+}
+
+# Stages a fully used block after the staging's used rows, by index into its
+# preallocated columns. A row beyond the pinned capacity is a bug.
+ledgr_fold_staging_write <- function(fold_state, rows) {
+  m <- rows$n
+  if (m == 0L) return(invisible(NULL))
+  used <- fold_state$pending_segments$n
+  if (used + m > fold_state$pending_segments$capacity) {
+    rlang::abort("Pulse diagnostic staging exceeded its capacity.", class = "ledgr_invalid_fold_execution")
+  }
+  dest <- seq.int(used + 1L, length.out = m)
+  for (name in .ledgr_diagnostic_row_fields) {
+    collapse::setv(fold_state$pending_segments[[name]], dest, rows[[name]], vind1 = TRUE)
+  }
+  fold_state$pending_segments$n <- used + m
+  invisible(NULL)
+}
+
+ledgr_fold_staging_add <- function(fold_state, segment, ts) {
+  ledgr_fold_staging_write(fold_state, ledgr_fold_diagnostic_rows(segment, ts))
+}
+
+# The writer block of a staging-schema object's used prefix: the run ID,
+# the logical sequence from `first_seq` and the pulse time on every row.
+ledgr_fold_diagnostic_block <- function(rows, run_id, ts, first_seq) {
+  n <- rows$n
+  used <- seq_len(n)
+  ts_num <- as.numeric(as.POSIXct(ts, tz = "UTC"))
+  col <- function(name) rows[[name]][used]
+  epoch <- function(name) .POSIXct(rows[[name]][used], tz = "UTC")
+  list(
+    run_id = rep_len(as.character(run_id), n),
+    diagnostic_seq = as.integer(first_seq) + used - 1L,
+    ts_utc = .POSIXct(rep_len(ts_num, n), tz = "UTC"),
+    instrument_id = col("instrument_id"), stage = col("stage"), outcome = col("outcome"),
+    reason_code = col("reason_code"), reasons = col("reasons"), target = col("target"),
+    quantity = col("quantity"), price = col("price"), mark_source = col("mark_source"),
+    mark_age = col("mark_age"), decision_ts_utc = epoch("decision_ts_utc"),
+    execution_ts_utc = epoch("execution_ts_utc"), event_seq = col("event_seq"),
+    target_before_risk = col("target_before_risk"), target_after_risk = col("target_after_risk"),
+    position_before = col("position_before"), position_after = col("position_after"),
+    feature_identity_json = col("feature_identity_json"), detail_json = col("detail_json")
+  )
+}
+
+# The equity record (Synthesis 3.6): five columns preallocated to the fold's
+# pulse count, the first `n` rows valued.
+ledgr_fold_equity_record <- function(capacity) {
+  capacity <- as.integer(capacity)
+  ledgr_carrier_new(list(
+    ts = numeric(capacity), cash = numeric(capacity), positions_value = numeric(capacity),
+    realized_pnl = numeric(capacity), cost_basis = numeric(capacity), n = 0L
+  ), "equity", NA_integer_)
+}
+
+# P1's one write per valued pulse, by index into the record's next row.
+ledgr_fold_equity_append <- function(record, ts, cash, positions_value, realized_pnl, cost_basis) {
+  i <- record$n + 1L
+  if (i > length(record$ts)) {
+    rlang::abort("Internal equity record exceeded its capacity.", class = "ledgr_internal_error")
+  }
+  collapse::setv(record$ts, i, as.numeric(ts), vind1 = TRUE)
+  collapse::setv(record$cash, i, as.numeric(cash), vind1 = TRUE)
+  collapse::setv(record$positions_value, i, as.numeric(positions_value), vind1 = TRUE)
+  collapse::setv(record$realized_pnl, i, as.numeric(realized_pnl), vind1 = TRUE)
+  collapse::setv(record$cost_basis, i, as.numeric(cost_basis), vind1 = TRUE)
+  record$n <- i
+  record
+}
+
+# E's frozen handoff: the valued prefix as fresh columns, never written again.
+ledgr_fold_equity_prefix <- function(record) {
+  used <- seq_len(record$n)
+  ledgr_carrier_new(list(
+    ts = record$ts[used], cash = record$cash[used], positions_value = record$positions_value[used],
+    realized_pnl = record$realized_pnl[used], cost_basis = record$cost_basis[used], n = record$n
+  ), "equity", NA_integer_)
 }

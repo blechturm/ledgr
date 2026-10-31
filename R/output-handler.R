@@ -284,35 +284,10 @@ ledgr_output_sink_memory <- function(run_id) {
     invisible(TRUE)
   }
 
-  # Equity facts, one per valued pulse, in five typed columns written by
-  # index with doubling growth.
-  equity <- new.env(parent = emptyenv())
-  equity$n <- 0L
-  equity$ts_utc <- numeric(0)
-  equity$cash <- numeric(0)
-  equity$positions_value <- numeric(0)
-  equity$realized_pnl <- numeric(0)
-  equity$cost_basis <- numeric(0)
-  equity_fields <- c("ts_utc", "cash", "positions_value", "realized_pnl", "cost_basis")
-  sink$record_equity_fact <- function(ts_utc, cash, positions_value, realized_pnl, cost_basis) {
-    i <- equity$n + 1L
-    if (i > length(equity$cash)) {
-      capacity <- max(256L, length(equity$cash) * 2L)
-      for (name in equity_fields) {
-        grown <- numeric(capacity)
-        if (equity$n > 0L) grown[seq_len(equity$n)] <- equity[[name]][seq_len(equity$n)]
-        equity[[name]] <- grown
-      }
-    }
-    collapse::setv(equity$ts_utc, i, as.numeric(as.POSIXct(ts_utc, tz = "UTC")), vind1 = TRUE)
-    collapse::setv(equity$cash, i, as.numeric(cash), vind1 = TRUE)
-    collapse::setv(equity$positions_value, i, as.numeric(positions_value), vind1 = TRUE)
-    collapse::setv(equity$realized_pnl, i, as.numeric(realized_pnl), vind1 = TRUE)
-    collapse::setv(equity$cost_basis, i, as.numeric(cost_basis), vind1 = TRUE)
-    equity$n <- i
-    invisible(TRUE)
-  }
-  sink$inline_summary <- function(run_id, metric_kernel) {
+  # The candidate's summary: `equity` is the frozen equity record the fold
+  # envelope hands out (one row per valued pulse, Synthesis 3.6); the sink
+  # holds no equity of its own and replays none.
+  sink$inline_summary <- function(run_id, metric_kernel, equity) {
     if (equity$n == 0L) {
       equity_curve <- ledgr_empty_equity_curve()
       fills <- ledgr_fill_row_buffer_tibble(inline_fills)
@@ -329,7 +304,7 @@ ledgr_output_sink_memory <- function(run_id) {
     positions_value <- equity$positions_value[keep]
     equity_curve <- data.frame(
       run_id = rep(run_id, equity$n),
-      ts_utc = as.POSIXct(equity$ts_utc[keep], origin = "1970-01-01", tz = "UTC"),
+      ts_utc = as.POSIXct(equity$ts[keep], origin = "1970-01-01", tz = "UTC"),
       cash = cash,
       positions_value = positions_value,
       equity = cash + positions_value,
@@ -719,7 +694,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   handler$write_strategy_state <- function(...) invisible(TRUE)
   handler$completion <- function() state$completion
   handler$diagnostics <- sink$diagnostics
-  handler$record_equity_fact <- sink$record_equity_fact
   handler$inline_summary <- sink$inline_summary
 
   handler$append_event_rows <- function(rows) {

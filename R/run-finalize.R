@@ -150,7 +150,7 @@ ledgr_run_terminal_recovery_equity <- function(con,
                                                source_pulses_posix = calendar$pulses_posix,
                                                pulse_columns = NULL) {
   achieved_end <- as.POSIXct(completion$achieved_end_utc[[1L]], tz = "UTC")
-  if (is.na(achieved_end)) return(list())
+  if (is.na(achieved_end)) return(ledgr_fold_equity_record(0L))
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
   keep <- which(pulses <= achieved_end)
   valuation_state <- ledgr_availability_valuation_state(
@@ -161,7 +161,9 @@ ledgr_run_terminal_recovery_equity <- function(con,
     ledgr_availability_exhausted_choice(availability_provider$valuation_policy),
     pulse_columns = pulse_columns
   )
-  lapply(keep, function(i) {
+  # The recovered rows as a frozen equity record (Synthesis 3.6); each
+  # achieved pulse still replays the committed ledger (WS7 owns that).
+  rows <- vapply(keep, function(i) {
     ts <- pulses[[i]]
     state <- ledgr_state_asof(
       con,
@@ -185,18 +187,23 @@ ledgr_run_terminal_recovery_equity <- function(con,
       }
       positions_value <- sum(as.numeric(positions[held]) * as.numeric(valuation$mark[held]))
     }
-    list(
-      ts_utc = ts,
-      cash = as.numeric(state$cash),
-      positions_value = as.numeric(positions_value),
-      realized_pnl = as.numeric(state$lot_state$realized_pnl),
-      cost_basis = as.numeric(state$lot_state$total_cost_basis)
+    c(
+      as.numeric(ts),
+      as.numeric(state$cash),
+      as.numeric(positions_value),
+      as.numeric(state$lot_state$realized_pnl),
+      as.numeric(state$lot_state$total_cost_basis)
     )
-  })
+  }, numeric(5L))
+  ledgr_carrier_new(list(
+    ts = rows[1L, ], cash = rows[2L, ], positions_value = rows[3L, ],
+    realized_pnl = rows[4L, ], cost_basis = rows[5L, ], n = length(keep)
+  ), "equity", NA_integer_)
 }
 
+# The equity-curve frame of a fold equity record's valued prefix.
 ledgr_run_fold_equity_frame <- function(run_id, fold_equity) {
-  if (length(fold_equity) == 0L) {
+  if (fold_equity$n == 0L) {
     return(data.frame(
       run_id = character(),
       ts_utc = as.POSIXct(character(), tz = "UTC"),
@@ -208,15 +215,12 @@ ledgr_run_fold_equity_frame <- function(run_id, fold_equity) {
       stringsAsFactors = FALSE
     ))
   }
-  ts_utc <- as.POSIXct(
-    vapply(fold_equity, function(x) as.numeric(x$ts_utc), numeric(1)),
-    origin = "1970-01-01",
-    tz = "UTC"
-  )
-  cash <- vapply(fold_equity, `[[`, numeric(1), "cash")
-  positions_value <- vapply(fold_equity, `[[`, numeric(1), "positions_value")
-  realized_pnl <- vapply(fold_equity, `[[`, numeric(1), "realized_pnl")
-  cost_basis <- vapply(fold_equity, `[[`, numeric(1), "cost_basis")
+  used <- seq_len(fold_equity$n)
+  ts_utc <- as.POSIXct(fold_equity$ts[used], origin = "1970-01-01", tz = "UTC")
+  cash <- fold_equity$cash[used]
+  positions_value <- fold_equity$positions_value[used]
+  realized_pnl <- fold_equity$realized_pnl[used]
+  cost_basis <- fold_equity$cost_basis[used]
   data.frame(
     run_id = rep(as.character(run_id), length(ts_utc)),
     ts_utc = ts_utc,
@@ -446,16 +450,19 @@ ledgr_run_finalize <- function(con,
   telemetry <- fold$telemetry
   processed <- fold$processed
   terminal_status <- fold$status %||% "DONE"
-  fold_equity <- fold$equity_facts %||% list()
-  # An availability run always finalizes through its equity prefix, even when
-  # this invocation valued no pulse (a stop on its first pulse): the stored
-  # prefix stays, and no dense replay over the calendar replaces it.
-  use_fold_equity <- isTRUE(run$availability_active) || length(fold_equity) > 0L
+  fold_equity <- fold$equity_facts
+  # The equity source is chosen by producer, not by the record's length
+  # (Synthesis 3.6): both producers fill the fold's equity record, but only
+  # an availability run finalizes through it, even when this invocation
+  # valued no pulse (a stop on its first pulse): the stored prefix stays, and
+  # no dense replay over the calendar replaces it. A durable dense run
+  # finalizes through event replay.
+  use_fold_equity <- isTRUE(run$availability_active)
 
   finalization_error <- tryCatch({
     post_start <- ledgr_time_now()
     pulses_posix <- if (use_fold_equity) {
-      as.POSIXct(vapply(fold_equity, function(x) as.numeric(x$ts_utc), numeric(1)), origin = "1970-01-01", tz = "UTC")
+      as.POSIXct(fold_equity$ts[seq_len(fold_equity$n)], origin = "1970-01-01", tz = "UTC")
     } else {
       as.POSIXct(pulses, tz = "UTC")
     }
@@ -508,20 +515,7 @@ ledgr_run_finalize <- function(con,
         stringsAsFactors = FALSE
       )
     } else if (use_fold_equity) {
-      cash_at <- vapply(fold_equity, `[[`, numeric(1), "cash")
-      positions_value <- vapply(fold_equity, `[[`, numeric(1), "positions_value")
-      realized_at <- vapply(fold_equity, `[[`, numeric(1), "realized_pnl")
-      cost_basis_at <- vapply(fold_equity, `[[`, numeric(1), "cost_basis")
-      eq_df <- data.frame(
-        run_id = rep(run_id, length(pulses_posix)),
-        ts_utc = pulses_posix,
-        cash = cash_at,
-        positions_value = positions_value,
-        equity = cash_at + positions_value,
-        realized_pnl = realized_at,
-        unrealized_pnl = positions_value - cost_basis_at,
-        stringsAsFactors = FALSE
-      )
+      eq_df <- ledgr_run_fold_equity_frame(run_id, fold_equity)
     } else {
       events_df <- ledgr_run_finalize_events(con, run_id)
       prepared <- ledgr_prepare_accounting_events(events_df, instrument_ids)

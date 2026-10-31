@@ -174,8 +174,10 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
       "state_update", "intent_reason", "sample_start",
       "t_ctx", "t_strat", "t_target"
     ),
-    # LDG-3166 (category 3): P3 returns the typed plan batch.
-    plan = c("batch", "diagnostic_segments", "sample_start", "t_target", "t_fill"),
+    # LDG-3166 (category 3): P3 returns the typed plan batch. LDG-3168
+    # (category 3): P3 stages its diagnostic rows in the fold's typed pulse
+    # staging (Synthesis 3.6) and returns no segment list.
+    plan = c("batch", "sample_start", "t_target", "t_fill"),
     apply = c("sample_start", "t_event", "t_state"),
     commit = "continue"
   )

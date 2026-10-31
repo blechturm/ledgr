@@ -2766,3 +2766,328 @@ testthat::test_that("[WS4a W1] P4 installs the book, publishes, advances, record
     testthat::expect_false(all(mapply(ws4a_w1_ok, bad$orders, legs)), info = new)
   }
 })
+
+# --- LDG-3168: diagnostics staging, equity record, stop results ------------
+
+# Runs the 3166 fixture (availability or dense; durable run and memory sweep)
+# and observes the fold's typed carrier at its boundaries: at every P1 call
+# the staged rows on entry and the equity rows written; at every drain the
+# staged rows, the rows handed to the writer (and how many are stopped
+# rows), the rows left after and the staging's validity; every stop E
+# applies, with the processed count it adds; every frozen equity prefix.
+# `stop_at` perturbs the availability plan's expected cash on that pulse (a
+# P3 affordability stop, as C8a). `mutate` replaces a carrier function by a
+# mutant of the original.
+ws4a_3168_capture <- function(avail, paths = c("run", "sweep"), stop_at = NA_integer_, mutate = list()) {
+  ns <- ws4a_ns()
+  seen <- new.env()
+  for (f in c("p1", "drains", "stops", "prefixes")) seen[[f]] <- list()
+  add <- function(field, x) seen[[field]][[length(seen[[field]]) + 1L]] <- x
+  impl <- function(name) {
+    original <- ns[[name]]
+    if (is.null(mutate[[name]])) original else mutate[[name]](original)
+  }
+  plan <- ns$ledgr_fold_build_availability_pulse_plan
+  observe <- impl("ledgr_fold_stage_observe_settle")
+  flush <- impl("ledgr_fold_flush_pulse_block")
+  apply_stop <- impl("ledgr_fold_apply_stop")
+  prefix <- ns$ledgr_fold_equity_prefix
+  pulse <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_fold_build_availability_pulse_plan = function(...) {
+      out <- plan(...)
+      if (identical(pulse, stop_at)) out$expected_final_cash <- out$expected_final_cash + 1
+      out
+    },
+    ledgr_fold_stage_observe_settle = function(fold_state, services, pulse_idx, ...) {
+      pulse <<- pulse_idx
+      staged <- fold_state$pending_segments$n
+      rows <- fold_state$equity_facts$n
+      out <- observe(fold_state, services, pulse_idx, ...)
+      add("p1", list(staged = staged, written = fold_state$equity_facts$n - rows,
+        stopped = ns$ledgr_is_fold_stop_result(out), services = names(services)))
+      out
+    },
+    ledgr_fold_flush_pulse_block = function(fold_state, diagnostic_writer, ...) {
+      staged <- fold_state$pending_segments$n
+      problem <- ns$ledgr_carrier_problem(fold_state$pending_segments, "diagnostics", NA_integer_)
+      handed <- c(rows = 0L, stopped = 0L)
+      writer <- list(append_block = function(block) {
+        handed <<- c(rows = length(block$diagnostic_seq), stopped = sum(block$outcome %in% "stopped"))
+        diagnostic_writer$append_block(block)
+      })
+      flush(fold_state, writer, ...)
+      add("drains", list(staged = staged, handed = handed, after = fold_state$pending_segments$n,
+        capacity = fold_state$pending_segments$capacity, problem = problem))
+    },
+    ledgr_fold_apply_stop = function(fold_state, stop) {
+      processed <- fold_state$processed
+      apply_stop(fold_state, stop)
+      add("stops", list(n = stop$diagnostics$n, problem = ns$ledgr_carrier_problem(stop, "stop", NA_integer_),
+        counted = fold_state$processed - processed))
+    },
+    ledgr_fold_equity_prefix = function(record) {
+      out <- prefix(record)
+      add("prefixes", out)
+      out
+    },
+    ledgr_fold_equity_append = impl("ledgr_fold_equity_append"),
+    .package = "ledgr"
+  )
+  fx <- ws4a_3166_fixture(avail)
+  on.exit(ledgr_snapshot_close(fx$snap), add = TRUE)
+  out <- list()
+  if ("run" %in% paths) {
+    out$run <- tryCatch({
+      close(suppressWarnings(ledgr_run(fx$exp(), params = fx$params, run_id = "ws4a-3168-run", seed = 1L)))
+      "returned"
+    }, error = identity)
+  }
+  if ("sweep" %in% paths) {
+    out$sweep <- suppressWarnings(ledgr_sweep(fx$exp(), ledgr_grid_named(c = list(strategy = fx$params)), seed = 1L))
+  }
+  c(out, as.list(seen))
+}
+
+# D2 (runtime): every pulse starts with an empty staging; every drain hands
+# the writer exactly its used rows and leaves none; capacity never changes.
+ws4a_d2_runtime <- function(got) {
+  staged <- vapply(got$p1, `[[`, 0L, "staged")
+  c(sprintf("a pulse starts with %d staged rows", staged[staged != 0L]),
+    unlist(lapply(got$drains, function(d) {
+      if (d$handed[["rows"]] != d$staged || d$after != 0L) {
+        sprintf("a drain of %d rows hands %d and keeps %d", d$staged, d$handed[["rows"]], d$after)
+      }
+    })),
+    if (length(unique(vapply(got$drains, `[[`, 0L, "capacity"))) > 1L) "the staging capacity changed")
+}
+# D10 (runtime): P1 writes exactly one equity row on every valued pulse and
+# none on a stop; no service slot holds equity; the frozen prefixes hold
+# exactly the valued rows.
+ws4a_d10_runtime <- function(got) {
+  written <- vapply(got$p1, `[[`, 0L, "written")
+  valued <- !vapply(got$p1, `[[`, NA, "stopped")
+  c(if (!identical(written, as.integer(valued))) paste("P1 equity writes per call:", paste(written, collapse = ",")),
+    if (any(grepl("equity", unlist(lapply(got$p1, `[[`, "services"))))) "a service slot holds equity",
+    if (sum(vapply(got$prefixes, `[[`, 0L, "n")) != sum(valued)) "the frozen prefixes do not hold the valued rows")
+}
+
+testthat::test_that("[WS4a V-diagnostics V-equity V-stop U-3168] staging, equity and stop payloads are typed and refuse the controls", {
+  ns <- ws4a_ns()
+  got <- ws4a_3168_capture(TRUE, stop_at = 3L)
+  # Production: every drained staging, stop payload and frozen prefix validates.
+  testthat::expect_gt(length(got$drains), 4L)
+  testthat::expect_true(all(vapply(got$drains, function(d) is.null(d$problem), NA)))
+  testthat::expect_length(got$stops, 2L)
+  testthat::expect_true(all(vapply(got$stops, function(s) is.null(s$problem) && s$n == 1L, NA)))
+  testthat::expect_true(all(vapply(got$prefixes, function(p) is.null(ns$ledgr_carrier_problem(p, "equity", NA_integer_)), NA)))
+  ok <- function(x, group) is.null(ns$ledgr_carrier_problem(x, group, NA_integer_))
+  set <- function(x, field, value) {
+    x[[field]] <- value
+    x
+  }
+  # A staging with two used rows of capacity four, a two-row record of
+  # capacity three, a stop carrying one row; and their typed empty forms.
+  state <- ns$ledgr_fold_state_new(cash = 100, positions = 0, lot_state = ns$ledgr_lot_book(1L),
+    pending_segments = ns$ledgr_fold_diagnostic_staging(4L), equity_facts = ns$ledgr_fold_equity_record(3L))
+  ns$ledgr_fold_staging_add(state, list(n = 2L, instrument_id = c("A", "B"), stage = "decision", outcome = "recorded",
+    reason_code = "decision_recorded", quantity = c(1, 2), mark_age = c(0L, NA)), 86400)
+  staging <- state$pending_segments
+  equity <- ns$ledgr_fold_equity_append(ns$ledgr_fold_equity_record(3L), 1, 100, 5, 0, 4)
+  equity <- ns$ledgr_fold_equity_append(equity, 2, 101, 6, 0, 4)
+  stop <- ns$ledgr_fold_stop_result("INCOMPLETE", "risk_mark_unavailable", "A", list(value = 1),
+    ns$ledgr_fold_diagnostic_rows(list(n = 1L, instrument_id = "A", stage = "risk", outcome = "stopped",
+      reason_code = "risk_mark_unavailable"), 86400), TRUE)
+  testthat::expect_identical(staging$n, 2L)
+  testthat::expect_identical(staging$reasons[1:2], c("decision_recorded", "decision_recorded"))
+  testthat::expect_identical(staging$decision_ts_utc[1:2], c(86400, 86400))
+  for (x in list(list(staging, "diagnostics"), list(equity, "equity"), list(stop, "stop"),
+    list(ns$ledgr_fold_diagnostic_staging(0L), "diagnostics"), list(ns$ledgr_fold_equity_record(0L), "equity"),
+    list(ns$ledgr_fold_stop_result("INCOMPLETE", "x"), "stop"))) {
+    testthat::expect_true(ok(x[[1L]], x[[2L]]))
+  }
+  # The four universal controls per group: storage type, a shortened column,
+  # a bound, an untyped empty column.
+  empty_staging <- ns$ledgr_fold_diagnostic_staging(0L)
+  empty_equity <- ns$ledgr_fold_equity_record(0L)
+  refused <- list(
+    diagnostics_storage = list(set(staging, "mark_age", as.numeric(staging$mark_age)), "diagnostics"),
+    diagnostics_shortened = list(set(staging, "stage", staging$stage[-1L]), "diagnostics"),
+    diagnostics_bound = list(set(staging, "n", 5L), "diagnostics"),
+    diagnostics_untyped_empty = list(set(empty_staging, "reasons", list()), "diagnostics"),
+    equity_storage = list(set(equity, "ts", as.integer(equity$ts)), "equity"),
+    equity_shortened = list(set(equity, "cash", equity$cash[-1L]), "equity"),
+    equity_bound = list(set(equity, "n", 4L), "equity"),
+    equity_untyped_empty = list(set(empty_equity, "cost_basis", list()), "equity"),
+    stop_storage = list(set(stop, "counts_processed", 1L), "stop"),
+    stop_shortened = list(set(stop, "status", c("INCOMPLETE", "INCOMPLETE")), "stop"),
+    stop_bound = list(set(stop, "diagnostics", set(stop$diagnostics, "n", 0L)), "stop"),
+    stop_untyped_empty = list(set(stop, "affected_instrument_ids", list()), "stop"),
+    # Section 3.2: F4.43 an NA reason code; F4.45 an NA decision time; F4.48
+    # n beyond capacity; out-of-order valued pulses; a negative mark age.
+    f4_43_na_reason = list(set(staging, "reason_code", replace(staging$reason_code, 2L, NA)), "diagnostics"),
+    f4_45_na_decision_time = list(set(staging, "decision_ts_utc", replace(staging$decision_ts_utc, 1L, NA)), "diagnostics"),
+    f4_48_beyond_capacity = list(set(equity, "n", 9L), "equity"),
+    equity_order = list(set(equity, "ts", c(2, 1, 0)), "equity"),
+    negative_age = list(set(staging, "mark_age", replace(staging$mark_age, 1L, -1L)), "diagnostics")
+  )
+  for (name in names(refused)) {
+    testthat::expect_false(ok(refused[[name]][[1L]], refused[[name]][[2L]]), info = name)
+  }
+  # Only the used prefix is checked: an NA reason code in an unused row passes.
+  testthat::expect_true(ok(set(staging, "reason_code", replace(staging$reason_code, 3L, NA)), "diagnostics"))
+  # V-stop refuses at construction (F4.49: a non-logical counts_processed).
+  testthat::expect_error(ns$ledgr_fold_stop_result("INCOMPLETE", "x", counts_processed = 1L), class = "ledgr_internal_error")
+  # The E and stop validator refuses a wrong-length diagnostic staging column
+  # and a wrong-type equity column (acceptance 3).
+  testthat::expect_no_error(ns$ledgr_fold_state_validate(state))
+  state$pending_segments <- refused$diagnostics_shortened[[1L]]
+  testthat::expect_error(ns$ledgr_fold_state_validate(state), "pending diagnostics", class = "ledgr_internal_error")
+  state$pending_segments <- staging
+  state$equity_facts <- refused$equity_storage[[1L]]
+  testthat::expect_error(ns$ledgr_fold_state_validate(state), "equity record", class = "ledgr_internal_error")
+  state$equity_facts <- equity
+  # The pinned capacity (design note 2.4), its overflow refusal and the
+  # existing segment-length refusal.
+  testthat::expect_identical(ns$ledgr_fold_diagnostic_capacity(4L, NULL), 23L)
+  plan <- list(state = list(disposition_due_by_pulse = list(`2` = 1:9, `5` = 1:40)))
+  testthat::expect_identical(ns$ledgr_fold_diagnostic_capacity(4L, plan), 40L)
+  testthat::expect_error(
+    ns$ledgr_fold_staging_add(state, list(n = 3L, stage = "risk"), 86400),
+    "exceeded its capacity", class = "ledgr_invalid_fold_execution"
+  )
+  testthat::expect_error(
+    ns$ledgr_fold_diagnostic_rows(list(n = 2L, stage = c("a", "b", "c")), 0),
+    "Diagnostic block field `stage` has length 3 for a segment of 2 rows.", fixed = TRUE,
+    class = "ledgr_invalid_fold_execution"
+  )
+})
+
+# D2 (static): no list-segment staging in the stages, E, the skip helpers
+# and the staging functions: no list append (`x[[length(x) + 1L]] <-`), no
+# `c(x, list(...))` growth, no staging slot reset to a list. The bounded
+# writer and the memory sink's filtered retained chunks are accepted.
+ws4a_d2_examined <- c(paste0("ledgr_fold_stage_", c("observe_settle", "decide", "plan", "apply", "commit")),
+  "ledgr_fold_envelope", "ledgr_fold_scheduled_skip_decision", "ledgr_fold_scheduled_skip_plan",
+  "ledgr_fold_staging_add", "ledgr_fold_staging_write", "ledgr_fold_diagnostic_rows",
+  "ledgr_fold_diagnostic_block", "ledgr_fold_flush_pulse_block", "ledgr_fold_apply_stop",
+  "ledgr_columnar_diagnostic_writer", "ledgr_output_handler", "ledgr_output_sink_memory")
+# A `list(...)` call with an unnamed element: a list of segments or rows,
+# not a record of named fields.
+ws4a_unnamed_list <- function(e) {
+  any(vapply(Filter(function(x) ws4a_head(x) == "list", ws4a_calls(e)), function(x) {
+    length(x) > 1L && (is.null(names(x)) || any(!nzchar(names(x)[-1L])))
+  }, NA))
+}
+ws4a_d2_hits <- function(fns) {
+  unlist(lapply(names(fns), function(nm) {
+    h <- vapply(Filter(function(a) {
+      lhs <- a[[2L]]
+      rhs <- a[[3L]]
+      (is.call(lhs) && ws4a_head(lhs) == "[[" && length(lhs) >= 3L && "length" %in% all.names(lhs[[3L]])) ||
+        (is.call(rhs) && ws4a_head(rhs) %in% c("c", "append") && ws4a_unnamed_list(rhs)) ||
+        (grepl("pending_segments", ws4a_txt(lhs), fixed = TRUE) && is.call(rhs) && ws4a_head(rhs) == "list")
+    }, ws4a_assigns(fns[[nm]])), ws4a_txt, "")
+    if (length(h)) paste0(nm, ": ", substr(h, 1L, 80L))
+  }))
+}
+
+testthat::test_that("[WS4a D2] the pulse staging is typed, drained whole and never retained across pulses", {
+  fns <- ws4a_sources()
+  testthat::expect_true(all(ws4a_d2_examined %in% names(fns)))
+  testthat::expect_length(ws4a_d2_hits(fns[ws4a_d2_examined]), 0L)
+  # The retired list-of-segments block builder is gone.
+  testthat::expect_false("ledgr_availability_diagnostic_block" %in% names(fns))
+  hit <- function(nm, stmt) length(ws4a_d2_hits(ws4a_inject_into(fns, nm, stmt))) > 0L
+  testthat::expect_true(hit("ledgr_fold_stage_observe_settle",
+    "fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment"))
+  testthat::expect_true(hit("ledgr_fold_stage_plan", "segments[[length(segments) + 1L]] <<- segment"))
+  testthat::expect_true(hit("ledgr_fold_envelope", "fold_state$pending_segments <- list()"))
+  testthat::expect_true(hit("ledgr_fold_staging_write", "pending <- c(pending, list(rows))"))
+  # Runtime, both producers, durable run and memory sweep.
+  for (avail in c(TRUE, FALSE)) {
+    got <- ws4a_3168_capture(avail, stop_at = if (avail) 3L else NA_integer_)
+    testthat::expect_gt(length(got$drains), 0L)
+    testthat::expect_length(ws4a_d2_runtime(got), 0L)
+  }
+  # Controls: a drain that keeps a row for the next pulse, and one that hands
+  # out the unused capacity, each fail the runtime predicate.
+  retain <- function(original) function(fold_state, ...) {
+    kept <- fold_state$pending_segments$n
+    original(fold_state, ...)
+    fold_state$pending_segments$n <- min(1L, kept)
+  }
+  whole <- function(original) function(fold_state, ...) {
+    if (fold_state$pending_segments$n > 0L) fold_state$pending_segments$n <- fold_state$pending_segments$capacity
+    original(fold_state, ...)
+  }
+  for (mutant in list(retain, whole)) {
+    got <- ws4a_3168_capture(TRUE, paths = "sweep", mutate = list(ledgr_fold_flush_pulse_block = mutant))
+    testthat::expect_gt(length(ws4a_d2_runtime(got)), 0L)
+  }
+})
+
+# D10 (static): one equity writer site, P1's write of the fold-owned record;
+# no accumulator, sink equity method or sink-held equity buffer.
+ws4a_d10_examined <- c(paste0("ledgr_fold_stage_", c("observe_settle", "decide", "plan", "apply", "commit")),
+  "ledgr_fold_envelope", "ledgr_output_handler", "ledgr_output_sink_memory", "ledgr_output_sink_duckdb")
+ws4a_d10_hits <- function(fns) {
+  targets <- lapply(fns, function(e) vapply(ws4a_assigns(e), function(a) ws4a_txt(a[[2L]]), ""))
+  writers <- unlist(Map(function(nm, t) rep(nm, sum(startsWith(t, "fold_state$equity_facts"))), names(fns), targets))
+  c(if (!identical(unname(writers), "ledgr_fold_stage_observe_settle")) paste("equity writers:", paste(writers, collapse = ", ")),
+    unlist(lapply(names(fns), function(nm) {
+      h <- c(intersect(all.names(fns[[nm]]), c("equity_fact_accumulator", "record_equity_fact")),
+        grep("^equity(\\$| *$)", targets[[nm]], value = TRUE))
+      if (length(h)) paste0(nm, ": ", h)
+    })))
+}
+
+testthat::test_that("[WS4a D10] P1 writes one fold-owned equity row per valued pulse on both producers", {
+  fns <- ws4a_sources()[ws4a_d10_examined]
+  testthat::expect_length(ws4a_d10_hits(fns), 0L)
+  inject <- function(nm, stmt) {
+    fns[[nm]] <- ws4a_inject(fns[[nm]], stmt)
+    length(ws4a_d10_hits(fns)) > 0L
+  }
+  testthat::expect_true(inject("ledgr_fold_stage_observe_settle", "services$equity_fact_accumulator$append(x)"))
+  testthat::expect_true(inject("ledgr_output_sink_memory", "equity <- new.env(parent = emptyenv())"))
+  testthat::expect_true(inject("ledgr_fold_stage_commit",
+    "fold_state$equity_facts <- ledgr_fold_equity_append(fold_state$equity_facts, ts, 0, 0, 0, 0)"))
+  # Runtime: availability (with a stop) and dense, durable run and sweep.
+  for (avail in c(TRUE, FALSE)) {
+    got <- ws4a_3168_capture(avail, stop_at = if (avail) 3L else NA_integer_)
+    testthat::expect_length(ws4a_d10_runtime(got), 0L)
+    testthat::expect_true(all(vapply(got$prefixes, `[[`, 0L, "n") > 0L))
+  }
+  # Controls: a duplicate and a missing writer fail the runtime predicate.
+  twice <- function(original) function(record, ...) original(original(record, ...), ...)
+  never <- function(original) function(record, ...) record
+  for (mutant in list(twice, never)) {
+    got <- ws4a_3168_capture(FALSE, paths = "sweep", mutate = list(ledgr_fold_equity_append = mutant))
+    testthat::expect_gt(length(ws4a_d10_runtime(got)), 0L)
+  }
+})
+
+testthat::test_that("[WS4a F4.49 O3.78] E applies each stop result once; its rows and count are installed once", {
+  callers <- names(Filter(function(e) "ledgr_fold_apply_stop" %in% ws4a_heads(e), ws4a_sources()))
+  testthat::expect_identical(callers, "ledgr_fold_envelope")
+  # The application counter: per stopped fold one application, whose
+  # stopped rows reach the writer once and whose pulse counts once.
+  counter <- function(got) {
+    c(applications = length(got$stops),
+      stopped_rows = sum(vapply(got$drains, function(d) d$handed[["stopped"]], 0L)),
+      counted = sum(vapply(got$stops, `[[`, 0L, "counted")))
+  }
+  got <- ws4a_3168_capture(TRUE, stop_at = 3L)
+  testthat::expect_identical(got$run, "returned")
+  testthat::expect_identical(counter(got), c(applications = 2L, stopped_rows = 2L, counted = 2L))
+  # Control: E invoking the stop application twice.
+  twice <- function(original) function(fold_state, stop) {
+    original(fold_state, stop)
+    original(fold_state, stop)
+  }
+  bad <- ws4a_3168_capture(TRUE, stop_at = 3L, mutate = list(ledgr_fold_apply_stop = twice))
+  testthat::expect_identical(counter(bad), c(applications = 2L, stopped_rows = 4L, counted = 4L))
+  # A full run applies none.
+  testthat::expect_length(ws4a_3168_capture(FALSE, paths = "sweep")$stops, 0L)
+})

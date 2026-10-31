@@ -235,8 +235,12 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
     positions = c(AAA = 2),
     cost_basis = c(AAA = 10)
   )
-  handler$record_equity_fact(
-    ts_utc = pulses[[1L]],
+  # LDG-3168 (category 1): the equity facts are rows of a typed equity
+  # record, handed to the inline summary as the fold's frozen prefix.
+  equity <- ledgr:::ledgr_fold_equity_record(2L)
+  equity <- ledgr:::ledgr_fold_equity_append(
+    equity,
+    ts = pulses[[1L]],
     cash = 1000,
     positions_value = 20,
     realized_pnl = lot_state$realized_pnl,
@@ -261,8 +265,9 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   write_res <- handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 2L)
   handler$record_accounting_fact(write_res, lot_res$applied)
   handler$flush_pulse_events()
-  handler$record_equity_fact(
-    ts_utc = pulses[[2L]],
+  equity <- ledgr:::ledgr_fold_equity_append(
+    equity,
+    ts = pulses[[2L]],
     cash = 1000 + write_res$cash_delta,
     positions_value = -12,
     realized_pnl = lot_state$realized_pnl,
@@ -281,7 +286,7 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
     run_id = run_id,
     metric_kernel = metric_kernel
   )
-  inline <- handler$inline_summary(run_id, metric_kernel)
+  inline <- handler$inline_summary(run_id, metric_kernel, ledgr:::ledgr_fold_equity_prefix(equity))
 
   testthat::expect_equal(inline$equity, reconstructed$equity)
   testthat::expect_equal(inline$fills, reconstructed$fills)

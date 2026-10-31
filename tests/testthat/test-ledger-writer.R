@@ -1143,18 +1143,20 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "write_exception_diagnostic", "write_fill_events", "write_run_diagnostics",
     "write_run_evidence", "write_strategy_state", "write_telemetry"
   )
+  # LDG-3168 (category 3): the memory sink records no equity of its own; the
+  # inline summary reads the fold's frozen equity record (Synthesis 3.6).
   memory_methods <- c(
     "abort_run", "append_compiled_spot_batch", "append_event_rows", "buffer_event",
     "buffer_strategy_state", "completion", "diagnostics", "events", "flush_pending",
     "flush_pulse_events", "init_buffers", "inline_summary", "pending_event_count",
-    "pending_state_count", "record_accounting_fact", "record_equity_fact",
+    "pending_state_count", "record_accounting_fact",
     "record_failure", "record_run_status", "run_transaction", "store_session_telemetry",
     "typed_events", "write_exception_diagnostic", "write_fill_events",
     "write_run_diagnostics", "write_run_evidence", "write_strategy_state",
     "write_telemetry"
   )
   testthat::expect_length(duckdb_methods, 21L)
-  testthat::expect_length(memory_methods, 27L)
+  testthat::expect_length(memory_methods, 26L)
   testthat::expect_length(intersect(duckdb_methods, memory_methods), 19L)
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
@@ -1187,7 +1189,10 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
 })
 
 testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep values, classes and order across growth", {
-  # Equity facts: 300 crosses the initial capacity of 256 and one doubling.
+  # Equity facts. LDG-3168 (decision 10, categories 1 and 5): the facts are
+  # rows of the fold's preallocated equity record (Synthesis 3.6), so the
+  # sink's doubling growth is retired; the record holds 300 valued rows of a
+  # larger capacity and the summary reads its frozen prefix.
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("growth-memory"))
   n <- 300L
   ts <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * (seq_len(n) - 1L)
@@ -1195,11 +1200,16 @@ testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep v
   value <- 50 + sqrt(seq_len(n))
   realized <- seq_len(n) / 3
   basis <- 40 + seq_len(n) / 11
+  record <- ledgr:::ledgr_fold_equity_record(n + 12L)
   for (i in seq_len(n)) {
-    memory$record_equity_fact(ts[[i]], cash[[i]], value[[i]], realized[[i]], basis[[i]])
+    record <- ledgr:::ledgr_fold_equity_append(record, ts[[i]], cash[[i]], value[[i]], realized[[i]], basis[[i]])
   }
   kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = ts)
-  summary <- memory$inline_summary(run_id = "growth-memory", metric_kernel = kernel)
+  summary <- memory$inline_summary(
+    run_id = "growth-memory",
+    metric_kernel = kernel,
+    equity = ledgr:::ledgr_fold_equity_prefix(record)
+  )
   expected <- data.frame(
     run_id = rep("growth-memory", n),
     ts_utc = as.POSIXct(as.numeric(ts), origin = "1970-01-01", tz = "UTC"),
@@ -1214,7 +1224,11 @@ testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep v
   testthat::expect_identical(attr(summary$equity$ts_utc, "tzone"), "UTC")
   testthat::expect_identical(summary$final_equity, expected$equity[[n]])
   empty <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("growth-empty"))
-  empty_summary <- empty$inline_summary(run_id = "growth-empty", metric_kernel = kernel)
+  empty_summary <- empty$inline_summary(
+    run_id = "growth-empty",
+    metric_kernel = kernel,
+    equity = ledgr:::ledgr_fold_equity_prefix(ledgr:::ledgr_fold_equity_record(4L))
+  )
   testthat::expect_identical(empty_summary$equity, ledgr:::ledgr_empty_equity_curve())
   testthat::expect_identical(empty_summary$final_equity, NA_real_)
 

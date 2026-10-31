@@ -93,17 +93,16 @@ ws4a_guts <- list(
     state$realized_comp <- 0
     state
   })),
+  # LDG-3168: the empty-context pulse's row of the fold equity record is skipped.
   C10_skip_valuation_on_empty = list(case = "C10", patch = list(ledgr_fold_stage_observe_settle = function(original) function(fold_state, services, ...) {
     advance <- services$valuation_state$advance
-    append <- services$equity_fact_accumulator$append
-    empty <- FALSE
+    ws_gut$empty <- FALSE
     services$valuation_state$advance <- function(pulse_idx, axis, ...) {
-      empty <<- length(axis) == 0L
+      ws_gut$empty <- length(axis) == 0L
       advance(pulse_idx, axis, ...)
     }
-    services$equity_fact_accumulator$append <- function(value) if (!empty) append(value)
     original(fold_state, services, ...)
-  })),
+  }, ledgr_fold_equity_append = function(original) function(record, ...) if (isTRUE(ws_gut$empty)) record else original(record, ...))),
   # M4 through the typed path (LDG-3166): the fill rows published in the scan's priority order.
   C11_affordability_order = list(case = "C11", patch = list(ledgr_fold_build_availability_pulse_plan = function(original) function(...) {
     plan <- original(...)
@@ -159,9 +158,10 @@ ws4a_guts <- list(
     obs$observation$packet$context_pos <- rev(obs$observation$packet$context_pos)
     obs
   })),
-  C16_force_fold_equity = list(case = "C16", patch = list(ledgr_run_finalize = function(original) function(con, output_handler, run, ...) {
-    run$availability_active <- TRUE
-    original(con, output_handler, run, ...)
+  # LDG-3168: the old decision, fold equity when the record has rows (dense fills it).
+  C16_force_fold_equity = list(case = "C16", patch = list(ledgr_run_finalize = function(original) function(con, output_handler, run, calendar, projection, fold) {
+    if (fold$equity_facts$n > 0L) run$availability_active <- TRUE
+    original(con, output_handler, run, calendar, projection, fold)
   })),
   C17_drop_continuation = list(case = "C17", patch = list(ledgr_walk_forward_continue_windows = function(original) function(fold_windows, ...) fold_windows)),
   C18_drop_split_tail = list(case = "C18", expect = "C18/(run|sweep)[.]", patch = list(ledgr_columnar_diagnostic_writer = function(original) function(run_id, output_handler, chunk_rows) {
@@ -170,21 +170,17 @@ ws4a_guts <- list(
     writer$append_block <- function(fields) append(lapply(fields, function(x) x[seq_len(min(length(x), chunk_rows))]))
     writer
   })),
+  # LDG-3168: the drain keeps the typed staging's first row for the next pulse,
+  # and E hands out the equity record's unused rows.
   C18_retain_staging = list(case = "C18", patch = list(ledgr_fold_flush_pulse_block = function(original) function(fold_state, ...) {
-    kept <- fold_state$pending_segments
+    kept <- fold_state$pending_segments$n
     original(fold_state, ...)
-    fold_state$pending_segments <- kept[seq_len(min(1L, length(kept)))]
+    fold_state$pending_segments$n <- min(1L, kept)
     invisible(NULL)
   })),
-  C18_drain_unused_equity = list(case = "C18", patch = list(ledgr_fold_equity_fact_accumulator = function(original) function(capacity) {
-    acc <- original(capacity)
-    collect <- acc$collect
-    acc$collect <- function() {
-      used <- collect()
-      unused <- list(ts_utc = 0, cash = 0, positions_value = 0, realized_pnl = 0, cost_basis = 0)
-      c(used, rep(list(unused), capacity - length(used)))
-    }
-    acc
+  C18_drain_unused_equity = list(case = "C18", patch = list(ledgr_fold_equity_prefix = function(original) function(record) {
+    record$n <- length(record$ts)
+    record
   })),
   # Section 6 mutations without a Section 4 gut that already implements them.
   M2_reorder_pulse_fills = list(case = "C1", patch = list(ledgr_fold_stage_apply = function(original) function(fold_state, services, observation, plan, ...) {

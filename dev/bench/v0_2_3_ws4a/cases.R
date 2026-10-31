@@ -523,10 +523,15 @@ ws_case("C15", "3165", function() {
 })
 
 # C16: a dense durable run finalizes equity through replay, not the prefix.
+# LDG-3168: both producers now fill the fold's equity record, so the fact
+# counts the fold rows finalization consumes (the frame built from the
+# record; 0 on dense, as the empty base accumulator gave); the record's own
+# rows are the typed precondition (observed, not compared).
 ws_case("C16", "3168", function() {
   fx <- ws_cost_fx("c16", FALSE)
-  n <- c(replay = 0L, prefix_commit = 0L, fold_equity_rows = NA)
+  n <- c(replay = 0L, prefix_commit = 0L, fold_equity_rows = 0L)
   inside <- FALSE
+  record_rows <- NA
   count <- function(k) function(original) function(...) {
     if (inside) n[[k]] <<- n[[k]] + 1L
     original(...)
@@ -534,14 +539,18 @@ ws_case("C16", "3168", function() {
   patch <- list(ledgr_run_finalize = function(original) function(...) {
     inside <<- TRUE
     on.exit(inside <<- FALSE)
-    n[["fold_equity_rows"]] <<- length(ws_args(original, ...)$fold$equity_facts)
+    record_rows <<- ws_args(original, ...)$fold$equity_facts$n
     original(...)
+  }, ledgr_run_fold_equity_frame = function(original) function(run_id, fold_equity) {
+    if (inside) n[["fold_equity_rows"]] <<- n[["fold_equity_rows"]] + fold_equity$n
+    original(run_id, fold_equity)
   })
   patch[[ws4a_seams[["replay"]]]] <- count("replay")
   patch[[ws4a_seams[["prefix_commit"]]]] <- count("prefix_commit")
   out <- ws_patches(patch, ws_durable(fx, ws_exp(fx), "c16", ws_c1_plan))
   ws_need(n[["replay"]] == 1L && n[["prefix_commit"]] == 0L, "replay used and prefix commit unused in finalization")
-  list(tables = out["run.equity_curve"], facts = as.list(n))
+  ws_need(ws4a_typed_c16(record_rows, n), "the dense run filled its fold equity record")
+  list(tables = out["run.equity_curve"], facts = as.list(n), observed = list(dense_record_rows = record_rows))
 })
 
 # C17: the window-1 final decision executes at window 2's first open in the

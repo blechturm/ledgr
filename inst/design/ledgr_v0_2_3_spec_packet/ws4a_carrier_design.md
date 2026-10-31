@@ -367,6 +367,49 @@ branch is unchanged.
 - **Retired:** `ledgr_fill_event_row()`, `ledgr_event_buffer_write_rows()`,
   the staged per-fill and per-leg lists and the per-fill write result.
 
+### 1.10 Diagnostics, equity and stops (LDG-3168 as built)
+
+`R/fold-carrier.R` holds the three groups of Synthesis 3.6, each validated
+by `ledgr_carrier_problem()` (V-diagnostics, V-equity, V-stop). The fold
+state gains the slot `equity_facts`; `pending_segments` becomes the typed
+staging, and `ledgr_fold_state_validate()` (E and stop application) checks
+both groups, used prefix included.
+
+- **Staging** (`pending_segments`): `n`, `capacity` and the 19 per-row
+  columns of the writer schema (times as UTC epoch doubles), allocated once
+  in E at `max(5N + 3, Q_pulse)` (`ledgr_fold_diagnostic_capacity()`, Q_pulse
+  the most due disposition rows of a pulse). Producers keep their segment
+  specifications; `ledgr_fold_diagnostic_rows()` expands one into a fully
+  used block with the persisted defaults and coercions, and
+  `ledgr_fold_staging_write()` writes it by index after the used rows (a row
+  beyond capacity is `ledgr_invalid_fold_execution`). P1, P2, P3, the
+  scheduled skip and P5 stage directly; P3 and the skip decision return no
+  segment list. The drain (`ledgr_fold_flush_pulse_block()`, P5 or an E
+  stop) hands the writer the used prefix as one block, adding `run_id`,
+  `diagnostic_seq` from the fold's row counter and `ts_utc`, and resets `n`
+  at constant capacity. The bounded writer, the handler's renumbering and
+  the memory sink's filter are unchanged. `ledgr_availability_diagnostic_block()`
+  is retired. Diagnostics carry text, not codes: there is no dictionary to
+  check; missingness follows the persisted defaults (stage, outcome, mark
+  source and feature identity may be NA; instrument, reason code, reasons,
+  decision time and detail may not).
+- **Equity** (`equity_facts`): `ts`, `cash`, `positions_value`,
+  `realized_pnl`, `cost_basis` preallocated to the pulse count, and `n`. P1
+  writes one row per valued pulse on both producers
+  (`ledgr_fold_equity_append()`); E returns the frozen prefix
+  (`ledgr_fold_equity_prefix()`). Finalisation selects its source by producer
+  (`use_fold_equity <- isTRUE(run$availability_active)`), the partial-prefix
+  commit and terminal recovery use the same record, and the memory sink's
+  `inline_summary(run_id, metric_kernel, equity)` reads the prefix; the
+  sink's growable equity vectors and `record_equity_fact` are gone.
+- **Stops:** `ledgr_fold_stop_result()` carries `diagnostics`, a fully used
+  staging block, and is validated as a group; `ledgr_fold_apply_stop()`,
+  called only by E, installs status, reason and exposure, stages the stop's
+  rows, counts a counting stop and validates the state; E then drains.
+- **Census:** the mode-branch record loses the producer-sized accumulator
+  capacity branch and records the partial commit's condition on `n`
+  (`dev/bench/v0_2_2_pre_cran_removal/census/README.md`).
+
 ## 2. Pins (scope b)
 
 ### 2.1 Reasons and restriction codes

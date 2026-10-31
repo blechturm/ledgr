@@ -308,23 +308,27 @@ ledgr_carrier_result_state <- function(fold_state, instrument_ids) {
   )
 }
 
+# The drain of the pulse's typed staging (in P5, or at an E stop): its used
+# prefix becomes one writer block, numbered from the fold's row counter; the
+# staging's used count returns to zero at constant capacity. The bounded
+# writer splits the block at its chunk boundaries.
 ledgr_fold_flush_pulse_block <- function(
     fold_state,
     diagnostic_writer,
     run_id,
     ts) {
-  if (length(fold_state$pending_segments) == 0L) {
+  n <- fold_state$pending_segments$n
+  if (n == 0L) {
     return(invisible(NULL))
   }
-  block <- ledgr_availability_diagnostic_block(
+  block <- ledgr_fold_diagnostic_block(
+    fold_state$pending_segments,
     run_id,
     ts,
-    fold_state$diagnostic_seq + 1L,
-    fold_state$pending_segments
+    fold_state$diagnostic_seq + 1L
   )
-  fold_state$pending_segments <- list()
-  fold_state$diagnostic_seq <-
-    fold_state$diagnostic_seq + length(block$diagnostic_seq)
+  fold_state$pending_segments$n <- 0L
+  fold_state$diagnostic_seq <- fold_state$diagnostic_seq + n
   diagnostic_writer$append_block(block)
   invisible(NULL)
 }
@@ -350,10 +354,7 @@ ledgr_fold_stage_observe_settle <- function(
   } else {
     NULL
   }
-  add_segment <- function(segment) {
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
-    invisible(NULL)
-  }
+  add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
   # One produced view: the provider's input names the run-axis positions by
   # ID; its outputs and the valuation are converted once by the transitional
   # provider adapter (Synthesis 3.2). Settlement, terminal and stop handling
@@ -402,7 +403,7 @@ ledgr_fold_stage_observe_settle <- function(
       reason_code = reason_code,
       affected_instrument_ids = ids,
       affected_exposure = affected,
-      diagnostic_segments = list(segment),
+      diagnostics = ledgr_fold_diagnostic_rows(segment, ts),
       counts_processed = FALSE
     )
   }
@@ -642,13 +643,6 @@ ledgr_fold_stage_observe_settle <- function(
   execution <- NULL
   if (services$availability_active) {
     fold_state$last_fully_valued <- ts
-    services$equity_fact_accumulator$append(list(
-      ts_utc = ts,
-      cash = fold_state$cash,
-      positions_value = positions_value,
-      realized_pnl = fold_state$lot_state$realized_pnl,
-      cost_basis = fold_state$lot_state$total_cost_basis
-    ))
     n_run <- length(services$instrument_ids)
     context_pos <- view_columns$context_pos
     packet <- ledgr_carrier_packet(c(
@@ -692,15 +686,17 @@ ledgr_fold_stage_observe_settle <- function(
       volume = if (has_next) next_bar$volume else absent
     ), "execution_packet", n_run)
   }
-  if (is.function(services$output_handler$record_equity_fact)) {
-    services$output_handler$record_equity_fact(
-      ts_utc = ts,
-      cash = fold_state$cash,
-      positions_value = positions_value,
-      realized_pnl = fold_state$lot_state$realized_pnl,
-      cost_basis = fold_state$lot_state$total_cost_basis
-    )
-  }
+  # The pulse is valued: its one row of the fold's equity record, on both
+  # producers (Synthesis 3.6). Finalisation and the inline summary read the
+  # frozen prefix E hands out.
+  fold_state$equity_facts <- ledgr_fold_equity_append(
+    fold_state$equity_facts,
+    ts = ts,
+    cash = fold_state$cash,
+    positions_value = positions_value,
+    realized_pnl = fold_state$lot_state$realized_pnl,
+    cost_basis = fold_state$lot_state$total_cost_basis
+  )
   if (sample_telemetry) {
     sample_now <- ledgr_time_now()
     t_bars <- ledgr_time_elapsed(sample_start, sample_now)
@@ -732,10 +728,8 @@ ledgr_fold_scheduled_skip_decision <- function(fold_state, services, observation
   position <- packet$position
   mark_source <- ledgr_carrier_mark_source_text(packet$mark_source)
   evidenced <- which(position != 0 & mark_source %in% c("stale_close", "frozen_close"))
-  diagnostic_segments <- if (length(evidenced) == 0L) {
-    list()
-  } else {
-    list(list(
+  if (length(evidenced) > 0L) {
+    ledgr_fold_staging_add(fold_state, list(
       n = length(evidenced),
       instrument_id = services$instrument_ids[packet$context_pos[evidenced]],
       stage = "valuation",
@@ -748,7 +742,7 @@ ledgr_fold_scheduled_skip_decision <- function(fold_state, services, observation
       mark_age = packet$mark_age[evidenced],
       position_before = position[evidenced],
       position_after = position[evidenced]
-    ))
+    ), observation$ts)
   }
   decision <- ledgr_carrier_decision(list(
     context_pos = packet$context_pos,
@@ -759,7 +753,6 @@ ledgr_fold_scheduled_skip_decision <- function(fold_state, services, observation
     intent_reason = NULL
   ), length(services$instrument_ids))
   c(decision, list(
-    diagnostic_segments = diagnostic_segments,
     sample_start = observation$sample_start,
     t_ctx = 0,
     t_strat = 0,
@@ -786,7 +779,6 @@ ledgr_fold_scheduled_skip_plan <- function(fold_state, decision) {
   )
   list(
     batch = batch,
-    diagnostic_segments = list(),
     sample_start = decision$sample_start,
     t_target = 0,
     t_fill = 0
@@ -803,10 +795,7 @@ ledgr_fold_stage_decide <- function(
   ts <- observation$ts
   ts_iso <- observation$ts_iso
   packet <- observation$packet
-  add_segment <- function(segment) {
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
-    invisible(NULL)
-  }
+  add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
 
   projection_idx <- services$projection_pulse_idx[[pulse_idx]]
   # P2 input: the decision axis and the public context's views. Context
@@ -1091,7 +1080,7 @@ ledgr_fold_stage_decide <- function(
           reason_code = "risk_mark_unavailable",
           affected_instrument_ids = stopped_ids,
           affected_exposure = affected,
-          diagnostic_segments = list(segment),
+          diagnostics = ledgr_fold_diagnostic_rows(segment, ts),
           counts_processed = TRUE
         ))
       }
@@ -1255,11 +1244,8 @@ ledgr_fold_stage_plan <- function(
     t_fill <- 0
   }
 
-  segments <- list()
-  add_segment <- function(segment) {
-    segments[[length(segments) + 1L]] <<- segment
-    invisible(NULL)
-  }
+  # P3's diagnostic rows are staged in emission order; a stop carries its row.
+  add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
   if (services$availability_active) {
     fill <- batch$fill
     rejection <- batch$rejection
@@ -1275,19 +1261,18 @@ ledgr_fold_stage_plan <- function(
         virtual_final_cash = batch$expected_final_cash,
         recorded_final_cash = recorded_final_cash
       ))
-      add_segment(list(
-        n = 1L,
-        stage = "affordability",
-        outcome = "stopped",
-        reason_code = "affordability_reconciliation_failed",
-        detail_json = affordability_detail
-      ))
       return(ledgr_fold_stop_result(
         status = "INCOMPLETE",
         reason_code = "affordability_reconciliation_failed",
         affected_instrument_ids = character(),
         affected_exposure = fold_state$affected_exposure,
-        diagnostic_segments = segments,
+        diagnostics = ledgr_fold_diagnostic_rows(list(
+          n = 1L,
+          stage = "affordability",
+          outcome = "stopped",
+          reason_code = "affordability_reconciliation_failed",
+          detail_json = affordability_detail
+        ), ts),
         counts_processed = TRUE
       ))
     }
@@ -1336,7 +1321,6 @@ ledgr_fold_stage_plan <- function(
   }
   list(
     batch = batch,
-    diagnostic_segments = segments,
     sample_start = sample_start,
     t_target = t_target,
     t_fill = t_fill
@@ -1571,29 +1555,21 @@ ledgr_fold_stage_commit <- function(
       ),
       exposure_basis = "decision_mark_gross"
     ))
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <-
-      list(
-        n = 1L,
-        stage = "reconciliation",
-        outcome = "reconciled",
-        reason_code = "affordability_reconciled",
-        detail_json = reconciliation_detail
-      )
-    ledgr_fold_flush_pulse_block(
-      fold_state,
-      services$diagnostic_writer,
-      services$run_id,
-      ts
-    )
+    ledgr_fold_staging_add(fold_state, list(
+      n = 1L,
+      stage = "reconciliation",
+      outcome = "reconciled",
+      reason_code = "affordability_reconciled",
+      detail_json = reconciliation_detail
+    ), ts)
   }
-  if (length(fold_state$pending_segments) > 0L) {
-    ledgr_fold_flush_pulse_block(
-      fold_state,
-      services$diagnostic_writer,
-      services$run_id,
-      ts
-    )
-  }
+  # The pulse's staged rows drain into the bounded writer.
+  ledgr_fold_flush_pulse_block(
+    fold_state,
+    services$diagnostic_writer,
+    services$run_id,
+    ts
+  )
 
   if (services$availability_active) {
     if (is.null(state_update)) {
@@ -1827,6 +1803,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     ts_utc = as.POSIXct(NA, tz = "UTC"),
     specified = FALSE
   )
+  # The pulse diagnostic staging (pinned capacity, design note 2.4) and the
+  # equity record (one row per valued pulse, capacity the pulse count) are
+  # allocated once here and never grow (Synthesis 3.6).
   fold_state <- ledgr_fold_state_new(
     cash = state$cash,
     positions = state$positions,
@@ -1837,18 +1816,15 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     last_fully_valued = last_fully_valued_ts,
     last_executed = last_executed_ts,
     frozen_set = as.character(execution$frozen_at_resume %||% character()),
+    pending_segments = ledgr_fold_diagnostic_staging(
+      ledgr_fold_diagnostic_capacity(length(instrument_ids), corporate_action_plan)
+    ),
+    equity_facts = ledgr_fold_equity_record(length(pulses_posix)),
     telemetry_idx = as.integer(telemetry$telemetry_samples %||% 0L)
   )
-  equity_fact_accumulator <- ledgr_fold_equity_fact_accumulator(
-    if (availability_active) length(pulses_posix) else 0L
-  )
+  # Each pulse's stages stage typed diagnostic rows in emission order; P5 or
+  # an E stop drains them as one block through the bounded writer.
   diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler)
-  # Each pulse accumulates typed diagnostic segments in emission order and
-  # appends one bounded block through the production writer.
-  add_segment <- function(segment) {
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
-    invisible(NULL)
-  }
   flush_pulse_block <- function(ts) {
     ledgr_fold_flush_pulse_block(
       fold_state,
@@ -1948,7 +1924,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     use_compiled_spot_fifo = use_compiled_spot_fifo,
     event_mode = event_mode,
     diagnostic_writer = diagnostic_writer,
-    equity_fact_accumulator = equity_fact_accumulator,
     telemetry = telemetry,
     telemetry_stride = telemetry_stride,
     checkpoint_every = checkpoint_every,
@@ -2007,17 +1982,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         sample_telemetry = sample_telemetry,
         sample_start = sample_start
       )
+      # E alone installs a stage's stop result, then drains the staging.
       if (ledgr_is_fold_stop_result(observed)) {
-        fold_state$status <- observed$status
-        fold_state$stop_reason <- observed$reason_code
-        fold_state$affected_exposure <- observed$affected_exposure
-        ledgr_fold_state_validate(fold_state)
-        for (segment in observed$diagnostic_segments) {
-          add_segment(segment)
-        }
-        if (isTRUE(observed$counts_processed)) {
-          fold_state$processed <- fold_state$processed + 1L
-        }
+        ledgr_fold_apply_stop(fold_state, observed)
         flush_pulse_block(ts)
         break
       }
@@ -2037,7 +2004,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
           sample_start = sample_start
         )
       } else {
-        add_segment(list(
+        ledgr_fold_staging_add(fold_state, list(
           n = 1L,
           instrument_id = "",
           stage = "decision",
@@ -2045,24 +2012,11 @@ ledgr_fold_envelope <- function(execution, output_handler) {
           reason_code = "scheduled_skip",
           reasons = "scheduled_skip",
           detail_json = "{}"
-        ))
-        skipped <- ledgr_fold_scheduled_skip_decision(fold_state, services, observation)
-        for (segment in skipped$diagnostic_segments) {
-          add_segment(segment)
-        }
-        skipped
+        ), ts)
+        ledgr_fold_scheduled_skip_decision(fold_state, services, observation)
       }
       if (ledgr_is_fold_stop_result(decision_result)) {
-        fold_state$status <- decision_result$status
-        fold_state$stop_reason <- decision_result$reason_code
-        fold_state$affected_exposure <- decision_result$affected_exposure
-        ledgr_fold_state_validate(fold_state)
-        for (segment in decision_result$diagnostic_segments) {
-          add_segment(segment)
-        }
-        if (isTRUE(decision_result$counts_processed)) {
-          fold_state$processed <- fold_state$processed + 1L
-        }
+        ledgr_fold_apply_stop(fold_state, decision_result)
         flush_pulse_block(ts)
         break
       }
@@ -2085,21 +2039,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         ledgr_fold_scheduled_skip_plan(fold_state, decision_result)
       }
       if (ledgr_is_fold_stop_result(plan_result)) {
-        fold_state$status <- plan_result$status
-        fold_state$stop_reason <- plan_result$reason_code
-        fold_state$affected_exposure <- plan_result$affected_exposure
-        ledgr_fold_state_validate(fold_state)
-        for (segment in plan_result$diagnostic_segments) {
-          add_segment(segment)
-        }
-        if (isTRUE(plan_result$counts_processed)) {
-          fold_state$processed <- fold_state$processed + 1L
-        }
+        ledgr_fold_apply_stop(fold_state, plan_result)
         flush_pulse_block(ts)
         break
-      }
-      for (segment in plan_result$diagnostic_segments) {
-        add_segment(segment)
       }
       sample_start <- plan_result$sample_start
 
@@ -2193,6 +2135,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     state = ledgr_carrier_result_state(fold_state, instrument_ids),
     state_prev = fold_state$state_prev,
     next_event_seq = fold_state$event_seq,
-    equity_facts = equity_fact_accumulator$collect()
+    # The frozen valued prefix for finalisation and the inline summary.
+    equity_facts = ledgr_fold_equity_prefix(fold_state$equity_facts)
   )
 }

@@ -915,7 +915,7 @@ ledgr_run_fold_impl <- function(config,
       ),
       fold = list(
         telemetry = telemetry,
-        processed = length(recovery_equity),
+        processed = recovery_equity$n,
         status = as.character(terminal_completion$intended_terminal_status[[1L]]),
         equity_facts = recovery_equity
       )
@@ -1062,7 +1062,7 @@ ledgr_run_fold_impl <- function(config,
   telemetry <- fold_result$telemetry
 
   if (!isTRUE(full_run)) {
-    if (availability_active && length(fold_result$equity_facts) > 0L) {
+    if (availability_active && fold_result$equity_facts$n > 0L) {
       partial_error <- tryCatch({
         ledgr_run_equity_prefix_commit(
           con = con,

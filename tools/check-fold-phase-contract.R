@@ -60,6 +60,7 @@ ledgr_fold_phase_source_findings <- function(paths) {
     current_stage = c("observe", "decide", "plan", "apply", "commit", "envelope"),
     current_ts = "envelope",
     pending_segments = c("observe", "decide", "plan", "commit", "envelope"),
+    equity_facts = "observe",
     diagnostic_seq = c("commit", "envelope"),
     telemetry_idx = "commit"
   )
@@ -73,8 +74,9 @@ ledgr_fold_phase_source_findings <- function(paths) {
     "(services\\$)?corporate_action_plan\\$bind_boundary\\s*\\(" = c("envelope", "apply"),
     "diagnostic_writer\\$append_block\\s*\\(" = c("commit", "envelope"),
     "diagnostic_writer\\$(drain|release)\\s*\\(" = "envelope",
-    "(services\\$)?equity_fact_accumulator\\$append\\s*\\(" = "observe",
-    "(services\\$)?output_handler\\$(append_event_rows|record_equity_fact)\\s*\\(" = "observe",
+    "ledgr_fold_equity_append\\s*\\(" = "observe",
+    "ledgr_fold_apply_stop\\s*\\(" = "envelope",
+    "(services\\$)?output_handler\\$append_event_rows\\s*\\(" = "observe",
     "output_handler\\$(write_fill_events|record_accounting_fact|append_compiled_spot_batch)\\s*\\(" = "apply",
     "output_handler\\$(flush_pulse_events|write_strategy_state|buffer_strategy_state)\\s*\\(" = "commit",
     "output_handler\\$(pending_event_count|pending_state_count|flush_pending)\\s*\\(" = c("commit", "envelope"),

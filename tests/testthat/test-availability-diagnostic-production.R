@@ -12,12 +12,13 @@ diagnostic_production_handler <- function() {
   )
 }
 
+# LDG-3168 (ws4a_carrier_design.md Section 5, category 1): the same segment
+# becomes a typed block of the pulse staging schema and is drained into the
+# writer's block, with the same run, sequence and pulse-time columns.
 diagnostic_production_block <- function(n, first_seq = 1L, id_offset = 0L) {
-  ledgr:::ledgr_availability_diagnostic_block(
-    run_id = "diagnostic-production",
-    ts_utc = as.POSIXct("2020-01-02 21:00:00", tz = "UTC"),
-    first_seq = first_seq,
-    segments = list(list(
+  ts_utc <- as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
+  rows <- ledgr:::ledgr_fold_diagnostic_rows(
+    list(
       n = n,
       instrument_id = sprintf("I%02d", id_offset + seq_len(n)),
       stage = "decision",
@@ -25,7 +26,14 @@ diagnostic_production_block <- function(n, first_seq = 1L, id_offset = 0L) {
       reason_code = "member_asserted",
       target = seq_len(n),
       mark_age = seq_len(n) - 1L
-    ))
+    ),
+    ts_utc
+  )
+  ledgr:::ledgr_fold_diagnostic_block(
+    rows,
+    run_id = "diagnostic-production",
+    ts = ts_utc,
+    first_seq = first_seq
   )
 }
 
