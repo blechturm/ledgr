@@ -1,0 +1,33 @@
+== w2_minvar
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w2_article
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w3_changing
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w3_full
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w4_sweep
+snapshot_hash      IDENTICAL
+sweep_candidates   IDENTICAL
+COMPARE_IDENTICAL
+== w4_wf
+snapshot_hash      IDENTICAL
+wf_folds           IDENTICAL
+wf_scores          IDENTICAL
+COMPARE_IDENTICAL

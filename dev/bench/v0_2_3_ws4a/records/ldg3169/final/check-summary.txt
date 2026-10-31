@@ -1,0 +1,2 @@
+* checking R code for possible problems ... NOTE
+Status: 1 NOTE
