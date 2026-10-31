@@ -726,8 +726,9 @@ Accepted change pending:
   screens each batch for a possible overflow (the native call refused, a
   returned realized total, net or compensation is non-finite, or the batch's
   reachable cost basis is not bounded below half the double range) and only
-  then asks the canonical typed fill operation for the earliest overflowing
-  fill; a native input refusal keeps its own condition when its fill comes
+  then asks the canonical typed fill operation for the earliest failing
+  fill, preserving any earlier canonical transition refusal and its
+  condition; a native input refusal keeps its own condition when its fill comes
   first or is the same fill. A non-finite result from a corrupt book stays
   `ledgr_lot_state_invariant`. Openings and dispositions are not covered by
   this refusal (v0.2.3 cut 5 `amendment_overflow`).

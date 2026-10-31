@@ -209,15 +209,12 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
   }
   batch <- native(n)
   if (ledgr_compiled_spot_fifo_suspect(batch, fills, book, lot_pack)) {
-    # Suspicion path only. The canonical typed fill operation is the oracle
-    # (contracts: canonical R is normative for compiled paths): its earliest
-    # invalid-fill row is the batch's overflow refusal, as for canonical
-    # fills. A native input refusal keeps its own condition when its row
-    # (the shortest refusing native prefix) comes first or is the same row.
-    # A corrupt book, or no canonical refusal, leaves the native outcome.
+    # On suspicion, retain the canonical operation's earliest refusal and its
+    # condition. A native input refusal wins when its row is earlier or the
+    # same. If canonical evaluation succeeds, retain the native outcome.
     # Nothing is installed or published for a refused batch.
     oracle <- ledgr_fold_fill_candidate(book, fills)
-    overflow <- if (!is.null(oracle$failed) && inherits(oracle$error, "ledgr_invalid_lot_fill")) {
+    failure <- if (!is.null(oracle$failed)) {
       oracle$failed
     } else {
       n + 1L
@@ -236,14 +233,9 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
           ok <- mid
         }
       }
-      if (failed <= overflow) stop(error)
+      if (failed <= failure) stop(error)
     }
-    if (overflow <= n) {
-      rlang::abort(
-        "Invalid fill input for lot accounting.",
-        class = "ledgr_invalid_lot_fill"
-      )
-    }
+    if (failure <= n) stop(oracle$error)
   }
   batch$positions <- as.numeric(batch$positions)
   # The output boundary publishes P3's carried effects and installs the cash

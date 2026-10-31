@@ -341,6 +341,9 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
       NULL
     },
     plan = {
+      if (is.nan(x$expected_final_cash) || identical(x$expected_final_cash, -Inf)) {
+        return("`expected_final_cash` must be finite, NA or positive infinity")
+      }
       kinds <- x$economic_event_kinds
       if (any(kinds < 1L | kinds > length(.ledgr_plan_kind_levels)) || anyDuplicated(kinds)) {
         return("an economic event kind is outside its dictionary")

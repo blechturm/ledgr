@@ -2999,6 +2999,18 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
   testthat::expect_identical(wrapper(fills(c(1, 1e308), c(Inf, 0))), "`fill_fee` must be finite >= 0.")
   testthat::expect_identical(wrapper(fills(c(1, 1e308), c(0, 0))), input[[2L]])
   testthat::expect_identical(wrapper(fills(c(1, 2), c(0, 0))), "none")
+  # Close re-review 1, N2: on suspicion an earlier canonical transition
+  # refusal keeps its condition instead of being discarded.
+  z <- ns$ledgr_lot_book(2L)
+  z$capacity <- c(1L, 0L); z$offset <- c(0L, 1L); z$tail <- c(1L, 0L)
+  z$lot_qty <- 0; z$lot_price <- 1
+  testthat::expect_null(ns$ledgr_lot_book_problem(z, reduction = FALSE))
+  state$lot_state <- z
+  testthat::expect_error(
+    ns$ledgr_run_compiled_spot_fifo_batch("w", fills(c(1, 1e308), c(0, 0)), state, c("A", "B"), 1L),
+    "Lot accounting cannot open through an unconsumed opposing lot.",
+    fixed = TRUE, class = "ledgr_lot_state_invariant"
+  )
 })
 
 # U-3168 and U-3167 at construction (ws13_close_review.md F3): a diagnostic
@@ -3565,4 +3577,13 @@ testthat::test_that("[WS4a F4.49 O3.78] E applies each stop result once; its row
   testthat::expect_identical(counter(bad), c(applications = 2L, stopped_rows = 4L, counted = 4L))
   # A full run applies none.
   testthat::expect_length(ws4a_3168_capture(FALSE, paths = "sweep")$stops, 0L)
+})
+
+# Close re-review 1, N1: the P3 expected-cash domain is finite, NA or +Inf.
+testthat::test_that("[WS4a expected cash domain] only finite, NA and positive infinity pass", {
+  p <- ws4a_3166_plan()
+  for (v in list(NA_real_, Inf, -1, 0, 1, NaN, -Inf)) {
+    p$expected_final_cash <- v
+    testthat::expect_identical(ws4a_refuses_plan(p), is.nan(v) || identical(v, -Inf))
+  }
 })

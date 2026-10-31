@@ -117,7 +117,8 @@ milestone check after WS4b.
   buy at 10 and with equity 1.5e308 for a sale realizing Inf). Workstream
   12's kernel raised `ledgr_lot_state_invariant`. The C++ batch is
   unchanged: its R wrapper screens each batch and, only on suspicion, asks
-  the canonical typed fill operation for the earliest overflowing fill; a
+  the canonical typed fill operation for the earliest failing fill,
+  preserving any earlier canonical transition refusal and its condition; a
   native input refusal keeps its own condition when its fill comes first or
   is the same fill. The LDG-3167 probe differs from the base in exactly six
   outcomes, all by this decision
@@ -140,8 +141,9 @@ milestone check after WS4b.
   valuations as `ledgr_internal_error` (close review F1).
 - **LDG-3166 checkpoint chain** (`ws13_checkpoint_review.md`,
   `ws13_checkpoint_rereview_1.md`, `ws13_checkpoint_rereview_2.md`: 3
-  reviews, 2 correction rounds, PASS on `167dc947`). Public refusals keep
-  the base class, message and order: the planners refuse the first failing
+  reviews, 2 correction rounds, PASS on `167dc947`). The canonical R
+  refusals checked by that checkpoint keep the base class, message and
+  order: the planners refuse the first failing
   row with its first failing check, an overflowing or arithmetic-NaN fee or
   cash effect passes the plan and is refused at accounting with
   `ledgr_invalid_lot_fill`, and the 21 probe scenarios plus two public NaN
@@ -169,9 +171,8 @@ milestone check after WS4b.
 - (a) Resolved by `amendment_valuation` and correction round 1 (close review
   F1): see "Valuation" above. The review's own case (selling the 1e308 long
   at 10) now reaches its fill and refuses by `amendment_overflow`, because
-  the sale's realized P&L overflows; the maintainer's decision names
-  `ledgr_config_non_finite` for it, so this reading is flagged for
-  confirmation.
+  the sale's realized P&L overflows, as the maintainer explicitly clarified
+  in `amendment_valuation` after correction round 1.
 - (b) The compiled path: resolved by correction round 1 (close review F2).
   Openings and dispositions are not fills and remain outside the refusal; their
   extreme-value semantics are not certified (typed-accounting design).
