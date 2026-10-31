@@ -260,6 +260,57 @@ plus `%in%`; its census is the P2 feature-table filters (three sites), the
 sizing-note test and the skip's mark-source token test. The mode-branch
 census lost two P1 rows (LTB-0331 entry of Section 5).
 
+### 1.8 Plan groups (LDG-3166 as built)
+
+P3 returns `list(batch, diagnostic_segments, sample_start, t_target,
+t_fill)`. `batch` is the plan group (`expected_final_cash`,
+`economic_event_kinds`, `fill`, `rejection`), built by either planner and
+validated once by `ledgr_carrier_plan()` (V-plan, which runs V-fill and
+V-rejection; class `ledgr_invalid_pulse_plan` with
+`ledgr_invalid_fold_execution`, Section 2.2). Fill and rejection rows
+together hold each actionable ordinal exactly once. The rejection group has
+`emit` (1 early, 2 affordability) and a `primary` code column (Section 2.1);
+the fill's primary is its first informational code, decoded at the
+diagnostic boundary. The acceptance mask and permutation stay in
+`ledgr_plan_affordability()`. Dense rejects rows too (final pulse:
+`final_pulse_no_execution`, with one `LEDGR_LAST_BAR_NO_FILL` warning per
+target; non-positive resolved price: `execution_bar_missing`), so both
+producers emit the same batch; dense has no reconciliation, and its
+`expected_final_cash` is `NA`. A scheduled skip returns an empty plan at the
+fold cash.
+
+- **Costs:** the execution spec's `cost_resolver` is a batch resolver,
+  `function(side, qty, open)` returning `list(price, fee)`; the planners
+  call it once per pulse with candidate rows, never for an empty batch.
+  `ledgr_cost_model_resolve()` applies the steps to whole columns and keeps
+  the resolver seam's documented classes (`ledgr_invalid_fill_proposal`,
+  `ledgr_invalid_fill_context`) for a wrongly shaped batch.
+- **Effects:** each planner calls `ledgr_fill_publication_deltas()` once per
+  pulse on its candidate rows (dense: its fills). Affordability, both
+  reconciliation sums (`sum()` over the reused column), P4 cash and every
+  sink reuse the result.
+- **Epochs:** E computes `services$execution_epochs` and
+  `execution_epoch_valid` once from `execution_opportunities_posix %||%
+  pulses_posix[-1]`. A planner refuses an invalid epoch only where the base
+  first parsed it, through `ledgr_plan_refuse_epoch()`, with the base class
+  and message; the refusal order is the base per-row order (availability:
+  epoch before short exposure; dense: first row's open, epoch, later opens).
+- **Named boundaries:** `ledgr_carrier_execution_view()` (transitional
+  provider adapter, remover WS4b; P3 only, D24); the publication input
+  `write_fill_events(fill, i, instrument_id, event_seq, use_transaction)`,
+  `ledgr_fill_event_payload()` and `ledgr_write_fill_events()` (typed columns
+  plus a row index; a zero-length index is the no-op; the execution epoch
+  becomes POSIXct there); the compiled wrapper reads the fill columns. The
+  `[WS4a D3 3166]` census: the short-exposure refusal names its instrument
+  (two `setNames`), and four dictionary, code or field-name tests.
+- **Retired:** `R/fill-model.R` (proposal, fill context, resolver call),
+  the fill-intent object and `ledgr_fill_none`, `ledgr_fold_pulse_plan_*`,
+  `ledgr_availability_apply_affordability()`,
+  `ledgr_availability_fill_cash_delta()`, the availability reason-string
+  helpers and `ledgr_ts_utc_posix()` (no caller left). D13 drops
+  `ledgr_fold_build_pulse_plan`; `records/detectors/frozen.csv` row `D13b`
+  is the unchanged digest of the three remaining builders on base 953338df.
+
 ## 2. Pins (scope b)
 
 ### 2.1 Reasons and restriction codes
