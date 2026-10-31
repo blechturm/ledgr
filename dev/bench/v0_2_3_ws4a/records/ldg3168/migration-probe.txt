@@ -1,0 +1,9 @@
+drop_used_equity_row       [LTB-0521] typed state, equity and diagnosti product 0 failures, control 2 -> FAILS AS REQUIRED
+drop_used_equity_row       inline accounting summary matches reconstruc product 0 failures, control 3 -> FAILS AS REQUIRED
+drop_used_equity_row       [LTB-0278] fold state and stop results have  product 0 failures, control 2 -> FAILS AS REQUIRED
+expose_unused_equity_row   [LTB-0521] typed state, equity and diagnosti product 0 failures, control 4 -> FAILS AS REQUIRED
+equity_record_grows        [LTB-0278] fold state and stop results have  product 0 failures, control 1 -> FAILS AS REQUIRED
+sink_equity_method         [LTB-0518] one output handler exposes exactl product 0 failures, control 3 -> FAILS AS REQUIRED
+plan_returns_segments      [LTB-0281] the envelope calls five typed sta product 0 failures, control 1 -> FAILS AS REQUIRED
+block_missing_column       the production diagnostic path defaults to o product 0 failures, control 1 -> FAILS AS REQUIRED
+block_missing_column       typed diagnostic blocks split across injecte product 0 failures, control 1 -> FAILS AS REQUIRED
