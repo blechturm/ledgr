@@ -2163,3 +2163,28 @@ testthat::test_that("[WS4a F1 base refusals] the planners refuse with the base c
     .package = "ledgr"
   )
 })
+
+# Checkpoint re-review 1, N1: finite public cost inputs that produce an
+# arithmetic NaN fee or cash effect keep the base accounting refusal, and the
+# plan still refuses an ordinary NA or a NaN cash effect with a finite fee.
+testthat::test_that("[WS4a F1 arithmetic NaN] dense costs retain accounting refusals", {
+  fx <- ws4a_3166_fixture(FALSE)
+  on.exit(ledgr_snapshot_close(fx$snap))
+  cases <- list(
+    list(target = -1e308, cost = ledgr_cost_chain(ledgr_cost_fixed_fee(1e308), ledgr_cost_notional_bps_fee(1e308))),
+    list(target = 1e308, cost = ledgr_cost_notional_bps_fee(0)))
+  for (i in seq_along(cases)) {
+    exp <- ledgr_experiment(fx$snap, function(ctx, params) {
+      t <- ctx$hold(); t[["AAA"]] <- params$target; t
+    }, cost_model = cases[[i]]$cost, opening = ledgr_opening(cash = 1000))
+    testthat::expect_error(ledgr_run(exp, params = list(target = cases[[i]]$target),
+      run_id = paste0("ws4a-nan-", i), seed = 1L),
+      "^Invalid fill input for lot accounting[.]$", class = "ledgr_invalid_lot_fill")
+  }
+  for (field in c("fee", "cash_delta")) {
+    p <- ws4a_3166_plan(); p$fill[[field]][1L] <- NA_real_
+    testthat::expect_true(ws4a_refuses_plan(p))
+  }
+  p <- ws4a_3166_plan(); p$fill$fee[1L] <- 0; p$fill$cash_delta[1L] <- NaN
+  testthat::expect_true(ws4a_refuses_plan(p))
+})

@@ -38,8 +38,9 @@
 # Field specifications: "<storage>:<axis>:<missingness>". Axis `context` is
 # the group's context length, `run` the run axis, `segment` the restriction
 # segment total, `any` free; missingness `none` refuses NA, `na` admits NA
-# (doubles must otherwise be finite), `inf` refuses NA but admits an infinite
-# double (a fee that overflowed, refused at accounting as in the base) and
+# (doubles must otherwise be finite), `inf` admits Inf and arithmetic NaN
+# only in resolved fee/cash columns, but refuses ordinary NA; accounting
+# retains the base refusal for non-finite fees, and
 # `-` marks opaque fields.
 .ledgr_carrier_fields <- list(
   decision_packet = c(
@@ -158,7 +159,8 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
     if (is.na(size) || length(v) != size) {
       return(paste0("`", names(spec)[[k]], "` does not have its axis length"))
     }
-    if (parts[[k]][[3L]] %in% c("none", "inf") && anyNA(v)) {
+    if ((identical(parts[[k]][[3L]], "none") && anyNA(v)) ||
+        (identical(parts[[k]][[3L]], "inf") && any(is.na(v) & !is.nan(v)))) {
       return(paste0("`", names(spec)[[k]], "` contains a missing value"))
     }
     if (is.double(v) && !identical(parts[[k]][[3L]], "inf") && any(is.infinite(v))) {
@@ -232,8 +234,11 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
       if (!is.null(problem)) return(problem)
       if (is.unsorted(x$k, strictly = TRUE)) return("fills are not in decision order")
       if (any(x$side != 1L & x$side != -1L)) return("a fill side is not +1 or -1")
-      if (any(x$qty <= 0) || any(x$price <= 0) || any(x$fee < 0)) {
+      if (any(x$qty <= 0) || any(x$price <= 0) || any(x$fee < 0, na.rm = TRUE)) {
         return("a fill quantity, price or fee is out of range")
+      }
+      if (any(is.nan(x$cash_delta) & is.finite(x$fee))) {
+        return("an undefined cash effect requires a non-finite fee")
       }
       if (!identical(x$position_delta, x$side * x$qty)) {
         return("`position_delta` is not the signed fill quantity")
