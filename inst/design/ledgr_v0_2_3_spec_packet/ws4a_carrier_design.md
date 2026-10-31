@@ -345,7 +345,11 @@ branch is unchanged.
   writing (`write_fill_events(stage = FALSE)`), so a publication refusal of
   an earlier fill (a non-finite cash effect in durable metadata) still comes
   first, as in the per-fill order. `records/ldg3167/` holds the base,
-  pre-change and candidate refusal probe.
+  pre-change and candidate refusal probe. A fill whose lot accounting
+  overflows to a non-finite value from a valid book is refused as
+  `ledgr_invalid_lot_fill` (cut 5 `amendment_overflow`), where the base
+  accepted it and workstream 12's kernel raised `ledgr_lot_state_invariant`;
+  `records/overflow/` holds the probe rerun.
 - **Publication group** (`ledgr_fill_event_payload()`, V-publication):
   `status`, `next_event_seq` and the row columns `event_id`, `run_id`,
   `ts_utc` (UTC seconds), `event_type`, `instrument_id`, `side`, `qty`,

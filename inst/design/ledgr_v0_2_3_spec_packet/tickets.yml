@@ -1435,4 +1435,5 @@ tickets:
       records. Keep generated build and check artifacts outside the tracked
       tree.
     acceptance: ["every oracle, case, gut, detector and injection passes or fails as specified, each with its command and exit code in the final-candidate record", "the contract text matches the implemented behaviour and promotes nothing unimplemented", "the disposition records the three identity declarations with evidence"]
-    evidence: []
+    evidence:
+      - "Prerequisite, amendment_overflow (not this ticket's final-candidate record): product 9b05538f refuses a fill whose lot accounting overflows to a non-finite value as ledgr_invalid_lot_fill ('Invalid fill input for lot accounting.'); a corrupt book keeps ledgr_lot_state_invariant. dev/bench/v0_2_3_ws4a/records/overflow/ (README.md, sequence.log, guts.log, a0-compare.csv, probe-candidate.txt): 23 cases identical, 36 of 36 guts fail as expected, dense PASS, A0 295 of 295, full suite exit 0; the LDG-3167 probe matches the base in 10 of 16 outcomes and differs by the decision in 6 (pub1_lot2 and pub1_lot2_live sweeps, lot1_pub2 and lot_only run and sweep). Test change with its stated reason: [WS4a 3167 precedence] expects ledgr_invalid_lot_fill instead of ledgr_lot_state_invariant for its three 1e308-at-10 rows, the outcome the amendment overrules; new block [WS4a overflow refusal]."
