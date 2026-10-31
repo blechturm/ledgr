@@ -604,7 +604,9 @@ workstreams:
   - id: 12
     name: "Typed lot book (macro WS4a, part 1)"
     cut: 5
-    status: "planned"
+    status: "complete"
+    accepted: "2026-10-31 by the maintainer after the Type 1 close review and one correction round, on product f4c47b8b."
+    close_review: "CHANGES_REQUIRED in ws12_close_review.md (independent clean-context Codex Type 1, 2026-10-31; F1-F6 blocking, F7 optional); correction round 1 at 03aed8b7/b7bffc0a; focused re-review PASS_AFTER_PATCHES in ws12_close_review_rereview_1.md (N1, N2 blocking; O1, O2 optional), all applied verbatim in f4c47b8b. Recorded ratio: 2 reviews, 1 correction round. F3 residual accepted: fold-state, fold-entry and compiled-unpack validation cannot bound non-flat cached-net or basis corruption from the current book alone."
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 12, after LDG-3164", reason: "One claim joins LDG-3162 through LDG-3164: one typed lot implementation (opening, fill, disposition) serves the fold, replay, the chunked fills reader, opening and resume initialisation, walk-forward carry, terminal dispositions and recovery, the handler's accounting fact and compiled pack/unpack; the named-list FIFO is deleted; outputs are exactly equal to the A0 successor, dense and real-data oracles; and the replay choice of decision (6) is settled within its replay timing and memory budgets."}
