@@ -223,6 +223,43 @@ unpack and batch, and P4 are positional.
 bound: the stop result's `affected_instrument_ids` and the Phase 5.5 fold
 return (`state`, `state_prev`, `next_event_seq`).
 
+### 1.7 Observation and decision groups (LDG-3165 as built)
+
+`R/fold-carrier.R` holds the four groups of Synthesis Sections 3.1-3.2.
+P1 returns `list(observation, execution)`: the observation carries the
+decision packet (`packet`, availability only) and the decision data
+(`data`, P2 only; E sets it to NULL before P3), the execution packet goes
+to P3 alone. P2 returns the decision group plus its stage clocks. Dense
+emits no packet, data or execution packet; its decision has the identity
+`context_pos`, which the decision group carries for both producers as the
+axis of its columns. Constructors `ledgr_carrier_packet()` (groups
+`decision_packet`, `decision_data`, `execution_packet`) and
+`ledgr_carrier_decision()` validate once through `ledgr_carrier_problem()`
+(V-packet, V-decision). The execution packet's `exec_ts` is read from the
+prepared opportunity axis; the availability planner keeps its own read until
+LDG-3166. Dictionaries: restriction codes and mark sources as in 2.1-2.2;
+status and lifetime codes index the prepared provider's fixed level vectors
+(the snapshot schema closes both vocabularies).
+
+Named boundaries of these groups:
+
+| Boundary | Function | Role |
+| --- | --- | --- |
+| Provider input | `ledgr_fold_positions_snapshot` in P1's `availability_decision` | run-axis positions named for `decision_view()` |
+| Provider output (transitional, remover WS4b) | `ledgr_carrier_provider_view` | view and valuation planes, keyed by the view's axis in order, unnamed once per produced view |
+| Settlement, terminal and stop paths in P1 | P1 body | keep reading the provider's named view and valuation (settlement boundary, remover WS8) |
+| P2 input | `ledgr_carrier_p2_input`, `ledgr_fold_positions_snapshot`, `ledgr_history_bar_packet_frame` | the public context's named availability planes, `.positions`, members and bar frame |
+| P2 return | `ledgr_validate_strategy_targets` | the one shape and name normalization; its named result feeds the risk steps and the named availability validators |
+| P2 stop | `ledgr_carrier_p2_valuation` | the affected-exposure record's valuation fields by ID, risk-mark stop only |
+
+The post-risk check is `ledgr_validate_post_risk_quantities()`: a numeric,
+context-length, finite transformed vector; class and parent unchanged.
+`[WS4a D3 3165]` examines P2 (`ledgr_fold_stage_decide`), P3's stage
+function, P5 and the scheduled skip with the shared name-keyed predicate
+plus `%in%`; its census is the P2 feature-table filters (three sites), the
+sizing-note test and the skip's mark-source token test. The mode-branch
+census lost two P1 rows (LTB-0331 entry of Section 5).
+
 ## 2. Pins (scope b)
 
 ### 2.1 Reasons and restriction codes

@@ -1260,7 +1260,7 @@ tickets:
   - id: "LDG-3165"
     title: "Typed observation and decision"
     workstream: 13
-    status: "planned"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3164"]
@@ -1284,7 +1284,14 @@ tickets:
       their owning ticket. No consumer reconstructs the old mixed observation
       containing next bars for P2.
     acceptance: ["P2's input carries no execution-packet field and the next-bar detector fails on an injected one", "one shape and name normalization of the strategy return remains, and the duplicate-normalization detector fails on an injected second one", "missing targets are refused, never zero-filled", "every decision (2) public oracle passes exactly", "the full suite passes"]
-    evidence: []
+    evidence:
+      - "Acceptance 1 (P2 input): product 33331be8, tests/testthat/test-ws4a-carrier.R [WS4a D5 D21]: P1 returns list(observation, execution); E hands P2 the observation only and drops the decision data before P3. On the v0.2.0.1 availability witness no P2 argument (depth 4) carries an execution-only name, the execution packet object or one of its next-bar price columns, and P3 receives no decision data; the injected packet and an injected unlabeled next-bar open column both fail. D21: the phase checker finds no history or substrate access in P3-P5, and an injected P3 history read is a finding."
+      - "Acceptance 2 (one normalization): [WS4a D4]: ledgr_validate_strategy_targets runs once per decided pulse on both producers (runtime counter) and once in ledgr_fold_stage_decide (static); the post-risk shape and name revalidation is deleted (ledgr_validate_post_risk_targets no longer exists) and replaced by ledgr_validate_post_risk_quantities, which checks only the transformed values and keeps class ledgr_invalid_post_risk_targets with parent ledgr_invalid_strategy_result. An injected second normalization after risk fails on both producers, and an injected static call is counted. [WS4a O3.28]: the compiled risk plan is validated in E and zero times inside P2; the short-exposure check stays."
+      - "Acceptance 3 (missing targets): [WS4a missing targets]: a strategy return missing one instrument is refused with ledgr_invalid_strategy_result ('missing instruments') on a dense and an availability run; past normalization, an NA post-risk quantity and an NA decision target are refused (V-decision), never zero-filled."
+      - "Acceptance 4 (oracles): dev/bench/v0_2_3_ws4a/records/ldg3165/ (README.md, sequence.log, a0-compare.csv) on product 33331be8: check.R --base=HEAD 23 cases identical; the dense oracle PASS (nine native arms identical); A0 successor 295 of 295 PASS. The C10/C15 case hooks read the context axis from the packet (lib.R ws_context) with unchanged recorded bytes; guts C7_plan_on_skip, C7_strategy_on_skip, C10, C12, C14b, C15 (M8, moved to reverse the packet's context_pos) and C17 fail as expected, as do the 13 LDG-3164 guts; the invalid-base control is refused."
+      - "Acceptance 5 (full suite): dev/bench/v0_2_3_ws4a/records/ldg3165/sequence.log: testthat::test_local(stop_on_failure = TRUE) exits 0 on product 33331be8 (one existing skip)."
+      - "Section 8 row 3165: U-3165, V-packet (three subgroups) and V-decision in [WS4a V-packet U-3165] and [WS4a V-decision U-3165] (storage type, shortened column, bound, untyped empty, typed empty accepted, and F4.14-F4.18, F4.20-F4.23, F4.25, F4.26 structural controls refused with ledgr_internal_error); F4.19 in [WS4a F4.19] (adapter output against its provider and valuation inputs field by field, an expired unpriced and a frozen holding, every production call of the witness run; erasing age, source or reference fails); D16 in [WS4a D16] (adapter calls equal produced views; a second conversion fails); D3 in [WS4a D3 3165] (P2, P3, P5 and the skip with %in% added; five census sites; four injected lookups fail); D12d and D13 in [WS4a D12d D13] (no unrecorded mode-branch site, no file above its frozen availability_active count, frozen dense-builder hash; an added P5 branch and an edited builder fail); C14b identical and its gut fails."
+      - "Test migrations (ws4a_carrier_design.md Section 5): test-risk-fold.R:122 LTB-0281 (category 3, frozen name sets for the observation and decision groups; an extra field fails the identical() name check); test-risk-fold.R:827 post-risk class test (category 5, nonfinite transformed quantity, class and parent kept); test-codebase-contracts.R:114 LTB-0331 (category 5, two removed P1 branch rows deleted from dev/bench/v0_2_2_pre_cran_removal/census/mode_branches.csv, README note; no row added). Design note Section 1.7 records the as-built groups and named boundaries. Harness 1,995 to 2,008 lines."
   - id: "LDG-3166"
     title: "Typed plan batch on both producers"
     workstream: 13

@@ -1220,10 +1220,15 @@ testthat::test_that("[WS4a D16] the provider adapter converts each produced view
 
 # D5: names that only the execution packet carries.
 ws4a_execution_names <- c("execution", "exec_ts", "has_next", "next_bar", "next_bars")
+# D5's predicate: an execution-only name, the execution packet object, or one
+# of its next-bar price columns under any name, anywhere in `x`.
 ws4a_p2_leaks <- function(x, execution, depth = 0L) {
   if (!is.list(x) || depth > 4L) return(character())
-  hits <- c(intersect(names(x), ws4a_execution_names),
-    if (!is.null(execution) && any(vapply(x, identical, logical(1), execution))) "execution packet object")
+  carried <- if (is.null(execution)) list() else {
+    c(list(execution), if (isTRUE(execution$has_next)) execution[c("open", "high", "low", "close")])
+  }
+  same <- vapply(x, function(v) any(vapply(carried, identical, logical(1), v)), logical(1))
+  hits <- c(intersect(names(x), ws4a_execution_names), if (any(same)) "execution packet value")
   unname(c(hits, unlist(lapply(x, ws4a_p2_leaks, execution = execution, depth = depth + 1L))))
 }
 
@@ -1242,8 +1247,10 @@ testthat::test_that("[WS4a D5 D21] P2's input carries no execution-packet field;
         out <- observe(...)
         if (!ledgr_is_fold_stop_result(out)) {
           state$execution <- out$execution
-          # Control: pass the next bar to P2 inside its observation.
-          if (leak) out$observation$execution <- out$execution
+          # Controls: pass the next bar to P2 inside its observation, as the
+          # packet or as one unlabeled price column.
+          if (leak == "packet") out$observation$execution <- out$execution
+          if (leak == "column" && out$execution$has_next) out$observation$extra <- out$execution$open
         }
         out
       },
@@ -1261,11 +1268,12 @@ testthat::test_that("[WS4a D5 D21] P2's input carries no execution-packet field;
     ws4a_v201_run()
     state
   }
-  clean <- leak_run(FALSE)
+  clean <- leak_run("none")
   testthat::expect_gt(clean$p2, 0L)
   testthat::expect_identical(clean$hits, character())
   testthat::expect_identical(clean$p3_data, 0L)
-  testthat::expect_gt(length(leak_run(TRUE)$hits), 0L)
+  testthat::expect_true(all(c("execution", "execution packet value") %in% leak_run("packet")$hits))
+  testthat::expect_identical(unique(leak_run("column")$hits), "execution packet value")
   testthat::expect_identical(ws4a_p2_leaks(list(history_bars = list(next_bar = 1)), NULL), "next_bar")
 
   # D21: the phase checker finds no history or substrate access in P3-P5;

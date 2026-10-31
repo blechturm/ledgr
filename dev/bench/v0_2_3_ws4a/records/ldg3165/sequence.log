@@ -1,0 +1,8 @@
+product 33331be8 (base 975c8add); R 4.6.1; scratch C:/Users/maxth/AppData/Local/Temp/ws13-3165
+cases check.R --base=HEAD exit 0 (PASS, 23 case(s) identical)
+guts guts.R --base=HEAD (20 guts) exit 0 (20 FAIL expected; invalid-base control REFUSED)
+dense dense/check.R exit 0 (PASS; nine native arms identical)
+a0-record record.R exit 0 (290 files)
+a0-compare compare.R exit 0 (PASS, 295 checks, 0 fail)
+suite test_local(stop_on_failure=TRUE) exit 0 (one skip: quantmod missing-package path)
+targeted test_local filter ^(ws4a-carrier|codebase-contracts|risk-fold|strategy-schedule|fold-phase-contract|pulse-seed-v2)$ all pass; ws4a-carrier rerun after the D5 strengthening: 31 tests, 0 failed
