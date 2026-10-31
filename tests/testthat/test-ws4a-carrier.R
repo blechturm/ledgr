@@ -1,10 +1,10 @@
 # ledgr-test-file-profile: review
 #
-# WS4a typed fold carrier: the LDG-3164 detectors and validators
-# (inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md Section 6 and
-# Section 3.2, rows owned by LDG-3164). Each predicate runs on production
-# code and must pass there; each also shows its own compliant control
-# passing and its own violating control failing.
+# WS4a typed fold carrier: the LDG-3164 and LDG-3165 detectors and
+# validators (inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md
+# Section 6 and Section 3.2, rows owned by those tickets). Each predicate
+# runs on production code and must pass there; each also shows its own
+# compliant control passing and its own violating control failing.
 
 ws4a_ns <- function() asNamespace("ledgr")
 
@@ -945,4 +945,543 @@ testthat::test_that("[WS4a F1] replay refuses the earliest failing event with th
   testthat::expect_error(replay(live_b, witness_a), exhaust, class = "ledgr_lot_state_invariant")
   # Within one event, exhaustion precedes the witness.
   testthat::expect_error(replay(utils::modifyList(live_b, list(pnl = 999))), exhaust, class = "ledgr_lot_state_invariant")
+})
+
+# --- LDG-3165: typed observation and decision -------------------------------
+
+# The v0.2.0.1 availability witness (helper-availability-v0-2-0-1-witnesses.R,
+# unchanged): a changing context with held nonmembers, halted (restricted)
+# instruments, a stale mark and an early stop. Returns the run's handle or
+# its error.
+ws4a_v201_run <- function(run_id = "ws4a-3165") {
+  f <- availability_v201_fold_fixture()
+  snap <- ledgr_snapshot_from_df(f$bars, instruments_df = f$instruments,
+    db_path = tempfile(fileext = ".duckdb"), snapshot_id = "witness", facts = f$facts,
+    price_basis = "split_adjusted")
+  withr::defer(ledgr_snapshot_close(snap), envir = parent.frame())
+  withr::local_options(list(ledgr.v201.interrupt_at = "", ledgr.v201.fail_at = "",
+    ledgr.v201.increase_nonmember_at = "", ledgr.v201.exit_eee_from = ""))
+  exp <- ledgr_experiment(snap, availability_v201_fold_strategy, universe = ledgr_universe_members("U"),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2L, exhausted = "refuse"),
+    corporate_action_policy = ledgr_corporate_actions(held_terminal_position = "refuse"),
+    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1e6))
+  out <- tryCatch(ledgr_run(exp, run_id = run_id), error = identity)
+  if (!inherits(out, "error")) close(out)
+  out
+}
+
+# One production instance of each P1 group, captured at the constructor.
+# Takes the first packet with a restricted instrument and a held nonmember,
+# its pulse's decision data, and the first execution packet with a next bar.
+ws4a_v201_groups <- function() {
+  ns <- ws4a_ns()
+  seen <- list()
+  packet <- ns$ledgr_carrier_packet
+  testthat::local_mocked_bindings(
+    ledgr_carrier_packet = function(x, group, n_run) {
+      wanted <- switch(group,
+        decision_packet = any(x$restriction_count > 0L) && any(!x$member),
+        decision_data = !is.null(seen$decision_packet) && length(x$open) == length(seen$decision_packet$x$context_pos),
+        execution_packet = isTRUE(x$has_next))
+      if (is.null(seen[[group]]) && wanted) seen[[group]] <<- list(x = x, n = n_run)
+      packet(x, group, n_run)
+    },
+    .package = "ledgr"
+  )
+  ws4a_v201_run()
+  seen
+}
+
+ws4a_refuses_group <- function(x, group, n_run) {
+  ns <- ws4a_ns()
+  inherits(tryCatch(ns$ledgr_carrier_new(x, group, n_run), error = identity), "ledgr_internal_error")
+}
+
+testthat::test_that("[WS4a V-packet U-3165] the three P1 groups are typed, aligned and refuse the controls", {
+  ns <- ws4a_ns()
+  g <- ws4a_v201_groups()
+  testthat::expect_setequal(names(g), c("decision_packet", "decision_data", "execution_packet"))
+  for (group in names(g)) {
+    testthat::expect_null(ns$ledgr_carrier_problem(g[[group]]$x, group, g[[group]]$n), info = group)
+  }
+  p <- g$decision_packet$x
+  n_run <- g$decision_packet$n
+  testthat::expect_true(any(p$restriction_count > 0L) && any(!p$member))
+  # Empty context: typed zero-length columns are accepted (n = 0).
+  empty <- p
+  for (f in setdiff(names(p), c("pulse_idx", "ts", "cash", "positions_value"))) empty[[f]] <- p[[f]][0L]
+  testthat::expect_null(ns$ledgr_carrier_problem(empty, "decision_packet", n_run))
+  edit <- function(x, ...) utils::modifyList(x, list(...))
+  packet_controls <- list(
+    storage_type = edit(p, context_pos = as.numeric(p$context_pos)),
+    shortened_column = edit(p, position = p$position[-1L]),
+    bound = edit(p, context_pos = replace(p$context_pos, 1L, n_run + 1L)),
+    untyped_empty = edit(empty, member = list()),
+    F4.14_duplicate_context_pos = edit(p, context_pos = replace(p$context_pos, 2L, p$context_pos[[1L]])),
+    F4.15_nan_position = edit(p, position = replace(p$position, 1L, NaN)),
+    F4.16_buyable_nonmember = edit(p, buyable = p$buyable | !p$member),
+    F4.17_code_7 = edit(p, restriction_code = replace(p$restriction_code, 1L, 7L)),
+    F4.17_detached_segment = edit(p, restriction_offset = p$restriction_offset + 1L),
+    F4.18_na_terminal_event = edit(p, terminal_event = replace(p$terminal_event, 1L, NA_character_)),
+    F4.18_status_code = edit(p, status = replace(p$status, 1L, 6L)),
+    F4.20_na_permissible = edit(p, permissible = replace(p$permissible, 1L, NA)),
+    named_column = edit(p, mark = stats::setNames(p$mark, seq_along(p$mark))),
+    extra_field = c(p, list(next_open = 1))
+  )
+  for (name in names(packet_controls)) {
+    testthat::expect_true(ws4a_refuses_group(packet_controls[[name]], "decision_packet", n_run), info = name)
+  }
+  d <- g$decision_data$x
+  empty_d <- d
+  for (f in c("open", "high", "low", "close", "volume", "observed", "source_row")) empty_d[[f]] <- d[[f]][0L]
+  testthat::expect_null(ns$ledgr_carrier_problem(empty_d, "decision_data", n_run))
+  data_controls <- list(
+    storage_type = edit(d, observed = as.integer(d$observed)),
+    shortened_column = edit(d, open = d$open[-1L]),
+    bound = edit(d, source_column = 0L),
+    untyped_empty = edit(empty_d, open = list()),
+    F4.21_next_bar_column = c(d, list(next_open = d$open)),
+    F4.22_row_without_column = edit(d, source_column = NA_integer_)
+  )
+  for (name in names(data_controls)) {
+    testthat::expect_true(ws4a_refuses_group(data_controls[[name]], "decision_data", n_run), info = name)
+  }
+  e <- g$execution_packet$x
+  exec_controls <- list(
+    storage_type = edit(e, has_next = 1L),
+    shortened_column = edit(e, open = e$open[-1L]),
+    bound = edit(e, open = replace(e$open, 1L, Inf)),
+    untyped_empty = edit(e, close = list()),
+    F4.23_has_next_na = edit(e, has_next = NA),
+    absent_next_with_values = edit(e, has_next = FALSE)
+  )
+  for (name in names(exec_controls)) {
+    testthat::expect_true(ws4a_refuses_group(exec_controls[[name]], "execution_packet", n_run), info = name)
+  }
+  testthat::expect_error(ns$ledgr_carrier_packet(packet_controls$bound, "decision_packet", n_run),
+    class = "ledgr_internal_error")
+})
+
+testthat::test_that("[WS4a V-decision U-3165] the decision group is typed, finite and ordered", {
+  ns <- ws4a_ns()
+  ok <- list(context_pos = c(3L, 1L, 2L), strategy_qty = c(1, 0, -2), target_qty = c(1, 0, -1),
+    actionable_k = c(1L, 3L), state_update = list(a = 1), intent_reason = "why")
+  testthat::expect_identical(ns$ledgr_carrier_decision(ok, 3L), ok)
+  empty <- list(context_pos = integer(), strategy_qty = numeric(), target_qty = numeric(),
+    actionable_k = integer(), state_update = NULL, intent_reason = NULL)
+  testthat::expect_null(ns$ledgr_carrier_problem(empty, "decision", 3L))
+  edit <- function(x, ...) utils::modifyList(x, list(...))
+  controls <- list(
+    storage_type = edit(ok, strategy_qty = c(1L, 0L, -2L)),
+    shortened_column = edit(ok, target_qty = c(1, 0)),
+    bound = edit(ok, actionable_k = c(1L, 4L)),
+    untyped_empty = edit(empty, target_qty = list()),
+    F4.25_na_target = edit(ok, target_qty = c(1, NA, -1)),
+    F4.25_unordered_actionable = edit(ok, actionable_k = c(3L, 1L)),
+    F4.26_non_character_intent = edit(ok, intent_reason = 1),
+    duplicate_context_pos = edit(ok, context_pos = c(1L, 1L, 2L))
+  )
+  for (name in names(controls)) {
+    testthat::expect_error(ns$ledgr_carrier_decision(controls[[name]], 3L), class = "ledgr_internal_error", info = name)
+  }
+})
+
+# F4.19: the adapter's packet columns against its provider and valuation
+# inputs, field by field; returns the fields that differ.
+ws4a_f419 <- function(view, valuation, cols) {
+  ns <- ws4a_ns()
+  plain <- function(x) unname(x)
+  text <- ns$ledgr_carrier_restriction_text(list(restriction_count = cols$restriction_count,
+    restriction_offset = cols$restriction_offset, restriction_code = cols$restriction_code))
+  ok <- c(
+    context_pos = identical(cols$context_pos, as.integer(plain(valuation$source_row))),
+    mark = identical(cols$mark, plain(valuation$mark)),
+    reference = identical(cols$reference, plain(valuation$reference)),
+    source_ts = identical(cols$source_ts, as.numeric(plain(valuation$source_ts))),
+    mark_age = identical(cols$mark_age, plain(valuation$age)),
+    mark_source = identical(ns$ledgr_carrier_mark_source_text(cols$mark_source), plain(valuation$source)),
+    priced = identical(cols$priced, plain(valuation$priced)),
+    permissible = identical(cols$permissible, plain(valuation$permissible)),
+    frozen = identical(cols$frozen, plain(valuation$frozen)),
+    member = identical(cols$member, plain(view$member)),
+    held = identical(cols$held, plain(view$held)),
+    target_restricted = identical(cols$target_restricted, plain(view$target_restricted)),
+    restriction_reason = identical(text$reason, plain(view$target_restriction_reason)),
+    restriction_reasons = identical(text$reasons, plain(view$target_restriction_reasons)),
+    status = identical(ns$.ledgr_carrier_status_levels[cols$status], plain(view$status)),
+    lifetime = identical(ns$.ledgr_carrier_lifetime_levels[cols$lifetime], plain(view$lifetime)),
+    terminal_event = identical(cols$terminal_event, plain(view$terminal_event)),
+    lifetime_fact_id = identical(cols$lifetime_fact_id, plain(view$lifetime_fact_id))
+  )
+  names(ok)[!ok]
+}
+
+testthat::test_that("[WS4a F4.19] the provider adapter keeps unpriced provenance field by field", {
+  ns <- ws4a_ns()
+  ids <- c("AAA", "BBB", "CCC")
+  pulses <- as.POSIXct("2021-01-04 21:00:00", tz = "UTC") + 86400 * 0:4
+  close <- rbind(AAA = c(10, 11, 12, 13, 14), BBB = c(20, NA, NA, NA, NA), CCC = c(30, 31, 32, NA, NA))
+  # BBB's last close is four sessions old: expired and unpriced under a
+  # one-session limit, its reference, source time and age retained; CCC is
+  # stale; under "freeze" the held BBB is frozen at its reference.
+  valuation_at <- function(exhausted) {
+    ns$ledgr_availability_valuation_state(list(close = close), ids, pulses, 2L, exhausted)$advance(
+      5L, c("CCC", "BBB", "AAA"), held = c(TRUE, TRUE, FALSE))
+  }
+  status <- stats::setNames(c("active", "halted", "active"), c("CCC", "BBB", "AAA"))
+  lifetime <- stats::setNames(c("known_active", "known_inactive", "unknown"), names(status))
+  restrictions <- ns$ledgr_availability_restrictions(status, lifetime, TRUE, TRUE)
+  axis <- names(status)
+  view <- c(list(axis = axis, members = c("CCC", "AAA"),
+    member = stats::setNames(c(TRUE, FALSE, TRUE), axis), held = stats::setNames(c(TRUE, TRUE, FALSE), axis),
+    target_restricted = restrictions$restricted, target_restriction_reason = restrictions$reason,
+    target_restriction_reasons = restrictions$reasons, status = status, lifetime = lifetime,
+    terminal_event = stats::setNames(c("", "delisted", ""), axis),
+    lifetime_fact_id = stats::setNames(c("", "f-1", ""), axis)))
+  for (exhausted in c("refuse", "freeze")) {
+    valuation <- valuation_at(exhausted)
+    v <- ns$ledgr_availability_restrict_frozen(view, valuation)
+    cols <- ns$ledgr_carrier_provider_view(v, valuation)
+    testthat::expect_identical(ws4a_f419(v, valuation, cols), character(), info = exhausted)
+    # The expired holding: no mark, its provenance kept.
+    testthat::expect_true(is.na(cols$mark[[2L]]) || exhausted == "freeze")
+    testthat::expect_identical(c(cols$reference[[2L]], cols$mark_age[[2L]]), c(20, 4))
+    testthat::expect_false(is.na(cols$source_ts[[2L]]))
+  }
+  testthat::expect_identical(ns$ledgr_carrier_mark_source_text(cols$mark_source), c("stale_close", "frozen_close", "current_close"))
+  # Controls: an adapter that erases the age, the source or the reference of
+  # an unpriced mark fails the check.
+  valuation <- valuation_at("refuse")
+  cols <- ns$ledgr_carrier_provider_view(view, valuation)
+  unpriced <- !cols$priced
+  erased <- list(mark_age = replace(cols$mark_age, unpriced, NA_integer_),
+    mark_source = replace(cols$mark_source, unpriced, 1L), reference = replace(cols$reference, unpriced, NA_real_))
+  for (field in names(erased)) {
+    bad <- cols
+    bad[[field]] <- erased[[field]]
+    testthat::expect_identical(ws4a_f419(view, valuation, bad), field, info = field)
+  }
+
+  # Production: every adapter call of the witness run keeps every field.
+  diffs <- character()
+  calls <- 0L
+  adapter <- ns$ledgr_carrier_provider_view
+  testthat::local_mocked_bindings(
+    ledgr_carrier_provider_view = function(view, valuation) {
+      out <- adapter(view, valuation)
+      calls <<- calls + 1L
+      diffs <<- c(diffs, ws4a_f419(view, valuation, out))
+      out
+    },
+    .package = "ledgr"
+  )
+  ws4a_v201_run()
+  testthat::expect_gt(calls, 5L)
+  testthat::expect_identical(diffs, character())
+})
+
+testthat::test_that("[WS4a D16] the provider adapter converts each produced view once", {
+  ns <- ws4a_ns()
+  count_views <- function(second = FALSE) {
+    n <- c(adapter = 0L, views = 0L)
+    adapter <- ns$ledgr_carrier_provider_view
+    valuation_state <- ns$ledgr_availability_valuation_state
+    restrict <- ns$ledgr_availability_restrict_frozen
+    testthat::local_mocked_bindings(
+      ledgr_carrier_provider_view = function(...) {
+        n[["adapter"]] <<- n[["adapter"]] + 1L
+        adapter(...)
+      },
+      # Each produced view advances the valuation state exactly once.
+      ledgr_availability_valuation_state = function(...) {
+        s <- valuation_state(...)
+        advance <- s$advance
+        s$advance <- function(...) {
+          n[["views"]] <<- n[["views"]] + 1L
+          advance(...)
+        }
+        s
+      },
+      # Control: a second conversion of the same view.
+      ledgr_availability_restrict_frozen = function(view, valuation) {
+        out <- restrict(view, valuation)
+        if (second) ns$ledgr_carrier_provider_view(out, valuation)
+        out
+      },
+      .package = "ledgr"
+    )
+    ws4a_v201_run()
+    n
+  }
+  once <- function(n) n[["views"]] > 0L && identical(n[["adapter"]], n[["views"]])
+  testthat::expect_true(once(count_views()))
+  testthat::expect_false(once(count_views(second = TRUE)))
+})
+
+# D5: names that only the execution packet carries.
+ws4a_execution_names <- c("execution", "exec_ts", "has_next", "next_bar", "next_bars")
+ws4a_p2_leaks <- function(x, execution, depth = 0L) {
+  if (!is.list(x) || depth > 4L) return(character())
+  hits <- c(intersect(names(x), ws4a_execution_names),
+    if (!is.null(execution) && any(vapply(x, identical, logical(1), execution))) "execution packet object")
+  unname(c(hits, unlist(lapply(x, ws4a_p2_leaks, execution = execution, depth = depth + 1L))))
+}
+
+testthat::test_that("[WS4a D5 D21] P2's input carries no execution-packet field; P3-P5 read no history", {
+  ns <- ws4a_ns()
+  observe <- ns$ledgr_fold_stage_observe_settle
+  decide <- ns$ledgr_fold_stage_decide
+  plan <- ns$ledgr_fold_stage_plan
+  leak_run <- function(leak) {
+    state <- new.env()
+    state$hits <- character()
+    state$p2 <- 0L
+    state$p3_data <- 0L
+    testthat::local_mocked_bindings(
+      ledgr_fold_stage_observe_settle = function(...) {
+        out <- observe(...)
+        if (!ledgr_is_fold_stop_result(out)) {
+          state$execution <- out$execution
+          # Control: pass the next bar to P2 inside its observation.
+          if (leak) out$observation$execution <- out$execution
+        }
+        out
+      },
+      ledgr_fold_stage_decide = function(fold_state, services, observation, ...) {
+        state$p2 <- state$p2 + 1L
+        state$hits <- c(state$hits, ws4a_p2_leaks(list(observation = observation, services = services), state$execution))
+        decide(fold_state, services, observation, ...)
+      },
+      ledgr_fold_stage_plan = function(fold_state, services, observation, decision, execution, ...) {
+        state$p3_data <- state$p3_data + !is.null(observation$data)
+        plan(fold_state, services, observation, decision, execution, ...)
+      },
+      .package = "ledgr"
+    )
+    ws4a_v201_run()
+    state
+  }
+  clean <- leak_run(FALSE)
+  testthat::expect_gt(clean$p2, 0L)
+  testthat::expect_identical(clean$hits, character())
+  testthat::expect_identical(clean$p3_data, 0L)
+  testthat::expect_gt(length(leak_run(TRUE)$hits), 0L)
+  testthat::expect_identical(ws4a_p2_leaks(list(history_bars = list(next_bar = 1)), NULL), "next_bar")
+
+  # D21: the phase checker finds no history or substrate access in P3-P5;
+  # an injected P3 history read is a finding.
+  root <- ledgr_test_source_root()
+  checker <- new.env(parent = baseenv())
+  sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+  files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+  rx <- "^substrate_reference:ledgr_fold_stage_(plan|apply|commit)|^service_owner:ledgr_fold_stage_(plan|apply|commit):.*history_reader"
+  testthat::expect_length(grep(rx, checker$ledgr_fold_phase_source_findings(files), value = TRUE), 0L)
+  fns <- ws4a_sources()
+  bad <- tempfile(fileext = ".R")
+  writeLines(c("ledgr_fold_stage_plan <-",
+    deparse(ws4a_inject(fns$ledgr_fold_stage_plan, "services$history_substrate$read(1L)"), width.cutoff = 500L)), bad)
+  testthat::expect_gt(length(grep(rx, checker$ledgr_fold_phase_source_findings(c(files, bad)), value = TRUE)), 0L)
+})
+
+testthat::test_that("[WS4a D4] the strategy return is normalized once per decided pulse", {
+  ns <- ws4a_ns()
+  normalize <- ns$ledgr_validate_strategy_targets
+  decide <- ns$ledgr_fold_stage_decide
+  risk <- ns$ledgr_apply_risk_plan
+  counts <- function(run, second = FALSE) {
+    n <- c(normalize = 0L, decide = 0L)
+    testthat::local_mocked_bindings(
+      ledgr_validate_strategy_targets = function(...) {
+        n[["normalize"]] <<- n[["normalize"]] + 1L
+        normalize(...)
+      },
+      ledgr_fold_stage_decide = function(...) {
+        n[["decide"]] <<- n[["decide"]] + 1L
+        decide(...)
+      },
+      # Control: the removed post-risk shape and name revalidation.
+      ledgr_apply_risk_plan = function(targets, risk_plan, ctx) {
+        out <- risk(targets, risk_plan, ctx)
+        if (second) ns$ledgr_validate_strategy_targets(out, names(targets))
+        out
+      },
+      .package = "ledgr"
+    )
+    run()
+    n
+  }
+  once <- function(n) n[["decide"]] > 0L && identical(n[["normalize"]], n[["decide"]])
+  dense <- function() {
+    snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = tempfile(fileext = ".duckdb"))
+    on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+    exp <- ledgr_experiment(snapshot, function(ctx, params) {
+      target <- ctx$hold()
+      target[[1L]] <- 1
+      target
+    }, cost_model = ledgr_cost_zero())
+    close(ledgr_run(exp, run_id = "d4-dense"))
+  }
+  testthat::expect_true(once(counts(ws4a_v201_run)))
+  testthat::expect_true(once(counts(dense)))
+  testthat::expect_false(once(counts(ws4a_v201_run, second = TRUE)))
+  testthat::expect_false(once(counts(dense, second = TRUE)))
+  # Static: P2 calls the normalizer once and no longer calls the deleted
+  # post-risk revalidation; an injected second call is found.
+  fns <- ws4a_sources()
+  calls <- function(f) sum(ws4a_heads(f) %in% c("ledgr_validate_strategy_targets", "ledgr_validate_post_risk_targets"))
+  testthat::expect_identical(calls(fns$ledgr_fold_stage_decide), 1L)
+  testthat::expect_false("ledgr_validate_post_risk_targets" %in% names(fns))
+  testthat::expect_identical(calls(ws4a_inject(fns$ledgr_fold_stage_decide, "ledgr_validate_strategy_targets(x, ids)")), 2L)
+})
+
+testthat::test_that("[WS4a missing targets] a missing target is refused on both producers, never zero-filled", {
+  drop_first <- function(ctx, params) {
+    target <- ctx$hold()
+    target[-1L]
+  }
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  dense <- ledgr_experiment(snapshot, drop_first, cost_model = ledgr_cost_zero())
+  testthat::expect_error(ledgr_run(dense, run_id = "missing-dense"), "missing instruments",
+    class = "ledgr_invalid_strategy_result")
+  f <- availability_v201_fold_fixture()
+  snap <- ledgr_snapshot_from_df(f$bars, instruments_df = f$instruments, db_path = tempfile(fileext = ".duckdb"),
+    snapshot_id = "witness", facts = f$facts, price_basis = "split_adjusted")
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+  avail <- ledgr_experiment(snap, drop_first, universe = ledgr_universe_members("U"),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2L, exhausted = "refuse"),
+    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1e6))
+  testthat::expect_error(ledgr_run(avail, run_id = "missing-avail"), "missing instruments",
+    class = "ledgr_invalid_strategy_result")
+  # Past normalization, a missing post-risk quantity or decision target is
+  # refused, not replaced by zero.
+  ns <- ws4a_ns()
+  testthat::expect_error(ns$ledgr_validate_post_risk_quantities(c(A = 1, B = NA), 2L),
+    class = "ledgr_invalid_post_risk_targets")
+  testthat::expect_error(ns$ledgr_carrier_decision(list(context_pos = 1:2, strategy_qty = c(1, NA),
+    target_qty = c(1, 0), actionable_k = 1L, state_update = NULL, intent_reason = NULL), 2L), class = "ledgr_internal_error")
+})
+
+testthat::test_that("[WS4a O3.28] the compiled risk plan is validated in E, not per pulse", {
+  ns <- ws4a_ns()
+  validate <- ns$ledgr_risk_validate_compiled_plan
+  decide <- ns$ledgr_fold_stage_decide
+  in_pulse <- 0L
+  inside <- FALSE
+  testthat::local_mocked_bindings(
+    ledgr_risk_validate_compiled_plan = function(...) {
+      if (inside) in_pulse <<- in_pulse + 1L
+      validate(...)
+    },
+    ledgr_fold_stage_decide = function(...) {
+      inside <<- TRUE
+      on.exit(inside <<- FALSE)
+      decide(...)
+    },
+    .package = "ledgr"
+  )
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_experiment(snapshot, function(ctx, params) {
+    target <- ctx$hold()
+    target[[1L]] <- 2
+    target
+  }, cost_model = ledgr_cost_zero(), risk_chain = ledgr_risk_max_weight(0.5))
+  close(ledgr_run(exp, run_id = "o328"))
+  testthat::expect_identical(in_pulse, 0L)
+  # The short-exposure check stays: an availability target opening a short
+  # position is refused.
+  testthat::expect_error(ns$ledgr_availability_validate_short_exposure(c(A = -1), c(A = 0)),
+    class = "ledgr_short_exposure_unsupported")
+})
+
+# D3 for the LDG-3165 regions: P2's decision logic, P3's decision and packet
+# reads, P5 and the scheduled skip use positions on the context axis. The
+# shared name-keyed predicate also flags %in% here; the census lists the P2
+# input and return boundaries that name instruments.
+ws4a_d3_3165 <- c(
+  # P2 input: the feature tables of the public context are filtered to the
+  # context IDs (a column-name test and two ID filters).
+  ledgr_fold_stage_decide = "as.character(features_current$instrument_id) %in% context_ids",
+  ledgr_fold_stage_decide = "\"instrument_id\" %in% names(features_wide_current)",
+  ledgr_fold_stage_decide = "as.character(features_wide_current$instrument_id) %in% context_ids",
+  # P2 return: the strategy helpers note skipped sizing by instrument ID.
+  ledgr_fold_stage_decide = "context_ids %in% services$pulse_notes$sizing_skipped",
+  # Mark-source tokens of the decoded dictionary, not instruments.
+  ledgr_fold_scheduled_skip_decision = "mark_source %in% c(\"stale_close\", \"frozen_close\")"
+)
+ws4a_d3_3165_hits <- function(fns) {
+  unlist(lapply(names(fns), function(nm) {
+    e <- fns[[nm]]
+    found <- c(ws4a_name_keyed(e), vapply(Filter(function(x) ws4a_head(x) == "%in%", ws4a_calls(e)),
+      function(x) substr(ws4a_txt(x), 1L, 70L), ""))
+    h <- setdiff(unique(found), ws4a_d3_3165[names(ws4a_d3_3165) == nm])
+    if (length(h)) paste0(nm, ": ", h)
+  }))
+}
+
+testthat::test_that("[WS4a D3 3165] P2, P3, P5 and the skip read the decision by position", {
+  fns <- ws4a_sources()
+  examined <- c("ledgr_fold_stage_decide", "ledgr_fold_stage_plan", "ledgr_fold_stage_commit",
+    "ledgr_fold_scheduled_skip_decision")
+  testthat::expect_length(ws4a_d3_3165_hits(fns[examined]), 0L)
+  # The census is exact: every entry is still present.
+  found <- unlist(lapply(unique(names(ws4a_d3_3165)), function(nm) paste(nm, vapply(Filter(function(x)
+    ws4a_head(x) == "%in%", ws4a_calls(fns[[nm]])), function(x) substr(ws4a_txt(x), 1L, 70L), ""))))
+  testthat::expect_setequal(found, paste(names(ws4a_d3_3165), ws4a_d3_3165))
+  inject <- function(nm, stmt) {
+    bad <- fns[nm]
+    bad[[nm]] <- ws4a_inject(bad[[nm]], stmt)
+    ws4a_d3_3165_hits(bad)
+  }
+  testthat::expect_gt(length(inject("ledgr_fold_stage_decide", "k <- match(id, context_ids)")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_stage_decide", "m <- packet$mark[context_ids]")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_stage_plan", "idx <- services$id_to_idx[target_names]")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_stage_commit", "keep <- context_ids %in% held")), 0L)
+})
+
+testthat::test_that("[WS4a D12d D13] no new mode branch; the dense observe and context builders are frozen", {
+  root <- ledgr_test_source_root()
+  records <- file.path(root, "dev", "bench", "v0_2_3_ws4a", "records")
+  testthat::skip_if_not(dir.exists(records), "WS4a frozen detector records are in the source checkout only")
+  frozen <- utils::read.csv(file.path(records, "detectors", "frozen.csv"), colClasses = "character")
+  frozen <- stats::setNames(frozen$value, frozen$id)
+  # D12d: every mode-branch site of the source is in the committed census
+  # record (LTB-0331's comparison; LDG-3165 only deleted two P1 rows), and
+  # no R/ file has more availability_active tokens than its frozen base
+  # count (a new file has none).
+  scanner <- new.env(parent = globalenv())
+  sys.source(file.path(root, "tools", "codebase-structure.R"), envir = scanner)
+  record <- utils::read.csv(file.path(root, "dev", "bench", "v0_2_2_pre_cran_removal", "census", "mode_branches.csv"),
+    colClasses = "character", na.strings = character(), encoding = "UTF-8")
+  record$occurrence <- as.integer(record$occurrence)
+  unrecorded <- function(dir) nrow(scanner$ledgr_mode_branch_compare(scanner$ledgr_mode_branch_scan(dir), record)$unrecorded)
+  testthat::expect_identical(unrecorded(root), 0L)
+  parse_census <- function(s) {
+    parts <- strsplit(strsplit(s, ";", fixed = TRUE)[[1L]], " ", fixed = TRUE)
+    stats::setNames(as.integer(vapply(parts, `[[`, "", 2L)), vapply(parts, `[[`, "", 1L))
+  }
+  count <- function(lines) sum(lengths(regmatches(lines, gregexpr("availability_active", lines, fixed = TRUE))))
+  files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+  now <- stats::setNames(vapply(files, function(f) count(readLines(f)), 0), basename(files))
+  base <- parse_census(frozen[["D12d"]])
+  over <- function(now) names(now)[now > ifelse(is.na(base[names(now)]), 0, base[names(now)])]
+  testthat::expect_identical(over(now), character())
+  # Controls: a branch added to P5 is an unrecorded site; a new file with a
+  # branch exceeds the base count.
+  probe <- withr::local_tempdir("ws4a-d12d-")
+  dir.create(file.path(probe, "R"))
+  writeLines(c("ledgr_fold_stage_commit <- ",
+    deparse(ws4a_inject(ws4a_sources()$ledgr_fold_stage_commit, "if (services$availability_active) NULL"), width.cutoff = 500L)),
+    file.path(probe, "R", "fold-engine.R"))
+  testthat::expect_gt(unrecorded(probe), 0L)
+  testthat::expect_identical(over(c(now, new.R = 1)), "new.R")
+  # D13: the dense observe and context builders hash equal to the base.
+  fns <- ws4a_sources()
+  dense <- c("ledgr_pulse_context", "ledgr_update_pulse_context_helpers", "ledgr_dense_eligibility_planes", "ledgr_fold_build_pulse_plan")
+  dhash <- function(f) digest::digest(vapply(f, ws4a_txt, ""), algo = "sha256")
+  testthat::expect_identical(dhash(fns[dense]), frozen[["D13"]])
+  edited <- fns[dense]
+  edited$ledgr_update_pulse_context_helpers <- ws4a_inject(edited$ledgr_update_pulse_context_helpers, "NULL")
+  testthat::expect_false(identical(dhash(edited), frozen[["D13"]]))
 })

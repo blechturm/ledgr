@@ -16,17 +16,19 @@ ws_swallow <- function(method) {
   })
   list(ledgr_fold_stage_apply = swallow, ledgr_fold_stage_commit = swallow)
 }
+# LDG-3165: P1 returns the observation and the execution packet; P3 takes both.
 ws_skip_gut <- function(stage) {
   out <- list(ledgr_fold_stage_observe_settle = function(original) function(fold_state, services, ...) {
     ws_gut$services <- services
-    ws_gut$observation <- original(fold_state, services, ...)
+    ws_gut$observed <- original(fold_state, services, ...)
   })
   if (stage == "plan") out$ledgr_fold_scheduled_skip_plan <- function(original) function(fold_state, decision) {
-    ws_ns("ledgr_fold_stage_plan")(fold_state, ws_gut$services, ws_gut$observation, decision, FALSE, NULL)
+    o <- ws_gut$observed
+    ws_ns("ledgr_fold_stage_plan")(fold_state, ws_gut$services, o$observation, decision, o$execution, FALSE, NULL)
     original(fold_state, decision)
-  } else out$ledgr_fold_scheduled_skip_decision <- function(original) function(fold_state, observation) {
-    ws_ns("ledgr_fold_stage_decide")(fold_state, ws_gut$services, observation, FALSE, NULL)
-    original(fold_state, observation)
+  } else out$ledgr_fold_scheduled_skip_decision <- function(original) function(fold_state, services, observation) {
+    ws_ns("ledgr_fold_stage_decide")(fold_state, services, observation, FALSE, NULL)
+    original(fold_state, services, observation)
   }
   out
 }
@@ -136,11 +138,12 @@ ws4a_guts <- list(
     ws4a_c14c_legs(function(legs) if (is.null(ws_gut$legs)) ws_gut$legs <- legs else
       collapse::setv(ws_gut$legs[[1L]]$fee, 1L, legs[[1L]]$fee + 1, vind1 = TRUE))(original)
   })),
+  # M8 through the typed path (LDG-3165): the decision packet's bridge is
+  # reversed; its context columns stay as P1 built them.
   C15_wrong_context_pos = list(case = "C15", patch = list(ledgr_fold_stage_observe_settle = function(original) function(...) {
     obs <- original(...)
     if (ws_ns("ledgr_is_fold_stop_result")(obs)) return(obs)
-    obs$context_position_idx <- rev(obs$context_position_idx)
-    obs$positions_snapshot[] <- rev(unname(obs$positions_snapshot))
+    obs$observation$packet$context_pos <- rev(obs$observation$packet$context_pos)
     obs
   })),
   C16_force_fold_equity = list(case = "C16", patch = list(ledgr_run_finalize = function(original) function(con, output_handler, run, ...) {

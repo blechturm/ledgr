@@ -462,8 +462,9 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
     } else {
       character()
     }
+    # The decision packet's membership flag of this context ordinal.
     informational_reasons <- if (!identical(
-      isTRUE(decision_member[[id]]),
+      isTRUE(decision_member[[target_idx]]),
       isTRUE(execution_view$member[[id]])
     )) "membership_changed_before_execution" else character()
     open <- if (is.null(next_bars)) NA_real_ else next_bars$open[[inst_idx]]

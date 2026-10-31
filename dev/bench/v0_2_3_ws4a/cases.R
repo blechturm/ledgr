@@ -290,7 +290,7 @@ ws_case("C10", "3165", function() {
   exp <- ws_exp(fx, ledgr_cost_zero(), universe = ledgr_universe_members("U"),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 100)))
   ctx <- character()
-  hooks <- list(ledgr_fold_stage_observe_settle = function(a, v) ctx <<- c(ctx, paste(v$context_ids, collapse = "+")))
+  hooks <- list(ledgr_fold_stage_observe_settle = function(a, v) ctx <<- c(ctx, paste(ws_context(a, v)$ids, collapse = "+")))
   out <- ws_trace(hooks, ws_durable(fx, exp, "c10", ws_days(NULL, list(AAA = 0), NULL, NULL, list(AAA = 2))))
   ledger <- out[["run.ledger_events"]]
   ws_need(sum(ctx == "") == 2L && nrow(out[["run.equity_curve"]]) == 6L, "valued pulses with an empty context")
@@ -499,8 +499,9 @@ ws_case("C15", "3165", function() {
   v <- ws_v201("c15")
   axis <- list()
   hooks <- list(ledgr_fold_stage_observe_settle = function(a, v) if (!ledgr_is_fold_stop_result(v)) {
-    axis[[length(axis) + 1L]] <<- data.frame(pulse = v$pulse_idx, context = paste(v$context_ids, collapse = "+"),
-      members = paste(v$members, collapse = "+"), rows = paste(v$context_position_idx, collapse = "+"))
+    x <- ws_context(a, v)
+    axis[[length(axis) + 1L]] <<- data.frame(pulse = v$observation$pulse_idx, context = paste(x$ids, collapse = "+"),
+      members = paste(x$members, collapse = "+"), rows = paste(x$pos, collapse = "+"))
   })
   out <- ws_trace(hooks, ws_durable(v$fx, v$exp, "c15"))
   axis <- do.call(rbind, axis)

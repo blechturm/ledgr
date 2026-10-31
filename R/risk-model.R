@@ -378,8 +378,9 @@ ledgr_risk_compile_arg <- function(value, arg, params) {
   resolved
 }
 
+# `risk_plan` is a compiled plan already validated by the caller: the fold
+# validates it once in E (ledgr_fold_envelope), not per pulse.
 ledgr_apply_risk_plan <- function(targets, risk_plan, ctx) {
-  risk_plan <- ledgr_risk_validate_compiled_plan(risk_plan)
   if (length(risk_plan$steps) == 0L) {
     return(targets)
   }
@@ -475,17 +476,35 @@ ledgr_risk_context_prices <- function(ctx, universe) {
   stats::setNames(as.numeric(close_vec), universe)
 }
 
-ledgr_validate_post_risk_targets <- function(targets, universe) {
-  tryCatch(
-    ledgr_validate_strategy_targets(targets, universe),
-    error = function(e) {
-      rlang::abort(
-        conditionMessage(e),
-        class = c("ledgr_invalid_post_risk_targets", "ledgr_risk_application_error"),
-        parent = e
-      )
-    }
-  )
+# The post-risk check of the transformed quantities. Shape and names were
+# normalized once on the strategy return; the closed risk steps keep the
+# context axis, so only the transformed values are checked: a numeric vector
+# of the context length with finite entries. Returns them as the unnamed
+# decision column.
+ledgr_validate_post_risk_quantities <- function(targets, n_context) {
+  problem <- if (!is.numeric(targets) || length(targets) != n_context) {
+    sprintf(
+      "`targets` must be %s; got %s.",
+      ledgr_strategy_targets_contract(),
+      paste(class(targets), collapse = "/")
+    )
+  } else if (any(!is.finite(targets))) {
+    sprintf(
+      "`targets` must be %s. Target quantities must be finite numeric values.",
+      ledgr_strategy_targets_contract()
+    )
+  }
+  if (!is.null(problem)) {
+    parent <- rlang::catch_cnd(
+      rlang::abort(problem, class = "ledgr_invalid_strategy_result")
+    )
+    rlang::abort(
+      problem,
+      class = c("ledgr_invalid_post_risk_targets", "ledgr_risk_application_error"),
+      parent = parent
+    )
+  }
+  as.numeric(targets)
 }
 
 ledgr_risk_model_from_payload <- function(payload) {

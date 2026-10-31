@@ -156,15 +156,14 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
     execution,
     ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("phase-packet-contract"))
   )
+  # LDG-3165 (design note Section 5, LTB-0281, category 3): P1 returns the
+  # observation and the private execution packet; P2 returns the typed
+  # decision group on the context axis.
   expected_names <- list(
-    observe = c(
-      "pulse_idx", "ts", "ts_iso", "context_ids", "context_position_idx",
-      "positions_snapshot", "positions_value", "availability_view",
-      "valuation", "members", "history_bars", "history_view",
-      "sample_start", "t_feats", "t_bars"
-    ),
+    observe = c("observation", "execution"),
     decide = c(
-      "strategy_targets", "targets", "state_update", "sample_start",
+      "context_pos", "strategy_qty", "target_qty", "actionable_k",
+      "state_update", "intent_reason", "sample_start",
       "t_ctx", "t_strat", "t_target"
     ),
     plan = c(
@@ -187,6 +186,11 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
     testthat::expect_identical(names(stage_packets[[name]]), expected_names[[name]])
     testthat::expect_false(has_data_frame(stage_packets[[name]]), info = name)
   }
+  testthat::expect_identical(
+    names(stage_packets$observe$observation),
+    c("pulse_idx", "ts", "ts_iso", "positions_value", "packet", "data",
+      "sample_start", "t_feats", "t_bars")
+  )
 })
 
 testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
@@ -826,17 +830,21 @@ testthat::test_that("risk failures are captured as sweep candidate failures", {
   )
 })
 
+# LDG-3165 (design note Section 5, test-risk-fold.R:827, category 5): the
+# missing-target refusal stays at the one normalization of the strategy
+# return; the post-risk check, no longer a second shape/name normalization,
+# checks the transformed quantities and keeps its class and parent.
 testthat::test_that("post-risk target validation has a distinct condition class", {
   testthat::expect_error(
     ledgr:::ledgr_validate_strategy_targets(c(AAA = 1), c("AAA", "BBB")),
     class = "ledgr_invalid_strategy_result"
   )
   testthat::expect_error(
-    ledgr:::ledgr_validate_post_risk_targets(c(AAA = 1), c("AAA", "BBB")),
+    ledgr:::ledgr_validate_post_risk_quantities(c(AAA = 1, BBB = NaN), 2L),
     class = "ledgr_invalid_post_risk_targets"
   )
   error <- testthat::capture_error(
-    ledgr:::ledgr_validate_post_risk_targets(c(AAA = 1), c("AAA", "BBB"))
+    ledgr:::ledgr_validate_post_risk_quantities(c(AAA = 1, BBB = NaN), 2L)
   )
   testthat::expect_s3_class(error$parent, "ledgr_invalid_strategy_result")
 })

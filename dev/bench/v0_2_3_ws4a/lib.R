@@ -40,6 +40,15 @@ ws4a_seams <- c(
   replay = "ledgr_replay_accounting_events",
   prefix_commit = "ledgr_run_equity_prefix_commit"
 )
+# P1's context axis from a traced ledgr_fold_stage_observe_settle call (args
+# `a`, value `v`): run positions, IDs and member IDs. LDG-3165 moved it from
+# the base observation's context_ids/context_position_idx/members into the
+# decision packet; a stop result has none.
+ws_context <- function(a, v) {
+  p <- v$observation$packet
+  ids <- a$services$instrument_ids[p$context_pos]
+  list(pos = p$context_pos, ids = ids, members = ids[p$member])
+}
 
 # --- Fixtures and paths ------------------------------------------------------
 

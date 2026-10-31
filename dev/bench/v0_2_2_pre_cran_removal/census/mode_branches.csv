@@ -128,8 +128,6 @@
 "R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",4
 "R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",5
 "R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",6
-"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",7
-"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",8
 "R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",1
 "R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",2
 "R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","availability$active","if: !inherits(exp, ""ledgr_experiment"") || !isTRUE(exp$availability$active)",1
