@@ -164,6 +164,178 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   session on the parent axis is unproved and contributes no decision. Their
   normalized argument remains in compiled identity; no pulse evaluates civil
   calendar rules.
+- The fold state is one locked environment that E (`ledgr_fold_envelope()`)
+  creates with exactly the slots of `.ledgr_fold_state_slots`; data-frame
+  slots are refused. Positions are an unnamed finite double vector on the
+  fixed run axis (`execution$instrument_ids`), `lot_state` is the typed lot
+  book, `pending_segments` the typed pulse diagnostic staging and
+  `equity_facts` the fold equity record. `ledgr_fold_state_validate()` checks
+  the state when E creates it and after E installs a stop result. The groups
+  that pass between stages are the typed column groups of the
+  [Typed Fold Carrier](#contract-execution-fold-carrier) rule group (v0.2.3
+  cut 5, LDG-3164 to LDG-3168).
+- P1 returns the observation and the execution packet. On the availability
+  producer the observation carries the decision packet (the provider and
+  valuation planes of one produced view, on the context axis) and the
+  decision data for P2; the private execution packet carries the next bar on
+  the run axis with an explicit `has_next` and reaches P3 only. P2 receives no execution-packet field, and E removes the decision
+  data before P3. Dense emits no decision packet, decision data or execution
+  packet: it joins at the normalized decision with the identity context
+  mapping, and its P3 reads the next bar from `bars_mat`.
+- P2 normalizes the strategy return once per decided pulse, on the complete
+  context axis (`ledgr_validate_strategy_targets()`); a missing target is
+  refused, never zero-filled. After the risk chain only the transformed
+  quantities are checked (`ledgr_validate_post_risk_quantities()`: numeric,
+  context length and finite, class `ledgr_invalid_post_risk_targets` with
+  parent `ledgr_invalid_strategy_result`); the risk-mark, equity and
+  short-exposure checks stay. E validates the compiled risk plan once per
+  fold.
+- P3 returns one plan batch per pulse on both producers, validated once by
+  `ledgr_carrier_plan()`. Its fill and rejection rows hold each actionable
+  context ordinal exactly once; fills are in decision order, and early
+  rejections precede affordability rejections, each in decision order. Cost
+  steps apply to the batch's columns in their compiled order.
+  `ledgr_fill_publication_deltas()` runs once per pulse in the planner, and
+  affordability, both reconciliation sums, P4 cash and every sink reuse its
+  result. E computes the execution epochs once from the prepared opportunity
+  axis; a planner refuses an invalid epoch where the per-fill path parsed it,
+  with the same class and message. A scheduled skip returns an empty plan at
+  the fold cash and runs no planning. Planned after-positions are diagnostic
+  evidence only.
+- P4 binds the next corporate-action boundary, then computes the candidate
+  lot block of the whole fill batch through the typed fill operation
+  (`ledgr_fold_fill_candidate()`) without changing the fold's book. A
+  refusal in that calculation leaves the book, cash, positions, event
+  sequence and output buffers unchanged. The batch reports its earliest
+  failing fill with that fill's own condition, after any publication refusal
+  of an earlier fill, as per-fill application did. Otherwise P4 installs the
+  candidate book, publishes the event block, advances the event sequence,
+  records the accounting facts and legs, then installs positions from the
+  lot-derived net and cash by an ordered scan of P3's cash effects
+  (`ledgr_cash_scan()`). An append, accounting-fact or flush failure after a
+  successful calculation aborts: durable writes of the whole invocation roll
+  back and a failed memory candidate exposes no successful result; private
+  state and buffers already changed are not restored. The compiled
+  spot-FIFO branch keeps its state-before-append order.
+- Stages write pulse diagnostics into the typed staging in emission order.
+  Its capacity is fixed in E at `max(5N + 3, Q_pulse)` rows (`N` run
+  instruments, `Q_pulse` the most disposition rows due on one pulse); a row
+  beyond it refuses with `ledgr_invalid_fold_execution`. P5, or E on a stop,
+  hands the used rows to the existing bounded diagnostic writer as one block
+  and resets the used count, so no staged row survives its pulse and no
+  run-long diagnostic buffer exists; the memory sink's filter and sequence
+  gaps are unchanged. P1 writes one equity row per valued pulse on both
+  producers into the fold equity record, preallocated to the pulse count. E
+  hands its frozen used prefix to finalization and to the memory sink's
+  inline summary; the memory sink holds no equity buffer. Finalization
+  selects its equity source by producer: availability runs use the fold
+  record, and dense durable runs keep event replay.
+- A stage's stop result (`ledgr_fold_stop_result()`) keeps its class, its
+  affected exposure and whether it counts a processed pulse, and carries its
+  diagnostics as one fully used staging block. E alone installs a stop
+  result, once (`ledgr_fold_apply_stop()`), then drains the staging.
+
+<a id="contract-execution-fold-carrier"></a>
+### Typed Fold Carrier
+
+The carrier contract of the typed-fold-carrier synthesis (Section 4) as
+implemented in v0.2.3 cut 5 (LDG-3164 to LDG-3168). It is internal: it
+changes no public API, stored format or identity.
+
+- Every typed column is a plain vector without attributes, of storage type
+  double, integer, logical or character, and of exactly its axis length:
+  scalar, the run axis, a group's context or row axis, or a code segment's
+  total. Empty groups hold typed length-zero columns. Times inside the
+  carrier are UTC epoch seconds stored as doubles; POSIXct appears only at
+  the output boundaries. Each group is validated once where it is
+  constructed (`ledgr_carrier_problem()`): exact field set and order,
+  storage types, axis lengths, missingness, finiteness, dictionary bounds
+  and the group invariants below. The execution view, fill, rejection and
+  plan groups refuse with `ledgr_invalid_pulse_plan` (parent
+  `ledgr_invalid_fold_execution`), the lot book and applied rows with
+  `ledgr_lot_state_invariant`, lot input with `ledgr_invalid_lot_fill`, and
+  every other group, including the fold state, with `ledgr_internal_error`.
+- Code dictionaries keep today's tokens in their order of first emission,
+  and code 0 decodes to the empty string. Restriction codes:
+  `trading_halted`, `quotation_only`, `status_unknown`,
+  `status_unknown_or_conflicting`, `lifetime_inactive`, `valuation_frozen`.
+  Mark sources: `missing`, `expired_close`, `current_close`, `stale_close`,
+  `frozen_close`. P3 reasons: `final_pulse_no_execution`,
+  `execution_bar_missing`, `insufficient_cash`,
+  `membership_changed_before_execution`, `trading_halted`,
+  `quotation_only`, `status_unknown`, `status_unknown_or_conflicting`,
+  `lifetime_inactive`. Economic event kinds: `FILL`, `CASHFLOW`,
+  `DISPOSITION`. Provider status and lifetime codes index the prepared
+  provider's fixed level vectors. Reason segments are ordered and
+  deduplicated per row, and text is built at the diagnostic boundary.
+  Diagnostics carry text, not codes.
+
+| Group | Fields | Rules | Writer; lifetime |
+| --- | --- | --- | --- |
+| state | the fold-state slots ([Fold Core](#contract-execution-fold-core)) | cash finite; positions unnamed, finite, run axis; next event sequence at least 1; diagnostic sequence, processed count and telemetry index non-negative; existing tokens, clocks, exposure and frozen set | E, P1, P4 and P5 by slot; run |
+| book | `offset`, `capacity`, `head`, `tail`; `lot_qty`, `lot_price`; `net_by_inst`, `cost_basis_by_inst`; `total_cost_basis`, `realized_pnl`, `realized_comp` | disjoint prefix segments in axis order; live lots `head..tail` in FIFO order, finite; dead slots NA; an empty segment has head 1 and tail 0; finite aggregates and totals; a flat instrument's net is exactly 0 | E, P1, P4 and replay through the lot operations; run |
+| decision packet (availability) | `pulse_idx`, `ts`, `context_pos`, `cash`, `positions_value`, `position`, `member`, `held`, `buyable`, `target_restricted`, `restriction_offset`, `restriction_count`, `restriction_code`, `status`, `lifetime`, `terminal_event`, `lifetime_fact_id`, `mark`, `reference`, `source_ts`, `mark_age`, `mark_source`, `priced`, `permissible`, `frozen` | `context_pos` unique run positions in the provider's decision order; buyable implies member; `target_restricted` exactly when a restriction segment is non-empty; `priced` exactly when the mark is finite; a missing mark keeps its age, source and reference; non-negative mark age; valuation reductions keep run order | P1, once per produced view through `ledgr_carrier_provider_view()`; through P5 |
+| decision data (availability) | `open`, `high`, `low`, `close`, `volume`, `observed`, `source_row`, `source_column`, `history` | current bar only, missing cells NA; `source_row` run positions and `source_column` the prepared pulse column; `history` the existing cutoff-bound handle | P1; P2 only |
+| execution packet (availability) | `exec_ts`, `has_next`; `open`, `high`, `low`, `close`, `volume` on the run axis | an absent next bar carries no values and an NA epoch | P1; P3 only |
+| decision | `context_pos`, `strategy_qty`, `target_qty`, `actionable_k`, `state_update`, `intent_reason` | finite targets on the context axis; `actionable_k` strictly increasing context ordinals; `intent_reason` NULL or one non-empty string; `state_update` opaque | P2; P5 |
+| execution view (availability) | `member`, `restricted`, `reason_offset`, `reason_count`, `reason_code` | contiguous code segments; restricted exactly when a segment is non-empty | P3 through `ledgr_carrier_execution_view()`; P3 |
+| plan | `expected_final_cash`, `economic_event_kinds`, `fill`, `rejection` | distinct kind codes; `FILL` declared exactly when the plan has fills; an empty plan declares no kind; one row per actionable ordinal; `expected_final_cash` NA on dense; the acceptance mask and priority permutation stay private to `ledgr_plan_affordability()` | P3; P5 |
+| fill | `k`, `pos`, `side`, `qty`, `price`, `fee`, `cash_delta`, `position_delta`, `exec_ts`, `position_before`, `planned_position_after`, `info_offset`, `info_count`, `info_code` | `pos = context_pos[k]`, distinct, in decision order; side +1 or -1; positive quantity and price; `position_delta = side * qty`; `planned_position_after` is diagnostic only; `fee` and `cash_delta` admit infinities and arithmetic NaN (NaN cash only with a non-finite fee), which accounting refuses as before, but never NA | P3; P5 |
+| rejection | `k`, `pos`, `emit`, `primary`, `reason_offset`, `reason_count`, `reason_code`, `resolved_price`, `exec_ts`, `position` | `emit` 1 (early) before 2 (affordability), each in decision order; at least one reason, `primary` the first; resolved price NA exactly for early rows; epoch NA exactly for `final_pulse_no_execution`; finite position | P3; P5 |
+| lot input | `operation` (1 fill, 3 opening, 4 disposition), `pos`, `side`, `qty`, `price`, `fee`, `position_before`, `realized_model_pnl` | distinct positions in one call; an opening has side 0, a signed non-zero quantity and a finite basis of either sign; a fill has side +1 or -1, positive quantity and price and a finite non-negative fee; a disposition has a non-negative price, zero fee and an optional replay witness | E, P1, P4 and the replay preparer; one kernel call |
+| applied row | `position_before`, `position_after`, `close_qty`, `open_qty`, `realized_close`, `realized_delta`, `event_realized`, `event_cost_basis` | finite; actual positions from lots; an opening closes and opens nothing and takes no Kahan step; the close/open split is checked against the lots before and after | the lot kernel; the calling boundary |
+| publication | `status`, `next_event_seq`, `event_id`, `run_id`, `ts_utc`, `event_type`, `instrument_id`, `side`, `qty`, `price`, `fee`, `meta_json`, `event_seq`, `cash_delta`, `position_delta`, `meta` | `WROTE` exactly when the block has rows, else `NO_OP`; contiguous sequences; IDs formatted once per block from run and sequence; existing tokens; `position_delta` the signed quantity; one metadata list per event; `meta_json` and `meta` keep their routed bytes | `ledgr_fill_event_payload()` at P4; the handler retains it |
+| leg | `event_seq`, `instrument_id`, `side`, `action`, `ts_utc`, `qty`, `price`, `fee`, `realized_pnl` | event order with CLOSE before OPEN, once each; the canonical fee split (`ledgr_fill_leg_fees()`); an OPEN leg realizes 0 | `ledgr_fill_leg_block()` at P4; the memory sink retains it |
+| diagnostics (staging) | `n`, `capacity` and the writer's per-row columns: `instrument_id`, `stage`, `outcome`, `reason_code`, `reasons`, `target`, `quantity`, `price`, `mark_source`, `mark_age`, `decision_ts_utc`, `execution_ts_utc`, `event_seq`, `target_before_risk`, `target_after_risk`, `position_before`, `position_after`, `feature_identity_json`, `detail_json` | `n` at most `capacity`; rules apply to the used prefix only; the persisted defaults and missingness (stage, outcome, mark source and feature identity may be NA; instrument, reason code, reasons, decision time and detail may not); `run_id`, `diagnostic_seq` and `ts_utc` are added at the drain | P1, P2, P3, the scheduled skip, P5 and E's stop installation; one pulse |
+| equity | `ts`, `cash`, `positions_value`, `realized_pnl`, `cost_basis`, `n` | rows preallocated to the pulse count; only the first `n` are valid, in strictly increasing time; values as valued | P1; E hands a frozen prefix |
+| stop | `status`, `reason_code`, `affected_instrument_ids`, `affected_exposure`, `diagnostics`, `counts_processed` | non-empty status and reason; `diagnostics` one fully used staging block | P1, P2 or P3; E applies it once |
+
+- Stage timing samples and run telemetry keep their present scalar and
+  array types. Dense emits no decision packet, decision data, execution
+  packet or execution view.
+- One typed lot implementation serves every consumer: the fold, replay, the
+  chunked fills reader, opening and resume initialisation, walk-forward
+  carry and as-of state, terminal dispositions and recovery, the handler's
+  accounting fact and the compiled pack and unpack. Its operations are
+  opening, fill and disposition (`ledgr_lot_opening()`, `ledgr_lot_fill()`,
+  `ledgr_lot_disposition()`). Within one call FIFO consumption is sequential
+  per instrument and vectorized across the call's distinct instruments; the
+  total cost basis and the Kahan-compensated realized P&L follow one scalar
+  scan in event order. The kernel computes no cash: cash is a separate
+  ordered scan of already computed effects, and replay adds each published
+  effect exactly once. Replay applies consecutive conflict-free blocks
+  without reordering. Compiled pack and unpack gather the typed lots and keep
+  the aggregate and Kahan state; the C++ is unchanged.
+- Instruments are positions on the run axis. ID-to-position conversion
+  happens only at named boundaries: the opening and resume import
+  (`ledgr_carrier_import_state()`, `ledgr_lot_book_from_opening()`), the
+  replay preparer, the P2 input and return (`ledgr_carrier_p2_input()`,
+  `ledgr_validate_strategy_targets()`), the publication input (one instrument
+  ID per fill row), the result state (`ledgr_carrier_result_state()`) and
+  the walk-forward carry. Transitional adapters name their removers:
+  `ledgr_carrier_provider_view()` and `ledgr_carrier_execution_view()`
+  (WS4b), `ledgr_carrier_settlement_state()` and
+  `ledgr_carrier_settlement_install()` (WS8), and
+  `ledgr_carrier_compiled_pack()` and `ledgr_carrier_compiled_unpack()` (the
+  compiled-envelope RFC).
+- The fold owns its state and transient batches, the handler owns event and
+  leg retention, and the diagnostic writer owns bounded chunks. Mutable
+  buffers are exclusive; retained context views, checkpoints, compiled
+  inputs and returned values are copied or never written again. The lot
+  kernel copies on modify and writes no book column by reference.
+  Candidates and workers never share a book.
+- Accepted validation limits. Imported positions are kept as given: the
+  state rule that positions equal the lot-derived net is not enforced at
+  import, because opening positions without lots and carried walk-forward
+  positions that differ from their re-summed lots in the last bits are
+  valid inputs; positions of instruments a fill or disposition touches come
+  from the book (cut 5 amendment of 2026-10-30, synthesis F4.01). The cached
+  net and cost basis equal the exact left-to-right reductions of the live
+  lots only for a book built by openings, where that is checked; a book
+  reached by fills or dispositions carries history-dependent rounding, so
+  state validation checks only that a flat instrument's net is exactly 0,
+  and each transition is checked by its applied rows (workstream 12 close
+  review F3, accepted residual).
 
 <a id="contract-execution-window-start"></a>
 ### Scoring And Feature Start
@@ -295,12 +467,21 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 <a id="contract-execution-event-staging"></a>
 ### Event Staging And Parallel Sweeps
 
-- The canonical R fold stages successful fill-event rows inside the output
-  handler until `flush_pulse_events()` publishes the complete pulse. No code
-  may read a staged row before that flush except the handler-local
-  `record_accounting_fact()` patch for that same fill. A handler with no staged
-  canonical rows treats the flush as a no-op; this preserves live database and
-  compiled-accounting behavior while keeping event order and meaning common.
+- The canonical R fold publishes a pulse's fills as one typed block
+  (`ledgr_fill_event_payload()`): event IDs formatted once per block,
+  contiguous event sequences and P3's carried cash and position effects. The
+  output handler holds that pending block until `flush_pulse_events()` writes
+  it by index into the event buffer and publishes the complete pulse. No code
+  may read the pending block before that flush except the handler-local
+  `record_accounting_fact()` for that same block, which writes its
+  event-order realized P&L and cost basis beside its rows and stages its legs
+  (`ledgr_fill_leg_block()`). Publication stages no per-fill or per-leg list;
+  the routed per-event `meta` list and `meta_json` keep their bytes. A
+  handler with no pending block treats the flush as a no-op. Live database
+  writes keep one insert per fill through `ledgr_write_fill_events()`,
+  compiled-accounting publication is unchanged, and P1's non-fill builders
+  keep their order and write their typed columns by index, so event order
+  and meaning stay common.
 - Parallel sweep is candidate-level dispatch over the same fold core. Workers
   return compact candidate result rows to the orchestrator; they must not write
   candidate ledgers, equity curves, feature panels, run telemetry, or promotion
@@ -348,20 +529,24 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not resolve, reinterpret, or rewrite fill
-  prices, fees, cash deltas, or cost metadata. When a handler materializes a
-  fill row from a resolved fill intent on the canonical R path, the row's cash
-  and position deltas come only from the one publication computation,
-  `ledgr_fill_publication_deltas()`, applied to the fill's resolved side,
-  quantity, price and fee. On that path a resolved fee is split across the
-  fill's close and open legs only by `ledgr_fill_leg_fees()`. These are row
-  projections of the resolved fill, not a second economic computation.
-  Compiled spot-FIFO batches supply the fold's already computed typed deltas
-  and leg fees, which the handler publishes unchanged; this clarification
-  changes neither compiled arithmetic nor its parity obligations against
-  canonical R.
-- Pulse plans declare every economic-event kind they carry. Each accounting
-  arm must handle every declared kind or fail closed before accounting; neither
-  canonical nor compiled execution may complete after silently dropping one.
+  prices, fees, cash deltas, or cost metadata. On the canonical R path a fill
+  row's cash and position deltas come only from the one publication
+  computation, `ledgr_fill_publication_deltas()`, which P3 applies once per
+  pulse to the resolved sides, quantities, prices and fees of its typed fill
+  rows; every handler and sink publishes those carried effects and computes
+  none. On that path a resolved fee is split across the fill's close and open
+  legs only by `ledgr_fill_leg_fees()`. These are row projections of the
+  resolved fill, not a second economic computation. The compiled spot-FIFO
+  wrapper reads the same fill rows, publishes P3's carried cash and position
+  effects and installs the cash they imply in fill order; its native lot
+  calculation, lot positions and leg fees are unchanged and the handler
+  publishes them unchanged. This changes neither compiled arithmetic nor its
+  parity obligations against canonical R.
+- A pulse plan declares every economic-event kind it carries, as codes of
+  the closed kind dictionary (`FILL`, `CASHFLOW`, `DISPOSITION`); `FILL` is
+  declared exactly when the plan has fills, and an empty plan declares none. Each accounting arm must handle every declared
+  kind or fail closed before accounting; neither canonical nor compiled
+  execution may complete after silently dropping one.
 - A terminal outcome, modeled or evidenced, posts one `DISPOSITION` event at
   the effective pulse before the strategy decision. It is not a fill and uses
   no fill timing or cost model. The event, its lot close, its cash change and
@@ -521,12 +706,23 @@ Accepted change pending:
   arithmetic residue after matched close quantities; it is not a new
   affordability rule, quantity granularity, liquidity policy, or identity
   component.
-- `ledgr_lot_apply_fill()` accepts only a known side, finite positive quantity
-  and finite non-negative fee. Ordinary fills require a finite positive price.
-  A terminal `DISPOSITION` alone may close lots at a finite zero price through
-  the internal `allow_zero_price = TRUE` path; a negative or non-finite price
-  always fails. Invalid transitions fail closed with a classed condition
-  aligned with the compiled lot kernel on its supported fill subset.
+- The typed fill operation (`ledgr_lot_fill()`) accepts only a known side,
+  finite positive quantity and finite non-negative fee. Ordinary fills
+  require a finite positive price. A terminal `DISPOSITION` alone
+  (`ledgr_lot_disposition()`, zero fee) may close lots at a finite zero
+  price; a negative or non-finite price always fails. Invalid transitions
+  fail closed with a classed condition aligned with the compiled lot kernel
+  on its supported fill subset.
+- On the canonical R path, a fill from a valid book whose lot accounting
+  overflows to a non-finite value from finite inputs (its realized P&L,
+  closing or opened cost basis, position, or the event-order cost-basis,
+  realized or compensation totals; for example buying 1e308 units at a price
+  of 10) is refused as invalid fill input: `ledgr_invalid_lot_fill`, message
+  `Invalid fill input for lot accounting.`, the refusal an overflowing fee
+  already gets. Runs and sweeps both refuse, and the earliest failing fill of
+  a batch refuses. A non-finite result from a corrupt book stays
+  `ledgr_lot_state_invariant`. Openings and dispositions are not covered by
+  this refusal (v0.2.3 cut 5 `amendment_overflow`).
 
 ## Sweep Promotion Contract
 

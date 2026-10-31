@@ -7,6 +7,12 @@
 - Committed runs and sweeps now write their output through one internal
   output handler with a DuckDB or a memory sink, replacing the two separate
   handlers; run, sweep and walk-forward results are unchanged.
+- A fill whose lot accounting overflows to a non-finite value, such as buying
+  1e308 units at a price of 10, is now refused with `ledgr_invalid_lot_fill`
+  ("Invalid fill input for lot accounting.") in runs and sweeps. Before, a run
+  failed later with `ledgr_config_non_finite` and a sweep completed with
+  infinite values. The fold now carries each pulse's data in typed columns;
+  all other results are unchanged.
 - Sweeps with `workers > 1` now give the same results as sequential sweeps for
   seeded strategies that draw through `withr::with_seed(ctx$pulse_seed, ...)`.
   Workers used R's `L'Ecuyer-CMRG` kind, so the same pulse seed drew different
