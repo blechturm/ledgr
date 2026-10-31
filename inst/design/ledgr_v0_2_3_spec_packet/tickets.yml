@@ -1221,7 +1221,7 @@ tickets:
   - id: "LDG-3164"
     title: "Typed lot book and one lot implementation for every consumer"
     workstream: 12
-    status: "planned"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3163"]
@@ -1253,6 +1253,8 @@ tickets:
       - "dev/bench/v0_2_3_ws4a/records/ldg3164/README.md and dev/bench/timing/records/ws4a-timing-1/ldg3164-gate/attempt-1: decision (6) is settled on blocks. Replay applies consecutive conflict-free blocks. Replay peak R heap is 0.92 (wide) and 0.88 (deep) of base, within the 1.10 budget. Reader timing is read_fills 0.408, read_trades 0.405 and read_equity 0.987, and the no-fill cells are at most 1.03, all passing. Fold, sparse and marginal cells (1.02-1.56) and deep-forward memory (1.13, unstable) are not gated until LDG-3169 under decision (8)."
       - "dev/bench/v0_2_3_ws4a/records/ldg3164/sequence.log: the full suite (testthat::test_local, stop_on_failure) exits 0 on the candidate df1b3b62."
       - "Correction round 1 for ws12_close_review.md, product commit 03aed8b7; harness/evidence commit b7bffc0a (dev/bench/v0_2_3_ws4a/records/ldg3164/README.md, section 'Correction round 1'): F1 replay and the kernel refuse the earliest failing event with the base 953338df class and message, and the review's two multi-error controls pass in [WS4a F1]; F2 per-scalar total checks and typed empty operations ([WS4a U-3164]); F3 aggregates exact at the opening construction boundary, exact zero net when flat elsewhere, and the close/open split checked against the lots ([WS4a V-book F4.12], [WS4a V-applied-row]); F4 D3, D11, D25 and D12a production predicates with the review's violating controls, and M11 as a real total-basis cumsum (fails C3); F5 native C14 serialize witness, with C14a_rename_by_reference failing. On 03aed8b7: 23 cases identical, 13 guts fail as expected, dense PASS, A0 295 of 295. Timing, memory, real-data and the maintainer's full-suite record are rerun by the maintainer. Pending the focused re-review."
+      - "Re-review: ws12_close_review_rereview_1.md (PASS_AFTER_PATCHES) at b7bffc0a; its N1 (split check witnesses an actual append), N2 (D25 callback loops with lapply controls), O1 (failure selection skipped on ordinary calls) and O2 (pointers) are applied verbatim in f4c47b8b. Close review CHANGES_REQUIRED, one correction round, re-review PASS_AFTER_PATCHES: ratio 2 reviews / 1 round."
+      - "dev/bench/v0_2_3_ws4a/records/ldg3164/README.md section 'Final candidate f4c47b8b' and final/ (sequence.log, a0-compare.csv, realdata.txt, memory/): on product f4c47b8b the 23 WS4a cases are identical, 13 of 13 guts fail as expected, the dense oracle and A0 (295 of 295) pass, the full suite exits 0 and all six real-data workloads are COMPARE_IDENTICAL. Memory is an observation under amendment_performance; decision (6) stands on blocks."
   - id: "LDG-3165"
     title: "Typed observation and decision"
     workstream: 13

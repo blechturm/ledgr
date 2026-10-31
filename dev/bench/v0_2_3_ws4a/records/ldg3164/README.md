@@ -83,3 +83,24 @@ it. `M11_uncompensated_totals` stays as a gut. `records/mutations.csv` and
 `records/gut_results.csv` are the LDG-3163 base records and were not
 rewritten. `C14a_rename_by_reference` names a retained typed column by
 reference, which the base-shaped view hides; only the native witness fails.
+
+## Final candidate f4c47b8b
+
+f4c47b8b applies the re-review's N1, N2, O1 and O2
+(`ws12_close_review_rereview_1.md`, PASS_AFTER_PATCHES). The maintainer
+verified it on 2026-10-31 with the same script, adding the two new guts.
+Library: E:/ledgr-data/r-lib/ledgr-ws4a-f4c47b8b. Records are in `final/`.
+
+| Step | Outcome |
+| --- | --- |
+| cases | PASS, 23 cases identical |
+| guts | 13 of 13 fail their case, including M11_cumsum_total_basis and C14a_rename_by_reference; the invalid-base control is refused |
+| dense | PASS, nine native arms identical |
+| A0 | PASS, 295 checks, 0 fail (`final/a0-compare.csv`) |
+| suite | exit 0 |
+| real data | all six workloads COMPARE_IDENTICAL (`final/realdata.txt`) |
+| memory | `final/memory/`. This is an observation, not a gate, under the cut 5 performance amendment of 2026-10-31. Peak R heap against base: wide replay 0.92, deep replay 0.88, wide forward 0.99, deep forward 1.12. Every cell is stable. |
+
+Under cut 5's `amendment_performance` (2026-10-31), timing is not a gate in
+this cut. Decision (6) stands as settled on blocks by attempt 1 above. Attempt
+2 on f4c47b8b was stopped unfinished; it is not evidence and is not committed.
