@@ -1,6 +1,6 @@
 # ledgr v0.2.3 Macro Plan
 
-**Status:** Accepted by the maintainer on 2026-10-28 (revision 4, written by
+**Status:** Accepted by the maintainer on 2026-10-28 (revision 5, written by
 Claude and amended by the maintainer). It is the within-release order for
 uncut work. Revision 2 applies
 the [Type 2 review](macro_plan_review.md) (RESTRUCTURE) as dispositioned in
@@ -11,6 +11,9 @@ moves WS8 into one ordered cut with WS7 after execution-core consolidation.
 Revision 4 records the maintainer's 2026-10-29 fold-carrier amendment: the
 dense oracle now precedes a focused design and implementation of common typed
 stage carriers, which precedes removal of the second execution path.
+Revision 5 records the maintainer's 2026-10-31 performance-convergence
+amendment: the post-consolidation peer record now leads to one bounded,
+evidence-driven optimization cut when the finished core misses its targets.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -100,7 +103,10 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     suite and the shared timing harness. A cut may still measure something
     to settle a design choice; that measurement is evidence, not a gate.
     Correctness oracles, cases and the real-data oracle run as before
-    (maintainer, 2026-10-31, after workstream 12 timed twice).
+    (maintainer, 2026-10-31, after workstream 12 timed twice). After the
+    surviving core is measured, WS14 provides the one bounded response to a
+    material miss; milestone deferral is not permission to ship an
+    uninvestigated performance result.
 
 ## 2. Dependency structure
 
@@ -131,6 +137,7 @@ Phase C   WS5 runtime ---> WS6 frame retirement --.
 Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
           WS10 economics implementation (as each RFC is accepted)
           WS3 full suite timing after WS4b and WS8
+          completed hot-path cuts -> WS14 performance convergence
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
@@ -150,6 +157,8 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS5 -> WS6 | technical prerequisite (synthesis D1 fixes the input layout) |
 | WS5, WS6, WS7 -> J | evidence prerequisite for WS5 acceptance |
 | WS9b budget decision -> H9 | technical prerequisite (inventory H9) |
+| WS4b, WS5, WS6, WS7/WS8 and execution-sensitive WS10 cuts -> WS14 | evidence prerequisite: optimize the surviving core, not an intermediate representation |
+| WS3 post-consolidation record -> WS14 | evidence prerequisite: the peer suite supplies the attribution and comparison |
 | each economics RFC -> its implementation | binding constraint |
 | R2 -> M5, M7; H4 -> M5 | binding constraint |
 | H4 -> C10 ADR -> C9 | binding constraint (inventory chain 2) |
@@ -388,6 +397,37 @@ rebuilding; site deployed from the built artifact.
   bound after the first rehearsal measures them.
 - The playbook's release order is replaced once the RFC is accepted.
 
+### WS14. Performance convergence checkpoint
+
+After the execution paths, strategy context, context frames, accounting
+readers and typed persistence have reached their surviving v0.2.3 shape, run
+the shared timing harness and full peer suite as one attributed performance
+checkpoint. Separate cold setup, warm no-fill pulse cost, strategy work,
+marginal fill cost, durable publication and result reads. Report ephemeral and
+durable ledgr separately and compare only semantically qualified peer cells.
+
+The provisional stretch objectives are 100-200 microseconds per ordinary
+no-fill pulse, at most 10 microseconds of marginal work per fill, an ephemeral
+array-friendly lane within about 3x PMwR, and a durable lane within about 2x
+its matched ephemeral lane. These are design objectives, not claims or gates,
+until the post-consolidation record fixes the exact workload boundaries and
+noise protocol at the cut.
+
+If the record misses a fixed target, one bounded optimization cut owns the
+largest measured remaining costs. It may remove redundant validation after a
+trusted carrier boundary, reuse flat contexts and buffers, prebind strategy
+and feature access, precompute pulse invariants, fuse vector stages, avoid
+unretained diagnostics, batch publication or keep measured state resident.
+It may introduce a compiled kernel only when the profile shows that ordinary R
+representation and allocation work is no longer the dominant cost. It may not
+create a second execution semantics, relax point-in-time or accounting rules,
+or weaken evidence and reproducibility. If the targets are met, the cut closes
+as a measurement and disposition record with no product change.
+
+WS3 reruns the affected peer cells after any product change. Release
+certification records the final targets, results and any consciously accepted
+semantic premium; it may not describe an uninvestigated miss as unavoidable.
+
 ## 4. Cut strategy
 
 - First cut: WS1, after A0. WS2, C4 and the Phase A chores may form a second
@@ -402,6 +442,9 @@ rebuilding; site deployed from the built artifact.
   WS4b cannot begin or inherit evidence until WS4a is accepted.
 - RFC-track work needs no cut; its implementation does.
 - The final cut is the release cut of rule 8.
+- WS14 is conditional on its checkpoint: one measurement/disposition cut,
+  with at most one bounded product-optimization workstream before the final
+  release rehearsal.
 
 ## 5. Explicit non-goals
 
@@ -434,10 +477,16 @@ without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
   existing modes; WS4b removes the redundant path against that contract.
   WS7 and WS8 consume the carrier but retain ownership of reader consolidation,
   typed durable storage, schema 125 and removal of accounting-critical JSON.
+- **Performance convergence, 2026-10-31:** the maintainer made PMwR a serious
+  performance constraint rather than a report-only peer. After the surviving
+  v0.2.3 core is measured, WS14 owns one bounded response to the largest
+  remaining costs while preserving one execution semantics and ledgr's
+  point-in-time, accounting, evidence and reproducibility guarantees.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on
-2026-10-29.
+2026-10-29; the performance-convergence amendment was accepted on
+2026-10-31.
 
 ## 7. Release definition of done
 
@@ -448,7 +497,8 @@ typed-accounting and typed-fold-carrier amendments were accepted on
 - Economics RFCs accepted and implemented.
 - RNG equivalence passing; memory and worker budgets set.
 - Dense parity lane, A0 and the v0.2.2 reference reproduced or each
-  difference decided; full peer suite timed after the consolidations.
+  difference decided; full peer suite timed after the consolidations; WS14's
+  targets met or each remaining premium measured and consciously accepted.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
 - A certified candidate promoted under the WS13 process.
