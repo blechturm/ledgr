@@ -112,6 +112,12 @@ ws4a_guts <- list(
     if (length(new) > 0L && length(book$lot_qty) == length(new)) collapse::setv(book$lot_qty, seq_along(new), new, vind1 = TRUE)
     out
   })),
+  # Invisible to the base-shaped view: names a retained typed column by reference.
+  C14a_rename_by_reference = list(case = "C14a", expect = "retained native book", patch = list(ledgr_lot_fill = function(original) function(book, ...) {
+    out <- original(book, ...)
+    collapse::setattrib(book$net_by_inst, list(names = rep("renamed", length(book$net_by_inst))))
+    out
+  })),
   C14b_write_retained_view = list(case = "C14b", patch = list(ledgr_call_strategy_fn = function(original) function(fn, ctx, ...) {
     if (!is.null(ws_gut$prev)) collapse::setv(ws_gut$prev, 1L, -999, vind1 = TRUE)
     ws_gut$prev <- ctx$vec$position
@@ -186,6 +192,14 @@ ws4a_guts <- list(
   })),
   M11_uncompensated_totals = list(case = "C5b", patch = list(ledgr_lot_add_realized = function(original) function(realized, comp, delta) {
     c(realized + delta, comp)
+  })),
+  # M11: the total basis as one cumsum() over the rows' basis changes instead of the ordered scalar scan.
+  M11_cumsum_total_basis = list(case = "C3", expect = "C3/book_totals", patch = list(ledgr_lot_apply = function(original) function(book, input) {
+    out <- original(book, input)
+    d <- out$book$cost_basis_by_inst[input$pos] - book$cost_basis_by_inst[input$pos]
+    out$applied$event_cost_basis <- cumsum(c(book$total_cost_basis, d))[-1L]
+    if (length(d)) out$book$total_cost_basis <- out$applied$event_cost_basis[[length(d)]]
+    out
   }))
 )
 
@@ -195,7 +209,7 @@ ws4a_mutations <- data.frame(id = paste0("M", 1:12), description = c("LIFO consu
   "skip a partial close's remainder", "wrong context_pos", "notional fee from the rounded price", "drop the notional step",
   "cumsum totals", "drop realized_comp in unpack"), gut = c("C4_lifo", "M2_reorder_pulse_fills", "M3_drop_lot_fee",
   "C11_affordability_order", "M5_positions_plus_delta", "C5b_kahan_on_openings", "M7_drop_partial_remainder",
-  "C15_wrong_context_pos", "C2_notional_from_rounded", "C1_drop_notional", "M11_uncompensated_totals", "C9_drop_comp_in_unpack"))
+  "C15_wrong_context_pos", "C2_notional_from_rounded", "C1_drop_notional", "M11_cumsum_total_basis", "C9_drop_comp_in_unpack"))
 stopifnot(ws4a_mutations$gut %in% names(ws4a_guts), !anyDuplicated(ws4a_mutations$gut))
 
 if (sys.nframe() == 0L) {

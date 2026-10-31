@@ -1,7 +1,9 @@
 # LDG-3164 candidate verification
 
 The maintainer ran this verification on 2026-10-30 and 2026-10-31. Product
-candidate df1b3b62; a6b3643e changes only memory.R. Base 953338df. Library:
+candidate df1b3b62; a6b3643e changes only memory.R; this record was
+committed in ad8ed703 and bee6c028. Base 953338df. Its results describe
+df1b3b62 only; the correction round below changed the product. Library:
 E:/ledgr-data/r-lib/ledgr-ws4a-df1b3b62. The script is
 `verify_3164.sh` in the session scratchpad; its commands appear below.
 
@@ -59,3 +61,25 @@ The fold cells regressed while P4 makes one typed call per fill, which is
 allowed until LDG-3167. Rprofmem bytes per fill also rose: dense 70,311
 (base 46,609) and availability 131,673 (base 108,349). These cells gate at
 LDG-3169.
+
+## Correction round 1 (close review F1-F7)
+
+Product commit 03aed8b7 answers `ws12_close_review.md` F1-F4; the harness,
+design note and evidence follow in the next commit. Verified by the
+implementer on 2026-10-31 against 03aed8b7, with no timing, memory or
+real-data runs (the maintainer reruns those):
+
+| Step | Command | Outcome |
+| --- | --- | --- |
+| cases | `check.R --base=HEAD` | PASS, 23 cases identical, with the C14 native serialize witness (F5) |
+| guts | `guts.R --base=HEAD` over the eleven guts above plus `M11_cumsum_total_basis` and `C14a_rename_by_reference` | 13 of 13 fail their case; the invalid-base control is refused |
+| dense | `peer_benchmark/dense/check.R` | PASS, nine native arms identical |
+| A0 | `cut3_successors/a0/record.R` and `compare.R` | PASS, 295 checks, 0 fail |
+| tests | test-ws4a-carrier.R and 17 lot, replay, accounting, disposition, walk-forward and terminal files | all pass |
+
+M11 is now registered to `M11_cumsum_total_basis` (the total basis as one
+`cumsum()`), which fails C3 (`book_totals`, equity); C5b does not detect
+it. `M11_uncompensated_totals` stays as a gut. `records/mutations.csv` and
+`records/gut_results.csv` are the LDG-3163 base records and were not
+rewritten. `C14a_rename_by_reference` names a retained typed column by
+reference, which the base-shaped view hides; only the native witness fails.

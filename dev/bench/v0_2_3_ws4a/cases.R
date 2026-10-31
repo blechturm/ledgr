@@ -410,10 +410,15 @@ ws_case("C13c", "3167", function() {
 # the end (C14a: the base-shaped container of a typed book).
 ws_keep <- function(env, name, value, view = identity) if (is.null(env$print[[name]])) {
   env$value[[name]] <- value
+  # The native typed value is also witnessed whole: the base-shaped view hides
+  # names and empty segments (LDG-3164 close review F5).
+  if (name %in% c("book_handout", "compiled_input", "corporate_action_view")) env$raw[[name]] <- serialize(value, NULL)
   env$view[[name]] <- view
   env$print[[name]] <- ws_fingerprint(view(value))
 }
 ws_retained <- function(env, n) {
+  ws_need(all(vapply(names(env$raw), function(k) identical(env$raw[[k]], serialize(env$value[[k]], NULL)), logical(1))),
+    "retained native book representation unchanged")
   tab <- data.frame(object = names(env$print), at_capture = unlist(env$print),
     at_end = vapply(names(env$print), function(k) ws_fingerprint(env$view[[k]](env$value[[k]])), ""))
   ws_need(nrow(tab) == n && all(tab$at_capture == tab$at_end),
