@@ -430,9 +430,9 @@ malformed ledgr timing-model payloads.
 \section{Fill seam classes}{
 
 \code{ledgr_invalid_fill_proposal} and \code{ledgr_invalid_fill_context} are raised at
-the internal proposal/resolver seam when a cost resolver receives the wrong
-object shape. They are stable top-level classes for tests that exercise that
-seam directly.
+the internal batch cost-resolver seam for misaligned side/quantity columns and
+execution-price columns, respectively. They remain stable top-level classes for
+tests of that seam.
 }
 
 \section{Execution window classes}{

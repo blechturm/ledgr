@@ -185,7 +185,12 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
     as.numeric(book$realized_comp)
   )
   batch$positions <- as.numeric(batch$positions)
-  batch$cash <- as.numeric(batch$cash[[1]])
+  # The output boundary publishes P3's carried effects and installs the cash
+  # they imply, in fill order; native lot positions stay authoritative and
+  # the native calculation is unchanged.
+  batch$cash_delta <- fills$cash_delta
+  batch$position_delta <- fills$position_delta
+  batch$cash <- ledgr_cash_scan(state$cash, fills$cash_delta)[[n]]
   batch$lot_state <- ledgr_carrier_compiled_unpack(batch, length(instrument_ids))
   batch$next_event_seq <- as.integer(batch$next_event_seq[[1]])
   batch

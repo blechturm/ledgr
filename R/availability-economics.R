@@ -403,31 +403,41 @@ ledgr_fold_build_availability_pulse_plan <- function(context_pos,
   informational <- which(member[k] != view_member)
   open <- execution$open[pos]
   bad_open <- !is.finite(open) | open <= 0
-  good <- which(!bad_open)
-  if (length(good) > 0L && !epoch_valid) ledgr_plan_refuse_epoch(exec_ts)
-  resolved <- ledgr_plan_resolve(cost_resolver, side[good], qty[good], open[good])
+  bad_delta <- !is.finite(delta)
+  # Rows with an execution bar pass the target-delta and epoch checks before
+  # their costs resolve; a row without a bar is rejected unchecked.
+  passed <- which(!bad_open & !bad_delta & epoch_valid)
+  resolved <- ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])
   price <- rep(NA_real_, n)
   fee <- rep(NA_real_, n)
-  price[good] <- resolved$price
-  fee[good] <- resolved$fee
+  price[passed] <- resolved$price
+  fee[passed] <- resolved$fee
   bad_price <- !bad_open & !(is.finite(price) & price > 0)
-  early <- which(bad_open | bad_price)
-  candidates <- which(!bad_open & !bad_price)
+  candidates <- passed[!bad_price[passed]]
 
   # The effects of every candidate, computed once and reused by the
-  # short-exposure check, affordability, the fills and publication.
+  # short-exposure check, affordability, the fills and publication. A fee
+  # that overflows stays in its effects: affordability rejects it, as before.
   effects <- ledgr_fill_publication_deltas(side[candidates], qty[candidates], price[candidates], fee[candidates])
-  resulting <- before[candidates] + effects$position_delta
-  short <- which(resulting < pmin(before[candidates], 0))
-  if (length(short) > 0L) {
-    # The first candidate in decision order refuses, as one target.
-    first <- short[[1L]]
-    id <- instrument_ids[[pos[[candidates[[first]]]]]]
-    ledgr_availability_validate_short_exposure(
-      stats::setNames(resulting[[first]], id),
-      stats::setNames(before[[candidates[[first]]]], id)
+  resulting <- rep(NA_real_, n)
+  resulting[candidates] <- before[candidates] + effects$position_delta
+  short <- logical(n)
+  short[candidates] <- resulting[candidates] < pmin(before[candidates], 0)
+  # The first failing row in decision order refuses with its first failing
+  # check, in the base per-row order: target delta, execution epoch, then
+  # short exposure as one target.
+  ledgr_plan_refuse_first(
+    list(!bad_open & bad_delta, !bad_open & !epoch_valid, short),
+    list(
+      function(i) ledgr_plan_refuse_delta(),
+      function(i) ledgr_plan_refuse_epoch(exec_ts),
+      function(i) {
+        id <- instrument_ids[[pos[[i]]]]
+        ledgr_availability_validate_short_exposure(stats::setNames(resulting[[i]], id), stats::setNames(before[[i]], id))
+      }
     )
-  }
+  )
+  early <- which(bad_open | bad_price)
 
   view_count <- if (n > 0L) execution_view$reason_count else integer()
   blocked <- view_count[candidates] > 0L

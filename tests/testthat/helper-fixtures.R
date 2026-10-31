@@ -139,11 +139,24 @@ ledgr_test_next_open_fill <- function(desired_qty_delta,
                                       next_open_price = NULL,
                                       instrument_id = NULL,
                                       ts_utc = NULL) {
+  open_label <- "`next_open_price`"
   if (!is.null(next_bar)) {
     instrument_id <- next_bar$instrument_id
     ts_utc <- next_bar$ts_utc
     next_open_price <- next_bar$open
+    open_label <- "`next_bar$open`"
   }
+  epoch <- if (inherits(ts_utc, "POSIXt")) {
+    as.numeric(ts_utc)
+  } else {
+    as.numeric(as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"))
+  }
+  # The production next-open input refusals, in the base order, with the
+  # open labelled by its input form.
+  ledgr:::ledgr_plan_refuse_inputs(
+    as.numeric(desired_qty_delta), as.numeric(next_open_price),
+    ledgr:::ledgr_plan_epoch_valid(epoch), epoch, open_label
+  )
   resolver <- ledgr:::ledgr_cost_resolver_from_model(
     ledgr_cost_chain(
       ledgr_cost_spread_bps(spread_bps),
@@ -154,11 +167,6 @@ ledgr_test_next_open_fill <- function(desired_qty_delta,
   side <- ledgr:::ledgr_plan_side(desired_qty_delta)
   qty <- abs(as.numeric(desired_qty_delta))
   resolved <- ledgr:::ledgr_plan_resolve(resolver, side, qty, as.numeric(next_open_price))
-  epoch <- if (inherits(ts_utc, "POSIXt")) {
-    as.numeric(ts_utc)
-  } else {
-    as.numeric(as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"))
-  }
   effects <- ledgr:::ledgr_fill_publication_deltas(side, qty, resolved$price, resolved$fee)
   groups <- ledgr:::ledgr_plan_groups(
     1L, 1L, side, qty, resolved$price, resolved$fee, epoch, 0,

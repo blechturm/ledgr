@@ -38,7 +38,9 @@
 # Field specifications: "<storage>:<axis>:<missingness>". Axis `context` is
 # the group's context length, `run` the run axis, `segment` the restriction
 # segment total, `any` free; missingness `none` refuses NA, `na` admits NA
-# (doubles must otherwise be finite) and `-` marks opaque fields.
+# (doubles must otherwise be finite), `inf` refuses NA but admits an infinite
+# double (a fee that overflowed, refused at accounting as in the base) and
+# `-` marks opaque fields.
 .ledgr_carrier_fields <- list(
   decision_packet = c(
     pulse_idx = "integer:scalar:none", ts = "double:scalar:none",
@@ -84,8 +86,8 @@
   ),
   fill = c(
     k = "integer:row:none", pos = "integer:row:none", side = "integer:row:none",
-    qty = "double:row:none", price = "double:row:none", fee = "double:row:none",
-    cash_delta = "double:row:none", position_delta = "double:row:none",
+    qty = "double:row:none", price = "double:row:none", fee = "double:row:inf",
+    cash_delta = "double:row:inf", position_delta = "double:row:none",
     exec_ts = "double:row:none",
     position_before = "double:row:none", planned_position_after = "double:row:none",
     info_offset = "integer:row:none", info_count = "integer:row:none",
@@ -156,10 +158,10 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
     if (is.na(size) || length(v) != size) {
       return(paste0("`", names(spec)[[k]], "` does not have its axis length"))
     }
-    if (identical(parts[[k]][[3L]], "none") && anyNA(v)) {
+    if (parts[[k]][[3L]] %in% c("none", "inf") && anyNA(v)) {
       return(paste0("`", names(spec)[[k]], "` contains a missing value"))
     }
-    if (is.double(v) && any(is.infinite(v))) {
+    if (is.double(v) && !identical(parts[[k]][[3L]], "inf") && any(is.infinite(v))) {
       return(paste0("`", names(spec)[[k]], "` contains a non-finite value"))
     }
   }
@@ -256,6 +258,14 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
       if (!identical(x$primary, x$reason_code[x$reason_offset + 1L])) {
         return("`primary` is not the first reason")
       }
+      # Only an unresolved (early) row lacks a price; only a row without an
+      # execution opportunity (final_pulse_no_execution) lacks an epoch.
+      if (any(is.na(x$resolved_price) != (x$emit == 1L))) {
+        return("resolved-price missingness disagrees with rejection phase")
+      }
+      if (any(is.na(x$exec_ts) != (x$primary == 1L))) {
+        return("execution-epoch missingness disagrees with opportunity")
+      }
       if (any(x$resolved_price <= 0, na.rm = TRUE)) return("a resolved price is not positive")
       NULL
     },
@@ -267,6 +277,9 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
       for (part in c("fill", "rejection")) {
         problem <- ledgr_carrier_problem(x[[part]], part, n_run, plan_axis)
         if (!is.null(problem)) return(paste0(part, ": ", problem))
+      }
+      if (length(x$fill$k) == 0L && length(x$rejection$k) == 0L && length(kinds) > 0L) {
+        return("an empty plan declares economic event kinds")
       }
       if ((length(x$fill$k) > 0L) != (1L %in% kinds)) {
         return("the FILL kind is not declared exactly when the plan has fills")

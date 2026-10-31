@@ -149,7 +149,13 @@ ledgr_fold_build_pulse_plan <- function(context_pos,
   qty <- abs(delta)
   none <- integer()
   if (!has_next) {
-    for (i in seq_len(n)) ledgr_fold_warn_final_bar_no_fill()
+    # Base per-row order on the final pulse: the target delta is checked,
+    # then the row warns; a non-finite delta refuses after the earlier rows'
+    # warnings.
+    bad <- which(!is.finite(delta))
+    warned <- if (length(bad) > 0L) bad[[1L]] - 1L else n
+    for (i in seq_len(warned)) ledgr_fold_warn_final_bar_no_fill()
+    if (length(bad) > 0L) ledgr_plan_refuse_delta()
     exec_ts <- NA_real_
     price <- rep(NA_real_, n)
     fee <- price
@@ -157,14 +163,9 @@ ledgr_fold_build_pulse_plan <- function(context_pos,
     reason <- 1L
   } else {
     open <- as.numeric(bars_mat$open[pos, pulse_idx + 1L])
-    bad_open <- !is.finite(open) | open <= 0
-    # The base order of refusals: the first row's open, then the shared
-    # execution epoch, then any later row's open.
-    if (n > 0L) {
-      if (bad_open[[1L]]) ledgr_plan_refuse_open()
-      if (!epoch_valid) ledgr_plan_refuse_epoch(exec_ts)
-      if (any(bad_open)) ledgr_plan_refuse_open()
-    }
+    # The first row, in decision order, failing its delta, its next open or
+    # the shared execution epoch refuses (base per-row order).
+    ledgr_plan_refuse_inputs(delta, open, epoch_valid, exec_ts)
     resolved <- ledgr_plan_resolve(cost_resolver, side, qty, open)
     price <- resolved$price
     fee <- resolved$fee
@@ -183,8 +184,40 @@ ledgr_fold_build_pulse_plan <- function(context_pos,
   )
 }
 
-ledgr_plan_refuse_open <- function() {
-  rlang::abort("`next_open_price` must be a finite numeric scalar > 0.", class = "ledgr_invalid_fill_input")
+# The next-open fill model's input refusals with the base 953338df classes
+# and messages. The open's label names its input form: `next_open_price` for
+# a price read from bars_mat, `next_bar$open` for a next bar.
+ledgr_plan_refuse_delta <- function() {
+  rlang::abort("`desired_qty_delta` must be a finite numeric scalar.", class = "ledgr_invalid_fill_input")
+}
+
+ledgr_plan_refuse_open <- function(open_label = "`next_open_price`") {
+  rlang::abort(sprintf("%s must be a finite numeric scalar > 0.", open_label), class = "ledgr_invalid_fill_input")
+}
+
+# Refuses the first failing row, in decision order, with its first failing
+# check: `fails` lists one logical column per check in the base per-row check
+# order, `refusals` the matching refusal of a row index. The loop runs over
+# the fixed checks, not over rows.
+ledgr_plan_refuse_first <- function(fails, refusals) {
+  row <- which(Reduce(`|`, fails, logical(length(fails[[1L]]))))
+  if (length(row) == 0L) return(invisible(NULL))
+  row <- row[[1L]]
+  for (j in seq_along(fails)) if (fails[[j]][[row]]) refusals[[j]](row)
+  invisible(NULL)
+}
+
+# The next-open inputs of rows that have a next bar, in the base per-row
+# order: target delta, next open, then the shared execution epoch.
+ledgr_plan_refuse_inputs <- function(delta, open, epoch_valid, exec_ts, open_label = "`next_open_price`") {
+  ledgr_plan_refuse_first(
+    list(!is.finite(delta), !is.finite(open) | open <= 0, rep(!epoch_valid, length(delta))),
+    list(
+      function(i) ledgr_plan_refuse_delta(),
+      function(i) ledgr_plan_refuse_open(open_label),
+      function(i) ledgr_plan_refuse_epoch(exec_ts)
+    )
+  )
 }
 
 ledgr_fold_apply_net_feasibility_noop <- function(pulse_plan, state) {
