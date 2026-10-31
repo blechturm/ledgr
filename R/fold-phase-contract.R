@@ -90,7 +90,7 @@ ledgr_fold_state_validate <- function(x) {
   # The lot book (V-book) and the run-axis positions that its axis defines:
   # positions are an unnamed finite double vector, one entry per book
   # instrument (Synthesis 3.1 and Section 4, groups "state" and "book").
-  book_problem <- ledgr_lot_book_problem(x$lot_state)
+  book_problem <- ledgr_lot_book_problem(x$lot_state, reduction = FALSE)
   if (!is.null(book_problem)) invalid(paste0("the lot book is invalid: ", book_problem))
   if (!is.double(x$positions) || !is.null(names(x$positions)) ||
       length(x$positions) != length(x$lot_state$offset) ||

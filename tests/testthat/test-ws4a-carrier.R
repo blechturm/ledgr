@@ -230,26 +230,126 @@ testthat::test_that("[WS4a import] E import maps openings onto the run axis and 
   )
 })
 
-testthat::test_that("[WS4a D3] the lot kernel and migrated book consumers index by position", {
+# D3's name-keyed lookups: match()-family calls, setNames(), intersect(),
+# names<- and `[`/`[[` with a character index (a string, an ID-named symbol,
+# or a names()/as.character()/paste() call).
+ws4a_name_keyed <- function(e) {
+  id_like <- function(i) is.character(i) || (is.symbol(i) && grepl("(^|_)(ids?|names?)$|^matched$", as.character(i))) ||
+    (is.call(i) && ws4a_head(i) %in% c("names", "as.character", "paste", "paste0"))
+  unlist(lapply(ws4a_calls(e), function(x) {
+    h <- ws4a_head(x)
+    if (h %in% c("match", "fmatch", "chmatch", "setNames", "intersect") ||
+        (h %in% c("<-", "=") && is.call(x[[2L]]) && ws4a_head(x[[2L]]) == "names") ||
+        (h %in% c("[", "[[") && length(x) >= 3L && any(vapply(as.list(x)[-(1:2)], id_like, logical(1))))) {
+      substr(ws4a_txt(x), 1L, 70L)
+    }
+  }))
+}
+# Statements of a function body, descending through blocks, branches and loops.
+ws4a_statements <- function(e) {
+  if (!is.call(e)) return(list())
+  h <- ws4a_head(e)
+  if (h == "{") return(unlist(lapply(as.list(e)[-1L], ws4a_statements), recursive = FALSE))
+  if (h == "if") return(c(list(e[[2L]]), unlist(lapply(as.list(e)[-(1:2)], ws4a_statements), recursive = FALSE)))
+  if (h %in% c("for", "while")) return(ws4a_statements(e[[length(e)]]))
+  if (h == "function") return(ws4a_statements(e[[3L]]))
+  list(e)
+}
+# The book region of a large function: its statements that touch the book.
+ws4a_book_region <- function(e) {
+  as.call(c(as.name("{"), Filter(function(s) {
+    n <- all.names(s)
+    any(n %in% c("lot_state", "initial_lot_state", "book", "net_by_inst", "cost_basis_by_inst", "lot_res", "lot_result", "applied")) ||
+      any(grepl("^ledgr_(lot_(book|apply|opening|fill|disposition)|carrier_)", n))
+  }, ws4a_statements(e))))
+}
+
+# The name-keyed boundary census of LDG-3164 (ws4a_carrier_design.md
+# Section 1.6): every name-keyed lookup in the lot kernel, the migrated book
+# consumers and the book regions of the run, sweep, handler and envelope
+# functions, each with its boundary role. Anything else is a D3 hit.
+ws4a_d3_whole <- c(
+  ws4a_kernel_names, "ledgr_lot_apply_blocks", "ledgr_lot_book", "ledgr_lot_book_live", "ledgr_lot_book_live_count",
+  "ledgr_lot_book_problem", "ledgr_lot_book_validate", "ledgr_lot_book_extend", "ledgr_lot_book_restrict",
+  "ledgr_lot_book_from_opening", "ledgr_lot_book_from_events", "ledgr_lot_book_asof", "ledgr_prepare_accounting_events",
+  "ledgr_replay_accounting_events", "ledgr_carrier_import_state", "ledgr_fold_positions_to_vec",
+  "ledgr_carrier_settlement_state", "ledgr_carrier_settlement_install", "ledgr_carrier_result_state",
+  "ledgr_carrier_compiled_pack", "ledgr_carrier_compiled_unpack", "ledgr_run_compiled_spot_fifo_batch",
+  "ledgr_fold_stage_apply", "ledgr_disposition_post", "ledgr_walk_forward_opening_from_run",
+  "ledgr_walk_forward_carried_opening", "ledgr_state_asof", "ledgr_extract_fills_impl", "ledgr_run_terminal_recovery_equity"
+)
+ws4a_d3_region <- c("ledgr_run_fold_impl", "ledgr_sweep_candidate_execution", "ledgr_output_handler", "ledgr_fold_envelope")
+ws4a_d3_census <- c(
+  # E opening import: opening positions, basis and carried lots onto the run axis.
+  ledgr_lot_book_from_opening = "match(ids, basis_ids)",
+  ledgr_lot_book_from_opening = "match(ids, instrument_ids)",
+  ledgr_fold_positions_to_vec = "intersect(names(positions), instrument_ids)",
+  ledgr_fold_positions_to_vec = "match(matched, instrument_ids)",
+  ledgr_fold_positions_to_vec = "positions[matched]",
+  # Replay import: ledger rows onto the replay axis; metadata fields by name.
+  ledgr_prepare_accounting_events = "value[[name]]",
+  ledgr_prepare_accounting_events = "intersect(names(meta[[i]]), c(\"subtype\", \"equity_subtype\", \"vendor_sub",
+  ledgr_prepare_accounting_events = "match(instrument_id, ids)",
+  # Replay initial positions (imported as given) and its named result.
+  ledgr_replay_accounting_events = "stats::setNames(rep(0, length(ids)), ids)",
+  ledgr_replay_accounting_events = "intersect(names(initial_positions), ids)",
+  ledgr_replay_accounting_events = "positions[matched]",
+  ledgr_replay_accounting_events = "initial_positions[matched]",
+  # Settlement: named state out; disposition parent IDs to book positions.
+  ledgr_carrier_settlement_state = "stats::setNames(fold_state$positions, instrument_ids)",
+  ledgr_disposition_post = "match(ids, position_names)",
+  # Result: named fold state; replayed state valued and recovered by ID.
+  ledgr_carrier_result_state = "stats::setNames(fold_state$positions, instrument_ids)",
+  ledgr_state_asof = "stats::setNames(as.numeric(bars$close), bars$instrument_id)",
+  ledgr_state_asof = "close_by_id[held_ids]",
+  ledgr_run_terminal_recovery_equity = "stats::setNames(rep(0, length(instrument_ids)), instrument_ids)",
+  ledgr_run_terminal_recovery_equity = "intersect(names(state$positions), instrument_ids)",
+  # Walk-forward: as-of book and carried lots to the next window's opening.
+  ledgr_walk_forward_opening_from_run = "names(held) <- positions$instrument_id",
+  ledgr_walk_forward_opening_from_run = "match(names(held), exp$universe)",
+  ledgr_walk_forward_opening_from_run = "names(cost_basis) <- names(held)",
+  ledgr_walk_forward_carried_opening = "match(ids, axis)",
+  ledgr_walk_forward_carried_opening = "held[ids]",
+  ledgr_walk_forward_carried_opening = "stats::setNames(basis, ids)",
+  # Handler accounting fact: the close/open leg fee pair, not an instrument axis.
+  ledgr_output_handler = "leg_fees[[\"close\"]]",
+  ledgr_output_handler = "leg_fees[[\"open\"]]"
+)
+ws4a_d3_hits <- function(fns) {
+  unlist(lapply(names(fns), function(nm) {
+    e <- if (nm %in% ws4a_d3_region) ws4a_book_region(fns[[nm]]) else fns[[nm]]
+    h <- setdiff(unique(ws4a_name_keyed(e)), ws4a_d3_census[names(ws4a_d3_census) == nm])
+    if (length(h)) paste0(nm, ": ", h)
+  }))
+}
+
+testthat::test_that("[WS4a D3] the lot kernel and migrated book consumers index by position outside the census", {
   fns <- ws4a_sources()
-  char_index <- function(i) {
-    (is.symbol(i) && grepl("^(id|ids|inst_id|instrument_id|instrument_ids|context_ids|target_names)$", as.character(i))) ||
-      (is.call(i) && ws4a_head(i) %in% c("names", "as.character"))
-  }
-  check <- function(e) {
-    unlist(lapply(ws4a_calls(e), function(x) {
-      if (ws4a_head(x) %in% c("[", "[[") && length(x) >= 3L && char_index(x[[3L]])) substr(ws4a_txt(x), 1L, 60L)
-    }))
-  }
-  examined <- c(
-    ws4a_kernel_names, "ledgr_lot_apply_blocks", "ledgr_lot_book_live",
-    "ledgr_lot_book_problem", "ledgr_replay_accounting_events", "ledgr_fold_stage_apply",
-    "ledgr_carrier_compiled_pack", "ledgr_carrier_compiled_unpack", "ledgr_disposition_post"
-  )
+  examined <- c(ws4a_d3_whole, ws4a_d3_region)
   testthat::expect_true(all(examined %in% names(fns)))
-  testthat::expect_length(ws4a_hits(fns[examined], check), 0L)
-  testthat::expect_length(ws4a_hits(list(good = str2lang("function(b, pos) b$net_by_inst[[pos]]")), check), 0L)
-  testthat::expect_gt(length(ws4a_hits(list(bad = str2lang("function(b, id) b$net_by_inst[[id]]")), check)), 0L)
+  testthat::expect_length(ws4a_d3_hits(fns[examined]), 0L)
+  # Every census entry is still present: the census is exact, not a superset.
+  found <- unlist(lapply(unique(names(ws4a_d3_census)), function(nm) {
+    e <- if (nm %in% ws4a_d3_region) ws4a_book_region(fns[[nm]]) else fns[[nm]]
+    paste(nm, unique(ws4a_name_keyed(e)))
+  }))
+  testthat::expect_setequal(paste(names(ws4a_d3_census), ws4a_d3_census), found)
+  # Each large function's book region is found and non-empty.
+  for (nm in ws4a_d3_region) testthat::expect_gt(length(ws4a_book_region(fns[[nm]])), 1L)
+  testthat::expect_length(ws4a_hits(list(good = str2lang("function(b, pos) b$net_by_inst[[pos]]")), ws4a_name_keyed), 0L)
+  testthat::expect_gt(length(ws4a_hits(list(bad = str2lang("function(b, id) b$net_by_inst[[id]]")), ws4a_name_keyed)), 0L)
+  # Violating controls on production regions: a literal instrument index and a
+  # match() lookup in the kernel; a new name-keyed site in a census boundary;
+  # a name lookup in the run's book region.
+  inject_hits <- function(nm, stmt) {
+    bad <- fns[nm]
+    bad[[nm]] <- ws4a_inject(bad[[nm]], stmt)
+    ws4a_d3_hits(bad)
+  }
+  testthat::expect_gt(length(inject_hits("ledgr_lot_apply", "net <- book$net_by_inst[[\"synthetic\"]]")), 0L)
+  testthat::expect_gt(length(inject_hits("ledgr_lot_apply", "pos <- match(input$instrument_id, book$ids)")), 0L)
+  testthat::expect_gt(length(inject_hits("ledgr_disposition_post", "before <- state_value$positions[ids]")), 0L)
+  testthat::expect_gt(length(inject_hits("ledgr_run_fold_impl", "initial_lot_state$net_by_inst <- opening_positions[instrument_ids]")), 0L)
 })
 
 testthat::test_that("[WS4a D7] openings take no Kahan step and keep a nonzero compensation", {
@@ -293,19 +393,48 @@ testthat::test_that("[WS4a D7] openings take no Kahan step and keep a nonzero co
   testthat::expect_identical(calls, 1L)
 })
 
+# D11: every write of a position in P4, replay, dispositions and the
+# settlement install reads the lot-derived net (net_by_inst, no arithmetic),
+# or is one of these named sources.
+ws4a_d11_sources <- c(
+  # P4: the pulse's working copy, the compiled batch's positions (the C++
+  # writes each touched position from its lot net) and the install.
+  ledgr_fold_stage_apply = "positions <- fold_state$positions",
+  ledgr_fold_stage_apply = "positions <- as.numeric(batch$positions)",
+  ledgr_fold_stage_apply = "fold_state$positions <- positions",
+  # Replay: initial positions imported as given (cut 5 amendment); each
+  # touched instrument's position_after from its applied rows (lot net).
+  ledgr_replay_accounting_events = "positions <- stats::setNames(rep(0, length(ids)), ids)",
+  ledgr_replay_accounting_events = "positions[matched] <- as.numeric(initial_positions[matched])",
+  ledgr_replay_accounting_events = "positions[idx[last]] <- position_after[last]",
+  # Settlement install: positions returned by the settlement boundary.
+  ledgr_carrier_settlement_install = "positions <- value$positions",
+  ledgr_carrier_settlement_install = "fold_state$positions <- as.numeric(positions)"
+)
+ws4a_d11_hits <- function(fns) {
+  unlist(lapply(names(fns), function(nm) {
+    unlist(lapply(ws4a_assigns(fns[[nm]]), function(x) {
+      if (!"positions" %in% all.names(x[[2L]])) return(NULL)
+      rhs <- all.names(x[[3L]])
+      from_net <- "net_by_inst" %in% rhs && !any(c("+", "-", "*", "/") %in% rhs)
+      if (!from_net && !ws4a_txt(x) %in% ws4a_d11_sources[names(ws4a_d11_sources) == nm]) paste0(nm, ": ", ws4a_txt(x))
+    }))
+  }))
+}
+
 testthat::test_that("[WS4a D11] P4 and replay read positions from the lot-derived net", {
   fns <- ws4a_sources()
-  check <- function(e) {
-    unlist(lapply(ws4a_assigns(e), function(x) {
-      if ("positions" %in% all.names(x[[2L]]) && any(c("+", "-") %in% all.names(x[[3L]])) &&
-          any(grepl("position|qty|delta", setdiff(all.names(x[[3L]]), c("+", "-"))))) ws4a_txt(x)
-    }))
-  }
-  examined <- fns[c("ledgr_fold_stage_apply", "ledgr_replay_accounting_events", "ledgr_disposition_post")]
-  testthat::expect_length(ws4a_hits(examined, check), 0L)
+  examined <- fns[c("ledgr_fold_stage_apply", "ledgr_replay_accounting_events", "ledgr_disposition_post",
+    "ledgr_carrier_settlement_install")]
+  testthat::expect_length(ws4a_d11_hits(examined), 0L)
   testthat::expect_true(any(grepl("net_by_inst", vapply(examined, ws4a_txt, ""))))
-  bad <- ws4a_inject(fns$ledgr_fold_stage_apply, "positions[[inst_idx]] <- positions[[inst_idx]] + qty")
-  testthat::expect_gt(length(ws4a_hits(list(p4 = bad), check)), 0L)
+  # Every named source is still a write in its function.
+  writes <- unlist(lapply(names(examined), function(nm) paste(nm, vapply(ws4a_assigns(examined[[nm]]), ws4a_txt, ""))))
+  testthat::expect_true(all(paste(names(ws4a_d11_sources), ws4a_d11_sources) %in% writes))
+  p4 <- function(stmt) list(ledgr_fold_stage_apply = ws4a_inject(fns$ledgr_fold_stage_apply, stmt))
+  testthat::expect_gt(length(ws4a_d11_hits(p4("positions[[inst_idx]] <- positions[[inst_idx]] + qty"))), 0L)
+  testthat::expect_gt(length(ws4a_d11_hits(p4("fold_state$positions <- planned"))), 0L)
+  testthat::expect_gt(length(ws4a_d11_hits(p4("positions[[inst_idx]] <- lot_res$book$net_by_inst[[inst_idx]] + qty"))), 0L)
 })
 
 testthat::test_that("[WS4a D12a-c D12e] identity, dependency, export and compiled-default boundaries are unchanged", {
@@ -347,6 +476,33 @@ testthat::test_that("[WS4a D12a-c D12e] identity, dependency, export and compile
   testthat::expect_identical(c1_hash(config_json), c1[["config_hash:character"]])
   edited <- sub('"initial_cash":100000.0', '"initial_cash":100001.0', config_json, fixed = TRUE)
   testthat::expect_false(identical(c1_hash(edited), c1[["config_hash:character"]]))
+
+  # D12a production predicate: a run built now by the production configuration
+  # constructor and run store binds the runs table as C1's base record does
+  # (A0's wall-clock and version exclusions aside), records C1's configuration
+  # fields to two levels (strategy parameters are the run's own), and stores
+  # config_hash() of its stored configuration. Control: one added field.
+  db <- tempfile(fileext = ".duckdb")
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(), cost_model = ledgr_cost_zero())
+  close(ledgr_run(exp, run_id = "d12a", seed = 1L))
+  h <- ledgr_test_open_duckdb(db)
+  runs <- DBI::dbGetQuery(h$con, "SELECT * FROM runs WHERE run_id = 'd12a'")
+  ledgr_test_close_duckdb(h$con, h$drv)
+  runs <- runs[setdiff(names(runs), c("created_at_utc", "engine_version"))]
+  testthat::expect_identical(paste0(names(runs), ":", vapply(runs, function(x) paste(class(x), collapse = "/"), "")), names(c1))
+  read <- function(json) yyjsonr::read_json_str(json, opts = yyjsonr::opts_read_json(
+    arr_of_objs_to_df = FALSE, obj_of_arrs_to_df = FALSE, length1_array_asis = TRUE))
+  fields <- function(cfg) sort(c(names(cfg), unlist(lapply(setdiff(names(cfg), c("strategy", "strategy_params")), function(k) {
+    if (is.list(cfg[[k]]) && !is.null(names(cfg[[k]]))) paste0(k, "/", names(cfg[[k]]))
+  }))))
+  stored <- read(runs$config_json)
+  testthat::expect_identical(ledgr:::config_hash(stored), runs$config_hash)
+  testthat::expect_identical(fields(stored), fields(read(gsub("\\\\", "\\", config_json, fixed = TRUE))))
+  added <- utils::modifyList(stored, list(engine = list(added_field = 1)))
+  testthat::expect_false(identical(fields(added), fields(stored)))
+  testthat::expect_false(identical(ledgr:::config_hash(added), runs$config_hash))
 })
 
 testthat::test_that("[WS4a D15] the lot kernel never writes a book column by reference", {
@@ -465,18 +621,59 @@ testthat::test_that("[WS4a D23] replay adds each published cash effect exactly o
 testthat::test_that("[WS4a D25] independent lot work is vectorized; replay applies whole blocks", {
   fns <- ws4a_sources()
   ops <- c("ledgr_lot_apply", "ledgr_lot_opening", "ledgr_lot_fill", "ledgr_lot_disposition", "ledgr_lot_input")
-  check <- function(e) unlist(lapply(ws4a_loop_bodies(e), function(b) intersect(ws4a_heads(b), ops)))
-  # The kernel's own loops are the FIFO depth loop and the ordered
-  # aggregate scan; neither dispatches a lot operation.
-  testthat::expect_length(ws4a_hits(fns[intersect(ws4a_kernel_names, names(fns))], check), 0L)
-  scan <- grep("^for \\(k in seq_len\\(m\\)\\)", vapply(Filter(function(x) ws4a_head(x) == "for",
+  # Lot work: a lot operation call, or a write to the book or to the kernel's
+  # per-instrument lot and consumption vectors.
+  lot_names <- c("book", "lot_qty", "lot_price", "offset", "capacity", "head", "tail", "net_by_inst", "cost_basis_by_inst",
+    "q", "p", "off", "cap", "net", "remaining", "close_qty", "open_qty", "realized_close", "basis_delta", "new_basis", "steps")
+  lot_work <- function(b) {
+    c(intersect(ws4a_heads(b), ops),
+      unlist(lapply(ws4a_assigns(b), function(x) intersect(all.names(x[[2L]]), lot_names))))
+  }
+  # The explicitly identified loops: the FIFO depth loop of the kernel; the
+  # ordered aggregate scan, which may write only the totals and per-event
+  # aggregate facts; and replay's consecutive conflict-free block loop
+  # (decision 6), which applies one whole block per operation call.
+  depth <- "while (length(active) > 0L)"
+  scan <- "for (k in seq_len(m))"
+  scan_writes <- c("total", "realized", "comp", "step", "event_cost_basis", "event_realized")
+  block <- "for (b in seq_along(starts))"
+  check <- function(e) {
+    unlist(lapply(Filter(function(x) ws4a_head(x) %in% c("for", "while", "repeat"), ws4a_calls(e)), function(x) {
+      header <- sub(" \\{.*$", "", ws4a_txt(x))
+      body <- x[[length(x)]]
+      if (header %in% c(depth, block)) return(NULL)
+      if (header == scan) {
+        targets <- vapply(ws4a_assigns(body), function(a) {
+          v <- a[[2L]]
+          while (is.call(v)) v <- v[[2L]]
+          as.character(v)
+        }, "")
+        return(if (!all(targets %in% scan_writes)) paste("aggregate scan writes", setdiff(targets, scan_writes)))
+      }
+      if (length(lot_work(body))) paste(header, "does lot work:", paste(unique(lot_work(body)), collapse = ","))
+    }))
+  }
+  kernel <- fns[c(intersect(ws4a_kernel_names, names(fns)), "ledgr_lot_apply_blocks")]
+  testthat::expect_length(ws4a_hits(kernel, check), 0L)
+  headers <- function(f) vapply(Filter(function(x) ws4a_head(x) %in% c("for", "while"), ws4a_calls(f)), function(x) sub(" \\{.*$", "", ws4a_txt(x)), "")
+  testthat::expect_true(all(c(depth, scan) %in% headers(fns$ledgr_lot_apply)))
+  testthat::expect_true(block %in% headers(fns$ledgr_lot_apply_blocks))
+  scan_txt <- grep("^for \\(k in seq_len\\(m\\)\\)", vapply(Filter(function(x) ws4a_head(x) == "for",
     ws4a_calls(fns$ledgr_lot_apply)), ws4a_txt, ""), value = TRUE)
-  testthat::expect_length(scan, 1L)
-  testthat::expect_true(grepl("ledgr_lot_add_realized", scan))
+  testthat::expect_length(scan_txt, 1L)
+  testthat::expect_true(grepl("ledgr_lot_add_realized", scan_txt))
   permitted <- str2lang("function(b, pos, q, basis) { b <- ledgr_lot_apply(b, pos); s <- 0; for (i in seq_along(basis)) s <- s + basis[[i]]; b }")
   per_instrument <- str2lang("function(b, pos, q) { for (k in seq_along(pos)) b <- ledgr_lot_fill(b, pos[k], 1L, q[k], 1); b }")
   testthat::expect_length(ws4a_hits(list(ok = permitted), check), 0L)
   testthat::expect_gt(length(ws4a_hits(list(bad = per_instrument), check)), 0L)
+  # Violating controls on the kernel: an inline per-instrument segment write
+  # in a loop, and lot work moved into the ordered aggregate scan.
+  inline <- "for (k in seq_along(pos)) book$lot_qty[book$offset[pos[k]] + 1L] <- quantity[k]"
+  testthat::expect_gt(length(ws4a_hits(list(kernel = ws4a_inject(fns$ledgr_lot_apply, inline)), check)), 0L)
+  in_scan <- str2lang(sub("event_realized[[k]] <- realized", "event_realized[[k]] <- realized; q[[k]] <- NA_real_",
+    paste(deparse(fns$ledgr_lot_apply, width.cutoff = 500L), collapse = "\n"), fixed = TRUE))
+  testthat::expect_false(identical(in_scan, fns$ledgr_lot_apply))
+  testthat::expect_gt(length(ws4a_hits(list(kernel = in_scan), check)), 0L)
 
   # Runtime: replaying one pulse's fills on distinct instruments is one
   # fill-operation call (blocks), not one call per instrument.
@@ -573,4 +770,158 @@ testthat::test_that("[WS4a compiled boundary] pack and unpack gather typed lots 
   dropped <- batch
   dropped$realized_comp <- 0
   testthat::expect_false(identical(ns$ledgr_carrier_compiled_unpack(dropped, 3L)$realized_comp, book$realized_comp))
+})
+
+testthat::test_that("[WS4a U-3164] book totals are typed scalars; empty operations keep the book and type their rows", {
+  ns <- ws4a_ns()
+  book <- ws4a_book()
+  for (field in c("total_cost_basis", "realized_pnl", "realized_comp")) {
+    controls <- list(integer = 0L, two = c(book[[field]], 1), empty = numeric(), na = NA_real_)
+    for (name in names(controls)) {
+      bad <- book
+      bad[[field]] <- controls[[name]]
+      testthat::expect_false(is.null(ns$ledgr_lot_book_problem(bad)), info = paste(field, name))
+    }
+  }
+  # The review's control: a length-2 and a length-0 total that concatenate to three.
+  bad <- book
+  bad$total_cost_basis <- c(0, 1)
+  bad$realized_pnl <- numeric()
+  testthat::expect_false(is.null(ns$ledgr_lot_book_problem(bad)))
+  typed_empty <- function(applied) {
+    identical(names(applied), c("position_before", "position_after", "close_qty", "open_qty", "realized_close",
+      "realized_delta", "event_realized", "event_cost_basis")) &&
+      all(vapply(applied, function(v) is.double(v) && length(v) == 0L, logical(1)))
+  }
+  empty <- list(
+    opening = ns$ledgr_lot_opening(book, integer(), numeric(), numeric()),
+    fill = ns$ledgr_lot_fill(book, integer(), integer(), numeric(), numeric()),
+    disposition = ns$ledgr_lot_disposition(book, integer(), integer(), numeric(), numeric())
+  )
+  for (name in names(empty)) {
+    testthat::expect_identical(empty[[name]]$book, book, info = name)
+    testthat::expect_true(typed_empty(empty[[name]]$applied), info = name)
+  }
+})
+
+testthat::test_that("[WS4a V-book F4.12] aggregates are exact reductions at construction and exact zero when flat", {
+  ns <- ws4a_ns()
+  # The review's control: one lot of 1e9 whose cached net is corrupted to 1e9 + 1.
+  big <- ns$ledgr_lot_book_from_opening("AAA", c(AAA = 1e9), c(AAA = 3.25))
+  testthat::expect_null(ns$ledgr_lot_book_problem(big))
+  corrupt <- big
+  corrupt$net_by_inst[[1L]] <- 1e9 + 1
+  testthat::expect_false(is.null(ns$ledgr_lot_book_problem(corrupt)))
+  basis <- big
+  basis$cost_basis_by_inst[[1L]] <- 42
+  testthat::expect_false(is.null(ns$ledgr_lot_book_problem(basis)))
+  # A book reached by fills: buy 1e9, buy 0.1, sell 1e9 leaves a 0.1 lot under
+  # a cached net of 0.10000002384, as on the base. No bound in terms of the
+  # live lots admits it and refuses the corruption above, so books reached by
+  # transitions are checked only where the arithmetic is exact.
+  drift <- ns$ledgr_lot_book(1L)
+  drift <- ns$ledgr_lot_fill(drift, 1L, 1L, 1e9, 1)$book
+  drift <- ns$ledgr_lot_fill(drift, 1L, 1L, 0.1, 1)$book
+  drift <- ns$ledgr_lot_fill(drift, 1L, -1L, 1e9, 1)$book
+  testthat::expect_identical(ns$ledgr_lot_book_live(drift)$qty, 0.1)
+  testthat::expect_false(identical(drift$net_by_inst, 0.1))
+  testthat::expect_null(ns$ledgr_lot_book_problem(drift, reduction = FALSE))
+  testthat::expect_false(is.null(ns$ledgr_lot_book_problem(drift)))
+  flat <- ws4a_book()
+  flat$net_by_inst[[3L]] <- 1e-300
+  testthat::expect_false(is.null(ns$ledgr_lot_book_problem(flat, reduction = FALSE)))
+  # Production boundaries: fold entry and the compiled unpack accept the
+  # drifted book; the opening construction refuses a corrupted opening.
+  imported <- ns$ledgr_carrier_import_state(list(cash = 1, positions = NULL, lot_state = drift), "AAA")
+  testthat::expect_identical(imported$lot_state, drift)
+  batch <- c(ns$ledgr_carrier_compiled_pack(drift),
+    drift[c("net_by_inst", "cost_basis_by_inst", "total_cost_basis", "realized_pnl", "realized_comp")])
+  testthat::expect_identical(ns$ledgr_carrier_compiled_unpack(batch, 1L)$net_by_inst, drift$net_by_inst)
+  opening <- ns$ledgr_lot_opening
+  for (field in c("net_by_inst", "cost_basis_by_inst")) {
+    testthat::local_mocked_bindings(
+      ledgr_lot_opening = function(book, pos, qty, price) {
+        out <- opening(book, pos, qty, price)
+        out$book[[field]][pos] <- out$book[[field]][pos] * (1 + 1e-12)
+        out
+      },
+      .package = "ledgr"
+    )
+    testthat::expect_error(
+      ns$ledgr_lot_book_from_opening(c("AAA", "BBB"), c(AAA = 2, BBB = -1), c(AAA = 10, BBB = 5)),
+      class = "ledgr_lot_state_invariant", info = field
+    )
+  }
+})
+
+testthat::test_that("[WS4a V-applied-row] the close/open split is checked against the lots before and after", {
+  ns <- ws4a_ns()
+  book <- ws4a_book()
+  applied <- ns$ledgr_lot_applied
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    ledgr_lot_applied = function(...) {
+      seen <<- list(...)
+      applied(...)
+    },
+    .package = "ledgr"
+  )
+  # A pure close of 2 from the 3.5 AAA holding: closes 2, opens nothing.
+  out <- ns$ledgr_lot_fill(book, 1L, -1L, 2, 105)
+  testthat::expect_identical(c(out$applied$close_qty, out$applied$open_qty), c(2, 0))
+  testthat::expect_identical(c(seen$lots$before, seen$lots$after), c(1, 1))
+  testthat::expect_identical(do.call(applied, seen), out$applied)
+  split <- function(close, open) do.call(applied, utils::modifyList(seen, list(close_qty = close, open_qty = open)))
+  testthat::expect_error(split(1, 1), class = "ledgr_lot_state_invariant")
+  testthat::expect_error(split(0, 2), class = "ledgr_lot_state_invariant")
+  testthat::expect_error(split(1.5, 0), class = "ledgr_lot_state_invariant")
+  testthat::expect_error(split(2, 1), class = "ledgr_lot_state_invariant")
+  # A reversal: selling 5 from 3.5 closes 3.5 and opens 1.5; reported as a
+  # pure close it is refused.
+  out <- ns$ledgr_lot_fill(book, 1L, -1L, 5, 105)
+  testthat::expect_identical(c(out$applied$close_qty, out$applied$open_qty), c(3.5, 1.5))
+  testthat::expect_identical(c(seen$lots$before, seen$lots$after, seen$lots$steps), c(1, -1, 2))
+  testthat::expect_error(split(5, 0), class = "ledgr_lot_state_invariant")
+})
+
+# The two multi-error controls of the workstream 12 close review (F1), and
+# their reversals. Each expects the base 953338df condition class and message,
+# confirmed by running the same ledgers against the base library.
+testthat::test_that("[WS4a F1] replay refuses the earliest failing event with the base precedence", {
+  ns <- ws4a_ns()
+  d1 <- as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
+  disp <- function(x) as.character(canonical_json(list(
+    source = "corporate_action_disposition", source_fact_id = paste0("f-", x$id), position_delta = -x$before,
+    cash_delta = x$before * x$mark, quantity = x$quantity, mark = x$mark, mark_source_ts_utc = "2020-01-03T21:00:00Z",
+    mark_age = 0, position_before = x$before, position_after = 0, realized_model_pnl = x$pnl, disposition_policy_id = "p")))
+  # Buys AAA 2 at 10 and BBB 3 at 20, then the given dispositions.
+  replay <- function(...) {
+    d <- list(...)
+    n <- 2L + length(d)
+    ev <- data.frame(event_id = paste0("e", seq_len(n)), run_id = "r",
+      ts_utc = c(d1, d1, d1 + 86400 * vapply(d, `[[`, 0, "day")),
+      event_type = c("FILL", "FILL", rep("DISPOSITION", length(d))),
+      instrument_id = c("AAA", "BBB", vapply(d, `[[`, "", "id")), side = c("BUY", "BUY", rep(NA, length(d))),
+      qty = c(2, 3, vapply(d, `[[`, 0, "quantity")), price = c(10, 20, vapply(d, `[[`, 0, "mark")), fee = 0,
+      meta_json = c(NA, NA, vapply(d, disp, "")), event_seq = seq_len(n), stringsAsFactors = FALSE)
+    ns$ledgr_replay_accounting_events(ns$ledgr_prepare_accounting_events(ev, c("AAA", "BBB")))
+  }
+  witness_a <- list(id = "AAA", before = 2, quantity = 2, mark = 12, pnl = 999, day = 1)
+  malformed_b <- list(id = "BBB", before = 2, quantity = 2.5, mark = 25, pnl = 10, day = 1)
+  live_b <- list(id = "BBB", before = 2, quantity = 2, mark = 25, pnl = 10, day = 1)
+  witness <- "^DISPOSITION realized model PnL does not match canonical FIFO realization[.]$"
+  exhaust <- "^DISPOSITION must consume the position and every live lot exactly[.]$"
+  malformed <- "^DISPOSITION lot metadata is malformed[.]$"
+  testthat::expect_identical(replay(utils::modifyList(witness_a, list(pnl = 4)))$realized_delta[[3L]], 4)
+  # A witness error followed by a malformed quantity; then by a leftover live lot.
+  testthat::expect_error(replay(witness_a, malformed_b), witness, class = "ledgr_invalid_ledger_meta")
+  testthat::expect_error(replay(witness_a, live_b), witness, class = "ledgr_invalid_ledger_meta")
+  # The same pairs a day apart (separate blocks), and reversed.
+  later <- function(x) utils::modifyList(x, list(day = 2))
+  testthat::expect_error(replay(witness_a, later(malformed_b)), witness, class = "ledgr_invalid_ledger_meta")
+  testthat::expect_error(replay(witness_a, later(live_b)), witness, class = "ledgr_invalid_ledger_meta")
+  testthat::expect_error(replay(malformed_b, witness_a), malformed, class = "ledgr_invalid_ledger_meta")
+  testthat::expect_error(replay(live_b, witness_a), exhaust, class = "ledgr_lot_state_invariant")
+  # Within one event, exhaustion precedes the witness.
+  testthat::expect_error(replay(utils::modifyList(live_b, list(pnl = 999))), exhaust, class = "ledgr_lot_state_invariant")
 })

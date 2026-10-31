@@ -131,7 +131,7 @@ ledgr_carrier_compiled_unpack <- function(batch, n) {
   book$total_cost_basis <- as.numeric(batch$total_cost_basis[[1]])
   book$realized_pnl <- as.numeric(batch$realized_pnl[[1]])
   book$realized_comp <- as.numeric(batch$realized_comp[[1]])
-  ledgr_lot_book_validate(book, n)
+  ledgr_lot_book_validate(book, n, reduction = FALSE)
 }
 
 ledgr_run_compiled_spot_fifo_batch <- function(run_id,

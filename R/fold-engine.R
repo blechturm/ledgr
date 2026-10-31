@@ -241,7 +241,7 @@ ledgr_fold_pulse_plan_fill_intents <- function(accounting_events) {
 ledgr_carrier_import_state <- function(state, instrument_ids) {
   n <- length(instrument_ids)
   book <- state$lot_state %||% ledgr_lot_book(n)
-  problem <- ledgr_lot_book_problem(book)
+  problem <- ledgr_lot_book_problem(book, reduction = FALSE)
   if (!is.null(problem)) {
     rlang::abort(
       paste0("Invalid typed lot book at fold entry: ", problem, "."),

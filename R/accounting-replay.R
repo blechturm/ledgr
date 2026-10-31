@@ -330,18 +330,17 @@ ledgr_replay_accounting_events <- function(prepared,
     (op == .ledgr_lot_opening & prepared$lot_qty != 0)
   rows <- which(lot_row)
   disposition <- rows[op[rows] == .ledgr_lot_disposition]
+  malformed <- integer()
   if (length(disposition) > 0L) {
     before <- prepared$position_before[disposition]
     quantity <- prepared$lot_qty[disposition]
     mark <- prepared$lot_price[disposition]
-    if (any(!is.finite(before) | before == 0 | !is.finite(quantity) |
-      quantity <= 0 | abs(before) != quantity | !is.finite(mark) | mark < 0)) {
-      ledgr_accounting_event_error(
-        "DISPOSITION lot metadata is malformed.",
-        "ledgr_invalid_ledger_meta"
-      )
-    }
+    malformed <- disposition[!is.finite(before) | before == 0 | !is.finite(quantity) |
+      quantity <= 0 | abs(before) != quantity | !is.finite(mark) | mark < 0]
   }
+  # Scalar event order: the lot rows before the first malformed disposition
+  # are applied first and may refuse earlier; otherwise it refuses after them.
+  if (length(malformed) > 0L) rows <- rows[rows < malformed[[1L]]]
   k <- length(rows)
   ts <- as.numeric(prepared$ts_utc)[rows]
   # A run of lot rows continues while rows are adjacent and share their
@@ -359,6 +358,12 @@ ledgr_replay_accounting_events <- function(prepared,
     realized_model_pnl = prepared$realized_model_pnl[rows],
     new_run = new_run
   )
+  if (length(malformed) > 0L) {
+    ledgr_accounting_event_error(
+      "DISPOSITION lot metadata is malformed.",
+      "ledgr_invalid_ledger_meta"
+    )
+  }
   book <- applied$book
   applied <- applied$applied
 
