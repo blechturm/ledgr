@@ -1,0 +1,13 @@
+round 2 on 28ad2542
+build exit 0
+R CMD check exit 0
+coverage exit 1
+coverage rerun exit 1
+diagnostic trace check exit 1
+cases exit 0
+guts exit 0
+dense exit 0
+a0-record exit 0
+a0-compare exit 0
+suite exit 0
+diagnostic coverage (scratch HEAD, six worker blocks skipped under covr) stopped unfinished at the maintainer's instruction, no exit code

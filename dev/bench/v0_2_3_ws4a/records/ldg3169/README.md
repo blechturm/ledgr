@@ -1,5 +1,9 @@
 # LDG-3169 final-candidate record
 
+Round 1 (below, through "Diagnostics") ran on `0ec90fee`. The final
+candidate is `28ad2542`, after the maintainer-authorized test repairs; see
+"Round 2".
+
 Tested commit `0ec90fee` on `claude/ws4a-carrier` (contracts.md and NEWS.md
 of LDG-3169 on top of `e365db21`). Its product is identical to the overflow
 product `9b05538f`: the git object ids of `R`, `src`, `tests`, `man`,
@@ -30,7 +34,7 @@ R 4.6.1, one at a time, scratch output under
 | D20 | `Rscript dev/bench/v0_2_3_ws4a/records/ldg3169/d20.R --out=<s>/gates/d20` | 0 | R8.02-R8.14 identical to `953338df`; R8.01 differs as designed (`ledgr_carrier_provider_view(view, valuation)` added at LDG-3165, absent on the base); witness cases C1, C3, C5b, C6, C8a, C9, C10, C11, C13a, C15, C16 and C18 identical; an injected P5 state encode changes exactly R8.04 and gut C1_drop_notional fails (`d20.log`, `d20-routes.csv`) |
 | Identity | `Rscript dev/bench/v0_2_3_ws4a/records/ldg3169/identity.R --base=953338df --candidate=HEAD --work=<s>/gates/identity --result=<s>/gates/identity.csv` | 0 | 16 of 16 PASS (`identity.csv`) |
 | Suite | `Rscript <s>/suite.R` (`pkgload::load_all(<worktree>)`, then `testthat::test_local(<worktree>, reporter = "summary", stop_on_failure = TRUE)`) | 0 | no failure; one existing skip (quantmod missing-package path) |
-| Real data | maintainer, separately: `v0_2_2-reference/compare.R` for the six workloads against `E:/ledgr-data/reference/v0.2.3-base-953338df` | (maintainer) | (maintainer) |
+| Real data | maintainer, on the installed product `9b05538f` (library `E:/ledgr-data/r-lib/ledgr-ws4a-9b05538f`): `v0_2_2-reference/compare.R` for the six workloads against `E:/ledgr-data/reference/v0.2.3-base-953338df` | 0 (every step, `realdata/sequence.log`) | all six COMPARE_IDENTICAL (`realdata/realdata.txt`, comparison names and outcomes only) |
 
 The failure-boundary injections are in these gates: C13a, C13b's runtime
 witness and C13c (cases, their four swallow guts, and `[WS4a C13b]`,
@@ -80,3 +84,76 @@ No coverage figure was obtained. The diagnostics stopped there.
 `d20.R` (42), `identity.R` (50) and `profile_scan.R` (13) are new
 maintained R: 2,299 to 2,404 lines, under the 2,500-line budget (cut 5
 `amendment_budget`).
+
+## Round 2: final candidate 28ad2542
+
+`28ad2542` applies the maintainer's disposition of the package-check and
+coverage blockers (2026-10-31). It changes test infrastructure only, and no
+test setup, fixture, oracle or bound:
+
+- (d1) `test-accounting-core-consolidation.R`: the helper moves above the
+  `# ledgr-test-profile: review` line, which again precedes LTB-0019. LDG-3164
+  had orphaned the declaration.
+- (d2) `test-governance-report.R:1152`, the later-added LTB-0514 (26ea8fb4,
+  claim LCL-0512), becomes LTB-0522, the next free stable ID on every branch;
+  `tests/claims.yml` LCL-0512 follows. The two blocks test different claims
+  (LCL-0505, LCL-0512). The control plane refuses a duplicate stable ID.
+- (e1) LTB-0188 (`test-ledger-writer.R`): its exact-source match runs under
+  `if (!ledgr_test_in_coverage())`, the repository's convention, because covr
+  rewrites function bodies. It stays fully active outside covr.
+- (e2) LTB-0022: `skip_on_covr()`. Investigated first with `<s>/ltb0022_probe.R`,
+  which runs the block's own measurement outside covr three times: production
+  slope 0.038, 0.023, 0.010 and mutant slope 0.355, 0.403, 0.378 against the
+  0.30 allowance, so it passes. Under covr the mutant gave 0.261: the counters
+  add depth-independent cost to the instrumented kernel calls, while the
+  mutant's extra scan runs in uninstrumented test code. The margin outside
+  covr is thin (at least 0.055).
+
+Product code is unchanged: the git object ids of `R`, `src`, `man`,
+`vignettes`, `DESCRIPTION` and `NAMESPACE` equal `9b05538f`'s (sha256
+`a4a0d4b0ddd8f4c61227a9ce3f86d4ba7625412ddda419ead60161cdf343e1fe` on both).
+The control plane's scanner now refuses no file and the preflight passes.
+Scratch `<s>/gates2/`; `round2/sequence.log` holds the exit codes.
+
+| Gate | Command | Exit | Outcome |
+| --- | --- | --- | --- |
+| Build | `<s>/build2.R` (R CMD build into `<s>/build2`, Quarto set) | 0 | `ledgr_0.2.2.tar.gz` |
+| Check | `<s>/check2.R` (R CMD check --no-manual --no-build-vignettes) | 0 | 0 ERRORs, 0 WARNINGs, 1 NOTE: the pre-existing `head` without a `utils` import in `ledgr_history_bar_mask_view` (`round2/check-00check.log`) |
+| Coverage | `Rscript tools/check-coverage.R` | 1 | not obtained; see below (`round2/coverage-attempt1.log`) |
+| Coverage, second attempt | the same | 1 | the same error (`round2/coverage-attempt2.log`) |
+| Cases | `check.R --base=HEAD --out=<s>/gates2/check` | 0 | 23 cases identical |
+| Guts and mutations | `guts.R --base=HEAD --guts=<the 36>` | 0 | 36 of 36 FAIL (expected); invalid-base control REFUSED (`round2/guts.log`) |
+| Dense | `dense/check.R --pkg=<worktree>` | 0 | PASS, nine native arms identical |
+| A0 | `a0/record.R`, then `a0/compare.R` | 0, 0 | 295 of 295 PASS (`round2/a0-compare.csv`) |
+| Suite | `Rscript <s>/suite.R` | 0 | no failure; one existing skip (quantmod) |
+| Real data | as in round 1 (maintainer, product `9b05538f`) | 0 | six COMPARE_IDENTICAL |
+
+D20 and identity read only `R/` and `src/` (and the product's runtime) and
+are not repeated: their round-1 results on `0ec90fee` hold for the
+unchanged product.
+
+### Coverage: not obtained
+
+Status: not obtained. covr's child-result collection fails on this Windows
+host (tooling, maintainer 2026-10-31); routed to `inst/design/horizon.md`
+(2026-10-31, coverage collection fails on the Windows host). Both attempts
+ran the whole test run and then failed in the collector:
+
+```
+Error in readRDS(f) : error reading from connection
+Calls: ledgr_check_coverage_main ... ledgr_with_ordinary_coverage_env -> force -> ledgr_collect_coverage
+Execution halted
+```
+
+What is known: a diagnostic collection with covr's install kept
+(`<s>/diag_traces.R`, exit 1) left 22 `covr_trace_*` files, of which 20 do
+not `readRDS()`. Those 20 are about 1.2 MB each, written in pairs about a
+second apart between 20:26 and 20:39, which matches two-worker daemons. Two
+traces are readable, the main process's 13 MB trace among them. Several
+worker-backed blocks start daemons with no coverage skip (found by
+`<s>/worker_blocks.R`): `test-rng-isolation.R` :249, :448 and :521,
+`test-pulse-seed-v2.R`:399, `test-sweep-parallel.R`:344 and possibly
+`test-history-substrate.R`:1194. What is unknown: that those daemons write
+the truncated traces, and whether coverage passes once they are skipped. A
+scratch run with them skipped was stopped unfinished on the maintainer's
+instruction. No coverage figure exists for this candidate.

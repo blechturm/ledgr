@@ -32,13 +32,15 @@ recorded). NEWS.md gains one line.
 
 ## Tested source identity
 
-Final candidate `0ec90fee`. Its product equals `9b05538f` (the overflow
-product): the git object ids of `R`, `src`, `tests`, `man`, `vignettes`,
+Final candidate `28ad2542`. Its product equals `9b05538f` (the overflow
+product): the git object ids of `R`, `src`, `man`, `vignettes`,
 `DESCRIPTION` and `NAMESPACE` are equal, product digest
-`f4357f927bbba6aa601e7518f6794879b8668f6bdb3cb12667309f6dc1b60da6` (sha256
+`a4a0d4b0ddd8f4c61227a9ce3f86d4ba7625412ddda419ead60161cdf343e1fe` (sha256
 over those ids in that order). `src/` is unchanged from the cut base
-`953338df`. The later LDG-3169 evidence commit adds records, this file and
-ticket evidence only; a later product edit invalidates the gate records.
+`953338df`. `28ad2542` changes four test-infrastructure files from round 1's
+candidate `0ec90fee`, by maintainer disposition (open item (d)). The later
+LDG-3169 evidence commit adds records, this file, horizon.md and ticket
+evidence only; a later product edit invalidates the gate records.
 
 ## Identity declarations (cut decision (3))
 
@@ -49,7 +51,7 @@ which runs the unchanged cut 4 probe on the cut base `953338df` and on
 
 | Axis | Declaration | Evidence (base = candidate) |
 | --- | --- | --- |
-| Snapshot content identity | none | snapshot hash of identical canonical input `b54a78e3c666...d515d4` on both; content hash rule 4 and identity rule 4 on both; the dense oracle and A0 (whose run records carry `data.snapshot_hash`) are identical; the real-data comparison's `snapshot_hash` row is the maintainer's (below) |
+| Snapshot content identity | none | snapshot hash of identical canonical input `b54a78e3c666...d515d4` on both; content hash rule 4 and identity rule 4 on both; the dense oracle and A0 (whose run records carry `data.snapshot_hash`) are identical; the six real-data comparisons report `snapshot_hash` IDENTICAL |
 | Run configuration identity | none | seeded config hash `91229b23572f...a317f72` and run id `run_e9c5c0be332eabfa` on both; unseeded `5946f113bd75...dcd8d2b5` and `run_ddacac4bf6b7b5b3` on both; engine JSON, sweep and candidate seed contracts (`ledgr_seed_v2`) and execution seed `344820648` equal; A0 `runs.csv` (A3) and case C1's `config_hash` reproduce exactly |
 | Store format fingerprint | none | `ledgr_store_format_bindings()` identical (28 bindings); fingerprint sha256 `4b5019005fdf...b74b4b53` on both; a store written by the base opens on the candidate, and a base sweep candidate promotes on it (one run row) |
 
@@ -76,9 +78,9 @@ milestone check after WS4b.
 | Detectors, validators, injections | in the suite: the `[WS4a ...]` blocks, C13b, the 3167 precedence and overflow blocks, LTB-0280; cases C13a and C13c with their swallow guts |
 | Full suite (`testthat::test_local`) | exit 0; one existing skip (quantmod missing-package path) |
 | `R CMD build` | exit 0 (with RStudio's Quarto, as `dev/build-site.R` sets it) |
-| `R CMD check --no-manual --no-build-vignettes` | exit 1: 1 ERROR (tests: orphan profile declaration, see open item (d)), 1 NOTE (pre-existing `head` import) |
-| Coverage (`tools/check-coverage.R`) | exit 1, no figure: the same refusal; see open item (e) |
-| Real-data oracle (six workloads) | (maintainer to fill: library, command, exit code and the six COMPARE results) |
+| `R CMD check --no-manual --no-build-vignettes` | exit 0 on `28ad2542`: 0 ERRORs, 0 WARNINGs, 1 NOTE (pre-existing `head` without a `utils` import); round 1 on `0ec90fee` exited 1 (open item (d)) |
+| Coverage (`tools/check-coverage.R`) | not obtained: covr child-result collection fails on this Windows host (tooling, maintainer 2026-10-31); routed to horizon.md (2026-10-31). Two attempts exit 1 with `readRDS(f)`: "error reading from connection" (open item (e)) |
+| Real-data oracle (six workloads) | maintainer run on the installed product `9b05538f` (library `E:/ledgr-data/r-lib/ledgr-ws4a-9b05538f`): installs and all six comparisons exit 0; w2_minvar, w2_article, w3_changing, w3_full, w4_sweep and w4_wf are COMPARE_IDENTICAL against `E:/ledgr-data/reference/v0.2.3-base-953338df`, snapshot hash included ([records/ldg3169/realdata/](../../../dev/bench/v0_2_3_ws4a/records/ldg3169/realdata/realdata.txt)) |
 
 ## Accepted refusal changes
 
@@ -130,29 +132,25 @@ milestone check after WS4b.
   overflowing openings and dispositions.
 - (c) LDG-3168's belief that Inf cannot reach the new used-row checks of the
   staging and equity record from finite public inputs is untested.
-- (d) Found here: `R CMD check` and coverage fail on the final candidate.
-  The test control plane refuses
-  `tests/testthat/test-accounting-core-consolidation.R` ("Orphan block
-  profile declaration"): LDG-3164 (`fcd05ba2`) inserted the helper
-  `ledgr_test_book_lots()` between line 30, `# ledgr-test-profile: review`,
-  and the LTB-0019 block, so the declaration no longer precedes its block.
-  It is the only file of 222 the control plane's scanner refuses.
-  `testthat::test_local()` skips that preflight, so no earlier full-suite
-  record caught it. The repair (the declaration directly above LTB-0019, as
-  on the base) is a registered-test edit outside this ticket and is left
-  for maintainer disposition.
-- (e) Behind (d), scratch-only diagnostics
-  ([records/ldg3169/README.md](../../../dev/bench/v0_2_3_ws4a/records/ldg3169/README.md),
-  "Diagnostics") found three more blockers. First, the preflight refuses a
-  duplicate stable block ID: LTB-0514 at `test-governance-report.R:1076` and
-  `:1152`. This is pre-existing, on `953338df` and `release/v0.2.3` since
-  `26ea8fb4`. With (d) and that ID fixed in a scratch copy, the package
-  check's tests pass. Coverage then still fails under covr. LTB-0188
-  (`test-ledger-writer.R:321`, migrated in LDG-3167) matches one deparsed
-  line that covr's instrumentation wraps. With that predicate applied to
-  whitespace-collapsed source, LTB-0022 (migrated in LDG-3164) failed once
-  under covr: mutant depth slope 0.261 against the 0.30 allowance. No
-  coverage figure exists for this candidate.
+- (d) Resolved in `28ad2542` by maintainer disposition (2026-10-31). Round 1
+  found that `R CMD check` and coverage stopped at the test control plane's
+  preflight. Repairs, test infrastructure only, with no setup, fixture,
+  oracle or bound changed:
+  - LDG-3164 (`fcd05ba2`) had orphaned LTB-0019's `review` declaration; the
+    helper now sits above the declaration.
+  - The pre-existing duplicate stable ID LTB-0514 (`26ea8fb4`, two different
+    claims) is resolved: the later block is LTB-0522, and claims.yml follows.
+  - LTB-0188's exact-source match runs outside covr only, because covr
+    rewrites function bodies.
+  - LTB-0022 has `skip_on_covr()`. Outside covr it passes 3 of 3 runs
+    (mutant 0.355-0.403 against 0.30); covr's counters flattened it to 0.261.
+    Its margin outside covr is thin.
+- (e) Coverage not obtained: covr child-result collection fails on this
+  Windows host (tooling, maintainer 2026-10-31); routed to
+  `inst/design/horizon.md`. It must be re-obtained before release
+  certification. Twenty of 22 kept trace files are unreadable, written in
+  pairs, which matches two-worker daemons from worker blocks without a
+  coverage skip. That cause is not proven (record README, "Coverage: not
+  obtained").
 - (f) `decisions.md#typed-fold-carrier` still says no implementation ticket
   is open; by its own rule the row leaves at release closeout.
-- (g) The real-data oracle row above is the maintainer's to fill.
