@@ -339,8 +339,8 @@ ledgr_lot_input <- function(operation,
 # before and after the operation (0 when flat).
 #
 # The split is checked against the lots, before and after: a row closes iff
-# its head lot opposed it before, and opens iff afterwards its head lot is on
-# its own side. The sum of the parts misses the quantity only by rounding and
+# its head lot opposed it before, and opens iff it appended a lot, after which
+# its head lot is on its own side. The sum of the parts misses the quantity only by rounding and
 # one dust snap: the k FIFO steps add each take to close_qty and subtract it
 # from the remainder (each rounding at most eps/2 of a value no larger than
 # the quantity), and a snapped remainder is at most eps * max(1, quantity).
@@ -374,7 +374,8 @@ ledgr_lot_applied <- function(input,
     TRUE
   } else {
     (close_qty[cons] > 0) == (lots$before[cons] == -input$side[cons]) &
-      (open_qty[cons] > 0) == (lots$after[cons] == input$side[cons])
+      (open_qty[cons] > 0) == lots$appended[cons] &
+      (open_qty[cons] == 0 | lots$after[cons] == input$side[cons])
   }
   if (!all(vapply(out, is.double, logical(1))) || any(lengths(out) != m) ||
       !all(is.finite(unlist(out, use.names = FALSE))) ||
@@ -484,45 +485,52 @@ ledgr_lot_apply <- function(book, input) {
   # predicates are vectorized; only the selection is ordered.
   realized_delta <- realized_close - fee
   witness <- input$realized_model_pnl
-  fail <- integer(m)
+  bad_through <- integer()
   through <- which(consuming & open_qty > 0 & live > 0L)
   if (length(through) > 0L) {
     front <- sign(q[off[pos[through]] + head[through]])
-    fail[through[is.na(front) | front != side[through]]] <- 1L
+    bad_through <- through[is.na(front) | front != side[through]]
   }
-  d <- which(op == .ledgr_lot_disposition & fail == 0L)
-  if (length(d) > 0L) {
-    # Replay compares the recorded realized model P&L with the canonical FIFO
-    # realization at dust tolerance (all.equal() semantics on scalars).
-    target <- realized_delta[d]
-    tol <- ledgr_lot_dust_tolerance_rows(target)
-    diff <- abs(target - witness[d])
-    relative <- is.finite(abs(target)) & abs(target) > tol
-    diff[relative] <- diff[relative] / abs(target[relative])
-    mismatch <- !is.na(witness[d]) & target != witness[d] & (is.na(diff) | diff > tol)
-    # A disposition must leave no live lot: none after consumption and none
-    # appended.
-    fail[d] <- ifelse(live[d] > 0L | open_qty[d] > 0, 2L, ifelse(mismatch, 3L, 0L))
-  }
-  first <- which(fail > 0L)
-  if (length(first) > 0L) {
-    k <- first[[1L]]
-    if (fail[[k]] == 3L) {
-      ledgr_accounting_event_error(
-        "DISPOSITION realized model PnL does not match canonical FIFO realization.",
-        "ledgr_invalid_ledger_meta"
+  d <- which(op == .ledgr_lot_disposition)
+  # Ordinary calls with no through failure and no disposition skip the
+  # failure selection.
+  if (length(bad_through) > 0L || length(d) > 0L) {
+    fail <- integer(m)
+    fail[bad_through] <- 1L
+    d <- d[fail[d] == 0L]
+    if (length(d) > 0L) {
+      # Replay compares the recorded realized model P&L with the canonical FIFO
+      # realization at dust tolerance (all.equal() semantics on scalars).
+      target <- realized_delta[d]
+      tol <- ledgr_lot_dust_tolerance_rows(target)
+      diff <- abs(target - witness[d])
+      relative <- is.finite(abs(target)) & abs(target) > tol
+      diff[relative] <- diff[relative] / abs(target[relative])
+      mismatch <- !is.na(witness[d]) & target != witness[d] & (is.na(diff) | diff > tol)
+      # A disposition must leave no live lot: none after consumption and none
+      # appended.
+      fail[d] <- ifelse(live[d] > 0L | open_qty[d] > 0, 2L, ifelse(mismatch, 3L, 0L))
+    }
+    first <- which(fail > 0L)
+    if (length(first) > 0L) {
+      k <- first[[1L]]
+      if (fail[[k]] == 3L) {
+        ledgr_accounting_event_error(
+          "DISPOSITION realized model PnL does not match canonical FIFO realization.",
+          "ledgr_invalid_ledger_meta"
+        )
+      }
+      rlang::abort(
+        if (fail[[k]] == 1L) {
+          "Lot accounting cannot open through an unconsumed opposing lot."
+        } else if (is.na(witness[[k]])) {
+          "Disposition left live lots after reaching zero position."
+        } else {
+          "DISPOSITION must consume the position and every live lot exactly."
+        },
+        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
       )
     }
-    rlang::abort(
-      if (fail[[k]] == 1L) {
-        "Lot accounting cannot open through an unconsumed opposing lot."
-      } else if (is.na(witness[[k]])) {
-        "Disposition left live lots after reaching zero position."
-      } else {
-        "DISPOSITION must consume the position and every live lot exactly."
-      },
-      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
-    )
   }
 
   appending <- opening | open_qty > 0
@@ -579,6 +587,7 @@ ledgr_lot_apply <- function(book, input) {
 
   # Appends: an opening's signed quantity, or a fill's unclosed remainder
   # on its own side, as a new lot at the segment tail.
+  tail_before_append <- tail
   a <- which(appending)
   if (length(a) > 0L) {
     signed <- ifelse(
@@ -653,7 +662,8 @@ ledgr_lot_apply <- function(book, input) {
       realized_delta = as.numeric(ifelse(opening, 0, realized_delta)),
       event_realized = event_realized,
       event_cost_basis = event_cost_basis,
-      lots = list(steps = steps, before = before, after = head_sign(head, tail, off))
+      lots = list(steps = steps, before = before, after = head_sign(head, tail, off),
+        appended = tail > tail_before_append)
     )
   )
 }

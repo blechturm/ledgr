@@ -65,7 +65,7 @@ LDG-3169.
 ## Correction round 1 (close review F1-F7)
 
 Product commit 03aed8b7 answers `ws12_close_review.md` F1-F4; the harness,
-design note and evidence follow in the next commit. Verified by the
+design note and evidence are in b7bffc0a. Verified by the
 implementer on 2026-10-31 against 03aed8b7, with no timing, memory or
 real-data runs (the maintainer reruns those):
 

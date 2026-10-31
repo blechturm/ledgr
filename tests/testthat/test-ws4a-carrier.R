@@ -637,8 +637,15 @@ testthat::test_that("[WS4a D25] independent lot work is vectorized; replay appli
   scan <- "for (k in seq_len(m))"
   scan_writes <- c("total", "realized", "comp", "step", "event_cost_basis", "event_realized")
   block <- "for (b in seq_along(starts))"
+  # Callback loops (lapply and friends) may do no lot work at all.
+  callback_check <- function(e) {
+    callbacks <- Filter(function(x) ws4a_head(x) %in%
+      c("lapply", "vapply", "sapply", "Map", "mapply"), ws4a_calls(e))
+    unlist(lapply(callbacks, function(x)
+      unlist(lapply(ws4a_loop_bodies(x), lot_work))))
+  }
   check <- function(e) {
-    unlist(lapply(Filter(function(x) ws4a_head(x) %in% c("for", "while", "repeat"), ws4a_calls(e)), function(x) {
+    c(callback_check(e), unlist(lapply(Filter(function(x) ws4a_head(x) %in% c("for", "while", "repeat"), ws4a_calls(e)), function(x) {
       header <- sub(" \\{.*$", "", ws4a_txt(x))
       body <- x[[length(x)]]
       if (header %in% c(depth, block)) return(NULL)
@@ -651,7 +658,7 @@ testthat::test_that("[WS4a D25] independent lot work is vectorized; replay appli
         return(if (!all(targets %in% scan_writes)) paste("aggregate scan writes", setdiff(targets, scan_writes)))
       }
       if (length(lot_work(body))) paste(header, "does lot work:", paste(unique(lot_work(body)), collapse = ","))
-    }))
+    })))
   }
   kernel <- fns[c(intersect(ws4a_kernel_names, names(fns)), "ledgr_lot_apply_blocks")]
   testthat::expect_length(ws4a_hits(kernel, check), 0L)
@@ -670,6 +677,13 @@ testthat::test_that("[WS4a D25] independent lot work is vectorized; replay appli
   # in a loop, and lot work moved into the ordered aggregate scan.
   inline <- "for (k in seq_along(pos)) book$lot_qty[book$offset[pos[k]] + 1L] <- quantity[k]"
   testthat::expect_gt(length(ws4a_hits(list(kernel = ws4a_inject(fns$ledgr_lot_apply, inline)), check)), 0L)
+  # Callback controls: per-instrument dispatch through lapply (close review
+  # re-review 1, N2).
+  for (stmt in c(
+    "lapply(seq_along(pos), function(k) ledgr_lot_fill(book, pos[k], 1L, quantity[k], 1))",
+    "lapply(seq_along(pos), function(k) book$lot_qty[book$offset[pos[k]] + 1L] <- quantity[k])"
+  )) testthat::expect_gt(length(ws4a_hits(
+    list(kernel = ws4a_inject(fns$ledgr_lot_apply, stmt)), check)), 0L)
   in_scan <- str2lang(sub("event_realized[[k]] <- realized", "event_realized[[k]] <- realized; q[[k]] <- NA_real_",
     paste(deparse(fns$ledgr_lot_apply, width.cutoff = 500L), collapse = "\n"), fixed = TRUE))
   testthat::expect_false(identical(in_scan, fns$ledgr_lot_apply))
@@ -882,6 +896,13 @@ testthat::test_that("[WS4a V-applied-row] the close/open split is checked agains
   testthat::expect_identical(c(out$applied$close_qty, out$applied$open_qty), c(3.5, 1.5))
   testthat::expect_identical(c(seen$lots$before, seen$lots$after, seen$lots$steps), c(1, -1, 2))
   testthat::expect_error(split(5, 0), class = "ledgr_lot_state_invariant")
+  # Signed openings: a sell of 2 against +2 then -1 closes 2 and opens nothing,
+  # as on the base (re-review 1, N1).
+  b <- ns$ledgr_lot_book_from_opening("S", lots = list(
+    instrument_id = c("S", "S"), qty = c(2, -1), price = c(10, 10)))
+  out <- ns$ledgr_lot_fill(b, 1L, -1L, 2, 10)
+  testthat::expect_identical(out$book$net_by_inst, -1)
+  testthat::expect_identical(c(out$applied$close_qty, out$applied$open_qty), c(2, 0))
 })
 
 # The two multi-error controls of the workstream 12 close review (F1), and
