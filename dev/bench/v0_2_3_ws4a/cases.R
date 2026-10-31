@@ -80,9 +80,10 @@ ws_case("C4", "3164", function() {
       lots <- ledgr_lot_book_live(a$book, a$pos[[k]])
       partial <<- c(partial, sprintf("%s:%d:%d", if (a$side[[k]] > 0) "BUY" else "SELL", length(lots$qty), length(unique(lots$price))))
     }
-  }, ledgr_fold_stage_apply = function(a, v) {
-    for (e in a$plan$pulse_plan$fills) planned[[length(planned) + 1L]] <<- data.frame(pulse = a$observation$pulse_idx,
-      instrument_id = e$instrument_id, planned = e$current_qty + e$delta, actual = a$fold_state$positions[[e$inst_idx]])
+  }, ledgr_fold_stage_apply = function(a, v) { # LDG-3166: the typed fill rows
+    f <- a$plan$batch$fill
+    if (length(f$k)) planned[[length(planned) + 1L]] <<- data.frame(pulse = a$observation$pulse_idx,
+      instrument_id = unname(a$services$instrument_ids[f$pos]), planned = f$planned_position_after, actual = a$fold_state$positions[f$pos])
   })
   out <- ws_trace(hooks, ws_durable(fx, ws_exp(fx), "c4", plan))
   parts <- do.call(rbind, strsplit(unique(partial), ":"))
@@ -222,12 +223,12 @@ ws_small_cash <- function(id) {
 }
 ws_perturb <- function(seam, injected) stats::setNames(list(function(original) function(...) {
   value <- original(...)
-  plan <- if (is.null(value$pulse_plan)) value else value$pulse_plan
-  if (injected$n == 0L && length(plan$fills) > 0L) {
+  plan <- if (is.null(value$batch)) value else value$batch # LDG-3166: the typed plan
+  if (injected$n == 0L && length(plan$fill$k) > 0L) {
     injected$n <- 1L
     injected$recorded <- ws_args(original, ...)$cash %||% NA_real_
     plan$expected_final_cash <- plan$expected_final_cash + 1
-    if (is.null(value$pulse_plan)) value <- plan else value$pulse_plan <- plan
+    if (is.null(value$batch)) value <- plan else value$batch <- plan
   }
   value
 }), seam)
@@ -307,7 +308,7 @@ ws_case("C11", "3166", function() {
     opening = ledgr_opening(cash = 10, positions = c(AAA = 5), cost_basis = c(AAA = 30)))
   plan <- ws_days(NULL, list(ZZZ = 2, AAA = 0, MMM = 2))
   order <- character()
-  hooks <- stats::setNames(list(function(a, v) if (length(v$fills)) order <<- vapply(v$fills, function(e) e$instrument_id, "")),
+  hooks <- stats::setNames(list(function(a, v) if (length(v$fill$k)) order <<- unname(a$instrument_ids[v$fill$pos])),
     ws4a_seams[["planner_return"]])
   out <- ws_trace(hooks, c(ws_durable(fx, exp, "c11", plan), ws_memory(exp, plan)))
   ws_need(identical(order, c("ZZZ", "AAA")), "decision order ZZZ, AAA differs from stable-ID order")

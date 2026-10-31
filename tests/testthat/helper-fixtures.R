@@ -127,6 +127,10 @@ ledgr_test_make_bars <- function(instrument_ids, ts_utc) {
   out
 }
 
+# LDG-3166 (design note Section 5, decision 10, category 1): one next-open
+# fill as a one-row typed fill group through the production batch resolver,
+# with its effects from ledgr_fill_publication_deltas(). Returns the group,
+# its row index and its instrument ID, the publication boundary's inputs.
 ledgr_test_next_open_fill <- function(desired_qty_delta,
                                       next_bar = NULL,
                                       spread_bps = 0,
@@ -134,24 +138,11 @@ ledgr_test_next_open_fill <- function(desired_qty_delta,
                                       price_round_digits = 8L,
                                       next_open_price = NULL,
                                       instrument_id = NULL,
-                                      ts_utc = NULL,
-                                      high = NA_real_,
-                                      low = NA_real_,
-                                      close = NA_real_,
-                                      volume = NA_real_) {
-  proposal <- ledgr:::ledgr_next_open_fill_proposal(
-    desired_qty_delta = desired_qty_delta,
-    next_bar = next_bar,
-    next_open_price = next_open_price,
-    instrument_id = instrument_id,
-    ts_utc = ts_utc,
-    high = high,
-    low = low,
-    close = close,
-    volume = volume
-  )
-  if (inherits(proposal, "ledgr_fill_none")) {
-    return(proposal)
+                                      ts_utc = NULL) {
+  if (!is.null(next_bar)) {
+    instrument_id <- next_bar$instrument_id
+    ts_utc <- next_bar$ts_utc
+    next_open_price <- next_bar$open
   }
   resolver <- ledgr:::ledgr_cost_resolver_from_model(
     ledgr_cost_chain(
@@ -160,7 +151,22 @@ ledgr_test_next_open_fill <- function(desired_qty_delta,
     ),
     price_round_digits = price_round_digits
   )
-  ledgr:::ledgr_resolve_fill_proposal(proposal, resolver)
+  side <- ledgr:::ledgr_plan_side(desired_qty_delta)
+  qty <- abs(as.numeric(desired_qty_delta))
+  resolved <- ledgr:::ledgr_plan_resolve(resolver, side, qty, as.numeric(next_open_price))
+  epoch <- if (inherits(ts_utc, "POSIXt")) {
+    as.numeric(ts_utc)
+  } else {
+    as.numeric(as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"))
+  }
+  effects <- ledgr:::ledgr_fill_publication_deltas(side, qty, resolved$price, resolved$fee)
+  groups <- ledgr:::ledgr_plan_groups(
+    1L, 1L, side, qty, resolved$price, resolved$fee, epoch, 0,
+    ledgr:::ledgr_carrier_segments(1L, integer(), integer()),
+    1L, effects, integer(), integer(), numeric()
+  )
+  fill <- ledgr:::ledgr_carrier_new(groups$fill, "fill", 1L, list(context_pos = 1L, actionable_k = 1L))
+  list(fill = fill, i = 1L, instrument_id = instrument_id)
 }
 
 ledgr_test_cost_resolver <- function(spread_bps = 0,

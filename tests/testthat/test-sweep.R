@@ -55,19 +55,14 @@ testthat::test_that("memory output handler stores typed events equivalent to led
   handler$append_event_rows(opening)
   handler$init_buffers(1L)
 
-  fill <- structure(
-    list(
-      instrument_id = "AAA",
-      side = "SELL",
-      qty = 1,
-      fill_price = 12,
-      fee = 0.25,
-      ts_exec_utc = "2020-01-02T00:00:00Z"
-    ),
-    class = "ledgr_fill_intent"
+  # LDG-3166 (design note Section 5, category 1): a one-row typed fill.
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = -1,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 12),
+    commission_fixed = 0.25
   )
-  full_write_res <- ledgr:::ledgr_fill_event_row("typed-memory", fill, 2L)
-  write_res <- handler$write_fill_events(fill, 2L)
+  full_write_res <- ledgr:::ledgr_fill_event_row("typed-memory", fill$fill, fill$i, fill$instrument_id, 2L)
+  write_res <- handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 2L)
   testthat::expect_identical(nrow(handler$events()), 1L)
   handler$flush_pulse_events()
 
@@ -108,7 +103,7 @@ testthat::test_that("memory output handler preserves full event columns across g
       spread_bps = 0,
       commission_fixed = i / 100
     )
-    write_res <- ledgr:::ledgr_fill_event_row(run_id, fill, i)
+    write_res <- ledgr:::ledgr_fill_event_row(run_id, fill$fill, fill$i, fill$instrument_id, i)
     expected[[i]] <- write_res$row
     expected_cash_delta[[i]] <- write_res$cash_delta
     expected_position_delta[[i]] <- write_res$position_delta
@@ -156,18 +151,13 @@ testthat::test_that("single-pass sweep summary matches separate reconstruction h
   handler$append_event_rows(opening)
   handler$init_buffers(1L)
 
-  fill <- structure(
-    list(
-      instrument_id = "AAA",
-      side = "SELL",
-      qty = 1,
-      fill_price = 12,
-      fee = 0.25,
-      ts_exec_utc = "2020-01-02T00:00:00Z"
-    ),
-    class = "ledgr_fill_intent"
+  # LDG-3166 (design note Section 5, category 1): a one-row typed fill.
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = -1,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 12),
+    commission_fixed = 0.25
   )
-  handler$write_fill_events(fill, 2L)
+  handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 2L)
   handler$flush_pulse_events()
   events <- handler$typed_events()
   close_mat <- matrix(c(10, 12), nrow = 1L, dimnames = list("AAA", NULL))
@@ -246,27 +236,22 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
     cost_basis = lot_state$total_cost_basis
   )
 
-  fill <- structure(
-    list(
-      instrument_id = "AAA",
-      side = "SELL",
-      qty = 3,
-      fill_price = 12,
-      fee = 0.25,
-      ts_exec_utc = "2020-01-02T00:00:00Z"
-    ),
-    class = "ledgr_fill_intent"
+  # LDG-3166 (design note Section 5, category 1): a one-row typed fill.
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = -3,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 12),
+    commission_fixed = 0.25
   )
   lot_res <- ledgr:::ledgr_lot_fill(
     lot_state,
     pos = 1L,
-    side = ledgr:::ledgr_lot_side(fill$side),
-    qty = fill$qty,
-    price = fill$fill_price,
-    fee = fill$fee
+    side = fill$fill$side,
+    qty = fill$fill$qty,
+    price = fill$fill$price,
+    fee = fill$fill$fee
   )
   lot_state <- lot_res$book
-  write_res <- handler$write_fill_events(fill, 2L)
+  write_res <- handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 2L)
   handler$record_accounting_fact(write_res, lot_res$applied)
   handler$flush_pulse_events()
   handler$record_equity_fact(

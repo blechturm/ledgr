@@ -300,45 +300,46 @@ testthat::test_that("active rebalance preserves held nonmembers and reserves exp
   testthat::expect_identical(attr(skipped, "sizing_skipped"), "MEMBER")
 })
 
+# LDG-3166 (design note Section 5, category 4): the typed affordability scan
+# through the availability planner, with the same inputs. Rows are given in
+# decision order; the resolver keeps each given price and charges no fee, as
+# the original entries did; `blocked` names candidates whose execution view
+# restricts them for trading_halted.
+availability_plan <- function(ids, current, target, price, cash, blocked = character()) {
+  n <- length(ids)
+  restricted <- ids %in% blocked
+  view <- ledgr:::ledgr_carrier_segments(n, which(restricted), rep(5L, sum(restricted)))
+  ledgr:::ledgr_fold_build_availability_pulse_plan(
+    context_pos = seq_len(n), target_qty = target, position = current, actionable_k = seq_len(n),
+    member = rep(TRUE, n),
+    execution = list(exec_ts = 1577923200, has_next = TRUE, open = price, high = price, low = price,
+      close = price, volume = rep(1, n)),
+    execution_view = list(member = rep(TRUE, n), restricted = restricted, reason_offset = view$offset,
+      reason_count = view$count, reason_code = view$code),
+    epoch_valid = TRUE,
+    cost_resolver = function(side, qty, open) list(price = open, fee = numeric(length(open))),
+    cash = cash,
+    instrument_ids = ids
+  )
+}
+
 testthat::test_that("affordability credits accepted reductions before purchases", {
-  entry <- function(id, current, delta, side, qty, price) {
-    list(
-      target_idx = match(id, c("BUY_EXACT", "SELL", "BUY_EXTRA")),
-      instrument_id = id,
-      current_qty = current,
-      delta = delta,
-      fill = list(side = side, qty = qty, fill_price = price, fee = 0)
-    )
-  }
-  entries <- list(
-    entry("BUY_EXACT", 0, 10, "BUY", 10, 10),
-    entry("SELL", 10, -10, "SELL", 10, 10),
-    entry("BUY_EXTRA", 0, 1, "BUY", 1, 10)
-  )
-  out <- ledgr:::ledgr_availability_apply_affordability(entries, cash = 0)
+  ids <- c("BUY_EXACT", "SELL", "BUY_EXTRA")
+  out <- availability_plan(ids, c(0, 10, 0), c(10, 0, 1), c(10, 10, 10), cash = 0)
+  # Accepted rows in decision order (M4 would publish them in scan order).
+  testthat::expect_identical(ids[out$fill$pos], c("BUY_EXACT", "SELL"))
+  testthat::expect_identical(ledgr:::.ledgr_plan_reason_levels[out$rejection$primary], "insufficient_cash")
+  testthat::expect_equal(out$expected_final_cash, 0, tolerance = 1e-12)
+  permuted <- availability_plan(rev(ids), c(0, 10, 0), c(1, 0, 10), c(10, 10, 10), cash = 0)
+  testthat::expect_setequal(rev(ids)[permuted$fill$pos], c("BUY_EXACT", "SELL"))
+  testthat::expect_equal(permuted$expected_final_cash, out$expected_final_cash, tolerance = 1e-12)
+  boundary <- availability_plan("BUY_EXACT", 0, 1, 5e-9, cash = 0)
+  testthat::expect_length(boundary$fill$k, 1L)
+  testthat::expect_equal(boundary$expected_final_cash, -5e-9, tolerance = 1e-15)
+  blocked <- availability_plan("BUY_EXACT", 0, 10, 10, cash = 0, blocked = "BUY_EXACT")
   testthat::expect_identical(
-    vapply(out$accepted, `[[`, character(1), "instrument_id"),
-    c("BUY_EXACT", "SELL")
-  )
-  testthat::expect_identical(out$rejected[[1L]]$reason_code, "insufficient_cash")
-  testthat::expect_equal(out$final_cash, 0, tolerance = 1e-12)
-  permuted <- ledgr:::ledgr_availability_apply_affordability(rev(entries), cash = 0)
-  testthat::expect_setequal(
-    vapply(permuted$accepted, `[[`, character(1), "instrument_id"),
-    c("BUY_EXACT", "SELL")
-  )
-  testthat::expect_equal(permuted$final_cash, out$final_cash, tolerance = 1e-12)
-  boundary <- ledgr:::ledgr_availability_apply_affordability(
-    list(entry("BUY_EXACT", 0, 1, "BUY", 1, 5e-9)),
-    cash = 0
-  )
-  testthat::expect_length(boundary$accepted, 1L)
-  testthat::expect_equal(boundary$final_cash, -5e-9, tolerance = 1e-15)
-  blocked <- entry("BUY_EXACT", 0, 10, "BUY", 10, 10)
-  blocked$blocking_reasons <- "trading_halted"
-  blocked <- ledgr:::ledgr_availability_apply_affordability(list(blocked), cash = 0)
-  testthat::expect_identical(
-    blocked$rejected[[1L]]$reasons,
+    ledgr:::ledgr_carrier_segment_text(blocked$rejection$reason_offset, blocked$rejection$reason_count,
+      blocked$rejection$reason_code, ledgr:::.ledgr_plan_reason_levels)$reasons,
     "trading_halted|insufficient_cash"
   )
 })
@@ -380,16 +381,10 @@ testthat::test_that("existing short holdings may hold or consume cash to cover",
   testthat::expect_invisible(
     ledgr:::ledgr_availability_validate_short_exposure(c(AAA = -2), c(AAA = -2))
   )
-  cover <- list(
-    target_idx = 1L,
-    instrument_id = "AAA",
-    current_qty = -2,
-    delta = 1,
-    fill = list(side = "BUY", qty = 1, fill_price = 100, fee = 0)
-  )
-  out <- ledgr:::ledgr_availability_apply_affordability(list(cover), cash = 100)
-  testthat::expect_length(out$accepted, 1L)
-  testthat::expect_equal(out$final_cash, 0)
+  # LDG-3166 (category 4): the typed affordability scan, same inputs.
+  out <- availability_plan("AAA", -2, -1, 100, cash = 100)
+  testthat::expect_length(out$fill$k, 1L)
+  testthat::expect_equal(out$expected_final_cash, 0)
 })
 
 # ledgr-test-profile: review

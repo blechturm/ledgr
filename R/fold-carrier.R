@@ -16,6 +16,9 @@
 # - decision (P2 -> P5): strategy and post-risk target quantities on the
 #   context axis and the actionable context ordinals. Dense joins here with
 #   the identity context axis (Synthesis 3.1, Q1).
+# LDG-3166 adds the P3 groups (Synthesis 3.3): the execution view (P3 only),
+# and the plan with its fill and rejection groups (P3 -> P5), one row per
+# actionable context ordinal, validated once by ledgr_carrier_plan().
 
 # Dictionaries (design note Sections 2.1-2.2). A code is a position in its
 # level vector; code 0 is the empty string and never an R index.
@@ -71,24 +74,70 @@
     strategy_qty = "double:context:none", target_qty = "double:context:none",
     actionable_k = "integer:any:none",
     state_update = "opaque:any:-", intent_reason = "opaque:any:-"
+  ),
+  # P3 (LDG-3166, Synthesis 3.3). Axis `row` is the group's own rows: the
+  # candidate IDs of the execution view, the fills or the rejections.
+  execution_view = c(
+    member = "logical:row:none", restricted = "logical:row:none",
+    reason_offset = "integer:row:none", reason_count = "integer:row:none",
+    reason_code = "integer:segment:none"
+  ),
+  fill = c(
+    k = "integer:row:none", pos = "integer:row:none", side = "integer:row:none",
+    qty = "double:row:none", price = "double:row:none", fee = "double:row:none",
+    cash_delta = "double:row:none", position_delta = "double:row:none",
+    exec_ts = "double:row:none",
+    position_before = "double:row:none", planned_position_after = "double:row:none",
+    info_offset = "integer:row:none", info_count = "integer:row:none",
+    info_code = "integer:segment:none"
+  ),
+  rejection = c(
+    k = "integer:row:none", pos = "integer:row:none", emit = "integer:row:none",
+    primary = "integer:row:none",
+    reason_offset = "integer:row:none", reason_count = "integer:row:none",
+    reason_code = "integer:segment:none",
+    resolved_price = "double:row:na", exec_ts = "double:row:na",
+    position = "double:row:none"
+  ),
+  plan = c(
+    expected_final_cash = "double:scalar:na", economic_event_kinds = "integer:any:none",
+    fill = "opaque:any:-", rejection = "opaque:any:-"
   )
 )
 # The specifications split once: storage, axis and missingness per field.
 .ledgr_carrier_field_parts <- lapply(.ledgr_carrier_fields, strsplit, split = ":", fixed = TRUE)
+# Per group: the field whose length is the group's own axis, and the count
+# field of its code segment.
+.ledgr_carrier_axes <- list(
+  decision_packet = c("context_pos", "restriction_count"), decision_data = c("source_row", NA),
+  execution_packet = c(NA, NA), decision = c("context_pos", NA),
+  execution_view = c("member", "reason_count"), fill = c("k", "info_count"),
+  rejection = c("k", "reason_count"), plan = c(NA, NA)
+)
+
+# P3 dictionaries (design note Sections 2.1-2.2): reason tokens of fills and
+# rejections, and the economic event kinds. Code 0 is the empty string.
+.ledgr_plan_reason_levels <- c(
+  "final_pulse_no_execution", "execution_bar_missing", "insufficient_cash",
+  "membership_changed_before_execution", "trading_halted", "quotation_only",
+  "status_unknown", "status_unknown_or_conflicting", "lifetime_inactive"
+)
+.ledgr_plan_kind_levels <- c("FILL", "CASHFLOW", "DISPOSITION")
 
 # NULL, or the first violated rule of group `group` on run axis length
 # `n_run`: the exact field set and order, storage types, axis lengths,
-# missingness, bounds and the group's invariants.
-ledgr_carrier_problem <- function(x, group, n_run) {
+# missingness, bounds and the group's invariants. The plan groups also take
+# `plan_axis`: the decision's context_pos and actionable_k.
+ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
   spec <- .ledgr_carrier_fields[[group]]
   if (!is.list(x) || is.data.frame(x) || !identical(names(x), names(spec))) {
     return("the field set is not exact")
   }
   parts <- .ledgr_carrier_field_parts[[group]]
-  axis_field <- switch(group, decision_data = "source_row", execution_packet = NULL, "context_pos")
-  n_context <- if (is.null(axis_field)) NA_integer_ else length(x[[axis_field]])
-  n_segment <- if (identical(group, "decision_packet") && is.integer(x$restriction_count)) {
-    sum(x$restriction_count)
+  axes <- .ledgr_carrier_axes[[group]]
+  n_context <- if (is.na(axes[[1L]])) NA_integer_ else length(x[[axes[[1L]]]])
+  n_segment <- if (!is.na(axes[[2L]]) && is.integer(x[[axes[[2L]]]])) {
+    sum(x[[axes[[2L]]]])
   } else {
     NA_integer_
   }
@@ -102,7 +151,7 @@ ledgr_carrier_problem <- function(x, group, n_run) {
     if (!typed || is.object(v) || !is.null(attributes(v))) {
       return(paste0("`", names(spec)[[k]], "` is not a plain ", storage, " vector"))
     }
-    size <- switch(parts[[k]][[2L]], scalar = 1L, context = n_context, run = n_run,
+    size <- switch(parts[[k]][[2L]], scalar = 1L, context = , row = n_context, run = n_run,
       segment = n_segment, any = length(v))
     if (is.na(size) || length(v) != size) {
       return(paste0("`", names(spec)[[k]], "` does not have its axis length"))
@@ -167,8 +216,95 @@ ledgr_carrier_problem <- function(x, group, n_run) {
         return("`intent_reason` is not NULL or one non-empty string")
       }
       NULL
+    },
+    execution_view = {
+      problem <- ledgr_carrier_segment_problem(x$reason_offset, x$reason_count, x$reason_code)
+      if (!is.null(problem)) return(problem)
+      if (!identical(x$restricted, x$reason_count > 0L)) {
+        return("`restricted` does not match its reason segments")
+      }
+      NULL
+    },
+    fill = {
+      problem <- ledgr_carrier_row_problem(x$k, x$pos, plan_axis, n_run)
+      if (!is.null(problem)) return(problem)
+      if (is.unsorted(x$k, strictly = TRUE)) return("fills are not in decision order")
+      if (any(x$side != 1L & x$side != -1L)) return("a fill side is not +1 or -1")
+      if (any(x$qty <= 0) || any(x$price <= 0) || any(x$fee < 0)) {
+        return("a fill quantity, price or fee is out of range")
+      }
+      if (!identical(x$position_delta, x$side * x$qty)) {
+        return("`position_delta` is not the signed fill quantity")
+      }
+      if (!identical(x$planned_position_after, x$position_before + x$position_delta)) {
+        return("`planned_position_after` is not the position before plus the fill")
+      }
+      ledgr_carrier_segment_problem(x$info_offset, x$info_count, x$info_code)
+    },
+    rejection = {
+      problem <- ledgr_carrier_row_problem(x$k, x$pos, plan_axis, n_run)
+      if (!is.null(problem)) return(problem)
+      # Early rejections (emit 1) precede affordability rejections (emit 2);
+      # each phase keeps decision order.
+      if (any(x$emit != 1L & x$emit != 2L) ||
+          is.unsorted(x$emit * (length(plan_axis$context_pos) + 1L) + x$k, strictly = TRUE)) {
+        return("rejections are not in emission order")
+      }
+      problem <- ledgr_carrier_segment_problem(x$reason_offset, x$reason_count, x$reason_code)
+      if (!is.null(problem)) return(problem)
+      if (any(x$reason_count < 1L)) return("a rejection has no reason")
+      if (!identical(x$primary, x$reason_code[x$reason_offset + 1L])) {
+        return("`primary` is not the first reason")
+      }
+      if (any(x$resolved_price <= 0, na.rm = TRUE)) return("a resolved price is not positive")
+      NULL
+    },
+    plan = {
+      kinds <- x$economic_event_kinds
+      if (any(kinds < 1L | kinds > length(.ledgr_plan_kind_levels)) || anyDuplicated(kinds)) {
+        return("an economic event kind is outside its dictionary")
+      }
+      for (part in c("fill", "rejection")) {
+        problem <- ledgr_carrier_problem(x[[part]], part, n_run, plan_axis)
+        if (!is.null(problem)) return(paste0(part, ": ", problem))
+      }
+      if ((length(x$fill$k) > 0L) != (1L %in% kinds)) {
+        return("the FILL kind is not declared exactly when the plan has fills")
+      }
+      if (!identical(sort(c(x$fill$k, x$rejection$k)), plan_axis$actionable_k)) {
+        return("the plan does not hold one row per actionable context ordinal")
+      }
+      NULL
     }
   )
+}
+
+# Rows of a fill or rejection group: context ordinals on the decision's axis
+# and pos = context_pos[k] on the run axis.
+ledgr_carrier_row_problem <- function(k, pos, plan_axis, n_run) {
+  context_pos <- plan_axis$context_pos
+  if (any(k < 1L | k > length(context_pos)) || anyDuplicated(k)) {
+    return("`k` is not distinct context ordinals")
+  }
+  if (!identical(pos, context_pos[k]) || any(pos > n_run)) {
+    return("`pos` is not context_pos[k] on the run axis")
+  }
+  NULL
+}
+
+# A code segment of P3: contiguous offsets, codes in the P3 dictionary and
+# no code twice within a row.
+ledgr_carrier_segment_problem <- function(offset, count, code) {
+  if (any(count < 0L) || !identical(offset, c(0L, cumsum(count))[seq_along(count)])) {
+    return("the reason segments are not contiguous")
+  }
+  if (any(code < 1L | code > length(.ledgr_plan_reason_levels))) {
+    return("a reason code is outside its dictionary")
+  }
+  if (anyDuplicated(rep.int(seq_along(count), count) * 16L + code)) {
+    return("a reason segment repeats a code")
+  }
+  NULL
 }
 
 # Constructors of the four groups (V-packet with its three subgroups and
@@ -184,15 +320,47 @@ ledgr_carrier_decision <- function(x, n_run) {
   ledgr_carrier_new(x, "decision", n_run)
 }
 
-ledgr_carrier_new <- function(x, group, n_run) {
-  problem <- ledgr_carrier_problem(x, group, n_run)
+# The P3 plan (V-plan, with V-fill and V-rejection for its two groups) on the
+# decision's context axis and actionable ordinals.
+ledgr_carrier_plan <- function(x, context_pos, actionable_k, n_run) {
+  ledgr_carrier_new(x, "plan", n_run, list(context_pos = context_pos, actionable_k = actionable_k))
+}
+
+# The P3 groups keep the existing pulse-plan condition class (design note
+# 2.2); the P1 and P2 groups refuse as internal errors.
+ledgr_carrier_new <- function(x, group, n_run, plan_axis = NULL) {
+  problem <- ledgr_carrier_problem(x, group, n_run, plan_axis)
   if (!is.null(problem)) {
     rlang::abort(
       paste0("Invalid internal ", gsub("_", " ", group, fixed = TRUE), ": ", problem, "."),
-      class = "ledgr_internal_error"
+      class = if (group %in% c("execution_view", "fill", "rejection", "plan")) {
+        c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
+      } else {
+        "ledgr_internal_error"
+      }
     )
   }
   x
+}
+
+# Ordered, deduplicated code segments of `n` rows (design note 2.1): `row`
+# and `code` list the codes in emission order; within a row the first
+# occurrence of a code is kept, in emission order.
+ledgr_carrier_segments <- function(n, row, code) {
+  row <- as.integer(row)
+  ord <- order(row, method = "radix")
+  row <- row[ord]
+  code <- as.integer(code)[ord]
+  keep <- !duplicated(row * 16L + code)
+  count <- tabulate(row[keep], nbins = n)
+  list(offset = c(0L, cumsum(count))[seq_len(n)], count = count, code = code[keep])
+}
+
+# The segments of rows `idx`, in that order.
+ledgr_carrier_segment_rows <- function(offset, count, code, idx) {
+  count <- count[idx]
+  at <- rep.int(offset[idx], count) + sequence(count)
+  list(offset = c(0L, cumsum(count))[seq_along(idx)], count = count, code = code[at])
 }
 
 # Transitional provider adapter (remover WS4b): the provider's decision view
@@ -247,21 +415,144 @@ ledgr_carrier_provider_view <- function(view, valuation) {
 # The restriction segments as text on the context axis: the primary reason
 # (the first token) and the "|"-joined reasons, "" when unrestricted.
 ledgr_carrier_restriction_text <- function(packet) {
-  count <- packet$restriction_count
+  ledgr_carrier_segment_text(packet$restriction_offset, packet$restriction_count,
+    packet$restriction_code, .ledgr_carrier_restriction_levels)
+}
+
+# Code segments as text, one entry per row: the first token and the
+# "|"-joined tokens, "" for an empty segment.
+ledgr_carrier_segment_text <- function(offset, count, code, levels) {
   reason <- character(length(count))
   hit <- which(count > 0L)
   if (length(hit) == 0L) return(list(reason = reason, reasons = reason))
-  tokens <- .ledgr_carrier_restriction_levels[packet$restriction_code]
-  first <- packet$restriction_offset[hit] + 1L
+  tokens <- levels[code]
+  first <- offset[hit] + 1L
   reason[hit] <- tokens[first]
   reasons <- reason
   # Append the r-th token of every segment that has one; r is bounded by the
   # dictionary size, so the loop runs over token ranks, not instruments.
   for (r in seq_len(max(count) - 1L)) {
     more <- hit[count[hit] > r]
-    reasons[more] <- paste(reasons[more], tokens[packet$restriction_offset[more] + r + 1L], sep = "|")
+    reasons[more] <- paste(reasons[more], tokens[offset[more] + r + 1L], sep = "|")
   }
   list(reason = reason, reasons = reasons)
+}
+
+# Transitional execution-view adapter (remover WS4b), the declared P3
+# service: the provider's execution view of the candidate IDs at the pulse's
+# execution epoch, keyed by those IDs in order, becomes the typed view on the
+# candidate axis. A restricted candidate carries its blocking reasons as an
+# ordered, deduplicated segment; a token outside the P3 dictionary refuses.
+ledgr_carrier_execution_view <- function(provider, exec_ts, ids) {
+  ids <- as.character(ids)
+  view <- provider$execution_view(.POSIXct(exec_ts, tz = "UTC"), ids)
+  plane <- function(x) {
+    if (!identical(names(x), ids)) {
+      rlang::abort(
+        "The execution view must be keyed by the candidate IDs in order.",
+        class = "ledgr_internal_error"
+      )
+    }
+    unname(x)
+  }
+  restricted <- plane(view$restricted)
+  tokens <- strsplit(plane(view$reasons)[restricted], "|", fixed = TRUE)
+  code <- match(unlist(tokens, use.names = FALSE), .ledgr_plan_reason_levels)
+  if (anyNA(code)) {
+    rlang::abort(
+      "An execution-view reason is outside the pulse-plan dictionary.",
+      class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
+    )
+  }
+  segment <- ledgr_carrier_segments(length(ids), rep.int(which(restricted), lengths(tokens)), code)
+  ledgr_carrier_new(list(
+    member = plane(view$member),
+    restricted = restricted,
+    reason_offset = segment$offset,
+    reason_count = segment$count,
+    reason_code = segment$code
+  ), "execution_view", NA_integer_)
+}
+
+# Execution epochs of the prepared opportunity axis (the next pulse on dense,
+# the declared next-session openings on availability), validated once in E:
+# TRUE where a fill may execute at a whole UTC second.
+ledgr_plan_epoch_valid <- function(axis) {
+  epoch <- as.numeric(axis)
+  !is.na(epoch) & ledgr_whole_second_posix(epoch)
+}
+
+# The refusal of an invalid execution epoch, raised where a planned fill first
+# needs it, with the fill model's condition.
+ledgr_plan_refuse_epoch <- function(exec_ts) {
+  ledgr_assert_whole_second_utc(
+    .POSIXct(exec_ts, tz = "UTC"),
+    label = "`next_bar$ts_utc`",
+    class = "ledgr_invalid_fill_input"
+  )
+  rlang::abort("An execution epoch flagged invalid is a whole UTC second.", class = "ledgr_internal_error")
+}
+
+# The economic event kinds as their tokens; a code outside the dictionary
+# shows as its number.
+ledgr_plan_kind_text <- function(kinds) {
+  out <- as.character(kinds)
+  known <- kinds %in% seq_along(.ledgr_plan_kind_levels)
+  out[known] <- .ledgr_plan_kind_levels[kinds[known]]
+  out
+}
+
+# The next-open fill model's side of each signed target delta: +1 buys, -1
+# sells; the quantity is abs(delta).
+ledgr_plan_side <- function(delta) {
+  side <- rep(-1L, length(delta))
+  side[delta > 0] <- 1L
+  side
+}
+
+# Price and fee of a batch of fills from the compiled cost steps: one
+# resolver call per pulse, none for an empty batch.
+ledgr_plan_resolve <- function(cost_resolver, side, qty, open) {
+  if (length(qty) == 0L) return(list(price = numeric(), fee = numeric()))
+  resolved <- cost_resolver(side, qty, open)
+  if (!is.list(resolved) || !is.double(resolved$price) || !is.double(resolved$fee) ||
+      length(resolved$price) != length(qty) || length(resolved$fee) != length(qty)) {
+    rlang::abort(
+      "The cost resolver must return one price and one fee per fill.",
+      class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
+    )
+  }
+  list(price = resolved$price, fee = resolved$fee)
+}
+
+# The fill and rejection groups of one pulse, gathered from the candidate
+# columns (one entry per actionable ordinal) by row index. `fills` are in
+# decision order, with `effects` computed once for exactly those rows by
+# ledgr_fill_publication_deltas(); `rejected` and `emit` are in emission
+# order. `segment` holds every candidate's ordered reason codes.
+ledgr_plan_groups <- function(k, pos, side, qty, price, fee, exec_ts, before, segment,
+                              fills, effects, rejected, emit, resolved_price) {
+  info <- ledgr_carrier_segment_rows(segment$offset, segment$count, segment$code, fills)
+  reasons <- ledgr_carrier_segment_rows(segment$offset, segment$count, segment$code, rejected)
+  list(
+    fill = list(
+      k = k[fills], pos = pos[fills], side = side[fills],
+      qty = qty[fills], price = price[fills], fee = fee[fills],
+      cash_delta = effects$cash_delta, position_delta = effects$position_delta,
+      exec_ts = rep(exec_ts, length(fills)),
+      position_before = before[fills],
+      planned_position_after = before[fills] + effects$position_delta,
+      info_offset = info$offset, info_count = info$count, info_code = info$code
+    ),
+    rejection = list(
+      k = k[rejected], pos = pos[rejected], emit = emit,
+      primary = reasons$code[reasons$offset + 1L],
+      reason_offset = reasons$offset, reason_count = reasons$count, reason_code = reasons$code,
+      resolved_price = resolved_price,
+      exec_ts = rep(exec_ts, length(rejected)),
+      position = before[rejected]
+    )
+  )
 }
 
 ledgr_carrier_mark_source_text <- function(code) {

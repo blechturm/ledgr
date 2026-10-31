@@ -259,16 +259,18 @@ testthat::test_that("db_live writes strategy_state only after pulse fill writes"
   original <- get("ledgr_write_fill_events", envir = ns, inherits = FALSE)
   saw_state_before_fill <- FALSE
   unlockBinding("ledgr_write_fill_events", ns)
+  # LDG-3166 (design note Section 5, category 5): the spy takes the column
+  # writer's signature (typed fill group, row index, instrument ID).
   assign(
     "ledgr_write_fill_events",
-    function(con, run_id, fill_intent, event_seq_start = NULL, use_transaction = TRUE) {
+    function(con, run_id, fill, i, instrument_id, event_seq_start = NULL, use_transaction = TRUE) {
       state_rows <- DBI::dbGetQuery(
         con,
         "SELECT COUNT(*) AS n FROM strategy_state WHERE run_id = ?",
         params = list(run_id)
       )$n[[1]]
       if (as.integer(state_rows) > 0L) saw_state_before_fill <<- TRUE
-      original(con, run_id, fill_intent, event_seq_start = event_seq_start, use_transaction = use_transaction)
+      original(con, run_id, fill, i, instrument_id, event_seq_start = event_seq_start, use_transaction = use_transaction)
     },
     envir = ns
   )

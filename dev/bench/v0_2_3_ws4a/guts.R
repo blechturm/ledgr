@@ -41,14 +41,24 @@ ws_flip <- function(book, pos) {
   book
 }
 
+# LDG-3166: the typed fill rows `o` of a plan's fill group, in that order.
+ws_fill_rows <- function(f, o) {
+  seg <- ws_ns("ledgr_carrier_segment_rows")(f$info_offset, f$info_count, f$info_code, o)
+  rows <- setdiff(names(f), c("info_offset", "info_count", "info_code"))
+  f[rows] <- lapply(f[rows], `[`, o)
+  f[c("info_offset", "info_count", "info_code")] <- seg
+  f
+}
+
 ws4a_guts <- list(
-  C1_drop_notional = list(case = "C1", patch = list(ledgr_cost_model_resolve = function(original) function(proposal, fill_context, steps, ...) {
-    original(proposal, fill_context, ws_plain(steps), ...)
+  # LDG-3166: the batch cost resolver (side, qty, open columns).
+  C1_drop_notional = list(case = "C1", patch = list(ledgr_cost_model_resolve = function(original) function(side, qty, open, steps, ...) {
+    original(side, qty, open, ws_plain(steps), ...)
   })),
-  C2_notional_from_rounded = list(case = "C2", patch = list(ledgr_cost_model_resolve = function(original) function(proposal, fill_context, steps, ...) {
-    fill <- original(proposal, fill_context, ws_plain(steps), ...)
-    for (s in setdiff(steps, ws_plain(steps))) fill$fee <- fill$fee + abs(fill$qty * fill$fill_price) * s$args$bps / 10000
-    fill
+  C2_notional_from_rounded = list(case = "C2", patch = list(ledgr_cost_model_resolve = function(original) function(side, qty, open, steps, ...) {
+    out <- original(side, qty, open, ws_plain(steps), ...)
+    for (s in setdiff(steps, ws_plain(steps))) out$fee <- out$fee + abs(qty * out$price) * s$args$bps / 10000
+    out
   })),
   C3_tolerance_x10 = list(case = "C3", expect = "C3/(book_|run[.])", patch = list(ledgr_lot_dust_tolerance_rows = function(original) function(...) 10 * original(...))),
   C4_lifo = list(case = "C4", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, ...) {
@@ -94,10 +104,12 @@ ws4a_guts <- list(
     services$equity_fact_accumulator$append <- function(value) if (!empty) append(value)
     original(fold_state, services, ...)
   })),
+  # M4 through the typed path (LDG-3166): the fill rows published in the scan's priority order.
   C11_affordability_order = list(case = "C11", patch = list(ledgr_fold_build_availability_pulse_plan = function(original) function(...) {
     plan <- original(...)
-    key <- vapply(plan$fills, function(e) paste(e$fill$side != "SELL", e$instrument_id), "")
-    plan$fills <- plan$fills[order(key, method = "radix")]
+    f <- plan$fill
+    key <- paste(f$side != -1L, ws_args(original, ...)$instrument_ids[f$pos])
+    plan$fill <- ws_fill_rows(f, order(key, method = "radix"))
     plan
   })),
   C12_fill_before_settlement = list(case = "C12", patch = list(ledgr_fold_stage_observe_settle = function(original) function(fold_state, ...) {
@@ -175,7 +187,8 @@ ws4a_guts <- list(
   })),
   # Section 6 mutations without a Section 4 gut that already implements them.
   M2_reorder_pulse_fills = list(case = "C1", patch = list(ledgr_fold_stage_apply = function(original) function(fold_state, services, observation, plan, ...) {
-    if (length(plan$accounting_events$fills) > 1L) plan$accounting_events$fills <- rev(plan$accounting_events$fills)
+    n <- length(plan$batch$fill$k) # LDG-3166: the typed fill rows
+    if (n > 1L) plan$batch$fill <- ws_fill_rows(plan$batch$fill, rev(seq_len(n)))
     original(fold_state, services, observation, plan, ...)
   })),
   M3_drop_lot_fee = list(case = "C4", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, qty, price, fee = 0, ...) {

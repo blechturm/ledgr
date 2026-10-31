@@ -100,11 +100,16 @@ ledgr_take_preflight_start <- function() {
   val
 }
 
+# The buffered and memory fill row of row `i` of the typed fill group `fill`
+# (P3's columns and computed effects), published for `instrument_id`. A
+# zero-length `i` is the no-op. The effects are reused, never recomputed.
 ledgr_fill_event_payload <- function(run_id,
-                                     fill_intent,
+                                     fill,
+                                     i,
+                                     instrument_id,
                                      event_seq,
                                      serialize_meta_json = TRUE) {
-  if (inherits(fill_intent, "ledgr_fill_none")) {
+  if (length(i) == 0L) {
     return(structure(
       list(
         status = "NO_OP",
@@ -114,27 +119,22 @@ ledgr_fill_event_payload <- function(run_id,
     ))
   }
 
-  if (!inherits(fill_intent, "ledgr_fill_intent") || !is.list(fill_intent)) {
-    rlang::abort("`fill_intent` must be a `ledgr_fill_intent`.", class = "ledgr_invalid_fill_intent")
-  }
+  ledgr_fill_input_check(fill, i)
   if (!is.numeric(event_seq) || length(event_seq) != 1 || is.na(event_seq) || !is.finite(event_seq) ||
     event_seq < 1 || (event_seq %% 1) != 0) {
     rlang::abort("`event_seq` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
 
-  instrument_id <- fill_intent$instrument_id
-  side <- fill_intent$side
-  qty <- fill_intent$qty
-  fill_price <- fill_intent$fill_price
-  fee <- fill_intent$fee
-  ts_exec_utc <- fill_intent$ts_exec_utc
+  side <- if (fill$side[[i]] > 0L) "BUY" else "SELL"
+  qty <- fill$qty[[i]]
+  fill_price <- fill$price[[i]]
+  fee <- fill$fee[[i]]
+  signed_qty <- fill$position_delta[[i]]
+  cash_delta <- fill$cash_delta[[i]]
 
-  deltas <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)
-  signed_qty <- deltas$position_delta
-  cash_delta <- deltas$cash_delta
-
-  ts_exec_posix <- ledgr_ts_utc_posix(
-    ts_exec_utc,
+  # The execution epoch materializes as POSIXct at this output boundary.
+  ts_exec_posix <- ledgr_assert_whole_second_utc(
+    .POSIXct(fill$exec_ts[[i]], tz = "UTC"),
     label = "`fill_intent$ts_exec_utc`",
     class = "ledgr_invalid_fill_intent"
   )
@@ -177,10 +177,12 @@ ledgr_fill_event_payload <- function(run_id,
   )
 }
 
-ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
+ledgr_fill_event_row <- function(run_id, fill, i, instrument_id, event_seq) {
   ledgr_fill_event_payload(
     run_id = run_id,
-    fill_intent = fill_intent,
+    fill = fill,
+    i = i,
+    instrument_id = instrument_id,
     event_seq = event_seq,
     serialize_meta_json = TRUE
   )

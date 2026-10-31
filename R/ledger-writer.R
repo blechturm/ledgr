@@ -1,21 +1,25 @@
-# The one publication computation of a fill row's cash and position deltas
-# (fold-phase synthesis Section 11, R3; contract-execution-accounting-events).
-# It projects a fill the fold already resolved: side, quantity, price and fee
-# are inputs, never re-derived. Fill-row builders on the canonical R path use
-# it: ledgr_fill_event_payload() (buffered DuckDB and memory rows) and
-# ledgr_write_fill_events() (db_live rows). Planner affordability, fold state
-# and the compiled spot-FIFO batch keep their own arithmetic.
+# The one computation of fill publication effects: cash and position deltas
+# (fold-phase synthesis Section 11, R3; typed-fold-carrier synthesis 3.3;
+# contract-execution-accounting-events). P3 calls it once per pulse on the
+# batch of resolved fills (`side` +1 buy, -1 sell); the typed plan carries
+# the results, and affordability, fold cash, the reconciliation sums and
+# every publication sink reuse them. No sink recomputes them.
 ledgr_fill_publication_deltas <- function(side, qty, fill_price, fee) {
-  signed_qty <- if (side == "BUY") as.numeric(qty) else -as.numeric(qty)
-  cash_delta <- if (side == "BUY") {
-    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(fee))
-  } else {
-    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(fee))
-  }
-  list(cash_delta = cash_delta, position_delta = signed_qty)
+  qty <- as.numeric(qty)
+  price <- as.numeric(fill_price)
+  fee <- as.numeric(fee)
+  buy <- side > 0L
+  cash_delta <- +(qty * price - fee)
+  cash_delta[buy] <- -(qty[buy] * price[buy] + fee[buy])
+  position_delta <- -qty
+  position_delta[buy] <- qty[buy]
+  list(cash_delta = cash_delta, position_delta = position_delta)
 }
 
-ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = NULL, use_transaction = TRUE) {
+# The db_live writer: row `i` of the typed fill group `fill` (P3's columns
+# and computed effects), published for `instrument_id`. A zero-length `i` is
+# the no-op.
+ledgr_write_fill_events <- function(con, run_id, fill, i, instrument_id, event_seq_start = NULL, use_transaction = TRUE) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
@@ -23,7 +27,7 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
 
-  if (inherits(fill_intent, "ledgr_fill_none")) {
+  if (length(i) == 0L) {
     return(structure(
       list(
         status = "NO_OP",
@@ -37,34 +41,26 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
     rlang::abort("`use_transaction` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
-  if (!inherits(fill_intent, "ledgr_fill_intent") || !is.list(fill_intent)) {
-    rlang::abort("`fill_intent` must be a `ledgr_fill_intent`.", class = "ledgr_invalid_fill_intent")
-  }
-
-  instrument_id <- fill_intent$instrument_id
-  side <- fill_intent$side
-  qty <- fill_intent$qty
-  fill_price <- fill_intent$fill_price
-  fee <- fill_intent$fee
-  ts_exec_utc <- fill_intent$ts_exec_utc
+  ledgr_fill_input_check(fill, i)
+  side <- fill$side[[i]]
+  qty <- fill$qty[[i]]
+  fill_price <- fill$price[[i]]
+  fee <- fill$fee[[i]]
 
   if (!is.character(instrument_id) || length(instrument_id) != 1 || is.na(instrument_id) || !nzchar(instrument_id)) {
     rlang::abort("`fill_intent$instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_fill_intent")
   }
-  if (!is.character(side) || length(side) != 1 || is.na(side) || !(side %in% c("BUY", "SELL"))) {
+  if (is.na(side) || !(side %in% c(1L, -1L))) {
     rlang::abort("`fill_intent$side` must be 'BUY' or 'SELL'.", class = "ledgr_invalid_fill_intent")
   }
-  if (!is.numeric(qty) || length(qty) != 1 || is.na(qty) || !is.finite(qty) || qty <= 0) {
+  if (is.na(qty) || !is.finite(qty) || qty <= 0) {
     rlang::abort("`fill_intent$qty` must be a finite numeric scalar > 0.", class = "ledgr_invalid_fill_intent")
   }
-  if (!is.numeric(fill_price) || length(fill_price) != 1 || is.na(fill_price) || !is.finite(fill_price) || fill_price <= 0) {
+  if (is.na(fill_price) || !is.finite(fill_price) || fill_price <= 0) {
     rlang::abort("`fill_intent$fill_price` must be a finite numeric scalar > 0.", class = "ledgr_invalid_fill_intent")
   }
-  if (!is.numeric(fee) || length(fee) != 1 || is.na(fee) || !is.finite(fee) || fee < 0) {
+  if (is.na(fee) || !is.finite(fee) || fee < 0) {
     rlang::abort("`fill_intent$fee` must be a finite numeric scalar >= 0.", class = "ledgr_invalid_fill_intent")
-  }
-  if (is.null(ts_exec_utc)) {
-    rlang::abort("`fill_intent$ts_exec_utc` is required.", class = "ledgr_invalid_fill_intent")
   }
 
   if (!is.null(event_seq_start)) {
@@ -80,15 +76,17 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
     rlang::abort(sprintf("run_id not found in runs table: %s", run_id), class = "ledgr_invalid_args")
   }
 
-  deltas <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)
-  signed_qty <- deltas$position_delta
-  cash_delta <- deltas$cash_delta
+  # The effects P3 computed for this fill.
+  signed_qty <- fill$position_delta[[i]]
+  cash_delta <- fill$cash_delta[[i]]
 
-  ts_exec_posix <- ledgr_ts_utc_posix(
-    ts_exec_utc,
+  # The execution epoch materializes as POSIXct at this output boundary.
+  ts_exec_posix <- ledgr_assert_whole_second_utc(
+    .POSIXct(fill$exec_ts[[i]], tz = "UTC"),
     label = "`fill_intent$ts_exec_utc`",
     class = "ledgr_invalid_fill_intent"
   )
+  side_token <- if (side > 0L) "BUY" else "SELL"
 
   meta_json <- canonical_json(
     list(
@@ -135,7 +133,7 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
         ts_exec_posix,
         "FILL",
         instrument_id,
-        side,
+        side_token,
         as.numeric(qty),
         as.numeric(fill_price),
         as.numeric(fee),
@@ -162,4 +160,19 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
   } else {
     do_write()
   }
+}
+
+# The fill input of a publication boundary: a typed fill group (its
+# publication columns and computed effects) and one row index within it.
+ledgr_fill_input_check <- function(fill, i) {
+  columns <- c("side", "qty", "price", "fee", "cash_delta", "position_delta", "exec_ts")
+  n <- if (is.list(fill)) length(fill$qty) else NA_integer_
+  ok <- is.list(fill) && !is.data.frame(fill) && all(columns %in% names(fill)) &&
+    all(lengths(fill[columns]) == n) && is.integer(fill$side) &&
+    all(vapply(fill[columns[-1L]], is.double, logical(1))) &&
+    is.numeric(i) && length(i) == 1L && !is.na(i) && i >= 1 && i <= n && i %% 1 == 0
+  if (!isTRUE(ok)) {
+    rlang::abort("`fill` must be a typed fill group with row `i`.", class = "ledgr_invalid_fill_intent")
+  }
+  invisible(TRUE)
 }

@@ -134,40 +134,31 @@ ledgr_carrier_compiled_unpack <- function(batch, n) {
   ledgr_lot_book_validate(book, n, reduction = FALSE)
 }
 
+# The compiled wrapper's input is P3's typed fill group: run-axis positions,
+# side codes, quantities, prices, fees and execution epochs, read as columns.
 ledgr_run_compiled_spot_fifo_batch <- function(run_id,
                                                fills,
                                                state,
                                                instrument_ids,
                                                event_seq_start) {
-  n <- length(fills)
+  n <- length(fills$k)
   if (n == 0L) {
     return(NULL)
   }
 
-  fill_inst_idx <- vapply(fills, function(fill) as.integer(fill$inst_idx), integer(1))
-  fill_instrument_id <- vapply(fills, function(fill) fill$instrument_id, character(1))
-  fill_side <- vapply(fills, function(fill) fill$side, character(1))
-  fill_qty <- vapply(fills, function(fill) as.numeric(fill$qty), numeric(1))
-  fill_price <- vapply(fills, function(fill) as.numeric(fill$fill_price), numeric(1))
-  fill_fee <- vapply(fills, function(fill) as.numeric(fill$fee), numeric(1))
-  fill_ts_utc <- vapply(
-    fills,
-    function(fill) {
-      as.numeric(ledgr_ts_utc_posix(
-        fill$ts_exec_utc,
-        label = "`fill$ts_exec_utc`",
-        class = "ledgr_invalid_fill_intent"
-      ))
-    },
-    numeric(1)
-  )
-
-  if (any(!(fill_side %in% c("BUY", "SELL")))) {
+  if (any(!(fills$side %in% c(1L, -1L)))) {
     rlang::abort(
       "`compiled_accounting_model = \"spot_fifo\"` supports BUY and SELL fills only.",
       class = c("ledgr_compiled_spot_fifo_invalid_input", "ledgr_invalid_fold_execution")
     )
   }
+  fill_inst_idx <- fills$pos
+  fill_instrument_id <- instrument_ids[fill_inst_idx]
+  fill_side <- c("SELL", "BUY")[(fills$side > 0L) + 1L]
+  fill_qty <- fills$qty
+  fill_price <- fills$price
+  fill_fee <- fills$fee
+  fill_ts_utc <- fills$exec_ts
 
   book <- state$lot_state
   lot_pack <- ledgr_carrier_compiled_pack(book)

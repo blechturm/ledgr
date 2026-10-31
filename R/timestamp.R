@@ -152,22 +152,3 @@ ledgr_assert_whole_second_utc <- function(x,
   attr(out, "tzone") <- "UTC"
   out
 }
-
-ledgr_ts_utc_posix <- function(x,
-                               label = "`ts_utc`",
-                               class = "ledgr_invalid_timestamp") {
-  if (inherits(x, "POSIXt")) {
-    out <- ledgr_assert_whole_second_utc(x, label = label, class = class)
-    if (length(out) != 1L) {
-      rlang::abort(sprintf("%s must be a scalar UTC timestamp.", label), class = class)
-    }
-    return(out)
-  }
-
-  iso <- ledgr_normalize_ts_utc(x)
-  out <- as.POSIXct(iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (length(out) != 1L || is.na(out)) {
-    rlang::abort(sprintf("%s must be a valid UTC timestamp.", label), class = class)
-  }
-  ledgr_assert_whole_second_utc(out, label = label, class = class)
-}

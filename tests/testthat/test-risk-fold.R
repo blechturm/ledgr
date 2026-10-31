@@ -84,9 +84,11 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
   events_written <- 0L
   resolver_seen_events <- integer()
   base_resolver <- ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0)
-  cost_resolver <- function(proposal, fill_context) {
+  # LDG-3166 (design note Section 5, category 5): the batch resolver prices
+  # every fill of a pulse in one call, before any event of that pulse.
+  cost_resolver <- function(side, qty, open) {
     resolver_seen_events <<- c(resolver_seen_events, events_written)
-    base_resolver(proposal, fill_context)
+    base_resolver(side, qty, open)
   }
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
@@ -112,7 +114,7 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
   ledgr:::ledgr_execute_fold(execution, handler)
 
   events <- handler$events()
-  testthat::expect_identical(resolver_seen_events, c(0L, 0L))
+  testthat::expect_identical(resolver_seen_events, 0L)
   testthat::expect_identical(events_written, 2L)
   testthat::expect_identical(as.character(events$instrument_id), c("AAA", "BBB"))
   testthat::expect_identical(as.integer(events$event_seq), 1:2)
@@ -166,10 +168,8 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
       "state_update", "intent_reason", "sample_start",
       "t_ctx", "t_strat", "t_target"
     ),
-    plan = c(
-      "pulse_plan", "accounting_events", "diagnostic_segments",
-      "sample_start", "t_target", "t_fill"
-    ),
+    # LDG-3166 (category 3): P3 returns the typed plan batch.
+    plan = c("batch", "diagnostic_segments", "sample_start", "t_target", "t_fill"),
     apply = c("sample_start", "t_event", "t_state"),
     commit = "continue"
   )
@@ -191,6 +191,14 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
     c("pulse_idx", "ts", "ts_iso", "positions_value", "packet", "data",
       "sample_start", "t_feats", "t_bars")
   )
+  # LDG-3166 (category 3): the frozen field sets of the plan group and its
+  # fill and rejection groups.
+  batch <- stage_packets$plan$batch
+  testthat::expect_identical(names(batch), c("expected_final_cash", "economic_event_kinds", "fill", "rejection"))
+  testthat::expect_identical(names(batch$fill), c("k", "pos", "side", "qty", "price", "fee", "cash_delta",
+    "position_delta", "exec_ts", "position_before", "planned_position_after", "info_offset", "info_count", "info_code"))
+  testthat::expect_identical(names(batch$rejection), c("k", "pos", "emit", "primary", "reason_offset",
+    "reason_count", "reason_code", "resolved_price", "exec_ts", "position"))
 })
 
 testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
@@ -522,10 +530,12 @@ testthat::test_that("compiled risk plan transforms targets before timing cost an
   resolver_calls <- 0L
   resolver_qty <- numeric()
   base_resolver <- ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0)
-  cost_resolver <- function(proposal, fill_context) {
+  # LDG-3166 (design note Section 5, categories 4 and 5): the post-risk
+  # quantity reaches the batch resolver, one call per pulse with fills.
+  cost_resolver <- function(side, qty, open) {
     resolver_calls <<- resolver_calls + 1L
-    resolver_qty <<- c(resolver_qty, proposal$qty)
-    base_resolver(proposal, fill_context)
+    resolver_qty <<- c(resolver_qty, qty)
+    base_resolver(side, qty, open)
   }
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {

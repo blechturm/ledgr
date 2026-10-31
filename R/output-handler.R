@@ -74,13 +74,15 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
     ledgr_store_append(con, "ledger_events", rows)
     invisible(TRUE)
   }
-  sink$write_fill_live <- function(fill_intent, event_seq) {
+  sink$write_fill_live <- function(fill, i, instrument_id, event_seq) {
     # The fold is already inside run_transaction(); live mode writes
     # immediately without opening a nested DuckDB transaction.
     ledgr_write_fill_events(
       con = con,
       run_id = run_id,
-      fill_intent = fill_intent,
+      fill = fill,
+      i = i,
+      instrument_id = instrument_id,
       event_seq_start = event_seq,
       use_transaction = FALSE
     )
@@ -558,13 +560,17 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     invisible(TRUE)
   }
 
-  handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
+  # Fill input: row `i` of P3's typed fill group and its instrument ID; the
+  # computed effects are reused by every sink.
+  handler$write_fill_events <- function(fill, i, instrument_id, event_seq, use_transaction = FALSE) {
     if (isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
-      return(sink$write_fill_live(fill_intent, event_seq))
+      return(sink$write_fill_live(fill, i, instrument_id, event_seq))
     }
     write_res <- ledgr_fill_event_payload(
       run_id = run_id,
-      fill_intent = fill_intent,
+      fill = fill,
+      i = i,
+      instrument_id = instrument_id,
       event_seq = event_seq,
       serialize_meta_json = sink$serialize_meta_json
     )

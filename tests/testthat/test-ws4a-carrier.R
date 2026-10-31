@@ -1484,12 +1484,476 @@ testthat::test_that("[WS4a D12d D13] no new mode branch; the dense observe and c
     file.path(probe, "R", "fold-engine.R"))
   testthat::expect_gt(unrecorded(probe), 0L)
   testthat::expect_identical(over(c(now, new.R = 1)), "new.R")
-  # D13: the dense observe and context builders hash equal to the base.
+  # D13: the dense observe and context builders hash equal to the base. The
+  # dense planner left the list at LDG-3166 (design note Section 6, D13: Q1
+  # freezes observation, not planning); frozen.csv row D13b is the same
+  # digest of the three remaining builders on base 953338df.
   fns <- ws4a_sources()
-  dense <- c("ledgr_pulse_context", "ledgr_update_pulse_context_helpers", "ledgr_dense_eligibility_planes", "ledgr_fold_build_pulse_plan")
+  dense <- c("ledgr_pulse_context", "ledgr_update_pulse_context_helpers", "ledgr_dense_eligibility_planes")
   dhash <- function(f) digest::digest(vapply(f, ws4a_txt, ""), algo = "sha256")
-  testthat::expect_identical(dhash(fns[dense]), frozen[["D13"]])
+  testthat::expect_identical(dhash(fns[dense]), frozen[["D13b"]])
   edited <- fns[dense]
   edited$ledgr_update_pulse_context_helpers <- ws4a_inject(edited$ledgr_update_pulse_context_helpers, "NULL")
-  testthat::expect_false(identical(dhash(edited), frozen[["D13"]]))
+  testthat::expect_false(identical(dhash(edited), frozen[["D13b"]]))
+})
+
+# --- LDG-3166: typed plan batch ---------------------------------------------
+
+# A dense and an availability snapshot of AAA and BBB over five sessions,
+# chained costs (spread, fixed, notional) and a strategy that buys, sells
+# and (dense) reverses, so plans hold buys, sells and fee splits.
+ws4a_3166_fixture <- function(avail) {
+  pulses <- as.POSIXct("2024-01-01 16:00:00", tz = "UTC") + 86400 * 0:4
+  open <- list(AAA = c(100, 101.37, 103.11, 99.73, 102.29), BBB = 50 + 0:4 / 3)
+  bars <- do.call(rbind, lapply(names(open), function(id) data.frame(ts_utc = pulses, instrument_id = id,
+    open = open[[id]], high = open[[id]] + 1, low = open[[id]] - 1, close = open[[id]] + 0.5, volume = 1000,
+    stringsAsFactors = FALSE)))
+  db <- tempfile(fileext = ".duckdb")
+  snap <- if (avail) {
+    sessions <- ledgr_facts_sessions(data.frame(session_date = as.Date(pulses), status = "open",
+      session_open = "09:30:00", session_close = "16:00:00", knowledge_time = pulses - 86400,
+      stringsAsFactors = FALSE), venue_id = "XNYS")
+    ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = names(open)),
+      facts = ledgr_facts(sessions), price_basis = "split_adjusted", db_path = db)
+  } else {
+    ledgr_snapshot_from_df(bars, db_path = db)
+  }
+  plan <- list(c(AAA = 3, BBB = 2), c(AAA = 5), c(AAA = 1, BBB = 0), c(AAA = if (avail) 0 else -2), c(AAA = 0))
+  strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    set <- params$plan[[match(substr(ctx$ts_utc, 1L, 10L), params$days)]]
+    target[names(set)] <- set
+    target
+  }
+  exp <- function(...) ledgr_experiment(snap, strategy, opening = ledgr_opening(cash = 1e5),
+    cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(7), ledgr_cost_fixed_fee(1.25), ledgr_cost_notional_bps_fee(3)), ...)
+  list(snap = snap, exp = exp, params = list(plan = plan, days = format(as.Date(pulses))))
+}
+# Runs a dense audit-log run, a dense db_live run and an availability sweep.
+ws4a_3166_runs <- function() {
+  dense <- ws4a_3166_fixture(FALSE)
+  withr::defer(ledgr_snapshot_close(dense$snap), envir = parent.frame())
+  close(ledgr_run(dense$exp(), params = dense$params, run_id = "ws4a-3166-dense", seed = 1L))
+  close(ledgr_run(dense$exp(execution_mode = "db_live"), params = dense$params, run_id = "ws4a-3166-live", seed = 1L))
+  avail <- ws4a_3166_fixture(TRUE)
+  withr::defer(ledgr_snapshot_close(avail$snap), envir = parent.frame())
+  ledgr_sweep(avail$exp(), ledgr_grid_named(a = list(strategy = avail$params)), seed = 1L)
+}
+
+# A plan of the availability planner on decision order D, A, C, B over the
+# run axis A, B, C, D: D sells (a funding reduction), A buys with a changed
+# membership, C has no execution bar, B is restricted (trading_halted).
+ws4a_3166_plan <- function(cash = 0) {
+  ns <- ws4a_ns()
+  view <- ns$ledgr_carrier_segments(4L, 4L, 5L)
+  ns$ledgr_fold_build_availability_pulse_plan(
+    context_pos = c(4L, 1L, 3L, 2L), target_qty = c(0, 2, 1, 1), position = c(5, 0, 0, 0),
+    actionable_k = 1:4, member = rep(TRUE, 4L),
+    execution = list(exec_ts = 1704292200, has_next = TRUE, open = c(10, 10, NA, 10)),
+    execution_view = list(member = c(TRUE, FALSE, TRUE, TRUE), restricted = c(FALSE, FALSE, FALSE, TRUE),
+      reason_offset = view$offset, reason_count = view$count, reason_code = view$code),
+    epoch_valid = TRUE,
+    cost_resolver = ns$ledgr_cost_resolver_from_model(ledgr_cost_fixed_fee(0.5)),
+    cash = cash, instrument_ids = c("A", "B", "C", "D")
+  )
+}
+ws4a_refuses_plan <- function(x, axis = list(context_pos = c(4L, 1L, 3L, 2L), actionable_k = 1:4), n_run = 4L) {
+  inherits(tryCatch(ws4a_ns()$ledgr_carrier_new(x, "plan", n_run, axis), error = identity), "ledgr_invalid_pulse_plan")
+}
+
+testthat::test_that("[WS4a V-execution-view V-plan V-fill V-rejection U-3166] the P3 groups are typed and refuse the controls", {
+  ns <- ws4a_ns()
+  p <- ws4a_3166_plan()
+  # The planner's rows: fills D and A in decision order, early rejection C,
+  # affordability rejection B; A carries membership_changed_before_execution.
+  testthat::expect_identical(p$fill$k, 1:2)
+  testthat::expect_identical(p$fill$pos, c(4L, 1L))
+  testthat::expect_identical(p$fill$info_code, 4L)
+  testthat::expect_identical(p$rejection$k, 3:4)
+  testthat::expect_identical(p$rejection$emit, 1:2)
+  testthat::expect_identical(ns$.ledgr_plan_reason_levels[p$rejection$primary], c("execution_bar_missing", "trading_halted"))
+  testthat::expect_identical(p$economic_event_kinds, 1L)
+  testthat::expect_false(ws4a_refuses_plan(p))
+  # Typed empty groups (n = 0) are accepted; a plan without rows declares no kind.
+  empty <- p
+  empty$fill <- lapply(p$fill, `[`, 0L)
+  empty$rejection <- lapply(p$rejection, `[`, 0L)
+  empty$economic_event_kinds <- integer()
+  no_rows <- list(context_pos = c(4L, 1L, 3L, 2L), actionable_k = integer())
+  testthat::expect_false(ws4a_refuses_plan(empty, no_rows))
+  edit <- function(x, part, ...) {
+    x[[part]] <- utils::modifyList(x[[part]], list(...))
+    x
+  }
+  controls <- list(
+    fill_storage_type = edit(p, "fill", k = as.numeric(p$fill$k)),
+    fill_shortened_column = edit(p, "fill", qty = p$fill$qty[-1L]),
+    fill_bound = edit(p, "fill", pos = c(4L, 9L)),
+    rejection_storage_type = edit(p, "rejection", emit = as.numeric(p$rejection$emit)),
+    rejection_shortened_column = edit(p, "rejection", position = p$rejection$position[-1L]),
+    rejection_bound = edit(p, "rejection", reason_code = c(2L, 10L)),
+    plan_storage_type = utils::modifyList(p, list(expected_final_cash = 1L)),
+    plan_shortened_column = utils::modifyList(p, list(expected_final_cash = numeric())),
+    O3.03_pos_not_context_pos = edit(p, "fill", pos = c(4L, 2L)),
+    O3.33_duplicate_row = edit(p, "rejection", k = c(1L, 4L), pos = c(4L, 2L)),
+    O3.40_permutation_returned = c(p, list(afford_order = 2:1)),
+    F4.28_unsupported_code = utils::modifyList(p, list(economic_event_kinds = c(1L, 7L))),
+    F4.29_side_0 = edit(p, "fill", side = c(-1L, 0L)),
+    F4.30_negative_fee = edit(p, "fill", fee = c(0.5, -0.5)),
+    F4.31_na_planned = edit(p, "fill", planned_position_after = c(0, NA)),
+    F4.32_duplicate_code = edit(p, "fill", info_offset = c(0L, 0L), info_count = c(0L, 2L), info_code = c(4L, 4L)),
+    F4.33_emit_out_of_order = edit(p, "rejection", emit = 2:1),
+    F4.34_na_position = edit(p, "rejection", position = c(0, NA)),
+    primary_not_first = edit(p, "rejection", primary = c(5L, 2L)),
+    fills_without_fill_kind = utils::modifyList(p, list(economic_event_kinds = integer()))
+  )
+  for (name in names(controls)) testthat::expect_true(ws4a_refuses_plan(controls[[name]]), info = name)
+  empty_controls <- list(
+    fill_kind_on_empty_plan = utils::modifyList(empty, list(economic_event_kinds = 1L)),
+    fill_untyped_empty = edit(empty, "fill", qty = list()),
+    rejection_untyped_empty = edit(empty, "rejection", exec_ts = list())
+  )
+  for (name in names(empty_controls)) testthat::expect_true(ws4a_refuses_plan(empty_controls[[name]], no_rows), info = name)
+  # The execution view group (V-execution-view).
+  v <- list(member = c(TRUE, FALSE), restricted = c(FALSE, TRUE), reason_offset = c(0L, 0L), reason_count = c(0L, 2L),
+    reason_code = c(5L, 9L))
+  view_refused <- function(x) inherits(tryCatch(ns$ledgr_carrier_new(x, "execution_view", NA_integer_), error = identity),
+    "ledgr_invalid_pulse_plan")
+  testthat::expect_false(view_refused(v))
+  testthat::expect_false(view_refused(lapply(v, `[`, 0L)))
+  view_controls <- list(
+    storage_type = utils::modifyList(v, list(member = c(1L, 0L))),
+    shortened_column = utils::modifyList(v, list(restricted = TRUE)),
+    bound = utils::modifyList(v, list(reason_code = c(5L, 10L))),
+    untyped_empty = utils::modifyList(lapply(v, `[`, 0L), list(member = list())),
+    F4.24_unequal_segment_lengths = utils::modifyList(v, list(reason_code = 5L)),
+    restricted_without_reasons = utils::modifyList(v, list(restricted = c(TRUE, TRUE)))
+  )
+  for (name in names(view_controls)) testthat::expect_true(view_refused(view_controls[[name]]), info = name)
+  # The adapter: a token outside the dictionary refuses with the pulse-plan
+  # class; a repeated token keeps its first occurrence.
+  provider <- list(execution_view = function(cutoff, ids) list(member = stats::setNames(TRUE, ids),
+    restricted = stats::setNames(TRUE, ids), reasons = stats::setNames("trading_halted|valuation_frozen", ids)))
+  testthat::expect_error(ns$ledgr_carrier_execution_view(provider, 1704292200, "A"), class = "ledgr_invalid_pulse_plan")
+  provider$execution_view <- function(cutoff, ids) list(member = stats::setNames(TRUE, ids),
+    restricted = stats::setNames(TRUE, ids), reasons = stats::setNames("lifetime_inactive|trading_halted|lifetime_inactive", ids))
+  testthat::expect_identical(ns$ledgr_carrier_execution_view(provider, 1704292200, "A")$reason_code, c(9L, 5L))
+})
+
+testthat::test_that("[WS4a F4.27 empty plan] skip plans plan nothing at the fold cash; empty plans declare no kind", {
+  ns <- ws4a_ns()
+  fold_state <- list(cash = 1234.5, positions = c(0, 2, 0))
+  skip_ok <- function(s) identical(s$batch$expected_final_cash, fold_state$cash) &&
+    identical(s$batch$economic_event_kinds, integer()) && length(s$batch$fill$k) == 0L && length(s$batch$rejection$k) == 0L
+  testthat::expect_true(skip_ok(ns$ledgr_fold_scheduled_skip_plan(fold_state, list(context_pos = c(2L, 3L)))))
+  # Control: a skip plan whose expected cash differs from the fold cash.
+  mutant <- ns$ledgr_fold_scheduled_skip_plan
+  body(mutant) <- str2lang(sub("expected_final_cash = fold_state$cash", "expected_final_cash = fold_state$cash + 1",
+    paste(deparse(body(mutant), width.cutoff = 500L), collapse = "\n"), fixed = TRUE))
+  testthat::expect_false(skip_ok(mutant(fold_state, list(context_pos = c(2L, 3L)))))
+  # An empty production plan (no actionable ordinal) declares no kind; the
+  # constructor refuses an empty plan declaring FILL.
+  empty <- ns$ledgr_fold_build_pulse_plan(1L, 0, 0, integer(), 1L, TRUE, 1704292200, TRUE,
+    list(open = matrix(10, 1L, 2L)), ledgr_test_cost_resolver(), 1L)
+  testthat::expect_identical(empty$economic_event_kinds, integer())
+  testthat::expect_true(ws4a_refuses_plan(utils::modifyList(empty, list(economic_event_kinds = 1L)),
+    list(context_pos = 1L, actionable_k = integer()), 1L))
+})
+
+testthat::test_that("[WS4a 3166 precedence] batched planning refuses in the base order", {
+  ns <- ws4a_ns()
+  # An invalid epoch is a sub-second one, as E flags it.
+  short <- function(order, epoch_valid = TRUE, open = c(10, 10)) {
+    ns$ledgr_fold_build_availability_pulse_plan(
+      context_pos = order, target_qty = c(-1, -2), position = c(0, 0), actionable_k = 1:2, member = c(TRUE, TRUE),
+      execution = list(exec_ts = if (epoch_valid) 1704292200 else 1704292200.25, has_next = TRUE, open = open),
+      execution_view = list(member = c(TRUE, TRUE), restricted = c(FALSE, FALSE), reason_offset = c(0L, 0L),
+        reason_count = c(0L, 0L), reason_code = integer()),
+      epoch_valid = epoch_valid, cost_resolver = ledgr_test_cost_resolver(), cash = 100, instrument_ids = c("A", "B"))
+  }
+  # Two short-exposure violations: the first in decision order refuses alone.
+  first <- tryCatch(short(1:2), error = identity)
+  testthat::expect_s3_class(first, "ledgr_short_exposure_unsupported")
+  testthat::expect_identical(first$instrument_ids, "A")
+  testthat::expect_identical(tryCatch(short(2:1), error = identity)$instrument_ids, "B")
+  # An invalid execution epoch refuses before any short-exposure check; with
+  # no execution bar it is never needed.
+  testthat::expect_error(short(1:2, epoch_valid = FALSE), class = "LEDGR_SUBSECOND_TIMESTAMP")
+  testthat::expect_length(short(1:2, epoch_valid = FALSE, open = c(NA, NA))$rejection$k, 2L)
+  # Dense: the first row's open, then the epoch, then a later row's open.
+  dense <- function(open, epoch_valid) {
+    ns$ledgr_fold_build_pulse_plan(1:2, c(1, 1), c(0, 0), 1:2, 1L, TRUE, if (epoch_valid) 1704292200 else 1704292200.25, epoch_valid,
+      list(open = cbind(c(10, 10), open)), ledgr_test_cost_resolver(), 2L)
+  }
+  testthat::expect_error(dense(c(NA, 10), FALSE), "next_open_price", class = "ledgr_invalid_fill_input")
+  testthat::expect_error(dense(c(10, NA), FALSE), class = "LEDGR_SUBSECOND_TIMESTAMP")
+  testthat::expect_error(dense(c(10, NA), TRUE), "next_open_price", class = "ledgr_invalid_fill_input")
+  testthat::expect_length(dense(c(10, 11), TRUE)$fill$k, 2L)
+})
+
+# D1 for the planners: no proposal, fill-context or fill-intent object, no
+# S3 constructor and no POSIXct conversion; no per-row list or apply-family
+# callback; the only loops are the identified ones below (the affordability
+# scan, the cost-step loop and the per-target final-bar warning), and none of
+# them builds a list.
+ws4a_d1_planners <- c("ledgr_fold_build_pulse_plan", "ledgr_fold_build_availability_pulse_plan",
+  "ledgr_plan_affordability", "ledgr_plan_groups", "ledgr_plan_resolve", "ledgr_plan_side", "ledgr_carrier_segments",
+  "ledgr_carrier_segment_rows", "ledgr_carrier_execution_view", "ledgr_cost_model_resolve", "ledgr_fill_publication_deltas")
+ws4a_d1_loops <- c(
+  ledgr_plan_affordability = "for (idx in priority)",
+  ledgr_cost_model_resolve = "for (step in steps)",
+  ledgr_fold_build_pulse_plan = "for (i in seq_len(n))"
+)
+# The execution-view adapter is the provider boundary: one cutoff per pulse.
+ws4a_d1_allowed <- c(ledgr_carrier_execution_view = ".POSIXct")
+ws4a_d1_hits <- function(fns) {
+  banned <- c("structure", "class<-", "oldClass<-", "as.POSIXct", ".POSIXct", "as.POSIXlt", "strptime",
+    "ledgr_ts_utc_posix", "ledgr_normalize_ts_utc", "ledgr_next_open_fill_proposal", "ledgr_resolve_fill_proposal",
+    "ledgr_fill_context", "lapply", "vapply", "sapply", "Map", "mapply")
+  unlist(lapply(names(fns), function(nm) {
+    calls <- ws4a_calls(fns[[nm]])
+    heads <- vapply(calls, ws4a_head, "")
+    hits <- setdiff(intersect(heads, banned), ws4a_d1_allowed[names(ws4a_d1_allowed) == nm])
+    lists <- Filter(function(x) ws4a_head(x) == "vector" && "\"list\"" %in% vapply(as.list(x)[-1L], ws4a_txt, ""), calls)
+    loops <- vapply(Filter(function(x) ws4a_head(x) %in% c("for", "while", "repeat"), calls), function(x) {
+      if (ws4a_head(x) == "for") paste0("for (", ws4a_txt(x[[2L]]), " in ", ws4a_txt(x[[3L]]), ")") else ws4a_head(x)
+    }, "")
+    loops <- setdiff(loops, ws4a_d1_loops[names(ws4a_d1_loops) == nm])
+    in_loops <- unlist(lapply(ws4a_loop_bodies(fns[[nm]]), function(b) intersect(ws4a_heads(b), c("list", "vector"))))
+    h <- c(hits, if (length(lists)) "vector(\"list\")", loops, in_loops)
+    if (length(h)) paste0(nm, ": ", h)
+  }))
+}
+
+testthat::test_that("[WS4a D1 planners] no per-fill list, S3 object or timestamp parse in either planner", {
+  fns <- ws4a_sources()
+  testthat::expect_true(all(ws4a_d1_planners %in% names(fns)))
+  testthat::expect_length(ws4a_d1_hits(fns[ws4a_d1_planners]), 0L)
+  # The retired per-fill objects and helpers are gone.
+  testthat::expect_length(intersect(names(fns), c("ledgr_next_open_fill_proposal", "ledgr_resolve_fill_proposal",
+    "ledgr_fill_context", "ledgr_availability_apply_affordability", "ledgr_fold_pulse_plan_fill_intents")), 0L)
+  inject <- function(nm, stmt) {
+    bad <- fns[nm]
+    bad[[nm]] <- ws4a_inject(bad[[nm]], stmt)
+    ws4a_d1_hits(bad)
+  }
+  testthat::expect_gt(length(inject("ledgr_fold_build_availability_pulse_plan", "rows <- vector(\"list\", n)")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_build_pulse_plan", "ts <- as.POSIXct(exec_ts, tz = \"UTC\")")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_build_availability_pulse_plan",
+    "for (i in seq_len(n)) rows[[i]] <- list(k = k[[i]])")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_build_pulse_plan",
+    "fill <- structure(list(qty = qty), class = \"ledgr_fill_intent\")")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_build_pulse_plan", "qty <- vapply(seq_len(n), function(i) qty[[i]], 0)")), 0L)
+  # A list built inside the identified scan fails.
+  testthat::expect_gt(length(inject("ledgr_plan_affordability", "for (idx in priority) seen <- list(idx)")), 0L)
+})
+
+# D3 for the LDG-3166 regions: the planners, P3's plan helpers, the
+# execution-view adapter and the publication input boundaries, with the
+# name-keyed predicate plus %in%. Census: the short-exposure refusal names its
+# instrument; the rest test dictionary tokens, codes or field names.
+ws4a_d3_3166_fns <- c("ledgr_fold_build_pulse_plan", "ledgr_fold_build_availability_pulse_plan", "ledgr_plan_affordability",
+  "ledgr_plan_groups", "ledgr_carrier_segments", "ledgr_carrier_segment_rows", "ledgr_carrier_execution_view",
+  "ledgr_cost_model_resolve", "ledgr_fill_publication_deltas", "ledgr_fold_plan_event_kinds", "ledgr_fold_scheduled_skip_plan",
+  "ledgr_fill_event_payload", "ledgr_write_fill_events", "ledgr_fill_input_check")
+ws4a_d3_3166 <- c(
+  ledgr_fold_build_availability_pulse_plan = "stats::setNames(resulting[[first]], id)",
+  ledgr_fold_build_availability_pulse_plan = "stats::setNames(before[[candidates[[first]]]], id)",
+  ledgr_carrier_execution_view = "match(unlist(tokens, use.names = FALSE), .ledgr_plan_reason_levels)",
+  ledgr_fold_plan_event_kinds = "1L %in% kinds",
+  ledgr_write_fill_events = "side %in% c(1L, -1L)",
+  ledgr_fill_input_check = "columns %in% names(fill)"
+)
+ws4a_d3_3166_found <- function(e) {
+  c(ws4a_name_keyed(e), vapply(Filter(function(x) ws4a_head(x) == "%in%", ws4a_calls(e)),
+    function(x) substr(ws4a_txt(x), 1L, 70L), ""))
+}
+
+testthat::test_that("[WS4a D3 3166] the planners and publication inputs index by position", {
+  fns <- ws4a_sources()
+  hits <- function(f) {
+    unlist(lapply(names(f), function(nm) {
+      h <- setdiff(unique(ws4a_d3_3166_found(f[[nm]])), ws4a_d3_3166[names(ws4a_d3_3166) == nm])
+      if (length(h)) paste0(nm, ": ", h)
+    }))
+  }
+  testthat::expect_true(all(ws4a_d3_3166_fns %in% names(fns)))
+  testthat::expect_length(hits(fns[ws4a_d3_3166_fns]), 0L)
+  found <- unlist(lapply(unique(names(ws4a_d3_3166)), function(nm) paste(nm, ws4a_d3_3166_found(fns[[nm]]))))
+  testthat::expect_setequal(found, paste(names(ws4a_d3_3166), ws4a_d3_3166))
+  inject <- function(nm, stmt) {
+    bad <- fns[nm]
+    bad[[nm]] <- ws4a_inject(bad[[nm]], stmt)
+    hits(bad)
+  }
+  testthat::expect_gt(length(inject("ledgr_fold_build_availability_pulse_plan", "open <- execution$open[instrument_ids]")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fold_build_pulse_plan", "pos <- match(ids, rownames(bars_mat$open))")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fill_event_payload", "keep <- instrument_id %in% held")), 0L)
+})
+
+# D8: the fold and the sinks hold no fill-intent object and never recompute
+# publication effects: ledgr_fill_publication_deltas() is called by the
+# planners only.
+ws4a_d8_regions <- c("ledgr_fold_stage_plan", "ledgr_fold_stage_apply", "ledgr_fold_stage_commit", "ledgr_fold_scheduled_skip_plan",
+  "ledgr_output_handler", "ledgr_output_sink_duckdb", "ledgr_output_sink_memory", "ledgr_fill_event_payload",
+  "ledgr_fill_event_row", "ledgr_write_fill_events", "ledgr_run_compiled_spot_fifo_batch")
+ws4a_d8_hits <- function(fns) {
+  intent <- c("ledgr_fill_intent", "ledgr_fill_none", "ledgr_fill_proposal", "ledgr_fill_context")
+  unlist(lapply(names(fns), function(nm) {
+    strings <- unlist(lapply(ws4a_calls(fns[[nm]]), function(x) Filter(is.character, as.list(x)[-1L])))
+    h <- c(intersect(strings, intent), intersect(ws4a_heads(fns[[nm]]),
+      c("ledgr_fill_publication_deltas", "ledgr_next_open_fill_proposal", "ledgr_resolve_fill_proposal", "ledgr_fill_context")))
+    if (length(h)) paste0(nm, ": ", h)
+  }))
+}
+
+testthat::test_that("[WS4a D8] no fill-intent object in the fold or sinks; effects are computed once, in P3", {
+  fns <- ws4a_sources()
+  testthat::expect_true(all(ws4a_d8_regions %in% names(fns)))
+  testthat::expect_length(ws4a_d8_hits(fns[ws4a_d8_regions]), 0L)
+  inject <- function(nm, stmt) {
+    bad <- fns[nm]
+    bad[[nm]] <- ws4a_inject(bad[[nm]], stmt)
+    ws4a_d8_hits(bad)
+  }
+  testthat::expect_gt(length(inject("ledgr_fill_event_payload", "intent <- structure(list(), class = \"ledgr_fill_intent\")")), 0L)
+  testthat::expect_gt(length(inject("ledgr_write_fill_events", "fx <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)")), 0L)
+
+  # Runtime: every computation happens inside P3, at most once per P3 call,
+  # and covers every published fill, on durable, db_live and memory sinks.
+  ns <- ws4a_ns()
+  count <- function(recompute = FALSE, twice = FALSE) {
+    n <- new.env()
+    n$inside <- FALSE
+    n$here <- 0L
+    n$outside <- 0L
+    n$max_per_p3 <- 0L
+    n$rows <- 0L
+    n$fills <- 0L
+    deltas <- ns$ledgr_fill_publication_deltas
+    plan <- ns$ledgr_fold_stage_plan
+    payload <- ns$ledgr_fill_event_payload
+    writer <- ns$ledgr_write_fill_events
+    build <- ns$ledgr_fold_build_pulse_plan
+    testthat::local_mocked_bindings(
+      ledgr_fill_publication_deltas = function(side, qty, fill_price, fee) {
+        if (n$inside) {
+          n$here <- n$here + 1L
+          n$max_per_p3 <- max(n$max_per_p3, n$here)
+          n$rows <- n$rows + length(qty)
+        } else {
+          n$outside <- n$outside + 1L
+        }
+        deltas(side, qty, fill_price, fee)
+      },
+      ledgr_fold_stage_plan = function(...) {
+        n$inside <- TRUE
+        n$here <- 0L
+        on.exit(n$inside <- FALSE)
+        out <- plan(...)
+        n$fills <- n$fills + length(out$batch$fill$k)
+        out
+      },
+      # Controls: a sink recomputing the effects; a planner computing twice.
+      ledgr_fill_event_payload = function(run_id, fill, i, ...) {
+        if (recompute && length(i)) ns$ledgr_fill_publication_deltas(fill$side[i], fill$qty[i], fill$price[i], fill$fee[i])
+        payload(run_id, fill, i, ...)
+      },
+      ledgr_write_fill_events = function(con, run_id, fill, i, ...) {
+        if (recompute && length(i)) ns$ledgr_fill_publication_deltas(fill$side[i], fill$qty[i], fill$price[i], fill$fee[i])
+        writer(con, run_id, fill, i, ...)
+      },
+      ledgr_fold_build_pulse_plan = function(...) {
+        out <- build(...)
+        if (twice) ns$ledgr_fill_publication_deltas(out$fill$side, out$fill$qty, out$fill$price, out$fill$fee)
+        out
+      },
+      .package = "ledgr"
+    )
+    ws4a_3166_runs()
+    as.list(n)
+  }
+  ok <- function(n) n$fills > 0L && n$outside == 0L && n$max_per_p3 == 1L && n$rows >= n$fills
+  testthat::expect_true(ok(count()))
+  testthat::expect_false(ok(count(recompute = TRUE)))
+  testthat::expect_false(ok(count(twice = TRUE)))
+})
+
+testthat::test_that("[WS4a 2.5] reused effects equal both base formulas on every fill", {
+  ns <- ws4a_ns()
+  fills <- list()
+  plan <- ns$ledgr_fold_stage_plan
+  testthat::local_mocked_bindings(
+    ledgr_fold_stage_plan = function(...) {
+      out <- plan(...)
+      if (!is.null(out$batch) && length(out$batch$fill$k)) fills[[length(fills) + 1L]] <<- out$batch$fill
+      out
+    },
+    .package = "ledgr"
+  )
+  ws4a_3166_runs()
+  # The base scalar formulas: ledgr_fill_publication_deltas() and
+  # ledgr_availability_fill_cash_delta() at 953338df.
+  base_publication <- function(side, qty, price, fee) {
+    list(cash_delta = if (side == "BUY") -(qty * price + fee) else +(qty * price - fee),
+      position_delta = if (side == "BUY") qty else -qty)
+  }
+  base_affordability <- function(side, qty, price, fee) if (identical(side, "BUY")) -(qty * price + fee) else qty * price - fee
+  same <- function(f) {
+    all(vapply(seq_along(f$k), function(i) {
+      side <- if (f$side[[i]] > 0L) "BUY" else "SELL"
+      b <- base_publication(side, f$qty[[i]], f$price[[i]], f$fee[[i]])
+      identical(f$cash_delta[[i]], b$cash_delta) && identical(f$position_delta[[i]], b$position_delta) &&
+        identical(f$cash_delta[[i]], base_affordability(side, f$qty[[i]], f$price[[i]], f$fee[[i]]))
+    }, logical(1)))
+  }
+  testthat::expect_gt(length(fills), 5L)
+  testthat::expect_true(any(vapply(fills, function(f) any(f$side < 0L), logical(1))))
+  testthat::expect_true(all(vapply(fills, same, logical(1))))
+  bad <- fills[[1L]]
+  bad$cash_delta[[1L]] <- bad$cash_delta[[1L]] + 1e-9
+  testthat::expect_false(same(bad))
+})
+
+testthat::test_that("[WS4a D22] the P3, restriction, mark-source, kind and side dictionaries match their literal fixtures", {
+  ns <- ws4a_ns()
+  fixtures <- list(
+    plan_reason = c("final_pulse_no_execution", "execution_bar_missing", "insufficient_cash",
+      "membership_changed_before_execution", "trading_halted", "quotation_only", "status_unknown",
+      "status_unknown_or_conflicting", "lifetime_inactive"),
+    restriction = c("trading_halted", "quotation_only", "status_unknown", "status_unknown_or_conflicting",
+      "lifetime_inactive", "valuation_frozen"),
+    mark_source = c("missing", "expired_close", "current_close", "stale_close", "frozen_close"),
+    kind = c("FILL", "CASHFLOW", "DISPOSITION")
+  )
+  levels <- list(plan_reason = ns$.ledgr_plan_reason_levels, restriction = ns$.ledgr_carrier_restriction_levels,
+    mark_source = ns$.ledgr_carrier_mark_source_levels, kind = ns$.ledgr_plan_kind_levels)
+  for (name in names(fixtures)) testthat::expect_identical(levels[[name]], fixtures[[name]], info = name)
+  # Code 0 is the empty string, never an index; kinds decode by code.
+  testthat::expect_identical(ns$ledgr_carrier_segment_text(0L, 0L, integer(), fixtures$plan_reason)$reasons, "")
+  testthat::expect_identical(ns$ledgr_plan_kind_text(c(1L, 3L, 99L)), c("FILL", "DISPOSITION", "99"))
+  # Side: +1 BUY, -1 SELL in the carrier; tokens at publication.
+  testthat::expect_identical(ns$ledgr_plan_side(c(2, -0.5)), c(1L, -1L))
+  buy <- ledgr_test_next_open_fill(1, list(instrument_id = "A", ts_utc = "2020-01-02T00:00:00Z", open = 10))
+  sell <- ledgr_test_next_open_fill(-1, list(instrument_id = "A", ts_utc = "2020-01-02T00:00:00Z", open = 10))
+  testthat::expect_identical(c(ns$ledgr_fill_event_row("r", buy$fill, 1L, "A", 1L)$row$side,
+    ns$ledgr_fill_event_row("r", sell$fill, 1L, "A", 1L)$row$side), c("BUY", "SELL"))
+  # Control: a renumbered token fails the fixture comparison.
+  renumbered <- replace(levels$plan_reason, 2:3, levels$plan_reason[3:2])
+  testthat::expect_false(identical(renumbered, fixtures$plan_reason))
+})
+
+testthat::test_that("[WS4a D24] the execution view is called only from P3", {
+  root <- ledgr_test_source_root()
+  checker <- new.env(parent = baseenv())
+  sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+  files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+  rx <- "ledgr_carrier_execution_view"
+  testthat::expect_length(grep(rx, checker$ledgr_fold_phase_source_findings(files), value = TRUE), 0L)
+  fns <- ws4a_sources()
+  testthat::expect_true("ledgr_carrier_execution_view" %in% ws4a_heads(fns$ledgr_fold_stage_plan))
+  bad <- tempfile(fileext = ".R")
+  writeLines(c("ledgr_fold_stage_apply <-", deparse(ws4a_inject(fns$ledgr_fold_stage_apply,
+    "view <- ledgr_carrier_execution_view(services$availability_provider, 1, \"A\")"), width.cutoff = 500L)), bad)
+  testthat::expect_gt(length(grep(rx, checker$ledgr_fold_phase_source_findings(c(files, bad)), value = TRUE)), 0L)
 })
