@@ -229,19 +229,22 @@ ledgr_lot_dust_tolerance_rows <- function(...) {
   .Machine$double.eps * scale
 }
 
+# The canonical leg-fee split of each fill row: the closing leg takes the fee
+# in proportion to its quantity, the opening leg the rest; a row with no
+# positive finite quantity splits nothing.
 ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
-  total_qty <- as.numeric(close_qty) + as.numeric(open_qty)
-  if (!is.finite(total_qty) || total_qty <= 0) {
-    return(c(close = 0, open = 0))
-  }
-
-  close_fee <- if (close_qty > 0) {
-    as.numeric(fee) * as.numeric(close_qty) / total_qty
-  } else {
-    0
-  }
-  open_fee <- if (open_qty > 0) as.numeric(fee) - close_fee else 0
-  c(close = close_fee, open = open_fee)
+  fee <- as.numeric(fee)
+  close_qty <- as.numeric(close_qty)
+  open_qty <- as.numeric(open_qty)
+  total_qty <- close_qty + open_qty
+  split <- is.finite(total_qty) & total_qty > 0
+  close_fee <- numeric(length(fee))
+  open_fee <- numeric(length(fee))
+  closing <- split & close_qty > 0
+  close_fee[closing] <- fee[closing] * close_qty[closing] / total_qty[closing]
+  opening <- split & open_qty > 0
+  open_fee[opening] <- fee[opening] - close_fee[opening]
+  list(close = close_fee, open = open_fee)
 }
 
 # One compensated (Kahan) realized-P&L step: returns the new realized value

@@ -41,7 +41,7 @@ ledgr_write_fill_events <- function(con, run_id, fill, i, instrument_id, event_s
     rlang::abort("`use_transaction` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
-  ledgr_fill_input_check(fill, i)
+  ledgr_fill_input_check(fill, i, single = TRUE)
   side <- fill$side[[i]]
   qty <- fill$qty[[i]]
   fill_price <- fill$price[[i]]
@@ -163,14 +163,17 @@ ledgr_write_fill_events <- function(con, run_id, fill, i, instrument_id, event_s
 }
 
 # The fill input of a publication boundary: a typed fill group (its
-# publication columns and computed effects) and one row index within it.
-ledgr_fill_input_check <- function(fill, i) {
+# publication columns and computed effects) and distinct row indexes within
+# it: a block for the buffered and memory sinks, one row (`single`) for the
+# db_live writer.
+ledgr_fill_input_check <- function(fill, i, single = FALSE) {
   columns <- c("side", "qty", "price", "fee", "cash_delta", "position_delta", "exec_ts")
   n <- if (is.list(fill)) length(fill$qty) else NA_integer_
   ok <- is.list(fill) && !is.data.frame(fill) && all(columns %in% names(fill)) &&
     all(lengths(fill[columns]) == n) && is.integer(fill$side) &&
     all(vapply(fill[columns[-1L]], is.double, logical(1))) &&
-    is.numeric(i) && length(i) == 1L && !is.na(i) && i >= 1 && i <= n && i %% 1 == 0
+    is.numeric(i) && length(i) >= 1L && !anyNA(i) && all(i >= 1 & i <= n & i %% 1 == 0) &&
+    !anyDuplicated(i) && (!single || length(i) == 1L)
   if (!isTRUE(ok)) {
     rlang::abort("`fill` must be a typed fill group with row `i`.", class = "ledgr_invalid_fill_intent")
   }

@@ -1,6 +1,6 @@
 # ledgr-test-file-profile: review
 #
-# WS4a typed fold carrier: the LDG-3164 and LDG-3165 detectors and
+# WS4a typed fold carrier: the LDG-3164 to LDG-3167 detectors and
 # validators (inst/design/ledgr_v0_2_3_spec_packet/ws4a_carrier_design.md
 # Section 6 and Section 3.2, rows owned by those tickets). Each predicate
 # runs on production code and must pass there; each also shows its own
@@ -310,10 +310,9 @@ ws4a_d3_census <- c(
   ledgr_walk_forward_opening_from_run = "names(cost_basis) <- names(held)",
   ledgr_walk_forward_carried_opening = "match(ids, axis)",
   ledgr_walk_forward_carried_opening = "held[ids]",
-  ledgr_walk_forward_carried_opening = "stats::setNames(basis, ids)",
-  # Handler accounting fact: the close/open leg fee pair, not an instrument axis.
-  ledgr_output_handler = "leg_fees[[\"close\"]]",
-  ledgr_output_handler = "leg_fees[[\"open\"]]"
+  ledgr_walk_forward_carried_opening = "stats::setNames(basis, ids)"
+  # LDG-3167: the handler's accounting fact splits leg fees by row position;
+  # its former close/open name pair is gone.
 )
 ws4a_d3_hits <- function(fns) {
   unlist(lapply(names(fns), function(nm) {
@@ -660,8 +659,14 @@ testthat::test_that("[WS4a D25] independent lot work is vectorized; replay appli
       if (length(lot_work(body))) paste(header, "does lot work:", paste(unique(lot_work(body)), collapse = ","))
     })))
   }
-  kernel <- fns[c(intersect(ws4a_kernel_names, names(fns)), "ledgr_lot_apply_blocks")]
+  # LDG-3167: P4 applies the pulse's fills as one candidate block, so P4 and
+  # its candidate join the examined functions.
+  kernel <- fns[c(intersect(ws4a_kernel_names, names(fns)), "ledgr_lot_apply_blocks", "ledgr_fold_stage_apply",
+    "ledgr_fold_fill_candidate")]
   testthat::expect_length(ws4a_hits(kernel, check), 0L)
+  p4_loop <- paste("for (i in seq_along(fill$k)) fold_state$lot_state <- ledgr_lot_fill(fold_state$lot_state,",
+    "fill$pos[[i]], fill$side[[i]], fill$qty[[i]], fill$price[[i]], fill$fee[[i]])$book")
+  testthat::expect_gt(length(ws4a_hits(list(p4 = ws4a_inject(fns$ledgr_fold_stage_apply, p4_loop)), check)), 0L)
   headers <- function(f) vapply(Filter(function(x) ws4a_head(x) %in% c("for", "while"), ws4a_calls(f)), function(x) sub(" \\{.*$", "", ws4a_txt(x)), "")
   testthat::expect_true(all(c(depth, scan) %in% headers(fns$ledgr_lot_apply)))
   testthat::expect_true(block %in% headers(fns$ledgr_lot_apply_blocks))
@@ -1817,7 +1822,7 @@ testthat::test_that("[WS4a D3 3166] the planners and publication inputs index by
 # planners only.
 ws4a_d8_regions <- c("ledgr_fold_stage_plan", "ledgr_fold_stage_apply", "ledgr_fold_stage_commit", "ledgr_fold_scheduled_skip_plan",
   "ledgr_output_handler", "ledgr_output_sink_duckdb", "ledgr_output_sink_memory", "ledgr_fill_event_payload",
-  "ledgr_fill_event_row", "ledgr_write_fill_events", "ledgr_run_compiled_spot_fifo_batch")
+  "ledgr_fill_leg_block", "ledgr_write_fill_events", "ledgr_run_compiled_spot_fifo_batch")
 ws4a_d8_hits <- function(fns) {
   intent <- c("ledgr_fill_intent", "ledgr_fill_none", "ledgr_fill_proposal", "ledgr_fill_context")
   unlist(lapply(names(fns), function(nm) {
@@ -1972,8 +1977,8 @@ testthat::test_that("[WS4a D22] the P3, restriction, mark-source, kind and side 
   testthat::expect_identical(ns$ledgr_plan_side(c(2, -0.5)), c(1L, -1L))
   buy <- ledgr_test_next_open_fill(1, list(instrument_id = "A", ts_utc = "2020-01-02T00:00:00Z", open = 10))
   sell <- ledgr_test_next_open_fill(-1, list(instrument_id = "A", ts_utc = "2020-01-02T00:00:00Z", open = 10))
-  testthat::expect_identical(c(ns$ledgr_fill_event_row("r", buy$fill, 1L, "A", 1L)$row$side,
-    ns$ledgr_fill_event_row("r", sell$fill, 1L, "A", 1L)$row$side), c("BUY", "SELL"))
+  testthat::expect_identical(c(ns$ledgr_fill_event_payload("r", buy$fill, 1L, "A", 1L)$side,
+    ns$ledgr_fill_event_payload("r", sell$fill, 1L, "A", 1L)$side), c("BUY", "SELL"))
   # Control: a renumbered token fails the fixture comparison.
   renumbered <- replace(levels$plan_reason, 2:3, levels$plan_reason[3:2])
   testthat::expect_false(identical(renumbered, fixtures$plan_reason))
@@ -2187,4 +2192,577 @@ testthat::test_that("[WS4a F1 arithmetic NaN] dense costs retain accounting refu
   }
   p <- ws4a_3166_plan(); p$fill$fee[1L] <- 0; p$fill$cash_delta[1L] <- NaN
   testthat::expect_true(ws4a_refuses_plan(p))
+})
+
+# --- LDG-3167: batched application and indexed publication -------------------
+
+# The publication path: P4 and its candidate, the block, leg and routed
+# metadata builders, the leg-fee split, the result-buffer writer, and the
+# handler and sink closures that publish fills, keyed "<function>/<assigned
+# name>" for a closure (two definitions of one name are joined).
+ws4a_pub_fns <- c("ledgr_fold_stage_apply", "ledgr_fold_fill_candidate", "ledgr_fill_event_payload",
+  "ledgr_fill_meta_rows", "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many")
+ws4a_pub_closures <- c(
+  ledgr_output_handler = "stage_fill_block", ledgr_output_handler = "handler$write_fill_events",
+  ledgr_output_handler = "handler$flush_pulse_events", ledgr_output_handler = "handler$record_accounting_fact",
+  ledgr_output_handler = "handler$append_event_rows", ledgr_output_sink_memory = "sink$stage_legs",
+  ledgr_output_sink_memory = "add_legs", ledgr_output_sink_memory = "sink$flush_legs",
+  ledgr_output_sink_duckdb = "sink$write_fill_live"
+)
+ws4a_publication <- function(fns) {
+  out <- fns[ws4a_pub_fns]
+  for (parent in unique(names(ws4a_pub_closures))) {
+    for (a in ws4a_assigns(fns[[parent]])) {
+      lhs <- ws4a_txt(a[[2L]])
+      key <- paste0(parent, "/", lhs)
+      if (lhs %in% ws4a_pub_closures[names(ws4a_pub_closures) == parent] && is.call(a[[3L]]) &&
+          ws4a_head(a[[3L]]) == "function") {
+        out[[key]] <- if (is.null(out[[key]])) a[[3L]] else call("function", NULL, call("{", out[[key]], a[[3L]]))
+      }
+    }
+  }
+  out
+}
+ws4a_inject_into <- function(fns, nm, stmt) {
+  fns[[nm]] <- ws4a_inject(fns[[nm]], stmt)
+  fns[nm]
+}
+
+# D1 (publication): no S3 object, POSIXct conversion, list staging or
+# apply-family recovery per fill. The identified exceptions: the boundary
+# conversions (epochs validated once per block, POSIXct where a buffer is
+# written); the routed metadata (one list per row, its JSON and the non-fill
+# rows' parsed metadata; WS7/WS8); field-name loops over a block's fixed
+# columns; db_live's one INSERT per fill; the refusal path's bisection.
+ws4a_d1_pub_allowed <- c(
+  ledgr_fill_event_payload = ".POSIXct", "ledgr_output_handler/handler$flush_pulse_events" = ".POSIXct",
+  ledgr_fill_row_buffer_add_many = "as.POSIXct", ledgr_fill_meta_rows = "Map", ledgr_fill_meta_rows = "list",
+  ledgr_fill_event_payload = "vapply", "ledgr_output_handler/handler$append_event_rows" = "lapply",
+  "ledgr_output_handler/handler$append_event_rows" = "vapply"
+)
+ws4a_d1_pub_loops <- c(
+  ledgr_fold_fill_candidate = "while (failed - ok > 1L)",
+  "ledgr_output_handler/stage_fill_block" = "for (name in setdiff(names(block), c(\"status\", \"next_event_seq\")))",
+  "ledgr_output_handler/handler$flush_pulse_events" = "for (name in setdiff(ledgr_output_event_columns, \"ts_utc\"))",
+  "ledgr_output_sink_memory/sink$stage_legs" = "for (name in names(legs))",
+  "ledgr_output_handler/handler$append_event_rows" = "for (name in ledgr_output_event_columns)",
+  "ledgr_output_sink_duckdb/sink$write_fill_live" = "for (k in seq_along(i))"
+)
+ws4a_d1_pub_hits <- function(fns) {
+  banned <- c("structure", "class<-", "oldClass<-", "as.POSIXct", ".POSIXct", "as.POSIXlt", "strptime",
+    "ledgr_normalize_ts_utc", "lapply", "vapply", "sapply", "Map", "mapply")
+  unlist(lapply(names(fns), function(nm) {
+    allowed <- ws4a_d1_pub_allowed[names(ws4a_d1_pub_allowed) == nm]
+    calls <- ws4a_calls(fns[[nm]])
+    hits <- setdiff(intersect(vapply(calls, ws4a_head, ""), banned), allowed)
+    lists <- Filter(function(x) ws4a_head(x) == "vector" && "\"list\"" %in% vapply(as.list(x)[-1L], ws4a_txt, ""), calls)
+    loops <- vapply(Filter(function(x) ws4a_head(x) %in% c("for", "while", "repeat"), calls), function(x) {
+      switch(ws4a_head(x), `for` = paste0("for (", ws4a_txt(x[[2L]]), " in ", ws4a_txt(x[[3L]]), ")"),
+        `while` = paste0("while (", ws4a_txt(x[[2L]]), ")"), "repeat")
+    }, "")
+    loops <- setdiff(loops, ws4a_d1_pub_loops[names(ws4a_d1_pub_loops) == nm])
+    in_loops <- setdiff(unlist(lapply(ws4a_loop_bodies(fns[[nm]]), function(b) {
+      intersect(ws4a_heads(b), c("list", "vector"))
+    })), allowed)
+    h <- c(hits, if (length(lists)) "vector(\"list\")", loops, in_loops)
+    if (length(h)) paste0(nm, ": ", h)
+  }))
+}
+
+testthat::test_that("[WS4a D1 publication] P4 and publication build no per-fill object, list or timestamp", {
+  fns <- ws4a_sources()
+  pub <- ws4a_publication(fns)
+  testthat::expect_true(all(c(ws4a_pub_fns, paste0(names(ws4a_pub_closures), "/", ws4a_pub_closures)) %in% names(pub)))
+  testthat::expect_length(ws4a_d1_pub_hits(pub), 0L)
+  # The retired per-fill publication helpers are gone.
+  testthat::expect_length(intersect(names(fns), c("ledgr_fill_event_row", "ledgr_event_buffer_write_rows")), 0L)
+  hit <- function(nm, stmt) length(ws4a_d1_pub_hits(ws4a_inject_into(pub, nm, stmt))) > 0L
+  testthat::expect_true(hit("ledgr_output_handler/handler$write_fill_events", "pulse_fill_rows <- vector(\"list\", 256L)"))
+  testthat::expect_true(hit("ledgr_fill_event_payload", "for (k in seq_along(i)) row <- list(qty = fill$qty[[k]])"))
+  testthat::expect_true(hit("ledgr_fill_event_payload", "res <- structure(list(), class = \"ledgr_ledger_write_result\")"))
+  testthat::expect_true(hit("ledgr_output_handler/handler$flush_pulse_events", "cash <- vapply(staged, `[[`, numeric(1), \"cash_delta\")"))
+  testthat::expect_true(hit("ledgr_output_handler/handler$record_accounting_fact", "ts <- as.POSIXct(block$ts_utc, tz = \"UTC\")"))
+  testthat::expect_true(hit("ledgr_fold_stage_apply", paste("for (i in seq_along(fill$k)) lot_res <- ledgr_lot_fill(",
+    "fold_state$lot_state, fill$pos[[i]], fill$side[[i]], fill$qty[[i]], fill$price[[i]], fill$fee[[i]])")))
+})
+
+# D9: no per-fill economic staging list and no per-leg staging list in the
+# handler, the sinks or the block builders. The retained, routed
+# representations pass: the memory sink's per-event metadata column and its
+# retained diagnostic chunks.
+ws4a_d9_allowed <- c("cols$meta <- vector(\"list\", capacity)", "diagnostic_parts <- vector(\"list\", 64L)",
+  "diagnostic_parts <<- c(diagnostic_parts, vector(\"list\", length(diagnostic_parts)))")
+ws4a_d9_hits <- function(fns) {
+  unlist(lapply(names(fns), function(nm) {
+    assigns <- ws4a_assigns(fns[[nm]])
+    alloc <- vapply(Filter(function(a) is.call(a[[3L]]) && ws4a_head(a[[3L]]) %in% c("vector", "c") &&
+      grepl("vector(\"list\"", ws4a_txt(a[[3L]]), fixed = TRUE), assigns), ws4a_txt, "")
+    entries <- vapply(Filter(function(a) is.call(a[[2L]]) && ws4a_head(a[[2L]]) == "[[" &&
+      is.call(a[[3L]]) && ws4a_head(a[[3L]]) == "list", assigns), ws4a_txt, "")
+    recover <- vapply(Filter(function(x) ws4a_head(x) %in% c("lapply", "vapply", "sapply", "Map", "mapply") &&
+      any(vapply(as.list(x)[-1L], function(y) identical(y, as.name("[[")) || identical(y, "[["), NA)),
+      ws4a_calls(fns[[nm]])), ws4a_txt, "")
+    h <- c(setdiff(alloc, ws4a_d9_allowed), entries, recover)
+    if (length(h)) paste0(nm, ": ", substr(h, 1L, 80L))
+  }))
+}
+
+testthat::test_that("[WS4a D9] publication stages no per-fill or per-leg list; the routed metadata is retained", {
+  fns <- ws4a_sources()
+  examined <- c("ledgr_output_handler", "ledgr_output_sink_memory", "ledgr_output_sink_duckdb",
+    "ledgr_fill_event_payload", "ledgr_fill_leg_block", "ledgr_fill_meta_rows")
+  testthat::expect_length(ws4a_d9_hits(fns[examined]), 0L)
+  # The retained metadata representation is present and accepted.
+  testthat::expect_true("cols$meta <- vector(\"list\", capacity)" %in% vapply(ws4a_assigns(fns$ledgr_output_handler), ws4a_txt, ""))
+  testthat::expect_length(ws4a_d9_hits(list(ok = str2lang("function(n) { cols$meta <- vector(\"list\", capacity); cols }"))), 0L)
+  # Injected economic staging fails: a staged per-fill list, a per-fill
+  # entry write, a per-leg entry write and a column recovered from entries.
+  hit <- function(nm, stmt) length(ws4a_d9_hits(ws4a_inject_into(fns, nm, stmt))) > 0L
+  testthat::expect_true(hit("ledgr_output_handler", "pulse_fill_rows <- vector(\"list\", 256L)"))
+  testthat::expect_true(hit("ledgr_output_handler", "pulse_fill_rows[[i]] <<- list(row = row, cash_delta = cash_delta)"))
+  testthat::expect_true(hit("ledgr_output_sink_memory", "pulse_fill_legs[[i]] <<- list(qty = qty, fee = fee, action = action)"))
+  testthat::expect_true(hit("ledgr_output_handler", "cash <- vapply(staged, `[[`, numeric(1), \"cash_delta\")"))
+})
+
+# D3 for the LDG-3167 regions: P4, its candidate and the publication path,
+# with the name-keyed predicate plus %in%. Census: the field-name loops over
+# a block's own columns (names of fields, not instruments).
+ws4a_d3_3167 <- c(
+  "ledgr_output_handler/stage_fill_block" = "pending_fills[[name]]",
+  "ledgr_output_handler/stage_fill_block" = "block[[name]]",
+  "ledgr_output_handler/handler$flush_pulse_events" = "block[[name]]",
+  "ledgr_output_handler/handler$append_event_rows" = "rows[[name]]",
+  "ledgr_output_sink_memory/sink$stage_legs" = "pending_legs[[name]]",
+  "ledgr_output_sink_memory/sink$stage_legs" = "legs[[name]]"
+)
+
+testthat::test_that("[WS4a D3 3167] P4 and publication index instruments by position", {
+  pub <- ws4a_publication(ws4a_sources())
+  found <- function(e) {
+    c(ws4a_name_keyed(e), vapply(Filter(function(x) ws4a_head(x) == "%in%", ws4a_calls(e)),
+      function(x) substr(ws4a_txt(x), 1L, 70L), ""))
+  }
+  hits <- function(f) {
+    unlist(lapply(names(f), function(nm) {
+      h <- setdiff(unique(found(f[[nm]])), ws4a_d3_3167[names(ws4a_d3_3167) == nm])
+      if (length(h)) paste0(nm, ": ", h)
+    }))
+  }
+  testthat::expect_length(hits(pub), 0L)
+  census <- unlist(lapply(unique(names(ws4a_d3_3167)), function(nm) paste(nm, unique(found(pub[[nm]])))))
+  testthat::expect_setequal(census, paste(names(ws4a_d3_3167), ws4a_d3_3167))
+  inject <- function(nm, stmt) hits(ws4a_inject_into(pub, nm, stmt))
+  testthat::expect_gt(length(inject("ledgr_fold_stage_apply", "net <- candidate$book$net_by_inst[instrument_id]")), 0L)
+  testthat::expect_gt(length(inject("ledgr_fill_leg_block", "row <- match(block$instrument_id, names(applied$close_qty))")), 0L)
+  testthat::expect_gt(length(inject("ledgr_output_handler/handler$record_accounting_fact", "keep <- block$instrument_id %in% held_ids")), 0L)
+})
+
+# D6: JSON encodes and parses in the fold stages only at their routed sites,
+# keyed by owning stage and call shape; P4 and its candidate have none.
+ws4a_json_shapes <- function(e) {
+  shape <- function(x) paste0(ws4a_head(x), "(", paste(vapply(as.list(x)[-1L], function(y) {
+    if (is.call(y) && ws4a_head(y) == "list") paste0("list(", paste(names(y)[-1L], collapse = ","), ")") else ws4a_txt(y)
+  }, ""), collapse = "; "), ")")
+  vapply(Filter(function(x) grepl("json|JSON", ws4a_head(x)), ws4a_calls(e)), shape, "")
+}
+ws4a_d6_routed <- c(
+  ledgr_fold_stage_observe_settle = "ledgr_availability_detail_json(affected$details[[k]])",
+  ledgr_fold_stage_decide = "canonical_json(list(intent_reason))",
+  ledgr_fold_stage_decide = "canonical_json(list(risk_step))",
+  ledgr_fold_stage_plan = "canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash))",
+  ledgr_fold_stage_commit = paste0("canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash,intended_gross_exposure,",
+    "post_risk_gross_exposure,actual_gross_exposure,exposure_basis))"),
+  ledgr_fold_stage_commit = "canonical_json(state_update)"
+)
+ws4a_d6_hits <- function(fns) {
+  unlist(lapply(names(fns), function(nm) {
+    s <- ws4a_json_shapes(fns[[nm]])
+    u <- unique(s)
+    n <- vapply(u, function(v) sum(s == v) - sum(ws4a_d6_routed[names(ws4a_d6_routed) == nm] == v), 0)
+    if (any(n > 0)) paste0(nm, ": ", u[n > 0])
+  }))
+}
+
+testthat::test_that("[WS4a D6] the fold stages encode JSON only at the routed sites; P4 encodes none", {
+  fns <- ws4a_sources()
+  stages <- c(paste0("ledgr_fold_stage_", c("observe_settle", "decide", "plan", "apply", "commit")), "ledgr_fold_fill_candidate")
+  testthat::expect_length(ws4a_d6_hits(fns[stages]), 0L)
+  testthat::expect_length(ws4a_json_shapes(fns$ledgr_fold_stage_apply), 0L)
+  hit <- function(nm, stmt) length(ws4a_d6_hits(ws4a_inject_into(fns, nm, stmt))) > 0L
+  testthat::expect_true(hit("ledgr_fold_stage_apply", "meta_json <- canonical_json(list(fee = fill$fee))"))
+  testthat::expect_true(hit("ledgr_fold_stage_plan", "canonical_json(list(intent_reason = x))"))
+  testthat::expect_true(hit("ledgr_fold_stage_commit", "canonical_json(state_update)"))
+})
+
+# The published blocks and legs of the dense fixture: its durable run
+# (serialized metadata) and a memory sweep (legs, with the reversal's CLOSE
+# and OPEN legs). The final pulse's unfillable change warns, as it should.
+ws4a_3167_capture <- function() {
+  ns <- ws4a_ns()
+  seen <- new.env()
+  seen$blocks <- list()
+  seen$legs <- list()
+  payload <- ns$ledgr_fill_event_payload
+  leg <- ns$ledgr_fill_leg_block
+  testthat::local_mocked_bindings(
+    ledgr_fill_event_payload = function(...) {
+      out <- payload(...)
+      seen$blocks[[length(seen$blocks) + 1L]] <- out
+      out
+    },
+    ledgr_fill_leg_block = function(...) {
+      out <- leg(...)
+      seen$legs[[length(seen$legs) + 1L]] <- out
+      out
+    },
+    .package = "ledgr"
+  )
+  dense <- ws4a_3166_fixture(FALSE)
+  on.exit(ledgr_snapshot_close(dense$snap), add = TRUE)
+  suppressWarnings({
+    close(ledgr_run(dense$exp(), params = dense$params, run_id = "ws4a-3167-dense", seed = 1L))
+    ledgr_sweep(dense$exp(), ledgr_grid_named(c = list(strategy = dense$params)), seed = 1L)
+  })
+  as.list(seen)
+}
+
+testthat::test_that("[WS4a V-publication V-leg U-3167] published blocks and legs are typed and refuse the controls", {
+  ns <- ws4a_ns()
+  got <- ws4a_3167_capture()
+  ok <- function(x, group) is.null(ns$ledgr_carrier_problem(x, group, NA_integer_))
+  refuses <- function(x, group) {
+    inherits(tryCatch(ns$ledgr_carrier_new(x, group, NA_integer_), error = identity), "ledgr_internal_error")
+  }
+  blocks <- Filter(function(b) identical(b$status, "WROTE"), got$blocks)
+  testthat::expect_gt(length(blocks), 3L)
+  testthat::expect_true(all(vapply(blocks, ok, NA, group = "publication")))
+  testthat::expect_true(all(vapply(got$legs, ok, NA, group = "leg")))
+  # Pulse one publishes both buys as one block; the reversal has both legs.
+  b <- blocks[[1L]]
+  testthat::expect_identical(b$side, c("BUY", "BUY"))
+  testthat::expect_false(anyNA(b$meta_json))
+  l <- Filter(function(x) all(c("CLOSE", "OPEN") %in% x$action), got$legs)[[1L]]
+  testthat::expect_identical(l$action, c("CLOSE", "OPEN"))
+  # Typed empty groups are accepted; the universal controls are refused:
+  # storage type, a shortened column, a bound, an untyped empty column.
+  empty <- lapply(b, function(v) v[0L])
+  empty$status <- "NO_OP"
+  empty$next_event_seq <- 4L
+  testthat::expect_true(ok(empty, "publication"))
+  empty_leg <- lapply(l, function(v) v[0L])
+  testthat::expect_true(ok(empty_leg, "leg"))
+  set <- function(x, field, value) {
+    x[[field]] <- value
+    x
+  }
+  testthat::expect_true(refuses(set(b, "event_seq", as.numeric(b$event_seq)), "publication"))
+  testthat::expect_true(refuses(set(b, "qty", b$qty[-1L]), "publication"))
+  testthat::expect_true(refuses(set(b, "fee", c(-1, b$fee[-1L])), "publication"))
+  testthat::expect_true(refuses(set(empty, "event_id", list()), "publication"))
+  testthat::expect_true(refuses(set(l, "qty", as.integer(ceiling(l$qty))), "leg"))
+  testthat::expect_true(refuses(set(l, "price", l$price[-1L]), "leg"))
+  testthat::expect_true(refuses(set(l, "qty", c(0, l$qty[-1L])), "leg"))
+  testthat::expect_true(refuses(set(empty_leg, "fee", list()), "leg"))
+  # Section 3.2 rows: F4.38 NA instrument on a FILL; F4.39 a gap in the fill
+  # sequence; O3.08 a duplicate sequence; F4.40 a missing metadata list;
+  # F4.41 OPEN before CLOSE; F4.42 an OPEN leg with P&L; and bad tokens.
+  testthat::expect_true(refuses(set(b, "instrument_id", c(NA, b$instrument_id[-1L])), "publication"))
+  testthat::expect_true(refuses(set(b, "event_seq", b$event_seq + c(0L, 1L)), "publication"))
+  testthat::expect_true(refuses(set(b, "event_seq", rep(b$event_seq[[1L]], 2L)), "publication"))
+  testthat::expect_true(refuses(set(b, "meta", list(NULL, b$meta[[2L]])), "publication"))
+  testthat::expect_true(refuses(set(b, "meta", b$meta[1L]), "publication"))
+  testthat::expect_true(refuses(set(b, "side", c("HOLD", "BUY")), "publication"))
+  testthat::expect_true(refuses(set(b, "status", "NO_OP"), "publication"))
+  testthat::expect_true(refuses(lapply(l, rev), "leg"))
+  testthat::expect_true(refuses(set(l, "realized_pnl", l$realized_pnl + c(0, 1)), "leg"))
+  testthat::expect_true(refuses(set(l, "action", c("CLOSE", "HOLD")), "leg"))
+})
+
+# C13b (Synthesis 3.5): a failure while the candidate is computed leaves the
+# book, cash, positions, event_seq and the publication buffers exactly as
+# they were at P4 entry, on durable, db_live and memory sinks. Pulse one's
+# second row gets a NaN fee inside the batch's typed fill operation, a
+# genuine second-row lot refusal.
+ws4a_buffers <- function(handler) {
+  h <- environment(handler$flush_pulse_events)
+  s <- environment(Filter(is.function, h$sink)[[1L]])
+  snapshot <- function(e) if (is.environment(e)) mget(sort(ls(e, all.names = TRUE)), e)
+  list(count = h$state$event_count, cols = snapshot(h$state$event_cols), pending = h$pending_fills,
+    realized = h$pending_realized, basis = h$pending_cost_basis, legs = s$pending_legs,
+    inline = snapshot(s$inline_fills),
+    ledger = if (!is.null(s$con)) DBI::dbGetQuery(s$con, "SELECT COUNT(*) AS n FROM ledger_events")$n)
+}
+ws4a_c13b <- function(apply_impl = NULL, paths = c("durable", "live", "memory")) {
+  ns <- ws4a_ns()
+  seen <- new.env()
+  seen$pairs <- list()
+  lot_fill <- ns$ledgr_lot_fill
+  apply <- apply_impl %||% ns$ledgr_fold_stage_apply
+  # Deep copies: a by-reference buffer write would otherwise reach both.
+  snap <- function(fs, services) {
+    unserialize(serialize(list(book = fs$lot_state, cash = fs$cash, positions = fs$positions,
+      event_seq = fs$event_seq, buffers = ws4a_buffers(services$output_handler)), NULL))
+  }
+  testthat::local_mocked_bindings(
+    ledgr_lot_fill = function(book, pos, side, qty, price, fee = 0) {
+      if (length(pos) >= 2L) fee[[2L]] <- NaN
+      lot_fill(book, pos, side, qty, price, fee)
+    },
+    ledgr_fold_stage_apply = function(fold_state, services, ...) {
+      before <- snap(fold_state, services)
+      withCallingHandlers(apply(fold_state, services, ...), error = function(e) {
+        seen$pairs[[length(seen$pairs) + 1L]] <- list(class = class(e)[[1L]], before = before,
+          after = snap(fold_state, services))
+      })
+    },
+    .package = "ledgr"
+  )
+  dense <- ws4a_3166_fixture(FALSE)
+  on.exit(ledgr_snapshot_close(dense$snap), add = TRUE)
+  out <- list()
+  if ("durable" %in% paths) {
+    out$durable <- tryCatch(ledgr_run(dense$exp(), params = dense$params, run_id = "c13b-durable", seed = 1L), error = identity)
+  }
+  if ("live" %in% paths) {
+    out$live <- tryCatch(ledgr_run(dense$exp(execution_mode = "db_live"), params = dense$params, run_id = "c13b-live",
+      seed = 1L), error = identity)
+  }
+  if ("memory" %in% paths) {
+    out$memory <- ledgr_sweep(dense$exp(), ledgr_grid_named(c = list(strategy = dense$params)), seed = 1L)
+  }
+  c(out, list(pairs = seen$pairs))
+}
+ws4a_unchanged <- function(pair) {
+  fields <- c("book", "cash", "positions", "event_seq", "buffers")
+  identical(pair$before[fields], pair$after[fields])
+}
+
+testthat::test_that("[WS4a C13b] a candidate-calculation error leaves state and buffers unchanged", {
+  got <- ws4a_c13b()
+  testthat::expect_s3_class(got$durable, "ledgr_invalid_lot_fill")
+  testthat::expect_s3_class(got$live, "ledgr_invalid_lot_fill")
+  testthat::expect_identical(got$memory$status, "FAILED")
+  testthat::expect_identical(got$memory$error_class[[1L]], "ledgr_invalid_lot_fill")
+  testthat::expect_length(got$pairs, 3L)
+  testthat::expect_identical(vapply(got$pairs, `[[`, "", "class"), rep("ledgr_invalid_lot_fill", 3L))
+  testthat::expect_true(all(vapply(got$pairs, ws4a_unchanged, NA)))
+  # Controls: installing or publishing row one before the candidate is
+  # computed (the per-fill order) changes the snapshot.
+  ns <- ws4a_ns()
+  fns <- ws4a_sources()
+  mutant <- function(stmt) eval(ws4a_inject(fns$ledgr_fold_stage_apply, stmt), ns)
+  f <- "plan$batch$fill"
+  installed <- mutant(sprintf(paste0("if (length(%1$s$k) > 1L) fold_state$lot_state <- ledgr_lot_fill(fold_state$lot_state,",
+    " %1$s$pos[1L], %1$s$side[1L], %1$s$qty[1L], %1$s$price[1L], %1$s$fee[1L])$book"), f))
+  published <- mutant(sprintf(paste0("if (length(%1$s$k) > 1L) services$output_handler$write_fill_events(%1$s, 1L,",
+    " services$instrument_ids[%1$s$pos[1L]], fold_state$event_seq)"), f))
+  for (impl in list(installed, published)) {
+    bad <- ws4a_c13b(impl, paths = "memory")
+    testthat::expect_identical(bad$memory$status, "FAILED")
+    testthat::expect_false(all(vapply(bad$pairs, ws4a_unchanged, NA)))
+  }
+})
+
+# Refusal order (Synthesis 3.5 keeps classes, messages and precedence): a
+# batch refuses with its earliest failing fill, as one typed fill operation
+# per fill did; a fill's publication refusal precedes a later fill's lot
+# refusal. Unit cases compare with the per-fill sequence; public cases are
+# the base 953338df outcomes of records/ldg3167/probe_multi.R.
+testthat::test_that("[WS4a 3167 precedence] a batch refuses in the per-fill order with the base conditions", {
+  ns <- ws4a_ns()
+  book <- ns$ledgr_lot_book(3L)
+  group <- function(qty, fee) list(k = 1:3, pos = 1:3, side = rep(1L, 3L), qty = qty, price = rep(10, 3L), fee = fee)
+  condition <- function(e) c(class(e)[[1L]], conditionMessage(e))
+  sequential <- function(f) {
+    b <- book
+    for (r in seq_along(f$pos)) {
+      out <- tryCatch(ns$ledgr_lot_fill(b, f$pos[r], f$side[r], f$qty[r], f$price[r], f$fee[r]), error = identity)
+      if (inherits(out, "error")) return(c(r, condition(out)))
+      b <- out$book
+    }
+    "none"
+  }
+  batched <- function(f) {
+    out <- ns$ledgr_fold_fill_candidate(book, f)
+    if (is.null(out$failed)) "none" else c(out$failed, condition(out$error))
+  }
+  applied <- c("ledgr_lot_state_invariant", "Invalid applied lot rows.")
+  input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")
+  cases <- list(
+    applied1_input2 = list(group(c(1e308, 1, 1), c(0, NaN, 0)), c(1, applied)),
+    input2_applied3 = list(group(c(1, 1, 1e308), c(0, NaN, 0)), c(2, input)),
+    applied2_input3 = list(group(c(1, 1e308, 1), c(0, 0, Inf)), c(2, applied)),
+    input3 = list(group(c(1, 1, 1), c(0, 0, NaN)), c(3, input)),
+    none = list(group(c(1, 2, 3), c(0, 0.5, 1)), "none")
+  )
+  for (name in names(cases)) {
+    f <- cases[[name]][[1L]]
+    testthat::expect_identical(batched(f), as.character(cases[[name]][[2L]]), info = name)
+    testthat::expect_identical(batched(f), sequential(f), info = name)
+  }
+  # Control: the batch operation alone reports a later row's input refusal.
+  plain <- tryCatch(ns$ledgr_lot_fill(book, 1:3, rep(1L, 3L), c(1e308, 1, 1), rep(10, 3L), c(0, NaN, 0)), error = identity)
+  testthat::expect_false(identical(condition(plain), applied))
+
+  # Public cases (finite inputs, two fills in one pulse), base outcomes.
+  days <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:3
+  public <- function(prices, opening, targets, cost, mode = "audit_log") {
+    bars <- do.call(rbind, lapply(names(prices), function(id) data.frame(ts_utc = days, instrument_id = id,
+      open = prices[[id]], high = prices[[id]], low = prices[[id]], close = prices[[id]], volume = 1000,
+      stringsAsFactors = FALSE)))
+    snap <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+    on.exit(ledgr_snapshot_close(snap))
+    exp <- ledgr_experiment(snap, function(ctx, params) {
+      t <- ctx$hold()
+      if (identical(substr(ctx$ts_utc, 1L, 10L), "2020-01-01")) t[names(params$t)] <- unlist(params$t)
+      t
+    }, cost_model = cost, opening = opening, execution_mode = mode)
+    e <- tryCatch({
+      close(ledgr_run(exp, params = list(t = targets), run_id = "p", seed = 1L))
+      NULL
+    }, error = identity)
+    if (is.null(e)) "none" else condition(e)
+  }
+  non_finite <- c("ledgr_config_non_finite",
+    "canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).")
+  long <- ledgr_opening(cash = 1000, positions = c(AAA = 1e308), cost_basis = c(AAA = 1))
+  # Fill 1 (AAA) publishes an infinite cash effect; fill 2 (BBB) is a lot refusal.
+  pub1_lot2 <- function(mode) public(list(AAA = 1.9, BBB = 10), long, list(AAA = 0, BBB = 1e308), ledgr_cost_zero(), mode)
+  testthat::expect_identical(pub1_lot2("audit_log"), non_finite)
+  testthat::expect_identical(pub1_lot2("db_live"), non_finite)
+  testthat::expect_identical(public(list(AAA = 10, BBB = 10), ledgr_opening(cash = 1000), list(AAA = 1, BBB = 1e307),
+    ledgr_cost_chain(ledgr_cost_fixed_fee(1.79e308), ledgr_cost_notional_bps_fee(10000))), input)
+  testthat::expect_identical(public(list(AAA = 10, BBB = 1.9), ledgr_opening(cash = 1000, positions = c(BBB = 1e308),
+    cost_basis = c(BBB = 1)), list(AAA = 1e308, BBB = 0), ledgr_cost_notional_bps_fee(0)), input)
+  # Control: without the earlier fills' publication check the later fill's
+  # lot refusal comes first.
+  handler <- ns$ledgr_output_handler
+  testthat::with_mocked_bindings(
+    ledgr_output_handler = function(sink, ...) {
+      h <- handler(sink, ...)
+      write <- h$write_fill_events
+      h$write_fill_events <- function(..., stage = TRUE) if (isTRUE(stage)) write(..., stage = stage)
+      h
+    },
+    testthat::expect_identical(pub1_lot2("audit_log"), applied),
+    .package = "ledgr"
+  )
+})
+
+# W1: the observed application order. Probes, in time order: the canonical
+# publication entry (1), the accounting-fact entry (2) and exit (3), and P4's
+# exit (4). Each step is first seen done at its own probe: the candidate book
+# at 1, the advanced sequence at 2, the legs at 3, positions and cash at 4.
+# A durable run has no leg method (probes 1 and 4). At the compiled append
+# entry the compiled lot state and next sequence are installed.
+ws4a_w1_order <- c("candidate_book_installed", "sequence_advanced", "legs_recorded", "positions_cash_installed")
+ws4a_w1 <- function(apply_impl = NULL) {
+  ns <- ws4a_ns()
+  w <- new.env()
+  w$orders <- list()
+  w$compiled <- list()
+  apply <- apply_impl %||% ns$ledgr_fold_stage_apply
+  candidate <- ns$ledgr_fold_fill_candidate
+  handler <- ns$ledgr_output_handler
+  probe <- function(k) {
+    fs <- w$fs
+    done <- c(candidate_book_installed = identical(fs$lot_state, w$cand$book),
+      sequence_advanced = identical(fs$event_seq, w$seq0 + length(w$fill$k)),
+      legs_recorded = isTRUE(w$legs), positions_cash_installed = !identical(fs$positions, w$pos0))
+    new <- done & is.na(w$first)
+    w$first[new] <- k
+  }
+  testthat::local_mocked_bindings(
+    ledgr_fold_fill_candidate = function(...) {
+      w$cand <- candidate(...)
+      w$cand
+    },
+    ledgr_fold_stage_apply = function(fold_state, services, observation, plan, ...) {
+      w$fs <- fold_state
+      w$fill <- plan$batch$fill
+      w$seq0 <- fold_state$event_seq
+      w$pos0 <- fold_state$positions
+      w$legs <- FALSE
+      w$first <- stats::setNames(rep(NA_integer_, 4L), ws4a_w1_order)
+      out <- apply(fold_state, services, observation, plan, ...)
+      if (length(w$fill$k) > 0L && !services$use_compiled_spot_fifo) {
+        probe(4L)
+        w$orders[[length(w$orders) + 1L]] <- w$first
+      }
+      out
+    },
+    ledgr_output_handler = function(sink, ...) {
+      h <- handler(sink, ...)
+      write <- h$write_fill_events
+      fact <- h$record_accounting_fact
+      append <- h$append_compiled_spot_batch
+      h$write_fill_events <- function(..., stage = TRUE) {
+        if (isTRUE(stage)) probe(1L)
+        write(..., stage = stage)
+      }
+      if (is.function(fact)) {
+        h$record_accounting_fact <- function(block, applied) {
+          probe(2L)
+          out <- fact(block, applied)
+          w$legs <- TRUE
+          probe(3L)
+          out
+        }
+      }
+      if (is.function(append)) {
+        h$append_compiled_spot_batch <- function(batch) {
+          w$compiled[[length(w$compiled) + 1L]] <- c(compiled_lot_state_installed = identical(w$fs$lot_state, batch$lot_state),
+            next_sequence_installed = identical(w$fs$event_seq, batch$next_event_seq))
+          append(batch)
+        }
+      }
+      h
+    },
+    .package = "ledgr"
+  )
+  dense <- ws4a_3166_fixture(FALSE)
+  on.exit(ledgr_snapshot_close(dense$snap), add = TRUE)
+  suppressWarnings({
+    close(ledgr_run(dense$exp(), params = dense$params, run_id = "w1-durable", seed = 1L))
+    ledgr_sweep(dense$exp(), ledgr_grid_named(c = list(strategy = dense$params)), seed = 1L)
+    ledgr_sweep(dense$exp(), ledgr_grid_named(c = list(strategy = dense$params)), seed = 1L,
+      compiled_accounting_model = "spot_fifo")
+  })
+  list(orders = w$orders, compiled = w$compiled)
+}
+ws4a_w1_ok <- function(first, legs = TRUE) {
+  want <- if (legs) 1:4 else c(1L, NA, NA, 4L)
+  want[[2L]] <- if (legs) 2L else 4L
+  identical(unname(first), want)
+}
+
+testthat::test_that("[WS4a W1] P4 installs the book, publishes, advances, records legs, then installs positions and cash", {
+  got <- ws4a_w1()
+  legs <- vapply(got$orders, function(f) !is.na(f[["legs_recorded"]]), NA)
+  testthat::expect_true(any(legs) && any(!legs))
+  testthat::expect_true(all(mapply(ws4a_w1_ok, got$orders, legs)))
+  testthat::expect_gt(length(got$compiled), 0L)
+  testthat::expect_true(all(unlist(got$compiled)))
+  # The comparator fails every swapped pair of the declared order.
+  first <- stats::setNames(1:4, ws4a_w1_order)
+  for (p in utils::combn(4L, 2L, simplify = FALSE)) {
+    swapped <- first
+    swapped[p] <- swapped[rev(p)]
+    testthat::expect_false(ws4a_w1_ok(swapped))
+  }
+  # Production mutations: the sequence advanced before publication; positions
+  # installed before the legs.
+  ns <- ws4a_ns()
+  mutant <- function(new) {
+    f <- ns$ledgr_fold_stage_apply
+    body(f) <- str2lang(sub("fold_state$lot_state <- candidate$book", paste("fold_state$lot_state <- candidate$book;", new),
+      paste(deparse(body(f), width.cutoff = 500L), collapse = "\n"), fixed = TRUE))
+    f
+  }
+  for (new in c("fold_state$event_seq <- fold_state$event_seq + length(rows)",
+    "fold_state$positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]")) {
+    bad <- ws4a_w1(mutant(new))
+    legs <- vapply(bad$orders, function(f) !is.na(f[["legs_recorded"]]), NA)
+    testthat::expect_false(all(mapply(ws4a_w1_ok, bad$orders, legs)), info = new)
+  }
 })

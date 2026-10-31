@@ -100,10 +100,15 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
     ctx$hold()
   }
   handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("risk-fold-plan-order"))
+  # LDG-3167 (design note Section 5, category 5; one block per pulse): the
+  # pulse's fills are published as one block after every cost is resolved;
+  # the counter counts published rows and block writes.
+  blocks_written <- 0L
   write_fill_events <- handler$write_fill_events
-  handler$write_fill_events <- function(...) {
-    events_written <<- events_written + 1L
-    write_fill_events(...)
+  handler$write_fill_events <- function(fill, i, ...) {
+    events_written <<- events_written + length(i)
+    blocks_written <<- blocks_written + 1L
+    write_fill_events(fill, i, ...)
   }
 
   execution <- ledgr_risk_fold_test_execution(
@@ -116,6 +121,7 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
   events <- handler$events()
   testthat::expect_identical(resolver_seen_events, 0L)
   testthat::expect_identical(events_written, 2L)
+  testthat::expect_identical(blocks_written, 1L)
   testthat::expect_identical(as.character(events$instrument_id), c("AAA", "BBB"))
   testthat::expect_identical(as.integer(events$event_seq), 1:2)
 })
@@ -211,13 +217,17 @@ testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
     ctx$hold()
   }
   handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-flush-counter"))
+  # LDG-3167 (design note Section 5, category 5; one block per pulse): two
+  # same-pulse fills are one block write of two rows.
   writes <- 0L
+  blocks <- 0L
   flushes <- 0L
   original_write <- handler$write_fill_events
   original_flush <- handler$flush_pulse_events
-  handler$write_fill_events <- function(...) {
-    writes <<- writes + 1L
-    original_write(...)
+  handler$write_fill_events <- function(fill, i, ...) {
+    writes <<- writes + length(i)
+    blocks <<- blocks + 1L
+    original_write(fill, i, ...)
   }
   handler$flush_pulse_events <- function() {
     flushes <<- flushes + 1L
@@ -235,6 +245,7 @@ testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
   ledgr:::ledgr_execute_fold(execution, handler)
 
   testthat::expect_identical(writes, 2L)
+  testthat::expect_identical(blocks, 1L)
   testthat::expect_identical(flushes, 3L)
   testthat::expect_identical(handler$events()$instrument_id, c("AAA", "BBB"))
 
@@ -293,15 +304,19 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
 
   # LDG-3164 (decision 10, category 5): ledgr_lot_apply_fill is deleted; the
   # failure is injected at the second typed fill operation of the pulse.
+  # LDG-3167 (category 5): the pulse's fills are one candidate computation,
+  # so the failure is injected at its second row; `calls` counts rows and the
+  # injection fires once, when the count first reaches two.
   original_apply <- ledgr:::ledgr_lot_fill
   calls <- 0L
   testthat::local_mocked_bindings(
-    ledgr_lot_fill = function(...) {
-      calls <<- calls + 1L
-      if (calls == 2L) {
+    ledgr_lot_fill = function(book, pos, ...) {
+      before <- calls
+      calls <<- calls + length(pos)
+      if (before < 2L && calls >= 2L) {
         rlang::abort("injected second-fill failure", class = "ledgr_test_fill_failure")
       }
-      original_apply(...)
+      original_apply(book, pos, ...)
     },
     .package = "ledgr"
   )
@@ -423,6 +438,11 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     }
   }
 
+  # LDG-3167 (design note Section 5, LTB-0280; changed fault timing accepted
+  # with cut 5): a pulse's fills are one block, so the write and the
+  # accounting-fact record fail at the pulse's first (only) block; the
+  # two-pulse witness below fails the second pulse's block after the first
+  # pulse's block was written.
   persistent_factory <- ledgr:::ledgr_output_handler
   for (mode in names(experiments)) {
     run_id <- paste0("handler-fault-", mode)
@@ -431,7 +451,8 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
         ledgr_run(experiments[[mode]], run_id = run_id, seed = 1L),
         ledgr_output_handler = fault_factory(
           persistent_factory,
-          "write_fill_events"
+          "write_fill_events",
+          fail_at = 1L
         ),
         .package = "ledgr"
       ),
@@ -469,7 +490,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
           ledgr_grid_named(failed = list(strategy = list())),
           seed = 1L
         ),
-        ledgr_output_handler = fault_factory(memory_factory, method),
+        ledgr_output_handler = fault_factory(memory_factory, method, fail_at = 1L),
         .package = "ledgr"
       )
       testthat::expect_identical(sweep$status, "FAILED", info = paste(method, mode))
@@ -482,6 +503,50 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
         is.na(sweep$final_equity[[1L]]),
         info = paste(method, mode)
       )
+    }
+  }
+
+  # Additional two-pulse rollback witness: the targets rise on the second
+  # pulse, so each of the first two pulses publishes one block; the second
+  # block's write or fact record fails after the first block was written.
+  rising <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets[] <- min(as.numeric(substr(ctx$ts_utc, 9L, 10L)), 2)
+    targets
+  }
+  two_pulse <- lapply(snapshots, function(snapshot) {
+    ledgr_experiment(snapshot, rising, cost_model = ledgr_cost_zero(), execution_mode = "db_live")
+  })
+  for (mode in names(two_pulse)) {
+    run_id <- paste0("handler-fault-two-pulse-", mode)
+    testthat::expect_error(
+      testthat::with_mocked_bindings(
+        ledgr_run(two_pulse[[mode]], run_id = run_id, seed = 1L),
+        ledgr_output_handler = fault_factory(persistent_factory, "write_fill_events", fail_at = 2L),
+        .package = "ledgr"
+      ),
+      class = "ledgr_test_handler_failure",
+      info = mode
+    )
+    con <- get_connection(snapshots[[mode]])
+    testthat::expect_identical(
+      as.integer(DBI::dbGetQuery(
+        con,
+        "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?",
+        params = list(run_id)
+      )$n[[1L]]),
+      0L,
+      info = mode
+    )
+    for (method in c("write_fill_events", "record_accounting_fact")) {
+      sweep <- testthat::with_mocked_bindings(
+        ledgr_sweep(two_pulse[[mode]], ledgr_grid_named(failed = list(strategy = list())), seed = 1L),
+        ledgr_output_handler = fault_factory(memory_factory, method, fail_at = 2L),
+        .package = "ledgr"
+      )
+      testthat::expect_identical(sweep$status, "FAILED", info = paste(method, mode))
+      testthat::expect_identical(sweep$error_class[[1L]], "ledgr_test_handler_failure", info = paste(method, mode))
+      testthat::expect_true(is.na(sweep$final_equity[[1L]]), info = paste(method, mode))
     }
   }
 })

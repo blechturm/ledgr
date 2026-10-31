@@ -474,7 +474,9 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
   cpp_source <- paste(readLines("../../src/spot_fifo.cpp", warn = FALSE), collapse = "\n")
   # The typed position reads: P4 takes the position from the book's
   # lot-derived net; replay from the applied rows' lot-derived position.
-  testthat::expect_match(fold_source, "lot_res$book$net_by_inst[[pos]]", fixed = TRUE)
+  # LDG-3167 (design note Section 5, category 3): P4 reads the net of every
+  # fill's instrument from the batch's candidate book.
+  testthat::expect_match(fold_source, "positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]", fixed = TRUE)
   testthat::expect_match(replay_source, "applied$position_after", fixed = TRUE)
   testthat::expect_match(
     cpp_source,

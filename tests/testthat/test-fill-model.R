@@ -65,7 +65,15 @@ testthat::test_that("execution epochs stay doubles inside the plan and become PO
   f <- ledgr_test_next_open_fill(10, bar, spread_bps = 0, commission_fixed = 0)
   testthat::expect_true(is.double(f$fill$exec_ts) && is.null(attributes(f$fill$exec_ts)))
   testthat::expect_identical(f$fill$exec_ts, as.numeric(bar$ts_utc))
-  row <- ledgr:::ledgr_fill_event_row("run-1", f$fill, f$i, f$instrument_id, 1L)$row
+  # LDG-3167 (category 5; the per-fill row helper retires): the published
+  # block keeps the epoch; the handler's published row is the boundary.
+  block <- ledgr:::ledgr_fill_event_payload("run-1", f$fill, f$i, f$instrument_id, 1L)
+  testthat::expect_true(is.double(block$ts_utc) && is.null(attributes(block$ts_utc)))
+  handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("run-1"))
+  handler$init_buffers(1L)
+  handler$write_fill_events(f$fill, f$i, f$instrument_id, 1L)
+  handler$flush_pulse_events()
+  row <- handler$events()
   testthat::expect_s3_class(row$ts_utc, "POSIXct")
   testthat::expect_identical(attr(row$ts_utc, "tzone"), "UTC")
   testthat::expect_identical(as.numeric(row$ts_utc), as.numeric(bar$ts_utc))

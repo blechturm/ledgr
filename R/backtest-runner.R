@@ -100,22 +100,29 @@ ledgr_take_preflight_start <- function() {
   val
 }
 
-# The buffered and memory fill row of row `i` of the typed fill group `fill`
-# (P3's columns and computed effects), published for `instrument_id`. A
-# zero-length `i` is the no-op. The effects are reused, never recomputed.
+# The published fill event block of the buffered and memory sinks
+# (Synthesis Section 4, publication group): rows `i` of the typed fill group
+# `fill` (P3's columns and computed effects), one `instrument_id` per row,
+# with contiguous sequences from `event_seq`. Columns are built once per
+# block, event IDs formatted for the whole block; the effects are reused,
+# never recomputed. The execution epoch stays a double (UTC seconds) and
+# becomes POSIXct where the handler writes its buffer. `meta` holds one list
+# per row and `meta_json` its encoding: the routed fill metadata (WS7/WS8),
+# kept byte for byte. A zero-length `i` is the no-op.
 ledgr_fill_event_payload <- function(run_id,
                                      fill,
                                      i,
                                      instrument_id,
                                      event_seq,
                                      serialize_meta_json = TRUE) {
-  if (length(i) == 0L) {
-    return(structure(
-      list(
-        status = "NO_OP",
-        next_event_seq = event_seq
-      ),
-      class = "ledgr_ledger_write_result"
+  n <- length(i)
+  if (n == 0L) {
+    return(list(
+      status = "NO_OP", next_event_seq = event_seq,
+      event_id = character(), run_id = character(), ts_utc = numeric(), event_type = character(),
+      instrument_id = character(), side = character(), qty = numeric(), price = numeric(),
+      fee = numeric(), meta_json = character(), event_seq = integer(), cash_delta = numeric(),
+      position_delta = numeric(), meta = list()
     ))
   }
 
@@ -125,67 +132,47 @@ ledgr_fill_event_payload <- function(run_id,
     rlang::abort("`event_seq` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
 
-  side <- if (fill$side[[i]] > 0L) "BUY" else "SELL"
-  qty <- fill$qty[[i]]
-  fill_price <- fill$price[[i]]
-  fee <- fill$fee[[i]]
-  signed_qty <- fill$position_delta[[i]]
-  cash_delta <- fill$cash_delta[[i]]
-
-  # The execution epoch materializes as POSIXct at this output boundary.
-  ts_exec_posix <- ledgr_assert_whole_second_utc(
-    .POSIXct(fill$exec_ts[[i]], tz = "UTC"),
+  ts_exec <- ledgr_assert_whole_second_utc(
+    .POSIXct(fill$exec_ts[i], tz = "UTC"),
     label = "`fill_intent$ts_exec_utc`",
     class = "ledgr_invalid_fill_intent"
   )
-
-  meta <- list(
-    fee = as.numeric(fee),
-    cash_delta = as.numeric(cash_delta),
-    position_delta = as.numeric(signed_qty),
-    realized_pnl = NULL
-  )
-  meta_json <- if (isTRUE(serialize_meta_json)) ledgr_canonical_json_encode(meta) else NA_character_
-
-  event_id <- paste0(run_id, "_", sprintf("%08d", as.integer(event_seq)))
-  row <- list(
-    event_id = event_id,
-    run_id = run_id,
-    ts_utc = ts_exec_posix,
-    event_type = "FILL",
-    instrument_id = instrument_id,
-    side = side,
-    qty = as.numeric(qty),
-    price = as.numeric(fill_price),
-    fee = as.numeric(fee),
+  fee <- fill$fee[i]
+  cash_delta <- fill$cash_delta[i]
+  position_delta <- fill$position_delta[i]
+  meta <- ledgr_fill_meta_rows(fee, cash_delta, position_delta)
+  meta_json <- if (isTRUE(serialize_meta_json)) {
+    vapply(meta, ledgr_canonical_json_encode, character(1))
+  } else {
+    rep(NA_character_, n)
+  }
+  seq <- as.integer(event_seq) + seq_len(n) - 1L
+  ledgr_carrier_new(list(
+    status = "WROTE",
+    next_event_seq = seq[[n]] + 1L,
+    event_id = paste0(run_id, "_", sprintf("%08d", seq)),
+    run_id = rep(run_id, n),
+    ts_utc = as.numeric(ts_exec),
+    event_type = rep("FILL", n),
+    instrument_id = as.character(instrument_id),
+    side = c("SELL", "BUY")[(fill$side[i] > 0L) + 1L],
+    qty = fill$qty[i],
+    price = fill$price[i],
+    fee = fee,
     meta_json = meta_json,
-    event_seq = as.integer(event_seq)
-  )
-
-  structure(
-    list(
-      status = "WROTE",
-      event_id = event_id,
-      event_seq = as.integer(event_seq),
-      next_event_seq = as.integer(event_seq) + 1L,
-      cash_delta = as.numeric(cash_delta),
-      position_delta = as.numeric(signed_qty),
-      meta = meta,
-      row = row
-    ),
-    class = "ledgr_ledger_write_result"
-  )
+    event_seq = seq,
+    cash_delta = cash_delta,
+    position_delta = position_delta,
+    meta = meta
+  ), "publication", NA_integer_)
 }
 
-ledgr_fill_event_row <- function(run_id, fill, i, instrument_id, event_seq) {
-  ledgr_fill_event_payload(
-    run_id = run_id,
-    fill = fill,
-    i = i,
-    instrument_id = instrument_id,
-    event_seq = event_seq,
-    serialize_meta_json = TRUE
-  )
+# The routed fill metadata (WS7/WS8): one list per row, in the canonical
+# field order, which the memory sink retains and the durable sink encodes.
+ledgr_fill_meta_rows <- function(fee, cash_delta, position_delta) {
+  Map(function(fee, cash_delta, position_delta) {
+    list(fee = fee, cash_delta = cash_delta, position_delta = position_delta, realized_pnl = NULL)
+  }, fee, cash_delta, position_delta, USE.NAMES = FALSE)
 }
 
 ledgr_store_run_telemetry <- function(run_id, telemetry) {

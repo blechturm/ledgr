@@ -567,7 +567,10 @@ testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event k
     )
     testthat::expect_match(fold_source, "fill <- plan$batch$fill", fixed = TRUE)
     testthat::expect_match(fold_source, "fills = fill", fixed = TRUE)
-    testthat::expect_match(fold_source, "for (i in seq_along(fill$k))", fixed = TRUE)
+    # LDG-3167 (category 3): the canonical path consumes the fill columns as
+    # one batch, not one row at a time.
+    testthat::expect_match(fold_source, "candidate <- ledgr_fold_fill_candidate(fold_state$lot_state", fixed = TRUE)
+    testthat::expect_false(grepl("for (i in seq_along(fill$k))", fold_source, fixed = TRUE))
   }
 })
 

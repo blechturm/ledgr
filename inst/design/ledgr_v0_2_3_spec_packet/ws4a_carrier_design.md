@@ -208,7 +208,7 @@ D3 hit. `ledgr_lot_book_live()` is positional and is not a boundary.
 | Result, terminal recovery | `ledgr_run_terminal_recovery_equity` (rf) | `setNames(rep(0, ...), instrument_ids)`, `intersect(names(state$positions), ...)` | recovered equity rows from replayed named positions |
 | Walk-forward as-of opening | `ledgr_walk_forward_opening_from_run` (wf) | `names(held) <- ...`, `match(names(held), exp$universe)`, `names(cost_basis) <- names(held)` | the as-of book's basis by universe position into the next window's named opening |
 | Walk-forward carry | `ledgr_walk_forward_carried_opening` (wf) | `match(ids, axis)`, `held[ids]`, `setNames(basis, ids)` | held IDs to replay-axis positions; carried lots and basis into the next opening |
-| Handler accounting fact | `ledgr_output_handler` (oh), `record_accounting_fact` | `leg_fees[["close"]]`, `leg_fees[["open"]]` | the close/open leg fee pair; no instrument lookup |
+| Handler accounting fact | `ledgr_output_handler` (oh), `record_accounting_fact` | none since LDG-3167 (the leg-fee split is by row position, `ledgr_fill_leg_fees()`); until then `leg_fees[["close"]]`, `leg_fees[["open"]]` | the close/open leg fee pair; no instrument lookup |
 
 The book regions of `ledgr_run_fold_impl` (br), `ledgr_sweep_candidate_execution`
 (sw) and `ledgr_fold_envelope` (fe) hold no name-keyed lookup: they build
@@ -324,6 +324,48 @@ fold cash.
   helpers and `ledgr_ts_utc_posix()` (no caller left). D13 drops
   `ledgr_fold_build_pulse_plan`; `records/detectors/frozen.csv` row `D13b`
   is the unchanged digest of the three remaining builders on base 953338df.
+
+### 1.9 Publication (LDG-3167 as built)
+
+P4 binds the next corporate-action boundary, then computes the pulse's
+candidate with `ledgr_fold_fill_candidate()`: one typed fill operation over
+the whole fill batch (distinct instruments, one conflict-free block),
+leaving the fold's book untouched. In that order it installs the candidate
+book, publishes the event block (`write_fill_events()`), advances the
+sequence by the block's rows, records the legs (`record_accounting_fact()`,
+memory sink) and installs positions (`net_by_inst` at the fills'
+positions) and cash (`ledgr_cash_scan()` of P3's effects). The compiled
+branch is unchanged.
+
+- **Refusals:** a refusing batch reports its earliest failing fill with that
+  fill's own condition. Row j's outcome depends only on its instrument and on
+  earlier rows (the ordered aggregate scan), so on the refusal path only the
+  shortest failing prefix is bisected, one block per step. The fills before
+  it are then built as the sink would publish them, without staging or
+  writing (`write_fill_events(stage = FALSE)`), so a publication refusal of
+  an earlier fill (a non-finite cash effect in durable metadata) still comes
+  first, as in the per-fill order. `records/ldg3167/` holds the base,
+  pre-change and candidate refusal probe.
+- **Publication group** (`ledgr_fill_event_payload()`, V-publication):
+  `status`, `next_event_seq` and the row columns `event_id`, `run_id`,
+  `ts_utc` (UTC seconds), `event_type`, `instrument_id`, `side`, `qty`,
+  `price`, `fee`, `meta_json`, `event_seq`, `cash_delta`, `position_delta`
+  and `meta`. IDs are formatted once per block; sequences are contiguous.
+  `meta` (one list per row) and `meta_json` are the routed fill metadata
+  (`ledgr_fill_meta_rows()`, WS7/WS8), byte for byte as before.
+- **Leg group** (`ledgr_fill_leg_block()`, V-leg): `event_seq`,
+  `instrument_id`, `side`, `action`, `ts_utc`, `qty`, `price`, `fee`,
+  `realized_pnl`; CLOSE before OPEN per event, the canonical fee split
+  (`ledgr_fill_leg_fees()`, now by row), OPEN P&L 0.
+- **Buffers:** the handler holds the pending block (and, on the memory
+  sink, its aggregate facts) closure-local until `flush_pulse_events()`
+  writes it column by column into the event buffer; the memory sink holds
+  the pending legs and writes them by index into its result buffer
+  (`ledgr_fill_row_buffer_add_many()` now writes by index, P18). Non-fill
+  builder rows parse their metadata once and write typed columns by index
+  (E6). db_live keeps one INSERT per fill through `ledgr_write_fill_events()`.
+- **Retired:** `ledgr_fill_event_row()`, `ledgr_event_buffer_write_rows()`,
+  the staged per-fill and per-leg lists and the per-fill write result.
 
 ## 2. Pins (scope b)
 

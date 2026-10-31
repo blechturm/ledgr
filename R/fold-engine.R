@@ -1343,6 +1343,42 @@ ledgr_fold_stage_plan <- function(
   )
 }
 
+# The candidate lot block of a pulse's fills (Synthesis 3.5): one typed fill
+# operation over the whole batch, whose instruments are distinct (V-fill), so
+# the batch is one conflict-free block; the input book is not modified.
+# Returns the operation's `book` and `applied` rows, or, when it refuses,
+# `failed` (the earliest failing fill) and that fill's own `error`, as the
+# per-fill application raised it. Row j's outcome depends only on its own
+# instrument and on rows before it (the ordered aggregate scan), so a prefix
+# of the batch fails exactly when it contains a failing row. On the refusal
+# path only, the shortest failing prefix is bisected, one block per step.
+ledgr_fold_fill_candidate <- function(book, fill) {
+  prefix <- function(m) {
+    j <- seq_len(m)
+    tryCatch(
+      ledgr_lot_fill(book, fill$pos[j], fill$side[j], fill$qty[j], fill$price[j], fill$fee[j]),
+      error = identity
+    )
+  }
+  n <- length(fill$k)
+  out <- prefix(n)
+  if (!inherits(out, "error")) return(out)
+  error <- out
+  ok <- 0L
+  failed <- n
+  while (failed - ok > 1L) {
+    mid <- (ok + failed) %/% 2L
+    out <- prefix(mid)
+    if (inherits(out, "error")) {
+      failed <- mid
+      error <- out
+    } else {
+      ok <- mid
+    }
+  }
+  list(failed = failed, error = error)
+}
+
 ledgr_fold_stage_apply <- function(
     fold_state,
     services,
@@ -1401,54 +1437,61 @@ ledgr_fold_stage_apply <- function(
         t_event <- t_event + ledgr_time_elapsed(sample_start, ledgr_time_now())
       }
     }
-  } else {
-    # One typed fill operation per fill row until LDG-3167 batches the
-    # pulse; the instrument is the row's run-axis position.
-    for (i in seq_along(fill$k)) {
-      if (sample_telemetry) sample_start <- ledgr_time_now()
-      pos <- fill$pos[[i]]
-
-      lot_res <- ledgr_lot_fill(
-        fold_state$lot_state,
-        pos = pos,
-        side = fill$side[[i]],
-        qty = fill$qty[[i]],
-        price = fill$price[[i]],
-        fee = fill$fee[[i]]
-      )
-      fold_state$lot_state <- lot_res$book
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
-
-      write_res <- output_handler$write_fill_events(
+  } else if (length(fill$k) > 0L) {
+    if (sample_telemetry) sample_start <- ledgr_time_now()
+    rows <- seq_along(fill$k)
+    instrument_id <- services$instrument_ids[fill$pos]
+    use_transaction <- identical(services$event_mode, "live")
+    # The candidate lot block of the whole fill batch and its ordered
+    # per-event facts, computed without touching the fold's book.
+    candidate <- ledgr_fold_fill_candidate(fold_state$lot_state, fill)
+    if (!is.null(candidate$failed)) {
+      # A refusal keeps the per-fill order: the fills before the failing one
+      # were published before its lot operation, so a publication refusal of
+      # theirs comes first. Nothing is staged or written here.
+      earlier <- seq_len(candidate$failed - 1L)
+      output_handler$write_fill_events(
         fill = fill,
-        i = i,
-        instrument_id = services$instrument_ids[[pos]],
+        i = earlier,
+        instrument_id = instrument_id[earlier],
         event_seq = fold_state$event_seq,
-        use_transaction = identical(services$event_mode, "live")
+        use_transaction = use_transaction,
+        stage = FALSE
       )
-      fold_state$event_seq <- write_res$next_event_seq
-      if (is.function(output_handler$record_accounting_fact)) {
-        output_handler$record_accounting_fact(
-          write_res = write_res,
-          applied = lot_res$applied
-        )
-      }
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
+      stop(candidate$error)
+    }
+    if (sample_telemetry) {
+      sample_now <- ledgr_time_now()
+      t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+      sample_start <- sample_now
+    }
 
-      # Lots alone determine the position; cash adds P3's computed effect.
-      positions[[pos]] <- lot_res$book$net_by_inst[[pos]]
-      cash <- cash + fill$cash_delta[[i]]
-      if (sample_telemetry) {
-        t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
-      }
+    # Install the book, publish the event block, advance the sequence and
+    # record the legs; positions and cash are installed last.
+    fold_state$lot_state <- candidate$book
+    block <- output_handler$write_fill_events(
+      fill = fill,
+      i = rows,
+      instrument_id = instrument_id,
+      event_seq = fold_state$event_seq,
+      use_transaction = use_transaction
+    )
+    fold_state$event_seq <- fold_state$event_seq + length(rows)
+    if (is.function(output_handler$record_accounting_fact)) {
+      output_handler$record_accounting_fact(block = block, applied = candidate$applied)
+    }
+    if (sample_telemetry) {
+      sample_now <- ledgr_time_now()
+      t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
+      sample_start <- sample_now
+    }
+
+    # Lots alone determine the positions; cash adds P3's computed effects in
+    # event order.
+    positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]
+    cash <- ledgr_cash_scan(cash, fill$cash_delta)[[length(rows)]]
+    if (sample_telemetry) {
+      t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
     }
   }
   fold_state$positions <- positions

@@ -241,18 +241,23 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     )
   )
 
+  # LDG-3167 (design note Section 5, category 1): the two fills are one
+  # two-row typed block; the expected rows still come from the one-row
+  # builder, one fill at a time, with the block's epochs as POSIXct.
+  block <- Map(c, fills[[1L]]$fill, fills[[2L]]$fill)
+  ids <- c(fills[[1L]]$instrument_id, fills[[2L]]$instrument_id)
+  expected_row <- function(run_id, i) {
+    one <- ledgr:::ledgr_fill_event_payload(run_id, fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)
+    one$ts_utc <- .POSIXct(one$ts_utc, tz = "UTC")
+    ledgr:::ledgr_event_row_df(one)
+  }
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-memory"), .event_initial_capacity = 1L)
   memory$init_buffers(2L)
-  invisible(memory$write_fill_events(fills[[1L]]$fill, fills[[1L]]$i, fills[[1L]]$instrument_id, 1L))
-  invisible(memory$write_fill_events(fills[[2L]]$fill, fills[[2L]]$i, fills[[2L]]$instrument_id, 2L))
+  invisible(memory$write_fill_events(block, 1:2, ids, 1L))
   testthat::expect_identical(nrow(memory$events()), 0L)
   memory$flush_pulse_events()
   memory_rows <- memory$events()
-  expected_memory <- do.call(rbind, lapply(seq_along(fills), function(i) {
-    ledgr:::ledgr_event_row_df(
-      ledgr:::ledgr_fill_event_row("pulse-memory", fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)$row
-    )
-  }))
+  expected_memory <- do.call(rbind, lapply(seq_along(fills), function(i) expected_row("pulse-memory", i)))
   testthat::expect_equal(
     as.data.frame(memory_rows),
     as.data.frame(expected_memory),
@@ -275,8 +280,7 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     .event_initial_capacity = 1L
   )
   durable$init_buffers(2L)
-  invisible(durable$write_fill_events(fills[[1L]]$fill, fills[[1L]]$i, fills[[1L]]$instrument_id, 1L))
-  invisible(durable$write_fill_events(fills[[2L]]$fill, fills[[2L]]$i, fills[[2L]]$instrument_id, 2L))
+  invisible(durable$write_fill_events(block, 1:2, ids, 1L))
   testthat::expect_identical(durable$pending_event_count(), 0L)
   durable$flush_pulse_events()
   testthat::expect_identical(durable$pending_event_count(), 2L)
@@ -288,11 +292,7 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
     params = list("pulse-durable")
   )
-  expected_durable <- do.call(rbind, lapply(seq_along(fills), function(i) {
-    ledgr:::ledgr_event_row_df(
-      ledgr:::ledgr_fill_event_row("pulse-durable", fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)$row
-    )
-  }))
+  expected_durable <- do.call(rbind, lapply(seq_along(fills), function(i) expected_row("pulse-durable", i)))
   expected_durable$meta_json <- as.character(expected_durable$meta_json)
   for (name in names(expected_durable)) {
     testthat::expect_identical(durable_rows[[name]], expected_durable[[name]])
@@ -311,12 +311,14 @@ testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity",
     ),
     collapse = "\n"
   )
-  testthat::expect_false(grepl("state\\$pulse_fill_rows", persistent_source))
-  testthat::expect_false(grepl("state\\$pulse_fill_rows", memory_source))
-  testthat::expect_false(grepl("state\\$pulse_fill_legs", memory_source))
-  testthat::expect_match(persistent_source, "pulse_fill_rows\\[\\[i\\]\\] <<-")
-  testthat::expect_match(memory_source, "pulse_fill_rows\\[\\[i\\]\\] <<-")
-  testthat::expect_match(memory_source, "pulse_fill_legs\\[\\[i\\]\\] <<-")
+  # LDG-3167 (design note Section 5, category 3): no staged list remains; the
+  # pulse's published block and its legs are typed columns held closure-local
+  # and written by index into the preallocated buffers at the flush.
+  testthat::expect_false(grepl("pulse_fill_rows|pulse_fill_legs", memory_source))
+  testthat::expect_false(grepl("state\\$pending_fills", persistent_source))
+  testthat::expect_match(persistent_source, "pending_fills <<- block")
+  testthat::expect_match(memory_source, "pending_legs <<- legs")
+  testthat::expect_match(persistent_source, "ledgr_event_buffer_setv(cols, name, index, block[[name]])", fixed = TRUE)
 
   fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
@@ -328,17 +330,20 @@ testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity",
     spread_bps = 0,
     commission_fixed = 0
   )
+  # A one-row block written and flushed after capacity - 1 published rows.
   allocated_for_last_write <- function(capacity) {
     handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("allocation-probe"))
     handler$init_buffers(capacity)
     for (i in seq_len(capacity - 1L)) {
       handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, i)
+      handler$flush_pulse_events()
     }
     path <- tempfile(fileext = ".out")
     on.exit(unlink(path), add = TRUE)
     Rprofmem(path)
     on.exit(Rprofmem(NULL), add = TRUE)
     handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, capacity)
+    handler$flush_pulse_events()
     Rprofmem(NULL)
     lines <- readLines(path, warn = FALSE)
     sizes <- suppressWarnings(as.numeric(sub(" .*", "", lines)))
@@ -469,11 +474,14 @@ testthat::test_that("persistent output handler preserves full columns across gro
       commission_fixed = i / 100
     )
   })
+  # LDG-3167 (design note Section 5, category 1): each fill is published as a
+  # typed one-row block and flushed; the expected row is that block's columns.
   expected <- vector("list", n_events)
   for (i in seq_len(n_events)) {
-    write_res <- ledgr:::ledgr_fill_event_row(run_id, fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)
-    expected[[i]] <- write_res$row
-    testthat::expect_true(handler$buffer_event(write_res))
+    block <- handler$write_fill_events(fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)
+    handler$flush_pulse_events()
+    block$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
+    expected[[i]] <- block[ledgr:::ledgr_output_event_columns]
   }
   handler$flush_pending()
 
@@ -1170,9 +1178,10 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
   # The shared mechanisms live in the handler only: neither sink allocates an
   # event column buffer, grows one, or stages fill rows.
   source_of <- function(fn) paste(deparse(body(fn)), collapse = "\n")
-  shared <- "event_cols|pulse_fill_rows|ensure_event_capacity|init_event_cols|ledgr_fill_event_payload"
+  # LDG-3167 (category 3): the pending published block replaces the staged rows.
+  shared <- "event_cols|pending_fills|ensure_event_capacity|init_event_cols|ledgr_fill_event_payload"
   testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "init_event_cols")
-  testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "pulse_fill_rows")
+  testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "pending_fills")
   testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_duckdb)))
   testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_memory)))
 })

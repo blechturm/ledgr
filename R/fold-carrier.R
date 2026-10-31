@@ -105,6 +105,22 @@
   plan = c(
     expected_final_cash = "double:scalar:na", economic_event_kinds = "integer:any:none",
     fill = "opaque:any:-", rejection = "opaque:any:-"
+  ),
+  # P4 (LDG-3167, Synthesis 3.5): one published fill block and its legs; the
+  # row axis is the block's events or legs. `cash_delta` admits the overflow
+  # the fill carried (`inf`); `meta` is the routed per-row metadata list.
+  publication = c(
+    status = "character:scalar:none", next_event_seq = "integer:scalar:none",
+    event_id = "character:row:none", run_id = "character:row:none", ts_utc = "double:row:none",
+    event_type = "character:row:none", instrument_id = "character:row:none", side = "character:row:none",
+    qty = "double:row:none", price = "double:row:none", fee = "double:row:none",
+    meta_json = "character:row:na", event_seq = "integer:row:none",
+    cash_delta = "double:row:inf", position_delta = "double:row:none", meta = "opaque:any:-"
+  ),
+  leg = c(
+    event_seq = "integer:row:none", instrument_id = "character:row:none", side = "character:row:none",
+    action = "character:row:none", ts_utc = "double:row:none", qty = "double:row:none",
+    price = "double:row:none", fee = "double:row:none", realized_pnl = "double:row:none"
   )
 )
 # The specifications split once: storage, axis and missingness per field.
@@ -115,7 +131,8 @@
   decision_packet = c("context_pos", "restriction_count"), decision_data = c("source_row", NA),
   execution_packet = c(NA, NA), decision = c("context_pos", NA),
   execution_view = c("member", "reason_count"), fill = c("k", "info_count"),
-  rejection = c("k", "reason_count"), plan = c(NA, NA)
+  rejection = c("k", "reason_count"), plan = c(NA, NA),
+  publication = c("event_id", NA), leg = c("event_seq", NA)
 )
 
 # P3 dictionaries (design note Sections 2.1-2.2): reason tokens of fills and
@@ -292,6 +309,50 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
       if (!identical(sort(c(x$fill$k, x$rejection$k)), plan_axis$actionable_k)) {
         return("the plan does not hold one row per actionable context ordinal")
       }
+      NULL
+    },
+    publication = {
+      n <- length(x$event_id)
+      if (!identical(x$status, if (n > 0L) "WROTE" else "NO_OP")) {
+        return("`status` does not match the block's rows")
+      }
+      # Sequences are contiguous within the block and generate their IDs.
+      if (n > 0L && (x$event_seq[[1L]] < 1L || !identical(x$event_seq, x$event_seq[[1L]] + seq_len(n) - 1L) ||
+          !identical(x$next_event_seq, x$event_seq[[n]] + 1L))) {
+        return("the block's event sequences are not contiguous")
+      }
+      if (x$next_event_seq < 1L) return("`next_event_seq` is not a sequence")
+      if (!identical(x$event_id, paste0(x$run_id, "_", sprintf("%08d", x$event_seq), recycle0 = TRUE))) {
+        return("an event ID is not its run and sequence")
+      }
+      if (any(x$event_type != "FILL") || any(!nzchar(x$instrument_id)) || any(x$side != "BUY" & x$side != "SELL")) {
+        return("an event type, instrument ID or side token is invalid")
+      }
+      if (any(x$qty <= 0) || any(x$price <= 0) || any(x$fee < 0)) {
+        return("an event quantity, price or fee is out of range")
+      }
+      signed <- x$qty
+      signed[x$side == "SELL"] <- -signed[x$side == "SELL"]
+      if (!identical(x$position_delta, signed)) {
+        return("`position_delta` is not the signed event quantity")
+      }
+      if (!is.list(x$meta) || !is.null(attributes(x$meta)) || length(x$meta) != n || !all(vapply(x$meta, is.list, NA))) {
+        return("`meta` is not one metadata list per event")
+      }
+      NULL
+    },
+    leg = {
+      if (any(x$action != "CLOSE" & x$action != "OPEN") || any(x$side != "BUY" & x$side != "SELL")) {
+        return("a leg action or side token is invalid")
+      }
+      # Legs follow their events; within an event CLOSE precedes OPEN, once each.
+      if (is.unsorted(2 * as.numeric(x$event_seq) + (x$action == "OPEN"), strictly = TRUE)) {
+        return("legs are not in event order with CLOSE before OPEN")
+      }
+      if (any(x$qty <= 0) || any(x$price <= 0) || any(x$fee < 0)) {
+        return("a leg quantity, price or fee is out of range")
+      }
+      if (any(x$realized_pnl[x$action == "OPEN"] != 0)) return("an OPEN leg realizes P&L")
       NULL
     }
   )

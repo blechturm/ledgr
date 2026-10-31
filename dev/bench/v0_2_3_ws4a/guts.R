@@ -137,18 +137,19 @@ ws4a_guts <- list(
     ws_gut$prev <- ctx$vec$position
     original(fn, ctx, ...)
   })),
-  # On the base an OPEN leg's qty is the event row's qty vector (as.numeric does
-  # not copy), so a by-reference qty write reaches both witnesses; the leg-only
-  # gut writes the leg's own fee (a fresh per-leg vector) and must leave the
-  # event witness equal.
-  C14c_reuse_staging = list(case = "C14c", expect = "changed: event_block", patch = list(ledgr_fill_event_payload = function(original) function(...) {
+  # LDG-3167: a later pulse writes into the retained typed block by reference.
+  # The event block and the leg block are separate column vectors (on the base
+  # an OPEN leg's qty was the event row's qty vector), so the event gut changes
+  # only the event witness and the leg gut, writing a leg fee, only the leg one.
+  C14c_reuse_staging = list(case = "C14c", expect = "changed: event_block[)]", patch = list(ledgr_fill_event_payload = function(original) function(...) {
     value <- original(...)
-    if (is.null(ws_gut$first)) ws_gut$first <- value else collapse::setv(ws_gut$first$row$qty, 1L, value$row$qty, vind1 = TRUE)
+    if (is.null(ws_gut$first)) ws_gut$first <- value else collapse::setv(ws_gut$first$qty, 1L, value$qty[[1L]], vind1 = TRUE)
     value
   })),
-  C14c_reuse_leg_staging = list(case = "C14c", expect = "changed: leg_block[)]", patch = list(ledgr_output_sink_memory = function(original) {
-    ws4a_c14c_legs(function(legs) if (is.null(ws_gut$legs)) ws_gut$legs <- legs else
-      collapse::setv(ws_gut$legs[[1L]]$fee, 1L, legs[[1L]]$fee + 1, vind1 = TRUE))(original)
+  C14c_reuse_leg_staging = list(case = "C14c", expect = "changed: leg_block[)]", patch = list(ledgr_fill_leg_block = function(original) function(...) {
+    value <- original(...)
+    if (is.null(ws_gut$legs)) ws_gut$legs <- value else collapse::setv(ws_gut$legs$fee, 1L, value$fee[[1L]] + 1, vind1 = TRUE)
+    value
   })),
   # M8 through the typed path (LDG-3165): the decision packet's bridge is
   # reversed; its context columns stay as P1 built them.

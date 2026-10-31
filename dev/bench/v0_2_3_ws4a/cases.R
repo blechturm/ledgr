@@ -353,10 +353,13 @@ ws_case("C13a", "3167", function() {
   snap <- function(fs) list(book = fs$lot_state, cash = fs$cash, positions = fs$positions, event_seq = fs$event_seq)
   inject <- function() {
     n <- 0L
-    list(ledgr_lot_fill = function(original) function(...) {
-      n <<- n + 1L
-      if (n == 2L) ws_fault("lot operation")
-      original(...)
+    # The second lot operation overall: the base's second one-row call, or
+    # (LDG-3167) the second row of the pulse's one batch call; later calls,
+    # such as a refusal's prefix bisection, fail too.
+    list(ledgr_lot_fill = function(original) function(book, pos, ...) {
+      n <<- n + length(pos)
+      if (n >= 2L) ws_fault("lot operation")
+      original(book, pos, ...)
     }, ledgr_fold_stage_apply = function(original) function(fold_state, ...) {
       before <- snap(fold_state)
       withCallingHandlers(original(fold_state, ...),
@@ -413,13 +416,16 @@ ws_keep <- function(env, name, value, view = identity) if (is.null(env$print[[na
   env$value[[name]] <- value
   # The native typed value is also witnessed whole: the base-shaped view hides
   # names and empty segments (LDG-3164 close review F5).
-  if (name %in% c("book_handout", "compiled_input", "corporate_action_view")) env$raw[[name]] <- serialize(value, NULL)
+  if (name %in% c("book_handout", "compiled_input", "corporate_action_view", "event_block", "leg_block")) {
+    env$raw[[name]] <- serialize(value, NULL)
+  }
   env$view[[name]] <- view
   env$print[[name]] <- ws_fingerprint(view(value))
 }
 ws_retained <- function(env, n) {
-  ws_need(all(vapply(names(env$raw), function(k) identical(env$raw[[k]], serialize(env$value[[k]], NULL)), logical(1))),
-    "retained native book representation unchanged")
+  raw <- vapply(names(env$raw), function(k) identical(env$raw[[k]], serialize(env$value[[k]], NULL)), logical(1))
+  ws_need(all(raw), paste0("retained native book representation unchanged (changed: ",
+    paste(names(env$raw)[!raw], collapse = ","), ")"))
   tab <- data.frame(object = names(env$print), at_capture = unlist(env$print),
     at_end = vapply(names(env$print), function(k) ws_fingerprint(env$view[[k]](env$value[[k]])), ""))
   ws_need(nrow(tab) == n && all(tab$at_capture == tab$at_end),
@@ -452,30 +458,36 @@ ws_case("C14b", "3165", function() {
   ws_need(!is.null(keep$value$state_prev), "a retained state_prev")
   ws_retained(keep, 4L)
 })
-# C14c: the published event payload and the memory sink's leg block (the used
-# pulse_fill_legs prefix at flush_legs, before it is copied into the result
-# buffer). LDG-3167 adds the typed publication's event and leg block handouts
-# as the equivalent attachment and keeps both witnesses.
-ws4a_c14c_legs <- function(on_flush) function(original) function(run_id) {
-  sink <- original(run_id)
-  flush <- sink$flush_legs
-  staged <- environment(sink$reset_legs)
-  sink$flush_legs <- function() {
-    if (staged$pulse_fill_leg_n > 0L) on_flush(staged$pulse_fill_legs[seq_len(staged$pulse_fill_leg_n)])
-    flush()
-  }
-  sink
+# C14c: the published event block and the memory sink's leg block, retained
+# across later pulses. Base: the first fill's payload and the first pulse's
+# staged legs. LDG-3167 attaches the typed handouts instead, the first event
+# block (ledgr_fill_event_payload) and leg block (ledgr_fill_leg_block),
+# fingerprinted in the base shape of the block's first event and of its legs,
+# and witnessed whole (raw) as well.
+ws4a_c14c_event_view <- function(b) {
+  if (!is.null(b$row)) return(b)
+  row <- list(event_id = b$event_id[[1L]], run_id = b$run_id[[1L]], ts_utc = .POSIXct(b$ts_utc[[1L]], tz = "UTC"),
+    event_type = b$event_type[[1L]], instrument_id = b$instrument_id[[1L]], side = b$side[[1L]], qty = b$qty[[1L]],
+    price = b$price[[1L]], fee = b$fee[[1L]], meta_json = b$meta_json[[1L]], event_seq = b$event_seq[[1L]])
+  structure(list(status = "WROTE", event_id = row$event_id, event_seq = row$event_seq, next_event_seq = row$event_seq + 1L,
+    cash_delta = b$cash_delta[[1L]], position_delta = b$position_delta[[1L]], meta = b$meta[[1L]], row = row),
+    class = "ledgr_ledger_write_result")
+}
+ws4a_c14c_leg_view <- function(l) {
+  if (is.null(names(l))) return(l)
+  lapply(seq_along(l$event_seq), function(k) list(event_seq = l$event_seq[[k]], ts_utc = .POSIXct(l$ts_utc[[k]], tz = "UTC"),
+    instrument_id = l$instrument_id[[k]], side = l$side[[k]], qty = l$qty[[k]], price = l$price[[k]], fee = l$fee[[k]],
+    realized_pnl = l$realized_pnl[[k]], action = l$action[[k]]))
 }
 ws_case("C14c", "3167", function() {
   t <- ws_two_fills("c14c")
   keep <- new.env()
   flushes <- 0L
-  legs <- ws4a_c14c_legs(function(block) {
-    flushes <<- flushes + 1L
-    ws_keep(keep, "leg_block", block)
-  })
-  ws_patches(list(ledgr_output_sink_memory = legs),
-    ws_trace(list(ledgr_fill_event_payload = function(a, v) ws_keep(keep, "event_block", v)), ws_memory(t$exp, t$plan)))
+  ws_trace(list(ledgr_fill_event_payload = function(a, v) ws_keep(keep, "event_block", v, ws4a_c14c_event_view),
+    ledgr_fill_leg_block = function(a, v) {
+      flushes <<- flushes + 1L
+      ws_keep(keep, "leg_block", v, ws4a_c14c_leg_view)
+    }), ws_memory(t$exp, t$plan))
   ws_need(flushes >= 2L, "a later pulse flushes legs after the leg block is retained")
   c(ws_retained(keep, 2L), list(facts = list(leg_flushes = flushes)))
 })

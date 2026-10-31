@@ -61,12 +61,15 @@ testthat::test_that("memory output handler stores typed events equivalent to led
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 12),
     commission_fixed = 0.25
   )
-  full_write_res <- ledgr:::ledgr_fill_event_row("typed-memory", fill$fill, fill$i, fill$instrument_id, 2L)
+  # LDG-3167 (category 1): the expected row is the one-row block of the
+  # durable builder (serialized metadata), with its epoch as POSIXct.
+  full_block <- ledgr:::ledgr_fill_event_payload("typed-memory", fill$fill, fill$i, fill$instrument_id, 2L)
+  full_block$ts_utc <- .POSIXct(full_block$ts_utc, tz = "UTC")
   write_res <- handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 2L)
   testthat::expect_identical(nrow(handler$events()), 1L)
   handler$flush_pulse_events()
 
-  expected <- tibble::as_tibble(rbind(opening, ledgr:::ledgr_event_row_df(full_write_res$row)))
+  expected <- tibble::as_tibble(rbind(opening, ledgr:::ledgr_event_row_df(full_block)))
   events <- handler$events()
   typed_events <- handler$typed_events()
 
@@ -103,12 +106,16 @@ testthat::test_that("memory output handler preserves full event columns across g
       spread_bps = 0,
       commission_fixed = i / 100
     )
-    write_res <- ledgr:::ledgr_fill_event_row(run_id, fill$fill, fill$i, fill$instrument_id, i)
-    expected[[i]] <- write_res$row
-    expected_cash_delta[[i]] <- write_res$cash_delta
-    expected_position_delta[[i]] <- write_res$position_delta
-    expected_meta[[i]] <- write_res$meta
-    handler$buffer_event(write_res)
+    # LDG-3167 (category 1): one typed block per event, written and flushed;
+    # the expected row is the durable builder's one-row block.
+    block <- ledgr:::ledgr_fill_event_payload(run_id, fill$fill, fill$i, fill$instrument_id, i)
+    block$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
+    expected[[i]] <- block[ledgr:::ledgr_output_event_columns]
+    expected_cash_delta[[i]] <- block$cash_delta
+    expected_position_delta[[i]] <- block$position_delta
+    expected_meta[[i]] <- block$meta[[1L]]
+    handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, i)
+    handler$flush_pulse_events()
   }
 
   events <- handler$events()
