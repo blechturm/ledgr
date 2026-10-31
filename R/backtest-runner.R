@@ -116,20 +116,20 @@ ledgr_fill_event_payload <- function(run_id,
                                      event_seq,
                                      serialize_meta_json = TRUE) {
   n <- length(i)
+  if (n > 0L) ledgr_fill_input_check(fill, i)
+  if (!is.numeric(event_seq) || length(event_seq) != 1 || is.na(event_seq) || !is.finite(event_seq) ||
+    event_seq < 1 || (event_seq %% 1) != 0) {
+    rlang::abort("`event_seq` must be an integer >= 1.", class = "ledgr_invalid_args")
+  }
   if (n == 0L) {
-    return(list(
-      status = "NO_OP", next_event_seq = event_seq,
+    # The typed empty block, validated at construction like a written one.
+    return(ledgr_carrier_new(list(
+      status = "NO_OP", next_event_seq = as.integer(event_seq),
       event_id = character(), run_id = character(), ts_utc = numeric(), event_type = character(),
       instrument_id = character(), side = character(), qty = numeric(), price = numeric(),
       fee = numeric(), meta_json = character(), event_seq = integer(), cash_delta = numeric(),
       position_delta = numeric(), meta = list()
-    ))
-  }
-
-  ledgr_fill_input_check(fill, i)
-  if (!is.numeric(event_seq) || length(event_seq) != 1 || is.na(event_seq) || !is.finite(event_seq) ||
-    event_seq < 1 || (event_seq %% 1) != 0) {
-    rlang::abort("`event_seq` must be an integer >= 1.", class = "ledgr_invalid_args")
+    ), "publication", NA_integer_))
   }
 
   ts_exec <- ledgr_assert_whole_second_utc(

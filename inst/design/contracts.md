@@ -274,12 +274,12 @@ changes no public API, stored format or identity.
 | --- | --- | --- | --- |
 | state | the fold-state slots ([Fold Core](#contract-execution-fold-core)) | cash finite; positions unnamed, finite, run axis; next event sequence at least 1; diagnostic sequence, processed count and telemetry index non-negative; existing tokens, clocks, exposure and frozen set | E, P1, P4 and P5 by slot; run |
 | book | `offset`, `capacity`, `head`, `tail`; `lot_qty`, `lot_price`; `net_by_inst`, `cost_basis_by_inst`; `total_cost_basis`, `realized_pnl`, `realized_comp` | disjoint prefix segments in axis order; live lots `head..tail` in FIFO order, finite; dead slots NA; an empty segment has head 1 and tail 0; finite aggregates and totals; a flat instrument's net is exactly 0 | E, P1, P4 and replay through the lot operations; run |
-| decision packet (availability) | `pulse_idx`, `ts`, `context_pos`, `cash`, `positions_value`, `position`, `member`, `held`, `buyable`, `target_restricted`, `restriction_offset`, `restriction_count`, `restriction_code`, `status`, `lifetime`, `terminal_event`, `lifetime_fact_id`, `mark`, `reference`, `source_ts`, `mark_age`, `mark_source`, `priced`, `permissible`, `frozen` | `context_pos` unique run positions in the provider's decision order; buyable implies member; `target_restricted` exactly when a restriction segment is non-empty; `priced` exactly when the mark is finite; a missing mark keeps its age, source and reference; non-negative mark age; valuation reductions keep run order | P1, once per produced view through `ledgr_carrier_provider_view()`; through P5 |
+| decision packet (availability) | `pulse_idx`, `ts`, `context_pos`, `cash`, `positions_value`, `position`, `member`, `held`, `buyable`, `target_restricted`, `restriction_offset`, `restriction_count`, `restriction_code`, `status`, `lifetime`, `terminal_event`, `lifetime_fact_id`, `mark`, `reference`, `source_ts`, `mark_age`, `mark_source`, `priced`, `permissible`, `frozen` | `context_pos` unique run positions in the provider's decision order; buyable implies member; `target_restricted` exactly when a restriction segment is non-empty; `priced` exactly when the mark is finite; a missing mark keeps its age, source and reference; non-negative mark age; valuation reductions keep run order; cash, positions and marks finite where present, while the derived `positions_value` admits Inf and arithmetic NaN (never NA) and is carried to the base refusal point | P1, once per produced view through `ledgr_carrier_provider_view()`; through P5 |
 | decision data (availability) | `open`, `high`, `low`, `close`, `volume`, `observed`, `source_row`, `source_column`, `history` | current bar only, missing cells NA; `source_row` run positions and `source_column` the prepared pulse column; `history` the existing cutoff-bound handle | P1; P2 only |
 | execution packet (availability) | `exec_ts`, `has_next`; `open`, `high`, `low`, `close`, `volume` on the run axis | an absent next bar carries no values and an NA epoch | P1; P3 only |
 | decision | `context_pos`, `strategy_qty`, `target_qty`, `actionable_k`, `state_update`, `intent_reason` | finite targets on the context axis; `actionable_k` strictly increasing context ordinals; `intent_reason` NULL or one non-empty string; `state_update` opaque | P2; P5 |
 | execution view (availability) | `member`, `restricted`, `reason_offset`, `reason_count`, `reason_code` | contiguous code segments; restricted exactly when a segment is non-empty | P3 through `ledgr_carrier_execution_view()`; P3 |
-| plan | `expected_final_cash`, `economic_event_kinds`, `fill`, `rejection` | distinct kind codes; `FILL` declared exactly when the plan has fills; an empty plan declares no kind; one row per actionable ordinal; `expected_final_cash` NA on dense; the acceptance mask and priority permutation stay private to `ledgr_plan_affordability()` | P3; P5 |
+| plan | `expected_final_cash`, `economic_event_kinds`, `fill`, `rejection` | distinct kind codes; `FILL` declared exactly when the plan has fills; an empty plan declares no kind; one row per actionable ordinal; `expected_final_cash` NA on dense, and on availability the affordability scan's cash, which an accepted sale's infinite proceeds carry to Inf; the acceptance mask and priority permutation stay private to `ledgr_plan_affordability()` | P3; P5 |
 | fill | `k`, `pos`, `side`, `qty`, `price`, `fee`, `cash_delta`, `position_delta`, `exec_ts`, `position_before`, `planned_position_after`, `info_offset`, `info_count`, `info_code` | `pos = context_pos[k]`, distinct, in decision order; side +1 or -1; positive quantity and price; `position_delta = side * qty`; `planned_position_after` is diagnostic only; `fee` and `cash_delta` admit infinities and arithmetic NaN (NaN cash only with a non-finite fee), which accounting refuses as before, but never NA | P3; P5 |
 | rejection | `k`, `pos`, `emit`, `primary`, `reason_offset`, `reason_count`, `reason_code`, `resolved_price`, `exec_ts`, `position` | `emit` 1 (early) before 2 (affordability), each in decision order; at least one reason, `primary` the first; resolved price NA exactly for early rows; epoch NA exactly for `final_pulse_no_execution`; finite position | P3; P5 |
 | lot input | `operation` (1 fill, 3 opening, 4 disposition), `pos`, `side`, `qty`, `price`, `fee`, `position_before`, `realized_model_pnl` | distinct positions in one call; an opening has side 0, a signed non-zero quantity and a finite basis of either sign; a fill has side +1 or -1, positive quantity and price and a finite non-negative fee; a disposition has a non-negative price, zero fee and an optional replay witness | E, P1, P4 and the replay preparer; one kernel call |
@@ -713,16 +713,32 @@ Accepted change pending:
   price; a negative or non-finite price always fails. Invalid transitions
   fail closed with a classed condition aligned with the compiled lot kernel
   on its supported fill subset.
-- On the canonical R path, a fill from a valid book whose lot accounting
-  overflows to a non-finite value from finite inputs (its realized P&L,
-  closing or opened cost basis, position, or the event-order cost-basis,
-  realized or compensation totals; for example buying 1e308 units at a price
-  of 10) is refused as invalid fill input: `ledgr_invalid_lot_fill`, message
+- A fill from a valid book whose lot accounting overflows to a non-finite
+  value from finite inputs (its realized P&L, closing or opened cost basis,
+  position, or the event-order cost-basis, realized or compensation totals;
+  for example buying 1e308 units at a price of 10) is refused as invalid fill
+  input: `ledgr_invalid_lot_fill`, message
   `Invalid fill input for lot accounting.`, the refusal an overflowing fee
-  already gets. Runs and sweeps both refuse, and the earliest failing fill of
-  a batch refuses. A non-finite result from a corrupt book stays
+  already gets on the canonical path. Runs and sweeps both refuse, on the
+  canonical R path and on the compiled `spot_fifo` path, and the earliest
+  failing fill of a batch refuses; nothing of a refused batch is installed or
+  published. The compiled path keeps its C++ batch unchanged: its R wrapper
+  screens each batch for a possible overflow (the native call refused, a
+  returned realized total, net or compensation is non-finite, or the batch's
+  reachable cost basis is not bounded below half the double range) and only
+  then asks the canonical typed fill operation for the earliest overflowing
+  fill; a native input refusal keeps its own condition when its fill comes
+  first or is the same fill. A non-finite result from a corrupt book stays
   `ledgr_lot_state_invariant`. Openings and dispositions are not covered by
   this refusal (v0.2.3 cut 5 `amendment_overflow`).
+- A valuation is not a fill. When finite admitted holdings value to a
+  non-finite run-order `positions_value` (for example 1e308 units marked at
+  10), the fold carries it, and the run fails or completes where the
+  accounting reaches it, as before: P5's reconciliation detail or a fill's
+  metadata refuses as `ledgr_config_non_finite`, and a dense run without such
+  an encoding completes with non-finite equity. A fill that follows still
+  refuses as above when its own lot accounting overflows (v0.2.3 cut 5
+  `amendment_valuation`).
 
 ## Sweep Promotion Contract
 

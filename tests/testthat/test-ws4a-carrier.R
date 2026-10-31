@@ -2302,9 +2302,38 @@ ws4a_d9_hits <- function(fns) {
     recover <- vapply(Filter(function(x) ws4a_head(x) %in% c("lapply", "vapply", "sapply", "Map", "mapply") &&
       any(vapply(as.list(x)[-1L], function(y) identical(y, as.name("[[")) || identical(y, "[["), NA)),
       ws4a_calls(fns[[nm]])), ws4a_txt, "")
-    h <- c(setdiff(alloc, ws4a_d9_allowed), entries, recover)
+    h <- c(setdiff(alloc, ws4a_d9_allowed), entries, recover, ws4a_d9_iterated(fns[[nm]]))
     if (length(h)) paste0(nm, ": ", substr(h, 1L, 80L))
   }))
+}
+# The operation, whatever the names (WS13 close review F4): a list built by
+# iteration. A list-returning apply call, an apply call whose inline function
+# or FUN.VALUE builds a list, or a loop body that builds one. The routed
+# metadata is the identified exception: a per-row record of exactly the
+# routed fields, and the metadata parser over the routed JSON (WS7/WS8).
+# Field-name loops build no list and pass.
+ws4a_d9_meta_fields <- c("fee", "cash_delta", "position_delta", "realized_pnl")
+ws4a_d9_iterated <- function(e) {
+  inline <- function(x) Filter(function(y) is.call(y) && identical(y[[1L]], as.name("function")), as.list(x)[-1L])
+  lists <- function(b) Filter(function(y) ws4a_head(y) == "list", ws4a_calls(b))
+  routed <- function(l) identical(sort(names(l)[-1L]), sort(ws4a_d9_meta_fields))
+  hits <- lapply(ws4a_calls(e), function(x) {
+    h <- ws4a_head(x)
+    if (h %in% c("for", "while", "repeat")) {
+      body <- switch(h, `for` = x[[4L]], `while` = x[[3L]], x[[2L]])
+      return(if (length(lists(body))) ws4a_txt(x))
+    }
+    if (!h %in% c("lapply", "vapply", "sapply", "Map", "mapply", "rapply", "Reduce", "split")) return(NULL)
+    built <- unlist(lapply(inline(x), lists), recursive = FALSE)
+    value <- if (h == "vapply") as.list(x)[-(1:3)] else list()
+    built <- c(built, Filter(function(y) is.call(y) && ws4a_head(y) == "list", value))
+    returns_list <- h %in% c("lapply", "Map", "mapply", "sapply", "rapply", "split")
+    if (!returns_list && !length(built)) return(NULL)
+    parser <- any(vapply(as.list(x)[-1L], identical, NA, as.name("ledgr_lot_parse_meta")))
+    if ((length(built) && all(vapply(built, routed, NA))) || (!length(built) && parser)) return(NULL)
+    ws4a_txt(x)
+  })
+  unlist(hits)
 }
 
 testthat::test_that("[WS4a D9] publication stages no per-fill or per-leg list; the routed metadata is retained", {
@@ -2322,6 +2351,23 @@ testthat::test_that("[WS4a D9] publication stages no per-fill or per-leg list; t
   testthat::expect_true(hit("ledgr_output_handler", "pulse_fill_rows[[i]] <<- list(row = row, cash_delta = cash_delta)"))
   testthat::expect_true(hit("ledgr_output_sink_memory", "pulse_fill_legs[[i]] <<- list(qty = qty, fee = fee, action = action)"))
   testthat::expect_true(hit("ledgr_output_handler", "cash <- vapply(staged, `[[`, numeric(1), \"cash_delta\")"))
+  # WS13 close review F4: economic lists built through iteration fail,
+  # whatever their names; the routed metadata and field-name loops pass.
+  testthat::expect_true(hit("ledgr_fill_event_payload",
+    "staged <- lapply(seq_along(i), function(k) list(qty = fill$qty[[k]], fee = fill$fee[[k]]))"))
+  testthat::expect_true(hit("ledgr_output_handler",
+    "staged <- lapply(seq_len(nrow(rows)), function(k) list(qty = rows$qty[[k]], price = rows$price[[k]]))"))
+  testthat::expect_true(hit("ledgr_fill_leg_block", "legs <- Map(function(q, f) list(qty = q, fee = f), block$qty, block$fee)"))
+  testthat::expect_true(hit("ledgr_fill_event_payload",
+    "staged <- vapply(seq_along(i), function(k) fill$qty[[k]], list(1))"))
+  testthat::expect_true(hit("ledgr_fill_event_payload", "for (k in seq_along(i)) rows <- c(rows, list(list(qty = fill$qty[[k]])))"))
+  testthat::expect_true(hit("ledgr_fill_event_payload", "staged <- lapply(seq_along(i), make_row)"))
+  pass <- function(nm, stmt) length(ws4a_d9_hits(ws4a_inject_into(fns, nm, stmt))) == 0L
+  testthat::expect_true(pass("ledgr_fill_event_payload", "for (name in names(fill)) out[[name]] <- fill[[name]][i]"))
+  testthat::expect_true(pass("ledgr_fill_event_payload", "q <- vapply(seq_along(i), function(k) fill$qty[[k]] * 2, numeric(1))"))
+  testthat::expect_true(pass("ledgr_fill_event_payload", paste("meta <- Map(function(fee, cash_delta, position_delta)",
+    "list(fee = fee, cash_delta = cash_delta, position_delta = position_delta, realized_pnl = NULL), fee, cash_delta, position_delta)")))
+  testthat::expect_true(pass("ledgr_output_handler", "meta <- lapply(rows$meta_json, ledgr_lot_parse_meta)"))
 })
 
 # D3 for the LDG-3167 regions: P4, its candidate and the publication path,
@@ -2804,6 +2850,205 @@ testthat::test_that("[WS4a overflow refusal] a fill whose lot accounting overflo
     ledgr_opening(cash = 1000, positions = c(BBB = 1e308), cost_basis = c(BBB = 1)), list(AAA = 1e308, BBB = 0)), refused)
 })
 
+# Public runs and sweeps for the WS13 close review's F1 and F2 (correction
+# round 1): one instrument S, four daily pulses, no costs; "none" for a run
+# that returns, the sweep's status, condition and final equity otherwise.
+ws4a_public_ovf <- function(avail, price, opening, targets, compiled = FALSE) {
+  pulses <- as.POSIXct("2024-01-01 16:00:00", tz = "UTC") + 86400 * 0:3
+  bars <- data.frame(ts_utc = pulses, instrument_id = "S", open = price, high = price, low = price,
+    close = price, volume = 1000, stringsAsFactors = FALSE)
+  db <- tempfile(fileext = ".duckdb")
+  snap <- if (avail) {
+    sessions <- ledgr_facts_sessions(data.frame(session_date = as.Date(pulses), status = "open",
+      session_open = "09:30:00", session_close = "16:00:00", knowledge_time = pulses - 86400,
+      stringsAsFactors = FALSE), venue_id = "XNYS")
+    ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = "S"),
+      facts = ledgr_facts(sessions), price_basis = "split_adjusted", db_path = db)
+  } else {
+    ledgr_snapshot_from_df(bars, db_path = db)
+  }
+  on.exit(ledgr_snapshot_close(snap))
+  exp <- ledgr_experiment(snap, function(ctx, params) {
+    t <- ctx$hold()
+    if (identical(substr(ctx$ts_utc, 1L, 10L), "2024-01-01")) t[names(params$t)] <- unlist(params$t)
+    t
+  }, cost_model = ledgr_cost_zero(), opening = opening)
+  condition <- function(e) c(class(e)[[1L]], conditionMessage(e))
+  run <- if (!compiled) {
+    e <- tryCatch({
+      close(suppressWarnings(ledgr_run(exp, params = list(t = targets), run_id = "ovf", seed = 1L)))
+      NULL
+    }, error = identity)
+    if (is.null(e)) "none" else condition(e)
+  }
+  s <- suppressWarnings(ledgr_sweep(exp, ledgr_grid_named(c = list(strategy = list(t = targets))), seed = 1L,
+    compiled_accounting_model = if (compiled) "spot_fifo" else NULL))
+  sweep <- if (identical(s$status[[1L]], "DONE")) c("DONE", s$final_equity[[1L]]) else c(s$error_class[[1L]], s$error_msg[[1L]])
+  list(run = run, sweep = sweep)
+}
+
+# Cut 5 amendment_valuation (maintainer, 2026-10-31; ws13_close_review.md F1):
+# a non-finite run-order valuation of finite admitted holdings is carried by
+# the decision packet, and the run reaches the base refusal point and
+# condition. Base outcomes (953338df) are in the comments.
+testthat::test_that("[WS4a valuation overflow] a non-finite valuation reaches the base refusal point", {
+  ns <- ws4a_ns()
+  non_finite <- c("ledgr_config_non_finite",
+    "canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).")
+  input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")
+  long <- ledgr_opening(cash = 1000, positions = c(S = 1e308), cost_basis = c(S = 1))
+  # Holding 1e308 marked at 10 (and at 1.9) values to Inf; the base and the
+  # candidate both refuse at P5's reconciliation detail on the run and the
+  # sweep. Before the amendment the packet refused as ledgr_internal_error.
+  testthat::expect_identical(ws4a_public_ovf(TRUE, 10, long, list()), list(run = non_finite, sweep = non_finite))
+  testthat::expect_identical(ws4a_public_ovf(TRUE, 1.9, long, list()), list(run = non_finite, sweep = non_finite))
+  # Selling it at 1.9: the proceeds are infinite but the lot accounting is
+  # finite. The run refuses at the fill's metadata (P4), the sweep at P5, as
+  # on the base (P3's expected final cash carries the Inf).
+  testthat::expect_identical(ws4a_public_ovf(TRUE, 1.9, long, list(S = 0)), list(run = non_finite, sweep = non_finite))
+  # The review's case, selling it at 10: valued without refusal, the sale's
+  # realized P&L (10 - 1) * 1e308 overflows, so amendment_overflow refuses the
+  # fill (base: ledgr_config_non_finite later, at P4's metadata on the run
+  # and at P5 on the sweep).
+  testthat::expect_identical(ws4a_public_ovf(TRUE, 10, long, list(S = 0)), list(run = input, sweep = input))
+  # Item (c): a dense holding valued at Inf completes as on the base.
+  testthat::expect_identical(ws4a_public_ovf(FALSE, 1.9, long, list()), list(run = "none", sweep = c("DONE", "Inf")))
+  # The derived valuation admits Inf and arithmetic NaN but never NA; the
+  # primitive cash, positions and marks stay finite (F4.15 as amended).
+  p <- ws4a_v201_groups()$decision_packet
+  edit <- function(...) utils::modifyList(p$x, list(...))
+  testthat::expect_null(ns$ledgr_carrier_problem(edit(positions_value = Inf), "decision_packet", p$n))
+  testthat::expect_null(ns$ledgr_carrier_problem(edit(positions_value = NaN), "decision_packet", p$n))
+  for (x in list(edit(positions_value = NA_real_), edit(cash = Inf), edit(position = replace(p$x$position, 1L, Inf)),
+    edit(mark = replace(p$x$mark, which(p$x$priced)[[1L]], Inf)))) {
+    testthat::expect_true(ws4a_refuses_group(x, "decision_packet", p$n))
+  }
+  # Control: the pre-amendment token refuses the derived Inf.
+  fields <- ns$.ledgr_carrier_fields
+  fields$decision_packet[["positions_value"]] <- "double:scalar:none"
+  testthat::with_mocked_bindings(
+    .ledgr_carrier_field_parts = lapply(fields, strsplit, split = ":", fixed = TRUE),
+    testthat::expect_identical(ws4a_public_ovf(TRUE, 10, long, list())$sweep,
+      c("ledgr_internal_error", "Invalid internal decision packet: `positions_value` contains a non-finite value.")),
+    .package = "ledgr"
+  )
+})
+
+# Cut 5 amendment_overflow on the compiled spot_fifo path (ws13_close_review.md
+# F2): the C++ batch is unchanged; its R wrapper refuses a fill whose lot
+# accounting overflows with the canonical condition at the earliest row, and
+# installs and publishes nothing for the refused batch.
+testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overflowing fill as invalid fill input", {
+  ns <- ws4a_ns()
+  input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")
+  cash <- ledgr_opening(cash = 1000)
+  negative <- ledgr_opening(cash = 1000, positions = c(S = 1e308), cost_basis = c(S = -1))
+  appended <- 0L
+  handler <- ns$ledgr_output_handler
+  counted <- function(expr) testthat::with_mocked_bindings(
+    ledgr_output_handler = function(sink, ...) {
+      h <- handler(sink, ...)
+      append <- h$append_compiled_spot_batch
+      h$append_compiled_spot_batch <- function(batch) {
+        appended <<- appended + 1L
+        append(batch)
+      }
+      h
+    },
+    expr,
+    .package = "ledgr"
+  )
+  # Opening-basis overflow, buying 1e308 at 10 (base: DONE, final equity NaN),
+  # and closing-realized overflow, selling a 1e308 long held at -1 for 1.5
+  # (base: DONE, final equity 1.5e308): both refuse, and the refused batch is
+  # never appended.
+  testthat::expect_identical(counted(ws4a_public_ovf(FALSE, 10, cash, list(S = 1e308), compiled = TRUE))$sweep, input)
+  testthat::expect_identical(counted(ws4a_public_ovf(FALSE, 1.5, negative, list(S = 0), compiled = TRUE))$sweep, input)
+  testthat::expect_identical(appended, 0L)
+  # Ordinary compiled fills are appended and unchanged.
+  testthat::expect_identical(counted(ws4a_public_ovf(FALSE, 10, cash, list(S = 5), compiled = TRUE))$sweep,
+    c("DONE", "1000"))
+  testthat::expect_gt(appended, 0L)
+  # Controls without the refusal (the suspicion screen off): the unchanged
+  # native outcomes return (opening basis: DONE with NaN equity; realized:
+  # the unpacked book's invariant).
+  testthat::with_mocked_bindings(
+    ledgr_compiled_spot_fifo_suspect = function(...) FALSE,
+    {
+      testthat::expect_identical(ws4a_public_ovf(FALSE, 10, cash, list(S = 1e308), compiled = TRUE)$sweep,
+        c("DONE", "NaN"))
+      testthat::expect_identical(ws4a_public_ovf(FALSE, 1.5, negative, list(S = 0), compiled = TRUE)$sweep[[1L]],
+        "ledgr_lot_state_invariant")
+    },
+    .package = "ledgr"
+  )
+  # Earliest-row precedence at the wrapper: row 1 overflows its opened basis,
+  # row 2 has an infinite fee, which the native batch refuses with its own
+  # input message. Row 1 refuses first, as in the canonical candidate;
+  # reversed, the native input refusal of row 1 keeps its condition.
+  condition <- function(expr) {
+    e <- tryCatch({ force(expr); NULL }, error = identity)
+    if (is.null(e)) "none" else conditionMessage(e)
+  }
+  state <- list(cash = 1000, positions = c(0, 0), lot_state = ns$ledgr_lot_book(2L))
+  fills <- function(qty, fee) list(k = 1:2, pos = 1:2, side = c(1L, 1L), qty = qty, price = c(10, 10), fee = fee,
+    exec_ts = c(86400, 86400), cash_delta = -(qty * 10 + fee), position_delta = qty)
+  wrapper <- function(f) condition(ns$ledgr_run_compiled_spot_fifo_batch("w", f, state, c("A", "B"), 1L))
+  testthat::expect_identical(wrapper(fills(c(1e308, 1), c(0, Inf))), input[[2L]])
+  testthat::expect_identical(ns$ledgr_fold_fill_candidate(state$lot_state, fills(c(1e308, 1), c(0, Inf)))$failed, 1L)
+  testthat::expect_identical(wrapper(fills(c(1, 1e308), c(Inf, 0))), "`fill_fee` must be finite >= 0.")
+  testthat::expect_identical(wrapper(fills(c(1, 1e308), c(0, 0))), input[[2L]])
+  testthat::expect_identical(wrapper(fills(c(1, 2), c(0, 0))), "none")
+})
+
+# U-3168 and U-3167 at construction (ws13_close_review.md F3): a diagnostic
+# segment is validated where it enters production, and the empty publication
+# block is validated like a written one.
+testthat::test_that("[WS4a U-3168 U-3167 construction] staging segments and empty blocks are validated where built", {
+  ns <- ws4a_ns()
+  state <- ns$ledgr_fold_state_new(cash = 100, positions = 0, lot_state = ns$ledgr_lot_book(1L),
+    pending_segments = ns$ledgr_fold_diagnostic_staging(4L))
+  ns$ledgr_fold_staging_add(state, list(n = 1L, instrument_id = "A", reason_code = "ok"), 86400)
+  testthat::expect_identical(state$pending_segments$n, 1L)
+  bad <- list(
+    na_reason = list(n = 1L, reason_code = NA_character_),
+    na_decision_time = list(n = 1L, reason_code = "ok", decision_ts_utc = NA_real_),
+    negative_mark_age = list(n = 1L, reason_code = "ok", mark_age = -1L)
+  )
+  for (name in names(bad)) {
+    testthat::expect_error(ns$ledgr_fold_staging_add(state, bad[[name]], 86400), class = "ledgr_internal_error",
+      info = name)
+    testthat::expect_identical(state$pending_segments$n, 1L, info = name)
+  }
+  # A typed empty segment passes and stages nothing.
+  ns$ledgr_fold_staging_add(state, list(n = 0L), 86400)
+  testthat::expect_identical(state$pending_segments$n, 1L)
+  # Control: the unvalidated row builder (the pre-correction final
+  # expression) stages the NA reason code.
+  raw <- ns$ledgr_fold_diagnostic_rows
+  b <- body(raw)
+  b[[length(b)]] <- quote(out)
+  body(raw) <- b
+  testthat::with_mocked_bindings(
+    ledgr_fold_diagnostic_rows = raw,
+    ns$ledgr_fold_staging_add(state, bad$na_reason, 86400),
+    .package = "ledgr"
+  )
+  testthat::expect_identical(state$pending_segments$n, 2L)
+
+  # The empty publication: an event sequence of 0 is the argument refusal
+  # (before: a NO_OP block with next_event_seq 0, which the publication
+  # validator refuses); a numeric sequence is normalized to an integer.
+  testthat::expect_error(ns$ledgr_fill_event_payload("review", NULL, integer(), character(), 0L),
+    "`event_seq` must be an integer >= 1.", fixed = TRUE, class = "ledgr_invalid_args")
+  empty <- ns$ledgr_fill_event_payload("review", NULL, integer(), character(), 3)
+  testthat::expect_identical(empty$status, "NO_OP")
+  testthat::expect_identical(empty$next_event_seq, 3L)
+  testthat::expect_null(ns$ledgr_carrier_problem(empty, "publication", NA_integer_))
+  old <- utils::modifyList(empty, list(next_event_seq = 0L))
+  testthat::expect_false(is.null(ns$ledgr_carrier_problem(old, "publication", NA_integer_)))
+})
+
 # W1: the observed application order. Probes, in time order: the canonical
 # publication entry (1), the accounting-fact entry (2) and exit (3), and P4's
 # exit (4). Each step is first seen done at its own probe: the candidate book
@@ -3186,7 +3431,7 @@ testthat::test_that("[WS4a D2] the pulse staging is typed, drained whole and nev
 # no accumulator, sink equity method or sink-held equity buffer.
 ws4a_d10_examined <- c(paste0("ledgr_fold_stage_", c("observe_settle", "decide", "plan", "apply", "commit")),
   "ledgr_fold_envelope", "ledgr_output_handler", "ledgr_output_sink_memory", "ledgr_output_sink_duckdb")
-ws4a_d10_hits <- function(fns) {
+ws4a_d10_hits <- function(fns, all = NULL) {
   targets <- lapply(fns, function(e) vapply(ws4a_assigns(e), function(a) ws4a_txt(a[[2L]]), ""))
   writers <- unlist(Map(function(nm, t) rep(nm, sum(startsWith(t, "fold_state$equity_facts"))), names(fns), targets))
   c(if (!identical(unname(writers), "ledgr_fold_stage_observe_settle")) paste("equity writers:", paste(writers, collapse = ", ")),
@@ -3194,20 +3439,95 @@ ws4a_d10_hits <- function(fns) {
       h <- c(intersect(all.names(fns[[nm]]), c("equity_fact_accumulator", "record_equity_fact")),
         grep("^equity(\\$| *$)", targets[[nm]], value = TRUE))
       if (length(h)) paste0(nm, ": ", h)
-    })))
+    })),
+    ws4a_d10_storage_hits(fns, all))
+}
+# The operation, whatever the names (WS13 close review F4). Storage: every
+# column allocation (a typed vector, list vector or environment, outside a
+# vapply template) and every self-growth (`x <- c(x, ...)`) that the sinks or
+# the handler hold is one of the census below; extra storage, such as a
+# sink-held equity record, fails under any name. Ownership: across the whole
+# package, only P1 appends to the fold's equity record and only E (and the
+# routed terminal recovery, WS7) allocate one.
+ws4a_d10_storage <- c(
+  ledgr_output_handler = "state", ledgr_output_handler = "cols", ledgr_output_handler = "pending_realized",
+  ledgr_output_handler = "pending_cost_basis", ledgr_output_handler = "pending_fills[[name]]",
+  setNames(paste0("cols$", c("event_id", "run_id", "event_type", "instrument_id", "side", "qty", "price", "fee",
+    "meta_json", "event_seq", "cash_delta", "position_delta", "event_realized", "event_cost_basis", "meta")),
+    rep("ledgr_output_handler", 15L)),
+  ledgr_output_sink_memory = "diagnostic_parts", ledgr_output_sink_memory = "pending_legs[[name]]",
+  ledgr_output_sink_duckdb = "state", ledgr_output_sink_duckdb = "state$state_ts",
+  ledgr_output_sink_duckdb = "state$state_json", ledgr_output_sink_duckdb = "sink$typed_columns",
+  ledgr_output_sink_duckdb = "grown_ts", ledgr_output_sink_duckdb = "grown_json"
+)
+ws4a_d10_storage_targets <- function(e) {
+  strip <- function(x) {
+    if (!is.call(x)) return(x)
+    h <- ws4a_head(x)
+    if (h == "function") return(NULL)
+    if (h == "vapply") x <- x[seq_len(min(length(x), 3L))]
+    as.call(lapply(as.list(x), strip))
+  }
+  alloc <- c("numeric", "double", "integer", "character", "logical", "vector", "new.env", "matrix", "array")
+  held <- Filter(function(a) {
+    rhs <- a[[3L]]
+    if (is.call(rhs) && ws4a_head(rhs) == "function") return(FALSE)
+    grow <- is.call(rhs) && ws4a_head(rhs) %in% c("c", "append") && length(rhs) > 1L &&
+      identical(ws4a_txt(rhs[[2L]]), ws4a_txt(a[[2L]]))
+    grow || length(intersect(ws4a_heads(strip(rhs)), alloc)) > 0L
+  }, ws4a_assigns(e))
+  unique(vapply(held, function(a) ws4a_txt(a[[2L]]), ""))
+}
+ws4a_d10_storage_hits <- function(fns, all = NULL) {
+  if (is.null(all)) all <- ws4a_sources()
+  sinks <- intersect(names(fns), unique(names(ws4a_d10_storage)))
+  extra <- unlist(lapply(sinks, function(nm) {
+    h <- setdiff(ws4a_d10_storage_targets(fns[[nm]]), ws4a_d10_storage[names(ws4a_d10_storage) == nm])
+    if (length(h)) paste0(nm, ": holds ", h)
+  }))
+  all[names(fns)] <- fns
+  callers <- function(f) names(Filter(function(e) f %in% ws4a_heads(e), all))
+  c(extra,
+    if (!identical(callers("ledgr_fold_equity_append"), "ledgr_fold_stage_observe_settle")) {
+      paste("equity appenders:", paste(callers("ledgr_fold_equity_append"), collapse = ", "))
+    },
+    if (!all(callers("ledgr_fold_equity_record") %in% c("ledgr_fold_envelope", "ledgr_run_terminal_recovery_equity"))) {
+      paste("equity record owners:", paste(callers("ledgr_fold_equity_record"), collapse = ", "))
+    })
 }
 
 testthat::test_that("[WS4a D10] P1 writes one fold-owned equity row per valued pulse on both producers", {
-  fns <- ws4a_sources()[ws4a_d10_examined]
-  testthat::expect_length(ws4a_d10_hits(fns), 0L)
+  src <- ws4a_sources()
+  fns <- src[ws4a_d10_examined]
+  testthat::expect_length(ws4a_d10_hits(fns, all = src), 0L)
   inject <- function(nm, stmt) {
     fns[[nm]] <- ws4a_inject(fns[[nm]], stmt)
-    length(ws4a_d10_hits(fns)) > 0L
+    length(ws4a_d10_hits(fns, all = src)) > 0L
   }
   testthat::expect_true(inject("ledgr_fold_stage_observe_settle", "services$equity_fact_accumulator$append(x)"))
   testthat::expect_true(inject("ledgr_output_sink_memory", "equity <- new.env(parent = emptyenv())"))
   testthat::expect_true(inject("ledgr_fold_stage_commit",
     "fold_state$equity_facts <- ledgr_fold_equity_append(fold_state$equity_facts, ts, 0, 0, 0, 0)"))
+  # WS13 close review F4: extra equity storage and writer ownership fail
+  # whatever their names; a sink-held record (the review's exact control),
+  # renamed, grown by c(), or a second appender or record owner elsewhere.
+  testthat::expect_true(inject("ledgr_output_sink_memory",
+    "sink$equity <- list(n = 0L, ts = numeric(1024L), cash = numeric(1024L))"))
+  testthat::expect_true(inject("ledgr_output_sink_memory", "sink$vals <- list(n = 0L, a = numeric(1024L))"))
+  testthat::expect_true(inject("ledgr_output_handler", "kept <<- c(kept, fold_cash)"))
+  testthat::expect_true(inject("ledgr_output_sink_duckdb", "series <- new.env(parent = emptyenv())"))
+  other <- function(nm, stmt) {
+    src[[nm]] <- ws4a_inject(src[[nm]], stmt)
+    length(ws4a_d10_hits(fns, all = src)) > 0L
+  }
+  testthat::expect_true(other("ledgr_run_finalize",
+    "rec <- ledgr_fold_equity_append(rec, 1, 0, 0, 0, 0)"))
+  testthat::expect_true(other("ledgr_sweep_candidate_execution", "rec <- ledgr_fold_equity_record(10L)"))
+  # Passing controls: a local temporary that is not held, a vapply template,
+  # and the census's own event column.
+  testthat::expect_false(inject("ledgr_output_handler", "x <- vapply(meta, length, integer(1))"))
+  testthat::expect_false(inject("ledgr_output_handler", "cols$qty <- numeric(capacity)"))
+  testthat::expect_false(inject("ledgr_output_sink_memory", "rows <- nrow(block)"))
   # Runtime: availability (with a stop) and dense, durable run and sweep.
   for (avail in c(TRUE, FALSE)) {
     got <- ws4a_3168_capture(avail, stop_at = if (avail) 3L else NA_integer_)

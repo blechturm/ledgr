@@ -652,7 +652,7 @@ Field invariants:
 | F4.12 | book: net_by_inst, cost_basis_by_inst lot-derived | 3164 | net differs from live lots |
 | F4.13 | book: totals scalars finite | 3164 | NaN realized_comp |
 | F4.14 | packet: pulse_idx valid; ts epoch; context_pos unique run positions; empty allowed | 3165 | duplicate context_pos |
-| F4.15 | packet: cash, positions_value, position finite | 3165 | NaN position |
+| F4.15 | packet: cash and position finite; positions_value, derived from them and the marks, admits Inf and arithmetic NaN but not NA (revised by cut 5 `amendment_valuation`, 2026-10-31, after the workstream 13 close review F1: a non-finite valuation of finite admitted holdings is carried to the base refusal point, not refused as internal corruption) | 3165 | NaN position; NA positions_value; Inf cash |
 | F4.16 | packet: member, held, buyable, target_restricted logical, no NA; buyable implies member | 3165 | buyable non-member |
 | F4.17 | packet: restriction segment ordered, codes in dictionary | 3165 | code 7 |
 | F4.18 | packet: status, lifetime codes; terminal_event, lifetime_fact_id character with empty strings | 3165 | NA terminal_event |
@@ -664,7 +664,7 @@ Field invariants:
 | F4.24 | execution view: member, restricted, reason segments | 3166 | unequal segment lengths |
 | F4.25 | decision: targets full and finite; actionable_k ordered | 3165 | NA target |
 | F4.26 | decision: state_update opaque; intent_reason existing validation | 3165 | non-character intent |
-| F4.27 | plan: accepted, afford_order private; expected_final_cash (dense unused; skip equals cash) | 3166 | skip cash differs |
+| F4.27 | plan: accepted, afford_order private; expected_final_cash (dense unused; skip equals cash; on availability it may be Inf from an accepted sale's infinite proceeds, admitted since the workstream 13 close correction, as the base carried it) | 3166 | skip cash differs |
 | F4.28 | plan: economic_event_kinds empty or supported | 3166 | unsupported code |
 | F4.29 | fill: k, pos, side (+/-1); distinct pos; decision order | 3166 | side 0 |
 | F4.30 | fill: qty, price, fee, effects, exec_ts valid | 3166 | negative fee |
@@ -888,8 +888,8 @@ failing control. Another detector's failure is not evidence for it.
 | D6 | No JSON encode or parse in the pulse loop beyond the routed sites (fill and non-fill `meta_json`, H5, intent reason, stop and exception detail, and P5's per-pulse strategy-state serialization `canonical_json(state_update)` at fe:1521, route R8.04) | parse-tree allowlist over fold stage functions | new `canonical_json` call in P3 |
 | D7 | No Kahan step on opening rows; nonzero compensation preserved | runtime counter in the typed operations, C5b | M6 |
 | D8 | No fill-intent object in the fold or sinks; effects computed once | parse regions plus a counter on `ledgr_fill_publication_deltas` | reconstruct an intent; compute twice |
-| D9 | No per-fill economic staging list and no per-leg staging list in publication; routed memory `meta` allowed | parse regions of the handler and memory sink | staged per-fill or per-leg list |
-| D10 | Exactly one equity writer per valued pulse on both producers; no accumulator in fold or service slots | runtime count plus slot inspection | keep the accumulator |
+| D9 | No per-fill economic staging list and no per-leg staging list in publication; routed memory `meta` allowed. As strengthened after the workstream 13 close review (F4): any list built by iteration (a list-returning apply call, an apply call whose inline function or FUN.VALUE builds a list, a loop body that builds one) fails whatever its names, except the routed metadata record of exactly its fields and the metadata parser | parse regions of the handler, the sinks and the block builders | staged per-fill or per-leg list; `lapply(seq_along(i), function(k) list(qty = ..., fee = ...))` |
+| D10 | Exactly one equity writer per valued pulse on both producers; no accumulator in fold or service slots. As strengthened after the workstream 13 close review (F4): every column allocation or self-growth the sinks and handler hold is in an enumerated storage census, and across the package only P1 appends to and only E (and the routed terminal recovery) allocate the equity record | runtime count plus slot inspection; storage census and package-wide caller census | keep the accumulator; a sink-held `list(n = 0L, ts = numeric(1024L), ...)` under any name |
 | D11 | Positions read only from `net_by_inst` | parse regions of P4 and replay | `positions + delta` |
 | D12a-e | Store bindings and config hash; DESCRIPTION; export census; mode-branch census; compiled default | existing contract tests and a C1 config-hash witness | change each |
 | D13 | Dense observe/ctx builders unchanged | source hash of `ledgr_pulse_context`, `ledgr_update_pulse_context_helpers` and `ledgr_dense_eligibility_planes` (frozen in `records/detectors/frozen.csv`); `ledgr_fold_build_pulse_plan` was also frozen at LDG-3163 but leaves the list when LDG-3166 retypes the dense planner (Q1 freezes observation, not planning) | edit a dense view builder |
@@ -898,7 +898,7 @@ failing control. Another detector's failure is not evidence for it.
 | D17 | Lot kernel computes no cash | parse region of the kernel | cash inside the kernel |
 | D18 | A kernel call refuses duplicate instruments | unit test | accept duplicates |
 | D19 | No named-list FIFO function defined in `R/` | parse census of definitions | define `ledgr_lot_apply_fill` |
-| D20 | Each Section 3.4 route's named operation and its output witness unchanged | per-route boundary diff plus witness | change the boundary |
+| D20 | Each Section 3.4 route's named operation and its output witness unchanged. As recorded at LDG-3169: the routes are compared by their signatures and call shapes, plus the twelve output witness cases; this does not establish operation-level equality of every named route (workstream 13 close review O1) | per-route boundary diff plus witness | change the boundary |
 | D21 | No history or substrate access in P3-P5 | phase-ownership checker (`tools/check-fold-phase-contract.R`) | injected P3 history read |
 | D22 | Dictionaries match literal fixtures (tokens and codes) | fixture comparison, separate from diagnostic round-trip bytes | renumber a token |
 | D23 | Replay applies each published cash effect exactly once | replay cash witness on a two-event ledger | apply a delta twice |

@@ -39,14 +39,17 @@
 # the group's context length, `run` the run axis, `segment` the restriction
 # segment total, `any` free; missingness `none` refuses NA, `na` admits NA
 # (doubles must otherwise be finite), `inf` admits Inf and arithmetic NaN
-# only in resolved fee/cash columns, but refuses ordinary NA; accounting
-# retains the base refusal for non-finite fees, and
-# `-` marks opaque fields.
+# only in resolved fee/cash columns and the packet's derived valuation, but
+# refuses ordinary NA; accounting retains the base refusal for non-finite
+# fees, and `-` marks opaque fields.
 .ledgr_carrier_fields <- list(
   decision_packet = c(
     pulse_idx = "integer:scalar:none", ts = "double:scalar:none",
     context_pos = "integer:context:none",
-    cash = "double:scalar:none", positions_value = "double:scalar:none",
+    # The run-order valuation is derived from finite positions and marks; its
+    # sum may overflow to Inf or NaN, which the run carries to the base
+    # refusal point (amendment_valuation), but it is never NA.
+    cash = "double:scalar:none", positions_value = "double:scalar:inf",
     position = "double:context:none",
     member = "logical:context:none", held = "logical:context:none",
     buyable = "logical:context:none", target_restricted = "logical:context:none",
@@ -103,7 +106,9 @@
     position = "double:row:none"
   ),
   plan = c(
-    expected_final_cash = "double:scalar:na", economic_event_kinds = "integer:any:none",
+    # NA on dense; on availability the affordability scan's cash, which an
+    # accepted sale's infinite proceeds (`inf` cash effects) carry to Inf.
+    expected_final_cash = "double:scalar:any", economic_event_kinds = "integer:any:none",
     fill = "opaque:any:-", rejection = "opaque:any:-"
   ),
   # P4 (LDG-3167, Synthesis 3.5): one published fill block and its legs; the
@@ -797,7 +802,8 @@ ledgr_fold_diagnostic_rows <- function(segment, ts) {
     )
     out[[name]] <- rep_len(v, m)
   }
-  out
+  # The segment is validated once where it enters production (U-3168).
+  ledgr_carrier_new(out, "diagnostics", NA_integer_)
 }
 
 # Stages a fully used block after the staging's used rows, by index into its

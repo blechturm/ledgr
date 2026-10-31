@@ -134,6 +134,25 @@ ledgr_carrier_compiled_unpack <- function(batch, n) {
   ledgr_lot_book_validate(book, n, reduction = FALSE)
 }
 
+# Whether a native batch result may hide a lot-accounting overflow (cut 5
+# amendment_overflow): the native call refused, a returned realized total,
+# net or compensation is non-finite, or the batch's reachable cost basis is
+# not bounded below half the double range. The bound is |total basis| plus
+# twice the touched instruments' bases, every live lot's basis and the
+# fills' notionals. The native kernel's dust rule scales with the value and
+# snaps an infinite basis to zero, so its outputs alone cannot show an
+# opened-basis overflow. A suspicion only asks the canonical oracle; it never
+# changes a result.
+ledgr_compiled_spot_fifo_suspect <- function(batch, fills, book, lot_pack) {
+  if (inherits(batch, "error")) return(TRUE)
+  pos <- fills$pos
+  bound <- abs(book$total_cost_basis) + 2 * sum(abs(book$cost_basis_by_inst[pos])) +
+    sum(abs(lot_pack$lot_qty * lot_pack$lot_price)) + sum(fills$qty * fills$price)
+  !is.finite(2 * bound) || !all(is.finite(batch$event_realized)) ||
+    !all(is.finite(batch$event_cost_basis)) || !all(is.finite(batch$net_by_inst[pos])) ||
+    !is.finite(batch$realized_comp[[1L]])
+}
+
 # The compiled wrapper's input is P3's typed fill group: run-axis positions,
 # side codes, quantities, prices, fees and execution epochs, read as columns.
 ledgr_run_compiled_spot_fifo_batch <- function(run_id,
@@ -163,27 +182,69 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
   book <- state$lot_state
   lot_pack <- ledgr_carrier_compiled_pack(book)
 
-  batch <- ledgr_cpp_spot_fifo_batch(
-    as.character(run_id),
-    as.integer(fill_inst_idx),
-    as.character(fill_instrument_id),
-    as.character(fill_side),
-    as.numeric(fill_qty),
-    as.numeric(fill_price),
-    as.numeric(fill_fee),
-    as.numeric(fill_ts_utc),
-    as.integer(event_seq_start),
-    as.numeric(state$positions),
-    as.numeric(book$net_by_inst),
-    as.numeric(state$cash),
-    as.integer(lot_pack$lot_inst_idx),
-    as.numeric(lot_pack$lot_qty),
-    as.numeric(lot_pack$lot_price),
-    as.numeric(book$cost_basis_by_inst),
-    as.numeric(book$total_cost_basis),
-    as.numeric(book$realized_pnl),
-    as.numeric(book$realized_comp)
-  )
+  # The unchanged native batch over the first `m` fills; it holds no state.
+  native <- function(m) {
+    j <- seq_len(m)
+    tryCatch(ledgr_cpp_spot_fifo_batch(
+      as.character(run_id),
+      as.integer(fill_inst_idx[j]),
+      as.character(fill_instrument_id[j]),
+      as.character(fill_side[j]),
+      as.numeric(fill_qty[j]),
+      as.numeric(fill_price[j]),
+      as.numeric(fill_fee[j]),
+      as.numeric(fill_ts_utc[j]),
+      as.integer(event_seq_start),
+      as.numeric(state$positions),
+      as.numeric(book$net_by_inst),
+      as.numeric(state$cash),
+      as.integer(lot_pack$lot_inst_idx),
+      as.numeric(lot_pack$lot_qty),
+      as.numeric(lot_pack$lot_price),
+      as.numeric(book$cost_basis_by_inst),
+      as.numeric(book$total_cost_basis),
+      as.numeric(book$realized_pnl),
+      as.numeric(book$realized_comp)
+    ), error = identity)
+  }
+  batch <- native(n)
+  if (ledgr_compiled_spot_fifo_suspect(batch, fills, book, lot_pack)) {
+    # Suspicion path only. The canonical typed fill operation is the oracle
+    # (contracts: canonical R is normative for compiled paths): its earliest
+    # invalid-fill row is the batch's overflow refusal, as for canonical
+    # fills. A native input refusal keeps its own condition when its row
+    # (the shortest refusing native prefix) comes first or is the same row.
+    # A corrupt book, or no canonical refusal, leaves the native outcome.
+    # Nothing is installed or published for a refused batch.
+    oracle <- ledgr_fold_fill_candidate(book, fills)
+    overflow <- if (!is.null(oracle$failed) && inherits(oracle$error, "ledgr_invalid_lot_fill")) {
+      oracle$failed
+    } else {
+      n + 1L
+    }
+    if (inherits(batch, "error")) {
+      error <- batch
+      ok <- 0L
+      failed <- n
+      while (failed - ok > 1L) {
+        mid <- (ok + failed) %/% 2L
+        out <- native(mid)
+        if (inherits(out, "error")) {
+          failed <- mid
+          error <- out
+        } else {
+          ok <- mid
+        }
+      }
+      if (failed <= overflow) stop(error)
+    }
+    if (overflow <= n) {
+      rlang::abort(
+        "Invalid fill input for lot accounting.",
+        class = "ledgr_invalid_lot_fill"
+      )
+    }
+  }
   batch$positions <- as.numeric(batch$positions)
   # The output boundary publishes P3's carried effects and installs the cash
   # they imply, in fill order; native lot positions stay authoritative and
