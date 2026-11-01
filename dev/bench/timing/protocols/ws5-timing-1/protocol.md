@@ -16,7 +16,7 @@ Run two labels and keep their records separate:
 
 - `14252ffb` versus the integrated Cut 7 candidate is the macro-rule-16
   release comparison;
-- the post-WS4a attribution base versus that candidate locates the costs added
+- the post-WS4a attribution base `cb332627` versus that candidate locates the costs added
   after the typed carrier.
 
 For both state cells, the milestone record must report fold-stage `t_ctx` and
@@ -28,4 +28,3 @@ must equal its warm-up outcome.
 The 1.10 ratios are disposition triggers, not semantic acceptance gates. A
 failed or slower cell is explained and routed under macro rule 16; no oracle,
 fixture, pair count or threshold is changed to hide it.
-

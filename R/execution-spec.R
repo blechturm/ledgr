@@ -57,6 +57,7 @@ ledgr_execution_spec <- function(run_id,
                                  state,
                                  state_prev = NULL,
                                  position_facts = NULL,
+                                 position_fact_unknown_basis = character(),
                                  history_substrate = NULL,
                                  feature_defs,
                                  active_alias_map = NULL,
@@ -98,6 +99,7 @@ ledgr_execution_spec <- function(run_id,
     state = state,
     state_prev = state_prev,
     position_facts = position_facts,
+    position_fact_unknown_basis = as.character(position_fact_unknown_basis),
     history_substrate = history_substrate,
     feature_defs = feature_defs,
     active_alias_map = active_alias_map,
@@ -243,6 +245,13 @@ ledgr_validate_execution_spec <- function(spec) {
         length(spec$position_facts$entry_bar) == length(spec$instrument_ids) &&
         length(spec$position_facts$exit_bar) == length(spec$instrument_ids)),
     "`execution$position_facts` must be NULL or run-axis entry/exit anchors."
+  )
+  ledgr_execution_spec_check(
+    is.character(spec$position_fact_unknown_basis) &&
+      !anyNA(spec$position_fact_unknown_basis) &&
+      !anyDuplicated(spec$position_fact_unknown_basis) &&
+      all(spec$position_fact_unknown_basis %in% spec$instrument_ids),
+    "`execution$position_fact_unknown_basis` must contain unique run-axis instrument_ids."
   )
   ledgr_execution_spec_check(
     ledgr_history_substrate_is(spec$history_substrate),

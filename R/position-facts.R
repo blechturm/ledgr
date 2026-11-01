@@ -8,23 +8,101 @@ ledgr_position_fact_state <- function(n, entry_bar = NULL, exit_bar = NULL) {
   list(entry_bar = entry, exit_bar = exit)
 }
 
-ledgr_position_fact_bar_index <- function(time, bar_axis) {
-  epoch <- as.numeric(as.POSIXct(time, tz = "UTC"))
+ledgr_position_fact_axis_map <- function(bar_axis, transition_time = NULL,
+                                         transition_index = NULL) {
+  epoch <- as.numeric(as.POSIXct(bar_axis, tz = "UTC"))
+  if (anyNA(epoch) || anyDuplicated(epoch)) {
+    rlang::abort(
+      "Position-fact bar axis must contain unique non-missing timestamps.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  out <- stats::setNames(as.integer(seq_along(epoch)), format(epoch, scientific = FALSE, trim = TRUE))
+  if (length(transition_time) == 0L) return(out)
+  transition_epoch <- as.numeric(as.POSIXct(transition_time, tz = "UTC"))
+  transition_index <- as.integer(transition_index)
+  if (length(transition_epoch) != length(transition_index) ||
+      anyNA(transition_epoch) || anyNA(transition_index) ||
+      any(transition_index < 1L | transition_index > length(epoch))) {
+    rlang::abort(
+      "Prepared position-transition labels must map to the run bar axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  keys <- format(transition_epoch, scientific = FALSE, trim = TRUE)
+  duplicate_conflict <- vapply(
+    split(transition_index, keys),
+    function(value) length(unique(value)) > 1L,
+    logical(1)
+  )
+  if (any(duplicate_conflict)) {
+    rlang::abort(
+      "Prepared position-transition labels must map uniquely to the run bar axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  keep <- !duplicated(keys)
+  keys <- keys[keep]
+  transition_index <- transition_index[keep]
+  prior <- unname(out[keys])
+  conflict <- !is.na(prior) & prior != transition_index
+  if (any(conflict)) {
+    rlang::abort(
+      "Prepared position-transition labels must map uniquely to the run bar axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  c(out, stats::setNames(transition_index[is.na(prior)], keys[is.na(prior)]))
+}
+
+ledgr_position_fact_replay_axis_map <- function(prepared, bar_axis) {
+  fill <- prepared$operation == .ledgr_lot_fill
+  if (!any(fill)) return(ledgr_position_fact_axis_map(bar_axis))
   bars <- as.numeric(as.POSIXct(bar_axis, tz = "UTC"))
-  exact <- match(epoch, bars)
-  missing <- is.na(exact)
-  if (any(missing)) exact[missing] <- findInterval(epoch[missing], bars) + 1L
-  exact[exact < 1L | exact > length(bars)] <- NA_integer_
-  as.integer(exact)
+  times <- as.numeric(as.POSIXct(prepared$ts_utc[fill], tz = "UTC"))
+  index <- match(times, bars)
+  missing <- is.na(index)
+  index[missing] <- findInterval(times[missing], bars) + 1L
+  valid <- index >= 1L & index <= length(bars) & times <= bars[index]
+  previous <- index > 1L
+  valid[previous] <- valid[previous] & times[previous] > bars[index[previous] - 1L]
+  if (any(!valid)) {
+    rlang::abort(
+      "A replayed fill timestamp cannot be placed on the prepared run bar axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  ledgr_position_fact_axis_map(bar_axis, prepared$ts_utc[fill], index)
+}
+
+ledgr_position_fact_bar_index <- function(time, bar_axis = NULL, axis_map = NULL) {
+  if (is.null(axis_map)) axis_map <- ledgr_position_fact_axis_map(bar_axis)
+  epoch <- as.numeric(as.POSIXct(time, tz = "UTC"))
+  key <- format(epoch, scientific = FALSE, trim = TRUE)
+  exact <- unname(as.integer(axis_map[key]))
+  if (anyNA(epoch) || anyNA(exact)) {
+    rlang::abort(
+      "A position transition timestamp is not on the prepared run bar axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  exact
 }
 
 # Classify canonical accounting transitions from the replay's own sequential
 # book values.  The helper consumes replay output; it is not a second replay
 # engine and it never scans fills separately from non-fill accounting events.
-ledgr_position_facts_from_replay <- function(replay, bar_axis) {
+ledgr_position_facts_from_replay <- function(replay, bar_axis, initial_state = NULL,
+                                             axis_map = NULL) {
   prepared <- replay$prepared
   n_inst <- length(prepared$instrument_ids)
-  state <- ledgr_position_fact_state(n_inst)
+  state <- initial_state %||% ledgr_position_fact_state(n_inst)
+  if (!is.list(state) ||
+      !identical(names(state), c("entry_bar", "exit_bar")) ||
+      length(state$entry_bar) != n_inst || length(state$exit_bar) != n_inst) {
+    rlang::abort("Initial position facts must align with the replay axis.", class = "ledgr_internal_error")
+  }
+  state <- list(entry_bar = as.integer(state$entry_bar), exit_bar = as.integer(state$exit_bar))
   n <- length(prepared$event_seq)
   if (n == 0L) return(state)
 
@@ -35,12 +113,25 @@ ledgr_position_facts_from_replay <- function(replay, bar_axis) {
   before[valid] <- after[valid] - prepared$position_delta[valid]
   flat_before <- valid & abs(before) <= 1e-12
   flat_after <- valid & abs(after) <= 1e-12
-  opened <- flat_before & !flat_after
-  closed <- !flat_before & flat_after
+  # Opening-position rows describe the initial book and are not transitions.
+  # A carried window therefore keeps its seeded anchors, while an ordinary
+  # supplied opening remains unknown when no seed was supplied.
+  transition <- prepared$operation != .ledgr_lot_opening
+  opened <- transition & flat_before & !flat_after
+  closed <- transition & !flat_before & flat_after
   fill <- prepared$operation == .ledgr_lot_fill
-  bar <- ledgr_position_fact_bar_index(prepared$ts_utc, bar_axis)
+  if (is.null(axis_map)) {
+    axis_map <- ledgr_position_fact_replay_axis_map(prepared, bar_axis)
+  }
+  bar <- rep(NA_integer_, n)
+  action <- opened | closed
+  if (any(action)) {
+    bar[action] <- ledgr_position_fact_bar_index(
+      prepared$ts_utc[action], axis_map = axis_map
+    )
+  }
 
-  entry_action <- which(opened | closed)
+  entry_action <- which(action)
   if (length(entry_action) > 0L) {
     last <- entry_action[!duplicated(pos[entry_action], fromLast = TRUE)]
     set <- fill[last] & opened[last]
@@ -73,28 +164,57 @@ ledgr_position_facts_apply <- function(state, pos, before, after, bar, fill) {
   state
 }
 
-ledgr_position_facts_view <- function(state, book, position, current_bar, bar_axis) {
-  n <- length(position)
-  entry_price <- rep(NA_real_, n)
-  held <- abs(position) > 1e-12
-  entry_price[held] <- as.numeric(book$cost_basis_by_inst[held]) / abs(as.numeric(position[held]))
-  entry_at <- as.POSIXct(rep(NA_real_, n), origin = "1970-01-01", tz = "UTC")
-  known_entry <- held & !is.na(state$entry_bar)
-  entry_at[known_entry] <- as.POSIXct(bar_axis[state$entry_bar[known_entry]], tz = "UTC")
-  exit_at <- as.POSIXct(rep(NA_real_, n), origin = "1970-01-01", tz = "UTC")
-  known_exit <- !is.na(state$exit_bar)
-  exit_at[known_exit] <- as.POSIXct(bar_axis[state$exit_bar[known_exit]], tz = "UTC")
-  bars_since_entry <- rep(NA_real_, n)
-  bars_since_entry[known_entry] <- as.numeric(current_bar - state$entry_bar[known_entry])
-  bars_since_exit <- rep(Inf, n)
-  bars_since_exit[known_exit] <- as.numeric(current_bar - state$exit_bar[known_exit])
+ledgr_position_fact_source <- function(state, book, position, current_bar, bar_axis,
+                                       context_pos = seq_along(position),
+                                       unknown_basis = rep(FALSE, length(position))) {
   list(
-    entry_price = entry_price,
-    entry_at = entry_at,
-    exit_at = exit_at,
-    bars_since_entry = bars_since_entry,
-    bars_since_exit = bars_since_exit
+    entry_bar = state$entry_bar,
+    exit_bar = state$exit_bar,
+    cost_basis = book$cost_basis_by_inst,
+    position = position,
+    current_bar = as.integer(current_bar),
+    bar_axis = bar_axis,
+    context_pos = as.integer(context_pos),
+    unknown_basis = rep_len(as.logical(unknown_basis), length(position))
   )
+}
+
+ledgr_position_fact_field <- function(source, name) {
+  pos <- source$context_pos
+  position <- source$position[pos]
+  held <- abs(position) > 1e-12
+  entry_bar <- source$entry_bar[pos]
+  exit_bar <- source$exit_bar[pos]
+  known_entry <- held & !is.na(entry_bar)
+  known_exit <- !is.na(exit_bar)
+
+  if (identical(name, "entry_price")) {
+    out <- rep(NA_real_, length(pos))
+    known_basis <- held & !source$unknown_basis[pos]
+    out[known_basis] <- source$cost_basis[pos[known_basis]] / abs(position[known_basis])
+    return(out)
+  }
+  if (identical(name, "entry_at")) {
+    out <- as.POSIXct(rep(NA_real_, length(pos)), origin = "1970-01-01", tz = "UTC")
+    out[known_entry] <- source$bar_axis[entry_bar[known_entry]]
+    return(out)
+  }
+  if (identical(name, "exit_at")) {
+    out <- as.POSIXct(rep(NA_real_, length(pos)), origin = "1970-01-01", tz = "UTC")
+    out[known_exit] <- source$bar_axis[exit_bar[known_exit]]
+    return(out)
+  }
+  if (identical(name, "bars_since_entry")) {
+    out <- rep(NA_real_, length(pos))
+    out[known_entry] <- as.numeric(source$current_bar - entry_bar[known_entry])
+    return(out)
+  }
+  if (identical(name, "bars_since_exit")) {
+    out <- rep(Inf, length(pos))
+    out[known_exit] <- as.numeric(source$current_bar - exit_bar[known_exit])
+    return(out)
+  }
+  rlang::abort("Unknown position-fact field.", class = "ledgr_internal_error")
 }
 
 ledgr_position_facts_from_carried <- function(carried, instrument_ids, bar_axis) {

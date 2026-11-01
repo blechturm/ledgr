@@ -348,44 +348,6 @@ ledgr_projection_features_wide <- function(projection, pulse_idx, feature_ids = 
   ledgr_fast_data_frame(cols, length(instruments))
 }
 
-ledgr_projection_feature_accessor <- function(projection,
-                                               pulse_idx,
-                                               feature_ids = NULL,
-                                               active_alias_map = NULL,
-                                               prepared = NULL) {
-  force(projection)
-  force(pulse_idx)
-  pulse_idx <- as.integer(pulse_idx)
-  if (is.null(prepared)) {
-    prepared <- ledgr_projection_feature_lookup_state(
-      projection,
-      feature_ids = feature_ids,
-      active_alias_map = active_alias_map
-    )
-  }
-  instrument_index <- projection$instrument_index
-  feature_values <- projection$feature_values
-  function(instrument_id, feature_name, default = NA_real_) {
-    if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
-      rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-    }
-    feature_name <- ledgr_resolve_feature_name(
-      feature_name,
-      prepared$name_lookup,
-      instrument_id = instrument_id
-    )
-    inst_idx <- unname(instrument_index[instrument_id])
-    if (length(inst_idx) != 1L || is.na(inst_idx)) {
-      return(default)
-    }
-    mat <- feature_values[[feature_name]]
-    if (is.null(mat)) {
-      return(default)
-    }
-    mat[[as.integer(inst_idx), pulse_idx]]
-  }
-}
-
 ledgr_projection_feature_vector_accessor <- function(projection,
                                                       pulse_idx,
                                                       feature_ids = NULL,
@@ -437,7 +399,9 @@ ledgr_projection_feature_name_state <- function(projection,
     },
     normalized = TRUE
   )
-  public_names <- c(name_lookup$aliases, setdiff(name_lookup$feature_ids, unname(name_lookup$alias_map %||% character())))
+  # A concrete ID remains readable even when an alias maps to it, so every ID
+  # must be reserved against flat context fields.
+  public_names <- c(name_lookup$aliases, name_lookup$feature_ids)
   collision <- intersect(public_names, ledgr_pulse_context_reserved_fields())
   if (length(collision) > 0L) {
     rlang::abort(

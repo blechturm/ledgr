@@ -800,14 +800,15 @@ ledgr_fold_stage_decide <- function(
     low = data$low, close = data$close, volume = data$volume, observed = data$observed
   ))
   positions_snapshot <- ledgr_fold_positions_snapshot(position, context_ids)
-  position_facts <- ledgr_position_facts_view(
+  position_facts <- ledgr_position_fact_source(
     fold_state$position_facts,
     fold_state$lot_state,
     fold_state$positions,
     current_bar = projection_idx,
-    bar_axis = services$bar_axis
+    bar_axis = services$bar_axis,
+    context_pos = context_pos,
+    unknown_basis = services$position_fact_unknown_basis_mask
   )
-  position_facts <- lapply(position_facts, function(value) value[context_pos])
   # The long feature table is the schema-only frame the context contract
   # allows on the availability path; accessors and the wide view carry values.
   features_current <- services$empty_feature_table
@@ -871,12 +872,17 @@ ledgr_fold_stage_decide <- function(
     id_to_idx = NULL,
     availability = p2$view,
     position_facts = position_facts,
-    build_counts = services$context_build_counts
+    build_counts = services$context_build_counts,
+    preparation_counts = services$context_preparation_counts,
+    bars_aligned = TRUE,
+    positions_aligned = TRUE,
+    availability_aligned = TRUE
   )
   ctx <- ledgr_filter_pulse_context_features(
     ctx,
     context_ids,
-    services$instrument_ids
+    services$instrument_ids,
+    context_pos = context_pos
   )
   if (sample_telemetry) {
     sample_now <- ledgr_time_now()
@@ -1342,7 +1348,7 @@ ledgr_fold_stage_apply <- function(
       fold_state$lot_state <- batch$lot_state
       fill_bar <- ledgr_position_fact_bar_index(
         as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC"),
-        services$bar_axis
+        axis_map = services$position_fact_axis_map
       )
       fold_state$position_facts <- ledgr_position_facts_apply(
         fold_state$position_facts, fill$pos, fill$position_before,
@@ -1393,7 +1399,7 @@ ledgr_fold_stage_apply <- function(
     fold_state$lot_state <- candidate$book
     fill_bar <- ledgr_position_fact_bar_index(
       as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC"),
-      services$bar_axis
+      axis_map = services$position_fact_axis_map
     )
     fold_state$position_facts <- ledgr_position_facts_apply(
       fold_state$position_facts, fill$pos, fill$position_before,
@@ -1762,6 +1768,10 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     feature_name_state = availability_feature_name_state
   )
   context_build_counts <- new.env(parent = emptyenv())
+  context_preparation_counts <- new.env(parent = emptyenv())
+  context_preparation_counts$service <- 1L
+  context_preparation_counts$feature_resolver <- 1L
+  context_preparation_counts$fill_axis_map <- 1L
   # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
@@ -1792,7 +1802,18 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     availability_feature_name_state = availability_feature_name_state,
     availability_feature_lookup_state = availability_feature_lookup_state,
     context_build_counts = context_build_counts,
+    context_preparation_counts = context_preparation_counts,
     bar_axis = history_substrate$axis,
+    position_fact_axis_map = ledgr_position_fact_axis_map(
+      history_substrate$axis,
+      transition_time = execution_opportunities_posix,
+      transition_index = as.integer(match(
+        pulses_posix[seq_along(execution_opportunities_posix)],
+        history_substrate$axis
+      )) + 1L
+    ),
+    position_fact_unknown_basis = execution$position_fact_unknown_basis,
+    position_fact_unknown_basis_mask = instrument_ids %in% execution$position_fact_unknown_basis,
     pulse_notes = pulse_notes,
     execution_opportunities_posix = execution_opportunities_posix,
     execution_epochs = execution_epochs,

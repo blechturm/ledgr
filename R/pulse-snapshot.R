@@ -220,6 +220,9 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
     features = feature_declaration,
     cost_model = ledgr_cost_zero()
   )
+  # Zero is required only to construct an internally valid opening book. It is
+  # not evidence of the caller's cost basis and must not leak as entry_price.
+  inspection$position_fact_unknown_basis <- names(positions)[positions != 0]
   out <- ledgr_pulse_inspection(
     inspection,
     ts_utc = ts_norm,

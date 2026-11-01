@@ -875,6 +875,8 @@
 #' - `ledgr_param_missing` reports the param missing boundary.
 #' - `ledgr_param_non_scalar` reports the param non scalar boundary.
 #' - `ledgr_partial_selection` reports the partial selection boundary.
+#' - `ledgr_position_fact_off_axis` reports a position-fact transition that
+#'   cannot be placed on the prepared canonical bar axis.
 #' - `ledgr_precomputed_coverage_error` reports the precomputed coverage
 #'   error boundary.
 #' - `ledgr_precomputed_engine_mismatch` reports the precomputed engine
@@ -1169,6 +1171,7 @@
 #' @aliases ledgr_param_missing
 #' @aliases ledgr_param_non_scalar
 #' @aliases ledgr_partial_selection
+#' @aliases ledgr_position_fact_off_axis
 #' @aliases ledgr_precomputed_coverage_error
 #' @aliases ledgr_precomputed_engine_mismatch
 #' @aliases ledgr_precomputed_feature_mismatch

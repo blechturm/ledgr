@@ -46,8 +46,8 @@ dense_historical_strategy <- function(fast_id, slow_id) {
 
 
 dense_transition <- function(ctx, params) {
-  fast <- ctx$vec$feature("fast")
-  slow <- ctx$vec$feature("slow")
+  fast <- ctx$fast
+  slow <- ctx$slow
   ids <- ctx$universe
   usable <- is.finite(fast) & is.finite(slow)
   above <- usable & fast > slow
@@ -68,7 +68,7 @@ dense_transition <- function(ctx, params) {
 }
 
 dense_positive_return <- function(ctx, params) {
-  score <- ctx$vec$feature("return_10")
+  score <- ctx$return_10
   targets <- ctx$hold()
   usable <- is.finite(score)
   targets[usable] <- as.numeric(score[usable] > 0)
@@ -76,19 +76,19 @@ dense_positive_return <- function(ctx, params) {
 }
 
 dense_mean_reversion <- function(ctx, params) {
-  average <- ctx$vec$feature("average")
+  average <- ctx$average
   usable <- is.finite(average)
   targets <- ctx$hold()
-  targets[usable & ctx$vec$close < 0.99 * average] <- 1
-  targets[usable & ctx$vec$close >= average] <- 0
+  targets[usable & ctx$close < 0.99 * average] <- 1
+  targets[usable & ctx$close >= average] <- 0
   targets
 }
 
 dense_ema_trend <- function(ctx, params) {
-  average <- ctx$vec$feature("average")
+  average <- ctx$average
   usable <- is.finite(average)
   targets <- ctx$hold()
-  targets[usable] <- as.numeric(ctx$vec$close[usable] > average[usable])
+  targets[usable] <- as.numeric(ctx$close[usable] > average[usable])
   targets
 }
 

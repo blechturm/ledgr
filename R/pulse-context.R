@@ -16,9 +16,6 @@ ledgr_pulse_context <- function(run_id,
     universe = universe,
     bars = bars,
     feature_table = features,
-    features = function(...) {
-      rlang::abort("Pulse context feature helpers have not been initialized.", class = "ledgr_invalid_pulse_context")
-    },
     .positions = positions,
     cash = cash,
     equity = equity,
@@ -114,21 +111,34 @@ ledgr_pulse_context_lazy_field <- function(x, name) {
     value <- ledgr_pulse_context_named(ledgr_pulse_context_vector_positions(lookup), ids)
   } else if (name %in% c("held", "member")) {
     value <- lookup$availability[[name]]
-    value <- ledgr_pulse_context_named(as.logical(value[ids]), ids)
+    if (!isTRUE(lookup$availability_aligned)) value <- value[ids]
+    value <- ledgr_pulse_context_named(as.logical(value), ids)
   } else if (identical(name, "buyable")) {
-    member <- as.logical(lookup$availability$member[ids])
-    restricted <- as.logical(lookup$availability$target_restricted[ids])
+    member <- lookup$availability$member
+    restricted <- lookup$availability$target_restricted
+    if (!isTRUE(lookup$availability_aligned)) {
+      member <- member[ids]
+      restricted <- restricted[ids]
+    }
+    member <- as.logical(member)
+    restricted <- as.logical(restricted)
     value <- ledgr_pulse_context_named(member & !restricted, ids)
   } else if (identical(name, "holding_value")) {
     position <- ledgr_pulse_context_vector_positions(lookup)
     held <- position != 0
-    mark <- as.numeric(lookup$availability$risk_mark[ids])
+    mark <- lookup$availability$risk_mark
+    if (!isTRUE(lookup$availability_aligned)) mark <- mark[ids]
+    mark <- as.numeric(mark)
     value <- numeric(length(ids))
     value[held] <- position[held] * mark[held]
     value[held & !is.finite(mark)] <- NA_real_
     value <- ledgr_pulse_context_named(value, ids)
   } else if (name %in% c("entry_price", "entry_at", "exit_at", "bars_since_entry", "bars_since_exit")) {
-    value <- lookup$position_facts[[name]]
+    value <- if (is.list(lookup$position_facts) && !is.null(lookup$position_facts$context_pos)) {
+      ledgr_position_fact_field(lookup$position_facts, name)
+    } else {
+      lookup$position_facts[[name]]
+    }
     if (is.null(value)) {
       value <- if (name %in% c("entry_at", "exit_at")) {
         as.POSIXct(rep(NA_real_, length(ids)), origin = "1970-01-01", tz = "UTC")
@@ -394,24 +404,10 @@ ledgr_attach_feature_helpers <- function(ctx,
     if (!is.data.frame(features_wide)) {
       features_wide <- ledgr_projection_features_wide(projection, pulse_idx, feature_ids = feature_ids)
     }
-    feature <- ledgr_projection_feature_accessor(
-      projection,
-      pulse_idx,
-      feature_ids = feature_ids,
-      prepared = prepared_feature_lookup
-    )
     feature_vector <- ledgr_projection_feature_vector_accessor(
       projection,
       pulse_idx,
       feature_ids = feature_ids,
-      prepared = prepared_feature_lookup
-    )
-    feature_bundle <- ledgr_projection_feature_bundle_accessor(
-      projection,
-      pulse_idx,
-      universe,
-      feature_ids = feature_ids,
-      active_alias_map = active_alias_map,
       prepared = prepared_feature_lookup
     )
     current_pulse_idx <- as.integer(pulse_idx)
@@ -428,18 +424,14 @@ ledgr_attach_feature_helpers <- function(ctx,
       ctx$feature_table <- features
       ctx$features_wide <- features_wide
       ctx$.feature_table_current <- feature_table_current
-      ctx$feature <- feature
       ctx$.feature_vector <- feature_vector
-      ctx$features <- feature_bundle
       return(invisible(ctx))
     }
 
     ctx$feature_table <- features
     ctx$features_wide <- features_wide
     ctx$.feature_table_current <- feature_table_current
-    ctx$feature <- feature
     ctx$.feature_vector <- feature_vector
-    ctx$features <- feature_bundle
     return(ctx)
   }
 
@@ -447,16 +439,9 @@ ledgr_attach_feature_helpers <- function(ctx,
     ledgr_feature_names(features),
     active_alias_map = active_alias_map
   )
-  feature <- ledgr_feature_accessor(features, prepared = prepared_feature_lookup)
   feature_vector <- ledgr_feature_vector_accessor(
     features,
     universe,
-    prepared = prepared_feature_lookup
-  )
-  feature_bundle <- ledgr_feature_bundle_accessor(
-    features,
-    universe,
-    active_alias_map = active_alias_map,
     prepared = prepared_feature_lookup
   )
   ctx$.pulse_lookup$feature_lookup <- list(name_lookup = prepared_feature_lookup)
@@ -465,18 +450,14 @@ ledgr_attach_feature_helpers <- function(ctx,
     ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
     ctx$.feature_table_current <- NULL
-    ctx$feature <- feature
     ctx$.feature_vector <- feature_vector
-    ctx$features <- feature_bundle
     return(invisible(ctx))
   }
 
   ctx$feature_table <- features
   ctx$features_wide <- ledgr_features_wide(features)
   ctx$.feature_table_current <- NULL
-  ctx$feature <- feature
   ctx$.feature_vector <- feature_vector
-  ctx$features <- feature_bundle
   ctx
 }
 
@@ -495,7 +476,11 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                id_to_idx = NULL,
                                                availability = NULL,
                                                position_facts = NULL,
-                                               build_counts = NULL) {
+                                               build_counts = NULL,
+                                               preparation_counts = NULL,
+                                               bars_aligned = FALSE,
+                                               positions_aligned = FALSE,
+                                               availability_aligned = FALSE) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
   ctx <- ledgr_attach_feature_helpers(
     ctx,
@@ -517,49 +502,22 @@ ledgr_update_pulse_context_helpers <- function(ctx,
     id_to_idx = id_to_idx,
     availability = availability,
     position_facts = position_facts,
-    build_counts = build_counts
+    build_counts = build_counts,
+    preparation_counts = preparation_counts,
+    bars_aligned = bars_aligned,
+    positions_aligned = positions_aligned,
+    availability_aligned = availability_aligned
   )
 }
 
-ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe) {
+ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe,
+                                                context_pos = NULL) {
   universe <- as.character(universe)
   private_universe <- as.character(private_universe)
   raw <- unclass(ctx)
-  feature <- raw$feature
-  force(feature)
-  ctx$feature <- function(instrument_id, feature_name, default = NA_real_) {
-    if (!is.character(instrument_id) || length(instrument_id) != 1L ||
-        is.na(instrument_id) || !nzchar(instrument_id)) {
-      label <- if (length(instrument_id) == 1L) {
-        as.character(instrument_id)
-      } else {
-        paste(instrument_id, collapse = ", ")
-      }
-      rlang::abort(
-        sprintf(
-          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
-          label,
-          ledgr_pulse_context_universe_message(universe)
-        ),
-        class = "ledgr_invalid_pulse_context"
-      )
-    }
-    ledgr_pulse_context_idx(ctx$.pulse_lookup, instrument_id)
-    feature(instrument_id, feature_name, default = default)
-  }
-  features <- raw$features
-  force(features)
-  ctx$features <- function(instrument_id, feature_map = NULL) {
-    if (!is.character(instrument_id) || length(instrument_id) != 1L ||
-        is.na(instrument_id) || !nzchar(instrument_id)) {
-      return(features(instrument_id, feature_map = feature_map))
-    }
-    ledgr_pulse_context_idx(ctx$.pulse_lookup, instrument_id)
-    features(instrument_id, feature_map = feature_map)
-  }
   feature_vector <- raw$.feature_vector
   force(feature_vector)
-  context_index <- match(universe, private_universe)
+  context_index <- context_pos %||% match(universe, private_universe)
   ctx$.feature_vector <- function(feature_name, default = NA_real_) {
     feature_vector(feature_name, default = default)[context_index]
   }
@@ -615,19 +573,23 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
                                                id_to_idx = NULL,
                                                availability = NULL,
                                                position_facts = NULL,
-                                               build_counts = NULL) {
+                                               build_counts = NULL,
+                                               preparation_counts = NULL,
+                                               bars_aligned = FALSE,
+                                               positions_aligned = FALSE,
+                                               availability_aligned = FALSE) {
   lookup <- ctx$.pulse_lookup
   if (!is.environment(lookup)) {
     rlang::abort("Pulse context accessors have not been initialized.", class = "ledgr_invalid_pulse_context")
   }
 
   universe <- as.character(universe)
-  lookup$bars <- if (is.data.frame(bars)) as.data.frame(bars, stringsAsFactors = FALSE) else lapply(bars, identity)
-  lookup$positions <- if (is.null(positions)) NULL else structure(as.numeric(positions), names = names(positions))
+  lookup$bars <- if (isTRUE(bars_aligned)) bars else if (is.data.frame(bars)) as.data.frame(bars, stringsAsFactors = FALSE) else lapply(bars, identity)
+  lookup$positions <- if (is.null(positions)) NULL else if (isTRUE(positions_aligned)) positions else structure(as.numeric(positions), names = names(positions))
   lookup$universe <- universe
   lookup$id_to_idx <- ledgr_pulse_context_id_to_idx(universe, id_to_idx)
   lookup$feature_vector <- ctx$.feature_vector
-  lookup$bar_index <- ledgr_pulse_context_bar_index(bars, universe)
+  lookup$bar_index <- if (isTRUE(bars_aligned)) integer() else ledgr_pulse_context_bar_index(bars, universe)
   if (!is.list(availability)) {
     availability <- ledgr_pulse_context_default_availability(
       universe,
@@ -635,12 +597,20 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
       bars
     )
   }
-  lookup$availability <- lapply(availability, function(value) {
-    if (is.atomic(value)) structure(value, names = names(value)) else value
-  })
+  lookup$availability <- if (isTRUE(availability_aligned)) {
+    availability
+  } else {
+    lapply(availability, function(value) {
+      if (is.atomic(value)) structure(value, names = names(value)) else value
+    })
+  }
+  lookup$bars_aligned <- isTRUE(bars_aligned)
+  lookup$positions_aligned <- isTRUE(positions_aligned)
+  lookup$availability_aligned <- isTRUE(availability_aligned)
   lookup$position_facts <- position_facts
   lookup$cache <- new.env(parent = emptyenv())
   lookup$build_counts <- build_counts
+  lookup$preparation_counts <- preparation_counts
   if (is.environment(ctx)) {
     return(invisible(ctx))
   }
@@ -720,6 +690,7 @@ ledgr_pulse_context_vector_field <- function(lookup, field) {
     return(rep(NA_real_, length(universe)))
   }
   values <- ledgr_pulse_context_column(lookup$bars, field)
+  if (isTRUE(lookup$bars_aligned)) return(as.numeric(values))
   out <- rep(NA_real_, length(universe))
   bar_index <- lookup$bar_index
   if (length(bar_index) > 0L) {
@@ -739,6 +710,7 @@ ledgr_pulse_context_vector_positions <- function(lookup) {
   if (!is.numeric(positions)) {
     rlang::abort("Pulse context `positions` must be numeric.", class = "ledgr_invalid_pulse_context")
   }
+  if (isTRUE(lookup$positions_aligned)) return(as.numeric(positions))
   if (!is.null(names(positions))) {
     out <- rep(0, length(universe))
     idx <- match(names(positions), universe, nomatch = 0L)
@@ -809,24 +781,6 @@ ledgr_pulse_context_require_id <- function(lookup, id) {
   }
 
   id
-}
-
-ledgr_pulse_context_idx <- function(lookup, id, missing = c("error", "na")) {
-  missing <- match.arg(missing)
-  if (!is.character(id) || length(id) != 1L || is.na(id) || !nzchar(id)) {
-    rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-
-  id_to_idx <- lookup$id_to_idx
-  idx <- if (length(id_to_idx) == 0L) NA_integer_ else unname(id_to_idx[id])
-  if (length(idx) == 1L && !is.na(idx)) {
-    return(as.integer(idx))
-  }
-  if (identical(missing, "na")) {
-    return(NA_integer_)
-  }
-  ledgr_pulse_context_require_id(lookup, id)
-  NA_integer_
 }
 
 ledgr_pulse_context_row_index <- function(lookup, id) {

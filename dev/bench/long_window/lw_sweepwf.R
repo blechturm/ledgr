@@ -7,7 +7,7 @@ suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 momentum <- function(ctx, params) {
   month <- format(ledgr_utc(ctx$ts_utc), "%Y-%m", tz = "UTC")
   if (identical(ctx$state_prev$month, month)) return(ctx$hold())
-  if (sum(is.finite(ctx$vec$feature("return_252"))) < 20L) {
+  if (sum(is.finite(ctx$return_252)) < 20L) {
     return(list(targets = ctx$hold(), state_update = list(month = month)))
   }
   targets <- ctx |>

@@ -1,0 +1,8 @@
+record,base_commit,value,evidence,owner
+typed_round_trip_whole_double,14252ffb,preserved,preacceptance_probes.md,LDG-3185
+typed_round_trip_integer,14252ffb,decoded_as_double,preacceptance_probes.md,LDG-3185
+typed_round_trip_empty_atomic,14252ffb,decoded_as_untyped_list,preacceptance_probes.md,LDG-3185
+unchanged_tail_resume,14252ffb,restarts_after_last_state_change,preacceptance_probes.md,LDG-3186
+five_pulse_context_builds,14252ffb,5,preacceptance_probes.md,LDG-3180
+five_pulse_state_encodes,14252ffb,5,preacceptance_probes.md,LDG-3186
+five_pulse_state_writes,14252ffb,5,preacceptance_probes.md,LDG-3186

@@ -649,7 +649,8 @@ ledgr_run_fold_impl <- function(config,
   if (is_resume && !isTRUE(terminal_recovery) && length(pulses) > 0) {
     resume_state <- ledgr_state_asof(
       con, run_id, initial_cash, resume_posix,
-      instrument_ids = instrument_ids, bar_axis = history_axis
+      instrument_ids = instrument_ids, bar_axis = history_axis,
+      initial_position_facts = position_facts
     )
     position_facts <- resume_state$position_facts
     if (identical(execution_mode, "audit_log")) {
@@ -1057,7 +1058,8 @@ ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
 }
 
 ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc,
-                             instrument_ids = character(), bar_axis = NULL) {
+                             instrument_ids = character(), bar_axis = NULL,
+                             initial_position_facts = NULL) {
   rows <- DBI::dbGetQuery(
     con,
     "
@@ -1098,7 +1100,9 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc,
     equity = cash + positions_value,
     lot_state = replay$lot_state,
     position_facts = if (is.null(bar_axis)) NULL else {
-      ledgr_position_facts_from_replay(replay, bar_axis)
+      ledgr_position_facts_from_replay(
+        replay, bar_axis, initial_state = initial_position_facts
+      )
     }
   )
 }

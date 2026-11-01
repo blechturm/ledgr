@@ -111,6 +111,13 @@ ledgr_feature_map <- function(...) {
   concrete_ids <- feature_ids[!is.na(feature_ids)]
   if (length(concrete_ids) > 0L) {
     ledgr_abort_duplicate_feature_ids(concrete_ids)
+    reserved_ids <- intersect(concrete_ids, ledgr_pulse_context_reserved_fields())
+    if (length(reserved_ids) > 0L) {
+      rlang::abort(
+        sprintf("Feature `%s` collides with a reserved pulse context field.", reserved_ids[[1L]]),
+        class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+      )
+    }
   }
   ledgr_validate_feature_map_alias_id_collisions(aliases, feature_ids)
 

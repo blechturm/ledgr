@@ -167,6 +167,18 @@ testthat::test_that("[LTB-0185] explicit maps cannot redefine known names", {
   )
 })
 
+testthat::test_that("mapped concrete feature IDs cannot shadow flat context fields", {
+  close_feature <- ledgr_indicator(
+    id = "close",
+    fn = function(window) tail(window$close, 1L),
+    requires_bars = 1L
+  )
+  testthat::expect_error(
+    ledgr_feature_map(px = close_feature),
+    class = "ledgr_invalid_feature_map"
+  )
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0184] public execution and pulse inspection agree on aliases", {
   bars <- feature_map_read_surface_bars()

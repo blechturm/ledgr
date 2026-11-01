@@ -288,7 +288,7 @@ testthat::test_that("non-fast projection contexts keep schema-only feature table
   testthat::expect_equal(nrow(ledgr_pulse_features(ctx)), 2L)
 })
 
-testthat::test_that("projection accessors can restrict a candidate feature subset", {
+testthat::test_that("projection wide views can restrict a candidate feature subset", {
   pulses <- as.POSIXct("2020-01-01", tz = "UTC")
   projection <- ledgr:::ledgr_runtime_projection(
     feature_values = list(
@@ -299,18 +299,11 @@ testthat::test_that("projection accessors can restrict a candidate feature subse
     universe = c("AAA", "BBB"),
     pulses_posix = pulses
   )
-  feature <- ledgr:::ledgr_projection_feature_accessor(projection, 1L, feature_ids = "alpha")
-
   restricted <- ledgr:::ledgr_projection_features_wide(projection, 1L, feature_ids = "alpha")
   unrestricted <- ledgr:::ledgr_projection_features_wide(projection, 1L)
 
   testthat::expect_identical(names(restricted), c("instrument_id", "ts_utc", "alpha"))
   testthat::expect_identical(names(unrestricted), c("instrument_id", "ts_utc", "alpha", "beta", "gamma"))
-  testthat::expect_equal(feature("AAA", "alpha"), 1)
-  testthat::expect_error(
-    feature("AAA", "beta"),
-    class = "ledgr_unknown_feature_id"
-  )
 })
 
 testthat::test_that("pulse context accessors fail loudly on ambiguity", {

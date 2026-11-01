@@ -2097,7 +2097,7 @@ claims:
     owner: "maintainer"
     protected_contract_or_defect: "Scalar, active-bundle and explicit-map feature reads refuse an instrument after it leaves the current decision axis even while its bars and feature values remain on the prepared physical axis; pre-cut invalid-input condition wording is preserved."
     oracle_independence: "A sealed complete membership family removes BBB while unchanged bars retain its data. The strategy records conditions from the public context, and the test derives the permitted axis from ctx$universe rather than from the feature lookup implementation."
-    smallest_failing_change: "Remove either dynamic-axis wrapper, or route invalid inputs directly through ledgr_pulse_context_idx(); an out-of-axis read returns BBB data or an exact class/message assertion fails."
+    smallest_failing_change: "Remove either dynamic-axis wrapper, or bypass ledgr_pulse_context_require_id(); an out-of-axis read returns BBB data or an exact class/message assertion fails."
     cheapest_adequate_lane: "One four-pulse availability run exercises all three public per-instrument feature reads and the three changed invalid-input boundaries; review, because sealed dynamic membership is required."
     overlapping_evidence: "LCL-0189 counts physical-axis lookup preparation with a fixed universe; LCL-0139 protects prepared lookup cost and static refusal, but neither shrinks the current decision axis while data remain available."
   - id: "LCL-0192"

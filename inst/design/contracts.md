@@ -1278,10 +1278,11 @@ Accepted change pending:
 <a id="contract-availability-context-and-state"></a>
 ### Context Planes And Strategy State
 
-- Every context exposes `ctx$members` and universe-aligned
-  `ctx$vec$member`, `held`, `target_restricted`,
-  `target_restriction_reason`, `admissible`, `priced`, `mark_age`, `risk_mark`
-  and `mark_source` planes. `risk_mark` is the close a holding is valued and
+- Every context exposes `ctx$members` and the universe-aligned flat columns
+  `ctx$member`, `ctx$held`, `ctx$buyable` and `ctx$holding_value`. The engine's
+  private P2 view additionally carries `target_restricted`,
+  `target_restriction_reason`, `priced`, `mark_age`, `risk_mark`
+  and `mark_source`. `risk_mark` is the close a holding is valued and
   risk-checked at (`NA` without a permissible or frozen mark) and
   `mark_source` names it: `current_close`, `stale_close`, `frozen_close`,
   `expired_close` or `missing`.
@@ -1811,20 +1812,16 @@ declared-session clocks alike, so a strategy written as named-vector
 manipulation, or as a helper pipeline, means the same thing on both.
 
 - **Eligibility.** An ID is eligible when it is a member and not
-  target-restricted. `ctx$vec$admissible` is that plane in every context:
+  target-restricted. `ctx$buyable` is that plane in every context:
   declared-session folds, bar-native folds, `ledgr_pulse_snapshot()` and
   interactive contexts. Fixed-basket contexts expose `ctx$members` as
   `ctx$universe`, and
-  `member` (all `TRUE`), `target_restricted` (all `FALSE`),
-  `target_restriction_reason` (all `""`) and `admissible` (all `TRUE`),
-  allocated once per run and reused on every pulse. No second eligibility
+  `ctx$member` and `ctx$buyable` (both all `TRUE`). No second eligibility
   plane exists: a context helper never rebuilds eligibility from
   `ctx$members`. An availability context without a logical, axis-length,
-  non-missing `admissible` plane, or any context whose plane is present but
+  non-missing `buyable` column, or any context whose column is present but
   malformed, fails with `ledgr_invalid_strategy_helper`
   (`ledgr_invalid_strategy_result` in the `ledgr_signal_strategy()` wrapper).
-  `ctx$tradable()` stays a character vector of IDs that also requires a
-  price.
 - **Context payloads.** An unnamed `values`, `where` or warmup payload has
   exactly length(Daxis) and aligns by position. A named payload uses unique
   Daxis IDs in any order and covers every eligible ID; an uncovered ineligible
@@ -1837,7 +1834,7 @@ manipulation, or as a helper pipeline, means the same thing on both.
 - **Signals.** `ledgr_signal_feature()`, `ledgr_signal_return()` and
   `ledgr_signal(ctx, values = ...)` return one value per Daxis ID in
   `ctx$universe` order, with the raw value for every ID including ineligible
-  ones, and carry `ctx$vec$admissible` as the `eligible` attribute. The origin
+  ones, and carry `ctx$buyable` as the `eligible` attribute. The origin
   is the feature ID, or the supplied `origin`. Arithmetic on a signal keeps
   its class and `eligible` attribute. Comparison, subsetting, `rank()` and
   `c()` return plain named vectors without them. Helpers that take `ctx`
@@ -1885,7 +1882,7 @@ manipulation, or as a helper pipeline, means the same thing on both.
   than holding or exiting fails with `ledgr_restricted_target`. Exiting or
   reducing an ineligible holding is a valid target, so the validators do not
   catch a hand-built rule that does so without meaning to; that is what
-  masking with `ctx$vec$admissible` is for.
+  masking with `ctx$buyable` is for.
 - **Empty axis.** Every context helper returns a zero-length named result.
   `ledgr_signal_strategy()` still invokes its function and returns a named
   zero-length target; a zero-length signal is valid whenever no ID is
@@ -1903,7 +1900,7 @@ manipulation, or as a helper pipeline, means the same thing on both.
   clocks.
 - **History selection.** `ledgr_history_frame()` selects from this plane at
   its cutoff. `instruments = "admissible"` requests the `ctx$universe` IDs
-  whose `ctx$vec$admissible` is `TRUE`, `"decision_axis"` requests every
+  whose `ctx$buyable` is `TRUE`, `"decision_axis"` requests every
   `ctx$universe` ID, and an explicit vector requests known instrument IDs in
   its own order. An explicit ID is never dropped for current
   inadmissibility; its selection row records `admissible` and an
@@ -1916,7 +1913,7 @@ and `AAA` a held nonmember, each holding 5:
 
 | Object | Type | Domain | Names | Ineligible entries | Example |
 |---|---|---|---|---|---|
-| `ctx$vec` planes | numeric, logical or character | Daxis | unnamed, positional | marked by `admissible` | `ctx$vec$admissible` is `FALSE, TRUE, FALSE` |
+| flat context columns | numeric or logical | Daxis | named | `ctx$buyable` marks eligibility | `ctx$buyable` is `BBB=FALSE, CCC=TRUE, AAA=FALSE` |
 | `ctx$members` | character IDs | allocation membership M | not applicable | not applicable | `BBB, CCC`; fixed basket: `ctx$universe` |
 | context signals | `ledgr_signal` (numeric) | Daxis | named | raw value; `eligible` attribute | `ledgr_signal_return(ctx, 1)` is `BBB=0.02 CCC=-0.01 AAA=0.01` |
 | context selections | `ledgr_selection` (logical) | Daxis | named | always `FALSE` | `ledgr_selection(ctx)` is `BBB=FALSE CCC=TRUE AAA=FALSE` |
@@ -2199,8 +2196,9 @@ and `AAA` a held nonmember, each holding 5:
   `bars_since_exit`; every declared feature alias and registered engine ID is
   also directly readable. Aliases resolve first. Unknown and retired names
   fail with `ledgr_unknown_context_field`.
-- The service, axis indices and feature resolver are prepared once per run or
-  candidate. Each requested column is built at most once in one view;
+- The run-axis service, fill-axis map and feature resolver are prepared once
+  per run or candidate; the changing decision axis is bound once per pulse.
+  Each requested column is built at most once in one view;
   `names()` and `str()` enumerate without forcing columns. A saved view is
   pulse-frozen and cannot observe later book, state or reusable fold buffers.
 - `member`, `held` and `buyable` are named logical columns on the decision
@@ -2371,16 +2369,12 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-feature-resolution"></a>
 ### Feature Resolution And Explicit Maps
 
-- `ctx$feature(instrument_id, feature_id)` uses the same alias-first singular
-  resolver as `ctx$vec$feature()`. It fails loudly for unknown names, including
-  the requested feature, instrument, active aliases and concrete feature IDs.
-  A known feature whose current value is warmup `NA` remains a normal `NA`
-  lookup, not an error.
-- `ctx$features(instrument_id, feature_map)` is a pulse-scoped bundled view
-  over `ctx$feature()`. It must preserve no-lookahead semantics, fail loudly
-  for unregistered mapped feature IDs, and return warmup `NA` for known
-  features that are not usable yet.
-- Every explicit-map consumer (`ctx$features()`, `ledgr_pulse_features()` and
+- Each declared feature alias and registered concrete feature ID is a flat
+  named numeric column on `ctx$universe`. Resolution is alias-first and fails
+  loudly for unknown names. A known feature whose current value is warmup
+  `NA` remains a normal `NA` lookup, not an error. No alias or concrete ID may
+  shadow a reserved context field.
+- Every explicit-map inspection consumer (`ledgr_pulse_features()` and
   `ledgr_pulse_wide()`) may add a call-local alias but may not redefine an
   active alias or registered engine ID to mean another feature. A conflict
   fails with `ledgr_invalid_feature_map`, naming the alias, requested feature
@@ -2388,8 +2382,9 @@ and `AAA` a held nonmember, each holding 5:
 - The decision-time guarantee concerns supported context operations. Public
   accessors may retain engine-owned prepared state internally only when every
   supported operation enforces the invoking pulse and permitted axis.
-  Instrument, universe and feature-ID indexes and the active alias map are
-  prepared once for one run-local context factory. The active alias map is
+  Instrument and feature-ID indexes and the active alias map are prepared
+  once for one run-local context factory; the pulse-local decision axis is
+  bound positionally. The active alias map is
   fixed for that run and prepared state is never shared across runs or sweep
   candidates. A bundled accessor may retain only its last successfully
   resolved explicit feature map, whether supplied as a character map or a
@@ -2412,18 +2407,18 @@ and `AAA` a held nonmember, each holding 5:
   feature accessors and the wide view carry current values. No equivalence is
   promised between these representations and none is materialized merely to
   make another look complete.
-- `ctx$tradable()` is a non-default convenience predicate. It returns
-  `admissible & priced` on every clock. A permissible stale mark may satisfy `priced` while
-  still failing current-close sizing, so this helper guarantees neither a
-  current sizing close nor execution at the next open.
+- `ctx$buyable` is the public target-admission column. A permissible stale
+  mark may remain priced while still failing current-close sizing, so
+  `buyable` guarantees neither a current sizing close nor execution at the
+  next open.
 - A frozen holding stays on the decision axis with its position. Its
   `risk_mark` is its last close, `mark_source` is `frozen_close`, `priced` is
   `TRUE` and `mark_age` keeps increasing. It is `target_restricted` with
   reason `valuation_frozen` unless an earlier restriction reason applies, so
-  `admissible` is `FALSE` and `ctx$tradable()` excludes it. The frozen close
+  `ctx$buyable` is `FALSE`. The frozen close
   is not an observed close and is never an execution price.
-- `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
-  produced by `ctx$features()`. It is not a helper-pipeline transformation and
+- `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric flat
+  feature columns. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
   The context-aware form `ledgr_passed_warmup(ctx, values)` reads a
   decision-axis vector and considers eligible IDs only; there, no eligible ID
@@ -2450,10 +2445,6 @@ and `AAA` a held nonmember, each holding 5:
   `feature_params` and resolve parameterized maps through the same validator
   and resolver as execution. Without concrete parameters they retain a classed
   refusal; no general map materializer is exported.
-- On an axis of at least 100 instruments, scalar and active-map bundle loops
-  warn once per run when calls in one pulse reach the axis size. The warning
-  names singular `ctx$vec$feature()` reads as the replacement. Explicit-map
-  bundle loops remain unrecorded.
 - Feature maps do not add a new `ctx$features_wide()` contract; the
   public wide pulse inspection API is `ledgr_pulse_wide()`.
 - `ledgr_pulse_snapshot()` is an external development and inspection helper;

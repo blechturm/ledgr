@@ -1,14 +1,27 @@
-family,owner,implementation,detector,mutation
-D1_values_names_axis,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,swap or unname one flat column
-D1_lazy_once,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,rebuild a requested column twice
-D1_frozen_view,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,retain a mutable fold buffer
-D1_alias_resolution,LDG-3180,R/runtime-projection.R,test-active-alias-runtime.R,resolve engine IDs before aliases
-D1_retired_surface,LDG-3180,R/pulse-context.R,test-scalar-accessor-warning.R,restore ctx$vec
-D1_unpriced_holding,LDG-3180,R/pulse-context.R,test-strategy-context-entrances.R,fabricate a held mark
-D2_event_order,LDG-3181,R/position-facts.R,test-position-facts-context.R,sort same-bar transitions
-D2_nonfill,LDG-3181,R/position-facts.R,test-position-facts-context.R,treat a zero-fill disposition as a fill
-D2_prefix_rebuild,LDG-3181,R/position-facts.R,test-position-facts-context.R,rebuild from fills only
-D2_resume_carry,LDG-3181,R/backtest-runner.R;R/walk-forward.R,test-position-facts-context.R,drop carried anchors
-D2_shared_axis,LDG-3181,R/position-facts.R,test-position-facts-context.R,count decision pulses rather than bars
-D2_pulse_unknown,LDG-3181,R/pulse-context.R,test-position-facts-context.R,fabricate supplied-opening anchors
-
+family,owner,implementation,detector,mutation,mutation_command
+D1_values_names_axis,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,swap or unname one flat column,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-flat-lazy-context.R')"
+D1_lazy_once,LDG-3180,R/pulse-context.R,test-position-facts-context.R,rebuild a requested fact twice,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D1_frozen_view,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,retain a mutable fold buffer,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-flat-lazy-context.R')"
+D1_alias_resolution,LDG-3180,R/runtime-projection.R,test-feature-map-read-surface.R,allow a concrete ID to shadow close,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-feature-map-read-surface.R')"
+D1_retired_surface,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,restore ctx$vec,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-flat-lazy-context.R')"
+D1_unpriced_holding,LDG-3180,R/pulse-context.R,test-strategy-context-entrances.R,fabricate a held mark,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-strategy-context-entrances.R')"
+D2_event_order,LDG-3181,R/position-facts.R,test-position-facts-context.R,sort same-bar transitions,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D2_nonfill,LDG-3181,R/position-facts.R,test-position-facts-context.R,treat a zero-fill transition as a fill,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D2_prefix_rebuild,LDG-3181,R/position-facts.R,test-position-facts-context.R,rebuild from fills only,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D2_resume_carry,LDG-3181,R/backtest-runner.R;R/walk-forward.R,test-position-facts-context.R,drop carried anchors,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D2_shared_axis,LDG-3181,R/position-facts.R,test-position-facts-context.R,snap an off-axis transition to the next bar,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D2_pulse_unknown,LDG-3181,R/pulse-snapshot.R,test-position-facts-context.R,report synthetic zero basis as entry price,Rscript -e "pkgload::load_all('.');testthat::test_file('tests/testthat/test-position-facts-context.R')"
+D3_target_verbs,LDG-3183,pending_WS16,tickets.yml,omit a Section 4 item 3 case,Rscript dev/bench/v0_2_3_ws5/check.R
+D4_selection_weights,LDG-3182,pending_WS16,tickets.yml,omit a selection or weight case,Rscript dev/bench/v0_2_3_ws5/check.R
+D5_state_declaration,LDG-3185,pending_WS17,tickets.yml,omit a declared-state type case,Rscript dev/bench/v0_2_3_ws5/check.R
+D5_state_checkpoint,LDG-3186,pending_WS17,tickets.yml,restore per-pulse payload encoding,Rscript dev/bench/v0_2_3_ws5/check.R
+D6_D7_schedule_inputs,LDG-3184,pending_WS16,tickets.yml,add a second scheduler or implicit input,Rscript dev/bench/v0_2_3_ws5/check.R
+D8_rounding_evidence,LDG-3187,pending_WS18,tickets.yml,omit a typed sizing category,Rscript dev/bench/v0_2_3_ws5/check.R
+D9_pattern_teaching,LDG-3189,pending_WS18,tickets.yml,teach an unexecuted pattern,Rscript dev/bench/v0_2_3_ws5/check.R
+S4_item_5_reader_cut,LDG-3188,pending_WS18,tickets.yml,retain a retired frame reader,Rscript dev/bench/v0_2_3_ws5/check.R
+S4_item_6_timing,LDG-3179,dev/bench/timing/protocols/ws5-timing-1,check.R,remove a registered timing cell,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_strategy_authoring,LDG-3189,vignettes/strategy-authoring-tools.qmd,maintained_state_census.csv,omit maintained teaching,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_strategy_development,LDG-3189,vignettes/strategy-development.qmd,maintained_state_census.csv,omit maintained teaching,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_peer_dense,LDG-3180,dev/bench/peer_benchmark/dense/recipes.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_long_window_run,LDG-3180,dev/bench/long_window/lw_run.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_long_window_sweepwf,LDG-3180,dev/bench/long_window/lw_sweepwf.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R

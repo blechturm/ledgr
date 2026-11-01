@@ -107,7 +107,7 @@ testthat::test_that("[LTB-0162] modeled terminal choices dispose once before the
       testthat::expect_identical(d$mark_age, case$mark_age, info = name)
     }
     # The disposition precedes the terminal pulse's strategy call.
-    testthat::expect_identical(seen[["2020-01-02T16:00:00Z"]], 0, info = name)
+    testthat::expect_identical(seen[["2020-01-02T16:00:00Z"]], c(AAA = 0), info = name)
     testthat::expect_equal(
       tables$equity$equity,
       c(1200, rep(1000 + 2 * case$price, 2L)),
@@ -385,6 +385,7 @@ testthat::test_that("[LTB-0167] frozen holdings are preserved and reserved by st
   }
   bt <- ledgr_run(terminal_outcome_experiment(snapshot, strategy = strategy), run_id = "frozen-context")
   tables <- terminal_outcome_tables(bt)
+  availability <- as.data.frame(ledgr_results(bt, "availability"))
   close(bt)
   testthat::expect_identical(seen$vec$held, TRUE)
   testthat::expect_equal(seen$vec$position, 2)
@@ -392,6 +393,17 @@ testthat::test_that("[LTB-0167] frozen holdings are preserved and reserved by st
   testthat::expect_identical(seen$vec$member, TRUE)
   testthat::expect_identical(seen$vec$buyable, FALSE)
   testthat::expect_identical(seen$tradable, "BBB")
+  frozen <- availability[
+    availability$instrument_id == "AAA" &
+      as.POSIXct(availability$ts_utc, tz = "UTC") ==
+        as.POSIXct("2020-01-03 16:00:00", tz = "UTC"),
+    , drop = FALSE
+  ]
+  testthat::expect_identical(frozen$mark_source, "frozen_close")
+  testthat::expect_identical(frozen$mark_age, 2L)
+  testthat::expect_identical(frozen$target_restricted, TRUE)
+  testthat::expect_identical(frozen$target_restriction_reason, "valuation_frozen")
+  testthat::expect_identical(frozen$priced, TRUE)
   # Reported equity includes the frozen value; the helper reserves it once.
   testthat::expect_equal(seen$equity, 1200)
   testthat::expect_equal(unclass(seen$target)[["AAA"]], 2)

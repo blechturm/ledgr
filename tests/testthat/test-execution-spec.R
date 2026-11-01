@@ -414,6 +414,7 @@ testthat::test_that("execution spec constructor exposes only the canonical subst
       "state",
       "state_prev",
       "position_facts",
+      "position_fact_unknown_basis",
       "history_substrate",
       "feature_defs",
       "active_alias_map",
