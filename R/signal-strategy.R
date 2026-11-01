@@ -30,7 +30,13 @@
 #'   function(ctx) c(AAA = "LONG"),
 #'   long_qty = 10
 #' )
-#' strategy(list(universe = "AAA"), list())
+#' strategy(
+#'   list(
+#'     universe = "AAA",
+#'     vec = list(admissible = TRUE, position = c(AAA = 0))
+#'   ),
+#'   list()
+#' )
 #'
 #' @section Articles:
 #' Strategy helper pipelines:

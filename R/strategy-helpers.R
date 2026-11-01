@@ -75,7 +75,8 @@ ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   vec = list(
-#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
+#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
+#'     admissible = c(TRUE, TRUE)
 #'   )
 #' )
 #' ledgr_signal_feature(ctx, "return_5")
@@ -122,7 +123,8 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   vec = list(
-#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
+#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
+#'     admissible = c(TRUE, TRUE)
 #'   )
 #' )
 #' ledgr_signal_return(ctx, lookback = 5)
@@ -303,7 +305,11 @@ ledgr_weight_equal <- function(selection) {
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   equity = 1000,
-#'   vec = list(close = c(AAA = 50, BBB = 100))
+#'   vec = list(
+#'     close = c(AAA = 50, BBB = 100),
+#'     admissible = c(TRUE, TRUE),
+#'     position = c(AAA = 0, BBB = 0)
+#'   )
 #' )
 #' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
 #'
@@ -488,7 +494,13 @@ ledgr_target_rebalance <- function(weights,
 #' @examples
 #' selection <- ledgr_selection(c(AAA = TRUE, BBB = FALSE),
 #'                              universe = c("AAA", "BBB"))
-#' ctx <- list(universe = c("AAA", "BBB"))
+#' ctx <- list(
+#'   universe = c("AAA", "BBB"),
+#'   vec = list(
+#'     admissible = c(TRUE, TRUE),
+#'     position = c(AAA = 0, BBB = 0)
+#'   )
+#' )
 #' ledgr_target_quantity(selection, ctx, qty = 10)
 #'
 #' @section Articles:

@@ -40,7 +40,8 @@ Strategy helper pipelines:
 ctx <- list(
   universe = c("AAA", "BBB"),
   vec = list(
-    feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
+    feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
+    admissible = c(TRUE, TRUE)
   )
 )
 ledgr_signal_feature(ctx, "return_5")
