@@ -207,7 +207,8 @@ cuts:
   - id: 5
     name: "Typed fold carrier (macro WS4a)"
     cut: "2026-10-30"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-01 by the maintainer, accepting workstream 13 on product 15ea966a after its checkpoint chain (ws13_checkpoint_review.md, re-reviews 1 and 2: PASS on 167dc947) and close chain (ws13_close_review.md NEEDS_TYPE_2, decided as amendment_valuation; ws13_close_review_rereview_1.md PASS_AFTER_PATCHES, applied verbatim in 15ea966a). Workstream 12 was accepted on 2026-10-31. Identity: snapshot content, run configuration and store format fingerprint unchanged (ws12_disposition.md). Accepted refusal changes: amendment_overflow and amendment_valuation. Open, routed: coverage not obtained (horizon.md, before release certification); overflowing openings and dispositions (typed-accounting work); speed and deep-forward memory at the WS4b milestone check (macro plan rule 16)."
     accepted: "2026-10-30 by the maintainer, revision 5, after LDG-3162 and LDG-3163 completed and the prepared-cut review (cut_review_5_prepared.md, PASS_AFTER_PATCHES, patches applied verbatim). Decisions (1)-(13) and the shape changes listed in ws4a_carrier_design.md Section 9 are accepted with the cut. Implementation starts with LDG-3164 (workstream 12)."
     amendment: "2026-10-30 by the maintainer, during LDG-3164 (stop rule of decision (1)): the synthesis Section 4 state invariant 'positions equal lot-derived net' (design note F4.01) is not enforced at import. The base admits an execution spec holding positions without lots and carried walk-forward positions that differ from the re-summed carried lots in the last bits; enforcing equality at E would add a refusal or change carried results. Imported positions are kept as given; positions of instruments a fill or disposition touches come from the book (O2.02, D11). The divergence is parked in horizon.md (2026-10-30, imported positions versus the lot-derived net) for the typed-accounting work (WS7/WS8). No identity or result change."
     amendment_performance: "2026-10-31 by the maintainer (macro plan rule 16): timing and memory are no longer gates in this cut; performance is checked against v0.2.2 after big milestones, first after core unification (WS4b). Decisions (4) and (5) set no pass/fail criterion; protocol ws4a-timing-1, its thresholds, timing_absolute.R and the memory method stay registered as tools for the milestone check. Decision (6) stands as settled on blocks at LDG-3164 by attempt 1 of dev/bench/timing/records/ws4a-timing-1/ldg3164-gate (candidate a6b3643e: read_fills 0.408, read_trades 0.405) and the replay memory record (0.88-0.92 of base); attempt 2 on f4c47b8b was stopped unfinished and is not evidence. Decision (8): LDG-3164 through LDG-3169 end with their correctness gates only, and the real-data oracle still runs at LDG-3164 and LDG-3169. LDG-3169 runs no timing matrix or memory script. Decision (7)'s question, whether the per-pulse lot copy dominates, moves to the milestone check after WS4b. Correctness oracles, cases, guts, detectors and injections are unchanged."
@@ -616,7 +617,8 @@ workstreams:
   - id: 13
     name: "Typed stage carrier (macro WS4a, part 2)"
     cut: 5
-    status: "planned"
+    status: "complete"
+    accepted: "2026-11-01 by the maintainer after the Type 1 close review chain, on product 15ea966a."
     depends_on_workstream: 12
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 13, after LDG-3169", reason: "One claim joins LDG-3165 through LDG-3169: both producers carry one pulse through E and P1-P5 in the typed carrier of the accepted synthesis, with publication and diagnostics as indexed columns and one equity record, outputs exactly equal to the A0 successor, dense and real-data oracles, at the timing and memory bounds of decisions (4) and (5), and every changed stage explainable from its code and the carrier contract."}
