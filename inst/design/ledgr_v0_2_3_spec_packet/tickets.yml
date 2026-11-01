@@ -862,8 +862,9 @@ workstreams:
   - id: 14
     name: "One execution path (macro WS4b)"
     cut: 6
-    status: "review_pending"
-    close_review: "CHANGES_REQUIRED in ws14_close_review.md; correction candidate c857d856 closes product findings and fe8a78aa registers the harness-required timing window. ws14_close_review_rereview_1.md records the focused chain: PASS_AFTER_PATCHES at 9f9e86f9, CHANGES_REQUIRED after 06d1fc44 exposed the remaining direct clock-kind census and stale-help cases, then PASS at 2bd5baa7 after both corrections. No Type 2 issue remains. One non-blocking stale ledgr_pulse_snapshot() description is routed to macro WS12 documentation debt. Workstream 14 awaits maintainer acceptance."
+    status: "complete"
+    accepted: "2026-11-01 by the maintainer after the independent Type 1 close-review chain ended PASS at 2bd5baa7; implementation and final review record are committed through 5f68b330."
+    close_review: "CHANGES_REQUIRED in ws14_close_review.md; correction candidate c857d856 closes product findings and fe8a78aa registers the harness-required timing window. ws14_close_review_rereview_1.md records the focused chain: PASS_AFTER_PATCHES at 9f9e86f9, CHANGES_REQUIRED after 06d1fc44 exposed the remaining direct clock-kind census and stale-help cases, then PASS at 2bd5baa7 after both corrections. No Type 2 issue remains. One non-blocking stale ledgr_pulse_snapshot() description is routed to macro WS12 documentation debt. Accepted by the maintainer on 2026-11-01."
     depends_on_workstream: 13
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 14, after LDG-3178", reason: "One claim joins LDG-3170 through LDG-3178: every supported run, sweep, walk-forward, promotion and pulse-inspection route prepares one execution substrate and enters one E/P1-P5 path; fixed-basket data use the accepted bar-native pulse clock and strict completeness while declared sessions keep their point-in-time semantics; the old dense fold, guard, context and provider branches and the exported ledgr_backtest() constructor are absent; final-pulse non-execution is one structured diagnostic under identity rule 5; all native, A0, real-data and failure oracles pass or differ only by decisions (1)-(5) and the decision (9) rows of the frozen expected-difference record; and the shared-harness plus peer milestone records attribute the final candidate without serving as acceptance clocks. The review walks the seven shapes over every changed preparation/fold/finalisation function, cold-reads the surviving path from its contract, mutation-checks the deletion and identity witnesses, audits every registered test migration and reconciles the source census to zero unowned branches."}
@@ -2010,7 +2011,7 @@ tickets:
   - id: "LDG-3178"
     title: "Verify the unified core and record the first performance milestone"
     workstream: 14
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3177"]
@@ -2045,3 +2046,4 @@ tickets:
       - "Final exact-source gates at 29a3a0d2: review profile 518/518 with one optional-package skip in 907.41 seconds; source build PASS; R CMD check --no-manual --no-build-vignettes has zero errors/notes and two expected missing-inst/doc warnings while every example, test and executable vignette passes. Fast, review and full-heavy together execute every registered profile."
       - "Private aggregate-only real-data record: the current-only gate refused the old store, then one candidate-format rebuild reproduced the same snapshot hash and fact digests over 5,481,906 bars, 1,166 instruments and 7,213 sessions (202.2 seconds, 5,770 MiB peak RSS). W2 minvar/article and W3 changing/full are byte-identical on every canonical table. W4 sweep differs only by the accepted diagnostics column and W4 walk-forward only by identity-rule-5 fields; dev/bench/v0_2_3_ws4b/check_realdata_accepted_differences.R proves all remaining aggregate columns identical."
       - "Focused close chain: inst/design/ledgr_v0_2_3_spec_packet/ws14_close_review_rereview_1.md. The final clean-context Claude Opus Type 1 confirmation returns PASS at 2bd5baa7: unified public help is current, the source-derived mode census covers resolver, symbol, field and alias clock-kind forms, both committed census CSVs reproduce, every row has a disposition, and the correction adds no compatibility or execution path."
+      - "Maintainer acceptance: 2026-11-01 after the final PASS; workstream 14 and LDG-3178 are complete on the committed record through 5f68b330."
