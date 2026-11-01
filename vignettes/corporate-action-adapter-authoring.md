@@ -224,16 +224,14 @@ fact’s entitlement, the fact also counts under its reason in
 `refusal_counts`, with its entitled quantity in
 `refusal_entitled_quantity`, and takes the unsupported-quantity route.
 Under the research preset nothing posts and `corporate_action_fidelity`
-reads `unsupported`. Under the strict preset an availability-aware run
-stops `INCOMPLETE` with `corporate_action_quantity_refused`, and a dense
-run raises `ledgr_corporate_action_quantity_unsupported`. A held fact
-with no effective clock has no effective pulse, so under either preset
-it only counts in `unsupported_facts` and makes
-`corporate_action_fidelity` read `unsupported`. A refused fact on a
-parent the run did not hold changes neither fidelity nor the run
-outcome. Neither preset claims exact recipient exposure, broker
-settlement, withholding, tax treatment, or completeness of the upstream
-source.
+reads `unsupported`. Under the strict preset the run stops `INCOMPLETE`
+with `corporate_action_quantity_refused`. A held fact with no effective
+clock has no effective pulse, so under either preset it only counts in
+`unsupported_facts` and makes `corporate_action_fidelity` read
+`unsupported`. A refused fact on a parent the run did not hold changes
+neither fidelity nor the run outcome. Neither preset claims exact
+recipient exposure, broker settlement, withholding, tax treatment, or
+completeness of the upstream source.
 
 This release does not claim corporate-action completeness, broker-exact
 settlement, net cash, tax correctness, or exact recipient exposure.

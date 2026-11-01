@@ -11,11 +11,15 @@
 "R/availability-policy.R","print.ledgr_experiment_plan","branch","$availability_active","if: isTRUE(x$availability_active)",2
 "R/availability-provider.R","ledgr_availability_config_active","flow","availability$active","statement",1
 "R/availability-provider.R","ledgr_availability_provider","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
+"R/availability-results.R","ledgr_backtest_availability","branch","ledgr_execution_clock_kind_from_config()","if: identical(ledgr_execution_clock_kind_from_config(bt$config), ""declared_sessions"")",1
+"R/availability-results.R","ledgr_backtest_availability_filtered","branch","ledgr_execution_clock_kind_from_config()","if: identical(ledgr_execution_clock_kind_from_config(bt$config), ""declared_sessions"")",1
 "R/availability-results.R","ledgr_backtest_terminal_evidence","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(bt$config)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: !is.null(strat$strategy_schedule) && !isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",1
 "R/backtest-config.R","ledgr_config","branch","availability$active","if: isTRUE(availability$active)",2
+"R/backtest-results.R","print.ledgr_backtest","flow","ledgr_execution_clock_kind_from_config()","arg:sprintf:3",1
 "R/backtest-results.R","summary.ledgr_backtest","branch","ledgr_availability_config_active()","if: ledgr_availability_config_active(object$config)",1
+"R/backtest-results.R","summary.ledgr_backtest","flow","ledgr_execution_clock_kind_from_config()","arg:sprintf:2",1
 "R/backtest-runner.R","ledgr_feature_defs_from_config","branch","availability_active","if: availability_active",1
 "R/backtest-runner.R","ledgr_feature_defs_from_config","flow","availability_active","assign_target",1
 "R/backtest-runner.R","ledgr_feature_defs_from_config","flow","ledgr_availability_config_active()","assign:availability_active",1

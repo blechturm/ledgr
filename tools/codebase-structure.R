@@ -455,7 +455,11 @@ ledgr_mode_branch_schema <- function() {
 }
 
 ledgr_mode_branch_helper_calls <- function() {
-  c("ledgr_availability_config_active", "ledgr_backtest_availability_active")
+  c(
+    "ledgr_availability_config_active",
+    "ledgr_backtest_availability_active",
+    "ledgr_execution_clock_kind_from_config"
+  )
 }
 
 ledgr_mode_branch_presence_symbols <- function() {
@@ -666,9 +670,11 @@ ledgr_mode_branch_scan <- function(root) {
         next
       }
       # Every switch form names one of these tokens, so a definition whose
-      # source text has none of them has no site and is not walked.
+      # source text has none of them has no site and is not walked. The
+      # execution-clock token owns result-reader differences after WS4b
+      # removed the old availability/dense execution split.
       if (!grepl(
-        "active|history_substrate|availability_provider",
+        "active|history_substrate|availability_provider|clock_kind",
         paste(as.character(refs[[i]]), collapse = "\n")
       )) {
         next

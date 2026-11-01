@@ -32,19 +32,17 @@ universe, scoring range, causal-history identity, feature engine version,
 grid labels, and resolved feature fingerprints. Use it for larger exploratory grids; \code{ledgr_sweep()}
 warns when more than 20 combinations run without precomputed features.
 
-For an availability-aware experiment the payload is computed through the
-same causal history substrate, history policy and calculation bounds as the
-experiment's runs and sweeps: feature state starts at the data start (the
-first session of the snapshot), whatever the scoring start. The payload
+The payload is computed through the same causal history substrate, history
+policy and calculation bounds as the experiment's runs and sweeps: feature
+state starts at the substrate's data start, whatever the scoring start. For
+a fixed basket this includes sealed bars before a dated opening. The payload
 records its causal axis (data start, first calculated session, cutoff and
 session stamps). A sweep reuses it only when that axis, the cutoff, the
 history policy, the snapshot and every candidate's feature identity match
-exactly; otherwise it refuses before any candidate runs. A dense payload
-never serves an availability sweep, nor the reverse.
+exactly; otherwise it refuses before any candidate runs. A bar-native
+payload never serves a declared-session sweep, nor the reverse.
 
-Dense experiments are unchanged: their feature state starts at the scoring
-start, bars before \code{start} are not read, and a sweep refuses a dense payload
-whose scoring start differs from its own.
+A payload never serves an experiment with a different execution-clock kind.
 }
 \section{Articles}{
 

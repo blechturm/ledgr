@@ -24,20 +24,25 @@ recorded after completion; clocks are not correctness gates.
 | --- | ---: | ---: | --- |
 | bar-native no-fill run | 2.796 | 2.726 | red; route surviving fold-loop cost |
 | bar-native sparse sweep | 2.715 | 2.735 | red; route surviving fold-loop cost |
-| bar-native wide run | 1.588 | 0.612 | slower than post-WS4a base, faster than release |
+| bar-native wide run | 1.588 | 0.612 | red against post-WS4a base; faster than release; route with the other bar-native cells |
 | declared-session no-fill run | 0.792 | 0.805 | improved |
 | declared-session sparse sweep | 0.949 | 0.978 | improved |
 | declared-session wide run | 0.866 | 0.441 | improved |
 
 Every one of the 192 measured executions retained its registered economic
 control. `phase_attribution.R` uses the same 500 by 1,260 no-fill fixture and
-the run's existing telemetry. Its matched record places the bar-native change
-in the fold loop (1.27 seconds at `b5622f09`, 5.44 seconds at the candidate),
-not primarily in preparation (0.58 versus 0.99 seconds) or finalisation (0.03
-seconds in both). The declared-session loop improves from 6.34 to 5.22
-seconds. The macro plan routes the red bar-native cells through WS5's already
-bound flat-context work and then the WS14 convergence checkpoint; it expressly
-forbids recreating the deleted dense execution path.
+the run's existing telemetry. Both arms in the matched attribution record are
+installed packages. The record places the bar-native change in the fold loop
+(1.27 seconds at `b5622f09`, 5.46 seconds at the candidate), not primarily in
+preparation (0.58 versus 0.80 seconds) or finalisation (0.03 versus 0.01
+seconds). The declared-session loop improves from 6.34 to 5.31 seconds. The
+macro plan routes all three red bar-native cells, including wide, through
+WS5's already bound flat-context work and then the WS14 convergence checkpoint;
+it expressly forbids recreating the deleted dense execution path.
+
+`phase_attribution_candidate.csv` preserves the earlier unmatched
+`load_all()` diagnostic and is not the quoted comparison arm.
+`phase_attribution_candidate_installed.csv` is the matched candidate arm.
 
 ## Peer lanes
 

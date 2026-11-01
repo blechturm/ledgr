@@ -10,19 +10,17 @@
 #' grid labels, and resolved feature fingerprints. Use it for larger exploratory grids; `ledgr_sweep()`
 #' warns when more than 20 combinations run without precomputed features.
 #'
-#' For an availability-aware experiment the payload is computed through the
-#' same causal history substrate, history policy and calculation bounds as the
-#' experiment's runs and sweeps: feature state starts at the data start (the
-#' first session of the snapshot), whatever the scoring start. The payload
+#' The payload is computed through the same causal history substrate, history
+#' policy and calculation bounds as the experiment's runs and sweeps: feature
+#' state starts at the substrate's data start, whatever the scoring start. For
+#' a fixed basket this includes sealed bars before a dated opening. The payload
 #' records its causal axis (data start, first calculated session, cutoff and
 #' session stamps). A sweep reuses it only when that axis, the cutoff, the
 #' history policy, the snapshot and every candidate's feature identity match
-#' exactly; otherwise it refuses before any candidate runs. A dense payload
-#' never serves an availability sweep, nor the reverse.
+#' exactly; otherwise it refuses before any candidate runs. A bar-native
+#' payload never serves a declared-session sweep, nor the reverse.
 #'
-#' Dense experiments are unchanged: their feature state starts at the scoring
-#' start, bars before `start` are not read, and a sweep refuses a dense payload
-#' whose scoring start differs from its own.
+#' A payload never serves an experiment with a different execution-clock kind.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -345,13 +343,13 @@ ledgr_precompute_validate_window_coverage <- function(precomputed, range, window
       class = "ledgr_precomputed_range_mismatch"
     )
   }
-  # Dense feature state starts at the scoring start, so a dense payload serves
-  # only windows that score from its own start.
+  # A window may consume only the scoring range whose preparation produced the
+  # payload. History itself starts at the shared substrate data boundary.
   if (!identical(as.numeric(req_scoring_start), as.numeric(pre_scoring_start))) {
     rlang::abort(
       sprintf(
         paste(
-          "`precomputed_features` starts dense feature state at %s, but the",
+          "`precomputed_features` starts its scoring range at %s, but the",
           "window scores from %s. Precompute with `start` equal to the",
           "window's scoring start."
         ),

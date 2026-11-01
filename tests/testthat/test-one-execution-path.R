@@ -85,6 +85,27 @@ testthat::test_that("[LTB-0524] bar-native coverage starts at the executable bou
   )
   on.exit(close(pulse), add = TRUE)
   testthat::expect_identical(pulse$universe, c("AAA", "BBB"))
+
+  # A missing bar after the executable boundary remains a public strict-
+  # coverage refusal. This distinguishes the accepted pre-opening omission
+  # above from an in-range gap without pinning a private preparation seam.
+  in_range_bars <- ws4b_bars(5L, c("AAA", "BBB"))
+  in_range_gap <- in_range_bars$instrument_id == "BBB" &
+    in_range_bars$ts_utc == as.POSIXct("2020-01-05", tz = "UTC")
+  in_range_bars <- in_range_bars[!in_range_gap, , drop = FALSE]
+  in_range_snapshot <- ledgr_snapshot_from_df(in_range_bars)
+  on.exit(ledgr_snapshot_close(in_range_snapshot), add = TRUE)
+  in_range_exp <- ledgr_experiment(
+    in_range_snapshot,
+    function(ctx, params) ctx$flat(),
+    universe = c("AAA", "BBB"),
+    opening = ledgr_opening(cash = 1000, date = as.Date("2020-01-04")),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_error(
+    ledgr_run(in_range_exp, run_id = "coverage-inside-execution"),
+    class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
+  )
 })
 
 # ledgr-test-profile: review

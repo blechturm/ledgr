@@ -13,9 +13,14 @@ read_table <- function(path) {
   utils::read.csv(path, colClasses = "character", check.names = FALSE)
 }
 
-same_except <- function(reference_path, candidate_path, dropped) {
+same_except <- function(reference_path, candidate_path, dropped,
+                        reference_only = character(), candidate_only = character()) {
   reference_table <- read_table(reference_path)
   candidate_table <- read_table(candidate_path)
+  if (!identical(setdiff(names(reference_table), names(candidate_table)), reference_only) ||
+      !identical(setdiff(names(candidate_table), names(reference_table)), candidate_only)) {
+    return(FALSE)
+  }
   shared <- setdiff(
     intersect(names(reference_table), names(candidate_table)),
     dropped
@@ -27,7 +32,8 @@ checks <- c(
   sweep = same_except(
     file.path(reference, "w4_sweep", "r1", "sweep_candidates.csv"),
     file.path(sweep_rerun, "sweep_candidates.csv"),
-    "diagnostics"
+    "diagnostics",
+    candidate_only = "diagnostics"
   ),
   walk_forward_folds = same_except(
     file.path(reference, "w4_wf", "r1", "wf_folds.csv"),

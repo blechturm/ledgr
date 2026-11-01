@@ -391,10 +391,9 @@ ledgr_corporate_action_time_tokens <- function(value) {
 #' absolute entitled parent quantities. A held refused fact takes the
 #' unsupported-quantity route: under `unsupported_quantity = "report_only"` it
 #' counts in `unsupported_facts` and `corporate_action_fidelity` reads
-#' `"unsupported"`; under `"refuse"` an availability-aware run stops
-#' `INCOMPLETE` with `corporate_action_quantity_refused` and a dense run raises
-#' `ledgr_corporate_action_quantity_unsupported`. An unheld refused fact
-#' changes neither fidelity nor the run outcome.
+#' `"unsupported"`; under `"refuse"` the run stops `INCOMPLETE` with
+#' `corporate_action_quantity_refused`. An unheld refused fact changes neither
+#' fidelity nor the run outcome.
 #'
 #' `choice_counts` counts exercised choices: the cash amount and posting
 #' choices once per corporate-action cash posting, the terminal choices once

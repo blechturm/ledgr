@@ -31,10 +31,9 @@ when the fact was entitled, and \code{refusal_entitled_quantity} sums their
 absolute entitled parent quantities. A held refused fact takes the
 unsupported-quantity route: under \code{unsupported_quantity = "report_only"} it
 counts in \code{unsupported_facts} and \code{corporate_action_fidelity} reads
-\code{"unsupported"}; under \code{"refuse"} an availability-aware run stops
-\code{INCOMPLETE} with \code{corporate_action_quantity_refused} and a dense run raises
-\code{ledgr_corporate_action_quantity_unsupported}. An unheld refused fact
-changes neither fidelity nor the run outcome.
+\code{"unsupported"}; under \code{"refuse"} the run stops \code{INCOMPLETE} with
+\code{corporate_action_quantity_refused}. An unheld refused fact changes neither
+fidelity nor the run outcome.
 
 \code{choice_counts} counts exercised choices: the cash amount and posting
 choices once per corporate-action cash posting, the terminal choices once

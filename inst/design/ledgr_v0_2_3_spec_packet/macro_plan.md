@@ -319,14 +319,17 @@ current producers are compared; WS4b does not redesign it.
   by the typed-fold-carrier acceptance (2026-10-30).
 - **Milestone disposition (2026-11-01):** the final Cut 6 candidate improves
   all three declared-session cells and the bar-native wide cell against
-  v0.2.2, but bar-native no-fill and sparse cells are about 2.7 times slower.
+  v0.2.2. Against the post-WS4a attribution base, however, all three
+  bar-native cells are red: no-fill and sparse are about 2.7 times slower and
+  wide is 1.588 times slower.
   The matched telemetry probe locates the difference in the fold loop rather
   than cold preparation or finalisation: the bar-native no-fill loop moves
-  from about 1.27 seconds to 5.44 seconds while the declared-session loop
-  improves from about 6.34 seconds to 5.22 seconds. This is the measured
+  from about 1.27 seconds to 5.46 seconds while the declared-session loop
+  improves from about 6.34 seconds to 5.31 seconds. Both arms are installed
+  packages; bar-native preparation moves from 0.58 to 0.80 seconds. This is the measured
   semantic premium of routing fixed baskets through the canonical substrate,
   not authority to restore the deleted dense path. WS5 owns the already-bound
-  eager context removal; WS14 must reproduce the two red bar-native cells and
+  eager context removal; WS14 must reproduce all three red bar-native cells and
   profile the surviving P1/P2 loop before choosing any further optimization.
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.

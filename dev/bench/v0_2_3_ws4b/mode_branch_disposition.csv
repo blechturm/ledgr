@@ -5,8 +5,11 @@ R/availability-policy.R,print.ledgr_experiment_plan,disclosure,prints point-in-t
 R/availability-provider.R,ledgr_availability_config_active,preparation,typed predicate for fact-backed provider construction
 R/availability-provider.R,ledgr_availability_provider,preparation,provider exists only for declared point-in-time facts
 R/availability-results.R,ledgr_backtest_terminal_evidence,result,terminal evidence exists only when terminal facts were supplied
+R/availability-results.R,ledgr_backtest_availability,result,bar-native availability is derived from rectangular coverage while declared sessions use fact-backed reconstruction
+R/availability-results.R,ledgr_backtest_availability_filtered,result,bar-native availability is derived from rectangular coverage while declared sessions use fact-backed reconstruction
 R/backtest-config.R,ledgr_config,admission,scheduling and fact-policy capability checks
 R/backtest-results.R,summary.ledgr_backtest,disclosure,summary labels the execution clock and fact evidence
+R/backtest-results.R,print.ledgr_backtest,disclosure,print labels the execution clock and fact evidence
 R/backtest-runner.R,ledgr_feature_defs_from_config,preparation,feature fingerprint resolves declared fact capability
 R/backtest-runner.R,ledgr_run_fold_impl,private-test-seam,config-only private seam retained for resume tests
 R/backtest.R,ledgr_run_experiment,preparation,experiment selects the fact-backed provider once
