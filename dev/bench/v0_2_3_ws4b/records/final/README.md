@@ -60,8 +60,31 @@ The private six-workload runner emits only comparison names and outcomes here:
 `w2_minvar`, `w2_article`, `w3_changing`, `w3_full`, `w4_sweep`, `w4_wf`.
 Vendor rows, identifiers, values and private paths do not enter this record.
 
+The current-only store gate correctly refused the pre-WS4b snapshot. One
+candidate-format rebuild then reproduced the same snapshot hash and fact
+digests over 5,481,906 bars, 1,166 instruments and 7,213 open sessions. The
+build took 202.2 seconds and peaked at 5,770 MiB RSS.
+
+`w2_minvar`, `w2_article`, `w3_changing` and `w3_full` are byte-identical for
+snapshot hash, equity, fills and ledger. `w4_sweep` differs only by the new
+diagnostics column; every shared economic column is identical. `w4_wf` differs
+only in the identity-rule-5 session, test-run and candidate-label fields;
+every other fold and score column is identical. The value-free reproducer
+`check_realdata_accepted_differences.R` rejects any other W4 difference.
+
 ## Exact-source close gates
 
 The ordinary fast profile, review profile, heavy protocol, full suite, package
 build/check and final aggregate records are appended only after they run on the
 named candidate. A later product edit invalidates the affected row.
+
+- fast: 612/612 blocks, zero skips or failures; 202.65 seconds. This is a
+  functional pass and an honestly recorded miss of the old 112-second
+  advisory timing bound.
+- review: 518/518 blocks, one optional-package skip, zero failures; 907.41
+  seconds after the three stale deleted-path tests were migrated.
+- full-heavy: 181/181 blocks, zero skips or failures; 296.42 seconds.
+- source build: PASS.
+- `R CMD check --no-manual --no-build-vignettes`: zero errors, zero notes and
+  two expected missing-`inst/doc` warnings caused by the chosen no-vignette
+  check mode; every example, test and executable vignette passed.

@@ -1,0 +1,8 @@
+control,outcome,accepted_difference
+w1_rebuild,PASS,"same snapshot hash and fact digests; identity rule 5 and current store fingerprint"
+w2_minvar,PASS,"none; equity fills and ledger byte-identical"
+w2_article,PASS,"none; equity fills and ledger byte-identical"
+w3_changing,PASS,"none; equity fills and ledger byte-identical"
+w3_full,PASS,"none; equity fills and ledger byte-identical"
+w4_sweep,PASS,"diagnostics column only; all shared economic columns identical"
+w4_walk_forward,PASS,"identity fields only; all shared fold and score columns identical"
