@@ -43,3 +43,12 @@ Therefore Cut 7 must use an explicit declaration-driven state codec and must
 retain one lightweight cursor record per completed pulse. Option A removes the
 unchanged-state payload encode, not the resume cursor. The future split
 progress/checkpoint architecture remains parked in `inst/design/horizon.md`.
+
+## Limitations
+
+The round-trip and resume probes call internal functions on synthetic
+`strategy_state` rows. Only the call-count arm is a public run, and its
+frame-based encode counter is exact only for this no-fill fixture. The
+`.libPaths()` line is host-specific. The script measures whatever tree it
+loads; this is input evidence for product source `14252ffb`, not product
+acceptance evidence for the later implementation.

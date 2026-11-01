@@ -1,9 +1,9 @@
 # Cut 7 Review: Strategy Authoring API
 
-Mode: Type 1 cut review with adversarial input check.  
-Reviewer: clean-context Claude Opus, high effort.  
-Range: `14252ffb..e3c374f1`.  
-Date: 2026-11-01.  
+Mode: Type 1 cut review with adversarial input check.
+Reviewer: clean-context Claude Opus, high effort.
+Range: `14252ffb..e3c374f1`.
+Date: 2026-11-01.
 Verdict: **NEEDS_TYPE_2**.
 
 ## Overall assessment

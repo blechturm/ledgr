@@ -792,7 +792,7 @@ cuts:
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
     status: "draft"
-    cut_review: "NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01): R1-R11 correct resume, typed missing-state encoding, D8 physical ownership, the WS6 boundary, scheduler retirement, contract ownership, integration acceptance, exports, timing attribution and the pre-acceptance probe. Independent patches are applied in revision 2. Maintainer decision 2026-11-01 accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review is pending."
+    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded ownership, memory-sink, edge-case and record patches are applied verbatim. Final clean-context confirmation is pending."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
       implements the accepted strategy-authoring synthesis on the one surviving
@@ -902,18 +902,28 @@ cuts:
     section_4_ownership: >-
       Synthesis Section 4 item 1 belongs to LDG-3180; item 2 to LDG-3181;
       item 3 to LDG-3183; item 4 to LDG-3185 and LDG-3186; item 5 to LDG-3188
-      and LDG-3189; item 6 to LDG-3187 and LDG-3189. LDG-3179 freezes the
+      and LDG-3189; item 6 to LDG-3179 (paired timing preregistration),
+      LDG-3184 (default disclosure) and LDG-3187 (rounding and coverage
+      disclosure). LDG-3179 freezes the
       complete detector, export, contract, identity, source and timing matrix;
       LDG-3190 reruns and reconciles it. Every listed mutation must fail a
       registered block; a source census alone is not detecting evidence.
     section_3_ownership: >-
-      Synthesis Section 3 context and Context Contract changes belong to
-      LDG-3180; selection and target changes to LDG-3182 and LDG-3183;
-      experiment-input and schedule changes to LDG-3184; declared-state and
-      strategy-result changes to LDG-3185 and LDG-3186; sizing diagnostics and
-      result disclosure to LDG-3187; strategy-authoring teaching to LDG-3188
-      and LDG-3189. LDG-3190 verifies the consolidated text but does not first
-      implement any contract amendment.
+      Synthesis Section 3 rows map to implementing tickets as follows. Pulse
+      data, feature resolution and strict features: LDG-3180. Prepared views
+      and inspection: no Cut 7 amendment; WS6 owns frame retirement and
+      LDG-3190 records the inspection handoff. Context and state: buyable and
+      flat columns LDG-3180, D2 facts LDG-3181, D5 declared state,
+      patch/replacement/reset and axis rules LDG-3185 and LDG-3186. Strategy
+      outputs and target semantics: LDG-3183. Decision axis: LDG-3182. Fold
+      core, accounting events and reconstruction: LDG-3181. Walk-forward folds
+      and window start: fact carry LDG-3181, strategy-state reset and candidate
+      isolation LDG-3186. Construction, identity and durable JSON: investor
+      inputs LDG-3184, typed declarations, identity and the state codec
+      LDG-3185. Preflight: LDG-3184. Standard metrics and result reads:
+      LDG-3187. Strategy teaching, example style and public names: LDG-3189.
+      LDG-3190 verifies the consolidated text but does not first implement any
+      contract amendment.
     condition_contract: >-
       Invalid selection/weight value types use ledgr_invalid_strategy_type;
       invalid helper call shapes use ledgr_invalid_strategy_helper with
@@ -924,7 +934,7 @@ cuts:
       sizing_unavailable diagnostic. Tickets pin exact messages only where the
       wording teaches the corrective public call.
     pre_acceptance_gate: >-
-      Before maintainer acceptance, run three bounded public-path probes on
+      Before maintainer acceptance, run three bounded probes on
       14252ffb: round-trip every proposed declared-state atomic type including
       typed missing values and a non-alphabetical asset axis; resume a strategy
       after an unchanged-state tail and after finalisation-only pulses; and
@@ -940,6 +950,11 @@ cuts:
       only resume; and a five-pulse unchanged-state public run performs five
       context builds, five state encodes and five strategy_state writes. These
       observations directly bind the typed codec and option-A cursor rules.
+      The round-trip and resume probes call internal functions on synthetic
+      strategy_state rows; only the call-count probe is a public run, and its
+      frame-based encode counter is exact only for this no-fill fixture. The
+      probe measures whatever tree it loads: it is input evidence for
+      14252ffb, not product acceptance evidence.
     identity_and_release_impact: >-
       Snapshot content identity: none. Run/configuration identity intentionally
       gains normalized declared state and explicitly supplied opening/cost
@@ -2304,6 +2319,7 @@ tickets:
     acceptance:
       - "every synthesis decision, Section 3 contract amendment, Section 4 detector and maintained consumer has exactly one ticket owner"
       - "the base semantic matrix and call-count record reproduce on 14252ffb, the bounded state round-trip and resume probes are recorded, and each proposed product difference has one explicit expected-difference row rather than a blanket table allowance"
+      - "the maintained-state shape census finds no nonscalar or nested state; any finding stops the cut for maintainer disposition"
       - "the timing protocol uses the shared harness, eight alternating pairs, both named comparison bases, the six named workload cells, fixed-basket-wide state cells and an experiment-construction cell; its thresholds are disposition triggers under macro rule 16"
       - "source, export, claim, identity and schema censuses are literal enough to fail when one named current reader/helper or owner is omitted"
   - id: "LDG-3180"
@@ -2329,7 +2345,7 @@ tickets:
       maintained consumers to the flat fields; a private vec adapter may
       survive only until LDG-3183 migrates the last target helper, then must be
       deleted. Do not implement WS6 history/frame helpers. A held instrument
-      without a permissible current mark has unavailable holding_value and
+      without a permissible current mark has holding_value NA_real_ and
       sizing must refuse or preserve according to the target rule rather than
       fabricate value.
     acceptance:
@@ -2357,11 +2373,14 @@ tickets:
       existing core; resume and contiguous carry_test_state retain known facts,
       while fresh openings/windows and candidates remain isolated. Add no fill-
       only or held-mask reconstruction engine and no instrument loop.
+      Positions supplied to ledgr_pulse_snapshot() carry unknown entry/exit
+      facts, never fabricated ones.
     acceptance:
       - "the full Section 4 item 2 matrix passes for additions, partial/full sales, re-entry, supplied openings, non-fill changes, zero-fill dispositions and multiple same-bar transitions"
       - "live and prefix-rebuilt facts are identical at every tested boundary, including resume, boundary fills and contiguous carried windows; fills-only, held-mask and treating a zero-fill disposition as a fill mutations each fail"
       - "entry/exit clocks and ages follow the shared absolute bar axis, with zero on recording bars, Inf/NA sentinels as specified and skipped decision bars counted"
       - "runtime/source checks reject a second replay engine, an instrument loop and recomputation of indices in P2"
+      - "pulse inspection with supplied positions reports typed unknown entry/exit facts; fabricated entry or exit facts fail the detector"
   - id: "LDG-3182"
     title: "Ship plain selection and strict named weights"
     workstream: 16
@@ -2403,17 +2422,20 @@ tickets:
       behavior, total/remaining capital-base requirements/defaults, once-only
       preservation/addition reservations, unavailable-price preservation and
       guard scaling. Emit the typed sizing primitives and intent_reason for
-      LDG-3187 without per-pulse JSON. Every unavailable sizing outcome uses
-      the common sizing_unavailable diagnostic path, including strategy-memory
-      inputs, rather than a helper-specific warning. Record the capital-base
-      origin and effective invest_fraction used for each sized request. Delete
+      LDG-3187 without per-pulse JSON. Every unavailable sizing outcome,
+      including one whose input is declared strategy state, uses the common
+      sizing_unavailable diagnostic path through both the durable and the
+      memory sink rather than a helper-specific warning. Record the capital-
+      base origin and effective invest_fraction of each sized request in the
+      returned target's origin. Delete
       LDG-3180's private vec adapter after the last target helper migrates. Do
       not change fill affordability, cash-shortfall, risk or execution policy.
     acceptance:
       - "ctx-first and placeholder-pipe calls are identical; empty adjust holds and empty rebalance clears only the decided eligible allocation"
       - "the complete Section 4 item 3 matrix covers character/logical keeps, leaver precedence, exits, every contradiction, undecided leavers, holding_value, zero/unpriced requests and both capital bases"
       - "runtime/source witnesses prove one shared sizing implementation and once-only P/A/U reservation; double reservation, redistribution, hidden normalization and ineligible-buy mutations fail"
-      - "unavailable marks or memory inputs use one sizing_unavailable diagnostic and never fabricate holding_value; capital-base origin and effective invest_fraction are exact"
+      - "unavailable marks or state inputs use one sizing_unavailable diagnostic with identical economics through a committed run (durable sink) and a sweep candidate (memory sink); a test pins which of those rows the memory sink retains; holding_value is never fabricated; capital-base origin and effective invest_fraction in the target origin are exact"
+      - "LDG-3180's private vec adapter is absent from source after the target helpers migrate"
       - "every returned target is full-axis and compatible with the existing target validator; execution, risk, affordability, costs and fills remain exact"
   - id: "LDG-3184"
     title: "Require investor inputs and expose mixed-cadence scheduling"
@@ -2466,13 +2488,15 @@ tickets:
       ledgr_strategy_state_rule_version to the store-format fingerprint with
       current-only refusal and no migration. Do not change schema 124 or
       implement a fallback unless the accepted checkpoint decision explicitly
-      authorizes it.
+      authorizes it. Migrate ledgr_pulse_snapshot() from its JSON-safe
+      state_prev argument to the declared-state grammar with no alias.
     acceptance:
       - "numeric/integer/logical/character and typed-missing defaults retain type through config identity and runtime reads; asset vectors align to the full decision axis and portfolio fields stay scalar"
       - "the state encoder round-trips all four atomic types with missing values, non-alphabetical and empty asset axes and whole-number doubles without inferring type from JSON or object-key order"
       - "unknown reads, duplicate/reserved names, nested shapes, bad types, non-finite values, off-axis IDs and undeclared persisted fields refuse with exact classes"
       - "new, departed and re-entering IDs follow the declared default lifecycle; saved state views remain pulse-frozen and candidate isolation holds"
       - "configuration hashes change for a declaration/default/type change and stay equal for equivalent normalized declarations; old/missing strategy-state rule markers refuse and the format binding is unconditional"
+      - "pulse inspection accepts the declared-state grammar and refuses the retired JSON-safe state_prev argument with no alias"
   - id: "LDG-3186"
     title: "Apply patches, replacements and state checkpoints"
     workstream: 17
@@ -2488,12 +2512,20 @@ tickets:
       write one existing-table cursor record for every completed pulse. An
       unchanged pulse writes one constant marker and performs no state-payload
       encode; a changed pulse writes the complete declared state once through
-      LDG-3185's declaration-driven codec. An asset-axis ID-set change is a
-      state change. Resume advances from the latest cursor and restores the
-      latest preceding payload aligned by ID; run, sweep and worker candidates
+      LDG-3185's declaration-driven codec. A pulse is unchanged when its
+      complete typed state and decision-axis ID vector are identical to the
+      previous completed pulse's (to the prepared defaults on the first pulse),
+      whatever the strategy returned; an asset-axis ID-set change is therefore
+      a state change when any asset field is declared. The marker is a non-NULL
+      constant that no codec payload can equal, and the payload query excludes
+      it. Resume advances from the latest cursor and restores the latest
+      preceding payload aligned by ID, or the declared defaults on the resume
+      axis when no payload precedes the cursor; run, sweep and worker candidates
       remain equal and isolated; walk-forward strategy state resets while
-      economic facts may carry. Validate and encode state at the pulse-context,
-      pulse-inspection and durable-write seams, and assign the old strategy
+      economic facts may carry. Replace the canonical_json validation encodes
+      at the pulse-context and pulse-inspection seams with declaration-driven
+      validation that encodes nothing; only the durable-write seam encodes, and
+      only on a changed pulse. Assign the old strategy
       JSON-cache retirement to this ticket's final source census. Keep schema
       124; stop if exact recovery requires an unapproved schema change. Measure
       and report both unchanged and every-pulse-changing state workloads, and
@@ -2505,6 +2537,7 @@ tickets:
       - "resume/restart, sequential/parallel sweep and walk-forward reset reproduce exact complete state; candidate or later-pulse leakage mutations fail"
       - "N unchanged pulses resume at N + 1, finalisation-only tails do not replay, and a departed/re-entering instrument restores or defaults exactly as declared"
       - "every completed pulse has exactly one cursor/checkpoint row; unchanged pulses use the constant marker with zero state-payload encodes, changed pulses encode once, and axis-ID-set changes force a checkpoint"
+      - "a no-state strategy, a never-changed declared state and a raw state_update returning identical values every pulse write only markers and resume exactly, from declared defaults or the last payload; a marker-equals-payload mutation fails"
       - "the changed-every-pulse and unchanged-state workload cells report encoding, row count, bytes and wall time without treating the future storage architecture as implemented"
       - "the seven optimization shapes and identity/format assertions pass, including a detector that fails a restored every-pulse state encode/write"
   - id: "LDG-3187"
@@ -2522,7 +2555,13 @@ tickets:
       to reason_code, intent_reason to reasons and the constant empty object to
       detail_json. Categories distinguish ordinary rounding, rounded-to-zero
       addition, rounded-to-zero liquidation and unavailable sizing. Do not
-      JSON-encode sizing values in the pulse loop. Add
+      JSON-encode sizing values in the pulse loop. Sizing rows use stage
+      "sizing". They are durable-sink evidence: the memory sink's retained-row
+      predicate does not keep them, sweep candidates make no D8 coverage claim,
+      and committed or promoted runs report it. The strategy_intent decision
+      row likewise stores intent_reason in reasons with the constant empty
+      detail_json, and ledgr_run_explain() reads that column without parsing
+      JSON (macro WS5 JSON-audit amendment, H6/H13). Add
       ledgr_sizing_evidence_rule_version to the store fingerprint. Summary and
       print report evidenced/unavailable decision counts, rounded-to-zero
       instructions, exposure-weighted pooled coverage, minimum decision
@@ -2537,6 +2576,7 @@ tickets:
       - "every named run_diagnostics field and reason mapping is exact; omission or swapping any boundary fails a registered detector"
       - "summary and print distinguish decision-exposure diagnostics from native actual invested exposure and identify clock, currency, aggregation, pooled/minimum/last coverage and unavailable coverage"
       - "raw quantity, unavailable-price, zero target, liquidation, risk and cash-shortfall fixtures are not mislabeled; undefined coverage remains typed NA"
+      - "a sweep candidate's memory sink retains no sizing row and its output makes no D8 claim, while the same candidate's committed run reports exact D8 coverage"
       - "successful pulse paths add no JSON encode/parse and the seven-shape review finds no per-decision frame/list accumulator; the sizing-evidence rule binding is present and old/missing markers refuse"
   - id: "LDG-3188"
     title: "Migrate maintained strategies to the accepted grammar"
