@@ -1,0 +1,14 @@
+family,owner,implementation,detector,mutation
+D1_values_names_axis,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,swap or unname one flat column
+D1_lazy_once,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,rebuild a requested column twice
+D1_frozen_view,LDG-3180,R/pulse-context.R,test-flat-lazy-context.R,retain a mutable fold buffer
+D1_alias_resolution,LDG-3180,R/runtime-projection.R,test-active-alias-runtime.R,resolve engine IDs before aliases
+D1_retired_surface,LDG-3180,R/pulse-context.R,test-scalar-accessor-warning.R,restore ctx$vec
+D1_unpriced_holding,LDG-3180,R/pulse-context.R,test-strategy-context-entrances.R,fabricate a held mark
+D2_event_order,LDG-3181,R/position-facts.R,test-position-facts-context.R,sort same-bar transitions
+D2_nonfill,LDG-3181,R/position-facts.R,test-position-facts-context.R,treat a zero-fill disposition as a fill
+D2_prefix_rebuild,LDG-3181,R/position-facts.R,test-position-facts-context.R,rebuild from fills only
+D2_resume_carry,LDG-3181,R/backtest-runner.R;R/walk-forward.R,test-position-facts-context.R,drop carried anchors
+D2_shared_axis,LDG-3181,R/position-facts.R,test-position-facts-context.R,count decision pulses rather than bars
+D2_pulse_unknown,LDG-3181,R/pulse-context.R,test-position-facts-context.R,fabricate supplied-opening anchors
+
