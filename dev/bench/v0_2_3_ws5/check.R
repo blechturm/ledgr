@@ -36,6 +36,13 @@ expected_families <- c(
 stopifnot(identical(owners$family, expected_families), !anyDuplicated(owners$family))
 stopifnot(all(grepl("^LDG-31(79|8[0-9]|90)$", owners$owner)))
 stopifnot(all(nzchar(owners$mutation)), all(startsWith(owners$mutation_command, "Rscript")))
+implemented_mutations <- grepl("^D[12]_", owners$family)
+stopifnot(all(grepl("v0_2_3_ws5/mutations[.]R", owners$mutation_command[implemented_mutations])))
+stopifnot(all(vapply(
+  owners$family[implemented_mutations],
+  function(family) grepl(family, owners$mutation_command[owners$family == family], fixed = TRUE),
+  logical(1)
+)))
 
 expected_consumers <- c(
   "vignettes/strategy-authoring-tools.qmd", "vignettes/strategy-development.qmd",
@@ -46,7 +53,8 @@ stopifnot(identical(state$consumer, expected_consumers))
 stopifnot(all(grepl("scalar|descriptive", state$state_shape)), all(nzchar(state$disposition)))
 
 stopifnot(identical(differences$item, c(
-  "public_context_surface", "position_facts", "carried_window_config_hash",
+  "public_context_surface", "position_facts", "uncarried_window_config_hash",
+  "carried_window_config_hash",
   "current_only_store_read", "pulse_supplied_position_basis", "plain_run_config_hash"
 )))
 stopifnot(identical(base$record, c(
@@ -66,14 +74,15 @@ stopifnot(identical(timing$cell, expected_cells), identical(thresholds$cell, exp
 stopifnot(all(timing$pairs == 8L), all(thresholds$bound == 1.10))
 protocol <- paste(readLines(file.path(root, "dev", "bench", "timing", "protocols", "ws5-timing-1", "protocol.md"), warn = FALSE), collapse = "\n")
 workloads <- paste(readLines(file.path(root, "dev", "bench", "timing", "protocols", "ws5-timing-1", "workloads.R"), warn = FALSE), collapse = "\n")
-stopifnot(grepl("14252ffb", protocol, fixed = TRUE), grepl("cb332627", protocol, fixed = TRUE))
+stopifnot(grepl("14252ffb", protocol, fixed = TRUE), grepl("b5622f09", protocol, fixed = TRUE))
 stopifnot(grepl("ws5_declared_strategy", workloads, fixed = TRUE), grepl("portfolio_state", workloads, fixed = TRUE))
 
 source_text <- paste(unlist(lapply(list.files(file.path(root, "R"), "[.]R$", full.names = TRUE), readLines, warn = FALSE)), collapse = "\n")
 stopifnot(!grepl("ledgr_scalar_accessor_loop", source_text, fixed = TRUE))
 position_source <- paste(readLines(file.path(root, "R", "position-facts.R"), warn = FALSE), collapse = "\n")
 fold_source <- paste(readLines(file.path(root, "R", "fold-engine.R"), warn = FALSE), collapse = "\n")
-stopifnot(length(gregexpr("findInterval", position_source, fixed = TRUE)[[1L]]) == 1L)
+find_interval_matches <- gregexpr("findInterval", position_source, fixed = TRUE)[[1L]]
+stopifnot(sum(find_interval_matches > 0L) == 1L)
 stopifnot(grepl("ledgr_position_fact_replay_axis_map", position_source, fixed = TRUE))
 stopifnot(!grepl("position_facts_view", fold_source, fixed = TRUE))
 stopifnot(!grepl("for (", position_source, fixed = TRUE))

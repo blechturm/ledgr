@@ -30,11 +30,8 @@ ledgr_position_fact_axis_map <- function(bar_axis, transition_time = NULL,
     )
   }
   keys <- format(transition_epoch, scientific = FALSE, trim = TRUE)
-  duplicate_conflict <- vapply(
-    split(transition_index, keys),
-    function(value) length(unique(value)) > 1L,
-    logical(1)
-  )
+  first <- match(keys, keys)
+  duplicate_conflict <- transition_index != transition_index[first]
   if (any(duplicate_conflict)) {
     rlang::abort(
       "Prepared position-transition labels must map uniquely to the run bar axis.",
@@ -59,11 +56,18 @@ ledgr_position_fact_replay_axis_map <- function(prepared, bar_axis) {
   fill <- prepared$operation == .ledgr_lot_fill
   if (!any(fill)) return(ledgr_position_fact_axis_map(bar_axis))
   bars <- as.numeric(as.POSIXct(bar_axis, tz = "UTC"))
+  if (length(bars) == 0L) {
+    rlang::abort(
+      "Replay position transitions require a non-empty run bar axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
   times <- as.numeric(as.POSIXct(prepared$ts_utc[fill], tz = "UTC"))
   index <- match(times, bars)
   missing <- is.na(index)
   index[missing] <- findInterval(times[missing], bars) + 1L
-  valid <- index >= 1L & index <= length(bars) & times <= bars[index]
+  valid <- times >= bars[[1L]] & index >= 1L & index <= length(bars) &
+    times <= bars[pmin(index, length(bars))]
   previous <- index > 1L
   valid[previous] <- valid[previous] & times[previous] > bars[index[previous] - 1L]
   if (any(!valid)) {
@@ -73,6 +77,51 @@ ledgr_position_fact_replay_axis_map <- function(prepared, bar_axis) {
     )
   }
   ledgr_position_fact_axis_map(bar_axis, prepared$ts_utc[fill], index)
+}
+
+ledgr_position_fact_fill_axis <- function(bar_axis, pulses_posix,
+                                          execution_opportunities_posix) {
+  bars <- as.numeric(as.POSIXct(bar_axis, tz = "UTC"))
+  pulses <- as.numeric(as.POSIXct(pulses_posix, tz = "UTC"))
+  opportunities <- as.numeric(as.POSIXct(execution_opportunities_posix, tz = "UTC"))
+  n <- length(opportunities)
+  if (n == 0L) return(list(bar = integer(), opportunity = numeric()))
+  if (length(pulses) < n || anyNA(bars) || anyNA(pulses[seq_len(n)]) ||
+      anyNA(opportunities)) {
+    rlang::abort(
+      "Prepared fill opportunities must align with the run pulse axis.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  pulse_bar <- match(pulses[seq_len(n)], bars)
+  fill_bar <- as.integer(pulse_bar) + 1L
+  if (anyNA(pulse_bar) || any(fill_bar > length(bars))) {
+    rlang::abort(
+      "Prepared fill opportunities must map to a following run bar.",
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  list(bar = fill_bar, opportunity = opportunities)
+}
+
+ledgr_position_fact_fill_bar <- function(prepared, pulse_idx, fill_time) {
+  pulse_idx <- as.integer(pulse_idx)
+  time <- as.numeric(as.POSIXct(fill_time, origin = "1970-01-01", tz = "UTC"))
+  valid_pulse <- length(pulse_idx) == 1L && !is.na(pulse_idx) &&
+    pulse_idx >= 1L && pulse_idx <= length(prepared$bar)
+  valid_time <- length(time) > 0L && !anyNA(time) && all(is.finite(time))
+  if (!valid_pulse || !valid_time ||
+      any(time != prepared$opportunity[[pulse_idx]])) {
+    rlang::abort(
+      sprintf(
+        "Fill timestamps must equal the opportunity prepared for their pulse (pulse=%s, got=%s, expected=%s).",
+        paste(pulse_idx, collapse = ","), paste(time, collapse = ","),
+        if (valid_pulse) prepared$opportunity[[pulse_idx]] else "<none>"
+      ),
+      class = c("ledgr_position_fact_off_axis", "ledgr_invalid_fold_execution")
+    )
+  }
+  prepared$bar[[pulse_idx]]
 }
 
 ledgr_position_fact_bar_index <- function(time, bar_axis = NULL, axis_map = NULL) {

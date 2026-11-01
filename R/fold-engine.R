@@ -58,6 +58,12 @@ ledgr_fold_positions_snapshot <- function(position_vec, instrument_ids) {
   stats::setNames(as.numeric(position_vec), instrument_ids)
 }
 
+ledgr_context_preparation_increment <- function(counts, name) {
+  value <- if (exists(name, counts, inherits = FALSE)) get(name, counts) else 0L
+  assign(name, as.integer(value) + 1L, counts)
+  invisible(NULL)
+}
+
 ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FALSE) {
   if (is.null(state_value)) return(NULL)
   # Scalar or otherwise JSON-safe generic strategy memory has no per-asset
@@ -1346,9 +1352,8 @@ ledgr_fold_stage_apply <- function(
       positions <- as.numeric(batch$positions)
       cash <- batch$cash
       fold_state$lot_state <- batch$lot_state
-      fill_bar <- ledgr_position_fact_bar_index(
-        as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC"),
-        axis_map = services$position_fact_axis_map
+      fill_bar <- ledgr_position_fact_fill_bar(
+        services$position_fact_fill_axis, pulse_idx, fill$exec_ts
       )
       fold_state$position_facts <- ledgr_position_facts_apply(
         fold_state$position_facts, fill$pos, fill$position_before,
@@ -1397,9 +1402,8 @@ ledgr_fold_stage_apply <- function(
     # Install the book, publish the event block, advance the sequence and
     # record the legs; positions and cash are installed last.
     fold_state$lot_state <- candidate$book
-    fill_bar <- ledgr_position_fact_bar_index(
-      as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC"),
-      axis_map = services$position_fact_axis_map
+    fill_bar <- ledgr_position_fact_fill_bar(
+      services$position_fact_fill_axis, pulse_idx, fill$exec_ts
     )
     fold_state$position_facts <- ledgr_position_facts_apply(
       fold_state$position_facts, fill$pos, fill$position_before,
@@ -1753,6 +1757,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
       ts
     )
   }
+  context_build_counts <- new.env(parent = emptyenv())
+  context_preparation_counts <- new.env(parent = emptyenv())
+  ledgr_context_preparation_increment(context_preparation_counts, "feature_resolver")
   availability_feature_name_state <- ledgr_projection_feature_name_state(
     runtime_projection,
     feature_ids = def_ids,
@@ -1767,15 +1774,17 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     active_alias_map = active_alias_map,
     feature_name_state = availability_feature_name_state
   )
-  context_build_counts <- new.env(parent = emptyenv())
-  context_preparation_counts <- new.env(parent = emptyenv())
-  context_preparation_counts$service <- 1L
-  context_preparation_counts$feature_resolver <- 1L
-  context_preparation_counts$fill_axis_map <- 1L
+  ledgr_context_preparation_increment(context_preparation_counts, "fill_axis_map")
+  position_fact_fill_axis <- ledgr_position_fact_fill_axis(
+    history_substrate$axis,
+    pulses_posix,
+    execution_opportunities_posix
+  )
   # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
   pulse_notes <- new.env(parent = emptyenv())
+  ledgr_context_preparation_increment(context_preparation_counts, "service")
   services <- list(
     run_id = run_id,
     instrument_ids = instrument_ids,
@@ -1804,14 +1813,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     context_build_counts = context_build_counts,
     context_preparation_counts = context_preparation_counts,
     bar_axis = history_substrate$axis,
-    position_fact_axis_map = ledgr_position_fact_axis_map(
-      history_substrate$axis,
-      transition_time = execution_opportunities_posix,
-      transition_index = as.integer(match(
-        pulses_posix[seq_along(execution_opportunities_posix)],
-        history_substrate$axis
-      )) + 1L
-    ),
+    position_fact_fill_axis = position_fact_fill_axis,
     position_fact_unknown_basis = execution$position_fact_unknown_basis,
     position_fact_unknown_basis_mask = instrument_ids %in% execution$position_fact_unknown_basis,
     pulse_notes = pulse_notes,

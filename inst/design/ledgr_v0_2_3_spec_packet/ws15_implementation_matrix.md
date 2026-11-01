@@ -1,6 +1,6 @@
 # Workstream 15 implementation matrix
 
-Status: close-review corrections complete; focused independent re-review pending.
+Status: second bounded correction complete; final focused confirmation pending.
 Authority: accepted Cut 7 synthesis D1/D2 and LDG-3179--LDG-3181.
 
 Necessity judgment: the old nested/scalar context duplicated whole-axis reads
@@ -41,6 +41,7 @@ weakening.
 Registered oracle changes LTB-0304 and LTB-0167 deliberately stop reading
 private P2 planes through the strategy context because D1 exposes only the
 flat `member`, `held`, `buyable` and `holding_value` columns. LTB-0304 retains
-its public availability-result mark-age/source parity assertions. LTB-0167
-retains the same frozen-holding facts through the native availability result
-table. The economic assertions were moved, not narrowed.
+five-entry-point mark-value parity through `holding_value`; mark age/source
+remains persisted and asserted only for its promoted run, and no broader
+mark-age/source parity is claimed. LTB-0167 retains its frozen-holding facts
+through the native availability result table.

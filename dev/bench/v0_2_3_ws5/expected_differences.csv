@@ -1,6 +1,7 @@
 item,base,candidate,owner,detector
 public_context_surface,nested_and_scalar_readers,flat_named_lazy_columns,LDG-3180,test-flat-lazy-context.R
 position_facts,absent,canonical_entry_exit_columns,LDG-3181,test-position-facts-context.R
+uncarried_window_config_hash,normalized_empty_carry,normalized_empty_carry,LDG-3181,test-position-facts-context.R
 carried_window_config_hash,no_position_fact_provenance,carried_position_fact_provenance_hashed,LDG-3181,test-position-facts-context.R
 current_only_store_read,carried_opening_without_fact_provenance_accepted,format-fingerprint-bound_current_store_only,LDG-3181,test-store-format-fingerprint.R
 pulse_supplied_position_basis,synthetic_zero_visible,typed_unknown_visible,LDG-3181,test-position-facts-context.R

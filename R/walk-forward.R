@@ -1274,8 +1274,17 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
     ledgr_prepare_accounting_events(events, universe),
     initial_cash = as.numeric(exp$opening$cash)
   )
+  initial_facts <- ledgr_position_facts_from_carried(
+    exp$opening$carried,
+    replay$prepared$instrument_ids,
+    history_substrate$axis
+  )
   carried_facts <- ledgr_position_facts_carried(
-    ledgr_position_facts_from_replay(replay, history_substrate$axis),
+    ledgr_position_facts_from_replay(
+      replay,
+      history_substrate$axis,
+      initial_state = initial_facts
+    ),
     replay$prepared$instrument_ids,
     history_substrate$axis
   )
