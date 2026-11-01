@@ -551,6 +551,243 @@ cuts:
       test-migration list and the timing and memory records. A Type 1 design
       concern returns NEEDS_TYPE_2. Finding-bearing reviews write a file in
       this packet; a third correction round stops for maintainer disposition.
+  - id: 6
+    name: "One execution path (macro WS4b)"
+    cut: "2026-11-01"
+    status: "accepted"
+    accepted: "2026-11-01 by the maintainer, revision 4, after the independent clean-context cut review (cut_review_6.md: NEEDS_TYPE_2), the maintainer's Option B decision, the focused re-review (cut_review_6_rereview_1.md: PASS_AFTER_PATCHES) and the reuse-first evidence reconciliation. Decisions (1)-(9) are accepted with the cut. Implementation starts with LDG-3170 in workstream 14."
+    revision: "4, applying cut_review_6.md RP1-RP10 and S1-S12 under the maintainer's 2026-11-01 Option B decision, cut_review_6_rereview_1.md P1-P12, and the maintainer's reuse-first disposition of P9"
+    opening: >-
+      Written by Codex on 2026-11-01 after Cut 5 merged at b5622f09 and the
+      maintainer resolved WS4b's four bounded product choices and then chose
+      Option B after the first independent cut review: fixed baskets adopt the
+      canonical execution semantics rather than keeping a dense profile. This is the
+      decision-bearing Type 2 spec cut authorized by macro-plan WS4b. It does
+      not reopen the typed carrier: it makes every supported run prepare one
+      execution substrate, routes that substrate through the accepted E and
+      P1-P5 carrier, removes the old dense branch and records the first
+      post-unification performance milestone. This entry, workstream 14 and
+      LDG-3170 through LDG-3178 become operative only after maintainer
+      acceptance. tickets.yml remains the sole sequencing authority.
+    cut_review: >-
+      Round 1: NEEDS_TYPE_2 in cut_review_6.md (independent clean-context
+      Claude); the maintainer chose Option B on 2026-11-01 and revision 2
+      applied RP1-RP10 and S1-S12. Round 2: PASS_AFTER_PATCHES in
+      cut_review_6_rereview_1.md; P1-P8 and P10-P12 are applied in revision 3.
+      The maintainer narrowed P9 in revision 4 after observing that it reran
+      already accepted evidence: cut_6_evidence_reconciliation.md maps every
+      decision to its existing source and leaves candidate-only checks to their
+      tickets. No further cut review is required for this reduction in
+      machinery or the exact remaining patches.
+    authority: >-
+      macro_plan.md revision 7, Section 1 rules 2, 4-6, 10-16, Section 2
+      WS4a -> WS4b edge and Section 3 WS4b including the 2026-11-01 amendment;
+      inst/design/contracts.md rule groups contract-execution-entry-points,
+      contract-execution-fold-core, contract-execution-fold-carrier,
+      contract-execution-window-start, contract-execution-walk-forward-folds,
+      contract-execution-identity, contract-execution-compiled-accounting,
+      contract-execution-decision-and-fill-contexts,
+      contract-availability-activation-and-calendar,
+      contract-availability-provider-and-timing,
+      contract-availability-context-and-state, contract-availability-targets,
+      contract-availability-affordability, contract-result-read-surfaces,
+      contract-result-completion-and-valuation and
+      contract-verification-store-and-codebase-gates;
+      rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md Sections 3-5 and 8-9;
+      dev/spikes/one_execution_mode/probe_findings.md and its checked evidence;
+      Cut 2's accepted dense oracle, A0, and Cut 5's accepted final-candidate
+      records; inst/design/manual/optimization_coding_style.qmd and
+      manual/benchmark_methodology.qmd; dev/bench/timing/ shared harness.
+    source_table: >-
+      Base release/v0.2.3 at b5622f09. The accepted carrier is shared, but
+      mode selection still reaches the hot path: availability_active occurs
+      140 times across 14 production files, including R/fold-engine.R (45),
+      R/backtest-runner.R (30) and R/run-snapshot.R (3),
+      but the LDG-3170 census owns the complete literal and equivalent-predicate
+      inventory rather than treating those three files as the whole surface.
+      ledgr_execute_fold() derives the mode from a
+      nullable provider, builds separate history readers, valuation state,
+      static dense views, fast context and dense eligibility planes, and P1-P5
+      branch on it. Dense coverage is a run-snapshot guard; availability uses
+      declared sessions, provider decision views and valuation. The accepted
+      one-execution-mode probe found equal economic results on complete dense
+      fixtures but different fill timestamps, missing-bar behavior and a
+      material availability-path floor; it identified the three decisions now
+      resolved here. The exported ledgr_backtest() duplicates experiment and
+      config construction, accepts raw data, and refuses availability-active
+      snapshots; ledgr_run() already returns the same ledgr_backtest result
+      handle. P5 serializes strategy state every pulse, reconciliation builds
+      detail JSON on the success path, and availability refreshes context and
+      valuation per pulse. Cut 5 records the final typed carrier and exact
+      reference product; no Cut 5 timing threshold is inherited.
+    decisions: >-
+      Accepted by the maintainer in the 2026-11-01 WS4b design discussion and
+      subject to this cut's independent review. (1) A fixed-basket snapshot
+      with no sessions, membership, trading-status or lifetime facts derives a
+      run-local bar-native pulse clock from its ordered distinct bar
+      timestamps. It invents no venue open or close, changes no snapshot
+      content, and next-pulse execution keeps the next bar timestamp. Declared
+      sessions remain authoritative. The experiment plan and print, result
+      summary() and print() disclose the substrate clock as implied bar-native
+      or declared beside the price-basis disclosure. Membership,
+      trading-status or lifetime
+      facts without sessions still refuse; corporate-action evidence alone may
+      use the bar-native clock. (2) The implied-clock input is strictly
+      rectangular over the requested instruments and executable range. Any
+      missing bar keeps the current dense coverage refusal before the fold,
+      irrespective of holdings or prospective trades. Carry, skip, freeze and
+      typed incomplete outcomes require declared sessions and their policies;
+      no public coverage knob is added. (3) The exported ledgr_backtest()
+      constructor is removed. ledgr_snapshot_from_df(), ledgr_experiment() and
+      ledgr_run() are the sole data, experiment and single-run workflow. The
+      ledgr_backtest result class, its methods and ledgr_run_open() remain in
+      this cut. No ignored argument, alias or compatibility wrapper is kept.
+      (4) The final pulse is observed and decided normally. Under next-pulse
+      timing, a target requiring a later pulse posts no fill or accounting
+      event, retains final strategy state and equity, and records one
+      structured final_pulse_no_execution diagnostic for each affected
+      instrument. It does not warn or refuse by default. A final target
+      requiring no trade records no such diagnostic. (5) The diagnostic
+      change is execution evidence, so
+      ledgr_identity_rule_version becomes 5L before it can ship. New configs,
+      run IDs, sweep IDs and walk-forward identities use rule 5. Rule-4
+      artifacts receive no migration, fallback or compatibility reader: a
+      rule-4 store refuses at open with ledgr_store_rebuild_required, and a
+      rule-4 config, saved sweep object or walk-forward result held outside a
+      store refuses at the existing identity validators. Snapshot content
+      identity and the store schema version do not change; the store
+      fingerprint changes through the identity binding. (6) One prepared
+      substrate and one E/P1-P5 path are the
+      invariant. Fixed-basket constants are compiled during preparation, not
+      rediscovered with per-pulse mode branches. Optimizing a prepared constant
+      plane is allowed; preserving a second dense fold, provider, context or
+      guard path is not. A specialization keyed on a prepared constant must
+      produce byte-identical carrier, evidence and results to the general path
+      on the same input; LDG-3173 adds a witness that forces the general path
+      on every fixed-basket fixture and compares, and a specialization that
+      skips a canonical rule or evidence row fails it. (7) The shared timing
+      harness and all peer-suite lanes are milestone evidence, not acceptance
+      clocks, with LDG-3178's reuse rule for unchanged peer engines. Every result
+      is reported, attributed and dispositioned; no threshold or oracle is
+      weakened to obtain green. (8) Test migration may replace assertions
+      naming deleted dense internals with assertions on the unified owner only
+      when the same fixture, semantic oracle, fault boundary and failure
+      sensitivity remain. An oracle changes only for a row of the frozen
+      expected-difference record, in the ticket that owns that row, and the
+      ticket evidence names the row and its cause. LCL-0300 and LTB-0306 are
+      retired by LDG-3172, with LCL-0298 owning the data-start rule for every
+      entry point; the overlapping_evidence notes at claims.yml LCL-0197 and
+      its neighbor are edited in the same ticket. The short-admission tests
+      move to the refusal oracle in LDG-3173. Other registered claims flipped
+      by decision (9) are listed in the LDG-3170 census with their owning
+      ticket. Removal of ledgr_backtest() deletes tests unique to
+      that removed surface; their underlying execution and result claims must
+      already exist on ledgr_run() or move there in the same ticket. Frozen
+      oracle records (dense oracle cbf25359, A0 and its Cut 3 successor, and
+      the real-data reference) are never edited. LDG-3170 writes one WS4b
+      difference record naming, per workload and table, the only admitted
+      differences: config_hash and config-derived IDs (rule 5), removed
+      LEDGR_LAST_BAR_NO_FILL conditions, added final_pulse_no_execution rows,
+      and decision (9). Every other cell stays identical. The dense-oracle gut
+      final_pulse_warning_suppressed is replaced by a gut suppressing the typed
+      row. A0's run_db_live fixture migrates only its attachment to
+      ledgr_experiment(execution_mode = "db_live") plus ledgr_run() with the
+      same inputs, and LDG-3170 proves the base record stays byte-identical.
+      The peer driver's internal-oracle lane
+      (peer_run_ledgr_internal_oracle) migrates its attachment to the
+      prepared-substrate constructor in LDG-3176, or is retired there once its
+      replacement coverage is accepted, so LDG-3178's peer rerun excludes no
+      lane silently. The RNG baseline probe is history: its records stay
+      unchanged and it is not rerun.
+      Real-data controls reseal candidate snapshot stores from source and pin
+      the unchanged snapshot content hash. (9) A fixed basket is a
+      full-membership, always-tradable, never-stale instance of the canonical
+      prepared execution substrate. It adopts the declared-session path's
+      history-from-data-start rule, continuous carry semantics, affordability
+      reconciliation, supported-target boundary (new or enlarged shorts
+      refuse), typed completion and corporate-action failures, segmented
+      feature engine, common strategy context and helper eligibility, fold
+      equity source and explicit non-finite valuation refusal. It does not
+      retain a dense policy profile or a stage-time mode switch. The compiled
+      spot-FIFO capability is restated as no declared sessions and no runtime
+      fact families. The now-constant ctx$availability_active field is removed
+      from the public strategy context; helpers stop reading it, and the
+      context contract, first-pulse state wording and examples change in
+      LDG-3173. Each changed dense result is a named row of the
+      expected-difference record; declared-session results do not change.
+      Each row has one owner and a positive fixed-basket witness: history from
+      data start and continuous carry, LDG-3172; common ctx, empty-target rule,
+      eligible-only helpers and the new/enlarged-short refusal
+      (ledgr_short_exposure_unsupported), LDG-3173; affordability rejection
+      (insufficient_cash with its reconciliation row), the decision trace,
+      reconciliation and completion evidence, the corporate-action INCOMPLETE
+      stop, the fold-record equity source and the explicit non-finite refusal
+      (ledgr_config_non_finite), LDG-3174.
+    identity_and_release_impact: >-
+      Snapshot content identity: unchanged
+      (ledgr_snapshot_content_hash_rule_version stays 4). Run/configuration
+      identity: rule 4 -> 5, intentionally changing config-derived run, sweep
+      and walk-forward IDs. Store format fingerprint: changes, because
+      ledgr_identity_rule_version is a store-format binding
+      (R/store-gate.R:3-12). Every store written before rule 5, including
+      sealed snapshot stores, refuses at open with
+      ledgr_store_rebuild_required; snapshots are resealed from their sources
+      with unchanged content hashes. Store schema version: unchanged. Public
+      surface: ledgr_backtest() removed; the result class stays. Persisted
+      evidence: final-pulse warnings become structured diagnostics, and fixed
+      baskets gain the common decision, affordability, completion and state
+      evidence described by decision (9). Fixed-basket feature-engine and
+      walk-forward outputs may change only through that decision. Release
+      impact: R code, tests, contracts, reference/help/vignettes, NAMESPACE,
+      one NEWS entry, benchmark records and identity fixtures. No dependency
+      change and no migration.
+    sequencing: >-
+      One serial workstream. LDG-3170 freezes the current-base semantic,
+      deletion and measurement controls. LDG-3171 builds the common prepared
+      substrate and implied-clock/coverage rules. LDG-3172 routes every run,
+      sweep, walk-forward, promotion and pulse-inspection preparation through
+      it. LDG-3173 removes P1/P2 mode branching and consolidates context and
+      valuation services. LDG-3174 unifies final-pulse P3-P5 behavior and bumps
+      identity rule 5. LDG-3175 removes ledgr_backtest(). LDG-3176 removes the
+      remaining dense path and its owners. LDG-3177 removes the named per-pulse
+      floor without changing retained evidence. LDG-3178 runs every oracle,
+      the milestone measurements, contracts/docs and closes workstream 14.
+      Dependencies bind; no deletion precedes its replacement and detector.
+    pre_acceptance_gate: >-
+      Complete. cut_6_evidence_reconciliation.md maps every Cut 6 decision to
+      accepted dense-oracle, A0, Cut 5, one-execution-mode, contract and
+      registered-test evidence. No design question lacks input, so macro rule
+      10 forbids replaying those workloads merely to accept this cut. Exact
+      candidate differences, real-data comparison, strict-TTR remeasurement,
+      timing-arm execution and milestone clocks remain with LDG-3170 through
+      LDG-3178, where a candidate exists and the checks can fail. A product
+      change after b5622f09 requires a focused input-delta check rather than an
+      automatic full replay.
+    out_of_scope: >-
+      Redesigning the accepted carrier or lot book; changing the canonical
+      declared-session rules for membership, lifetime, trading status,
+      valuation, corporate actions, affordability, fills, costs, risk or
+      accounting; fixed-basket economics change only through the rows of
+      decision (9) recorded in the expected-difference record; a public
+      missing-data or clock policy knob; inferred exchange calendars; an
+      intraday session model beyond preserving arbitrary ordered bar pulses;
+      renaming or deleting the ledgr_backtest result class; WS5 flat ctx and
+      typed declared state; WS6 frame retirement; WS7/WS8 readers, replay,
+      schema 125 and accounting JSON; worker batching; a compiled default;
+      peer-harness redesign; compatibility code; weakening an oracle, detector
+      or timing record.
+    workstreams: [14]
+    review_lifecycle: >-
+      A fresh Claude CLI cut review first verifies decisions (1)-(9) against
+      code, contracts, Cut 5 and the one-execution-mode evidence, then
+      adversarially challenges ticket grain, dependencies, identity, deletion
+      witnesses and whether every acceptance item can fail. Implementation
+      begins only after maintainer acceptance. Workstream 14 receives one Type
+      1 close review over the final candidate, the seven optimization shapes,
+      cold readability of the surviving core, exact oracles, deletion census,
+      identity refusal, documentation and both milestone records. A design
+      concern returns NEEDS_TYPE_2; finding-bearing reviews get a packet file;
+      a third correction round stops for maintainer disposition.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -622,6 +859,13 @@ workstreams:
     depends_on_workstream: 12
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 13, after LDG-3169", reason: "One claim joins LDG-3165 through LDG-3169: both producers carry one pulse through E and P1-P5 in the typed carrier of the accepted synthesis, with publication and diagnostics as indexed columns and one equity record, outputs exactly equal to the A0 successor, dense and real-data oracles, at the timing and memory bounds of decisions (4) and (5), and every changed stage explainable from its code and the carrier contract."}
+  - id: 14
+    name: "One execution path (macro WS4b)"
+    cut: 6
+    status: "planned"
+    depends_on_workstream: 13
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 14, after LDG-3178", reason: "One claim joins LDG-3170 through LDG-3178: every supported run, sweep, walk-forward, promotion and pulse-inspection route prepares one execution substrate and enters one E/P1-P5 path; fixed-basket data use the accepted bar-native pulse clock and strict completeness while declared sessions keep their point-in-time semantics; the old dense fold, guard, context and provider branches and the exported ledgr_backtest() constructor are absent; final-pulse non-execution is one structured diagnostic under identity rule 5; all native, A0, real-data and failure oracles pass or differ only by decisions (1)-(5) and the decision (9) rows of the frozen expected-difference record; and the shared-harness plus peer milestone records attribute the final candidate without serving as acceptance clocks. The review walks the seven shapes over every changed preparation/fold/finalisation function, cold-reads the surviving path from its contract, mutation-checks the deletion and identity witnesses, audits every registered test migration and reconciles the source census to zero unowned branches."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -1448,3 +1692,338 @@ tickets:
       - "Open for the close review (ws12_disposition.md): (a) selling a 1e308-unit long at 10 on availability raises ledgr_internal_error 'Invalid internal decision packet: `positions_value` contains a non-finite value' from the LDG-3165 packet validator, where the base raised ledgr_config_non_finite later; (b) the overflow refusal does not cover the compiled spot_fifo path or overflowing openings and dispositions; (c) LDG-3168's untested belief that Inf cannot reach the new used-row checks from finite public inputs; (e) coverage not obtained (routed); (f) decisions.md#typed-fold-carrier still reads 'no implementation ticket is open' until release closeout; LTB-0022's margin outside covr is thin (0.055). Harness 2,299 to 2,404 lines (d20.R, identity.R, profile_scan.R)."
       - "Correction round 1 (inst/design/ledgr_v0_2_3_spec_packet/ws13_close_review.md: NEEDS_TYPE_2 on F1, decided as cut 5 amendment_valuation; F2-F4 blocking; O1 optional). Product d027c242 is the new final candidate. F1: R/fold-carrier.R decision packet positions_value token none to inf (Inf and NaN admitted, NA refused) and plan expected_final_cash na to any (an accepted availability sale's infinite proceeds, as the base carried them); design note F4.15/F4.27 and contracts revised. F2: R/compiled-spot-fifo.R screens each native batch (ledgr_compiled_spot_fifo_suspect()) and, on suspicion only, asks the canonical typed fill operation for the earliest overflowing fill (ledgr_invalid_lot_fill); native input refusals keep their condition and precedence; the native kernel snaps an infinite basis to 0, so its outputs alone cannot show an opened-basis overflow; src/ unchanged. F3: ledgr_fold_diagnostic_rows() validates at construction; the empty ledgr_fill_event_payload() block is argument-checked (event_seq 0 now refuses with ledgr_invalid_args, before NO_OP with next_event_seq 0) and validated. F4: D9 detects list construction through iteration; D10 adds a sink/handler storage census and a package-wide equity ownership census; the review's exact counterexamples fail. O1: D20 wording. New test blocks [WS4a valuation overflow], [WS4a compiled overflow], [WS4a U-3168 U-3167 construction]; D9/D10 controls added; no registered setup, fixture or oracle changed. Public base-versus-candidate (records/ldg3169/round3/public-*.txt): availability holds at 10 and 1.9 and a sale at 1.9 equal the base (ledgr_config_non_finite, run and sweep); dense hold at 1.9 equals the base (DONE, Inf); compiled buy 1e308 at 10 (base DONE NaN) and sale realizing Inf (base DONE 1.5e308) now ledgr_invalid_lot_fill; the review's availability sale at 10 now refuses ledgr_invalid_lot_fill because its realized P&L overflows (amendment_overflow), not ledgr_config_non_finite as amendment_valuation's example names: flagged for maintainer confirmation. Gates on d027c242 (records/ldg3169/round3/README.md, sequence.log): check.R --base=HEAD exit 0, 23 identical; guts.R over the 36 exit 0, 36 of 36 fail as expected, invalid-base control refused; dense exit 0 PASS; A0 record and compare exit 0, 295 of 295; full suite exit 0 (one existing skip); R CMD build exit 0; R CMD check --no-manual --no-build-vignettes exit 0, 0 errors, 0 warnings, 1 pre-existing NOTE. No timing, memory, coverage or real-data run; the maintainer reruns real data. Harness 2,404 to 2,456 lines (round3/public.R). Review count: one close review, one correction round."
       - "Close review chain closed: ws13_close_review_rereview_1.md (Codex, 2026-10-31, PASS_AFTER_PATCHES) on 0cdbd244; its N1 (expected_final_cash domain), N2 (compiled wrapper keeps the earliest canonical refusal) and N3 (contracts and disposition wording) are applied verbatim in product 15ea966a. dev/bench/v0_2_3_ws4a/records/ldg3169/final/: on 15ea966a 23 cases identical, 36 of 36 guts fail as expected, dense PASS, A0 295 of 295, full suite exit 0, R CMD build exit 0, R CMD check exit 0 with 1 pre-existing NOTE, and all six real-data workloads COMPARE_IDENTICAL. Recorded ratio for the close chain: 2 reviews, 2 correction rounds (the second applying exact patches)."
+  - id: "LDG-3170"
+    title: "Freeze the WS4b decisions, deletion census and milestone protocol"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: []
+    scope: >-
+      On the unchanged b5622f09 base, create a bounded WS4b control under
+      dev/bench/v0_2_3_ws4b/ that extends the Cut 5 case harness
+      (dev/bench/v0_2_3_ws4a/lib.R, check.R --base and guts.R) with an
+      expected-difference map and reuses, rather than copies, the accepted
+      dense oracle, A0 and shared timing harness. Extend the registered
+      LTB-0331 mode-branch census (tools/codebase-structure.R and its committed
+      record) to every production file containing availability_active or the
+      equivalent nullable-provider, static-view and dense-plane predicates,
+      together with the ledgr_backtest() surface and the three production plus
+      maintained test/benchmark ledgr_execute_fold() consumers. Classify every
+      Cut 5 case, gut and detector as unchanged, attachment-migrated with the
+      same predicate, or retired with a named successor; D12d and D13 retire at
+      LDG-3176 through the updated LTB-0331 record.
+      Re-run the smallest one-execution-mode witnesses on the post-Cut-5 tree:
+      complete daily, irregular and two-pulses-on-one-UTC-date fixed baskets;
+      held, unheld and execution-bar gaps; declared-session availability;
+      corporate-action-only evidence; final-pulse changed and unchanged
+      targets; a requested basket with an unrequested instrument carrying
+      extra timestamps; Date-typed boundaries on a date with two pulses; both
+      midnight-UTC and 21:00-UTC daily bars; run, sweep and one
+      window/walk-forward route. Freeze the current economic/result bytes and
+      the accepted difference table, including each decision (9) change.
+      Remeasure the strict TTR feature-preparation split on b5622f09 rather
+      than carrying the stale pre-Cut-16 ratio. Register
+      ws4b-timing-1 in dev/bench/timing/protocols/ with no-fill,
+      sparse-rebalance and wide-all-fill shapes, phase attribution and three
+      alternating pairs. Record two separate base arms: the v0.2.2 tag for
+      macro rule 16 and b5622f09 for WS4b attribution. Reuse
+      ws4a-timing-1/workloads.R by reference. thresholds.csv carries one finite
+      disposition trigger per cell (proposed 1.10); protocol.md states that a
+      FAIL verdict or non-zero checker exit obliges an attributed disposition
+      line in the milestone record and is not a ticket or workstream failure
+      (macro rule 16). The shared harness is not edited. During LDG-3170,
+      confirm that the v0.2.2 arm can execute the workloads or record a reviewed
+      substitute. Name all peer-suite lanes and their post-merge command, with
+      the LDG-3178 reuse rule for unchanged peer engines; do not fork the peer
+      harness. Add mutation controls for every decision
+      and each deletion-census family before product work starts.
+    acceptance:
+      - "the unchanged base reproduces the dense oracle, A0 and every WS4b semantic witness, with an explicit expected-difference table rather than a pooled parity claim"
+      - "the updated LTB-0331 census names every production and maintained test/benchmark consumer, accounts for each Cut 5 detector, and deleting one seeded census row makes its checker fail"
+      - "each of decisions (1)-(5) and (9), strict identity refusal and old-path deletion has a demonstrated mutation or successor witness that the planned gate detects"
+      - "ws4b-timing-1 uses the shared harness by reference, records timer boundaries and economic controls, and the base record reproduces without treating a clock as acceptance"
+    evidence: []
+  - id: "LDG-3171"
+    title: "Prepare one run substrate with a bar-native fixed-basket clock"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3170"]
+    scope: >-
+      Introduce one internal prepared-run substrate consumed by the fold. For
+      a fixed character basket with no runtime availability facts, derive its
+      pulse axis from the ordered distinct sealed bar timestamps, its
+      execution opportunities from the next pulse, constant membership and
+      tradability planes, and never-stale marks. Do not write inferred session
+      rows or alter the snapshot. Enforce the current rectangular coverage
+      rule over the requested instruments and executable range before the
+      fold, preserving the current typed refusal and no accepted prefix. The
+      UTC-date boundary rule remains the current fixed-basket rule and is a
+      named preparation predicate, not a fold mode branch.
+      Preserve arbitrary ordered timestamps, including irregular intervals
+      and multiple pulses on one civil date; derive no weekday, venue date,
+      open or close. Corporate-action-only snapshots use this substrate.
+      Snapshots declaring membership, trading-status or lifetime without a
+      complete session calendar retain their current refusal. Declared-session
+      experiments compile the existing availability provider and valuation
+      rules into the same substrate contract without changing their results.
+      Fixed baskets use the same execution semantics as that canonical path,
+      with full membership, constant tradability and never-stale marks as
+      prepared data; no dense behavior profile survives. Construction is once
+      per standalone run and once per sweep/window input, and once per
+      walk-forward fold, shared by that fold's candidates with only
+      candidate-specific overlays; it may not materialize an
+      instruments-by-pulses copy of constant planes. Session-level sharing
+      across folds remains H9/WS9b work.
+    acceptance:
+      - "daily, irregular and same-date multi-pulse fixtures preserve exact timestamps and snapshot roots and differ exactly in the named decision (9) rows"
+      - "one missing bar for a held, unheld or would-be execution instrument refuses with the frozen dense coverage condition before strategy evaluation"
+      - "declared-session availability fixtures and their typed incomplete/refusal boundaries remain exact; runtime fact families, a valuation policy, or a non-default history policy without sessions keep their current refusal; and the two-pulse minimum keeps ledgr_run_window_too_short"
+      - "a corporate-action-only fixed basket reaches the existing corporate-action plan over the bar-native axis without fabricated session facts"
+      - "a construction counter proves one substrate build per standalone run, one shared build per sweep/window input and one per walk-forward fold, and scale/allocation checks reject per-candidate invariant rebuilds or a copied constant plane"
+    evidence: []
+  - id: "LDG-3172"
+    title: "Route every execution entry through the prepared substrate"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3171"]
+    scope: >-
+      Make ledgr_run(), ledgr_sweep(), run and sweep windows, walk-forward
+      training/test runs, promotion/reproduction, ledgr_pulse_snapshot() and
+      ledgr_precompute_features() plus its sweep/walk-forward consumption
+      obtain bars, features, pulse axis, execution opportunities and provider
+      services from the same prepared substrate. ledgr_experiment_plan() and
+      print report the substrate clock as implied bar-native or declared. Keep
+      one feature hydration
+      and history-start rule, one source-pulse mapping and one absolute pulse
+      index. Preserve candidate-invariant sharing already present in sweeps;
+      do not rebuild the substrate per pulse or add a pulse-first engine.
+      Terminal recovery uses the same constructor. The
+      ledgr_pulse_snapshot_availability_required refusal is removed because an
+      implied-clock fixed basket is inspectable. A precomputed payload records
+      its substrate clock kind and feature_engine_version; a mismatch refuses
+      through the existing ledgr_precomputed_* conditions.
+      Remove entry-specific dense versus availability preparation after each
+      consumer is on the common constructor. The compiled spot-FIFO envelope
+      keeps its current admitted capability and canonical-R oracle; the
+      preparation-time admission is restated as no declared sessions and no
+      runtime membership, trading-status or lifetime fact families; it is a
+      named capability check, not a stage branch. A compiled request on a
+      declared-session experiment still refuses
+      ledgr_compiled_availability_unsupported. This ticket neither expands nor
+      removes the compiled envelope.
+    acceptance:
+      - "the route matrix covers run, sweep, both window helpers, walk-forward, promotion/reproduction, terminal recovery, pulse inspection, feature precomputation and experiment/result plan, summary and print surfaces on fixed-basket and declared-session fixtures"
+      - "each route uses the same source-pulse and execution-opportunity arrays and preserves absolute pulse indices, feature hydration and strategy RNG results"
+      - "run/sweep and training/test parity remain exact; carried walk-forward state matches the frozen expected-difference record, so a fixed basket's non-final-window target fills at the next window's first pulse"
+      - "call-count detectors fail per-pulse or duplicate per-candidate invariant preparation, while the existing strategy-first worker path remains authoritative"
+    evidence: []
+  - id: "LDG-3173"
+    title: "Consolidate P1 and P2 context, provider and valuation services"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3172"]
+    scope: >-
+      Refactor E, P1 and P2 to consume only the prepared substrate's indexed
+      primitives. Constant fixed-basket planes and changing declared-session
+      planes are two prepared values of one contract, not two stage branches.
+      Remove availability_active decisions from fold observation, decision,
+      context construction, feature selection and valuation. Reuse prepared
+      instrument lookup, bar indices, feature lookup and helper closures;
+      update only pulse-dependent primitive references. Preserve the public
+      common ctx shape and every current membership, trading, lifetime, frozen,
+      valuation and eligibility meaning. A fixed basket now receives that same
+      shape, empty-target rule and eligible-only helper semantics under
+      decision (9). Remove ctx$availability_active from the public context,
+      since every run uses canonical semantics and a constant field would be a
+      compatibility affordance. Helpers and ledgr_signal_strategy stop reading
+      it; update the ledgr_strategy_context contract table, the state_prev
+      first-pulse entry and affected examples in this ticket. Declared-session
+      results do not change; their ctx loses only this field. Do not move WS5
+      flat-ctx work here.
+      A capability check may remain in preparation, but no mode selector may
+      reach E or P1-P5.
+    acceptance:
+      - "the fold and pulse-context hot path contains no availability_active or nullable-provider mode dispatch; an injected branch is detected"
+      - "changing universes preserve their frozen context values, aliases, eligibility planes, valuation marks, refusals and strategy outputs; fixed baskets differ exactly in the named decision (9) context and helper rows"
+      - "ctx$availability_active is absent from every run context, helper and example; restoring the field or a helper branch on it fails the context-surface and source-census detectors"
+      - "prepared lookups and helper closures keep stable identity across pulses and a counter rejects per-pulse rebuild or full-axis name matching"
+      - "forcing the general path on every fixed-basket fixture is byte-identical to any constant-plane specialization; a specialization that skips a canonical rule or evidence row fails the witness"
+      - "all P1/P2 carrier validators, failure boundaries and the seven-shape checks pass without a second context/provider implementation"
+    evidence: []
+  - id: "LDG-3174"
+    title: "Unify P3-P5, finalisation and final-pulse behavior and advance identity rule 5"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3173"]
+    scope: >-
+      Make P3-P5 and finalisation use the canonical affordability,
+      supported-target, evidence, completion, corporate-action-failure,
+      equity-source and finiteness rules for fixed baskets (decision (9) rows
+      owned here). Give the common execution plan one no-next-opportunity rule.
+      Evaluate the final decision and persist its strategy state and equity
+      normally. For
+      each affected instrument whose target requires a trade, emit the typed
+      execution diagnostic with reason_code final_pulse_no_execution and no
+      fill, accounting event or warning; an unchanged target emits none. Keep
+      diagnostic ordering deterministic. The memory sink's keep_diagnostics() predicate
+      retains final_pulse_no_execution, with diagnostic_seq numbering
+      unchanged, so sweep candidates, walk-forward training and promotion keep
+      the same evidence as a durable run. The run diagnostics result,
+      summary(bt) and each candidate's retained diagnostics are the named
+      surfaces; rewrite R/sweep.R's warning claim. Delete
+      LEDGR_LAST_BAR_NO_FILL, its warning helper, condition reference/help,
+      documentation-contract pins and current vignette teaching in this ticket
+      so the suite stays green. Before the
+      changed evidence can ship, set ledgr_identity_rule_version to 5L and
+      update every config, sweep, promotion, walk-forward and identity oracle.
+      Rule-4 execution records are not migrated or normalized to rule 5 and
+      refuse at the store/current-identity boundaries described by decision
+      (5). A non-positive resolved execution price follows the canonical
+      path's existing behavior. If the pre-acceptance twin records an
+      execution_bar_missing row, that row is a decision (9) difference and is
+      not suppressed. The final-pulse diagnostic is limited to an otherwise
+      executable target that lacks a next pulse.
+    acceptance:
+      - "an overspending, a new-short, a corporate-action-failing and a non-finite-valuation fixed basket each produce the canonical outcome recorded in the expected-difference record, and restoring the dense rule for any one fails its witness"
+      - "run, sweep, windows and walk-forward record one ordered diagnostic per affected instrument, no diagnostic for unchanged targets, and no final-pulse fill/event/warning; a memory sweep candidate retains exactly the final_pulse_no_execution rows, with the same diagnostic_seq values, that a durable run of the same candidate records, and its other retained rows are unchanged from the memory-sink predicate"
+      - "final strategy state, equity and all earlier-pulse results remain exact; removing the state write or equity row fails a registered detector"
+      - "new config-derived identities use rule 5 consistently; a store written by b5622f09 refuses at open with ledgr_store_rebuild_required naming ledgr_identity_rule_version; and a rule-4 config, saved sweep and walk-forward result presented outside a store refuse respectively with ledgr_invalid_config, ledgr_sweep_schema_incompatible and ledgr_walk_forward_invalid_session. The comparison reuses the Cut 4 identity-witness pattern: bindings equal the base plus exactly ledgr_identity_rule_version = 5L"
+      - "identical canonical input keeps its snapshot hash, the store fingerprint differs only in ledgr_identity_rule_version, and no rule-4 fallback, migration or reader branch is added"
+    evidence: []
+  - id: "LDG-3175"
+    title: "Remove the ledgr_backtest constructor surface"
+    workstream: 14
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3174"]
+    scope: >-
+      Remove the exported ledgr_backtest() function, ledgr_backtest_impl(),
+      its data/universe inference helpers when uncalled, its availability-only
+      refusal condition and all documentation/examples that teach the
+      constructor. Remove the export and regenerate documentation. Keep the
+      ledgr_backtest result class returned by ledgr_run(), its print, summary,
+      extraction, plotting, metric-context and close methods, and
+      ledgr_run_open(). Tests unique to the constructor
+      (test-backtest-wrapper.R and the
+      ledgr_backtest_availability_unsupported cases in test-pit-consistency.R)
+      are deleted claim by claim against a claim map, and each surviving
+      execution/result claim moves to ledgr_experiment() plus ledgr_run() with
+      the same fixture and oracle. In every other test file that uses
+      ledgr_backtest() only to build a result handle, migrate the invocation to
+      ledgr_snapshot_from_df()/ledgr_experiment()/ledgr_run() with identical
+      data, strategy, universe, cash, cost model and run_id. Assertions,
+      expected conditions and numeric oracles do not change. List each pinned
+      identity that moves and its cause; state owner relocation as the test
+      change reason. ledgr_backtest_bench() and every ledgr_backtest S3 method
+      stay exported. Add no alias, deprecation stub or ignored args.
+    acceptance:
+      - "ledgr_backtest is absent from exports, bindings, help, articles and executable examples, while ledgr_run still returns a fully functional ledgr_backtest result handle"
+      - "raw-data teaching uses ledgr_snapshot_from_df(), ledgr_experiment() and ledgr_run(), and point-in-time teaching has no alternate entry point"
+      - "a claim map accounts for every removed constructor test and mutation; result-handle methods and run reopening remain exact"
+      - "source and export censuses fail if the constructor or a compatibility alias returns, while exempting ledgr_backtest_bench and the retained S3 methods by exact name"
+    evidence: []
+  - id: "LDG-3176"
+    title: "Delete the dense fold, guard, planner and service branches"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3175"]
+    scope: >-
+      After all consumers use the common substrate, delete the dense planner,
+      static bars/feature view route, dense eligibility-plane owner, dense-only
+      coverage branch, mode-specific execution-opportunity assembly and every
+      fold/service conditional superseded by LDG-3171 through LDG-3174.
+      Retain strict fixed-basket coverage in the substrate validator, not as a
+      second run guard. Keep capability checks that genuinely belong before
+      execution, including the compiled-envelope admission rule, but name and
+      justify each remaining availability/configuration predicate. Reconcile
+      the literal LDG-3170 census and registered source claims; deletion by
+      renaming does not satisfy the gate.
+    acceptance:
+      - "the updated LTB-0331 record, changed for this ticket with its stated reason, has zero unowned mode rows; every surviving row is a named preparation-time capability or data predicate, no dense behavior profile survives, and the retired Cut 5 D12d/D13 controls have named successors"
+      - "removing or bypassing the common substrate breaks every fixed-basket and declared-session entry route, demonstrating that no fallback engine survives"
+      - "the dense native oracle, A0, real-data controls and all registered fault boundaries pass, apart from rule-5 identities, final-pulse evidence and the decision (9) rows of the frozen expected-difference record"
+      - "the seven optimization shapes find no growing accumulator, per-pulse full-axis reconstruction, repeated invariant normalization or hidden second representation in the surviving core"
+    evidence: []
+  - id: "LDG-3177"
+    title: "Remove the consolidated path's measured per-pulse floor"
+    workstream: 14
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3176"]
+    scope: >-
+      Optimize only the surviving common path, preserving its carrier and
+      evidence. Remove the per-pulse cost of absent-asset padding and of
+      reconciliation detail without changing any persisted byte or
+      strategy-visible value. Persisted strategy_state rows, ctx$state_prev
+      and every reconciled row's detail_json stay identical, produced from
+      typed primitives, shared immutable padding or a block-level formatter at
+      drain rather than full-axis list construction and canonical_json() per
+      pulse. Keep the required P5 resume cursor write. The sink declares its
+      diagnostic-retention predicate once at preparation; the fold uses that
+      predicate to stage and drain only required diagnostics, with identical
+      logical sequence gaps, rather than copying sink policy into the fold.
+      Remove the canonical_json()
+      cache only if this ticket removes its final per-pulse caller; otherwise
+      leave it for WS5 as the macro plan requires. Replace stale-mark
+      all.equal() calls with one vectorized typed predicate that reproduces
+      all.equal.numeric's scalar boundary: relative to absolute target above
+      the tolerance and absolute at or below it, with witnesses on both sides.
+      Route every remaining per-pulse canonical_json() site explicitly: intent
+      detail, risk segment and affordability failure are removed here or named
+      to their surviving evidence owner; strategy-state encoding is routed to
+      WS5 typed state. The non-finite valuation refusal raised by the
+      reconciliation encode today (ledgr_config_non_finite, Cut 5
+      amendment_valuation) becomes an explicit typed finiteness check at the
+      same pulse and precedence before any deferred formatting. Make no
+      selective-materialization change
+      without a row-and-sequence parity record.
+    acceptance:
+      - "strategy_state bytes, ctx$state_prev values, state resume, restart and worker parity stay exact, while absent asset state has no per-pulse O(instruments) list construction or serialization"
+      - "successful pulses make no canonical_json() call for reconciliation, reconciled rows keep identical detail_json bytes, and every failure keeps its exact class, reason, values and retained diagnostic, including amendment_valuation's refusal at the same pulse with the same accepted prefix and retained diagnostic"
+      - "diagnostic retained rows and logical sequence gaps match the frozen run and sweep records, including stops, scheduled holds and final-pulse non-execution"
+      - "source and runtime counters fail restored per-pulse canonical cache lookup, full-axis padding, stale-mark all.equal and unretained diagnostic materialization"
+      - "paired phase records attribute each removed floor; a neutral or slower result is recorded rather than hidden or used to weaken a correctness gate"
+    evidence: []
+  - id: "LDG-3178"
+    title: "Verify the unified core and record the first performance milestone"
+    workstream: 14
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3177"]
+    scope: >-
+      On one named final candidate, run the LDG-3170 semantic matrix and guts,
+      the accepted dense oracle, A0, Cut 5 carrier cases, full test profiles,
+      package build/check and the six aggregate-only real-data controls. Run
+      ws4b-timing-1 against both v0.2.2 (the macro-rule-16 reference) and
+      b5622f09 (the WS4b attribution arm) on the registered host and rerun all
+      peer-suite lanes under their own protocol. Unchanged peer engines need
+      not be re-timed only when the suite's host-drift controls permit reuse of
+      same-session peer records; otherwise rerun them. Report
+      cold setup, preparation, feature work, warm book lifecycle, fold stages,
+      publication/finalisation and result reads; report durable and memory
+      sinks separately. Timing is descriptive milestone evidence: explain and
+      route every regression or remaining dominant phase without changing an
+      oracle or acceptance criterion. Reconcile the deletion census, promote
+      implemented rules to contracts.md, update NEWS and all current teaching,
+      record identity rule 5 and write the workstream disposition. Keep private
+      data private and generated build/check artifacts untracked.
+    acceptance:
+      - "every semantic oracle, mutation, fault injection, deletion witness and real-data comparison passes or differs only by an explicitly accepted Cut 6 decision"
+      - "the full suite, R CMD build and R CMD check pass on the exact tested source, and generated artifacts remain outside the tracked tree"
+      - "the shared-harness and peer milestone records reproduce, retain economic controls, attribute the surviving costs and state every material regression or miss without acting as acceptance clocks"
+      - "contracts, reference, vignettes, NAMESPACE, NEWS, decisions bridge, packet status and disposition describe only implemented behavior and the three identity declarations"
+    evidence: []

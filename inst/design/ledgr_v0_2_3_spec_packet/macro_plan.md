@@ -1,6 +1,6 @@
 # ledgr v0.2.3 Macro Plan
 
-**Status:** Accepted by the maintainer on 2026-10-28 (revision 5, written by
+**Status:** Accepted by the maintainer on 2026-10-28 (revision 7, written by
 Claude and amended by the maintainer). It is the within-release order for
 uncut work. Revision 2 applies
 the [Type 2 review](macro_plan_review.md) (RESTRUCTURE) as dispositioned in
@@ -14,6 +14,16 @@ stage carriers, which precedes removal of the second execution path.
 Revision 5 records the maintainer's 2026-10-31 performance-convergence
 amendment: the post-consolidation peer record now leads to one bounded,
 evidence-driven optimization cut when the finished core misses its targets.
+Revision 6, accepted separately by the maintainer on 2026-10-31 before this
+cut was drafted, records the peer-scaling amendment: warm
+book lifecycle, real parameter grids, worker-level candidate batching and
+feature preparation become named evidence instead of being hidden inside
+setup or strategy time.
+Revision 7 records the maintainer's 2026-11-01 WS4b decisions after Cut 5:
+the implied bar-native pulse clock, strict dense coverage, removal of the
+exported `ledgr_backtest()` constructor and one structured final-pulse
+non-execution diagnostic, plus the Option B rule that a fixed basket is the
+full-membership, always-tradable, never-stale case of the canonical substrate.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -195,6 +205,14 @@ and the point-in-time demonstration row. All lanes are timed again after WS4b
 and WS8 so the release can see where it stands (maintainer, 2026-10-28). The
 post-WS7/WS8 record includes warm result reads and full run-plus-results time,
 so eliminating accounting representations is measured end to end.
+- **Amendment (maintainer, 2026-10-31, observed scaling record):** add one
+  ledgr parameter-grid lane on the same prepared experiment at 10, 100 and
+  1,000 candidates, with 1, 2 and 4 workers where admissible. It separates
+  preparation, warm book lifecycle, feature/indicator preparation, candidate
+  engine, worker dispatch/collection and retained output. This complements,
+  and is not pooled with, the report's repeated one-candidate session lane.
+  The existing strategy-first engine remains authoritative; the RED
+  pulse-first spike is not reopened.
 - **Current status (2026-10-30):** Cut 2 is closed. The accepted dense oracle
   at `cbf25359` and the accepted current-tree descriptive record discharge
   C1's prerequisite. Full peer-lane replacement and post-WS4/WS8 reruns remain
@@ -253,12 +271,32 @@ calendar, decide the fate of `ledgr_backtest()`, and add the final-bar no-fill
 disclosure (M8b). The carrier is the common contract against which the two
 current producers are compared; WS4b does not redesign it.
 
+- **Amendment (maintainer, 2026-11-01):** Cut 6 binds four product choices.
+  A fixed-basket snapshot without declared sessions derives a run-local
+  bar-native pulse clock from ordered distinct bar timestamps; it invents no
+  venue open or close and next-pulse execution keeps the next bar timestamp.
+  Such a snapshot remains strictly rectangular over the requested instruments
+  and executable range, with any missing bar refusing before the fold; missing
+  data policies require declared sessions. The exported `ledgr_backtest()`
+  constructor is removed, while the existing run-result class and methods stay.
+  The final pulse is observed and decided normally, but a target requiring a
+  later pulse produces no fill or accounting event and records the structured
+  `final_pulse_no_execution` diagnostic without a warning or refusal. Cut 6 is
+  a decision-bearing Type 2 spec cut and introduces no public policy knob.
+  A fixed basket is the full-membership, never-stale case of the canonical
+  prepared execution substrate; it adopts the declared-session path's history,
+  carry, affordability, supported-target, evidence, failure, context, equity
+  and finiteness semantics. The cut records every resulting dense-output
+  difference explicitly rather than retaining a dense compatibility profile.
+
 - **Route:** direct tickets, Type 2 at cut. **Gate:** dense parity lane, A0
   and the v0.2.2 reference unchanged, or each difference decided.
 - **Amendment (maintainer, 2026-10-30):** WS4b also owns the consolidated
-  path's per-pulse floor. Its gate adds a timing comparison against today's
-  dense path on the no-fill, sparse-rebalance and wide all-fill shapes, with
-  bounds set at the cut. Per-pulse state normalization and serialization
+  path's per-pulse floor. Its evidence adds a timing comparison against today's
+  dense path on the no-fill, sparse-rebalance and wide all-fill shapes. Macro
+  rule 16 supersedes the earlier instruction to bind per-workstream timing
+  bounds: this is a descriptive post-unification milestone, not a ticket gate.
+  Per-pulse state normalization and serialization
   (no per-instrument padding for undeclared asset state), the availability
   context refresh, per-pulse valuation and diagnostic flushing are in scope.
   Evidence: `dev/spikes/ws4a-carrier-probe/` (availability floor 6.6 s
@@ -350,9 +388,14 @@ part of its evidence.
 
 - **WS9a, now:** phase-level memory and worker baselines; the C3 placement RFC.
 - **WS9b, after WS4b:** structural reduction, then the worker-budget decision
-  (defaults Type 2 at cut), then H9 daemon reuse. Final memory evidence
-  follows WS6 and H9. The typed-accounting work must also prove that shared
-  result reconstruction is chunk-bounded and report its peak RSS.
+  (defaults Type 2 at cut), then H9 daemon reuse and bounded worker-level
+  candidate batching in the existing strategy-first dispatcher. The batching
+  decision uses a minimum-work threshold, preserves candidate isolation and
+  failure semantics, and records dispatch savings against its additional
+  live-state and worker RSS. Final memory evidence follows WS6 and H9. The
+  typed-accounting work must also prove that shared result reconstruction is
+  chunk-bounded and report its peak RSS. Evidence:
+  `dev/spikes/pulse-first-batch/` (batching helped; pulse-first did not).
 
 ### WS10. Economics (C11, C12a, U2, X2): design and implementation
 
@@ -403,8 +446,12 @@ After the execution paths, strategy context, context frames, accounting
 readers and typed persistence have reached their surviving v0.2.3 shape, run
 the shared timing harness and full peer suite as one attributed performance
 checkpoint. Separate cold setup, warm no-fill pulse cost, strategy work,
-marginal fill cost, durable publication and result reads. Report ephemeral and
-durable ledgr separately and compare only semantically qualified peer cells.
+warm book construction/finalisation/teardown, feature and indicator
+preparation, candidate dispatch, marginal fill cost, durable publication and
+result reads. Report ephemeral and durable ledgr separately and compare only
+semantically qualified peer cells. Attribute the durable premium with internal
+phase clocks; do not add a public full-output ephemeral mode merely to create
+a benchmark counterfactual.
 
 The provisional stretch objectives are 100-200 microseconds per ordinary
 no-fill pulse, at most 10 microseconds of marginal work per fill, an ephemeral
@@ -419,10 +466,14 @@ trusted carrier boundary, reuse flat contexts and buffers, prebind strategy
 and feature access, precompute pulse invariants, fuse vector stages, avoid
 unretained diagnostics, batch publication or keep measured state resident.
 It may introduce a compiled kernel only when the profile shows that ordinary R
-representation and allocation work is no longer the dominant cost. It may not
-create a second execution semantics, relax point-in-time or accounting rules,
-or weaken evidence and reproducibility. If the targets are met, the cut closes
-as a measurement and disposition record with no product change.
+representation and allocation work is no longer the dominant cost. If meeting
+an accepted target would require making compiled execution the default, WS14
+returns that choice through a focused Type 2 decision before implementation;
+the R implementation remains the executable oracle and no second semantics is
+permitted. The cut may not otherwise create a second execution path, relax
+point-in-time or accounting rules, or weaken evidence and reproducibility. If
+the targets are met, it closes as a measurement and disposition record with no
+product change.
 
 WS3 reruns the affected peer cells after any product change. Release
 certification records the final targets, results and any consciously accepted
@@ -454,6 +505,10 @@ fundamentals (after CRAN); public `ledgr.crypto2` (separate packet); a cash
 default (demand-driven); a decision-graph recorder; state-storage redesign
 without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
 
+The compiled-default non-goal remains binding unless WS14's post-consolidation
+profile triggers and the maintainer accepts the focused Type 2 escalation
+defined there.
+
 ## 6. Maintainer decisions recorded in this revision
 
 - **A.** Consolidation precedes the strategy API runtime (dense freeze and
@@ -482,11 +537,24 @@ without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
   v0.2.3 core is measured, WS14 owns one bounded response to the largest
   remaining costs while preserving one execution semantics and ledgr's
   point-in-time, accounting, evidence and reproducibility guarantees.
+- **Peer scaling, 2026-10-31:** the observed suite distinguishes process-cold
+  setup from the large warm lifecycle cost of every independent book. WS3 now
+  measures actual parameter grids, WS9b owns bounded candidate batching, and
+  WS14 attributes warm lifecycle and feature preparation explicitly. A
+  compiled default remains out of scope unless a measured miss passes the
+  named Type 2 escalation.
+- **WS4b behavior, 2026-11-01:** the Cut 6 choices are the bar-native
+  pulse clock, strict dense completeness, removal of `ledgr_backtest()` and
+  structured final-pulse non-execution, plus the Option B rule that a fixed
+  basket is the full-membership, always-tradable, never-stale case of the
+  canonical substrate. They preserve one execution semantics and do not
+  authorize an alternate dense policy or inferred venue clock.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on
-2026-10-29; the performance-convergence amendment was accepted on
-2026-10-31.
+2026-10-29; the performance-convergence and peer-scaling amendments were
+accepted on 2026-10-31; the WS4b behavior amendment was accepted on
+2026-11-01.
 
 ## 7. Release definition of done
 
@@ -498,7 +566,8 @@ typed-accounting and typed-fold-carrier amendments were accepted on
 - RNG equivalence passing; memory and worker budgets set.
 - Dense parity lane, A0 and the v0.2.2 reference reproduced or each
   difference decided; full peer suite timed after the consolidations; WS14's
-  targets met or each remaining premium measured and consciously accepted.
+  targets met or each remaining premium measured and consciously accepted;
+  warm independent-book and actual parameter-grid scaling both recorded.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
 - A certified candidate promoted under the WS13 process.
