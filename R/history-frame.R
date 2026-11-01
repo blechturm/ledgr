@@ -575,7 +575,7 @@ ledgr_history_bar_mask_view <- function(substrate, rows, columns, cutoff_col,
     override_barriers, function(x) x$count[[1L]], integer(1L)
   )
   barrier_off <- if (length(barrier_count) > 0L) {
-    cumsum(c(1L, head(barrier_count, -1L)))
+    cumsum(c(1L, utils::head(barrier_count, -1L)))
   } else {
     integer()
   }
