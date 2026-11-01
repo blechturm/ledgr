@@ -792,7 +792,7 @@ cuts:
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
     status: "draft"
-    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded patches are applied. Final confirmation CHANGES_REQUIRED in cut_review_7_confirmation_1.md for four exact acceptance/status patches and one wording nit; all are applied verbatim, and that reviewer states no further review round is required. Cut 7 is ready for maintainer acceptance."
+    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded patches are applied. Final confirmation CHANGES_REQUIRED in cut_review_7_confirmation_1.md for four exact acceptance/status patches and one wording nit; all are applied verbatim. A final narrow clean-context Claude Opus check at ec5fe2be returned PASS. Cut 7 is ready for maintainer acceptance."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
       implements the accepted strategy-authoring synthesis on the one surviving
