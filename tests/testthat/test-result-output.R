@@ -127,9 +127,10 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   output <- utils::capture.output(print(daily$bt))
   blob <- paste(output, collapse = "\n")
 
-  testthat::expect_lte(length(output), 16L)
+  testthat::expect_lte(length(output), 17L)
   testthat::expect_match(blob, "Run ID:", fixed = TRUE)
   testthat::expect_match(blob, "Period:.*2020-01-01 to 2020-01-04")
+  testthat::expect_match(blob, "Execution Clock:.*bar_native")
   testthat::expect_match(blob, "Opening Cash:", fixed = TRUE)
   testthat::expect_match(blob, "Final Equity:", fixed = TRUE)
   testthat::expect_match(blob, sprintf("%.2f%%", metrics$total_return * 100), fixed = TRUE)

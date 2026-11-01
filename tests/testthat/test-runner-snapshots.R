@@ -222,7 +222,7 @@ testthat::test_that("coverage validation fails loud for ragged per-instrument co
   cfg <- runner_snapshot_config(path, snapshot_id, universe_ids = c("AAA", "BBB"))
   testthat::expect_error(
     ledgr_run_config(cfg, run_id = "run-snapshot-coverage"),
-    class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
+    class = "ledgr_missing_bars"
   )
 })
 

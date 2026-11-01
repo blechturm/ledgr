@@ -332,7 +332,10 @@ testthat::test_that("AT9: Per-instrument coverage validation fails on ragged cov
   Sys.sleep(0.05)
 
   cfg <- v011_make_runner_cfg(db_path, snapshot_id, universe_ids = c("AAA", "BBB"), start_ts_utc = "2020-01-01T00:00:00Z", end_ts_utc = "2023-01-01T00:00:00Z")
-  testthat::expect_error(ledgr_run_config(cfg, run_id = "run-v011-coverage"), class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+  testthat::expect_error(
+    ledgr_run_config(cfg, run_id = "run-v011-coverage"),
+    class = "ledgr_missing_bars"
+  )
 })
 
 testthat::test_that("AT10: Snapshot discovery APIs (list + info)", {

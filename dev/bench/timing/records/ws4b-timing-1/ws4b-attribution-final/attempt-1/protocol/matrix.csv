@@ -1,0 +1,7 @@
+cell,workload,clock,args,pairs
+bar_native_nofill_run,ws4a_path,run,producer=dense;shape=nofill;path=run;reps=2,8
+declared_nofill_run,ws4a_path,run,producer=availability;shape=nofill;path=run;reps=1,8
+bar_native_sparse_sweep,ws4a_path,sweep,producer=dense;shape=sparse;path=sweep;reps=2,8
+declared_sparse_sweep,ws4a_path,sweep,producer=availability;shape=sparse;path=sweep;reps=1,8
+bar_native_wide_run,ws4a_path,run,producer=dense;shape=wide;path=run;reps=1,8
+declared_wide_run,ws4a_path,run,producer=availability;shape=wide;path=run;reps=1,8

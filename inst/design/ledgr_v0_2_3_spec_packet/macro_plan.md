@@ -315,8 +315,19 @@ current producers are compared; WS4b does not redesign it.
   - the stale-mark trace's `all.equal()` call per stale instrument
     (`R/fold-engine.R:1002-1007`, I3);
   - the equity-fact accumulator's list per pulse, unpacked with `vapply()`
-    at finalisation (`R/fold-phase-contract.R:164-190`, P4). Moved to WS4a
-    by the typed-fold-carrier acceptance (2026-10-30).
+  at finalisation (`R/fold-phase-contract.R:164-190`, P4). Moved to WS4a
+  by the typed-fold-carrier acceptance (2026-10-30).
+- **Milestone disposition (2026-11-01):** the final Cut 6 candidate improves
+  all three declared-session cells and the bar-native wide cell against
+  v0.2.2, but bar-native no-fill and sparse cells are about 2.7 times slower.
+  The matched telemetry probe locates the difference in the fold loop rather
+  than cold preparation or finalisation: the bar-native no-fill loop moves
+  from about 1.27 seconds to 5.44 seconds while the declared-session loop
+  improves from about 6.34 seconds to 5.22 seconds. This is the measured
+  semantic premium of routing fixed baskets through the canonical substrate,
+  not authority to restore the deleted dense path. WS5 owns the already-bound
+  eager context removal; WS14 must reproduce the two red bar-native cells and
+  profile the surviving P1/P2 loop before choosing any further optimization.
 - C4 (pulse seed) and H10 (settlement state) have their own cuts; H9 waits
   for WS9b's budget decision.
 

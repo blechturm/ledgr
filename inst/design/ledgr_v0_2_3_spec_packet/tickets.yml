@@ -862,7 +862,8 @@ workstreams:
   - id: 14
     name: "One execution path (macro WS4b)"
     cut: 6
-    status: "planned"
+    status: "review_pending"
+    close_review: "CHANGES_REQUIRED in ws14_close_review.md; correction candidate c857d856 closes product findings and fe8a78aa registers the harness-required timing window. A focused independent re-review is required before maintainer acceptance."
     depends_on_workstream: 13
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 14, after LDG-3178", reason: "One claim joins LDG-3170 through LDG-3178: every supported run, sweep, walk-forward, promotion and pulse-inspection route prepares one execution substrate and enters one E/P1-P5 path; fixed-basket data use the accepted bar-native pulse clock and strict completeness while declared sessions keep their point-in-time semantics; the old dense fold, guard, context and provider branches and the exported ledgr_backtest() constructor are absent; final-pulse non-execution is one structured diagnostic under identity rule 5; all native, A0, real-data and failure oracles pass or differ only by decisions (1)-(5) and the decision (9) rows of the frozen expected-difference record; and the shared-harness plus peer milestone records attribute the final candidate without serving as acceptance clocks. The review walks the seven shapes over every changed preparation/fold/finalisation function, cold-reads the surviving path from its contract, mutation-checks the deletion and identity witnesses, audits every registered test migration and reconciles the source census to zero unowned branches."}
@@ -1695,7 +1696,7 @@ tickets:
   - id: "LDG-3170"
     title: "Freeze the WS4b decisions, deletion census and milestone protocol"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: []
@@ -1743,11 +1744,13 @@ tickets:
       - "the updated LTB-0331 census names every production and maintained test/benchmark consumer, accounts for each Cut 5 detector, and deleting one seeded census row makes its checker fail"
       - "each of decisions (1)-(5) and (9), strict identity refusal and old-path deletion has a demonstrated mutation or successor witness that the planned gate detects"
       - "ws4b-timing-1 uses the shared harness by reference, records timer boundaries and economic controls, and the base record reproduces without treating a clock as acceptance"
-    evidence: []
+    evidence:
+      - "Control and source census: dev/bench/v0_2_3_ws4b/ contains the finite decision (1)-(5),(9) difference map, zero-unowned-row ownership table and check.R; the checker reports WS4B_CONTROL_OK. LTB-0331 and the refreshed committed mode census reject a stale or added source row."
+      - "Milestone protocol: dev/bench/timing/protocols/ws4b-timing-1 reuses ws4a-timing-1/workloads.R by reference and crosses bar-native/declared with no-fill, sparse and wide work. The unchanged shared harness rejected the proposed three pairs and requires eight; fe8a78aa records the stronger common noise rule."
   - id: "LDG-3171"
     title: "Prepare one run substrate with a bar-native fixed-basket clock"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3170"]
@@ -1783,11 +1786,12 @@ tickets:
       - "declared-session availability fixtures and their typed incomplete/refusal boundaries remain exact; runtime fact families, a valuation policy, or a non-default history policy without sessions keep their current refusal; and the two-pulse minimum keeps ledgr_run_window_too_short"
       - "a corporate-action-only fixed basket reaches the existing corporate-action plan over the bar-native axis without fabricated session facts"
       - "a construction counter proves one substrate build per standalone run, one shared build per sweep/window input and one per walk-forward fold, and scale/allocation checks reject per-candidate invariant rebuilds or a copied constant plane"
-    evidence: []
+    evidence:
+      - "Product 83745c14 with correction c857d856: ledgr_history_substrate_for_experiment() supplies both clock kinds; fixed baskets use ordered sealed bar timestamps, constant planes and one provider contract. Rectangular coverage is bounded by the executable start. LTB-0524 fails if the earlier history prefix is scanned; existing in-range gap and two-pulse refusals remain green."
   - id: "LDG-3172"
     title: "Route every execution entry through the prepared substrate"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3171"]
@@ -1821,11 +1825,12 @@ tickets:
       - "each route uses the same source-pulse and execution-opportunity arrays and preserves absolute pulse indices, feature hydration and strategy RNG results"
       - "run/sweep and training/test parity remain exact; carried walk-forward state matches the frozen expected-difference record, so a fixed basket's non-final-window target fills at the next window's first pulse"
       - "call-count detectors fail per-pulse or duplicate per-candidate invariant preparation, while the existing strategy-first worker path remains authoritative"
-    evidence: []
+    evidence:
+      - "Product 83745c14 routes run, sweep, window, walk-forward, pulse inspection and feature preparation through the common substrate. The route/call-count suite and WS4b control pass; eabe3840 updates pulse inspection to the unified clock and c857d856 makes plan/result clock disclosure explicit."
   - id: "LDG-3173"
     title: "Consolidate P1 and P2 context, provider and valuation services"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3172"]
@@ -1856,11 +1861,12 @@ tickets:
       - "prepared lookups and helper closures keep stable identity across pulses and a counter rejects per-pulse rebuild or full-axis name matching"
       - "forcing the general path on every fixed-basket fixture is byte-identical to any constant-plane specialization; a specialization that skips a canonical rule or evidence row fails the witness"
       - "all P1/P2 carrier validators, failure boundaries and the seven-shape checks pass without a second context/provider implementation"
-    evidence: []
+    evidence:
+      - "Product 83745c14 removes availability_active from the strategy context and E/P1-P5 dispatch. The common context, carrier and helper tests pass; test-strategy-context-entrances no longer constructs the retired field. No fixed-basket specialization survives, so the forced-general-path witness is vacuous and recorded in ws14_disposition.md."
   - id: "LDG-3174"
     title: "Unify P3-P5, finalisation and final-pulse behavior and advance identity rule 5"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3173"]
@@ -1898,11 +1904,12 @@ tickets:
       - "final strategy state, equity and all earlier-pulse results remain exact; removing the state write or equity row fails a registered detector"
       - "new config-derived identities use rule 5 consistently; a store written by b5622f09 refuses at open with ledgr_store_rebuild_required naming ledgr_identity_rule_version; and a rule-4 config, saved sweep and walk-forward result presented outside a store refuse respectively with ledgr_invalid_config, ledgr_sweep_schema_incompatible and ledgr_walk_forward_invalid_session. The comparison reuses the Cut 4 identity-witness pattern: bindings equal the base plus exactly ledgr_identity_rule_version = 5L"
       - "identical canonical input keeps its snapshot hash, the store fingerprint differs only in ledgr_identity_rule_version, and no rule-4 fallback, migration or reader branch is added"
-    evidence: []
+    evidence:
+      - "Product 83745c14 advances identity rule 5 and implements common affordability, short, evidence, completion and final-pulse behavior. LTB-0523 pins run/sweep state refusal parity, LTB-0525 pins exact durable/memory final_pulse_no_execution sequence and payload, and LTB-0528 pins rule-4 sweep, walk-forward and store refusals."
   - id: "LDG-3175"
     title: "Remove the ledgr_backtest constructor surface"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3174"]
@@ -1931,11 +1938,12 @@ tickets:
       - "raw-data teaching uses ledgr_snapshot_from_df(), ledgr_experiment() and ledgr_run(), and point-in-time teaching has no alternate entry point"
       - "a claim map accounts for every removed constructor test and mutation; result-handle methods and run reopening remain exact"
       - "source and export censuses fail if the constructor or a compatibility alias returns, while exempting ledgr_backtest_bench and the retained S3 methods by exact name"
-    evidence: []
+    evidence:
+      - "Product 83745c14 removes the exported ledgr_backtest() constructor, implementation, help and examples without an alias; ledgr_run() retains the ledgr_backtest result class and its methods. Commits eabe3840 through c0adbf9e migrate examples and teaching; namespace, source and documentation-contract censuses pass."
   - id: "LDG-3176"
     title: "Delete the dense fold, guard, planner and service branches"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3175"]
@@ -1955,11 +1963,12 @@ tickets:
       - "removing or bypassing the common substrate breaks every fixed-basket and declared-session entry route, demonstrating that no fallback engine survives"
       - "the dense native oracle, A0, real-data controls and all registered fault boundaries pass, apart from rule-5 identities, final-pulse evidence and the decision (9) rows of the frozen expected-difference record"
       - "the seven optimization shapes find no growing accumulator, per-pulse full-axis reconstruction, repeated invariant normalization or hidden second representation in the surviving core"
-    evidence: []
+    evidence:
+      - "Product 83745c14 deletes the dense fold/planner/context representation. Correction c857d856 removes the duplicate rectangular guard. The refreshed LTB-0331 census and dev/bench/v0_2_3_ws4b/mode_branch_disposition.csv account for every surviving predicate as preparation, admission, disclosure, result, reopen, invariant or the named private test seam; check.R reports zero unowned rows."
   - id: "LDG-3177"
     title: "Remove the consolidated path's measured per-pulse floor"
     workstream: 14
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-3176"]
@@ -1996,11 +2005,12 @@ tickets:
       - "diagnostic retained rows and logical sequence gaps match the frozen run and sweep records, including stops, scheduled holds and final-pulse non-execution"
       - "source and runtime counters fail restored per-pulse canonical cache lookup, full-axis padding, stale-mark all.equal and unretained diagnostic materialization"
       - "paired phase records attribute each removed floor; a neutral or slower result is recorded rather than hidden or used to weaken a correctness gate"
-    evidence: []
+    evidence:
+      - "Correction c857d856 keeps reconciliation as typed pulse primitives and formats retained detail_json at diagnostic drain. LTB-0527 rejects stage JSON and all.equal(), LTB-0526 pins both scalar tolerance regimes, and LTB-0523 preserves strategy-state refusal precedence. Focused semantic and WS4a carrier suites pass."
   - id: "LDG-3178"
     title: "Verify the unified core and record the first performance milestone"
     workstream: 14
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3177"]
@@ -2026,4 +2036,9 @@ tickets:
       - "the full suite, R CMD build and R CMD check pass on the exact tested source, and generated artifacts remain outside the tracked tree"
       - "the shared-harness and peer milestone records reproduce, retain economic controls, attribute the surviving costs and state every material regression or miss without acting as acceptance clocks"
       - "contracts, reference, vignettes, NAMESPACE, NEWS, decisions bridge, packet status and disposition describe only implemented behavior and the three identity declarations"
-    evidence: []
+    evidence:
+      - "Candidate source: c857d856 product plus fe8a78aa timing-protocol-only correction. ws14_close_review.md records the first independent CHANGES_REQUIRED verdict; ws14_disposition.md records the three identity declarations and surviving boundaries."
+      - "Focused gates already green: WS4B_CONTROL_OK, codebase census check, documentation contracts, test-one-execution-path, test-strategy-intent-evidence, test-ws4a-carrier, availability workflow and result S3. Final timing, peer, profile, package-check and aggregate real-data outcomes are recorded under dev/bench/v0_2_3_ws4b/records/final/ before the focused re-review."
+      - "Shared timing evidence: dev/bench/timing/records/ws4b-timing-1/{ws4b-attribution-final,v022-release-final}/attempt-1 each contain 96 finite successful rows with identical economic controls. Declared-session cells improve in both comparisons; bar-native no-fill and sparse are about 2.7 times slower, while bar-native wide is faster than v0.2.2. The reproducible phase probe at dev/bench/v0_2_3_ws4b/phase_attribution.R locates the bar-native difference in the fold loop rather than setup or finalization. The macro plan routes it to WS5 and WS14 without restoring a second execution path."
+      - "Peer smoke 2026-11-01: all three ledgr lanes completed with Tier 1 parity and registered feature tolerance; quantstrat was absent and restricted-network dependency setup classified Backtrader, zipline-reloaded and LEAN unavailable rather than dropping or reusing their rows."
+      - "Exact-source gates after close-review corrections: fast profile 612/612 in 202.65 seconds (functional pass, advisory 112-second timing bound exceeded); full-heavy protocol 181/181 in 296.42 seconds. The first review-profile attempt was capped at five minutes; its completed rerun exposed three stale path-migration tests, corrected and focused green before the final profile rerun."
