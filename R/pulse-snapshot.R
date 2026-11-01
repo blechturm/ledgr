@@ -248,16 +248,16 @@ ledgr_pulse_inspection_noop <- function(ctx, params) ctx$flat()
 #' @return The input object, invisibly.
 #' @examples
 #' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
-#'   instrument_id = "AAA",
-#'   open = 100,
-#'   high = 101,
-#'   low = 99,
-#'   close = 100,
-#'   volume = 1000
+#'   ts_utc = as.POSIXct(c("2020-01-01", "2020-01-02"), tz = "UTC"),
+#'   instrument_id = c("AAA", "AAA"),
+#'   open = c(100, 101),
+#'   high = c(101, 102),
+#'   low = c(99, 100),
+#'   close = c(100, 101),
+#'   volume = c(1000, 1100)
 #' )
 #' snapshot <- ledgr_snapshot_from_df(bars)
-#' pulse <- ledgr_pulse_snapshot(snapshot, universe = "AAA", ts_utc = "2020-01-01T00:00:00Z")
+#' pulse <- ledgr_pulse_snapshot(snapshot, universe = "AAA", ts_utc = "2020-01-02T00:00:00Z")
 #' print(pulse)
 #' close(pulse)
 #' ledgr_snapshot_close(snapshot)
@@ -282,16 +282,16 @@ print.ledgr_pulse_context <- function(x, ...) {
 #' @return The input object, invisibly.
 #' @examples
 #' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
-#'   instrument_id = "AAA",
-#'   open = 100,
-#'   high = 101,
-#'   low = 99,
-#'   close = 100,
-#'   volume = 1000
+#'   ts_utc = as.POSIXct(c("2020-01-01", "2020-01-02"), tz = "UTC"),
+#'   instrument_id = c("AAA", "AAA"),
+#'   open = c(100, 101),
+#'   high = c(101, 102),
+#'   low = c(99, 100),
+#'   close = c(100, 101),
+#'   volume = c(1000, 1100)
 #' )
 #' snapshot <- ledgr_snapshot_from_df(bars)
-#' pulse <- ledgr_pulse_snapshot(snapshot, universe = "AAA", ts_utc = "2020-01-01T00:00:00Z")
+#' pulse <- ledgr_pulse_snapshot(snapshot, universe = "AAA", ts_utc = "2020-01-02T00:00:00Z")
 #' close(pulse)
 #' ledgr_snapshot_close(snapshot)
 #' @export
