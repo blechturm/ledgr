@@ -792,7 +792,7 @@ cuts:
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
     status: "draft"
-    cut_review: "NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01): one maintainer decision on durable state cursors/checkpoints; R1-R11 correct resume, typed missing-state encoding, D8 physical ownership, the WS6 boundary, scheduler retirement, contract ownership, integration acceptance, exports, timing attribution and the pre-acceptance probe. Independent patches are applied in revision 2; the checkpoint decision remains open."
+    cut_review: "NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01): R1-R11 correct resume, typed missing-state encoding, D8 physical ownership, the WS6 boundary, scheduler retirement, contract ownership, integration acceptance, exports, timing attribution and the pre-acceptance probe. Independent patches are applied in revision 2. Maintainer decision 2026-11-01 accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review is pending."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
       implements the accepted strategy-authoring synthesis on the one surviving
@@ -836,9 +836,16 @@ cuts:
       state shape is admitted. (2) Runtime state is one prepared typed field
       table, not a list per instrument. Helper returns are field patches; raw
       state_update is complete replacement; reset_state restores all defaults.
-      The exact durable cursor/checkpoint representation remains the one Type 2
-      decision raised by cut_review_7.md; implementation cannot begin until it
-      is resolved. (3) D8 uses one typed run_diagnostics sizing row per sized
+      One durable cursor row is written to the existing strategy_state table
+      for every completed pulse. An unchanged pulse writes one constant marker
+      without encoding state; a changed pulse writes the complete declared
+      state once through the typed codec, and any decision-axis ID-set change
+      counts as a state change. Resume advances from the latest cursor and
+      restores the latest preceding payload aligned by instrument ID. This
+      keeps schema 124 and current transactional resume semantics. The changed-
+      state encoding cost is measured; a separate progress carrier plus typed
+      checkpoint store is the preferred future architecture parked in
+      horizon.md, not work in this cut. (3) D8 uses one typed run_diagnostics sizing row per sized
       instrument and decision. Requested, post-guard pre-floor and rounded
       quantities use target_before_risk, target and quantity; the accepted mark
       uses price and held quantity uses position_before. Typed reason_code
@@ -886,8 +893,8 @@ cuts:
       requires attribution and routing, not weakened acceptance. Hosted clocks
       are advisory. (8) Snapshot identity is unchanged. Normalized declared
       state is a new configuration-identity input; supplied investor inputs and
-      effective schedule remain identity inputs. Store schema stays 124 only if
-      the accepted checkpoint decision permits it. The cut unconditionally
+      effective schedule remain identity inputs. Store schema stays 124 under
+      the accepted cursor/checkpoint design. The cut unconditionally
       adds ledgr_strategy_state_rule_version and
       ledgr_sizing_evidence_rule_version to the format fingerprint; old or
       missing markers refuse under the current-only policy, with no migration
@@ -924,17 +931,27 @@ cuts:
       count current context builds, state encodes and strategy_state writes.
       Record the scripts and results in the packet. A failure changes the cut;
       it is not deferred to implementation.
+    pre_acceptance_evidence: >-
+      PASS as an input gate, with the expected design failures recorded in
+      dev/bench/v0_2_3_strategy_authoring_preflight/README.md. On product source
+      14252ffb, canonical config JSON rejects numeric missing state and loses
+      atomic missing positions/order for the other declared types; sparse
+      change-only rows resume at pulse 2 rather than 4 and miss finalisation-
+      only resume; and a five-pulse unchanged-state public run performs five
+      context builds, five state encodes and five strategy_state writes. These
+      observations directly bind the typed codec and option-A cursor rules.
     identity_and_release_impact: >-
       Snapshot content identity: none. Run/configuration identity intentionally
       gains normalized declared state and explicitly supplied opening/cost
       inputs; schedule identity remains the accepted scheduler identity. Store
-      schema stays 124 only if the accepted cursor/checkpoint decision permits
-      it. The format fingerprint unconditionally gains the strategy-state and
+      schema stays 124: existing strategy_state rows become explicit cursor or
+      typed-checkpoint records. The format fingerprint unconditionally gains the strategy-state and
       sizing-evidence rule bindings, with current-only refusal and no reader for
       a missing or old rule. Public API: flat ctx, new selection/target/state
       helpers, required investor inputs and the bounded retired-reader/helper
-      list in decision (4). Persisted evidence: typed sizing diagnostics and a
-      durable state cursor/checkpoint representation that cannot weaken resume.
+      list in decision (4). Persisted evidence: typed sizing diagnostics, one
+      small cursor record per completed pulse and a complete typed checkpoint
+      only on state change.
       Release impact: R, tests, contracts, NAMESPACE, reference, articles,
       NEWS, benchmark and identity records; no dependency change is planned.
     sequencing: >-
@@ -2468,22 +2485,27 @@ tickets:
       replacement, reset_state and intent_reason at the existing normalization
       boundary. Enforce broadcast/alignment, missing reset, replacement/default
       and incompatible-operation rules. Keep complete typed state in the fold;
-      implement the maintainer-accepted durable cursor/checkpoint design from
-      Cut 7 decision (2), using the explicit declaration-driven encoding of
-      LDG-3185 rather than list-per-ID padding. Resume advances from the durable
-      completed-pulse cursor and restores the latest applicable payload; run,
-      sweep and worker candidates remain equal and isolated; walk-forward
-      strategy state resets while economic facts may carry. Validate and encode
-      state at the pulse-context, pulse-inspection and durable-write seams, and
-      assign the old strategy JSON-cache retirement to this ticket's final
-      source census. Stop for maintainer disposition if the accepted design
-      cannot be represented without an unapproved schema change.
+      write one existing-table cursor record for every completed pulse. An
+      unchanged pulse writes one constant marker and performs no state-payload
+      encode; a changed pulse writes the complete declared state once through
+      LDG-3185's declaration-driven codec. An asset-axis ID-set change is a
+      state change. Resume advances from the latest cursor and restores the
+      latest preceding payload aligned by ID; run, sweep and worker candidates
+      remain equal and isolated; walk-forward strategy state resets while
+      economic facts may carry. Validate and encode state at the pulse-context,
+      pulse-inspection and durable-write seams, and assign the old strategy
+      JSON-cache retirement to this ticket's final source census. Keep schema
+      124; stop if exact recovery requires an unapproved schema change. Measure
+      and report both unchanged and every-pulse-changing state workloads, and
+      route any storage redesign through the triggered RFC in synthesis
+      Section 7 and the preferred architecture parked in horizon.md.
     acceptance:
       - "patch retention, complete replacement, empty replacement, omitted update, whole reset, metadata separation and every illegal combination match D5 and fail under their opposite mutations"
       - "asset scalar broadcast and named full-axis alignment are exact; NaN/infinity refusal precedes NA reset and all returned values match declared type/shape"
       - "resume/restart, sequential/parallel sweep and walk-forward reset reproduce exact complete state; candidate or later-pulse leakage mutations fail"
       - "N unchanged pulses resume at N + 1, finalisation-only tails do not replay, and a departed/re-entering instrument restores or defaults exactly as declared"
-      - "unchanged pulses make zero state-payload encodes; cursor writes and changed-state payload writes match the accepted decision, with no list-per-ID padding or per-pulse full-axis serialization"
+      - "every completed pulse has exactly one cursor/checkpoint row; unchanged pulses use the constant marker with zero state-payload encodes, changed pulses encode once, and axis-ID-set changes force a checkpoint"
+      - "the changed-every-pulse and unchanged-state workload cells report encoding, row count, bytes and wall time without treating the future storage architecture as implemented"
       - "the seven optimization shapes and identity/format assertions pass, including a detector that fails a restored every-pulse state encode/write"
   - id: "LDG-3187"
     title: "Persist and report typed sizing and rounding evidence"
