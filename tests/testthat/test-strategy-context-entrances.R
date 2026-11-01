@@ -57,7 +57,6 @@ strategy_context_entrance_fixture <- function(availability = FALSE,
     universe = ids,
     availability = availability_view
   )
-  ctx$availability_active <- TRUE
   ctx$members <- members
   ctx
 }
@@ -83,7 +82,6 @@ strategy_context_empty_axis_fixture <- function() {
     pulse_seed = NULL,
     state_prev = NULL,
     .safety_state = "GREEN",
-    availability_active = TRUE,
     members = character()
   )
   class(empty_axis) <- "ledgr_pulse_context"
@@ -906,7 +904,6 @@ testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and
     pulse_seed = NULL,
     state_prev = NULL,
     .safety_state = "GREEN",
-    availability_active = TRUE,
     members = character()
   )
   class(empty_axis) <- "ledgr_pulse_context"

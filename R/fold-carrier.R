@@ -143,7 +143,16 @@
     decision_ts_utc = "double:row:none", execution_ts_utc = "double:row:na", event_seq = "integer:row:na",
     target_before_risk = "double:row:na", target_after_risk = "double:row:na",
     position_before = "double:row:na", position_after = "double:row:na",
-    feature_identity_json = "character:row:na", detail_json = "character:row:none"
+    feature_identity_json = "character:row:na", detail_json = "character:row:none",
+    # Reconciliation detail is carried as typed values and formatted only for
+    # retained rows when the pulse block drains. These columns are internal;
+    # they never enter the persisted diagnostic schema.
+    reconciliation_actual_gross = "double:row:na",
+    reconciliation_cash_before = "double:row:na",
+    reconciliation_intended_gross = "double:row:na",
+    reconciliation_post_risk_gross = "double:row:na",
+    reconciliation_recorded_cash = "double:row:na",
+    reconciliation_virtual_cash = "double:row:na"
   ),
   # One row per valued pulse, preallocated to the fold's pulse count; only
   # the first `n` rows are valid. Values are kept as valued (`any`).
@@ -755,7 +764,10 @@ ledgr_carrier_p2_valuation <- function(packet, context_ids) {
   mark_age = NA_integer_, decision_ts_utc = NA_real_, execution_ts_utc = NA_real_,
   event_seq = NA_integer_, target_before_risk = NA_real_, target_after_risk = NA_real_,
   position_before = NA_real_, position_after = NA_real_, feature_identity_json = NA_character_,
-  detail_json = "{}"
+  detail_json = "{}", reconciliation_actual_gross = NA_real_,
+  reconciliation_cash_before = NA_real_, reconciliation_intended_gross = NA_real_,
+  reconciliation_post_risk_gross = NA_real_, reconciliation_recorded_cash = NA_real_,
+  reconciliation_virtual_cash = NA_real_
 )
 .ledgr_diagnostic_epoch_fields <- c("decision_ts_utc", "execution_ts_utc")
 .ledgr_diagnostic_storage <- vapply(.ledgr_carrier_field_parts$diagnostics[.ledgr_diagnostic_row_fields],
@@ -839,6 +851,23 @@ ledgr_fold_diagnostic_block <- function(rows, run_id, ts, first_seq, keep = NULL
   ts_num <- as.numeric(as.POSIXct(ts, tz = "UTC"))
   col <- function(name) rows[[name]][used]
   epoch <- function(name) .POSIXct(rows[[name]][used], tz = "UTC")
+  detail_json <- col("detail_json")
+  reconciliation <- col("reason_code") == "affordability_reconciled"
+  if (any(reconciliation)) {
+    source_row <- used[reconciliation]
+    detail_json[reconciliation] <- vapply(
+      source_row,
+      function(i) ledgr_fold_reconciliation_detail(
+        cash_before = rows$reconciliation_cash_before[[i]],
+        virtual_final_cash = rows$reconciliation_virtual_cash[[i]],
+        recorded_final_cash = rows$reconciliation_recorded_cash[[i]],
+        intended_gross_exposure = rows$reconciliation_intended_gross[[i]],
+        post_risk_gross_exposure = rows$reconciliation_post_risk_gross[[i]],
+        actual_gross_exposure = rows$reconciliation_actual_gross[[i]]
+      ),
+      character(1L)
+    )
+  }
   list(
     run_id = rep_len(as.character(run_id), n),
     diagnostic_seq = as.integer(first_seq) + used - 1L,
@@ -850,7 +879,7 @@ ledgr_fold_diagnostic_block <- function(rows, run_id, ts, first_seq, keep = NULL
     execution_ts_utc = epoch("execution_ts_utc"), event_seq = col("event_seq"),
     target_before_risk = col("target_before_risk"), target_after_risk = col("target_after_risk"),
     position_before = col("position_before"), position_after = col("position_after"),
-    feature_identity_json = col("feature_identity_json"), detail_json = col("detail_json")
+    feature_identity_json = col("feature_identity_json"), detail_json = detail_json
   )
 }
 

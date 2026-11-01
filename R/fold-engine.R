@@ -155,6 +155,29 @@ ledgr_fold_reconciliation_detail <- function(cash_before,
   out
 }
 
+ledgr_fold_reconciliation_check <- function(cash_before,
+                                            virtual_final_cash,
+                                            recorded_final_cash,
+                                            intended_gross_exposure,
+                                            post_risk_gross_exposure,
+                                            actual_gross_exposure) {
+  values <- c(
+    actual_gross_exposure,
+    cash_before,
+    intended_gross_exposure,
+    post_risk_gross_exposure,
+    recorded_final_cash,
+    virtual_final_cash
+  )
+  if (any(!is.finite(values))) {
+    rlang::abort(
+      "canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).",
+      class = "ledgr_config_non_finite"
+    )
+  }
+  invisible(TRUE)
+}
+
 
 # The next-open fill model's input refusals with the base 953338df classes
 # and messages. The open's label names its input form: `next_open_price` for
@@ -1418,29 +1441,32 @@ ledgr_fold_stage_commit <- function(
     }
     # Gross exposures at the decision marks, each on the context axis.
     actual_positions <- fold_state$positions[context_pos]
-    reconciliation_detail <- ledgr_fold_reconciliation_detail(
+    reconciliation_values <- list(
       cash_before = fold_state$cash - sum(fill$cash_delta),
       virtual_final_cash = batch$expected_final_cash,
       recorded_final_cash = fold_state$cash,
       intended_gross_exposure = ledgr_availability_marked_gross(
-        decision$strategy_qty,
-        packet$mark
+        decision$strategy_qty, packet$mark
       ),
       post_risk_gross_exposure = ledgr_availability_marked_gross(
-        decision$target_qty,
-        packet$mark
+        decision$target_qty, packet$mark
       ),
       actual_gross_exposure = ledgr_availability_marked_gross(
-        actual_positions,
-        packet$mark
+        actual_positions, packet$mark
       )
     )
+    do.call(ledgr_fold_reconciliation_check, reconciliation_values)
     ledgr_fold_staging_add(fold_state, list(
       n = 1L,
       stage = "reconciliation",
       outcome = "reconciled",
       reason_code = "affordability_reconciled",
-      detail_json = reconciliation_detail
+      reconciliation_actual_gross = reconciliation_values$actual_gross_exposure,
+      reconciliation_cash_before = reconciliation_values$cash_before,
+      reconciliation_intended_gross = reconciliation_values$intended_gross_exposure,
+      reconciliation_post_risk_gross = reconciliation_values$post_risk_gross_exposure,
+      reconciliation_recorded_cash = reconciliation_values$recorded_final_cash,
+      reconciliation_virtual_cash = reconciliation_values$virtual_final_cash
     ), ts)
   }
   # The pulse's staged rows drain into the bounded writer.
@@ -1459,20 +1485,23 @@ ledgr_fold_stage_commit <- function(
   }
   fold_state$state_axis <- context_ids
   fold_state$state_prev <- state_update
+  # Every sink validates the state at the same pulse and precedence. The
+  # durable sink persists these bytes; the memory sink deliberately discards
+  # them after using the same serializability boundary.
+  if (sample_telemetry) sample_start <- ledgr_time_now()
+  state_json <- canonical_json(state_update)
   if (isTRUE(output_handler$persists_strategy_state)) {
-    if (sample_telemetry) sample_start <- ledgr_time_now()
     # This row is also the durable resume cursor, so even a strategy with no
     # user state records every completed pulse. User state may be changed in
     # place and is therefore serialized on every pulse as well.
-    state_json <- canonical_json(state_update)
     if (identical(services$event_mode, "live")) {
       output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)
     } else {
       output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
     }
-    if (sample_telemetry) {
-      t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
-    }
+  }
+  if (sample_telemetry) {
+    t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
   }
 
   fold_state$processed <- fold_state$processed + 1L

@@ -34,7 +34,7 @@ result that trades on every bar.
 
 <div class="ledgr-diagram ledgr-execution-diagram">
 
-```mermaid
+``` mermaid
 %%{init: {"theme": "base", "flowchart": {"nodeSpacing": 22, "rankSpacing": 24, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "22px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b"}}}%%
 
 flowchart LR
@@ -183,27 +183,26 @@ strategy should read `ctx$vec$close` and feature values as pulse-known
 set by the cost model; this article keeps costs at zero to isolate
 timing (see `vignette("risk-and-cost", package = "ledgr")`).
 
-Every run summary names this rule on its `Fill Timing:` line.
-`dense_bar_timestamp` means a dense run: a target decided on one bar
-fills at the next bar’s open, stamped with that bar’s timestamp.
-`availability_open_v2` means an availability-aware run: decisions happen
-at declared session closes and fill at the next declared session
-opening.
+Every run summary names both the decision clock and fill rule.
+`Execution Clock: bar_native` means that a fixed basket uses its sealed
+bar timestamps as the pulse axis. `Execution Clock: declared` means that
+the snapshot supplied an authoritative session calendar. In either case,
+a target decided on one pulse fills at the next executable pulse’s open.
 
-## Cash Is Not Checked In A Dense Run
+## Targets Must Be Affordable
 
-A dense run fills a target whether or not the account can pay for it.
-Dense fills do not check cash, which can go negative when targets cost
-more than the account holds. An availability-aware run refuses a
-cash-consuming fill it cannot afford and records the refusal with reason
-`insufficient_cash`. When capital matters, size targets from `ctx$cash`
-and `ctx$equity`, or with `ledgr_target_rebalance()`.
+Every run applies the same affordability rule. A cash-consuming fill
+that the account cannot fund is rejected and recorded with reason
+`insufficient_cash`. Size targets from `ctx$cash` and `ctx$equity`, or
+use `ledgr_target_rebalance()` to express a portfolio allocation.
 
 ## A Target On The Final Bar Cannot Fill
 
 A target change on the final pulse is valid strategy output, but there
-is no later bar where ledgr can simulate the next-open fill. ledgr warns
-and leaves the ledger unchanged for that final target change.
+is no later pulse where ledgr can simulate the next-open fill. ledgr
+leaves the ledger unchanged and records a structured
+`final_pulse_no_execution` diagnostic for each affected instrument. It
+does not warn.
 
 ``` r
 final_bar_strategy <- function(ctx, params) {
@@ -343,16 +342,17 @@ unrealized loss that no trade has booked yet.
 
 ## Try It
 
-> [!TIP]
->
-> ### Try it
->
-> In the momentum comparison above, replace `lead(close)` and `lead(open)`
-> with a two-bar lead (`lead(close, 2)`, `lead(open, 2)`). Does the
-> next-open win rate stay near a coin flip? Then change the signal to
-> `close < open` (hold on down bars). Does the same-bar rule still win 100
-> percent of the time, and why?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+In the momentum comparison above, replace `lead(close)` and `lead(open)`
+with a two-bar lead (`lead(close, 2)`, `lead(open, 2)`). Does the
+next-open win rate stay near a coin flip? Then change the signal to
+`close < open` (hold on down bars). Does the same-bar rule still win 100
+percent of the time, and why?
+
+</div>
 
 ## Where Next
 

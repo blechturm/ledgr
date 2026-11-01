@@ -2,6 +2,14 @@ ledgr_history_substrate_version <- 1L
 
 ledgr_execution_clock_kinds <- function() c("bar_native", "declared_sessions")
 
+ledgr_execution_clock_kind_from_config <- function(config) {
+  if (isTRUE(ledgr_availability_config_active(config))) {
+    "declared_sessions"
+  } else {
+    "bar_native"
+  }
+}
+
 ledgr_bar_native_sessions <- function(axis) {
   axis <- as.POSIXct(axis, tz = "UTC")
   n <- length(axis)
@@ -83,10 +91,16 @@ ledgr_execution_provider_config_from_config <- function(config, clock_kind) {
   out
 }
 
-ledgr_history_substrate_require_rectangular <- function(substrate) {
+ledgr_history_substrate_require_rectangular <- function(substrate,
+                                                        coverage_start = NULL) {
   ledgr_history_substrate_require(substrate)
   if (!identical(substrate$clock_kind, "bar_native")) return(invisible(substrate))
-  observed <- substrate$bars$observed
+  keep <- rep(TRUE, length(substrate$axis))
+  if (!is.null(coverage_start)) {
+    coverage_start <- ledgr_history_utc(coverage_start)
+    keep <- substrate$axis >= coverage_start
+  }
+  observed <- substrate$bars$observed[, keep, drop = FALSE]
   if (length(observed) == 0L || !all(observed)) {
     rlang::abort(
       paste0(
@@ -342,7 +356,10 @@ ledgr_history_substrate_for_experiment <- function(exp,
     source_start_utc = meta$start,
     clock_kind = clock_kind
   )
-  ledgr_history_substrate_require_rectangular(substrate)
+  ledgr_history_substrate_require_rectangular(
+    substrate,
+    coverage_start = coverage_start
+  )
   substrate
 }
 

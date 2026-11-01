@@ -45,6 +45,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "Exposure:",
       "  Time in Market:      83.33%", "",
       "Execution Evidence:",
+      "  Execution Clock:      bar_native",
       "  Fill Timing:         dense_bar_timestamp", "",
       "Completion Evidence:",
       "  Status:           DONE",

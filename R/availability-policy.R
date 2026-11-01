@@ -367,7 +367,9 @@ ledgr_experiment_plan <- function(x, ...) {
 print.ledgr_experiment_plan <- function(x, ...) {
   cat("ledgr experiment plan\n")
   cat("Execution clock: ", x$execution_clock, "\n", sep = "")
-  cat("Availability: ", if (isTRUE(x$availability_active)) "active" else "dense", "\n", sep = "")
+  if (isTRUE(x$availability_active)) {
+    cat("Point-in-time facts: active\n")
+  }
   cat("Price basis:  ", ledgr_price_basis_display(x$price_basis %||% "undeclared", x$price_basis_default), "\n", sep = "")
   cat("Metrics:      ", x$metric_calendar, "\n", sep = "")
   if (!is.null(x$strategy_schedule)) {

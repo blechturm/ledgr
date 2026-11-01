@@ -1,0 +1,7 @@
+decision,surface,base,candidate,detector
+1,execution_clock,fixed-basket dense clock,bar_native clock,LTB-0524
+2,preparation,fixed-basket dense preparation,one prepared substrate,LTB-0331
+3,context,mode-specific context,one common context without availability_active,LTB-0520
+4,final_pulse,warning and dropped intent,final_pulse_no_execution diagnostic,LTB-0525
+5,identity,identity rule 4,identity rule 5 with old-rule refusal,LTB-0528
+9,affordability,dense overspending allowed,common insufficient_cash refusal,LTB-0127

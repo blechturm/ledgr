@@ -523,10 +523,10 @@ ledgr_availability_marks_state <- function(con,
   )
 }
 
-ledgr_backtest_availability_active <- function(bt,
-                                               con,
-                                               diagnostics = NULL,
-                                               instrument_ids = NULL) {
+ledgr_backtest_availability_declared <- function(bt,
+                                                 con,
+                                                 diagnostics = NULL,
+                                                 instrument_ids = NULL) {
   if (is.null(diagnostics)) {
     diagnostics <- ledgr_backtest_diagnostics(con, bt$run_id)
   }
@@ -630,10 +630,10 @@ ledgr_backtest_availability_active <- function(bt,
   ))
 }
 
-ledgr_backtest_availability_dense <- function(bt,
-                                              con,
-                                              instrument_ids = NULL,
-                                              times = NULL) {
+ledgr_backtest_availability_bar_native <- function(bt,
+                                                   con,
+                                                   instrument_ids = NULL,
+                                                   times = NULL) {
   ids <- as.character(bt$config$universe$instrument_ids)
   if (!is.null(instrument_ids)) {
     ids <- ids[!is.na(match(ids, instrument_ids))]
@@ -680,10 +680,10 @@ ledgr_backtest_availability_dense <- function(bt,
 
 ledgr_backtest_availability <- function(bt, con) {
   ledgr_backtest_ensure_snapshot(bt, con)
-  if (ledgr_availability_config_active(bt$config)) {
-    ledgr_backtest_availability_active(bt, con)
+  if (identical(ledgr_execution_clock_kind_from_config(bt$config), "declared_sessions")) {
+    ledgr_backtest_availability_declared(bt, con)
   } else {
-    ledgr_backtest_availability_dense(bt, con)
+    ledgr_backtest_availability_bar_native(bt, con)
   }
 }
 
@@ -691,16 +691,16 @@ ledgr_backtest_availability_filtered <- function(bt,
                                                  con,
                                                  instrument_ids,
                                                  times) {
-  if (ledgr_availability_config_active(bt$config)) {
+  if (identical(ledgr_execution_clock_kind_from_config(bt$config), "declared_sessions")) {
     diagnostics <- data.frame(ts_utc = as.POSIXct(times, tz = "UTC"))
-    ledgr_backtest_availability_active(
+    ledgr_backtest_availability_declared(
       bt,
       con,
       diagnostics = diagnostics,
       instrument_ids = instrument_ids
     )
   } else {
-    ledgr_backtest_availability_dense(
+    ledgr_backtest_availability_bar_native(
       bt,
       con,
       instrument_ids = instrument_ids,
@@ -727,10 +727,9 @@ ledgr_backtest_availability_filtered <- function(bt,
 #' - availability: `member`, `held`, `target_restricted`,
 #'   `target_restriction_reason`, and `target_restriction_reasons`;
 #' - decision evidence: `feature_identity_json`, `quantity`,
-#'   `target_before_risk`, and `target_after_risk`; on availability-aware runs,
-#'   `intent_reason` is the optional portfolio-level note returned by the
-#'   strategy at that decision pulse and is `NA_character_` when none was
-#'   supplied. Dense explanation retains its existing schema;
+#'   `target_before_risk`, and `target_after_risk`; `intent_reason` is the
+#'   optional portfolio-level note returned by the strategy at that decision
+#'   pulse and is `NA_character_` when none was supplied;
 #' - execution evidence: `execution_outcome`, `execution_reason`,
 #'   `execution_reasons`, and `resulting_position`;
 #' - valuation evidence: `mark_source` and `mark_age`; and
@@ -764,13 +763,12 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   opened <- ledgr_backtest_read_connection(bt)
   on.exit(opened$close(), add = TRUE)
   ledgr_backtest_ensure_snapshot(bt, opened$con)
-  availability_active <- ledgr_availability_config_active(bt$config)
   diagnostics <- ledgr_backtest_diagnostics_filtered(
     opened$con,
     bt$run_id,
     instrument_id,
     ts,
-    include_strategy_intent = availability_active
+    include_strategy_intent = TRUE
   )
   decision_idx <- diagnostics$stage == "decision" &
     diagnostics$instrument_id == instrument_id
@@ -793,30 +791,27 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     ]
   }
   decision_time <- as.POSIXct(decision$ts_utc, tz = "UTC")
-  intent_reason <- NULL
-  if (availability_active) {
-    intent <- diagnostics[
-      diagnostics$stage == "decision" &
-        diagnostics$instrument_id == "" &
-        diagnostics$reason_code == "strategy_intent",
-      ,
-      drop = FALSE
-    ]
-    intent_time <- as.numeric(as.POSIXct(intent$ts_utc, tz = "UTC"))
-    if (anyDuplicated(intent_time)) {
-      rlang::abort(
-        "The retained decision trace has duplicate strategy intent evidence.",
-        class = "ledgr_run_explanation_unavailable"
-      )
-    }
-    intent_idx <- match(as.numeric(decision_time), intent_time)
-    intent_reason <- rep(NA_character_, length(intent_idx))
-    found_intent <- !is.na(intent_idx)
-    if (any(found_intent)) {
-      intent_reason[found_intent] <- ledgr_strategy_intent_reasons(
-        intent$detail_json[intent_idx[found_intent]]
-      )
-    }
+  intent <- diagnostics[
+    diagnostics$stage == "decision" &
+      diagnostics$instrument_id == "" &
+      diagnostics$reason_code == "strategy_intent",
+    ,
+    drop = FALSE
+  ]
+  intent_time <- as.numeric(as.POSIXct(intent$ts_utc, tz = "UTC"))
+  if (anyDuplicated(intent_time)) {
+    rlang::abort(
+      "The retained decision trace has duplicate strategy intent evidence.",
+      class = "ledgr_run_explanation_unavailable"
+    )
+  }
+  intent_idx <- match(as.numeric(decision_time), intent_time)
+  intent_reason <- rep(NA_character_, length(intent_idx))
+  found_intent <- !is.na(intent_idx)
+  if (any(found_intent)) {
+    intent_reason[found_intent] <- ledgr_strategy_intent_reasons(
+      intent$detail_json[intent_idx[found_intent]]
+    )
   }
   available <- if (nrow(decision) == 0L) {
     ledgr_availability_result_empty()
@@ -885,12 +880,9 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
     completion_status = rep(terminal$status, nrow(decision)),
     complete_performance = rep(complete_performance, nrow(decision))
   )
-  if (availability_active) {
-    out <- tibble::add_column(
-      out,
-      intent_reason = intent_reason,
-      .after = "feature_identity_json"
-    )
-  }
-  out
+  tibble::add_column(
+    out,
+    intent_reason = intent_reason,
+    .after = "feature_identity_json"
+  )
 }

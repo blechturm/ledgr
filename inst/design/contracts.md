@@ -119,14 +119,17 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
-- Availability-aware execution prepares one immutable causal-history
-  substrate from the first session of the experiment snapshot through the
-  requested end. That substrate alone owns the common venue axis, canonical
+- Every execution prepares one immutable causal-history substrate from the
+  data start of the experiment snapshot through the requested end. That
+  substrate alone owns the bar-native or declared-session axis, canonical
   instrument index, bars, facts (stored lifetime and terminal segments, and
   the provider execution plan that holds membership and trading-status facts
   once), expected-session masks and feature inputs. It replaces `bars_by_id`,
-  `bars_mat` and `static_bars_views` on that path; dense execution retains its
-  pre-cut representation.
+  `bars_mat` and `static_bars_views`; no second dense representation or fold
+  survives. A fact-free fixed basket compiles constant membership,
+  tradability and valuation planes over the ordered distinct sealed bar
+  timestamps. Declared sessions compile their point-in-time planes over the
+  authoritative session axis.
 - P1 (observe and settle) is the sole fold-stage substrate reader. P2 (decide)
   adapts the primitive packet returned by P1 into the strategy context and
   feature views. P3 through P5 receive neither a history frame nor a substrate
@@ -169,14 +172,14 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   that pass between stages are the typed column groups of the
   [Typed Fold Carrier](#contract-execution-fold-carrier) rule group (v0.2.3
   cut 5, LDG-3164 to LDG-3168).
-- P1 returns the observation and the execution packet. On the availability
-  producer the observation carries the decision packet (the provider and
-  valuation planes of one produced view, on the context axis) and the
-  decision data for P2; the private execution packet carries the next bar on
-  the run axis with an explicit `has_next` and reaches P3 only. P2 receives no execution-packet field, and E removes the decision
-  data before P3. Dense emits no decision packet, decision data or execution
-  packet: it joins at the normalized decision with the identity context
-  mapping, and its P3 reads the next bar from `bars_mat`.
+- P1 returns the observation and the execution packet on every clock. The
+  observation carries the decision packet (membership, eligibility and
+  valuation planes on the context axis) and decision data for P2; the private
+  execution packet carries the next bar on the run axis with an explicit
+  `has_next` and reaches P3 only. P2 receives no execution-packet field, and E
+  removes decision data before P3. Fixed-basket planes are prepared constants;
+  declared-session planes may vary by pulse. Neither case selects another
+  stage implementation.
 - P2 normalizes the strategy return once per decided pulse, on the complete
   context axis (`ledgr_validate_strategy_targets()`); a missing target is
   refused, never zero-filled. After the risk chain only the transformed
@@ -222,9 +225,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   gaps are unchanged. P1 writes one equity row per valued pulse on both
   producers into the fold equity record, preallocated to the pulse count. E
   hands its frozen used prefix to finalization and to the memory sink's
-  inline summary; the memory sink holds no equity buffer. Finalization
-  selects its equity source by producer: availability runs use the fold
-  record, and dense durable runs keep event replay.
+  inline summary; the memory sink holds no equity buffer. Every producer and
+  sink finalizes from the fold equity record.
 - A stage's stop result (`ledgr_fold_stop_result()`) keeps its class, its
   affected exposure and whether it counts a processed pulse, and carries its
   diagnostics as one fully used staging block. E alone installs a stop
@@ -269,12 +271,12 @@ changes no public API, stored format or identity.
 | --- | --- | --- | --- |
 | state | the fold-state slots ([Fold Core](#contract-execution-fold-core)) | cash finite; positions unnamed, finite, run axis; next event sequence at least 1; diagnostic sequence, processed count and telemetry index non-negative; existing tokens, clocks, exposure and frozen set | E, P1, P4 and P5 by slot; run |
 | book | `offset`, `capacity`, `head`, `tail`; `lot_qty`, `lot_price`; `net_by_inst`, `cost_basis_by_inst`; `total_cost_basis`, `realized_pnl`, `realized_comp` | disjoint prefix segments in axis order; live lots `head..tail` in FIFO order, finite; dead slots NA; an empty segment has head 1 and tail 0; finite aggregates and totals; a flat instrument's net is exactly 0 | E, P1, P4 and replay through the lot operations; run |
-| decision packet (availability) | `pulse_idx`, `ts`, `context_pos`, `cash`, `positions_value`, `position`, `member`, `held`, `buyable`, `target_restricted`, `restriction_offset`, `restriction_count`, `restriction_code`, `status`, `lifetime`, `terminal_event`, `lifetime_fact_id`, `mark`, `reference`, `source_ts`, `mark_age`, `mark_source`, `priced`, `permissible`, `frozen` | `context_pos` unique run positions in the provider's decision order; buyable implies member; `target_restricted` exactly when a restriction segment is non-empty; `priced` exactly when the mark is finite; a missing mark keeps its age, source and reference; non-negative mark age; valuation reductions keep run order; cash, positions and marks finite where present, while the derived `positions_value` admits Inf and arithmetic NaN (never NA) and is carried to the base refusal point | P1, once per produced view through `ledgr_carrier_provider_view()`; through P5 |
-| decision data (availability) | `open`, `high`, `low`, `close`, `volume`, `observed`, `source_row`, `source_column`, `history` | current bar only, missing cells NA; `source_row` run positions and `source_column` the prepared pulse column; `history` the existing cutoff-bound handle | P1; P2 only |
-| execution packet (availability) | `exec_ts`, `has_next`; `open`, `high`, `low`, `close`, `volume` on the run axis | an absent next bar carries no values and an NA epoch | P1; P3 only |
+| decision packet | `pulse_idx`, `ts`, `context_pos`, `cash`, `positions_value`, `position`, `member`, `held`, `buyable`, `target_restricted`, `restriction_offset`, `restriction_count`, `restriction_code`, `status`, `lifetime`, `terminal_event`, `lifetime_fact_id`, `mark`, `reference`, `source_ts`, `mark_age`, `mark_source`, `priced`, `permissible`, `frozen` | `context_pos` unique run positions in prepared decision order; buyable implies member; `target_restricted` exactly when a restriction segment is non-empty; `priced` exactly when the mark is finite; a missing mark keeps its age, source and reference; non-negative mark age; valuation reductions keep run order; cash, positions and marks finite where present, while the derived `positions_value` admits Inf and arithmetic NaN (never NA) and is carried to the base refusal point | P1, once per produced view through `ledgr_carrier_provider_view()`; through P5 |
+| decision data | `open`, `high`, `low`, `close`, `volume`, `observed`, `source_row`, `source_column`, `history` | current bar only, missing cells NA; `source_row` run positions and `source_column` the prepared pulse column; `history` the existing cutoff-bound handle | P1; P2 only |
+| execution packet | `exec_ts`, `has_next`; `open`, `high`, `low`, `close`, `volume` on the run axis | an absent next bar carries no values and an NA epoch | P1; P3 only |
 | decision | `context_pos`, `strategy_qty`, `target_qty`, `actionable_k`, `state_update`, `intent_reason` | finite targets on the context axis; `actionable_k` strictly increasing context ordinals; `intent_reason` NULL or one non-empty string; `state_update` opaque | P2; P5 |
-| execution view (availability) | `member`, `restricted`, `reason_offset`, `reason_count`, `reason_code` | contiguous code segments; restricted exactly when a segment is non-empty | P3 through `ledgr_carrier_execution_view()`; P3 |
-| plan | `expected_final_cash`, `economic_event_kinds`, `fill`, `rejection` | distinct kind codes; `FILL` declared exactly when the plan has fills; an empty plan declares no kind; one row per actionable ordinal; `expected_final_cash` NA on dense, and on availability the affordability scan's cash, which an accepted sale's infinite proceeds carry to Inf; the acceptance mask and priority permutation stay private to `ledgr_plan_affordability()` | P3; P5 |
+| execution view | `member`, `restricted`, `reason_offset`, `reason_count`, `reason_code` | contiguous code segments; restricted exactly when a segment is non-empty | P3 through `ledgr_carrier_execution_view()`; P3 |
+| plan | `expected_final_cash`, `economic_event_kinds`, `fill`, `rejection` | distinct kind codes; `FILL` declared exactly when the plan has fills; an empty plan declares no kind; one row per actionable ordinal; `expected_final_cash` is the affordability scan's cash, which an accepted sale's infinite proceeds may carry to Inf; the acceptance mask and priority permutation stay private to `ledgr_plan_affordability()` | P3; P5 |
 | fill | `k`, `pos`, `side`, `qty`, `price`, `fee`, `cash_delta`, `position_delta`, `exec_ts`, `position_before`, `planned_position_after`, `info_offset`, `info_count`, `info_code` | `pos = context_pos[k]`, distinct, in decision order; side +1 or -1; positive quantity and price; `position_delta = side * qty`; `planned_position_after` is diagnostic only; `fee` and `cash_delta` admit infinities and arithmetic NaN (NaN cash only with a non-finite fee), which accounting refuses as before, but never NA | P3; P5 |
 | rejection | `k`, `pos`, `emit`, `primary`, `reason_offset`, `reason_count`, `reason_code`, `resolved_price`, `exec_ts`, `position` | `emit` 1 (early) before 2 (affordability), each in decision order; at least one reason, `primary` the first; resolved price NA exactly for early rows; epoch NA exactly for `final_pulse_no_execution`; finite position | P3; P5 |
 | lot input | `operation` (1 fill, 3 opening, 4 disposition), `pos`, `side`, `qty`, `price`, `fee`, `position_before`, `realized_model_pnl` | distinct positions in one call; an opening has side 0, a signed non-zero quantity and a finite basis of either sign; a fill has side +1 or -1, positive quantity and price and a finite non-negative fee; a disposition has a non-negative price, zero fee and an optional replay witness | E, P1, P4 and the replay preparer; one kernel call |
@@ -285,9 +287,8 @@ changes no public API, stored format or identity.
 | equity | `ts`, `cash`, `positions_value`, `realized_pnl`, `cost_basis`, `n` | rows preallocated to the pulse count; only the first `n` are valid, in strictly increasing time; values as valued | P1; E hands a frozen prefix |
 | stop | `status`, `reason_code`, `affected_instrument_ids`, `affected_exposure`, `diagnostics`, `counts_processed` | non-empty status and reason; `diagnostics` one fully used staging block | P1, P2 or P3; E applies it once |
 
-- Stage timing samples and run telemetry keep their present scalar and
-  array types. Dense emits no decision packet, decision data, execution
-  packet or execution view.
+- Stage timing samples and run telemetry keep their present scalar and array
+  types. Every execution clock emits the same carrier groups.
 - One typed lot implementation serves every consumer: the fold, replay, the
   chunked fills reader, opening and resume initialisation, walk-forward
   carry and as-of state, terminal dispositions and recovery, the handler's
@@ -340,16 +341,16 @@ changes no public API, stored format or identity.
   experiment's opening date for `ledgr_run()`, `ledgr_sweep()`,
   `ledgr_promote()` and `ledgr_precompute_features()` (the snapshot start when
   the opening is undated or dated earlier; a run records that clamped start as
-  its config start, Cut 12 LDG-3004), `start` for `ledgr_backtest()`,
-  and the window start for walk-forward training and test windows. A distinct
+  its config start, Cut 12 LDG-3004), and the window start for walk-forward
+  training and test windows. A distinct
   `execution_start_utc` refuses with `ledgr_unsupported_execution_start`; a
   scoring range with fewer than two pulses refuses with
   `ledgr_run_window_too_short` in runs and sweeps alike. A sweep's
   `scoring_range` names the first and last pulse it scored, in memory and
   after reopening.
-- **History start (Cut 16, LDG-3064).** History has one start, the data
-  start: the first session of the experiment's snapshot. Every
-  availability-aware run, sweep, promotion, run or sweep window, walk-forward
+- **History start (Cut 16, LDG-3064; Cut 6, LDG-3172).** History has one start,
+  the data start: the first pulse of the experiment's prepared substrate.
+  Every run, sweep, promotion, run or sweep window, walk-forward
   training and test window, explicit precompute and experiment-derived pulse
   inspection reads feature, mark and entitlement history from it through one
   shared causal preparation; the scoring start bounds decisions, fills, equity
@@ -364,11 +365,8 @@ changes no public API, stored format or identity.
   `ledgr_precomputed_range_mismatch` (cutoff or calculation start),
   `ledgr_precomputed_history_mismatch` (policy or axis),
   `ledgr_precomputed_snapshot_mismatch` or
-  `ledgr_precomputed_feature_mismatch`, and a dense payload never serves an
-  availability sweep nor the reverse. Dense experiments keep the frozen dense
-  rule: their feature state starts at the scoring start, and a dense payload
-  serves only a range or window scoring from its own start
-  (`ledgr_precomputed_range_mismatch`). When no candidate trades in a
+  `ledgr_precomputed_feature_mismatch`. A payload also records its substrate
+  clock kind and never serves a different clock kind. When no candidate trades in a
   walk-forward training window, volatility-based selection metrics have no
   finite value and that fold has no selection; see No selection.
 
@@ -433,7 +431,7 @@ changes no public API, stored format or identity.
   reports realized profit and loss from its own opening lots. The last window,
   `"flat_test_state"` windows and standalone runs keep the terminal rule: the
   final decision is recorded as `final_pulse_no_execution` and nothing
-  crosses. Dense sessions keep their per-window behavior.
+  crosses.
 - Calendar-month folds (Cut 16, LDG-3064). `ledgr_folds_rolling()` and
   `ledgr_folds_anchored()` derive every boundary from the original anchor plus
   whole multiples of the train, test and step periods. Months and years apply
@@ -730,9 +728,8 @@ Accepted change pending:
 - A valuation is not a fill. When finite admitted holdings value to a
   non-finite run-order `positions_value` (for example 1e308 units marked at
   10), the fold carries it, and the run fails or completes where the
-  accounting reaches it, as before: P5's reconciliation detail or a fill's
-  metadata refuses as `ledgr_config_non_finite`, and a dense run without such
-  an encoding completes with non-finite equity. A fill that follows still
+  accounting reaches it: P5's typed reconciliation check or a fill's metadata
+  refuses as `ledgr_config_non_finite`. A fill that follows still
   refuses as above when its own lot accounting overflows (v0.2.3 cut 5
   `amendment_valuation`).
 
@@ -903,9 +900,8 @@ Accepted change pending:
 ### Off-Session Bars
 
 - A valid bar that falls on no declared open-session close is sealed in
-  `snapshot_bars` and never becomes a pulse (every run on a snapshot with
-  sessions is availability-aware; `ledgr_backtest()` refuses such snapshots,
-  Cut 12 LDG-3001). Ingest records each one in the quarantine table under reason
+  `snapshot_bars` and never becomes a pulse when the snapshot declares
+  sessions. Ingest records each one in the quarantine table under reason
   `off_session_bar` (in either `invalid_observations` mode);
   `ledgr_snapshot_quarantine()` lists it with `disposition`
   `sealed_not_a_pulse` (quarantined rows read `excluded`),
@@ -924,7 +920,7 @@ Accepted change pending:
   an implicit representation that could silently re-key a snapshot.
 - Sealing validates referential integrity and OHLC consistency before writing a
   snapshot hash or transitioning to `SEALED`. Every stored open, high, low and
-  close is positive (after rounding to 8 digits): a dense snapshot refuses a
+  close is positive (after rounding to 8 digits): a fact-free snapshot refuses a
   zero or negative price at its seal check (`ledgr_ohlc_non_positive`), and a
   fact-bearing ingest treats the row as an invalid observation with reason
   `ohlc_non_positive` (refused, or quarantined under
@@ -1048,12 +1044,13 @@ Accepted change pending:
 <a id="contract-availability-activation-and-calendar"></a>
 ### Activation And Session Calendar
 
-- Availability-aware execution activates when a snapshot declares membership,
-  sessions, trading-status, or lifetime facts, or when an experiment declares a
-  valuation policy. There is no mode flag. Canonical omission preserves the
-  dense experiment, config, execution-spec, context, and feature-identity
-  payloads.
-- Every availability-aware experiment requires a complete declared session
+- Every experiment prepares the same execution substrate and fold path. A
+  snapshot that declares membership, sessions, trading-status or lifetime
+  facts, or an experiment that declares a valuation policy, requires the
+  declared-session clock and its point-in-time services. A fact-free fixed
+  basket instead derives a run-local `bar_native` clock from the ordered
+  distinct sealed bar timestamps. There is no public mode flag.
+- Every declared-session experiment requires a complete declared session
   calendar over the requested range and runs under a
   `ledgr_valuation_stale()` policy. A run, sweep, run window or
   walk-forward fold whose first or last sealed bar inside its requested range
@@ -1067,11 +1064,11 @@ Accepted change pending:
   experiment availability-aware and it supplies no `valuation_policy`, it runs
   under `ledgr_valuation_stale()`; that policy is the same record, with the
   same config identity, as declaring it explicitly. A defaulted policy never
-  activates availability: a snapshot without availability fact families stays
-  dense. `ledgr_experiment_plan()`, `ledgr_valuation_summary()`, `summary()`
+  activates the declared-session clock: a fact-free snapshot stays
+  bar-native. `ledgr_experiment_plan()`, `ledgr_valuation_summary()`, `summary()`
   and `print()` of a result mark a horizon of 5 sessions as the default; the
   marker follows the value, as for every plan assumption (Cut 12 LDG-3014).
-- On availability-aware entry points a Date is a venue civil-session label,
+- On declared-session entry points a Date is a venue civil-session label,
   not UTC midnight. Opening, run, sweep, window and fold starts resolve to the
   unique declared session open; ends resolve to its close. Zero or multiple
   matching open sessions refuse. POSIXct inputs retain their exact instants.
@@ -1107,8 +1104,9 @@ Accepted change pending:
   source adapter owns both conversions (Cut 16 LDG-3068). The
   basis appears in `ledgr_experiment_plan()`, in
   `ledgr_corporate_action_summary()` (`price_basis`, `price_basis_default`)
-  and in `print()` of a result, labeled declared or assumed default. A dense
-  experiment may still run undeclared and shows `undeclared` (Cut 12 LDG-3012).
+  and in `print()` of a result, labeled declared or assumed default. A
+  bar-native experiment may still run undeclared and shows `undeclared`
+  (Cut 12 LDG-3012).
 - A character-vector universe remains a fixed basket even when it consumes
   session, trading-status, or lifetime facts. Dynamic membership is explicit
   through `ledgr_universe_members(universe_id)` and must name a membership
@@ -1176,14 +1174,15 @@ Accepted change pending:
   `Stale-mark horizon`, and the plan and the experiment print a `Valuation:`
   line, each value marked `default` or `declared`. The experiment's history
   policy appears on the same surfaces as the price basis: a `History policy:`
-  line in `print()` of an availability-aware result, a `History Policy`
+  line in `print()` of a declared-session result, a `History Policy`
   section in `summary()`, a `History:` line in `print()` of the experiment
   and of `ledgr_experiment_plan()`, whose `assumptions` table adds
   `history.price_carry`, `history.output_carry` and `history.segment_limit`.
   Each field is marked `default` when it equals the `ledgr_history_policy()`
   constructor default (omission and an explicit default share identity) and
-  `declared` otherwise. Dense results, experiments and plans show no history
-  policy (Cut 16 LDG-3081).
+  `declared` otherwise. Bar-native results, experiments and plans disclose
+  their `bar_native` execution clock and show no declared-session history
+  policy (Cut 16 LDG-3081; Cut 6 LDG-3172).
 
 <a id="contract-availability-fact-inspection"></a>
 ### Fact Inspection And Calendar Adapters
@@ -1242,16 +1241,17 @@ Accepted change pending:
   shadow a lower-precedence tie. Future facts may change snapshot and descendant
   identity but must not rewrite earlier context, errors, features, or supported
   telemetry.
-- Availability-aware decisions occur at declared session closes. Each
+- Declared-session decisions occur at declared session closes. Each
   non-terminal decision resolves execution-time facts and records accepted
   fills and events at the next declared session opening. Membership remains
   frozen from the decision; the terminal decision has no execution opportunity.
-  Dense execution declares no independent opening clock and is unchanged.
-- New availability-aware configs record `execution_timing_version = 2L` in the
+  Bar-native decisions occur at sealed bar timestamps and execute at the next
+  bar pulse.
+- New declared-session configs record `execution_timing_version = 2L` in the
   availability payload. It participates in canonical config identity,
   walk-forward descendant identity, sweep execution assumptions, and candidate
-  reproduction keys. Dense configs omit the field and retain their recorded
-  dense timing model.
+  reproduction keys. Bar-native configs omit the declared-session timing
+  field and disclose their substrate clock separately.
 - Every stored active config carries execution-timing version 2 and the
   `availability_open_v2` convention. A missing or different version is
   refused; no timing convention is inferred from stored rows.
@@ -1278,7 +1278,7 @@ Accepted change pending:
 <a id="contract-availability-context-and-state"></a>
 ### Context Planes And Strategy State
 
-- Availability-aware contexts expose `ctx$members` and universe-aligned
+- Every context exposes `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
   `target_restriction_reason`, `admissible`, `priced`, `mark_age`, `risk_mark`
   and `mark_source` planes. `risk_mark` is the close a holding is valued and
@@ -1286,8 +1286,9 @@ Accepted change pending:
   `mark_source` names it: `current_close`, `stale_close`, `frozen_close`,
   `expired_close` or `missing`.
   The decision axis Daxis is `ctx$universe` in its existing order. The
-  allocation membership M is Daxis in dense contexts and `ctx$members` in
-  availability contexts; Daxis may additionally contain held nonmembers.
+  allocation membership M is `ctx$members`; for a fact-free fixed basket this
+  is the complete decision axis, while a declared-session axis may additionally
+  contain held nonmembers.
   Context-mode helpers keep the full Daxis and apply eligibility as
   "Decision Axis And Eligibility" in the Strategy Contract states. An empty Daxis still invokes the strategy and
   accepts a named numeric zero-length target while preserving portfolio-level
@@ -1303,22 +1304,20 @@ Accepted change pending:
 <a id="contract-availability-targets"></a>
 ### Execution And Target Semantics
 
-- Availability-aware execution is canonical R only. An explicit
-  compiled spot-FIFO request fails before execution with
-  `ledgr_compiled_availability_unsupported`; dense compiled behavior is
-  unchanged.
-- Availability-aware strategy targets may hold or exit a restricted ID.
+- Compiled spot-FIFO admission is a preparation-time capability check: it
+  admits a bar-native fixed basket with no runtime fact families and refuses a
+  declared-session experiment with `ledgr_compiled_availability_unsupported`.
+- Strategy targets may hold or exit a restricted ID.
   Unrestricted held nonmembers may also reduce without reversing sign.
   Post-risk targets must be zero or preserve the strategy target's sign while
   not increasing its magnitude. New or enlarged short exposure fails before
   any fill from that pulse is accepted; existing short quantities remain
   algebraically holdable and coverable without defining short financing.
-- Availability-aware rebalance helpers initialize every ineligible axis ID,
+- Rebalance helpers initialize every ineligible axis ID,
   held nonmember or target-restricted member, at its current quantity,
   reserve its absolute marked exposure, and size only eligible IDs from
   accepted current closes. Helper weights and
-  `equity_fraction` apply to allocatable capital A, where dense A is NAV and
-  availability-aware A is
+  `equity_fraction` apply to allocatable capital A, where A is
   `max(0, NAV - sum(abs(quantity * mark)))` over preserved ineligible holdings. A
   positive member weight targets
   `floor(weight * equity_fraction * A / close)`. For NAV 100, held-nonmember
@@ -1326,7 +1325,7 @@ Accepted change pending:
   weight 0.6 targets 3; these are residual-budget weights, not total-NAV
   weights. An explicit zero member weight targets zero without consulting a
   sizing close. Raw full named numeric target vectors remain literal.
-- Unpriced members (Cut 10, LDG-2973). In an availability-aware rebalance, an
+- Unpriced members (Cut 10, LDG-2973). In a rebalance, an
   eligible member with a positive weight but no positive accepted current
   close is skipped for that rebalance: it keeps its current quantity, zero if
   unheld, and its weight is never redistributed. Let A be allocatable capital,
@@ -1339,9 +1338,8 @@ Accepted change pending:
   per-pulse note slot and recorded as the instrument's decision diagnostic
   with reason `sizing_unavailable`, whatever the strategy does to the returned
   target; memory sweep candidates and walk-forward training keep these rows in
-  their in-memory diagnostics only. Dense runs keep the positive-weight
-  warn-and-zero path, so dense and availability-aware runs now diverge on an
-  unpriced member: dense targets zero with a warning, availability-aware skips.
+  their in-memory diagnostics only. The same skip rule applies on bar-native
+  and declared-session clocks.
 
 <a id="contract-availability-valuation"></a>
 ### Valuation And Terminal Outcomes
@@ -1788,8 +1786,7 @@ Accepted change pending:
   IDs named in `keep` preserve their current quantities and reserve their
   absolute marked exposure exactly once; weights and `equity_fraction` apply
   to the remaining capital. A kept ID must not also occur in the weights.
-  Dense sizing without `keep` does not require a position plane. Availability
-  sizing or an explicit `keep` requires one position per decision-axis ID and
+  Sizing requires one position per decision-axis ID and
   fails with `ledgr_invalid_strategy_helper` when that plane is absent.
   It must not silently create fractional share targets, and ranking, leverage,
   negative-weight and final-target rules are unchanged.
@@ -1809,14 +1806,15 @@ Accepted change pending:
 <a id="contract-strategy-decision-axis"></a>
 ### Decision Axis And Eligibility
 
-One decision axis and one eligibility plane hold in dense and
-availability-aware contexts alike, so a strategy written as named-vector
-manipulation, or as a helper pipeline, means the same thing in both.
+One decision axis and one eligibility plane hold on bar-native and
+declared-session clocks alike, so a strategy written as named-vector
+manipulation, or as a helper pipeline, means the same thing on both.
 
 - **Eligibility.** An ID is eligible when it is a member and not
   target-restricted. `ctx$vec$admissible` is that plane in every context:
-  availability folds, dense folds, `ledgr_pulse_snapshot()` and interactive
-  contexts. Dense contexts expose `ctx$members` as `ctx$universe`, and
+  declared-session folds, bar-native folds, `ledgr_pulse_snapshot()` and
+  interactive contexts. Fixed-basket contexts expose `ctx$members` as
+  `ctx$universe`, and
   `member` (all `TRUE`), `target_restricted` (all `FALSE`),
   `target_restriction_reason` (all `""`) and `admissible` (all `TRUE`),
   allocated once per run and reused on every pulse. No second eligibility
@@ -1824,8 +1822,7 @@ manipulation, or as a helper pipeline, means the same thing in both.
   `ctx$members`. An availability context without a logical, axis-length,
   non-missing `admissible` plane, or any context whose plane is present but
   malformed, fails with `ledgr_invalid_strategy_helper`
-  (`ledgr_invalid_strategy_result` in the `ledgr_signal_strategy()` wrapper);
-  a dense context without the plane treats every ID as eligible.
+  (`ledgr_invalid_strategy_result` in the `ledgr_signal_strategy()` wrapper).
   `ctx$tradable()` stays a character vector of IDs that also requires a
   price.
 - **Context payloads.** An unnamed `values`, `where` or warmup payload has
@@ -1901,8 +1898,9 @@ manipulation, or as a helper pipeline, means the same thing in both.
   failure. The one-argument history-frame or history-matrix form returns the
   recorded result of that read's `min_observations` and `min_instruments`
   requirements without rescanning the returned cells.
-- **Dense results.** Every dense ID is eligible, so dense results of the
-  existing helper pipelines do not change.
+- **Fixed-basket results.** Every fixed-basket ID is eligible unless a
+  prepared rule restricts it, and the same helper semantics apply on both
+  clocks.
 - **History selection.** `ledgr_history_frame()` selects from this plane at
   its cutoff. `instruments = "admissible"` requests the `ctx$universe` IDs
   whose `ctx$vec$admissible` is `TRUE`, `"decision_axis"` requests every
@@ -1919,7 +1917,7 @@ and `AAA` a held nonmember, each holding 5:
 | Object | Type | Domain | Names | Ineligible entries | Example |
 |---|---|---|---|---|---|
 | `ctx$vec` planes | numeric, logical or character | Daxis | unnamed, positional | marked by `admissible` | `ctx$vec$admissible` is `FALSE, TRUE, FALSE` |
-| `ctx$members` | character IDs | allocation membership M | not applicable | not applicable | `BBB, CCC`; dense: `ctx$universe` |
+| `ctx$members` | character IDs | allocation membership M | not applicable | not applicable | `BBB, CCC`; fixed basket: `ctx$universe` |
 | context signals | `ledgr_signal` (numeric) | Daxis | named | raw value; `eligible` attribute | `ledgr_signal_return(ctx, 1)` is `BBB=0.02 CCC=-0.01 AAA=0.01` |
 | context selections | `ledgr_selection` (logical) | Daxis | named | always `FALSE` | `ledgr_selection(ctx)` is `BBB=FALSE CCC=TRUE AAA=FALSE` |
 | rankings | `ledgr_selection` (logical) | the signal's Daxis | named | never selected or counted | `ledgr_select_top_n(signal, 2)` selects `CCC` and warns `ledgr_partial_selection` |
@@ -2205,16 +2203,16 @@ and `AAA` a held nonmember, each holding 5:
 - `ctx$vec` exposes universe-aligned vector views for cross-sectional strategy
   logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
   `position`, and `feature`, and in every context the eligibility planes
-  `member`, `target_restricted`, `target_restriction_reason`, and
-  `admissible`; availability-aware contexts add `held`, `priced`, `mark_age`,
-  `risk_mark` and `mark_source`. `ctx$vec$feature(feature_id)` returns the current
+  `member`, `held`, `target_restricted`, `target_restriction_reason`,
+  `admissible`, `priced`, `mark_age`, `risk_mark` and `mark_source`.
+  `ctx$vec$feature(feature_id)` returns the current
   universe-aligned vector for one active alias or registered engine feature
   ID. Active aliases resolve before concrete IDs; an unknown name fails with
   `ledgr_unknown_feature_id` and lists both namespaces separately.
-- Availability-aware pulse contexts restrict bars, feature tables, scalar
+- Declared-session pulse contexts restrict bars, feature tables, scalar
   feature access, vector feature access, positions, and errors to the current
-  decision axis. Dense contexts retain the existing fixed-universe fields and
-  shape.
+  decision axis. Fixed-basket contexts use the same shape with constant
+  membership, tradability and current-mark planes.
 - `ctx$position(instrument_id)` and unnamed `ctx$vec$position` are the scalar
   and Daxis-aligned reads of pulse-start position state. Cross scalar reads to
   the plane with `ctx$idx()`. There is no public `ctx$positions` snapshot.
@@ -2224,7 +2222,8 @@ and `AAA` a held nonmember, each holding 5:
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
   behavior is flat-unless-signal or hold-unless-signal.
-- Availability-aware pulse contexts carry the causal history of their pulse.
+- Every experiment-derived pulse context carries the causal history of its
+  pulse.
   `ledgr_history_frame(ctx, feature = NULL, bar = NULL, lookback,
   instruments = "admissible", min_observations = NULL,
   min_instruments = 1L, layout = "wide")` reads
@@ -2234,14 +2233,15 @@ and `AAA` a held nonmember, each holding 5:
   returned value is observed at or before the pulse, with facts knowable at
   it; later-known facts change only later reads and never an earlier
   returned object. `lookback` is required; all-history access is the explicit
-  `lookback = Inf`. Dense contexts and the snapshot-and-universe
-  `ledgr_pulse_snapshot()` form have no history and refuse with
+  `lookback = Inf`. The snapshot-and-universe `ledgr_pulse_snapshot()` form
+  has no experiment policy or history and refuses with
   `ledgr_history_unavailable`; malformed requests refuse with
   `ledgr_invalid_history_request`, `ledgr_invalid_history_field`,
   `ledgr_unknown_feature_id` or `ledgr_history_unknown_instrument`, and a
   cutoff outside the prepared axis with `ledgr_history_outside_axis`.
-- The history axis is the declared venue's expected sessions from the data
-  start (the first session of the experiment's snapshot) through the cutoff,
+- The history axis is the prepared substrate's pulses from the data start
+  through the cutoff: declared expected sessions on a declared-session clock,
+  ordered sealed bar timestamps on a bar-native clock,
   with one cutoff-resolved expected-session mask per instrument for bar
   reads. `lookback = Inf` returns the whole axis; a finite lookback returns the last `lookback`
   sessions and is the exact value suffix of the `Inf` result. An explicit
@@ -2398,7 +2398,7 @@ and `AAA` a held nonmember, each holding 5:
   R introspection of closure environments, call stacks or internal bindings is
   outside this contract.
 - The prepared singular resolver is owned by one run or sweep candidate and is
-  reused by dense and availability reads. Resolution precedes decision-axis
+  reused by bar-native and declared-session reads. Resolution precedes decision-axis
   restriction. No package-global resolver cache or plural feature plane is
   part of this contract.
 
@@ -2410,9 +2410,8 @@ and `AAA` a held nonmember, each holding 5:
   feature accessors and the wide view carry current values. No equivalence is
   promised between these representations and none is materialized merely to
   make another look complete.
-- `ctx$tradable()` is a non-default convenience predicate. In availability
-  mode it returns `admissible & priced`; in dense mode it returns IDs with a
-  finite positive close. A permissible stale mark may satisfy `priced` while
+- `ctx$tradable()` is a non-default convenience predicate. It returns
+  `admissible & priced` on every clock. A permissible stale mark may satisfy `priced` while
   still failing current-close sizing, so this helper guarantees neither a
   current sizing close nor execution at the next open.
 - A frozen holding stays on the decision axis with its position. Its
@@ -2533,8 +2532,8 @@ and `AAA` a held nonmember, each holding 5:
   including that function's own captures. The CSV adapter represents its
   constructor-owned captured values through `params$data_hash`; public source or
   adapter labels do not authorize that private route.
-- Dense indicator fingerprints omit the history declarations. Under identity
-  rule 4 an availability-aware feature fingerprint binds the dense
+- Bar-native indicator fingerprints omit declared-session history
+  declarations. Under identity rule 5 a declared-session feature fingerprint binds the bar-native
   fingerprint (functions, captures, `id`, `requires_bars`, `stable_after` and
   `params`, which carry the TTR version and algorithm arguments) together with
   the history class, gap behavior, required fields, input-carry family,
@@ -2593,10 +2592,11 @@ and `AAA` a held nonmember, each holding 5:
   its values from `series_fn` per segment; the sampled causality checks under
   [Feature Path](#contract-context-feature-path) refute it against `fn`. A
   history-dependent pair is not refuted.
-- Dense indicator fingerprints and the dense feature-engine identity omit the
-  availability declarations. Two accepted corrections change dense results:
+- Bar-native indicator fingerprints and the bar-native feature-engine identity
+  omit declared-session declarations. Two earlier corrections changed
+  fixed-basket results:
   TTR `aroon` declares its `n + 1` width in both modes, which changes its
-  dense fingerprint and adds one dense warm-up row (Cut 16 decision (14));
+  bar-native fingerprint and adds one warm-up row (Cut 16 decision (14));
   and a custom indicator whose id matches a built-in pattern (`sma_<n>`,
   `return_1`) runs its own function in both modes, in any session and
   call order, and is never replaced by the built-in (Cut 16 decision
@@ -2673,8 +2673,8 @@ and `AAA` a held nonmember, each holding 5:
 - A durable `ledgr_run()` prepares features after it registers the run, so a
   refused definition leaves that run recorded `FAILED` with no strategy call,
   ledger event or equity row (Cut 16 decision 18); sweep and precompute
-  refusals write nothing. Dense
-  execution is frozen and runs no causality check.
+  refusals write nothing. The segmented feature engine and its admission checks
+  serve both execution clocks.
 - Feature computation follows one uncached production path. Explicit
   `ledgr_precomputed_features` payloads are validated against current feature
   identity before reuse; a mismatch refuses before candidate execution.
@@ -2710,9 +2710,10 @@ and `AAA` a held nonmember, each holding 5:
 - `ledgr_results(bt, what = ...)` may return a ledgr-owned tibble subclass for
   display. That subclass must remain tibble-compatible, and
   `tibble::as_tibble()` must expose the raw result table.
-- `diagnostics` is the ordered durable trace recorded by availability-aware
-  runs; dense runs return its typed zero-row schema. `availability` is derived
-  from sealed facts, the stored effective plan, and ledger holdings. Neither
+- `diagnostics` is the ordered durable trace recorded by every run;
+  `availability` is the common execution-state view, using prepared constants
+  on a bar-native fixed basket and sealed facts plus the stored effective plan
+  on a declared-session clock. Neither
   view executes strategy code, reconstructs a strategy target, writes durable
   rows, or changes run identity.
 - Availability result reads derive marks from history starting at the data
@@ -2739,22 +2740,21 @@ and `AAA` a held nonmember, each holding 5:
 ### Completion And Valuation Disclosure
 
 - `ledgr_run_info()` and `summary()` project existing terminal completion
-  evidence read-only. Availability-aware runs expose requested and achieved
+  evidence read-only. Every run exposes requested and achieved
   windows, terminal status and stop reason, last fully valued and executed
   times, complete or incomplete performance, and affected instrument IDs from
-  recorded stop diagnostics. Dense runs without that evidence report it as
-  unknown; inspection must not reconstruct or persist it.
+  recorded stop diagnostics; inspection must not reconstruct or persist it.
 - `ledgr_results(bt, what = "fills")` returns execution fill rows, including
   opening and closing actions. `ledgr_results(bt, what = "trades")` returns
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed
   from closed trade rows, so open-only fills do not count as trades until
   quantity is closed.
-- Public fill `ts_utc` is economic execution time. Availability-aware version-2
+- Public fill `ts_utc` is economic execution time. Declared-session version-2
   fills use the next declared session opening, while equity remains stamped at
   the close pulse. The read-only `recording_pulse_ts_utc` column is derived from
   recorded fill association and sealed session facts; it is not persisted and
-  remains `NA` when the association is missing or ambiguous. Dense alignment is
-  the existing fill timestamp. Align fills to equity only after grouping fills
+  remains `NA` when the association is missing or ambiguous. Bar-native
+  alignment is the fill timestamp. Align fills to equity only after grouping fills
   by recording pulse, so multiple fills cannot duplicate equity rows.
 - Timestamp display options are print-only. `options(ledgr.print_ts_utc =
   "auto")` may compact all-midnight UTC timestamps to dates in ledgr-owned
@@ -2803,12 +2803,10 @@ and `AAA` a held nonmember, each holding 5:
   unsupported-quantity route when its parent is held at entitlement: a
   complete fact of a subtype outside `ordinary_cash_dividend`,
   `cash_acquisition`, `stock_acquisition`, `mixed_acquisition` and
-  `spin_off`, a complete acquisition in a dense run, where no disposition
-  acts, and a refused fact (`complete = FALSE`) of any subtype. Under
-  `unsupported_quantity = "refuse"` (the strict preset) an availability run
-  stops `INCOMPLETE` with `corporate_action_quantity_refused` at the fact's
-  effective pulse and a dense run raises
-  `ledgr_corporate_action_quantity_unsupported`; a held fact with no
+  `spin_off`, and a refused fact (`complete = FALSE`) of any subtype. Under
+  `unsupported_quantity = "refuse"` (the strict preset) a run stops
+  `INCOMPLETE` with `corporate_action_quantity_refused` at the fact's
+  effective pulse; a held fact with no
   effective clock has no effective pulse, so under either value it only
   counts in `unsupported_facts` and makes `corporate_action_fidelity` read
   `unsupported`; otherwise nothing posts, the
@@ -2827,10 +2825,10 @@ and `AAA` a held nonmember, each holding 5:
   once per `DISPOSITION`, and `unsupported_quantity.report_only` once per held
   fact on the unsupported-quantity route under `"report_only"`, refused facts
   included, so there it equals `unsupported_facts`. Every `refuse` choice
-  reads 0: a refusal is reported by the run's status and stop reason (in a
-  dense run, by the raised condition), not counted here (Cut 17 LDG-3091).
+  reads 0: a refusal is reported by the run's status and stop reason, not
+  counted here (Cut 17 LDG-3091; Cut 6 LDG-3174).
 - `ledgr_valuation_summary(bt)` reports one run's valuation state (`current`,
-  `stale`, `frozen`, or `not_applicable` for dense runs), stale and frozen
+  `stale`, `frozen`, or `not_applicable` for bar-native runs), stale and frozen
   instrument-sessions and holdings, longest stale age and longest freeze,
   maximum frozen gross value and equity weight, frozen-at-end count, value
   and weight, and `total_return_if_frozen_worthless`. That field subtracts
@@ -2842,7 +2840,7 @@ and `AAA` a held nonmember, each holding 5:
   return converges once every freeze resolves, provided the carried marks
   changed no decision in between; path statistics may remain distorted
   because the price move books on the resumption date.
-- `print()` and `summary()` of an availability-aware run show one valuation
+- `print()` and `summary()` of a declared-session run show one valuation
   headline (`CURRENT`, `STALE` or `FROZEN`). A run that stopped `INCOMPLETE`
   because a holding had no permissible mark (`valuation_horizon_exhausted`,
   or `terminal_mark_unavailable` for a known-inactive holding whose terminal
@@ -2853,7 +2851,7 @@ and `AAA` a held nonmember, each holding 5:
   valuation or used an assumed terminal outcome, they print one warning before
   any metric that names each assumption and the argument that declared it.
   The warning has no materiality threshold. Refused exhaustion, settlement
-  evidence alone and a clean run do not warn, and a dense run shows no
+  evidence alone and a clean run do not warn, and a bar-native run shows no
   valuation output.
 
 <a id="contract-result-reconstruction"></a>
@@ -2862,8 +2860,8 @@ and `AAA` a held nonmember, each holding 5:
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild
   path, which ensures snapshot-backed sources before rebuilding derived
-  artifacts. A dense run is rebuilt on its bar timestamps and requires every
-  close. An availability-aware run (Cut 11, LDG-2978) is rebuilt on its
+  artifacts. A bar-native run is rebuilt on its prepared bar timestamps and
+  requires every close. A declared-session run (Cut 11, LDG-2978) is rebuilt on its
   open-session calendar through its last fully valued pulse, with each held
   instrument valued at its last observed close in the run window, which is
   the current, stale or frozen mark the fold used; members may miss bars. The
@@ -3228,19 +3226,21 @@ Accepted change pending:
 - Indicator teaching distinguishes bounded and history-dependent definitions,
   teaches `stable_after` as first-valid rather than converged, and cites the
   measured gap-recovery ranges as evidence instead of promising convergence.
-  It states that availability-aware preparation runs sampled causality and
+  It states that declared-session preparation runs sampled causality and
   `fn`/`series_fn` checks, that a passing check is not a proof of causality,
-  and that dense execution runs neither.
+  and identifies which checks also apply on a bar-native clock.
 
 <a id="contract-documentation-strategy-context"></a>
 ### Strategy Context Teaching
 
 - `man/ledgr_strategy_context.Rd` owns one explicit reference table for every
-  public runtime context member and plane. It records dense and availability
+  public runtime context member and plane. It records bar-native and
+  declared-session
   applicability, shape, axis, units, missingness and counterpart, and
   distinguishes metadata, state reads and intent constructors. A documentation
-  contract compares the authored table in both directions against real dense
-  and availability callbacks; it is not generated from the observed fixture.
+  contract compares the authored table in both directions against real
+  bar-native and declared-session callbacks; it is not generated from the
+  observed fixture.
 - Strategy-authoring documentation teaches both allocation pipelines and
   hold-and-edit intent. Representative executed examples cover equal-member
   allocation, a predicate with a held nonmember, momentum with an explicit

@@ -1,5 +1,14 @@
 # ledgr (development version)
 
+- Every experiment now prepares one execution substrate and enters one fold
+  path. Fixed baskets derive a disclosed `bar_native` pulse clock from their
+  sealed bar timestamps; experiments with declared sessions keep that clock.
+  Both use the same affordability, eligibility, completion, corporate-action,
+  state and result-evidence rules. A changed target on the final pulse records
+  `final_pulse_no_execution` instead of warning, and execution identity advances
+  to rule 5. The public `ledgr_backtest()` constructor is removed; use
+  `ledgr_snapshot_from_df()`, `ledgr_experiment()` and `ledgr_run()`. The
+  `ledgr_backtest` result class and its methods remain.
 - Maintainer benchmark evidence now includes a five-process descriptive
   cold/warm public-run baseline with exact result controls for 12 x 90 and
   500 x 1260 daily dense workloads; it is not a speed claim or a future ratio
@@ -534,9 +543,12 @@ memory is the tighter constraint.
   attribute, and print as withheld. Walk-forward test-window metrics follow
   the same rule.
 
-- `ledgr_backtest()` was removed. Seal raw bars with
-  `ledgr_snapshot_from_df()`, declare a `ledgr_experiment()`, and execute it
-  with `ledgr_run()` so every run uses the same point-in-time-safe path.
+- `ledgr_backtest()` now refuses a snapshot that declares point-in-time facts
+  (sessions, membership, trading status, or lifetime) with class
+  `ledgr_backtest_availability_unsupported`. It runs dense execution only and
+  previously ignored those facts silently; use `ledgr_experiment()` and
+  `ledgr_run()`. Snapshots without facts, or with corporate actions only,
+  still run.
 
 - `ledgr_valuation_stale()` now defaults to `max_sessions = 5`, and an
   availability-aware experiment without a `valuation_policy` runs under

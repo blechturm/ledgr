@@ -347,7 +347,12 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
   cutoff <- ledgr_history_utc(
     ledgr_snapshot_resolve_civil_boundary(exp$snapshot, ts_utc, edge = "close")
   )
-  substrate <- ledgr_history_substrate_for_experiment(exp, meta, end = meta$end)
+  substrate <- ledgr_history_substrate_for_experiment(
+    exp,
+    meta,
+    end = meta$end,
+    coverage_start = cutoff
+  )
   calendar <- ledgr_availability_calendar(
     list(sessions = substrate$sessions), meta$start, meta$end
   )

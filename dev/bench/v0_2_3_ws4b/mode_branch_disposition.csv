@@ -1,0 +1,37 @@
+file,function,owner,reason
+R/availability-policy.R,ledgr_experiment_plan,preparation,plan records point-in-time fact capability
+R/availability-policy.R,ledgr_price_basis_label,disclosure,labels a disclosed default when facts are active
+R/availability-policy.R,print.ledgr_experiment_plan,disclosure,prints point-in-time fact capability
+R/availability-provider.R,ledgr_availability_config_active,preparation,typed predicate for fact-backed provider construction
+R/availability-provider.R,ledgr_availability_provider,preparation,provider exists only for declared point-in-time facts
+R/availability-results.R,ledgr_backtest_terminal_evidence,result,terminal evidence exists only when terminal facts were supplied
+R/backtest-config.R,ledgr_config,admission,scheduling and fact-policy capability checks
+R/backtest-results.R,summary.ledgr_backtest,disclosure,summary labels the execution clock and fact evidence
+R/backtest-runner.R,ledgr_feature_defs_from_config,preparation,feature fingerprint resolves declared fact capability
+R/backtest-runner.R,ledgr_run_fold_impl,private-test-seam,config-only private seam retained for resume tests
+R/backtest.R,ledgr_run_experiment,preparation,experiment selects the fact-backed provider once
+R/config-validate.R,validate_ledgr_config,admission,configuration facts and valuation policy are validated together
+R/corporate-action-results.R,ledgr_corporate_action_summary,result,assumption disclosure depends on supplied facts
+R/derived-state.R,ledgr_rebuild_derived_state,replay,derived marks reconstruct point-in-time valuation when configured
+R/execution-timing.R,ledgr_execution_timing_provenance,disclosure,compiled timing provenance records fact capability
+R/execution-timing.R,ledgr_execution_timing_require_current,admission,compiled envelope excludes declared-session execution
+R/experiment.R,ledgr_experiment,admission,experiment binds availability policy to supplied fact capability
+R/experiment.R,print.ledgr_experiment,disclosure,experiment print describes supplied point-in-time facts
+R/fold-engine.R,ledgr_fold_envelope,invariant,common fold requires its prepared provider
+R/history-substrate.R,ledgr_execution_clock_kind_from_config,preparation,selects a declared or bar-native prepared value
+R/history-substrate.R,ledgr_execution_provider_config,preparation,constructs provider configuration once
+R/history-substrate.R,ledgr_history_substrate_for_experiment,preparation,one constructor selects the clock and provider
+R/precompute-features.R,ledgr_precompute_scoring_range,preparation,history range depends on declared facts
+R/precompute-features.R,ledgr_resolve_candidate_features,preparation,feature admission depends on declared facts
+R/precompute-features.R,ledgr_validate_precomputed_features,admission,precomputed payload clock must match
+R/run-snapshot.R,ledgr_run_snapshot_guard,admission,bar-native runs require two executable pulses
+R/run-store.R,ledgr_run_open,reopen,declared facts reconstruct their provider on incomplete reopen
+R/sweep.R,ledgr_sweep_candidate_execution,preparation,candidate overlay may receive the shared provider
+R/sweep.R,ledgr_sweep_impl,preparation,sweep shares a fact-backed substrate across candidates
+R/valuation-summary.R,ledgr_assumption_flags_for_run,result,assumption flags exist only for supplied policies and facts
+R/valuation-summary.R,ledgr_valuation_summary,result,valuation evidence differs only when point-in-time valuation is active
+R/walk-forward-folds.R,ledgr_experiment_window,preparation,window carries the experiment fact capability
+R/walk-forward.R,ledgr_walk_forward_continue_windows,admission,continuation validates fact-backed identity
+R/walk-forward.R,ledgr_walk_forward_eval_fold,preparation,fold candidates share the prepared fact-backed substrate
+R/walk-forward.R,ledgr_walk_forward_impl,preparation,walk-forward chooses fact-backed preparation once per fold
+R/walk-forward.R,ledgr_walk_forward_opening_from_run,replay,carried opening reads point-in-time fold state when supplied

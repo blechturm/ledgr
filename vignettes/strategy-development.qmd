@@ -234,9 +234,11 @@ it executes and what it costs, as
 ::: {.ledgr-callout .ledgr-callout-warning}
 **Affordability is not automatic**
 
-A dense run fills a target whether or not the account can pay for it, so cash
-can go negative. `vignette("execution-semantics", package = "ledgr")` states
-the rule, including what availability-aware runs do instead.
+The target vector is intent, not a promise that every fill can execute. ledgr
+applies risk, execution and affordability after the strategy returns; a
+cash-consuming fill that the account cannot fund is rejected with
+`insufficient_cash`. `vignette("execution-semantics", package = "ledgr")`
+walks through the boundary.
 :::
 
 ## A First Trading Rule

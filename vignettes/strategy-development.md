@@ -89,25 +89,26 @@ full future dataset.
 
 For the installed accessor reference, see `?ledgr_strategy_context`.
 
-> [!TIP]
->
-> ### One instrument or everyone
->
-> The `ctx$vec$` forms return a value for the whole universe in one read.
-> The scalar forms answer for one instrument you have already singled out.
-> Both are correct; only the first is cheap when you want every name,
-> because the scalar form costs per call and a universe-wide loop pays it
-> once per instrument per pulse.
-> `vignette("strategy-authoring-tools", package = "ledgr")` shows the
-> plane-based pattern and documents the `ledgr_scalar_accessor_loop`
-> warning emitted for that shape on large universes.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**One instrument or everyone**
+
+The `ctx$vec$` forms return a value for the whole universe in one read.
+The scalar forms answer for one instrument you have already singled out.
+Both are correct; only the first is cheap when you want every name,
+because the scalar form costs per call and a universe-wide loop pays it
+once per instrument per pulse.
+`vignette("strategy-authoring-tools", package = "ledgr")` shows the
+plane-based pattern and documents the `ledgr_scalar_accessor_loop`
+warning emitted for that shape on large universes.
+
+</div>
 
 The pulse loop is the contract in motion:
 
 <div class="ledgr-diagram ledgr-pulse-loop">
 
-```mermaid
+``` mermaid
 
 flowchart TB
   state_t["pulse t state<br/>bars through t<br/>positions, cash, equity"]
@@ -187,15 +188,18 @@ A target is intent: the layers after the strategy decide what is
 allowed, when it executes and what it costs, as
 `vignette("risk-and-cost", package = "ledgr")` explains.
 
-> [!WARNING]
->
-> ### Affordability is not automatic
->
-> A dense run fills a target whether or not the account can pay for it, so
-> cash can go negative.
-> `vignette("execution-semantics", package = "ledgr")` states the rule,
-> including what availability-aware runs do instead.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Affordability is not automatic**
+
+The target vector is intent, not a promise that every fill can execute.
+ledgr applies risk, execution and affordability after the strategy
+returns; a cash-consuming fill that the account cannot fund is rejected
+with `insufficient_cash`.
+`vignette("execution-semantics", package = "ledgr")` walks through the
+boundary.
+
+</div>
 
 ## A First Trading Rule
 
@@ -233,14 +237,15 @@ rank instruments or size positions from the account, the helper pipeline
 in `vignette("strategy-authoring-tools", package = "ledgr")` does that
 work.
 
-> [!TIP]
->
-> ### Try it
->
-> Change `buy_if_up()` so it starts from `ctx$hold()` instead of
-> `ctx$flat()`. Which positions would persist after a down bar, and why
-> does that change the economic meaning of the strategy?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Change `buy_if_up()` so it starts from `ctx$hold()` instead of
+`ctx$flat()`. Which positions would persist after a down bar, and why
+does that change the economic meaning of the strategy?
+
+</div>
 
 ## Why `params` Exists
 
@@ -447,6 +452,7 @@ summary(bt_first)
 #>   Time in Market:      69.77%
 #>
 #> Execution Evidence:
+#>   Execution Clock:      bar_native
 #>   Fill Timing:         dense_bar_timestamp
 #>
 #> Completion Evidence:

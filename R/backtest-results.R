@@ -747,6 +747,11 @@ print.ledgr_backtest <- function(x, ...) {
   ledgr_print_result_assumption_warning(valuation, corporate_actions)
   cat(sprintf("%-34s %s\n", "Run ID:", x$run_id))
   cat(sprintf("%-34s %s\n", "Period:", period))
+  cat(sprintf(
+    "%-34s %s\n",
+    "Execution Clock:",
+    ledgr_execution_clock_kind_from_config(cfg)
+  ))
   cat(sprintf("%-34s $%.2f\n", "Opening Cash:", initial_cash))
   cat(sprintf("%-34s $%.2f\n", "Final Equity:", headline$final_equity))
   cat(sprintf("%-34s %.2f%%\n", return_label, headline$total_return * 100))
@@ -975,6 +980,10 @@ summary.ledgr_backtest <- function(object,
 
   timing <- ledgr_execution_timing_provenance(object$config)
   cat("\nExecution Evidence:\n")
+  cat(sprintf(
+    "  Execution Clock:      %s\n",
+    ledgr_execution_clock_kind_from_config(object$config)
+  ))
   cat(sprintf("  Fill Timing:         %s\n", timing$execution_timing_convention))
   timing_version <- timing$execution_timing_version
   if (!is.null(timing_version) && !is.na(timing_version)) {

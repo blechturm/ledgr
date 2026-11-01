@@ -89,40 +89,6 @@ ledgr_run_snapshot_guard <- function(con,
     )
   }
 
-  coverage <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT instrument_id, COUNT(*) AS n ",
-      "FROM snapshot_bars ",
-      "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
-      "AND ts_utc >= CAST(? AS TIMESTAMP) ",
-      "AND ts_utc <= CAST(? AS TIMESTAMP) ",
-      "GROUP BY instrument_id"
-    ),
-    params = list(snapshot_id, start_str, end_str)
-  )
-  if (!isTRUE(availability_active) &&
-      (nrow(coverage) != length(instrument_ids) ||
-       any(as.integer(coverage$n) < length(pulses)))) {
-    missing_ids <- setdiff(
-      instrument_ids,
-      as.character(coverage$instrument_id)
-    )
-    msg <- paste0(
-      "LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is ",
-      "incomplete for requested range."
-    )
-    if (length(missing_ids) > 0) {
-      msg <- paste0(
-        msg,
-        " Missing instruments: ",
-        paste(missing_ids, collapse = ", "),
-        "."
-      )
-    }
-    fail_run(msg, class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
-  }
-
   ledgr_prepare_snapshot_runtime_views(
     con,
     snapshot_id,

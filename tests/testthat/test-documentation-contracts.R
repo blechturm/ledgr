@@ -737,8 +737,8 @@ testthat::test_that("public result and helper documentation states current seman
     execution_home <- paste(readLines(ledgr_test_source_vignette("execution-semantics.qmd"), warn = FALSE), collapse = "\n")
     risk_home <- paste(readLines(ledgr_test_source_vignette("risk-and-cost.qmd"), warn = FALSE), collapse = "\n")
     production_doc <- paste(readLines(ledgr_test_source_vignette("research-to-production.qmd"), warn = FALSE), collapse = "\n")
-    testthat::expect_match(strategy_development_doc, "A dense run fills a target whether or not the account can pay\\s+for it")
-    testthat::expect_match(execution_home, "Dense\\s+fills do not check cash, which can go negative")
+    testthat::expect_match(strategy_development_doc, "ledgr\\s+applies risk, execution and affordability after the strategy returns")
+    testthat::expect_match(execution_home, "Every run applies the same affordability rule", fixed = TRUE)
     testthat::expect_match(risk_home, "A risk chain may reshape those quantities\\s+before any fill exists")
     testthat::expect_match(production_doc, "Affordability is not\\s+part of it")
     testthat::expect_match(strategy_doc, "returns an empty selection without a warning", fixed = TRUE)
@@ -2023,9 +2023,9 @@ ledgr_doc_fact_home_problems <- function(root) {
     gsub("\\s+", " ", paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = " "))
   }
   homes <- list(
-    c("execution-semantics", "Dense fills do not check cash, which can go negative"),
-    c("execution-semantics", "records the refusal with reason `insufficient_cash`"),
-    c("execution-semantics", "`dense_bar_timestamp` means a dense run"),
+    c("execution-semantics", "Every run applies the same affordability rule."),
+    c("execution-semantics", "rejected and recorded with reason `insufficient_cash`"),
+    c("execution-semantics", "`Execution Clock: bar_native` means"),
     c("indicators", "| Registered TTR form | `ledgr_ind_ttr()` on a catalogued function, output and argument form | Supported: per catalogue row |"),
     c("indicators", "Read it once across the decision axis with `ctx$vec$feature(\"alias\")`"),
     c("sweeps", "Promotion records a choice; it does not make that choice out-of-sample."),
