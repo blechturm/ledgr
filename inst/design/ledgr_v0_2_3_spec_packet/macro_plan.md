@@ -435,6 +435,9 @@ Roxygen pin (H5b) and UX-brief reconcile (U1) now. R2 opens with the first
 cut and precedes M5 and M7; M5 also waits for H4's decisions. M7: six plots,
 each signed off. M1 audit after WS1 and WS4b. M6 NEWS collapse only for the
 CRAN release.
+- **WS4b close note, 2026-11-01:** refresh the `ledgr_pulse_snapshot()` help
+  so its experiment form teaches both bar-native fixed baskets and declared
+  sessions; only the snapshot-and-universe form lacks causal history.
 
 ### WS13. Release-candidate certification (R1, M4)
 

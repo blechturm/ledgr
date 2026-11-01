@@ -71,3 +71,20 @@ These are documentation and detector corrections, not product or design
 changes. The reviewer also independently confirmed the strengthened private
 aggregate checker against the existing record; the maintainer-side run and
 unexpected-column mutation had already passed before this review.
+
+## Focused confirmation 2
+
+**Reviewed range:** `06d1fc44..2bd5baa7`
+
+**Verdict:** `PASS`
+
+Both residuals are resolved. The generated corporate-action and condition
+help matches its source and the unified behavior. A fresh census matches both
+committed CSVs, every owner has a disposition, and the synthetic detector
+fails when the symbol, field or alias support is removed. No compatibility
+path, fallback, product behavior or second execution path was added.
+
+One non-blocking note is routed to macro WS12 documentation debt:
+`ledgr_pulse_snapshot()` still describes its experiment form as
+availability-aware even though a fixed-basket experiment supplies history.
+It does not affect the implemented API or this workstream's oracles.
