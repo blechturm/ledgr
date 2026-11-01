@@ -65,13 +65,30 @@
 "R/history-substrate.R","ledgr_execution_provider_config","branch","alias:active","if: active && !is.null(exp$universe_rule)",1
 "R/history-substrate.R","ledgr_execution_provider_config","flow","alias:active","assign_target",1
 "R/history-substrate.R","ledgr_execution_provider_config","flow","availability$active","assign:active",1
+"R/history-substrate.R","ledgr_execution_provider_config_from_config","branch","alias:declared","if: !declared",1
+"R/history-substrate.R","ledgr_execution_provider_config_from_config","flow","alias:declared","assign_target",1
+"R/history-substrate.R","ledgr_execution_provider_config_from_config","flow","clock_kind","arg:identical:1",1
+"R/history-substrate.R","ledgr_history_stage_identity","flow","$clock_kind","arg:list:clock_kind",1
+"R/history-substrate.R","ledgr_history_substrate","flow","clock_kind","arg:list:clock_kind",1
+"R/history-substrate.R","ledgr_history_substrate","flow","clock_kind","arg:match.arg:1",1
+"R/history-substrate.R","ledgr_history_substrate","flow","clock_kind","assign_target",1
 "R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","clock_kind","if: identical(clock_kind, ""bar_native"")",1
+"R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","clock_kind","if: identical(clock_kind, ""declared_sessions"")",1
+"R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","clock_kind","if: identical(clock_kind, ""declared_sessions"")",2
+"R/history-substrate.R","ledgr_history_substrate_for_experiment","flow","clock_kind","arg:ledgr_history_substrate:clock_kind",1
+"R/history-substrate.R","ledgr_history_substrate_for_experiment","flow","clock_kind","assign_target",1
+"R/history-substrate.R","ledgr_history_substrate_require_rectangular","branch","$clock_kind","if: !identical(substrate$clock_kind, ""bar_native"")",1
+"R/precompute-features.R","ledgr_precompute_features_impl","flow","$clock_kind","arg:list:clock_kind",1
 "R/precompute-features.R","ledgr_precompute_scoring_range","branch","availability$active","if: !is.null(exp) && isTRUE(exp$availability$active)",1
 "R/precompute-features.R","ledgr_resolve_candidate_features","branch","availability$active","if: isTRUE(exp$availability$active)",1
+"R/precompute-features.R","ledgr_validate_precomputed_features","branch","$clock_kind","if: !identical(precomputed$clock_kind, expected_clock)",1
 "R/precompute-features.R","ledgr_validate_precomputed_features","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/run-snapshot.R","ledgr_run_snapshot_guard","branch","availability_active","if: !isTRUE(availability_active) && length(pulses) < 2L",1
 "R/run-store.R","ledgr_run_open","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(cfg)",1
+"R/sweep.R","ledgr_sweep_candidate_execution","branch","$clock_kind","if: identical(history_substrate$clock_kind, ""declared_sessions"")",1
 "R/sweep.R","ledgr_sweep_candidate_execution","branch","is.null(availability_provider)","if: is.null(availability_provider)",1
+"R/sweep.R","ledgr_sweep_impl","branch","$clock_kind","if: identical(history_substrate$clock_kind, ""declared_sessions"")",1
 "R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",1
 "R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active && identical(compiled_accounting_model, ""spot_fifo"")",1
 "R/sweep.R","ledgr_sweep_impl","branch","is.null(history_substrate)","if: is.null(history_substrate)",1

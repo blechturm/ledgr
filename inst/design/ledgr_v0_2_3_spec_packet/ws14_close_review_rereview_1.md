@@ -50,3 +50,24 @@ record and detector patches are required before acceptance.
 
 The patches above do not alter the accepted architecture or product behavior.
 A focused clean-context confirmation is sufficient after they land.
+
+## Focused confirmation 1
+
+**Reviewed range:** `9f9e86f9..06d1fc44`
+
+**Verdict:** `CHANGES_REQUIRED`
+
+The aggregate checker, matched attribution record, public coverage control and
+performance routing are resolved. Two corrections remain:
+
+1. The corporate-action help still contained a second reference to the
+   removed dense-only raised condition. The history-unavailable condition also
+   still said fixed-basket contexts have no causal history.
+2. The mode scanner recognized the clock resolver but not direct
+   `clock_kind`, `$clock_kind` or local aliases. It therefore missed clock
+   branches in substrate construction, precompute and sweep execution.
+
+These are documentation and detector corrections, not product or design
+changes. The reviewer also independently confirmed the strengthened private
+aggregate checker against the existing record; the maintainer-side run and
+unexpected-column mutation had already passed before this review.

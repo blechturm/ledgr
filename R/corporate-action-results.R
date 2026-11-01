@@ -400,8 +400,7 @@ ledgr_corporate_action_time_tokens <- function(value) {
 #' per disposition, and `unsupported_quantity.report_only` once per held fact
 #' on the unsupported-quantity route under `"report_only"`, where it equals
 #' `unsupported_facts`. Every `refuse` choice reads 0: a refusal is reported
-#' by the run's status and stop reason (in a dense run, by the raised
-#' condition), not counted here.
+#' by the run's status and stop reason, not counted here.
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public

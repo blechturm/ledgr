@@ -848,10 +848,10 @@ ledgr_history_context_view <- function(ctx) {
   if (!inherits(ctx, "ledgr_pulse_context") || !inherits(view, "ledgr_history_view")) {
     rlang::abort(
       paste(
-        "Causal history is available only in an availability-aware pulse",
-        "context: a run, sweep or walk-forward strategy context, or",
-        "ledgr_pulse_snapshot() called with a ledgr_experiment. Dense",
-        "contexts and the snapshot-and-universe pulse form have no history."
+        "Causal history is available only in a strategy pulse context from",
+        "a run, sweep or walk-forward, or ledgr_pulse_snapshot() called",
+        "with a ledgr_experiment. The snapshot-and-universe pulse form has",
+        "no experiment-bound history."
       ),
       class = c("ledgr_history_unavailable", "ledgr_invalid_args")
     )

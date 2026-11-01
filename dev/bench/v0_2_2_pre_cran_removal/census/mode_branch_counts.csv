@@ -12,11 +12,11 @@
 "R/execution-timing.R",2,2,0
 "R/experiment.R",2,6,0
 "R/fold-engine.R",1,1,0
-"R/history-substrate.R",3,5,2
-"R/precompute-features.R",3,3,0
+"R/history-substrate.R",7,10,10
+"R/precompute-features.R",4,4,1
 "R/run-snapshot.R",1,1,0
 "R/run-store.R",1,1,0
-"R/sweep.R",2,4,2
+"R/sweep.R",2,6,2
 "R/valuation-summary.R",2,2,0
 "R/walk-forward-folds.R",1,1,0
 "R/walk-forward.R",4,5,0

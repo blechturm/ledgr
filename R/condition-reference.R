@@ -74,8 +74,9 @@
 #' `ledgr_invalid_history_treatment` and
 #' `ledgr_invalid_history_field` refuse malformed treatment evidence or an
 #' unsupported bar field. `ledgr_history_unavailable` refuses a history read
-#' from a dense or snapshot-and-universe pulse context, which has no causal
-#' history. `ledgr_invalid_history_request` refuses malformed
+#' outside a strategy pulse context or from the snapshot-and-universe pulse
+#' form, which has no experiment-bound causal history.
+#' `ledgr_invalid_history_request` refuses malformed
 #' [ledgr_history_frame()] and [ledgr_history_matrix()] request arguments,
 #' including a missing required `lookback`, and `ledgr_invalid_history_result`
 #' refuses a matrix,

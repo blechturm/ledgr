@@ -176,9 +176,11 @@ testthat::test_that("[LTB-0331] execution-mode branches match the committed cens
   # A result reader may branch on the prepared execution-clock kind without
   # retaining any old execution mode. The prefilter must still walk it.
   clock_probe <- c(
-    "probe_result <- function(cfg) {",
+    "probe_result <- function(cfg, history_substrate) {",
     "  clock_kind <- ledgr_execution_clock_kind_from_config(cfg)",
     "  if (identical(clock_kind, 'declared_sessions')) 1 else 2",
+    "  local_kind <- history_substrate$clock_kind",
+    "  if (identical(local_kind, 'bar_native')) 3 else 4",
     "}"
   )
   writeLines(clock_probe, probe_file)
@@ -186,6 +188,9 @@ testthat::test_that("[LTB-0331] execution-mode branches match the committed cens
   testthat::expect_true(nrow(clock_sites) > 0L)
   testthat::expect_true(all(clock_sites$owner == "probe_result"))
   testthat::expect_true(any(clock_sites$kind == "branch"))
+  testthat::expect_true("clock_kind" %in% clock_sites$switch)
+  testthat::expect_true("$clock_kind" %in% clock_sites$switch)
+  testthat::expect_true("alias:local_kind" %in% clock_sites$switch)
 
   writeLines(base_source, probe_file)
 

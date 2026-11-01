@@ -23,7 +23,12 @@ R/experiment.R,print.ledgr_experiment,disclosure,experiment print describes supp
 R/fold-engine.R,ledgr_fold_envelope,invariant,common fold requires its prepared provider
 R/history-substrate.R,ledgr_execution_clock_kind_from_config,preparation,selects a declared or bar-native prepared value
 R/history-substrate.R,ledgr_execution_provider_config,preparation,constructs provider configuration once
+R/history-substrate.R,ledgr_execution_provider_config_from_config,preparation,normalizes provider configuration for the selected prepared clock
+R/history-substrate.R,ledgr_history_stage_identity,preparation,records the selected prepared clock in worker-stage identity
+R/history-substrate.R,ledgr_history_substrate,preparation,validates and stores the prepared clock once
 R/history-substrate.R,ledgr_history_substrate_for_experiment,preparation,one constructor selects the clock and provider
+R/history-substrate.R,ledgr_history_substrate_require_rectangular,admission,strict rectangular coverage applies only to the bar-native prepared value
+R/precompute-features.R,ledgr_precompute_features_impl,preparation,records the prepared clock in a reusable payload
 R/precompute-features.R,ledgr_precompute_scoring_range,preparation,history range depends on declared facts
 R/precompute-features.R,ledgr_resolve_candidate_features,preparation,feature admission depends on declared facts
 R/precompute-features.R,ledgr_validate_precomputed_features,admission,precomputed payload clock must match

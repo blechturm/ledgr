@@ -40,6 +40,5 @@ choices once per corporate-action cash posting, the terminal choices once
 per disposition, and \code{unsupported_quantity.report_only} once per held fact
 on the unsupported-quantity route under \code{"report_only"}, where it equals
 \code{unsupported_facts}. Every \code{refuse} choice reads 0: a refusal is reported
-by the run's status and stop reason (in a dense run, by the raised
-condition), not counted here.
+by the run's status and stop reason, not counted here.
 }

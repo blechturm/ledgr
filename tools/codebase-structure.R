@@ -501,7 +501,7 @@ ledgr_mode_branch_children <- function(x) {
 ledgr_mode_branch_switch_at <- function(x, aliases = character()) {
   if (is.symbol(x)) {
     name <- as.character(x)
-    if (identical(name, "availability_active")) return("availability_active")
+    if (name %in% c("availability_active", "clock_kind")) return(name)
     if (name %in% aliases) return(paste0("alias:", name))
     return(NA_character_)
   }
@@ -510,6 +510,7 @@ ledgr_mode_branch_switch_at <- function(x, aliases = character()) {
   if (identical(head, "$") && length(x) == 3L && is.symbol(x[[3L]])) {
     field <- as.character(x[[3L]])
     if (identical(field, "availability_active")) return("$availability_active")
+    if (identical(field, "clock_kind")) return("$clock_kind")
     target <- x[[2L]]
     names_availability <- (is.symbol(target) &&
       identical(as.character(target), "availability")) ||
@@ -568,7 +569,7 @@ ledgr_mode_branch_aliases <- function(body) {
   aliases <- character()
   repeat {
     found <- unique(unlist(lapply(assignments, function(item) {
-      if (identical(item$name, "availability_active") ||
+      if (item$name %in% c("availability_active", "clock_kind") ||
           item$name %in% aliases ||
           !ledgr_mode_branch_flag_expression(item$value) ||
           length(ledgr_mode_branch_switches_in(item$value, aliases)) == 0L) {
