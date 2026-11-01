@@ -791,8 +791,8 @@ cuts:
   - id: 7
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
-    status: "draft"
-    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded patches are applied. Final confirmation CHANGES_REQUIRED in cut_review_7_confirmation_1.md for four exact acceptance/status patches and one wording nit; all are applied verbatim. A final narrow clean-context Claude Opus check at ec5fe2be returned PASS. Cut 7 is ready for maintainer acceptance."
+    status: "accepted"
+    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded patches are applied. Final confirmation CHANGES_REQUIRED in cut_review_7_confirmation_1.md for four exact acceptance/status patches and one wording nit; all are applied verbatim. A final narrow clean-context Claude Opus check at ec5fe2be returned PASS. The maintainer accepted Cut 7 on 2026-11-01; workstreams 15-18 and LDG-3179 through LDG-3190 are operative."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
       implements the accepted strategy-authoring synthesis on the one surviving
@@ -801,9 +801,9 @@ cuts:
       canonical position facts, selection and target verbs, typed declared
       state, experiment inputs, scheduling predicate, rounding disclosure and
       executed pattern teaching. It does not implement WS6 frame retirement or
-      WS7/WS8 accounting storage. This entry, workstreams 15-18 and LDG-3179
-      through LDG-3190 become operative only after maintainer acceptance;
-      tickets.yml remains the sole sequencing authority.
+      WS7/WS8 accounting storage. The maintainer accepted this entry on
+      2026-11-01; workstreams 15-18 and LDG-3179 through LDG-3190 are
+      operative, and tickets.yml remains the sole sequencing authority.
     authority: >-
       inst/design/rfc/rfc_strategy_authoring_api_v0_2_3_synthesis.md, accepted
       2026-10-28, Sections 2-4 and 6-8; its final review and
@@ -824,7 +824,7 @@ cuts:
       JSON audit identifies per-decision intent encoding. These are inputs and
       attribution evidence, not promises that WS5 alone meets WS14 targets.
     decisions: >-
-      Proposed for maintainer acceptance with this cut. (1) The public state
+      Accepted by the maintainer on 2026-11-01. (1) The public state
       declaration is supplied to ledgr_experiment() as asset_state = list(...)
       and portfolio_state = list(...). This release supports scalar numeric,
       integer, logical and character defaults only. Asset scalars become
