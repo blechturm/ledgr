@@ -25,7 +25,7 @@ testthat::test_that("ledgr_run_compare compares stored completed runs without re
     targets
   }
 
-  bt_a <- ledgr_backtest(
+  bt_a <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     strategy_params = list(qty = 1),
@@ -36,7 +36,7 @@ testthat::test_that("ledgr_run_compare compares stored completed runs without re
   cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
-  bt_b <- ledgr_backtest(
+  bt_b <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     strategy_params = list(qty = 2),
@@ -98,7 +98,7 @@ testthat::test_that("ledgr_run_compare compares different stored strategies", {
     targets
   }
 
-  bt_a <- ledgr_backtest(
+  bt_a <- ledgr_test_run(
     snapshot = snapshot,
     strategy = buy_one,
     start = "2020-01-01",
@@ -108,7 +108,7 @@ testthat::test_that("ledgr_run_compare compares different stored strategies", {
   cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
-  bt_b <- ledgr_backtest(
+  bt_b <- ledgr_test_run(
     snapshot = snapshot,
     strategy = buy_two,
     start = "2020-01-01",
@@ -146,7 +146,7 @@ testthat::test_that("ledgr_run_compare counts only closing trades for win rate",
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = bars,
     strategy = strategy,
     initial_cash = 2000,
@@ -196,7 +196,7 @@ testthat::test_that("open-only fills are not counted as closed trades", {
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = bars,
     strategy = strategy,
     initial_cash = 2000,
@@ -251,7 +251,7 @@ testthat::test_that("multi-fill runs count each closing fill as a trade", {
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = bars,
     strategy = strategy,
     initial_cash = 2000,
@@ -279,7 +279,7 @@ testthat::test_that("ledgr_run_compare respects archive and incomplete-run rules
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -301,7 +301,7 @@ testthat::test_that("ledgr_run_compare respects archive and incomplete-run rules
 
   bad_strategy <- function(ctx, params) stop("compare failure")
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       snapshot = snapshot,
       strategy = bad_strategy,
       start = "2020-01-01",
@@ -441,7 +441,7 @@ testthat::test_that("[LTB-0134] run tags are character whether or not a run is t
     targets["TEST_A"] <- 1
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = ledgr_test_compact_bars(),
     strategy = strategy,
     start = "2020-01-01",

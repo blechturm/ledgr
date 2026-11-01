@@ -23,7 +23,7 @@ testthat::test_that("optional PerformanceAnalytics parity matches aligned ledgr 
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = bars,
     strategy = strategy,
     initial_cash = 1000,

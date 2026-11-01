@@ -779,14 +779,6 @@ testthat::test_that("strict scalar series and active identity contracts agree", 
     ledgr_indicator_fingerprint(sma),
     ledgr_indicator_fingerprint(dense_sma)
   )
-  testthat::expect_identical(
-    ledgr_feature_engine_version(),
-    ledgr_feature_engine_version(FALSE)
-  )
-  testthat::expect_false(identical(
-    ledgr_feature_engine_version(),
-    ledgr_feature_engine_version(TRUE)
-  ))
 
   disagreeing <- ledgr_indicator(
     "disagreeing",

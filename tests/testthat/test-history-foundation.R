@@ -685,7 +685,7 @@ testthat::test_that("[LTB-0287] history policy is canonical identity input", {
   )
   disabled <- ledgr_run(disabled_exp, run_id = "history-disabled")
   on.exit(close(disabled), add = TRUE)
-  testthat::expect_identical(default$config$identity_rule_version, 4L)
+  testthat::expect_identical(default$config$identity_rule_version, 5L)
   testthat::expect_false(identical(config_hash(default$config), config_hash(disabled$config)))
   repeated <- ledgr_run(fixture$experiment, run_id = "history-default-2")
   on.exit(close(repeated), add = TRUE)

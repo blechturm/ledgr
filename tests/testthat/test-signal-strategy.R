@@ -9,7 +9,7 @@ testthat::test_that("raw signal strings are not valid functional strategy result
   )
 
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = bars,
       strategy = function(ctx, params) "LONG",
       universe = "AAA",
@@ -109,7 +109,7 @@ testthat::test_that("ledgr_signal_strategy runs through the data-first backtest 
     long_qty = 1
   )
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = bars,
     strategy = wrapped,
     start = "2020-01-01",

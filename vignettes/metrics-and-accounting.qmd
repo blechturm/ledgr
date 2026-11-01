@@ -145,8 +145,7 @@ produced that surface.
 Use a five-bar in-memory example so the accounting can be checked by hand. OHLC
 values are equal per bar so the example focuses on accounting arithmetic; real
 bars use the same code with ordinary intra-bar movement.
-This article uses `ledgr_backtest()` as a compact helper for accounting
-examples. The canonical research workflow remains:
+The examples use the same canonical workflow as a research project:
 snapshot -> `ledgr_experiment()` -> `ledgr_run()`.
 
 ```{r}
@@ -170,13 +169,14 @@ one_day_strategy <- function(ctx, params) {
   targets
 }
 
-bt <- ledgr_backtest(
-  data = bars,
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = one_day_strategy,
-  initial_cash = 1000,
-  run_id = "accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+bt <- ledgr_run(exp, run_id = "accounting_example")
 ```
 
 The strategy asks to hold one share on the first pulse and then returns to flat.
@@ -350,13 +350,13 @@ keep their schemas, so downstream code can rely on the same column names.
 
 flat_strategy <- function(ctx, params) ctx$flat()
 
-flat_bt <- ledgr_backtest(
-  data = bars,
+flat_exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = flat_strategy,
-  initial_cash = 1000,
-  run_id = "flat_accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+flat_bt <- ledgr_run(flat_exp, run_id = "flat_accounting_example")
 
 ledgr_results(flat_bt, what = "fills")
 ledgr_results(flat_bt, what = "trades")
@@ -382,13 +382,13 @@ open_only_strategy <- function(ctx, params) {
   targets
 }
 
-open_bt <- ledgr_backtest(
-  data = bars,
+open_exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = open_only_strategy,
-  initial_cash = 1000,
-  run_id = "open_accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+open_bt <- ledgr_run(open_exp, run_id = "open_accounting_example")
 
 ledgr_results(open_bt, what = "fills")
 ledgr_results(open_bt, what = "trades")
@@ -396,8 +396,9 @@ ledgr_compute_metrics(open_bt)[c("n_trades", "win_rate", "avg_trade")]
 ```
 
 A final-bar target under a next-open fill model can also be valid research
-input while producing no fill. There is no later bar available for execution, so
-ledgr warns and leaves the ledger unchanged for that last target change.
+input while producing no fill. There is no later bar available for execution,
+so ledgr records `final_pulse_no_execution` and leaves the ledger unchanged for
+that target change.
 
 ```{r}
 #| label: final-bar-no-fill
@@ -410,15 +411,16 @@ final_bar_strategy <- function(ctx, params) {
   targets
 }
 
-final_bar_bt <- ledgr_backtest(
-  data = bars,
+final_bar_exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = final_bar_strategy,
-  initial_cash = 1000,
-  run_id = "final_bar_accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+final_bar_bt <- ledgr_run(final_bar_exp, run_id = "final_bar_accounting_example")
 
 ledgr_results(final_bar_bt, what = "fills")
+ledgr_results(final_bar_bt, what = "diagnostics")
 ```
 
 
@@ -430,6 +432,7 @@ close(bt)
 close(flat_bt)
 close(open_bt)
 close(final_bar_bt)
+ledgr_snapshot_close(snapshot)
 ```
 
 ## Where Next

@@ -263,7 +263,9 @@ ledgr_compute_metrics_internal <- function(bt,
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+#' bt <- ledgr_run(exp)
 #' ledgr_compute_equity_curve(bt)
 #' close(bt)
 #' @noRd
@@ -315,7 +317,9 @@ ledgr_compute_equity_curve_impl <- function(bt, con = NULL) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+#' bt <- ledgr_run(exp)
 #' ledgr_backtest_bench(bt)
 #' close(bt)
 #' @export
@@ -326,7 +330,7 @@ ledgr_backtest_bench <- function(bt) {
 
   telemetry <- ledgr_get_run_telemetry(bt$run_id)
   if (is.null(telemetry)) {
-    rlang::abort("No telemetry found for this run_id. Run ledgr_backtest() to capture telemetry.", class = "ledgr_invalid_args")
+    rlang::abort("No telemetry found for this run_id. Run ledgr_run() to capture telemetry.", class = "ledgr_invalid_args")
   }
 
   summarize_vec <- function(x) {
@@ -419,7 +423,9 @@ ledgr_backtest_bench <- function(bt) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+#' bt <- ledgr_run(exp)
 #' ledgr_compute_metrics(bt)
 #' close(bt)
 #' @export
@@ -700,7 +706,9 @@ ledgr_print_run_schedule_evidence <- function(evidence, indent = "") {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+#' bt <- ledgr_run(exp)
 #' print(bt)
 #' close(bt)
 #' @export
@@ -871,7 +879,9 @@ ledgr_summary_prefix_only <- function(completion) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+#' bt <- ledgr_run(exp)
 #' summary(bt)
 #' close(bt)
 #' @export
@@ -973,7 +983,7 @@ summary.ledgr_backtest <- function(object,
 
   ledgr_print_valuation_summary(valuation)
   # Off-session bars exist only in snapshots with sessions; the count is
-  # snapshot-wide. A dense run stored before ledgr_backtest() refused such
+  # snapshot-wide. An earlier fixed-basket path refused such
   # snapshots (LDG-3001) used those bars as pulses, so it reports none.
   off_session <- if (ledgr_availability_config_active(object$config)) {
     ledgr_backtest_off_session_bar_count(object)
@@ -1232,11 +1242,18 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(
+#'   snapshot, strategy,
+#'   opening = ledgr_opening(cash = 1000),
+#'   cost_model = ledgr_cost_zero()
+#' )
+#' bt <- ledgr_run(exp)
 #' tibble::as_tibble(bt, what = "trades")
 #' tibble::as_tibble(bt, what = "returns")
 #' tibble::as_tibble(bt, what = "equity")
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
   rlang::check_dots_empty()
@@ -1306,9 +1323,8 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
 #' `what = "diagnostics"` returns ordered durable decision, risk, execution,
 #' reconciliation, and stop evidence. A structured strategy result may add
 #' `intent_reason`, one non-empty character scalar; when supplied it is
-#' retained once at portfolio level for that invoked pulse in dense and
-#' availability-aware runs. Dense runs otherwise return the same typed
-#' zero-row schema.
+#' retained once at portfolio level for that invoked pulse. Runs without such
+#' evidence return the same typed zero-row schema.
 #' `what = "availability"` reconstructs the per-pulse availability plane from
 #' sealed facts, the effective plan, and ledger holdings. It does not execute
 #' strategy code or invent targets.
@@ -1348,10 +1364,17 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(
+#'   snapshot, strategy,
+#'   opening = ledgr_opening(cash = 1000),
+#'   cost_model = ledgr_cost_zero()
+#' )
+#' bt <- ledgr_run(exp)
 #' ledgr_results(bt, what = "trades")
 #' ledgr_results(bt, what = "returns")
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_results <- function(bt, what = c(
     "equity", "returns", "fills", "trades", "ledger", "diagnostics", "availability"

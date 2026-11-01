@@ -107,9 +107,8 @@ context that produced that surface.
 Use a five-bar in-memory example so the accounting can be checked by
 hand. OHLC values are equal per bar so the example focuses on accounting
 arithmetic; real bars use the same code with ordinary intra-bar
-movement. This article uses `ledgr_backtest()` as a compact helper for
-accounting examples. The canonical research workflow remains: snapshot
--\> `ledgr_experiment()` -\> `ledgr_run()`.
+movement. The examples use the same canonical workflow as a research
+project: snapshot -\> `ledgr_experiment()` -\> `ledgr_run()`.
 
 ``` r
 bars <- data.frame(
@@ -130,13 +129,14 @@ one_day_strategy <- function(ctx, params) {
   targets
 }
 
-bt <- ledgr_backtest(
-  data = bars,
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = one_day_strategy,
-  initial_cash = 1000,
-  run_id = "accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+bt <- ledgr_run(exp, run_id = "accounting_example")
 ```
 
 The strategy asks to hold one share on the first pulse and then returns
@@ -333,13 +333,13 @@ column names.
 ``` r
 flat_strategy <- function(ctx, params) ctx$flat()
 
-flat_bt <- ledgr_backtest(
-  data = bars,
+flat_exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = flat_strategy,
-  initial_cash = 1000,
-  run_id = "flat_accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+flat_bt <- ledgr_run(flat_exp, run_id = "flat_accounting_example")
 
 ledgr_results(flat_bt, what = "fills")
 #> # A tibble: 0 x 10
@@ -379,13 +379,13 @@ open_only_strategy <- function(ctx, params) {
   targets
 }
 
-open_bt <- ledgr_backtest(
-  data = bars,
+open_exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = open_only_strategy,
-  initial_cash = 1000,
-  run_id = "open_accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+open_bt <- ledgr_run(open_exp, run_id = "open_accounting_example")
 
 ledgr_results(open_bt, what = "fills")
 #> # A tibble: 1 x 10
@@ -411,8 +411,8 @@ ledgr_compute_metrics(open_bt)[c("n_trades", "win_rate", "avg_trade")]
 
 A final-bar target under a next-open fill model can also be valid
 research input while producing no fill. There is no later bar available
-for execution, so ledgr warns and leaves the ledger unchanged for that
-last target change.
+for execution, so ledgr records `final_pulse_no_execution` and leaves
+the ledger unchanged for that target change.
 
 ``` r
 final_bar_strategy <- function(ctx, params) {
@@ -423,23 +423,38 @@ final_bar_strategy <- function(ctx, params) {
   targets
 }
 
-final_bar_bt <- ledgr_backtest(
-  data = bars,
+final_bar_exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = final_bar_strategy,
-  initial_cash = 1000,
-  run_id = "final_bar_accounting_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
+final_bar_bt <- ledgr_run(final_bar_exp, run_id = "final_bar_accounting_example")
 
 ledgr_results(final_bar_bt, what = "fills")
 #> # A tibble: 0 x 10
 #> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
 #> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
 #> #   realized_pnl <dbl>, action <chr>
+ledgr_results(final_bar_bt, what = "diagnostics")
+#> # A tibble: 11 x 22
+#>    run_id diagnostic_seq ts_utc     instrument_id stage outcome reason_code reasons target
+#>    <chr>           <int> <date>     <chr>         <chr> <chr>   <chr>       <chr>    <dbl>
+#>  1 final~              1 2020-01-01 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  2 final~              2 2020-01-01 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  3 final~              3 2020-01-02 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  4 final~              4 2020-01-02 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  5 final~              5 2020-01-03 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  6 final~              6 2020-01-03 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  7 final~              7 2020-01-04 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  8 final~              8 2020-01-04 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  9 final~              9 2020-01-05 "AAA"         deci~ record~ decision_r~ decisi~      1
+#> 10 final~             10 2020-01-05 "AAA"         exec~ no_fill final_puls~ final_~      1
+#> 11 final~             11 2020-01-05 ""            reco~ reconc~ affordabil~ afford~     NA
+#> # i 13 more variables: quantity <dbl>, price <dbl>, mark_source <chr>, mark_age <int>,
+#> #   decision_ts_utc <dttm>, execution_ts_utc <dttm>, event_seq <int>,
+#> #   target_before_risk <dbl>, target_after_risk <dbl>, position_before <dbl>,
+#> #   position_after <dbl>, feature_identity_json <chr>, detail_json <chr>
 ```
 
 ## Where Next

@@ -468,17 +468,16 @@ ledgr_history_read_service <- function(substrate,
   } else {
     character()
   }
-  structure(
-    list(
-      substrate = substrate,
-      feature_defs = stats::setNames(feature_defs, feature_ids),
-      feature_names = ledgr_feature_name_lookup_state(
-        feature_ids,
-        active_alias_map = active_alias_map
-      )
-    ),
-    class = "ledgr_history_read_service"
+  service <- new.env(parent = emptyenv())
+  service$substrate <- substrate
+  service$feature_defs <- stats::setNames(feature_defs, feature_ids)
+  service$feature_names <- ledgr_feature_name_lookup_state(
+    feature_ids,
+    active_alias_map = active_alias_map
   )
+  class(service) <- "ledgr_history_read_service"
+  lockEnvironment(service, bindings = TRUE)
+  service
 }
 
 ledgr_history_view <- function(service, cutoff_col) {

@@ -73,15 +73,10 @@ ledgr_strategy_type_stats <- function(x) {
   sprintf("non-NA: %d/%d", non_na, length(x))
 }
 
-# The eligibility plane over the decision axis is `ctx$vec$admissible`. A dense
-# context without the plane has every ID eligible; a plane that is present, or
-# an availability context, must carry one non-missing logical per axis ID, and
-# anything else fails closed with the caller's condition class.
+# The eligibility plane over the decision axis is `ctx$vec$admissible` and
+# carries one non-missing logical per axis ID.
 ledgr_strategy_eligible <- function(ctx, axis, class = "ledgr_invalid_strategy_helper") {
   admissible <- ctx$vec$admissible
-  if (is.null(admissible) && !isTRUE(ctx$availability_active)) {
-    return(rep(TRUE, length(axis)))
-  }
   if (!is.logical(admissible) || length(admissible) != length(axis) || anyNA(admissible)) {
     rlang::abort(
       "`ctx$vec$admissible` must hold one non-missing logical value per decision-axis instrument.",
@@ -104,8 +99,7 @@ ledgr_strategy_context_parts <- function(ctx, helper) {
     )
   }
   axis <- ctx$universe
-  allow_empty <- isTRUE(ctx$availability_active)
-  if (!is.character(axis) || (!allow_empty && length(axis) < 1L) || anyNA(axis) ||
+  if (!is.character(axis) || anyNA(axis) ||
       any(!nzchar(axis)) || anyDuplicated(axis)) {
     ledgr_strategy_context_abort(
       sprintf("`ctx$universe` is invalid for `%s()`.", helper)
@@ -117,11 +111,7 @@ ledgr_strategy_context_parts <- function(ctx, helper) {
       sprintf("`ctx$vec$id` must match `ctx$universe` for `%s()`.", helper)
     )
   }
-  members <- if (isTRUE(ctx$availability_active)) {
-    as.character(ctx$members %||% character())
-  } else {
-    axis
-  }
+  members <- as.character(ctx$members %||% character())
   expected_members <- axis[axis %in% members]
   if (anyNA(members) || any(!nzchar(members)) || anyDuplicated(members) ||
       !identical(members, expected_members)) {
@@ -406,8 +396,7 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
 #' ctx <- structure(
 #'   list(
 #'     universe = c("AAA", "BBB"),
-#'     vec = list(id = c("AAA", "BBB")),
-#'     availability_active = FALSE
+#'     vec = list(id = c("AAA", "BBB"))
 #'   ),
 #'   class = "ledgr_pulse_context"
 #' )

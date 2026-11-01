@@ -307,7 +307,7 @@ testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {
   )
 
   bt_exp <- ledgr_run(exp, params = params, run_id = "exp-parity")
-  bt_legacy <- ledgr_backtest(
+  bt_legacy <- ledgr_test_run(
     snapshot = snapshot_legacy,
     strategy = strategy,
     strategy_params = params,

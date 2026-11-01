@@ -237,26 +237,30 @@ testthat::test_that("workstream 8 hot-path substitutions preserve exact results"
     pulses_posix = pulses
   )
   schema <- ledgr:::ledgr_projection_feature_table_schema()
-  views <- ledgr:::ledgr_projection_pulse_views(projection, "signal")
-  testthat::expect_identical(views$feature_table, replicate(3L, schema, simplify = FALSE))
+  feature_table <- lapply(seq_along(pulses), function(i) {
+    ledgr:::ledgr_projection_feature_table(
+      projection,
+      i,
+      feature_ids = character()
+    )
+  })
+  features_wide <- lapply(seq_along(pulses), function(i) {
+    ledgr:::ledgr_projection_features_wide(
+      projection,
+      i,
+      feature_ids = "signal"
+    )
+  })
   testthat::expect_identical(
-    ledgr:::ledgr_projection_pulse_views(
-      projection,
-      "signal",
-      feature_table = "full"
-    )$features_wide,
-    views$features_wide
+    feature_table,
+    replicate(3L, schema, simplify = FALSE)
   )
-  testthat::expect_error(
-    ledgr:::ledgr_projection_pulse_views(
-      projection,
-      "signal",
-      feature_table = "third"
-    ),
-    class = "simpleError"
+  testthat::expect_identical(
+    vapply(features_wide, nrow, integer(1)),
+    rep(2L, 3L)
   )
   changed <- schema[, c("ts_utc", "instrument_id", "feature_name", "feature_value")]
-  testthat::expect_false(identical(rep(list(changed), 3L), views$feature_table))
+  testthat::expect_false(identical(rep(list(changed), 3L), feature_table))
 })
 
 # ledgr-test-profile: review

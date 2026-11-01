@@ -1,4 +1,7 @@
 testthat::test_that("[LTB-0131] public calls open the store once, plus once per committed run, and leave no connection open", {
+  # Prime the process-wide schema oracle before counting file-store opens. Its
+  # one in-memory DuckDB connection is package setup, not a user store open.
+  ledgr:::ledgr_current_schema_catalogue()
   connections <- new.env(parent = emptyenv())
   connections$all <- list()
   real_connect <- DBI::dbConnect
@@ -66,6 +69,7 @@ testthat::test_that("[LTB-0131] public calls open the store once, plus once per 
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0241] composite and interactive calls open the store once per read or commit and leave none open", {
+  ledgr:::ledgr_current_schema_catalogue()
   connections <- new.env(parent = emptyenv())
   connections$all <- list()
   real_connect <- DBI::dbConnect
@@ -107,13 +111,14 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
   testthat::expect_identical(opens(precomputed <- ledgr_precompute_features(exp, grid)), 1L)
   testthat::expect_identical(opens(ledgr_sweep(exp, grid)), 1L)
   testthat::expect_identical(opens(ledgr_sweep(exp, grid, precomputed_features = precomputed)), 1L)
-  # The data-first wrapper reads the snapshot and commits a run; close() checkpoints.
-  testthat::expect_identical(opens(close(ledgr_backtest(
+  # The data-first wrapper prepares and commits through one held store;
+  # close() is the second open.
+  testthat::expect_identical(opens(close(ledgr_test_run(
     snapshot = snapshot, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero()
-  ))), 3L)
+  ))), 2L)
 
-  # Composite calls open the store once for their own reads and writes, plus
-  # once for each run they commit; the readers of what they wrote open once.
+  # Composite calls hold one store connection across preparation, candidate
+  # execution and committed runs; readers of what they wrote open once.
   wf_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(c(wf_path, paste0(wf_path, ".wal")), force = TRUE), add = TRUE)
   wf_bars <- data.frame(
@@ -144,7 +149,7 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
     folds = folds,
     selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 101L
-  )), 3L)
+  )), 1L)
   testthat::expect_identical(opens(invisible(lapply(wf$test_runs, close))), 2L)
   testthat::expect_identical(opens(ledgr_walk_forward_open(wf_snapshot, wf$session_id)), 1L)
   testthat::expect_identical(opens(ledgr_walk_forward_scores(wf_snapshot, wf$session_id)), 1L)
@@ -153,7 +158,7 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
   testthat::expect_identical(opens(ledgr_candidate(wf, fold_seq = 1L, snapshot = wf_snapshot)), 1L)
   testthat::expect_identical(opens(
     promoted <- ledgr_promote(wf_exp, candidate, run_id = "lifecycle_promoted")
-  ), 2L)
+  ), 1L)
   testthat::expect_identical(opens(close(promoted)), 1L)
 
   # Interactive contexts read what they need when built and keep no connection.

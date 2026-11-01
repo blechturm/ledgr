@@ -1,4 +1,4 @@
-ledgr_feature_engine_version <- function(availability_active = FALSE) {
+ledgr_feature_engine_version <- function() {
   # Feature-engine provenance includes every helper whose semantics can change
   # computed feature values.
   payload <- list(
@@ -34,7 +34,7 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
       label = "`ledgr_call_feature_fn()`"
     )
   )
-  if (isTRUE(availability_active)) {
+  {
     helper <- function(fn, name) {
       ledgr_function_fingerprint(
         fn,
@@ -93,7 +93,7 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
   digest::digest(canonical_json(payload), algo = "sha256")
 }
 
-# Availability-aware feature identity under rule 4: the dense fingerprint
+# Canonical feature identity under rule 5: the base fingerprint
 # (functions, captures, id, requires_bars, stable_after and params, which
 # carry the TTR version and algorithm arguments) plus every calculation-
 # affecting history declaration. Declaration provenance is display-only.
@@ -441,19 +441,6 @@ ledgr_strict_sma_series <- function(values, width) {
     mean(values[seq.int(i - width + 1L, i)])
   }, numeric(1))
   out
-}
-
-ledgr_compute_feature_latest <- function(bars_df, feature_def) {
-  ledgr_validate_feature_def(feature_def)
-
-  if (!is.data.frame(bars_df) || nrow(bars_df) < 1) {
-    rlang::abort("`bars_df` must be a non-empty data.frame.", class = "ledgr_invalid_feature_input")
-  }
-  if (!all(c("ts_utc", "close") %in% names(bars_df))) {
-    rlang::abort("`bars_df` must include at least columns `ts_utc` and `close`.", class = "ledgr_invalid_feature_input")
-  }
-
-  ledgr_compute_feature_scalar_at(bars_df, feature_def, nrow(bars_df))
 }
 
 ledgr_check_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L)) {

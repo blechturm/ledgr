@@ -43,7 +43,7 @@ testthat::test_that("the production diagnostic path defaults to one typed block"
     "diagnostic-production",
     sink$handler
   )
-  testthat::expect_identical(names(writer), c("append_block", "drain", "release"))
+  testthat::expect_identical(names(writer), c("keep", "append_block", "drain", "release"))
 
   writer$append_block(diagnostic_production_block(2L))
   testthat::expect_length(sink$state$writes, 0L)

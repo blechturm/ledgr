@@ -236,7 +236,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
-  testthat::expect_warning(ledgr_run_config(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  ledgr_run_config(cfg, run_id = run_id)
 
   states <- DBI::dbGetQuery(
     con,
@@ -363,16 +363,7 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
       )
     )
   }
-  run_without_last_bar_warning <- function(code) {
-    withCallingHandlers(
-      force(code),
-      warning = function(w) {
-        if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
-          invokeRestart("muffleWarning")
-        }
-      }
-    )
-  }
+  run_without_last_bar_warning <- function(code) force(code)
 
   clean_path <- tempfile(fileext = ".duckdb")
   resumed_path <- tempfile(fileext = ".duckdb")

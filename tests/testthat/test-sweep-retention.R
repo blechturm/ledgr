@@ -18,6 +18,9 @@ ledgr_sweep_retention_comparable_rows <- function(x) {
   out$params <- vapply(out$params, ledgr:::canonical_json, character(1))
   out$feature_params <- vapply(out$feature_params, ledgr:::canonical_json, character(1))
   out$warnings <- vapply(out$warnings, ledgr:::canonical_json, character(1))
+  if ("diagnostics" %in% names(out)) {
+    out$diagnostics <- vapply(out$diagnostics, ledgr:::canonical_json, character(1))
+  }
   out$feature_fingerprints <- vapply(
     out$feature_fingerprints,
     function(x) ledgr:::canonical_json(as.list(x)),
@@ -105,7 +108,7 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash",
+      "feature_params", "warnings", "diagnostics", "feature_fingerprints", "risk_chain_hash",
       "provenance", "t_engine", "t_results", "t_fills_extract"
     )
   )
@@ -347,7 +350,7 @@ testthat::test_that("closed-trade retention exposes deterministic minimal trade 
     } else if (identical(ctx$ts_utc, "2020-01-02T00:00:00Z")) {
       targets["AAA"] <- 0
     } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
-      targets["AAA"] <- -params$qty
+      targets["AAA"] <- params$qty
     } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
       targets["AAA"] <- 0
     }
@@ -382,10 +385,10 @@ testthat::test_that("closed-trade retention exposes deterministic minimal trade 
   testthat::expect_identical(trades$trade_seq[trades$candidate_id == "b"], c(1L, 2L))
   testthat::expect_equal(
     trades$realized_pnl[trades$candidate_id == "a"],
-    c(1, -1),
+    c(1, 1),
     tolerance = 1e-12
   )
-  testthat::expect_identical(trades$win_loss[trades$candidate_id == "a"], c("WIN", "LOSS"))
+  testthat::expect_identical(trades$win_loss[trades$candidate_id == "a"], c("WIN", "WIN"))
 
   only_b <- ledgr_sweep_trades(retained, candidates = "b")
   testthat::expect_identical(unique(only_b$candidate_id), "b")
@@ -560,11 +563,8 @@ testthat::test_that("retained returns keep final equity row with final-bar no-fi
   testthat::expect_identical(nrow(long), 6L)
   testthat::expect_identical(long$ts_utc[[nrow(long)]], as.POSIXct("2020-01-06", tz = "UTC"))
   testthat::expect_equal(long$equity[[nrow(long)]], out$final_equity[[1]], tolerance = 1e-12)
-  testthat::expect_true(any(grepl(
-    "LEDGR_LAST_BAR_NO_FILL",
-    vapply(out$warnings[[1]], conditionMessage, character(1)),
-    fixed = TRUE
-  )))
+  testthat::expect_true("final_pulse_no_execution" %in%
+    out$diagnostics[[1]]$reason_code)
 })
 
 testthat::test_that("ledgr_sweep rejects invalid retain arguments before execution", {

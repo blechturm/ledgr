@@ -200,7 +200,7 @@ testthat::test_that("projection-backed wide views are fresh public objects", {
   testthat::expect_equal(second$signal, c(999, 4))
 })
 
-testthat::test_that("projection pulse views default to schema-only long tables", {
+testthat::test_that("projection pulse accessors return schema-stable long and wide values", {
   pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
   projection <- ledgr:::ledgr_runtime_projection(
     feature_values = list(signal = matrix(c(1, 2, 3, 4), nrow = 2L)),
@@ -208,23 +208,21 @@ testthat::test_that("projection pulse views default to schema-only long tables",
     pulses_posix = pulses
   )
 
-  schema_views <- ledgr:::ledgr_projection_pulse_views(projection, "signal")
-  full_views <- ledgr:::ledgr_projection_pulse_views(projection, "signal", feature_table = "full")
+  schema <- ledgr:::ledgr_projection_feature_table_schema()
+  full <- ledgr:::ledgr_projection_feature_table(projection, 1L, "signal")
+  wide <- ledgr:::ledgr_projection_features_wide(projection, 1L, "signal")
 
-  testthat::expect_true(all(vapply(schema_views$feature_table, is.data.frame, logical(1))))
-  testthat::expect_true(all(vapply(schema_views$feature_table, nrow, integer(1)) == 0L))
+  testthat::expect_true(is.data.frame(schema))
+  testthat::expect_identical(nrow(schema), 0L)
   testthat::expect_identical(
-    names(schema_views$feature_table[[1]]),
+    names(schema),
     c("instrument_id", "ts_utc", "feature_name", "feature_value")
   )
-  testthat::expect_equal(nrow(full_views$feature_table[[1]]), 2L)
-  testthat::expect_equal(
-    schema_views$features_wide,
-    full_views$features_wide
-  )
+  testthat::expect_equal(nrow(full), 2L)
+  testthat::expect_equal(wide, ledgr:::ledgr_features_wide(full))
 })
 
-testthat::test_that("projection pulse views match single-pulse wide construction", {
+testthat::test_that("projection wide access matches single-pulse construction", {
   pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2
   projection <- ledgr:::ledgr_runtime_projection(
     feature_values = list(
@@ -235,12 +233,12 @@ testthat::test_that("projection pulse views match single-pulse wide construction
     pulses_posix = pulses
   )
 
-  views <- ledgr:::ledgr_projection_pulse_views(projection)
-
   for (pulse_idx in seq_along(pulses)) {
     testthat::expect_equal(
-      views$features_wide[[pulse_idx]],
-      ledgr:::ledgr_projection_features_wide(projection, pulse_idx)
+      ledgr:::ledgr_projection_features_wide(projection, pulse_idx),
+      ledgr:::ledgr_features_wide(
+        ledgr:::ledgr_projection_feature_table(projection, pulse_idx)
+      )
     )
   }
 })
@@ -747,12 +745,12 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
   }
 
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       snapshot = snap,
       strategy = helper_strategy,
       universe = c("TEST_A", "TEST_B"),
       start = "2020-01-01",
-      end = "2020-01-15",
+      end = max(bars$ts_utc),
       db_path = db_path,
     cost_model = ledgr_cost_zero()
     ),

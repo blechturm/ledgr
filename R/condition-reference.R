@@ -83,8 +83,6 @@
 #' matches, a `ledgr_history` result. `ledgr_weight_alignment_mismatch`
 #' refuses [ledgr_align_weights()] solver output whose length, names or shape
 #' do not match the history result's included instruments.
-#' `ledgr_pulse_snapshot_availability_required` refuses experiment-derived
-#' [ledgr_pulse_snapshot()] inspection of a dense experiment, and
 #' `ledgr_pulse_inspection_stopped` refuses an inspection cutoff whose
 #' observe-and-settle stage stops before the strategy context is built.
 #' `ledgr_staged_history_mismatch` refuses a worker task
@@ -107,10 +105,6 @@
 #'
 #' `ledgr_availability_sessions_required` is raised when availability-aware
 #' execution lacks a complete session calendar.
-#'
-#' `ledgr_backtest_availability_unsupported` is raised when `ledgr_backtest()`
-#' receives a snapshot that declares point-in-time facts; use
-#' `ledgr_experiment()` and `ledgr_run()`.
 #'
 #' `ledgr_promote_identity_mismatch` is a warning raised when a promoted
 #' candidate's recorded identities differ from the promoting experiment's.
@@ -515,8 +509,7 @@
 #'   `terminal_settlement_unsupported`, `terminal_mark_unavailable`,
 #'   `corporate_action_cash_refused` and `corporate_action_quantity_refused`
 #'   stop the run `INCOMPLETE` and keep the accepted prefix. Nothing is
-#'   fabricated. A dense run has no typed stop: its corporate-action refusals
-#'   raise `ledgr_corporate_action_unsupported`.
+#'   fabricated. The same typed stop applies on either execution clock.
 #' - **Frozen-at-end bound.** `total_return_if_frozen_worthless` in
 #'   [ledgr_valuation_summary()] restates endpoint return with holdings still
 #'   frozen at the end valued at zero. It is a bound, not a corrected return,
@@ -551,7 +544,7 @@
 #' @aliases ledgr_snapshot_hash_order_invalid
 #' @aliases ledgr_store_rebuild_required ledgr_invalid_store
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
-#' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
+#' @aliases ledgr_availability_sessions_required
 #' @aliases ledgr_sessions_incomplete ledgr_promote_identity_mismatch
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
@@ -687,8 +680,6 @@
 #' - `ledgr_corporate_action_entitlement_missing` reports a cash-dividend,
 #'   disposition or quantity-effect corporate action without an entitlement
 #'   clock.
-#' - `ledgr_corporate_action_quantity_unsupported` reports the corporate
-#'   action quantity unsupported boundary.
 #' - `ledgr_db_not_found` reports db was not found.
 #' - `ledgr_distribution_adjusted_bars_unsupported` reports the distribution
 #'   adjusted bars unsupported boundary.
@@ -840,7 +831,6 @@
 #'   input.
 #' - `ledgr_invalid_sweep_review_rank` reports invalid sweep review rank
 #'   input.
-#' - `ledgr_invalid_target_price` reports invalid target price input.
 #' - `ledgr_invalid_timestamp` reports invalid timestamp input.
 #' - `ledgr_invalid_warmup_input` reports invalid warmup input input.
 #' - `ledgr_invalid_worker_dependencies` reports invalid worker dependencies
@@ -1033,8 +1023,6 @@
 #' @aliases ledgr_corporate_action_clock_missing
 #' @aliases ledgr_corporate_action_double_credit
 #' @aliases ledgr_corporate_action_entitlement_missing
-#' @aliases ledgr_corporate_action_quantity_unsupported
-#' @aliases ledgr_corporate_action_unsupported
 #' @aliases ledgr_db_not_found
 #' @aliases ledgr_distribution_adjusted_bars_unsupported
 #' @aliases ledgr_duplicate_corporate_action_event
@@ -1149,7 +1137,6 @@
 #' @aliases ledgr_invalid_sweep_projection
 #' @aliases ledgr_invalid_sweep_review_input
 #' @aliases ledgr_invalid_sweep_review_rank
-#' @aliases ledgr_invalid_target_price
 #' @aliases ledgr_invalid_timestamp
 #' @aliases ledgr_invalid_warmup_input
 #' @aliases ledgr_invalid_worker_dependencies
@@ -1274,7 +1261,6 @@
 #' @aliases ledgr_history_duplicate_bar
 #' @aliases ledgr_history_outside_axis
 #' @aliases ledgr_history_unavailable
-#' @aliases ledgr_pulse_snapshot_availability_required
 #' @aliases ledgr_pulse_inspection_stopped
 #' @aliases ledgr_history_segment_limit_exceeded
 #' @aliases ledgr_fact_knowledge_missing
@@ -1282,27 +1268,4 @@
 #' @aliases ledgr_history_unknown_instrument
 #' @aliases ledgr_weight_alignment_mismatch
 #' @aliases ledgr_staged_history_mismatch
-NULL
-
-#' LEDGR_LAST_BAR_NO_FILL warning code
-#'
-#' `LEDGR_LAST_BAR_NO_FILL` is the warning code emitted when a strategy changes
-#' targets on the final pulse of a next-open run. The strategy output is valid,
-#' but there is no later bar where ledgr can simulate the fill.
-#'
-#' No fill is emitted for that final target change, and the ledger is left
-#' unchanged for the missing execution. Extend the snapshot by one executable
-#' bar and rerun if the final target change is meant to execute.
-#'
-#' `ledgr_sweep()` preserves the warning as a candidate-row warning rather than
-#' converting it into a failed candidate. Committed runs emit the warning during
-#' execution. User tests may assert on the warning code in the message.
-#'
-#' See `vignette("execution-semantics", package = "ledgr")` or
-#' `system.file("doc", "execution-semantics.html", package = "ledgr")` for a
-#' runnable final-bar example.
-#'
-#' @name LEDGR_LAST_BAR_NO_FILL
-#' @aliases LEDGR_LAST_BAR_NO_FILL ledgr_last_bar_no_fill
-#' @aliases ledgr_final_bar_no_fill
 NULL

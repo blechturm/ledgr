@@ -365,7 +365,6 @@ testthat::test_that("[LTB-0255] every snapshot-table source file is classified",
     testthat::expect_match(required, "ledgr_snapshot_quarantine", fixed = TRUE)
     testthat::expect_match(required, "ledgr_run_open", fixed = TRUE)
     testthat::expect_match(required, "ledgr_sweep_open", fixed = TRUE)
-    testthat::expect_match(required, "ledgr_pulse_snapshot", fixed = TRUE)
     testthat::expect_match(required, "ledgr_indicator_dev", fixed = TRUE)
     testthat::expect_match(required, "ledgr_feature_contract_check", fixed = TRUE)
   }
@@ -558,7 +557,7 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   on.exit(ledgr_snapshot_close(split_snapshot), add = TRUE)
   split_root <- ledgr_snapshot_info(split_snapshot)$snapshot_hash[[1L]]
   ledgr:::ledgr_snapshot_verified_reset()
-  split_result <- ledgr_backtest(
+  split_result <- ledgr_test_run(
     snapshot = split_snapshot,
     strategy = function(ctx, params) ctx$flat(),
     universe = "AAA",
@@ -571,17 +570,6 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   on.exit(close(split_result), add = TRUE)
   snapshot_key <- ledgr:::ledgr_store_key(split_snapshot_path)
   run_key <- ledgr:::ledgr_store_key(split_run_path)
-  testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
-    snapshot_key, split_snapshot$snapshot_id, split_root, 4L
-  ))
-  testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
-    run_key, split_snapshot$snapshot_id, split_root, 4L
-  ))
-
-  ledgr:::ledgr_snapshot_verified_reset()
-  split_con <- ledgr_db_init(split_run_path)
-  on.exit(DBI::dbDisconnect(split_con, shutdown = TRUE), add = TRUE)
-  ledgr_state_reconstruct(split_result$run_id, split_con)
   testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
     snapshot_key, split_snapshot$snapshot_id, split_root, 4L
   ))

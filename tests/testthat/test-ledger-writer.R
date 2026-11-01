@@ -1140,6 +1140,7 @@ testthat::test_that("[LTB-0516] the db_live writer keeps its validation and tran
 
 testthat::test_that("[LTB-0518] one output handler exposes exactly each storage kind's methods and owns the shared mechanisms", {
   duckdb_methods <- c(
+    "diagnostic_keep", "persists_strategy_state",
     "abort_run", "append_event_rows", "buffer_event", "buffer_strategy_state",
     "flush_pending", "flush_pulse_events", "init_buffers", "pending_event_count",
     "pending_state_count", "record_failure", "record_run_status", "run_transaction",
@@ -1150,6 +1151,7 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
   # LDG-3168 (category 3): the memory sink records no equity of its own; the
   # inline summary reads the fold's frozen equity record (Synthesis 3.6).
   memory_methods <- c(
+    "diagnostic_keep", "persists_strategy_state",
     "abort_run", "append_compiled_spot_batch", "append_event_rows", "buffer_event",
     "buffer_strategy_state", "completion", "diagnostics", "events", "flush_pending",
     "flush_pulse_events", "init_buffers", "inline_summary", "pending_event_count",
@@ -1159,9 +1161,9 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "write_run_diagnostics", "write_run_evidence", "write_strategy_state",
     "write_telemetry"
   )
-  testthat::expect_length(duckdb_methods, 21L)
-  testthat::expect_length(memory_methods, 26L)
-  testthat::expect_length(intersect(duckdb_methods, memory_methods), 19L)
+  testthat::expect_length(duckdb_methods, 23L)
+  testthat::expect_length(memory_methods, 28L)
+  testthat::expect_length(intersect(duckdb_methods, memory_methods), 21L)
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1174,12 +1176,20 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     ))
     testthat::expect_s3_class(durable, "ledgr_output_handler")
     testthat::expect_identical(sort(names(durable)), sort(duckdb_methods), info = mode)
-    testthat::expect_true(all(vapply(durable, is.function, logical(1))), info = mode)
+    testthat::expect_true(all(vapply(
+      durable[setdiff(names(durable), "persists_strategy_state")],
+      is.function, logical(1)
+    )), info = mode)
+    testthat::expect_true(durable$persists_strategy_state, info = mode)
   }
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("method-set-memory"))
   testthat::expect_s3_class(memory, "ledgr_output_handler")
   testthat::expect_identical(sort(names(memory)), sort(memory_methods))
-  testthat::expect_true(all(vapply(memory, is.function, logical(1))))
+  testthat::expect_true(all(vapply(
+    memory[setdiff(names(memory), "persists_strategy_state")],
+    is.function, logical(1)
+  )))
+  testthat::expect_false(memory$persists_strategy_state)
 
   # The shared mechanisms live in the handler only: neither sink allocates an
   # event column buffer, grows one, or stages fill rows.
@@ -1239,7 +1249,7 @@ testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep v
   # Retained diagnostic chunks: 70 kept chunks cross the initial 64 slots.
   rows <- function(k) {
     data.frame(
-      run_id = "growth-memory", diagnostic_seq = 0L,
+      run_id = "growth-memory", diagnostic_seq = as.integer(k),
       ts_utc = as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * k,
       instrument_id = "A", stage = "valuation", outcome = "stopped",
       reason_code = "valuation_horizon_exhausted", quantity = as.numeric(k), price = 1,

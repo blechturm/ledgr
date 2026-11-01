@@ -9,7 +9,7 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -52,7 +52,7 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -91,7 +91,7 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",

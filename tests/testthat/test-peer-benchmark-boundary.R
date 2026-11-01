@@ -23,18 +23,6 @@ testthat::test_that("Stage L freezes optimization oracles", {
     c("2020-01-01 00:00:00", "2020-01-02 00:00:00"),
     tz = "UTC"
   )
-  bars <- list(
-    A = data.frame(ts_utc = axis),
-    B = data.frame(ts_utc = axis)
-  )
-  testthat::expect_identical(
-    ledgr_precompute_ts_key(axis),
-    as.numeric(axis)
-  )
-  testthat::expect_identical(
-    ledgr_precompute_validate_static_coverage(bars, c("A", "B")),
-    ledgr_stage_l_validate_static_coverage_oracle(bars, c("A", "B"))
-  )
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_hash_encode_time(axis),
     c(

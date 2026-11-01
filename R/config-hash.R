@@ -33,7 +33,8 @@ config_hash_payload <- function(config) {
   payload$sweep_retention <- NULL
   if (is.list(payload$data)) {
     payload$data$snapshot_db_path <- NULL
-    # Identity rule 4 retains content-based snapshot identity from rule 3.
+    # Identity rule 5 retains content-based snapshot identity from rule 4 and
+    # binds the unified canonical execution semantics.
     payload$data$snapshot_id <- NULL
   }
   if (is.list(payload$sweep)) {
@@ -62,4 +63,4 @@ config_hash_payload <- function(config) {
 
 
 # Run and session identity bind the sealed snapshot content hash.
-ledgr_identity_rule_version <- 4L
+ledgr_identity_rule_version <- 5L

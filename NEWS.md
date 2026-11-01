@@ -534,12 +534,9 @@ memory is the tighter constraint.
   attribute, and print as withheld. Walk-forward test-window metrics follow
   the same rule.
 
-- `ledgr_backtest()` now refuses a snapshot that declares point-in-time facts
-  (sessions, membership, trading status, or lifetime) with class
-  `ledgr_backtest_availability_unsupported`. It runs dense execution only and
-  previously ignored those facts silently; use `ledgr_experiment()` and
-  `ledgr_run()`. Snapshots without facts, or with corporate actions only,
-  still run.
+- `ledgr_backtest()` was removed. Seal raw bars with
+  `ledgr_snapshot_from_df()`, declare a `ledgr_experiment()`, and execute it
+  with `ledgr_run()` so every run uses the same point-in-time-safe path.
 
 - `ledgr_valuation_stale()` now defaults to `max_sessions = 5`, and an
   availability-aware experiment without a `valuation_policy` runs under

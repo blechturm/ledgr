@@ -11,11 +11,11 @@
 #' parameters, feature definitions, timing model, cost identity, opening state,
 #' and seed.
 #'
-#' Every run records `identity_rule_version`. Under identity rule 4 the
+#' Every run records `identity_rule_version`. Under identity rule 5 the
 #' snapshot identity in `config_hash` is the sealed content hash
 #' (`data.snapshot_hash`), not the store-local `data.snapshot_id`: the same
 #' bars sealed under two snapshot IDs give the same `config_hash`. Every
-#' current config carries rule 4, a snapshot hash and the causal-history
+#' current config carries rule 5, a snapshot hash and the causal-history
 #' identity from [ledgr_history_policy()]. Missing or different identity
 #' records are invalid rather than inferred or migrated. Worker and resource
 #' controls do not enter that logical execution identity.

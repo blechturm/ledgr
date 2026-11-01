@@ -296,7 +296,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   gc()
   Sys.sleep(0.05)
-  testthat::expect_warning(ledgr_run_config(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  ledgr_run_config(cfg, run_id = run_id)
 
   gc()
   Sys.sleep(0.05)
@@ -319,7 +319,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   cfg_clean <- cfg
   cfg_clean$db_path <- db_clean
   cfg_clean <- ledgr_test_snapshot_backed_config(cfg_clean, bars, "at8_snapshot_clean")
-  testthat::expect_warning(ledgr_run_config(cfg_clean, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  ledgr_run_config(cfg_clean, run_id = run_id)
 
   gc()
   Sys.sleep(0.05)
@@ -341,7 +341,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
 })
 
 # ledgr-test-profile: review
-testthat::test_that("last-bar policy warns and produces no fill event", {
+testthat::test_that("the final-pulse policy records a diagnostic and no fill", {
   instrument_ids <- c("AAA")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00")
   bars <- ledgr_test_make_bars(instrument_ids, ts_utc)
@@ -372,11 +372,7 @@ testthat::test_that("last-bar policy warns and produces no fill event", {
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "lastbar_snapshot")
 
   run_id <- "lastbar-1"
-  testthat::expect_warning(
-    ledgr_run_config(cfg, run_id = run_id),
-    "LEDGR_LAST_BAR_NO_FILL",
-    fixed = TRUE
-  )
+  ledgr_run_config(cfg, run_id = run_id)
 
   gc()
   Sys.sleep(0.05)
@@ -386,6 +382,15 @@ testthat::test_that("last-bar policy warns and produces no fill event", {
 
   n <- DBI::dbGetQuery(h$con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
   testthat::expect_identical(n, 0)
+  diagnostic <- DBI::dbGetQuery(
+    h$con,
+    "SELECT reason_code FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq",
+    params = list(run_id)
+  )
+  testthat::expect_identical(
+    diagnostic$reason_code[diagnostic$reason_code == "final_pulse_no_execution"],
+    "final_pulse_no_execution"
+  )
 })
 
 testthat::test_that("AT12: raw bars configs fail before fold and OHLC violations fail at snapshot seal", {

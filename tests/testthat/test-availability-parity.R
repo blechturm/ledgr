@@ -819,7 +819,7 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("[LTB-0065] dense runs expose typed absent completion evidence", {
+testthat::test_that("[LTB-0065] fixed baskets expose canonical completion and decision evidence", {
   snapshot <- ledgr_snapshot_from_df(utils::head(ledgr_demo_bars, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(
@@ -832,8 +832,8 @@ testthat::test_that("[LTB-0065] dense runs expose typed absent completion eviden
 
   completion <- ledgr_run_completion(bt)
   testthat::expect_s3_class(completion, "ledgr_run_completion")
-  testthat::expect_false(completion$completion_evidence_available)
-  testthat::expect_identical(completion$complete_performance, NA)
+  testthat::expect_true(completion$completion_evidence_available)
+  testthat::expect_true(completion$complete_performance)
   testthat::expect_identical(completion$affected_exposure, NA_real_)
   testthat::expect_s3_class(completion$affected_exposure_ts_utc, "POSIXct")
   testthat::expect_true(is.na(completion$affected_exposure_ts_utc))
@@ -841,7 +841,7 @@ testthat::test_that("[LTB-0065] dense runs expose typed absent completion eviden
 
   diagnostics <- tibble::as_tibble(bt, what = "diagnostics")
   availability <- tibble::as_tibble(bt, what = "availability")
-  testthat::expect_identical(nrow(diagnostics), 0L)
+  testthat::expect_gt(nrow(diagnostics), 0L)
   testthat::expect_identical(names(diagnostics), names(ledgr:::ledgr_availability_diagnostic_row(
     run_id = "x", diagnostic_seq = 1L, ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
     stage = "decision", outcome = "recorded"
@@ -850,10 +850,13 @@ testthat::test_that("[LTB-0065] dense runs expose typed absent completion eviden
   testthat::expect_true(all(availability$member))
   testthat::expect_true(all(availability$admissible))
   testthat::expect_true(all(!availability$target_restricted))
-  testthat::expect_error(
-    ledgr_run_explain(bt, availability$instrument_id[[1L]], availability$ts_utc[[1L]]),
-    class = "ledgr_run_explanation_unavailable"
+  explanation <- ledgr_run_explain(
+    bt,
+    availability$instrument_id[[1L]],
+    availability$ts_utc[[1L]]
   )
+  testthat::expect_identical(explanation$completion_status, "DONE")
+  testthat::expect_true(explanation$complete_performance)
 })
 
 # ledgr-test-profile: review

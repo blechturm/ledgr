@@ -606,7 +606,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   ledgr:::ledgr_run_store_close(opened)
   testthat::expect_identical(
     ledgr:::ledgr_json_read_nested(session_meta)$identity_rule_version,
-    4L
+    5L
   )
 
   testthat::expect_s3_class(reopened, "ledgr_walk_forward_results")

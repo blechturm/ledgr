@@ -3,8 +3,8 @@
 # proposal, fill-context and fill-intent object shapes retire with the
 # objects (Synthesis 3.3).
 
-# The dense planner on one decision pulse: `open` is the next-open matrix
-# (instruments by pulses), `delta` the context targets from flat positions.
+# The canonical planner on one fixed-basket decision pulse: `open` is the
+# prepared next-open matrix and `delta` the context targets from flat positions.
 ledgr_test_dense_plan <- function(open,
                                   delta,
                                   context_pos = seq_along(delta),
@@ -12,18 +12,32 @@ ledgr_test_dense_plan <- function(open,
                                   exec_ts = 1577923200,
                                   epoch_valid = TRUE,
                                   resolver = ledgr_test_cost_resolver()) {
-  ledgr:::ledgr_fold_build_pulse_plan(
+  next_open <- if (isTRUE(has_next)) {
+    as.numeric(open[, 2L, drop = TRUE])
+  } else {
+    rep(NA_real_, nrow(open))
+  }
+  n <- length(delta)
+  ledgr:::ledgr_fold_build_availability_pulse_plan(
     context_pos = as.integer(context_pos),
     target_qty = as.numeric(delta),
     position = numeric(length(delta)),
     actionable_k = seq_along(delta),
-    pulse_idx = 1L,
-    has_next = has_next,
-    exec_ts = if (has_next) exec_ts else NA_real_,
+    member = rep(TRUE, length(delta)),
+    execution = list(
+      exec_ts = if (has_next) exec_ts else NA_real_,
+      has_next = isTRUE(has_next),
+      open = next_open
+    ),
+    execution_view = list(
+      member = rep(TRUE, n), restricted = rep(FALSE, n),
+      reason_offset = rep(0L, n), reason_count = rep(0L, n),
+      reason_code = integer()
+    ),
     epoch_valid = epoch_valid,
-    bars_mat = list(open = open),
     cost_resolver = resolver,
-    n_run = nrow(open)
+    cash = 1e300,
+    instrument_ids = paste0("I", seq_len(nrow(open)))
   )
 }
 
@@ -232,75 +246,64 @@ testthat::test_that("next-open proposal and public cost resolver preserve fill i
   }
 })
 
-testthat::test_that("next-open proposal accepts matrix-backed scalar execution context", {
-  # Original inputs: SELL 5 of AAA at a matrix-backed next bar
-  # 101/102/99/100.5/100000. The dense planner reads that bar from the frozen
-  # dense context (bars_mat at pulse_idx + 1); its typed row carries side,
-  # quantity, instrument and the open.
+testthat::test_that("next-open planning consumes the prepared execution open", {
+  # Buy 5 of AAA at the next prepared open. The canonical
+  # planner receives only the execution field it owns rather than a second
+  # matrix-backed bar view.
   bar <- list(open = 101, high = 102, low = 99, close = 100.5, volume = 100000)
   snapshot <- ledgr_test_next_bar_snapshot(bar, avail = FALSE)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   seen <- new.env()
-  build <- ledgr:::ledgr_fold_build_pulse_plan
+  build <- ledgr:::ledgr_fold_build_availability_pulse_plan
   plan <- ledgr:::ledgr_fold_stage_plan
   testthat::local_mocked_bindings(
     ledgr_fold_stage_plan = function(fold_state, services, ...) {
       seen$ids <- services$instrument_ids
       plan(fold_state, services, ...)
     },
-    ledgr_fold_build_pulse_plan = function(context_pos, target_qty, position, actionable_k, pulse_idx, has_next,
-                                           exec_ts, epoch_valid, bars_mat, cost_resolver, n_run) {
-      out <- build(context_pos, target_qty, position, actionable_k, pulse_idx, has_next, exec_ts, epoch_valid,
-        bars_mat, cost_resolver, n_run)
+    ledgr_fold_build_availability_pulse_plan = function(context_pos, target_qty, position, actionable_k,
+                                                        member, execution, execution_view, epoch_valid,
+                                                        cost_resolver, cash, instrument_ids) {
+      out <- build(context_pos, target_qty, position, actionable_k, member, execution,
+        execution_view, epoch_valid, cost_resolver, cash, instrument_ids)
       if (is.null(seen$fill) && length(out$fill$k)) {
         seen$fill <- out$fill
-        seen$bars <- bars_mat
-        seen$column <- pulse_idx + 1L
+        seen$open <- execution$open
       }
       out
     },
     .package = "ledgr"
   )
-  exp <- ledgr_experiment(snapshot, ledgr_test_first_day(c(AAA = -5)), opening = ledgr_opening(cash = 1e4),
+  exp <- ledgr_experiment(snapshot, ledgr_test_first_day(c(AAA = 5)), opening = ledgr_opening(cash = 1e4),
     cost_model = ledgr_cost_zero())
   bt <- ledgr_run(exp, run_id = "fill-model-matrix-witness", seed = 1L)
   ids <- ledgr_results(bt, "ledger")$instrument_id
   close(bt)
   fill <- seen$fill
-  fields <- c("open", "high", "low", "close", "volume")
   aaa <- match("AAA", seen$ids)
-  projected <- function(bars, row) all(vapply(fields, function(f) identical(bars[[f]][[row, seen$column]], bar[[f]]), logical(1)))
   testthat::expect_identical(ids, "AAA")
   testthat::expect_identical(fill$pos, aaa)
-  testthat::expect_identical(fill$side, -1L)
+  testthat::expect_identical(fill$side, 1L)
   testthat::expect_equal(fill$qty, 5)
   testthat::expect_equal(fill$price, 101)
-  testthat::expect_true(projected(seen$bars, fill$pos))
-  testthat::expect_equal(seen$bars$volume[[fill$pos, seen$column]], 100000)
-  # Controls: a crossed instrument mapping and each corrupted bar field.
-  testthat::expect_false(projected(seen$bars, 3L - fill$pos))
-  for (f in fields) {
-    bad <- seen$bars
-    bad[[f]][[fill$pos, seen$column]] <- bad[[f]][[fill$pos, seen$column]] + 1
-    testthat::expect_false(projected(bad, fill$pos), info = f)
-  }
+  testthat::expect_equal(seen$open[[fill$pos]], bar$open)
 })
 
-testthat::test_that("the dense planner reads the next open of each row's run position", {
-  # Category 5: the matrix-backed context's instrument, side, quantity and
-  # next open are the typed row's pos, side, qty and price.
+testthat::test_that("the canonical planner maps each prepared next open by run position", {
+  # Category 5: instrument, side, quantity and next open are the typed row's
+  # pos, side, qty and price.
   open <- rbind(AAA = c(100, 101), BBB = c(200, 99))
-  plan <- ledgr_test_dense_plan(open, c(-5, 3), context_pos = c(2L, 1L))
+  plan <- ledgr_test_dense_plan(open, c(5, 3), context_pos = c(2L, 1L))
   fill <- plan$fill
   testthat::expect_identical(fill$pos, c(2L, 1L))
-  testthat::expect_identical(fill$side, c(-1L, 1L))
+  testthat::expect_identical(fill$side, c(1L, 1L))
   testthat::expect_identical(fill$qty, c(5, 3))
   testthat::expect_identical(fill$price, c(99, 101))
   # Controls: a corrupted instrument mapping and a corrupted next open.
-  testthat::expect_false(identical(ledgr_test_dense_plan(open, c(-5, 3), context_pos = 1:2)$fill$price, fill$price))
+  testthat::expect_false(identical(ledgr_test_dense_plan(open, c(5, 3), context_pos = 1:2)$fill$price, fill$price))
   corrupt <- open
   corrupt[2L, 2L] <- 98
-  testthat::expect_false(identical(ledgr_test_dense_plan(corrupt, c(-5, 3), context_pos = c(2L, 1L))$fill$price, fill$price))
+  testthat::expect_false(identical(ledgr_test_dense_plan(corrupt, c(5, 3), context_pos = c(2L, 1L))$fill$price, fill$price))
 })
 
 testthat::test_that("BUY/SELL spread adjustment is symmetric and spread=0 yields open", {
@@ -370,14 +373,10 @@ testthat::test_that("fee is included and must be non-negative", {
 })
 
 testthat::test_that("[LTB-0002] last-bar policy returns a structured NO_FILL with WARN code", {
-  # Category 4: the has_next = FALSE path plans no fill, rejects the row for
-  # the missing opportunity and warns once per target.
+  # Category 4: the has_next = FALSE path plans no fill and rejects the row
+  # with the structured final-pulse reason.
   open <- matrix(100, 1L, 1L)
-  testthat::expect_warning(
-    plan <- ledgr_test_dense_plan(open, 1, has_next = FALSE),
-    "LEDGR_LAST_BAR_NO_FILL",
-    fixed = TRUE
-  )
+  plan <- ledgr_test_dense_plan(open, 1, has_next = FALSE)
   testthat::expect_length(plan$fill$k, 0L)
   testthat::expect_identical(plan$economic_event_kinds, integer())
   testthat::expect_identical(ledgr:::.ledgr_plan_reason_levels[plan$rejection$primary], "final_pulse_no_execution")
@@ -405,12 +404,11 @@ testthat::test_that("invalid inputs fail loud", {
     class = "ledgr_invalid_cost_model"
   )
 
-  # Additive (LDG-3166): the dense planner's matrix-backed open refuses with
-  # the base next_open_price message and class.
-  testthat::expect_error(
-    ledgr_test_dense_plan(matrix(c(100, NaN), 1L, 2L), 1),
-    "next_open_price",
-    fixed = TRUE,
-    class = "ledgr_invalid_fill_input"
+  # The canonical planner classifies an absent prepared execution price as a
+  # typed row rejection rather than accepting a non-finite fill.
+  missing_open <- ledgr_test_dense_plan(matrix(c(100, NaN), 1L, 2L), 1)
+  testthat::expect_identical(
+    ledgr:::.ledgr_plan_reason_levels[missing_open$rejection$primary],
+    "execution_bar_missing"
   )
 })

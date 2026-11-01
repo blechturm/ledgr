@@ -17,7 +17,7 @@ testthat::test_that("equity curve state is reconstructed from ledger fills", {
   }
 
   for (mode in c("audit_log", "db_live")) local({
-    bt <- ledgr_backtest(
+    bt <- ledgr_test_run(
       data = bars,
       strategy = strategy,
       initial_cash = 1000,

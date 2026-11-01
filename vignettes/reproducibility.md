@@ -109,15 +109,10 @@ bt <- ledgr_run(
 )
 ```
 
-    Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-    next-open fill model requires a following bar. No fill was emitted for this target
-    change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-    should be fillable.
-
-The `LEDGR_LAST_BAR_NO_FILL` warning means the rule changed its target
-on the last bar, where no later open exists to fill it. It does not
-affect what the run records;
-`vignette("execution-semantics", package = "ledgr")` explains it.
+The `final_pulse_no_execution` diagnostic means the rule changed its
+target on the last bar, where no later open exists to fill it. It does
+not create a fill; `vignette("execution-semantics", package = "ledgr")`
+explains it.
 
 ## The Provenance Model
 
@@ -153,18 +148,29 @@ ledgr_run_info(snapshot, "qty_10")
     Status:           DONE
     Archived:         FALSE
     Tags:             NA
+
+    Completion Evidence:
+      Status:           DONE
+      Requested Window: 2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
+      Achieved Window:  2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
+      Stop Reason:      none
+      Last Fully Valued: 2019-06-28T00:00:00Z
+      Last Executed:    2019-06-27T00:00:00Z
+      Performance:       complete
+      Affected IDs:      none recorded
+
     Snapshot:         research_snapshot
     Snapshot Hash:    1f315cc620d0849849114d32cb44b042ec567f9512db99ad802c4ac89efe3a43
     Feature Set Hash: de5d1af37415a1f7423cff4e673f917b944231a8767977d28edd092a775c9097
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      37d83c3e5ec60663e37f5a054a745e195977892e347f228a05a255ab69eec579
+    Config Hash:      1ea3af0ed00cc556a1de3dd549485c7fd557919a46b395c421c0267f39fa9c3a
     Strategy Hash:    bacaf6e70817b64d2a9221bc85f88607caed1e47d1da0e4a1bad4f61567f2989
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.160
+    Elapsed Sec:      3.530
 
 ## Extract Stored Strategy Source
 
@@ -247,11 +253,6 @@ ledgr_run(
   run_id = "qty_10_rerun"
 )
 ```
-
-    Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-    next-open fill model requires a following bar. No fill was emitted for this target
-    change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-    should be fillable.
 
     ledgr Backtest Results
     ======================
@@ -591,8 +592,8 @@ tryCatch(
 
 With a seed, the draws move the strategy between instruments. A
 different seed gives different fills. The random switches often change
-the target on the last bar, so these runs raise the
-`LEDGR_LAST_BAR_NO_FILL` warning explained above; this chunk hides it.
+the target on the last bar, so these runs retain the
+`final_pulse_no_execution` diagnostic explained above.
 
 ``` r
 bt_seed_1 <- ledgr_run(random_exp, params = list(qty = 10), seed = 1L, run_id = "random_seed_1")

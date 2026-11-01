@@ -39,10 +39,8 @@ examples can inspect stored assumptions. The accounting walkthrough,
 result-table hierarchy, and hand recomputation live in
 `vignette("metrics-and-accounting", package = "ledgr")`.
 
-This example uses `ledgr_backtest()`, a compact in-memory entrance for
-small examples. New project workflows should enter through a sealed
-snapshot, `ledgr_experiment()`, and `ledgr_run()` as shown in the
-Quickstart.
+This example enters through a sealed snapshot, `ledgr_experiment()`, and
+`ledgr_run()`, the same workflow used in a research project.
 
 ``` r
 bars <- data.frame(
@@ -63,13 +61,14 @@ one_day_strategy <- function(ctx, params) {
   targets
 }
 
-bt <- ledgr_backtest(
-  data = bars,
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = one_day_strategy,
-  initial_cash = 1000,
-  run_id = "metric_context_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+bt <- ledgr_run(exp, run_id = "metric_context_example")
 ```
 
 ## Metric Context
@@ -324,6 +323,16 @@ summary(bt)
 #>
 #> Execution Evidence:
 #>   Fill Timing:         dense_bar_timestamp
+#>
+#> Completion Evidence:
+#>   Status:           DONE
+#>   Requested Window: 2020-01-01T00:00:00Z to 2020-01-05T00:00:00Z
+#>   Achieved Window:  2020-01-01T00:00:00Z to 2020-01-05T00:00:00Z
+#>   Stop Reason:      none
+#>   Last Fully Valued: 2020-01-05T00:00:00Z
+#>   Last Executed:    2020-01-03T00:00:00Z
+#>   Performance:       complete
+#>   Affected IDs:      none recorded
 #>
 #> Corporate-Action Evidence:
 #> Economic events: NOT SUPPLIED - returns may omit distributions

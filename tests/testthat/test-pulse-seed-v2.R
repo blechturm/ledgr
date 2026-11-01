@@ -317,13 +317,23 @@ testthat::test_that("resume reads the same pulse seeds as a straight run on the 
   on.exit(ledgr_snapshot_close(resume$snapshot), add = TRUE)
   testthat::expect_identical(clean$cfg$engine$pulse_seed_rule, 2L)
 
-  suppressWarnings(ledgr:::ledgr_run_config(clean$cfg, run_id = "ps2-resume-clean"))
+  suppressWarnings(ledgr:::ledgr_run_config(
+    ledgr_test_modernize_config(clean$cfg),
+    run_id = "ps2-resume-clean"
+  ))
   straight <- ps2_seeds_by_ts(rec)
   ps2_clear(rec)
-  ledgr:::ledgr_run_fold(resume$cfg, run_id = "ps2-resume", control = list(max_pulses = 3L))
+  ledgr:::ledgr_run_fold(
+    ledgr_test_modernize_config(resume$cfg),
+    run_id = "ps2-resume",
+    control = list(max_pulses = 3L)
+  )
   first_part <- ps2_seeds_by_ts(rec)
   ps2_clear(rec)
-  suppressWarnings(ledgr:::ledgr_run_config(resume$cfg, run_id = "ps2-resume"))
+  suppressWarnings(ledgr:::ledgr_run_config(
+    ledgr_test_modernize_config(resume$cfg),
+    run_id = "ps2-resume"
+  ))
   second_part <- ps2_seeds_by_ts(rec)
 
   testthat::expect_length(straight, 8L)
@@ -484,10 +494,20 @@ testthat::test_that("actual draws agree for continuous, resumed and windowed run
   resume <- make_cfg("ps2_draw_resume")
   on.exit(ledgr_snapshot_close(clean$snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(resume$snapshot), add = TRUE)
-  suppressWarnings(ledgr:::ledgr_run_config(clean$cfg, run_id = "ps2-draw"))
-  ledgr:::ledgr_run_fold(resume$cfg, run_id = "ps2-draw", control = list(max_pulses = 5L))
+  suppressWarnings(ledgr:::ledgr_run_config(
+    ledgr_test_modernize_config(clean$cfg),
+    run_id = "ps2-draw"
+  ))
+  ledgr:::ledgr_run_fold(
+    ledgr_test_modernize_config(resume$cfg),
+    run_id = "ps2-draw",
+    control = list(max_pulses = 5L)
+  )
   calls$n <- 0L
-  suppressWarnings(ledgr:::ledgr_run_config(resume$cfg, run_id = "ps2-draw"))
+  suppressWarnings(ledgr:::ledgr_run_config(
+    ledgr_test_modernize_config(resume$cfg),
+    run_id = "ps2-draw"
+  ))
   # The resume executed only pulses 6 to 12 of the same calendar.
   testthat::expect_identical(calls$n, 7L)
   clean_bt <- ledgr:::new_ledgr_backtest("ps2-draw", clean$db_path, clean$cfg)
@@ -705,12 +725,10 @@ testthat::test_that("identical canonical input keeps its snapshot hash", {
 })
 
 testthat::test_that("seeded configuration identity changes by the rule field only; unseeded is unchanged", {
-  # Values measured on the base tree 7353594b with the same fixture and
-  # strategy text (ldg3159 identity probe). The unseeded configuration and
-  # its generated run id are unchanged; the seeded configuration gains
-  # engine.pulse_seed_rule = 2, so its hash and generated run id change.
-  base_unseeded_hash <- "5946f113bd75b1c1ad748a408e7310aa3142bd56c7cbdb2cd79d5c71dcd8d2b5"
-  base_seeded_hash <- "a64da03069f964fd525f43bfb3cd95719563d093e16cf9d61b42905d5894574c"
+  # Rule 5 changes every configuration identity. Within rule 5 the seeded
+  # form differs only by engine.pulse_seed_rule and the seed itself.
+  base_unseeded_hash <- "15db9b54b5bd277faed426ef7b291e4b2e84990cd1e1f8fffbdbcf8ce7ce6b08"
+  base_seeded_hash <- "12944da5b2c7bc7e4460a3dda8443712b1d0ed5c998134a5640b4771a9bded80"
   strategy <- function(ctx, params) { targets <- ctx$flat(); targets[[1L]] <- params$qty; targets }
   snapshot <- ledgr_snapshot_from_df(ledgr_rng_test_bars("AAA", 12L), db_path = tempfile(fileext = ".duckdb"),
     snapshot_id = "id_cfg")
@@ -723,10 +741,10 @@ testthat::test_that("seeded configuration identity changes by the rule field onl
   unseeded_hash <- ledgr_run_info(snapshot, unseeded$run_id)$config_hash
   seeded_hash <- ledgr_run_info(snapshot, seeded$run_id)$config_hash
   testthat::expect_identical(unseeded_hash, base_unseeded_hash)
-  testthat::expect_identical(unseeded$run_id, "run_ddacac4bf6b7b5b3")
+  testthat::expect_identical(unseeded$run_id, "run_bd19d2c1c127df40")
   testthat::expect_false(identical(seeded_hash, base_seeded_hash))
-  testthat::expect_identical(seeded_hash, "91229b23572f76045711dc380427cd875a15a2704a25829a3e9333a04a317f72")
-  testthat::expect_identical(seeded$run_id, "run_e9c5c0be332eabfa")
+  testthat::expect_identical(seeded_hash, "8aefa40d5aab669b2a10fc7e72a97ab114b782c8747b6a00c5e4d7a9912d9177")
+  testthat::expect_identical(seeded$run_id, "run_6709b2c87d05487c")
   # Removing the one field restores the base seeded hash.
   base_form <- seeded$config
   base_form$engine$pulse_seed_rule <- NULL

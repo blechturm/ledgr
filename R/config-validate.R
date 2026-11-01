@@ -218,16 +218,15 @@ validate_ledgr_config <- function(config) {
 
   final_execution <- config$backtest$final_execution_ts_utc
   if (!is.null(final_execution)) {
-    # Only a continued availability carry window executes after its last
-    # pulse (LDG-3064); the instant is parsed exactly, never truncated.
+    # A continued carry window may execute after its last decision pulse on
+    # either prepared clock; the instant is parsed exactly, never truncated.
     if (!is.character(final_execution) || length(final_execution) != 1L ||
         !grepl(iso8601_utc, final_execution) ||
-        !isTRUE(config$availability$active) ||
         !isTRUE(ledgr_history_utc(final_execution) > ledgr_history_utc(end_ts))) {
       rlang::abort(
         paste(
           "Config field backtest.final_execution_ts_utc must be an ISO8601 UTC",
-          "instant after backtest.end_ts_utc on an availability-aware config."
+          "instant after backtest.end_ts_utc."
         ),
         class = "ledgr_invalid_config"
       )
@@ -375,9 +374,9 @@ validate_ledgr_config <- function(config) {
     rlang::abort("Config field alias_map_order must be a character vector.", class = "ledgr_invalid_config")
   }
 
-  # Modern execution is sealed-snapshot-only. `ledgr_backtest()` keeps its
-  # data-frame convenience by converting bars to a sealed snapshot before this
-  # config exists; low-level raw `bars` configs must fail before fold entry.
+  # Modern execution is sealed-snapshot-only. Raw data first enters through
+  # `ledgr_snapshot_from_df()`; low-level raw `bars` configs fail before fold
+  # entry.
   if (is.null(config$data) || !is.list(config$data)) {
     rlang::abort(
       "Config field data must specify sealed snapshot data (`data.source = 'snapshot'` and `data.snapshot_id`).",

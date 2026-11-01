@@ -67,6 +67,16 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
     fixed = TRUE
   )
 
+  pulse_ts <- as.POSIXct("2020-01-01", tz = "UTC")
+  bars <- data.frame(
+    instrument_id = c("AAA", "BBB"), ts_utc = rep(pulse_ts, 2L),
+    open = 1, high = 1, low = 1, close = 1, volume = 1
+  )
+  context <- ledgr:::ledgr_pulse_context(
+    "feature-access", pulse_ts, c("AAA", "BBB"), bars,
+    cash = 1000, equity = 1000
+  )
+
   calls <- 0L
   normalize_calls <- 0L
   resolve_calls <- 0L
@@ -88,9 +98,10 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
     },
     .package = "ledgr"
   )
-  fast <- ledgr:::ledgr_fast_context_state(
-    c("AAA", "BBB"),
+  fast <- ledgr:::ledgr_update_pulse_context_helpers(
+    context,
     projection = projection,
+    pulse_idx = 1L,
     feature_ids = c("sma_2", "sma_3"),
     active_alias_map = c(short = "sma_2", long = "sma_3")
   )
@@ -151,9 +162,13 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   testthat::expect_false(grepl("%in%", scalar_source, fixed = TRUE))
   testthat::expect_false(grepl("%in%", bundle_source, fixed = TRUE))
 
-  invalid_alias <- ledgr:::ledgr_fast_context_state(
-    c("AAA", "BBB"),
+  invalid_alias <- ledgr:::ledgr_update_pulse_context_helpers(
+    ledgr:::ledgr_pulse_context(
+      "invalid-alias", pulse_ts, c("AAA", "BBB"), bars,
+      cash = 1000, equity = 1000
+    ),
     projection = projection,
+    pulse_idx = 1L,
     feature_ids = c("sma_2", "sma_3"),
     active_alias_map = stats::setNames(1L, "fast")
   )

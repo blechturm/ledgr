@@ -54,8 +54,7 @@ ledgr_selection(c(AAA = TRUE, BBB = FALSE), universe = c("AAA", "BBB"))
 ctx <- structure(
   list(
     universe = c("AAA", "BBB"),
-    vec = list(id = c("AAA", "BBB")),
-    availability_active = FALSE
+    vec = list(id = c("AAA", "BBB"))
   ),
   class = "ledgr_pulse_context"
 )

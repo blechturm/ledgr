@@ -201,7 +201,7 @@ ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) 
     snapshot_db_path = snapshot$db_path,
     snapshot_hash = ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
   )
-  cfg$identity_rule_version <- 4L
+  cfg$identity_rule_version <- 5L
   ledgr_test_modernize_config(cfg)
 }
 
@@ -235,7 +235,7 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
   cfg$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
     ledgr_corporate_actions_research()
   )
-  cfg$identity_rule_version <- 4L
+  cfg$identity_rule_version <- 5L
   cfg$history <- ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   # A seeded configuration names its pulse-seed rule (LDG-3159).
   if (is.list(cfg$engine) && !is.null(cfg$engine$seed)) {
@@ -343,4 +343,71 @@ ledgr_test_system2 <- function(command, args = character(), ...) {
 
 ledgr_test_skip_workers_in_coverage <- function() {
   testthat::skip_if(ledgr_test_in_coverage(), "Coverage runs start no worker daemons.")
+}
+ledgr_test_run <- function(snapshot = NULL,
+                           strategy,
+                           universe = NULL,
+                           start = NULL,
+                           end = NULL,
+                           initial_cash = 100000,
+                           strategy_params = list(),
+                           features = list(),
+                           timing_model = ledgr_timing_next_open(),
+                           cost_model,
+                           risk_chain = ledgr_risk_none(),
+                           execution_mode = "audit_log",
+                           checkpoint_every = 10000L,
+                           db_path = NULL,
+                           control = list(),
+                           run_id = NULL,
+                           data = NULL,
+                           corporate_action_policy = ledgr_corporate_actions_research(),
+                           ...) {
+  dots <- list(...)
+  if (length(dots) > 0L) {
+    rlang::abort("Unsupported test setup argument.", class = "ledgr_invalid_args")
+  }
+  if (!is.null(snapshot) && !is.null(data)) {
+    rlang::abort("Provide exactly one of `snapshot` and `data`.", class = "ledgr_invalid_args")
+  }
+  source <- snapshot %||% data
+  if (is.data.frame(source)) {
+    source <- ledgr_snapshot_from_df(source, db_path = db_path)
+  }
+  if (!inherits(source, "ledgr_snapshot")) {
+    rlang::abort("Test setup requires a snapshot or data frame.", class = "ledgr_invalid_args")
+  }
+  if (is.null(universe)) {
+    opened <- ledgr_snapshot_hold(source)
+    on.exit(opened(), add = TRUE)
+    universe <- as.character(DBI::dbGetQuery(
+      ledgr:::get_connection(source),
+      "SELECT instrument_id FROM snapshot_instruments WHERE snapshot_id = ? ORDER BY instrument_id",
+      params = list(source$snapshot_id)
+    )$instrument_id)
+  }
+  exp <- ledgr_experiment(
+    snapshot = source,
+    universe = universe,
+    strategy = strategy,
+    opening = ledgr_opening(cash = initial_cash, date = start),
+    features = features,
+    timing_model = timing_model,
+    cost_model = cost_model,
+    risk_chain = risk_chain,
+    execution_mode = control$execution_mode %||% execution_mode,
+    corporate_action_policy = corporate_action_policy
+  )
+  # Test-only engine controls exercise telemetry and early-exit paths without
+  # adding those diagnostics knobs to the public experiment surface.
+  exp$control <- control
+  if (!is.null(end)) {
+    window <- ledgr_experiment_window(
+      exp,
+      start_utc = start %||% source$metadata$start_date,
+      end_utc = end
+    )
+    return(ledgr_run_window(exp, params = strategy_params, window = window, run_id = run_id))
+  }
+  ledgr_run(exp, params = strategy_params, run_id = run_id)
 }

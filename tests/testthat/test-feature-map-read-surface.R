@@ -59,7 +59,10 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
   ctx <- list(
     universe = c("AAA", "BBB"),
     availability_active = FALSE,
-    vec = list(feature = plane)
+    vec = list(
+      feature = plane,
+      admissible = stats::setNames(c(TRUE, TRUE), c("AAA", "BBB"))
+    )
   )
   alias_signal <- ledgr_signal_feature(ctx, "short")
   id_signal <- ledgr_signal_feature(ctx, "sma_2")

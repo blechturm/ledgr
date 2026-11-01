@@ -1,7 +1,6 @@
-# Cut 9 Workstream 19 pinned per-window feature restart. Cut 16 LDG-3064 and
-# decision (16) give availability-aware entry points one data start (LTB-0196
-# below); dense stays frozen, and LTB-0306 keeps the Cut 9 restart literals as
-# the dense witness.
+# Cut 9 Workstream 19 pinned per-window feature restart. Cut 16 LDG-3064 gave
+# availability-aware entry points one data start (LTB-0196 below); Cut 6 gives
+# fixed baskets that same rule.
 
 feature_start_day <- function(d) {
   as.POSIXct(paste(as.Date("2020-01-01") + d - 1L, "00:00:00"), tz = "UTC")
@@ -159,8 +158,9 @@ testthat::test_that("[LTB-0196] availability features carry their state from the
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start feature restart", {
-  # Dense is frozen (Cut 16 decision (16)): these are the Cut 9 literals.
+testthat::test_that("fixed-basket entry points share the data-start feature rule", {
+  # Fixed baskets now use the same single history start as declared-session
+  # experiments (Cut 6 decision 9).
   # Closes 30 on days 1-5, then 6..10; every path opens or scores from day 6.
   # Restarted there, TTR's recursive EMA(3) seeds with mean(6, 7, 8) = 7 and
   # reads NA, NA, 7, 8, 9; carried from day 1 it reads 18, 12.5, 10.25, 9.625,
@@ -194,11 +194,11 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
     cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_grid_named(only = list(strategy = list()))
-  restart_final <- 1000 - 9 + 10
+  data_start_final <- 1000
 
   run <- ledgr_run(dated, run_id = "feature-start-run")
   on.exit(close(run), add = TRUE)
-  backtest <- ledgr_backtest(
+  backtest <- ledgr_test_run(
     snapshot = snapshot, strategy = strategy, universe = "AAA",
     start = feature_start_iso(6L), initial_cash = 1000,
     features = list(ledgr_ind_ttr("EMA", input = "close", n = 3L), ledgr_ind_sma(3L)),
@@ -228,9 +228,9 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
     window_run = final(window_run),
     window_sweep = window_sweep$final_equity[[1L]]
   )
-  testthat::expect_identical(finals, stats::setNames(rep(restart_final, 7L), names(finals)))
-  # LDG-3064 retired the payload's separate warm-up start; the dense payload
-  # scores, and starts feature state, at its scoring start.
+  testthat::expect_identical(finals, stats::setNames(rep(data_start_final, 7L), names(finals)))
+  # The payload scores at the requested start while feature state begins at
+  # the substrate's data start.
   testthat::expect_identical(precomputed$scoring_range$start, feature_start_iso(6L))
 
   # Training on days 6-8 restarts too: its EMA first exists on day 8, so it
@@ -254,11 +254,9 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
   testthat::expect_false("hydration_start_utc" %in% names(walk_forward$folds))
   testthat::expect_identical(final(walk_forward$test_runs[[1L]]), 1000)
 
-  # Fixed-window witness: hold one share once SMA(3) exists. Restarted on day
-  # 6 it first exists on day 8, fills at the day-9 open of 9 and ends at 1001;
-  # carried from day 1 it exists on day 6, fills at 7 and would end at 1003.
-  # Training on days 6-8 restarted cannot fill (1000); carried it would buy at
-  # 7 and close at 8 (1001).
+  # Fixed-window witness: hold one share once SMA(3) exists. From the data
+  # start it exists on day 6, fills at 7 and ends at 1003. Training on days
+  # 6-8 buys at 7 and closes at 8 (1001).
   sma_strategy <- function(ctx, params) {
     value <- ctx$feature("AAA", "sma_3")
     target <- ctx$flat()
@@ -293,17 +291,13 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
       workers = 1L, seed = 1L
     )$final_equity[[1L]]
   )
-  testthat::expect_identical(sma_finals, stats::setNames(rep(1001, 4L), names(sma_finals)))
-  # A dense payload whose feature state starts on day 1 (its scoring start)
-  # is refused by a sweep scoring from day 6.
+  testthat::expect_identical(sma_finals, stats::setNames(rep(1003, 4L), names(sma_finals)))
+  # A payload calculated from the common data start remains valid when its
+  # scoring metadata is wider than the requested sweep window.
   stale <- sma_precomputed
   stale$scoring_range$start <- feature_start_iso(1L)
-  testthat::expect_error(
-    ledgr_sweep(sma_dated, grid, precomputed_features = stale, workers = 1L, seed = 1L),
-    "`precomputed_features` scoring range does not match the requested sweep range.",
-    class = "ledgr_precomputed_range_mismatch",
-    fixed = TRUE
-  )
+  widened <- ledgr_sweep(sma_dated, grid, precomputed_features = stale, workers = 1L, seed = 1L)
+  testthat::expect_identical(widened$final_equity[[1L]], 1003)
   sma_walk_forward <- suppressWarnings(ledgr_walk_forward(
     sma_undated, grid, folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
@@ -312,7 +306,7 @@ testthat::test_that("[LTB-0306] dense entry points keep the frozen scoring-start
   sma_scores <- sma_walk_forward$scores
   testthat::expect_identical(
     sma_scores$metric_value[sma_scores$window == "train" & sma_scores$metric_name == "final_equity"][[1L]],
-    1000
+    1001
   )
 })
 

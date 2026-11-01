@@ -17,7 +17,7 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
     targets
   }
 
-  bt_a <- ledgr_backtest(
+  bt_a <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy_one,
     start = "2020-01-01",
@@ -28,7 +28,7 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   )
   on.exit(close(bt_a), add = TRUE)
 
-  bt_b <- ledgr_backtest(
+  bt_b <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy_two,
     start = "2020-01-01",
@@ -59,16 +59,16 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
     "frozen_at_end_value", "assumed_terminal_outcomes"
   )
   testthat::expect_identical(utils::tail(names(runs), 16L), completion_fields)
-  # Dense runs write no availability diagnostics, so their flags stay NA.
-  testthat::expect_true(all(is.na(runs$valuation_state)))
-  testthat::expect_false(any(runs$completion_evidence_available))
+  # Every run now traverses the common completion and valuation path.
+  testthat::expect_true(all(runs$valuation_state == "current"))
+  testthat::expect_true(all(runs$completion_evidence_available))
   testthat::expect_s3_class(runs$requested_start_utc, "POSIXct")
   testthat::expect_s3_class(runs$achieved_end_utc, "POSIXct")
   testthat::expect_type(runs$complete_performance, "logical")
   testthat::expect_type(runs$affected_instrument_ids, "list")
   testthat::expect_true(all(vapply(
     runs$affected_instrument_ids,
-    function(ids) identical(ids, NA_character_),
+    function(ids) identical(ids, character()),
     logical(1)
   )))
 
@@ -106,7 +106,7 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(qty = 1),
@@ -121,12 +121,12 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   info <- ledgr_run_info(snapshot, "info-run")
-  testthat::expect_false(info$completion_evidence_available)
-  testthat::expect_true(is.na(info$completion_status))
-  testthat::expect_true(is.na(info$requested_start_utc))
-  testthat::expect_true(is.na(info$requested_end_utc))
-  testthat::expect_true(is.na(info$complete_performance))
-  testthat::expect_identical(info$affected_instrument_ids, NA_character_)
+  testthat::expect_true(info$completion_evidence_available)
+  testthat::expect_identical(info$completion_status, "DONE")
+  testthat::expect_s3_class(info$requested_start_utc, "POSIXct")
+  testthat::expect_s3_class(info$requested_end_utc, "POSIXct")
+  testthat::expect_true(info$complete_performance)
+  testthat::expect_identical(info$affected_instrument_ids, character())
   testthat::expect_s3_class(info, "ledgr_run_info")
   testthat::expect_identical(info$run_id, "info-run")
   testthat::expect_identical(info$status, "DONE")
@@ -213,7 +213,7 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -276,7 +276,7 @@ testthat::test_that("ledgr_run_open rejects incomplete runs and archived complet
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",

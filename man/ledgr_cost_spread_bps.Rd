@@ -57,8 +57,10 @@ bars <- data.frame(
   volume = 1000
 )
 strategy <- function(ctx, params) ctx$flat()
+snapshot <- ledgr_snapshot_from_df(bars)
 # raises ledgr_cost_model_unspecified: cost_model is required.
-try(ledgr_backtest(data = bars, strategy = strategy), silent = TRUE)
-bt <- ledgr_backtest(data = bars, strategy = strategy, cost_model = zero)
+try(ledgr_experiment(snapshot, strategy), silent = TRUE)
+exp <- ledgr_experiment(snapshot, strategy, cost_model = zero)
+bt <- ledgr_run(exp)
 close(bt)
 }

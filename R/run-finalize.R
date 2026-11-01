@@ -421,144 +421,39 @@ ledgr_run_equity_prefix_commit <- function(con,
   })
 }
 
-ledgr_run_finalize_events <- function(con, run_id) {
-  DBI::dbGetQuery(
-    con,
-    "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
-    FROM ledger_events
-    WHERE run_id = ?
-    ORDER BY event_seq
-    ",
-    params = list(run_id)
-  )
-}
-
 ledgr_run_finalize <- function(con,
                                output_handler,
                                run,
                                calendar,
-                               projection,
                                fold) {
   run_id <- run$run_id
-  start_ts_utc <- run$start_ts_utc
-  end_ts_utc <- run$end_ts_utc
-  instrument_ids <- run$instrument_ids
-  initial_cash <- run$initial_cash
-  pulses <- calendar$pulses
-  bars_mat <- projection$bars_mat
   telemetry <- fold$telemetry
   processed <- fold$processed
   terminal_status <- fold$status %||% "DONE"
   fold_equity <- fold$equity_facts
-  # The equity source is chosen by producer, not by the record's length
-  # (Synthesis 3.6): both producers fill the fold's equity record, but only
-  # an availability run finalizes through it, even when this invocation
-  # valued no pulse (a stop on its first pulse): the stored prefix stays, and
-  # no dense replay over the calendar replaces it. A durable dense run
-  # finalizes through event replay.
-  use_fold_equity <- isTRUE(run$availability_active)
-
   finalization_error <- tryCatch({
     post_start <- ledgr_time_now()
-    pulses_posix <- if (use_fold_equity) {
-      as.POSIXct(fold_equity$ts[seq_len(fold_equity$n)], origin = "1970-01-01", tz = "UTC")
-    } else {
-      as.POSIXct(pulses, tz = "UTC")
-    }
-    # Closes are read only for the dense replay below.
-    close_mat <- NULL
-    if (use_fold_equity) {
-      close_mat <- NULL
-    } else if (!is.null(bars_mat)) {
-      close_mat <- bars_mat$close
-    } else {
-      start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
-      end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
-      start_ts <- as.POSIXct(start_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-      end_ts <- as.POSIXct(end_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-      ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-      bars_close <- DBI::dbGetQuery(
-        con,
-        paste0(
-          "SELECT instrument_id, ts_utc, close ",
-          "FROM bars ",
-          "WHERE instrument_id IN (", ids_sql, ") ",
-          "AND ts_utc >= ? AND ts_utc <= ? ",
-          "ORDER BY instrument_id, ts_utc"
-        ),
-        params = list(start_ts, end_ts)
-      )
-      if (nrow(bars_close) == 0) {
-        rlang::abort("No bars found for pulse calendar during derived-state reconstruction.", class = "ledgr_missing_bars")
-      }
-      close_mat <- matrix(NA_real_, nrow = length(instrument_ids), ncol = length(pulses_posix))
-      for (j in seq_along(instrument_ids)) {
-        id <- instrument_ids[[j]]
-        rows <- bars_close[bars_close$instrument_id == id, , drop = FALSE]
-        if (nrow(rows) != length(pulses_posix)) {
-          rlang::abort(sprintf("Missing bars.close for instrument_id=%s during derived-state reconstruction.", id), class = "ledgr_missing_bars")
-        }
-        close_mat[j, ] <- as.numeric(rows$close)
-      }
-    }
-
-    if (length(pulses_posix) == 0L) {
-      eq_df <- data.frame(
-        run_id = character(0),
-        ts_utc = as.POSIXct(character(0), tz = "UTC"),
-        cash = numeric(0),
-        positions_value = numeric(0),
-        equity = numeric(0),
-        realized_pnl = numeric(0),
-        unrealized_pnl = numeric(0),
-        stringsAsFactors = FALSE
-      )
-    } else if (use_fold_equity) {
-      eq_df <- ledgr_run_fold_equity_frame(run_id, fold_equity)
-    } else {
-      events_df <- ledgr_run_finalize_events(con, run_id)
-      prepared <- ledgr_prepare_accounting_events(events_df, instrument_ids)
-      replay <- ledgr_replay_accounting_events(prepared, initial_cash = initial_cash)
-      eq_df <- ledgr_accounting_equity_from_replay(
-        replay,
-        pulses_posix,
-        close_mat,
-        initial_cash,
-        instrument_ids,
-        run_id
+    eq_df <- ledgr_run_fold_equity_frame(run_id, fold_equity)
+    completion <- ledgr_run_completion_read(con, run_id, required = TRUE)
+    completion <- ledgr_run_completion_validate(completion, run_id, calendar)
+    if (!identical(
+      as.character(completion$intended_terminal_status[[1L]]),
+      as.character(terminal_status)
+    )) {
+      ledgr_run_terminal_evidence_abort(
+        "Fold status disagrees with terminal completion evidence."
       )
     }
-    if (use_fold_equity) {
-      completion <- ledgr_run_completion_read(con, run_id, required = TRUE)
-      completion <- ledgr_run_completion_validate(completion, run_id, calendar)
-      if (!identical(
-        as.character(completion$intended_terminal_status[[1L]]),
-        as.character(terminal_status)
-      )) {
-        ledgr_run_terminal_evidence_abort(
-          "Fold status disagrees with terminal completion evidence."
-        )
-      }
-      ledgr_run_equity_prefix_commit(
-        con = con,
-        run_id = run_id,
-        current = eq_df,
-        calendar = calendar,
-        achieved_end_utc = completion$achieved_end_utc[[1L]],
-        record_status = function() {
-          output_handler$record_run_status(terminal_status, NA_character_)
-        }
-      )
-    } else {
-      DBI::dbWithTransaction(con, {
-        DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
-        if (nrow(eq_df) > 0) {
-          ledgr_store_append(con, "equity_curve", eq_df)
-        }
+    ledgr_run_equity_prefix_commit(
+      con = con,
+      run_id = run_id,
+      current = eq_df,
+      calendar = calendar,
+      achieved_end_utc = completion$achieved_end_utc[[1L]],
+      record_status = function() {
         output_handler$record_run_status(terminal_status, NA_character_)
-      })
-    }
+      }
+    )
     NULL
   }, error = function(e) e)
   if (!is.null(finalization_error)) {

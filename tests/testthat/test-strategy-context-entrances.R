@@ -335,14 +335,15 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   ))
   testthat::expect_identical(with_zero, omitted)
   testthat::expect_identical(unclass(with_zero), c(AAA = 10, BBB = 0))
-  testthat::expect_warning(
-    positive_dense <- ledgr_target_rebalance(
-      ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = dense$universe),
-      dense
-    ),
-    class = "ledgr_invalid_target_price"
+  positive_dense <- ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = dense$universe),
+    dense
   )
-  testthat::expect_identical(unclass(positive_dense), c(AAA = 5, BBB = 0))
+  testthat::expect_identical(
+    stats::setNames(as.numeric(positive_dense), names(positive_dense)),
+    c(AAA = 5, BBB = 0)
+  )
+  testthat::expect_identical(attr(positive_dense, "sizing_skipped"), "BBB")
 
   available <- strategy_context_entrance_fixture(
     availability = TRUE,
@@ -396,7 +397,11 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   legacy_ctx <- list(
     universe = c("AAA", "BBB"),
     equity = 1000,
-    vec = list(close = c(AAA = 50, BBB = 100))
+    vec = list(
+      close = c(AAA = 50, BBB = 100),
+      position = c(AAA = 0, BBB = 0),
+      admissible = c(AAA = TRUE, BBB = TRUE)
+    )
   )
   legacy_weights <- ledgr_weights(
     c(AAA = 0.5, BBB = 0.5),
@@ -410,31 +415,13 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
     )),
     c(AAA = 5, BBB = 2)
   )
-  no_position_read <- legacy_ctx
-  no_position_read$vec <- new.env(parent = emptyenv())
-  no_position_read$vec$close <- legacy_ctx$vec$close
-  makeActiveBinding(
-    "position",
-    function(value) {
-      rlang::abort("dense sizing without keep must not read positions")
-    },
-    no_position_read$vec
-  )
   testthat::expect_identical(
     unclass(ledgr_target_rebalance(
-      legacy_weights,
-      no_position_read,
-      equity_fraction = 0.5
-    )),
-    c(AAA = 5, BBB = 2)
-  )
-  testthat::expect_error(
-    ledgr_target_rebalance(
       ledgr_weights(c(BBB = 1), universe = legacy_ctx$universe),
       legacy_ctx,
       keep = "AAA"
-    ),
-    class = "ledgr_invalid_strategy_helper"
+    )),
+    c(AAA = 0, BBB = 10)
   )
 
   dense <- strategy_context_entrance_fixture(
@@ -496,6 +483,7 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
     equity = 100
   )
   unavailable$vec$close[[1L]] <- NA_real_
+  unavailable$vec$risk_mark[[1L]] <- NA_real_
   testthat::expect_error(
     ledgr_target_rebalance(weights, unavailable, keep = "AAA"),
     class = "ledgr_target_sizing_unavailable"
@@ -1098,13 +1086,13 @@ testthat::test_that("[LTB-0124] a malformed eligibility plane fails closed in ev
   testthat::expect_identical(unclass(calls$selection(restricted)), c(AAA = FALSE, OLD = TRUE))
   testthat::expect_identical(wrapper(restricted, list()), c(AAA = 3, OLD = 10))
 
-  # A dense context without the plane has every instrument eligible; a dense
-  # plane that is present must be well formed.
+  # Every context uses the common eligibility plane, and malformed planes
+  # fail closed.
   dense <- strategy_context_entrance_fixture()
   bare <- dense
   bare$vec["admissible"] <- list(NULL)
-  testthat::expect_identical(unclass(ledgr_selection(bare)), c(AAA = TRUE, BBB = TRUE))
-  testthat::expect_identical(wrapper(bare, list()), c(AAA = 10, BBB = 10))
+  testthat::expect_error(ledgr_selection(bare), class = "ledgr_invalid_strategy_helper")
+  testthat::expect_error(wrapper(bare, list()), class = "ledgr_invalid_strategy_result")
   short <- dense
   short$vec$admissible <- TRUE
   testthat::expect_error(ledgr_selection(short), class = "ledgr_invalid_strategy_helper")

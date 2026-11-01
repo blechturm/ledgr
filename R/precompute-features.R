@@ -83,39 +83,29 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
   ledgr_snapshot_ensure_handle(exp$snapshot)
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)
   unique_defs <- ledgr_precompute_unique_feature_defs(resolved$candidates)
-  availability_active <- isTRUE(exp$availability$active)
-  feature_engine_version <- ledgr_feature_engine_version(availability_active)
-  history_axis <- NULL
-  if (availability_active) {
-    # Availability experiments precompute through the same causal substrate,
-    # policy and calculation bounds as their runs and sweeps.
-    substrate <- ledgr_history_substrate_for_experiment(
-      exp, meta, end = range$scoring_end
-    )
-    calculation_start <- ledgr_history_calculation_start(substrate)
-    payload <- ledgr_history_precompute_payload(
-      unique_defs,
-      substrate,
-      calculation_start = calculation_start,
-      calculation_end = range$scoring_end
-    )
-    pulses_posix <- substrate$axis
-    history_axis <- ledgr_precompute_history_axis(
-      substrate, calculation_start, range$scoring_end
-    )
-    available <- ledgr_precompute_available_counts(
-      substrate$instrument_ids,
-      substrate$bars$observed,
-      substrate$axis,
-      range$scoring_start
-    )
-  } else {
-    bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$scoring_start, range$scoring_end)
-    ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
-    payload <- ledgr_precompute_payload(unique_defs, bars_by_id)
-    pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
-    available <- ledgr_precompute_available_counts_dense(bars_by_id, range$scoring_start)
-  }
+  feature_engine_version <- ledgr_feature_engine_version()
+  substrate <- ledgr_history_substrate_for_experiment(
+    exp, meta,
+    end = range$scoring_end,
+    coverage_start = range$scoring_start
+  )
+  calculation_start <- ledgr_history_calculation_start(substrate)
+  payload <- ledgr_history_precompute_payload(
+    unique_defs,
+    substrate,
+    calculation_start = calculation_start,
+    calculation_end = range$scoring_end
+  )
+  pulses_posix <- substrate$axis
+  history_axis <- ledgr_precompute_history_axis(
+    substrate, calculation_start, range$scoring_end
+  )
+  available <- ledgr_precompute_available_counts(
+    substrate$instrument_ids,
+    substrate$bars$observed,
+    substrate$axis,
+    range$scoring_start
+  )
   projection <- ledgr_projection_from_payload(
     payload = payload,
     universe = exp$universe,
@@ -138,7 +128,8 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
     warmup = warmup,
     projection = projection,
     payload = payload,
-    history_axis = history_axis
+    history_axis = history_axis,
+    clock_kind = substrate$clock_kind
   )
   structure(out, class = c("ledgr_precomputed_features", "list"))
 }
@@ -220,11 +211,22 @@ ledgr_validate_precomputed_features <- function(precomputed,
   }
   if (!identical(
     precomputed$feature_engine_version,
-    ledgr_feature_engine_version(isTRUE(exp$availability$active))
+    ledgr_feature_engine_version()
   )) {
     rlang::abort(
       "`precomputed_features` was built with a different feature engine version. Rerun ledgr_precompute_features().",
       class = "ledgr_precomputed_engine_mismatch"
+    )
+  }
+  expected_clock <- if (isTRUE(exp$availability$active)) {
+    "declared_sessions"
+  } else {
+    "bar_native"
+  }
+  if (!identical(precomputed$clock_kind, expected_clock)) {
+    rlang::abort(
+      "`precomputed_features` was built for a different execution clock.",
+      class = "ledgr_precomputed_feature_mismatch"
     )
   }
   params_hashes <- vapply(
@@ -290,7 +292,7 @@ ledgr_validate_precomputed_features <- function(precomputed,
     )
   }
 
-  invisible(TRUE)
+  invisible(resolved)
 }
 
 ledgr_precompute_validate_history_axis <- function(precomputed, expected) {
@@ -501,61 +503,6 @@ ledgr_precompute_fetch_bars_frame <- function(snapshot, universe, start, end) {
   rows$instrument_id <- as.character(rows$instrument_id)
   rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
   rows
-}
-
-ledgr_precompute_fetch_bars <- function(snapshot, universe, start, end) {
-  rows <- ledgr_precompute_fetch_bars_frame(snapshot, universe, start, end)
-  split(rows, rows$instrument_id)
-}
-
-ledgr_precompute_validate_static_coverage <- function(bars_by_id, universe) {
-  missing <- setdiff(universe, names(bars_by_id))
-  if (length(missing) > 0L) {
-    rlang::abort(
-      sprintf("Precomputed feature scoring range is missing bars for instrument(s): %s.", paste(missing, collapse = ", ")),
-      class = "ledgr_precomputed_coverage_error"
-    )
-  }
-  pulses <- NULL
-  for (id in universe) {
-    bars <- bars_by_id[[id]]
-    if (is.null(bars) || nrow(bars) == 0L) {
-      rlang::abort(
-        sprintf("Precomputed feature scoring range is missing bars for instrument: %s.", id),
-        class = "ledgr_precomputed_coverage_error"
-      )
-    }
-    ts <- ledgr_precompute_ts_key(bars$ts_utc)
-    if (is.null(pulses)) {
-      pulses <- ts
-    } else if (!identical(ts, pulses)) {
-      rlang::abort("Precomputed feature scoring range has incomplete or misaligned per-instrument bars.", class = "ledgr_precomputed_coverage_error")
-    }
-  }
-  invisible(TRUE)
-}
-
-ledgr_precompute_ts_key <- function(x) {
-  instants <- as.numeric(as.POSIXct(x, tz = "UTC"))
-  if (anyNA(instants) || any(!is.finite(instants))) {
-    rlang::abort(
-      paste(
-        "Dense static-coverage timestamps must be non-missing finite",
-        "UTC instants."
-      ),
-      class = "ledgr_invalid_pulse_context"
-    )
-  }
-  if (any(instants != trunc(instants))) {
-    rlang::abort(
-      paste(
-        "Dense static-coverage timestamps must be whole-second UTC",
-        "instants; sub-second values are unsupported."
-      ),
-      class = "ledgr_invalid_pulse_context"
-    )
-  }
-  instants
 }
 
 ledgr_precompute_resolve_grid <- function(exp, param_grid) {
@@ -771,34 +718,6 @@ ledgr_precompute_feature_union <- function(unique_defs) {
   })
   out <- tibble::as_tibble(do.call(rbind, rows))
   out[order(out$feature_id, out$fingerprint, method = "radix"), , drop = FALSE]
-}
-
-# Dense payload. Availability-aware features are calculated over the shared
-# history substrate by ledgr_history_precompute_payload().
-ledgr_precompute_payload <- function(unique_defs, bars_by_id) {
-  out <- list()
-  for (fingerprint in names(unique_defs)) {
-    def <- unique_defs[[fingerprint]]
-    values <- lapply(bars_by_id, function(bars) {
-      ledgr_compute_feature_series(bars, def)
-    })
-    out[[fingerprint]] <- list(
-      feature_id = def$id,
-      fingerprint = fingerprint,
-      values = values
-    )
-  }
-  out
-}
-
-# Bars observed at or before the scoring start, per instrument.
-ledgr_precompute_available_counts_dense <- function(bars_by_id, scoring_start) {
-  scoring_start_posix <- as.POSIXct(scoring_start, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  vapply(
-    bars_by_id,
-    function(bars) as.integer(sum(as.POSIXct(bars$ts_utc, tz = "UTC") <= scoring_start_posix)),
-    integer(1)
-  )
 }
 
 ledgr_precompute_available_counts <- function(instrument_ids, observed, axis, scoring_start) {

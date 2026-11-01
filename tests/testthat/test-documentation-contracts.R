@@ -499,7 +499,6 @@ testthat::test_that("help pages provide browser-free paths to installed articles
     expected <- list(
       ledgr_run = c("strategy-development", "metrics-and-accounting"),
       ledgr_experiment = c("strategy-development", "experiment-store", "reproducibility"),
-      ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
       ledgr_precompute_features = "sweeps",
       ledgr_sweep = "sweeps",
       ledgr_pbo = "selection-integrity",
@@ -573,7 +572,6 @@ testthat::test_that("public result and helper documentation states current seman
     cost_doc <- paste(readLines(ledgr_test_source_vignette("risk-and-cost.qmd"), warn = FALSE), collapse = "\n")
     execution_doc_last_bar <- paste(readLines(ledgr_test_source_vignette("execution-semantics.qmd"), warn = FALSE), collapse = "\n")
     root <- testthat::test_path("..", "..")
-    backtest_help <- paste(readLines(file.path(root, "man", "ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
     experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
     compute_help <- paste(readLines(file.path(root, "man", "ledgr_compute_metrics.Rd"), warn = FALSE), collapse = "\n")
     summary_help <- paste(readLines(file.path(root, "man", "summary.ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
@@ -592,7 +590,6 @@ testthat::test_that("public result and helper documentation states current seman
       testthat::expect_match(metrics_doc, term, fixed = TRUE)
     }
     testthat::expect_match(checklist_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
-    testthat::expect_match(metrics_doc, "compact helper for accounting\\s+examples")
     testthat::expect_match(metrics_doc, "snapshot -> `ledgr_experiment\\(\\)` -> `ledgr_run\\(\\)`")
     testthat::expect_match(checklist_doc, "requires_bars", fixed = TRUE)
     testthat::expect_match(checklist_doc, "stable_after", fixed = TRUE)
@@ -639,7 +636,7 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(metrics_doc, "exactly one comparison context per table", fixed = TRUE)
     testthat::expect_match(metrics_doc, "source sweep context explains\\s+how a candidate was ranked")
     testthat::expect_match(metrics_doc, "For reports, convert the comparison object", fixed = TRUE)
-    testthat::expect_match(execution_doc_last_bar, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+    testthat::expect_match(execution_doc_last_bar, "final_pulse_no_execution", fixed = TRUE)
     testthat::expect_match(checklist_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
     testthat::expect_match(checklist_doc, "Ordinary feature warmup is local to the beginning of each instrument's usable\\s+sample")
     testthat::expect_match(metrics_doc, "Risk Metric Contract", fixed = TRUE)
@@ -668,8 +665,6 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_no_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
     testthat::expect_no_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
-    testthat::expect_match(backtest_help, "quoted bid/ask\\s+spread")
-    testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\}\\s+basis\\s+points before explicit fees")
     testthat::expect_match(experiment_help, "quoted bid/ask\\s+spread")
     testthat::expect_match(experiment_help, "crosses approximately\\s+\\\\code\\{spread_bps\\}\\s+basis\\s+points before explicit fees")
 
@@ -779,7 +774,7 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "### Keep A Position While Rebalancing The Rest", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "This is exactly the target a backtest would receive", fixed = TRUE)
     testthat::expect_match(context_help, "carries\\s+\\\\code\\{asset_state\\}")
-    testthat::expect_match(context_help, "NULL_on_first_dense_pulse", fixed = TRUE)
+    testthat::expect_match(context_help, "asset_state_from_first_pulse", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Returning a bare target keeps the previous state unchanged.", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "state_update = list(decisions_seen = decisions_seen + 1L)", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Read whole vectors, not one instrument at a time", fixed = TRUE)
@@ -1018,7 +1013,7 @@ testthat::test_that("cost documentation contains runnable examples and the curre
         "ledgr_cost_chain",
         "ledgr_cost_steps(cost)",
         "ledgr_cost_describe(cost)",
-        "try(ledgr_backtest(data = bars, strategy = strategy), silent = TRUE)",
+        "try(ledgr_experiment(snapshot, strategy), silent = TRUE)",
         "cost_model = zero"
       )) {
         testthat::expect_match(cost_help, term, fixed = TRUE)
@@ -1455,10 +1450,9 @@ testthat::test_that("condition help exposes stable classes and final-bar behavio
     }
   })
 
-  # Also covers: LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behavior
+  # Also covers: execution teaching documents structured final-pulse evidence.
   local({
     root <- testthat::test_path("..", "..")
-    warning_path <- file.path(root, "man", "LEDGR_LAST_BAR_NO_FILL.Rd")
     execution_candidates <- file.path(
       root,
       "vignettes",
@@ -1466,21 +1460,17 @@ testthat::test_that("condition help exposes stable classes and final-bar behavio
     )
     execution_paths <- execution_candidates[file.exists(execution_candidates)]
     execution_path <- if (length(execution_paths) > 0L) execution_paths[[1L]] else NA_character_
-    final_bar_sources_exist <- file.exists(warning_path) && file.exists(execution_path)
+    final_bar_sources_exist <- file.exists(execution_path)
     testthat::expect_true(
       final_bar_sources_exist,
-      info = "final-bar help and execution sources are required in the review lane"
+      info = "final-pulse execution teaching is required in the review lane"
     )
     if (final_bar_sources_exist) {
-      warning_doc <- paste(readLines(warning_path, warn = FALSE), collapse = "\n")
       execution_doc <- paste(readLines(execution_path, warn = FALSE), collapse = "\n")
 
-      testthat::expect_match(warning_doc, "\\alias{LEDGR_LAST_BAR_NO_FILL}", fixed = TRUE)
-      testthat::expect_match(warning_doc, "No fill is emitted", fixed = TRUE)
-      testthat::expect_match(warning_doc, "ledger is left", fixed = TRUE)
-      testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
-      testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
-      testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+      testthat::expect_match(execution_doc, "final_pulse_no_execution", fixed = TRUE)
+      testthat::expect_match(execution_doc, "does not warn", fixed = TRUE)
+      testthat::expect_match(execution_doc, "no fill", ignore.case = TRUE)
       testthat::expect_no_match(execution_doc, "v0.1.9.1 ships the public transaction-cost model API", fixed = TRUE)
       testthat::expect_no_match(execution_doc, "The stable public transaction-cost model API is planned", fixed = TRUE)
     }

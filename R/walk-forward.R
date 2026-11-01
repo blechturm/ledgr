@@ -131,21 +131,39 @@ ledgr_walk_forward_impl <- function(exp,
   opening_state_policy <- ledgr_walk_forward_opening_state_policy(opening_state_policy)
   ledgr_snapshot_ensure_handle(exp$snapshot)
   fold_windows <- lapply(folds, function(fold) {
-    ledgr_walk_forward_fold_windows(exp, fold, opening_state_policy)
+    ledgr_walk_forward_fold_windows(
+      exp, fold, opening_state_policy, validate_pulses = FALSE
+    )
   })
-  history_substrate <- if (isTRUE(exp$availability$active)) {
-    history_end <- max(as.POSIXct(vapply(fold_windows, function(windows) {
-      max(
-        as.numeric(windows$train$scoring_end_utc),
-        as.numeric(windows$test$scoring_end_utc)
-      )
-    }, numeric(1)), origin = "1970-01-01", tz = "UTC"))
-    ledgr_history_substrate_for_experiment(exp, end = history_end)
-  } else {
-    NULL
+  history_end <- max(as.POSIXct(vapply(fold_windows, function(windows) {
+    max(
+      as.numeric(windows$train$scoring_end_utc),
+      as.numeric(windows$test$scoring_end_utc)
+    )
+  }, numeric(1)), origin = "1970-01-01", tz = "UTC"))
+  history_start <- min(as.POSIXct(vapply(fold_windows, function(windows) {
+    min(
+      as.numeric(windows$train$scoring_start_utc),
+      as.numeric(windows$test$scoring_start_utc)
+    )
+  }, numeric(1)), origin = "1970-01-01", tz = "UTC"))
+  history_substrate <- ledgr_history_substrate_for_experiment(
+    exp,
+    end = history_end,
+    coverage_start = history_start
+  )
+  for (windows in fold_windows) {
+    ledgr_experiment_window_validate_pulses(
+      exp, windows$train, history_substrate
+    )
+    ledgr_experiment_window_validate_pulses(
+      exp, windows$test, history_substrate
+    )
   }
   if (identical(opening_state_policy, "carry_test_state")) {
-    ledgr_walk_forward_refuse_noncontiguous_carry(exp, fold_windows)
+    ledgr_walk_forward_refuse_noncontiguous_carry(
+      exp, fold_windows, history_substrate = history_substrate
+    )
     fold_windows <- ledgr_walk_forward_continue_windows(fold_windows, history_substrate)
   }
   if (identical(opening_state_policy, "flat_test_state")) {

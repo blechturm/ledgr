@@ -13,7 +13,7 @@ testthat::test_that("function(ctx, params) strategies receive strategy_params an
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(qty = 2),
@@ -76,7 +76,7 @@ testthat::test_that("function(ctx, params) with empty default strategy_params is
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -100,7 +100,7 @@ testthat::test_that("function(ctx) strategies fail with migration guidance", {
 
   strategy <- function(ctx) ctx$flat()
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = test_bars,
       strategy = strategy,
       start = "2020-01-01",
@@ -108,10 +108,10 @@ testthat::test_that("function(ctx) strategies fail with migration guidance", {
       db_path = db_path,
     cost_model = ledgr_cost_zero()
     ),
-    class = "ledgr_invalid_strategy_signature"
+    class = "ledgr_invalid_experiment_strategy"
   )
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = test_bars,
       strategy = strategy,
       start = "2020-01-01",
@@ -131,7 +131,7 @@ testthat::test_that("strategy signature and params validation fail clearly", {
 
   bad_signature <- function(ctx, params, extra) ctx$flat()
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = test_bars,
       strategy = bad_signature,
       start = "2020-01-01",
@@ -139,12 +139,12 @@ testthat::test_that("strategy signature and params validation fail clearly", {
       db_path = db_path,
     cost_model = ledgr_cost_zero()
     ),
-    class = "ledgr_invalid_strategy_signature"
+    class = "ledgr_invalid_experiment_strategy"
   )
 
   strategy <- function(ctx, params) ctx$flat()
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = test_bars,
       strategy = strategy,
       strategy_params = list(fn = function() 1),
@@ -173,7 +173,7 @@ testthat::test_that("strategy params and source changes alter provenance hashes"
   run_provenance <- function(strategy, strategy_params, run_id) {
     db_path <- tempfile(fileext = ".duckdb")
     on.exit(unlink(db_path), add = TRUE)
-    bt <- ledgr_backtest(
+    bt <- ledgr_test_run(
       data = test_bars,
       strategy = strategy,
       strategy_params = strategy_params,
@@ -221,7 +221,7 @@ testthat::test_that("legacy strategy objects are rejected instead of stored as R
 
   legacy_strategy <- list(on_pulse = function(ctx) ctx$flat())
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = test_bars,
       strategy = legacy_strategy,
       start = "2020-01-01",
@@ -231,8 +231,8 @@ testthat::test_that("legacy strategy objects are rejected instead of stored as R
       run_id = "legacy-strategy-run",
     cost_model = ledgr_cost_zero()
     ),
-    "`strategy` must be a function or configured strategy list.",
+    "`strategy` must be a function with signature function(ctx, params).",
     fixed = TRUE,
-    class = "ledgr_invalid_args"
+    class = "ledgr_invalid_experiment_strategy"
   )
 })

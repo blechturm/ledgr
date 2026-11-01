@@ -1460,6 +1460,18 @@ test_seam_contracts <- c(
   ledgr_event_row_df = paste(
     "Build typed event rows for writer and reconstruction test oracles."
   ),
+  ledgr_plan_refuse_inputs = paste(
+    "Exercise the canonical next-open refusal precedence from literal inputs."
+  ),
+  ledgr_fill_row_buffer_add = paste(
+    "Build scalar retained-fill rows beside the production batch writer oracle."
+  ),
+  ledgr_projection_feature_accessor_state = paste(
+    "Construct the prepared scalar feature accessor for lookup regression tests."
+  ),
+  ledgr_projection_feature_bundle_accessor_state = paste(
+    "Construct the prepared bundle accessor for lookup regression tests."
+  ),
   ledgr_history_worker_clear = paste(
     "Reset daemon-local staged history between worker identity and cleanup tests."
   ),

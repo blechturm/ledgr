@@ -158,21 +158,26 @@ testthat::test_that("[LTB-0452] the strict preset refuses a held refused fact in
   testthat::expect_identical(summary$refusal_counts, c(basis_unverified = 1L))
   testthat::expect_identical(summary$sealed_refusal_counts, c(basis_unverified = 2L))
 
-  # Dense: no typed stop exists, so the existing refusal class is raised.
+  # Fixed basket: the same canonical typed stop is recorded.
   dense <- refused_fact_dense_snapshot(rows)
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
-  error <- testthat::expect_error(
-    ledgr_run(
-      refused_fact_experiment(dense, ledgr_corporate_actions_strict(), FALSE),
-      run_id = "refused_strict_dense"
-    ),
-    class = "ledgr_corporate_action_quantity_unsupported"
+  dense_bt <- ledgr_run(
+    refused_fact_experiment(dense, ledgr_corporate_actions_strict(), FALSE),
+    run_id = "refused_strict_dense"
   )
-  refused_id <- DBI::dbGetQuery(
+  dense_completion <- ledgr_run_completion(dense_bt)
+  dense_summary <- ledgr_corporate_action_summary(dense_bt)
+  close(dense_bt)
+  testthat::expect_identical(ledgr_run_info(dense, "refused_strict_dense")$status, "INCOMPLETE")
+  testthat::expect_identical(dense_completion$stop_reason, "corporate_action_quantity_refused")
+  dense_stopped <- DBI::dbGetQuery(
     ledgr:::get_connection(dense),
-    "SELECT fact_id FROM snapshot_equity_corporate_actions WHERE parent_instrument_id = 'AAA'"
-  )$fact_id
-  testthat::expect_identical(error$source_fact_ids, refused_id)
+    "SELECT instrument_id, reason_code FROM run_diagnostics WHERE run_id = ? AND outcome = 'stopped'",
+    params = list("refused_strict_dense")
+  )
+  testthat::expect_identical(dense_stopped$instrument_id, "AAA")
+  testthat::expect_identical(dense_stopped$reason_code, "corporate_action_quantity_refused")
+  testthat::expect_identical(dense_summary$corporate_action_fidelity, "unsupported")
 })
 
 # ledgr-test-profile: review

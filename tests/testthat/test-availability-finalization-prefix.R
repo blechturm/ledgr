@@ -196,7 +196,7 @@ testthat::test_that("invalid terminal merge preserves prior rows and status", {
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("dense resume keeps full recomputation and bypasses prefix merge", {
+testthat::test_that("fixed-basket resume commits the valued prefix and resumes it", {
   dates <- as.Date("2020-01-01") + 0:2
   bars <- data.frame(
     ts_utc = as.POSIXct(paste(dates, "16:00:00"), tz = "UTC"),
@@ -250,7 +250,7 @@ testthat::test_that("dense resume keeps full recomputation and bypasses prefix m
     "dense-prefix-bypass"
   )
   testthat::expect_identical(first_store$status, "RUNNING")
-  testthat::expect_equal(nrow(first_store$equity), 0L)
+  testthat::expect_equal(nrow(first_store$equity), 2L)
 
   options(
     ledgr.interrupt = FALSE,
@@ -264,7 +264,7 @@ testthat::test_that("dense resume keeps full recomputation and bypasses prefix m
   )
   testthat::expect_identical(final_store$status, "DONE")
   testthat::expect_equal(nrow(final_store$equity), 3L)
-  testthat::expect_identical(calls$n, 0L)
+  testthat::expect_identical(calls$n, 2L)
   reopened <- ledgr_run_open(snapshot, "dense-prefix-bypass")
   on.exit(close(reopened), add = TRUE)
   testthat::expect_equal(nrow(ledgr_compute_equity_curve(reopened)), 3L)

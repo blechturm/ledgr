@@ -667,12 +667,12 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
   }
   strategy <- function(ctx, params) ctx$flat()
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snap,
     strategy = strategy,
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
-    end = "2020-01-10",
+    end = "2020-01-06",
     features = list(ind),
     db_path = db_path,
     cost_model = ledgr_cost_zero()

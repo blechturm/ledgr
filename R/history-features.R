@@ -41,6 +41,7 @@ ledgr_feature_certify <- function(def) {
     same_functions <- identical(claimed, canonical$fingerprint) ||
       (!is.null(content) && identical(content, canonical$fingerprint))
     if (same_functions &&
+        identical(def$history_source, "catalogue") &&
         !identical(declarations$input_carry, canonical$input_carry)) {
       ledgr_indicator_abort_declaration(
         sprintf(

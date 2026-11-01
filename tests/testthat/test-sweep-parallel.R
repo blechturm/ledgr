@@ -23,7 +23,10 @@ ledgr_parallel_sweep_artifact_counts <- function(snapshot) {
 }
 
 ledgr_parallel_sweep_comparable <- function(x) {
-  volatile <- c("warnings", "provenance", "t_engine", "t_results", "t_fills_extract")
+  volatile <- c(
+    "warnings", "provenance", "t_engine", "t_results", "t_fills_extract",
+    "staged_invariant_bytes", "staged_payload_census", "history_worker_support"
+  )
   out <- as.data.frame(x[, !names(x) %in% volatile, drop = FALSE])
   out$params <- vapply(out$params, ledgr:::canonical_json, character(1))
   out$feature_params <- vapply(out$feature_params, ledgr:::canonical_json, character(1))
@@ -36,6 +39,9 @@ ledgr_parallel_sweep_comparable <- function(x) {
   attr(out, "snapshot_id") <- NULL
   attr(out, "snapshot_hash") <- NULL
   attr(out, "strategy_hash") <- NULL
+  attr(out, "staged_invariant_bytes") <- NULL
+  attr(out, "staged_payload_census") <- NULL
+  attr(out, "history_worker_support") <- NULL
   out
 }
 

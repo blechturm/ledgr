@@ -8,7 +8,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
     targets["TEST_A"] <- params$qty
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(qty = 1),
@@ -92,7 +92,7 @@ testthat::test_that("run tag validation and missing runs fail clearly", {
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",

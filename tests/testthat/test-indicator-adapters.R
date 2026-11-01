@@ -148,13 +148,13 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
     )
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snap,
     strategy = capture_strategy,
     strategy_params = list(feature = "test_ttr_rsi"),
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
-    end = "2020-01-31",
+    end = "2020-01-16",
     features = list(ind),
     db_path = db_path,
   cost_model = ledgr_cost_zero()
@@ -190,13 +190,13 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
     list(targets = ctx$flat(), state_update = list(values = as.list(values)))
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snap,
     strategy = capture_strategy,
     strategy_params = list(feature = "test_csv_signal"),
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
-    end = "2020-01-10",
+    end = "2020-01-06",
     features = list(ind),
     db_path = db_path,
   cost_model = ledgr_cost_zero()

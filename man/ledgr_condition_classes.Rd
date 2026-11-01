@@ -20,7 +20,6 @@
 \alias{ledgr_invalid_valuation_policy}
 \alias{ledgr_availability_inactive}
 \alias{ledgr_availability_sessions_required}
-\alias{ledgr_backtest_availability_unsupported}
 \alias{ledgr_sessions_incomplete}
 \alias{ledgr_promote_identity_mismatch}
 \alias{ledgr_membership_universe_not_found}
@@ -155,8 +154,6 @@
 \alias{ledgr_corporate_action_clock_missing}
 \alias{ledgr_corporate_action_double_credit}
 \alias{ledgr_corporate_action_entitlement_missing}
-\alias{ledgr_corporate_action_quantity_unsupported}
-\alias{ledgr_corporate_action_unsupported}
 \alias{ledgr_db_not_found}
 \alias{ledgr_distribution_adjusted_bars_unsupported}
 \alias{ledgr_duplicate_corporate_action_event}
@@ -271,7 +268,6 @@
 \alias{ledgr_invalid_sweep_projection}
 \alias{ledgr_invalid_sweep_review_input}
 \alias{ledgr_invalid_sweep_review_rank}
-\alias{ledgr_invalid_target_price}
 \alias{ledgr_invalid_timestamp}
 \alias{ledgr_invalid_warmup_input}
 \alias{ledgr_invalid_worker_dependencies}
@@ -396,7 +392,6 @@
 \alias{ledgr_history_duplicate_bar}
 \alias{ledgr_history_outside_axis}
 \alias{ledgr_history_unavailable}
-\alias{ledgr_pulse_snapshot_availability_required}
 \alias{ledgr_pulse_inspection_stopped}
 \alias{ledgr_history_segment_limit_exceeded}
 \alias{ledgr_fact_knowledge_missing}
@@ -498,8 +493,6 @@ metadata, weights or sufficiency query on a value that is not, or no longer
 matches, a \code{ledgr_history} result. \code{ledgr_weight_alignment_mismatch}
 refuses \code{\link[=ledgr_align_weights]{ledgr_align_weights()}} solver output whose length, names or shape
 do not match the history result's included instruments.
-\code{ledgr_pulse_snapshot_availability_required} refuses experiment-derived
-\code{\link[=ledgr_pulse_snapshot]{ledgr_pulse_snapshot()}} inspection of a dense experiment, and
 \code{ledgr_pulse_inspection_stopped} refuses an inspection cutoff whose
 observe-and-settle stage stops before the strategy context is built.
 \code{ledgr_staged_history_mismatch} refuses a worker task
@@ -526,10 +519,6 @@ execution.
 
 \code{ledgr_availability_sessions_required} is raised when availability-aware
 execution lacks a complete session calendar.
-
-\code{ledgr_backtest_availability_unsupported} is raised when \code{ledgr_backtest()}
-receives a snapshot that declares point-in-time facts; use
-\code{ledgr_experiment()} and \code{ledgr_run()}.
 
 \code{ledgr_promote_identity_mismatch} is a warning raised when a promoted
 candidate's recorded identities differ from the promoting experiment's.
@@ -946,8 +935,7 @@ is an assumption-backed estimate, not an exact value.
 \code{terminal_settlement_unsupported}, \code{terminal_mark_unavailable},
 \code{corporate_action_cash_refused} and \code{corporate_action_quantity_refused}
 stop the run \code{INCOMPLETE} and keep the accepted prefix. Nothing is
-fabricated. A dense run has no typed stop: its corporate-action refusals
-raise \code{ledgr_corporate_action_unsupported}.
+fabricated. The same typed stop applies on either execution clock.
 \item \strong{Frozen-at-end bound.} \code{total_return_if_frozen_worthless} in
 \code{\link[=ledgr_valuation_summary]{ledgr_valuation_summary()}} restates endpoint return with holdings still
 frozen at the end valued at zero. It is a bound, not a corrected return,
@@ -1004,8 +992,6 @@ double credit boundary.
 \item \code{ledgr_corporate_action_entitlement_missing} reports a cash-dividend,
 disposition or quantity-effect corporate action without an entitlement
 clock.
-\item \code{ledgr_corporate_action_quantity_unsupported} reports the corporate
-action quantity unsupported boundary.
 \item \code{ledgr_db_not_found} reports db was not found.
 \item \code{ledgr_distribution_adjusted_bars_unsupported} reports the distribution
 adjusted bars unsupported boundary.
@@ -1157,7 +1143,6 @@ input input.
 input.
 \item \code{ledgr_invalid_sweep_review_rank} reports invalid sweep review rank
 input.
-\item \code{ledgr_invalid_target_price} reports invalid target price input.
 \item \code{ledgr_invalid_timestamp} reports invalid timestamp input.
 \item \code{ledgr_invalid_warmup_input} reports invalid warmup input input.
 \item \code{ledgr_invalid_worker_dependencies} reports invalid worker dependencies

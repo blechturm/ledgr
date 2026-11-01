@@ -280,7 +280,7 @@ eligibility_plane_capture <- function(ctx, params) {
   )
 }
 
-testthat::test_that("[LTB-0119] every context exposes the eligibility planes, built once per dense run", {
+testthat::test_that("[LTB-0119] every context exposes the common eligibility planes", {
   dates <- as.Date("2026-02-01") + 0:3
   bars <- data.frame(
     ts_utc = rep(as.POSIXct(paste(dates, "16:00:00"), tz = "UTC"), each = 2L),
@@ -300,15 +300,6 @@ testthat::test_that("[LTB-0119] every context exposes the eligibility planes, bu
     masked = list(1, 1)
   )
 
-  builds <- 0L
-  build_planes <- ledgr:::ledgr_dense_eligibility_planes
-  testthat::local_mocked_bindings(
-    ledgr_dense_eligibility_planes = function(n) {
-      builds <<- builds + 1L
-      build_planes(n)
-    },
-    .package = "ledgr"
-  )
   dense_run <- ledgr_run(ledgr_experiment(
     dense_snapshot,
     eligibility_plane_capture,
@@ -322,7 +313,6 @@ testthat::test_that("[LTB-0119] every context exposes the eligibility planes, bu
   dense_seen <- availability_last_state(dense_run)$planes
   testthat::expect_length(dense_seen, 4L)
   for (entry in dense_seen) testthat::expect_identical(plain(entry), plain(dense_expected))
-  testthat::expect_identical(builds, 1L)
 
   pulse <- ledgr_pulse_snapshot(
     dense_snapshot,

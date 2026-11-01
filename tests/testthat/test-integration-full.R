@@ -52,7 +52,7 @@ testthat::test_that("LDG-507 full v0.1.2 workflow completes without warnings", {
     targets
   }
 
-  bt <- testthat::expect_no_warning(ledgr_backtest(
+  bt <- testthat::expect_no_warning(ledgr_test_run(
     data = bars,
     strategy = strategy,
     start = as.character(dates[[1]]),

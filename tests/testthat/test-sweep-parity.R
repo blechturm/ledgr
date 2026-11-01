@@ -249,19 +249,18 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
       "total_return", "annualized_return", "volatility", "sharpe_ratio",
       "max_drawdown", "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash",
+      "feature_params", "warnings", "diagnostics", "feature_fingerprints", "risk_chain_hash",
       "provenance", "t_engine", "t_results", "t_fills_extract"
     )
   )
   testthat::expect_true(all(results$status == "DONE"))
 
   partial_row <- results[results$candidate_id == "partial", , drop = FALSE]
-  testthat::expect_true(any(vapply(
-    partial_row$warnings[[1]],
-    function(w) grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE),
-    logical(1)
-  )))
+  testthat::expect_true("final_pulse_no_execution" %in%
+    partial_row$diagnostics[[1]]$reason_code)
   testthat::expect_length(results$warnings[[which(results$candidate_id == "zero")]], 0L)
+  testthat::expect_false("final_pulse_no_execution" %in%
+    results$diagnostics[[which(results$candidate_id == "zero")]]$reason_code)
 
   for (label in results$candidate_id) {
     candidate <- ledgr_candidate(results, label)
@@ -535,7 +534,7 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
       ledgr_corporate_actions_research()
     ),
     data = list(source = "snapshot", snapshot_hash = "test-hash"),
-    identity_rule_version = 4L,
+    identity_rule_version = 5L,
     history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy()),
     strategy = list(id = "x", params = list())
   )
@@ -543,6 +542,6 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
   # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002.
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "2ffe955ea6e7d2a411fd8ea52de1b7e28aeeae9160323f51eba1aa090cd3004b"
+    "84194b28bec7337ad8f14cdd300d7f6ed166924a296616d41b31869565a7a01c"
   )
 })

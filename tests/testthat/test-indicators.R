@@ -252,7 +252,7 @@ testthat::test_that("indicator deregistration does not mutate completed run arti
     ctx$flat()
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",

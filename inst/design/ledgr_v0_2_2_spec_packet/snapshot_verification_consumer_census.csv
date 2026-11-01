@@ -4,7 +4,6 @@ availability-persistence.R,reader_writer,3,ledgr_experiment|ledgr_run|ledgr_fact
 availability-policy.R,reader,3,ledgr_experiment|ledgr_backtest,enclosing class-3 guard
 availability-provider.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward|result reports,enclosing class-3 guard
 availability-results.R,reader,3,ledgr_results|ledgr_run_explain|print.ledgr_backtest|summary.ledgr_backtest,ledgr_backtest_ensure_snapshot
-backtest.R,reader,3,ledgr_backtest|ledgr_run,ledgr_snapshot_ensure_handle|ledgr_run_snapshot_guard
 backtest-runner.R,reader,3,ledgr_run,ledgr_snapshot_ensure_handle at public outer entry
 backtest-results.R,reader,2+3,ledgr_compute_metrics|print.ledgr_backtest|summary.ledgr_backtest,guard only before snapshot-dependent branch
 condition-reference.R,documentation,NA,roxygen condition reference,mentions table-shaped condition names but reads no snapshot content
@@ -19,7 +18,6 @@ experiment.R,reader,3,ledgr_experiment,ledgr_experiment_validate_snapshot
 feature-inspection.R,reader,3,ledgr_feature_contract_check,ledgr_snapshot_ensure_handle
 indicator-dev.R,reader,3,ledgr_indicator_dev,ledgr_snapshot_ensure_handle
 precompute-features.R,reader,3,ledgr_precompute_features|ledgr_sweep|ledgr_walk_forward,ledgr_snapshot_ensure_handle at outer entry
-pulse-snapshot.R,reader,3,ledgr_pulse_snapshot,ledgr_snapshot_ensure_handle
 run-snapshot.R,reader,3,ledgr_run|resume,ledgr_snapshot_ensure_verified
 run-store.R,reader,3,ledgr_run_open (INCOMPLETE),ledgr_snapshot_ensure_verified before availability-provider reconstruction
 snapshot.R,reader,1+3,print.ledgr_snapshot|summary.ledgr_snapshot,metadata lookup only for print; ensure for summary
@@ -33,4 +31,3 @@ snapshot-source.R,reader,3,run|reconstruction|snapshot-dependent result reports,
 snapshots-seal.R,verifier_writer,3,ledgr_snapshot_seal,complete check; register only after commit
 snapshot-verification.R,verifier,3,all class-3 entries,ledgr_snapshot_ensure_verified
 sweep-persistence.R,durable_and_reader,2+3,ledgr_sweep_save|ledgr_sweep_list|ledgr_sweep_open,durable-only except ensure before sweep_open universe rows
-walk-forward-folds.R,reader,3,ledgr_experiment_window|ledgr_run_window|ledgr_walk_forward,ledgr_snapshot_ensure_handle at public outer entry

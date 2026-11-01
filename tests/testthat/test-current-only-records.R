@@ -22,7 +22,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     testthat::expect_no_match(source, token, fixed = TRUE)
   }
 
-  testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 4L)
+  testthat::expect_identical(ledgr:::ledgr_identity_rule_version, 5L)
   testthat::expect_identical(
     ledgr:::ledgr_saved_sweep_schema_version,
     6L
@@ -37,7 +37,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   )
 
   current <- list(
-    identity_rule_version = 4L,
+    identity_rule_version = 5L,
     data = list(snapshot_id = "local-id", snapshot_hash = "content-hash"),
     risk_chain = ledgr:::ledgr_config_risk_identity(),
     history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
@@ -89,7 +89,7 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
   round_trip <- ledgr:::ledgr_json_read_config(
     ledgr:::canonical_json(config)
   )
-  testthat::expect_identical(round_trip$identity_rule_version, 4L)
+  testthat::expect_identical(round_trip$identity_rule_version, 5L)
 
   invalid_configs <- list(
     missing_identity_rule = function(x) {
@@ -106,6 +106,10 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
     },
     preceding_identity_rule = function(x) {
       x$identity_rule_version <- 3L
+      x
+    },
+    former_identity_rule = function(x) {
+      x$identity_rule_version <- 4L
       x
     },
     double_identity_rule = function(x) {
@@ -257,7 +261,9 @@ testthat::test_that("[LTB-0264] stored record readers are current-only", {
 })
 
 testthat::test_that("[LTB-0265] removed public call forms have no compatibility path", {
-  testthat::expect_false("fill_model" %in% names(formals(ledgr_backtest)))
+  testthat::expect_false(exists(
+    "ledgr_backtest", envir = asNamespace("ledgr"), inherits = FALSE
+  ))
   testthat::expect_false("fill_model" %in% names(formals(ledgr_experiment)))
   testthat::expect_false(
     "type" %in% names(formals(ledgr:::as_tibble.ledgr_backtest))

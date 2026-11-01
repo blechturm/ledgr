@@ -148,9 +148,9 @@ bt <- ledgr_run(
 )
 ```
 
-The `LEDGR_LAST_BAR_NO_FILL` warning means the rule changed its target on the
-last bar, where no later open exists to fill it. It does not affect what the
-run records; `vignette("execution-semantics", package = "ledgr")` explains it.
+The `final_pulse_no_execution` diagnostic means the rule changed its target on
+the last bar, where no later open exists to fill it. It does not create a fill;
+`vignette("execution-semantics", package = "ledgr")` explains it.
 
 ## The Provenance Model
 
@@ -507,8 +507,8 @@ tryCatch(
 
 With a seed, the draws move the strategy between instruments. A different seed
 gives different fills. The random switches often change the target on the last
-bar, so these runs raise the `LEDGR_LAST_BAR_NO_FILL` warning explained above;
-this chunk hides it.
+bar, so these runs retain the `final_pulse_no_execution` diagnostic explained
+above.
 
 ```{r}
 #| label: random-seeded

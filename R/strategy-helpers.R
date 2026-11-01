@@ -3,8 +3,7 @@ ledgr_validate_strategy_helper_ctx <- function(ctx, helper) {
     rlang::abort(sprintf("`ctx` must be a ledgr strategy context for `%s()`.", helper), class = "ledgr_invalid_strategy_helper")
   }
   universe <- ctx$universe
-  allow_empty <- isTRUE(ctx$availability_active)
-  if (!is.character(universe) || (!allow_empty && length(universe) < 1L) ||
+  if (!is.character(universe) ||
       anyNA(universe) || any(!nzchar(universe)) || anyDuplicated(universe)) {
     rlang::abort(sprintf("`ctx$universe` must be a unique character vector for `%s()`.", helper), class = "ledgr_invalid_strategy_helper")
   }
@@ -75,7 +74,6 @@ ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
 #' @examples
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
-#'   availability_active = FALSE,
 #'   vec = list(
 #'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
 #'   )
@@ -352,8 +350,7 @@ ledgr_target_rebalance <- function(weights,
     )
   }
 
-  availability_active <- isTRUE(ctx$availability_active)
-  members <- if (availability_active) universe[ledgr_strategy_eligible(ctx, universe)] else universe
+  members <- universe[ledgr_strategy_eligible(ctx, universe)]
 
   extra <- setdiff(names(weights), members)
   if (length(extra) > 0L) {
@@ -369,44 +366,26 @@ ledgr_target_rebalance <- function(weights,
     rlang::abort("Levered weights are not supported; `sum(abs(weights))` must be <= 1.", class = "ledgr_levered_weights")
   }
 
-  position_required <- availability_active || length(keep) > 0L
-  position <- if (position_required) ctx$vec$position else NULL
-  if (position_required &&
-      (is.null(position) || length(position) != length(universe))) {
+  position <- ctx$vec$position
+  if (is.null(position) || length(position) != length(universe)) {
     rlang::abort(
       paste0(
         "`ctx$vec$position` must provide one value per decision-axis ",
-        "instrument when availability is active or `keep` is used."
+        "instrument."
       ),
       class = "ledgr_invalid_strategy_helper"
     )
   }
-  position_vec <- if (position_required) {
-    stats::setNames(as.numeric(position), universe)
-  } else {
-    stats::setNames(numeric(length(universe)), universe)
-  }
-  target <- if (availability_active) {
-    position_vec
-  } else {
-    stats::setNames(rep(0, length(universe)), universe)
-  }
-  if (availability_active && length(members) > 0L) target[members] <- 0
+  position_vec <- stats::setNames(as.numeric(position), universe)
+  target <- position_vec
+  if (length(members) > 0L) target[members] <- 0
   if (length(keep) > 0L) target[keep] <- position_vec[keep]
   allocation_equity <- equity
-  held_nonmembers <- if (availability_active) {
-    setdiff(universe[position_vec != 0], members)
-  } else {
-    character()
-  }
+  held_nonmembers <- setdiff(universe[position_vec != 0], members)
   reserved_ids <- union(held_nonmembers, keep[position_vec[keep] != 0])
   if (length(reserved_ids) > 0L) {
     idx <- match(reserved_ids, universe)
-    marks <- if (availability_active) {
-      as.numeric(ctx$vec$risk_mark[idx])
-    } else {
-      as.numeric(ctx$vec$close[idx])
-    }
+    marks <- as.numeric(ctx$vec$risk_mark[idx])
     quantities <- position_vec[idx]
     if (any(!is.finite(marks))) {
       rlang::abort(
@@ -435,7 +414,7 @@ ledgr_target_rebalance <- function(weights,
   sized_value <- weight_values[valid] * equity_fraction * allocation_equity
   skipped <- character()
   scale <- 1
-  if (availability_active && any(invalid_price)) {
+  if (any(invalid_price)) {
     # An eligible member without a current close is skipped for this
     # rebalance: it keeps its current quantity and its weight is not
     # redistributed. Priced members keep their fully priced size unless a held
@@ -466,14 +445,6 @@ ledgr_target_rebalance <- function(weights,
     if (is.environment(notes)) {
       notes$sizing_skipped <- union(notes$sizing_skipped, skipped)
     }
-  } else if (any(invalid_price)) {
-    rlang::warn(
-      sprintf(
-        "Cannot size targets for %s: close price is missing, non-finite, or non-positive. Targeting 0.",
-        paste(sprintf("`%s`", weight_ids[invalid_price]), collapse = ", ")
-      ),
-      class = "ledgr_invalid_target_price"
-    )
   }
   if (scale != 1) sized_value <- scale * sized_value
   target[weight_ids[valid]] <- floor(sized_value / price[valid])
@@ -537,7 +508,6 @@ ledgr_target_quantity <- function(selection, ctx, qty) {
     )
   }
 
-  availability_active <- isTRUE(ctx$availability_active)
   eligible <- ledgr_strategy_eligible(ctx, universe)
   selection_ids <- names(selection)
   chosen <- as.logical(selection)
@@ -557,18 +527,14 @@ ledgr_target_quantity <- function(selection, ctx, qty) {
     )
   }
 
-  target <- if (availability_active) {
-    position <- ctx$vec$position
-    if (is.null(position) || length(position) != length(universe)) {
-      rlang::abort(
-        "`ctx$vec$position` must provide one value per decision-axis instrument when availability is active.",
-        class = "ledgr_invalid_strategy_helper"
-      )
-    }
-    stats::setNames(as.numeric(position), universe)
-  } else {
-    stats::setNames(rep(0, length(universe)), universe)
+  position <- ctx$vec$position
+  if (is.null(position) || length(position) != length(universe)) {
+    rlang::abort(
+      "`ctx$vec$position` must provide one value per decision-axis instrument.",
+      class = "ledgr_invalid_strategy_helper"
+    )
   }
+  target <- stats::setNames(as.numeric(position), universe)
   target[eligible] <- 0
   target[selected_idx] <- as.numeric(qty)
 

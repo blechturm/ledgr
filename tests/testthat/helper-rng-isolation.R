@@ -119,8 +119,8 @@ ledgr_rng_source_inventory <- function(parsed) {
 # Wrapper-shape bodies of Section 5.4 (decision (15)).
 ledgr_rng_wrapper_expected <- function() {
   c(
-    # 14 W exports other than the dispatch-only generic ledgr_candidate.
-    "ledgr_backtest", "ledgr_candidate_reproduction_key", "ledgr_feature_grid",
+    # 13 W exports other than the dispatch-only generic ledgr_candidate.
+    "ledgr_candidate_reproduction_key", "ledgr_feature_grid",
     "ledgr_pbo", "ledgr_precompute_features", "ledgr_promote", "ledgr_pulse_snapshot",
     "ledgr_run", "ledgr_sim_bars", "ledgr_sim_pit_inputs", "ledgr_strategy_grid",
     "ledgr_sweep", "ledgr_sweep_review", "ledgr_walk_forward",

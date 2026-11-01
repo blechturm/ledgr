@@ -179,7 +179,7 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       # retention identity, binds function captures, and retains the sealed hash;
       # the frozen rule-1 run has neither.
       testthat::expect_null(expected_config$identity_rule_version)
-      testthat::expect_identical(as.integer(actual_config$identity_rule_version), 4L)
+      testthat::expect_identical(as.integer(actual_config$identity_rule_version), 5L)
       testthat::expect_null(expected_config$history)
       testthat::expect_identical(
         actual_config$history,

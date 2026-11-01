@@ -395,10 +395,10 @@ If a whole run finishes with no fills, test the strategy on a late
 pulse. A feature that never warms up looks exactly like this first week,
 only it never ends.
 
-The run also prints two `LEDGR_LAST_BAR_NO_FILL` warnings, one for each
+The run diagnostics also retain `final_pulse_no_execution` for each
 instrument whose target changed on the final bar: there is no later open
-at which to fill those changes. Expect them at the end of most samples;
-`?LEDGR_LAST_BAR_NO_FILL` explains when they matter.
+at which to fill those changes. The execution-semantics article explains
+when that evidence matters.
 
 ## Choose Members With A Rule Instead Of A Rank
 

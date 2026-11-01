@@ -52,9 +52,8 @@ ledgr-owned metrics and retained sweep returns.
 \code{what = "diagnostics"} returns ordered durable decision, risk, execution,
 reconciliation, and stop evidence. A structured strategy result may add
 \code{intent_reason}, one non-empty character scalar; when supplied it is
-retained once at portfolio level for that invoked pulse in dense and
-availability-aware runs. Dense runs otherwise return the same typed
-zero-row schema.
+retained once at portfolio level for that invoked pulse. Runs without such
+evidence return the same typed zero-row schema.
 \code{what = "availability"} reconstructs the per-pulse availability plane from
 sealed facts, the effective plan, and ledger holdings. It does not execute
 strategy code or invent targets.
@@ -91,8 +90,15 @@ strategy <- function(ctx, params) {
   targets["AAA"] <- 1
   targets
 }
-bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot, strategy,
+  opening = ledgr_opening(cash = 1000),
+  cost_model = ledgr_cost_zero()
+)
+bt <- ledgr_run(exp)
 ledgr_results(bt, what = "trades")
 ledgr_results(bt, what = "returns")
 close(bt)
+ledgr_snapshot_close(snapshot)
 }

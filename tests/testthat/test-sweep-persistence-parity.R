@@ -272,11 +272,8 @@ testthat::test_that("retained-series parity matrix covers final-bar and failed-c
   testthat::expect_identical(unique(as.character(retained$candidate_id)), "final_bar")
   testthat::expect_identical(nrow(retained), length(unique(bars$ts_utc)))
   testthat::expect_equal(retained$equity[[nrow(retained)]], sweep$final_equity[[1]], tolerance = 1e-12)
-  testthat::expect_true(any(vapply(
-    sweep$warnings[[1]],
-    function(w) grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE),
-    logical(1)
-  )))
+  testthat::expect_true("final_pulse_no_execution" %in%
+    sweep$diagnostics[[1]]$reason_code)
   testthat::expect_error(
     ledgr_sweep_returns(sweep, candidates = "failed"),
     class = "ledgr_sweep_returns_candidate_not_completed"

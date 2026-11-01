@@ -19,6 +19,30 @@ ledgr_output_typed_columns <- c(
   "cash_delta", "position_delta", "event_realized", "event_cost_basis", "meta"
 )
 
+ledgr_memory_diagnostic_keep <- function(diagnostics, n = NULL) {
+  if (is.null(n)) {
+    n <- if (is.data.frame(diagnostics)) nrow(diagnostics) else length(diagnostics$stage)
+  }
+  if (n == 0L) return(logical())
+  take <- function(name, default) {
+    value <- diagnostics[[name]]
+    if (is.null(value)) value <- default
+    rep_len(value, n)
+  }
+  stage <- as.character(take("stage", NA_character_))
+  outcome <- as.character(take("outcome", NA_character_))
+  quantity <- as.numeric(take("quantity", NA_real_))
+  mark_source <- as.character(take("mark_source", ""))
+  reason_code <- as.character(take("reason_code", ""))
+  valued <- stage %in% "decision" |
+    (stage %in% "valuation" & outcome %in% "marked")
+  (valued & !is.na(quantity) & quantity != 0 &
+    mark_source %in% c("stale_close", "frozen_close")) |
+    (stage %in% "valuation" & reason_code %in% "terminal_disposition") |
+    reason_code %in% "final_pulse_no_execution" |
+    outcome %in% "stopped"
+}
+
 # The legs of a published fill block (Synthesis Section 4, leg group): per
 # fill, a CLOSE leg for its closed quantity and then an OPEN leg for its
 # opened quantity, in event order, with the canonical leg-fee split; an
@@ -71,6 +95,11 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   sink$typed_columns <- character(0)
   sink$nonwrote_buffer_result <- FALSE
   sink$refresh_seq_on_exception <- TRUE
+  sink$preserve_diagnostic_seq <- FALSE
+  sink$diagnostic_keep <- function(diagnostics, n = NULL) {
+    if (is.null(n)) n <- if (is.data.frame(diagnostics)) nrow(diagnostics) else length(diagnostics$stage)
+    rep(TRUE, n)
+  }
 
   # DBI::dbWithTransaction() rolls back on an interrupt but then returns
   # normally, which would let a run finalize as if its rolled-back pulses had
@@ -227,6 +256,7 @@ ledgr_output_sink_memory <- function(run_id) {
   sink$typed_columns <- ledgr_output_typed_columns
   sink$nonwrote_buffer_result <- TRUE
   sink$refresh_seq_on_exception <- FALSE
+  sink$preserve_diagnostic_seq <- TRUE
 
   # The fill legs of the pulse's published blocks: leg columns (the leg
   # group of ledgr_fill_leg_block()), held closure-local until flush_legs()
@@ -336,13 +366,9 @@ ledgr_output_sink_memory <- function(run_id) {
   # when read.
   diagnostic_parts <- vector("list", 64L)
   diagnostic_part_n <- 0L
+  sink$diagnostic_keep <- ledgr_memory_diagnostic_keep
   sink$keep_diagnostics <- function(diagnostics) {
-    valued <- diagnostics$stage %in% "decision" |
-      (diagnostics$stage %in% "valuation" & diagnostics$outcome %in% "marked")
-    keep <- (valued & !is.na(diagnostics$quantity) & diagnostics$quantity != 0 &
-      diagnostics$mark_source %in% c("stale_close", "frozen_close")) |
-      (diagnostics$stage %in% "valuation" & diagnostics$reason_code %in% "terminal_disposition") |
-      diagnostics$outcome %in% "stopped"
+    keep <- sink$diagnostic_keep(diagnostics)
     if (any(keep)) {
       i <- diagnostic_part_n + 1L
       if (i > length(diagnostic_parts)) {
@@ -389,6 +415,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   pending_realized <- numeric()
   pending_cost_basis <- numeric()
   handler <- list()
+  handler$diagnostic_keep <- sink$diagnostic_keep
+  handler$persists_strategy_state <- isTRUE(sink$drains)
 
   # -- Event column buffer and capacity growth -------------------------------
 
@@ -616,12 +644,14 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   }
   handler$write_run_diagnostics <- function(diagnostics) {
     if (!is.null(diagnostics) && nrow(diagnostics) > 0L) {
-      diagnostics$diagnostic_seq <- seq.int(
-        from = next_diagnostic_seq(),
-        length.out = nrow(diagnostics)
-      )
+      if (!isTRUE(sink$preserve_diagnostic_seq)) {
+        diagnostics$diagnostic_seq <- seq.int(
+          from = next_diagnostic_seq(),
+          length.out = nrow(diagnostics)
+        )
+      }
       sink$keep_diagnostics(diagnostics)
-      state$next_diagnostic_seq <- state$next_diagnostic_seq + nrow(diagnostics)
+      state$next_diagnostic_seq <- max(diagnostics$diagnostic_seq) + 1L
     }
     invisible(TRUE)
   }

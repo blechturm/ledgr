@@ -25,7 +25,9 @@ ledgr_has_namespace <- function(pkg) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+#' bt <- ledgr_run(exp)
 #' if (requireNamespace("ggplot2", quietly = TRUE)) {
 #'   plot(bt)
 #' }

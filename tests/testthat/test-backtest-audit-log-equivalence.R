@@ -29,37 +29,23 @@ testthat::test_that("audit_log matches db_live results", {
   }
 
   end_ts <- df$ts_utc[[n_rows - 1L]]
-  expected_last_bar_warning <- function(code) {
-    seen <- FALSE
-    value <- withCallingHandlers(
-      force(code),
-      warning = function(w) {
-        if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
-          seen <<- TRUE
-          invokeRestart("muffleWarning")
-        }
-      }
-    )
-    testthat::expect_true(seen)
-    value
-  }
-  bt_audit <- expected_last_bar_warning(ledgr_backtest(
+  bt_audit <- ledgr_test_run(
     snapshot = snap,
     strategy = strategy,
     universe = "BTC",
     end = end_ts,
     execution_mode = "audit_log",
   cost_model = ledgr_cost_zero()
-  ))
+  )
   on.exit(close(bt_audit), add = TRUE)
-  bt_db <- expected_last_bar_warning(ledgr_backtest(
+  bt_db <- ledgr_test_run(
     snapshot = snap,
     strategy = strategy,
     universe = "BTC",
     end = end_ts,
     execution_mode = "db_live",
   cost_model = ledgr_cost_zero()
-  ))
+  )
   on.exit(close(bt_db), add = TRUE)
 
   fills_a <- ledgr_run_fills(bt_audit)
@@ -80,4 +66,11 @@ testthat::test_that("audit_log matches db_live results", {
   testthat::expect_equal(eq_a$equity, eq_b$equity, tolerance = 1e-8)
   testthat::expect_equal(eq_a$cash, eq_b$cash, tolerance = 1e-8)
   testthat::expect_equal(eq_a$positions_value, eq_b$positions_value, tolerance = 1e-8)
+  diagnostics_a <- ledgr_results(bt_audit, "diagnostics")
+  diagnostics_b <- ledgr_results(bt_db, "diagnostics")
+  testthat::expect_equal(
+    diagnostics_a[, setdiff(names(diagnostics_a), "run_id"), drop = FALSE],
+    diagnostics_b[, setdiff(names(diagnostics_b), "run_id"), drop = FALSE]
+  )
+  testthat::expect_true("final_pulse_no_execution" %in% diagnostics_a$reason_code)
 })

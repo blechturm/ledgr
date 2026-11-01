@@ -61,7 +61,7 @@ testthat::test_that("risk identity participates in config_hash without a separat
       snapshot_id = "test-snapshot",
       snapshot_hash = "test-hash"
     ),
-    identity_rule_version = 4L,
+    identity_rule_version = 5L,
     history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   )
 
@@ -121,7 +121,7 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
       snapshot_id = "test-snapshot",
       snapshot_hash = "test-hash"
     ),
-    identity_rule_version = 4L,
+    identity_rule_version = 5L,
     history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   )
 

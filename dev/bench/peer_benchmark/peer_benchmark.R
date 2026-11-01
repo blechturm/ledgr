@@ -635,27 +635,39 @@ peer_ledgr_ephemeral_snapshot_prepare <- function(bars_path) {
   bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
   bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
   universe <- sort(unique(as.character(bars$instrument_id)))
-  bars_by_id <- stats::setNames(lapply(universe, function(id) {
-    out <- bars[bars$instrument_id == id, , drop = FALSE]
-    out[order(out$ts_utc), , drop = FALSE]
-  }), universe)
-  bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, universe)
-  bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, universe)
-  pulses_posix <- as.POSIXct(bars_by_id[[universe[[1L]]]]$ts_utc, tz = "UTC")
+  pulses_posix <- sort(unique(as.POSIXct(bars$ts_utc, tz = "UTC")))
   pulses_iso <- format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  static_bars_views <- ledgr:::ledgr_bars_pulse_views(
-    bars_mat = bars_mat,
-    instrument_ids = universe,
-    pulses_posix = pulses_posix
+  availability_data <- list(
+    families = data.frame(family = character(), stringsAsFactors = FALSE),
+    sessions = ledgr:::ledgr_bar_native_sessions(pulses_posix)
   )
+  availability_config <- list(
+    universe = list(instrument_ids = universe),
+    availability = list(
+      universe_rule = NULL,
+      valuation_policy = unclass(
+        ledgr_valuation_stale(.Machine$integer.max, "freeze")
+      )
+    ),
+    history_policy = ledgr_history_policy()
+  )
+  history_substrate <- ledgr:::ledgr_history_substrate(
+    bars = bars,
+    instrument_ids = universe,
+    axis = pulses_posix,
+    availability_data = availability_data,
+    availability_config = availability_config,
+    snapshot_hash = "peer-ephemeral",
+    clock_kind = "bar_native"
+  )
+  ledgr:::ledgr_history_substrate_require_rectangular(history_substrate)
   list(
     bars = bars,
     universe = universe,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
     pulses_posix = pulses_posix,
     pulses_iso = pulses_iso,
-    static_bars_views = static_bars_views
+    history_substrate = history_substrate,
+    availability_config = availability_config
   )
 }
 
@@ -668,11 +680,11 @@ peer_ledgr_ephemeral_experiment_setup <- function(prep, features) {
     feature_defs <- ledgr:::ledgr_flatten_feature_list(features, context = "`features`")
     active_alias_map <- NULL
   }
-  # Production dense precompute payload (the test-only matrix builder was
-  # deleted by LDG-3067).
-  payload <- ledgr:::ledgr_precompute_payload(
+  payload <- ledgr:::ledgr_history_precompute_payload(
     ledgr:::ledgr_precompute_unique_feature_defs(list(list(feature_defs = feature_defs))),
-    prep$bars_by_id
+    prep$history_substrate,
+    calculation_start = ledgr:::ledgr_history_calculation_start(prep$history_substrate),
+    calculation_end = utils::tail(prep$pulses_posix, 1L)
   )
   runtime_projection <- ledgr:::ledgr_projection_from_payload(
     payload = payload,
@@ -681,11 +693,21 @@ peer_ledgr_ephemeral_experiment_setup <- function(prep, features) {
     feature_engine_version = ledgr:::ledgr_feature_engine_version(),
     alias_index = NULL
   )
-  c(prep, list(
-    feature_defs = feature_defs,
-    runtime_projection = runtime_projection,
-    active_alias_map = active_alias_map
-  ))
+  history_substrate <- ledgr:::ledgr_history_substrate_bind_features(
+    prep$history_substrate,
+    runtime_projection
+  )
+  availability_provider <- ledgr:::ledgr_availability_provider_from_substrate(
+    history_substrate,
+    prep$availability_config,
+    "peer-ephemeral"
+  )
+  prep$feature_defs <- feature_defs
+  prep$runtime_projection <- runtime_projection
+  prep$active_alias_map <- active_alias_map
+  prep$history_substrate <- history_substrate
+  prep$availability_provider <- availability_provider
+  prep
 }
 
 peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy, seed,
@@ -720,13 +742,14 @@ peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy
     checkpoint_every = 0L,
     telemetry_stride = 0L,
     state = list(cash = 1e7, positions = initial_positions),
-    state_prev = NULL,
-    bars_by_id = prep$bars_by_id,
-    bars_mat = prep$bars_mat,
-    static_bars_views = prep$static_bars_views,
-    static_feature_views = NULL,
+    state_prev = list(
+      asset_state = stats::setNames(
+        rep(list(list()), length(prep$universe)),
+        prep$universe
+      )
+    ),
+    history_substrate = prep$history_substrate,
     feature_defs = prep$feature_defs,
-    runtime_projection = prep$runtime_projection,
     active_alias_map = prep$active_alias_map,
     risk_plan = risk_plan,
     cost_resolver = cost_resolver,
@@ -734,8 +757,9 @@ peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy
     telemetry = telemetry,
     seed = seed,
     event_mode = "buffered",
-    use_fast_context = TRUE,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    availability_provider = prep$availability_provider,
+    execution_opportunities_posix = prep$pulses_posix[-1L]
   )
   t2 <- proc.time()[["elapsed"]]
   ledgr:::ledgr_execute_fold(execution, output_handler)
@@ -744,7 +768,7 @@ peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy
   equity <- as.data.frame(ledgr:::ledgr_equity_from_events(
     events = events,
     pulses_posix = prep$pulses_posix,
-    close_mat = prep$bars_mat$close,
+    close_mat = prep$history_substrate$bars$close,
     initial_cash = 1e7,
     instrument_ids = prep$universe,
     run_id = run_id

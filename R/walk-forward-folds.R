@@ -660,7 +660,8 @@ ledgr_experiment_window <- function(exp,
 ledgr_experiment_window_from_fold <- function(exp,
                                              fold,
                                              window = c("train", "test"),
-                                             opening_state_policy = c("carry_test_state", "flat_test_state")) {
+                                             opening_state_policy = c("carry_test_state", "flat_test_state"),
+                                             validate_pulses = TRUE) {
   fold <- ledgr_validate_fold(fold)
   window <- match.arg(window)
   opening_state_policy <- match.arg(opening_state_policy)
@@ -679,7 +680,8 @@ ledgr_experiment_window_from_fold <- function(exp,
       exp = exp,
       start_utc = train_start,
       end_utc = train_end,
-      opening_state_policy = opening_state_policy
+      opening_state_policy = opening_state_policy,
+      validate_pulses = validate_pulses
     ))
   }
   test_start <- if (!is.null(fold$civil_boundaries$test_start)) {
@@ -696,58 +698,58 @@ ledgr_experiment_window_from_fold <- function(exp,
     exp = exp,
     start_utc = test_start,
     end_utc = test_end,
-    opening_state_policy = opening_state_policy
+    opening_state_policy = opening_state_policy,
+    validate_pulses = validate_pulses
   )
 }
 
-ledgr_walk_forward_fold_windows <- function(exp, fold, opening_state_policy) {
+ledgr_walk_forward_fold_windows <- function(exp, fold, opening_state_policy,
+                                            validate_pulses = TRUE) {
   list(
     train = ledgr_experiment_window_from_fold(
       exp,
       fold,
       window = "train",
-      opening_state_policy = opening_state_policy
+      opening_state_policy = opening_state_policy,
+      validate_pulses = validate_pulses
     ),
     test = ledgr_experiment_window_from_fold(
       exp,
       fold,
       window = "test",
-      opening_state_policy = opening_state_policy
+      opening_state_policy = opening_state_policy,
+      validate_pulses = validate_pulses
     )
   )
 }
 
-ledgr_experiment_window_validate_pulses <- function(exp, window) {
+ledgr_experiment_window_validate_pulses <- function(exp, window,
+                                                    history_substrate = NULL) {
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
-  bars_by_id <- ledgr_precompute_fetch_bars(
-    exp$snapshot,
-    exp$universe,
-    ledgr_walk_forward_iso(window$scoring_start_utc),
-    ledgr_walk_forward_iso(window$scoring_end_utc)
-  )
-  bars_by_id <- ledgr_sweep_normalize_bars_by_id(bars_by_id, exp$universe)
-  if (isTRUE(exp$availability$active)) {
-    provider <- ledgr_availability_session_source(
-      get_connection(exp$snapshot),
-      exp$snapshot$snapshot_id
+  substrate <- history_substrate
+  if (is.null(substrate)) {
+    substrate <- ledgr_history_substrate_for_experiment(
+      exp,
+      end = window$scoring_end_utc,
+      coverage_start = window$scoring_start_utc
     )
-    ledgr_availability_require_coverage(provider, ledgr_snapshot_bar_range(get_connection(exp$snapshot), exp$snapshot$snapshot_id, window$scoring_start_utc, window$scoring_end_utc))
-    calendar <- ledgr_availability_calendar(
-      provider,
-      window$scoring_start_utc,
-      window$scoring_end_utc
-    )
-    bars_by_id <- ledgr_sweep_align_availability_bars(
-      bars_by_id,
-      exp$universe,
-      calendar$pulses_posix
-    )
-    n_pulses <- length(calendar$pulses_posix)
   } else {
-    ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
-    n_pulses <- nrow(bars_by_id[[exp$universe[[1L]]]])
+    ledgr_history_substrate_validate_owner(
+      substrate,
+      snapshot_hash = exp$snapshot_hash %||%
+        ledgr_snapshot_stored_hash(exp$snapshot),
+      history_policy = exp$history_policy,
+      instrument_ids = exp$universe,
+      required_end = window$scoring_end_utc
+    )
   }
+  calendar <- ledgr_availability_calendar(
+    list(sessions = substrate$sessions),
+    window$scoring_start_utc,
+    window$scoring_end_utc
+  )
+  n_pulses <- length(calendar$pulses_posix)
   if (n_pulses < 2L) {
     rlang::abort(
       "Experiment windows must contain at least two scoring pulses.",
@@ -793,27 +795,29 @@ ledgr_run_window <- function(exp,
 
 # The experiment's pulse calendar over [start, end]: open-session closes for an
 # availability-aware experiment, otherwise the universe's bar timestamps.
-ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
+ledgr_walk_forward_pulse_calendar <- function(exp, start, end,
+                                              history_substrate = NULL) {
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
-  con <- get_connection(exp$snapshot)
-  snapshot_id <- exp$snapshot$snapshot_id
-  if (isTRUE(exp$availability$active)) {
-    sessions <- ledgr_availability_session_source(con, snapshot_id)$sessions
-    close <- as.POSIXct(sessions$session_close[sessions$status == "open"], tz = "UTC")
-    close <- close[!is.na(close) & close >= start & close <= end]
-    return(sort(unique(close)))
+  substrate <- history_substrate
+  if (is.null(substrate)) {
+    substrate <- ledgr_history_substrate_for_experiment(
+      exp,
+      end = end,
+      coverage_start = start
+    )
+  } else {
+    ledgr_history_substrate_validate_owner(
+      substrate,
+      snapshot_hash = exp$snapshot_hash %||%
+        ledgr_snapshot_stored_hash(exp$snapshot),
+      history_policy = exp$history_policy,
+      instrument_ids = exp$universe,
+      required_end = end
+    )
   }
-  placeholders <- paste(rep("?", length(exp$universe)), collapse = ", ")
-  rows <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT DISTINCT ts_utc FROM snapshot_bars WHERE snapshot_id = ? ",
-      "AND instrument_id IN (", placeholders, ") AND ts_utc >= ? AND ts_utc <= ? ORDER BY ts_utc"
-    ),
-    params = c(list(snapshot_id), as.list(exp$universe), list(start, end))
-  )
-  as.POSIXct(rows$ts_utc, tz = "UTC")
+  axis <- as.POSIXct(substrate$axis, tz = "UTC")
+  axis[!is.na(axis) & axis >= start & axis <= end]
 }
 
 # carry_test_state hands each test window's closing state to the next one, so
@@ -823,7 +827,8 @@ ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
 # two windows is never observed, so positions would cross it unvalued and any
 # terminal event inside it would go unsettled. Refuse before any training
 # sweep or store write and name the first offending pair.
-ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, fold_windows) {
+ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, fold_windows,
+                                                          history_substrate = NULL) {
   if (inherits(fold_windows, "ledgr_fold_list")) {
     fold_windows <- lapply(fold_windows, function(fold) {
       ledgr_walk_forward_fold_windows(exp, fold, "carry_test_state")
@@ -857,7 +862,12 @@ ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, fold_windows) {
       class = c("ledgr_walk_forward_overlapping_carry", "ledgr_walk_forward_invalid_fold_window")
     )
   }
-  pulses <- as.numeric(ledgr_walk_forward_pulse_calendar(exp, min(test_start), max(test_end)))
+  pulses <- as.numeric(ledgr_walk_forward_pulse_calendar(
+    exp,
+    min(test_start),
+    max(test_end),
+    history_substrate = history_substrate
+  ))
   after_end <- findInterval(as.numeric(test_end[-n]), pulses)
   before_next <- findInterval(as.numeric(test_start[-1L]), pulses, left.open = TRUE)
   between <- before_next - after_end

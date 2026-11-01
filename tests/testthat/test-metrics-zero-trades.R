@@ -10,12 +10,12 @@ testthat::test_that("metrics handle zero-trade backtests", {
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snap,
     strategy = zero_strategy,
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
-    end = "2020-01-10",
+    end = "2020-01-06",
     initial_cash = 1000,
   cost_model = ledgr_cost_zero()
   )

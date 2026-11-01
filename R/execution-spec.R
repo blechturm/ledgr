@@ -56,13 +56,8 @@ ledgr_execution_spec <- function(run_id,
                                  telemetry_stride,
                                  state,
                                  state_prev = NULL,
-                                 bars_by_id,
-                                 bars_mat,
-                                 static_bars_views = NULL,
                                  history_substrate = NULL,
-                                 static_feature_views = NULL,
                                  feature_defs,
-                                 runtime_projection,
                                  active_alias_map = NULL,
                                  risk_plan = NULL,
                                  cost_resolver,
@@ -70,9 +65,8 @@ ledgr_execution_spec <- function(run_id,
                                  telemetry,
                                  seed = NULL,
                                  event_mode = c("live", "buffered"),
-                                 use_fast_context = FALSE,
                                  compiled_accounting_model = NULL,
-                                 availability_provider = NULL,
+                                 availability_provider,
                                  execution_opportunities_posix = NULL,
                                  corporate_action_plan = NULL,
                                  corporate_action_policy = NULL,
@@ -85,11 +79,6 @@ ledgr_execution_spec <- function(run_id,
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
-  if (is.null(availability_provider) && !is.null(execution_opportunities_posix)) {
-    ledgr_abort_invalid_execution_spec(
-      "Dense execution must not declare availability execution opportunities."
-    )
-  }
   spec <- list(
     spec_version = ledgr_execution_spec_version(),
     run_id = run_id,
@@ -107,13 +96,8 @@ ledgr_execution_spec <- function(run_id,
     telemetry_stride = as.integer(telemetry_stride),
     state = state,
     state_prev = state_prev,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
-    static_bars_views = static_bars_views,
     history_substrate = history_substrate,
-    static_feature_views = static_feature_views,
     feature_defs = feature_defs,
-    runtime_projection = runtime_projection,
     active_alias_map = active_alias_map,
     risk_plan = ledgr_risk_validate_compiled_plan(risk_plan),
     cost_resolver = cost_resolver,
@@ -121,7 +105,6 @@ ledgr_execution_spec <- function(run_id,
     telemetry = telemetry,
     seed = seed,
     event_mode = event_mode,
-    use_fast_context = isTRUE(use_fast_context),
     compiled_accounting_model = compiled_accounting_model
   )
   if (!is.null(corporate_action_plan)) {
@@ -136,12 +119,10 @@ ledgr_execution_spec <- function(run_id,
   if (length(last_executed_at_resume) == 1L && !is.na(last_executed_at_resume)) {
     spec$last_executed_at_resume <- as.POSIXct(last_executed_at_resume, tz = "UTC")
   }
-  if (!is.null(availability_provider)) {
-    spec$availability_provider <- availability_provider
-    spec$execution_opportunities_posix <- execution_opportunities_posix
-    if (length(final_execution_posix) == 1L && !is.na(final_execution_posix)) {
-      spec$final_execution_posix <- as.POSIXct(final_execution_posix, tz = "UTC")
-    }
+  spec$availability_provider <- availability_provider
+  spec$execution_opportunities_posix <- execution_opportunities_posix
+  if (length(final_execution_posix) == 1L && !is.na(final_execution_posix)) {
+    spec$final_execution_posix <- as.POSIXct(final_execution_posix, tz = "UTC")
   }
   if (!is.null(decision_due)) {
     spec$decision_due <- decision_due
@@ -254,47 +235,21 @@ ledgr_validate_execution_spec <- function(spec) {
     "`execution$state` must include scalar cash and numeric positions."
   )
   ledgr_execution_spec_check(
-    is.list(spec$bars_by_id),
-    "`execution$bars_by_id` must be a list."
+    ledgr_history_substrate_is(spec$history_substrate),
+    "`execution$history_substrate` must be a current ledgr history substrate."
   )
   ledgr_execution_spec_check(
-    is.null(spec$static_bars_views) || is.list(spec$static_bars_views),
-    "`execution$static_bars_views` must be NULL or a list."
+    inherits(spec$availability_provider, "ledgr_availability_provider"),
+    "`execution$availability_provider` must be a ledgr availability provider."
   )
   ledgr_execution_spec_check(
-    is.null(spec$history_substrate) || ledgr_history_substrate_is(spec$history_substrate),
-    "`execution$history_substrate` must be NULL or a current ledgr history substrate."
+    inherits(
+      spec$history_substrate$feature_projection,
+      "ledgr_runtime_projection"
+    ),
+    "Execution requires the feature projection to be owned by its history substrate."
   )
   ledgr_execution_spec_check(
-    is.null(spec$static_feature_views) || is.list(spec$static_feature_views),
-    "`execution$static_feature_views` must be NULL or a list."
-  )
-  ledgr_execution_spec_check(
-    is.null(spec$availability_provider) ||
-      inherits(spec$availability_provider, "ledgr_availability_provider"),
-    "`execution$availability_provider` must be NULL or a ledgr availability provider."
-  )
-  if (!is.null(spec$availability_provider)) {
-    ledgr_execution_spec_check(
-      ledgr_history_substrate_is(spec$history_substrate),
-      "Availability execution requires one current causal history substrate."
-    )
-    ledgr_execution_spec_check(
-      inherits(
-        spec$history_substrate$feature_projection,
-        "ledgr_runtime_projection"
-      ) && is.null(spec$runtime_projection),
-      paste(
-        "Availability execution requires the feature projection to be owned",
-        "only by its causal history substrate."
-      )
-    )
-    ledgr_execution_spec_check(
-      length(spec$bars_by_id) == 0L && is.null(spec$bars_mat) &&
-        is.null(spec$static_bars_views),
-      "Availability execution must own bars only through its causal history substrate."
-    )
-    ledgr_execution_spec_check(
       inherits(spec$execution_opportunities_posix, "POSIXct") &&
         length(spec$execution_opportunities_posix) ==
           max(length(spec$pulses_posix) - 1L, 0L) +
@@ -307,20 +262,10 @@ ledgr_validate_execution_spec <- function(spec) {
         !anyNA(spec$execution_opportunities_posix),
       paste(
         "`execution$execution_opportunities_posix` must contain one declared",
-        "next-session opening for every non-terminal availability pulse, plus",
+        "next-session opening for every non-terminal pulse, plus",
         "the declared final execution of a continued carry window."
       )
     )
-  } else {
-    ledgr_execution_spec_check(
-      is.list(spec$bars_mat) && is.matrix(spec$bars_mat$close),
-      "Dense `execution$bars_mat` must include a close matrix."
-    )
-    ledgr_execution_spec_check(
-      is.null(spec$execution_opportunities_posix),
-      "Dense execution must not declare availability execution opportunities."
-    )
-  }
   ledgr_execution_spec_check(
     is.null(spec$corporate_action_plan) ||
       inherits(spec$corporate_action_plan, "ledgr_corporate_action_plan"),
@@ -333,12 +278,6 @@ ledgr_validate_execution_spec <- function(spec) {
     is.list(spec$feature_defs),
     "`execution$feature_defs` must be a list."
   )
-  if (is.null(spec$availability_provider)) {
-    ledgr_execution_spec_check(
-      inherits(spec$runtime_projection, "ledgr_runtime_projection"),
-      "`execution$runtime_projection` must be a ledgr_runtime_projection object."
-    )
-  }
   ledgr_risk_validate_compiled_plan(spec$risk_plan)
   ledgr_execution_spec_check(
     is.function(spec$cost_resolver),
@@ -360,10 +299,6 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     identical(spec$event_mode, "live") || identical(spec$event_mode, "buffered"),
     "`execution$event_mode` must be \"live\" or \"buffered\"."
-  )
-  ledgr_execution_spec_check(
-    ledgr_execution_spec_is_logical_scalar(spec$use_fast_context),
-    "`execution$use_fast_context` must be TRUE or FALSE."
   )
   ledgr_normalize_compiled_accounting_model(
     spec$compiled_accounting_model

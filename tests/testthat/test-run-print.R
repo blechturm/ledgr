@@ -11,7 +11,7 @@ testthat::test_that("ledgr_run_list prints curated view while preserving tibble 
     targets["TEST_A"] <- 1
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     start = "2020-01-01",
@@ -79,7 +79,7 @@ testthat::test_that("ledgr_run_compare prints curated view while preserving nume
     targets["TEST_A"] <- params$qty
     targets
   }
-  bt_a <- ledgr_backtest(
+  bt_a <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     strategy_params = list(qty = 1),
@@ -90,7 +90,7 @@ testthat::test_that("ledgr_run_compare prints curated view while preserving nume
   cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
-  bt_b <- ledgr_backtest(
+  bt_b <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     strategy_params = list(qty = 2),

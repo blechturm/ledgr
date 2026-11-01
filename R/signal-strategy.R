@@ -60,10 +60,8 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
 
   out <- function(ctx, params) {
     universe <- ctx$universe
-    availability_active <- isTRUE(ctx$availability_active)
-    if (!is.character(universe) || (!availability_active && length(universe) < 1L) ||
-        anyNA(universe) || any(!nzchar(universe))) {
-      rlang::abort("Signal strategy context must include a non-empty character `universe`.", class = "ledgr_invalid_strategy_result")
+    if (!is.character(universe) || anyNA(universe) || any(!nzchar(universe))) {
+      rlang::abort("Signal strategy context must include a character `universe`.", class = "ledgr_invalid_strategy_result")
     }
     eligible <- ledgr_strategy_eligible(ctx, universe, class = "ledgr_invalid_strategy_result")
     current_targets <- function() {
@@ -92,7 +90,7 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
       # on the axis, if any, keeps its current quantity.
       if (any(eligible)) must_cover(universe[eligible])
       targets <- if (length(universe) == 0L) stats::setNames(numeric(), character()) else current_targets()
-      return(ledgr_validate_strategy_targets(targets, universe, allow_empty = availability_active))
+      return(ledgr_validate_strategy_targets(targets, universe, allow_empty = TRUE))
     }
 
     signal_names <- names(signals)
@@ -136,7 +134,7 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
       # validator refuse missing or extra names, as it always has.
       targets <- as.numeric(signal_map[signals])
       names(targets) <- signal_names
-      return(ledgr_validate_strategy_targets(targets, universe, allow_empty = availability_active))
+      return(ledgr_validate_strategy_targets(targets, universe, allow_empty = TRUE))
     }
 
     # Some instruments are ineligible: they keep their current quantity, and
@@ -155,7 +153,7 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
     if (any(eligible & !covered)) must_cover(universe[eligible & !covered])
     mapped <- eligible[position_of_signal]
     targets[position_of_signal[mapped]] <- unname(signal_map)[match(signals[mapped], names(signal_map))]
-    ledgr_validate_strategy_targets(targets, universe, allow_empty = availability_active)
+    ledgr_validate_strategy_targets(targets, universe, allow_empty = TRUE)
   }
   attr(out, "ledgr_signal_strategy_wrapper") <- TRUE
   out

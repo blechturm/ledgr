@@ -1417,7 +1417,7 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash",
+      "feature_params", "warnings", "diagnostics", "feature_fingerprints", "risk_chain_hash",
       "provenance", "t_engine", "t_results", "t_fills_extract"
     )
   )

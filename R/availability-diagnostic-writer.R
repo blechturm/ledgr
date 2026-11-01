@@ -107,6 +107,7 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     build(n)
   }
   list(
+    keep = output_handler$diagnostic_keep,
     append_block = append_block,
     drain = drain,
     release = reset

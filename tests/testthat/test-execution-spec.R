@@ -15,6 +15,51 @@ ledgr_expect_lot_states_equivalent <- function(actual, expected) {
   testthat::expect_identical(actual$realized_comp, expected$realized_comp)
 }
 
+ledgr_test_execution_substrate <- function(bars_by_id, instrument_ids, pulses_posix) {
+  bars <- do.call(rbind, unname(bars_by_id))
+  rownames(bars) <- NULL
+  data <- list(
+    families = data.frame(family = character(), stringsAsFactors = FALSE),
+    sessions = ledgr:::ledgr_bar_native_sessions(pulses_posix)
+  )
+  config <- list(
+    universe = list(instrument_ids = instrument_ids),
+    availability = list(
+      universe_rule = NULL,
+      valuation_policy = unclass(
+        ledgr_valuation_stale(.Machine$integer.max, "freeze")
+      )
+    ),
+    history_policy = ledgr_history_policy()
+  )
+  substrate <- ledgr:::ledgr_history_substrate(
+    bars = bars,
+    instrument_ids = instrument_ids,
+    axis = pulses_posix,
+    availability_data = data,
+    availability_config = config,
+    snapshot_hash = "execution-spec-test",
+    clock_kind = "bar_native"
+  )
+  projection <- ledgr:::ledgr_projection_from_feature_matrix(
+    feature_matrix = list(),
+    universe = instrument_ids,
+    pulses_posix = pulses_posix
+  )
+  substrate <- ledgr:::ledgr_history_substrate_bind_features(
+    substrate,
+    projection
+  )
+  list(
+    substrate = substrate,
+    provider = ledgr:::ledgr_availability_provider_from_substrate(
+      substrate,
+      config,
+      "execution-spec-test"
+    )
+  )
+}
+
 ledgr_test_execution_spec <- function(...) {
   pulses_posix <- as.POSIXct(
     c("2024-01-01 00:00:00", "2024-01-02 00:00:00"),
@@ -51,6 +96,11 @@ ledgr_test_execution_spec <- function(...) {
     )
   }), instrument_ids)
   strategy <- function(ctx, params) ctx$flat()
+  prepared <- ledgr_test_execution_substrate(
+    bars_by_id,
+    instrument_ids,
+    pulses_posix
+  )
 
   args <- modifyList(
     list(
@@ -68,17 +118,8 @@ ledgr_test_execution_spec <- function(...) {
       telemetry_stride = 0L,
       state = list(cash = 1000, positions = stats::setNames(c(0, 0), instrument_ids)),
       state_prev = NULL,
-      bars_by_id = bars_by_id,
-      bars_mat = bars_mat,
-      static_bars_views = NULL,
-      history_substrate = NULL,
-      static_feature_views = NULL,
+      history_substrate = prepared$substrate,
       feature_defs = list(),
-      runtime_projection = ledgr:::ledgr_projection_from_feature_matrix(
-        feature_matrix = list(),
-        universe = instrument_ids,
-        pulses_posix = pulses_posix
-      ),
       active_alias_map = NULL,
       risk_plan = NULL,
       cost_resolver = ledgr_test_cost_resolver(
@@ -89,25 +130,13 @@ ledgr_test_execution_spec <- function(...) {
       telemetry = ledgr:::ledgr_sweep_telemetry_env(),
       seed = 123L,
       event_mode = "buffered",
-      use_fast_context = TRUE,
-      compiled_accounting_model = NULL
+      compiled_accounting_model = NULL,
+      availability_provider = prepared$provider,
+      execution_opportunities_posix = pulses_posix[-1L]
     ),
     list(...),
     keep.null = TRUE
   )
-  if (!is.null(args$availability_provider) && is.null(args$history_substrate)) {
-    args$history_substrate <- structure(
-      list(
-        substrate_version = ledgr:::ledgr_history_substrate_version,
-        feature_projection = args$runtime_projection
-      ),
-      class = c("ledgr_history_substrate", "list")
-    )
-    args$bars_by_id <- list()
-    args["bars_mat"] <- list(NULL)
-    args["static_bars_views"] <- list(NULL)
-    args["runtime_projection"] <- list(NULL)
-  }
   do.call(ledgr:::ledgr_execution_spec, args)
 }
 
@@ -146,11 +175,16 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
       stringsAsFactors = FALSE
     )
   )
+  prepared <- ledgr_test_execution_substrate(
+    bars_by_id,
+    instrument_ids,
+    pulses_posix
+  )
   target_path <- list(
-    c(AAA = -1),
     c(AAA = 1),
-    c(AAA = 1),
-    c(AAA = 1)
+    c(AAA = 3),
+    c(AAA = 3),
+    c(AAA = 3)
   )
   opening_positions <- c(AAA = 2)
   opening_cost_basis <- c(AAA = 10)
@@ -189,16 +223,8 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
       )
     ),
     state_prev = NULL,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
-    static_bars_views = NULL,
-    static_feature_views = NULL,
+    history_substrate = prepared$substrate,
     feature_defs = list(),
-    runtime_projection = ledgr:::ledgr_projection_from_feature_matrix(
-      feature_matrix = list(),
-      universe = instrument_ids,
-      pulses_posix = pulses_posix
-    ),
     active_alias_map = NULL,
     risk_plan = NULL,
     cost_resolver = ledgr_test_cost_resolver(
@@ -209,8 +235,9 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
     telemetry = ledgr:::ledgr_sweep_telemetry_env(),
     seed = 123L,
     event_mode = "buffered",
-    use_fast_context = TRUE,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    availability_provider = prepared$provider,
+    execution_opportunities_posix = pulses_posix[-1L]
   )
   handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("compiled-spot-fifo-parity"))
   handler$append_event_rows(opening_rows)
@@ -276,7 +303,12 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
       stringsAsFactors = FALSE
     )
   }), instrument_ids)
-  opening_positions <- c(AAA = 2, BBB = 0, CCC = -1)
+  prepared <- ledgr_test_execution_substrate(
+    bars_by_id,
+    instrument_ids,
+    pulses_posix
+  )
+  opening_positions <- c(AAA = 2, BBB = 0, CCC = 1)
   opening_cost_basis <- c(AAA = 10, CCC = 30)
   opening_rows <- ledgr:::ledgr_opening_position_event_rows(
     run_id = "compiled-spot-fifo-multi-parity",
@@ -286,10 +318,10 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
     event_seq_start = 1L
   )
   target_path <- list(
-    c(AAA = -1, BBB = 2, CCC = 0),
-    c(AAA = 1, BBB = -1, CCC = 2),
-    c(AAA = 1, BBB = -1, CCC = 2),
-    c(AAA = 1, BBB = -1, CCC = 2)
+    c(AAA = 1, BBB = 2, CCC = 0),
+    c(AAA = 3, BBB = 1, CCC = 2),
+    c(AAA = 3, BBB = 1, CCC = 2),
+    c(AAA = 3, BBB = 1, CCC = 2)
   )
   pulse_idx <- 0L
   strategy <- function(ctx, params) {
@@ -319,16 +351,8 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
       )
     ),
     state_prev = NULL,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
-    static_bars_views = NULL,
-    static_feature_views = NULL,
+    history_substrate = prepared$substrate,
     feature_defs = list(),
-    runtime_projection = ledgr:::ledgr_projection_from_feature_matrix(
-      feature_matrix = list(),
-      universe = instrument_ids,
-      pulses_posix = pulses_posix
-    ),
     active_alias_map = NULL,
     risk_plan = NULL,
     cost_resolver = ledgr_test_cost_resolver(
@@ -339,8 +363,9 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
     telemetry = ledgr:::ledgr_sweep_telemetry_env(),
     seed = 123L,
     event_mode = "buffered",
-    use_fast_context = TRUE,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    availability_provider = prepared$provider,
+    execution_opportunities_posix = pulses_posix[-1L]
   )
   handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("compiled-spot-fifo-multi-parity"))
   handler$append_event_rows(opening_rows)
@@ -363,7 +388,7 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
   )
 }
 
-testthat::test_that("execution spec constructor preserves the former list payload shape", {
+testthat::test_that("execution spec constructor exposes only the canonical substrate payload", {
   spec <- ledgr_test_execution_spec()
 
   testthat::expect_s3_class(spec, "ledgr_execution_spec")
@@ -388,13 +413,8 @@ testthat::test_that("execution spec constructor preserves the former list payloa
       "telemetry_stride",
       "state",
       "state_prev",
-      "bars_by_id",
-      "bars_mat",
-      "static_bars_views",
       "history_substrate",
-      "static_feature_views",
       "feature_defs",
-      "runtime_projection",
       "active_alias_map",
       "risk_plan",
       "cost_resolver",
@@ -402,8 +422,9 @@ testthat::test_that("execution spec constructor preserves the former list payloa
       "telemetry",
       "seed",
       "event_mode",
-      "use_fast_context",
-      "compiled_accounting_model"
+      "compiled_accounting_model",
+      "availability_provider",
+      "execution_opportunities_posix"
     )
   )
   testthat::expect_identical(spec$id_to_idx, stats::setNames(as.integer(1:2), c("AAA", "BBB")))
@@ -422,7 +443,7 @@ testthat::test_that("execution specs validate before fold entry", {
     class = "ledgr_invalid_execution_spec"
   )
   bad_projection <- ledgr_test_execution_spec()
-  bad_projection$runtime_projection <- list()
+  bad_projection$history_substrate$feature_projection <- list()
   testthat::expect_error(
     ledgr:::ledgr_validate_execution_spec(bad_projection),
     class = "ledgr_invalid_execution_spec"
@@ -457,7 +478,10 @@ testthat::test_that("availability execution specs require aligned opening opport
 
   testthat::expect_identical(spec$execution_opportunities_posix, opening)
   testthat::expect_error(
-    ledgr_test_execution_spec(availability_provider = provider),
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = NULL
+    ),
     class = "ledgr_invalid_execution_spec"
   )
   testthat::expect_error(
@@ -481,11 +505,9 @@ testthat::test_that("availability execution specs require aligned opening opport
     ),
     class = "ledgr_invalid_execution_spec"
   )
-  testthat::expect_error(
-    ledgr_test_execution_spec(execution_opportunities_posix = opening),
-    class = "ledgr_invalid_execution_spec"
+  testthat::expect_true(
+    "execution_opportunities_posix" %in% names(ledgr_test_execution_spec())
   )
-  testthat::expect_false("execution_opportunities_posix" %in% names(ledgr_test_execution_spec()))
 })
 
 testthat::test_that("compiled accounting model enum fails closed", {
@@ -526,11 +548,11 @@ testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event k
   # (1 FILL, 2 CASHFLOW, 3 DISPOSITION); SYNTHETIC_UNKNOWN is a code outside
   # the dictionary.
   event_kinds <- c(CASHFLOW = 2L, DISPOSITION = 3L, SYNTHETIC_UNKNOWN = 99L)
-  original_builder <- ledgr:::ledgr_fold_build_pulse_plan
+  original_builder <- ledgr:::ledgr_fold_build_availability_pulse_plan
 
   run_with_kind <- function(event_kind, compiled_accounting_model) {
     testthat::local_mocked_bindings(
-      ledgr_fold_build_pulse_plan = function(...) {
+      ledgr_fold_build_availability_pulse_plan = function(...) {
         plan <- original_builder(...)
         plan$fill <- lapply(plan$fill, function(x) x[0L])
         plan$economic_event_kinds <- event_kind
@@ -578,26 +600,6 @@ testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event k
 testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold outputs", {
   r_path <- ledgr_compiled_spot_fifo_test_run(NULL)
   compiled_path <- ledgr_compiled_spot_fifo_test_run("spot_fifo")
-
-  expect_reversal_fees <- function(path) {
-    for (fills in list(path$inline_summary$fills, path$reconstructed$fills)) {
-      testthat::expect_identical(fills$event_seq, c(2L, 2L, 3L, 3L))
-      testthat::expect_identical(fills$action, c("CLOSE", "OPEN", "CLOSE", "OPEN"))
-      testthat::expect_equal(fills$qty, c(2, 1, 1, 1))
-      testthat::expect_equal(
-        fills$fee,
-        c(1 / 6, 1 / 12, 1 / 8, 1 / 8),
-        tolerance = 1e-12
-      )
-      testthat::expect_equal(
-        unname(vapply(split(fills$fee, fills$event_seq), sum, numeric(1))),
-        c(0.25, 0.25),
-        tolerance = 1e-12
-      )
-    }
-  }
-  expect_reversal_fees(r_path)
-  expect_reversal_fees(compiled_path)
 
   testthat::expect_equal(
     as.data.frame(compiled_path$events),

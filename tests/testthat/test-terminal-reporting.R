@@ -178,7 +178,7 @@ testthat::test_that("[LTB-0174] warnings have no materiality threshold and stay 
     instrument_id = "AAA", open = 100:102, high = 101:103, low = 99:101,
     close = 100:102, volume = 1000
   )
-  dense <- ledgr_backtest(
+  dense <- ledgr_test_run(
     data = bars,
     strategy = function(ctx, params) {
       target <- ctx$flat()

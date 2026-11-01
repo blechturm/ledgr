@@ -76,9 +76,8 @@ can inspect stored assumptions. The accounting walkthrough, result-table
 hierarchy, and hand recomputation live in
 `vignette("metrics-and-accounting", package = "ledgr")`.
 
-This example uses `ledgr_backtest()`, a compact in-memory entrance for small
-examples. New project workflows should enter through a sealed snapshot,
-`ledgr_experiment()`, and `ledgr_run()` as shown in the Quickstart.
+This example enters through a sealed snapshot, `ledgr_experiment()`, and
+`ledgr_run()`, the same workflow used in a research project.
 
 ```{r}
 #| label: metric-context-fixture
@@ -101,13 +100,14 @@ one_day_strategy <- function(ctx, params) {
   targets
 }
 
-bt <- ledgr_backtest(
-  data = bars,
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = one_day_strategy,
-  initial_cash = 1000,
-  run_id = "metric_context_example",
+  opening = ledgr_opening(cash = 1000),
   cost_model = ledgr_cost_zero()
 )
+bt <- ledgr_run(exp, run_id = "metric_context_example")
 ```
 
 ## Metric Context
@@ -359,6 +359,7 @@ run made no trades, use the checklist in
 #| include: false
 
 close(bt)
+ledgr_snapshot_close(snapshot)
 ```
 
 ## Where Next

@@ -226,19 +226,17 @@ final_bt <- ledgr_run(
   run_id = "how_targets_final_bar",
   params = list()
 )
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 nrow(ledgr_results(final_bt, what = "fills"))
 #> [1] 0
 ```
 
-The warning carries the stable code `LEDGR_LAST_BAR_NO_FILL` (see
-`?LEDGR_LAST_BAR_NO_FILL`). If that final target matters, extend the
-snapshot by one executable bar and run again. Do not suppress the
-warning and treat the missing fill as a completed trade.
+No fill is recorded. Instead, `ledgr_results(final_bt, "diagnostics")`
+records `final_pulse_no_execution` for each target that required a
+trade. If that final target matters, extend the snapshot by one
+executable bar and run again. Do not treat the diagnostic as a completed
+trade. This condition does not warn: it is ordinary structured evidence
+that the requested execution opportunity did not exist.
 
 ## Zero Fills And Zero Trades Are Different
 

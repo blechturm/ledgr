@@ -32,7 +32,11 @@ fifo_opening_config <- function(snapshot,
                                 opening,
                                 cost_model = ledgr_cost_zero(),
                                 execution_mode = "audit_log") {
-  universe <- ledgr:::ledgr_infer_universe_from_snapshot(snapshot)
+  con <- ledgr:::ledgr_snapshot_connection(snapshot)$con
+  universe <- DBI::dbGetQuery(
+    con,
+    "SELECT DISTINCT instrument_id FROM snapshot_bars ORDER BY instrument_id"
+  )$instrument_id
   ledgr_config(
     snapshot = snapshot,
     universe = universe,
@@ -240,7 +244,7 @@ testthat::test_that("opening-position fills keep gross fill P&L separate from ne
 })
 
 # ledgr-test-profile: review
-testthat::test_that("opening-position liquidation can flip into a short lot", {
+testthat::test_that("opening-position liquidation cannot flip into a short lot", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 55)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
   on.exit(unlink(setup$db_path), add = TRUE)
@@ -251,24 +255,19 @@ testthat::test_that("opening-position liquidation can flip into a short lot", {
     targets
   }
 
-  bt <- fifo_opening_run(
-    setup$snapshot,
-    strategy = strategy,
-    opening = ledgr_opening(cash = 10000, positions = c(AAA = 100), cost_basis = c(AAA = 50)),
-    run_id = "fifo-opening-flip"
+  testthat::expect_error(
+    fifo_opening_run(
+      setup$snapshot,
+      strategy = strategy,
+      opening = ledgr_opening(
+        cash = 10000,
+        positions = c(AAA = 100),
+        cost_basis = c(AAA = 50)
+      ),
+      run_id = "fifo-opening-flip"
+    ),
+    class = "ledgr_short_exposure_unsupported"
   )
-  on.exit(close(bt), add = TRUE)
-
-  fills <- ledgr_results(bt, what = "fills")
-  testthat::expect_equal(nrow(fills), 2L)
-  testthat::expect_identical(fills$action, c("CLOSE", "OPEN"))
-  testthat::expect_equal(fills$qty, c(100, 150))
-  testthat::expect_equal(fills$realized_pnl, c(1000, 0))
-
-  rebuilt <- fifo_opening_reconstruct(setup$db_path, bt$run_id)
-  testthat::expect_equal(rebuilt$positions$qty[rebuilt$positions$instrument_id == "AAA"], -150)
-  testthat::expect_equal(rebuilt$equity_curve$realized_pnl[[nrow(rebuilt$equity_curve)]], 1000)
-  testthat::expect_equal(rebuilt$equity_curve$unrealized_pnl[[nrow(rebuilt$equity_curve)]], 750)
 })
 
 # ledgr-test-profile: review

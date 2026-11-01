@@ -832,9 +832,10 @@ ledgr_fold_staging_add <- function(fold_state, segment, ts) {
 
 # The writer block of a staging-schema object's used prefix: the run ID,
 # the logical sequence from `first_seq` and the pulse time on every row.
-ledgr_fold_diagnostic_block <- function(rows, run_id, ts, first_seq) {
-  n <- rows$n
-  used <- seq_len(n)
+ledgr_fold_diagnostic_block <- function(rows, run_id, ts, first_seq, keep = NULL) {
+  logical_n <- rows$n
+  used <- if (is.null(keep)) seq_len(logical_n) else which(as.logical(keep))
+  n <- length(used)
   ts_num <- as.numeric(as.POSIXct(ts, tz = "UTC"))
   col <- function(name) rows[[name]][used]
   epoch <- function(name) .POSIXct(rows[[name]][used], tz = "UTC")

@@ -15,7 +15,7 @@ testthat::test_that("[LTB-0012] closed durable handles remain read-only locators
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     start = "2020-01-01",
@@ -106,7 +106,7 @@ testthat::test_that("durable backtest safety net checkpoints and messages", {
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snapshot,
     strategy = strategy,
     start = "2020-01-01",

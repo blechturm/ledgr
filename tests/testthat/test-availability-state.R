@@ -323,7 +323,7 @@ testthat::test_that("retired valuation entry points remain unavailable", {
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("dense folds never construct availability valuation state", {
+testthat::test_that("fixed baskets use the canonical valuation-state service", {
   dates <- as.POSIXct(
     paste(as.Date("2020-01-01") + 0:1, "16:00:00"),
     tz = "UTC"
@@ -347,9 +347,12 @@ testthat::test_that("dense folds never construct availability valuation state", 
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
   )
+  calls <- 0L
+  original <- ledgr:::ledgr_availability_valuation_state
   testthat::local_mocked_bindings(
     ledgr_availability_valuation_state = function(...) {
-      stop("dense fold reached availability valuation")
+      calls <<- calls + 1L
+      original(...)
     },
     .package = "ledgr"
   )
@@ -359,4 +362,5 @@ testthat::test_that("dense folds never construct availability valuation state", 
     ledgr_run_info(snapshot, "dense-valuation-bypass")$status,
     "DONE"
   )
+  testthat::expect_gt(calls, 0L)
 })

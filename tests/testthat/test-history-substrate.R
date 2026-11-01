@@ -598,13 +598,12 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
     universe = c("AAA", "BBB"),
     cost_model = ledgr_cost_zero()
   )
-  path_substrate <- testthat::with_mocked_bindings(
-    ledgr:::ledgr_history_substrate_for_experiment(path_experiment),
-    ledgr_precompute_fetch_bars = function(...) {
-      stop("history construction must keep the bar query unsplit")
-    },
-    .package = "ledgr"
-  )
+  testthat::expect_false(exists(
+    "ledgr_precompute_fetch_bars",
+    envir = asNamespace("ledgr"),
+    inherits = FALSE
+  ))
+  path_substrate <- ledgr:::ledgr_history_substrate_for_experiment(path_experiment)
   testthat::expect_identical(
     unname(path_substrate$bars$observed[1L, ]),
     c(TRUE, FALSE, TRUE, FALSE)
@@ -1161,16 +1160,10 @@ testthat::test_that("[LTB-0293] availability fold ownership has one history read
     ),
     fixed = TRUE
   ))
-  testthat::expect_true(grepl(
-    paste0(
-      "if \\(availability_active\\) \\{[\\s\\S]*?",
-      "history_substrate <- ledgr_history_substrate\\([\\s\\S]*?",
-      "bars_all <- NULL[\\s\\S]*?\\} else \\{[\\s\\S]*?",
-      "raw_bars_by_id <- split\\(bars_all"
-    ),
-    runner,
-    perl = TRUE
-  ))
+  testthat::expect_match(
+    runner, "ledgr_availability_provider_from_substrate", fixed = TRUE
+  )
+  testthat::expect_no_match(runner, "raw_bars_by_id", fixed = TRUE)
   testthat::expect_match(sweep, "ledgr_sweep_stage_history_tasks", fixed = TRUE)
 
   # LDG-3063: experiment-derived pulse inspection reaches the substrate only
@@ -1811,7 +1804,7 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
   testthat::expect_identical(
     names(substrate),
     c(
-      "substrate_version", "snapshot_hash", "policy_identity",
+      "substrate_version", "clock_kind", "snapshot_hash", "policy_identity",
       "history_policy", "source_start_utc", "data_start_utc",
       "instrument_ids", "instrument_index", "axis", "pulse_index", "bars",
       "bar_gap_runs", "segments", "segment_counts", "sessions",
@@ -1898,11 +1891,7 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
     )
   }
   # Readers that need only the session calendar compile no provider.
-  for (fn in c(
-    "ledgr_rebuild_derived_state", "ledgr_run_open",
-    "ledgr_experiment_window_validate_pulses",
-    "ledgr_walk_forward_pulse_calendar"
-  )) {
+  for (fn in c("ledgr_rebuild_derived_state", "ledgr_run_open")) {
     source_text <- paste(deparse(get(fn, envir = ns)), collapse = "\n")
     testthat::expect_true(
       grepl("ledgr_availability_session_source(", source_text, fixed = TRUE),
@@ -1911,6 +1900,16 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
     for (call in c("ledgr_availability_provider(", "ledgr_availability_provider_data(")) {
       testthat::expect_false(grepl(call, source_text, fixed = TRUE), info = paste(fn, call))
     }
+  }
+  for (fn in c(
+    "ledgr_experiment_window_validate_pulses",
+    "ledgr_walk_forward_pulse_calendar"
+  )) {
+    source_text <- paste(deparse(get(fn, envir = ns)), collapse = "\n")
+    testthat::expect_true(
+      grepl("ledgr_history_substrate_for_experiment(", source_text, fixed = TRUE),
+      info = fn
+    )
   }
 })
 

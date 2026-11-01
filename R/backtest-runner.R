@@ -1,5 +1,4 @@
 .ledgr_telemetry_registry <- new.env(parent = emptyenv())
-.ledgr_preflight_registry <- new.env(parent = emptyenv())
 
 ledgr_strategy_error_classes <- function(error) {
   original <- setdiff(class(error), c("rlang_error", "error", "condition"))
@@ -86,18 +85,6 @@ ledgr_time_elapsed <- function(start, end) {
     return(as.numeric(delta))
   }
   as.numeric(difftime(end, start, units = "secs"))
-}
-
-ledgr_set_preflight_start <- function(value) {
-  assign("start", value, envir = .ledgr_preflight_registry)
-  invisible(TRUE)
-}
-
-ledgr_take_preflight_start <- function() {
-  if (!exists("start", envir = .ledgr_preflight_registry, inherits = FALSE)) return(NULL)
-  val <- get("start", envir = .ledgr_preflight_registry, inherits = FALSE)
-  rm("start", envir = .ledgr_preflight_registry)
-  val
 }
 
 # The published fill event block of the buffered and memory sinks
@@ -369,7 +356,7 @@ ledgr_run_fold_impl <- function(config,
   final_execution_ts_utc <- prepared$final_execution_ts_utc
   seed <- prepared$seed
   compiled_accounting_model <- prepared$compiled_accounting_model
-  availability_active <- ledgr_availability_config_active(cfg)
+  declared_sessions <- ledgr_availability_config_active(cfg)
   run_wall_start <- ledgr_time_now()
 
   engine <- ledgr_run_prepare_engine(cfg, db_path)
@@ -379,13 +366,21 @@ ledgr_run_fold_impl <- function(config,
   snapshot_db_path <- engine$snapshot_db_path
   snapshot_hash_for_features <- NULL
 
-  opened <- ledgr_store_open(db_path, mode = "create")
+  held <- ledgr_held_store(db_path)
+  opened <- if (is.null(held)) {
+    ledgr_store_open(db_path, mode = "create")
+  } else {
+    ledgr_store_assert_current(held, db_path)
+    list(con = held, drv = NULL, borrowed = TRUE)
+  }
   drv <- opened$drv
   con <- opened$con
   on.exit({
     ledgr_checkpoint_duckdb(con)
-    suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
-    suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
+    if (!isTRUE(opened$borrowed)) {
+      suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+      suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
+    }
   }, add = TRUE)
 
   ledgr_validate_schema_once(con)
@@ -443,12 +438,12 @@ ledgr_run_fold_impl <- function(config,
     end_ts_utc = end_ts_utc,
     run_id = run_id,
     fail_run = fail_run,
-    availability_active = availability_active
+    availability_active = declared_sessions
   )
   snapshot_hash_for_features <- snapshot$snapshot_hash
   history_policy <- ledgr_history_identity_require_current(cfg$history)
   corporate_action_rows <- ledgr_corporate_action_rows(con, snapshot_id)
-  availability_data <- if (availability_active && is.null(history_substrate)) {
+  availability_data <- if (is.null(history_substrate)) {
     ledgr_availability_provider_data(con, snapshot_id)
   } else {
     NULL
@@ -458,11 +453,26 @@ ledgr_run_fold_impl <- function(config,
   # open, so its history reaches that session's close.
   continuation <- NULL
   history_end_ts_utc <- end_ts_utc
-  availability_sessions <- if (availability_active) {
+  if (!declared_sessions && !is.null(final_execution_ts_utc)) {
+    history_end_ts_utc <- max(
+      as.POSIXct(history_end_ts_utc, tz = "UTC"),
+      as.POSIXct(final_execution_ts_utc, tz = "UTC")
+    )
+  }
+  availability_sessions <- {
     sessions <- if (is.null(history_substrate)) {
       availability_data$sessions
     } else {
       history_substrate$sessions
+    }
+    if (!declared_sessions && is.null(history_substrate)) {
+      axis <- ledgr_run_snapshot_calendar(
+        con, instrument_ids,
+        ledgr_run_snapshot_history_start(con, snapshot_id),
+        history_end_ts_utc
+      )$pulses_posix
+      sessions <- ledgr_bar_native_sessions(axis)
+      availability_data$sessions <- sessions
     }
     continuation <- ledgr_availability_continuation(sessions, final_execution_ts_utc)
     if (!is.null(continuation)) history_end_ts_utc <- continuation$close
@@ -478,49 +488,35 @@ ledgr_run_fold_impl <- function(config,
       )
     }
     sessions
-  } else {
-    NULL
   }
 
-  if (availability_active) {
+  if (declared_sessions) {
     ledgr_availability_require_coverage(
       list(sessions = availability_sessions),
       ledgr_snapshot_bar_range(con, snapshot_id, start_ts_utc, end_ts_utc)
     )
   }
-  calendar <- if (availability_active) {
-    ledgr_availability_run_calendar(
-      list(sessions = availability_sessions),
-      start_ts_utc,
-      end_ts_utc,
-      final_execution_ts_utc
-    )
-  } else {
-    ledgr_run_snapshot_calendar(
-      con,
-      instrument_ids,
-      start_ts_utc,
-      end_ts_utc
-    )
-  }
+  calendar <- ledgr_availability_run_calendar(
+    list(sessions = availability_sessions),
+    start_ts_utc,
+    end_ts_utc,
+    final_execution_ts_utc
+  )
   pulses <- calendar$pulses
   pulses_posix <- calendar$pulses_posix
   pulses_iso <- calendar$pulses_iso
-  history_axis <- pulses_posix
-  if (availability_active) {
-    history_axis <- if (is.null(history_substrate)) {
-      history_start <- ledgr_run_snapshot_history_start(con, snapshot_id)
-      ledgr_availability_calendar(
-        list(sessions = availability_sessions),
-        as.POSIXct(history_start, tz = "UTC"),
-        history_end_ts_utc
-      )$pulses_posix
-    } else {
-      history_substrate$axis
-    }
+  history_axis <- if (is.null(history_substrate)) {
+    history_start <- ledgr_run_snapshot_history_start(con, snapshot_id)
+    ledgr_availability_calendar(
+      list(sessions = availability_sessions),
+      as.POSIXct(history_start, tz = "UTC"),
+      history_end_ts_utc
+    )$pulses_posix
+  } else {
+    history_substrate$axis
   }
 
-  terminal_completion <- if (availability_active && is_resume) {
+  terminal_completion <- if (is_resume) {
     ledgr_run_completion_read(
       con,
       run_id,
@@ -593,7 +589,6 @@ ledgr_run_fold_impl <- function(config,
   next_event_seq <- resume$next_event_seq
 
   prepared_control <- ledgr_run_prepare_control(control)
-  fast_context <- prepared_control$fast_context
   max_pulses <- prepared_control$max_pulses
   cost_resolver <- ledgr_cost_resolver_from_plan_json(cfg$cost_model$cost_plan_json)
 
@@ -661,39 +656,13 @@ ledgr_run_fold_impl <- function(config,
     }
   }
 
-  preflight_start <- ledgr_take_preflight_start()
-  if (is.null(preflight_start)) {
-    preflight_start <- ledgr_time_now()
-  }
+  preflight_start <- ledgr_time_now()
   run_feature_series <- NULL
   run_feature_matrix <- NULL
   runtime_projection <- NULL
-  bars_by_id <- NULL
-  bars_cols_by_id <- NULL
-  bars_mat <- NULL
-  static_bars_views <- NULL
-  bar_col_map <- list(
-    instrument_id = 1L,
-    ts_utc = 2L,
-    open = 3L,
-    high = 4L,
-    low = 5L,
-    close = 6L,
-    volume = 7L,
-    gap_type = 8L,
-    is_synthetic = 9L
-  )
-  use_bars_cache <- TRUE
-  use_fast_context <- !availability_active
-  if (isTRUE(use_bars_cache)) {
-    bars_all <- NULL
-    if (!availability_active || is.null(history_substrate)) {
-      preparation_start <- if (availability_active) history_axis[[1L]] else start_ts_utc
-      preparation_end <- if (availability_active) {
-        history_axis[[length(history_axis)]]
-      } else {
-        end_ts_utc
-      }
+  if (is.null(history_substrate)) {
+      preparation_start <- history_axis[[1L]]
+      preparation_end <- history_axis[[length(history_axis)]]
       start_iso <- ledgr_normalize_ts_utc(preparation_start)
       end_iso <- ledgr_normalize_ts_utc(preparation_end)
       start_ts <- as.POSIXct(start_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
@@ -716,152 +685,54 @@ ledgr_run_fold_impl <- function(config,
       if (nrow(bars_all) == 0) {
         fail_run("No bars found for feature hydration.", class = "ledgr_missing_bars")
       }
-    }
-
-    if (availability_active) {
-      if (is.null(history_substrate)) {
-        availability_config <- cfg
-        availability_config$history_policy <- history_policy
-        history_substrate <- ledgr_history_substrate(
-          bars = bars_all,
-          instrument_ids = instrument_ids,
-          axis = history_axis,
-          availability_data = availability_data,
-          availability_config = availability_config,
-          snapshot_hash = snapshot_hash_for_features,
-          source_start_utc = as.POSIXct(history_start, tz = "UTC")
-        )
-      }
-      bars_all <- NULL
-    } else {
-      raw_bars_by_id <- split(bars_all, as.character(bars_all$instrument_id))
-      bars_all <- NULL
-      bars_by_id <- list()
-      for (instrument_id in instrument_ids) {
-        b <- raw_bars_by_id[[instrument_id]]
-        if (is.null(b) || nrow(b) == 0) {
-        fail_run(sprintf("Missing bars for instrument_id=%s during feature hydration.", instrument_id), class = "ledgr_missing_bars")
-      }
-        if (nrow(b) != length(pulses)) {
-        fail_run("Feature hydration requires complete per-instrument coverage.", class = "ledgr_missing_bars")
-      }
-      ts_match <- as.POSIXct(b$ts_utc, tz = "UTC")
-      if (any(ts_match != pulses_posix)) {
-        fail_run("Feature hydration bars are misaligned with pulse timestamps.", class = "ledgr_missing_bars")
-      }
-        bars_by_id[[instrument_id]] <- b
-      }
-      raw_bars_by_id <- NULL
-      bars_cols_by_id <- lapply(
-      bars_by_id,
-      function(b) {
-        list(
-          b$instrument_id,
-          b$ts_utc,
-          b$open,
-          b$high,
-          b$low,
-          b$close,
-          b$volume,
-          b$gap_type,
-          b$is_synthetic
-        )
-      }
-    )
-      n_inst <- length(instrument_ids)
-      n_pulses <- length(pulses)
-      bars_mat <- list(
-      open = matrix(NA_real_, nrow = n_inst, ncol = n_pulses),
-      high = matrix(NA_real_, nrow = n_inst, ncol = n_pulses),
-      low = matrix(NA_real_, nrow = n_inst, ncol = n_pulses),
-      close = matrix(NA_real_, nrow = n_inst, ncol = n_pulses),
-      volume = matrix(NA_real_, nrow = n_inst, ncol = n_pulses),
-      gap_type = matrix("", nrow = n_inst, ncol = n_pulses),
-      is_synthetic = matrix(FALSE, nrow = n_inst, ncol = n_pulses)
-    )
-      for (j in seq_along(instrument_ids)) {
-      id <- instrument_ids[[j]]
-      cols <- bars_cols_by_id[[id]]
-      bars_mat$open[j, ] <- as.numeric(cols[[bar_col_map$open]])
-      bars_mat$high[j, ] <- as.numeric(cols[[bar_col_map$high]])
-      bars_mat$low[j, ] <- as.numeric(cols[[bar_col_map$low]])
-      bars_mat$close[j, ] <- as.numeric(cols[[bar_col_map$close]])
-      bars_mat$volume[j, ] <- as.numeric(cols[[bar_col_map$volume]])
-      bars_mat$gap_type[j, ] <- as.character(cols[[bar_col_map$gap_type]])
-      bars_mat$is_synthetic[j, ] <- as.logical(cols[[bar_col_map$is_synthetic]])
-      }
-      bars_cols_by_id <- NULL
-      static_bars_views <- ledgr_bars_pulse_views(
-        bars_mat = bars_mat,
-        instrument_ids = instrument_ids,
-        pulses_posix = pulses_posix
+      availability_config <- ledgr_execution_provider_config_from_config(
+        cfg,
+        if (declared_sessions) "declared_sessions" else "bar_native"
       )
-    }
+      availability_config$history_policy <- history_policy
+      history_substrate <- ledgr_history_substrate(
+        bars = bars_all,
+        instrument_ids = instrument_ids,
+        axis = history_axis,
+        availability_data = availability_data,
+        availability_config = availability_config,
+        snapshot_hash = snapshot_hash_for_features,
+        source_start_utc = as.POSIXct(history_start, tz = "UTC"),
+        clock_kind = if (declared_sessions) "declared_sessions" else "bar_native"
+      )
+      ledgr_history_substrate_require_rectangular(history_substrate)
   }
 
-  feature_engine_version <- ledgr_feature_engine_version(availability_active)
+  bars_mat <- history_substrate$bars
+  feature_engine_version <- ledgr_feature_engine_version()
   if (length(feature_defs) > 0) {
     def_ids <- vapply(feature_defs, function(d) d$id, character(1))
-    if (availability_active) {
-      # One preparation treats each instrument's inputs once and calculates
-      # every definition on the substrate axis.
-      run_feature_matrix <- ledgr_history_compute_feature_series(
-        substrate = history_substrate,
-        definitions = stats::setNames(feature_defs, def_ids),
-        calculation_start = ledgr_history_calculation_start(history_substrate),
-        calculation_end = end_ts_utc
-      )
-    } else {
-      run_feature_series <- stats::setNames(
-        lapply(feature_defs, function(...) list()),
-        def_ids
-      )
-      for (def in feature_defs) {
-        for (instrument_id in instrument_ids) {
-          b <- bars_by_id[[instrument_id]]
-          values <- ledgr_compute_feature_series(b, def)
-          if (length(values) != nrow(b)) {
-            fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
-          }
-          run_feature_series[[def$id]][[instrument_id]] <- as.numeric(values)
-        }
-      }
-      n_inst <- length(instrument_ids)
-      n_def <- length(def_ids)
-      run_feature_matrix <- vector("list", n_def)
-      for (d in seq_len(n_def)) {
-        id <- def_ids[[d]]
-        mat <- matrix(NA_real_, nrow = n_inst, ncol = length(pulses_posix))
-        for (j in seq_along(instrument_ids)) {
-          mat[j, ] <- as.numeric(run_feature_series[[id]][[instrument_ids[[j]]]])
-        }
-        run_feature_matrix[[d]] <- mat
-      }
-      names(run_feature_matrix) <- def_ids
-      run_feature_series <- NULL
-    }
-    bars_by_id <- NULL
-  } else {
-    bars_by_id <- NULL
+    run_feature_matrix <- ledgr_history_compute_feature_series(
+      substrate = history_substrate,
+      definitions = stats::setNames(feature_defs, def_ids),
+      calculation_start = ledgr_history_calculation_start(history_substrate),
+      calculation_end = end_ts_utc
+    )
   }
   runtime_projection <- ledgr_projection_from_feature_matrix(
     feature_matrix = run_feature_matrix %||% list(),
     universe = instrument_ids,
-    pulses_posix = if (availability_active) history_axis else pulses_posix,
+    pulses_posix = history_axis,
     feature_engine_version = feature_engine_version,
     alias_index = NULL
   )
-  if (availability_active) {
-    history_substrate <- ledgr_history_substrate_bind_features(
-      history_substrate,
-      runtime_projection
-    )
-    availability_provider <- ledgr_availability_provider_from_substrate(
-      history_substrate,
+  history_substrate <- ledgr_history_substrate_bind_features(
+    history_substrate,
+    runtime_projection
+  )
+  availability_provider <- ledgr_availability_provider_from_substrate(
+    history_substrate,
+    ledgr_execution_provider_config_from_config(
       cfg,
-      snapshot_hash_for_features
-    )
-  }
+      if (declared_sessions) "declared_sessions" else "bar_native"
+    ),
+    snapshot_hash_for_features
+  )
   run_feature_matrix <- NULL
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
@@ -887,32 +758,22 @@ ledgr_run_fold_impl <- function(config,
       run_id = run_id,
       completion = terminal_completion,
       calendar = calendar,
-      bars_mat = if (availability_active) history_substrate$bars else bars_mat,
+      bars_mat = history_substrate$bars,
       instrument_ids = instrument_ids,
       initial_cash = initial_cash,
       availability_provider = availability_provider,
-      source_pulses_posix = if (availability_active) history_axis else pulses_posix,
-      pulse_columns = if (availability_active) {
-        unname(history_substrate$pulse_index[ledgr_projection_pulse_names(pulses_posix)])
-      } else {
-        NULL
-      }
+      source_pulses_posix = history_axis,
+      pulse_columns = unname(history_substrate$pulse_index[
+        ledgr_projection_pulse_names(pulses_posix)
+      ])
     )
     ledgr_run_finalize(
       con = con,
       output_handler = output_handler,
       run = list(
-        run_id = run_id,
-        start_ts_utc = start_ts_utc,
-        end_ts_utc = end_ts_utc,
-        instrument_ids = instrument_ids,
-        initial_cash = initial_cash,
-        availability_active = availability_active
+        run_id = run_id
       ),
       calendar = calendar,
-      projection = list(
-        bars_mat = bars_mat
-      ),
       fold = list(
         telemetry = telemetry,
         processed = recovery_equity$n,
@@ -943,7 +804,12 @@ ledgr_run_fold_impl <- function(config,
   ledgr_run_resume_preflight(is_resume, strategy_preflight)
   output_handler$record_run_status("RUNNING", NA_character_)
 
-  state_prev_mem <- NULL
+  state_prev_mem <- list(
+    asset_state = stats::setNames(
+      rep(list(list()), length(instrument_ids)),
+      instrument_ids
+    )
+  )
   if (is_resume) {
     state_prev_mem <- ledgr_strategy_state_prev(con, run_id, resume_iso)
   }
@@ -963,7 +829,7 @@ ledgr_run_fold_impl <- function(config,
     instrument_ids = instrument_ids,
     existing_events = ledgr_corporate_action_existing_events(con, run_id),
     start_idx = start_idx,
-    dispositions_active = availability_active,
+    dispositions_active = TRUE,
     carried = opening_carried$pending
   )
 
@@ -982,13 +848,8 @@ ledgr_run_fold_impl <- function(config,
     telemetry_stride = telemetry_stride,
     state = state_env$current,
     state_prev = state_prev_mem,
-    bars_by_id = list(),
-    bars_mat = bars_mat,
-    static_bars_views = static_bars_views,
     history_substrate = history_substrate,
-    static_feature_views = NULL,
     feature_defs = feature_defs,
-    runtime_projection = if (availability_active) NULL else runtime_projection,
     active_alias_map = active_alias_map,
     risk_plan = risk_plan,
     cost_resolver = cost_resolver,
@@ -996,21 +857,16 @@ ledgr_run_fold_impl <- function(config,
     telemetry = telemetry,
     seed = seed,
     event_mode = if (identical(execution_mode, "db_live")) "live" else "buffered",
-    use_fast_context = use_fast_context,
     compiled_accounting_model = compiled_accounting_model,
     availability_provider = availability_provider,
-    execution_opportunities_posix = if (availability_active) {
-      calendar$execution_opportunities_posix
-    } else {
-      NULL
-    },
+    execution_opportunities_posix = calendar$execution_opportunities_posix,
     corporate_action_plan = corporate_action_plan,
     corporate_action_policy = if (is.null(cfg$corporate_actions)) {
       NULL
     } else {
       ledgr_corporate_action_identity_decode(cfg$corporate_actions)$policy
     },
-    frozen_at_resume = if (availability_active && is_resume && start_idx > 1L) {
+    frozen_at_resume = if (is_resume && start_idx > 1L) {
       ledgr_availability_frozen_at(
         con, run_id, initial_cash, availability_provider,
         history_substrate$bars,
@@ -1028,7 +884,7 @@ ledgr_run_fold_impl <- function(config,
       NULL
     },
     final_execution_posix = calendar$final_execution_posix,
-    last_executed_at_resume = if (availability_active && is_resume && start_idx > 1L) {
+    last_executed_at_resume = if (is_resume && start_idx > 1L) {
       DBI::dbGetQuery(
         con,
         "SELECT MAX(ts_utc) AS ts_utc FROM ledger_events WHERE run_id = ? AND event_type = 'FILL'",
@@ -1062,7 +918,7 @@ ledgr_run_fold_impl <- function(config,
   telemetry <- fold_result$telemetry
 
   if (!isTRUE(full_run)) {
-    if (availability_active && fold_result$equity_facts$n > 0L) {
+    if (fold_result$equity_facts$n > 0L) {
       partial_error <- tryCatch({
         ledgr_run_equity_prefix_commit(
           con = con,
@@ -1099,17 +955,9 @@ ledgr_run_fold_impl <- function(config,
     con = con,
     output_handler = output_handler,
     run = list(
-      run_id = run_id,
-      start_ts_utc = start_ts_utc,
-      end_ts_utc = end_ts_utc,
-      instrument_ids = instrument_ids,
-      initial_cash = initial_cash,
-      availability_active = availability_active
+      run_id = run_id
     ),
     calendar = calendar,
-    projection = list(
-      bars_mat = bars_mat
-    ),
     fold = list(
       telemetry = telemetry,
       processed = processed,

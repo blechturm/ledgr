@@ -58,7 +58,7 @@ testthat::test_that("rng wrapper source check passes on the package source and r
   testthat::skip_if_not(dir.exists(file.path(root, "R")), "package R sources unavailable")
   parsed <- ledgr_rng_src_parse_dir(root)
   testthat::expect_identical(ledgr_rng_source_check(parsed), character())
-  testthat::expect_length(ledgr_rng_wrapper_expected(), 18L)
+  testthat::expect_length(ledgr_rng_wrapper_expected(), 17L)
 
   # Replace one top-level definition and rerun the check.
   replace_def <- function(name, text) {
@@ -283,7 +283,7 @@ testthat::test_that("an ambient-RNG strategy gives identical results across stor
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
   backtest_equity <- function(ck) {
     set.seed(1L, kind = "Mersenne-Twister", normal.kind = "Inversion", sample.kind = "Rejection")
-    bt <- suppressWarnings(ledgr_backtest(snapshot = fx$snapshot, strategy = ledgr_rng_test_ambient_strategy,
+    bt <- suppressWarnings(ledgr_test_run(snapshot = fx$snapshot, strategy = ledgr_rng_test_ambient_strategy,
       strategy_params = list(qty = 10), cost_model = ledgr_cost_zero(), checkpoint_every = ck,
       run_id = paste0("store-ck", ck)))
     on.exit(close(bt))
@@ -354,8 +354,6 @@ testthat::test_that("every wrapped export restores the caller's RNG on success",
 
   ledgr_rng_expect_caller_unchanged(function() close(suppressWarnings(ledgr_run(fx$exp, run_id = next_id("w-run")))), "ledgr_run unseeded")
   ledgr_rng_expect_caller_unchanged(function() close(suppressWarnings(ledgr_run(fx$exp, run_id = next_id("w-run"), seed = 3L))), "ledgr_run seeded")
-  ledgr_rng_expect_caller_unchanged(function() close(suppressWarnings(ledgr_backtest(snapshot = fx$snapshot, strategy = draw_strategy,
-    cost_model = ledgr_cost_zero(), run_id = next_id("w-bt")))), "ledgr_backtest")
   ledgr_rng_expect_caller_unchanged(function() suppressWarnings(ledgr_sweep(fx$exp, grid)), "ledgr_sweep unseeded")
   ledgr_rng_expect_caller_unchanged(function() suppressWarnings(ledgr_sweep(fx$exp, grid, seed = 9L)), "ledgr_sweep seeded")
 
@@ -437,8 +435,6 @@ testthat::test_that("wrapped exports restore the caller's RNG on setup failure a
     ledgr_rng_expect_caller_unchanged(function() ledgr_sweep(fx$exp, ledgr_grid_named(a = list(strategy = list())),
       seed = seed, stop_on_error = TRUE), paste("ledgr_sweep failure", label), expect_condition = "error")
   }
-  ledgr_rng_expect_caller_unchanged(function() ledgr_backtest(snapshot = fx$snapshot, strategy = failing,
-    cost_model = ledgr_cost_zero(), run_id = next_id("bt-fail")), "ledgr_backtest failure", expect_condition = "error")
   # No-draw guard: this validation error precedes seeding.
   ledgr_rng_expect_caller_unchanged(function() ledgr_sim_bars(n_instruments = 2, n_days = 10, seed = 4L, instrument_prefix = ""),
     "ledgr_sim_bars setup failure", expect_condition = "error")
@@ -734,7 +730,10 @@ testthat::test_that("signal strategies and adapter indicators draw like the call
   invisible(stats::runif(1))
   second <- stats::runif(1)
   set.seed(1L)
-  strat(list(universe = "AAA"), list())
+  strat(list(
+    universe = "AAA",
+    vec = list(admissible = stats::setNames(TRUE, "AAA"))
+  ), list())
   testthat::expect_identical(stats::runif(1), second)
 
   # sample.int passes the adapter's fingerprint purity check (decision (11)).
@@ -813,7 +812,7 @@ testthat::test_that("rng-relevant sites run only under a wrapped export or a ret
     sw <- ledgr_sweep(feature_exp, ledgr_grid_named(a = list(strategy = list(qty = 1))), seed = 3L,
       retain = ledgr_sweep_retention(returns = "completed"))
     close(ledgr_promote(feature_exp, ledgr_candidate(sw, 1L), run_id = "trace-promote"))
-    close(ledgr_backtest(snapshot = fx$snapshot, strategy = ledgr_rng_test_flat_strategy, features = list(ind),
+    close(ledgr_test_run(snapshot = fx$snapshot, strategy = ledgr_rng_test_flat_strategy, features = list(ind),
       cost_model = ledgr_cost_zero(), run_id = "trace-bt"))
     ledgr_precompute_features(feature_exp, data.frame(qty = 1))
     close(ledgr_pulse_snapshot(fx$snapshot, universe = c("AAA", "BBB"), ts_utc = "2021-01-05T00:00:00Z", features = list(ind)))

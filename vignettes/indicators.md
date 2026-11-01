@@ -368,10 +368,6 @@ bt <- exp |>
     params = list(min_return = 0, qty = 10),
     run_id = "indicators_demo_run"
   )
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 ledgr_results(bt, what = "fills")
 #> # A tibble: 39 x 10
@@ -394,10 +390,10 @@ close(pulse)
 close(bt)
 ```
 
-The `LEDGR_LAST_BAR_NO_FILL` warning comes from the last bar: the rule
-changed its target there, and there is no later open at which to fill
-it. It is expected at the end of most samples;
-`vignette("execution-semantics", package = "ledgr")` explains it.
+The run diagnostics may contain `final_pulse_no_execution`: the rule
+changed its target on the final bar, where there is no later open at
+which to fill it. `vignette("execution-semantics", package = "ledgr")`
+explains that evidence.
 
 The fill table is the first execution check: it shows which instruments
 actually crossed from a target into a position, at which next-open

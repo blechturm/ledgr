@@ -82,7 +82,7 @@ testthat::test_that("saved sweeps save, list, open, and inspect compact artifact
   testthat::expect_equal(reopened$total_return, sweep$total_return)
   testthat::expect_identical(attr(reopened, "snapshot_id"), attr(sweep, "snapshot_id"))
   testthat::expect_identical(attr(reopened, "snapshot_hash"), attr(sweep, "snapshot_hash"))
-  testthat::expect_identical(attr(reopened, "identity_rule_version"), 4L)
+  testthat::expect_identical(attr(reopened, "identity_rule_version"), 5L)
   testthat::expect_identical(attr(reopened, "cost_model_hash"), attr(sweep, "cost_model_hash"))
   testthat::expect_identical(attr(reopened, "metric_context_hash"), attr(sweep, "metric_context_hash"))
   testthat::expect_identical(attr(reopened, "sweep_retention"), ledgr_sweep_retention("completed"))

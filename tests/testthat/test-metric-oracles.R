@@ -186,7 +186,7 @@ ledgr_metric_fixture <- function(name) {
 ledgr_run_metric_fixture <- function(name) {
   fixture <- ledgr_metric_fixture(name)
   db_path <- tempfile(fileext = ".duckdb")
-  bt_expr <- quote(ledgr_backtest(
+  bt_expr <- quote(ledgr_test_run(
     data = fixture$bars,
     strategy = fixture$strategy,
     initial_cash = fixture$initial_cash,
@@ -194,21 +194,10 @@ ledgr_run_metric_fixture <- function(name) {
     run_id = paste0("metric-", name),
   cost_model = ledgr_cost_zero()
   ))
-  bt <- if (isTRUE(fixture$expect_warning)) {
-    warned <- FALSE
-    value <- withCallingHandlers(
-      eval(bt_expr),
-      warning = function(w) {
-        if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
-          warned <<- TRUE
-          invokeRestart("muffleWarning")
-        }
-      }
-    )
-    testthat::expect_true(warned)
-    value
-  } else {
-    eval(bt_expr)
+  bt <- eval(bt_expr)
+  if (isTRUE(fixture$expect_warning)) {
+    testthat::expect_true("final_pulse_no_execution" %in%
+      ledgr_results(bt, "diagnostics")$reason_code)
   }
   list(bt = bt, db_path = db_path)
 }

@@ -653,6 +653,7 @@ print.ledgr_experiment <- function(x, ...) {
   cat("Opening:     cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
       ", positions=", length(x$opening$positions), "\n", sep = "")
   cat("Mode:        ", x$execution_mode, "\n", sep = "")
+  cat("Clock:       ", if (isTRUE(x$availability$active)) "declared_sessions" else "bar_native", "\n", sep = "")
   cat(
     "Price basis: ",
     if (is.null(x$data_identity$price_basis) && !isTRUE(x$availability$active)) {

@@ -6,7 +6,7 @@ testthat::test_that("plot.ledgr_backtest dispatches and returns a plot object", 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = test_strategy,
     start = "2020-01-01",
@@ -26,7 +26,7 @@ testthat::test_that("plot.ledgr_backtest has dependency fallbacks", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = test_strategy,
     start = "2020-01-01",

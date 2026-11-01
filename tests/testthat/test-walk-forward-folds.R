@@ -205,7 +205,7 @@ testthat::test_that("experiment windows validate pulse coverage and derive fold 
 
   testthat::expect_error(
     ledgr:::ledgr_experiment_window(exp, "2020-01-02", "2020-01-02"),
-    class = "ledgr_walk_forward_invalid_fold_window"
+    class = "ledgr_run_window_too_short"
   )
   testthat::expect_error(
     ledgr:::ledgr_experiment_window(exp, "2019-12-31", "2020-01-03"),
@@ -274,20 +274,18 @@ testthat::test_that("windowed execution preserves final-bar no-fill semantics at
   exp <- ledgr_experiment(snapshot, ledgr_wf_final_bar_strategy, cost_model = ledgr_cost_zero())
   window <- ledgr:::ledgr_experiment_window(exp, "2020-01-02", "2020-01-04")
 
-  run <- NULL
-  testthat::expect_warning(
-    run <- ledgr:::ledgr_run_window(
-      exp,
-      params = list(qty = 1, entry_ts = "2020-01-04T00:00:00Z"),
-      window = window,
-      run_id = "wf-final-bar-no-fill",
-      seed = 33L
-    ),
-    "LEDGR_LAST_BAR_NO_FILL"
+  run <- ledgr:::ledgr_run_window(
+    exp,
+    params = list(qty = 1, entry_ts = "2020-01-04T00:00:00Z"),
+    window = window,
+    run_id = "wf-final-bar-no-fill",
+    seed = 33L
   )
   on.exit(close(run), add = TRUE)
   testthat::expect_identical(ledgr_compute_metrics(run)$n_trades, 0L)
   testthat::expect_equal(nrow(ledgr_results(run, "fills")), 0)
+  testthat::expect_true("final_pulse_no_execution" %in%
+    ledgr_results(run, "diagnostics")$reason_code)
 })
 
 # ledgr-test-profile: review

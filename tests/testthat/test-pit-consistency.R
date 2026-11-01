@@ -641,7 +641,8 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
   testthat::expect_identical(quiet$corporate_action_fidelity, "none")
   testthat::expect_identical(quiet$unsupported_facts, 0L)
 
-  # A held cash acquisition in a dense run: no disposition acts there.
+  # A held cash acquisition on a bar-native clock follows the same typed
+  # completion path as a declared-session run.
   dense_bars <- data.frame(
     instrument_id = rep(c("AAA", "CCC"), each = 5), ts_utc = rep(at(days[1:5]), 2),
     open = 10, high = 10, low = 10, close = 10, volume = 1
@@ -655,12 +656,16 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
   dense_research <- run_summary(dense, "dense_research", ledgr_corporate_actions_research(), universe = c("AAA", "CCC"))
   testthat::expect_identical(dense_research$corporate_action_fidelity, "unsupported")
   testthat::expect_identical(dense_research$unsupported_facts, 1L)
-  # A dense run has no typed stop, so strict still aborts; a dense sweep
-  # candidate fails the same way.
-  testthat::expect_error(
-    run_summary(dense, "dense_strict", ledgr_corporate_actions_strict(), universe = c("AAA", "CCC")),
-    class = "ledgr_corporate_action_quantity_unsupported"
+  dense_strict <- run_summary(
+    dense,
+    "dense_strict",
+    ledgr_corporate_actions_strict(),
+    universe = c("AAA", "CCC")
   )
+  testthat::expect_identical(dense_strict$corporate_action_fidelity, "unsupported")
+  dense_info <- ledgr_run_info(dense, "dense_strict")
+  testthat::expect_identical(dense_info$completion_status, "INCOMPLETE")
+  testthat::expect_identical(dense_info$stop_reason, "terminal_settlement_unsupported")
   dense_sweep <- ledgr_sweep(
     ledgr_experiment(dense, buy_aaa,
       universe = c("AAA", "CCC"), cost_model = ledgr_cost_zero(),
@@ -668,7 +673,9 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
     ),
     ledgr_grid_named(a = list(strategy = list()))
   )
-  testthat::expect_identical(dense_sweep$error_class[[1L]], "ledgr_corporate_action_quantity_unsupported")
+  testthat::expect_identical(dense_sweep$status[[1L]], "INCOMPLETE")
+  testthat::expect_true(is.na(dense_sweep$error_class[[1L]]))
+  testthat::expect_identical(dense_sweep$stop_reason[[1L]], "terminal_settlement_unsupported")
 })
 
 testthat::test_that("[LTB-0228] a declared corporate-action refusal stops the run typed", {
@@ -761,60 +768,6 @@ testthat::test_that("[LTB-0230] ledgr_compute_metrics() withholds annualized fig
   complete <- ledgr_compute_metrics(done)
   testthat::expect_null(attr(complete, "withheld"))
   testthat::expect_true(is.finite(complete$annualized_return))
-})
-
-testthat::test_that("[LTB-0231] ledgr_backtest() refuses snapshots with point-in-time facts and writes no run", {
-  hold <- function(ctx, params) ctx$hold()
-  facts_snapshot <- scale_test_events_snapshot()
-  on.exit(ledgr_snapshot_close(facts_snapshot), add = TRUE)
-  err <- testthat::expect_error(
-    ledgr_backtest(facts_snapshot, hold, cost_model = ledgr_cost_zero(), run_id = "refused"),
-    class = "ledgr_backtest_availability_unsupported"
-  )
-  testthat::expect_s3_class(err, "ledgr_invalid_args")
-  testthat::expect_match(conditionMessage(err), "membership, sessions, lifetime", fixed = TRUE)
-  testthat::expect_match(conditionMessage(err), "ledgr_run()", fixed = TRUE)
-  testthat::expect_identical(nrow(ledgr_run_list(facts_snapshot)), 0L)
-
-  # Trading-status facts alone also refuse (each activating family counts).
-  status_days <- as.POSIXct(paste(pit_consistency_days()[1:4], "21:00:00"), tz = "UTC")
-  status_only <- ledgr_snapshot_from_df(
-    data.frame(instrument_id = "AAA", ts_utc = status_days, open = 10, high = 10, low = 10, close = 10, volume = 1),
-    data.frame(instrument_id = "AAA"),
-    db_path = tempfile(fileext = ".duckdb"),
-    facts = ledgr_facts(ledgr_facts_trading_status(data.frame(
-      instrument_id = "AAA", effective_from = status_days[[2]], knowledge_time = status_days[[1]],
-      status = "halted", source = "t"
-    )))
-  )
-  on.exit(ledgr_snapshot_close(status_only), add = TRUE)
-  status_err <- testthat::expect_error(
-    ledgr_backtest(status_only, hold, cost_model = ledgr_cost_zero(), run_id = "refused_status"),
-    class = "ledgr_backtest_availability_unsupported"
-  )
-  testthat::expect_match(conditionMessage(status_err), "point-in-time facts (trading_status)", fixed = TRUE)
-
-  days <- pit_consistency_days()
-  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  bars <- data.frame(
-    instrument_id = "AAA", ts_utc = at(days),
-    open = 10, high = 10, low = 10, close = 10, volume = 100
-  )
-  dense <- ledgr_snapshot_from_df(bars, data.frame(instrument_id = "AAA"), db_path = tempfile(fileext = ".duckdb"))
-  on.exit(ledgr_snapshot_close(dense), add = TRUE)
-  ran <- ledgr_backtest(dense, hold, cost_model = ledgr_cost_zero(), run_id = "dense_ok")
-  on.exit(close(ran), add = TRUE)
-  testthat::expect_identical(ledgr_run_list(dense)$status, "DONE")
-
-  ca_only <- ledgr_snapshot_from_df(
-    bars, data.frame(instrument_id = "AAA"),
-    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
-    facts = ledgr_facts(pit_consistency_ca("cash_dividend", "AAA", at(days[[3]]), at(days[[4]])))
-  )
-  on.exit(ledgr_snapshot_close(ca_only), add = TRUE)
-  ran_ca <- ledgr_backtest(ca_only, hold, cost_model = ledgr_cost_zero(), run_id = "ca_only_ok")
-  on.exit(close(ran_ca), add = TRUE)
-  testthat::expect_identical(ledgr_run_list(ca_only)$status, "DONE")
 })
 
 testthat::test_that("[LTB-0232] an undeclared price basis runs as a disclosed split_adjusted default", {
@@ -1140,7 +1093,7 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
   }
 })
 
-testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 4", {
+testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 5", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   flat <- function(ctx, params) ctx$flat()
@@ -1149,7 +1102,7 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
     exp <- ledgr_experiment(snapshot, flat, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
     bt <- ledgr_run(exp, run_id = run_id)
     on.exit(close(bt))
-    testthat::expect_identical(bt$config$identity_rule_version, 4L)
+    testthat::expect_identical(bt$config$identity_rule_version, 5L)
     testthat::expect_identical(bt$config$data$snapshot_hash, ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]])
     ledgr_run_info(snapshot, run_id)$config_hash
   }
@@ -1190,7 +1143,7 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
 testthat::test_that("[LTB-0244] walk-forward sessions use current content identity", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  # A walk-forward session records rule 4 and reuses the same current identity.
+  # A walk-forward session records rule 5 and reuses the same current identity.
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(),
@@ -1207,7 +1160,7 @@ testthat::test_that("[LTB-0244] walk-forward sessions use current content identi
   wf_con <- ledgr:::get_connection(snapshot)
   session <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions")
   testthat::expect_identical(nrow(session), 1L)
-  testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 4L)
+  testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 5L)
 
   identity <- ledgr:::ledgr_walk_forward_session_identity(
     exp, wf_args$grid, folds, wf_args$selection_rule, NULL, "carry_test_state", "previous"

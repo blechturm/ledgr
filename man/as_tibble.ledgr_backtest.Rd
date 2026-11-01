@@ -72,9 +72,16 @@ strategy <- function(ctx, params) {
   targets["AAA"] <- 1
   targets
 }
-bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot, strategy,
+  opening = ledgr_opening(cash = 1000),
+  cost_model = ledgr_cost_zero()
+)
+bt <- ledgr_run(exp)
 tibble::as_tibble(bt, what = "trades")
 tibble::as_tibble(bt, what = "returns")
 tibble::as_tibble(bt, what = "equity")
 close(bt)
+ledgr_snapshot_close(snapshot)
 }

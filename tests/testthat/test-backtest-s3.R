@@ -8,12 +8,12 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
 
   one_leg <- function(ctx, params) c(TEST_A = 100)
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     snapshot = snap,
     strategy = one_leg,
     universe = "TEST_A",
     start = "2020-01-01",
-    end = "2020-01-15",
+    end = "2020-01-06",
     db_path = db_path,
   cost_model = ledgr_cost_zero()
   )
@@ -46,6 +46,15 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "  Time in Market:      83.33%", "",
       "Execution Evidence:",
       "  Fill Timing:         dense_bar_timestamp", "",
+      "Completion Evidence:",
+      "  Status:           DONE",
+      "  Requested Window: 2020-01-01T00:00:00Z to 2020-01-06T00:00:00Z",
+      "  Achieved Window:  2020-01-01T00:00:00Z to 2020-01-06T00:00:00Z",
+      "  Stop Reason:      none",
+      "  Last Fully Valued: 2020-01-06T00:00:00Z",
+      "  Last Executed:    2020-01-02T00:00:00Z",
+      "  Performance:       complete",
+      "  Affected IDs:      none recorded", "",
       "Corporate-Action Evidence:",
       "Economic events: NOT SUPPLIED - returns may omit distributions",
       "Price basis: UNDECLARED - distribution double counting cannot be ruled out",
@@ -159,7 +168,7 @@ testthat::test_that("summary surfaces impossible warmup diagnostics without chan
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = bars,
     strategy = strategy,
     features = features,

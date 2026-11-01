@@ -1,5 +1,104 @@
 ledgr_history_substrate_version <- 1L
 
+ledgr_execution_clock_kinds <- function() c("bar_native", "declared_sessions")
+
+ledgr_bar_native_sessions <- function(axis) {
+  axis <- as.POSIXct(axis, tz = "UTC")
+  n <- length(axis)
+  if (n == 0L) {
+    return(data.frame(
+      venue_id = character(), session_date = as.Date(character()),
+      effective_from = as.POSIXct(character(), tz = "UTC"),
+      effective_to = as.POSIXct(character(), tz = "UTC"),
+      knowledge_time = as.POSIXct(character(), tz = "UTC"),
+      status = character(), session_open = as.POSIXct(character(), tz = "UTC"),
+      session_close = as.POSIXct(character(), tz = "UTC"),
+      provenance_json = character(), stringsAsFactors = FALSE
+    ))
+  }
+  # This is a run-local clock shell, not a venue calendar and never durable.
+  # Equal open/close instants make the following bar pulse the execution
+  # opportunity without inventing an exchange clock. Duplicate civil dates
+  # are intentional for intraday or otherwise same-date observations.
+  effective_to <- c(axis[-1L], axis[[n]] + 1)
+  data.frame(
+    venue_id = rep("__bar_native__", n),
+    session_date = as.Date(axis, tz = "UTC"),
+    effective_from = axis,
+    effective_to = effective_to,
+    knowledge_time = axis,
+    status = rep("open", n),
+    session_open = axis,
+    session_close = axis,
+    provenance_json = rep("{}", n),
+    stringsAsFactors = FALSE
+  )
+}
+
+ledgr_execution_provider_config <- function(exp) {
+  active <- isTRUE(exp$availability$active)
+  list(
+    data = list(snapshot_id = exp$snapshot$snapshot_id),
+    universe = list(instrument_ids = exp$universe),
+    history_policy = exp$history_policy,
+    availability = list(
+      active = TRUE,
+      declared_families = if (active) {
+        exp$availability$declared_families
+      } else {
+        character()
+      },
+      universe_rule = if (active && !is.null(exp$universe_rule)) {
+        unclass(exp$universe_rule)
+      } else {
+        NULL
+      },
+      valuation_policy = if (active) {
+        unclass(exp$valuation_policy)
+      } else {
+        unclass(ledgr_valuation_stale(.Machine$integer.max, "freeze"))
+      },
+      provider_version = ledgr_availability_provider_version(),
+      execution_timing_version = ledgr_availability_execution_timing_rule_version
+    )
+  )
+}
+
+ledgr_execution_provider_config_from_config <- function(config, clock_kind) {
+  declared <- identical(clock_kind, "declared_sessions")
+  out <- config
+  out$history_policy <- ledgr_history_identity_require_current(config$history)
+  if (!declared) {
+    out$availability <- list(
+      active = TRUE,
+      declared_families = character(),
+      universe_rule = NULL,
+      valuation_policy = unclass(
+        ledgr_valuation_stale(.Machine$integer.max, "freeze")
+      ),
+      provider_version = ledgr_availability_provider_version(),
+      execution_timing_version = ledgr_availability_execution_timing_rule_version
+    )
+  }
+  out
+}
+
+ledgr_history_substrate_require_rectangular <- function(substrate) {
+  ledgr_history_substrate_require(substrate)
+  if (!identical(substrate$clock_kind, "bar_native")) return(invisible(substrate))
+  observed <- substrate$bars$observed
+  if (length(observed) == 0L || !all(observed)) {
+    rlang::abort(
+      paste0(
+        "LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is ",
+        "incomplete for requested range."
+      ),
+      class = c("LEDGR_SNAPSHOT_COVERAGE_ERROR", "ledgr_invalid_snapshot")
+    )
+  }
+  invisible(substrate)
+}
+
 .ledgr_history_worker_stage <- new.env(parent = emptyenv())
 
 ledgr_history_utc <- function(x) {
@@ -30,6 +129,7 @@ ledgr_history_stage_identity <- function(substrate, owner_id) {
       snapshot_hash = substrate$snapshot_hash,
       policy_identity = substrate$policy_identity,
       substrate_version = substrate$substrate_version,
+      clock_kind = substrate$clock_kind,
       source_start_utc = ledgr_normalize_ts_utc(substrate$source_start_utc),
       data_start_utc = ledgr_normalize_ts_utc(substrate$data_start_utc),
       instruments = substrate$instrument_ids,
@@ -188,34 +288,62 @@ ledgr_history_substrate_validate_owner <- function(substrate,
 
 ledgr_history_substrate_for_experiment <- function(exp,
                                                    meta = NULL,
-                                                   end = NULL) {
-  if (!inherits(exp, "ledgr_experiment") || !isTRUE(exp$availability$active)) {
+                                                   end = NULL,
+                                                   coverage_start = NULL) {
+  if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort(
-      "Causal-history preparation requires one availability-aware experiment.",
+      "Execution-substrate preparation requires one ledgr experiment.",
       class = c("ledgr_invalid_history_substrate", "ledgr_invalid_experiment")
     )
   }
   ledgr_snapshot_ensure_handle(exp$snapshot)
   if (is.null(meta)) meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   if (is.null(end)) end <- meta$end
+  if (is.null(coverage_start)) coverage_start <- meta$start
   con <- get_connection(exp$snapshot)
   data <- ledgr_availability_provider_data(con, exp$snapshot$snapshot_id)
-  config <- ledgr_sweep_availability_config(exp)
-  calendar <- ledgr_availability_calendar(
-    list(sessions = data$sessions), meta$start, end
-  )
+  config <- ledgr_execution_provider_config(exp)
   bars <- ledgr_precompute_fetch_bars_frame(
     exp$snapshot, exp$universe, meta$start, end
   )
-  ledgr_history_substrate(
+  clock_kind <- if (isTRUE(exp$availability$active)) {
+    "declared_sessions"
+  } else {
+    "bar_native"
+  }
+  if (identical(clock_kind, "declared_sessions")) {
+    ledgr_availability_require_coverage(
+      list(sessions = data$sessions),
+      ledgr_snapshot_bar_range(
+        con,
+        exp$snapshot$snapshot_id,
+        coverage_start,
+        end
+      )
+    )
+  }
+  axis <- if (identical(clock_kind, "declared_sessions")) {
+    ledgr_availability_calendar(
+      list(sessions = data$sessions), meta$start, end
+    )$pulses_posix
+  } else {
+    sort(unique(as.POSIXct(bars$ts_utc, tz = "UTC")))
+  }
+  if (identical(clock_kind, "bar_native")) {
+    data$sessions <- ledgr_bar_native_sessions(axis)
+  }
+  substrate <- ledgr_history_substrate(
     bars = bars,
     instrument_ids = exp$universe,
-    axis = calendar$pulses_posix,
+    axis = axis,
     availability_data = data,
     availability_config = config,
     snapshot_hash = meta$snapshot_hash,
-    source_start_utc = meta$start
+    source_start_utc = meta$start,
+    clock_kind = clock_kind
   )
+  ledgr_history_substrate_require_rectangular(substrate)
+  substrate
 }
 
 # The instant from which every availability entry point calculates feature
@@ -1386,7 +1514,8 @@ ledgr_history_substrate <- function(bars,
                                     availability_data,
                                     availability_config,
                                     snapshot_hash,
-                                    source_start_utc = NULL) {
+                                    source_start_utc = NULL,
+                                    clock_kind = "declared_sessions") {
   instrument_ids <- as.character(instrument_ids)
   axis <- as.POSIXct(axis, tz = "UTC")
   if (anyNA(instrument_ids) || any(!nzchar(instrument_ids)) ||
@@ -1404,6 +1533,7 @@ ledgr_history_substrate <- function(bars,
     }
   }
   source_start_utc <- ledgr_history_utc(source_start_utc)
+  clock_kind <- match.arg(clock_kind, ledgr_execution_clock_kinds())
   if (length(source_start_utc) != 1L || is.na(source_start_utc)) {
     rlang::abort(
       "History substrate source_start_utc must be one finite UTC instant.",
@@ -1472,6 +1602,7 @@ ledgr_history_substrate <- function(bars,
   structure(
     list(
       substrate_version = ledgr_history_substrate_version,
+      clock_kind = clock_kind,
       snapshot_hash = as.character(snapshot_hash),
       policy_identity = ledgr_history_policy_identity(policy),
       history_policy = policy,

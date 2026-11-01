@@ -5,7 +5,7 @@ testthat::test_that("successful runs persist compact telemetry outside the resul
 
   strategy <- function(ctx, params) ctx$flat()
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -42,7 +42,7 @@ testthat::test_that("diagnostic fold-loop telemetry records sampled buckets", {
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -88,7 +88,7 @@ testthat::test_that("failed runs persist minimum telemetry diagnostics", {
   }
 
   testthat::expect_error(
-    ledgr_backtest(
+    ledgr_test_run(
       data = test_bars,
       strategy = bad_strategy,
       start = "2020-01-01",

@@ -265,15 +265,6 @@ ledgr_projection_feature_at <- function(projection,
   mat[[as.integer(inst_idx), as.integer(pulse_idx)]]
 }
 
-ledgr_split_pulse_data_frame <- function(data, pulse_idx, n_pulses) {
-  pulse_factor <- factor(pulse_idx, levels = seq_len(n_pulses))
-  views <- unname(split(data, pulse_factor, drop = FALSE))
-  for (i in seq_along(views)) {
-    rownames(views[[i]]) <- NULL
-  }
-  views
-}
-
 ledgr_fast_data_frame <- function(cols, n_rows) {
   # Internal hot-path stamp for validated equal-length primitive columns.
   attr(cols, "row.names") <- .set_row_names(n_rows)
@@ -355,86 +346,6 @@ ledgr_projection_features_wide <- function(projection, pulse_idx, feature_ids = 
     unname(projection$feature_values[feature_ids])
   )
   ledgr_fast_data_frame(cols, length(instruments))
-}
-
-ledgr_projection_pulse_views <- function(projection,
-                                         feature_ids = NULL,
-                                         feature_table = c("schema", "full")) {
-  if (missing(feature_table)) {
-    feature_table <- "schema"
-  } else if (!is.character(feature_table) || length(feature_table) != 1L ||
-             is.na(feature_table) || !feature_table %in% c("schema", "full")) {
-    stop("'arg' should be one of \"schema\", \"full\"", call. = FALSE)
-  }
-  n_pulses <- length(projection$pulses_posix)
-  feature_table_views <- vector("list", n_pulses)
-  features_wide <- vector("list", n_pulses)
-  if (n_pulses == 0L) {
-    return(list(feature_table = feature_table_views, features_wide = features_wide))
-  }
-
-  feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
-  instruments <- names(projection$instrument_index)
-  n_inst <- length(instruments)
-  n_def <- length(feature_ids)
-  if (n_inst == 0L || n_def == 0L) {
-    for (pulse_idx in seq_len(n_pulses)) {
-      feature_table_views[[pulse_idx]] <- ledgr_projection_feature_table(
-        projection,
-        pulse_idx,
-        feature_ids = if (identical(feature_table, "full")) feature_ids else character()
-      )
-      features_wide[[pulse_idx]] <- ledgr_projection_features_wide(
-        projection,
-        pulse_idx,
-        feature_ids = feature_ids
-      )
-    }
-    return(list(feature_table = feature_table_views, features_wide = features_wide))
-  }
-
-  if (identical(feature_table, "full")) {
-    feature_array <- array(NA_real_, dim = c(n_inst, n_def, n_pulses))
-    for (feature_idx in seq_along(feature_ids)) {
-      feature_id <- feature_ids[[feature_idx]]
-      mat <- projection$feature_values[[feature_id]]
-      if (!is.null(mat)) {
-        feature_array[, feature_idx, ] <- mat
-      }
-    }
-    feature_table_all <- data.frame(
-      instrument_id = rep(rep(instruments, times = n_def), times = n_pulses),
-      ts_utc = as.POSIXct(rep(projection$pulses_posix, each = n_inst * n_def), tz = "UTC"),
-      feature_name = rep(rep(feature_ids, each = n_inst), times = n_pulses),
-      feature_value = as.numeric(as.vector(feature_array)),
-      stringsAsFactors = FALSE
-    )
-    feature_table_views <- ledgr_split_pulse_data_frame(
-      feature_table_all,
-      rep(seq_len(n_pulses), each = n_inst * n_def),
-      n_pulses
-    )
-  } else {
-    schema <- ledgr_projection_feature_table_schema()
-    feature_table_views <- rep(list(schema), n_pulses)
-  }
-
-  feature_mats <- unname(projection$feature_values[feature_ids])
-  for (pulse_idx in seq_len(n_pulses)) {
-    cols <- ledgr_projection_features_wide_columns(
-      projection,
-      pulse_idx,
-      feature_ids,
-      instruments,
-      feature_mats
-    )
-    features_wide[[pulse_idx]] <- ledgr_fast_data_frame(cols, n_inst)
-  }
-
-  list(
-    feature_table = feature_table_views,
-    features_wide = features_wide
-  )
 }
 
 ledgr_projection_feature_accessor <- function(projection,

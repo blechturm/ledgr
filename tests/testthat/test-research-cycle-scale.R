@@ -135,7 +135,7 @@ testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-f
 testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows its candidate row reads", {
   handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("scale"))
   rows <- data.frame(
-    run_id = "scale", diagnostic_seq = 0L, ts_utc = as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:7,
+    run_id = "scale", diagnostic_seq = seq_len(8L), ts_utc = as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:7,
     instrument_id = c("A", "B", "A", "C", "B", "A", "D", "E"),
     stage = c("decision", "decision", "decision", "valuation", "decision", "execution", "valuation", "decision"),
     outcome = c("recorded", "recorded", "recorded", "disposed", "recorded", "filled", "stopped", "recorded"),
@@ -149,7 +149,9 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
   )
   handler$write_run_diagnostics(rows[1:5, ])
   handler$write_run_diagnostics(rows[6:8, ])
-  handler$write_exception_diagnostic(rows[7, ])
+  exception <- rows[7, ]
+  exception$diagnostic_seq <- 9L
+  handler$write_exception_diagnostic(exception)
   kept <- handler$diagnostics()
   testthat::expect_identical(kept$diagnostic_seq, c(1L, 4L, 5L, 7L, 9L))
   full <- rbind(rows, rows[7, ])
@@ -164,9 +166,15 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
 
 testthat::test_that("[LTB-0212] vectorised asset-state normalisation equals the per-ID rule", {
   reference <- function(state_value, axis) {
+    if (is.null(state_value) || !is.list(state_value) ||
+        is.null(state_value$asset_state)) return(state_value)
     asset_state <- state_value$asset_state %||% list()
-    normalized <- stats::setNames(vector("list", length(axis)), axis)
-    for (id in axis) normalized[[id]] <- asset_state[[id]] %||% list()
+    if (identical(names(asset_state), axis)) return(state_value)
+    normalized <- stats::setNames(rep(list(list()), length(axis)), axis)
+    for (id in axis) {
+      value <- asset_state[id]
+      if (length(value) == 1L && !is.null(value[[1L]])) normalized[id] <- value
+    }
     state_value$asset_state <- normalized
     state_value
   }
@@ -177,10 +185,8 @@ testthat::test_that("[LTB-0212] vectorised asset-state normalisation equals the 
     list(state = NULL, axis = "A")
   )
   for (case in cases) {
-    state <- case$state
-    if (is.null(state)) state <- list()
     once <- ledgr:::ledgr_fold_asset_state_normalize(case$state, case$axis, drop_exited = TRUE)
-    testthat::expect_identical(once, reference(state, case$axis))
+    testthat::expect_identical(once, reference(case$state, case$axis))
     testthat::expect_identical(ledgr:::ledgr_fold_asset_state_normalize(once, case$axis), once)
     testthat::expect_identical(ledgr:::ledgr_fold_asset_state_normalize(once, case$axis, drop_exited = TRUE), once)
   }
@@ -190,9 +196,15 @@ testthat::test_that("[LTB-0214] carried strategy state equals normalising it on 
   snapshot <- scale_test_events_snapshot(second_members = c("AAA", "BBB"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   reference <- function(state_value, axis) {
+    if (is.null(state_value) || !is.list(state_value) ||
+        is.null(state_value$asset_state)) return(state_value)
     asset_state <- state_value$asset_state %||% list()
-    normalized <- stats::setNames(vector("list", length(axis)), axis)
-    for (id in axis) normalized[[id]] <- asset_state[[id]] %||% list()
+    if (identical(names(asset_state), axis)) return(state_value)
+    normalized <- stats::setNames(rep(list(list()), length(axis)), axis)
+    for (id in axis) {
+      value <- asset_state[id]
+      if (length(value) == 1L && !is.null(value[[1L]])) normalized[id] <- value
+    }
     state_value$asset_state <- normalized
     state_value
   }
@@ -215,7 +227,12 @@ testthat::test_that("[LTB-0214] carried strategy state equals normalising it on 
   on.exit(close(bt), add = TRUE)
   testthat::expect_true(any(lengths(seen$axes) == 3L) && any(lengths(seen$axes) == 2L))
   expected <- character(length(seen$axes))
-  previous <- list()
+  previous <- list(
+    asset_state = stats::setNames(
+      rep(list(list()), length(seen$axes[[1L]])),
+      seen$axes[[1L]]
+    )
+  )
   for (k in seq_along(seen$axes)) {
     state <- if (is.null(seen$updates[[k]])) previous else seen$updates[[k]]
     previous <- reference(state, seen$axes[[k]])

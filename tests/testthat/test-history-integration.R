@@ -220,7 +220,8 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
     ws42_sweep_core(ledgr:::ledgr_sweep_window(exp, grid, window))
   )
   # A different knowledge state (CCC's inactivity known one session later) is
-  # a different snapshot and refuses; so does a dense experiment.
+  # a different snapshot and refuses; so does a fixed-basket experiment built
+  # from a different snapshot.
   shifted <- ws42_history_fixture(strategy = counting, ccc_known = 8L)
   on.exit(ledgr_snapshot_close(shifted$snapshot), add = TRUE)
   refuses(
@@ -235,10 +236,10 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
     features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
     opening = ledgr_opening(cash = 1000)
   )
-  refuses(ledgr_sweep(dense, grid, precomputed_features = full), "ledgr_precomputed_feature_mismatch")
+  refuses(ledgr_sweep(dense, grid, precomputed_features = full), "ledgr_precomputed_snapshot_mismatch")
   refuses(
     ledgr_sweep(exp, grid, precomputed_features = ledgr_precompute_features(dense, grid)),
-    "ledgr_precomputed_feature_mismatch"
+    "ledgr_precomputed_snapshot_mismatch"
   )
 
   # Returned results are fresh values: mutating them changes no later read,
@@ -347,8 +348,9 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   }, logical(1))]
   testthat::expect_identical(offending, character())
 
-  # Gating: a dense experiment has no experiment-derived inspection, its
-  # snapshot-and-universe form is unchanged, and malformed calls refuse.
+  # A fixed-basket experiment uses its bar-native substrate; the minimal
+  # snapshot-and-universe form remains history-free, and malformed calls
+  # refuse.
   dense_snapshot <- ws42_dense_snapshot()
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   dense <- ledgr_experiment(
@@ -356,9 +358,15 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
-  testthat::expect_error(
-    ledgr_pulse_snapshot(dense, ts_utc = as.POSIXct("2021-01-06 21:00:00", tz = "UTC")),
-    class = "ledgr_pulse_snapshot_availability_required"
+  dense_pulse <- ledgr_pulse_snapshot(
+    dense,
+    ts_utc = as.POSIXct("2021-01-06 21:00:00", tz = "UTC")
+  )
+  on.exit(close(dense_pulse), add = TRUE)
+  testthat::expect_identical(dense_pulse$close("BBB"), 23)
+  testthat::expect_s3_class(
+    ledgr_history_frame(dense_pulse, bar = "close", lookback = 2L),
+    "ledgr_history"
   )
   pulse <- ledgr_pulse_snapshot(
     dense_snapshot,

@@ -65,7 +65,7 @@ testthat::test_that("[LTB-0192] run, backtest, sweep, promotion and walk-forward
   on.exit(close(run), add = TRUE)
   testthat::expect_identical(scoring_boundary_equity(ledgr_results(run, "equity")), expected)
 
-  backtest <- ledgr_backtest(
+  backtest <- ledgr_test_run(
     snapshot = snapshot, strategy = always_long, universe = "AAA",
     start = scoring_boundary_iso(6L), initial_cash = 1000,
     cost_model = ledgr_cost_zero(), run_id = "scoring-boundary-backtest"

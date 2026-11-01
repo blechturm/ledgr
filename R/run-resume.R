@@ -75,6 +75,7 @@ ledgr_run_resume <- function(con,
         }
         DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
         DBI::dbExecute(con, "DELETE FROM strategy_state WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_iso))
+        DBI::dbExecute(con, "DELETE FROM run_diagnostics WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
       })
     }
   }

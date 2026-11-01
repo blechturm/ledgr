@@ -124,16 +124,6 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
         class = "ledgr_invalid_args"
       )
     }
-    if (!isTRUE(snapshot$availability$active)) {
-      rlang::abort(
-        paste(
-          "Experiment-derived pulse inspection requires an availability-aware",
-          "experiment. Use ledgr_pulse_snapshot(snapshot, universe, ts_utc) for",
-          "a dense inspection context."
-        ),
-        class = c("ledgr_pulse_snapshot_availability_required", "ledgr_invalid_args")
-      )
-    }
     if (is.null(params)) params <- list()
     if (!is.list(params) || is.data.frame(params)) {
       rlang::abort("`params` must be a list. Use `params = list()` when the strategy has no parameters.", class = "ledgr_invalid_args")
@@ -145,7 +135,7 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
   }
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort(
-      "`snapshot` must be a ledgr_snapshot object or an availability-aware ledgr_experiment.",
+      "`snapshot` must be a ledgr_snapshot object or ledgr_experiment.",
       class = "ledgr_invalid_args"
     )
   }
@@ -164,6 +154,7 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
   if (!is.list(feature_params) || is.data.frame(feature_params)) {
     rlang::abort("`feature_params` must be a list. Use `feature_params = list()` when features have no parameters.", class = "ledgr_invalid_args")
   }
+  feature_declaration <- features
   alias_map_info <- ledgr_alias_map_storage(NULL)
   if (inherits(features, "ledgr_feature_map")) {
     ledgr_validate_feature_params_for_declarations(features, feature_params)
@@ -207,67 +198,48 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
     }
   }
 
-  # The context verifies and reads bars and features once through the same
-  # dedicated connection; it keeps no connection.
-  opened <- ledgr_open_dedicated_snapshot(snapshot)
-  on.exit(ledgr_snapshot_close(opened$snapshot), add = TRUE)
-  con <- opened$con
-  ledgr_snapshot_ensure_verified(
-    con,
-    snapshot$snapshot_id,
-    snapshot_db_path = snapshot$db_path
+  # Snapshot-form inspection is a convenience constructor over the same
+  # experiment-derived preparation and P1/P2 path as a run. It does not keep a
+  # second dense reader or feature engine.
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
+  inspection_cost_basis <- if (length(positions) > 0L) {
+    stats::setNames(rep(0, length(positions)), names(positions))
+  } else {
+    NULL
+  }
+  inspection <- ledgr_experiment(
+    snapshot = snapshot,
+    universe = universe,
+    strategy = ledgr_pulse_inspection_noop,
+    opening = ledgr_opening(
+      cash = cash,
+      positions = positions,
+      cost_basis = inspection_cost_basis
+    ),
+    features = feature_declaration,
+    cost_model = ledgr_cost_zero()
   )
-
-  e <- new.env(parent = emptyenv())
-  e$ts_utc <- ts_norm
-  e$universe <- universe
-  e$members <- e$universe
-  e$positions <- positions
-  e$cash <- as.numeric(cash)
-  e$state_prev <- state_prev
-  e$feature_params <- feature_params
-  e$active_alias_map <- alias_map_info$alias_map
-  e$alias_map_json <- alias_map_info$alias_map_json
-  e$alias_map_hash <- alias_map_info$alias_map_hash
-  e$alias_map_version <- alias_map_info$alias_map_version
-  e$.snapshot <- opened$snapshot
-
-  bars <- tryCatch(
-    {
-      ledgr_fetch_latest_bars(con, snapshot$snapshot_id, universe, ts_norm)
-    },
-    error = function(err) {
-      ledgr_snapshot_close(opened$snapshot)
-      stop(err)
-    }
+  out <- ledgr_pulse_inspection(
+    inspection,
+    ts_utc = ts_norm,
+    params = list(),
+    feature_params = feature_params
   )
-  features_df <- tryCatch(
-    {
-      ledgr_compute_pulse_features(con, snapshot$snapshot_id, universe, ts_norm, features)
-    },
-    error = function(err) {
-      ledgr_snapshot_close(opened$snapshot)
-      stop(err)
-    }
-  )
-
-  e$bars <- bars
-  e$features <- features_df
-  position_vec <- stats::setNames(rep(0, length(universe)), universe)
-  position_vec[names(positions)] <- as.numeric(positions)
-  close_vec <- as.numeric(bars$close[match(universe, as.character(bars$instrument_id))])
-  e$equity <- as.numeric(cash) + sum(position_vec * close_vec)
-  ledgr_update_pulse_context_helpers(
-    e,
-    bars = bars,
-    features = features_df,
-    positions = e$positions,
-    universe = e$universe,
-    active_alias_map = e$active_alias_map
-  )
-
-  structure(e, class = "ledgr_pulse_context")
+  if (!is.null(state_prev)) out$state_prev <- state_prev
+  if (is.function(out$.feature_table_current)) {
+    out$feature_table <- out$.feature_table_current()
+  }
+  out$.history <- NULL
+  out$feature_params <- feature_params
+  out$active_alias_map <- alias_map_info$alias_map
+  out$alias_map_json <- alias_map_info$alias_map_json
+  out$alias_map_hash <- alias_map_info$alias_map_hash
+  out$alias_map_version <- alias_map_info$alias_map_version
+  out
 }
+
+ledgr_pulse_inspection_noop <- function(ctx, params) ctx$flat()
 
 #' Print a pulse snapshot context
 #'
@@ -336,97 +308,6 @@ ledgr_open_dedicated_snapshot <- function(snapshot) {
   temp <- new_ledgr_snapshot(snapshot$db_path, snapshot$snapshot_id, metadata = list())
   con <- get_connection(temp)
   list(con = con, snapshot = temp)
-}
-
-ledgr_fetch_latest_bars <- function(con, snapshot_id, universe, ts_utc) {
-  if (length(universe) == 0L) return(NULL)
-  rows <- ledgr_fetch_latest_bars_query(
-    con, snapshot_id, unique(as.character(universe)), ts_utc
-  )
-  row_index <- match(as.character(universe), as.character(rows$instrument_id))
-  missing <- which(is.na(row_index))
-  if (length(missing) > 0L) {
-    rlang::abort(
-      sprintf(
-        "No bars available for instrument '%s' at ts_utc.",
-        universe[[missing[[1L]]]]
-      ),
-      class = "ledgr_invalid_args"
-    )
-  }
-  out <- rows[row_index, , drop = FALSE]
-  out$ts_utc <- vapply(out$ts_utc, ledgr_iso_utc, character(1))
-  rownames(out) <- NULL
-  out
-}
-
-ledgr_fetch_latest_bars_query <- function(con, snapshot_id, universe, ts_utc) {
-  quoted_ids <- paste(DBI::dbQuoteString(con, universe), collapse = ", ")
-  DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
-      "FROM snapshot_bars WHERE snapshot_id = ? ",
-      "AND instrument_id IN (", quoted_ids, ") AND ts_utc = ?"
-    ),
-    params = list(snapshot_id, ts_utc)
-  )
-}
-
-ledgr_compute_pulse_features <- function(con, snapshot_id, universe, ts_utc, features) {
-  if (length(features) == 0) {
-    return(data.frame())
-  }
-
-  quoted_ids <- paste(DBI::dbQuoteString(con, universe), collapse = ", ")
-  history <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
-      "FROM snapshot_bars ",
-      "WHERE snapshot_id = ? AND instrument_id IN (", quoted_ids, ") ",
-      "AND ts_utc <= ? ",
-      "ORDER BY instrument_id, ts_utc"
-    ),
-    params = list(snapshot_id, ts_utc)
-  )
-  history$instrument_id <- as.character(history$instrument_id)
-  history_by_instrument <- split(history, history$instrument_id)
-
-  n_features <- length(features)
-  n_rows <- length(universe) * n_features
-  instrument_id <- rep(as.character(universe), each = n_features)
-  feature_name <- rep(
-    vapply(features, function(feature) feature$id, character(1)),
-    times = length(universe)
-  )
-  feature_value <- rep(NA_real_, n_rows)
-
-  row_idx <- 1L
-  for (inst in universe) {
-    bars <- history_by_instrument[[inst]]
-    if (is.null(bars) || nrow(bars) == 0L) {
-      row_idx <- row_idx + n_features
-      next
-    }
-    for (feature in features) {
-      feature_value[[row_idx]] <- if (is.null(feature$series_fn)) {
-        ledgr_compute_feature_latest(bars, feature)
-      } else {
-        values <- ledgr_compute_feature_series(bars, feature)
-        values[[length(values)]]
-      }
-      row_idx <- row_idx + 1L
-    }
-  }
-
-  data.frame(
-    ts_utc = rep(ts_utc, n_rows),
-    instrument_id = instrument_id,
-    feature_name = feature_name,
-    feature_value = feature_value,
-    stringsAsFactors = FALSE
-  )
 }
 
 ledgr_simplify_indicator_values <- function(values) {
@@ -501,7 +382,7 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
     payload = payload,
     universe = exp$universe,
     pulses_posix = substrate$axis,
-    feature_engine_version = ledgr_feature_engine_version(TRUE),
+    feature_engine_version = ledgr_feature_engine_version(),
     alias_index = NULL
   )
   # Released at its last read; the projection holds every value (audit F01).
@@ -515,9 +396,6 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
     params = params_info$value,
     feature_params = feature_params_info$value,
     execution_seed = NA_integer_,
-    bars_by_id = list(),
-    bars_mat = NULL,
-    static_bars_views = NULL,
     pulses_posix = pulses_posix,
     pulses_iso = ledgr_projection_pulse_names(pulses_posix),
     metric_kernel = NULL,
@@ -526,7 +404,6 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
       alias_map = feature_result$alias_map
     ),
     candidate_feature_row = NULL,
-    runtime_projection = NULL,
     snapshot_hash = meta$snapshot_hash,
     strategy_hash = NA_character_,
     master_seed = NULL,

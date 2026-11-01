@@ -141,25 +141,23 @@ the risk chain something to correct.
 
 ``` r
 greedy <- function(ctx, params) {
-  long_id  <- ctx$universe[[1]]
-  short_id <- ctx$universe[[2]]
+  large_id <- ctx$universe[[1]]
+  small_id <- ctx$universe[[2]]
 
   target <- ctx$flat()
   # Size each position as a fraction of equity, converted to whole shares
   # at the current price.
-  target[[long_id]]  <-  floor(0.90 * ctx$equity / ctx$close(long_id))
-  target[[short_id]] <- -floor(0.20 * ctx$equity / ctx$close(short_id))
+  target[[large_id]] <- floor(0.90 * ctx$equity / ctx$close(large_id))
+  target[[small_id]] <- floor(0.20 * ctx$equity / ctx$close(small_id))
   target
 }
 ```
 
 Each target line turns a fraction of current equity into a whole-share
-count at the instrument’s price: the first is about 90 percent of equity
-held long, the second about 20 percent held short. Together that is
-roughly 110 percent gross exposure – a concentrated, slightly levered
-long-short bet. Both sides are past the limits declared above. The 90
-percent long exceeds the 50 percent cap, and a short is not long-only,
-so the risk chain has two separate things to fix.
+count at the instrument’s price. Together they request roughly 110
+percent gross long exposure, concentrated in the first instrument. The
+first position exceeds the 50 percent cap; the long-only step leaves
+both positive targets unchanged.
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -198,8 +196,8 @@ run_policy <- function(cost, risk, run_id) {
 >
 > The runs below write to a temporary DuckDB store, so the article leaves
 > no project files behind. The greedy strategy re-targets on every bar, so
-> the final bar logs a `LEDGR_LAST_BAR_NO_FILL` notice. That is expected
-> next-open behavior; see
+> the final bar records `final_pulse_no_execution` in the run diagnostics.
+> That is expected next-open behavior; see
 > `vignette("execution-semantics", package = "ledgr")`.
 
 
@@ -209,10 +207,6 @@ compare the opening-day fills.
 ``` r
 uncapped <- run_policy(ledgr_cost_zero(), ledgr_risk_none(), "uncapped")
 capped   <- run_policy(ledgr_cost_zero(), risk, "capped")
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 opening_fills <- function(bt) {
   ledgr_results(bt, what = "fills") |>
@@ -221,22 +215,22 @@ opening_fills <- function(bt) {
 }
 
 opening_fills(uncapped)
-#> # A tibble: 2 x 4
+#> # A tibble: 1 x 4
 #>   instrument_id side    qty  price
 #>   <chr>         <chr> <dbl>  <dbl>
 #> 1 DEMO_01       BUY      98 91.478
-#> 2 DEMO_02       SELL     27 73.908
 opening_fills(capped)
-#> # A tibble: 1 x 4
+#> # A tibble: 2 x 4
 #>   instrument_id side     qty  price
 #>   <chr>         <chr>  <dbl>  <dbl>
 #> 1 DEMO_01       BUY   54.632 91.478
+#> 2 DEMO_02       BUY   27     73.908
 ```
 
-Without a risk chain, ledgr fills exactly what the strategy asked for: a
-long in the first instrument and a short in the second. With `long_only`
-and `max_weight(0.5)`, the short is gone and the long is clamped to half
-of equity. The strategy code did not change. The policy did.
+Without a risk chain, ledgr fills exactly what the strategy asked for.
+With `long_only` and `max_weight(0.5)`, the first position is clamped to
+half of equity while the smaller second position is unchanged. The
+strategy code did not change. The policy did.
 
 The clamped quantity is fractional – 54.632 shares – because
 `max_weight` scales the target to hit exactly 50 percent of equity at
@@ -256,10 +250,6 @@ opening fill.
 
 ``` r
 with_cost <- run_policy(cost, risk, "with_cost")
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 first_fill <- function(bt) {
   ledgr_results(bt, what = "fills") |>

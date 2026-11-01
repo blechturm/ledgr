@@ -138,7 +138,7 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
   testthat::expect_identical(pulse_values, run_values)
   testthat::expect_identical(
     unname(pulse_values[paste0(fixture$ids, "::window_params")]),
-    c(40, 40)
+    c(20, 20)
   )
   testthat::expect_identical(
     unname(pulse_values[paste0(fixture$ids, "::series_path")]),
@@ -146,7 +146,7 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
   )
 })
 
-testthat::test_that("[LTB-0104] fn-only pulse features run once per instrument", {
+testthat::test_that("[LTB-0104] fn-only pulse features use the run preparation", {
   fixture <- ledgr_pulse_feature_parity_fixture()
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L
@@ -173,10 +173,24 @@ testthat::test_that("[LTB-0104] fn-only pulse features run once per instrument",
     cash = 10000
   )
   on.exit(close(pulse), add = TRUE)
+  pulse_calls <- calls$n
 
-  testthat::expect_identical(calls$n, length(fixture$ids))
+  calls$n <- 0L
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    features = list(counted),
+    opening = ledgr_opening(cash = 10000),
+    cost_model = ledgr_cost_zero()
+  )
+  run <- ledgr_run(experiment, run_id = "fn-only-pulse-preparation")
+  on.exit(close(run), add = TRUE)
+  run_calls <- calls$n
+
+  testthat::expect_gt(pulse_calls, 0L)
+  testthat::expect_identical(pulse_calls, run_calls)
   testthat::expect_identical(
     unname(pulse$vec$feature("counted_window")),
-    c(109.75, 87.75)
+    c(110.5, 88)
   )
 })

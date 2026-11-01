@@ -170,7 +170,7 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   testthat::expect_match(sweep_source, "ledgr_history_precompute_payload", fixed = TRUE)
   testthat::expect_match(sweep_source, "feature_engine_version", fixed = TRUE)
   testthat::expect_no_match(
-    paste(deparse(body(ledgr:::ledgr_precompute_payload)), collapse = "\n"),
+    payload_source,
     "availability",
     fixed = TRUE
   )
@@ -178,12 +178,8 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   under_covr <- requireNamespace("covr", quietly = TRUE) && covr::in_covr()
   if (!under_covr) {
     testthat::expect_identical(
-      ledgr:::ledgr_feature_engine_version(FALSE),
-      "80d1ae6d2165196044db3f0d1944d69f21b76e264d2df16df49e23f448a7c681"
-    )
-    testthat::expect_identical(
-      ledgr:::ledgr_feature_engine_version(TRUE),
-      "0072232f5cf0eb40b15a2d93e83551573ffcc9f388226527fabce16f50e2d508"
+      ledgr:::ledgr_feature_engine_version(),
+      "895161a3f7ff6d3d2808d5e45a00a2e3f9cf9c5330e52e89e6c6d6aa58a5fb56"
     )
   }
 })

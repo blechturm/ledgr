@@ -47,7 +47,7 @@ testthat::test_that("ledgr_run_strategy returns Tier 1 source metadata without e
     targets
   }
 
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(qty = 2),
@@ -86,7 +86,7 @@ testthat::test_that("ledgr_run_strategy trust TRUE verifies hash and returns a f
     targets["TEST_A"] <- params$qty
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(qty = 1),
@@ -119,7 +119,7 @@ testthat::test_that("ledgr_run_strategy detects source hash mismatch", {
     targets["TEST_A"] <- external_qty
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(),
@@ -160,7 +160,7 @@ testthat::test_that("ledgr_run_strategy trust FALSE does not parse or evaluate s
     targets["TEST_A"] <- external_qty
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     strategy_params = list(),
@@ -200,7 +200,7 @@ testthat::test_that("ledgr_run_strategy trust TRUE reports parse failures", {
     targets["TEST_A"] <- 1
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",
@@ -241,7 +241,7 @@ testthat::test_that("ledgr_run_strategy surfaces Tier 2 warnings", {
     targets["TEST_A"] <- external_qty
     targets
   }
-  bt <- ledgr_backtest(
+  bt <- ledgr_test_run(
     data = test_bars,
     strategy = strategy,
     start = "2020-01-01",

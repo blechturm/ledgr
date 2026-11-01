@@ -350,7 +350,7 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   testthat::expect_identical(flags$run_id, ids)
   testthat::expect_identical(
     flags$valuation_state,
-    c("frozen", "frozen", "frozen", NA_character_)
+    c("frozen", "frozen", "frozen", "current")
   )
   for (run_id in frozen_ids) {
     at <- which(flags$run_id == run_id)
@@ -384,8 +384,8 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   }
   dense_listed <- ledgr_run_list(dense_snapshot)
   dense_compared <- ledgr_run_compare(dense_snapshot, run_ids = "batch-dense")
-  testthat::expect_true(is.na(dense_listed$valuation_state[[1L]]))
-  testthat::expect_true(is.na(dense_compared$valuation_state[[1L]]))
+  testthat::expect_identical(dense_listed$valuation_state[[1L]], "current")
+  testthat::expect_identical(dense_compared$valuation_state[[1L]], "current")
 })
 
 # ledgr-test-profile: review

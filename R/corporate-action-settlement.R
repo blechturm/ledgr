@@ -147,8 +147,7 @@ ledgr_corporate_action_past_quantities <- function(events,
 }
 
 # A settlement the policy refuses, for held parents of `rows`: a typed stop
-# the fold ends an availability run with (Cut 12 LDG-2997), or, in a dense run
-# that has no stop, raises through ledgr_corporate_action_refusal_abort().
+# consumed by the common completion boundary.
 ledgr_corporate_action_refusal <- function(rows, kind) {
   reason <- switch(kind,
     cash = "corporate_action_cash_refused",
@@ -160,25 +159,6 @@ ledgr_corporate_action_refusal <- function(rows, kind) {
     reason_code = reason,
     reasons = reason,
     source_fact_ids = as.character(rows$fact_id)
-  )
-}
-
-ledgr_corporate_action_refusal_abort <- function(stopped) {
-  if (identical(stopped$kind, "quantity")) {
-    rlang::abort(
-      "Corporate-action quantity effects are unsupported for held positions under the selected policy.",
-      class = c(
-        "ledgr_corporate_action_quantity_unsupported",
-        "ledgr_corporate_action_unsupported",
-        "ledgr_invalid_fold_execution"
-      ),
-      source_fact_ids = stopped$source_fact_ids
-    )
-  }
-  rlang::abort(
-    "Corporate-action cash settlement is refused by the selected policy.",
-    class = c("ledgr_corporate_action_unsupported", "ledgr_invalid_fold_execution"),
-    source_fact_ids = stopped$source_fact_ids
   )
 }
 

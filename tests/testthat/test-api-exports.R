@@ -6,7 +6,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_adapter_csv",
     "ledgr_adapter_r",
     "ledgr_align_weights",
-    "ledgr_backtest",
     "ledgr_backtest_bench",
     "ledgr_business_objective",
     "ledgr_calendar",

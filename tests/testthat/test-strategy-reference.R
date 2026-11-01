@@ -144,11 +144,12 @@ testthat::test_that("ledgr_target_rebalance builds full-universe targets and rej
   empty <- ledgr_target_rebalance(ledgr_weights(numeric()), ctx)
   testthat::expect_identical(unclass(empty), c(AAA = 0, BBB = 0, CCC = 0))
 
-  testthat::expect_warning(
-    bad_price <- ledgr_target_rebalance(ledgr_weights(c(CCC = 0.25)), ctx),
-    class = "ledgr_invalid_target_price"
+  testthat::expect_no_warning(
+    bad_price <- ledgr_target_rebalance(ledgr_weights(c(CCC = 0.25)), ctx)
   )
-  testthat::expect_identical(unclass(bad_price), c(AAA = 0, BBB = 0, CCC = 0))
+  testthat::expect_identical(as.numeric(bad_price), c(0, 0, 0))
+  testthat::expect_identical(names(bad_price), c("AAA", "BBB", "CCC"))
+  testthat::expect_identical(attr(bad_price, "sizing_skipped", exact = TRUE), "CCC")
 
   testthat::expect_error(
     ledgr_target_rebalance(ledgr_weights(c(AAA = -0.1)), ctx),

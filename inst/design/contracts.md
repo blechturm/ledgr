@@ -80,16 +80,11 @@ current contract merely because they are newer or nearby.
 
 Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle).
 
-- `ledgr_run()` is the public single-run API over a
-  `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
-  public workflow to a lower-level compatibility surface. It runs dense
-  execution only: on a snapshot that declares point-in-time facts (sessions,
-  membership, trading status, or lifetime) it refuses with
-  `ledgr_backtest_availability_unsupported` and points to `ledgr_experiment()`
-  plus `ledgr_run()` (Cut 12 LDG-3001). Corporate-action-only snapshots still
-  run.
-- There is still one canonical execution path. Public convenience APIs must
-  build canonical config and delegate to the existing runner; they must not
+- `ledgr_run()` is the public single-run API over a `ledgr_experiment` object.
+  Raw data enters through `ledgr_snapshot_from_df()`; there is no alternate
+  data-frame execution constructor.
+- There is one canonical execution path. Public APIs must build canonical
+  config and delegate to the existing runner; they must not
   implement alternate pulse, fill, ledger, feature, or replay semantics.
 - Convenience APIs may reduce setup friction, but must not implement alternate
   execution semantics.
@@ -660,17 +655,17 @@ Accepted change pending:
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
   declaration-order diagnostics. Every run records `identity_rule_version`.
-  Under identity rule 4 the config carries the sealed
+  Under identity rule 5 the config carries the sealed
   `data.snapshot_hash` and `config_hash` drops the store-local
   `data.snapshot_id`, so identical content sealed under two snapshot IDs gives
   equal identity and different content under one reused ID does not; the
   walk-forward `experiment_hash` and `session_id` follow, and each session
-  records the rule in its `meta_json`. Rule 4 retains rule 3's removal of the
+  records the rule in its `meta_json`. Rule 5 retains rule 4's removal of the
   feature-retention switch and deterministic direct captures of indicator
   functions. It additionally binds the causal-history policy, axis, cutoff and
   treatment rule versions. Declared and assumed price bases remain distinct;
   worker and resource controls are excluded. Every config and session carries
-  identity rule 4 as the exact integer `4L`; a missing, differently typed or
+  identity rule 5 as the exact integer `5L`; a missing, differently typed or
   different rule is refused rather than coerced, inferred or migrated.
   `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
@@ -2462,7 +2457,7 @@ and `AAA` a held nonmember, each holding 5:
   public wide pulse inspection API is `ledgr_pulse_wide()`.
 - `ledgr_pulse_snapshot()` is an external development and inspection helper;
   no strategy callback calls it, receives an experiment or supplies a history
-  policy. Called with an availability-aware `ledgr_experiment`, its concrete
+  policy. Called with a `ledgr_experiment`, its concrete
   `params` and `feature_params`, and a cutoff `ts_utc` naming one session
   close (a `Date` names that session's close), it takes snapshot, universe,
   features, history policy, data start and opening state from that experiment
@@ -2475,10 +2470,11 @@ and `AAA` a held nonmember, each holding 5:
   to its strategy, so its data-dependent planes and public history reads
   equal that run's first pulse. A cutoff off the prepared venue axis
   refuses with `ledgr_history_outside_axis`, a pulse whose P1 stops before the
-  context is built refuses with `ledgr_pulse_inspection_stopped`, and a dense
-  experiment refuses with `ledgr_pulse_snapshot_availability_required`. The
-  snapshot-and-universe form remains the dense inspection branch until the
-  execution-core consolidation and carries no history.
+  context is built refuses with `ledgr_pulse_inspection_stopped`. Fixed-basket
+  experiments use the implied bar-native substrate; declared-session
+  experiments use their prepared point-in-time substrate. The
+  snapshot-and-universe form remains a minimal inspection branch and carries
+  no history.
 - Strategy evaluation errors are wrapped with pulse context while preserving the
   original condition as the parent. The wrapper must name the run, timestamp,
   instruments, and available feature IDs so users can distinguish strategy

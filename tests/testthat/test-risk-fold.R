@@ -42,6 +42,43 @@ ledgr_risk_fold_test_execution <- function(strategy,
       stringsAsFactors = FALSE
     )
   }), instrument_ids)
+  bars <- do.call(rbind, unname(bars_by_id))
+  availability_data <- ledgr:::ledgr_facts_inspection_data(list(families = list()))
+  availability_data$sessions <- ledgr:::ledgr_bar_native_sessions(pulses_posix)
+  availability_config <- list(
+    data = list(snapshot_id = "risk-fold"),
+    universe = list(instrument_ids = instrument_ids),
+    history_policy = ledgr_history_policy(),
+    availability = list(
+      active = TRUE,
+      declared_families = character(),
+      universe_rule = NULL,
+      valuation_policy = unclass(ledgr_valuation_stale(.Machine$integer.max, "freeze")),
+      provider_version = ledgr:::ledgr_availability_provider_version(),
+      execution_timing_version = ledgr:::ledgr_availability_execution_timing_rule_version
+    )
+  )
+  substrate <- ledgr:::ledgr_history_substrate(
+    bars = bars,
+    instrument_ids = instrument_ids,
+    axis = pulses_posix,
+    availability_data = availability_data,
+    availability_config = availability_config,
+    snapshot_hash = "risk-fold-snapshot",
+    source_start_utc = pulses_posix[[1L]],
+    clock_kind = "bar_native"
+  )
+  projection <- ledgr:::ledgr_projection_from_feature_matrix(
+    feature_matrix = list(),
+    universe = instrument_ids,
+    pulses_posix = pulses_posix
+  )
+  substrate <- ledgr:::ledgr_history_substrate_bind_features(substrate, projection)
+  provider <- ledgr:::ledgr_availability_provider_from_substrate(
+    substrate,
+    availability_config,
+    "risk-fold-snapshot"
+  )
 
   ledgr:::ledgr_execution_spec(
     run_id = run_id,
@@ -58,16 +95,8 @@ ledgr_risk_fold_test_execution <- function(strategy,
     telemetry_stride = 0L,
     state = list(cash = cash, positions = positions[instrument_ids]),
     state_prev = NULL,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
-    static_bars_views = NULL,
-    static_feature_views = NULL,
+    history_substrate = substrate,
     feature_defs = list(),
-    runtime_projection = ledgr:::ledgr_projection_from_feature_matrix(
-      feature_matrix = list(),
-      universe = instrument_ids,
-      pulses_posix = pulses_posix
-    ),
     active_alias_map = NULL,
     risk_plan = risk_plan,
     cost_resolver = cost_resolver,
@@ -75,8 +104,9 @@ ledgr_risk_fold_test_execution <- function(strategy,
     telemetry = ledgr:::ledgr_sweep_telemetry_env(),
     seed = 123L,
     event_mode = "buffered",
-    use_fast_context = TRUE,
-    compiled_accounting_model = NULL
+    compiled_accounting_model = NULL,
+    availability_provider = provider,
+    execution_opportunities_posix = pulses_posix[-1L]
   )
 }
 
@@ -579,17 +609,20 @@ testthat::test_that("no-op feasibility hook does not sequentially reject same-pu
     run_id = "risk-fold-rebalance",
     instrument_ids = c("BBB", "AAA"),
     cash = 0,
-    positions = c(BBB = 0, AAA = 0)
+    positions = c(BBB = 0, AAA = 2)
   )
 
   ledgr:::ledgr_execute_fold(execution, handler)
   events <- handler$events()
 
-  testthat::expect_identical(as.character(events$instrument_id), c("AAA", "BBB", "AAA"))
-  testthat::expect_identical(as.character(events$side), c("BUY", "BUY", "SELL"))
-  testthat::expect_equal(sum(attr(events, "ledgr_event_cash_delta")), -20)
+  testthat::expect_identical(as.character(events$instrument_id), c("BBB", "AAA"))
+  testthat::expect_identical(as.character(events$side), c("BUY", "SELL"))
+  testthat::expect_equal(sum(attr(events, "ledgr_event_cash_delta")), 2)
   position_delta <- attr(events, "ledgr_event_position_delta")
-  final_position <- tapply(position_delta, events$instrument_id, sum)
+  final_position <- c(BBB = 0, AAA = 2)
+  final_position[names(tapply(position_delta, events$instrument_id, sum))] <-
+    final_position[names(tapply(position_delta, events$instrument_id, sum))] +
+    tapply(position_delta, events$instrument_id, sum)
   testthat::expect_equal(as.numeric(final_position[c("BBB", "AAA")]), c(1, 0))
 })
 

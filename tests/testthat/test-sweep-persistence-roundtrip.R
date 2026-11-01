@@ -147,7 +147,7 @@ testthat::test_that("reopened sweeps round-trip retained closed-trade evidence",
     } else if (identical(ctx$ts_utc, "2020-01-02T00:00:00Z")) {
       targets["AAA"] <- 0
     } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
-      targets["AAA"] <- -params$qty
+      targets["AAA"] <- params$qty
     } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
       targets["AAA"] <- 0
     }

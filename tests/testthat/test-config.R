@@ -20,7 +20,7 @@ ledgr_test_cost_config <- function(cost_model = ledgr_cost_zero()) {
 }
 
 ledgr_test_current_config <- function(config) {
-  config$identity_rule_version <- 4L
+  config$identity_rule_version <- 5L
   config$history <- ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
   config$risk_chain <- ledgr:::ledgr_config_risk_identity()
   config$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
@@ -237,7 +237,7 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
   # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002.
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "2ffe955ea6e7d2a411fd8ea52de1b7e28aeeae9160323f51eba1aa090cd3004b"
+    "84194b28bec7337ad8f14cdd300d7f6ed166924a296616d41b31869565a7a01c"
   )
 })
 

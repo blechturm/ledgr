@@ -75,13 +75,11 @@ testthat::test_that("deleted feature-retention surfaces cannot return", {
   testthat::expect_match(news, "Added a session-scoped feature cache", fixed = TRUE)
 
   testthat::expect_false("persist_features" %in% names(formals(ledgr_experiment)))
-  testthat::expect_false("persist_features" %in% names(formals(ledgr_backtest)))
+  testthat::expect_false(exists(
+    "ledgr_backtest", envir = asNamespace("ledgr"), inherits = FALSE
+  ))
   testthat::expect_error(
     ledgr_experiment(persist_features = TRUE),
-    "unused argument"
-  )
-  testthat::expect_error(
-    ledgr_backtest(persist_features = TRUE),
     "unused argument"
   )
 })

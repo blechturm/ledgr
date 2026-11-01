@@ -342,6 +342,7 @@ ledgr_experiment_plan <- function(x, ...) {
     list(
       schema_version = 1L,
       availability_active = active,
+      execution_clock = if (active) "declared_sessions" else "bar_native",
       universe_type = if (is.null(x$universe_rule)) "fixed" else "membership",
       universe_id = x$universe_rule$universe_id %||% NA_character_,
       price_basis = ledgr_price_basis_label(x$data_identity$price_basis, active)$value,
@@ -365,6 +366,7 @@ ledgr_experiment_plan <- function(x, ...) {
 #' @export
 print.ledgr_experiment_plan <- function(x, ...) {
   cat("ledgr experiment plan\n")
+  cat("Execution clock: ", x$execution_clock, "\n", sep = "")
   cat("Availability: ", if (isTRUE(x$availability_active)) "active" else "dense", "\n", sep = "")
   cat("Price basis:  ", ledgr_price_basis_display(x$price_basis %||% "undeclared", x$price_basis_default), "\n", sep = "")
   cat("Metrics:      ", x$metric_calendar, "\n", sep = "")

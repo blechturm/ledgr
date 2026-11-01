@@ -28,7 +28,9 @@ bars <- data.frame(
   volume = 1000
 )
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+bt <- ledgr_run(exp)
 if (interactive()) print(bt$config)
 close(bt)
 }

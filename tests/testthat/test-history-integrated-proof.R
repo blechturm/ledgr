@@ -500,7 +500,7 @@ testthat::test_that("[LTB-0411] a cash dividend is credited per split-adjusted s
   testthat::expect_identical(as_traded$equity$cash, c(1000, 1010, 1010, 1010, 1010, 1010))
 })
 
-testthat::test_that("[LTB-0412] the test-only sweep feature matrix stays deleted and its fixtures use production precompute", {
+testthat::test_that("[LTB-0412] the test-only sweep feature matrix stays deleted and sweeps use the production substrate", {
   root <- ledgr_test_source_root()
   if (!ledgr_test_checkout_context(root)) {
     return(invisible(NULL))
@@ -515,15 +515,9 @@ testthat::test_that("[LTB-0412] the test-only sweep feature matrix stays deleted
   }, logical(1))]
   testthat::expect_identical(named, character())
   testthat::expect_false(exists(helper, envir = asNamespace("ledgr"), inherits = FALSE))
-  sweep_tests <- readLines(file.path(root, "tests", "testthat", "test-sweep.R"), warn = FALSE)
-  builder <- grep("^ledgr_sweep_test_precomputed <- function", sweep_tests)
-  testthat::expect_length(builder, 1L)
-  body_end <- builder + grep("^}", sweep_tests[builder:length(sweep_tests)])[[1L]] - 1L
-  testthat::expect_true(any(grepl("ledgr_precompute_features(", sweep_tests[builder:body_end], fixed = TRUE)))
-  testthat::expect_identical(
-    length(grep("runtime_projection <- ledgr_sweep_test_precomputed(", sweep_tests, fixed = TRUE)),
-    3L
-  )
+  sweep_source <- readLines(file.path(root, "R", "sweep.R"), warn = FALSE)
+  testthat::expect_true(any(grepl("ledgr_history_substrate_for_experiment(", sweep_source, fixed = TRUE)))
+  testthat::expect_true(any(grepl("ledgr_history_precompute_payload(", sweep_source, fixed = TRUE)))
 })
 
 # Two-instrument fixture over `days` with DDD closes `ddd` (NA = no print)

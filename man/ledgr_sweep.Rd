@@ -84,9 +84,10 @@ Sweep candidate metrics use the experiment's metric context. The returned
 table has exactly one sweep-level metric context, available with
 \code{ledgr_metric_context(results)}, and promotion context records that source
 sweep context separately from the committed run's own metric context.
-Candidate warnings, including \code{LEDGR_LAST_BAR_NO_FILL}, are row-level
-diagnostics. Inspect them before promotion; committed runs expose their own
-result tables and promotion context.
+Candidate warnings are row-level diagnostics. Structured execution evidence,
+including a target that cannot execute after the final pulse, is retained in
+the candidate diagnostics. Inspect it before promotion; committed runs expose
+the same evidence through their result tables and promotion context.
 Hash fields in sweep provenance and reproduction keys are summarized in
 \link{ledgr_identity_fields}.
 

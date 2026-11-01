@@ -65,24 +65,10 @@ ledgr_run_prepare_engine <- function(cfg, db_path) {
 }
 
 ledgr_run_prepare_control <- function(control) {
-  fast_context <- control$fast_context
-  if (is.null(fast_context)) fast_context <- FALSE
-  if (!is.logical(fast_context) ||
-    length(fast_context) != 1L ||
-    is.na(fast_context)) {
-    rlang::abort(
-      "`control$fast_context` must be TRUE or FALSE.",
-      class = "ledgr_invalid_args"
-    )
-  }
-
   max_pulses <- control$max_pulses
   if (is.null(max_pulses)) max_pulses <- Inf
 
-  list(
-    fast_context = fast_context,
-    max_pulses = max_pulses
-  )
+  list(max_pulses = max_pulses)
 }
 
 ledgr_run_prepare_telemetry_stride <- function(control) {

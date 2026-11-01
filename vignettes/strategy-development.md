@@ -422,10 +422,6 @@ bt_first <- exp |>
     params = list(min_return = 0, qty = 10),
     run_id = "positive_return_1"
   )
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 summary(bt_first)
 #> ledgr Backtest Summary
@@ -453,18 +449,27 @@ summary(bt_first)
 #> Execution Evidence:
 #>   Fill Timing:         dense_bar_timestamp
 #>
+#> Completion Evidence:
+#>   Status:           DONE
+#>   Requested Window: 2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
+#>   Achieved Window:  2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
+#>   Stop Reason:      none
+#>   Last Fully Valued: 2019-06-28T00:00:00Z
+#>   Last Executed:    2019-06-27T00:00:00Z
+#>   Performance:       complete
+#>   Affected IDs:      none recorded
+#>
 #> Corporate-Action Evidence:
 #> Economic events: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>   Full policy record: ledgr_corporate_action_summary(bt)
 ```
 
-The run prints a `LEDGR_LAST_BAR_NO_FILL` warning. The strategy changed
-its target on the last bar of the sample, and there is no later open at
-which to fill that change, so ledgr reports it rather than dropping it
-silently. Expect it at the end of most samples;
-`vignette("execution-semantics", package = "ledgr")` explains when it
-matters.
+The run diagnostics retain `final_pulse_no_execution`. The strategy
+changed its target on the last bar of the sample, and there is no later
+open at which to fill that change, so ledgr records the outcome rather
+than dropping it silently. The execution-semantics article explains when
+it matters.
 
 The summary is portfolio-level: total return, max drawdown, and trade
 count are computed from the completed run. In ledgr, a trade is a fill

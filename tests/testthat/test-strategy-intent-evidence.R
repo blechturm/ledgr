@@ -137,7 +137,7 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
     .package = "ledgr"
   )
   testthat::expect_identical(dense_intent_query, FALSE)
-  testthat::expect_identical(nrow(dense_explanation), 0L)
+  testthat::expect_gt(nrow(dense_explanation), 0L)
   testthat::expect_identical(
     names(dense_explanation),
     c(
@@ -175,7 +175,8 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
     run_id = "intent-dense-omitted"
   )
   on.exit(close(omitted), add = TRUE)
-  testthat::expect_identical(nrow(ledgr_results(omitted, "diagnostics")), 0L)
+  omitted_diagnostics <- ledgr_results(omitted, "diagnostics")
+  testthat::expect_false(any(omitted_diagnostics$reason_code == "strategy_intent"))
   testthat::expect_identical(ledgr_results(omitted, "fills"), fills)
   testthat::expect_identical(ledgr_results(omitted, "equity"), equity)
   testthat::expect_identical(ledgr_compute_metrics(omitted), metrics)

@@ -274,17 +274,21 @@ testthat::test_that("direct run, sweep candidate, and promotion preserve cost id
 })
 
 # ledgr-test-profile: review
-testthat::test_that("ledgr_backtest requires costs and has no fill_model formal", {
+testthat::test_that("experiments require costs and have no fill_model formal", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   strategy <- function(ctx, params) ctx$flat()
   testthat::expect_error(
-    ledgr_backtest(data = bars, strategy = strategy),
+    ledgr_test_run(data = bars, strategy = strategy),
     class = "ledgr_cost_model_unspecified"
   )
+  db_path <- tempfile(fileext = ".duckdb")
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  on.exit(unlink(db_path), add = TRUE)
   testthat::expect_error(
-    ledgr_backtest(
-      data = bars,
-      strategy = strategy,
+    ledgr_experiment(
+      snapshot,
+      strategy,
       cost_model = ledgr_cost_zero(),
       fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0)
     ),

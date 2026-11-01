@@ -86,8 +86,7 @@ state read.
 A strategy that returns \code{list(targets = ..., state_update = ...)} receives
 that \code{state_update} as \code{ctx$state_prev} at the next pulse; returning a
 bare target keeps the previous state. State must be JSON-serializable plain
-data. In a dense run \code{ctx$state_prev} is \code{NULL} on the first pulse. In
-an availability-aware run it is a list from the first pulse and carries
+data. In every run \code{ctx$state_prev} is a list from the first pulse and carries
 \code{asset_state}, a list keyed by the instrument IDs in \code{ctx$universe}:
 entries for instruments that leave the axis are dropped, returning instruments
 start from \code{list()}, and a returned entry for an ID outside the axis fails
@@ -130,8 +129,7 @@ top | cash | all | numeric_scalar | portfolio | currency | never | none
 top | equity | all | numeric_scalar | portfolio | currency | never | none
 top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
-top | state_prev | all | nullable_list | portfolio_and_Daxis | strategy_state | NULL_on_first_dense_pulse | none
-top | availability_active | availability | logical_scalar | none | flag | never | none
+top | state_prev | all | list | portfolio_and_Daxis | strategy_state | asset_state_from_first_pulse | none
 top | members | all | character_vector | Daxis_subset | instrument_id | empty_allowed | vec.member
 top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars
 top | open | all | function | instrument_id | price | NA_allowed | vec.open
@@ -157,14 +155,14 @@ plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | volu
 plane | position | all | numeric_vector | Daxis | quantity | never | position
 plane | feature | all | function | Daxis | feature_value | warmup_NA | feature
 plane | member | all | logical_vector | Daxis | flag | never | members
-plane | held | availability | logical_vector | Daxis | flag | never | none
+plane | held | all | logical_vector | Daxis | flag | never | none
 plane | target_restricted | all | logical_vector | Daxis | flag | never | none
 plane | target_restriction_reason | all | character_vector | Daxis | reason_token | empty_string_allowed | none
 plane | admissible | all | logical_vector | Daxis | flag | never | tradable
-plane | priced | availability | logical_vector | Daxis | flag | never | tradable
-plane | mark_age | availability | integer_vector | Daxis | sessions | NA_when_unpriced | none
-plane | risk_mark | availability | numeric_vector | Daxis | price | NA_when_unpriced | none
-plane | mark_source | availability | character_vector | Daxis | source_token | empty_when_unpriced | none
+plane | priced | all | logical_vector | Daxis | flag | never | tradable
+plane | mark_age | all | integer_vector | Daxis | sessions | NA_when_unpriced | none
+plane | risk_mark | all | numeric_vector | Daxis | price | NA_when_unpriced | none
+plane | mark_source | all | character_vector | Daxis | source_token | empty_when_unpriced | none
 }
 }
 \section{Feature Object Compatibility}{
