@@ -792,7 +792,7 @@ cuts:
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
     status: "draft"
-    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded ownership, memory-sink, edge-case and record patches are applied verbatim. Final clean-context confirmation is pending."
+    cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded patches are applied. Final confirmation CHANGES_REQUIRED in cut_review_7_confirmation_1.md for four exact acceptance/status patches and one wording nit; all are applied verbatim, and that reviewer states no further review round is required. Cut 7 is ready for maintainer acceptance."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
       implements the accepted strategy-authoring synthesis on the one surviving
@@ -1096,7 +1096,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: 15
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
+    review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations and the Section 4 item 6 default-disclosure detector fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
   - id: 17
     name: "Typed declared strategy state (macro WS5)"
     cut: 7
@@ -2466,6 +2466,7 @@ tickets:
       - "a second calendar/compiler, data-dependent schedule or callback-executing plan mutation fails"
       - "the off-period stop example executes and proves that ledgr_schedule_due() gates only the inner allocation decision"
       - "ledgr_strategy_schedule() is absent from exports/help/call sites; every former implicit-opening experiment supplies opening and cost_model explicitly, while pulse inspection labels its synthetic cash as inspection-only"
+      - "plan and print identify the supplied capital/cost model and each effective default; removing that disclosure fails a registered Section 4 item 6 detector"
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17
@@ -2516,7 +2517,7 @@ tickets:
       complete typed state and decision-axis ID vector are identical to the
       previous completed pulse's (to the prepared defaults on the first pulse),
       whatever the strategy returned; an asset-axis ID-set change is therefore
-      a state change when any asset field is declared. The marker is a non-NULL
+      a state change. The marker is a non-NULL
       constant that no codec payload can equal, and the payload query excludes
       it. Resume advances from the latest cursor and restores the latest
       preceding payload aligned by ID, or the declared defaults on the resume
@@ -2537,7 +2538,7 @@ tickets:
       - "resume/restart, sequential/parallel sweep and walk-forward reset reproduce exact complete state; candidate or later-pulse leakage mutations fail"
       - "N unchanged pulses resume at N + 1, finalisation-only tails do not replay, and a departed/re-entering instrument restores or defaults exactly as declared"
       - "every completed pulse has exactly one cursor/checkpoint row; unchanged pulses use the constant marker with zero state-payload encodes, changed pulses encode once, and axis-ID-set changes force a checkpoint"
-      - "a no-state strategy, a never-changed declared state and a raw state_update returning identical values every pulse write only markers and resume exactly, from declared defaults or the last payload; a marker-equals-payload mutation fails"
+      - "on a constant decision axis, a no-state strategy, a never-changed declared state and a raw state_update returning identical values every pulse write only markers and resume exactly, from declared defaults or the last payload; a marker-equals-payload mutation fails"
       - "the changed-every-pulse and unchanged-state workload cells report encoding, row count, bytes and wall time without treating the future storage architecture as implemented"
       - "the seven optimization shapes and identity/format assertions pass, including a detector that fails a restored every-pulse state encode/write"
   - id: "LDG-3187"
@@ -2577,6 +2578,7 @@ tickets:
       - "summary and print distinguish decision-exposure diagnostics from native actual invested exposure and identify clock, currency, aggregation, pooled/minimum/last coverage and unavailable coverage"
       - "raw quantity, unavailable-price, zero target, liquidation, risk and cash-shortfall fixtures are not mislabeled; undefined coverage remains typed NA"
       - "a sweep candidate's memory sink retains no sizing row and its output makes no D8 claim, while the same candidate's committed run reports exact D8 coverage"
+      - "the strategy_intent row stores intent_reason in reasons with detail_json `{}`; ledgr_run_explain() returns identical intent_reason values without parsing JSON, and restoring either the detail_json encode or the reader parse fails a registered detector"
       - "successful pulse paths add no JSON encode/parse and the seven-shape review finds no per-decision frame/list accumulator; the sizing-evidence rule binding is present and old/missing markers refuse"
   - id: "LDG-3188"
     title: "Migrate maintained strategies to the accepted grammar"
@@ -2634,7 +2636,8 @@ tickets:
       aggregate controls, full test profiles, source build and R CMD check.
       Run the registered descriptive timing record and attribute eager-context,
       feature, state-change/unchanged, target-sizing, publication/finalisation
-      and result-read costs. Consolidate synthesis Section 3 contract changes,
+      and result-read costs. Verify and consolidate the Section 3 amendments
+      landed by their owning tickets,
       NEWS, help and pipeline/decision routing. Remove the strategy-authoring
       bridge and pipeline obligation only when all accepted duties have owners
       or are complete. Record the exact flat context layout and inspection
