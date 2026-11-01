@@ -788,6 +788,153 @@ cuts:
       identity refusal, documentation and both milestone records. A design
       concern returns NEEDS_TYPE_2; finding-bearing reviews get a packet file;
       a third correction round stops for maintainer disposition.
+  - id: 7
+    name: "Strategy authoring API (macro WS5)"
+    cut: "2026-11-01"
+    status: "draft"
+    opening: >-
+      Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
+      implements the accepted strategy-authoring synthesis on the one surviving
+      execution path. It resolves the synthesis's bounded Section 6 questions,
+      registers every Section 4 detector, and owns the flat lazy context,
+      canonical position facts, selection and target verbs, typed declared
+      state, experiment inputs, scheduling predicate, rounding disclosure and
+      executed pattern teaching. It does not implement WS6 frame retirement or
+      WS7/WS8 accounting storage. This entry, workstreams 15-18 and LDG-3179
+      through LDG-3190 become operative only after maintainer acceptance;
+      tickets.yml remains the sole sequencing authority.
+    authority: >-
+      inst/design/rfc/rfc_strategy_authoring_api_v0_2_3_synthesis.md, accepted
+      2026-10-28, Sections 2-4 and 6-8; its final review and
+      rfc_strategy_authoring_api_v0_2_3_decisions.md; macro_plan.md revision 7,
+      rules 2, 4-6 and 10-16, WS5 and the WS4b milestone disposition;
+      contracts.md rule groups named by synthesis Section 3; the accepted Cut
+      6 one-execution-path product and evidence; the shape, JSON and PMwR
+      performance audits cited by macro WS5; optimization_coding_style.qmd and
+      benchmark_methodology.qmd. Accepted RFC choices are not reopened here.
+    measured_input: >-
+      The final Cut 6 product at 14252ffb has one prepared substrate and one
+      E/P1-P5 fold. Its matched installed-package record locates the remaining
+      fixed-basket premium in the fold loop: no-fill loop 1.27 to 5.46 seconds,
+      preparation 0.58 to 0.80 seconds. The shape audit attributes about 19%
+      of the earlier no-fill floor to eager ctx$vec/bar_index construction. P5
+      still normalizes state and writes canonical JSON on every processed
+      pulse. The PMwR audit found list-per-ID state near 20% of a wide run. The
+      JSON audit identifies per-decision intent encoding. These are inputs and
+      attribution evidence, not promises that WS5 alone meets WS14 targets.
+    decisions: >-
+      Proposed for maintainer acceptance with this cut. (1) The public state
+      declaration is supplied to ledgr_experiment() as asset_state = list(...)
+      and portfolio_state = list(...). This release supports scalar numeric,
+      integer, logical and character defaults only. Asset scalars become
+      instrument-ID-named typed vectors over the decision axis; portfolio
+      scalars remain length one. Each normalized declaration records scope,
+      field name, atomic type, scalar shape and an explicit typed missing or
+      concrete default. Asset and portfolio fields share one namespace and the
+      synthesis's result-role names are reserved. No arbitrary array or nested
+      state shape is admitted. (2) Runtime state is one prepared typed field
+      table, not a list per instrument. Helper returns are field patches; raw
+      state_update is complete replacement; reset_state restores all defaults.
+      Only changed complete state is serialized at a P5 checkpoint through the
+      existing strategy_state table, and resume reads the latest checkpoint at
+      or before its boundary. The durable payload is a flat declared-field
+      object containing typed scalars and named atomic asset vectors, never a
+      list per ID. Unchanged pulses do not encode or write state. This cut does
+      not change the experiment-store schema version or consume WS8's schema
+      125; if implementation proves the existing table cannot preserve the
+      declared type contract, the ticket stops for maintainer disposition
+      rather than adding a hidden format. (3) D8 uses typed per-decision sizing
+      evidence: requested_value, post_guard_value, rounded_value,
+      rounded_to_zero_n and intent_coverage, each in the experiment currency at
+      that decision's accepted marks. Summary exposes counts of evidenced and
+      unavailable decisions, total rounded-to-zero instructions, and sums of
+      the three evidenced value fields with rounding_loss = post_guard_value -
+      rounded_value. Print labels those sums as decision-exposure diagnostics,
+      not P&L. Final actual invested exposure comes from native execution and
+      valuation and is printed separately. Undefined coverage or denominator
+      stays NA, never 100%. (4) The flat context is a pulse-frozen lazy view.
+      Its service, bar/feature indices and feature resolver are prepared once
+      per candidate; each named column is built at most once per view. Internal
+      adapters may bridge old helper implementation during a ticket, but no
+      public ctx$vec, ctx$feature(), ctx$features(), ctx$bar() or prepared frame
+      compatibility surface remains when workstream 15 closes. WS6 alone owns
+      the later explicit history/frame helpers. (5) Exact public spellings are
+      the synthesis spellings: ledgr_select_top(), ledgr_select_lowest(),
+      ledgr_weight_equal(), ledgr_target_rebalance(ctx, ...),
+      ledgr_target_adjust(ctx, ...), ledgr_strategy_result() and
+      ledgr_schedule_due(). ledgr_passed_warmup() remains the one readiness
+      predicate and accepts the new context inputs; ledgr_align_weights() is
+      retained only as the ordinary named-weight alignment helper if its live
+      consumers demonstrate a distinct operation, otherwise it is removed in
+      LDG-3189. The synthesis's retired helpers receive no aliases. (6)
+      opening and cost_model are required at public experiment construction.
+      Existing extracted/resumed book provenance is not reconstructed or asked
+      for again. schedule = accepts the existing classed schedule declaration;
+      the mixed-cadence predicate delegates to the same compiled calendar and
+      never creates a second scheduler. (7) Timing is milestone evidence under
+      macro rule 16, not a workstream gate. Before product edits LDG-3179
+      registers eight alternating pairs for fixed-basket and declared-session
+      no-fill, sparse and wide cells, plus state-change and state-unchanged
+      cells. A ratio above 1.10 against 14252ffb or failure to remove the named
+      eager-context/state costs requires attribution and routing, not weakened
+      acceptance. Hosted clocks are advisory. (8) Identity and format:
+      snapshot identity is unchanged; normalized declarations, supplied
+      investor inputs and effective schedule already participate in config
+      identity and are pinned here; store schema stays 124 under decision (2),
+      while store-format bindings change only if a new named declaration rule
+      constant is required. Old or missing executable declaration markers
+      refuse under the current-only policy, with no migration or fallback.
+    section_4_ownership: >-
+      Synthesis Section 4 item 1 belongs to LDG-3180; item 2 to LDG-3181;
+      item 3 to LDG-3183; item 4 to LDG-3185 and LDG-3186; item 5 to LDG-3188
+      and LDG-3189; item 6 to LDG-3187 and LDG-3189. LDG-3179 freezes the
+      complete detector, export, contract, identity, source and timing matrix;
+      LDG-3190 reruns and reconciles it. Every listed mutation must fail a
+      registered block; a source census alone is not detecting evidence.
+    identity_and_release_impact: >-
+      Snapshot content identity: none. Run/configuration identity: intentional
+      changes for normalized declared state, explicitly supplied opening/cost
+      inputs and their effective defaults; schedule identity remains the
+      accepted scheduler identity. Store schema: proposed unchanged at 124;
+      store-format fingerprint changes only through a declaration-rule binding
+      if LDG-3185 needs one, with current-only refusal and no reader for the
+      missing/old rule. Public API: flat ctx, new selection/target/state helpers,
+      required investor inputs and retired old strategy readers/helpers.
+      Persisted evidence: typed intent reason and sizing evidence; state rows
+      become change checkpoints with the same reconstructible state. Release
+      impact: R, tests, contracts, NAMESPACE, reference, articles, NEWS,
+      benchmark and identity records; no dependency change is planned.
+    sequencing: >-
+      Four serial workstreams. Workstream 15 freezes the implementation matrix,
+      then ships the flat lazy context and canonical book facts. Workstream 16
+      ships plain selection, strict weights, two target verbs, required investor
+      inputs and the schedule predicate. Workstream 17 ships declared typed
+      state and change/checkpoint persistence. Workstream 18 adds sizing and
+      rounding disclosure, migrates strategies and the executed pattern
+      article, removes retired exports, reruns the integrated evidence and
+      hands the accepted flat layout to WS6. Ticket dependencies bind; WS6 may
+      design against the accepted cut but cannot remove frames before LDG-3190.
+    out_of_scope: >-
+      WS6 history/frame helper design and removal beyond the public context
+      readers expressly retired here; WS7/WS8 result-reader consolidation,
+      schema 125 and accounting-event storage; fractional quantities; cash
+      shortfall allocation; separate-capital sleeves; a decision graph or
+      general recording layer; arbitrary/nested state shapes; a new scheduler;
+      execution, cost, risk, fill or affordability policy changes; a compiled
+      default; compatibility aliases, migrations or fallback readers; changing
+      a frozen oracle except for an enumerated accepted API/identity/result
+      difference with one owner.
+    workstreams: [15, 16, 17, 18]
+    review_lifecycle: >-
+      A fresh clean-context Claude CLI cut review challenges necessity first,
+      then verifies every synthesis decision, Section 3 contract amendment and
+      Section 4 detector has one owner; it attacks decisions (2), (3), (5), (7)
+      and (8), ticket grain, schema-125 coordination and whether every gate can
+      fail. Each workstream receives one independent Type 1 close review.
+      Reviews of fold, state, persistence or result paths walk the seven
+      optimization shapes and report timing. A Type 1 design concern returns
+      NEEDS_TYPE_2. Finding-bearing reviews get packet files; a third correction
+      round on one workstream stops for maintainer disposition.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -868,6 +1015,34 @@ workstreams:
     depends_on_workstream: 13
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 14, after LDG-3178", reason: "One claim joins LDG-3170 through LDG-3178: every supported run, sweep, walk-forward, promotion and pulse-inspection route prepares one execution substrate and enters one E/P1-P5 path; fixed-basket data use the accepted bar-native pulse clock and strict completeness while declared sessions keep their point-in-time semantics; the old dense fold, guard, context and provider branches and the exported ledgr_backtest() constructor are absent; final-pulse non-execution is one structured diagnostic under identity rule 5; all native, A0, real-data and failure oracles pass or differ only by decisions (1)-(5) and the decision (9) rows of the frozen expected-difference record; and the shared-harness plus peer milestone records attribute the final candidate without serving as acceptance clocks. The review walks the seven shapes over every changed preparation/fold/finalisation function, cold-reads the surviving path from its contract, mutation-checks the deletion and identity witnesses, audits every registered test migration and reconciles the source census to zero unowned branches."}
+  - id: 15
+    name: "Flat lazy context and canonical position facts (macro WS5)"
+    cut: 7
+    status: "pending"
+    depends_on_workstream: 14
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 15, after LDG-3181", reason: "One claim joins LDG-3179 through LDG-3181: every strategy receives one pulse-frozen flat lazy context prepared from the common substrate; named bar, eligibility, position, valuation, feature and fact columns are built at most once on demand with exact axis/cutoff identity; canonical entry/exit facts update from accounting transitions and reconstruct identically across resume and contiguous walk-forward; old public vec/scalar/bundle readers are absent; every Section 4 item 1/2 mutation fails; fixed-basket and declared-session economics stay within the frozen difference matrix; and the eager-context floor is measured without serving as an acceptance clock."}
+  - id: 16
+    name: "Selection, targets and investor setup (macro WS5)"
+    cut: 7
+    status: "pending"
+    depends_on_workstream: 15
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
+  - id: 17
+    name: "Typed declared strategy state (macro WS5)"
+    cut: 7
+    status: "pending"
+    depends_on_workstream: 16
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, resume and candidate isolation are exact; unchanged pulses do no state JSON or write; durable checkpoints reconstruct the same complete state without consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
+  - id: 18
+    name: "Disclosure, teaching and WS5 integration (macro WS5)"
+    cut: 7
+    status: "pending"
+    depends_on_workstream: 17
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 18, after LDG-3190", reason: "One claim joins LDG-3187 through LDG-3190: typed sizing evidence and native actual exposure are separately reported with exact coverage and aggregation labels; all maintained strategies, the peer recipe and one executed pattern article teach the final flat API and required inputs; the export/contract inventory has no retired reader/helper or accidental compatibility alias; Section 4 items 5/6 and every workstream detector fail under their mutations; full profiles, build/check, integrated oracles and descriptive timing pass or differ only by owned accepted rows; and WS6 receives one stable flat input layout."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2047,3 +2222,278 @@ tickets:
       - "Private aggregate-only real-data record: the current-only gate refused the old store, then one candidate-format rebuild reproduced the same snapshot hash and fact digests over 5,481,906 bars, 1,166 instruments and 7,213 sessions (202.2 seconds, 5,770 MiB peak RSS). W2 minvar/article and W3 changing/full are byte-identical on every canonical table. W4 sweep differs only by the accepted diagnostics column and W4 walk-forward only by identity-rule-5 fields; dev/bench/v0_2_3_ws4b/check_realdata_accepted_differences.R proves all remaining aggregate columns identical."
       - "Focused close chain: inst/design/ledgr_v0_2_3_spec_packet/ws14_close_review_rereview_1.md. The final clean-context Claude Opus Type 1 confirmation returns PASS at 2bd5baa7: unified public help is current, the source-derived mode census covers resolver, symbol, field and alias clock-kind forms, both committed census CSVs reproduce, every row has a disposition, and the correction adds no compatibility or execution path."
       - "Maintainer acceptance: 2026-11-01 after the final PASS; workstream 14 and LDG-3178 are complete on the committed record through 5f68b330."
+  - id: "LDG-3179"
+    title: "Freeze the WS5 surface, detector and timing matrix"
+    workstream: 15
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Before product edits, enumerate every public context field/reader,
+      selection/weight/target/state helper and experiment input affected by the
+      synthesis; every fold/rebuild/scheduler/result owner; every registered
+      claim and maintained benchmark/article consumer; the exact contract and
+      export delta; identity/format fields; and all synthesis Section 4 cases.
+      Freeze a runnable matrix over fixed-basket and declared-session runs,
+      sweep, walk-forward, resume, promotion and pulse inspection. Register the
+      descriptive paired timing protocol of Cut 7 decision (7), including
+      economic controls and phase attribution. Record the current ctx/state
+      build and encode call counts. Write one ownership table with zero
+      unowned item and one mutation command per acceptance family. Do not copy
+      frozen oracle records or build a new harness.
+    acceptance:
+      - "every synthesis decision, Section 3 contract amendment, Section 4 detector and maintained consumer has exactly one ticket owner"
+      - "the base semantic matrix and call-count record reproduce on 14252ffb, and each proposed product difference has one explicit expected-difference row rather than a blanket table allowance"
+      - "the timing protocol uses the shared harness, eight alternating pairs and the six named workload cells plus state-change/state-unchanged cells; its thresholds are disposition triggers under macro rule 16"
+      - "source, export, claim, identity and schema censuses are literal enough to fail when one named current reader/helper or owner is omitted"
+  - id: "LDG-3180"
+    title: "Build one flat lazy pulse context"
+    workstream: 15
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3179"]
+    scope: >-
+      Implement synthesis D1 on the common prepared substrate. Prepare the
+      service, indices and feature resolver once per run or candidate. Expose
+      pulse-frozen asset-ID-named lazy columns for bars, position, held, member,
+      buyable, holding_value, declared features and LDG-3181 facts, plus the
+      accepted portfolio fields and ctx$state. Build each requested column at
+      most once per view; names() and str() enumerate without forcing feature
+      values; saved views do not observe later books/state. Preserve alias-first
+      feature resolution, collision refusal and candidate identity. Remove the
+      public ctx$vec, ctx$feature(), ctx$features() and ctx$bar() readers and
+      their loop warnings with no alias. Migrate maintained consumers to the
+      flat fields; keep any private bridge strictly inside this ticket and
+      delete it before close. Do not implement WS6 history/frame helpers.
+    acceptance:
+      - "all named fields have exact values, names and decision-axis order on dense, changing-universe, empty and holdings-only fixtures; unknown/reserved/colliding reads refuse with classed conditions"
+      - "runtime counters prove one service/resolver preparation per candidate, at most one build per requested column per view, no build for unused features and no full-axis name matching on repeated reads"
+      - "a saved view remains frozen after later book and state changes, and shared-buffer/candidate-leak mutations fail"
+      - "the old public readers, warnings, exports, help and maintained call sites are absent; an injected compatibility alias or second reader fails the census"
+      - "the Section 4 item 1 mutations and the fixed-basket/declared route matrix fail independently, while accepted economic controls remain exact"
+  - id: "LDG-3181"
+    title: "Maintain and rebuild canonical position facts"
+    workstream: 15
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3180"]
+    scope: >-
+      Implement D2 at the canonical accounting transition boundary. Maintain
+      entry and exit bar-index vectors from pre/post book transitions in actual
+      event order; expose entry_price, entry_at, exit_at, bars_since_entry and
+      bars_since_exit through the flat context. Preserve supplied-opening and
+      non-fill-event unknown/provenance rules, additions and partial reductions,
+      multiple transitions in one bar, skipped decision bars and shared-calendar
+      counting. Rebuild from the committed accounting prefix through the
+      existing core; resume and contiguous carry_test_state retain known facts,
+      while fresh openings/windows and candidates remain isolated. Add no fill-
+      only or held-mask reconstruction engine and no instrument loop.
+    acceptance:
+      - "the full Section 4 item 2 matrix passes for additions, partial/full sales, re-entry, supplied openings, non-fill changes, zero-fill dispositions and multiple same-bar transitions"
+      - "live and prefix-rebuilt facts are identical at every tested boundary, including resume, boundary fills and contiguous carried windows; fills-only and held-mask mutations fail"
+      - "entry/exit clocks and ages follow the shared absolute bar axis, with zero on recording bars, Inf/NA sentinels as specified and skipped decision bars counted"
+      - "runtime/source checks reject a second replay engine, an instrument loop and recomputation of indices in P2"
+  - id: "LDG-3182"
+    title: "Ship plain selection and strict named weights"
+    workstream: 16
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3181"]
+    scope: >-
+      Implement D4's ledgr_select_top(), ledgr_select_lowest() and
+      ledgr_weight_equal() over ordinary named vectors. Bind n/fraction
+      exclusivity, non-negative integer counts, fraction bounds/floor/minimum,
+      candidate pools, missing/unknown exclusion, C-locale ID tie order and
+      named/positional logical alignment. Enforce finite non-negative named
+      weights summing to at most one without normalization or leverage switches.
+      Retire ledgr_select_top_n(), ledgr_signal_feature(), ledgr_select_held()
+      and ledgr_weight_each() from exports, help, examples and maintained code,
+      with no alias. Raw complete quantity targets remain public.
+    acceptance:
+      - "top/lowest selection is exact for n, fraction, zero, ties, missing scores, short pools, named/positional within and empty pools; every invalid coverage/count/fraction mutation fails"
+      - "equal weights, explicit each and empty selection return exact named vectors; invalid names, finiteness, signs and sums refuse rather than normalize"
+      - "retired spellings are absent from exports, help and maintained sources, and one injected alias fails the export/source census"
+  - id: "LDG-3183"
+    title: "Implement the two ctx-first target verbs"
+    workstream: 16
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3182"]
+    scope: >-
+      Implement D3's ledgr_target_rebalance(ctx, ...) and
+      ledgr_target_adjust(ctx, ...) through one shared sizing engine. Preserve
+      complete quantity targets, empty-verb meanings, logical/named keep and
+      exit validation, contradiction refusal, explicit leaver precedence,
+      no default leaver sale, buyable-only purchases, zero-weight no-price
+      behavior, total/remaining capital-base requirements/defaults, once-only
+      preservation/addition reservations, unavailable-price preservation and
+      guard scaling. Emit typed sizing primitives and intent_reason for LDG-3187
+      without per-pulse JSON. Do not change fill affordability, cash-shortfall,
+      risk or execution policy.
+    acceptance:
+      - "ctx-first and placeholder-pipe calls are identical; empty adjust holds and empty rebalance clears only the decided eligible allocation"
+      - "the complete Section 4 item 3 matrix covers character/logical keeps, leaver precedence, exits, every contradiction, undecided leavers, holding_value, zero/unpriced requests and both capital bases"
+      - "runtime/source witnesses prove one shared sizing implementation and once-only P/A/U reservation; double reservation, redistribution, hidden normalization and ineligible-buy mutations fail"
+      - "every returned target is full-axis and compatible with the existing target validator; execution, risk, affordability, costs and fills remain exact"
+  - id: "LDG-3184"
+    title: "Require investor inputs and expose mixed-cadence scheduling"
+    workstream: 16
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3183"]
+    scope: >-
+      Implement D6-D7. Require opening and cost_model in public experiment
+      construction, accepting explicit zero cash with supplied holdings and
+      ledgr_cost_zero() as an explicit choice. Propagate evidenced extracted,
+      resumed and carried books without asking again. Accept schedule = on the
+      experiment and expose ledgr_schedule_due(ctx, schedule) as a pure query of
+      the same compiled parent axis, partial-period and no-lookahead rules.
+      Preserve every-pulse behavior when omitted and outer scheduler ownership.
+      Plan/print disclose supplied capital/cost and effective defaults; plan may
+      warn from opening metadata but never execute arbitrary strategy code.
+    acceptance:
+      - "missing opening/cost errors teach the exact constructors; explicit zero/cost-zero work; extraction, resume and carry preserve their evidenced inputs"
+      - "schedule identity and outer skip behavior remain exact, while mixed cadence runs every executable callback and the due predicate agrees with the authoritative compiler on every tested pulse"
+      - "a second calendar/compiler, data-dependent schedule or callback-executing plan mutation fails"
+      - "the off-period stop example executes and proves that ledgr_schedule_due() gates only the inner allocation decision"
+  - id: "LDG-3185"
+    title: "Normalize declared typed strategy state"
+    workstream: 17
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3184"]
+    scope: >-
+      Add asset_state and portfolio_state declarations to experiment/config
+      construction under Cut 7 decisions (1) and (8). Normalize unique names,
+      scope, atomic type, scalar shape and explicit typed defaults before
+      identity hashing. Reject nested/non-scalar defaults, duplicate/reserved
+      names, NaN/infinity and undeclared persisted fields. Prepare typed asset
+      vectors and portfolio scalars once per candidate and expose pulse-frozen
+      ctx$state fields with axis lifecycle rules. Pin config identity and, if a
+      declaration-rule binding is needed, current-only store refusal without a
+      migration. Do not change schema 124 or implement a fallback.
+    acceptance:
+      - "numeric/integer/logical/character and typed-missing defaults retain type through config identity and runtime reads; asset vectors align to the full decision axis and portfolio fields stay scalar"
+      - "unknown reads, duplicate/reserved names, nested shapes, bad types, non-finite values, off-axis IDs and undeclared persisted fields refuse with exact classes"
+      - "new, departed and re-entering IDs follow the declared default lifecycle; saved state views remain pulse-frozen and candidate isolation holds"
+      - "configuration hashes change for a declaration/default/type change and stay equal for equivalent normalized declarations; old/missing rule markers refuse if a binding is introduced"
+  - id: "LDG-3186"
+    title: "Apply patches, replacements and state checkpoints"
+    workstream: 17
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3185"]
+    scope: >-
+      Implement ledgr_strategy_result() field patches, raw state_update complete
+      replacement, reset_state and intent_reason at the existing normalization
+      boundary. Enforce broadcast/alignment, missing reset, replacement/default
+      and incompatible-operation rules. Keep complete typed state in the fold;
+      write the existing strategy_state table only when complete state changes,
+      using one flat field payload rather than list-per-ID padding. Resume reads
+      the latest checkpoint at or before the boundary; run, sweep and worker
+      candidates remain equal and isolated; walk-forward strategy state resets
+      while economic facts may carry. Stop for maintainer disposition if exact
+      type recovery requires a schema change.
+    acceptance:
+      - "patch retention, complete replacement, empty replacement, omitted update, whole reset, metadata separation and every illegal combination match D5 and fail under their opposite mutations"
+      - "asset scalar broadcast and named full-axis alignment are exact; NaN/infinity refusal precedes NA reset and all returned values match declared type/shape"
+      - "resume/restart, sequential/parallel sweep and walk-forward reset reproduce exact complete state; candidate or later-pulse leakage mutations fail"
+      - "unchanged pulses make zero canonical_json and zero strategy_state writes; changed checkpoints reconstruct exact state from schema 124, with no list-per-ID padding or per-pulse full-axis serialization"
+      - "the seven optimization shapes and identity/format assertions pass, including a detector that fails a restored every-pulse state encode/write"
+  - id: "LDG-3187"
+    title: "Persist and report typed sizing and rounding evidence"
+    workstream: 18
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3186"]
+    scope: >-
+      Carry LDG-3183's requested, post-guard and rounded sizing values,
+      rounded-to-zero count, intent coverage and optional intent_reason as typed
+      decision evidence through the canonical diagnostic/output path. Do not
+      JSON-encode them in the pulse loop. Implement Cut 7 decision (3) in
+      summary() and print(), with decision currency/clock/aggregation labels and
+      native final actual invested exposure separately. Raw quantity strategies
+      report unavailable intent coverage; undefined denominators stay NA.
+      Distinguish rounding from unavailable sizing, deliberate zeros, risk
+      reductions, liquidation and cash-shortfall fills. Coordinate physical
+      columns with the existing schema 124 diagnostic surface; do not consume
+      WS8 accounting schema 125 silently.
+    acceptance:
+      - "pre/post/rounded values and rounded-to-zero counts are exact per decision and in aggregate; omission or swapping any boundary fails a registered detector"
+      - "summary and print distinguish decision-exposure diagnostics from native actual invested exposure and identify clock, currency, aggregation and unavailable coverage"
+      - "raw quantity, unavailable-price, zero target, liquidation, risk and cash-shortfall fixtures are not mislabeled; undefined coverage remains typed NA"
+      - "successful pulse paths add no JSON encode/parse and the seven-shape review finds no per-decision frame/list accumulator"
+  - id: "LDG-3188"
+    title: "Migrate maintained strategies to the accepted grammar"
+    workstream: 18
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3187"]
+    scope: >-
+      Migrate maintained package strategies, peer recipes and registered
+      strategy examples to flat ctx, plain selection, strict weights, ctx-first
+      targets, required investor inputs and declared state. Preserve unchanged-
+      meaning fills for the 58-fill trailing port and 741-fill Turtle quantity
+      recipe at their frozen fixture sizes; list every intentional policy,
+      identity or disclosure difference. Retain ordinary R expressions rather
+      than wrapper value types. Update the peer benchmark's labelled flat-ctx
+      recipe without changing its peer semantics or clocks.
+    acceptance:
+      - "the two named semantic ports preserve their frozen fills and state behavior except for explicitly owned accepted differences, and reverting each migrated construct fails its detector"
+      - "all maintained strategy examples supply opening and cost inputs and use no retired reader/helper; no oracle is edited merely to hide a product failure"
+      - "the peer recipe remains economically qualified and its measurement boundary is unchanged apart from named WS5 preparation/context attribution"
+  - id: "LDG-3189"
+    title: "Teach one complete strategy-authoring pattern"
+    workstream: 18
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3188"]
+    scope: >-
+      Write and execute D9's pattern article: fixed mix, filter, rank/rotate,
+      slots, explicit preservation/leavers, position facts and declared memory,
+      with meaningful setup, required investor inputs, mixed cadence and D8
+      disclosure. Teach plain conditions/named weights first, within at first
+      stock rank, leaver precedence at first indexed universe, selected versus
+      retained counts, explicit open_slots clamping, FIFO basis and bar-label
+      meaning beside the first percentage stop, and declared-state reset. Run a
+      maintainer cold read. Reconcile the public export inventory, including
+      ledgr_passed_warmup() and the evidence-based keep/remove disposition of
+      ledgr_align_weights(); remove every retired helper from current teaching.
+    acceptance:
+      - "the article executes from a clean source build and each example is a complete readable strategy with its meaningful setup"
+      - "an independent cold reader can explain each paragraph from the code and identify scheduling, leaver, state and rounding semantics without hidden setup"
+      - "documentation contracts fail removal of required topics or return of retired spellings, and the final export/reference inventory matches the cut decision exactly"
+  - id: "LDG-3190"
+    title: "Verify WS5 and hand the flat layout to WS6"
+    workstream: 18
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3189"]
+    scope: >-
+      On one named final candidate, rerun the LDG-3179 semantic matrix and all
+      Section 4 mutations, Cut 6 economic controls, A0/current real-data
+      aggregate controls, full test profiles, source build and R CMD check.
+      Run the registered descriptive timing record and attribute eager-context,
+      feature, state-change/unchanged, target-sizing, publication/finalisation
+      and result-read costs. Consolidate synthesis Section 3 contract changes,
+      NEWS, help and pipeline/decision routing. Remove the strategy-authoring
+      bridge and pipeline obligation only when all accepted duties have owners
+      or are complete. Record the exact flat context layout and inspection
+      obligations as WS6's binding input; do not implement WS6 here.
+    acceptance:
+      - "every Section 4 detector and registered mutation fails independently, and every semantic/economic oracle passes or differs only by a one-owner accepted row"
+      - "fast, review and heavy profiles, source build, R CMD check, examples and executable article pass on the exact candidate"
+      - "the descriptive timing record reproduces, retains economic controls and attributes every material regression or miss without serving as an acceptance clock"
+      - "contracts, exports, reference, articles, NEWS, decisions bridge, RFC pipeline and packet status describe only implemented behavior; WS6 receives one unambiguous flat-layout handoff"
