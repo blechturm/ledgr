@@ -1,0 +1,18 @@
+R8.01  DIFFERS
+R8.02  identical
+R8.03  identical
+R8.04  identical
+R8.05  identical
+R8.06  identical
+R8.07  identical
+R8.08  identical
+R8.09  identical
+R8.10  identical
+R8.11  identical
+R8.12  identical
+R8.13  identical
+R8.14  identical
+witness cases C1,C3,C5b,C6,C8a,C9,C10,C11,C13a,C15,C16,C18 check.R exit 0 
+control: injected P5 state encode changes routes: R8.04 (expected R8.04)
+control: gut C1_drop_notional check.R exit 1 (expected 1)
+d20: PASS 

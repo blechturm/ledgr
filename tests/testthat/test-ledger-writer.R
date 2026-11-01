@@ -70,7 +70,7 @@ testthat::test_that("BUY fill writes a correct FILL ledger event", {
     commission_fixed = 1.25
   )
 
-  res <- ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 1L)
+  res <- ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, event_seq_start = 1L)
   testthat::expect_identical(res$status, "WROTE")
   testthat::expect_identical(res$event_id, "run-ledger-1_00000001")
   testthat::expect_identical(res$event_seq, 1L)
@@ -125,7 +125,7 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
     commission_fixed = 1.25
   )
 
-  res <- handler$write_fill_events(fill, 1L, use_transaction = FALSE)
+  res <- handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 1L, use_transaction = FALSE)
   testthat::expect_identical(res$status, "WROTE")
   testthat::expect_identical(handler$pending_event_count(), 0L)
   testthat::expect_equal(
@@ -241,18 +241,23 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     )
   )
 
+  # LDG-3167 (design note Section 5, category 1): the two fills are one
+  # two-row typed block; the expected rows still come from the one-row
+  # builder, one fill at a time, with the block's epochs as POSIXct.
+  block <- Map(c, fills[[1L]]$fill, fills[[2L]]$fill)
+  ids <- c(fills[[1L]]$instrument_id, fills[[2L]]$instrument_id)
+  expected_row <- function(run_id, i) {
+    one <- ledgr:::ledgr_fill_event_payload(run_id, fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)
+    one$ts_utc <- .POSIXct(one$ts_utc, tz = "UTC")
+    ledgr:::ledgr_event_row_df(one)
+  }
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-memory"), .event_initial_capacity = 1L)
   memory$init_buffers(2L)
-  invisible(memory$write_fill_events(fills[[1L]], 1L))
-  invisible(memory$write_fill_events(fills[[2L]], 2L))
+  invisible(memory$write_fill_events(block, 1:2, ids, 1L))
   testthat::expect_identical(nrow(memory$events()), 0L)
   memory$flush_pulse_events()
   memory_rows <- memory$events()
-  expected_memory <- do.call(rbind, lapply(seq_along(fills), function(i) {
-    ledgr:::ledgr_event_row_df(
-      ledgr:::ledgr_fill_event_row("pulse-memory", fills[[i]], i)$row
-    )
-  }))
+  expected_memory <- do.call(rbind, lapply(seq_along(fills), function(i) expected_row("pulse-memory", i)))
   testthat::expect_equal(
     as.data.frame(memory_rows),
     as.data.frame(expected_memory),
@@ -275,8 +280,7 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     .event_initial_capacity = 1L
   )
   durable$init_buffers(2L)
-  invisible(durable$write_fill_events(fills[[1L]], 1L))
-  invisible(durable$write_fill_events(fills[[2L]], 2L))
+  invisible(durable$write_fill_events(block, 1:2, ids, 1L))
   testthat::expect_identical(durable$pending_event_count(), 0L)
   durable$flush_pulse_events()
   testthat::expect_identical(durable$pending_event_count(), 2L)
@@ -288,11 +292,7 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
     params = list("pulse-durable")
   )
-  expected_durable <- do.call(rbind, lapply(seq_along(fills), function(i) {
-    ledgr:::ledgr_event_row_df(
-      ledgr:::ledgr_fill_event_row("pulse-durable", fills[[i]], i)$row
-    )
-  }))
+  expected_durable <- do.call(rbind, lapply(seq_along(fills), function(i) expected_row("pulse-durable", i)))
   expected_durable$meta_json <- as.character(expected_durable$meta_json)
   for (name in names(expected_durable)) {
     testthat::expect_identical(durable_rows[[name]], expected_durable[[name]])
@@ -311,12 +311,18 @@ testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity",
     ),
     collapse = "\n"
   )
-  testthat::expect_false(grepl("state\\$pulse_fill_rows", persistent_source))
-  testthat::expect_false(grepl("state\\$pulse_fill_rows", memory_source))
-  testthat::expect_false(grepl("state\\$pulse_fill_legs", memory_source))
-  testthat::expect_match(persistent_source, "pulse_fill_rows\\[\\[i\\]\\] <<-")
-  testthat::expect_match(memory_source, "pulse_fill_rows\\[\\[i\\]\\] <<-")
-  testthat::expect_match(memory_source, "pulse_fill_legs\\[\\[i\\]\\] <<-")
+  # LDG-3167 (design note Section 5, category 3): no staged list remains; the
+  # pulse's published block and its legs are typed columns held closure-local
+  # and written by index into the preallocated buffers at the flush.
+  testthat::expect_false(grepl("pulse_fill_rows|pulse_fill_legs", memory_source))
+  testthat::expect_false(grepl("state\\$pending_fills", persistent_source))
+  testthat::expect_match(persistent_source, "pending_fills <<- block")
+  testthat::expect_match(memory_source, "pending_legs <<- legs")
+  # covr rewrites function bodies and wraps this statement across deparsed
+  # lines, so its exact source text holds only in ordinary runs.
+  if (!ledgr_test_in_coverage()) {
+    testthat::expect_match(persistent_source, "ledgr_event_buffer_setv(cols, name, index, block[[name]])", fixed = TRUE)
+  }
 
   fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
@@ -328,17 +334,20 @@ testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity",
     spread_bps = 0,
     commission_fixed = 0
   )
+  # A one-row block written and flushed after capacity - 1 published rows.
   allocated_for_last_write <- function(capacity) {
     handler <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("allocation-probe"))
     handler$init_buffers(capacity)
     for (i in seq_len(capacity - 1L)) {
-      handler$write_fill_events(fill, i)
+      handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, i)
+      handler$flush_pulse_events()
     }
     path <- tempfile(fileext = ".out")
     on.exit(unlink(path), add = TRUE)
     Rprofmem(path)
     on.exit(Rprofmem(NULL), add = TRUE)
-    handler$write_fill_events(fill, capacity)
+    handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, capacity)
+    handler$flush_pulse_events()
     Rprofmem(NULL)
     lines <- readLines(path, warn = FALSE)
     sizes <- suppressWarnings(as.numeric(sub(" .*", "", lines)))
@@ -469,11 +478,14 @@ testthat::test_that("persistent output handler preserves full columns across gro
       commission_fixed = i / 100
     )
   })
+  # LDG-3167 (design note Section 5, category 1): each fill is published as a
+  # typed one-row block and flushed; the expected row is that block's columns.
   expected <- vector("list", n_events)
   for (i in seq_len(n_events)) {
-    write_res <- ledgr:::ledgr_fill_event_row(run_id, fills[[i]], i)
-    expected[[i]] <- write_res$row
-    testthat::expect_true(handler$buffer_event(write_res))
+    block <- handler$write_fill_events(fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)
+    handler$flush_pulse_events()
+    block$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
+    expected[[i]] <- block[ledgr:::ledgr_output_event_columns]
   }
   handler$flush_pending()
 
@@ -765,7 +777,7 @@ testthat::test_that("SELL fill writes correct deltas", {
     commission_fixed = 2
   )
 
-  ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 1L)
+  ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, event_seq_start = 1L)
 
   row <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ?", params = list(run_id))
   testthat::expect_equal(nrow(row), 1L)
@@ -799,8 +811,8 @@ testthat::test_that("event_seq increments across multiple writes", {
     commission_fixed = 0
   )
 
-  r1 <- ledgr:::ledgr_write_fill_events(con, run_id, fill1, event_seq_start = 1L)
-  r2 <- ledgr:::ledgr_write_fill_events(con, run_id, fill2, event_seq_start = r1$next_event_seq)
+  r1 <- ledgr:::ledgr_write_fill_events(con, run_id, fill1$fill, fill1$i, fill1$instrument_id, event_seq_start = 1L)
+  r2 <- ledgr:::ledgr_write_fill_events(con, run_id, fill2$fill, fill2$i, fill2$instrument_id, event_seq_start = r1$next_event_seq)
 
   testthat::expect_identical(r2$event_seq, 2L)
 
@@ -818,8 +830,13 @@ testthat::test_that("fill_none is a no-op (no ledger rows written)", {
 
   before <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
 
-  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
-  res <- ledgr:::ledgr_write_fill_events(con, run_id, none, event_seq_start = 1L)
+  # LDG-3166 (design note Section 5, category 5): ledgr_fill_none is retired;
+  # a zero-length row index of a typed fill group is the no-op.
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = 1,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10)
+  )
+  res <- ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, integer(), fill$instrument_id, event_seq_start = 1L)
   testthat::expect_identical(res$status, "NO_OP")
 
   after <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
@@ -841,11 +858,11 @@ testthat::test_that("append-only: duplicate (run_id, event_seq) fails and does n
     commission_fixed = 0
   )
 
-  ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 1L)
+  ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, event_seq_start = 1L)
   before <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
 
   testthat::expect_error(
-    ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 1L)
+    ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, event_seq_start = 1L)
   )
 
   after <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
@@ -868,7 +885,7 @@ testthat::test_that("transactionality: failed insert leaves no partial row", {
   )
 
   testthat::expect_error(
-    ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 0L),
+    ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, event_seq_start = 0L),
     "event_seq_start",
     fixed = TRUE
   )
@@ -878,48 +895,52 @@ testthat::test_that("transactionality: failed insert leaves no partial row", {
 
 
 testthat::test_that("[LTB-0515] fill-row publication deltas are computed once for every publication path", {
+  # LDG-3166 (design note Section 5, category 5; Synthesis 3.3): the deltas
+  # are computed once per fill when the typed fill is built (P3 in the fold);
+  # every sink reuses them and computes none.
   # Independent oracle: the resolved fill's side, quantity, price and fee.
   oracle <- function(fill) {
-    q <- as.numeric(fill$qty)
-    p <- as.numeric(fill$fill_price)
-    f <- as.numeric(fill$fee)
-    if (identical(fill$side, "BUY")) {
+    q <- as.numeric(fill$fill$qty)
+    p <- as.numeric(fill$fill$price)
+    f <- as.numeric(fill$fill$fee)
+    if (identical(fill$fill$side, 1L)) {
       list(cash_delta = -(q * p + f), position_delta = q)
     } else {
       list(cash_delta = q * p - f, position_delta = -q)
     }
   }
-  buy <- ledgr_test_next_open_fill(
-    desired_qty_delta = 3,
-    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 101.37),
-    spread_bps = 7,
-    commission_fixed = 1.25
+  make_fills <- function() list(
+    buy = ledgr_test_next_open_fill(
+      desired_qty_delta = 3,
+      next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 101.37),
+      spread_bps = 7,
+      commission_fixed = 1.25
+    ),
+    sell = ledgr_test_next_open_fill(
+      desired_qty_delta = -2,
+      next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-03T00:00:00Z", open = 99.11),
+      spread_bps = 7,
+      commission_fixed = 0.5
+    ),
+    no_fee = ledgr_test_next_open_fill(
+      desired_qty_delta = 4,
+      next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-02T00:00:00Z", open = 50),
+      spread_bps = 0,
+      commission_fixed = 0
+    )
   )
-  sell <- ledgr_test_next_open_fill(
-    desired_qty_delta = -2,
-    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-03T00:00:00Z", open = 99.11),
-    spread_bps = 7,
-    commission_fixed = 0.5
-  )
-  no_fee <- ledgr_test_next_open_fill(
-    desired_qty_delta = 4,
-    next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-02T00:00:00Z", open = 50),
-    spread_bps = 0,
-    commission_fixed = 0
-  )
-  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
-  fills <- list(buy = buy, sell = sell, no_fee = no_fee)
-  testthat::expect_identical(buy$side, "BUY")
-  testthat::expect_identical(sell$side, "SELL")
-  testthat::expect_gt(buy$fee, 0)
-  testthat::expect_identical(no_fee$fee, 0)
+  fills <- make_fills()
+  testthat::expect_identical(fills$buy$fill$side, 1L)
+  testthat::expect_identical(fills$sell$fill$side, -1L)
+  testthat::expect_gt(fills$buy$fill$fee, 0)
+  testthat::expect_identical(fills$no_fee$fill$fee, 0)
 
   # The shared computation itself.
   for (name in names(fills)) {
-    fill <- fills[[name]]
+    fill <- fills[[name]]$fill
     testthat::expect_identical(
-      ledgr:::ledgr_fill_publication_deltas(fill$side, fill$qty, fill$fill_price, fill$fee),
-      oracle(fill),
+      ledgr:::ledgr_fill_publication_deltas(fill$side, fill$qty, fill$price, fill$fee),
+      oracle(fills[[name]]),
       info = name
     )
   }
@@ -953,14 +974,16 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
     out <- list(durable = list(), live = list(), memory = list())
     seq_no <- 1L
     for (name in names(fills)) {
-      out$durable[[name]] <- durable$write_fill_events(fills[[name]], seq_no, use_transaction = FALSE)
-      out$live[[name]] <- live$write_fill_events(fills[[name]], seq_no, use_transaction = TRUE)
-      out$memory[[name]] <- memory$write_fill_events(fills[[name]], seq_no, use_transaction = FALSE)
+      out$durable[[name]] <- durable$write_fill_events(fills[[name]]$fill, fills[[name]]$i, fills[[name]]$instrument_id, seq_no, use_transaction = FALSE)
+      out$live[[name]] <- live$write_fill_events(fills[[name]]$fill, fills[[name]]$i, fills[[name]]$instrument_id, seq_no, use_transaction = TRUE)
+      out$memory[[name]] <- memory$write_fill_events(fills[[name]]$fill, fills[[name]]$i, fills[[name]]$instrument_id, seq_no, use_transaction = FALSE)
       seq_no <- seq_no + 1L
     }
-    out$durable_none <- durable$write_fill_events(none, seq_no, use_transaction = FALSE)
-    out$live_none <- live$write_fill_events(none, seq_no, use_transaction = TRUE)
-    out$memory_none <- memory$write_fill_events(none, seq_no, use_transaction = FALSE)
+    # The no-op: a zero-length row index.
+    none <- fills[[1L]]
+    out$durable_none <- durable$write_fill_events(none$fill, integer(), none$instrument_id, seq_no, use_transaction = FALSE)
+    out$live_none <- live$write_fill_events(none$fill, integer(), none$instrument_id, seq_no, use_transaction = TRUE)
+    out$memory_none <- memory$write_fill_events(none$fill, integer(), none$instrument_id, seq_no, use_transaction = FALSE)
     durable$flush_pulse_events()
     durable$flush_pending()
     memory$flush_pulse_events()
@@ -995,7 +1018,7 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
         meta <- out[[path]][[k]]
         testthat::expect_identical(as.numeric(meta$cash_delta), want$cash_delta, info = paste(path, name))
         testthat::expect_identical(as.numeric(meta$position_delta), want$position_delta, info = paste(path, name))
-        testthat::expect_identical(as.numeric(meta$fee), as.numeric(fills[[name]]$fee), info = paste(path, name))
+        testthat::expect_identical(as.numeric(meta$fee), as.numeric(fills[[name]]$fill$fee), info = paste(path, name))
       }
       testthat::expect_identical(out$memory_cash[[k]], want$cash_delta, info = paste("memory", name))
       testthat::expect_identical(out$memory_position[[k]], want$position_delta, info = paste("memory", name))
@@ -1011,8 +1034,8 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
 
   check(publish(), shift = 0)
 
-  # Perturbing the one computation moves every publication path with it, and
-  # a NO_OP never reaches it.
+  # Perturbing the one computation moves every publication path with it: one
+  # computation per fill, none in the sinks, and a NO_OP never reaches it.
   original <- ledgr:::ledgr_fill_publication_deltas
   calls <- 0L
   testthat::local_mocked_bindings(
@@ -1024,8 +1047,10 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
     },
     .package = "ledgr"
   )
+  fills <- make_fills()
+  testthat::expect_identical(calls, 3L)
   check(publish(), shift = 1)
-  testthat::expect_identical(calls, 9L)
+  testthat::expect_identical(calls, 3L)
 })
 
 testthat::test_that("[LTB-0516] the db_live writer keeps its validation and transaction behavior around the shared deltas", {
@@ -1058,41 +1083,42 @@ testthat::test_that("[LTB-0516] the db_live writer keeps its validation and tran
     .package = "ledgr"
   )
 
-  # Validation runs before the shared computation and writes nothing.
+  # LDG-3166 (design note Section 5, categories 1 and 5): the writer takes the
+  # typed fill columns and reuses their computed effects; it computes none.
+  # Validation writes nothing.
   bad_side <- fill
-  bad_side$side <- "HOLD"
+  bad_side$fill$side <- 0L
   testthat::expect_error(
-    ledgr:::ledgr_write_fill_events(con, run_id, bad_side, event_seq_start = 1L),
+    ledgr:::ledgr_write_fill_events(con, run_id, bad_side$fill, bad_side$i, bad_side$instrument_id, event_seq_start = 1L),
     class = "ledgr_invalid_fill_intent"
   )
   bad_fee <- fill
-  bad_fee$fee <- -1
+  bad_fee$fill$fee <- -1
   testthat::expect_error(
-    ledgr:::ledgr_write_fill_events(con, run_id, bad_fee, event_seq_start = 1L),
+    ledgr:::ledgr_write_fill_events(con, run_id, bad_fee$fill, bad_fee$i, bad_fee$instrument_id, event_seq_start = 1L),
     class = "ledgr_invalid_fill_intent"
   )
   testthat::expect_error(
-    ledgr:::ledgr_write_fill_events(con, "no-such-run", fill, event_seq_start = 1L),
+    ledgr:::ledgr_write_fill_events(con, "no-such-run", fill$fill, fill$i, fill$instrument_id, event_seq_start = 1L),
     class = "ledgr_invalid_args"
   )
   testthat::expect_identical(calls, 0L)
   testthat::expect_identical(count(), 0L)
 
-  # NO_OP short-circuits before validation and the computation.
-  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
+  # NO_OP (a zero-length row index) short-circuits before validation.
   testthat::expect_identical(
-    ledgr:::ledgr_write_fill_events(con, run_id, none, event_seq_start = 5L)$next_event_seq,
+    ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, integer(), fill$instrument_id, event_seq_start = 5L)$next_event_seq,
     5L
   )
   testthat::expect_identical(calls, 0L)
 
   # A transactional write commits one row; its sequence is chosen from the
   # table when no start is given.
-  first <- ledgr:::ledgr_write_fill_events(con, run_id, fill, use_transaction = TRUE)
+  first <- ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, use_transaction = TRUE)
   testthat::expect_identical(first$event_seq, 1L)
-  second <- ledgr:::ledgr_write_fill_events(con, run_id, fill, use_transaction = TRUE)
+  second <- ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, use_transaction = TRUE)
   testthat::expect_identical(second$event_seq, 2L)
-  testthat::expect_identical(calls, 2L)
+  testthat::expect_identical(calls, 0L)
   testthat::expect_identical(count(), 2L)
   meta <- parse_meta(DBI::dbGetQuery(
     con,
@@ -1101,13 +1127,13 @@ testthat::test_that("[LTB-0516] the db_live writer keeps its validation and tran
   )$meta_json[[1L]])
   testthat::expect_identical(
     as.numeric(meta$cash_delta),
-    -(as.numeric(fill$qty) * as.numeric(fill$fill_price) + as.numeric(fill$fee))
+    -(as.numeric(fill$fill$qty) * as.numeric(fill$fill$price) + as.numeric(fill$fill$fee))
   )
-  testthat::expect_identical(as.numeric(meta$position_delta), as.numeric(fill$qty))
+  testthat::expect_identical(as.numeric(meta$position_delta), as.numeric(fill$fill$qty))
 
   # A failed transactional insert leaves no partial row.
   testthat::expect_error(
-    ledgr:::ledgr_write_fill_events(con, run_id, fill, event_seq_start = 2L, use_transaction = TRUE)
+    ledgr:::ledgr_write_fill_events(con, run_id, fill$fill, fill$i, fill$instrument_id, event_seq_start = 2L, use_transaction = TRUE)
   )
   testthat::expect_identical(count(), 2L)
 })
@@ -1121,18 +1147,20 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "write_exception_diagnostic", "write_fill_events", "write_run_diagnostics",
     "write_run_evidence", "write_strategy_state", "write_telemetry"
   )
+  # LDG-3168 (category 3): the memory sink records no equity of its own; the
+  # inline summary reads the fold's frozen equity record (Synthesis 3.6).
   memory_methods <- c(
     "abort_run", "append_compiled_spot_batch", "append_event_rows", "buffer_event",
     "buffer_strategy_state", "completion", "diagnostics", "events", "flush_pending",
     "flush_pulse_events", "init_buffers", "inline_summary", "pending_event_count",
-    "pending_state_count", "record_accounting_fact", "record_equity_fact",
+    "pending_state_count", "record_accounting_fact",
     "record_failure", "record_run_status", "run_transaction", "store_session_telemetry",
     "typed_events", "write_exception_diagnostic", "write_fill_events",
     "write_run_diagnostics", "write_run_evidence", "write_strategy_state",
     "write_telemetry"
   )
   testthat::expect_length(duckdb_methods, 21L)
-  testthat::expect_length(memory_methods, 27L)
+  testthat::expect_length(memory_methods, 26L)
   testthat::expect_length(intersect(duckdb_methods, memory_methods), 19L)
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
@@ -1156,15 +1184,19 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
   # The shared mechanisms live in the handler only: neither sink allocates an
   # event column buffer, grows one, or stages fill rows.
   source_of <- function(fn) paste(deparse(body(fn)), collapse = "\n")
-  shared <- "event_cols|pulse_fill_rows|ensure_event_capacity|init_event_cols|ledgr_fill_event_payload"
+  # LDG-3167 (category 3): the pending published block replaces the staged rows.
+  shared <- "event_cols|pending_fills|ensure_event_capacity|init_event_cols|ledgr_fill_event_payload"
   testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "init_event_cols")
-  testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "pulse_fill_rows")
+  testthat::expect_match(source_of(ledgr:::ledgr_output_handler), "pending_fills")
   testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_duckdb)))
   testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_memory)))
 })
 
 testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep values, classes and order across growth", {
-  # Equity facts: 300 crosses the initial capacity of 256 and one doubling.
+  # Equity facts. LDG-3168 (decision 10, categories 1 and 5): the facts are
+  # rows of the fold's preallocated equity record (Synthesis 3.6), so the
+  # sink's doubling growth is retired; the record holds 300 valued rows of a
+  # larger capacity and the summary reads its frozen prefix.
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("growth-memory"))
   n <- 300L
   ts <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * (seq_len(n) - 1L)
@@ -1172,11 +1204,16 @@ testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep v
   value <- 50 + sqrt(seq_len(n))
   realized <- seq_len(n) / 3
   basis <- 40 + seq_len(n) / 11
+  record <- ledgr:::ledgr_fold_equity_record(n + 12L)
   for (i in seq_len(n)) {
-    memory$record_equity_fact(ts[[i]], cash[[i]], value[[i]], realized[[i]], basis[[i]])
+    record <- ledgr:::ledgr_fold_equity_append(record, ts[[i]], cash[[i]], value[[i]], realized[[i]], basis[[i]])
   }
   kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = ts)
-  summary <- memory$inline_summary(run_id = "growth-memory", metric_kernel = kernel)
+  summary <- memory$inline_summary(
+    run_id = "growth-memory",
+    metric_kernel = kernel,
+    equity = ledgr:::ledgr_fold_equity_prefix(record)
+  )
   expected <- data.frame(
     run_id = rep("growth-memory", n),
     ts_utc = as.POSIXct(as.numeric(ts), origin = "1970-01-01", tz = "UTC"),
@@ -1191,7 +1228,11 @@ testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep v
   testthat::expect_identical(attr(summary$equity$ts_utc, "tzone"), "UTC")
   testthat::expect_identical(summary$final_equity, expected$equity[[n]])
   empty <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("growth-empty"))
-  empty_summary <- empty$inline_summary(run_id = "growth-empty", metric_kernel = kernel)
+  empty_summary <- empty$inline_summary(
+    run_id = "growth-empty",
+    metric_kernel = kernel,
+    equity = ledgr:::ledgr_fold_equity_prefix(ledgr:::ledgr_fold_equity_record(4L))
+  )
   testthat::expect_identical(empty_summary$equity, ledgr:::ledgr_empty_equity_curve())
   testthat::expect_identical(empty_summary$final_equity, NA_real_)
 

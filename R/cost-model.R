@@ -368,10 +368,12 @@ ledgr_cost_resolver_from_model <- function(cost_model, price_round_digits = 8L) 
   steps <- ledgr_cost_flat_steps(cost_model)
   force(steps)
   force(price_round_digits)
-  resolver <- function(proposal, fill_context) {
+  # A batch resolver: one call prices every fill of a pulse.
+  resolver <- function(side, qty, open) {
     ledgr_cost_model_resolve(
-      proposal = proposal,
-      fill_context = fill_context,
+      side = side,
+      qty = qty,
+      open = open,
       steps = steps,
       price_round_digits = price_round_digits
     )
@@ -386,48 +388,45 @@ ledgr_cost_resolver_from_plan_json <- function(cost_plan_json, price_round_digit
   )
 }
 
-ledgr_cost_model_resolve <- function(proposal,
-                                     fill_context,
+# The compiled cost steps on a batch of fills (Synthesis 3.3,
+# contract-execution-cost-model): `side` is +1 (buy) or -1 (sell), `qty` the
+# unsigned quantity and `open` the next-open price of each fill. Steps apply
+# in their compiled order to whole columns; the loop runs over the fixed step
+# list, not over fills. The notional fee uses the spread-adjusted, unrounded
+# price; the price is rounded last.
+ledgr_cost_model_resolve <- function(side,
+                                     qty,
+                                     open,
                                      steps,
                                      price_round_digits = 8L) {
-  if (!inherits(proposal, "ledgr_fill_proposal")) {
-    rlang::abort("`proposal` must be a ledgr_fill_proposal.", class = "ledgr_invalid_fill_proposal")
+  # The resolver seam's stable classes (?ledgr_condition_classes): the wrong
+  # batch shape is refused before any step applies.
+  if (!is.numeric(side) || !is.numeric(qty) || length(side) != length(qty)) {
+    rlang::abort("`side` and `qty` must describe one batch of fills.", class = "ledgr_invalid_fill_proposal")
   }
-  if (!inherits(fill_context, "ledgr_fill_context")) {
-    rlang::abort("`fill_context` must be a ledgr_fill_context.", class = "ledgr_invalid_fill_context")
+  if (!is.numeric(open) || length(open) != length(qty)) {
+    rlang::abort("`open` must hold one execution price per fill.", class = "ledgr_invalid_fill_context")
   }
-
-  side <- proposal$side
-  qty <- proposal$qty
-  instrument_id <- proposal$instrument_id
-  ts_exec_utc <- proposal$ts_exec_utc
-  price <- fill_context$execution_bar$open
-  fee <- 0
+  price <- as.numeric(open)
+  fee <- numeric(length(price))
 
   for (step in steps) {
     if (identical(step$type_id, "spread_bps")) {
       bps <- as.numeric(step$args$bps)
-      multiplier <- if (identical(side, "BUY")) (1 + bps / 20000) else (1 - bps / 20000)
+      multiplier <- rep(1 - bps / 20000, length(price))
+      multiplier[side > 0L] <- 1 + bps / 20000
       price <- price * multiplier
     } else if (identical(step$type_id, "fixed_fee")) {
       fee <- fee + as.numeric(step$args$amount)
     } else if (identical(step$type_id, "notional_bps_fee")) {
       # Notional fees use the spread-adjusted pre-rounding price. The exposed
-      # fill_price is rounded separately below for ledger cash arithmetic.
+      # fill price is rounded separately below for ledger cash arithmetic.
       fee <- fee + abs(as.numeric(qty) * as.numeric(price)) * as.numeric(step$args$bps) / 10000
     }
   }
-  fill_price <- round(as.numeric(price), digits = as.integer(price_round_digits))
 
-  structure(
-    list(
-      instrument_id = instrument_id,
-      side = side,
-      qty = qty,
-      fill_price = fill_price,
-      fee = as.numeric(fee),
-      ts_exec_utc = ts_exec_utc
-    ),
-    class = "ledgr_fill_intent"
+  list(
+    price = round(as.numeric(price), digits = as.integer(price_round_digits)),
+    fee = as.numeric(fee)
   )
 }

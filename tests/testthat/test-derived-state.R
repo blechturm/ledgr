@@ -98,8 +98,8 @@ testthat::test_that("derived state reconstructs positions, cash, and equity_curv
     commission_fixed = 1
   )
 
-  ledgr:::ledgr_write_fill_events(con, run_id, fill_buy, event_seq_start = 1L)
-  ledgr:::ledgr_write_fill_events(con, run_id, fill_sell, event_seq_start = 2L)
+  ledgr:::ledgr_write_fill_events(con, run_id, fill_buy$fill, fill_buy$i, fill_buy$instrument_id, event_seq_start = 1L)
+  ledgr:::ledgr_write_fill_events(con, run_id, fill_sell$fill, fill_sell$i, fill_sell$instrument_id, event_seq_start = 2L)
 
   before_ledger <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(run_id))
 

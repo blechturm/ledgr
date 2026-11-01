@@ -29,6 +29,22 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-10-31-infrastructure-coverage-collection-fails-on-windows"></a>
+### 2026-10-31 [infrastructure] Coverage collection fails on the Windows host
+
+LDG-3169 (v0.2.3 cut 5) could not obtain a coverage figure on the local
+Windows host. `tools/check-coverage.R` exits 1 after the tests pass: covr's
+`ledgr_collect_coverage()` stops in `readRDS(f)` with "error reading from
+connection" while reading child-process trace files. A kept install showed
+20 of 22 `covr_trace_*` files unreadable, written in pairs about a second
+apart, which matches two-worker mirai daemons. Several worker-backed blocks
+(test-rng-isolation.R, test-pulse-seed-v2.R and test-sweep-parallel.R among
+them) start daemons without `ledgr_test_skip_workers_in_coverage()`; that
+link is not proven. By maintainer decision (2026-10-31) this is
+coverage tooling, not a package defect, and does not block LDG-3169.
+Coverage must be re-obtained before release certification, either on CI or
+with a fixed collector. This entry authorizes no implementation.
+
 <a id="2026-10-30-execution-imported-positions-versus-lot-net"></a>
 ### 2026-10-30 [execution] Imported positions versus the lot-derived net
 

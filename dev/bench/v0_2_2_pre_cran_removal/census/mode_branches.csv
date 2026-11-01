@@ -45,7 +45,7 @@
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && is_resume",1
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && is_resume && start_idx > 1L",1
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && is_resume && start_idx > 1L",2
-"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && length(fold_result$equity_facts) > 0L",1
+"R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active","if: availability_active && fold_result$equity_facts$n > 0L",1
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active+is.null(history_substrate)","if: !availability_active || is.null(history_substrate)",1
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","availability_active+is.null(history_substrate)","if: availability_active && is.null(history_substrate)",1
 "R/backtest-runner.R","ledgr_run_fold_impl","branch","is.null(history_substrate)","if: !is.null(history_substrate)",1
@@ -95,7 +95,6 @@
 "R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",5
 "R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",6
 "R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",7
-"R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active",8
 "R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && !is.null(runtime_projection)",1
 "R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && !is.null(runtime_projection)",2
 "R/fold-engine.R","ledgr_fold_envelope","branch","availability_active","if: availability_active && is.function(output_handler$write_exception_diagnostic)",1
@@ -128,8 +127,6 @@
 "R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",4
 "R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",5
 "R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",6
-"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",7
-"R/fold-engine.R","ledgr_fold_stage_observe_settle","branch","$availability_active","if: services$availability_active",8
 "R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",1
 "R/fold-engine.R","ledgr_fold_stage_plan","branch","$availability_active","if: services$availability_active",2
 "R/history-substrate.R","ledgr_history_substrate_for_experiment","branch","availability$active","if: !inherits(exp, ""ledgr_experiment"") || !isTRUE(exp$availability$active)",1

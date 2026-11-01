@@ -146,3 +146,28 @@ counts and six zero finding counts. Restoring an unconditional row bind at the
 version call site fails LTB-0272. Wrapper, positional and builder class forms
 are included in both inventories; making either inventory narrower fails
 LTB-0271 or the check-mode reconciliation.
+
+## LDG-3165 typed observation and decision
+
+LDG-3165 (v0.2.3 cut 5, workstream 13) removes two branch sites from
+`ledgr_fold_stage_observe_settle()` and adds none: the observation no longer
+selects `context_position_idx` and `members` by producer, because P1 builds
+the decision packet inside its existing availability block. The two stale
+rows (`if: services$availability_active`, occurrences 7 and 8) were deleted
+from `mode_branches.csv`, and `mode_branch_counts.csv` records 40 branch
+sites for `R/fold-engine.R`. This is the LTB-0331 entry of
+`ws4a_carrier_design.md` Section 5 (stage bodies rewritten; every remaining
+row keeps its owner); `[WS4a D12d]` in `test-ws4a-carrier.R` checks that no
+file gains an `availability_active` site against the frozen base.
+
+## LDG-3168 typed equity record
+
+LDG-3168 removes one branch site from `ledgr_fold_envelope()` and adds none:
+both producers now fill the fold's one equity record, so its capacity is the
+pulse count on both and the producer-sized accumulator capacity
+(`if: availability_active`, occurrence 8) is gone; that row was deleted and
+`mode_branch_counts.csv` records 39 branch sites for `R/fold-engine.R`. The
+partial-prefix commit in `ledgr_run_fold_impl()` keeps its branch and owner;
+its recorded condition now reads the record's used-row count
+(`fold_result$equity_facts$n > 0L` for `length(fold_result$equity_facts) >
+0L`). This is the LTB-0331 entry of `ws4a_carrier_design.md` Section 5.

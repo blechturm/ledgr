@@ -323,41 +323,23 @@ ledgr_availability_validate_short_exposure <- function(targets, current) {
   invisible(targets)
 }
 
-ledgr_availability_fill_cash_delta <- function(fill) {
-  if (identical(fill$side, "BUY")) {
-    -(fill$qty * fill$fill_price + fill$fee)
-  } else {
-    fill$qty * fill$fill_price - fill$fee
-  }
-}
-
-ledgr_availability_reason_values <- function(x) {
-  x <- as.character(x %||% character())
-  x <- x[!is.na(x) & nzchar(x)]
-  unique(unlist(strsplit(x, "|", fixed = TRUE), use.names = FALSE))
-}
-
-ledgr_availability_reason_text <- function(x) {
-  paste(ledgr_availability_reason_values(x), collapse = "|")
-}
-
-ledgr_availability_apply_affordability <- function(entries,
-                                                    cash,
-                                                    tolerance = ledgr_availability_cash_tolerance) {
-  if (length(entries) == 0L) {
-    return(list(accepted = entries, rejected = list(), final_cash = as.numeric(cash)))
-  }
-  cash_delta <- vapply(entries, function(x) ledgr_availability_fill_cash_delta(x$fill), numeric(1))
-  blocked <- vapply(entries, function(x) {
-    length(ledgr_availability_reason_values(x$blocking_reasons)) > 0L
-  }, logical(1))
-  generator <- vapply(entries, function(x) {
-    identical(x$fill$side, "SELL") && x$current_qty > 0 && x$delta < 0
-  }, logical(1)) & cash_delta >= 0 & !blocked
-  stable_id <- vapply(entries, `[[`, character(1), "instrument_id")
+# Affordability (Synthesis 3.3, contract-availability-affordability): an
+# ordered scan over the candidate rows (one per actionable ordinal that
+# resolved a fill). Unblocked cash-generating reductions come first, then the
+# remaining rows, each in radix stable-ID order. The scan is a justified
+# sequential loop: each acceptance changes the cash the next row is checked
+# against. It writes only the acceptance and insufficient-cash masks; the
+# permutation and the masks stay private to P3.
+ledgr_plan_affordability <- function(cash_delta,
+                                      blocked,
+                                      generator,
+                                      stable_id,
+                                      cash,
+                                      tolerance = ledgr_availability_cash_tolerance) {
   priority <- c(which(generator), which(!generator))
   priority <- priority[order(!generator[priority], enc2utf8(stable_id[priority]), method = "radix")]
-  accepted <- rep(FALSE, length(entries))
+  accepted <- logical(length(cash_delta))
+  insufficient <- logical(length(cash_delta))
   virtual_cash <- as.numeric(cash)
   for (idx in priority) {
     next_cash <- virtual_cash + cash_delta[[idx]]
@@ -366,165 +348,118 @@ ledgr_availability_apply_affordability <- function(entries,
       accepted[[idx]] <- TRUE
       virtual_cash <- next_cash
     } else if (!affordable) {
-      entries[[idx]]$blocking_reasons <- c(
-        ledgr_availability_reason_values(entries[[idx]]$blocking_reasons),
-        "insufficient_cash"
-      )
+      insufficient[[idx]] <- TRUE
     }
   }
-  rejected <- entries[!accepted]
-  for (i in seq_along(rejected)) {
-    reasons <- c(
-      ledgr_availability_reason_values(rejected[[i]]$blocking_reasons),
-      ledgr_availability_reason_values(rejected[[i]]$informational_reasons)
-    )
-    rejected[[i]]$reason_code <- reasons[[1L]]
-    rejected[[i]]$reasons <- ledgr_availability_reason_text(reasons)
-  }
-  list(
-    accepted = entries[accepted],
-    rejected = rejected,
-    final_cash = virtual_cash
-  )
+  list(accepted = accepted, insufficient = insufficient, final_cash = virtual_cash)
 }
 
-ledgr_fold_build_availability_pulse_plan <- function(targets,
-                                                     target_names,
-                                                     target_inst_idx,
-                                                     current_qty_vec,
-                                                     delta_vec,
-                                                     actionable_idx,
-                                                     pulse_idx,
-                                                     execution_opportunities_posix,
-                                                     bars_mat,
+# The availability planner (Synthesis 3.3): one candidate row per actionable
+# context ordinal, executed at the pulse's next-session open from the
+# execution packet. Early rejections (no execution opportunity, no execution
+# bar, no resolvable price) keep decision order; the remaining candidates
+# pass the short-exposure check in decision order, then the affordability
+# scan. Accepted rows become fills in decision order; affordability
+# rejections follow the early ones in decision order. Reasons are ordered
+# code segments: the view's blocking reasons, then execution_bar_missing or
+# insufficient_cash, then membership_changed_before_execution.
+ledgr_fold_build_availability_pulse_plan <- function(context_pos,
+                                                     target_qty,
+                                                     position,
+                                                     actionable_k,
+                                                     member,
+                                                     execution,
+                                                     execution_view,
+                                                     epoch_valid,
                                                      cost_resolver,
-                                                     ts_signal_utc,
-                                                     provider,
-                                                     decision_member,
                                                      cash,
-                                                     next_bars = NULL) {
-  # Accepted and rejected entries are written by index into lists sized for
-  # every actionable target, then trimmed.
-  entries <- vector("list", length(actionable_idx))
-  n_entries <- 0L
-  rejected <- vector("list", length(actionable_idx))
-  n_rejected <- 0L
-  execution_ts <- if (pulse_idx <= length(execution_opportunities_posix)) {
-    as.POSIXct(execution_opportunities_posix[[pulse_idx]], tz = "UTC")
-  } else {
-    as.POSIXct(NA, tz = "UTC")
-  }
-  # One execution view per pulse for every actionable ID; each ID resolves
-  # independently, so it equals one view per target.
-  execution_view <- if (!is.na(execution_ts) && length(actionable_idx) > 0L) {
-    provider$execution_view(execution_ts, target_names[actionable_idx])
-  }
-  if (is.null(next_bars) && !is.null(bars_mat) &&
-      pulse_idx < ncol(bars_mat$open)) {
-    next_bars <- list(
-      open = as.numeric(bars_mat$open[, pulse_idx + 1L]),
-      high = as.numeric(bars_mat$high[, pulse_idx + 1L]),
-      low = as.numeric(bars_mat$low[, pulse_idx + 1L]),
-      close = as.numeric(bars_mat$close[, pulse_idx + 1L]),
-      volume = as.numeric(bars_mat$volume[, pulse_idx + 1L])
+                                                     instrument_ids) {
+  k <- actionable_k
+  n <- length(k)
+  pos <- context_pos[k]
+  before <- position[k]
+  delta <- target_qty[k] - before
+  side <- ledgr_plan_side(delta)
+  qty <- abs(delta)
+  exec_ts <- execution$exec_ts
+  plan <- function(groups, kinds, final_cash) {
+    ledgr_carrier_plan(
+      list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds,
+        fill = groups$fill, rejection = groups$rejection),
+      context_pos, actionable_k, length(instrument_ids)
     )
+  }
+  none <- integer()
+  if (is.na(exec_ts)) {
+    # The final pulse of a run without a declared execution: every row is
+    # rejected for the missing opportunity.
+    segment <- ledgr_carrier_segments(n, seq_len(n), rep(1L, n))
+    groups <- ledgr_plan_groups(k, pos, side, qty, rep(NA_real_, n), rep(NA_real_, n), exec_ts, before, segment,
+      none, list(cash_delta = numeric(), position_delta = numeric()), seq_len(n), rep(1L, n), rep(NA_real_, n))
+    return(plan(groups, none, cash))
   }
 
-  for (target_idx in actionable_idx) {
-    id <- target_names[[target_idx]]
-    inst_idx <- target_inst_idx[[target_idx]]
-    current_qty <- as.numeric(current_qty_vec[[target_idx]])
-    delta <- as.numeric(delta_vec[[target_idx]])
-    reject <- function(blocking_reasons, informational_reasons = character()) {
-      reasons <- c(
-        ledgr_availability_reason_values(blocking_reasons),
-        ledgr_availability_reason_values(informational_reasons)
-      )
-      n_rejected <<- n_rejected + 1L
-      rejected[[n_rejected]] <<- list(
-        target_idx = as.integer(target_idx),
-        instrument_id = id,
-        inst_idx = as.integer(inst_idx),
-        current_qty = current_qty,
-        delta = delta,
-        reason_code = reasons[[1L]],
-        reasons = ledgr_availability_reason_text(reasons),
-        execution_ts_utc = execution_ts
-      )
-    }
+  view_member <- if (n > 0L) execution_view$member else logical()
+  informational <- which(member[k] != view_member)
+  open <- execution$open[pos]
+  bad_open <- !is.finite(open) | open <= 0
+  bad_delta <- !is.finite(delta)
+  # Rows with an execution bar pass the target-delta and epoch checks before
+  # their costs resolve; a row without a bar is rejected unchecked.
+  passed <- which(!bad_open & !bad_delta & epoch_valid)
+  resolved <- ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])
+  price <- rep(NA_real_, n)
+  fee <- rep(NA_real_, n)
+  price[passed] <- resolved$price
+  fee[passed] <- resolved$fee
+  bad_price <- !bad_open & !(is.finite(price) & price > 0)
+  candidates <- passed[!bad_price[passed]]
 
-    if (is.na(execution_ts)) {
-      reject("final_pulse_no_execution")
-      next
-    }
-    blocking_reasons <- if (isTRUE(execution_view$restricted[[id]])) {
-      ledgr_availability_reason_values(execution_view$reasons[[id]])
-    } else {
-      character()
-    }
-    informational_reasons <- if (!identical(
-      isTRUE(decision_member[[id]]),
-      isTRUE(execution_view$member[[id]])
-    )) "membership_changed_before_execution" else character()
-    open <- if (is.null(next_bars)) NA_real_ else next_bars$open[[inst_idx]]
-    if (!is.finite(open) || open <= 0) {
-      reject(c(blocking_reasons, "execution_bar_missing"), informational_reasons)
-      next
-    }
-    proposal <- ledgr_next_open_fill_proposal(
-      desired_qty_delta = delta,
-      next_open_price = open,
-      instrument_id = id,
-      ts_utc = execution_ts,
-      high = next_bars$high[[inst_idx]],
-      low = next_bars$low[[inst_idx]],
-      close = next_bars$close[[inst_idx]],
-      volume = next_bars$volume[[inst_idx]]
-    )
-    fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
-    if (inherits(fill, "ledgr_fill_none") || !is.finite(fill$fill_price) || fill$fill_price <= 0) {
-      reject(c(blocking_reasons, "execution_bar_missing"), informational_reasons)
-      next
-    }
-    signed_qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
-    resulting_qty <- current_qty + signed_qty
-    ledgr_availability_validate_short_exposure(
-      stats::setNames(resulting_qty, id),
-      stats::setNames(current_qty, id)
-    )
-    fill$instrument_id <- id
-    fill$ts_signal_utc <- ts_signal_utc
-    fill$inst_idx <- inst_idx
-    n_entries <- n_entries + 1L
-    entries[[n_entries]] <- list(
-      target_idx = as.integer(target_idx),
-      instrument_id = id,
-      inst_idx = as.integer(inst_idx),
-      current_qty = current_qty,
-      delta = delta,
-      resulting_qty = resulting_qty,
-      fill = fill,
-      blocking_reasons = blocking_reasons,
-      informational_reasons = informational_reasons,
-      execution_ts_utc = execution_ts
-    )
-  }
-
-  affordability <- ledgr_availability_apply_affordability(entries[seq_len(n_entries)], cash)
-  rejected <- c(rejected[seq_len(n_rejected)], affordability$rejected)
-  accepted_ids <- vapply(affordability$accepted, `[[`, integer(1), "target_idx")
-  accepted <- affordability$accepted[order(accepted_ids)]
-  structure(
+  # The effects of every candidate, computed once and reused by the
+  # short-exposure check, affordability, the fills and publication. A fee
+  # that overflows stays in its effects: affordability rejects it, as before.
+  effects <- ledgr_fill_publication_deltas(side[candidates], qty[candidates], price[candidates], fee[candidates])
+  resulting <- rep(NA_real_, n)
+  resulting[candidates] <- before[candidates] + effects$position_delta
+  short <- logical(n)
+  short[candidates] <- resulting[candidates] < pmin(before[candidates], 0)
+  # The first failing row in decision order refuses with its first failing
+  # check, in the base per-row order: target delta, execution epoch, then
+  # short exposure as one target.
+  ledgr_plan_refuse_first(
+    list(!bad_open & bad_delta, !bad_open & !epoch_valid, short),
     list(
-      targets = targets,
-      actionable_idx = as.integer(actionable_idx),
-      fills = accepted,
-      rejected = rejected,
-      expected_final_cash = affordability$final_cash,
-      economic_event_kinds = if (length(accepted) > 0L) "FILL" else character()
-    ),
-    class = c("ledgr_pulse_plan", "list")
+      function(i) ledgr_plan_refuse_delta(),
+      function(i) ledgr_plan_refuse_epoch(exec_ts),
+      function(i) {
+        id <- instrument_ids[[pos[[i]]]]
+        ledgr_availability_validate_short_exposure(stats::setNames(resulting[[i]], id), stats::setNames(before[[i]], id))
+      }
+    )
   )
+  early <- which(bad_open | bad_price)
+
+  view_count <- if (n > 0L) execution_view$reason_count else integer()
+  blocked <- view_count[candidates] > 0L
+  generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 &
+    effects$cash_delta >= 0 & !blocked
+  scan <- ledgr_plan_affordability(effects$cash_delta, blocked, generator,
+    instrument_ids[pos[candidates]], cash)
+  fills <- candidates[scan$accepted]
+  late <- candidates[!scan$accepted]
+
+  # Each row's ordered reasons: blocking, then the planner's own, then
+  # informational.
+  view_code <- if (n > 0L) execution_view$reason_code else integer()
+  short_cash <- candidates[scan$insufficient]
+  segment <- ledgr_carrier_segments(n,
+    c(rep.int(seq_len(n), view_count), early, short_cash, informational),
+    c(view_code, rep(2L, length(early)), rep(3L, length(short_cash)), rep(4L, length(informational))))
+  groups <- ledgr_plan_groups(k, pos, side, qty, price, fee, exec_ts, before, segment,
+    fills, list(cash_delta = effects$cash_delta[scan$accepted], position_delta = effects$position_delta[scan$accepted]),
+    c(early, late), rep(c(1L, 2L), c(length(early), length(late))),
+    c(rep(NA_real_, length(early)), price[late]))
+  plan(groups, if (length(fills) > 0L) 1L else none, scan$final_cash)
 }
 
 ledgr_availability_completion_row <- function(run_id,

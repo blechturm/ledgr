@@ -330,18 +330,15 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
     lot_state = ledgr:::ledgr_lot_book(1L)
   )
   for (i in seq_along(partial_qty)) {
-    fill <- list(list(
-      inst_idx = 1L,
-      instrument_id = "AAA",
-      side = partial_side[[i]],
-      qty = partial_qty[[i]],
-      fill_price = 100,
-      fee = 0,
-      ts_exec_utc = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
-    ))
+    # LDG-3166 (design note Section 5, LTB-0498): the compiled wrapper reads
+    # a one-row typed fill group's columns.
+    fill <- ledgr_test_next_open_fill(
+      desired_qty_delta = ledgr:::ledgr_lot_side(partial_side[[i]]) * partial_qty[[i]],
+      next_bar = list(instrument_id = "AAA", ts_utc = as.POSIXct(i, origin = "1970-01-01", tz = "UTC"), open = 100)
+    )
     partial_batch <- ledgr:::ledgr_run_compiled_spot_fifo_batch(
       "ws59-compiled-partial-one",
-      fill,
+      fill$fill,
       partial_state,
       "AAA",
       i
@@ -477,7 +474,9 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
   cpp_source <- paste(readLines("../../src/spot_fifo.cpp", warn = FALSE), collapse = "\n")
   # The typed position reads: P4 takes the position from the book's
   # lot-derived net; replay from the applied rows' lot-derived position.
-  testthat::expect_match(fold_source, "lot_res$book$net_by_inst[[inst_idx]]", fixed = TRUE)
+  # LDG-3167 (design note Section 5, category 3): P4 reads the net of every
+  # fill's instrument from the batch's candidate book.
+  testthat::expect_match(fold_source, "positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]", fixed = TRUE)
   testthat::expect_match(replay_source, "applied$position_after", fixed = TRUE)
   testthat::expect_match(
     cpp_source,

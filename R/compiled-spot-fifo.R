@@ -134,67 +134,116 @@ ledgr_carrier_compiled_unpack <- function(batch, n) {
   ledgr_lot_book_validate(book, n, reduction = FALSE)
 }
 
+# Whether a native batch result may hide a lot-accounting overflow (cut 5
+# amendment_overflow): the native call refused, a returned realized total,
+# net or compensation is non-finite, or the batch's reachable cost basis is
+# not bounded below half the double range. The bound is |total basis| plus
+# twice the touched instruments' bases, every live lot's basis and the
+# fills' notionals. The native kernel's dust rule scales with the value and
+# snaps an infinite basis to zero, so its outputs alone cannot show an
+# opened-basis overflow. A suspicion only asks the canonical oracle; it never
+# changes a result.
+ledgr_compiled_spot_fifo_suspect <- function(batch, fills, book, lot_pack) {
+  if (inherits(batch, "error")) return(TRUE)
+  pos <- fills$pos
+  bound <- abs(book$total_cost_basis) + 2 * sum(abs(book$cost_basis_by_inst[pos])) +
+    sum(abs(lot_pack$lot_qty * lot_pack$lot_price)) + sum(fills$qty * fills$price)
+  !is.finite(2 * bound) || !all(is.finite(batch$event_realized)) ||
+    !all(is.finite(batch$event_cost_basis)) || !all(is.finite(batch$net_by_inst[pos])) ||
+    !is.finite(batch$realized_comp[[1L]])
+}
+
+# The compiled wrapper's input is P3's typed fill group: run-axis positions,
+# side codes, quantities, prices, fees and execution epochs, read as columns.
 ledgr_run_compiled_spot_fifo_batch <- function(run_id,
                                                fills,
                                                state,
                                                instrument_ids,
                                                event_seq_start) {
-  n <- length(fills)
+  n <- length(fills$k)
   if (n == 0L) {
     return(NULL)
   }
 
-  fill_inst_idx <- vapply(fills, function(fill) as.integer(fill$inst_idx), integer(1))
-  fill_instrument_id <- vapply(fills, function(fill) fill$instrument_id, character(1))
-  fill_side <- vapply(fills, function(fill) fill$side, character(1))
-  fill_qty <- vapply(fills, function(fill) as.numeric(fill$qty), numeric(1))
-  fill_price <- vapply(fills, function(fill) as.numeric(fill$fill_price), numeric(1))
-  fill_fee <- vapply(fills, function(fill) as.numeric(fill$fee), numeric(1))
-  fill_ts_utc <- vapply(
-    fills,
-    function(fill) {
-      as.numeric(ledgr_ts_utc_posix(
-        fill$ts_exec_utc,
-        label = "`fill$ts_exec_utc`",
-        class = "ledgr_invalid_fill_intent"
-      ))
-    },
-    numeric(1)
-  )
-
-  if (any(!(fill_side %in% c("BUY", "SELL")))) {
+  if (any(!(fills$side %in% c(1L, -1L)))) {
     rlang::abort(
       "`compiled_accounting_model = \"spot_fifo\"` supports BUY and SELL fills only.",
       class = c("ledgr_compiled_spot_fifo_invalid_input", "ledgr_invalid_fold_execution")
     )
   }
+  fill_inst_idx <- fills$pos
+  fill_instrument_id <- instrument_ids[fill_inst_idx]
+  fill_side <- c("SELL", "BUY")[(fills$side > 0L) + 1L]
+  fill_qty <- fills$qty
+  fill_price <- fills$price
+  fill_fee <- fills$fee
+  fill_ts_utc <- fills$exec_ts
 
   book <- state$lot_state
   lot_pack <- ledgr_carrier_compiled_pack(book)
 
-  batch <- ledgr_cpp_spot_fifo_batch(
-    as.character(run_id),
-    as.integer(fill_inst_idx),
-    as.character(fill_instrument_id),
-    as.character(fill_side),
-    as.numeric(fill_qty),
-    as.numeric(fill_price),
-    as.numeric(fill_fee),
-    as.numeric(fill_ts_utc),
-    as.integer(event_seq_start),
-    as.numeric(state$positions),
-    as.numeric(book$net_by_inst),
-    as.numeric(state$cash),
-    as.integer(lot_pack$lot_inst_idx),
-    as.numeric(lot_pack$lot_qty),
-    as.numeric(lot_pack$lot_price),
-    as.numeric(book$cost_basis_by_inst),
-    as.numeric(book$total_cost_basis),
-    as.numeric(book$realized_pnl),
-    as.numeric(book$realized_comp)
-  )
+  # The unchanged native batch over the first `m` fills; it holds no state.
+  native <- function(m) {
+    j <- seq_len(m)
+    tryCatch(ledgr_cpp_spot_fifo_batch(
+      as.character(run_id),
+      as.integer(fill_inst_idx[j]),
+      as.character(fill_instrument_id[j]),
+      as.character(fill_side[j]),
+      as.numeric(fill_qty[j]),
+      as.numeric(fill_price[j]),
+      as.numeric(fill_fee[j]),
+      as.numeric(fill_ts_utc[j]),
+      as.integer(event_seq_start),
+      as.numeric(state$positions),
+      as.numeric(book$net_by_inst),
+      as.numeric(state$cash),
+      as.integer(lot_pack$lot_inst_idx),
+      as.numeric(lot_pack$lot_qty),
+      as.numeric(lot_pack$lot_price),
+      as.numeric(book$cost_basis_by_inst),
+      as.numeric(book$total_cost_basis),
+      as.numeric(book$realized_pnl),
+      as.numeric(book$realized_comp)
+    ), error = identity)
+  }
+  batch <- native(n)
+  if (ledgr_compiled_spot_fifo_suspect(batch, fills, book, lot_pack)) {
+    # On suspicion, retain the canonical operation's earliest refusal and its
+    # condition. A native input refusal wins when its row is earlier or the
+    # same. If canonical evaluation succeeds, retain the native outcome.
+    # Nothing is installed or published for a refused batch.
+    oracle <- ledgr_fold_fill_candidate(book, fills)
+    failure <- if (!is.null(oracle$failed)) {
+      oracle$failed
+    } else {
+      n + 1L
+    }
+    if (inherits(batch, "error")) {
+      error <- batch
+      ok <- 0L
+      failed <- n
+      while (failed - ok > 1L) {
+        mid <- (ok + failed) %/% 2L
+        out <- native(mid)
+        if (inherits(out, "error")) {
+          failed <- mid
+          error <- out
+        } else {
+          ok <- mid
+        }
+      }
+      if (failed <= failure) stop(error)
+    }
+    if (failure <= n) stop(oracle$error)
+  }
   batch$positions <- as.numeric(batch$positions)
-  batch$cash <- as.numeric(batch$cash[[1]])
+  # The output boundary publishes P3's carried effects and installs the cash
+  # they imply, in fill order; native lot positions stay authoritative and
+  # the native calculation is unchanged.
+  batch$cash_delta <- fills$cash_delta
+  batch$position_delta <- fills$position_delta
+  batch$cash <- ledgr_cash_scan(state$cash, fills$cash_delta)[[n]]
   batch$lot_state <- ledgr_carrier_compiled_unpack(batch, length(instrument_ids))
   batch$next_event_seq <- as.integer(batch$next_event_seq[[1]])
   batch

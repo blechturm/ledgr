@@ -227,14 +227,8 @@ testthat::test_that("[LTB-0005] cost model applies half-spread price transforms 
 })
 
 testthat::test_that("notional fees use spread-adjusted pre-rounding price", {
-  proposal <- ledgr:::ledgr_next_open_fill_proposal(
-    desired_qty_delta = 3,
-    next_bar = list(
-      instrument_id = "AAA",
-      ts_utc = "2020-01-02T00:00:00Z",
-      open = 100.123456789
-    )
-  )
+  # LDG-3166 (design note Section 5, category 4): the batch resolver prices
+  # one BUY of 3 at the same open.
   resolver <- ledgr:::ledgr_cost_resolver_from_model(
     ledgr_cost_chain(
       ledgr_cost_spread_bps(7),
@@ -242,10 +236,10 @@ testthat::test_that("notional fees use spread-adjusted pre-rounding price", {
     ),
     price_round_digits = 2L
   )
-  fill <- ledgr:::ledgr_resolve_fill_proposal(proposal, resolver)
+  fill <- resolver(1L, 3, 100.123456789)
   spread_adjusted <- 100.123456789 * (1 + 7 / 20000)
 
-  testthat::expect_equal(fill$fill_price, round(spread_adjusted, 2))
+  testthat::expect_equal(fill$price, round(spread_adjusted, 2))
   testthat::expect_equal(fill$fee, abs(3 * spread_adjusted) * 10 / 10000)
 })
 

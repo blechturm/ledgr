@@ -1,0 +1,3 @@
+Error in readRDS(f) : error reading from connection
+Calls: ledgr_check_coverage_main ... ledgr_with_ordinary_coverage_env -> force -> ledgr_collect_coverage
+Execution halted

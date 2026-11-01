@@ -19,6 +19,40 @@ ledgr_output_typed_columns <- c(
   "cash_delta", "position_delta", "event_realized", "event_cost_basis", "meta"
 )
 
+# The legs of a published fill block (Synthesis Section 4, leg group): per
+# fill, a CLOSE leg for its closed quantity and then an OPEN leg for its
+# opened quantity, in event order, with the canonical leg-fee split; an
+# opening leg realizes nothing. `applied` holds the block's applied lot rows
+# in block order. Columns are gathered by row index once per block.
+ledgr_fill_leg_block <- function(block, applied) {
+  closing <- applied$close_qty > 0
+  opening <- applied$open_qty > 0
+  fees <- ledgr_fill_leg_fees(block$fee, applied$close_qty, applied$open_qty)
+  # Row r's CLOSE leg sorts before its OPEN leg.
+  row <- c(which(closing), which(opening))
+  open <- rep(c(FALSE, TRUE), c(sum(closing), sum(opening)))
+  ord <- order(2L * row + open, method = "radix")
+  row <- row[ord]
+  open <- open[ord]
+  qty <- applied$close_qty[row]
+  qty[open] <- applied$open_qty[row[open]]
+  fee <- fees$close[row]
+  fee[open] <- fees$open[row[open]]
+  realized_pnl <- applied$realized_close[row]
+  realized_pnl[open] <- 0
+  ledgr_carrier_new(list(
+    event_seq = block$event_seq[row],
+    instrument_id = block$instrument_id[row],
+    side = block$side[row],
+    action = c("CLOSE", "OPEN")[open + 1L],
+    ts_utc = block$ts_utc[row],
+    qty = qty,
+    price = block$price[row],
+    fee = fee,
+    realized_pnl = realized_pnl
+  ), "leg", NA_integer_)
+}
+
 # DuckDB sink: the run store of one run. Durable appends, transactions with
 # interrupt re-raise, db_live immediate writes, diagnostic sequence seeding
 # from the store, telemetry and strategy-state persistence.
@@ -74,16 +108,27 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
     ledgr_store_append(con, "ledger_events", rows)
     invisible(TRUE)
   }
-  sink$write_fill_live <- function(fill_intent, event_seq) {
-    # The fold is already inside run_transaction(); live mode writes
-    # immediately without opening a nested DuckDB transaction.
-    ledgr_write_fill_events(
-      con = con,
-      run_id = run_id,
-      fill_intent = fill_intent,
-      event_seq_start = event_seq,
-      use_transaction = FALSE
-    )
+  # db_live publishes the rows `i` of a fill block at once: one INSERT per
+  # fill, in event order, through the db_live writer with its own validation
+  # and sequence (one statement per fill is the immediate-write contract; its
+  # fill JSON is routed to WS7/WS8). The fold is already inside
+  # run_transaction(), so no nested DuckDB transaction is opened. Returns the
+  # writer's result for the last row, or its no-op for an empty block.
+  sink$write_fill_live <- function(fill, i, instrument_id, event_seq) {
+    write <- function(rows, event_seq_start) {
+      ledgr_write_fill_events(
+        con = con,
+        run_id = run_id,
+        fill = fill,
+        i = i[rows],
+        instrument_id = instrument_id[rows],
+        event_seq_start = event_seq_start,
+        use_transaction = FALSE
+      )
+    }
+    if (length(i) == 0L) return(write(integer(), event_seq))
+    for (k in seq_along(i)) res <- write(k, event_seq + k - 1L)
+    res
   }
   sink$set_schedule_counts <- function(decision_pulse_count, scheduled_skip_count) {
     state$decision_pulse_count <- as.integer(decision_pulse_count)
@@ -183,52 +228,40 @@ ledgr_output_sink_memory <- function(run_id) {
   sink$nonwrote_buffer_result <- TRUE
   sink$refresh_seq_on_exception <- FALSE
 
-  # Closed and opened fill legs staged during a pulse, closure-local so a
-  # write never copies the list (LTB-0188).
-  pulse_fill_legs <- vector("list", 256L)
-  pulse_fill_leg_n <- 0L
+  # The fill legs of the pulse's published blocks: leg columns (the leg
+  # group of ledgr_fill_leg_block()), held closure-local until flush_legs()
+  # writes them by index into the result buffer; NULL when none is pending.
+  pending_legs <- NULL
   inline_fills <- ledgr_fill_row_buffer(1024L)
 
   sink$reset_legs <- function() {
-    pulse_fill_leg_n <<- 0L
+    pending_legs <<- NULL
     invisible(TRUE)
   }
-  sink$stage_leg <- function(row, qty, fee, realized_pnl, action) {
-    i <- pulse_fill_leg_n + 1L
-    if (i > length(pulse_fill_legs)) {
-      pulse_fill_legs <<- c(
-        pulse_fill_legs,
-        vector("list", length(pulse_fill_legs))
-      )
+  sink$stage_legs <- function(legs) {
+    if (is.null(pending_legs)) {
+      pending_legs <<- legs
+    } else {
+      # A second block before the flush: its columns appended once.
+      for (name in names(legs)) pending_legs[[name]] <<- c(pending_legs[[name]], legs[[name]])
     }
-    pulse_fill_legs[[i]] <<- list(
-      event_seq = row$event_seq,
-      ts_utc = row$ts_utc,
-      instrument_id = row$instrument_id,
-      side = row$side,
-      qty = as.numeric(qty),
-      price = row$price,
-      fee = as.numeric(fee),
-      realized_pnl = as.numeric(realized_pnl),
-      action = action
-    )
-    pulse_fill_leg_n <<- i
     invisible(TRUE)
   }
-  sink$add_leg <- function(row, qty, fee, realized_pnl, action) {
-    ledgr_fill_row_buffer_add(
+  add_legs <- function(legs) {
+    ledgr_fill_row_buffer_add_many(
       inline_fills,
-      row$event_seq,
-      row$ts_utc,
-      row$instrument_id,
-      row$side,
-      qty,
-      row$price,
-      fee,
-      realized_pnl,
-      action
+      event_seq = legs$event_seq,
+      ts_utc = legs$ts_utc,
+      instrument_id = legs$instrument_id,
+      side = legs$side,
+      qty = legs$qty,
+      price = legs$price,
+      fee = legs$fee,
+      realized_pnl = legs$realized_pnl,
+      action = legs$action
     )
   }
+  sink$add_legs <- add_legs
   sink$add_legs_many <- function(batch) {
     ledgr_fill_row_buffer_add_many(
       inline_fills,
@@ -244,73 +277,17 @@ ledgr_output_sink_memory <- function(run_id) {
     )
   }
   sink$flush_legs <- function() {
-    n_legs <- pulse_fill_leg_n
-    if (n_legs > 0L) {
-      legs <- pulse_fill_legs[seq_len(n_legs)]
-      start <- inline_fills$n + 1L
-      end <- inline_fills$n + n_legs
-      ledgr_fill_row_buffer_grow(inline_fills, end)
-      index <- start:end
-      field <- function(name, type) vapply(legs, `[[`, type, name)
-      collapse::setv(inline_fills$event_seq, index, field("event_seq", integer(1)), vind1 = TRUE)
-      collapse::setv(
-        inline_fills$ts_utc,
-        index,
-        .POSIXct(field("ts_utc", numeric(1)), tz = "UTC"),
-        vind1 = TRUE
-      )
-      collapse::setv(
-        inline_fills$instrument_id,
-        index,
-        field("instrument_id", character(1)),
-        vind1 = TRUE
-      )
-      collapse::setv(inline_fills$side, index, field("side", character(1)), vind1 = TRUE)
-      collapse::setv(inline_fills$qty, index, field("qty", numeric(1)), vind1 = TRUE)
-      collapse::setv(inline_fills$price, index, field("price", numeric(1)), vind1 = TRUE)
-      collapse::setv(inline_fills$fee, index, field("fee", numeric(1)), vind1 = TRUE)
-      collapse::setv(
-        inline_fills$realized_pnl,
-        index,
-        field("realized_pnl", numeric(1)),
-        vind1 = TRUE
-      )
-      collapse::setv(inline_fills$action, index, field("action", character(1)), vind1 = TRUE)
-      inline_fills$n <- end
-      pulse_fill_leg_n <<- 0L
+    if (!is.null(pending_legs)) {
+      add_legs(pending_legs)
+      pending_legs <<- NULL
     }
     invisible(TRUE)
   }
 
-  # Equity facts, one per valued pulse, in five typed columns written by
-  # index with doubling growth.
-  equity <- new.env(parent = emptyenv())
-  equity$n <- 0L
-  equity$ts_utc <- numeric(0)
-  equity$cash <- numeric(0)
-  equity$positions_value <- numeric(0)
-  equity$realized_pnl <- numeric(0)
-  equity$cost_basis <- numeric(0)
-  equity_fields <- c("ts_utc", "cash", "positions_value", "realized_pnl", "cost_basis")
-  sink$record_equity_fact <- function(ts_utc, cash, positions_value, realized_pnl, cost_basis) {
-    i <- equity$n + 1L
-    if (i > length(equity$cash)) {
-      capacity <- max(256L, length(equity$cash) * 2L)
-      for (name in equity_fields) {
-        grown <- numeric(capacity)
-        if (equity$n > 0L) grown[seq_len(equity$n)] <- equity[[name]][seq_len(equity$n)]
-        equity[[name]] <- grown
-      }
-    }
-    collapse::setv(equity$ts_utc, i, as.numeric(as.POSIXct(ts_utc, tz = "UTC")), vind1 = TRUE)
-    collapse::setv(equity$cash, i, as.numeric(cash), vind1 = TRUE)
-    collapse::setv(equity$positions_value, i, as.numeric(positions_value), vind1 = TRUE)
-    collapse::setv(equity$realized_pnl, i, as.numeric(realized_pnl), vind1 = TRUE)
-    collapse::setv(equity$cost_basis, i, as.numeric(cost_basis), vind1 = TRUE)
-    equity$n <- i
-    invisible(TRUE)
-  }
-  sink$inline_summary <- function(run_id, metric_kernel) {
+  # The candidate's summary: `equity` is the frozen equity record the fold
+  # envelope hands out (one row per valued pulse, Synthesis 3.6); the sink
+  # holds no equity of its own and replays none.
+  sink$inline_summary <- function(run_id, metric_kernel, equity) {
     if (equity$n == 0L) {
       equity_curve <- ledgr_empty_equity_curve()
       fills <- ledgr_fill_row_buffer_tibble(inline_fills)
@@ -327,7 +304,7 @@ ledgr_output_sink_memory <- function(run_id) {
     positions_value <- equity$positions_value[keep]
     equity_curve <- data.frame(
       run_id = rep(run_id, equity$n),
-      ts_utc = as.POSIXct(equity$ts_utc[keep], origin = "1970-01-01", tz = "UTC"),
+      ts_utc = as.POSIXct(equity$ts[keep], origin = "1970-01-01", tz = "UTC"),
       cash = cash,
       positions_value = positions_value,
       equity = cash + positions_value,
@@ -404,10 +381,13 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   state$terminal_status_written <- FALSE
   state$completion <- NULL
   state$next_diagnostic_seq <- NULL
-  # Fill rows staged during a pulse, closure-local so a write never copies
-  # the list (LTB-0188); flush_pulse_events() writes them by index.
-  pulse_fill_rows <- vector("list", 256L)
-  pulse_fill_n <- 0L
+  # The pulse's published fill block (publication columns), held
+  # closure-local until flush_pulse_events() writes it by index into the
+  # event buffer; NULL when none is pending. Typed sinks keep the block's
+  # aggregate facts beside it.
+  pending_fills <- NULL
+  pending_realized <- numeric()
+  pending_cost_basis <- numeric()
   handler <- list()
 
   # -- Event column buffer and capacity growth -------------------------------
@@ -502,7 +482,9 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       "`max_events`"
     )
     ensure_event_capacity(state$event_count + 1L)
-    pulse_fill_n <<- 0L
+    pending_fills <<- NULL
+    pending_realized <<- numeric()
+    pending_cost_basis <<- numeric()
     if (is.function(sink$reset_legs)) sink$reset_legs()
     invisible(TRUE)
   }
@@ -527,75 +509,79 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     invisible(TRUE)
   }
 
-  # -- Pulse fill staging ----------------------------------------------------
+  # -- Pulse fill publication ------------------------------------------------
 
-  stage_fill_event <- function(write_res) {
-    if (!is_wrote(write_res)) {
+  # Holds a published block until the pulse flush. A second block before the
+  # flush (handler-level writes) has its columns appended once.
+  stage_fill_block <- function(block) {
+    if (!identical(block$status, "WROTE")) {
       return(invisible(FALSE))
     }
     require_initialized()
-    i <- pulse_fill_n + 1L
-    if (i > length(pulse_fill_rows)) {
-      pulse_fill_rows <<- c(
-        pulse_fill_rows,
-        vector("list", length(pulse_fill_rows))
-      )
-    }
-    entry <- if (typed) {
-      list(
-        row = write_res$row,
-        cash_delta = write_res$cash_delta,
-        position_delta = write_res$position_delta,
-        meta = write_res$meta,
-        event_realized = NA_real_,
-        event_cost_basis = NA_real_
-      )
+    n <- length(block$event_seq)
+    if (is.null(pending_fills)) {
+      pending_fills <<- block
     } else {
-      write_res$row
+      for (name in setdiff(names(block), c("status", "next_event_seq"))) {
+        pending_fills[[name]] <<- c(pending_fills[[name]], block[[name]])
+      }
+      pending_fills$next_event_seq <<- block$next_event_seq
     }
-    pulse_fill_rows[[i]] <<- entry
-    pulse_fill_n <<- i
+    if (typed) {
+      pending_realized <<- c(pending_realized, rep(NA_real_, n))
+      pending_cost_basis <<- c(pending_cost_basis, rep(NA_real_, n))
+    }
     invisible(TRUE)
   }
 
-  handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
-    if (isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
-      return(sink$write_fill_live(fill_intent, event_seq))
+  # Fill input: rows `i` of P3's typed fill group with one instrument ID per
+  # row, published as one block with contiguous sequences from `event_seq`;
+  # the computed effects are reused by every sink. Returns the published
+  # block (db_live: the writer's result). With `stage = FALSE` the block is
+  # built and checked as this sink would publish it, but neither staged nor
+  # written (the fold's refusal order, ledgr_fold_stage_apply()).
+  handler$write_fill_events <- function(fill, i, instrument_id, event_seq, use_transaction = FALSE, stage = TRUE) {
+    if (isTRUE(stage) && isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
+      return(sink$write_fill_live(fill, i, instrument_id, event_seq))
     }
-    write_res <- ledgr_fill_event_payload(
+    block <- ledgr_fill_event_payload(
       run_id = run_id,
-      fill_intent = fill_intent,
+      fill = fill,
+      i = i,
+      instrument_id = instrument_id,
       event_seq = event_seq,
       serialize_meta_json = sink$serialize_meta_json
     )
-    stage_fill_event(write_res)
-    write_res
+    if (isTRUE(stage)) stage_fill_block(block)
+    block
   }
 
+  # Writes the pending block by index into the event buffer, column by
+  # column; the execution epochs become POSIXct here.
   handler$flush_pulse_events <- function() {
-    n <- pulse_fill_n
-    if (n > 0L) {
-      staged <- pulse_fill_rows[seq_len(n)]
+    block <- pending_fills
+    if (!is.null(block)) {
+      n <- length(block$event_seq)
       start <- state$event_count + 1L
       end <- state$event_count + n
       ensure_event_capacity(end)
       index <- start:end
+      cols <- state$event_cols
+      for (name in setdiff(ledgr_output_event_columns, "ts_utc")) {
+        ledgr_event_buffer_setv(cols, name, index, block[[name]])
+      }
+      ledgr_event_buffer_setv(cols, "ts_utc", index, .POSIXct(block$ts_utc, tz = "UTC"))
       if (typed) {
-        ledgr_event_buffer_write_rows(state$event_cols, index, lapply(staged, `[[`, "row"))
-        ledgr_event_buffer_setv(state$event_cols, "cash_delta", index,
-          vapply(staged, `[[`, numeric(1), "cash_delta"))
-        ledgr_event_buffer_setv(state$event_cols, "position_delta", index,
-          vapply(staged, `[[`, numeric(1), "position_delta"))
-        ledgr_event_buffer_setv(state$event_cols, "event_realized", index,
-          vapply(staged, `[[`, numeric(1), "event_realized"))
-        ledgr_event_buffer_setv(state$event_cols, "event_cost_basis", index,
-          vapply(staged, `[[`, numeric(1), "event_cost_basis"))
-        ledgr_event_buffer_setv(state$event_cols, "meta", index, lapply(staged, `[[`, "meta"))
-      } else {
-        ledgr_event_buffer_write_rows(state$event_cols, index, staged)
+        ledgr_event_buffer_setv(cols, "cash_delta", index, block$cash_delta)
+        ledgr_event_buffer_setv(cols, "position_delta", index, block$position_delta)
+        ledgr_event_buffer_setv(cols, "event_realized", index, pending_realized)
+        ledgr_event_buffer_setv(cols, "event_cost_basis", index, pending_cost_basis)
+        ledgr_event_buffer_setv(cols, "meta", index, block$meta)
       }
       state$event_count <- end
-      pulse_fill_n <<- 0L
+      pending_fills <<- NULL
+      pending_realized <<- numeric()
+      pending_cost_basis <<- numeric()
     }
     if (is.function(sink$flush_legs)) sink$flush_legs()
     invisible(TRUE)
@@ -708,7 +694,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   handler$write_strategy_state <- function(...) invisible(TRUE)
   handler$completion <- function() state$completion
   handler$diagnostics <- sink$diagnostics
-  handler$record_equity_fact <- sink$record_equity_fact
   handler$inline_summary <- sink$inline_summary
 
   handler$append_event_rows <- function(rows) {
@@ -721,15 +706,17 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       for (name in ledgr_output_event_columns) {
         ledgr_event_buffer_setv(state$event_cols, name, idx, rows[[name]])
       }
-      for (j in seq_len(n)) {
-        meta <- ledgr_lot_parse_meta(rows$meta_json[[j]])
-        pos <- start + j - 1L
-        set_event_value("meta", pos, meta)
-        set_event_value("cash_delta", pos, meta$cash_delta %||% NA_real_)
-        set_event_value("position_delta", pos, meta$position_delta %||% NA_real_)
-        set_event_value("event_realized", pos, NA_real_)
-        set_event_value("event_cost_basis", pos, NA_real_)
-      }
+      # The builders' rows adapt once into the indexed buffer (E6): each
+      # row's metadata is parsed once (the routed memory meta, WS8) and the
+      # typed columns are written by index.
+      meta <- lapply(rows$meta_json, ledgr_lot_parse_meta)
+      cash_delta <- vapply(meta, function(m) as.numeric(m$cash_delta %||% NA_real_)[[1L]], numeric(1))
+      position_delta <- vapply(meta, function(m) as.numeric(m$position_delta %||% NA_real_)[[1L]], numeric(1))
+      ledgr_event_buffer_setv(state$event_cols, "meta", idx, meta)
+      ledgr_event_buffer_setv(state$event_cols, "cash_delta", idx, cash_delta)
+      ledgr_event_buffer_setv(state$event_cols, "position_delta", idx, position_delta)
+      ledgr_event_buffer_setv(state$event_cols, "event_realized", idx, rep(NA_real_, n))
+      ledgr_event_buffer_setv(state$event_cols, "event_cost_basis", idx, rep(NA_real_, n))
       state$event_count <- end
     }
     invisible(TRUE)
@@ -784,35 +771,28 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     invisible(TRUE)
   }
 
-  # `applied` is the one-row applied lot record of the fill (typed lot
-  # kernel): close and open quantities, realized close and the event's
-  # aggregate facts after the fill.
-  handler$record_accounting_fact <- function(write_res, applied) {
-    if (!is_wrote(write_res) || pulse_fill_n == 0L && state$event_count == 0L) {
+  # The accounting facts of the most recently published `block`: `applied`
+  # holds its applied lot rows in block order (typed lot kernel). Each row's
+  # event-order realized P&L and total cost basis are written by index beside
+  # the block's rows, and its legs (ledgr_fill_leg_block()) are staged with
+  # the pulse, or added at once when the block was written unstaged.
+  handler$record_accounting_fact <- function(block, applied) {
+    staged <- !is.null(pending_fills)
+    if (!identical(block$status, "WROTE") || (!staged && state$event_count == 0L)) {
       return(invisible(FALSE))
     }
-    staged <- pulse_fill_n > 0L
+    m <- length(block$event_seq)
     if (staged) {
-      i <- pulse_fill_n
-      entry <- pulse_fill_rows[[i]]
-      entry$event_realized <- applied$event_realized[[1L]]
-      entry$event_cost_basis <- applied$event_cost_basis[[1L]]
-      pulse_fill_rows[[i]] <<- entry
+      idx <- length(pending_realized) - m + seq_len(m)
+      pending_realized[idx] <<- applied$event_realized
+      pending_cost_basis[idx] <<- applied$event_cost_basis
     } else {
-      i <- state$event_count
-      set_event_value("event_realized", i, applied$event_realized[[1L]])
-      set_event_value("event_cost_basis", i, applied$event_cost_basis[[1L]])
+      idx <- state$event_count - m + seq_len(m)
+      ledgr_event_buffer_setv(state$event_cols, "event_realized", idx, applied$event_realized)
+      ledgr_event_buffer_setv(state$event_cols, "event_cost_basis", idx, applied$event_cost_basis)
     }
-    close_qty <- applied$close_qty[[1L]]
-    open_qty <- applied$open_qty[[1L]]
-    leg_fees <- ledgr_fill_leg_fees(write_res$row$fee, close_qty, open_qty)
-    add <- if (staged) sink$stage_leg else sink$add_leg
-    if (isTRUE(close_qty > 0)) {
-      add(write_res$row, close_qty, leg_fees[["close"]], applied$realized_close[[1L]], "CLOSE")
-    }
-    if (isTRUE(open_qty > 0)) {
-      add(write_res$row, open_qty, leg_fees[["open"]], 0, "OPEN")
-    }
+    legs <- ledgr_fill_leg_block(block, applied)
+    if (staged) sink$stage_legs(legs) else sink$add_legs(legs)
     invisible(TRUE)
   }
 

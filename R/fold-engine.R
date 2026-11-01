@@ -109,91 +109,114 @@ ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FA
   state_value
 }
 
-ledgr_fold_warn_final_bar_no_fill <- function(fill) {
-  if (is.character(fill$warn_code) &&
-      identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
-    warning(
-      paste(
-        "LEDGR_LAST_BAR_NO_FILL:",
-        "target changed on the final available bar, but the next-open fill model requires a following bar.",
-        "No fill was emitted for this target change.",
-        "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
-      ),
-      call. = FALSE
-    )
-  }
+ledgr_fold_warn_final_bar_no_fill <- function() {
+  warning(
+    paste(
+      "LEDGR_LAST_BAR_NO_FILL:",
+      "target changed on the final available bar, but the next-open fill model requires a following bar.",
+      "No fill was emitted for this target change.",
+      "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
+    ),
+    call. = FALSE
+  )
   invisible(NULL)
 }
 
-ledgr_fold_build_pulse_plan <- function(targets,
-                                        target_names,
-                                        target_inst_idx,
-                                        current_qty_vec,
-                                        delta_vec,
-                                        actionable_idx,
+# The dense planner (Synthesis 3.3 and Section 4, Q1): one candidate row per
+# actionable context ordinal, executed at the next pulse's open read from
+# bars_mat at pulse_idx + 1. On the final pulse every row is rejected for the
+# missing opportunity and warns once per target, as before; a missing next
+# open refuses in decision order; a non-positive resolved price is rejected.
+# Rejections feed no diagnostics on this producer; its plan carries no
+# reconciliation cash.
+ledgr_fold_build_pulse_plan <- function(context_pos,
+                                        target_qty,
+                                        position,
+                                        actionable_k,
                                         pulse_idx,
-                                        pulses_posix,
+                                        has_next,
+                                        exec_ts,
+                                        epoch_valid,
                                         bars_mat,
                                         cost_resolver,
-                                        ts_signal_utc) {
-  fills <- vector("list", length(actionable_idx))
-  fill_n <- 0L
-  has_next_pulse <- pulse_idx < length(pulses_posix)
-
-  for (target_idx in actionable_idx) {
-    instrument_id <- target_names[[target_idx]]
-    inst_idx <- target_inst_idx[[target_idx]]
-    delta <- delta_vec[[target_idx]]
-
-    proposal <- ledgr_next_open_fill_proposal(
-      desired_qty_delta = delta,
-      next_open_price = if (has_next_pulse) bars_mat$open[inst_idx, pulse_idx + 1L] else NULL,
-      instrument_id = instrument_id,
-      ts_utc = if (has_next_pulse) pulses_posix[[pulse_idx + 1L]] else NULL,
-      high = if (has_next_pulse) bars_mat$high[inst_idx, pulse_idx + 1L] else NA_real_,
-      low = if (has_next_pulse) bars_mat$low[inst_idx, pulse_idx + 1L] else NA_real_,
-      close = if (has_next_pulse) bars_mat$close[inst_idx, pulse_idx + 1L] else NA_real_,
-      volume = if (has_next_pulse) bars_mat$volume[inst_idx, pulse_idx + 1L] else NA_real_
-    )
-    fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
-
-    if (inherits(fill, "ledgr_fill_none")) {
-      ledgr_fold_warn_final_bar_no_fill(fill)
-      next
-    }
-    if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
-      next
-    }
-
-    fill$instrument_id <- instrument_id
-    fill$ts_signal_utc <- ts_signal_utc
-    fill$inst_idx <- inst_idx
-
-    fill_n <- fill_n + 1L
-    fills[[fill_n]] <- list(
-      target_idx = as.integer(target_idx),
-      instrument_id = instrument_id,
-      inst_idx = as.integer(inst_idx),
-      current_qty = as.numeric(current_qty_vec[[target_idx]]),
-      delta = as.numeric(delta),
-      fill = fill
-    )
-  }
-
-  if (fill_n == 0L) {
-    fills <- list()
+                                        n_run) {
+  k <- actionable_k
+  n <- length(k)
+  pos <- context_pos[k]
+  before <- position[k]
+  delta <- target_qty[k] - before
+  side <- ledgr_plan_side(delta)
+  qty <- abs(delta)
+  none <- integer()
+  if (!has_next) {
+    # Base per-row order on the final pulse: the target delta is checked,
+    # then the row warns; a non-finite delta refuses after the earlier rows'
+    # warnings.
+    bad <- which(!is.finite(delta))
+    warned <- if (length(bad) > 0L) bad[[1L]] - 1L else n
+    for (i in seq_len(warned)) ledgr_fold_warn_final_bar_no_fill()
+    if (length(bad) > 0L) ledgr_plan_refuse_delta()
+    exec_ts <- NA_real_
+    price <- rep(NA_real_, n)
+    fee <- price
+    fills <- none
+    reason <- 1L
   } else {
-    fills <- fills[seq_len(fill_n)]
+    open <- as.numeric(bars_mat$open[pos, pulse_idx + 1L])
+    # The first row, in decision order, failing its delta, its next open or
+    # the shared execution epoch refuses (base per-row order).
+    ledgr_plan_refuse_inputs(delta, open, epoch_valid, exec_ts)
+    resolved <- ledgr_plan_resolve(cost_resolver, side, qty, open)
+    price <- resolved$price
+    fee <- resolved$fee
+    fills <- which(is.finite(price) & price > 0)
+    reason <- 2L
   }
+  rejected <- setdiff(seq_len(n), fills)
+  effects <- ledgr_fill_publication_deltas(side[fills], qty[fills], price[fills], fee[fills])
+  segment <- ledgr_carrier_segments(n, rejected, rep(reason, length(rejected)))
+  groups <- ledgr_plan_groups(k, pos, side, qty, price, fee, exec_ts, before, segment,
+    fills, effects, rejected, rep(1L, length(rejected)), rep(NA_real_, length(rejected)))
+  ledgr_carrier_plan(
+    list(expected_final_cash = NA_real_, economic_event_kinds = if (length(fills) > 0L) 1L else none,
+      fill = groups$fill, rejection = groups$rejection),
+    context_pos, actionable_k, n_run
+  )
+}
 
-  structure(
+# The next-open fill model's input refusals with the base 953338df classes
+# and messages. The open's label names its input form: `next_open_price` for
+# a price read from bars_mat, `next_bar$open` for a next bar.
+ledgr_plan_refuse_delta <- function() {
+  rlang::abort("`desired_qty_delta` must be a finite numeric scalar.", class = "ledgr_invalid_fill_input")
+}
+
+ledgr_plan_refuse_open <- function(open_label = "`next_open_price`") {
+  rlang::abort(sprintf("%s must be a finite numeric scalar > 0.", open_label), class = "ledgr_invalid_fill_input")
+}
+
+# Refuses the first failing row, in decision order, with its first failing
+# check: `fails` lists one logical column per check in the base per-row check
+# order, `refusals` the matching refusal of a row index. The loop runs over
+# the fixed checks, not over rows.
+ledgr_plan_refuse_first <- function(fails, refusals) {
+  row <- which(Reduce(`|`, fails, logical(length(fails[[1L]]))))
+  if (length(row) == 0L) return(invisible(NULL))
+  row <- row[[1L]]
+  for (j in seq_along(fails)) if (fails[[j]][[row]]) refusals[[j]](row)
+  invisible(NULL)
+}
+
+# The next-open inputs of rows that have a next bar, in the base per-row
+# order: target delta, next open, then the shared execution epoch.
+ledgr_plan_refuse_inputs <- function(delta, open, epoch_valid, exec_ts, open_label = "`next_open_price`") {
+  ledgr_plan_refuse_first(
+    list(!is.finite(delta), !is.finite(open) | open <= 0, rep(!epoch_valid, length(delta))),
     list(
-      targets = targets,
-      actionable_idx = as.integer(actionable_idx),
-      fills = fills,
-      economic_event_kinds = if (length(fills) > 0L) "FILL" else character()
-    ),
-    class = c("ledgr_pulse_plan", "list")
+      function(i) ledgr_plan_refuse_delta(),
+      function(i) ledgr_plan_refuse_open(open_label),
+      function(i) ledgr_plan_refuse_epoch(exec_ts)
+    )
   )
 }
 
@@ -202,35 +225,29 @@ ledgr_fold_apply_net_feasibility_noop <- function(pulse_plan, state) {
   pulse_plan
 }
 
-ledgr_fold_pulse_plan_accounting_events <- function(pulse_plan,
-                                                    canonical_event_kinds = NULL) {
-  fills <- pulse_plan$fills %||% list()
-  event_kinds <- unique(as.character(
-    pulse_plan$economic_event_kinds %||% character()
-  ))
-  if (length(fills) > 0L && !"FILL" %in% event_kinds) {
+# P3's event-kind gate (before any mutation): a plan with fills declares
+# FILL; canonical R accounting executes only `canonical_event_kinds`.
+ledgr_fold_plan_event_kinds <- function(plan, canonical_event_kinds = NULL) {
+  kinds <- unique(plan$economic_event_kinds)
+  if (length(plan$fill$k) > 0L && !1L %in% kinds) {
     rlang::abort(
       "A pulse plan containing fills must declare the FILL economic-event kind.",
       class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
     )
   }
   if (!is.null(canonical_event_kinds)) {
-    unsupported <- setdiff(event_kinds, canonical_event_kinds)
+    unsupported <- setdiff(kinds, canonical_event_kinds)
     if (length(unsupported) > 0L) {
       rlang::abort(
         paste0(
           "Canonical R accounting cannot execute pulse-plan economic event ",
-          "kind(s): ", paste(unsupported, collapse = ", "), "."
+          "kind(s): ", paste(ledgr_plan_kind_text(unsupported), collapse = ", "), "."
         ),
         class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
       )
     }
   }
-  list(fills = fills, kinds = event_kinds)
-}
-
-ledgr_fold_pulse_plan_fill_intents <- function(accounting_events) {
-  lapply(accounting_events$fills, function(entry) entry$fill)
+  ledgr_plan_kind_text(kinds)
 }
 
 # E import boundary (Synthesis 3.1): opening, carried or resumed state into
@@ -291,23 +308,27 @@ ledgr_carrier_result_state <- function(fold_state, instrument_ids) {
   )
 }
 
+# The drain of the pulse's typed staging (in P5, or at an E stop): its used
+# prefix becomes one writer block, numbered from the fold's row counter; the
+# staging's used count returns to zero at constant capacity. The bounded
+# writer splits the block at its chunk boundaries.
 ledgr_fold_flush_pulse_block <- function(
     fold_state,
     diagnostic_writer,
     run_id,
     ts) {
-  if (length(fold_state$pending_segments) == 0L) {
+  n <- fold_state$pending_segments$n
+  if (n == 0L) {
     return(invisible(NULL))
   }
-  block <- ledgr_availability_diagnostic_block(
+  block <- ledgr_fold_diagnostic_block(
+    fold_state$pending_segments,
     run_id,
     ts,
-    fold_state$diagnostic_seq + 1L,
-    fold_state$pending_segments
+    fold_state$diagnostic_seq + 1L
   )
-  fold_state$pending_segments <- list()
-  fold_state$diagnostic_seq <-
-    fold_state$diagnostic_seq + length(block$diagnostic_seq)
+  fold_state$pending_segments$n <- 0L
+  fold_state$diagnostic_seq <- fold_state$diagnostic_seq + n
   diagnostic_writer$append_block(block)
   invisible(NULL)
 }
@@ -333,10 +354,12 @@ ledgr_fold_stage_observe_settle <- function(
   } else {
     NULL
   }
-  add_segment <- function(segment) {
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
-    invisible(NULL)
-  }
+  add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
+  # One produced view: the provider's input names the run-axis positions by
+  # ID; its outputs and the valuation are converted once by the transitional
+  # provider adapter (Synthesis 3.2). Settlement, terminal and stop handling
+  # below keep reading the provider's named view and valuation (the
+  # settlement boundary, remover WS8).
   availability_decision <- function(positions) {
     full_positions <- ledgr_fold_positions_snapshot(
       positions,
@@ -349,16 +372,14 @@ ledgr_fold_stage_observe_settle <- function(
       ids,
       held = as.logical(view$held[ids])
     )
-    view$priced <- valuation$priced
-    view$mark_age <- valuation$age
-    view$risk_mark <- valuation$mark
-    view$mark_source <- valuation$source
     view <- ledgr_availability_restrict_frozen(view, valuation)
+    columns <- ledgr_carrier_provider_view(view, valuation)
     list(
       view = view,
       valuation = valuation,
+      columns = columns,
       ids = ids,
-      held_ids = ids[as.logical(view$held[ids])],
+      held_ids = ids[columns$held],
       full_positions = full_positions
     )
   }
@@ -382,7 +403,7 @@ ledgr_fold_stage_observe_settle <- function(
       reason_code = reason_code,
       affected_instrument_ids = ids,
       affected_exposure = affected,
-      diagnostic_segments = list(segment),
+      diagnostics = ledgr_fold_diagnostic_rows(segment, ts),
       counts_processed = FALSE
     )
   }
@@ -424,9 +445,7 @@ ledgr_fold_stage_observe_settle <- function(
     }
   }
 
-  availability_view <- NULL
-  valuation <- NULL
-  context_ids <- services$instrument_ids
+  view_columns <- NULL
   if (services$availability_active) {
     decision <- availability_decision(fold_state$positions)
     if (!is.null(services$corporate_action_plan) &&
@@ -541,12 +560,11 @@ ledgr_fold_stage_observe_settle <- function(
       decision <- availability_decision(fold_state$positions)
     }
 
-    availability_view <- decision$view
+    view_columns <- decision$columns
     valuation <- decision$valuation
     context_ids <- decision$ids
     full_positions <- decision$full_positions
-    held_ids <- decision$held_ids
-    unvalued_ids <- held_ids[!valuation$priced[held_ids]]
+    unvalued_ids <- context_ids[view_columns$held & !view_columns$priced]
     if (length(unvalued_ids) > 0L) {
       return(stop_valuation(
         unvalued_ids,
@@ -556,7 +574,7 @@ ledgr_fold_stage_observe_settle <- function(
         valuation
       ))
     }
-    frozen_now <- held_ids[valuation$frozen[held_ids]]
+    frozen_now <- context_ids[view_columns$held & view_columns$frozen]
     entered <- setdiff(frozen_now, fold_state$frozen_set)
     exited <- setdiff(fold_state$frozen_set, frozen_now)
     if (length(entered) > 0L) {
@@ -601,10 +619,12 @@ ledgr_fold_stage_observe_settle <- function(
   active_positions <- position_qty != 0
   positions_value <- if (any(active_positions)) {
     if (services$availability_active) {
-      sum(
-        position_qty[active_positions] *
-          valuation$mark[services$instrument_ids[active_positions]]
-      )
+      # The valuation reduction keeps run order: marks are scattered from the
+      # context axis onto the run axis, so a holding off the context has no
+      # mark, then the products are summed in run order.
+      run_mark <- rep(NA_real_, length(position_qty))
+      run_mark[view_columns$context_pos] <- view_columns$mark
+      sum(position_qty[active_positions] * run_mark[active_positions])
     } else {
       sum(
         position_qty[active_positions] *
@@ -614,25 +634,69 @@ ledgr_fold_stage_observe_settle <- function(
   } else {
     0
   }
+  # The decision packet (P1 -> P5), the decision data (P2 only) and the
+  # private execution packet (P3 only), built once the pulse is valued.
+  # Dense emits none of them and joins at the normalized decision (Synthesis
+  # Section 4, producer scope).
+  packet <- NULL
+  data <- NULL
+  execution <- NULL
   if (services$availability_active) {
     fold_state$last_fully_valued <- ts
-    services$equity_fact_accumulator$append(list(
-      ts_utc = ts,
-      cash = fold_state$cash,
-      positions_value = positions_value,
-      realized_pnl = fold_state$lot_state$realized_pnl,
-      cost_basis = fold_state$lot_state$total_cost_basis
-    ))
+    n_run <- length(services$instrument_ids)
+    context_pos <- view_columns$context_pos
+    packet <- ledgr_carrier_packet(c(
+      list(pulse_idx = as.integer(pulse_idx), ts = as.numeric(ts)),
+      view_columns["context_pos"],
+      list(
+        cash = as.numeric(fold_state$cash),
+        positions_value = as.numeric(positions_value),
+        position = fold_state$positions[context_pos]
+      ),
+      view_columns[-1L]
+    ), "decision_packet", n_run)
+    # The current bar gathered onto the context axis; its locator is the run
+    # row and the prepared pulse column it was read from.
+    current <- history_bars$current
+    data <- ledgr_carrier_packet(list(
+      open = current$open[context_pos],
+      high = current$high[context_pos],
+      low = current$low[context_pos],
+      close = current$close[context_pos],
+      volume = current$volume[context_pos],
+      observed = current$observed[context_pos],
+      source_row = context_pos,
+      source_column = services$history_reader$pulse_columns[[pulse_idx]],
+      history = history_view
+    ), "decision_data", n_run)
+    # The next bar on the run axis, explicitly absent (has_next FALSE, all
+    # NA) beyond the prepared sessions; a carry window's final pulse reads
+    # its continuation column through the reader's next_bar.
+    next_bar <- history_bars$next_bar
+    has_next <- !is.null(next_bar)
+    absent <- rep(NA_real_, n_run)
+    opportunities <- services$execution_opportunities_posix
+    execution <- ledgr_carrier_packet(list(
+      exec_ts = if (pulse_idx <= length(opportunities)) as.numeric(opportunities[[pulse_idx]]) else NA_real_,
+      has_next = has_next,
+      open = if (has_next) next_bar$open else absent,
+      high = if (has_next) next_bar$high else absent,
+      low = if (has_next) next_bar$low else absent,
+      close = if (has_next) next_bar$close else absent,
+      volume = if (has_next) next_bar$volume else absent
+    ), "execution_packet", n_run)
   }
-  if (is.function(services$output_handler$record_equity_fact)) {
-    services$output_handler$record_equity_fact(
-      ts_utc = ts,
-      cash = fold_state$cash,
-      positions_value = positions_value,
-      realized_pnl = fold_state$lot_state$realized_pnl,
-      cost_basis = fold_state$lot_state$total_cost_basis
-    )
-  }
+  # The pulse is valued: its one row of the fold's equity record, on both
+  # producers (Synthesis 3.6). Finalisation and the inline summary read the
+  # frozen prefix E hands out.
+  fold_state$equity_facts <- ledgr_fold_equity_append(
+    fold_state$equity_facts,
+    ts = ts,
+    cash = fold_state$cash,
+    positions_value = positions_value,
+    realized_pnl = fold_state$lot_state$realized_pnl,
+    cost_basis = fold_state$lot_state$total_cost_basis
+  )
   if (sample_telemetry) {
     sample_now <- ledgr_time_now()
     t_bars <- ledgr_time_elapsed(sample_start, sample_now)
@@ -640,89 +704,81 @@ ledgr_fold_stage_observe_settle <- function(
   } else {
     t_bars <- 0
   }
-  context_position_idx <- if (services$availability_active) {
-    unname(valuation$source_row)
-  } else {
-    seq_along(services$instrument_ids)
-  }
-  positions_snapshot <- ledgr_fold_positions_snapshot(
-    fold_state$positions[context_position_idx],
-    context_ids
-  )
   list(
-    pulse_idx = pulse_idx,
-    ts = ts,
-    ts_iso = ts_iso,
-    context_ids = context_ids,
-    context_position_idx = context_position_idx,
-    positions_snapshot = positions_snapshot,
-    positions_value = positions_value,
-    availability_view = availability_view,
-    valuation = valuation,
-    members = if (services$availability_active) {
-      as.character(availability_view$members)
-    } else {
-      context_ids
-    },
-    history_bars = history_bars,
-    history_view = history_view,
-    sample_start = sample_start,
-    t_feats = t_feats,
-    t_bars = t_bars
+    observation = list(
+      pulse_idx = pulse_idx,
+      ts = ts,
+      ts_iso = ts_iso,
+      positions_value = positions_value,
+      packet = packet,
+      data = data,
+      sample_start = sample_start,
+      t_feats = t_feats,
+      t_bars = t_bars
+    ),
+    execution = execution
   )
 }
 
-ledgr_fold_scheduled_skip_decision <- function(fold_state, observation) {
-  positions <- observation$positions_snapshot
-  held <- names(positions)[positions != 0]
-  mark_source <- as.character(observation$valuation$source[held])
-  evidenced <- held[mark_source %in% c("stale_close", "frozen_close")]
-  diagnostic_segments <- if (length(evidenced) == 0L) {
-    list()
-  } else {
-    list(list(
+# A scheduled skip holds every context position: the decision is the
+# packet's positions on its own context axis, with no actionable ordinal.
+# Held positions marked from a stale or frozen close are evidenced.
+ledgr_fold_scheduled_skip_decision <- function(fold_state, services, observation) {
+  packet <- observation$packet
+  position <- packet$position
+  mark_source <- ledgr_carrier_mark_source_text(packet$mark_source)
+  evidenced <- which(position != 0 & mark_source %in% c("stale_close", "frozen_close"))
+  if (length(evidenced) > 0L) {
+    ledgr_fold_staging_add(fold_state, list(
       n = length(evidenced),
-      instrument_id = evidenced,
+      instrument_id = services$instrument_ids[packet$context_pos[evidenced]],
       stage = "valuation",
       outcome = "marked",
       reason_code = "",
       reasons = "",
-      quantity = positions[evidenced],
-      price = observation$valuation$mark[evidenced],
-      mark_source = observation$valuation$source[evidenced],
-      mark_age = observation$valuation$age[evidenced],
-      position_before = positions[evidenced],
-      position_after = positions[evidenced]
-    ))
+      quantity = position[evidenced],
+      price = packet$mark[evidenced],
+      mark_source = mark_source[evidenced],
+      mark_age = packet$mark_age[evidenced],
+      position_before = position[evidenced],
+      position_after = position[evidenced]
+    ), observation$ts)
   }
-  list(
-    strategy_targets = positions,
-    targets = positions,
+  decision <- ledgr_carrier_decision(list(
+    context_pos = packet$context_pos,
+    strategy_qty = position,
+    target_qty = position,
+    actionable_k = integer(),
     state_update = NULL,
-    diagnostic_segments = diagnostic_segments,
+    intent_reason = NULL
+  ), length(services$instrument_ids))
+  c(decision, list(
     sample_start = observation$sample_start,
     t_ctx = 0,
     t_strat = 0,
     t_target = 0
-  )
+  ))
 }
 
+# A scheduled skip plans nothing: its typed plan is empty, declares no
+# economic event kind and expects the fold cash unchanged.
 ledgr_fold_scheduled_skip_plan <- function(fold_state, decision) {
-  pulse_plan <- structure(
+  none <- integer()
+  empty <- numeric()
+  batch <- ledgr_carrier_plan(
     list(
-      targets = decision$targets,
-      actionable_idx = integer(),
-      fills = list(),
-      rejected = list(),
-      economic_event_kinds = character(),
-      expected_final_cash = fold_state$cash
+      expected_final_cash = fold_state$cash,
+      economic_event_kinds = none,
+      fill = list(k = none, pos = none, side = none, qty = empty, price = empty, fee = empty,
+        cash_delta = empty, position_delta = empty, exec_ts = empty, position_before = empty,
+        planned_position_after = empty, info_offset = none, info_count = none, info_code = none),
+      rejection = list(k = none, pos = none, emit = none, primary = none, reason_offset = none,
+        reason_count = none, reason_code = none, resolved_price = empty, exec_ts = empty, position = empty)
     ),
-    class = c("ledgr_pulse_plan", "list")
+    decision$context_pos, none, length(fold_state$positions)
   )
   list(
-    pulse_plan = pulse_plan,
-    accounting_events = list(fills = list(), kinds = character()),
-    diagnostic_segments = list(),
+    batch = batch,
     sample_start = decision$sample_start,
     t_target = 0,
     t_fill = 0
@@ -738,24 +794,31 @@ ledgr_fold_stage_decide <- function(
   pulse_idx <- observation$pulse_idx
   ts <- observation$ts
   ts_iso <- observation$ts_iso
-  context_ids <- observation$context_ids
-  positions_snapshot <- observation$positions_snapshot
-  availability_view <- observation$availability_view
-  valuation <- observation$valuation
-  add_segment <- function(segment) {
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
-    invisible(NULL)
-  }
+  packet <- observation$packet
+  add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
 
   projection_idx <- services$projection_pulse_idx[[pulse_idx]]
-  bars_current <- if (services$availability_active) {
-    ledgr_history_bar_packet_frame(
-      observation$history_bars$current,
-      observation$context_position_idx
-    )
+  # P2 input: the decision axis and the public context's views. Context
+  # ordinal k is run position context_pos[k]; dense keeps its frozen views on
+  # the identity axis (Synthesis 3.1, Q1). P2 receives no execution packet.
+  p2 <- NULL
+  if (services$availability_active) {
+    context_pos <- packet$context_pos
+    position <- packet$position
+    context_ids <- services$instrument_ids[context_pos]
+    p2 <- ledgr_carrier_p2_input(packet, context_ids)
+    data <- observation$data
+    bars_current <- ledgr_history_bar_packet_frame(list(
+      ts_utc = ts, instrument_id = context_ids, open = data$open, high = data$high,
+      low = data$low, close = data$close, volume = data$volume, observed = data$observed
+    ))
   } else {
-    services$bars_views[[pulse_idx]]
+    context_pos <- seq_along(services$instrument_ids)
+    position <- fold_state$positions
+    context_ids <- services$instrument_ids
+    bars_current <- services$bars_views[[pulse_idx]]
   }
+  positions_snapshot <- ledgr_fold_positions_snapshot(position, context_ids)
   # The long feature table is the schema-only frame the context contract
   # allows on the availability path; accessors and the wide view carry values.
   features_current <- if (services$availability_active) {
@@ -812,8 +875,8 @@ ledgr_fold_stage_decide <- function(
   )
   if (services$availability_active) {
     ctx$availability_active <- TRUE
-    ctx$members <- observation$members
-    ctx$.history <- observation$history_view
+    ctx$members <- p2$members
+    ctx$.history <- observation$data$history
   } else {
     ctx$members <- context_ids
   }
@@ -849,7 +912,7 @@ ledgr_fold_stage_decide <- function(
       feature_name_state = services$availability_feature_name_state,
       feature_lookup_state = services$availability_feature_lookup_state,
       id_to_idx = if (services$availability_active) NULL else services$id_to_idx,
-      availability = availability_view,
+      availability = p2$view,
       scalar_access_state = services$scalar_access_state,
       dense_planes = services$dense_planes
     )
@@ -912,12 +975,18 @@ ledgr_fold_stage_decide <- function(
 
   intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
 
+  # P2 return boundary: the strategy return is normalized once, on the
+  # complete context axis; a missing or extra target is refused, never
+  # filled. `targets` keeps the strategy's instrument names in context order
+  # for the risk steps and the named admissibility validators; the decision
+  # columns are its unnamed values.
   targets <- ledgr_validate_strategy_targets(
     result$targets,
     context_ids,
     allow_empty = services$availability_active
   )
-  strategy_targets <- targets
+  strategy_qty <- as.numeric(targets)
+  target_qty <- strategy_qty
   if (!is.null(intent_reason)) {
     add_segment(list(
       n = 1L,
@@ -939,12 +1008,8 @@ ledgr_fold_stage_decide <- function(
       ))
       return(invisible(NULL))
     }
-    restriction <- as.character(
-      availability_view$target_restriction_reason[context_ids]
-    )
-    restrictions <- as.character(
-      availability_view$target_restriction_reasons[context_ids]
-    )
+    restriction <- p2$restriction$reason
+    restrictions <- p2$restriction$reasons
     reason <- ifelse(nzchar(restriction), restriction, "decision_recorded")
     reasons <- ifelse(nzchar(restrictions), restrictions, reason)
     skipped <- context_ids %in% services$pulse_notes$sizing_skipped
@@ -963,19 +1028,15 @@ ledgr_fold_stage_decide <- function(
       outcome = "recorded",
       reason_code = reason,
       reasons = reasons,
-      target = strategy_targets[context_ids],
-      quantity = positions_snapshot[context_ids],
-      price = valuation$mark[context_ids],
-      mark_source = valuation$source[context_ids],
-      mark_age = valuation$age[context_ids],
-      target_before_risk = strategy_targets[context_ids],
-      target_after_risk = if (is.null(target_after)) {
-        NA_real_
-      } else {
-        target_after[context_ids]
-      },
-      position_before = positions_snapshot[context_ids],
-      position_after = positions_snapshot[context_ids]
+      target = strategy_qty,
+      quantity = position,
+      price = packet$mark,
+      mark_source = p2$mark_source,
+      mark_age = packet$mark_age,
+      target_before_risk = strategy_qty,
+      target_after_risk = if (is.null(target_after)) NA_real_ else target_after,
+      position_before = position,
+      position_after = position
     ))
     invisible(NULL)
   }
@@ -984,18 +1045,17 @@ ledgr_fold_stage_decide <- function(
       ledgr_availability_validate_strategy_targets(
         targets,
         positions_snapshot,
-        availability_view
+        p2$view
       )
-      new_positive <- as.numeric(targets) > as.numeric(positions_snapshot) &
-        as.numeric(targets) > 0 &
-        !valuation$permissible[names(targets)]
+      new_positive <- strategy_qty > position & strategy_qty > 0 & !packet$permissible
       if (any(new_positive)) {
         append_decision_trace()
-        stopped_ids <- names(targets)[new_positive]
+        stopped <- which(new_positive)
+        stopped_ids <- context_ids[stopped]
         affected <- ledgr_availability_affected_exposure(
           stopped_ids,
           positions_snapshot,
-          valuation
+          ledgr_carrier_p2_valuation(packet, context_ids)
         )
         affected <- c(affected, list(ts_utc = ts, specified = TRUE))
         segment <- list(
@@ -1004,13 +1064,13 @@ ledgr_fold_stage_decide <- function(
           stage = "risk",
           outcome = "stopped",
           reason_code = "risk_mark_unavailable",
-          target = targets[stopped_ids],
-          quantity = positions_snapshot[stopped_ids],
-          mark_source = valuation$source[stopped_ids],
-          mark_age = valuation$age[stopped_ids],
-          target_before_risk = targets[stopped_ids],
-          position_before = positions_snapshot[stopped_ids],
-          position_after = positions_snapshot[stopped_ids],
+          target = strategy_qty[stopped],
+          quantity = position[stopped],
+          mark_source = p2$mark_source[stopped],
+          mark_age = packet$mark_age[stopped],
+          target_before_risk = strategy_qty[stopped],
+          position_before = position[stopped],
+          position_after = position[stopped],
           detail_json = canonical_json(list(
             risk_step = "availability_risk_mark_gate"
           ))
@@ -1020,51 +1080,51 @@ ledgr_fold_stage_decide <- function(
           reason_code = "risk_mark_unavailable",
           affected_instrument_ids = stopped_ids,
           affected_exposure = affected,
-          diagnostic_segments = list(segment),
+          diagnostics = ledgr_fold_diagnostic_rows(segment, ts),
           counts_processed = TRUE
         ))
       }
     }
     fold_state$current_stage <- "risk"
-    targets <- ledgr_apply_risk_plan(targets, services$risk_plan, ctx)
-    targets <- ledgr_validate_post_risk_targets(targets, context_ids)
+    # Risk applies to the normalized targets; the compiled plan was validated
+    # once in E. Only the transformed quantities are checked again (dynamic
+    # mark and equity checks stay inside the risk steps).
+    risked <- ledgr_apply_risk_plan(targets, services$risk_plan, ctx)
+    target_qty <- ledgr_validate_post_risk_quantities(risked, length(context_ids))
     if (services$availability_active) {
-      ledgr_availability_validate_post_risk(targets, strategy_targets)
-      ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+      ledgr_availability_validate_post_risk(risked, targets)
+      ledgr_availability_validate_short_exposure(risked, positions_snapshot)
     }
   }
   if (services$availability_active) {
-    append_decision_trace(targets)
-    stale_ids <- context_ids[
-      valuation$permissible[context_ids] &
-        !is.na(valuation$age[context_ids]) &
-        valuation$age[context_ids] > 0L &
-        (positions_snapshot[context_ids] != 0 | targets[context_ids] != 0)
-    ]
-    if (length(stale_ids) > 0L) {
-      reduced <- vapply(stale_ids, function(id) {
-        !isTRUE(all.equal(
-          as.numeric(targets[[id]]),
-          as.numeric(strategy_targets[[id]])
-        ))
+    append_decision_trace(target_qty)
+    stale <- which(
+      packet$permissible &
+        !is.na(packet$mark_age) &
+        packet$mark_age > 0L &
+        (position != 0 | target_qty != 0)
+    )
+    if (length(stale) > 0L) {
+      reduced <- vapply(stale, function(k) {
+        !isTRUE(all.equal(target_qty[[k]], strategy_qty[[k]]))
       }, logical(1))
       add_segment(list(
-        n = length(stale_ids), instrument_id = stale_ids, stage = "risk",
+        n = length(stale), instrument_id = context_ids[stale], stage = "risk",
         outcome = ifelse(reduced, "reduced", "passed"),
         reason_code = ifelse(
           reduced,
           "stale_mark_reduction",
           "stale_mark_pass_through"
         ),
-        target = targets[stale_ids],
-        quantity = positions_snapshot[stale_ids],
-        price = valuation$mark[stale_ids],
-        mark_source = valuation$source[stale_ids],
-        mark_age = valuation$age[stale_ids],
-        target_before_risk = strategy_targets[stale_ids],
-        target_after_risk = targets[stale_ids],
-        position_before = positions_snapshot[stale_ids],
-        position_after = positions_snapshot[stale_ids]
+        target = target_qty[stale],
+        quantity = position[stale],
+        price = packet$mark[stale],
+        mark_source = p2$mark_source[stale],
+        mark_age = packet$mark_age[stale],
+        target_before_risk = strategy_qty[stale],
+        target_after_risk = target_qty[stale],
+        position_before = position[stale],
+        position_after = position[stale]
       ))
     }
   }
@@ -1075,15 +1135,23 @@ ledgr_fold_stage_decide <- function(
   } else {
     t_target <- 0
   }
-  list(
-    strategy_targets = strategy_targets,
-    targets = targets,
+  # The decision group on the context axis; context_pos is its only bridge
+  # to the run axis. Actionable ordinals are the context ordinals whose
+  # post-risk target moves the position beyond sqrt(eps).
+  decision <- ledgr_carrier_decision(list(
+    context_pos = context_pos,
+    strategy_qty = strategy_qty,
+    target_qty = target_qty,
+    actionable_k = which(abs(target_qty - position) > sqrt(.Machine$double.eps)),
     state_update = result$state_update,
+    intent_reason = intent_reason
+  ), length(services$instrument_ids))
+  c(decision, list(
     sample_start = sample_start,
     t_ctx = t_ctx,
     t_strat = t_strat,
     t_target = t_target
-  )
+  ))
 }
 
 ledgr_fold_stage_plan <- function(
@@ -1091,24 +1159,24 @@ ledgr_fold_stage_plan <- function(
     services,
     observation,
     decision,
+    execution,
     sample_telemetry,
     sample_start) {
   fold_state$current_stage <- "execution"
   pulse_idx <- observation$pulse_idx
   ts <- observation$ts
-  ts_iso <- observation$ts_iso
-  targets <- decision$targets
-  strategy_targets <- decision$strategy_targets
-  positions_snapshot <- observation$positions_snapshot
-  availability_view <- observation$availability_view
-  valuation <- observation$valuation
-
-  target_names <- names(targets)
-  desired_vec <- as.numeric(targets)
-  target_inst_idx <- as.integer(services$id_to_idx[target_names])
-  current_qty_vec <- as.numeric(fold_state$positions[target_inst_idx])
-  delta_vec <- desired_vec - current_qty_vec
-  actionable_idx <- which(abs(delta_vec) > sqrt(.Machine$double.eps))
+  # The decision columns live on the context axis; context_pos is the only
+  # bridge to the run axis. The planners return the typed plan (Synthesis
+  # 3.3): one row per actionable context ordinal, as fills and rejections.
+  context_pos <- decision$context_pos
+  target_qty <- decision$target_qty
+  strategy_qty <- decision$strategy_qty
+  position <- as.numeric(fold_state$positions[context_pos])
+  actionable_k <- decision$actionable_k
+  instrument_ids <- services$instrument_ids
+  # Execution epochs were validated once in E from the opportunity axis.
+  epochs <- services$execution_epochs
+  epoch_valid <- pulse_idx > length(epochs) || services$execution_epoch_valid[[pulse_idx]]
   if (sample_telemetry) {
     sample_now <- ledgr_time_now()
     t_target <- decision$t_target + ledgr_time_elapsed(sample_start, sample_now)
@@ -1118,53 +1186,55 @@ ledgr_fold_stage_plan <- function(
   }
 
   if (sample_telemetry) sample_start <- ledgr_time_now()
-  pulse_plan <- if (services$availability_active) {
+  batch <- if (services$availability_active) {
+    exec_ts <- execution$exec_ts
+    execution_view <- if (!is.na(exec_ts) && length(actionable_k) > 0L) {
+      ledgr_carrier_execution_view(
+        services$availability_provider,
+        exec_ts,
+        instrument_ids[context_pos[actionable_k]]
+      )
+    }
     ledgr_fold_build_availability_pulse_plan(
-      targets = targets,
-      target_names = target_names,
-      target_inst_idx = target_inst_idx,
-      current_qty_vec = current_qty_vec,
-      delta_vec = delta_vec,
-      actionable_idx = actionable_idx,
-      pulse_idx = pulse_idx,
-      execution_opportunities_posix = services$execution_opportunities_posix,
-      bars_mat = NULL,
+      context_pos = context_pos,
+      target_qty = target_qty,
+      position = position,
+      actionable_k = actionable_k,
+      member = observation$packet$member,
+      execution = execution,
+      execution_view = execution_view,
+      epoch_valid = epoch_valid,
       cost_resolver = services$cost_resolver,
-      ts_signal_utc = ts_iso,
-      provider = services$availability_provider,
-      decision_member = availability_view$member,
       cash = fold_state$cash,
-      next_bars = observation$history_bars$next_bar
+      instrument_ids = instrument_ids
     )
   } else {
+    has_next <- pulse_idx < length(services$pulses_posix)
     plan <- ledgr_fold_build_pulse_plan(
-      targets = targets,
-      target_names = target_names,
-      target_inst_idx = target_inst_idx,
-      current_qty_vec = current_qty_vec,
-      delta_vec = delta_vec,
-      actionable_idx = actionable_idx,
+      context_pos = context_pos,
+      target_qty = target_qty,
+      position = position,
+      actionable_k = actionable_k,
       pulse_idx = pulse_idx,
-      pulses_posix = services$pulses_posix,
+      has_next = has_next,
+      exec_ts = if (has_next) epochs[[pulse_idx]] else NA_real_,
+      epoch_valid = epoch_valid,
       bars_mat = services$bars_mat,
       cost_resolver = services$cost_resolver,
-      ts_signal_utc = ts_iso
+      n_run = length(instrument_ids)
     )
     ledgr_fold_apply_net_feasibility_noop(
       plan,
-      ledgr_carrier_settlement_state(fold_state, services$instrument_ids)
+      ledgr_carrier_settlement_state(fold_state, instrument_ids)
     )
   }
-  accounting_events <- ledgr_fold_pulse_plan_accounting_events(
-    pulse_plan,
-    canonical_event_kinds = if (services$use_compiled_spot_fifo) {
-      NULL
-    } else {
-      c("FILL", "CASHFLOW")
-    }
+  # Unsupported kinds refuse here, before any mutation.
+  kinds <- ledgr_fold_plan_event_kinds(
+    batch,
+    canonical_event_kinds = if (services$use_compiled_spot_fifo) NULL else 1:2
   )
   if (services$use_compiled_spot_fifo) {
-    ledgr_require_compiled_spot_fifo_event_kinds(accounting_events$kinds)
+    ledgr_require_compiled_spot_fifo_event_kinds(kinds)
   }
   if (sample_telemetry) {
     sample_now <- ledgr_time_now()
@@ -1174,154 +1244,123 @@ ledgr_fold_stage_plan <- function(
     t_fill <- 0
   }
 
-  segments <- list()
-  add_segment <- function(segment) {
-    segments[[length(segments) + 1L]] <<- segment
-    invisible(NULL)
-  }
+  # P3's diagnostic rows are staged in emission order; a stop carries its row.
+  add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
   if (services$availability_active) {
-    recorded_final_cash <- fold_state$cash + sum(vapply(
-      pulse_plan$fills,
-      function(entry) ledgr_availability_fill_cash_delta(entry$fill),
-      numeric(1)
-    ))
+    fill <- batch$fill
+    rejection <- batch$rejection
+    # The reconciliation sum reuses the fills' computed cash effects.
+    recorded_final_cash <- fold_state$cash + sum(fill$cash_delta)
     if (!isTRUE(all.equal(
       as.numeric(recorded_final_cash),
-      as.numeric(pulse_plan$expected_final_cash),
+      as.numeric(batch$expected_final_cash),
       tolerance = ledgr_availability_cash_tolerance
     ))) {
       affordability_detail <- canonical_json(list(
         cash_before = fold_state$cash,
-        virtual_final_cash = pulse_plan$expected_final_cash,
+        virtual_final_cash = batch$expected_final_cash,
         recorded_final_cash = recorded_final_cash
-      ))
-      add_segment(list(
-        n = 1L,
-        stage = "affordability",
-        outcome = "stopped",
-        reason_code = "affordability_reconciliation_failed",
-        detail_json = affordability_detail
       ))
       return(ledgr_fold_stop_result(
         status = "INCOMPLETE",
         reason_code = "affordability_reconciliation_failed",
         affected_instrument_ids = character(),
         affected_exposure = fold_state$affected_exposure,
-        diagnostic_segments = segments,
+        diagnostics = ledgr_fold_diagnostic_rows(list(
+          n = 1L,
+          stage = "affordability",
+          outcome = "stopped",
+          reason_code = "affordability_reconciliation_failed",
+          detail_json = affordability_detail
+        ), ts),
         counts_processed = TRUE
       ))
     }
-    if (length(pulse_plan$rejected) > 0L) {
-      rejected <- pulse_plan$rejected
-      rejected_ids <- vapply(
-        rejected,
-        function(entry) as.character(entry$instrument_id),
-        character(1)
-      )
-      rejected_qty <- vapply(
-        rejected,
-        function(entry) as.numeric(entry$current_qty),
-        numeric(1)
-      )
+    # The reason text is built here, at the diagnostic boundary.
+    if (length(rejection$k) > 0L) {
+      reasons <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reason_count,
+        rejection$reason_code, .ledgr_plan_reason_levels)
       add_segment(list(
-        n = length(rejected), instrument_id = rejected_ids,
+        n = length(rejection$k), instrument_id = instrument_ids[rejection$pos],
         stage = "execution", outcome = "no_fill",
-        reason_code = vapply(
-          rejected,
-          function(entry) as.character(entry$reason_code),
-          character(1)
-        ),
-        reasons = vapply(
-          rejected,
-          function(entry) as.character(entry$reasons %||% entry$reason_code),
-          character(1)
-        ),
-        target = targets[rejected_ids],
-        quantity = rejected_qty,
-        price = vapply(
-          rejected,
-          function(entry) as.numeric(entry$fill$fill_price %||% NA_real_),
-          numeric(1)
-        ),
+        reason_code = .ledgr_plan_reason_levels[rejection$primary],
+        reasons = reasons$reasons,
+        target = target_qty[rejection$k],
+        quantity = rejection$position,
+        price = rejection$resolved_price,
         decision_ts_utc = ts,
-        execution_ts_utc = vapply(
-          rejected,
-          function(entry) as.numeric(as.POSIXct(entry$execution_ts_utc, tz = "UTC")),
-          numeric(1)
-        ),
-        target_before_risk = strategy_targets[rejected_ids],
-        target_after_risk = targets[rejected_ids],
-        position_before = rejected_qty,
-        position_after = rejected_qty
+        execution_ts_utc = rejection$exec_ts,
+        target_before_risk = strategy_qty[rejection$k],
+        target_after_risk = target_qty[rejection$k],
+        position_before = rejection$position,
+        position_after = rejection$position
       ))
     }
-    if (length(pulse_plan$fills) > 0L) {
-      fills <- pulse_plan$fills
-      fill_ids <- vapply(
-        fills,
-        function(entry) as.character(entry$instrument_id),
-        character(1)
-      )
-      informational <- lapply(
-        fills,
-        function(entry) {
-          ledgr_availability_reason_values(entry$informational_reasons)
-        }
-      )
+    if (length(fill$k) > 0L) {
+      # The primary of a fill row is its first informational reason or "".
+      reasons <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count,
+        fill$info_code, .ledgr_plan_reason_levels)
       add_segment(list(
-        n = length(fills), instrument_id = fill_ids,
+        n = length(fill$k), instrument_id = instrument_ids[fill$pos],
         stage = "execution", outcome = "filled",
-        reason_code = vapply(
-          informational,
-          function(x) if (length(x) > 0L) x[[1L]] else "",
-          character(1)
-        ),
-        reasons = vapply(
-          informational,
-          ledgr_availability_reason_text,
-          character(1)
-        ),
-        target = targets[fill_ids],
-        quantity = vapply(
-          fills,
-          function(entry) as.numeric(entry$fill$qty),
-          numeric(1)
-        ),
-        price = vapply(
-          fills,
-          function(entry) as.numeric(entry$fill$fill_price),
-          numeric(1)
-        ),
+        reason_code = reasons$reason,
+        reasons = reasons$reasons,
+        target = target_qty[fill$k],
+        quantity = fill$qty,
+        price = fill$price,
         decision_ts_utc = ts,
-        execution_ts_utc = vapply(
-          fills,
-          function(entry) as.numeric(as.POSIXct(entry$execution_ts_utc, tz = "UTC")),
-          numeric(1)
-        ),
-        event_seq = fold_state$event_seq + seq_along(fills) - 1L,
-        target_before_risk = strategy_targets[fill_ids],
-        target_after_risk = targets[fill_ids],
-        position_before = vapply(
-          fills,
-          function(entry) as.numeric(entry$current_qty),
-          numeric(1)
-        ),
-        position_after = vapply(
-          fills,
-          function(entry) as.numeric(entry$resulting_qty),
-          numeric(1)
-        )
+        execution_ts_utc = fill$exec_ts,
+        event_seq = fold_state$event_seq + seq_along(fill$k) - 1L,
+        target_before_risk = strategy_qty[fill$k],
+        target_after_risk = target_qty[fill$k],
+        position_before = fill$position_before,
+        # The planned after-position: diagnostic evidence, not authority.
+        position_after = fill$planned_position_after
       ))
     }
   }
   list(
-    pulse_plan = pulse_plan,
-    accounting_events = accounting_events,
-    diagnostic_segments = segments,
+    batch = batch,
     sample_start = sample_start,
     t_target = t_target,
     t_fill = t_fill
   )
+}
+
+# The candidate lot block of a pulse's fills (Synthesis 3.5): one typed fill
+# operation over the whole batch, whose instruments are distinct (V-fill), so
+# the batch is one conflict-free block; the input book is not modified.
+# Returns the operation's `book` and `applied` rows, or, when it refuses,
+# `failed` (the earliest failing fill) and that fill's own `error`, as the
+# per-fill application raised it. Row j's outcome depends only on its own
+# instrument and on rows before it (the ordered aggregate scan), so a prefix
+# of the batch fails exactly when it contains a failing row. On the refusal
+# path only, the shortest failing prefix is bisected, one block per step.
+ledgr_fold_fill_candidate <- function(book, fill) {
+  prefix <- function(m) {
+    j <- seq_len(m)
+    tryCatch(
+      ledgr_lot_fill(book, fill$pos[j], fill$side[j], fill$qty[j], fill$price[j], fill$fee[j]),
+      error = identity
+    )
+  }
+  n <- length(fill$k)
+  out <- prefix(n)
+  if (!inherits(out, "error")) return(out)
+  error <- out
+  ok <- 0L
+  failed <- n
+  while (failed - ok > 1L) {
+    mid <- (ok + failed) %/% 2L
+    out <- prefix(mid)
+    if (inherits(out, "error")) {
+      failed <- mid
+      error <- out
+    } else {
+      ok <- mid
+    }
+  }
+  list(failed = failed, error = error)
 }
 
 ledgr_fold_stage_apply <- function(
@@ -1333,7 +1372,7 @@ ledgr_fold_stage_apply <- function(
     sample_start) {
   fold_state$current_stage <- "accounting"
   pulse_idx <- observation$pulse_idx
-  accounting_events <- plan$accounting_events
+  fill <- plan$batch$fill
   output_handler <- services$output_handler
   t_event <- 0
   t_state <- 0
@@ -1354,12 +1393,12 @@ ledgr_fold_stage_apply <- function(
     )
   }
   if (services$use_compiled_spot_fifo) {
-    compiled_fills <- ledgr_fold_pulse_plan_fill_intents(accounting_events)
-    if (length(compiled_fills) > 0L) {
+    if (length(fill$k) > 0L) {
       if (sample_telemetry) sample_start <- ledgr_time_now()
+      # The compiled wrapper reads the fill columns.
       batch <- ledgr_run_compiled_spot_fifo_batch(
         run_id = services$run_id,
-        fills = compiled_fills,
+        fills = fill,
         state = list(
           cash = fold_state$cash,
           positions = fold_state$positions,
@@ -1382,59 +1421,61 @@ ledgr_fold_stage_apply <- function(
         t_event <- t_event + ledgr_time_elapsed(sample_start, ledgr_time_now())
       }
     }
-  } else {
-    for (entry in accounting_events$fills) {
-      if (sample_telemetry) sample_start <- ledgr_time_now()
-      fill <- entry$fill
-      inst_idx <- entry$inst_idx
-
-      # One typed fill operation per fill until LDG-3167 batches the pulse;
-      # the instrument is its run-axis position.
-      lot_res <- ledgr_lot_fill(
-        fold_state$lot_state,
-        pos = inst_idx,
-        side = ledgr_lot_side(fill$side),
-        qty = fill$qty,
-        price = fill$fill_price,
-        fee = fill$fee
-      )
-      fold_state$lot_state <- lot_res$book
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
-
-      write_res <- output_handler$write_fill_events(
-        fill_intent = fill,
+  } else if (length(fill$k) > 0L) {
+    if (sample_telemetry) sample_start <- ledgr_time_now()
+    rows <- seq_along(fill$k)
+    instrument_id <- services$instrument_ids[fill$pos]
+    use_transaction <- identical(services$event_mode, "live")
+    # The candidate lot block of the whole fill batch and its ordered
+    # per-event facts, computed without touching the fold's book.
+    candidate <- ledgr_fold_fill_candidate(fold_state$lot_state, fill)
+    if (!is.null(candidate$failed)) {
+      # A refusal keeps the per-fill order: the fills before the failing one
+      # were published before its lot operation, so a publication refusal of
+      # theirs comes first. Nothing is staged or written here.
+      earlier <- seq_len(candidate$failed - 1L)
+      output_handler$write_fill_events(
+        fill = fill,
+        i = earlier,
+        instrument_id = instrument_id[earlier],
         event_seq = fold_state$event_seq,
-        use_transaction = identical(services$event_mode, "live")
+        use_transaction = use_transaction,
+        stage = FALSE
       )
-      fold_state$event_seq <- write_res$next_event_seq
-      if (is.function(output_handler$record_accounting_fact)) {
-        output_handler$record_accounting_fact(
-          write_res = write_res,
-          applied = lot_res$applied
-        )
-      }
-      if (sample_telemetry) {
-        sample_now <- ledgr_time_now()
-        t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
-        sample_start <- sample_now
-      }
+      stop(candidate$error)
+    }
+    if (sample_telemetry) {
+      sample_now <- ledgr_time_now()
+      t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+      sample_start <- sample_now
+    }
 
-      qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
-      cash_delta <- if (identical(fill$side, "BUY")) {
-        -(fill$qty * fill$fill_price + fill$fee)
-      } else {
-        fill$qty * fill$fill_price - fill$fee
-      }
-      # Lots alone determine the position.
-      positions[[inst_idx]] <- lot_res$book$net_by_inst[[inst_idx]]
-      cash <- cash + cash_delta
-      if (sample_telemetry) {
-        t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
-      }
+    # Install the book, publish the event block, advance the sequence and
+    # record the legs; positions and cash are installed last.
+    fold_state$lot_state <- candidate$book
+    block <- output_handler$write_fill_events(
+      fill = fill,
+      i = rows,
+      instrument_id = instrument_id,
+      event_seq = fold_state$event_seq,
+      use_transaction = use_transaction
+    )
+    fold_state$event_seq <- fold_state$event_seq + length(rows)
+    if (is.function(output_handler$record_accounting_fact)) {
+      output_handler$record_accounting_fact(block = block, applied = candidate$applied)
+    }
+    if (sample_telemetry) {
+      sample_now <- ledgr_time_now()
+      t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
+      sample_start <- sample_now
+    }
+
+    # Lots alone determine the positions; cash adds P3's computed effects in
+    # event order.
+    positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]
+    cash <- ledgr_cash_scan(cash, fill$cash_delta)[[length(rows)]]
+    if (sample_telemetry) {
+      t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
     }
   }
   fold_state$positions <- positions
@@ -1456,13 +1497,14 @@ ledgr_fold_stage_commit <- function(
     sample_telemetry,
     pulse_start) {
   output_handler <- services$output_handler
-  pulse_plan <- plan$pulse_plan
+  batch <- plan$batch
   ts <- observation$ts
   ts_iso <- observation$ts_iso
-  context_ids <- observation$context_ids
-  valuation <- observation$valuation
-  strategy_targets <- decision$strategy_targets
-  targets <- decision$targets
+  packet <- observation$packet
+  # The decision's context axis, named by run position for the state
+  # normalization boundary.
+  context_pos <- decision$context_pos
+  context_ids <- services$instrument_ids[context_pos]
   state_update <- decision$state_update
   sample_start <- apply$sample_start
   t_state <- apply$t_state
@@ -1472,12 +1514,9 @@ ledgr_fold_stage_commit <- function(
   }
 
   if (services$availability_active) {
-    if (length(pulse_plan$fills) > 0L) {
-      fill_times <- as.POSIXct(vapply(
-        pulse_plan$fills,
-        function(entry) as.numeric(entry$execution_ts_utc),
-        numeric(1)
-      ), origin = "1970-01-01", tz = "UTC")
+    fill <- batch$fill
+    if (length(fill$k) > 0L) {
+      fill_times <- as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC")
       fold_state$last_executed <- max(
         c(fold_state$last_executed, fill_times),
         na.rm = TRUE
@@ -1485,7 +1524,7 @@ ledgr_fold_stage_commit <- function(
     }
     if (!isTRUE(all.equal(
       as.numeric(fold_state$cash),
-      as.numeric(pulse_plan$expected_final_cash),
+      as.numeric(batch$expected_final_cash),
       tolerance = ledgr_availability_cash_tolerance
     ))) {
       rlang::abort(
@@ -1496,55 +1535,41 @@ ledgr_fold_stage_commit <- function(
         )
       )
     }
-    actual_positions <- ledgr_fold_positions_snapshot(
-      fold_state$positions[valuation$source_row],
-      context_ids
-    )
+    # Gross exposures at the decision marks, each on the context axis.
+    actual_positions <- fold_state$positions[context_pos]
     reconciliation_detail <- canonical_json(list(
-      cash_before = fold_state$cash - sum(vapply(
-        pulse_plan$fills,
-        function(entry) ledgr_availability_fill_cash_delta(entry$fill),
-        numeric(1)
-      )),
-      virtual_final_cash = pulse_plan$expected_final_cash,
+      cash_before = fold_state$cash - sum(fill$cash_delta),
+      virtual_final_cash = batch$expected_final_cash,
       recorded_final_cash = fold_state$cash,
       intended_gross_exposure = ledgr_availability_marked_gross(
-        strategy_targets,
-        valuation$mark[names(strategy_targets)]
+        decision$strategy_qty,
+        packet$mark
       ),
       post_risk_gross_exposure = ledgr_availability_marked_gross(
-        targets,
-        valuation$mark[names(targets)]
+        decision$target_qty,
+        packet$mark
       ),
       actual_gross_exposure = ledgr_availability_marked_gross(
         actual_positions,
-        valuation$mark[names(actual_positions)]
+        packet$mark
       ),
       exposure_basis = "decision_mark_gross"
     ))
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <-
-      list(
-        n = 1L,
-        stage = "reconciliation",
-        outcome = "reconciled",
-        reason_code = "affordability_reconciled",
-        detail_json = reconciliation_detail
-      )
-    ledgr_fold_flush_pulse_block(
-      fold_state,
-      services$diagnostic_writer,
-      services$run_id,
-      ts
-    )
+    ledgr_fold_staging_add(fold_state, list(
+      n = 1L,
+      stage = "reconciliation",
+      outcome = "reconciled",
+      reason_code = "affordability_reconciled",
+      detail_json = reconciliation_detail
+    ), ts)
   }
-  if (length(fold_state$pending_segments) > 0L) {
-    ledgr_fold_flush_pulse_block(
-      fold_state,
-      services$diagnostic_writer,
-      services$run_id,
-      ts
-    )
-  }
+  # The pulse's staged rows drain into the bounded writer.
+  ledgr_fold_flush_pulse_block(
+    fold_state,
+    services$diagnostic_writer,
+    services$run_id,
+    ts
+  )
 
   if (services$availability_active) {
     if (is.null(state_update)) {
@@ -1678,6 +1703,11 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     NULL
   }
   execution_opportunities_posix <- execution$execution_opportunities_posix
+  # The prepared opportunity axis: a pulse's fills execute at its entry (the
+  # declared next-session opening, or the next pulse). Its epochs are
+  # validated once here, not per fill (Synthesis 3.3).
+  execution_epochs <- as.numeric(execution_opportunities_posix %||% pulses_posix[-1L])
+  execution_epoch_valid <- ledgr_plan_epoch_valid(execution_epochs)
   corporate_action_plan <- execution$corporate_action_plan
   max_stale_sessions <- if (availability_active) {
     as.integer(availability_provider$valuation_policy$max_sessions)
@@ -1773,6 +1803,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     ts_utc = as.POSIXct(NA, tz = "UTC"),
     specified = FALSE
   )
+  # The pulse diagnostic staging (pinned capacity, design note 2.4) and the
+  # equity record (one row per valued pulse, capacity the pulse count) are
+  # allocated once here and never grow (Synthesis 3.6).
   fold_state <- ledgr_fold_state_new(
     cash = state$cash,
     positions = state$positions,
@@ -1783,18 +1816,15 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     last_fully_valued = last_fully_valued_ts,
     last_executed = last_executed_ts,
     frozen_set = as.character(execution$frozen_at_resume %||% character()),
+    pending_segments = ledgr_fold_diagnostic_staging(
+      ledgr_fold_diagnostic_capacity(length(instrument_ids), corporate_action_plan)
+    ),
+    equity_facts = ledgr_fold_equity_record(length(pulses_posix)),
     telemetry_idx = as.integer(telemetry$telemetry_samples %||% 0L)
   )
-  equity_fact_accumulator <- ledgr_fold_equity_fact_accumulator(
-    if (availability_active) length(pulses_posix) else 0L
-  )
+  # Each pulse's stages stage typed diagnostic rows in emission order; P5 or
+  # an E stop drains them as one block through the bounded writer.
   diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler)
-  # Each pulse accumulates typed diagnostic segments in emission order and
-  # appends one bounded block through the production writer.
-  add_segment <- function(segment) {
-    fold_state$pending_segments[[length(fold_state$pending_segments) + 1L]] <- segment
-    invisible(NULL)
-  }
   flush_pulse_block <- function(ts) {
     ledgr_fold_flush_pulse_block(
       fold_state,
@@ -1887,12 +1917,13 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     dense_planes = dense_planes,
     pulse_notes = pulse_notes,
     execution_opportunities_posix = execution_opportunities_posix,
+    execution_epochs = execution_epochs,
+    execution_epoch_valid = execution_epoch_valid,
     cost_resolver = cost_resolver,
     pulses_posix = pulses_posix,
     use_compiled_spot_fifo = use_compiled_spot_fifo,
     event_mode = event_mode,
     diagnostic_writer = diagnostic_writer,
-    equity_fact_accumulator = equity_fact_accumulator,
     telemetry = telemetry,
     telemetry_stride = telemetry_stride,
     checkpoint_every = checkpoint_every,
@@ -1942,7 +1973,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         ((fold_state$processed + 1L) %% telemetry_stride == 0L)
       sample_start <- if (sample_telemetry) pulse_start else NULL
 
-      observation <- ledgr_fold_stage_observe_settle(
+      observed <- ledgr_fold_stage_observe_settle(
         fold_state = fold_state,
         services = services,
         pulse_idx = i,
@@ -1951,20 +1982,15 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         sample_telemetry = sample_telemetry,
         sample_start = sample_start
       )
-      if (ledgr_is_fold_stop_result(observation)) {
-        fold_state$status <- observation$status
-        fold_state$stop_reason <- observation$reason_code
-        fold_state$affected_exposure <- observation$affected_exposure
-        ledgr_fold_state_validate(fold_state)
-        for (segment in observation$diagnostic_segments) {
-          add_segment(segment)
-        }
-        if (isTRUE(observation$counts_processed)) {
-          fold_state$processed <- fold_state$processed + 1L
-        }
+      # E alone installs a stage's stop result, then drains the staging.
+      if (ledgr_is_fold_stop_result(observed)) {
+        ledgr_fold_apply_stop(fold_state, observed)
         flush_pulse_block(ts)
         break
       }
+      # P2 receives the observation (decision packet and decision data);
+      # the execution packet goes to P3 alone.
+      observation <- observed$observation
       sample_start <- observation$sample_start
 
       decision_due <- is.null(services$decision_due) ||
@@ -1978,7 +2004,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
           sample_start = sample_start
         )
       } else {
-        add_segment(list(
+        ledgr_fold_staging_add(fold_state, list(
           n = 1L,
           instrument_id = "",
           stage = "decision",
@@ -1986,28 +2012,18 @@ ledgr_fold_envelope <- function(execution, output_handler) {
           reason_code = "scheduled_skip",
           reasons = "scheduled_skip",
           detail_json = "{}"
-        ))
-        skipped <- ledgr_fold_scheduled_skip_decision(fold_state, observation)
-        for (segment in skipped$diagnostic_segments) {
-          add_segment(segment)
-        }
-        skipped
+        ), ts)
+        ledgr_fold_scheduled_skip_decision(fold_state, services, observation)
       }
       if (ledgr_is_fold_stop_result(decision_result)) {
-        fold_state$status <- decision_result$status
-        fold_state$stop_reason <- decision_result$reason_code
-        fold_state$affected_exposure <- decision_result$affected_exposure
-        ledgr_fold_state_validate(fold_state)
-        for (segment in decision_result$diagnostic_segments) {
-          add_segment(segment)
-        }
-        if (isTRUE(decision_result$counts_processed)) {
-          fold_state$processed <- fold_state$processed + 1L
-        }
+        ledgr_fold_apply_stop(fold_state, decision_result)
         flush_pulse_block(ts)
         break
       }
       sample_start <- decision_result$sample_start
+      # The decision data (current bars, locator, history view) is P2-local:
+      # P3-P5 see the decision packet only.
+      observation$data <- NULL
 
       plan_result <- if (decision_due) {
         ledgr_fold_stage_plan(
@@ -2015,6 +2031,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
           services = services,
           observation = observation,
           decision = decision_result,
+          execution = observed$execution,
           sample_telemetry = sample_telemetry,
           sample_start = sample_start
         )
@@ -2022,21 +2039,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
         ledgr_fold_scheduled_skip_plan(fold_state, decision_result)
       }
       if (ledgr_is_fold_stop_result(plan_result)) {
-        fold_state$status <- plan_result$status
-        fold_state$stop_reason <- plan_result$reason_code
-        fold_state$affected_exposure <- plan_result$affected_exposure
-        ledgr_fold_state_validate(fold_state)
-        for (segment in plan_result$diagnostic_segments) {
-          add_segment(segment)
-        }
-        if (isTRUE(plan_result$counts_processed)) {
-          fold_state$processed <- fold_state$processed + 1L
-        }
+        ledgr_fold_apply_stop(fold_state, plan_result)
         flush_pulse_block(ts)
         break
-      }
-      for (segment in plan_result$diagnostic_segments) {
-        add_segment(segment)
       }
       sample_start <- plan_result$sample_start
 
@@ -2130,6 +2135,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     state = ledgr_carrier_result_state(fold_state, instrument_ids),
     state_prev = fold_state$state_prev,
     next_event_seq = fold_state$event_seq,
-    equity_facts = equity_fact_accumulator$collect()
+    # The frozen valued prefix for finalisation and the inline summary.
+    equity_facts = ledgr_fold_equity_prefix(fold_state$equity_facts)
   )
 }

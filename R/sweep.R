@@ -1917,7 +1917,8 @@ ledgr_sweep_run_candidate <- function(exp,
   summary <- if (is.function(output_handler$inline_summary)) {
     output_handler$inline_summary(
       run_id = run_id,
-      metric_kernel = metric_kernel
+      metric_kernel = metric_kernel,
+      equity = fold_result$equity_facts
     )
   } else {
     events <- if (is.function(output_handler$typed_events)) {

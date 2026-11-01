@@ -1,0 +1,23 @@
+== planners
+dense delta1 open2           warnings=0 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+dense open1 delta2           warnings=0 ERROR ledgr_invalid_fill_input | `next_open_price` must be a finite numeric scalar > 0.
+dense ok1 delta2 sub         warnings=0 ERROR LEDGR_SUBSECOND_TIMESTAMP/ledgr_invalid_fill_input | `next_bar$ts_utc` must use whole-second UTC timestamps; sub-second timestamps are out of scope.
+dense delta1 sub             warnings=0 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+dense open1 sub              warnings=0 ERROR ledgr_invalid_fill_input | `next_open_price` must be a finite numeric scalar > 0.
+dense final ok1 delta2       warnings=1 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+dense final delta1           warnings=0 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+dense fee overflow           warnings=0 fills A:fee=Inf,B:fee=Inf
+avail short1 delta2          warnings=0 ERROR ledgr_short_exposure_unsupported/ledgr_invalid_strategy_result | Availability-aware execution cannot open or enlarge short exposure: A.
+avail delta1 short2          warnings=0 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+avail nobar-delta1 short2    warnings=0 ERROR ledgr_short_exposure_unsupported/ledgr_invalid_strategy_result | Availability-aware execution cannot open or enlarge short exposure: B.
+avail nobar1 delta2 sub      warnings=0 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+avail ok1 sub                warnings=0 ERROR LEDGR_SUBSECOND_TIMESTAMP/ledgr_invalid_fill_input | `next_bar$ts_utc` must use whole-second UTC timestamps; sub-second timestamps are out of scope.
+avail nobar both sub         warnings=0 fills  | rejected A:execution_bar_missing,B:execution_bar_missing
+avail short1 sub             warnings=0 ERROR LEDGR_SUBSECOND_TIMESTAMP/ledgr_invalid_fill_input | `next_bar$ts_utc` must use whole-second UTC timestamps; sub-second timestamps are out of scope.
+avail fee overflow           warnings=0 fills  | rejected A:insufficient_cash,B:insufficient_cash
+avail fee overflow sell      warnings=0 fills  | rejected A:insufficient_cash,B:insufficient_cash
+== public
+public fee overflow dense    warnings=0 ERROR ledgr_invalid_lot_fill | Invalid fill input for lot accounting.
+public fee overflow avail    warnings=0 DONE; fills 0 | no_fill: insufficient_cash
+public delta overflow dense  warnings=0 ERROR ledgr_invalid_fill_input | `desired_qty_delta` must be a finite numeric scalar.
+public delta overflow avail  warnings=0 ERROR ledgr_invalid_opening | Negative opening positions are not supported in v0.1.7.

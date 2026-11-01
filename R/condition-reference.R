@@ -21,9 +21,9 @@
 #'
 #' @section Fill seam classes:
 #' `ledgr_invalid_fill_proposal` and `ledgr_invalid_fill_context` are raised at
-#' the internal proposal/resolver seam when a cost resolver receives the wrong
-#' object shape. They are stable top-level classes for tests that exercise that
-#' seam directly.
+#' the internal batch cost-resolver seam for misaligned side/quantity columns and
+#' execution-price columns, respectively. They remain stable top-level classes for
+#' tests of that seam.
 #'
 #' @section Execution window classes:
 #' `ledgr_run_window_too_short` is raised when a run window contains fewer than

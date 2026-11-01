@@ -41,18 +41,20 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
     state_prev = 5
   )
   testthat::expect_identical(scalar_state$state_prev, 5)
-  facts <- ledgr_fold_equity_fact_accumulator(2L)
-  facts$append(list(ts_utc = 1, cash = 100))
-  facts$append(list(ts_utc = 2, cash = 101))
+  # LDG-3168 (decision 10, categories 1 and 5): the fold-owned equity record
+  # replaces the accumulator (Synthesis 3.6). It keeps the appended facts in
+  # order, hands out only its valued prefix and refuses a write beyond its
+  # capacity with the same class.
+  facts <- ledgr_fold_equity_record(2L)
+  facts <- ledgr_fold_equity_append(facts, 1, 100, 0, 0, 0)
+  testthat::expect_identical(ledgr_fold_equity_prefix(facts)$cash, 100)
+  facts <- ledgr_fold_equity_append(facts, 2, 101, 0, 0, 0)
   testthat::expect_identical(
-    facts$collect(),
-    list(
-      list(ts_utc = 1, cash = 100),
-      list(ts_utc = 2, cash = 101)
-    )
+    ledgr_fold_equity_prefix(facts)[c("ts", "cash")],
+    list(ts = c(1, 2), cash = c(100, 101))
   )
   testthat::expect_error(
-    facts$append(list(ts_utc = 3, cash = 102)),
+    ledgr_fold_equity_append(facts, 3, 102, 0, 0, 0),
     class = "ledgr_internal_error"
   )
   # Inverted by LDG-3164: unnamed run-axis positions are the carrier shape;
@@ -81,12 +83,14 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
     class = "ledgr_internal_error"
   )
 
+  # LDG-3168 (category 1): the stop's diagnostics are a typed block of the
+  # staging schema instead of a list of segments.
   stop <- ledgr_fold_stop_result(
     status = "INCOMPLETE",
     reason_code = "risk_mark_unavailable",
     affected_instrument_ids = "AAA",
     affected_exposure = list(value = 10),
-    diagnostic_segments = list(list(stage = "risk")),
+    diagnostics = ledgr_fold_diagnostic_rows(list(n = 1L, stage = "risk"), 0),
     counts_processed = TRUE
   )
   testthat::expect_true(ledgr_is_fold_stop_result(stop))
@@ -94,7 +98,7 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
     names(stop),
     c(
       "status", "reason_code", "affected_instrument_ids",
-      "affected_exposure", "diagnostic_segments", "counts_processed"
+      "affected_exposure", "diagnostics", "counts_processed"
     )
   )
   testthat::expect_true(stop$counts_processed)

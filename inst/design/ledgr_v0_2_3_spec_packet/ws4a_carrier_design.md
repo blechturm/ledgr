@@ -208,7 +208,7 @@ D3 hit. `ledgr_lot_book_live()` is positional and is not a boundary.
 | Result, terminal recovery | `ledgr_run_terminal_recovery_equity` (rf) | `setNames(rep(0, ...), instrument_ids)`, `intersect(names(state$positions), ...)` | recovered equity rows from replayed named positions |
 | Walk-forward as-of opening | `ledgr_walk_forward_opening_from_run` (wf) | `names(held) <- ...`, `match(names(held), exp$universe)`, `names(cost_basis) <- names(held)` | the as-of book's basis by universe position into the next window's named opening |
 | Walk-forward carry | `ledgr_walk_forward_carried_opening` (wf) | `match(ids, axis)`, `held[ids]`, `setNames(basis, ids)` | held IDs to replay-axis positions; carried lots and basis into the next opening |
-| Handler accounting fact | `ledgr_output_handler` (oh), `record_accounting_fact` | `leg_fees[["close"]]`, `leg_fees[["open"]]` | the close/open leg fee pair; no instrument lookup |
+| Handler accounting fact | `ledgr_output_handler` (oh), `record_accounting_fact` | none since LDG-3167 (the leg-fee split is by row position, `ledgr_fill_leg_fees()`); until then `leg_fees[["close"]]`, `leg_fees[["open"]]` | the close/open leg fee pair; no instrument lookup |
 
 The book regions of `ledgr_run_fold_impl` (br), `ledgr_sweep_candidate_execution`
 (sw) and `ledgr_fold_envelope` (fe) hold no name-keyed lookup: they build
@@ -222,6 +222,197 @@ unpack and batch, and P4 are positional.
 `fill$ts_signal_utc`, the local `cur_qty` (fe:1347). Bound outputs stay as
 bound: the stop result's `affected_instrument_ids` and the Phase 5.5 fold
 return (`state`, `state_prev`, `next_event_seq`).
+
+### 1.7 Observation and decision groups (LDG-3165 as built)
+
+`R/fold-carrier.R` holds the four groups of Synthesis Sections 3.1-3.2.
+P1 returns `list(observation, execution)`: the observation carries the
+decision packet (`packet`, availability only) and the decision data
+(`data`, P2 only; E sets it to NULL before P3), the execution packet goes
+to P3 alone. P2 returns the decision group plus its stage clocks. Dense
+emits no packet, data or execution packet; its decision has the identity
+`context_pos`, which the decision group carries for both producers as the
+axis of its columns. Constructors `ledgr_carrier_packet()` (groups
+`decision_packet`, `decision_data`, `execution_packet`) and
+`ledgr_carrier_decision()` validate once through `ledgr_carrier_problem()`
+(V-packet, V-decision). The execution packet's `exec_ts` is read from the
+prepared opportunity axis; the availability planner keeps its own read until
+LDG-3166. Dictionaries: restriction codes and mark sources as in 2.1-2.2;
+status and lifetime codes index the prepared provider's fixed level vectors
+(the snapshot schema closes both vocabularies).
+
+Named boundaries of these groups:
+
+| Boundary | Function | Role |
+| --- | --- | --- |
+| Provider input | `ledgr_fold_positions_snapshot` in P1's `availability_decision` | run-axis positions named for `decision_view()` |
+| Provider output (transitional, remover WS4b) | `ledgr_carrier_provider_view` | view and valuation planes, keyed by the view's axis in order, unnamed once per produced view |
+| Settlement, terminal, stop and freeze-transition diagnostic paths in P1 | P1 body | keep reading the provider's named view and valuation (settlement boundary, remover WS8) |
+| P2 input | `ledgr_carrier_p2_input`, `ledgr_fold_positions_snapshot`, `ledgr_history_bar_packet_frame` | the public context's named availability planes, `.positions`, members and bar frame |
+| P2 return | `ledgr_validate_strategy_targets` | the one shape and name normalization; its named result feeds the risk steps and the named availability validators |
+| P2 stop | `ledgr_carrier_p2_valuation` | the affected-exposure record's valuation fields by ID, risk-mark stop only |
+
+The post-risk check is `ledgr_validate_post_risk_quantities()`: a numeric,
+context-length, finite transformed vector; class and parent unchanged.
+`[WS4a D3 3165]` examines P2 (`ledgr_fold_stage_decide`), P3's stage
+function, P5 and the scheduled skip with the shared name-keyed predicate
+plus `%in%`; its census is the P2 feature-table filters (three sites), the
+sizing-note test and the skip's mark-source token test. The mode-branch
+census lost two P1 rows (LTB-0331 entry of Section 5).
+
+### 1.8 Plan groups (LDG-3166 as built)
+
+P3 returns `list(batch, diagnostic_segments, sample_start, t_target,
+t_fill)`. `batch` is the plan group (`expected_final_cash`,
+`economic_event_kinds`, `fill`, `rejection`), built by either planner and
+validated once by `ledgr_carrier_plan()` (V-plan, which runs V-fill and
+V-rejection; class `ledgr_invalid_pulse_plan` with
+`ledgr_invalid_fold_execution`, Section 2.2). Fill and rejection rows
+together hold each actionable ordinal exactly once. The rejection group has
+`emit` (1 early, 2 affordability) and a `primary` code column (Section 2.1);
+the fill's primary is its first informational code, decoded at the
+diagnostic boundary. The acceptance mask and permutation stay in
+`ledgr_plan_affordability()`. Dense rejects rows too (final pulse:
+`final_pulse_no_execution`, with one `LEDGR_LAST_BAR_NO_FILL` warning per
+target; non-positive resolved price: `execution_bar_missing`), so both
+producers emit the same batch; dense has no reconciliation, and its
+`expected_final_cash` is `NA`. A scheduled skip returns an empty plan at the
+fold cash.
+
+- **Costs:** the execution spec's `cost_resolver` is a batch resolver,
+  `function(side, qty, open)` returning `list(price, fee)`; the planners
+  call it once per pulse with candidate rows, never for an empty batch.
+  `ledgr_cost_model_resolve()` applies the steps to whole columns and keeps
+  the resolver seam's documented classes (`ledgr_invalid_fill_proposal`,
+  `ledgr_invalid_fill_context`) for a wrongly shaped batch.
+- **Effects:** each planner calls `ledgr_fill_publication_deltas()` once per
+  pulse on its candidate rows (dense: its fills). Affordability, both
+  reconciliation sums (`sum()` over the reused column), P4 cash and every
+  sink reuse the result.
+- **Epochs:** E computes `services$execution_epochs` and
+  `execution_epoch_valid` once from `execution_opportunities_posix %||%
+  pulses_posix[-1]`. A planner refuses an invalid epoch only where the base
+  first parsed it, through `ledgr_plan_refuse_epoch()`, with the base class
+  and message.
+- **Refusals (correction round 1, `ws13_checkpoint_review.md` F1):**
+  `ledgr_plan_refuse_first()` refuses the first failing row in decision
+  order with its first failing check, in the base per-row order: dense
+  target delta, next open, epoch (`ledgr_plan_refuse_inputs()`, which also
+  serves the `next_bar$open` input form); on the final pulse each row's delta
+  is checked before its warning; availability, for rows with an execution
+  bar, delta, epoch, then short exposure. Classes and messages are the base
+  ones. A fee that overflows stays in the plan (V-fill admits an infinite fee
+  and cash effect, missingness `inf`): dense refuses it at accounting with
+  `ledgr_invalid_lot_fill`, availability rejects it for cash, as the base
+  did. `records/ldg3166/correction1/` holds the base-versus-candidate probe.
+- **Compiled publication (F2):** the wrapper publishes P3's carried
+  `cash_delta` and `position_delta` and installs the cash they imply
+  (`ledgr_cash_scan()`); native lot positions stay authoritative and the C++
+  is unchanged.
+- **Named boundaries:** `ledgr_carrier_execution_view()` (transitional
+  provider adapter, remover WS4b; P3 only, D24); the publication input
+  `write_fill_events(fill, i, instrument_id, event_seq, use_transaction)`,
+  `ledgr_fill_event_payload()` and `ledgr_write_fill_events()` (typed columns
+  plus a row index; a zero-length index is the no-op; the execution epoch
+  becomes POSIXct there); the compiled wrapper reads the fill columns. The
+  `[WS4a D3 3166]` census: the short-exposure refusal names its instrument
+  (two `setNames`), and four dictionary, code or field-name tests.
+- **Retired:** `R/fill-model.R` (proposal, fill context, resolver call),
+  the fill-intent object and `ledgr_fill_none`, `ledgr_fold_pulse_plan_*`,
+  `ledgr_availability_apply_affordability()`,
+  `ledgr_availability_fill_cash_delta()`, the availability reason-string
+  helpers and `ledgr_ts_utc_posix()` (no caller left). D13 drops
+  `ledgr_fold_build_pulse_plan`; `records/detectors/frozen.csv` row `D13b`
+  is the unchanged digest of the three remaining builders on base 953338df.
+
+### 1.9 Publication (LDG-3167 as built)
+
+P4 binds the next corporate-action boundary, then computes the pulse's
+candidate with `ledgr_fold_fill_candidate()`: one typed fill operation over
+the whole fill batch (distinct instruments, one conflict-free block),
+leaving the fold's book untouched. In that order it installs the candidate
+book, publishes the event block (`write_fill_events()`), advances the
+sequence by the block's rows, records the legs (`record_accounting_fact()`,
+memory sink) and installs positions (`net_by_inst` at the fills'
+positions) and cash (`ledgr_cash_scan()` of P3's effects). The compiled
+branch is unchanged.
+
+- **Refusals:** a refusing batch reports its earliest failing fill with that
+  fill's own condition. Row j's outcome depends only on its instrument and on
+  earlier rows (the ordered aggregate scan), so on the refusal path only the
+  shortest failing prefix is bisected, one block per step. The fills before
+  it are then built as the sink would publish them, without staging or
+  writing (`write_fill_events(stage = FALSE)`), so a publication refusal of
+  an earlier fill (a non-finite cash effect in durable metadata) still comes
+  first, as in the per-fill order. `records/ldg3167/` holds the base,
+  pre-change and candidate refusal probe. A fill whose lot accounting
+  overflows to a non-finite value from a valid book is refused as
+  `ledgr_invalid_lot_fill` (cut 5 `amendment_overflow`), where the base
+  accepted it and workstream 12's kernel raised `ledgr_lot_state_invariant`;
+  `records/overflow/` holds the probe rerun.
+- **Publication group** (`ledgr_fill_event_payload()`, V-publication):
+  `status`, `next_event_seq` and the row columns `event_id`, `run_id`,
+  `ts_utc` (UTC seconds), `event_type`, `instrument_id`, `side`, `qty`,
+  `price`, `fee`, `meta_json`, `event_seq`, `cash_delta`, `position_delta`
+  and `meta`. IDs are formatted once per block; sequences are contiguous.
+  `meta` (one list per row) and `meta_json` are the routed fill metadata
+  (`ledgr_fill_meta_rows()`, WS7/WS8), byte for byte as before.
+- **Leg group** (`ledgr_fill_leg_block()`, V-leg): `event_seq`,
+  `instrument_id`, `side`, `action`, `ts_utc`, `qty`, `price`, `fee`,
+  `realized_pnl`; CLOSE before OPEN per event, the canonical fee split
+  (`ledgr_fill_leg_fees()`, now by row), OPEN P&L 0.
+- **Buffers:** the handler holds the pending block (and, on the memory
+  sink, its aggregate facts) closure-local until `flush_pulse_events()`
+  writes it column by column into the event buffer; the memory sink holds
+  the pending legs and writes them by index into its result buffer
+  (`ledgr_fill_row_buffer_add_many()` now writes by index, P18). Non-fill
+  builder rows parse their metadata once and write typed columns by index
+  (E6). db_live keeps one INSERT per fill through `ledgr_write_fill_events()`.
+- **Retired:** `ledgr_fill_event_row()`, `ledgr_event_buffer_write_rows()`,
+  the staged per-fill and per-leg lists and the per-fill write result.
+
+### 1.10 Diagnostics, equity and stops (LDG-3168 as built)
+
+`R/fold-carrier.R` holds the three groups of Synthesis 3.6, each validated
+by `ledgr_carrier_problem()` (V-diagnostics, V-equity, V-stop). The fold
+state gains the slot `equity_facts`; `pending_segments` becomes the typed
+staging, and `ledgr_fold_state_validate()` (E and stop application) checks
+both groups, used prefix included.
+
+- **Staging** (`pending_segments`): `n`, `capacity` and the 19 per-row
+  columns of the writer schema (times as UTC epoch doubles), allocated once
+  in E at `max(5N + 3, Q_pulse)` (`ledgr_fold_diagnostic_capacity()`, Q_pulse
+  the most due disposition rows of a pulse). Producers keep their segment
+  specifications; `ledgr_fold_diagnostic_rows()` expands one into a fully
+  used block with the persisted defaults and coercions, and
+  `ledgr_fold_staging_write()` writes it by index after the used rows (a row
+  beyond capacity is `ledgr_invalid_fold_execution`). P1, P2, P3, the
+  scheduled skip and P5 stage directly; P3 and the skip decision return no
+  segment list. The drain (`ledgr_fold_flush_pulse_block()`, P5 or an E
+  stop) hands the writer the used prefix as one block, adding `run_id`,
+  `diagnostic_seq` from the fold's row counter and `ts_utc`, and resets `n`
+  at constant capacity. The bounded writer, the handler's renumbering and
+  the memory sink's filter are unchanged. `ledgr_availability_diagnostic_block()`
+  is retired. Diagnostics carry text, not codes: there is no dictionary to
+  check; missingness follows the persisted defaults (stage, outcome, mark
+  source and feature identity may be NA; instrument, reason code, reasons,
+  decision time and detail may not).
+- **Equity** (`equity_facts`): `ts`, `cash`, `positions_value`,
+  `realized_pnl`, `cost_basis` preallocated to the pulse count, and `n`. P1
+  writes one row per valued pulse on both producers
+  (`ledgr_fold_equity_append()`); E returns the frozen prefix
+  (`ledgr_fold_equity_prefix()`). Finalisation selects its source by producer
+  (`use_fold_equity <- isTRUE(run$availability_active)`), the partial-prefix
+  commit and terminal recovery use the same record, and the memory sink's
+  `inline_summary(run_id, metric_kernel, equity)` reads the prefix; the
+  sink's growable equity vectors and `record_equity_fact` are gone.
+- **Stops:** `ledgr_fold_stop_result()` carries `diagnostics`, a fully used
+  staging block, and is validated as a group; `ledgr_fold_apply_stop()`,
+  called only by E, installs status, reason and exposure, stages the stop's
+  rows, counts a counting stop and validates the state; E then drains.
+- **Census:** the mode-branch record loses the producer-sized accumulator
+  capacity branch and records the partial commit's condition on `n`
+  (`dev/bench/v0_2_2_pre_cran_removal/census/README.md`).
 
 ## 2. Pins (scope b)
 
@@ -461,7 +652,7 @@ Field invariants:
 | F4.12 | book: net_by_inst, cost_basis_by_inst lot-derived | 3164 | net differs from live lots |
 | F4.13 | book: totals scalars finite | 3164 | NaN realized_comp |
 | F4.14 | packet: pulse_idx valid; ts epoch; context_pos unique run positions; empty allowed | 3165 | duplicate context_pos |
-| F4.15 | packet: cash, positions_value, position finite | 3165 | NaN position |
+| F4.15 | packet: cash and position finite; positions_value, derived from them and the marks, admits Inf and arithmetic NaN but not NA (revised by cut 5 `amendment_valuation`, 2026-10-31, after the workstream 13 close review F1: a non-finite valuation of finite admitted holdings is carried to the base refusal point, not refused as internal corruption) | 3165 | NaN position; NA positions_value; Inf cash |
 | F4.16 | packet: member, held, buyable, target_restricted logical, no NA; buyable implies member | 3165 | buyable non-member |
 | F4.17 | packet: restriction segment ordered, codes in dictionary | 3165 | code 7 |
 | F4.18 | packet: status, lifetime codes; terminal_event, lifetime_fact_id character with empty strings | 3165 | NA terminal_event |
@@ -473,7 +664,7 @@ Field invariants:
 | F4.24 | execution view: member, restricted, reason segments | 3166 | unequal segment lengths |
 | F4.25 | decision: targets full and finite; actionable_k ordered | 3165 | NA target |
 | F4.26 | decision: state_update opaque; intent_reason existing validation | 3165 | non-character intent |
-| F4.27 | plan: accepted, afford_order private; expected_final_cash (dense unused; skip equals cash) | 3166 | skip cash differs |
+| F4.27 | plan: accepted, afford_order private; expected_final_cash (dense unused; skip equals cash; on availability it may be Inf from an accepted sale's infinite proceeds, admitted since the workstream 13 close correction, as the base carried it) | 3166 | skip cash differs |
 | F4.28 | plan: economic_event_kinds empty or supported | 3166 | unsupported code |
 | F4.29 | fill: k, pos, side (+/-1); distinct pos; decision order | 3166 | side 0 |
 | F4.30 | fill: qty, price, fee, effects, exec_ts valid | 3166 | negative fee |
@@ -697,8 +888,8 @@ failing control. Another detector's failure is not evidence for it.
 | D6 | No JSON encode or parse in the pulse loop beyond the routed sites (fill and non-fill `meta_json`, H5, intent reason, stop and exception detail, and P5's per-pulse strategy-state serialization `canonical_json(state_update)` at fe:1521, route R8.04) | parse-tree allowlist over fold stage functions | new `canonical_json` call in P3 |
 | D7 | No Kahan step on opening rows; nonzero compensation preserved | runtime counter in the typed operations, C5b | M6 |
 | D8 | No fill-intent object in the fold or sinks; effects computed once | parse regions plus a counter on `ledgr_fill_publication_deltas` | reconstruct an intent; compute twice |
-| D9 | No per-fill economic staging list and no per-leg staging list in publication; routed memory `meta` allowed | parse regions of the handler and memory sink | staged per-fill or per-leg list |
-| D10 | Exactly one equity writer per valued pulse on both producers; no accumulator in fold or service slots | runtime count plus slot inspection | keep the accumulator |
+| D9 | No per-fill economic staging list and no per-leg staging list in publication; routed memory `meta` allowed. As strengthened after the workstream 13 close review (F4): any list built by iteration (a list-returning apply call, an apply call whose inline function or FUN.VALUE builds a list, a loop body that builds one) fails whatever its names, except the routed metadata record of exactly its fields and the metadata parser | parse regions of the handler, the sinks and the block builders | staged per-fill or per-leg list; `lapply(seq_along(i), function(k) list(qty = ..., fee = ...))` |
+| D10 | Exactly one equity writer per valued pulse on both producers; no accumulator in fold or service slots. As strengthened after the workstream 13 close review (F4): every column allocation or self-growth the sinks and handler hold is in an enumerated storage census, and across the package only P1 appends to and only E (and the routed terminal recovery) allocate the equity record | runtime count plus slot inspection; storage census and package-wide caller census | keep the accumulator; a sink-held `list(n = 0L, ts = numeric(1024L), ...)` under any name |
 | D11 | Positions read only from `net_by_inst` | parse regions of P4 and replay | `positions + delta` |
 | D12a-e | Store bindings and config hash; DESCRIPTION; export census; mode-branch census; compiled default | existing contract tests and a C1 config-hash witness | change each |
 | D13 | Dense observe/ctx builders unchanged | source hash of `ledgr_pulse_context`, `ledgr_update_pulse_context_helpers` and `ledgr_dense_eligibility_planes` (frozen in `records/detectors/frozen.csv`); `ledgr_fold_build_pulse_plan` was also frozen at LDG-3163 but leaves the list when LDG-3166 retypes the dense planner (Q1 freezes observation, not planning) | edit a dense view builder |
@@ -707,7 +898,7 @@ failing control. Another detector's failure is not evidence for it.
 | D17 | Lot kernel computes no cash | parse region of the kernel | cash inside the kernel |
 | D18 | A kernel call refuses duplicate instruments | unit test | accept duplicates |
 | D19 | No named-list FIFO function defined in `R/` | parse census of definitions | define `ledgr_lot_apply_fill` |
-| D20 | Each Section 3.4 route's named operation and its output witness unchanged | per-route boundary diff plus witness | change the boundary |
+| D20 | Each Section 3.4 route's named operation and its output witness unchanged. As recorded at LDG-3169: the routes are compared by their signatures and call shapes, plus the twelve output witness cases; this does not establish operation-level equality of every named route (workstream 13 close review O1) | per-route boundary diff plus witness | change the boundary |
 | D21 | No history or substrate access in P3-P5 | phase-ownership checker (`tools/check-fold-phase-contract.R`) | injected P3 history read |
 | D22 | Dictionaries match literal fixtures (tokens and codes) | fixture comparison, separate from diagnostic round-trip bytes | renumber a token |
 | D23 | Replay applies each published cash effect exactly once | replay cash witness on a two-event ledger | apply a delta twice |

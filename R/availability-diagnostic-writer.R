@@ -1,8 +1,8 @@
-# Production diagnostic accumulation for availability-aware folds constructs
-# one typed block per pulse and appends it to bounded typed column buffers. The
-# durable output handler still owns the transaction and assigns diagnostic_seq
-# at write time. Chunk capacity is an unexported constructor seam used by
-# tests; ordinary folds use 65,536 rows.
+# Production diagnostic accumulation for availability-aware folds: the fold
+# drains each pulse's typed staging (ledgr_fold_diagnostic_block()) into
+# bounded typed column buffers. The durable output handler still owns the
+# transaction and assigns diagnostic_seq at write time. Chunk capacity is an
+# unexported constructor seam used by tests; ordinary folds use 65,536 rows.
 
 # A chunk of 65,536 rows keeps the buffer bounded (a few megabytes) while a
 # durable run makes about sixteen times fewer appends than with 4,096.
@@ -29,65 +29,6 @@ ledgr_availability_diagnostic_columns <- function(n) {
     event_seq = int(), target_before_risk = dbl(), target_after_risk = dbl(),
     position_before = dbl(), position_after = dbl(),
     feature_identity_json = chr(), detail_json = chr()
-  )
-}
-
-# Build one typed diagnostic block per pulse. `segments`
-# is a list of segment lists in emission order; each carries `n` (its row
-# count) and, for any subset of the field names, a vector of length n or 1.
-# Absent fields take the persisted diagnostic-schema defaults:
-# `reasons` defaults to the segment's reason_code and `decision_ts_utc` to the
-# pulse timestamp. Every row shares `ts_utc`; diagnostic_seq starts at
-# `first_seq`. The result is a list of typed, unnamed vectors in the column
-# order of ledgr_availability_diagnostic_columns(), the same values and
-# coercions the scalar constructor applies row by row.
-ledgr_availability_diagnostic_block <- function(run_id, ts_utc, first_seq, segments) {
-  n_seg <- vapply(segments, function(s) as.integer(s$n), integer(1))
-  n <- sum(n_seg)
-  ts_num <- as.numeric(as.POSIXct(ts_utc, tz = "UTC"))
-  to_seconds <- function(v) {
-    if (inherits(v, "POSIXct") || is.numeric(v)) as.numeric(v) else as.numeric(as.POSIXct(v, tz = "UTC"))
-  }
-  segments <- lapply(segments, function(s) {
-    if (is.null(s$reasons)) s$reasons <- if (is.null(s$reason_code)) "" else s$reason_code
-    s
-  })
-  column <- function(name, default, coerce) {
-    parts <- lapply(seq_along(segments), function(k) {
-      v <- segments[[k]][[name]]
-      if (is.null(v)) v <- default
-      if (!length(v) %in% c(1L, n_seg[[k]])) {
-        rlang::abort(sprintf("Diagnostic block field `%s` has length %d for a segment of %d rows.", name, length(v), n_seg[[k]]),
-                     class = "ledgr_invalid_fold_execution")
-      }
-      rep_len(coerce(unname(v)), n_seg[[k]])
-    })
-    unlist(parts, use.names = FALSE)
-  }
-  ts_col <- function(name, default) .POSIXct(column(name, default, to_seconds), tz = "UTC")
-  list(
-    run_id = rep_len(as.character(run_id), n),
-    diagnostic_seq = as.integer(first_seq) + seq_len(n) - 1L,
-    ts_utc = .POSIXct(rep_len(ts_num, n), tz = "UTC"),
-    instrument_id = column("instrument_id", "", as.character),
-    stage = column("stage", NA_character_, as.character),
-    outcome = column("outcome", NA_character_, as.character),
-    reason_code = column("reason_code", "", as.character),
-    reasons = column("reasons", "", as.character),
-    target = column("target", NA_real_, as.numeric),
-    quantity = column("quantity", NA_real_, as.numeric),
-    price = column("price", NA_real_, as.numeric),
-    mark_source = column("mark_source", "", as.character),
-    mark_age = column("mark_age", NA_integer_, as.integer),
-    decision_ts_utc = ts_col("decision_ts_utc", ts_num),
-    execution_ts_utc = ts_col("execution_ts_utc", NA_real_),
-    event_seq = column("event_seq", NA_integer_, as.integer),
-    target_before_risk = column("target_before_risk", NA_real_, as.numeric),
-    target_after_risk = column("target_after_risk", NA_real_, as.numeric),
-    position_before = column("position_before", NA_real_, as.numeric),
-    position_after = column("position_after", NA_real_, as.numeric),
-    feature_identity_json = column("feature_identity_json", NA_character_, as.character),
-    detail_json = column("detail_json", "{}", as.character)
   )
 }
 

@@ -108,40 +108,51 @@ testthat::test_that("ordinary coverage isolates a preceding CRAN-profile environ
 })
 
 testthat::test_that("fill event row helper covers no-op and validation branches", {
-  none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
-  out <- ledgr:::ledgr_fill_event_row("run-1", none, 1L)
-  testthat::expect_s3_class(out, "ledgr_ledger_write_result")
+  # LDG-3166 (design note Section 5, categories 1 and 5): the column payload
+  # builder takes a typed fill group and a row index; a zero-length index is
+  # the no-op and the effects are the ones computed when the fill was built.
+  # LDG-3167 (category 1 and 5; the per-fill write result and its row helper
+  # retire): the builder returns the published block; the no-op block has no
+  # rows.
+  buy <- ledgr_test_next_open_fill(
+    desired_qty_delta = 2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
+    commission_fixed = 1
+  )
+  out <- ledgr:::ledgr_fill_event_payload("run-1", buy$fill, integer(), "AAA", 1L)
   testthat::expect_identical(out$status, "NO_OP")
+  testthat::expect_length(out$event_seq, 0L)
 
   testthat::expect_error(
-    ledgr:::ledgr_fill_event_row("run-1", list(), 1L),
+    ledgr:::ledgr_fill_event_payload("run-1", list(), 1L, "AAA", 1L),
     class = "ledgr_invalid_fill_intent"
   )
-  fill <- structure(
-    list(
-      instrument_id = "AAA",
-      side = "BUY",
-      qty = 2,
-      fill_price = 10,
-      fee = 1,
-      ts_exec_utc = "2020-01-02T00:00:00Z"
-    ),
-    class = "ledgr_fill_intent"
+  testthat::expect_error(
+    ledgr:::ledgr_fill_event_payload("run-1", buy$fill, 0L, "AAA", 1L),
+    class = "ledgr_invalid_fill_intent"
   )
   testthat::expect_error(
-    ledgr:::ledgr_fill_event_row("run-1", fill, 0L),
+    ledgr:::ledgr_fill_event_payload("run-1", buy$fill, 1L, "AAA", 0L),
     class = "ledgr_invalid_args"
   )
 
-  row <- ledgr:::ledgr_fill_event_row("run-1", fill, 3L)
+  row <- ledgr:::ledgr_fill_event_payload("run-1", buy$fill, 1L, "AAA", 3L)
   testthat::expect_identical(row$status, "WROTE")
   testthat::expect_equal(row$cash_delta, -21)
   testthat::expect_equal(row$position_delta, 2)
 
-  fill$side <- "SELL"
-  row <- ledgr:::ledgr_fill_event_row("run-1", fill, 4L)
+  sell <- ledgr_test_next_open_fill(
+    desired_qty_delta = -2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
+    commission_fixed = 1
+  )
+  row <- ledgr:::ledgr_fill_event_payload("run-1", sell$fill, 1L, "AAA", 4L)
   testthat::expect_equal(row$cash_delta, 19)
   testthat::expect_equal(row$position_delta, -2)
+  # Control: a wrong carried delta is published as carried, never recomputed.
+  wrong <- sell$fill
+  wrong$cash_delta <- 21
+  testthat::expect_equal(ledgr:::ledgr_fill_event_payload("run-1", wrong, 1L, "AAA", 4L)$cash_delta, 21)
 })
 
 testthat::test_that("indicator validation and fingerprint helpers fail loud on invalid inputs", {

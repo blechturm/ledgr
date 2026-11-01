@@ -16,6 +16,7 @@
   "current_stage",
   "current_ts",
   "pending_segments",
+  "equity_facts",
   "diagnostic_seq",
   "telemetry_idx"
 )
@@ -42,7 +43,8 @@ ledgr_fold_state_new <- function(
     frozen_set = character(),
     current_stage = "fold",
     current_ts = as.POSIXct(NA, tz = "UTC"),
-    pending_segments = list(),
+    pending_segments = ledgr_fold_diagnostic_staging(0L),
+    equity_facts = ledgr_fold_equity_record(0L),
     diagnostic_seq = 0L,
     telemetry_idx = 0L) {
   out <- new.env(parent = emptyenv())
@@ -63,6 +65,7 @@ ledgr_fold_state_new <- function(
   out$current_stage <- current_stage
   out$current_ts <- current_ts
   out$pending_segments <- pending_segments
+  out$equity_facts <- equity_facts
   out$diagnostic_seq <- diagnostic_seq
   out$telemetry_idx <- telemetry_idx
   ledgr_fold_state_validate(out)
@@ -123,22 +126,32 @@ ledgr_fold_state_validate <- function(x) {
       !is.character(x$current_stage) || length(x$current_stage) != 1L ||
       is.na(x$current_stage) || !nzchar(x$current_stage) ||
       !inherits(x$current_ts, "POSIXct") || length(x$current_ts) != 1L ||
-      !is.list(x$pending_segments) ||
       !is.integer(x$diagnostic_seq) || length(x$diagnostic_seq) != 1L ||
       is.na(x$diagnostic_seq) || x$diagnostic_seq < 0L ||
       !is.integer(x$telemetry_idx) || length(x$telemetry_idx) != 1L ||
       is.na(x$telemetry_idx) || x$telemetry_idx < 0L) {
     invalid("one or more slots have the wrong type or size")
   }
+  # The typed pulse diagnostics staging (V-diagnostics) and equity record
+  # (V-equity): exact columns, types, row axis, used-row bounds and the used
+  # prefix's missingness and order (LDG-3168, Synthesis 3.6).
+  problem <- ledgr_carrier_problem(x$pending_segments, "diagnostics", NA_integer_)
+  if (!is.null(problem)) invalid(paste0("the pending diagnostics are invalid: ", problem))
+  problem <- ledgr_carrier_problem(x$equity_facts, "equity", NA_integer_)
+  if (!is.null(problem)) invalid(paste0("the equity record is invalid: ", problem))
   invisible(x)
 }
 
+# A stage's stop result (V-stop): its status and reason, the affected
+# instruments and exposure, its diagnostics as a fully used block of the
+# staging schema, and whether its pulse counts as processed. E alone
+# installs it (ledgr_fold_apply_stop()).
 ledgr_fold_stop_result <- function(
     status,
     reason_code,
     affected_instrument_ids = character(),
     affected_exposure = list(),
-    diagnostic_segments = list(),
+    diagnostics = ledgr_fold_diagnostic_rows(list(n = 0L), NA_real_),
     counts_processed = FALSE) {
   out <- structure(
     list(
@@ -146,23 +159,15 @@ ledgr_fold_stop_result <- function(
       reason_code = reason_code,
       affected_instrument_ids = affected_instrument_ids,
       affected_exposure = affected_exposure,
-      diagnostic_segments = diagnostic_segments,
+      diagnostics = diagnostics,
       counts_processed = counts_processed
     ),
     class = "ledgr_fold_stop_result"
   )
-  if (!is.character(out$status) || length(out$status) != 1L ||
-      is.na(out$status) || !nzchar(out$status) ||
-      !is.character(out$reason_code) || length(out$reason_code) != 1L ||
-      is.na(out$reason_code) || !nzchar(out$reason_code) ||
-      !is.character(out$affected_instrument_ids) ||
-      anyNA(out$affected_instrument_ids) ||
-      !is.list(out$affected_exposure) ||
-      !is.list(out$diagnostic_segments) ||
-      !is.logical(out$counts_processed) ||
-      length(out$counts_processed) != 1L || is.na(out$counts_processed)) {
+  problem <- ledgr_carrier_problem(out, "stop", NA_integer_)
+  if (!is.null(problem)) {
     rlang::abort(
-      "Invalid internal fold stop result.",
+      paste0("Invalid internal fold stop result: ", problem, "."),
       class = "ledgr_internal_error"
     )
   }
@@ -173,30 +178,18 @@ ledgr_is_fold_stop_result <- function(x) {
   inherits(x, "ledgr_fold_stop_result")
 }
 
-ledgr_fold_equity_fact_accumulator <- function(capacity) {
-  capacity <- as.integer(capacity)
-  if (length(capacity) != 1L || is.na(capacity) || capacity < 0L) {
-    rlang::abort(
-      "Invalid internal equity-fact accumulator capacity.",
-      class = "ledgr_internal_error"
-    )
+# E's one installation of a stop result: status, reason and affected
+# exposure, the stop's diagnostics staged after the pulse's earlier rows,
+# and the processed count when the stop counts its pulse; then the state
+# is validated. The caller drains the staging and ends the loop.
+ledgr_fold_apply_stop <- function(fold_state, stop) {
+  fold_state$status <- stop$status
+  fold_state$stop_reason <- stop$reason_code
+  fold_state$affected_exposure <- stop$affected_exposure
+  ledgr_fold_staging_write(fold_state, stop$diagnostics)
+  if (stop$counts_processed) {
+    fold_state$processed <- fold_state$processed + 1L
   }
-  values <- vector("list", capacity)
-  size <- 0L
-  append <- function(value) {
-    size <<- size + 1L
-    if (size > capacity) {
-      rlang::abort(
-        "Internal equity-fact accumulator exceeded its capacity.",
-        class = "ledgr_internal_error"
-      )
-    }
-    collapse::setv(values, size, list(value), vind1 = TRUE, xlist = TRUE)
-    invisible(NULL)
-  }
-  collect <- function() {
-    if (size == 0L) return(list())
-    values[seq_len(size)]
-  }
-  list(append = append, collect = collect)
+  ledgr_fold_state_validate(fold_state)
+  invisible(NULL)
 }

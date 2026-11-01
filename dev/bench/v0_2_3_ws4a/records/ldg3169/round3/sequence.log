@@ -1,0 +1,10 @@
+cases exit 0
+guts exit 0
+dense exit 0
+a0-record exit 0
+a0-compare exit 0
+suite exit 0
+build exit 0
+R CMD check exit 0
+public base exit 0
+public candidate exit 0

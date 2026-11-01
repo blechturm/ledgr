@@ -1,0 +1,10 @@
+product ba67ae8a; scratch C:/Users/maxth/AppData/Local/Temp/ws13-3168/gates
+cases exit 0
+guts exit 0
+dense exit 0
+a0-record exit 0
+a0-compare exit 0
+migration-probe exit 0
+migration-probe (rerun after attached-copy fix) exit 0
+suite exit 0
+done

@@ -1,0 +1,34 @@
+# LDG-3169 real-data oracle (maintainer run): installed product 9b05538f, library E:/ledgr-data/r-lib/ledgr-ws4a-9b05538f, reference E:/ledgr-data/reference/v0.2.3-base-953338df. Comparison names and outcomes only.
+== w2_article
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w2_minvar
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w3_changing
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w3_full
+snapshot_hash      IDENTICAL
+equity             IDENTICAL
+fills              IDENTICAL
+ledger             IDENTICAL
+COMPARE_IDENTICAL
+== w4_sweep
+snapshot_hash      IDENTICAL
+sweep_candidates   IDENTICAL
+COMPARE_IDENTICAL
+== w4_wf
+snapshot_hash      IDENTICAL
+wf_folds           IDENTICAL
+wf_scores          IDENTICAL
+COMPARE_IDENTICAL

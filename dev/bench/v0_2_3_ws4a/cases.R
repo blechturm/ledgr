@@ -80,9 +80,10 @@ ws_case("C4", "3164", function() {
       lots <- ledgr_lot_book_live(a$book, a$pos[[k]])
       partial <<- c(partial, sprintf("%s:%d:%d", if (a$side[[k]] > 0) "BUY" else "SELL", length(lots$qty), length(unique(lots$price))))
     }
-  }, ledgr_fold_stage_apply = function(a, v) {
-    for (e in a$plan$pulse_plan$fills) planned[[length(planned) + 1L]] <<- data.frame(pulse = a$observation$pulse_idx,
-      instrument_id = e$instrument_id, planned = e$current_qty + e$delta, actual = a$fold_state$positions[[e$inst_idx]])
+  }, ledgr_fold_stage_apply = function(a, v) { # LDG-3166: the typed fill rows
+    f <- a$plan$batch$fill
+    if (length(f$k)) planned[[length(planned) + 1L]] <<- data.frame(pulse = a$observation$pulse_idx,
+      instrument_id = unname(a$services$instrument_ids[f$pos]), planned = f$planned_position_after, actual = a$fold_state$positions[f$pos])
   })
   out <- ws_trace(hooks, ws_durable(fx, ws_exp(fx), "c4", plan))
   parts <- do.call(rbind, strsplit(unique(partial), ":"))
@@ -222,12 +223,12 @@ ws_small_cash <- function(id) {
 }
 ws_perturb <- function(seam, injected) stats::setNames(list(function(original) function(...) {
   value <- original(...)
-  plan <- if (is.null(value$pulse_plan)) value else value$pulse_plan
-  if (injected$n == 0L && length(plan$fills) > 0L) {
+  plan <- if (is.null(value$batch)) value else value$batch # LDG-3166: the typed plan
+  if (injected$n == 0L && length(plan$fill$k) > 0L) {
     injected$n <- 1L
     injected$recorded <- ws_args(original, ...)$cash %||% NA_real_
     plan$expected_final_cash <- plan$expected_final_cash + 1
-    if (is.null(value$pulse_plan)) value <- plan else value$pulse_plan <- plan
+    if (is.null(value$batch)) value <- plan else value$batch <- plan
   }
   value
 }), seam)
@@ -290,7 +291,7 @@ ws_case("C10", "3165", function() {
   exp <- ws_exp(fx, ledgr_cost_zero(), universe = ledgr_universe_members("U"),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 100)))
   ctx <- character()
-  hooks <- list(ledgr_fold_stage_observe_settle = function(a, v) ctx <<- c(ctx, paste(v$context_ids, collapse = "+")))
+  hooks <- list(ledgr_fold_stage_observe_settle = function(a, v) ctx <<- c(ctx, paste(ws_context(a, v)$ids, collapse = "+")))
   out <- ws_trace(hooks, ws_durable(fx, exp, "c10", ws_days(NULL, list(AAA = 0), NULL, NULL, list(AAA = 2))))
   ledger <- out[["run.ledger_events"]]
   ws_need(sum(ctx == "") == 2L && nrow(out[["run.equity_curve"]]) == 6L, "valued pulses with an empty context")
@@ -307,7 +308,7 @@ ws_case("C11", "3166", function() {
     opening = ledgr_opening(cash = 10, positions = c(AAA = 5), cost_basis = c(AAA = 30)))
   plan <- ws_days(NULL, list(ZZZ = 2, AAA = 0, MMM = 2))
   order <- character()
-  hooks <- stats::setNames(list(function(a, v) if (length(v$fills)) order <<- vapply(v$fills, function(e) e$instrument_id, "")),
+  hooks <- stats::setNames(list(function(a, v) if (length(v$fill$k)) order <<- unname(a$instrument_ids[v$fill$pos])),
     ws4a_seams[["planner_return"]])
   out <- ws_trace(hooks, c(ws_durable(fx, exp, "c11", plan), ws_memory(exp, plan)))
   ws_need(identical(order, c("ZZZ", "AAA")), "decision order ZZZ, AAA differs from stable-ID order")
@@ -352,10 +353,13 @@ ws_case("C13a", "3167", function() {
   snap <- function(fs) list(book = fs$lot_state, cash = fs$cash, positions = fs$positions, event_seq = fs$event_seq)
   inject <- function() {
     n <- 0L
-    list(ledgr_lot_fill = function(original) function(...) {
-      n <<- n + 1L
-      if (n == 2L) ws_fault("lot operation")
-      original(...)
+    # The second lot operation overall: the base's second one-row call, or
+    # (LDG-3167) the second row of the pulse's one batch call; later calls,
+    # such as a refusal's prefix bisection, fail too.
+    list(ledgr_lot_fill = function(original) function(book, pos, ...) {
+      n <<- n + length(pos)
+      if (n >= 2L) ws_fault("lot operation")
+      original(book, pos, ...)
     }, ledgr_fold_stage_apply = function(original) function(fold_state, ...) {
       before <- snap(fold_state)
       withCallingHandlers(original(fold_state, ...),
@@ -412,13 +416,16 @@ ws_keep <- function(env, name, value, view = identity) if (is.null(env$print[[na
   env$value[[name]] <- value
   # The native typed value is also witnessed whole: the base-shaped view hides
   # names and empty segments (LDG-3164 close review F5).
-  if (name %in% c("book_handout", "compiled_input", "corporate_action_view")) env$raw[[name]] <- serialize(value, NULL)
+  if (name %in% c("book_handout", "compiled_input", "corporate_action_view", "event_block", "leg_block")) {
+    env$raw[[name]] <- serialize(value, NULL)
+  }
   env$view[[name]] <- view
   env$print[[name]] <- ws_fingerprint(view(value))
 }
 ws_retained <- function(env, n) {
-  ws_need(all(vapply(names(env$raw), function(k) identical(env$raw[[k]], serialize(env$value[[k]], NULL)), logical(1))),
-    "retained native book representation unchanged")
+  raw <- vapply(names(env$raw), function(k) identical(env$raw[[k]], serialize(env$value[[k]], NULL)), logical(1))
+  ws_need(all(raw), paste0("retained native book representation unchanged (changed: ",
+    paste(names(env$raw)[!raw], collapse = ","), ")"))
   tab <- data.frame(object = names(env$print), at_capture = unlist(env$print),
     at_end = vapply(names(env$print), function(k) ws_fingerprint(env$view[[k]](env$value[[k]])), ""))
   ws_need(nrow(tab) == n && all(tab$at_capture == tab$at_end),
@@ -451,30 +458,36 @@ ws_case("C14b", "3165", function() {
   ws_need(!is.null(keep$value$state_prev), "a retained state_prev")
   ws_retained(keep, 4L)
 })
-# C14c: the published event payload and the memory sink's leg block (the used
-# pulse_fill_legs prefix at flush_legs, before it is copied into the result
-# buffer). LDG-3167 adds the typed publication's event and leg block handouts
-# as the equivalent attachment and keeps both witnesses.
-ws4a_c14c_legs <- function(on_flush) function(original) function(run_id) {
-  sink <- original(run_id)
-  flush <- sink$flush_legs
-  staged <- environment(sink$reset_legs)
-  sink$flush_legs <- function() {
-    if (staged$pulse_fill_leg_n > 0L) on_flush(staged$pulse_fill_legs[seq_len(staged$pulse_fill_leg_n)])
-    flush()
-  }
-  sink
+# C14c: the published event block and the memory sink's leg block, retained
+# across later pulses. Base: the first fill's payload and the first pulse's
+# staged legs. LDG-3167 attaches the typed handouts instead, the first event
+# block (ledgr_fill_event_payload) and leg block (ledgr_fill_leg_block),
+# fingerprinted in the base shape of the block's first event and of its legs,
+# and witnessed whole (raw) as well.
+ws4a_c14c_event_view <- function(b) {
+  if (!is.null(b$row)) return(b)
+  row <- list(event_id = b$event_id[[1L]], run_id = b$run_id[[1L]], ts_utc = .POSIXct(b$ts_utc[[1L]], tz = "UTC"),
+    event_type = b$event_type[[1L]], instrument_id = b$instrument_id[[1L]], side = b$side[[1L]], qty = b$qty[[1L]],
+    price = b$price[[1L]], fee = b$fee[[1L]], meta_json = b$meta_json[[1L]], event_seq = b$event_seq[[1L]])
+  structure(list(status = "WROTE", event_id = row$event_id, event_seq = row$event_seq, next_event_seq = row$event_seq + 1L,
+    cash_delta = b$cash_delta[[1L]], position_delta = b$position_delta[[1L]], meta = b$meta[[1L]], row = row),
+    class = "ledgr_ledger_write_result")
+}
+ws4a_c14c_leg_view <- function(l) {
+  if (is.null(names(l))) return(l)
+  lapply(seq_along(l$event_seq), function(k) list(event_seq = l$event_seq[[k]], ts_utc = .POSIXct(l$ts_utc[[k]], tz = "UTC"),
+    instrument_id = l$instrument_id[[k]], side = l$side[[k]], qty = l$qty[[k]], price = l$price[[k]], fee = l$fee[[k]],
+    realized_pnl = l$realized_pnl[[k]], action = l$action[[k]]))
 }
 ws_case("C14c", "3167", function() {
   t <- ws_two_fills("c14c")
   keep <- new.env()
   flushes <- 0L
-  legs <- ws4a_c14c_legs(function(block) {
-    flushes <<- flushes + 1L
-    ws_keep(keep, "leg_block", block)
-  })
-  ws_patches(list(ledgr_output_sink_memory = legs),
-    ws_trace(list(ledgr_fill_event_payload = function(a, v) ws_keep(keep, "event_block", v)), ws_memory(t$exp, t$plan)))
+  ws_trace(list(ledgr_fill_event_payload = function(a, v) ws_keep(keep, "event_block", v, ws4a_c14c_event_view),
+    ledgr_fill_leg_block = function(a, v) {
+      flushes <<- flushes + 1L
+      ws_keep(keep, "leg_block", v, ws4a_c14c_leg_view)
+    }), ws_memory(t$exp, t$plan))
   ws_need(flushes >= 2L, "a later pulse flushes legs after the leg block is retained")
   c(ws_retained(keep, 2L), list(facts = list(leg_flushes = flushes)))
 })
@@ -499,8 +512,9 @@ ws_case("C15", "3165", function() {
   v <- ws_v201("c15")
   axis <- list()
   hooks <- list(ledgr_fold_stage_observe_settle = function(a, v) if (!ledgr_is_fold_stop_result(v)) {
-    axis[[length(axis) + 1L]] <<- data.frame(pulse = v$pulse_idx, context = paste(v$context_ids, collapse = "+"),
-      members = paste(v$members, collapse = "+"), rows = paste(v$context_position_idx, collapse = "+"))
+    x <- ws_context(a, v)
+    axis[[length(axis) + 1L]] <<- data.frame(pulse = v$observation$pulse_idx, context = paste(x$ids, collapse = "+"),
+      members = paste(x$members, collapse = "+"), rows = paste(x$pos, collapse = "+"))
   })
   out <- ws_trace(hooks, ws_durable(v$fx, v$exp, "c15"))
   axis <- do.call(rbind, axis)
@@ -509,10 +523,15 @@ ws_case("C15", "3165", function() {
 })
 
 # C16: a dense durable run finalizes equity through replay, not the prefix.
+# LDG-3168: both producers now fill the fold's equity record, so the fact
+# counts the fold rows finalization consumes (the frame built from the
+# record; 0 on dense, as the empty base accumulator gave); the record's own
+# rows are the typed precondition (observed, not compared).
 ws_case("C16", "3168", function() {
   fx <- ws_cost_fx("c16", FALSE)
-  n <- c(replay = 0L, prefix_commit = 0L, fold_equity_rows = NA)
+  n <- c(replay = 0L, prefix_commit = 0L, fold_equity_rows = 0L)
   inside <- FALSE
+  record_rows <- NA
   count <- function(k) function(original) function(...) {
     if (inside) n[[k]] <<- n[[k]] + 1L
     original(...)
@@ -520,14 +539,18 @@ ws_case("C16", "3168", function() {
   patch <- list(ledgr_run_finalize = function(original) function(...) {
     inside <<- TRUE
     on.exit(inside <<- FALSE)
-    n[["fold_equity_rows"]] <<- length(ws_args(original, ...)$fold$equity_facts)
+    record_rows <<- ws_args(original, ...)$fold$equity_facts$n
     original(...)
+  }, ledgr_run_fold_equity_frame = function(original) function(run_id, fold_equity) {
+    if (inside) n[["fold_equity_rows"]] <<- n[["fold_equity_rows"]] + fold_equity$n
+    original(run_id, fold_equity)
   })
   patch[[ws4a_seams[["replay"]]]] <- count("replay")
   patch[[ws4a_seams[["prefix_commit"]]]] <- count("prefix_commit")
   out <- ws_patches(patch, ws_durable(fx, ws_exp(fx), "c16", ws_c1_plan))
   ws_need(n[["replay"]] == 1L && n[["prefix_commit"]] == 0L, "replay used and prefix commit unused in finalization")
-  list(tables = out["run.equity_curve"], facts = as.list(n))
+  ws_need(ws4a_typed_c16(record_rows, n), "the dense run filled its fold equity record")
+  list(tables = out["run.equity_curve"], facts = as.list(n), observed = list(dense_record_rows = record_rows))
 })
 
 # C17: the window-1 final decision executes at window 2's first open in the

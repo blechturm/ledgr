@@ -16,17 +16,19 @@ ws_swallow <- function(method) {
   })
   list(ledgr_fold_stage_apply = swallow, ledgr_fold_stage_commit = swallow)
 }
+# LDG-3165: P1 returns the observation and the execution packet; P3 takes both.
 ws_skip_gut <- function(stage) {
   out <- list(ledgr_fold_stage_observe_settle = function(original) function(fold_state, services, ...) {
     ws_gut$services <- services
-    ws_gut$observation <- original(fold_state, services, ...)
+    ws_gut$observed <- original(fold_state, services, ...)
   })
   if (stage == "plan") out$ledgr_fold_scheduled_skip_plan <- function(original) function(fold_state, decision) {
-    ws_ns("ledgr_fold_stage_plan")(fold_state, ws_gut$services, ws_gut$observation, decision, FALSE, NULL)
+    o <- ws_gut$observed
+    ws_ns("ledgr_fold_stage_plan")(fold_state, ws_gut$services, o$observation, decision, o$execution, FALSE, NULL)
     original(fold_state, decision)
-  } else out$ledgr_fold_scheduled_skip_decision <- function(original) function(fold_state, observation) {
-    ws_ns("ledgr_fold_stage_decide")(fold_state, ws_gut$services, observation, FALSE, NULL)
-    original(fold_state, observation)
+  } else out$ledgr_fold_scheduled_skip_decision <- function(original) function(fold_state, services, observation) {
+    ws_ns("ledgr_fold_stage_decide")(fold_state, services, observation, FALSE, NULL)
+    original(fold_state, services, observation)
   }
   out
 }
@@ -39,14 +41,24 @@ ws_flip <- function(book, pos) {
   book
 }
 
+# LDG-3166: the typed fill rows `o` of a plan's fill group, in that order.
+ws_fill_rows <- function(f, o) {
+  seg <- ws_ns("ledgr_carrier_segment_rows")(f$info_offset, f$info_count, f$info_code, o)
+  rows <- setdiff(names(f), c("info_offset", "info_count", "info_code"))
+  f[rows] <- lapply(f[rows], `[`, o)
+  f[c("info_offset", "info_count", "info_code")] <- seg
+  f
+}
+
 ws4a_guts <- list(
-  C1_drop_notional = list(case = "C1", patch = list(ledgr_cost_model_resolve = function(original) function(proposal, fill_context, steps, ...) {
-    original(proposal, fill_context, ws_plain(steps), ...)
+  # LDG-3166: the batch cost resolver (side, qty, open columns).
+  C1_drop_notional = list(case = "C1", patch = list(ledgr_cost_model_resolve = function(original) function(side, qty, open, steps, ...) {
+    original(side, qty, open, ws_plain(steps), ...)
   })),
-  C2_notional_from_rounded = list(case = "C2", patch = list(ledgr_cost_model_resolve = function(original) function(proposal, fill_context, steps, ...) {
-    fill <- original(proposal, fill_context, ws_plain(steps), ...)
-    for (s in setdiff(steps, ws_plain(steps))) fill$fee <- fill$fee + abs(fill$qty * fill$fill_price) * s$args$bps / 10000
-    fill
+  C2_notional_from_rounded = list(case = "C2", patch = list(ledgr_cost_model_resolve = function(original) function(side, qty, open, steps, ...) {
+    out <- original(side, qty, open, ws_plain(steps), ...)
+    for (s in setdiff(steps, ws_plain(steps))) out$fee <- out$fee + abs(qty * out$price) * s$args$bps / 10000
+    out
   })),
   C3_tolerance_x10 = list(case = "C3", expect = "C3/(book_|run[.])", patch = list(ledgr_lot_dust_tolerance_rows = function(original) function(...) 10 * original(...))),
   C4_lifo = list(case = "C4", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, ...) {
@@ -81,21 +93,22 @@ ws4a_guts <- list(
     state$realized_comp <- 0
     state
   })),
+  # LDG-3168: the empty-context pulse's row of the fold equity record is skipped.
   C10_skip_valuation_on_empty = list(case = "C10", patch = list(ledgr_fold_stage_observe_settle = function(original) function(fold_state, services, ...) {
     advance <- services$valuation_state$advance
-    append <- services$equity_fact_accumulator$append
-    empty <- FALSE
+    ws_gut$empty <- FALSE
     services$valuation_state$advance <- function(pulse_idx, axis, ...) {
-      empty <<- length(axis) == 0L
+      ws_gut$empty <- length(axis) == 0L
       advance(pulse_idx, axis, ...)
     }
-    services$equity_fact_accumulator$append <- function(value) if (!empty) append(value)
     original(fold_state, services, ...)
-  })),
+  }, ledgr_fold_equity_append = function(original) function(record, ...) if (isTRUE(ws_gut$empty)) record else original(record, ...))),
+  # M4 through the typed path (LDG-3166): the fill rows published in the scan's priority order.
   C11_affordability_order = list(case = "C11", patch = list(ledgr_fold_build_availability_pulse_plan = function(original) function(...) {
     plan <- original(...)
-    key <- vapply(plan$fills, function(e) paste(e$fill$side != "SELL", e$instrument_id), "")
-    plan$fills <- plan$fills[order(key, method = "radix")]
+    f <- plan$fill
+    key <- paste(f$side != -1L, ws_args(original, ...)$instrument_ids[f$pos])
+    plan$fill <- ws_fill_rows(f, order(key, method = "radix"))
     plan
   })),
   C12_fill_before_settlement = list(case = "C12", patch = list(ledgr_fold_stage_observe_settle = function(original) function(fold_state, ...) {
@@ -123,29 +136,32 @@ ws4a_guts <- list(
     ws_gut$prev <- ctx$vec$position
     original(fn, ctx, ...)
   })),
-  # On the base an OPEN leg's qty is the event row's qty vector (as.numeric does
-  # not copy), so a by-reference qty write reaches both witnesses; the leg-only
-  # gut writes the leg's own fee (a fresh per-leg vector) and must leave the
-  # event witness equal.
-  C14c_reuse_staging = list(case = "C14c", expect = "changed: event_block", patch = list(ledgr_fill_event_payload = function(original) function(...) {
+  # LDG-3167: a later pulse writes into the retained typed block by reference.
+  # The event block and the leg block are separate column vectors (on the base
+  # an OPEN leg's qty was the event row's qty vector), so the event gut changes
+  # only the event witness and the leg gut, writing a leg fee, only the leg one.
+  C14c_reuse_staging = list(case = "C14c", expect = "changed: event_block[)]", patch = list(ledgr_fill_event_payload = function(original) function(...) {
     value <- original(...)
-    if (is.null(ws_gut$first)) ws_gut$first <- value else collapse::setv(ws_gut$first$row$qty, 1L, value$row$qty, vind1 = TRUE)
+    if (is.null(ws_gut$first)) ws_gut$first <- value else collapse::setv(ws_gut$first$qty, 1L, value$qty[[1L]], vind1 = TRUE)
     value
   })),
-  C14c_reuse_leg_staging = list(case = "C14c", expect = "changed: leg_block[)]", patch = list(ledgr_output_sink_memory = function(original) {
-    ws4a_c14c_legs(function(legs) if (is.null(ws_gut$legs)) ws_gut$legs <- legs else
-      collapse::setv(ws_gut$legs[[1L]]$fee, 1L, legs[[1L]]$fee + 1, vind1 = TRUE))(original)
+  C14c_reuse_leg_staging = list(case = "C14c", expect = "changed: leg_block[)]", patch = list(ledgr_fill_leg_block = function(original) function(...) {
+    value <- original(...)
+    if (is.null(ws_gut$legs)) ws_gut$legs <- value else collapse::setv(ws_gut$legs$fee, 1L, value$fee[[1L]] + 1, vind1 = TRUE)
+    value
   })),
+  # M8 through the typed path (LDG-3165): the decision packet's bridge is
+  # reversed; its context columns stay as P1 built them.
   C15_wrong_context_pos = list(case = "C15", patch = list(ledgr_fold_stage_observe_settle = function(original) function(...) {
     obs <- original(...)
     if (ws_ns("ledgr_is_fold_stop_result")(obs)) return(obs)
-    obs$context_position_idx <- rev(obs$context_position_idx)
-    obs$positions_snapshot[] <- rev(unname(obs$positions_snapshot))
+    obs$observation$packet$context_pos <- rev(obs$observation$packet$context_pos)
     obs
   })),
-  C16_force_fold_equity = list(case = "C16", patch = list(ledgr_run_finalize = function(original) function(con, output_handler, run, ...) {
-    run$availability_active <- TRUE
-    original(con, output_handler, run, ...)
+  # LDG-3168: the old decision, fold equity when the record has rows (dense fills it).
+  C16_force_fold_equity = list(case = "C16", patch = list(ledgr_run_finalize = function(original) function(con, output_handler, run, calendar, projection, fold) {
+    if (fold$equity_facts$n > 0L) run$availability_active <- TRUE
+    original(con, output_handler, run, calendar, projection, fold)
   })),
   C17_drop_continuation = list(case = "C17", patch = list(ledgr_walk_forward_continue_windows = function(original) function(fold_windows, ...) fold_windows)),
   C18_drop_split_tail = list(case = "C18", expect = "C18/(run|sweep)[.]", patch = list(ledgr_columnar_diagnostic_writer = function(original) function(run_id, output_handler, chunk_rows) {
@@ -154,25 +170,22 @@ ws4a_guts <- list(
     writer$append_block <- function(fields) append(lapply(fields, function(x) x[seq_len(min(length(x), chunk_rows))]))
     writer
   })),
+  # LDG-3168: the drain keeps the typed staging's first row for the next pulse,
+  # and E hands out the equity record's unused rows.
   C18_retain_staging = list(case = "C18", patch = list(ledgr_fold_flush_pulse_block = function(original) function(fold_state, ...) {
-    kept <- fold_state$pending_segments
+    kept <- fold_state$pending_segments$n
     original(fold_state, ...)
-    fold_state$pending_segments <- kept[seq_len(min(1L, length(kept)))]
+    fold_state$pending_segments$n <- min(1L, kept)
     invisible(NULL)
   })),
-  C18_drain_unused_equity = list(case = "C18", patch = list(ledgr_fold_equity_fact_accumulator = function(original) function(capacity) {
-    acc <- original(capacity)
-    collect <- acc$collect
-    acc$collect <- function() {
-      used <- collect()
-      unused <- list(ts_utc = 0, cash = 0, positions_value = 0, realized_pnl = 0, cost_basis = 0)
-      c(used, rep(list(unused), capacity - length(used)))
-    }
-    acc
+  C18_drain_unused_equity = list(case = "C18", patch = list(ledgr_fold_equity_prefix = function(original) function(record) {
+    record$n <- length(record$ts)
+    record
   })),
   # Section 6 mutations without a Section 4 gut that already implements them.
   M2_reorder_pulse_fills = list(case = "C1", patch = list(ledgr_fold_stage_apply = function(original) function(fold_state, services, observation, plan, ...) {
-    if (length(plan$accounting_events$fills) > 1L) plan$accounting_events$fills <- rev(plan$accounting_events$fills)
+    n <- length(plan$batch$fill$k) # LDG-3166: the typed fill rows
+    if (n > 1L) plan$batch$fill <- ws_fill_rows(plan$batch$fill, rev(seq_len(n)))
     original(fold_state, services, observation, plan, ...)
   })),
   M3_drop_lot_fee = list(case = "C4", patch = list(ledgr_lot_fill = function(original) function(book, pos, side, qty, price, fee = 0, ...) {
