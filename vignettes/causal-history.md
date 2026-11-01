@@ -626,7 +626,7 @@ estimate <- function(ctx, params) {
     return(ctx$hold())
   }
   w <- clipped_weights(stats::cov(returns))
-  held <- ctx$universe[ctx$vec$position != 0]
+  held <- ctx$universe[ctx$position != 0]
   keep <- intersect(ledgr_history_info(returns)$excluded_ids, held)
   if (!isTRUE(params$keep)) keep <- character()
   w |>

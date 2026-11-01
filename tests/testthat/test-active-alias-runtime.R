@@ -10,7 +10,7 @@ testthat::test_that("ledgr_run resolves active aliases from feature_params", {
   )
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    x <- ctx$features("AAA")
+    x <- c(fast = ctx$fast[["AAA"]], slow = ctx$slow[["AAA"]])
     if (ledgr_passed_warmup(x) && x[["fast"]] >= x[["slow"]]) {
       targets["AAA"] <- params$qty
     }
@@ -35,21 +35,20 @@ testthat::test_that("ledgr_run resolves active aliases from feature_params", {
   testthat::expect_identical(bt$config$feature_params, list(fast_n = 2L, slow_n = 3L))
 })
 
-testthat::test_that("ctx features without active aliases fails loudly", {
+testthat::test_that("unmapped feature IDs remain available by registered ID", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
-    ctx$features("AAA")
+    ctx$sma_2[["AAA"]]
     ctx$flat()
   }
   exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = list(ledgr_ind_sma(2)), cost_model = ledgr_cost_zero())
 
-  testthat::expect_error(
-    ledgr_run(exp, run_id = "missing-active-alias-map"),
-    class = "ledgr_no_active_alias_map"
-  )
+  bt <- ledgr_run(exp, run_id = "missing-active-alias-map")
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_s3_class(bt, "ledgr_backtest")
 })
 
 testthat::test_that("sweeps keep feature params separate from strategy params", {
@@ -60,7 +59,7 @@ testthat::test_that("sweeps keep feature params separate from strategy params", 
   features <- ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n")))
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    x <- ctx$features("AAA")
+    x <- ctx$signal[["AAA"]]
     if (ledgr_passed_warmup(x)) {
       targets["AAA"] <- params$qty
     }
@@ -102,7 +101,7 @@ testthat::test_that("parameterized active-alias bundle sweeps resolve concrete o
   )
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    x <- ctx$features("AAA")
+    x <- c(bbands_up = ctx$bbands_up[["AAA"]], bbands_dn = ctx$bbands_dn[["AAA"]])
     if (ledgr_passed_warmup(x) && x[["bbands_up"]] > x[["bbands_dn"]]) {
       targets["AAA"] <- params$qty
     }
@@ -159,7 +158,7 @@ testthat::test_that("promotion replays active alias feature params", {
 
   features <- ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n")))
   strategy <- function(ctx, params) {
-    x <- ctx$features("AAA")
+    x <- ctx$signal[["AAA"]]
     targets <- ctx$flat()
     if (ledgr_passed_warmup(x)) {
       targets["AAA"] <- params$qty

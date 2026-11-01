@@ -9,7 +9,7 @@ testthat::test_that("ledgr_run executes an experiment with fixed features", {
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    if (ctx$close("AAA") > 0) {
+    if (ctx$close[["AAA"]] > 0) {
       targets["AAA"] <- params$qty
     }
     targets

@@ -753,7 +753,7 @@ testthat::test_that("max-weight preserves negative target direction", {
   out <- ledgr:::ledgr_apply_risk_step_max_weight(
     c(AAA = -50),
     list(args = list(max_weight = 0.1)),
-    list(equity = 1000, vec = list(close = c(AAA = 10)))
+    list(equity = 1000, close = c(AAA = 10))
   )
 
   testthat::expect_equal(out, c(AAA = -10))
@@ -763,7 +763,7 @@ testthat::test_that("max-weight zeros nonzero targets when equity is zero", {
   out <- ledgr:::ledgr_apply_risk_step_max_weight(
     c(AAA = 50, BBB = 0),
     list(args = list(max_weight = 0.1)),
-    list(equity = 0, vec = list(close = c(AAA = 10, BBB = NA_real_)))
+    list(equity = 0, close = c(AAA = 10, BBB = NA_real_))
   )
 
   testthat::expect_equal(out, c(AAA = 0, BBB = 0))
@@ -814,7 +814,7 @@ testthat::test_that("max-weight fails closed when nonzero targets need invalid d
   ctx <- list(
     universe = c("AAA", "BBB"),
     equity = 1000,
-    vec = list(close = c(NA_real_, NA_real_))
+    close = c(NA_real_, NA_real_)
   )
   risk_plan <- ledgr:::ledgr_risk_plan_compile(
     ledgr_risk_max_weight(0.1),

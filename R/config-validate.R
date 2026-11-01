@@ -253,6 +253,13 @@ validate_ledgr_config <- function(config) {
       class = "ledgr_invalid_config"
     )
   }
+  if (!is.null(carried$position_facts) &&
+      length(setdiff(carried$position_facts$instrument_id, instrument_ids)) > 0L) {
+    rlang::abort(
+      "Config field opening.carried.position_facts names instruments outside the universe.",
+      class = "ledgr_invalid_config"
+    )
+  }
 
   pulse <- cfg_get(c("backtest", "pulse"))
   assert_scalar_chr(pulse, "backtest.pulse")

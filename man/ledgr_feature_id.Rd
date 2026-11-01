@@ -17,7 +17,7 @@ vector in list order. Feature-map input returns IDs named by alias.
 }
 \description{
 Returns the exact feature ID strings that strategies should pass to
-\code{ctx$feature(instrument_id, name)}. This helper reads the existing indicator
+\code{ctx[[name]][[instrument_id]]}. This helper reads the existing indicator
 IDs; it does not generate aliases or change the ID scheme.
 }
 \section{Articles}{

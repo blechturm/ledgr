@@ -1,4 +1,4 @@
-testthat::test_that("pulse context exposes narrative scalar accessors", {
+testthat::test_that("pulse context exposes flat named columns and retained frame helpers", {
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
   bars <- data.frame(
@@ -24,49 +24,48 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   )
 
   testthat::expect_true(is.function(ctx$bar))
-  testthat::expect_true(is.function(ctx$open))
-  testthat::expect_true(is.function(ctx$high))
-  testthat::expect_true(is.function(ctx$low))
-  testthat::expect_true(is.function(ctx$close))
-  testthat::expect_true(is.function(ctx$volume))
-  testthat::expect_true(is.function(ctx$position))
-  testthat::expect_true(is.function(ctx$idx))
+  testthat::expect_true(is.numeric(ctx$open))
+  testthat::expect_true(is.numeric(ctx$high))
+  testthat::expect_true(is.numeric(ctx$low))
+  testthat::expect_true(is.numeric(ctx$close))
+  testthat::expect_true(is.numeric(ctx$volume))
+  testthat::expect_true(is.numeric(ctx$position))
   testthat::expect_true(is.function(ctx$flat))
   testthat::expect_true(is.function(ctx$hold))
-  testthat::expect_true(is.function(ctx$tradable))
-  testthat::expect_null(ctx$positions)
-  testthat::expect_null(ctx$targets)
-  testthat::expect_null(ctx$current_targets)
-  testthat::expect_null(ctx$safety_state)
+  testthat::expect_error(ctx$idx, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$tradable, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$positions, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$targets, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$current_targets, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$safety_state, class = "ledgr_unknown_context_field")
 
-  testthat::expect_equal(ctx$open("A"), 10)
-  testthat::expect_equal(ctx$high("A"), 11)
-  testthat::expect_equal(ctx$low("A"), 9)
-  testthat::expect_equal(ctx$close("A"), 10.5)
-  testthat::expect_equal(ctx$volume("B"), 200)
-  testthat::expect_null(names(ctx$close("A")))
-  testthat::expect_identical(ctx$idx("A"), 1L)
-  testthat::expect_identical(ctx$idx("Z", missing = "na"), NA_integer_)
-  testthat::expect_error(ctx$idx("Z"), class = "ledgr_invalid_pulse_context")
-  testthat::expect_identical(ctx$vec$id, universe)
-  testthat::expect_equal(ctx$vec$open, c(10, 20))
-  testthat::expect_equal(ctx$vec$high, c(11, 21))
-  testthat::expect_equal(ctx$vec$low, c(9, 19))
-  testthat::expect_equal(ctx$vec$close, c(10.5, 20.5))
-  testthat::expect_equal(ctx$vec$volume, c(100, 200))
-  testthat::expect_equal(ctx$vec$position, c(0, 3))
+  testthat::expect_equal(ctx$open[["A"]], 10)
+  testthat::expect_equal(ctx$high[["A"]], 11)
+  testthat::expect_equal(ctx$low[["A"]], 9)
+  testthat::expect_equal(ctx$close[["A"]], 10.5)
+  testthat::expect_equal(ctx$volume[["B"]], 200)
+  testthat::expect_null(names(ctx$close[["A"]]))
+  testthat::expect_identical(match("A", ctx$universe), 1L)
+  testthat::expect_identical(match("Z", ctx$universe), NA_integer_)
+  testthat::expect_error(ctx$vec, class = "ledgr_unknown_context_field")
+  testthat::expect_equal(ctx$open, c(A = 10, B = 20))
+  testthat::expect_equal(ctx$high, c(A = 11, B = 21))
+  testthat::expect_equal(ctx$low, c(A = 9, B = 19))
+  testthat::expect_equal(ctx$close, c(A = 10.5, B = 20.5))
+  testthat::expect_equal(ctx$volume, c(A = 100, B = 200))
+  testthat::expect_equal(ctx$position, c(A = 0, B = 3))
 
   bar_b <- ctx$bar("B")
   testthat::expect_true(is.data.frame(bar_b))
   testthat::expect_equal(nrow(bar_b), 1L)
   testthat::expect_identical(as.character(bar_b$instrument_id), "B")
 
-  testthat::expect_equal(ctx$position("A"), 0)
-  testthat::expect_equal(ctx$position("B"), 3)
+  testthat::expect_equal(ctx$position[["A"]], 0)
+  testthat::expect_equal(ctx$position[["B"]], 3)
   testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
   testthat::expect_identical(ctx$flat(default = 2), stats::setNames(c(2, 2), universe))
   testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 3), universe))
-  testthat::expect_identical(ctx$tradable(), universe)
+  testthat::expect_identical(names(ctx$buyable)[ctx$buyable], universe)
 
   testthat::expect_true(is.numeric(ctx$cash))
   testthat::expect_true(is.numeric(ctx$equity))
@@ -77,7 +76,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_identical(ctx$.pulse_lookup$bar_index, stats::setNames(1:2, universe))
 })
 
-testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse planes", {
+testthat::test_that("[LTB-0061] ctx$buyable is eligibility and not a price plane", {
   ids <- c("HALTED", "UNPRICED", "HELD_NONMEMBER", "MEMBER")
   bars <- data.frame(
     instrument_id = ids,
@@ -116,12 +115,10 @@ testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse pla
     availability = availability
   )
 
-  expected <- ctx$vec$id[ctx$vec$admissible & ctx$vec$priced]
-  testthat::expect_identical(ctx$tradable(), expected)
-  testthat::expect_identical(ctx$tradable(), "MEMBER")
+  testthat::expect_identical(names(ctx$buyable)[ctx$buyable], c("UNPRICED", "MEMBER"))
 
   weights <- ledgr_weight_equal(ledgr_selection(
-    stats::setNames(ids %in% ctx$tradable(), ids),
+    stats::setNames(ids %in% names(ctx$buyable)[ctx$buyable], ids),
     universe = ids
   ))
   testthat::expect_error(
@@ -137,7 +134,7 @@ testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse pla
     cash = 1000,
     equity = 1000
   )
-  testthat::expect_identical(dense$tradable(), "HALTED")
+  testthat::expect_identical(names(dense$buyable)[dense$buyable], ids)
 
   availability$member[] <- FALSE
   empty <- ledgr:::ledgr_update_pulse_context_helpers(
@@ -148,8 +145,8 @@ testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse pla
     availability = availability
   )
   targets <- empty$flat()
-  targets[empty$tradable()] <- 1
-  testthat::expect_identical(empty$tradable(), character())
+  targets[names(empty$buyable)[empty$buyable]] <- 1
+  testthat::expect_identical(names(empty$buyable)[empty$buyable], character())
   testthat::expect_identical(targets, stats::setNames(rep(0, length(ids)), ids))
 })
 
@@ -285,8 +282,8 @@ testthat::test_that("non-fast projection contexts keep schema-only feature table
   testthat::expect_s3_class(ctx, "ledgr_pulse_context")
   testthat::expect_true(is.data.frame(ctx$feature_table))
   testthat::expect_equal(nrow(ctx$feature_table), 0L)
-  testthat::expect_equal(ctx$feature("AAA", "signal"), 1)
-  testthat::expect_equal(ctx$vec$feature("signal"), c(1, 2))
+  testthat::expect_equal(ctx[["signal"]][["AAA"]], 1)
+  testthat::expect_equal(unname(ctx[["signal"]]), c(1, 2))
   testthat::expect_equal(ctx$features_wide$signal, c(1, 2))
   testthat::expect_equal(nrow(ledgr_pulse_features(ctx)), 2L)
 })
@@ -337,15 +334,8 @@ testthat::test_that("pulse context accessors fail loudly on ambiguity", {
     equity = 1000
   )
 
-  testthat::expect_error(
-    ctx$close("AA"),
-    "Available ctx\\$universe: AAA, BBB"
-  )
-  testthat::expect_error(
-    ctx$volume("AAA"),
-    "missing required field `volume`",
-    fixed = TRUE
-  )
+  testthat::expect_error(ctx$close[["AA"]], "subscript out of bounds", fixed = TRUE)
+  testthat::expect_true(is.na(ctx$volume[["AAA"]]))
   testthat::expect_error(
     ctx$flat(default = NA_real_),
     "`default` must be a finite numeric scalar",
@@ -397,20 +387,20 @@ testthat::test_that("pulse context feature accessor fails loudly on unknown feat
     equity = 1000
   )
 
-  testthat::expect_true(is.na(ctx$feature("AAA", "return_20")))
-  testthat::expect_true(is.na(ctx$vec$feature("return_20")[[1L]]))
+  testthat::expect_true(is.na(ctx[["return_20"]][["AAA"]]))
+  testthat::expect_true(is.na(ctx[["return_20"]][[1L]]))
   testthat::expect_error(
-    ctx$feature("AAA", "returns_20"),
-    class = "ledgr_unknown_feature_id"
+    ctx[["returns_20"]][["AAA"]],
+    class = "ledgr_unknown_context_field"
   )
   testthat::expect_error(
-    ctx$feature("AAA", "returns_20"),
-    "Active aliases: <none>. Concrete feature IDs: return_20",
+    ctx[["returns_20"]][["AAA"]],
+    "Unknown pulse context field `returns_20`.",
     fixed = TRUE
   )
   testthat::expect_error(
-    ctx$vec$feature("returns_20"),
-    class = "ledgr_unknown_feature_id"
+    ctx[["returns_20"]],
+    class = "ledgr_unknown_context_field"
   )
 })
 
@@ -437,17 +427,17 @@ testthat::test_that("pulse context feature accessor fails when no features are r
   )
 
   testthat::expect_error(
-    ctx$feature("AAA", "rsi_20"),
-    class = "ledgr_unknown_feature_id"
+    ctx[["rsi_20"]][["AAA"]],
+    class = "ledgr_unknown_context_field"
   )
   testthat::expect_error(
-    ctx$feature("AAA", "rsi_20"),
-    "Active aliases: <none>. Concrete feature IDs: <none>",
+    ctx[["rsi_20"]][["AAA"]],
+    "Unknown pulse context field `rsi_20`.",
     fixed = TRUE
   )
 })
 
-testthat::test_that("pulse context feature maps return aliased pulse values", {
+testthat::test_that("pulse context exposes active aliases as flat columns", {
   ts <- "2020-01-02T00:00:00Z"
   bars <- data.frame(
     instrument_id = c("AAA", "BBB"),
@@ -480,9 +470,13 @@ testthat::test_that("pulse context feature maps return aliased pulse values", {
     cash = 1000,
     equity = 1000
   )
+  ctx <- ledgr:::ledgr_update_pulse_context_helpers(
+    ctx,
+    active_alias_map = c(trend = "sma_2", ret = "return_2")
+  )
 
-  x_aaa <- ctx$features("AAA", feature_map)
-  x_bbb <- ctx$features("BBB", feature_map)
+  x_aaa <- c(trend = ctx$trend[["AAA"]], ret = ctx$ret[["AAA"]])
+  x_bbb <- c(trend = ctx$trend[["BBB"]], ret = ctx$ret[["BBB"]])
 
   testthat::expect_identical(names(x_aaa), c("trend", "ret"))
   testthat::expect_equal(x_aaa[["trend"]], 10.25)
@@ -490,15 +484,13 @@ testthat::test_that("pulse context feature maps return aliased pulse values", {
   testthat::expect_false(ledgr_passed_warmup(x_aaa))
   testthat::expect_true(ledgr_passed_warmup(x_bbb))
   testthat::expect_equal(x_bbb[["ret"]], 0.05)
-  testthat::expect_equal(ctx$feature("BBB", "return_2"), x_bbb[["ret"]])
+  testthat::expect_equal(ctx[["return_2"]][["BBB"]], x_bbb[["ret"]])
 
-  inline <- ctx$features("AAA", c(short_ret = "return_2", short_sma = "sma_2"))
-  testthat::expect_identical(names(inline), c("short_ret", "short_sma"))
-  testthat::expect_equal(inline[["short_sma"]], 10.25)
-  testthat::expect_true(is.na(inline[["short_ret"]]))
+  testthat::expect_equal(ctx$sma_2[["AAA"]], 10.25)
+  testthat::expect_true(is.na(ctx$return_2[["AAA"]]))
 })
 
-testthat::test_that("pulse context feature maps fail loudly for invalid lookup", {
+testthat::test_that("retired feature readers fail loudly", {
   ts <- "2020-01-02T00:00:00Z"
   bars <- data.frame(
     instrument_id = "AAA",
@@ -527,20 +519,9 @@ testthat::test_that("pulse context feature maps fail loudly for invalid lookup",
     equity = 1000
   )
 
-  testthat::expect_error(
-    ctx$features("BBB", ledgr_feature_map(sma = ledgr_ind_sma(2))),
-    class = "ledgr_invalid_pulse_context"
-  )
-  testthat::expect_error(
-    ctx$features("AAA", list(sma = ledgr_ind_sma(2))),
-    class = "ledgr_invalid_feature_map"
-  )
-  testthat::expect_error(
-    ctx$features("AAA", ledgr_feature_map(ret = ledgr_ind_returns(2))),
-    "Active aliases: <none>. Concrete feature IDs: sma_2",
-    fixed = TRUE,
-    class = "ledgr_unknown_feature_id"
-  )
+  testthat::expect_error(ctx$features, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$feature, class = "ledgr_unknown_context_field")
+  testthat::expect_equal(ctx$sma_2[["AAA"]], 10.25)
 })
 
 testthat::test_that("ledgr_passed_warmup validates input shape", {
@@ -569,18 +550,18 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
   on.exit(close(ctx), add = TRUE)
 
   testthat::expect_s3_class(ctx, "ledgr_pulse_context")
-  testthat::expect_true(is.function(ctx$close))
-  testthat::expect_true(is.function(ctx$position))
+  testthat::expect_true(is.numeric(ctx$close))
+  testthat::expect_true(is.numeric(ctx$position))
   testthat::expect_true(is.function(ctx$flat))
   testthat::expect_true(is.function(ctx$hold))
-  testthat::expect_true(is.function(ctx$features))
-  testthat::expect_equal(ctx$close("TEST_A"), ctx$bars$close[ctx$bars$instrument_id == "TEST_A"])
-  testthat::expect_equal(ctx$position("TEST_A"), 0)
+  testthat::expect_error(ctx$features, class = "ledgr_unknown_context_field")
+  testthat::expect_equal(ctx$close[["TEST_A"]], ctx$bars$close[ctx$bars$instrument_id == "TEST_A"])
+  testthat::expect_equal(ctx$position[["TEST_A"]], 0)
   testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
   testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 0), universe))
   testthat::expect_error(
-    ctx$feature("TEST_A", "sma_200"),
-    class = "ledgr_unknown_feature_id"
+    ctx[["sma_200"]][["TEST_A"]],
+    class = "ledgr_unknown_context_field"
   )
   testthat::expect_true(is.environment(ctx$.pulse_lookup))
 })
@@ -719,26 +700,26 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
   observed$count <- 0L
 
   helper_strategy <- function(ctx, params) {
-    if (!is.function(ctx$close) || !is.function(ctx$flat) || !is.function(ctx$position) || !is.function(ctx$hold)) {
+    if (!is.numeric(ctx$close) || !is.function(ctx$flat) || !is.numeric(ctx$position) || !is.function(ctx$hold)) {
       stop("runtime context accessors are missing")
     }
     if (is.function(ctx$cash) || is.function(ctx$equity)) {
       stop("cash/equity must remain scalar fields")
     }
-    if (!identical(ctx$close("TEST_A"), unname(ctx$bars$close[ctx$bars$instrument_id == "TEST_A"]))) {
+    if (!identical(ctx$close[["TEST_A"]], unname(ctx$bars$close[ctx$bars$instrument_id == "TEST_A"]))) {
       stop("runtime close accessor does not match ctx$bars")
     }
-    if (!identical(ctx$position("TEST_A"), unname(ctx$vec$position[[ctx$idx("TEST_A")]]))) {
-      stop("runtime scalar position does not match ctx$vec$position")
+    if (!identical(ctx$position[["TEST_A"]], unname(ctx$position[[match("TEST_A", ctx$universe)]]))) {
+      stop("runtime scalar position does not match ctx$position")
     }
-    expected_current <- stats::setNames(as.numeric(ctx$vec$position), ctx$vec$id)
+    expected_current <- stats::setNames(as.numeric(ctx$position), ctx$universe)
     if (!identical(ctx$hold(), expected_current)) {
-      stop("runtime hold accessor does not match ctx$vec$position")
+      stop("runtime hold accessor does not match ctx$position")
     }
 
     observed$count <- observed$count + 1L
     targets <- ctx$flat()
-    if (observed$count == 1L && ctx$close("TEST_A") > 0) {
+    if (observed$count == 1L && ctx$close[["TEST_A"]] > 0) {
       targets["TEST_A"] <- 1
     }
     targets
@@ -770,12 +751,12 @@ testthat::test_that("feature-map strategies match across execution modes", {
 
   features <- ledgr_feature_map(ret = ledgr_ind_returns(2))
   strategy <- function(ctx, params) {
-    x <- ctx$features("AAA", features)
-    if (!identical(x[["ret"]], ctx$feature("AAA", "return_2"))) {
+    x <- ctx$ret[["AAA"]]
+    if (!identical(x, ctx[["return_2"]][["AAA"]])) {
       stop("mapped feature value does not match scalar feature accessor")
     }
     targets <- ctx$flat()
-    if (ledgr_passed_warmup(x) && x[["ret"]] > 0) {
+    if (ledgr_passed_warmup(x) && x > 0) {
       targets["AAA"] <- 1
     }
     targets

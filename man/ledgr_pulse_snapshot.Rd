@@ -89,8 +89,8 @@ pulse <- ledgr_pulse_snapshot(
   positions = c(AAA = 2),
   state_prev = list(pulses_seen = 1)
 )
-pulse$close("AAA")
-pulse$feature("AAA", "sma_2")
+pulse$close[["AAA"]]
+pulse$sma_2[["AAA"]]
 pulse$state_prev
 close(pulse)
 ledgr_snapshot_close(snapshot)

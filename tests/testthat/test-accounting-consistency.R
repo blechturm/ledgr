@@ -12,7 +12,7 @@ testthat::test_that("equity curve state is reconstructed from ledger fills", {
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    targets["AAA"] <- if (ctx$close("AAA") == 100) 1 else 0
+    targets["AAA"] <- if (ctx$close[["AAA"]] == 100) 1 else 0
     targets
   }
 

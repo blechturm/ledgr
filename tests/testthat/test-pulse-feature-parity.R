@@ -53,7 +53,7 @@ ledgr_pulse_feature_parity_fixture <- function() {
 ledgr_pulse_feature_values <- function(ctx, ids, feature_ids) {
   values <- unlist(lapply(ids, function(id) {
     vapply(feature_ids, function(feature_id) {
-      ctx$feature(id, feature_id)
+      ctx[[feature_id]][[id]]
     }, numeric(1))
   }), use.names = FALSE)
   names(values) <- as.vector(t(outer(ids, feature_ids, paste, sep = "::")))
@@ -74,7 +74,7 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
     if (identical(ledgr_iso_utc(ctx$ts_utc), params$target_ts)) {
       values <- unlist(lapply(params$ids, function(id) {
         vapply(params$feature_ids, function(feature_id) {
-          ctx$feature(id, feature_id)
+          ctx[[feature_id]][[id]]
         }, numeric(1))
       }), use.names = FALSE)
       names(values) <- as.vector(t(outer(
@@ -190,7 +190,7 @@ testthat::test_that("[LTB-0104] fn-only pulse features use the run preparation",
   testthat::expect_gt(pulse_calls, 0L)
   testthat::expect_identical(pulse_calls, run_calls)
   testthat::expect_identical(
-    unname(pulse$vec$feature("counted_window")),
+    unname(pulse[["counted_window"]]),
     c(110.5, 88)
   )
 })

@@ -17,6 +17,14 @@ applied. Its [final confirmation](cut_review_7_confirmation_1.md) required four
 exact textual patches and stated that no further review was needed once they
 landed; all are applied. The maintainer accepted the cut on 2026-11-01.
 Cut 2 (WS3 dense oracle and current-tree timing) is closed and accepted at revision 3.2. The 2026-10-30 amendment aligns its descriptive baseline with Cut 4's shared paired-gate harness boundary; its focused [review](cut_review_2_amendment.md) is `PASS`. Workstream 2's accepted [Type 1 close review](ws2_close_review.md) freezes the dense oracle at `cbf25359`. Workstream 3's accepted [Type 1 close review](ws3_close_review.md) freezes the descriptive [current-tree record](../../../dev/bench/peer_benchmark/records/20261030-current-tree/). Together they discharge C1's oracle/baseline prerequisite. A0 remains independent, the record is not a future ratio arm or public speed claim, and the old peer driver retires only after replacement coverage is accepted.
+
+Workstream 15 (LDG-3179--LDG-3181) is implementation-complete and prepared
+for its independent Type 1 close review. The bounded record is
+[ws15_implementation_matrix.md](ws15_implementation_matrix.md) with runnable
+inventories under `dev/bench/v0_2_3_ws5/` and timing preregistration under
+`dev/bench/timing/protocols/ws5-timing-1/`. Ticket statuses remain pending
+until that close review and maintainer acceptance; integrated Cut 7 timing is
+descriptive milestone evidence, not a WS15 correctness gate.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.

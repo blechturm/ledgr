@@ -286,7 +286,7 @@ testthat::test_that("[LTB-0371] strategy preflight refuses private context inter
   plain_strategy <- function(ctx, params) {
     state <- list(last = ctx$ts_utc, count = 1L)
     targets <- ctx$flat()
-    targets[ctx$universe[ctx$vec$admissible]] <- ctx$vec$position[ctx$vec$admissible]
+    targets[ctx$universe[ctx$buyable]] <- ctx$position[ctx$buyable]
     if (is.null(state$last)) {
       return(ctx$hold())
     }

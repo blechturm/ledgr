@@ -2,7 +2,7 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
   snapshot <- availability_runtime_fixture(days = 5L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    invisible(ctx$vec$feature("sma_2"))
+    invisible(ctx[["sma_2"]])
     ctx$flat()
   }
   experiment <- ledgr_experiment(

@@ -162,7 +162,7 @@ testthat::test_that("summary surfaces impossible warmup diagnostics without chan
   features <- list(ledgr_ind_sma(20))
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    value <- ctx$feature("AAA", "sma_20")
+    value <- ctx[["sma_20"]][["AAA"]]
     if (is.finite(value)) {
       targets["AAA"] <- 1
     }

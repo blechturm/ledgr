@@ -57,10 +57,10 @@ features <- ledgr_feature_map(
 
 A **feature ID** is ledgr’s engine-facing name for a computed value. An
 **alias** is the strategy-facing name you choose in a feature map. Use
-aliases such as `ret_5` or `sma_10` when you write strategy logic with
-`ctx$features()`. Use feature IDs such as `return_5` or `sma_10` when
-you need the explicit engine contract, for example with `ctx$feature()`
-or when inspecting stored feature metadata.
+aliases such as `ret_5` or `sma_10` as flat context-column names. Use
+feature IDs such as `return_5` or `sma_10` when you need the explicit
+engine contract, for example with `ctx[[feature_id]]` or when inspecting
+stored feature metadata.
 
 Feature objects appear in three registration and inspection places:
 
@@ -70,19 +70,15 @@ Feature objects appear in three registration and inspection places:
 | `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs |
 | `ledgr_pulse_snapshot(features = ...)` | static list or feature map | computes pulse-known values for inspection |
 
-The strategy context then exposes the computed values through accessors:
+The strategy context exposes each computed value as a flat named column:
 
-| Accessor | Name type | Use |
+| Expression | Name type | Use |
 |----|----|----|
-| `ctx$vec$feature(feature_id)` | active alias or engine feature ID | reads one feature across the whole decision axis |
-| `ctx$feature(id, feature_id)` | active alias or engine feature ID | reads one scalar value |
-| `ctx$features(id, feature_map)` | feature map | returns a named vector keyed by alias |
+| `ctx[[feature_id]]` | active alias or engine feature ID | reads one named feature column across the decision axis |
 
 The canonical strategy workflow is: register features on
-`ledgr_experiment()`, resolve the engine ID once, then read the whole
-decision axis with `ctx$vec$feature()`. Keep `ctx$feature()` and
-`ctx$features()` for one-instrument inspection and for active aliases,
-whose concrete engine IDs vary by candidate.
+`ledgr_experiment()`, then read the active alias directly. Use
+`ctx[[feature_id]]` when code deliberately works with an engine ID.
 
 ## Feature Lifecycle: From Declaration To Lookup
 
@@ -118,10 +114,8 @@ flowchart LR
 4.  During `ledgr_run()` or `ledgr_sweep()`, the engine computes the
     registered feature values at each pulse without looking past the
     current bar.
-5.  Strategy code normally reads one feature across the decision axis
-    with `ctx$vec$feature()`. Scalar accessors remain useful for
-    inspection and for active aliases that have no whole-universe alias
-    accessor yet.
+5.  Strategy code reads one flat named feature column across the
+    decision axis.
 
 A **fingerprint** identifies the feature definition, not just the name.
 If the calculation, parameters, warmup rule, adapter, or selected output
@@ -170,8 +164,8 @@ mapped aliases after warmup:
 
 ``` r
 crossover_strategy <- function(ctx, params) {
-  fast <- ctx$vec$feature(crossover_ids[["sma_fast"]])
-  slow <- ctx$vec$feature(crossover_ids[["sma_slow"]])
+  fast <- ctx[[crossover_ids[["sma_fast"]]]]
+  slow <- ctx[[crossover_ids[["sma_slow"]]]]
   ready <- is.finite(fast) & is.finite(slow)
 
   targets <- ctx$flat()
@@ -257,7 +251,7 @@ ledgr_pulse_wide(pulse, features)
 `ledgr_pulse_features()` and `ledgr_pulse_wide()` work on interactive
 pulse snapshots and on the `ctx` object inside an ordinary strategy
 function. They are inspection views over the same pulse-known data used
-by `ctx$feature()` and `ctx$features()`.
+by flat feature columns.
 
 ## Access Features In A Strategy
 
@@ -267,24 +261,24 @@ are not always the clearest shape for strategy code. A strategy often
 wants to ask a smaller question: “what are the current values for this
 instrument?”
 
-That is why ledgr also exposes the same pulse data through scalar and
-mapped accessors. The table views and the accessors are not competing
-APIs; they are different views over the same pulse-known data.
-
-The explicit scalar accessor is useful when you want to show or debug
-one value. It uses the engine ID, not the alias:
+Strategy code reads the same pulse-known data as flat named columns.
+Index a column by instrument only when you deliberately need one value.
+This engine-ID read selects one column, then one instrument:
 
 ``` r
 ids <- ledgr_feature_id(features)
-pulse$feature("DEMO_01", ids[["ret_5"]])
+pulse[[ids[["ret_5"]]]][["DEMO_01"]]
 #> [1] 0.08531877
 ```
 
-Mapped access returns a named numeric vector keyed by alias for one
-instrument at one pulse:
+Aliases are the primary column names. A compact one-instrument
+inspection can name the selected values explicitly:
 
 ``` r
-x <- pulse$features("DEMO_01", features)
+x <- c(
+  ret_5 = pulse$ret_5[["DEMO_01"]],
+  sma_10 = pulse$sma_10[["DEMO_01"]]
+)
 x
 #>       ret_5      sma_10
 #>  0.08531877 99.79637070
@@ -300,21 +294,19 @@ known feature that is not ready yet.
 >
 > ### Try it
 >
-> Change the scalar accessor to `pulse$feature("DEMO_01", "returns_5")`.
-> Why does that fail while `ids[["ret_5"]]` works?
+> Change the lookup to `pulse[["returns_5"]]`. Why does that fail while
+> `pulse[[ids[["ret_5"]]]]` works?
 
 
-A strategy decides for every instrument at once. `ctx$vec$feature()`
-reads one feature for the whole universe in a single call, one value per
-instrument in the order of `ctx$universe`. It takes the engine ID, which
-is what `ids` already holds:
+A strategy decides for every instrument at once. One flat feature-column
+read returns a named value for every instrument in `ctx$universe` order:
 
 ``` r
 strategy <- function(ctx, params) {
-  ret_5 <- ctx$vec$feature(ids[["ret_5"]])
-  sma_10 <- ctx$vec$feature(ids[["sma_10"]])
+  ret_5 <- ctx[[ids[["ret_5"]]]]
+  sma_10 <- ctx[[ids[["sma_10"]]]]
   ready <- !is.na(ret_5) & !is.na(sma_10)
-  qualifies <- ready & ret_5 > params$min_return & ctx$vec$close > sma_10
+  qualifies <- ready & ret_5 > params$min_return & ctx$close > sma_10
 
   targets <- ctx$flat()
   targets[qualifies] <- params$qty
@@ -328,7 +320,7 @@ That pattern keeps the signal logic readable:
   alias into the engine ID.
 - `ready` is the warmup gate: an instrument qualifies only once both of
   its features are usable. For one instrument, `ledgr_passed_warmup()`
-  asks the same question of the vector `ctx$features()` returns.
+  asks the same question of the flat feature columns.
 - The rest of the condition is the economic rule.
 - The strategy still returns ordinary target quantities.
 
@@ -337,9 +329,9 @@ section’s lesson. `ledgr_signal_feature(ctx, ids[["ret_5"]])` reads the
 same vector for the helper pipeline that
 `vignette("strategy-development", package = "ledgr")` shows.
 
-`ctx$features()` in a loop over `ctx$universe` would give the same
-targets, but it repeats per-instrument work at every pulse. Keep the
-scalar and mapped accessors for inspecting one instrument.
+Indexing flat feature columns by instrument would give the same targets,
+but it repeats per-instrument work at every pulse. Read each column once
+and index only for deliberate one-instrument inspection.
 
 The strategy reads `ids` from the code around it, so it closes over a
 value built from the feature map. The run records the registered feature
@@ -474,15 +466,11 @@ strategy grids for this map, runs the sweep and reads the candidate
 rows.
 
 For single-output indicators, the feature-map alias is the
-strategy-facing name. Read it once across the decision axis with
-`ctx$vec$feature("alias")`; use `ctx$features(id)` when you deliberately
-need several mapped values for one instrument. On an axis of at least
-100 instruments, an active-map bundle loop warns when its calls reach
-the axis size and names the plane replacement. Explicit-map bundle calls
-remain local and unrecorded. There is no plural whole-universe accessor:
-read each required alias through the singular plane. Bundle entries are
-intentionally flat; the TTR companion explains why bundles use `prefix`
-or `naming` rather than one outer alias.
+strategy-facing name. Read each alias once as its flat named context
+column, then index those vectors if you deliberately need several values
+for one instrument. Bundle entries are intentionally flat; the TTR
+companion explains why bundles use `prefix` or `naming` rather than one
+outer alias.
 
 For TTR-backed declarations, multi-output bundles, and adapter warmup
 rules, read `vignette("ttr-indicators", package = "ledgr")`.

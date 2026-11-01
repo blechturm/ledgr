@@ -141,7 +141,7 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
 
   ind <- ledgr_adapter_r("TTR::RSI", id = "test_ttr_rsi", requires_bars = 15L, n = 14L)
   capture_strategy <- function(ctx, params) {
-    values <- vapply(ctx$universe, function(id) ctx$feature(id, params$feature), numeric(1))
+    values <- ctx[[params$feature]]
     list(
       targets = ctx$flat(),
       state_update = list(finite = as.list(stats::setNames(is.finite(values), names(values))))
@@ -186,7 +186,7 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
 
   ind <- ledgr_adapter_csv(csv_path = csv_path, value_col = "signal", id = "test_csv_signal")
   capture_strategy <- function(ctx, params) {
-    values <- vapply(ctx$universe, function(id) ctx$feature(id, params$feature), numeric(1))
+    values <- ctx[[params$feature]]
     list(targets = ctx$flat(), state_update = list(values = as.list(values)))
   }
 

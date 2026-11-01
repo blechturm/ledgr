@@ -100,7 +100,7 @@ testthat::test_that("changed captures recompute values and repeated captures sta
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    value <- ctx$feature("AAA", "captured_value")
+    value <- ctx[["captured_value"]][["AAA"]]
     if (is.finite(value) && value > params$threshold) targets[["AAA"]] <- 1
     targets
   }

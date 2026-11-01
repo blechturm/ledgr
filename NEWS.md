@@ -1,5 +1,15 @@
 # ledgr (development version)
 
+- Strategy pulse contexts are now flat named lazy views. Read bar, position,
+  eligibility, holding-value, position-fact and declared-feature columns
+  directly (for example `ctx$close`, `ctx$buyable`, `ctx$entry_price` and
+  `ctx$return_5`). Each requested column is built at most once per pulse and
+  saved views are frozen. The nested `ctx$vec`, scalar readers,
+  `ctx$feature()`, `ctx$features()`, `ctx$idx()` and `ctx$tradable()` surfaces
+  and scalar-loop warnings are removed; unknown fields raise
+  `ledgr_unknown_context_field`. Position facts are maintained and rebuilt by
+  the canonical accounting transition and survive resume and contiguous
+  carry without a second replay path.
 - Every experiment now prepares one execution substrate and enters one fold
   path. Fixed baskets derive a disclosed `bar_native` pulse clock from their
   sealed bar timestamps; experiments with declared sessions keep that clock.

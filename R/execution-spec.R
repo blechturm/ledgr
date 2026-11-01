@@ -56,6 +56,7 @@ ledgr_execution_spec <- function(run_id,
                                  telemetry_stride,
                                  state,
                                  state_prev = NULL,
+                                 position_facts = NULL,
                                  history_substrate = NULL,
                                  feature_defs,
                                  active_alias_map = NULL,
@@ -96,6 +97,7 @@ ledgr_execution_spec <- function(run_id,
     telemetry_stride = as.integer(telemetry_stride),
     state = state,
     state_prev = state_prev,
+    position_facts = position_facts,
     history_substrate = history_substrate,
     feature_defs = feature_defs,
     active_alias_map = active_alias_map,
@@ -233,6 +235,14 @@ ledgr_validate_execution_spec <- function(spec) {
           length(spec$state$positions) == length(spec$instrument_ids)
       ),
     "`execution$state` must include scalar cash and numeric positions."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$position_facts) ||
+      (is.list(spec$position_facts) &&
+        identical(names(spec$position_facts), c("entry_bar", "exit_bar")) &&
+        length(spec$position_facts$entry_bar) == length(spec$instrument_ids) &&
+        length(spec$position_facts$exit_bar) == length(spec$instrument_ids)),
+    "`execution$position_facts` must be NULL or run-axis entry/exit anchors."
   )
   ledgr_execution_spec_check(
     ledgr_history_substrate_is(spec$history_substrate),

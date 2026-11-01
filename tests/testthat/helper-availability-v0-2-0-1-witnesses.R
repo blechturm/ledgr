@@ -324,12 +324,11 @@ availability_v201_fold_strategy <- function(ctx, params) {
     stop("injected v0.2.0.1 witness failure")
   }
   target <- ctx$hold()
-  member <- ctx$vec$member
-  restricted <- ctx$vec$target_restricted
-  positions <- ctx$vec$position
+  member <- ctx$member
+  positions <- ctx$position
   pulse <- as.integer(substr(ctx$ts_utc, 9L, 10L))
-  target[member & !restricted] <- 5 + pulse
-  reduce <- !member & !restricted & positions != 0
+  target[ctx$buyable] <- 5 + pulse
+  reduce <- !member & positions != 0
   target[reduce] <- floor(positions[reduce] / 2)
 
   increase_at <- getOption("ledgr.v201.increase_nonmember_at", "")

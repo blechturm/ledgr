@@ -54,7 +54,7 @@ testthat::test_that("[LTB-0162] modeled terminal choices dispose once before the
     case <- cases[[name]]
     seen <- new.env(parent = emptyenv())
     strategy <- function(ctx, params) {
-      seen[[ctx$ts_utc]] <- ctx$vec$position[match("AAA", ctx$universe)]
+      seen[[ctx$ts_utc]] <- ctx$position[match("AAA", ctx$universe)]
       ctx$hold()
     }
     bt <- ledgr_run(
@@ -369,15 +369,14 @@ testthat::test_that("[LTB-0167] frozen holdings are preserved and reserved by st
   seen <- new.env(parent = emptyenv())
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
-      idx <- match("AAA", ctx$universe)
-      seen$vec <- lapply(
-        ctx$vec[c(
-          "held", "position", "risk_mark", "mark_source", "mark_age",
-          "target_restricted", "target_restriction_reason", "admissible", "priced"
-        )],
-        function(v) v[[idx]]
+      seen$vec <- list(
+        held = ctx$held[["AAA"]],
+        position = ctx$position[["AAA"]],
+        holding_value = ctx$holding_value[["AAA"]],
+        member = ctx$member[["AAA"]],
+        buyable = ctx$buyable[["AAA"]]
       )
-      seen$tradable <- ctx$tradable()
+      seen$tradable <- names(ctx$buyable)[ctx$buyable]
       seen$equity <- ctx$equity
       seen$target <- ledgr_target_rebalance(ledgr_weights(c(BBB = 1)), ctx)
       return(seen$target)
@@ -389,13 +388,9 @@ testthat::test_that("[LTB-0167] frozen holdings are preserved and reserved by st
   close(bt)
   testthat::expect_identical(seen$vec$held, TRUE)
   testthat::expect_equal(seen$vec$position, 2)
-  testthat::expect_equal(seen$vec$risk_mark, 100)
-  testthat::expect_identical(seen$vec$mark_source, "frozen_close")
-  testthat::expect_identical(seen$vec$mark_age, 2L)
-  testthat::expect_identical(seen$vec$target_restricted, TRUE)
-  testthat::expect_identical(seen$vec$target_restriction_reason, "valuation_frozen")
-  testthat::expect_identical(seen$vec$admissible, FALSE)
-  testthat::expect_identical(seen$vec$priced, TRUE)
+  testthat::expect_equal(seen$vec$holding_value, 200)
+  testthat::expect_identical(seen$vec$member, TRUE)
+  testthat::expect_identical(seen$vec$buyable, FALSE)
   testthat::expect_identical(seen$tradable, "BBB")
   # Reported equity includes the frozen value; the helper reserves it once.
   testthat::expect_equal(seen$equity, 1200)

@@ -32,7 +32,7 @@ contract: the returned strategy maps signals to a full named numeric target
 vector before the shared StrategyResult validator runs.
 }
 \details{
-Only eligible instruments (\code{ctx$vec$admissible}) are mapped from their
+Only eligible instruments (\code{ctx$buyable}) are mapped from their
 signals. Every ineligible instrument, a held nonmember or a target-restricted
 member, keeps its current quantity, whatever signal it received. On an empty
 decision axis the function is still called and the strategy returns a named

@@ -14,7 +14,7 @@ ledgr_wf_test_bars <- function() {
 
 ledgr_wf_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ctx$close("AAA") >= params$threshold) {
+  if (ctx$close[["AAA"]] >= params$threshold) {
     targets["AAA"] <- params$qty
   }
   targets

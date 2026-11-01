@@ -25,10 +25,9 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
          length(ctx$state_prev$asset_state$AAA) == 0L),
       plane_names = intersect(
         c(
-          "member", "held", "target_restricted", "target_restriction_reason",
-          "admissible", "priced", "mark_age"
+          "member", "held", "buyable", "holding_value"
         ),
-        names(ctx$vec)
+        names(ctx)
       )
     )
     asset_state <- stats::setNames(vector("list", length(ctx$universe)), ctx$universe)

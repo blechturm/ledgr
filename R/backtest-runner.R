@@ -15,8 +15,9 @@ ledgr_strategy_context_list <- function(x, max_items = 8L) {
 
 ledgr_strategy_error_features <- function(ctx) {
   feature_table <- ctx$feature_table
-  if (is.null(feature_table) && is.data.frame(ctx$features)) {
-    feature_table <- ctx$features
+  raw <- unclass(ctx)
+  if (is.null(feature_table) && is.data.frame(raw$features)) {
+    feature_table <- raw$features
   }
   if (!is.data.frame(feature_table)) {
     feature_table <- data.frame()
@@ -630,6 +631,9 @@ ledgr_run_fold_impl <- function(config,
     cost_basis = opening_cost_basis,
     lots = opening_carried$lots
   )
+  position_facts <- ledgr_position_facts_from_carried(
+    opening_carried, instrument_ids, history_axis
+  )
   if (identical(execution_mode, "audit_log")) {
     initial_positions <- rep(0, length(instrument_ids))
     names(initial_positions) <- instrument_ids
@@ -643,7 +647,11 @@ ledgr_run_fold_impl <- function(config,
   instrument_index <- seq_along(instrument_ids)
   names(instrument_index) <- instrument_ids
   if (is_resume && !isTRUE(terminal_recovery) && length(pulses) > 0) {
-    resume_state <- ledgr_state_asof(con, run_id, initial_cash, resume_posix, instrument_ids = instrument_ids)
+    resume_state <- ledgr_state_asof(
+      con, run_id, initial_cash, resume_posix,
+      instrument_ids = instrument_ids, bar_axis = history_axis
+    )
+    position_facts <- resume_state$position_facts
     if (identical(execution_mode, "audit_log")) {
       pos_vec <- rep(0, length(instrument_ids))
       names(pos_vec) <- instrument_ids
@@ -848,6 +856,7 @@ ledgr_run_fold_impl <- function(config,
     telemetry_stride = telemetry_stride,
     state = state_env$current,
     state_prev = state_prev_mem,
+    position_facts = position_facts,
     history_substrate = history_substrate,
     feature_defs = feature_defs,
     active_alias_map = active_alias_map,
@@ -1047,7 +1056,8 @@ ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
   ledgr_json_read_nested(row$state_json[[1]])
 }
 
-ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids = character()) {
+ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc,
+                             instrument_ids = character(), bar_axis = NULL) {
   rows <- DBI::dbGetQuery(
     con,
     "
@@ -1086,7 +1096,10 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
     cash = cash,
     positions = pos,
     equity = cash + positions_value,
-    lot_state = replay$lot_state
+    lot_state = replay$lot_state,
+    position_facts = if (is.null(bar_axis)) NULL else {
+      ledgr_position_facts_from_replay(replay, bar_axis)
+    }
   )
 }
 

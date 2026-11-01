@@ -11,7 +11,11 @@ ws42_integration_reader <- function(ctx) {
     fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
     fast_matrix = ledgr_history_matrix(ctx, feature = "fast", lookback = 2L),
     bbb_fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, instruments = "BBB"),
-    planes = ctx$vec[c("id", "member", "admissible", "target_restriction_reason", "close", "position")],
+    planes = list(
+      id = ctx$universe, member = unname(ctx$member),
+      admissible = unname(ctx$buyable), close = unname(ctx$close),
+      position = unname(ctx$position)
+    ),
     cash = ctx$cash,
     equity = ctx$equity
   )

@@ -98,11 +98,11 @@ testthat::test_that("[LTB-0056] physical recipient closure does not leak before 
   strategy <- function(ctx, params) {
     targets <- ctx$hold()
     if (identical(ctx$ts_utc, params$first_pulse)) targets[["AAA"]] <- 2
-    values <- ctx$vec$feature("sma_2")
+    values <- ctx[["sma_2"]]
     list(
       targets = targets,
       state_update = list(
-        axis = paste(ctx$vec$id, collapse = "|"),
+        axis = paste(ctx$universe, collapse = "|"),
         cross_mean = if (all(is.na(values))) {
           "unavailable"
         } else {

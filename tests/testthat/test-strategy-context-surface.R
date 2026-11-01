@@ -20,19 +20,15 @@ testthat::test_that("[LTB-0084] retired context names stay absent and rule hashe
     equity = 161.5
   )
 
-  testthat::expect_null(ctx$positions)
-  testthat::expect_null(ctx$targets)
-  testthat::expect_null(ctx$current_targets)
-  testthat::expect_null(ctx$safety_state)
-  testthat::expect_identical(ctx$vec$position, c(0, 3))
-  testthat::expect_identical(
-    vapply(universe, ctx$position, numeric(1)),
-    stats::setNames(ctx$vec$position, universe)
-  )
+  testthat::expect_error(ctx$positions, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$targets, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$current_targets, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$safety_state, class = "ledgr_unknown_context_field")
+  testthat::expect_identical(ctx$position, c(AAA = 0, BBB = 3))
   intent <- ctx$hold()
   intent[["BBB"]] <- 0
-  testthat::expect_identical(ctx$position("BBB"), 3)
-  testthat::expect_identical(ctx$vec$position[[2L]], 3)
+  testthat::expect_identical(ctx$position[["BBB"]], 3)
+  testthat::expect_identical(ctx$position[[2L]], 3)
 
   exports <- getNamespaceExports("ledgr")
   testthat::expect_true(all(c("ledgr_rule_argmax", "ledgr_rule_argmin") %in% exports))
@@ -86,8 +82,14 @@ strategy_context_surface_capture <- function(ctx, params) {
       "_scalar"
     })
   }
-  public <- names(ctx)[!startsWith(names(ctx), ".")]
-  plane <- names(ctx$vec)
+  plane <- intersect(
+    c("open", "high", "low", "close", "volume", "position", "held",
+      "member", "buyable", "holding_value", "entry_price", "entry_at",
+      "exit_at", "bars_since_entry", "bars_since_exit", "signal"),
+    names(ctx)
+  )
+  plane_labels <- ifelse(plane == "signal", "declared_feature", plane)
+  public <- setdiff(names(ctx)[!startsWith(names(ctx), ".")], plane)
   encode <- function(names, values, scope) {
     paste(
       paste(names, vapply(
@@ -103,15 +105,15 @@ strategy_context_surface_capture <- function(ctx, params) {
   previous <- ctx$state_prev$surface_history
   if (is.null(previous)) previous <- list()
   entry <- list(
-    top = encode(public, ctx[public], "top"),
-    plane = encode(plane, ctx$vec[plane], "plane"),
+    top = encode(public, lapply(public, function(name) ctx[[name]]), "top"),
+    plane = encode(plane_labels, lapply(plane, function(name) ctx[[name]]), "plane"),
     plane_lengths = paste(vapply(
-      ctx$vec[plane],
+      lapply(plane, function(name) ctx[[name]]),
       function(value) if (is.function(value)) -1L else length(value),
       integer(1)
     ), collapse = ","),
     plane_named = paste(vapply(
-      ctx$vec[plane],
+      lapply(plane, function(name) ctx[[name]]),
       function(value) is.function(value) || is.null(names(value)),
       logical(1)
     ), collapse = ","),
@@ -236,7 +238,7 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
       actual <- decode(observed[[scope]])
       wanted <- expected[expected$scope == scope, ]
       testthat::expect_identical(names(actual), wanted$member)
-      testthat::expect_true(all(vapply(
+      shape_matches <- vapply(
         seq_len(nrow(wanted)),
         function(index) {
           strategy_context_surface_shape_matches(
@@ -244,7 +246,15 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
           )
         },
         logical(1)
-      )))
+      )
+      testthat::expect_true(
+        all(shape_matches),
+        info = paste(
+          paste0(wanted$member[!shape_matches], "=", actual[wanted$member[!shape_matches]],
+                 " (documented ", wanted$shape[!shape_matches], ")"),
+          collapse = "; "
+        )
+      )
     }
     plane <- expected[expected$scope == "plane", ]
     lengths <- as.integer(strsplit(observed$plane_lengths, ",", fixed = TRUE)[[1L]])
@@ -256,7 +266,7 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
       length(strsplit(observed$universe, ",", fixed = TRUE)[[1L]])
     }
     testthat::expect_true(all(lengths[vector] == axis_length))
-    testthat::expect_true(all(unnamed))
+    testthat::expect_true(all(!unnamed[vector]))
   }
   assert_surface(dense, "dense")
   assert_surface(held, "availability")
@@ -265,13 +275,11 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
 
 eligibility_plane_capture <- function(ctx, params) {
   masked <- ctx$flat()
-  masked[ctx$vec$admissible & ctx$vec$close > 0] <- 1
+  masked[ctx$buyable & ctx$close > 0] <- 1
   entry <- list(
     members = as.list(ctx$members),
-    member = as.list(ctx$vec$member),
-    target_restricted = as.list(ctx$vec$target_restricted),
-    target_restriction_reason = as.list(ctx$vec$target_restriction_reason),
-    admissible = as.list(ctx$vec$admissible),
+    member = as.list(ctx$member),
+    buyable = as.list(ctx$buyable),
     masked = as.list(unname(masked))
   )
   list(
@@ -294,9 +302,7 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
   dense_expected <- list(
     members = list("AAA", "BBB"),
     member = list(TRUE, TRUE),
-    target_restricted = list(FALSE, FALSE),
-    target_restriction_reason = list("", ""),
-    admissible = list(TRUE, TRUE),
+    buyable = list(TRUE, TRUE),
     masked = list(1, 1)
   )
 
@@ -321,12 +327,10 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
   )
   on.exit(close(pulse), add = TRUE)
   testthat::expect_identical(pulse$members, c("AAA", "BBB"))
-  testthat::expect_identical(pulse$vec$member, c(TRUE, TRUE))
-  testthat::expect_identical(pulse$vec$target_restricted, c(FALSE, FALSE))
-  testthat::expect_identical(pulse$vec$target_restriction_reason, c("", ""))
-  testthat::expect_identical(pulse$vec$admissible, c(TRUE, TRUE))
+  testthat::expect_identical(pulse$member, c(AAA = TRUE, BBB = TRUE))
+  testthat::expect_identical(pulse$buyable, c(AAA = TRUE, BBB = TRUE))
   pulse_masked <- pulse$flat()
-  pulse_masked[pulse$vec$admissible & pulse$vec$close > 0] <- 1
+  pulse_masked[pulse$buyable & pulse$close > 0] <- 1
   testthat::expect_identical(pulse_masked, c(AAA = 1, BBB = 1))
 
   membership_input <- data.frame(
@@ -357,10 +361,10 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
   ragged_seen <- availability_last_state(availability_run)$planes
   first <- plain(ragged_seen[[1L]])
   second <- plain(ragged_seen[[2L]])
-  testthat::expect_identical(first$admissible, TRUE)
+  testthat::expect_identical(first$buyable, TRUE)
   testthat::expect_identical(first$masked, 1)
   testthat::expect_null(second$members)
   testthat::expect_identical(second$member, FALSE)
-  testthat::expect_identical(second$admissible, FALSE)
+  testthat::expect_identical(second$buyable, FALSE)
   testthat::expect_identical(second$masked, 0)
 })

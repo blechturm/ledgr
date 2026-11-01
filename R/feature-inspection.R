@@ -435,7 +435,10 @@ ledgr_pulse_feature_rows <- function(table) {
 }
 
 ledgr_pulse_active_alias_map <- function(pulse) {
-  alias_map <- pulse$active_alias_map
+  # Runtime alias state is inspection metadata, not an author-facing context
+  # column.  Read the stored pulse packet directly so strict `$` dispatch does
+  # not turn this internal consumer into a compatibility surface.
+  alias_map <- unclass(pulse)[["active_alias_map"]]
   if (is.null(alias_map)) {
     return(NULL)
   }
@@ -591,15 +594,15 @@ ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
 ledgr_pulse_wide_add_ohlcv <- function(out, pulse, instrument_id) {
   fields <- c("open", "high", "low", "close", "volume")
   for (field in fields) {
-    accessor <- pulse[[field]]
-    if (!is.function(accessor)) {
+    values <- pulse[[field]]
+    if (!is.numeric(values) || is.null(names(values))) {
       rlang::abort(
-        sprintf("Pulse context is missing bar accessor `%s`.", field),
+        sprintf("Pulse context is missing named bar column `%s`.", field),
         class = "ledgr_invalid_pulse_context"
       )
     }
     col <- paste0(instrument_id, "__ohlcv_", field)
-    out[[col]] <- accessor(instrument_id)
+    out[[col]] <- values[[instrument_id]]
   }
   out
 }

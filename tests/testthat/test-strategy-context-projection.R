@@ -29,9 +29,9 @@ strategy_context_projection_capture <- function(ctx, params) {
     vapply(context_values, exposed_value, logical(1)),
     vapply(context_values, exposed_container, logical(1))
   ))
-  scalar <- ctx$feature("AAA", "sma_2")
-  plane <- ctx$vec$feature("sma_2")[[1L]]
-  bundle <- ctx$features("AAA")[["signal"]]
+  scalar <- ctx[["sma_2"]][["AAA"]]
+  plane <- ctx[["sma_2"]][[1L]]
+  bundle <- ctx$signal[["AAA"]]
   encode <- function(value) {
     if (is.na(value)) "NA" else format(value, digits = 17, trim = TRUE)
   }
@@ -76,23 +76,23 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     feature_ids = "signal"
   )
 
-  testthat::expect_null(ctx$.feature_projection)
-  testthat::expect_null(ctx$.feature_pulse_idx)
-  testthat::expect_null(ctx$.feature_ids)
+  testthat::expect_error(ctx$.feature_projection, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$.feature_pulse_idx, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$.feature_ids, class = "ledgr_unknown_context_field")
   testthat::expect_false(any(vapply(
     unclass(ctx),
     function(value) inherits(value, "ledgr_runtime_projection"),
     logical(1)
   )))
   testthat::expect_true(is.function(ctx$.feature_table_current))
-  testthat::expect_identical(ctx$feature("AAA", "signal"), NA_real_)
-  testthat::expect_identical(ctx$vec$feature("signal"), c(NA_real_, NA_real_))
+  testthat::expect_identical(ctx[["signal"]][["AAA"]], NA_real_)
+  testthat::expect_identical(ctx[["signal"]], c(AAA = NA_real_, BBB = NA_real_))
   first_table <- ledgr_pulse_features(ctx)
   testthat::expect_true(all(first_table$ts_utc == pulses[[1L]]))
   testthat::expect_equal(first_table$feature_value, c(NA_real_, NA_real_))
   testthat::expect_error(
-    ctx$feature("AAA", "future_signal"),
-    class = "ledgr_unknown_feature_id"
+    ctx[["future_signal"]][["AAA"]],
+    class = "ledgr_unknown_context_field"
   )
 
   second_bars <- bars
@@ -106,7 +106,7 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     pulse_idx = 2L,
     feature_ids = "signal"
   )
-  testthat::expect_identical(second$vec$feature("signal"), c(11, 21))
+  testthat::expect_identical(second[["signal"]], c(AAA = 11, BBB = 21))
   second_table <- ledgr_pulse_features(second)
   testthat::expect_true(all(second_table$ts_utc == pulses[[2L]]))
   testthat::expect_equal(second_table$feature_value, c(11, 21))

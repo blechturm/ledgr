@@ -397,7 +397,7 @@ ws43_parity_snapshot <- function() {
 ws43_parity_strategy <- function(ctx, params) {
   ids <- c("sma_2", "ret", "ema", "macd_signal", "bb_up", "custom")
   values <- unlist(lapply(c("AAA", "BBB"), function(instrument) {
-    vapply(ids, function(id) ctx$features(instrument)[[id]], numeric(1))
+    vapply(ids, function(id) ctx[[id]][[instrument]], numeric(1))
   }))
   warning(
     sprintf(

@@ -86,11 +86,7 @@ availability_strict_probe_strategy <- function(ctx, params) {
   encode <- function(value) {
     if (is.na(value)) "NA" else format(value, digits = 17, trim = TRUE)
   }
-  values <- vapply(
-    c("AAA", "BBB"),
-    function(id) ctx$features(id)[["signal"]],
-    numeric(1)
-  )
+  values <- unname(ctx$signal[c("AAA", "BBB")])
   warning(
     sprintf(
       "STRICT_MATRIX|%d|%s|%s|%s",
@@ -804,7 +800,7 @@ testthat::test_that("undeclared indicators run as history-dependent in availabil
   )
   testthat::expect_identical(undeclared$history_class, "history_dependent")
   strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "undeclared")
+    value <- ctx[["undeclared"]][["AAA"]]
     history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
     history[[length(history) + 1L]] <- if (is.na(value)) "NA" else format(value, digits = 17)
     list(targets = ctx$hold(), state_update = list(history = history))
@@ -842,7 +838,7 @@ testthat::test_that("future facts do not change earlier features", {
   on.exit(lapply(snapshots, ledgr_snapshot_close), add = TRUE)
   strategy <- function(ctx, params) {
     history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
-    value <- ctx$feature("AAA", "sma_2")
+    value <- ctx[["sma_2"]][["AAA"]]
     history[[length(history) + 1L]] <- if (is.na(value)) "NA" else format(value, digits = 17)
     list(targets = ctx$hold(), state_update = list(history = history))
   }

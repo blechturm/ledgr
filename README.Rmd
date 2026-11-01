@@ -115,9 +115,9 @@ number of shares for every instrument.
 #| label: strategy
 
 above_trend <- function(ctx, params) {
-  trend <- ctx$vec$feature("sma_20")
+  trend <- ctx$sma_20
   if (!ledgr_passed_warmup(trend)) return(ctx$flat())
-  above <- ctx$vec$close > trend * (1 + params$buffer)
+  above <- ctx$close > trend * (1 + params$buffer)
   targets <- ctx$flat()
   targets[above] <- params$qty
   targets

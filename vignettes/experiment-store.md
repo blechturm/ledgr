@@ -75,7 +75,7 @@ After snapshot creation, store operations take `snapshot`, not
 features <- list(ledgr_ind_sma(20))
 
 trend_strategy <- function(ctx, params) {
-  above <- ctx$vec$close > ledgr_signal_feature(ctx, "sma_20")
+  above <- ctx$close > ledgr_signal_feature(ctx, "sma_20")
   ctx |>
     ledgr_selection(where = above, missing = "exclude") |>
     ledgr_target_quantity(ctx, params$qty)

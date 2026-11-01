@@ -2322,6 +2322,8 @@ tickets:
       - "the maintained-state shape census finds no nonscalar or nested state; any finding stops the cut for maintainer disposition"
       - "the timing protocol uses the shared harness, eight alternating pairs, both named comparison bases, the six named workload cells, fixed-basket-wide state cells and an experiment-construction cell; its thresholds are disposition triggers under macro rule 16"
       - "source, export, claim, identity and schema censuses are literal enough to fail when one named current reader/helper or owner is omitted"
+    evidence:
+      - "Implementation record prepared in dev/bench/v0_2_3_ws5/: the surface and ownership inventories have zero duplicate or unowned rows; the bounded public probes record the typed-round-trip and unchanged-tail findings for LDG-3185/3186 without a WS5 workaround; check.R reports WS5_INVENTORY_OK. The shared-harness protocol dev/bench/timing/protocols/ws5-timing-1 has nine cells, eight alternating pairs, both comparison bases, the six named economic cells, two fixed-wide state cells and a separate construction clock. Integrated timing records remain a Cut 7 milestone obligation, not a WS15 correctness gate. Independent close review is pending, so ticket status remains pending."
   - id: "LDG-3180"
     title: "Build one flat lazy pulse context"
     workstream: 15
@@ -2355,6 +2357,8 @@ tickets:
       - "the bounded retired public readers, warnings, exports, help and maintained call sites are absent while the four WS6-owned frame/bar surfaces remain; an injected compatibility alias or second reader fails the census"
       - "a held instrument without a permissible mark never receives fabricated holding_value, and the corresponding sizing/refusal path is detected"
       - "the Section 4 item 1 mutations and the fixed-basket/declared route matrix fail independently, while accepted economic controls remain exact"
+    evidence:
+      - "Implementation is review-ready in R/pulse-context.R and the existing prepared feature resolver. test-flat-lazy-context.R pins named axis order, strict unknowns, one build per requested column, no unused-feature build, non-forcing names/str and frozen saved views; active-alias, strategy surface, pulse inspection, risk and helper suites cover the migrated routes. The retired warning/reader claim migration is explicit in tests/claims.yml and ws15_implementation_matrix.md. Independent close review is pending, so ticket status remains pending."
   - id: "LDG-3181"
     title: "Maintain and rebuild canonical position facts"
     workstream: 15
@@ -2381,6 +2385,8 @@ tickets:
       - "entry/exit clocks and ages follow the shared absolute bar axis, with zero on recording bars, Inf/NA sentinels as specified and skipped decision bars counted"
       - "runtime/source checks reject a second replay engine, an instrument loop and recomputation of indices in P2"
       - "pulse inspection with supplied positions reports typed unknown entry/exit facts; fabricated entry or exit facts fail the detector"
+    evidence:
+      - "Implementation is review-ready in R/position-facts.R at the existing accounting transition and replay boundaries. test-position-facts-context.R covers live fills, additions, partial/full exits, re-entry, same-bar order, non-fill close/open, external-opening unknowns, shared-axis ages, contiguous carry and a real durable interruption/resume reconstruction. No fills-only scanner, held-mask engine or instrument loop was added. Independent close review is pending, so ticket status remains pending."
   - id: "LDG-3182"
     title: "Ship plain selection and strict named weights"
     workstream: 16

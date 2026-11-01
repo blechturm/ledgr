@@ -732,7 +732,7 @@ testthat::test_that("signal strategies and adapter indicators draw like the call
   set.seed(1L)
   strat(list(
     universe = "AAA",
-    vec = list(admissible = stats::setNames(TRUE, "AAA"))
+    buyable = stats::setNames(TRUE, "AAA")
   ), list())
   testthat::expect_identical(stats::runif(1), second)
 

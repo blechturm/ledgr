@@ -66,8 +66,8 @@ ledgr_demo_sma_crossover_strategy <- function() {
     }
 
     targets <- ctx$flat()
-    fast <- ctx$vec$feature("fast")
-    slow <- ctx$vec$feature("slow")
+    fast <- ctx$fast
+    slow <- ctx$slow
     ready <- is.finite(fast) & is.finite(slow)
     selected <- ready & ((fast / slow) - 1) > threshold
     targets[selected] <- qty

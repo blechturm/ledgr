@@ -1,181 +1,107 @@
 \name{ledgr_strategy_context}
 \alias{ledgr_strategy_context}
 \alias{ctx}
-\title{Strategy pulse context accessors}
+\title{Strategy pulse context columns}
 \description{
-The strategy pulse context is the object passed to every
-\code{function(ctx, params)} strategy at one decision time. It exposes only
-data that is known at that pulse: current bars, registered current feature
-values, current simulated positions, cash, equity, and helpers for building
-target vectors.
+The strategy pulse context passed to each \code{function(ctx, params)} call is
+a flat named, lazy view of information known at one decision pulse.
 }
 \details{
-Common accessors:
-\itemize{
-\item \code{ctx$ts_utc}: current decision timestamp.
-\item \code{ctx$universe}: character vector on the current decision axis. In
-availability-aware runs this can include held nonmembers that remain necessary
-for valuation and disposition.
-\item \code{ctx$members}: the current allocation population. In a dense run it
-is \code{ctx$universe}.
-\item \code{ctx$vec$member}, \code{ctx$vec$target_restricted},
-\code{ctx$vec$target_restriction_reason} and \code{ctx$vec$admissible}: the
-eligibility planes, aligned to \code{ctx$universe}, in every run. An
-instrument is admissible when it is a member and not target-restricted. In a
-dense run every instrument is a member, none is restricted, every reason is
-\code{""} and every instrument is admissible, so a rule masked with
-\code{ctx$vec$admissible} works unchanged in both kinds of run. The context
-helpers, including \code{ledgr_passed_warmup(ctx, values)}, consider admissible
-instruments only, and fail when an availability context lacks a well-formed
-\code{ctx$vec$admissible} plane.
-\item \code{ctx$idx(id)}: 1-based universe position for one instrument.
-\item \code{ctx$open(id)}, \code{ctx$high(id)}, \code{ctx$low(id)},
-\code{ctx$close(id)}, \code{ctx$volume(id)}: current bar values for one
-instrument.
-\item \code{ctx$vec$open}, \code{ctx$vec$high}, \code{ctx$vec$low},
-\code{ctx$vec$close}, \code{ctx$vec$volume}: current bar values for the full
-universe, aligned to \code{ctx$universe}.
-\item \code{ctx$bar(id)}: the current OHLCV row for one instrument.
-\item \code{ctx$feature(id, feature_id)}: one feature value for one instrument,
-addressed by an active alias or concrete engine feature ID.
-\item \code{ctx$vec$feature(feature_id)}: one active alias or concrete feature
-ID across the full universe, aligned to \code{ctx$universe}.
-\item \code{ctx$features(id, feature_map)}: mapped feature values for one
-instrument, returned as a named numeric vector keyed by feature-map aliases.
-\item \code{ctx$position(id)}: current simulated position for one instrument.
-\item \code{ctx$vec$position}: current simulated positions for the full
-universe, aligned to \code{ctx$universe}.
-\item \code{ctx$cash} and \code{ctx$equity}: current simulated portfolio state.
-\item \code{ctx$state_prev}: the \code{state_update} the strategy returned at
-the previous pulse.
-\item \code{ctx$flat()}: full named target vector initialized to zero.
-\item \code{ctx$hold()}: full named target vector initialized to current
-positions.
-\item \code{ctx$tradable()}: convenience subset of current members that are
-admissible and priced in an availability-aware run; in a dense run it returns
-instruments with a finite positive close. A permissible stale mark can satisfy
-the predicate without supplying a current sizing close, and the result does not
-promise execution at the next open.
-}
+Read current market, portfolio, eligibility, position-fact, and declared
+feature columns by name, for example \code{ctx$close}, \code{ctx$buyable},
+\code{ctx$entry_price}, or \code{ctx[["return_5"]]}. Every column is named by
+instrument ID and aligned to \code{ctx$universe}. A column is built at most
+once for that pulse. Returned values are pulse-frozen: editing one does not
+alter the fold or a later read. \code{names(ctx)} and \code{str(ctx)} describe
+the surface without forcing columns.
 
-Singular reads resolve an active feature-map alias first, then a concrete
-engine ID from \code{ledgr_feature_id()}. \code{ctx$features()} returns one
-instrument's mapped values named by alias. Unknown names fail loudly and list
-active aliases separately from concrete IDs; warmup for a known feature is
-represented by \code{NA_real_}. No plural whole-universe accessor is added:
-read each required alias once with \code{ctx$vec$feature()}.
+Active feature-map aliases are the primary declared-feature names. Registered
+engine IDs are also dynamically readable. An unknown or retired field fails
+with \code{ledgr_unknown_context_field}. The former \code{ctx$vec}, scalar
+market and position readers, \code{ctx$feature()}, \code{ctx$features()},
+\code{ctx$idx()}, and \code{ctx$tradable()} surfaces are retired. Use a flat
+column read, ordinary named-vector indexing or \code{match()}, and explicit
+vector logic.
 
-For universes of at least 100 instruments, reading one name through
-\code{ctx$feature()} once per instrument emits one
-\code{ledgr_scalar_accessor_loop} warning per run and names
-\code{ctx$vec$feature(feature_id)} as the whole-universe alternative. An
-active-map \code{ctx$features(id)} loop warns at the same axis-sized threshold
-and names the active aliases to read through that plane. Explicit-map bundle
-reads remain unrecorded because the plane does not accept an explicit map.
+\code{ctx$member} marks the current allocation population,
+\code{ctx$held} marks nonzero pulse-start positions, and \code{ctx$buyable}
+is membership with target restrictions applied. \code{ctx$holding_value} is
+zero when unheld and the signed marked value when held; a held position without
+a permissible mark is \code{NA_real_}. These columns have the same meaning in
+dense and availability-aware runs.
 
-\code{ctx$idx(id)} fails loudly for unknown instruments by default. Use
-\code{ctx$idx(id, missing = "na")} only when an explicit \code{NA_integer_}
-sentinel is part of the strategy logic.
+Position facts come from the canonical accounting transition in the same
+fold. \code{entry_price} is remaining FIFO basis divided by held quantity.
+\code{entry_at} is the bar on which the current position opened and
+\code{exit_at} is the bar of the last closing fill. Additions and partial exits
+retain the opening anchor. A non-fill close clears entry facts without
+inventing an exit, while a non-fill opening has unknown entry facts. The age
+columns use the shared bar axis. Unknown anchors remain missing; no known prior
+exit is represented by infinite \code{bars_since_exit}.
 
-\code{ctx$position(id)} is the scalar pulse-start state read and
-\code{ctx$vec$position} is its unnamed decision-axis-aligned plane. Use
-\code{ctx$idx(id)} to cross between them. \code{ctx$hold()} constructs named
-portfolio intent from that state; editing its result does not mutate either
-state read.
+\code{ctx$flat()} returns a full named zero target and \code{ctx$hold()} returns
+the pulse-start position target. The existing frame helpers \code{bar()},
+\code{features_wide}, \code{feature_table}, and \code{bars} remain available.
+Use \code{ctx$buyable & is.finite(ctx$close) & ctx$close > 0} for an explicit
+current-close sizing predicate; it does not promise execution at the next open.
 
 A strategy that returns \code{list(targets = ..., state_update = ...)} receives
-that \code{state_update} as \code{ctx$state_prev} at the next pulse; returning a
+that \code{state_update} as \code{ctx$state_prev} on the next pulse. Returning a
 bare target keeps the previous state. State must be JSON-serializable plain
-data. In every run \code{ctx$state_prev} is a list from the first pulse and carries
-\code{asset_state}, a list keyed by the instrument IDs in \code{ctx$universe}:
-entries for instruments that leave the axis are dropped, returning instruments
-start from \code{list()}, and a returned entry for an ID outside the axis fails
-with \code{ledgr_invalid_strategy_state}.
+data. In every run \code{ctx$state_prev} is a list from the first pulse and its
+\code{asset_state} is keyed by IDs on \code{ctx$universe}.
 
-The structured result may also include \code{intent_reason}, either \code{NULL}
-or one non-empty character scalar. When supplied, ledgr records the value once
-at portfolio level for that invoked pulse in
-\code{ledgr_results(run, "diagnostics")}; availability-aware
-\code{ledgr_run_explain()} joins it to the existing instrument explanation.
-Prefer short snake-case values. This optional note does not change strategy
-state, targets, execution, accounting or identity, and is not a general factor
-or prediction store.
-
-Strategies should return full named numeric target vectors. The helpers
-\code{ctx$flat()} and \code{ctx$hold()} are the safest starting points because
-they already have one entry for every instrument in \code{ctx$universe}.
-In availability-aware runs, \code{ctx$universe} is the decision axis and
-\code{ctx$members} is the current allocation population; held nonmembers may
-remain on the former without entering the latter. In a dense run the two are
-the same. Use \code{ctx$tradable()} as
-the explicit convenience predicate for admissible and priced members. A stale
-permissible mark can satisfy that predicate while still failing current-close
-sizing, so it guarantees neither a sizing close nor execution at the next open.
+Strategies should return full named numeric target vectors. In an
+availability-aware run \code{ctx$universe} is the decision axis and
+\code{ctx$members} is the current allocation population; held nonmembers can
+remain on the former without entering the latter.
 }
 \section{Complete Public Surface}{
-The table below is authoritative for callback-visible, non-private members.
-\code{Daxis} means \code{ctx$universe}; every plane is positional and unnamed.
-Cross a plane with IDs through \code{ctx$idx()}. Dot-prefixed engine state is
-private and deliberately absent.
+The table is authoritative for callback-visible non-private members.
+\code{Daxis} means \code{ctx$universe}. Every plane is a named vector aligned
+to that axis. \code{declared_feature} represents each active alias and each
+unmapped registered engine ID. Dot-prefixed engine state is private.
 
 \preformatted{
 scope | member | applies | shape | axis | units | missingness | counterpart
 top | run_id | all | character_scalar | none | identifier | never | none
 top | ts_utc | all | character_scalar | none | UTC_time | never | none
-top | universe | all | character_vector | Daxis | instrument_id | empty_allowed | vec.id
+top | universe | all | character_vector | Daxis | instrument_id | empty_allowed | plane_names
 top | bars | all | data_frame | current_Daxis_rows | market_data | rows_may_be_absent | bar
-top | feature_table | all | data_frame | current_Daxis_rows | feature_value | warmup_NA_or_schema_only | feature
+top | feature_table | all | data_frame | current_Daxis_rows | feature_value | warmup_NA_or_schema_only | declared_feature
 top | cash | all | numeric_scalar | portfolio | currency | never | none
 top | equity | all | numeric_scalar | portfolio | currency | never | none
 top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | state_prev | all | list | portfolio_and_Daxis | strategy_state | asset_state_from_first_pulse | none
-top | members | all | character_vector | Daxis_subset | instrument_id | empty_allowed | vec.member
+top | members | all | character_vector | Daxis_subset | instrument_id | empty_allowed | member
 top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars
-top | open | all | function | instrument_id | price | NA_allowed | vec.open
-top | high | all | function | instrument_id | price | NA_allowed | vec.high
-top | low | all | function | instrument_id | price | NA_allowed | vec.low
-top | close | all | function | instrument_id | price | NA_allowed | vec.close
-top | volume | all | function | instrument_id | source_units | NA_allowed | vec.volume
-top | position | all | function | instrument_id | quantity | never | vec.position
-top | idx | all | function | instrument_id | Daxis_index | optional_NA | vec.id
 top | flat | all | function | Daxis | target_quantity | never | none
-top | hold | all | function | Daxis | target_quantity | never | vec.position
-top | tradable | all | function | Daxis_subset | instrument_id | empty_allowed | mode_specific_planes
-top | features_wide | all | data_frame | current_Daxis_rows | feature_value | warmup_NA | features
-top | feature | all | function | instrument_id | feature_value | warmup_NA | vec.feature
-top | features | all | function | instrument_id | feature_value | warmup_NA | vec.feature
-top | vec | all | list | Daxis | mixed | plane_specific | scalar_counterparts
-plane | id | all | character_vector | Daxis | instrument_id | never | universe
-plane | open | all | numeric_vector | Daxis | price | NA_allowed | open
-plane | high | all | numeric_vector | Daxis | price | NA_allowed | high
-plane | low | all | numeric_vector | Daxis | price | NA_allowed | low
-plane | close | all | numeric_vector | Daxis | price | NA_allowed | close
-plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | volume
-plane | position | all | numeric_vector | Daxis | quantity | never | position
-plane | feature | all | function | Daxis | feature_value | warmup_NA | feature
+top | hold | all | function | Daxis | target_quantity | never | position
+top | features_wide | all | data_frame | current_Daxis_rows | feature_value | warmup_NA | declared_feature
+plane | open | all | numeric_vector | Daxis | price | NA_allowed | bars
+plane | high | all | numeric_vector | Daxis | price | NA_allowed | bars
+plane | low | all | numeric_vector | Daxis | price | NA_allowed | bars
+plane | close | all | numeric_vector | Daxis | price | NA_allowed | bars
+plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | bars
+plane | position | all | numeric_vector | Daxis | quantity | never | hold
+plane | held | all | logical_vector | Daxis | flag | never | position
 plane | member | all | logical_vector | Daxis | flag | never | members
-plane | held | all | logical_vector | Daxis | flag | never | none
-plane | target_restricted | all | logical_vector | Daxis | flag | never | none
-plane | target_restriction_reason | all | character_vector | Daxis | reason_token | empty_string_allowed | none
-plane | admissible | all | logical_vector | Daxis | flag | never | tradable
-plane | priced | all | logical_vector | Daxis | flag | never | tradable
-plane | mark_age | all | integer_vector | Daxis | sessions | NA_when_unpriced | none
-plane | risk_mark | all | numeric_vector | Daxis | price | NA_when_unpriced | none
-plane | mark_source | all | character_vector | Daxis | source_token | empty_when_unpriced | none
+plane | buyable | all | logical_vector | Daxis | flag | never | member
+plane | holding_value | all | numeric_vector | Daxis | currency | NA_when_held_unpriced | position
+plane | entry_price | all | numeric_vector | Daxis | price | NA_when_unheld_or_unknown | position
+plane | entry_at | all | double_vector | Daxis | UTC_time | NA_when_unheld_or_unknown | position
+plane | exit_at | all | double_vector | Daxis | UTC_time | NA_when_no_known_exit | position
+plane | bars_since_entry | all | numeric_vector | Daxis | bars | NA_when_unheld_or_unknown | entry_at
+plane | bars_since_exit | all | numeric_vector | Daxis | bars | Inf_when_no_known_exit | exit_at
+plane | declared_feature | all | numeric_vector | Daxis | feature_value | warmup_NA | feature_table
 }
 }
 \section{Feature Object Compatibility}{
 \code{ledgr_experiment(features = ...)} accepts static indicators, lists of
-indicators, named lists, and feature maps as the canonical public feature
-shapes. Compatibility feature factories of the form \code{function(params)}
-remain available for old flat-grid and advanced exact-ID workflows, but new
-parameterized feature sweeps should use active aliases with
-\code{ledgr_feature_map()}. Pulse inspection helpers accept static feature
-shapes. Inside the strategy context, \code{ctx$feature()} reads one engine
-feature ID and \code{ctx$features()} requires a \code{ledgr_feature_map}.
-Lower-level or legacy helpers may be narrower; the experiment-first workflow is
-the canonical public path for feature maps.
+indicators, named lists, and feature maps. Parameterized feature sweeps should
+use active aliases with \code{ledgr_feature_map()}. Read each declared feature
+once as its flat named context column.
 }
 \section{Articles}{
 
@@ -195,12 +121,9 @@ features <- ledgr_feature_map(
 
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    x <- ctx$features(id, features)
-    if (ledgr_passed_warmup(x) && x[["ret_5"]] > params$min_return) {
-      targets[id] <- params$qty
-    }
-  }
+  ready <- ledgr_passed_warmup(ctx, ctx$ret_5)
+  buy <- ready & ctx$buyable & ctx$ret_5 > params$min_return
+  targets[buy] <- params$qty
   targets
 }
 }

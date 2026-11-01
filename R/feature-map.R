@@ -13,10 +13,8 @@
 #' their output feature IDs become the aliases; use the bundle's `prefix` or
 #' `naming` argument to control those names. An alias may equal its own entry's
 #' feature ID, but it may not equal a different entry's feature ID.
-#' Inside a strategy body, `ctx$features(instrument_id, feature_map)` returns a
-#' named numeric vector keyed by the feature-map aliases. The same helper also
-#' accepts a named character vector such as `c(alias = "feature_id")` for
-#' explicit ad hoc aliasing. Use `ledgr_passed_warmup()` on the returned vector before
+#' Inside a strategy body, each alias is a named flat column such as
+#' `ctx$ret_5`. Use `ledgr_passed_warmup()` on the selected columns before
 #' applying rules that require all mapped values to be finite.
 #'
 #' @param ... For `ledgr_feature_map()`, named `ledgr_indicator` objects or
@@ -44,12 +42,8 @@
 #'
 #' strategy <- function(ctx, params) {
 #'   targets <- ctx$flat()
-#'   for (id in ctx$universe) {
-#'     x <- ctx$features(id, features)
-#'     if (ledgr_passed_warmup(x) && x[["ret_5"]] > params$min_return) {
-#'       targets[id] <- params$qty
-#'     }
-#'   }
+#'   ready <- is.finite(ctx$ret_5)
+#'   targets[ready & ctx$ret_5 > params$min_return] <- params$qty
 #'   targets
 #' }
 #' @export
@@ -193,6 +187,13 @@ ledgr_validate_feature_map_aliases <- function(aliases, n) {
       class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
     )
   }
+  reserved <- intersect(aliases, ledgr_pulse_context_reserved_fields())
+  if (length(reserved) > 0L) {
+    rlang::abort(
+      sprintf("Feature map alias `%s` collides with a reserved pulse context field.", reserved[[1L]]),
+      class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+    )
+  }
   invalid <- aliases[make.names(aliases) != aliases]
   if (length(invalid) > 0L) {
     rlang::abort(
@@ -308,7 +309,7 @@ print.ledgr_feature_map <- function(x, ...) {
 #' Check whether mapped feature values have passed warmup
 #'
 #' `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
-#' returned by `ctx$features(id, feature_map)`. For those vectors, `TRUE` means
+#' read from flat feature columns. For those vectors, `TRUE` means
 #' every requested feature is usable at the current pulse. For an intact
 #' `ledgr_history` frame or `ledgr_history_matrix`, it returns the recorded
 #' `min_observations` and `min_instruments` result without rescanning values.
@@ -321,8 +322,8 @@ print.ledgr_feature_map <- function(x, ...) {
 #' `ledgr_invalid_warmup_input`.
 #'
 #' The context-aware form `ledgr_passed_warmup(ctx, values)` checks one value
-#' per instrument on the decision axis, such as `ctx$vec$feature(id)` or a
-#' context signal. It considers eligible instruments only (`ctx$vec$admissible`):
+#' per instrument on the decision axis, such as `ctx[[id]]` or a
+#' context signal. It considers eligible instruments only (`ctx$buyable`):
 #' a missing value on a held nonmember or a target-restricted member does not
 #' fail the check, and with no eligible instrument the check passes. `values`
 #' aligns by position when unnamed and by name when named, as for
@@ -356,7 +357,7 @@ print.ledgr_feature_map <- function(x, ...) {
 #' try(ledgr_passed_warmup(numeric(0)))
 #'
 #' # Inside a strategy, over every eligible instrument:
-#' # if (!ledgr_passed_warmup(ctx, ctx$vec$feature("sma_10"))) return(ctx$hold())
+#' # if (!ledgr_passed_warmup(ctx, ctx$sma_10)) return(ctx$hold())
 #' @export
 ledgr_passed_warmup <- function(x, values) {
   if (!missing(values)) {

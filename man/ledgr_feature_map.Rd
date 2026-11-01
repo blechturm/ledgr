@@ -37,10 +37,8 @@ Indicator entries must be named. Bundle entries must be unnamed because
 their output feature IDs become the aliases; use the bundle's \code{prefix} or
 \code{naming} argument to control those names. An alias may equal its own entry's
 feature ID, but it may not equal a different entry's feature ID.
-Inside a strategy body, \code{ctx$features(instrument_id, feature_map)} returns a
-named numeric vector keyed by the feature-map aliases. The same helper also
-accepts a named character vector such as \code{c(alias = "feature_id")} for
-explicit ad hoc aliasing. Use \code{ledgr_passed_warmup()} on the returned vector before
+Inside a strategy body, each alias is a named flat column such as
+\code{ctx$ret_5}. Use \code{ledgr_passed_warmup()} on the selected columns before
 applying rules that require all mapped values to be finite.
 }
 \section{Articles}{
@@ -66,12 +64,8 @@ ledgr_feature_id(features)
 
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    x <- ctx$features(id, features)
-    if (ledgr_passed_warmup(x) && x[["ret_5"]] > params$min_return) {
-      targets[id] <- params$qty
-    }
-  }
+  ready <- is.finite(ctx$ret_5)
+  targets[ready & ctx$ret_5 > params$min_return] <- params$qty
   targets
 }
 }

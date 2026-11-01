@@ -367,7 +367,7 @@ testthat::test_that("[LTB-0437] the article teaches one focused causal optimizat
     "intent_reason = \"insufficient_sample\"",
     "intent_reason = \"rebalanced\"",
     "ledgr_align_weights(returns)",
-    "targets[!ctx$vec$member] <- 0",
+    "targets[!ctx$member] <- 0",
     "Amat = cbind(rep(1, n), diag(n))",
     "bvec = c(1, rep(0, n))",
     "meq = 1L",

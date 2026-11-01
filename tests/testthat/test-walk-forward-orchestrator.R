@@ -15,7 +15,7 @@ ledgr_wfo_bars <- function(n_days = 12L) {
 
 ledgr_wfo_strategy <- function(ctx, params) {
   target <- ctx$flat()
-  if (ctx$close("AAA") >= params$threshold) {
+  if (ctx$close[["AAA"]] >= params$threshold) {
     target["AAA"] <- params$qty
   }
   target
@@ -59,7 +59,7 @@ ledgr_wfo_candidate_failure_strategy <- function(ctx, params) {
     rlang::abort("candidate failed", class = "ledgr_test_candidate_failure")
   }
   target <- ctx$flat()
-  if (ctx$close("AAA") >= params$threshold) {
+  if (ctx$close[["AAA"]] >= params$threshold) {
     target["AAA"] <- params$qty
   }
   target
@@ -70,7 +70,7 @@ ledgr_wfo_test_failure_strategy <- function(ctx, params) {
     rlang::abort("selected test run failed", class = "ledgr_test_run_failure")
   }
   target <- ctx$flat()
-  if (ctx$close("AAA") >= params$threshold) {
+  if (ctx$close[["AAA"]] >= params$threshold) {
     target["AAA"] <- params$qty
   }
   target

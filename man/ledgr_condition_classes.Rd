@@ -245,6 +245,7 @@
 \alias{ledgr_invalid_price_basis}
 \alias{ledgr_invalid_promotion_context_summary}
 \alias{ledgr_invalid_pulse_context}
+\alias{ledgr_unknown_context_field}
 \alias{ledgr_invalid_pulse_plan}
 \alias{ledgr_invalid_pulse_wide_names}
 \alias{ledgr_invalid_result_table}
@@ -319,7 +320,6 @@
 \alias{ledgr_run_not_complete}
 \alias{ledgr_run_registration_failed}
 \alias{ledgr_run_telemetry_failed}
-\alias{ledgr_scalar_accessor_loop}
 \alias{ledgr_session_boundary_unresolved}
 \alias{ledgr_session_coverage_incomplete}
 \alias{ledgr_session_instant_duplicate}
@@ -1113,6 +1113,8 @@ features input.
 \item \code{ledgr_invalid_promotion_context_summary} reports invalid promotion
 context summary input.
 \item \code{ledgr_invalid_pulse_context} reports invalid pulse context input.
+\item \code{ledgr_unknown_context_field} reports an unknown or retired flat context
+field read.
 \item \code{ledgr_invalid_pulse_plan} reports invalid pulse plan input.
 \item \code{ledgr_invalid_pulse_wide_names} reports invalid pulse wide names input.
 \item \code{ledgr_invalid_result_table} reports invalid result table input.
@@ -1222,7 +1224,6 @@ missing boundary.
 \item \code{ledgr_run_registration_failed} reports the run registration failed
 boundary.
 \item \code{ledgr_run_telemetry_failed} reports the run telemetry failed boundary.
-\item \code{ledgr_scalar_accessor_loop} reports the scalar accessor loop boundary.
 \item \code{ledgr_session_coverage_incomplete} reports the session coverage
 incomplete boundary.
 \item \code{ledgr_session_instant_duplicate} reports the session instant duplicate

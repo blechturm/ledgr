@@ -122,7 +122,7 @@ testthat::test_that("feature-factory sweep identity remains stable", {
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    value <- ctx$feature("AAA", paste0("sma_", params$n))
+    value <- ctx[[paste0("sma_", params$n)]][["AAA"]]
     if (!is.na(value) && value > 0) {
       targets["AAA"] <- params$n
     }

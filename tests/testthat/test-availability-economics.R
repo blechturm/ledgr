@@ -279,13 +279,10 @@ testthat::test_that("active rebalance preserves held nonmembers and reserves exp
     members = "MEMBER",
     availability_active = TRUE,
     equity = 1000,
-    vec = list(
-      positions = c(3, 0),
-      close = c(NA, 50),
-      risk_mark = c(100, 50),
-      admissible = c(FALSE, TRUE)
-    ),
-    idx = function(id) match(id, c("FORMER", "MEMBER"))
+    position = c(FORMER = 3, MEMBER = 0),
+    close = c(FORMER = NA, MEMBER = 50),
+    holding_value = c(FORMER = 300, MEMBER = 0),
+    buyable = c(FORMER = FALSE, MEMBER = TRUE)
   )
   target <- ledgr_target_rebalance(
     ledgr_weights(c(MEMBER = 1), universe = "MEMBER"),
@@ -294,7 +291,7 @@ testthat::test_that("active rebalance preserves held nonmembers and reserves exp
   testthat::expect_identical(c(target), c(FORMER = 3, MEMBER = 14))
 
   # Cut 10: an unpriced, unheld member is skipped at zero instead of failing.
-  ctx$vec$close[[2L]] <- NA_real_
+  ctx$close[["MEMBER"]] <- NA_real_
   skipped <- ledgr_target_rebalance(ledgr_weights(c(MEMBER = 1), universe = "MEMBER"), ctx)
   testthat::expect_identical(c(skipped), c(FORMER = 3, MEMBER = 0))
   testthat::expect_identical(attr(skipped, "sizing_skipped"), "MEMBER")

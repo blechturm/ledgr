@@ -35,8 +35,8 @@ strict_dispatch_experiment <- function(snapshot, instruments) {
   sma_id <- ledgr_feature_id(ledgr_ind_sma(2L))
   returns_id <- ledgr_feature_id(ledgr_ind_returns(2L))
   strategy <- function(ctx, params) {
-    sma <- unname(ctx$vec$feature(sma_id))
-    returns <- unname(ctx$vec$feature(returns_id))
+    sma <- unname(ctx[[sma_id]])
+    returns <- unname(ctx[[returns_id]])
     list(
       targets = ctx$flat(),
       state_update = if (all(is.finite(c(sma, returns)))) {

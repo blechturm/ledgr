@@ -257,7 +257,7 @@ min_variance <- function(ctx, params) {
 
   # This strategy follows the point-in-time index. A holding that has left
   # the membership universe is therefore assigned a zero target.
-  targets[!ctx$vec$member] <- 0
+  targets[!ctx$member] <- 0
 
   list(targets = targets, intent_reason = "rebalanced")
 }

@@ -244,8 +244,8 @@ A strategy therefore guards the value it intends to use as well as the
 instrument's current trading permission:
 
 ```r
-signal <- ctx$vec$feature("sma_2")
-ready <- !is.na(signal) & ctx$vec$admissible
+signal <- ctx$sma_2
+ready <- !is.na(signal) & ctx$buyable
 targets <- ctx$hold()
 targets[ready] <- 1
 ```
@@ -258,8 +258,7 @@ justifies.
 This uses one singular feature name over the full decision axis. That name may
 be a concrete engine ID or an active feature-map alias. In a sweep, the alias
 stays fixed while each candidate resolves it to its concrete feature. Read each
-required alias once through `ctx$vec$feature()`; there is no plural
-whole-universe accessor.
+required alias once as its flat named feature column.
 
 This is stricter than a generic warmup check in one useful way: it says what
 the strategy actually needs at this pulse. See
@@ -340,19 +339,16 @@ For sealing in general, see
 
 ## Step 5: Write a Strategy That Reads Availability
 
-An availability-aware strategy receives universe-aligned planes on `ctx$vec`.
-Four of them carry everything this article is about:
+An availability-aware strategy receives named universe-aligned flat columns.
+Four of them carry the decision inputs this article needs:
 
-- `priced` — does this instrument have a mark your valuation policy accepts?
-- `mark_age` — how many sessions old is that mark?
-- `mark_source` — `current_close` when it traded today, `stale_close` when
-  you are carrying an older one within your tolerance, `frozen_close` once you
-  hold it beyond that tolerance and its last close is carried as an
-  assumption, `expired_close` when an unheld instrument's close is too old.
-- `target_restricted`, with `target_restriction_reason` — may you resize it?
+- `member` — is this instrument in the current allocation population?
+- `held` — does the pulse start with a nonzero position?
+- `buyable` — is the current member free of target restrictions?
+- `close` — what current close, if any, is known for explicit sizing?
 
 The strategy below buys ten units of everything it is allowed to buy.
-`ctx$hold()` starts from the positions already held, while `ctx$tradable()`
+`ctx$hold()` starts from positions already held, while `ctx$buyable`
 returns the current members that are admissible and priced. Anything halted,
 unlisted, frozen or unpriced therefore stays at its current quantity without
 a strategy-side eligibility reconstruction.
@@ -362,7 +358,7 @@ a strategy-side eligibility reconstruction.
 
 buy_what_is_tradable <- function(ctx, params) {
   targets <- ctx$hold()
-  targets[ctx$tradable()] <- 10
+  targets[ctx$buyable & is.finite(ctx$close) & ctx$close > 0] <- 10
   targets
 }
 ```
@@ -530,7 +526,7 @@ hole: halve `BBB` at the January 15 close, whose next open is January 16.
 
 trim_in_hole <- function(ctx, params) {
   targets <- ctx$hold()
-  targets[ctx$tradable()] <- 10
+  targets[ctx$buyable & is.finite(ctx$close) & ctx$close > 0] <- 10
   if (format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC") == "2020-01-15") {
     targets[["BBB"]] <- 5
   }

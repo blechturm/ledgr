@@ -40,10 +40,8 @@ Strategy helper pipelines:
 \examples{
 ctx <- list(
   universe = c("AAA", "BBB"),
-  vec = list(
-    feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
-    admissible = c(TRUE, TRUE)
-  )
+  return_5 = c(AAA = 0.03, BBB = NA_real_),
+  buyable = c(AAA = TRUE, BBB = TRUE)
 )
 ledgr_signal_return(ctx, lookback = 5)
 

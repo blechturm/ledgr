@@ -2192,32 +2192,34 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-pulse-data"></a>
 ### Pulse Data And Axis-Aligned Accessors
 
-- Runtime and interactive pulse contexts expose data-frame-compatible
-  `ctx$bars` and long-table `ctx$feature_table`.
-- Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, `ctx$idx()`,
-  and `ctx$vec` are derived views over pulse-known data; they do not change
-  feature computation semantics or no-lookahead boundaries.
-- `ctx$idx(instrument_id, missing = c("error", "na"))` returns the 1-based
-  universe position for an instrument. Unknown IDs fail loudly by default and
-  return `NA_integer_` only when `missing = "na"` is requested explicitly.
-- `ctx$vec` exposes universe-aligned vector views for cross-sectional strategy
-  logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
-  `position`, and `feature`, and in every context the eligibility planes
-  `member`, `held`, `target_restricted`, `target_restriction_reason`,
-  `admissible`, `priced`, `mark_age`, `risk_mark` and `mark_source`.
-  `ctx$vec$feature(feature_id)` returns the current
-  universe-aligned vector for one active alias or registered engine feature
-  ID. Active aliases resolve before concrete IDs; an unknown name fails with
-  `ledgr_unknown_feature_id` and lists both namespaces separately.
-- Declared-session pulse contexts restrict bars, feature tables, scalar
-  feature access, vector feature access, positions, and errors to the current
-  decision axis. Fixed-basket contexts use the same shape with constant
-  membership, tradability and current-mark planes.
-- `ctx$position(instrument_id)` and unnamed `ctx$vec$position` are the scalar
-  and Daxis-aligned reads of pulse-start position state. Cross scalar reads to
-  the plane with `ctx$idx()`. There is no public `ctx$positions` snapshot.
-  `ctx$hold()` copies the state into full named portfolio intent; editing that
-  target does not mutate either state read.
+- Runtime and interactive pulse contexts are flat named lazy views over
+  `ctx$universe`. The asset columns are `open`, `high`, `low`, `close`,
+  `volume`, `position`, `held`, `member`, `buyable`, `holding_value`,
+  `entry_price`, `entry_at`, `exit_at`, `bars_since_entry` and
+  `bars_since_exit`; every declared feature alias and registered engine ID is
+  also directly readable. Aliases resolve first. Unknown and retired names
+  fail with `ledgr_unknown_context_field`.
+- The service, axis indices and feature resolver are prepared once per run or
+  candidate. Each requested column is built at most once in one view;
+  `names()` and `str()` enumerate without forcing columns. A saved view is
+  pulse-frozen and cannot observe later book, state or reusable fold buffers.
+- `member`, `held` and `buyable` are named logical columns on the decision
+  axis. `holding_value` is zero when unheld and signed quantity times the
+  permissible mark when held; it is `NA_real_` for a held instrument without
+  such a mark. Fixed-basket and declared-session contexts use the same shape.
+- `entry_price` is remaining FIFO basis divided by held quantity;
+  `entry_at` and `exit_at` are the shared-axis bars of the current opening and
+  last closing fill. Additions and partial exits retain the entry anchor.
+  Non-fill closes clear entry facts without inventing an exit, and non-fill
+  openings have unknown entry facts. Ages use the shared absolute bar axis;
+  supplied openings and pulse inspection never fabricate anchors.
+- `ctx$vec`, `ctx$feature()`, `ctx$features()`, scalar OHLCV readers,
+  `ctx$position(id)`, `ctx$idx()` and `ctx$tradable()` are not public context
+  members. Use flat columns and ordinary named-vector indexing or `match()`.
+  `ctx$bars`, `ctx$feature_table`, `ctx$features_wide` and `ctx$bar(id)` retain
+  their existing frame contracts until the WS6 reader cut.
+- `ctx$hold()` copies pulse-start positions into full named portfolio intent;
+  editing that target or a returned flat column never mutates the view.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default

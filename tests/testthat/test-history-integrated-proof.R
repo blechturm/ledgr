@@ -210,8 +210,8 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
           instruments = "DDD", min_observations = 0L, layout = "long"
         )
       ), NULL),
-      scalar = ctx$feature("DDD", "sma"),
-      vec = ctx$vec$feature("sma")
+      scalar = ctx[["sma"]][["DDD"]],
+      vec = ctx[["sma"]]
     )
   }
   capture <- function(policy) {
@@ -348,9 +348,9 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
         ctx,
         feature = "sma", lookback = 1L, instruments = c("AAA", "DDD")
       ),
-      scalar = c(ctx$feature("AAA", "sma"), ctx$feature("DDD", "sma")),
-      vec = ctx$vec$feature("sma"),
-      bar = ctx$close("DDD")
+      scalar = c(ctx[["sma"]][["AAA"]], ctx[["sma"]][["DDD"]]),
+      vec = ctx[["sma"]],
+      bar = ctx$close[["DDD"]]
     )
   }
   spy <- function(ctx, params) {

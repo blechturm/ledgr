@@ -715,7 +715,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
     requires_bars = 1
   )
   strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "custom_close")
+    value <- ctx[["custom_close"]][["AAA"]]
     targets <- ctx$flat()
     if (!is.na(value) && value > params$threshold) {
       targets["AAA"] <- params$qty
@@ -1015,7 +1015,7 @@ testthat::test_that("feature-consuming sweep strategies see the same feature val
     requires_bars = 1
   )
   strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "custom_close")
+    value <- ctx[["custom_close"]][["AAA"]]
     observed[[observed$mode]] <- c(observed[[observed$mode]], value)
     targets <- ctx$flat()
     targets["AAA"] <- if (value > 101) 1 else 0
@@ -1044,7 +1044,7 @@ testthat::test_that("precomputed features validate current factory identity befo
     list(ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1))
   }
   strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "custom_close")
+    value <- ctx[["custom_close"]][["AAA"]]
     targets <- ctx$flat()
     targets["AAA"] <- if (value > 101) 1 else 0
     targets

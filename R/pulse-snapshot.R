@@ -60,8 +60,8 @@
 #'   positions = c(AAA = 2),
 #'   state_prev = list(pulses_seen = 1)
 #' )
-#' pulse$close("AAA")
-#' pulse$feature("AAA", "sma_2")
+#' pulse$close[["AAA"]]
+#' pulse$sma_2[["AAA"]]
 #' pulse$state_prev
 #' close(pulse)
 #' ledgr_snapshot_close(snapshot)
@@ -268,10 +268,10 @@ print.ledgr_pulse_context <- function(x, ...) {
   cat("Universe:  ", paste(x$universe, collapse = ", "), "\n", sep = "")
   cat("Cash:      ", format(x$cash, scientific = FALSE, trim = TRUE), "\n", sep = "")
   cat("Equity:    ", format(x$equity, scientific = FALSE, trim = TRUE), "\n", sep = "")
-  cat("Positions: ", sum(as.numeric(x$vec$position) != 0), " nonzero\n", sep = "")
+  cat("Positions: ", sum(as.numeric(x$position) != 0), " nonzero\n", sep = "")
   cat("State:     ", if (is.null(x$state_prev)) "none" else "supplied", "\n", sep = "")
   cat("Bars:      ", nrow(x$bars), "\n", sep = "")
-  cat("Features:  ", nrow(x$features), "\n", sep = "")
+  cat("Features:  ", length(ledgr_pulse_context_feature_columns(x$.pulse_lookup)), " columns\n", sep = "")
   invisible(x)
 }
 

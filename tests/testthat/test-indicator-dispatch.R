@@ -34,7 +34,7 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
     seen <- new.env(parent = emptyenv())
     for (id in ids) seen[[id]] <- numeric()
     strategy <- function(ctx, params) {
-      for (id in names(seen)) seen[[id]] <- c(seen[[id]], ctx$feature("AAA", id))
+      for (id in names(seen)) seen[[id]] <- c(seen[[id]], ctx[[id]][["AAA"]])
       ctx$hold()
     }
     args <- list(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())

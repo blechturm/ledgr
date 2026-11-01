@@ -74,14 +74,10 @@ full future dataset.
 |----|----|
 | `ctx$ts_utc` | current decision timestamp |
 | `ctx$universe` | instruments in the run |
-| `ctx$idx(id)` | 1-based universe position for one instrument |
-| `ctx$open(id)`, `ctx$close(id)` | current bar values for one instrument |
-| `ctx$vec$close` | current close values for the full universe |
-| `ctx$feature(id, feature_id)` | current indicator value for one instrument by engine feature ID |
-| `ctx$vec$feature(feature_id)` | current indicator values for the full universe by engine feature ID |
-| `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias, using the supplied feature map |
-| `ctx$position(id)` | current simulated position |
-| `ctx$vec$position` | current simulated positions aligned to `ctx$universe` |
+| `ctx$open`, `ctx$close` | current bar columns, named and aligned to `ctx$universe` |
+| `ctx[[feature_id]]` | current named indicator column by active alias or engine feature ID |
+| `ctx$position` | current named simulated positions |
+| `ctx$buyable` | current named eligibility mask |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
 | `ctx$state_prev` | what the strategy returned as `state_update` at the previous pulse |
 | `ctx$flat()` | target zero positions unless changed |
@@ -93,11 +89,8 @@ For the installed accessor reference, see `?ledgr_strategy_context`.
 
 **One instrument or everyone**
 
-The `ctx$vec$` forms return a value for the whole universe in one read.
-The scalar forms answer for one instrument you have already singled out.
-Both are correct; only the first is cheap when you want every name,
-because the scalar form costs per call and a universe-wide loop pays it
-once per instrument per pulse.
+Flat context columns return one named vector over the whole universe in one
+read. Index that vector only after you have singled out an instrument.
 `vignette("strategy-authoring-tools", package = "ledgr")` shows the
 plane-based pattern and documents the `ledgr_scalar_accessor_loop`
 warning emitted for that shape on large universes.
@@ -141,14 +134,14 @@ I already own, unless today’s bar gives me a reason to leave.”
 
 ``` r
 hold_unless_down <- function(ctx, params) {
-  down <- ctx$vec$close < ctx$vec$open
+  down <- ctx$close < ctx$open
   targets <- ctx$hold()
   targets[down] <- 0
   targets
 }
 ```
 
-`ctx$vec$close < ctx$vec$open` compares every instrument at once, in the
+`ctx$close < ctx$open` compares every instrument at once, in the
 order of `ctx$universe`, and gives the condition a name: `down` holds
 one `TRUE` or `FALSE` per instrument. Assigning through it changes
 exactly the instruments where it is `TRUE`; every other instrument keeps
@@ -213,7 +206,7 @@ observable data becomes a target.
 
 ``` r
 buy_if_up <- function(ctx, params) {
-  up <- ctx$vec$close > ctx$vec$open
+  up <- ctx$close > ctx$open
   targets <- ctx$flat()
   targets[up] <- 1
   targets
@@ -257,7 +250,7 @@ different assumptions.
 
 ``` r
 buy_if_up_qty <- function(ctx, params) {
-  up <- ctx$vec$close > ctx$vec$open
+  up <- ctx$close > ctx$open
   targets <- ctx$flat()
   targets[up] <- params$qty
   targets
@@ -322,7 +315,7 @@ unknown feature, not warmup.
 
 ``` r
 positive_return <- function(ctx, params) {
-  ret <- ctx$vec$feature("return_5")
+  ret <- ctx$return_5
   if (!ledgr_passed_warmup(ret)) return(ctx$flat())
   rising <- ret > params$min_return
   targets <- ctx$flat()

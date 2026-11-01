@@ -106,13 +106,16 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
     active_alias_map = c(short = "sma_2", long = "sma_3")
   )
   for (i in seq_len(20L)) {
-    testthat::expect_identical(fast$feature("AAA", "sma_2"), 10)
-    testthat::expect_identical(fast$feature("AAA", "short"), 10)
-    testthat::expect_identical(fast$features("BBB"), c(short = 20, long = 40))
+    testthat::expect_identical(fast$sma_2[["AAA"]], 10)
+    testthat::expect_identical(fast$short[["AAA"]], 10)
+    testthat::expect_identical(
+      c(short = fast$short[["BBB"]], long = fast$long[["BBB"]]),
+      c(short = 20, long = 40)
+    )
   }
   testthat::expect_identical(calls, 1L)
   testthat::expect_identical(normalize_calls, 1L)
-  testthat::expect_identical(resolve_calls, 40L)
+  testthat::expect_identical(resolve_calls, 3L)
 
   name_state <- ledgr:::ledgr_projection_feature_name_state(
     projection,
@@ -162,18 +165,17 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   testthat::expect_false(grepl("%in%", scalar_source, fixed = TRUE))
   testthat::expect_false(grepl("%in%", bundle_source, fixed = TRUE))
 
-  invalid_alias <- ledgr:::ledgr_update_pulse_context_helpers(
-    ledgr:::ledgr_pulse_context(
-      "invalid-alias", pulse_ts, c("AAA", "BBB"), bars,
-      cash = 1000, equity = 1000
-    ),
-    projection = projection,
-    pulse_idx = 1L,
-    feature_ids = c("sma_2", "sma_3"),
-    active_alias_map = stats::setNames(1L, "fast")
-  )
   testthat::expect_error(
-    invalid_alias$features("AAA"),
+    ledgr:::ledgr_update_pulse_context_helpers(
+      ledgr:::ledgr_pulse_context(
+        "invalid-alias", pulse_ts, c("AAA", "BBB"), bars,
+        cash = 1000, equity = 1000
+      ),
+      projection = projection,
+      pulse_idx = 1L,
+      feature_ids = c("sma_2", "sma_3"),
+      active_alias_map = stats::setNames(1L, "fast")
+    ),
     "`alias_map` must be a named character vector of concrete feature IDs.",
     class = "ledgr_invalid_alias_map",
     fixed = TRUE
@@ -190,7 +192,7 @@ testthat::test_that("[LTB-0140] prepared feature state stays inside one sweep ca
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n")))
   strategy <- function(ctx, params) {
-    value <- ctx$features("AAA")[["signal"]]
+    value <- ctx$signal[["AAA"]]
     targets <- ctx$flat()
     if (is.finite(value)) targets[["AAA"]] <- 1
     targets
@@ -382,7 +384,7 @@ testthat::test_that("[LTB-0189] availability folds prepare hashed feature lookup
     signal = ledgr_ind_sma(ledgr_param("n"))
   )
   strategy <- function(ctx, params) {
-    signal <- ctx$vec$feature("signal")
+    signal <- ctx[["signal"]]
     target <- ctx$flat()
     target[is.finite(signal) & signal > 51] <- 1
     target
@@ -498,14 +500,12 @@ testthat::test_that("[LTB-0191] availability feature reads enforce the current d
     if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
       observed$universe <- ctx$universe
       observed$checks <- list(
-        scalar = capture(function() ctx$feature("BBB", "signal")),
-        bundle = capture(function() ctx$features("BBB")),
-        explicit = capture(function() {
-          ctx$features("BBB", c(local_signal = "sma_2"))
-        }),
-        scalar_na = capture(function() ctx$feature(NA_character_, "signal")),
-        scalar_empty = capture(function() ctx$feature("", "signal")),
-        bundle_numeric = capture(function() ctx$features(1L))
+        scalar = capture(function() ctx[["signal"]][["BBB"]]),
+        bundle = capture(function() ctx$features),
+        explicit = capture(function() ctx$feature),
+        scalar_na = capture(function() ctx[["signal"]][[NA_character_]]),
+        scalar_empty = capture(function() ctx[["signal"]][[""]]),
+        bundle_numeric = capture(function() ctx$vec)
       )
     }
     ctx$flat()
@@ -522,32 +522,22 @@ testthat::test_that("[LTB-0191] availability feature reads enforce the current d
   on.exit(close(backtest), add = TRUE)
 
   testthat::expect_identical(observed$universe, "AAA")
-  outside_message <- "Unknown instrument_id 'BBB'. Available ctx$universe: AAA."
-  for (name in c("scalar", "bundle", "explicit")) {
-    testthat::expect_identical(
-      observed$checks[[name]],
-      list(class = "ledgr_invalid_pulse_context", message = outside_message)
-    )
+  testthat::expect_identical(observed$checks$scalar$class, "subscriptOutOfBoundsError")
+  for (name in c("bundle", "explicit", "bundle_numeric")) {
+    testthat::expect_identical(observed$checks[[name]]$class, "ledgr_unknown_context_field")
   }
   testthat::expect_identical(
     observed$checks$scalar_na,
     list(
-      class = "ledgr_invalid_pulse_context",
-      message = "Unknown instrument_id 'NA'. Available ctx$universe: AAA."
+      class = "subscriptOutOfBoundsError",
+      message = "subscript out of bounds"
     )
   )
   testthat::expect_identical(
     observed$checks$scalar_empty,
     list(
-      class = "ledgr_invalid_pulse_context",
-      message = "Unknown instrument_id ''. Available ctx$universe: AAA."
-    )
-  )
-  testthat::expect_identical(
-    observed$checks$bundle_numeric,
-    list(
-      class = "ledgr_invalid_args",
-      message = "`instrument_id` must be a non-empty character scalar."
+      class = "subscriptOutOfBoundsError",
+      message = "subscript out of bounds"
     )
   )
 })

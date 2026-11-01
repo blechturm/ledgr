@@ -164,7 +164,7 @@ testthat::test_that("feature_set_hash is exposed on run config, info, list, and 
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    signal <- ctx$features("TEST_A")[["fast"]]
+    signal <- ctx$fast[["TEST_A"]]
     if (!is.na(signal)) targets["TEST_A"] <- 1
     targets
   }

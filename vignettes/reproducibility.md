@@ -71,7 +71,7 @@ hashed, and stored with the run. Hidden globals are not.
 
 ``` r
 strategy <- function(ctx, params) {
-  above <- ctx$vec$close > params$threshold
+  above <- ctx$close > params$threshold
   targets <- ctx$flat()
   targets[above] <- params$qty
   targets
@@ -376,14 +376,14 @@ sweeps.
 captured_threshold <- 100
 
 tier_2_captured <- function(ctx, params) {
-  above <- ctx$vec$close > captured_threshold
+  above <- ctx$close > captured_threshold
   targets <- ctx$flat()
   targets[above] <- params$qty
   targets
 }
 
 tier_1_parameterized <- function(ctx, params) {
-  above <- ctx$vec$close > params$threshold
+  above <- ctx$close > params$threshold
   targets <- ctx$flat()
   targets[above] <- params$qty
   targets
@@ -467,7 +467,7 @@ strategy body so its source is captured. Do not put function objects in
 ``` r
 repaired_strategy <- function(ctx, params) {
   choose_targets <- function(context, quantity) {
-    above <- context$vec$close > params$threshold
+    above <- context$close > params$threshold
     targets <- context$flat()
     targets[above] <- quantity
     targets

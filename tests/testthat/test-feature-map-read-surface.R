@@ -59,10 +59,9 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
   ctx <- list(
     universe = c("AAA", "BBB"),
     availability_active = FALSE,
-    vec = list(
-      feature = plane,
-      admissible = stats::setNames(c(TRUE, TRUE), c("AAA", "BBB"))
-    )
+    short = stats::setNames(plane("short"), c("AAA", "BBB")),
+    sma_2 = stats::setNames(plane("sma_2"), c("AAA", "BBB")),
+    buyable = stats::setNames(c(TRUE, TRUE), c("AAA", "BBB"))
   )
   alias_signal <- ledgr_signal_feature(ctx, "short")
   id_signal <- ledgr_signal_feature(ctx, "sma_2")
@@ -83,6 +82,7 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
     .positions = c(AAA = 0, BBB = 0),
     .pulse_lookup = new.env(parent = emptyenv())
   )
+  class(empty_ctx) <- "ledgr_pulse_context"
   empty_ctx <- ledgr:::ledgr_attach_feature_helpers(
     empty_ctx,
     projection = projection,
@@ -93,15 +93,15 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
   empty_ctx <- ledgr:::ledgr_refresh_pulse_context_lookup(
     empty_ctx,
     bars = data.frame(),
-    positions = c(AAA = 0, BBB = 0),
-    universe = c("AAA", "BBB")
+    positions = numeric(),
+    universe = character()
   )
   empty_ctx <- ledgr:::ledgr_filter_pulse_context_features(
     empty_ctx,
     character(),
     c("AAA", "BBB")
   )
-  testthat::expect_identical(empty_ctx$vec$feature("short"), numeric())
+  testthat::expect_identical(empty_ctx[["short"]], stats::setNames(numeric(), character()))
 })
 
 testthat::test_that("[LTB-0185] explicit maps cannot redefine known names", {
@@ -129,8 +129,6 @@ testthat::test_that("[LTB-0185] explicit maps cannot redefine known names", {
     "already resolves to `sma_2` in this context."
   )
   consumers <- list(
-    bundle_character = function() pulse$features("AAA", conflict),
-    bundle_object = function() pulse$features("AAA", object_conflict),
     long_character = function() ledgr_pulse_features(pulse, conflict),
     long_object = function() ledgr_pulse_features(pulse, object_conflict),
     wide_character = function() ledgr_pulse_wide(pulse, conflict),
@@ -144,18 +142,13 @@ testthat::test_that("[LTB-0185] explicit maps cannot redefine known names", {
       fixed = TRUE
     )
   }
-  testthat::expect_error(
-    pulse$features("AAA", c(sma_2 = "sma_3")),
-    "Explicit feature alias `sma_2` requests `sma_3`, but that name already resolves to `sma_2` in this context.",
-    class = "ledgr_invalid_feature_map",
-    fixed = TRUE
-  )
+  testthat::expect_error(pulse$features, class = "ledgr_unknown_context_field")
 
-  own <- pulse$features("AAA", c(fast = "sma_2"))
-  local <- pulse$features("AAA", c(local_fast = "sma_2"))
-  reused_local <- pulse$features("AAA", c(local_fast = "sma_3"))
-  testthat::expect_identical(unname(own), unname(local))
-  testthat::expect_false(identical(unname(local), unname(reused_local)))
+  own <- pulse$fast[["AAA"]]
+  local <- ledgr_pulse_features(pulse, c(local_fast = "sma_2"))$feature_value[[1L]]
+  reused_local <- ledgr_pulse_features(pulse, c(local_fast = "sma_3"))$feature_value[[1L]]
+  testthat::expect_identical(own, local)
+  testthat::expect_false(identical(local, reused_local))
   long <- ledgr_pulse_features(pulse, c(local_fast = "sma_2"))
   wide <- ledgr_pulse_wide(pulse, c(local_fast = "sma_2"))
   testthat::expect_identical(unique(long$alias), "local_fast")
@@ -184,15 +177,13 @@ testthat::test_that("[LTB-0184] public execution and pulse inspection agree on a
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n")))
   strategy <- function(ctx, params) {
-    alias <- ctx$vec$feature("signal")
+    alias <- ctx[["signal"]]
     feature_id <- paste0("sma_", params$n)
-    exact <- ctx$vec$feature(feature_id)
+    exact <- ctx[[feature_id]]
     scalar <- vapply(ctx$universe, function(id) {
-      ctx$feature(id, "signal")
+      ctx[["signal"]][[id]]
     }, numeric(1))
-    bundle <- vapply(ctx$universe, function(id) {
-      ctx$features(id)[["signal"]]
-    }, numeric(1))
+    bundle <- ctx$signal
     signal <- ledgr_signal_feature(ctx, "signal")
     if (!identical(as.numeric(alias), as.numeric(exact)) ||
         !identical(as.numeric(alias), as.numeric(scalar)) ||
@@ -227,20 +218,18 @@ testthat::test_that("[LTB-0184] public execution and pulse inspection agree on a
   )
   on.exit(close(pulse), add = TRUE)
   testthat::expect_identical(
-    pulse$vec$feature("signal"),
-    pulse$vec$feature("sma_2")
+    pulse$signal,
+    pulse$sma_2
   )
 
   sweep_experiment <- ledgr_experiment(
     snapshot,
     function(ctx, params) {
-      alias <- ctx$vec$feature("signal")
+      alias <- ctx[["signal"]]
       scalar <- vapply(ctx$universe, function(id) {
-        ctx$feature(id, "signal")
+        ctx[["signal"]][[id]]
       }, numeric(1))
-      bundle <- vapply(ctx$universe, function(id) {
-        ctx$features(id)[["signal"]]
-      }, numeric(1))
+      bundle <- ctx$signal
       if (!identical(as.numeric(alias), as.numeric(scalar)) ||
           !identical(as.numeric(alias), as.numeric(bundle))) {
         stop("candidate-local alias resolution diverged")
@@ -274,7 +263,7 @@ testthat::test_that("[LTB-0184] public execution and pulse inspection agree on a
   walk_experiment <- ledgr_experiment(
     snapshot,
     function(ctx, params) {
-      value <- ctx$vec$feature("signal")
+      value <- ctx[["signal"]]
       target <- ctx$flat()
       target[is.finite(value)] <- 1
       target

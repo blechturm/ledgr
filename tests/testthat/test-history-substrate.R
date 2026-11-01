@@ -1614,7 +1614,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
   snapshot <- availability_runtime_fixture(days = 13L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    if (!any(is.finite(ctx$vec$feature("return_2")))) {
+    if (!any(is.finite(ctx[["return_2"]]))) {
       return(ctx$hold())
     }
     target <- ctx$flat()

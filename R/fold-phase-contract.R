@@ -3,6 +3,7 @@
   "positions",
   "lot_state",
   "state_prev",
+  "position_facts",
   "state_axis",
   "event_seq",
   "status",
@@ -26,6 +27,7 @@ ledgr_fold_state_new <- function(
     positions,
     lot_state,
     state_prev = NULL,
+    position_facts = NULL,
     state_axis = NULL,
     event_seq = 1L,
     status = "DONE",
@@ -52,6 +54,7 @@ ledgr_fold_state_new <- function(
   out$positions <- positions
   out$lot_state <- lot_state
   out$state_prev <- state_prev
+  out$position_facts <- position_facts %||% ledgr_position_fact_state(length(positions))
   out$state_axis <- state_axis
   out$event_seq <- event_seq
   out$status <- status
@@ -107,6 +110,10 @@ ledgr_fold_state_validate <- function(x) {
   exposure_fields <- c("value", "details", "ts_utc", "specified")
   if (!is.numeric(x$cash) || length(x$cash) != 1L || !is.finite(x$cash) ||
       is.data.frame(x$state_prev) ||
+      !is.list(x$position_facts) ||
+      !identical(names(x$position_facts), c("entry_bar", "exit_bar")) ||
+      length(x$position_facts$entry_bar) != length(x$positions) ||
+      length(x$position_facts$exit_bar) != length(x$positions) ||
       !(is.null(x$state_axis) || is.character(x$state_axis)) ||
       !is.integer(x$event_seq) || length(x$event_seq) != 1L ||
       is.na(x$event_seq) || x$event_seq < 1L ||

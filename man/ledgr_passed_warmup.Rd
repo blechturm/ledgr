@@ -17,7 +17,7 @@ A logical scalar.
 }
 \description{
 \code{ledgr_passed_warmup()} is a strategy-authoring guard for named numeric vectors
-returned by \code{ctx$features(id, feature_map)}. For those vectors, \code{TRUE} means
+read from flat feature columns. For those vectors, \code{TRUE} means
 every requested feature is usable at the current pulse. For an intact
 \code{ledgr_history} frame or \code{ledgr_history_matrix}, it returns the recorded
 \code{min_observations} and \code{min_instruments} result without rescanning values.
@@ -31,8 +31,8 @@ aborts with classes \code{ledgr_empty_warmup_input} and
 \code{ledgr_invalid_warmup_input}.
 
 The context-aware form \code{ledgr_passed_warmup(ctx, values)} checks one value
-per instrument on the decision axis, such as \code{ctx$vec$feature(id)} or a
-context signal. It considers eligible instruments only (\code{ctx$vec$admissible}):
+per instrument on the decision axis, such as \code{ctx[[id]]} or a
+context signal. It considers eligible instruments only (\code{ctx$buyable}):
 a missing value on a held nonmember or a target-restricted member does not
 fail the check, and with no eligible instrument the check passes. \code{values}
 aligns by position when unnamed and by name when named, as for
@@ -65,5 +65,5 @@ ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
 try(ledgr_passed_warmup(numeric(0)))
 
 # Inside a strategy, over every eligible instrument:
-# if (!ledgr_passed_warmup(ctx, ctx$vec$feature("sma_10"))) return(ctx$hold())
+# if (!ledgr_passed_warmup(ctx, ctx$sma_10)) return(ctx$hold())
 }

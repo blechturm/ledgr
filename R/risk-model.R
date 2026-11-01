@@ -452,26 +452,24 @@ ledgr_risk_context_equity <- function(ctx) {
 }
 
 ledgr_risk_context_prices <- function(ctx, universe) {
-  close_vec <- NULL
-  if (is.list(ctx$vec) &&
-      is.numeric(ctx$vec$risk_mark) &&
-      length(ctx$vec$risk_mark) == length(universe)) {
-    close_vec <- as.numeric(ctx$vec$risk_mark)
+  lookup <- unclass(ctx)[[".pulse_lookup"]]
+  close_vec <- if (is.environment(lookup) &&
+      is.list(lookup$availability) &&
+      is.numeric(lookup$availability$risk_mark)) {
+    as.numeric(lookup$availability$risk_mark[universe])
+  } else {
+    rep(NA_real_, length(universe))
   }
-  if (is.list(ctx$vec) &&
-      is.null(close_vec) &&
-      is.numeric(ctx$vec$close) &&
-      length(ctx$vec$close) == length(universe)) {
-    close_vec <- as.numeric(ctx$vec$close)
-  }
-  if (is.null(close_vec)) {
-    if (!is.function(ctx$close)) {
+  fallback <- !is.finite(close_vec)
+  if (any(fallback)) {
+    close <- ctx$close
+    if (!is.numeric(close) || length(close) != length(universe)) {
       rlang::abort(
-        "Risk application requires decision-time close prices from `ctx$vec$close` or `ctx$close(id)`.",
+        "Risk application requires one flat decision-time close per instrument.",
         class = c("ledgr_invalid_risk_context", "ledgr_risk_application_error")
       )
     }
-    close_vec <- vapply(universe, function(id) as.numeric(ctx$close(id)), numeric(1))
+    close_vec[fallback] <- as.numeric(close[fallback])
   }
   stats::setNames(as.numeric(close_vec), universe)
 }

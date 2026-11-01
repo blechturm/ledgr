@@ -166,7 +166,7 @@ testthat::test_that("windowed sweeps validate precomputed scoring and hydration 
   )
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    if (ctx$feature("AAA", "custom_close") > params$threshold) {
+    if (ctx[["custom_close"]][["AAA"]] > params$threshold) {
       targets[["AAA"]] <- params$qty
     }
     targets
@@ -355,7 +355,7 @@ testthat::test_that("precomputed features refuse after a direct capture changes"
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     target <- ctx$flat()
-    value <- ctx$feature("AAA", "captured_scale")
+    value <- ctx[["captured_scale"]][["AAA"]]
     if (is.finite(value) && value > params$threshold) target[["AAA"]] <- 1
     target
   }
@@ -407,7 +407,7 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   windows <- c(fast = 5, slow = 20)
   strategy <- function(ctx, params) {
     target <- ctx$flat()
-    value <- ctx$feature("AAA", "trend")
+    value <- ctx[["trend"]][["AAA"]]
     if (is.finite(value)) target[["AAA"]] <- 1
     target
   }
@@ -483,8 +483,8 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   nm <- c("fast", "slow")
   alias_strategy <- function(ctx, params) {
     target <- ctx$flat()
-    value <- ctx$feature("AAA", "fast")
-    if (is.finite(value) && ctx$close("AAA") > value) target[["AAA"]] <- 1
+    value <- ctx[["fast"]][["AAA"]]
+    if (is.finite(value) && ctx$close[["AAA"]] > value) target[["AAA"]] <- 1
     target
   }
   alias_exp <- ledgr_experiment(

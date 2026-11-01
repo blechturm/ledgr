@@ -274,7 +274,7 @@ ledgr_carrier_settlement_state <- function(fold_state, instrument_ids) {
   )
 }
 
-ledgr_carrier_settlement_install <- function(fold_state, value) {
+ledgr_carrier_settlement_install <- function(fold_state, value, bar_index = NULL) {
   positions <- value$positions
   if (!is.double(positions) || length(positions) != length(fold_state$positions)) {
     rlang::abort(
@@ -282,8 +282,19 @@ ledgr_carrier_settlement_install <- function(fold_state, value) {
       class = "ledgr_invalid_fold_execution"
     )
   }
+  positions <- as.numeric(positions)
+  if (!is.null(bar_index)) {
+    before <- fold_state$positions
+    changed <- which(abs(before - positions) > 1e-12)
+    if (length(changed) > 0L) {
+      fold_state$position_facts <- ledgr_position_facts_apply(
+        fold_state$position_facts, changed, before[changed], positions[changed],
+        bar_index, FALSE
+      )
+    }
+  }
   fold_state$cash <- value$cash
-  fold_state$positions <- as.numeric(positions)
+  fold_state$positions <- positions
   fold_state$lot_state <- value$lot_state
   invisible(NULL)
 }
@@ -408,7 +419,9 @@ ledgr_fold_stage_observe_settle <- function(
       state_value = ledgr_carrier_settlement_state(fold_state, services$instrument_ids),
       marks = marks
     )
-    ledgr_carrier_settlement_install(fold_state, posted$state)
+    ledgr_carrier_settlement_install(
+      fold_state, posted$state, services$projection_pulse_idx[[pulse_idx]]
+    )
     fold_state$event_seq <- posted$next_event_seq
     refused <- posted$stopped %||%
       services$corporate_action_plan$check_quantity_effects(pulse_idx)
@@ -437,7 +450,9 @@ ledgr_fold_stage_observe_settle <- function(
         state_value = ledgr_carrier_settlement_state(fold_state, services$instrument_ids),
         valuation = decision$valuation
       )
-      ledgr_carrier_settlement_install(fold_state, disposed$state)
+      ledgr_carrier_settlement_install(
+        fold_state, disposed$state, services$projection_pulse_idx[[pulse_idx]]
+      )
       fold_state$event_seq <- disposed$next_event_seq
       if (!is.null(disposed$stopped)) {
         return(stop_valuation(
@@ -525,7 +540,9 @@ ledgr_fold_stage_observe_settle <- function(
         instrument_ids = services$instrument_ids,
         exposure_mark = resolved$reference
       )
-      ledgr_carrier_settlement_install(fold_state, posted$state)
+      ledgr_carrier_settlement_install(
+        fold_state, posted$state, services$projection_pulse_idx[[pulse_idx]]
+      )
       fold_state$event_seq <- posted$next_event_seq
       add_segment(list(
         n = length(inactive_ids), instrument_id = inactive_ids, stage = "valuation",
@@ -783,6 +800,14 @@ ledgr_fold_stage_decide <- function(
     low = data$low, close = data$close, volume = data$volume, observed = data$observed
   ))
   positions_snapshot <- ledgr_fold_positions_snapshot(position, context_ids)
+  position_facts <- ledgr_position_facts_view(
+    fold_state$position_facts,
+    fold_state$lot_state,
+    fold_state$positions,
+    current_bar = projection_idx,
+    bar_axis = services$bar_axis
+  )
+  position_facts <- lapply(position_facts, function(value) value[context_pos])
   # The long feature table is the schema-only frame the context contract
   # allows on the availability path; accessors and the wide view carry values.
   features_current <- services$empty_feature_table
@@ -845,7 +870,8 @@ ledgr_fold_stage_decide <- function(
     feature_lookup_state = services$availability_feature_lookup_state,
     id_to_idx = NULL,
     availability = p2$view,
-    scalar_access_state = services$scalar_access_state
+    position_facts = position_facts,
+    build_counts = services$context_build_counts
   )
   ctx <- ledgr_filter_pulse_context_features(
     ctx,
@@ -1314,6 +1340,14 @@ ledgr_fold_stage_apply <- function(
       positions <- as.numeric(batch$positions)
       cash <- batch$cash
       fold_state$lot_state <- batch$lot_state
+      fill_bar <- ledgr_position_fact_bar_index(
+        as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC"),
+        services$bar_axis
+      )
+      fold_state$position_facts <- ledgr_position_facts_apply(
+        fold_state$position_facts, fill$pos, fill$position_before,
+        fill$planned_position_after, fill_bar, TRUE
+      )
       fold_state$event_seq <- batch$next_event_seq
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
@@ -1357,6 +1391,14 @@ ledgr_fold_stage_apply <- function(
     # Install the book, publish the event block, advance the sequence and
     # record the legs; positions and cash are installed last.
     fold_state$lot_state <- candidate$book
+    fill_bar <- ledgr_position_fact_bar_index(
+      as.POSIXct(fill$exec_ts, origin = "1970-01-01", tz = "UTC"),
+      services$bar_axis
+    )
+    fold_state$position_facts <- ledgr_position_facts_apply(
+      fold_state$position_facts, fill$pos, fill$position_before,
+      fill$planned_position_after, fill_bar, TRUE
+    )
     block <- output_handler$write_fill_events(
       fill = fill,
       i = rows,
@@ -1682,6 +1724,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     positions = state$positions,
     lot_state = state$lot_state,
     state_prev = execution$state_prev,
+    position_facts = execution$position_facts,
     event_seq = as.integer(execution$event_seq_start),
     affected_exposure = affected,
     last_fully_valued = last_fully_valued_ts,
@@ -1718,11 +1761,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     active_alias_map = active_alias_map,
     feature_name_state = availability_feature_name_state
   )
-  scalar_access_state <- if (length(instrument_ids) >= 100L) {
-    ledgr_pulse_context_scalar_access_state()
-  } else {
-    NULL
-  }
+  context_build_counts <- new.env(parent = emptyenv())
   # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
@@ -1752,7 +1791,8 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     output_handler = output_handler,
     availability_feature_name_state = availability_feature_name_state,
     availability_feature_lookup_state = availability_feature_lookup_state,
-    scalar_access_state = scalar_access_state,
+    context_build_counts = context_build_counts,
+    bar_axis = history_substrate$axis,
     pulse_notes = pulse_notes,
     execution_opportunities_posix = execution_opportunities_posix,
     execution_epochs = execution_epochs,

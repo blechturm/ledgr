@@ -1015,7 +1015,20 @@ ledgr_history_request_plan <- function(ctx,
     min_observations = min_observations,
     min_instruments = min_instruments,
     decision_ids = as.character(ctx$universe),
-    decision_planes = ctx$vec,
+    decision_planes = {
+      member <- unname(ctx$member)
+      buyable <- unname(ctx$buyable)
+      list(
+        id = as.character(ctx$universe),
+        open = unname(ctx$open), high = unname(ctx$high), low = unname(ctx$low),
+        close = unname(ctx$close), volume = unname(ctx$volume),
+        position = unname(ctx$position), member = member,
+        held = unname(ctx$held), admissible = buyable,
+        target_restriction_reason = ifelse(
+          member & !buyable, "target_restricted", ""
+        )
+      )
+    },
     diagnostic = diagnostic,
     manifestation = manifestation
   )

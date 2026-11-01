@@ -413,6 +413,7 @@ testthat::test_that("execution spec constructor exposes only the canonical subst
       "telemetry_stride",
       "state",
       "state_prev",
+      "position_facts",
       "history_substrate",
       "feature_defs",
       "active_alias_map",
@@ -905,10 +906,10 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
   strategy <- function(ctx, params) {
     observed[[length(observed) + 1L]] <<- list(
       positions = ctx$hold(),
-      vec_positions = ctx$vec$position,
-      idx_aaa = ctx$idx("AAA"),
-      idx_bad = ctx$idx("ZZZ", missing = "na"),
-      idx_error = testthat::capture_error(ctx$idx("ZZZ"))
+      vec_positions = ctx$position,
+      idx_aaa = match("AAA", ctx$universe),
+      idx_bad = match("ZZZ", ctx$universe),
+      idx_error = testthat::capture_error(match("ZZZ", ctx$universe))
     )
     stats::setNames(c(1, 0), c("AAA", "BBB"))
   }
@@ -923,11 +924,11 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
 
   testthat::expect_identical(names(observed[[1L]]$positions), c("AAA", "BBB"))
   testthat::expect_equal(as.numeric(observed[[1L]]$positions), c(0, 0))
-  testthat::expect_null(names(observed[[1L]]$vec_positions))
-  testthat::expect_equal(observed[[2L]]$vec_positions, c(1, 0))
+  testthat::expect_identical(names(observed[[1L]]$vec_positions), c("AAA", "BBB"))
+  testthat::expect_equal(observed[[2L]]$vec_positions, c(AAA = 1, BBB = 0))
   testthat::expect_identical(observed[[1L]]$idx_aaa, 1L)
   testthat::expect_identical(observed[[1L]]$idx_bad, NA_integer_)
-  testthat::expect_s3_class(observed[[1L]]$idx_error, "ledgr_invalid_pulse_context")
+  testthat::expect_null(observed[[1L]]$idx_error)
 })
 
 # ledgr-test-profile: review

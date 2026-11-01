@@ -41,7 +41,7 @@ strategy_context_entrance_fixture <- function(availability = FALSE,
   if (is.null(priced)) priced <- c(TRUE, TRUE)
   availability_view <- list(
     member = stats::setNames(ids %in% members, ids),
-    held = stats::setNames(ctx$vec$position != 0, ids),
+    held = stats::setNames(ctx$position != 0, ids),
     target_restricted = stats::setNames(restricted, ids),
     target_restriction_reason = stats::setNames(c("", "nonmember"), ids),
     priced = stats::setNames(priced, ids),
@@ -58,6 +58,15 @@ strategy_context_entrance_fixture <- function(availability = FALSE,
     availability = availability_view
   )
   ctx$members <- members
+  ctx
+}
+
+strategy_context_override_plane <- function(ctx, name, value) {
+  lookup <- unclass(ctx)[[".pulse_lookup"]]
+  if (is.atomic(value) && length(value) == length(ctx$universe)) {
+    names(value) <- ctx$universe
+  }
+  assign(name, value, envir = lookup$cache)
   ctx
 }
 
@@ -91,7 +100,7 @@ strategy_context_empty_axis_fixture <- function() {
     features = empty_axis$feature_table,
     positions = empty_axis$.positions,
     universe = character(),
-    availability = list()
+    availability = NULL
   )
 }
 
@@ -104,7 +113,7 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility
   testthat::expect_identical(unclass(dense_target), c(AAA = 15, BBB = 7))
 
   score_target <- dense |>
-    ledgr_signal(values = dense$vec$feature("return_5")) |>
+    ledgr_signal(values = dense[["return_5"]]) |>
     ledgr_select_top_n(1) |>
     ledgr_weight_equal() |>
     ledgr_target_rebalance(dense)
@@ -232,7 +241,7 @@ testthat::test_that("[LTB-0087] raw and convenience signals share raw values and
     priced = c(FALSE, TRUE),
     equity = 140
   )
-  raw <- ledgr_signal(ctx, values = ctx$vec$feature("return_5"))
+  raw <- ledgr_signal(ctx, values = ctx[["return_5"]])
   convenience <- ledgr_signal_return(ctx, lookback = 5)
   for (signal in list(raw, convenience)) {
     testthat::expect_identical(
@@ -261,7 +270,7 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
   feature <- ledgr_signal_feature(restricted, "return_5")
   raw <- ledgr_signal(
     restricted,
-    values = restricted$vec$feature("return_5")
+    values = restricted[["return_5"]]
   )
   testthat::expect_identical(
     stats::setNames(as.numeric(feature), names(feature)),
@@ -294,7 +303,7 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
   )
   testthat::expect_error(
     ledgr_signal_feature(dense, "unknown_feature"),
-    class = "ledgr_unknown_feature_id"
+    class = "ledgr_unknown_context_field"
   )
 
   empty <- strategy_context_entrance_fixture(
@@ -322,7 +331,7 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
 
 testthat::test_that("[LTB-0088] explicit zero weights never require sizing prices", {
   dense <- strategy_context_entrance_fixture(equity = 100)
-  dense$vec$close[[2L]] <- NA_real_
+  dense <- strategy_context_override_plane(dense, "close", c(10, NA_real_))
   with_zero <- testthat::expect_no_warning(ledgr_target_rebalance(
     ledgr_weights(c(AAA = 1, BBB = 0), universe = dense$universe),
     dense
@@ -350,7 +359,7 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
     restricted = c(FALSE, FALSE),
     equity = 100
   )
-  available$vec$close[[2L]] <- NA_real_
+  available <- strategy_context_override_plane(available, "close", c(10, NA_real_))
   available_zero <- testthat::expect_no_condition(ledgr_target_rebalance(
     ledgr_weights(c(AAA = 1, OLD = 0), universe = available$universe),
     available
@@ -370,8 +379,7 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   )
   testthat::expect_identical(c(skipped), c(AAA = 5, OLD = 2))
   testthat::expect_identical(attr(skipped, "sizing_skipped"), "OLD")
-  unmarked <- available
-  unmarked$vec$risk_mark[[2L]] <- NA_real_
+  unmarked <- strategy_context_override_plane(available, "holding_value", c(0, NA_real_))
   testthat::expect_error(
     ledgr_target_rebalance(
       ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = unmarked$universe),
@@ -395,11 +403,10 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   legacy_ctx <- list(
     universe = c("AAA", "BBB"),
     equity = 1000,
-    vec = list(
-      close = c(AAA = 50, BBB = 100),
-      position = c(AAA = 0, BBB = 0),
-      admissible = c(AAA = TRUE, BBB = TRUE)
-    )
+    close = c(AAA = 50, BBB = 100),
+    position = c(AAA = 0, BBB = 0),
+    holding_value = c(AAA = 0, BBB = 0),
+    buyable = c(AAA = TRUE, BBB = TRUE)
   )
   legacy_weights <- ledgr_weights(
     c(AAA = 0.5, BBB = 0.5),
@@ -426,7 +433,7 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
     positions = c(AAA = 4),
     equity = 100
   )
-  dense$vec$close[[2L]] <- 10
+  dense <- strategy_context_override_plane(dense, "close", c(10, 10))
   weights <- ledgr_weights(c(BBB = 1), universe = dense$universe)
 
   kept <- ledgr_target_rebalance(weights, dense, keep = "AAA")
@@ -480,8 +487,8 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
     positions = c(AAA = 4),
     equity = 100
   )
-  unavailable$vec$close[[1L]] <- NA_real_
-  unavailable$vec$risk_mark[[1L]] <- NA_real_
+  unavailable <- strategy_context_override_plane(unavailable, "close", c(NA_real_, 20))
+  unavailable <- strategy_context_override_plane(unavailable, "holding_value", c(NA_real_, 0))
   testthat::expect_error(
     ledgr_target_rebalance(weights, unavailable, keep = "AAA"),
     class = "ledgr_target_sizing_unavailable"
@@ -692,11 +699,11 @@ testthat::test_that("[LTB-0117] fixed-quantity targets follow the selection", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   pipeline <- function(ctx, params) {
     ctx |>
-      ledgr_selection(where = ctx$vec$feature("return_5") > 0, missing = "exclude") |>
+      ledgr_selection(where = ctx[["return_5"]] > 0, missing = "exclude") |>
       ledgr_target_quantity(ctx, params$qty)
   }
   by_hand <- function(ctx, params) {
-    ret <- ctx$vec$feature("return_5")
+    ret <- ctx[["return_5"]]
     targets <- ctx$flat()
     targets[which(ret > 0)] <- params$qty
     targets
@@ -742,7 +749,7 @@ testthat::test_that("[LTB-0120] signals cover the decision axis and carry eligib
   )
   for (name in names(contexts)) {
     ctx <- contexts[[name]]
-    feature <- ctx$vec$feature("return_5")
+    feature <- ctx[["return_5"]]
     signals <- list(
       ledgr_signal_feature(ctx, "return_5"),
       ledgr_signal_return(ctx, lookback = 5),
@@ -752,10 +759,10 @@ testthat::test_that("[LTB-0120] signals cover the decision axis and carry eligib
     for (signal in signals) {
       testthat::expect_identical(names(signal), ctx$universe, info = name)
       testthat::expect_identical(as.numeric(signal), as.numeric(feature), info = name)
-      testthat::expect_identical(attr(signal, "eligible"), as.logical(ctx$vec$admissible), info = name)
+      testthat::expect_identical(attr(signal, "eligible"), as.logical(ctx$buyable), info = name)
     }
     target <- ctx$flat()
-    target[ctx$vec$admissible & signals[[2L]] > 0.1] <- 10
+    target[ctx$buyable & signals[[2L]] > 0.1] <- 10
     testthat::expect_identical(target, intended[[name]], info = name)
   }
 
@@ -913,7 +920,7 @@ testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and
     features = empty_axis$feature_table,
     positions = empty_axis$.positions,
     universe = character(),
-    availability = list()
+    availability = NULL
   )
   calls <- 0L
   counting <- ledgr_signal_strategy(function(ctx) {
@@ -950,7 +957,7 @@ testthat::test_that("[LTB-0123] the context warmup form checks eligible instrume
   )
   for (name in names(contexts)) {
     ctx <- contexts[[name]]
-    testthat::expect_true(ledgr_passed_warmup(ctx, ctx$vec$feature("return_5")), info = name)
+    testthat::expect_true(ledgr_passed_warmup(ctx, ctx[["return_5"]]), info = name)
     testthat::expect_true(ledgr_passed_warmup(ctx, ledgr_signal_feature(ctx, "return_5")), info = name)
     variants <- list(missing_first = c(NA_real_, 0.9), missing_second = c(0.2, NA_real_))
     for (variant in names(variants)) {
@@ -963,7 +970,7 @@ testthat::test_that("[LTB-0123] the context warmup form checks eligible instrume
       testthat::expect_identical(
         ledgr_passed_warmup(ctx, ledgr_signal(ctx, values = values)), expected, info = label
       )
-      eligible_only <- named[as.logical(ctx$vec$admissible)]
+      eligible_only <- named[as.logical(ctx$buyable)]
       testthat::expect_identical(ledgr_passed_warmup(ctx, eligible_only), expected, info = label)
     }
   }
@@ -999,7 +1006,7 @@ testthat::test_that("[LTB-0123] the context warmup form checks eligible instrume
   # The one-argument form is unchanged: all(!is.na(x)) over the whole vector.
   testthat::expect_true(ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101)))
   testthat::expect_false(ledgr_passed_warmup(c(ret_5 = NA_real_, sma_10 = 101)))
-  testthat::expect_false(ledgr_passed_warmup(restricted$vec$feature("return_5") * NA))
+  testthat::expect_false(ledgr_passed_warmup(restricted[["return_5"]] * NA))
   testthat::expect_identical(
     condition_classes(ledgr_passed_warmup(numeric())),
     c("ledgr_empty_warmup_input", "ledgr_invalid_warmup_input", "ledgr_invalid_args")
@@ -1072,12 +1079,12 @@ testthat::test_that("[LTB-0124] a malformed eligibility plane fails closed in ev
   }
   planes <- list(missing = NULL, short = FALSE, character = c("TRUE", "FALSE"), missing_value = c(NA, TRUE))
   for (plane in names(planes)) {
-    broken <- restricted
-    broken$vec["admissible"] <- list(planes[[plane]])
+    broken <- strategy_context_override_plane(restricted, "buyable", planes[[plane]])
     for (name in names(calls)) {
       testthat::expect_error(calls[[name]](broken), class = expected_class(name), info = paste(plane, name))
     }
   }
+  restricted <- strategy_context_override_plane(restricted, "buyable", c(FALSE, TRUE))
 
   # The well-formed context keeps the restricted member out.
   testthat::expect_identical(unclass(calls$selection(restricted)), c(AAA = FALSE, OLD = TRUE))
@@ -1086,12 +1093,10 @@ testthat::test_that("[LTB-0124] a malformed eligibility plane fails closed in ev
   # Every context uses the common eligibility plane, and malformed planes
   # fail closed.
   dense <- strategy_context_entrance_fixture()
-  bare <- dense
-  bare$vec["admissible"] <- list(NULL)
+  bare <- strategy_context_override_plane(dense, "buyable", NULL)
   testthat::expect_error(ledgr_selection(bare), class = "ledgr_invalid_strategy_helper")
   testthat::expect_error(wrapper(bare, list()), class = "ledgr_invalid_strategy_result")
-  short <- dense
-  short$vec$admissible <- TRUE
+  short <- strategy_context_override_plane(dense, "buyable", TRUE)
   testthat::expect_error(ledgr_selection(short), class = "ledgr_invalid_strategy_helper")
   testthat::expect_error(wrapper(short, list()), class = "ledgr_invalid_strategy_result")
 })

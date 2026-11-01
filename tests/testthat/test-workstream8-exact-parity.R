@@ -474,7 +474,7 @@ testthat::test_that("availability marks use one query and preserve the prefix or
     snapshot,
     function(ctx, params) {
       target <- ctx$hold()
-      target[ctx$vec$member & !ctx$vec$target_restricted] <- 1
+      target[ctx$buyable] <- 1
       target
     },
     valuation_policy = ledgr_valuation_stale(2),

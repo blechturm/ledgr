@@ -124,7 +124,7 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       testthat::expect_identical(actual$schema_version, "124")
       actual$schema_version <- NULL
       expected$schema_version <- NULL
-      # LDG-2851 renamed `ctx$vec$positions` to `ctx$vec$position` after the
+      # LDG-2851 renamed `ctx$positions` to `ctx$position` after the
       # freeze, so the witness strategy's source differs by exactly that
       # rename, and so do the values derived from it: the source hash, the
       # strategy key and the config hash. The frozen evidence stays as
@@ -133,12 +133,12 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       actual_config <- ledgr:::ledgr_json_read_nested(actual$config_json)
       frozen_source <- expected_config$strategy$provenance$strategy_source
       testthat::expect_identical(
-        lengths(regmatches(frozen_source, gregexpr("ctx$vec$positions", frozen_source, fixed = TRUE))),
+        lengths(regmatches(frozen_source, gregexpr("ctx$positions", frozen_source, fixed = TRUE))),
         1L
       )
       testthat::expect_identical(
         actual_config$strategy$provenance$strategy_source,
-        gsub("ctx$vec$positions", "ctx$vec$position", frozen_source, fixed = TRUE)
+        gsub("ctx$positions", "ctx$position", frozen_source, fixed = TRUE)
       )
       for (derived in c("strategy_source", "strategy_source_hash")) {
         expected_config$strategy$provenance[[derived]] <- NULL

@@ -32,7 +32,7 @@ testthat::test_that("ledgr_signal_return reads registered return features", {
 
   testthat::expect_error(
     ledgr_signal_return(ctx, lookback = 3),
-    class = "ledgr_unknown_feature_id"
+    class = "ledgr_unknown_context_field"
   )
 })
 
@@ -191,9 +191,6 @@ testthat::test_that("[LTB-0066] strategy helpers consume only vector accessors",
     cash = 1000,
     equity = 1000
   )
-  ctx$feature <- function(...) rlang::abort("scalar feature path should not be used")
-  ctx$close <- function(...) rlang::abort("scalar close path should not be used")
-
   signal <- ledgr_signal_return(ctx, lookback = 2)
   weights <- ledgr_weight_equal(ledgr_select_top_n(signal, 1))
   target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
@@ -231,7 +228,7 @@ testthat::test_that("[LTB-0092] context helper pipeline agrees across run and sw
   strategy <- function(ctx, params) {
     signal <- ledgr_signal(
       ctx,
-      values = ctx$vec$feature(paste0("return_", params$lookback))
+      values = ctx[[paste0("return_", params$lookback)]]
     )
     selection <- ledgr_select_top_n(signal, params$n)
     weights <- ledgr_weight_equal(selection)

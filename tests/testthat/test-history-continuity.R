@@ -333,9 +333,8 @@ testthat::test_that("[LTB-0304] every entry point reads feature, mark and entitl
   seen <- new.env()
   reader <- function(ctx) {
     list(
-      fast = ctx$feature("AAA", "fast"),
-      bbb_mark = ctx$vec$risk_mark[ctx$universe == "BBB"],
-      bbb_age = ctx$vec$mark_age[ctx$universe == "BBB"],
+      fast = ctx[["fast"]][["AAA"]],
+      bbb_mark = ctx$holding_value[["BBB"]] / ctx$position[["BBB"]],
       equity = ctx$equity
     )
   }
@@ -370,7 +369,7 @@ testthat::test_that("[LTB-0304] every entry point reads feature, mark and entitl
   ledgr_sweep(dated, pre_grid, precomputed_features = precomputed)
   testthat::expect_identical(precomputed$history_axis$calculation_start_utc, ws42_iso(axis[[1L]]))
   testthat::expect_null(precomputed$warmup_range)
-  expected <- list(fast = 13.5, bbb_mark = 22, bbb_age = 2L, equity = 1022)
+  expected <- list(fast = 13.5, bbb_mark = 22, equity = 1022)
   for (tag in c("run", "sweep", "run_window", "sweep_window", "precompute")) {
     testthat::expect_identical(seen[[paste(tag, ws42_iso(axis[[4L]]))]], expected, info = tag)
   }

@@ -47,7 +47,7 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 }
 
 ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
-  values <- if (length(universe) == 0L) numeric() else as.numeric(ctx$vec$feature(feature_id))
+  values <- if (length(universe) == 0L) numeric() else as.numeric(ctx[[feature_id]])
   signal <- ledgr_signal(stats::setNames(values, universe), universe = universe, origin = feature_id)
   attr(signal, "eligible") <- ledgr_strategy_eligible(ctx, universe)
   signal
@@ -57,7 +57,7 @@ ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
 #'
 #' `ledgr_signal_feature()` reads one already-registered feature plane and
 #' returns one raw score per instrument in `ctx$universe`, in that order. The
-#' signal carries `ctx$vec$admissible` as its `eligible` attribute: an
+#' signal carries `ctx$buyable` as its `eligible` attribute: an
 #' instrument that is not a member, or is target-restricted, keeps its raw score
 #' but is marked ineligible, so ineligible is never reported as missing.
 #' [ledgr_select_top_n()] ranks eligible scores only, and [ledgr_selection()]
@@ -74,10 +74,8 @@ ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
 #' @examples
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
-#'   vec = list(
-#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
-#'     admissible = c(TRUE, TRUE)
-#'   )
+#'   return_5 = c(AAA = 0.03, BBB = NA_real_),
+#'   buyable = c(AAA = TRUE, BBB = TRUE)
 #' )
 #' ledgr_signal_feature(ctx, "return_5")
 #'
@@ -122,10 +120,8 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' @examples
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
-#'   vec = list(
-#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
-#'     admissible = c(TRUE, TRUE)
-#'   )
+#'   return_5 = c(AAA = 0.03, BBB = NA_real_),
+#'   buyable = c(AAA = TRUE, BBB = TRUE)
 #' )
 #' ledgr_signal_return(ctx, lookback = 5)
 #'
@@ -305,15 +301,14 @@ ledgr_weight_equal <- function(selection) {
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   equity = 1000,
-#'   vec = list(
-#'     close = c(AAA = 50, BBB = 100),
-#'     admissible = c(TRUE, TRUE),
-#'     position = c(AAA = 0, BBB = 0)
-#'   )
+#'   close = c(AAA = 50, BBB = 100),
+#'   buyable = c(AAA = TRUE, BBB = TRUE),
+#'   position = c(AAA = 0, BBB = 0),
+#'   holding_value = c(AAA = 0, BBB = 0)
 #' )
 #' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
 #'
-#' ctx$vec$position <- c(AAA = 2, BBB = 0)
+#' ctx$position <- c(AAA = 2, BBB = 0)
 #' weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
 #' ledgr_target_rebalance(weights, ctx, keep = "AAA")
 #'
@@ -372,11 +367,11 @@ ledgr_target_rebalance <- function(weights,
     rlang::abort("Levered weights are not supported; `sum(abs(weights))` must be <= 1.", class = "ledgr_levered_weights")
   }
 
-  position <- ctx$vec$position
+  position <- ctx$position
   if (is.null(position) || length(position) != length(universe)) {
     rlang::abort(
       paste0(
-        "`ctx$vec$position` must provide one value per decision-axis ",
+        "`ctx$position` must provide one value per decision-axis ",
         "instrument."
       ),
       class = "ledgr_invalid_strategy_helper"
@@ -391,15 +386,14 @@ ledgr_target_rebalance <- function(weights,
   reserved_ids <- union(held_nonmembers, keep[position_vec[keep] != 0])
   if (length(reserved_ids) > 0L) {
     idx <- match(reserved_ids, universe)
-    marks <- as.numeric(ctx$vec$risk_mark[idx])
-    quantities <- position_vec[idx]
-    if (any(!is.finite(marks))) {
+    reserved_value <- as.numeric(ctx$holding_value[idx])
+    if (any(!is.finite(reserved_value))) {
       rlang::abort(
         "Cannot reserve kept exposure without a permissible valuation mark.",
         class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper")
       )
     }
-    allocation_equity <- max(0, equity - sum(abs(quantities * marks)))
+    allocation_equity <- max(0, equity - sum(abs(reserved_value)))
   }
   if (length(weights) == 0L || equity_fraction == 0 || equity == 0) {
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
@@ -411,7 +405,7 @@ ledgr_target_rebalance <- function(weights,
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
   }
 
-  close_vec <- as.numeric(ctx$vec$close)
+  close_vec <- as.numeric(ctx$close)
   weight_ids <- names(weights)[positive_weight]
   weight_values <- weight_values[positive_weight]
   price <- close_vec[match(weight_ids, universe)]
@@ -432,22 +426,22 @@ ledgr_target_rebalance <- function(weights,
     held <- position_vec[skip_idx] != 0
     held_exposure <- 0
     if (any(held)) {
-      marks <- as.numeric(ctx$vec$risk_mark[skip_idx[held]])
-      if (any(!is.finite(marks))) {
-        id <- skipped[held][which(!is.finite(marks))[[1L]]]
+      held_values <- as.numeric(ctx$holding_value[skip_idx[held]])
+      if (any(!is.finite(held_values))) {
+        id <- skipped[held][which(!is.finite(held_values))[[1L]]]
         rlang::abort(
           sprintf("Cannot keep `%s` while skipping it: it has no current close and no permissible valuation mark.", id),
           class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
           instrument_id = id
         )
       }
-      held_exposure <- sum(abs(position_vec[skip_idx[held]] * marks))
+      held_exposure <- sum(abs(held_values))
     }
     priced_value <- sum(sized_value)
     if (priced_value > 0 && priced_value + held_exposure > allocation_equity) {
       scale <- max(0, allocation_equity - held_exposure) / priced_value
     }
-    notes <- ctx$.notes
+    notes <- unclass(ctx)[[".notes"]]
     if (is.environment(notes)) {
       notes$sizing_skipped <- union(notes$sizing_skipped, skipped)
     }
@@ -496,10 +490,8 @@ ledgr_target_rebalance <- function(weights,
 #'                              universe = c("AAA", "BBB"))
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
-#'   vec = list(
-#'     admissible = c(TRUE, TRUE),
-#'     position = c(AAA = 0, BBB = 0)
-#'   )
+#'   buyable = c(TRUE, TRUE),
+#'   position = c(AAA = 0, BBB = 0)
 #' )
 #' ledgr_target_quantity(selection, ctx, qty = 10)
 #'
@@ -539,10 +531,10 @@ ledgr_target_quantity <- function(selection, ctx, qty) {
     )
   }
 
-  position <- ctx$vec$position
+  position <- ctx$position
   if (is.null(position) || length(position) != length(universe)) {
     rlang::abort(
-      "`ctx$vec$position` must provide one value per decision-axis instrument.",
+      "`ctx$position` must provide one value per decision-axis instrument.",
       class = "ledgr_invalid_strategy_helper"
     )
   }

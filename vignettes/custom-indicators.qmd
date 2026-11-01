@@ -71,7 +71,7 @@ important fields are:
 
 | Field | Meaning |
 | --- | --- |
-| `id` | Stable feature ID a strategy reads with `ctx$vec$feature(feature_id)`. |
+| `id` | Stable feature ID a strategy reads as the flat named column `ctx[[feature_id]]`. |
 | `fn` | Scalar function for one bounded historical window. |
 | `series_fn` | Optional vectorized function for one instrument's full bar series. |
 | `requires_bars` | Minimum lookback requirement for the indicator definition. |

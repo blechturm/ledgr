@@ -980,13 +980,13 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   buy <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- params$qty
     target
   }
   buy_twice <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- 2 * params$qty
     target
   }
@@ -1054,13 +1054,13 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   buy <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- params$qty
     target
   }
   buy_twice <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- 2 * params$qty
     target
   }

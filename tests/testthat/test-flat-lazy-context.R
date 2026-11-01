@@ -1,0 +1,62 @@
+testthat::test_that("flat context columns are named, lazy, strict and frozen", {
+  ts <- as.POSIXct("2020-01-02", tz = "UTC")
+  bars <- data.frame(
+    ts_utc = rep(ts, 2L), instrument_id = c("BBB", "AAA"),
+    open = c(20, 10), high = c(21, 11), low = c(19, 9),
+    close = c(20.5, 10.5), volume = c(200, 100)
+  )
+  features <- data.frame(
+    ts_utc = rep(ts, 2L), instrument_id = c("AAA", "BBB"),
+    feature_name = "score", feature_value = c(1, 2)
+  )
+  positions <- c(AAA = 3, BBB = 0)
+  counts <- new.env(parent = emptyenv())
+  ctx <- ledgr:::ledgr_pulse_context(
+    "flat", ts, c("AAA", "BBB"), bars, features, positions,
+    cash = 100, equity = 131.5
+  )
+  ctx$.pulse_lookup$build_counts <- counts
+
+  testthat::expect_identical(ctx$close, c(AAA = 10.5, BBB = 20.5))
+  testthat::expect_identical(ctx$position, c(AAA = 3, BBB = 0))
+  testthat::expect_identical(ctx$held, c(AAA = TRUE, BBB = FALSE))
+  testthat::expect_identical(ctx$buyable, c(AAA = TRUE, BBB = TRUE))
+  testthat::expect_identical(ctx$holding_value, c(AAA = 31.5, BBB = 0))
+  testthat::expect_identical(ctx$score, c(AAA = 1, BBB = 2))
+  invisible(ctx$close)
+  testthat::expect_identical(counts$close, 1L)
+  testthat::expect_identical(counts$score, 1L)
+
+  before_names <- names(ctx)
+  utils::capture.output(str(ctx))
+  testthat::expect_identical(names(ctx), before_names)
+  testthat::expect_false(exists("open", counts, inherits = FALSE))
+
+  bars$close[] <- 999
+  positions[] <- 99
+  testthat::expect_identical(ctx$close, c(AAA = 10.5, BBB = 20.5))
+  testthat::expect_identical(ctx$position, c(AAA = 3, BBB = 0))
+  testthat::expect_error(ctx$missing_column, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$vec, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$feature("AAA", "score"), class = "ledgr_unknown_context_field")
+})
+
+testthat::test_that("feature names cannot shadow flat context fields", {
+  testthat::expect_error(
+    ledgr_feature_map(close = ledgr_ind_sma(2)),
+    "reserved pulse context field",
+    class = "ledgr_invalid_feature_map"
+  )
+})
+
+testthat::test_that("held positions without a permissible mark keep unknown holding value", {
+  ts <- as.POSIXct("2020-01-02", tz = "UTC")
+  bars <- data.frame(
+    ts_utc = ts, instrument_id = "AAA", open = NA_real_, high = NA_real_,
+    low = NA_real_, close = NA_real_, volume = NA_real_
+  )
+  ctx <- ledgr:::ledgr_pulse_context(
+    "unpriced", ts, "AAA", bars, positions = c(AAA = 2), cash = 0, equity = 0
+  )
+  testthat::expect_true(is.na(ctx$holding_value[["AAA"]]))
+})

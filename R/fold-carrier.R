@@ -718,7 +718,7 @@ ledgr_carrier_mark_source_text <- function(code) {
 }
 
 # P2 input boundary (availability): the public context's availability
-# planes, keyed by the context IDs as ledgr_pulse_context_vec() reads them,
+# planes, keyed by the context IDs as the flat context reads them,
 # with the restriction and mark-source text decoded once for the pulse.
 ledgr_carrier_p2_input <- function(packet, context_ids) {
   named <- function(v) stats::setNames(v, context_ids)

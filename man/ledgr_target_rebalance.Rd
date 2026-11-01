@@ -73,15 +73,14 @@ weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5),
 ctx <- list(
   universe = c("AAA", "BBB"),
   equity = 1000,
-  vec = list(
-    close = c(AAA = 50, BBB = 100),
-    admissible = c(TRUE, TRUE),
-    position = c(AAA = 0, BBB = 0)
-  )
+  close = c(AAA = 50, BBB = 100),
+  buyable = c(AAA = TRUE, BBB = TRUE),
+  position = c(AAA = 0, BBB = 0),
+  holding_value = c(AAA = 0, BBB = 0)
 )
 ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
 
-ctx$vec$position <- c(AAA = 2, BBB = 0)
+ctx$position <- c(AAA = 2, BBB = 0)
 weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
 ledgr_target_rebalance(weights, ctx, keep = "AAA")
 

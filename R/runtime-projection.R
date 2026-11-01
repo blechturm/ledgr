@@ -417,16 +417,17 @@ ledgr_projection_feature_name_state <- function(projection,
                                                 feature_ids = NULL,
                                                 active_alias_map = NULL) {
   available_features <- ledgr_projection_feature_ids(projection, feature_ids)
-  active_lookup <- tryCatch(
+  active_lookup <- if (is.null(active_alias_map)) {
+    list(valid = FALSE, value = NULL)
+  } else {
     list(
       valid = TRUE,
       value = ledgr_feature_lookup_map(
         NULL,
         active_alias_map = active_alias_map
       )
-    ),
-    error = function(e) list(valid = FALSE, value = NULL, error = e)
-  )
+    )
+  }
   name_lookup <- ledgr_feature_name_lookup_state(
     available_features,
     active_alias_map = if (isTRUE(active_lookup$valid)) {
@@ -436,6 +437,14 @@ ledgr_projection_feature_name_state <- function(projection,
     },
     normalized = TRUE
   )
+  public_names <- c(name_lookup$aliases, setdiff(name_lookup$feature_ids, unname(name_lookup$alias_map %||% character())))
+  collision <- intersect(public_names, ledgr_pulse_context_reserved_fields())
+  if (length(collision) > 0L) {
+    rlang::abort(
+      sprintf("Feature `%s` collides with a reserved pulse context field.", collision[[1L]]),
+      class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+    )
+  }
   list(
     available_features = available_features,
     available_message = ledgr_feature_names_message(sort(

@@ -14,8 +14,8 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
       empty_long = ledgr_history_frame(ctx, bar = "close", lookback = 0L, layout = "long"),
       none = ledgr_history_frame(ctx, bar = "close", lookback = 2L, instruments = character()),
       scalar = list(
-        close = ctx$close("AAA"), vec_close = ctx$vec$close, ids = ctx$universe,
-        feature = ctx$feature("AAA", "fast"), vec_fast = ctx$vec$feature("fast")
+        close = ctx$close[["AAA"]], vec_close = ctx$close, ids = ctx$universe,
+        feature = ctx[["fast"]][["AAA"]], vec_fast = ctx[["fast"]]
       ),
       ctx = ctx
     )
@@ -410,7 +410,6 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   reread6 <- at7$ctx
   reread6$.history <- ledgr:::ledgr_history_view(reread6$.history$service, 6L)
   reread6$universe <- at6$ctx$universe
-  reread6$vec <- at6$ctx$vec
   testthat::expect_identical(
     ledgr_history_frame(reread6, bar = "close", lookback = Inf,
       instruments = "decision_axis", min_observations = 0L),

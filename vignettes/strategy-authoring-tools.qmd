@@ -192,13 +192,13 @@ pulse <- ledgr_pulse_snapshot(
 
 tibble(
   instrument_id = pulse$universe,
-  close = pulse$vec$close,
-  momentum = pulse$vec$feature("return_5"),
-  trend = pulse$vec$feature("sma_10")
+  close = pulse$close,
+  momentum = pulse$return_5,
+  trend = pulse$sma_10
 )
 ```
 
-Each `ctx$vec` value is a plain vector in the order of `ctx$universe`, which is
+Each flat context column is a named vector in the order of `ctx$universe`, which is
 why the four columns line up. Now ask the strategy for its decision:
 
 ```{r}
@@ -219,18 +219,12 @@ position size before you run months of bars.
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Read whole vectors, not one instrument at a time**
 
-`ctx$vec$close` and `ctx$vec$feature()` return one value per instrument in a
-single read. The scalar forms `ctx$close(id)`, `ctx$feature(id, feature_id)`,
-and `ctx$position(id)` are for an instrument you have already singled out.
-Calling them in a loop over `ctx$universe` repeats per-instrument work at every
-pulse and is the most common way to make a strategy slow. Singular feature
-reads accept either an active alias or a concrete feature ID. For universes of
-at least 100 instruments, a loop over the bar, price, position, scalar feature,
-or active-map bundle accessor triggers one `ledgr_scalar_accessor_loop` warning
-per run when its calls reach the axis size and names the vector replacement;
-the warning changes no result. Read each required active alias once with
-`ctx$vec$feature("alias")`. Explicit-map bundle calls stay unrecorded because
-the plane does not accept an explicit map.
+Each flat named feature column, such as `ctx$return_5`, returns one value per
+instrument in a single read. Bar, position, eligibility and position-fact
+columns work the same way. Index a returned vector only after you have singled
+out an instrument; do not rebuild the column in an instrument loop. Active
+aliases are the primary names, and a registered engine ID is also readable
+with `ctx[[feature_id]]`.
 :::
 
 ## From Scores To Shares
@@ -318,7 +312,7 @@ rounded down to whole shares:
 #| label: sizing-check
 
 chosen <- names(weights)
-chosen_close <- pulse$vec$close[match(chosen, pulse$universe)]
+chosen_close <- pulse$close[match(chosen, pulse$universe)]
 
 tibble(
   instrument_id = chosen,
@@ -424,8 +418,8 @@ first_pulse <- ledgr_pulse_snapshot(
   features = features
 )
 
-rising <- first_pulse$vec$feature("return_5") > 0 &
-  first_pulse$vec$close > first_pulse$vec$feature("sma_10")
+rising <- first_pulse$return_5 > 0 &
+  first_pulse$close > first_pulse$sma_10
 rising
 
 tryCatch(
@@ -448,9 +442,9 @@ the close:
 #| label: trend-momentum
 
 trend_momentum <- function(ctx, params) {
-  momentum <- ctx$vec$feature("return_5")
-  trend <- ctx$vec$feature("sma_10")
-  close <- ctx$vec$close
+  momentum <- ctx$return_5
+  trend <- ctx$sma_10
+  close <- ctx$close
   rising <- momentum > 0 & close > trend
 
   weights <- ctx |>
@@ -529,7 +523,7 @@ explicitly. `ledgr_passed_warmup()` is `TRUE` only when every value it is given
 is present, so the guard is one line at the top of the strategy:
 
 ```r
-if (!ledgr_passed_warmup(ctx$vec$feature("sma_10"))) return(ctx$hold())
+if (!ledgr_passed_warmup(ctx$sma_10)) return(ctx$hold())
 ```
 
 The third version uses it.
@@ -560,9 +554,9 @@ weekly_trend_momentum <- function(ctx, params) {
   decisions_seen <- ctx$state_prev$decisions_seen
   if (is.null(decisions_seen)) decisions_seen <- 0L
 
-  momentum <- ctx$vec$feature("return_5")
-  trend <- ctx$vec$feature("sma_10")
-  close <- ctx$vec$close
+  momentum <- ctx$return_5
+  trend <- ctx$sma_10
+  close <- ctx$close
 
   if (!ledgr_passed_warmup(trend)) {
     targets <- ctx$hold()
@@ -785,7 +779,7 @@ you may invest in changes too; `vignette("survivorship-bias", package =
   leaves the universe loses its entry; `?ledgr_strategy_context` states the
   rules.
 
-Neither membership nor `ctx$tradable()` guarantees that an order fills at the
+Neither membership nor the `ctx$buyable` mask guarantees that an order fills at the
 next open.
 
 ## Cleanup

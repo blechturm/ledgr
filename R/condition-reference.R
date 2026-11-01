@@ -801,6 +801,8 @@
 #' - `ledgr_invalid_promotion_context_summary` reports invalid promotion
 #'   context summary input.
 #' - `ledgr_invalid_pulse_context` reports invalid pulse context input.
+#' - `ledgr_unknown_context_field` reports an unknown or retired flat context
+#'   field read.
 #' - `ledgr_invalid_pulse_plan` reports invalid pulse plan input.
 #' - `ledgr_invalid_pulse_wide_names` reports invalid pulse wide names input.
 #' - `ledgr_invalid_result_table` reports invalid result table input.
@@ -910,7 +912,6 @@
 #' - `ledgr_run_registration_failed` reports the run registration failed
 #'   boundary.
 #' - `ledgr_run_telemetry_failed` reports the run telemetry failed boundary.
-#' - `ledgr_scalar_accessor_loop` reports the scalar accessor loop boundary.
 #' - `ledgr_session_coverage_incomplete` reports the session coverage
 #'   incomplete boundary.
 #' - `ledgr_session_instant_duplicate` reports the session instant duplicate
@@ -1115,6 +1116,7 @@
 #' @aliases ledgr_invalid_price_basis
 #' @aliases ledgr_invalid_promotion_context_summary
 #' @aliases ledgr_invalid_pulse_context
+#' @aliases ledgr_unknown_context_field
 #' @aliases ledgr_invalid_pulse_plan
 #' @aliases ledgr_invalid_pulse_wide_names
 #' @aliases ledgr_invalid_result_table
@@ -1189,7 +1191,6 @@
 #' @aliases ledgr_run_not_complete
 #' @aliases ledgr_run_registration_failed
 #' @aliases ledgr_run_telemetry_failed
-#' @aliases ledgr_scalar_accessor_loop
 #' @aliases ledgr_session_boundary_unresolved
 #' @aliases ledgr_session_coverage_incomplete
 #' @aliases ledgr_session_instant_duplicate

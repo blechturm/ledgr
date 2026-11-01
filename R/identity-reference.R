@@ -31,7 +31,7 @@
 #' @section Alias identity:
 #' `alias_map_json` stores the active alias map used for runtime lookup, plus
 #' declaration-level identity mappings when available. The concrete lookup map
-#' lets `ctx$features(id)` resolve aliases to feature IDs after reopening.
+#' lets flat `ctx[[alias]]` columns resolve to feature IDs after reopening.
 #'
 #' `alias_map_hash` hashes declaration-level alias identity, not concrete
 #' feature parameter values. Alias names and declaration semantics affect this

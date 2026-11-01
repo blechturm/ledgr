@@ -144,8 +144,10 @@ testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped a
     ctx <- list(
       universe = c("AAA", "BBB"), equity = equity, availability_active = TRUE,
       members = c("AAA", "BBB"),
-      vec = list(close = close, position = position, risk_mark = risk_mark,
-                 admissible = c(TRUE, TRUE)),
+      close = close,
+      position = position,
+      holding_value = position * risk_mark,
+      buyable = c(TRUE, TRUE),
       .notes = new.env(parent = emptyenv())
     )
     ctx$.notes$sizing_skipped <- character()
