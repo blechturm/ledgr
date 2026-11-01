@@ -7,7 +7,10 @@ implemented and accepted through `14252ffb`: its final independent Type 1
 confirmation is `PASS`, and workstream 14/LDG-3178 are complete. Cut 7 is the
 draft WS5 strategy-authoring implementation cut (workstreams 15-18,
 LDG-3179-LDG-3190); it resolves the accepted synthesis's bounded spec-cut
-questions and awaits independent cut review and maintainer acceptance.
+questions. Its independent [cut review](cut_review_7.md) returned
+`NEEDS_TYPE_2`: all independent corrections are applied, while one maintainer
+decision on the durable state cursor/checkpoint representation remains before
+focused re-review and acceptance.
 Cut 2 (WS3 dense oracle and current-tree timing) is closed and accepted at revision 3.2. The 2026-10-30 amendment aligns its descriptive baseline with Cut 4's shared paired-gate harness boundary; its focused [review](cut_review_2_amendment.md) is `PASS`. Workstream 2's accepted [Type 1 close review](ws2_close_review.md) freezes the dense oracle at `cbf25359`. Workstream 3's accepted [Type 1 close review](ws3_close_review.md) freezes the descriptive [current-tree record](../../../dev/bench/peer_benchmark/records/20261030-current-tree/). Together they discharge C1's oracle/baseline prerequisite. A0 remains independent, the record is not a future ratio arm or public speed claim, and the old peer driver retires only after replacement coverage is accepted.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole

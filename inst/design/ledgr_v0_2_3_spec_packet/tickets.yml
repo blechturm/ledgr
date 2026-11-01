@@ -792,6 +792,7 @@ cuts:
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
     status: "draft"
+    cut_review: "NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01): one maintainer decision on durable state cursors/checkpoints; R1-R11 correct resume, typed missing-state encoding, D8 physical ownership, the WS6 boundary, scheduler retirement, contract ownership, integration acceptance, exports, timing attribution and the pre-acceptance probe. Independent patches are applied in revision 2; the checkpoint decision remains open."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
       implements the accepted strategy-authoring synthesis on the one surviving
@@ -835,55 +836,62 @@ cuts:
       state shape is admitted. (2) Runtime state is one prepared typed field
       table, not a list per instrument. Helper returns are field patches; raw
       state_update is complete replacement; reset_state restores all defaults.
-      Only changed complete state is serialized at a P5 checkpoint through the
-      existing strategy_state table, and resume reads the latest checkpoint at
-      or before its boundary. The durable payload is a flat declared-field
-      object containing typed scalars and named atomic asset vectors, never a
-      list per ID. Unchanged pulses do not encode or write state. This cut does
-      not change the experiment-store schema version or consume WS8's schema
-      125; if implementation proves the existing table cannot preserve the
-      declared type contract, the ticket stops for maintainer disposition
-      rather than adding a hidden format. (3) D8 uses typed per-decision sizing
-      evidence: requested_value, post_guard_value, rounded_value,
-      rounded_to_zero_n and intent_coverage, each in the experiment currency at
-      that decision's accepted marks. Summary exposes counts of evidenced and
-      unavailable decisions, total rounded-to-zero instructions, and sums of
-      the three evidenced value fields with rounding_loss = post_guard_value -
-      rounded_value. Print labels those sums as decision-exposure diagnostics,
-      not P&L. Final actual invested exposure comes from native execution and
-      valuation and is printed separately. Undefined coverage or denominator
-      stays NA, never 100%. (4) The flat context is a pulse-frozen lazy view.
-      Its service, bar/feature indices and feature resolver are prepared once
-      per candidate; each named column is built at most once per view. Internal
-      adapters may bridge old helper implementation during a ticket, but no
-      public ctx$vec, ctx$feature(), ctx$features(), ctx$bar() or prepared frame
-      compatibility surface remains when workstream 15 closes. WS6 alone owns
-      the later explicit history/frame helpers. (5) Exact public spellings are
-      the synthesis spellings: ledgr_select_top(), ledgr_select_lowest(),
-      ledgr_weight_equal(), ledgr_target_rebalance(ctx, ...),
-      ledgr_target_adjust(ctx, ...), ledgr_strategy_result() and
-      ledgr_schedule_due(). ledgr_passed_warmup() remains the one readiness
-      predicate and accepts the new context inputs; ledgr_align_weights() is
-      retained only as the ordinary named-weight alignment helper if its live
-      consumers demonstrate a distinct operation, otherwise it is removed in
-      LDG-3189. The synthesis's retired helpers receive no aliases. (6)
+      The exact durable cursor/checkpoint representation remains the one Type 2
+      decision raised by cut_review_7.md; implementation cannot begin until it
+      is resolved. (3) D8 uses one typed run_diagnostics sizing row per sized
+      instrument and decision. Requested, post-guard pre-floor and rounded
+      quantities use target_before_risk, target and quantity; the accepted mark
+      uses price and held quantity uses position_before. Typed reason_code
+      values distinguish ordinary rounding, rounded-to-zero addition,
+      rounded-to-zero liquidation and unavailable sizing; detail_json is the
+      constant empty object and intent_reason uses reasons. A named sizing-rule
+      binding makes old stores refuse. Summary reports evidenced/unavailable
+      decision counts, total rounded-to-zero instructions, an exposure-weighted
+      pooled coverage ratio, minimum decision coverage and last-decision
+      coverage. Cross-decision requested/post-guard/rounded value sums and their
+      difference are labelled decision-exposure diagnostics, never portfolio
+      exposure or P&L. Raw quantity returns print one unavailable-intent notice
+      per run. Final actual invested exposure comes from native execution and
+      valuation and is separate. Undefined coverage stays NA, never 100%. (4)
+      The flat context is a pulse-frozen lazy view. Its service, bar/feature
+      indices and feature resolver are prepared once per candidate; each named
+      column is built at most once per view. Internal adapters may bridge old
+      helper implementation until the last target helper migrates. WS5 removes
+      public ctx$vec, ctx$feature(), ctx$features(), open/high/low/close/volume
+      scalar reads, position(id), idx(id) and tradable(); tradable becomes the
+      buyable column. Prepared ctx$bars, feature_table, features_wide and
+      ctx$bar(id) remain unchanged until WS6 supplies and reviews replacements.
+      ctx$state is introduced by LDG-3185, which retires state_prev. (5) Exact
+      public spellings are the synthesis spellings: ledgr_select_top(),
+      ledgr_select_lowest(), ledgr_weight_equal(),
+      ledgr_target_rebalance(ctx, ...), ledgr_target_adjust(ctx, ...),
+      ledgr_strategy_result() and ledgr_schedule_due().
+      ledgr_passed_warmup() remains the readiness predicate and
+      ledgr_align_weights() remains the causal-history alignment helper; both
+      join the public-name allowlist. Other live exports retain their meaning
+      and move onto the flat context; broader pruning is WS11b. Retired helpers,
+      including public ledgr_strategy_schedule(), receive no aliases. (6)
       opening and cost_model are required at public experiment construction.
       Existing extracted/resumed book provenance is not reconstructed or asked
       for again. schedule = accepts the existing classed schedule declaration;
       the mixed-cadence predicate delegates to the same compiled calendar and
       never creates a second scheduler. (7) Timing is milestone evidence under
-      macro rule 16, not a workstream gate. Before product edits LDG-3179
-      registers eight alternating pairs for fixed-basket and declared-session
-      no-fill, sparse and wide cells, plus state-change and state-unchanged
-      cells. A ratio above 1.10 against 14252ffb or failure to remove the named
-      eager-context/state costs requires attribution and routing, not weakened
-      acceptance. Hosted clocks are advisory. (8) Identity and format:
-      snapshot identity is unchanged; normalized declarations, supplied
-      investor inputs and effective schedule already participate in config
-      identity and are pinned here; store schema stays 124 under decision (2),
-      while store-format bindings change only if a new named declaration rule
-      constant is required. Old or missing executable declaration markers
-      refuse under the current-only policy, with no migration or fallback.
+      macro rule 16, not a workstream gate. Before edits LDG-3179 registers
+      eight alternating pairs for fixed-basket and declared-session no-fill,
+      sparse and wide cells, plus fixed-basket-wide state-change and unchanged
+      cells. Both 14252ffb and the post-WS4a attribution base are recorded;
+      t_ctx and t_state shares locate the known premium for WS14. An
+      experiment-construction cell is required before any warm-iteration claim.
+      A ratio above 1.10 against 14252ffb or failure to remove the named costs
+      requires attribution and routing, not weakened acceptance. Hosted clocks
+      are advisory. (8) Snapshot identity is unchanged. Normalized declared
+      state is a new configuration-identity input; supplied investor inputs and
+      effective schedule remain identity inputs. Store schema stays 124 only if
+      the accepted checkpoint decision permits it. The cut unconditionally
+      adds ledgr_strategy_state_rule_version and
+      ledgr_sizing_evidence_rule_version to the format fingerprint; old or
+      missing markers refuse under the current-only policy, with no migration
+      or fallback.
     section_4_ownership: >-
       Synthesis Section 4 item 1 belongs to LDG-3180; item 2 to LDG-3181;
       item 3 to LDG-3183; item 4 to LDG-3185 and LDG-3186; item 5 to LDG-3188
@@ -891,19 +899,44 @@ cuts:
       complete detector, export, contract, identity, source and timing matrix;
       LDG-3190 reruns and reconciles it. Every listed mutation must fail a
       registered block; a source census alone is not detecting evidence.
+    section_3_ownership: >-
+      Synthesis Section 3 context and Context Contract changes belong to
+      LDG-3180; selection and target changes to LDG-3182 and LDG-3183;
+      experiment-input and schedule changes to LDG-3184; declared-state and
+      strategy-result changes to LDG-3185 and LDG-3186; sizing diagnostics and
+      result disclosure to LDG-3187; strategy-authoring teaching to LDG-3188
+      and LDG-3189. LDG-3190 verifies the consolidated text but does not first
+      implement any contract amendment.
+    condition_contract: >-
+      Invalid selection/weight value types use ledgr_invalid_strategy_type;
+      invalid helper call shapes use ledgr_invalid_strategy_helper with
+      ledgr_invalid_args; contradictory or invalid returned targets use
+      ledgr_invalid_strategy_result; declared/runtime state failures use
+      ledgr_invalid_strategy_state; and a sizing request that cannot be valued
+      uses the existing ledgr_target_sizing_unavailable class and the common
+      sizing_unavailable diagnostic. Tickets pin exact messages only where the
+      wording teaches the corrective public call.
+    pre_acceptance_gate: >-
+      Before maintainer acceptance, run three bounded public-path probes on
+      14252ffb: round-trip every proposed declared-state atomic type including
+      typed missing values and a non-alphabetical asset axis; resume a strategy
+      after an unchanged-state tail and after finalisation-only pulses; and
+      count current context builds, state encodes and strategy_state writes.
+      Record the scripts and results in the packet. A failure changes the cut;
+      it is not deferred to implementation.
     identity_and_release_impact: >-
-      Snapshot content identity: none. Run/configuration identity: intentional
-      changes for normalized declared state, explicitly supplied opening/cost
-      inputs and their effective defaults; schedule identity remains the
-      accepted scheduler identity. Store schema: proposed unchanged at 124;
-      store-format fingerprint changes only through a declaration-rule binding
-      if LDG-3185 needs one, with current-only refusal and no reader for the
-      missing/old rule. Public API: flat ctx, new selection/target/state helpers,
-      required investor inputs and retired old strategy readers/helpers.
-      Persisted evidence: typed intent reason and sizing evidence; state rows
-      become change checkpoints with the same reconstructible state. Release
-      impact: R, tests, contracts, NAMESPACE, reference, articles, NEWS,
-      benchmark and identity records; no dependency change is planned.
+      Snapshot content identity: none. Run/configuration identity intentionally
+      gains normalized declared state and explicitly supplied opening/cost
+      inputs; schedule identity remains the accepted scheduler identity. Store
+      schema stays 124 only if the accepted cursor/checkpoint decision permits
+      it. The format fingerprint unconditionally gains the strategy-state and
+      sizing-evidence rule bindings, with current-only refusal and no reader for
+      a missing or old rule. Public API: flat ctx, new selection/target/state
+      helpers, required investor inputs and the bounded retired-reader/helper
+      list in decision (4). Persisted evidence: typed sizing diagnostics and a
+      durable state cursor/checkpoint representation that cannot weaken resume.
+      Release impact: R, tests, contracts, NAMESPACE, reference, articles,
+      NEWS, benchmark and identity records; no dependency change is planned.
     sequencing: >-
       Four serial workstreams. Workstream 15 freezes the implementation matrix,
       then ships the flat lazy context and canonical book facts. Workstream 16
@@ -914,6 +947,9 @@ cuts:
       article, removes retired exports, reruns the integrated evidence and
       hands the accepted flat layout to WS6. Ticket dependencies bind; WS6 may
       design against the accepted cut but cannot remove frames before LDG-3190.
+      Cut 7 closes the WS5 implementation. Full macro-WS5 acceptance occurs at
+      macro join J after the merged WS7 result reader consumes and exposes the
+      D8 facts; LDG-3190 records that handoff rather than claiming join J.
     out_of_scope: >-
       WS6 history/frame helper design and removal beyond the public context
       readers expressly retired here; WS7/WS8 result-reader consolidation,
@@ -1021,7 +1057,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: 14
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 15, after LDG-3181", reason: "One claim joins LDG-3179 through LDG-3181: every strategy receives one pulse-frozen flat lazy context prepared from the common substrate; named bar, eligibility, position, valuation, feature and fact columns are built at most once on demand with exact axis/cutoff identity; canonical entry/exit facts update from accounting transitions and reconstruct identically across resume and contiguous walk-forward; old public vec/scalar/bundle readers are absent; every Section 4 item 1/2 mutation fails; fixed-basket and declared-session economics stay within the frozen difference matrix; and the eager-context floor is measured without serving as an acceptance clock."}
+    review: {mode: "Type 1", point: "close of workstream 15, after LDG-3181", reason: "One claim joins LDG-3179 through LDG-3181: every strategy receives one pulse-frozen flat lazy context prepared from the common substrate; named bar, eligibility, position, valuation, feature and fact columns are built at most once on demand with exact axis/cutoff identity; canonical entry/exit facts update from accounting transitions and reconstruct identically across resume and contiguous walk-forward; public vec, singular feature/bundle readers, scalar OHLCV/position/index reads and tradable() are absent while ctx$bars, feature_table, features_wide and ctx$bar(id) remain owned by WS6; every Section 4 item 1/2 mutation fails; fixed-basket and declared-session economics stay within the frozen difference matrix; and the eager-context floor is measured without serving as an acceptance clock."}
   - id: 16
     name: "Selection, targets and investor setup (macro WS5)"
     cut: 7
@@ -1035,14 +1071,14 @@ workstreams:
     status: "pending"
     depends_on_workstream: 16
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, resume and candidate isolation are exact; unchanged pulses do no state JSON or write; durable checkpoints reconstruct the same complete state without consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
+    review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors with an explicit type/missing encoding; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, durable resume cursor, restored state and candidate isolation are exact; unchanged pulses do no state encoding; the accepted cursor/checkpoint design reconstructs complete state without silently consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
   - id: 18
     name: "Disclosure, teaching and WS5 integration (macro WS5)"
     cut: 7
     status: "pending"
     depends_on_workstream: 17
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 18, after LDG-3190", reason: "One claim joins LDG-3187 through LDG-3190: typed sizing evidence and native actual exposure are separately reported with exact coverage and aggregation labels; all maintained strategies, the peer recipe and one executed pattern article teach the final flat API and required inputs; the export/contract inventory has no retired reader/helper or accidental compatibility alias; Section 4 items 5/6 and every workstream detector fail under their mutations; full profiles, build/check, integrated oracles and descriptive timing pass or differ only by owned accepted rows; and WS6 receives one stable flat input layout."}
+    review: {mode: "Type 1", point: "close of workstream 18, after LDG-3190", reason: "One claim joins LDG-3187 through LDG-3190: typed sizing evidence and native actual exposure are separately reported with exact coverage and aggregation labels; all maintained strategies, the peer recipe and one executed pattern article teach the final flat API and required inputs; the export/contract inventory has no retired reader/helper or accidental compatibility alias; Section 4 items 5/6 and every workstream detector fail under their mutations; full profiles, build/check, integrated oracles and descriptive timing pass or differ only by owned accepted rows; WS6 receives one stable flat input layout; and join J remains open until the merged WS7 reader consumes the D8 facts."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2238,14 +2274,20 @@ tickets:
       Freeze a runnable matrix over fixed-basket and declared-session runs,
       sweep, walk-forward, resume, promotion and pulse inspection. Register the
       descriptive paired timing protocol of Cut 7 decision (7), including
-      economic controls and phase attribution. Record the current ctx/state
-      build and encode call counts. Write one ownership table with zero
+      economic controls and phase attribution against both 14252ffb and the
+      post-WS4a attribution base. Include fixed-basket-wide state-change and
+      state-unchanged cells, t_ctx/t_state shares and a separate experiment-
+      construction cell before making any warm-iteration claim. Record the
+      current ctx/state build and encode/write call counts. Before acceptance,
+      run the cut-level state round-trip and unchanged-tail/finalisation resume
+      probes. Confirm that no maintained strategy currently depends on a
+      nonscalar or nested state shape. Write one ownership table with zero
       unowned item and one mutation command per acceptance family. Do not copy
       frozen oracle records or build a new harness.
     acceptance:
       - "every synthesis decision, Section 3 contract amendment, Section 4 detector and maintained consumer has exactly one ticket owner"
-      - "the base semantic matrix and call-count record reproduce on 14252ffb, and each proposed product difference has one explicit expected-difference row rather than a blanket table allowance"
-      - "the timing protocol uses the shared harness, eight alternating pairs and the six named workload cells plus state-change/state-unchanged cells; its thresholds are disposition triggers under macro rule 16"
+      - "the base semantic matrix and call-count record reproduce on 14252ffb, the bounded state round-trip and resume probes are recorded, and each proposed product difference has one explicit expected-difference row rather than a blanket table allowance"
+      - "the timing protocol uses the shared harness, eight alternating pairs, both named comparison bases, the six named workload cells, fixed-basket-wide state cells and an experiment-construction cell; its thresholds are disposition triggers under macro rule 16"
       - "source, export, claim, identity and schema censuses are literal enough to fail when one named current reader/helper or owner is omitted"
   - id: "LDG-3180"
     title: "Build one flat lazy pulse context"
@@ -2263,15 +2305,22 @@ tickets:
       most once per view; names() and str() enumerate without forcing feature
       values; saved views do not observe later books/state. Preserve alias-first
       feature resolution, collision refusal and candidate identity. Remove the
-      public ctx$vec, ctx$feature(), ctx$features() and ctx$bar() readers and
-      their loop warnings with no alias. Migrate maintained consumers to the
-      flat fields; keep any private bridge strictly inside this ticket and
-      delete it before close. Do not implement WS6 history/frame helpers.
+      public ctx$vec, ctx$feature(), ctx$features(), scalar open/high/low/close/
+      volume, position(id), idx(id) and tradable() readers and their loop
+      warnings with no alias; buyable replaces tradable. Keep ctx$bars,
+      feature_table, features_wide and ctx$bar(id) unchanged for WS6. Migrate
+      maintained consumers to the flat fields; a private vec adapter may
+      survive only until LDG-3183 migrates the last target helper, then must be
+      deleted. Do not implement WS6 history/frame helpers. A held instrument
+      without a permissible current mark has unavailable holding_value and
+      sizing must refuse or preserve according to the target rule rather than
+      fabricate value.
     acceptance:
       - "all named fields have exact values, names and decision-axis order on dense, changing-universe, empty and holdings-only fixtures; unknown/reserved/colliding reads refuse with classed conditions"
       - "runtime counters prove one service/resolver preparation per candidate, at most one build per requested column per view, no build for unused features and no full-axis name matching on repeated reads"
       - "a saved view remains frozen after later book and state changes, and shared-buffer/candidate-leak mutations fail"
-      - "the old public readers, warnings, exports, help and maintained call sites are absent; an injected compatibility alias or second reader fails the census"
+      - "the bounded retired public readers, warnings, exports, help and maintained call sites are absent while the four WS6-owned frame/bar surfaces remain; an injected compatibility alias or second reader fails the census"
+      - "a held instrument without a permissible mark never receives fabricated holding_value, and the corresponding sizing/refusal path is detected"
       - "the Section 4 item 1 mutations and the fixed-basket/declared route matrix fail independently, while accepted economic controls remain exact"
   - id: "LDG-3181"
     title: "Maintain and rebuild canonical position facts"
@@ -2293,7 +2342,7 @@ tickets:
       only or held-mask reconstruction engine and no instrument loop.
     acceptance:
       - "the full Section 4 item 2 matrix passes for additions, partial/full sales, re-entry, supplied openings, non-fill changes, zero-fill dispositions and multiple same-bar transitions"
-      - "live and prefix-rebuilt facts are identical at every tested boundary, including resume, boundary fills and contiguous carried windows; fills-only and held-mask mutations fail"
+      - "live and prefix-rebuilt facts are identical at every tested boundary, including resume, boundary fills and contiguous carried windows; fills-only, held-mask and treating a zero-fill disposition as a fill mutations each fail"
       - "entry/exit clocks and ages follow the shared absolute bar axis, with zero on recording bars, Inf/NA sentinels as specified and skipped decision bars counted"
       - "runtime/source checks reject a second replay engine, an instrument loop and recomputation of indices in P2"
   - id: "LDG-3182"
@@ -2312,10 +2361,14 @@ tickets:
       weights summing to at most one without normalization or leverage switches.
       Retire ledgr_select_top_n(), ledgr_signal_feature(), ledgr_select_held()
       and ledgr_weight_each() from exports, help, examples and maintained code,
-      with no alias. Raw complete quantity targets remain public.
+      with no alias. Selection helpers return a plain character vector of
+      instrument IDs; weight_equal returns a plain named double vector, with
+      character(0) and a named numeric(0) as their empty results. Raw complete
+      quantity targets remain public.
     acceptance:
       - "top/lowest selection is exact for n, fraction, zero, ties, missing scores, short pools, named/positional within and empty pools; every invalid coverage/count/fraction mutation fails"
       - "equal weights, explicit each and empty selection return exact named vectors; invalid names, finiteness, signs and sums refuse rather than normalize"
+      - "return classes and empty shapes are exactly plain character IDs for selections and plain named doubles for weights; no wrapper class is introduced"
       - "retired spellings are absent from exports, help and maintained sources, and one injected alias fails the export/source census"
   - id: "LDG-3183"
     title: "Implement the two ctx-first target verbs"
@@ -2332,13 +2385,18 @@ tickets:
       no default leaver sale, buyable-only purchases, zero-weight no-price
       behavior, total/remaining capital-base requirements/defaults, once-only
       preservation/addition reservations, unavailable-price preservation and
-      guard scaling. Emit typed sizing primitives and intent_reason for LDG-3187
-      without per-pulse JSON. Do not change fill affordability, cash-shortfall,
-      risk or execution policy.
+      guard scaling. Emit the typed sizing primitives and intent_reason for
+      LDG-3187 without per-pulse JSON. Every unavailable sizing outcome uses
+      the common sizing_unavailable diagnostic path, including strategy-memory
+      inputs, rather than a helper-specific warning. Record the capital-base
+      origin and effective invest_fraction used for each sized request. Delete
+      LDG-3180's private vec adapter after the last target helper migrates. Do
+      not change fill affordability, cash-shortfall, risk or execution policy.
     acceptance:
       - "ctx-first and placeholder-pipe calls are identical; empty adjust holds and empty rebalance clears only the decided eligible allocation"
       - "the complete Section 4 item 3 matrix covers character/logical keeps, leaver precedence, exits, every contradiction, undecided leavers, holding_value, zero/unpriced requests and both capital bases"
       - "runtime/source witnesses prove one shared sizing implementation and once-only P/A/U reservation; double reservation, redistribution, hidden normalization and ineligible-buy mutations fail"
+      - "unavailable marks or memory inputs use one sizing_unavailable diagnostic and never fabricate holding_value; capital-base origin and effective invest_fraction are exact"
       - "every returned target is full-axis and compatible with the existing target validator; execution, risk, affordability, costs and fills remain exact"
   - id: "LDG-3184"
     title: "Require investor inputs and expose mixed-cadence scheduling"
@@ -2357,11 +2415,18 @@ tickets:
       Preserve every-pulse behavior when omitted and outer scheduler ownership.
       Plan/print disclose supplied capital/cost and effective defaults; plan may
       warn from opening metadata but never execute arbitrary strategy code.
+      Retire public ledgr_strategy_schedule() with no alias and migrate every
+      experiment call site that relied on an implicit opening or cost default
+      in this ticket. ledgr_pulse_snapshot() remains an inspection helper, not
+      experiment construction: its synthetic cash default remains explicitly
+      labelled inspection-only and never enters run identity or teaching as an
+      investor default.
     acceptance:
       - "missing opening/cost errors teach the exact constructors; explicit zero/cost-zero work; extraction, resume and carry preserve their evidenced inputs"
       - "schedule identity and outer skip behavior remain exact, while mixed cadence runs every executable callback and the due predicate agrees with the authoritative compiler on every tested pulse"
       - "a second calendar/compiler, data-dependent schedule or callback-executing plan mutation fails"
       - "the off-period stop example executes and proves that ledgr_schedule_due() gates only the inner allocation decision"
+      - "ledgr_strategy_schedule() is absent from exports/help/call sites; every former implicit-opening experiment supplies opening and cost_model explicitly, while pulse inspection labels its synthetic cash as inspection-only"
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17
@@ -2376,14 +2441,21 @@ tickets:
       identity hashing. Reject nested/non-scalar defaults, duplicate/reserved
       names, NaN/infinity and undeclared persisted fields. Prepare typed asset
       vectors and portfolio scalars once per candidate and expose pulse-frozen
-      ctx$state fields with axis lifecycle rules. Pin config identity and, if a
-      declaration-rule binding is needed, current-only store refusal without a
-      migration. Do not change schema 124 or implement a fallback.
+      ctx$state fields with axis lifecycle rules, retiring state_prev. The
+      durable state encoding records every field's declared type, a separate
+      missingness mask and, for asset fields, the instrument-ID vector; decode
+      follows the declaration rather than JSON token type or key order. Pin
+      normalized declared state in config identity and unconditionally add
+      ledgr_strategy_state_rule_version to the store-format fingerprint with
+      current-only refusal and no migration. Do not change schema 124 or
+      implement a fallback unless the accepted checkpoint decision explicitly
+      authorizes it.
     acceptance:
       - "numeric/integer/logical/character and typed-missing defaults retain type through config identity and runtime reads; asset vectors align to the full decision axis and portfolio fields stay scalar"
+      - "the state encoder round-trips all four atomic types with missing values, non-alphabetical and empty asset axes and whole-number doubles without inferring type from JSON or object-key order"
       - "unknown reads, duplicate/reserved names, nested shapes, bad types, non-finite values, off-axis IDs and undeclared persisted fields refuse with exact classes"
       - "new, departed and re-entering IDs follow the declared default lifecycle; saved state views remain pulse-frozen and candidate isolation holds"
-      - "configuration hashes change for a declaration/default/type change and stay equal for equivalent normalized declarations; old/missing rule markers refuse if a binding is introduced"
+      - "configuration hashes change for a declaration/default/type change and stay equal for equivalent normalized declarations; old/missing strategy-state rule markers refuse and the format binding is unconditional"
   - id: "LDG-3186"
     title: "Apply patches, replacements and state checkpoints"
     workstream: 17
@@ -2396,17 +2468,22 @@ tickets:
       replacement, reset_state and intent_reason at the existing normalization
       boundary. Enforce broadcast/alignment, missing reset, replacement/default
       and incompatible-operation rules. Keep complete typed state in the fold;
-      write the existing strategy_state table only when complete state changes,
-      using one flat field payload rather than list-per-ID padding. Resume reads
-      the latest checkpoint at or before the boundary; run, sweep and worker
-      candidates remain equal and isolated; walk-forward strategy state resets
-      while economic facts may carry. Stop for maintainer disposition if exact
-      type recovery requires a schema change.
+      implement the maintainer-accepted durable cursor/checkpoint design from
+      Cut 7 decision (2), using the explicit declaration-driven encoding of
+      LDG-3185 rather than list-per-ID padding. Resume advances from the durable
+      completed-pulse cursor and restores the latest applicable payload; run,
+      sweep and worker candidates remain equal and isolated; walk-forward
+      strategy state resets while economic facts may carry. Validate and encode
+      state at the pulse-context, pulse-inspection and durable-write seams, and
+      assign the old strategy JSON-cache retirement to this ticket's final
+      source census. Stop for maintainer disposition if the accepted design
+      cannot be represented without an unapproved schema change.
     acceptance:
       - "patch retention, complete replacement, empty replacement, omitted update, whole reset, metadata separation and every illegal combination match D5 and fail under their opposite mutations"
       - "asset scalar broadcast and named full-axis alignment are exact; NaN/infinity refusal precedes NA reset and all returned values match declared type/shape"
       - "resume/restart, sequential/parallel sweep and walk-forward reset reproduce exact complete state; candidate or later-pulse leakage mutations fail"
-      - "unchanged pulses make zero canonical_json and zero strategy_state writes; changed checkpoints reconstruct exact state from schema 124, with no list-per-ID padding or per-pulse full-axis serialization"
+      - "N unchanged pulses resume at N + 1, finalisation-only tails do not replay, and a departed/re-entering instrument restores or defaults exactly as declared"
+      - "unchanged pulses make zero state-payload encodes; cursor writes and changed-state payload writes match the accepted decision, with no list-per-ID padding or per-pulse full-axis serialization"
       - "the seven optimization shapes and identity/format assertions pass, including a detector that fails a restored every-pulse state encode/write"
   - id: "LDG-3187"
     title: "Persist and report typed sizing and rounding evidence"
@@ -2416,22 +2493,29 @@ tickets:
     effort: "L"
     dependencies: ["LDG-3186"]
     scope: >-
-      Carry LDG-3183's requested, post-guard and rounded sizing values,
-      rounded-to-zero count, intent coverage and optional intent_reason as typed
-      decision evidence through the canonical diagnostic/output path. Do not
-      JSON-encode them in the pulse loop. Implement Cut 7 decision (3) in
-      summary() and print(), with decision currency/clock/aggregation labels and
-      native final actual invested exposure separately. Raw quantity strategies
-      report unavailable intent coverage; undefined denominators stay NA.
-      Distinguish rounding from unavailable sizing, deliberate zeros, risk
-      reductions, liquidation and cash-shortfall fills. Coordinate physical
-      columns with the existing schema 124 diagnostic surface; do not consume
-      WS8 accounting schema 125 silently.
+      Persist one typed run_diagnostics row per sized instrument and decision.
+      Map requested quantity to target_before_risk, post-guard pre-floor
+      quantity to target, rounded quantity to quantity, the accepted decision
+      mark to price, held quantity to position_before, typed sizing categories
+      to reason_code, intent_reason to reasons and the constant empty object to
+      detail_json. Categories distinguish ordinary rounding, rounded-to-zero
+      addition, rounded-to-zero liquidation and unavailable sizing. Do not
+      JSON-encode sizing values in the pulse loop. Add
+      ledgr_sizing_evidence_rule_version to the store fingerprint. Summary and
+      print report evidenced/unavailable decision counts, rounded-to-zero
+      instructions, exposure-weighted pooled coverage, minimum decision
+      coverage and last-decision coverage, with decision currency, clock and
+      aggregation labels and native final actual invested exposure separately.
+      Raw cross-decision quantity/value sums are labelled diagnostics, never
+      portfolio exposure or P&L; raw quantity strategies emit one unavailable-
+      intent notice per run. Undefined denominators stay NA. Coordinate with
+      the existing schema 124 diagnostic surface; do not consume WS8 schema 125
+      silently.
     acceptance:
-      - "pre/post/rounded values and rounded-to-zero counts are exact per decision and in aggregate; omission or swapping any boundary fails a registered detector"
-      - "summary and print distinguish decision-exposure diagnostics from native actual invested exposure and identify clock, currency, aggregation and unavailable coverage"
+      - "every named run_diagnostics field and reason mapping is exact; omission or swapping any boundary fails a registered detector"
+      - "summary and print distinguish decision-exposure diagnostics from native actual invested exposure and identify clock, currency, aggregation, pooled/minimum/last coverage and unavailable coverage"
       - "raw quantity, unavailable-price, zero target, liquidation, risk and cash-shortfall fixtures are not mislabeled; undefined coverage remains typed NA"
-      - "successful pulse paths add no JSON encode/parse and the seven-shape review finds no per-decision frame/list accumulator"
+      - "successful pulse paths add no JSON encode/parse and the seven-shape review finds no per-decision frame/list accumulator; the sizing-evidence rule binding is present and old/missing markers refuse"
   - id: "LDG-3188"
     title: "Migrate maintained strategies to the accepted grammar"
     workstream: 18
@@ -2467,12 +2551,13 @@ tickets:
       stock rank, leaver precedence at first indexed universe, selected versus
       retained counts, explicit open_slots clamping, FIFO basis and bar-label
       meaning beside the first percentage stop, and declared-state reset. Run a
-      maintainer cold read. Reconcile the public export inventory, including
-      ledgr_passed_warmup() and the evidence-based keep/remove disposition of
-      ledgr_align_weights(); remove every retired helper from current teaching.
+      maintainer cold read. Reconcile the public export inventory, putting
+      ledgr_passed_warmup() and ledgr_align_weights() on the public-name
+      allowlist and preserving the live synthesis-unnamed exports with flat-ctx
+      semantics; remove every bounded retired helper from current teaching.
     acceptance:
       - "the article executes from a clean source build and each example is a complete readable strategy with its meaningful setup"
-      - "an independent cold reader can explain each paragraph from the code and identify scheduling, leaver, state and rounding semantics without hidden setup"
+      - "the maintainer cold read can explain each paragraph from the code and identify scheduling, leaver, state and rounding semantics without hidden setup"
       - "documentation contracts fail removal of required topics or return of retired spellings, and the final export/reference inventory matches the cut decision exactly"
   - id: "LDG-3190"
     title: "Verify WS5 and hand the flat layout to WS6"
@@ -2492,8 +2577,13 @@ tickets:
       bridge and pipeline obligation only when all accepted duties have owners
       or are complete. Record the exact flat context layout and inspection
       obligations as WS6's binding input; do not implement WS6 here.
+      Record that Cut 7 closes WS5 implementation but macro join J remains open
+      until the merged WS7 reader consumes D8's diagnostic fields and canonical
+      facts. Verify that LDG-3186 removed the old strategy JSON cache and no
+      other ticket owns it.
     acceptance:
       - "every Section 4 detector and registered mutation fails independently, and every semantic/economic oracle passes or differs only by a one-owner accepted row"
       - "fast, review and heavy profiles, source build, R CMD check, examples and executable article pass on the exact candidate"
       - "the descriptive timing record reproduces, retains economic controls and attributes every material regression or miss without serving as an acceptance clock"
       - "contracts, exports, reference, articles, NEWS, decisions bridge, RFC pipeline and packet status describe only implemented behavior; WS6 receives one unambiguous flat-layout handoff"
+      - "the closeout hands D8 field/fact consumption to WS7 and leaves join J open; it does not claim full macro-WS5 acceptance prematurely"
