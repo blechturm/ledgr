@@ -4,7 +4,10 @@ This is the descriptive post-unification milestone owned by LDG-3170 and
 LDG-3178. It uses the shared timing harness unchanged and sources the frozen
 WS4a workloads by reference. Six cells cross the two execution clocks
 (`bar_native` and `declared_sessions`) with no-fill, sparse-rebalance and wide
-all-fill work. Each cell uses three alternating before/after pairs.
+all-fill work. Each cell uses eight alternating before/after pairs. The cut's
+proposed three pairs were rejected by the unchanged shared harness, whose
+frozen noise rule requires at least eight; the protocol follows that stronger
+common rule rather than weakening the harness.
 
 The timed boundaries and economic controls are exactly those in
 `../ws4a-timing-1/protocol.md`. The names `dense` and `availability` occur only
