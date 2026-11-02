@@ -538,6 +538,21 @@ execution-sensitive economics cuts are held to rule 17 instead.
   claim, named for its contract. The first test file and the shared fixture
   helpers are written deliberately, by the maintainer or under a tight
   brief, before agents extend them, because later tests copy the first ones.
+- **Self-documenting (maintainer, 2026-11-02).** A reader, human or agent,
+  can tell from the suite alone what each test checks and why. One file per
+  contract topic, named after it. Each block's title states the claim as a
+  sentence, and the block declares its metadata in code at its head: claim
+  ID, contract address, oracle kind (reference, invariant or negative
+  witness), the mutants it is expected to detect and, where it guards a
+  past defect, one line on that defect. Fixtures are few, named for what
+  they contain and described where they are built. Test names and files
+  carry no ticket, workstream or version IDs; history stays in git. A
+  failing assertion says which contract rule broke. The in-file metadata is
+  the single source: the contract-to-test-to-mutant index is generated from
+  it and checked for drift, and it replaces the hand-maintained claims
+  registry for the fold core rather than adding a second record. The pruned
+  remainder of the suite adopts the same form wherever the test cut merges
+  or rewrites a file.
 - **Proof before retirement.** A recorded mutant set covers the fold core:
   the registered mutations plus a generated batch (for example off-by-one
   positions, a dropped fee, a flipped comparison, a missed carry). The old
@@ -715,7 +730,8 @@ accepted on 2026-10-31; the WS4b behavior amendment was accepted on
   warm independent-book and actual parameter-grid scaling both recorded.
 - WS14a review dispositioned and both cuts closed; the rule-17 baseline
   empty or each remaining entry carrying an accepted reason; the fold-core
-  tests rebuilt with a mutant record showing no unexplained loss; every
+  tests rebuilt, self-documenting, with a generated contract-to-test index
+  and a mutant record showing no unexplained loss; every
   registered claim still detected and the fast lane within its bound.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
