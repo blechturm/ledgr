@@ -112,6 +112,9 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #'   \item{strategy_source_hash}{Stored source hash, or `NA` if unavailable.}
 #'   \item{strategy_params}{Decoded strategy parameter list.}
 #'   \item{strategy_params_hash}{Stored strategy parameter hash.}
+#'   \item{strategy_schedule}{Verified canonical schedule declaration, or
+#'   `NULL` for an unscheduled run. To rebuild the run, pass this field to
+#'   [ledgr_experiment()] as `schedule = strategy_schedule`.}
 #'   \item{reproducibility_level}{Stored reproducibility tier.}
 #'   \item{strategy_type}{Stored strategy type.}
 #'   \item{strategy_source_capture_method}{How source was captured.}

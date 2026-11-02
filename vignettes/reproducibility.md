@@ -231,6 +231,10 @@ Use `trust = TRUE` only when you explicitly trust the experiment store
 and intentionally want ledgr to parse and evaluate the stored text into
 a function object.
 
+The recovered schedule is a separate verified declaration. Pass it back
+through `schedule = trusted$strategy_schedule`; it is `NULL` for an
+unscheduled run.
+
 ``` r
 trusted <- ledgr_run_strategy(snapshot, "qty_10", trust = TRUE)
 is.function(trusted$strategy_function)
@@ -244,7 +248,8 @@ rerun_exp <- ledgr_experiment(
   strategy = trusted$strategy_function,
   features = features,
   opening = ledgr_opening(cash = 10000),
-  cost_model = ledgr_cost_zero()
+  cost_model = ledgr_cost_zero(),
+  schedule = trusted$strategy_schedule
 )
 
 ledgr_run(

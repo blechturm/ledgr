@@ -1113,7 +1113,11 @@ workstreams:
       finds F10: trusted recovery reattached the newly refused hidden schedule
       attribute. The bounded correction returns a bare recovered function,
       keeps the declaration in strategy_schedule and pins public
-      reconstruction with the original schedule hash.
+      reconstruction with the original schedule hash. Focused re-review 2 in
+      close_review_16_rereview_2.md closes F10 and finds only F11, the missing
+      public documentation for that separate field. The doc-only closure names
+      strategy_schedule in the return contract and teaches the explicit
+      schedule= rerun path.
     depends_on_workstream: 15
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations and the Section 4 item 6 default-disclosure detector fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
@@ -2563,6 +2567,15 @@ tickets:
         behavior changes. The strategy-schedule and WS16 authoring files pass,
         and the registered D6_D7_schedule_inputs mutation still applies and is
         detected.
+      - >-
+        Focused re-review F11 closure: ledgr_run_strategy() help now defines
+        strategy_schedule as the verified canonical declaration or NULL and
+        instructs reconstruction through ledgr_experiment(schedule=). The
+        reproducibility source and rendered Markdown pass the separate field
+        in the rerun example. Both focused files pass; exact-source build and
+        R CMD check --no-manual --no-build-vignettes pass with only the two
+        expected missing-inst/doc warnings, and all executable vignette code
+        passes.
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17
