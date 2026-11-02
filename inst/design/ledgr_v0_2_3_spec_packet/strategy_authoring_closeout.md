@@ -91,6 +91,16 @@ contiguous. It similarly validates current typed empty strategy-state payloads
 before ignoring their accepted representation change. No frozen economic value
 or fill oracle was edited.
 
+The final integration pass repaired stale tests rather than weakening their
+oracles. History tests now use the accepted flat context, named vectors and
+current restriction reasons; corporate-action fixtures declare state;
+indicator fixtures supply the required opening policy; peer and demo recipes
+use the supported flat feature and state surfaces. One product defect found by
+those migrations was fixed: the internal history adapter now reads its private
+`.history` field without dispatching through the public S3 reader. The timing
+harness now excludes its warm-up row with an exact numbered-run predicate,
+rather than accidentally timing it as a ninth run.
+
 ## Optimization and representation review
 
 Sizing evidence is built in preallocated atomic vectors while the helper sizes
@@ -121,3 +131,33 @@ JSON cache has no remaining WS5 owner.
 The strategy-authoring RFC pipeline row and decisions bridge stay until the
 independent close review is accepted. Acceptance housekeeping may then remove
 the implementation obligation while retaining the named future handoffs.
+
+## Integrated gates and timing
+
+The exact candidate passes all semantic gates:
+
+- review profile: 523/523 blocks in 819.29 seconds, with the one registered
+  optional-package skip;
+- heavy profile: 183/183 blocks in 279 seconds;
+- fast profile: 638/638 blocks in 214.22 seconds. The functional lane passes,
+  while the historical 112-second backstop is an explicit timing miss already
+  accepted for this cut; no block was retiered or weakened;
+- source build passes; and
+- `R CMD check --no-manual --no-build-vignettes` reports zero errors and zero
+  notes. Its two warnings are the expected missing `inst/doc` products under
+  the requested no-build-vignettes mode. Tests, examples and executable
+  vignette code pass from the built tarball; and
+- the codebase contract census passes with 70 connection, 176 version, 90 run
+  configuration, 2,006 helper and 2,487 condition entries; its execution-mode
+  census records 72 branch and 31 flow sites in 45 functions.
+
+The registered fresh-process timing records live under
+`dev/bench/timing/records/ws5-timing-1/`. Against the v0.2.2 release base all
+nine ratios pass the 1.10 disposition threshold (0.926 to 1.024). Against the
+post-WS4a attribution base, declared-session runs improve (0.747 to 0.929) and
+construction is neutral (1.000), while fixed-basket ratios remain red: 2.762
+no-fill, 2.758 sparse, 1.600 wide, 2.068 state-change and 2.039
+state-unchanged. All 288 slots across the two comparisons are finite and retain
+identical economic controls. The latter checker failure is recorded, not
+described as a pass: macro WS14 continues to own the bounded response to this
+known common-path premium, and Workstream 18 does not restore a second fold.

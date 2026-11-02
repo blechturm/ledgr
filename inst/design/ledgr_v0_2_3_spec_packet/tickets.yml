@@ -2759,6 +2759,16 @@ tickets:
       - "a sweep candidate's memory sink retains no sizing row and its output makes no D8 claim, while the same candidate's committed run reports exact D8 coverage"
       - "the strategy_intent row stores intent_reason in reasons with detail_json `{}`; ledgr_run_explain() returns identical intent_reason values without parsing JSON, and restoring either the detail_json encode or the reader parse fails a registered detector"
       - "successful pulse paths add no JSON encode/parse and the seven-shape review finds no per-decision frame/list accumulator; the sizing-evidence rule binding is present and old/missing markers refuse"
+    evidence:
+      - >-
+        Product f848ed80 with integration corrections through f0c2b5ed:
+        LTB-0539/LCL-0529 pins the typed helper boundary and every sizing
+        category; LTB-0540/LCL-0530 pins durable rows, summary/print labels,
+        raw-strategy unavailability, sweep exclusion, promotion and resume;
+        LTB-0541/LCL-0531 pins the current-only rule binding and the absence of
+        sizing/intent JSON work; LTB-0542/LCL-0532 separates requested sizing
+        from later risk and affordability. The isolated D8 mutation fails
+        LTB-0540.
   - id: "LDG-3188"
     title: "Migrate maintained strategies to the accepted grammar"
     workstream: 18
@@ -2779,6 +2789,16 @@ tickets:
       - "the two named semantic ports preserve their frozen fills and state behavior except for explicitly owned accepted differences, and reverting each migrated construct fails its detector"
       - "all maintained strategy examples supply opening and cost inputs and use no retired reader/helper; no oracle is edited merely to hide a product failure"
       - "the peer recipe remains economically qualified and its measurement boundary is unchanged apart from named WS5 preparation/context attribution"
+    evidence:
+      - >-
+        dev/bench/v0_2_3_ws5/semantic_ports.R and review-profile
+        LTB-0543/LCL-0533 preserve 58 trailing-stop fills, 741 Turtle fills
+        and 1,045 state cursor/checkpoint rows for each maintained port. The
+        integration corrections migrate stale history, indicator,
+        corporate-action, peer and demo fixtures to current flat-context,
+        opening, cost and declared-state contracts without hiding a product
+        failure; the internal history adapter defect found by that migration
+        is fixed at 8628cfff.
   - id: "LDG-3189"
     title: "Teach one complete strategy-authoring pattern"
     workstream: 18
@@ -2809,6 +2829,12 @@ tickets:
         teaching/public-grammar reconciliation remains owned here and broader
         context-selection pruning remains WS11b; WS16 added no compatibility
         adapter or new product semantics.
+      - >-
+        vignettes/strategy-authoring-tools.qmd executes 61 chunks and teaches
+        the six accepted patterns plus D8 disclosure. LTB-0544/LCL-0534 pins
+        the required source and rendered topics and the public-name inventory;
+        the article uses complete experiments with required opening and costs
+        and no retired helper spelling.
   - id: "LDG-3190"
     title: "Verify WS5 and hand the flat layout to WS6"
     workstream: 18
@@ -2845,3 +2871,18 @@ tickets:
         record any surviving WS11b owner. The causal-history rendered reason
         change from status_unknown to target_restricted is attributed to
         WS15's flat-context/buyable migration, not to a WS16 economic change.
+      - >-
+        Final candidate e04786ef: review 523/523 in 819.29 seconds (one
+        registered optional skip), heavy 183/183 in 279 seconds and fast
+        638/638 in 214.22 seconds. The fast functional lane passes and the
+        112-second timing backstop remains an explicit maintainer-accepted
+        miss; no test was retiered. Source build and R CMD check pass with
+        zero errors/notes and the two expected no-build-vignettes warnings;
+        tools/check-codebase-contracts.R --mode=check reports
+        LEDGR_CODEBASE_CENSUS_OK and the mode-branch census passes.
+        dev/bench/timing/records/ws5-timing-1/ records 144/144 successful
+        slots per base: every ratio against v0.2.2 is at most 1.024; against
+        the post-WS4a base declared-session ratios are 0.747-0.929 and
+        construction 1.000, while five fixed-basket ratios are 1.600-2.762
+        and remain explicitly routed to macro WS14. The latter checker is a
+        recorded descriptive FAIL, not an acceptance pass.
