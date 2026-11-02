@@ -420,7 +420,7 @@ testthat::test_that("preparation counters increment at one site per run and cand
 testthat::test_that("scheduled decision skips still count absolute entry age", {
   seen <- new.env(parent = emptyenv())
   seen$rows <- list()
-  strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(function(ctx, params) {
+  strategy <- function(ctx, params) {
     rows <- seen$rows
     rows[[length(rows) + 1L]] <- list(
       ts = ctx$ts_utc, entry = ctx$entry_at[["AAA"]], age = ctx$bars_since_entry[["AAA"]]
@@ -429,8 +429,12 @@ testthat::test_that("scheduled decision skips still count absolute entry age", {
     target <- ctx$hold()
     if (length(rows) == 1L) target[["AAA"]] <- 1
     target
-  }, ledgr_schedule_dates(as.Date(c("2021-01-04", "2021-01-13"))))
-  fixture <- ws42_history_fixture(strategy = strategy, features = list())
+  }
+  fixture <- ws42_history_fixture(
+    strategy = strategy,
+    features = list(),
+    schedule = ledgr_schedule_dates(as.Date(c("2021-01-04", "2021-01-13")))
+  )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   run <- ledgr_run(fixture$exp, run_id = "position-fact-skipped-decisions")
   close(run)

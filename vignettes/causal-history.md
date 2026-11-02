@@ -32,7 +32,7 @@ snapshot <- ledgr_snapshot_open(snapshot_path)
 momentum <- function(ctx, params) {
   ctx |>
     ledgr_signal_return(params$lookback) |>
-    ledgr_select_top(params$n) |>
+    ledgr_select_top(params$n, within = ctx$buyable) |>
     ledgr_weight_equal() |>
     ledgr_target_rebalance(ctx, weights = _, invest_fraction = 0.95)
 }

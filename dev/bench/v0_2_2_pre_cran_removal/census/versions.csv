@@ -133,11 +133,11 @@
 "R/store-gate.R",179,"ledgr_store_assert_current","read_branch_or_equality","version < ledgr_experiment_store_schema_version",TRUE,"comparison",FALSE,FALSE,FALSE,"<",FALSE,FALSE
 "R/store-gate.R",182,"ledgr_store_assert_current","read_branch_or_equality","version > ledgr_experiment_store_schema_version",TRUE,"comparison",FALSE,FALSE,FALSE,">",FALSE,FALSE
 "R/strategy-provenance.R",104,"ledgr_dependency_versions_json","binding","ledgr_dependency_versions_json <- function() {     packages <- c(""ledgr"", ""collapse"", ""duckdb"", ""DBI"", ""digest"", ""yyjsonr"", ""tibble"", ""TTR"")     versions <- list(R = as.character(getRversion()))     for (pkg in packages) {         versions[[pkg]] <- if (requireNamespace(pkg, quietly = TRUE)) {             as.character(utils::packageVersion(pkg))         }         else {             NA_character_         }     }     unname(canonical_json(versions)) }",TRUE,"write_site:ledgr_dependency_versions_json;ledgr_write_strategy_provenance",FALSE,FALSE,FALSE,"",FALSE,FALSE
-"R/strategy-schedule.R",171,"ledgr_schedule_version","binding","ledgr_schedule_version <- 1L",FALSE,"none",FALSE,TRUE,TRUE,"",FALSE,FALSE
-"R/strategy-schedule.R",216,"ledgr_schedule_validate","read_branch_or_equality","length(version) != 1L",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
-"R/strategy-schedule.R",216,"ledgr_schedule_validate","read_branch_or_equality","is.na(version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.na",FALSE,FALSE
-"R/strategy-schedule.R",217,"ledgr_schedule_validate","read_branch_or_equality","version != floor(version)",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
-"R/strategy-schedule.R",218,"ledgr_schedule_validate","read_branch_or_equality","as.integer(version) != ledgr_schedule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
+"R/strategy-schedule.R",192,"ledgr_schedule_version","binding","ledgr_schedule_version <- 1L",FALSE,"none",FALSE,TRUE,TRUE,"",FALSE,FALSE
+"R/strategy-schedule.R",237,"ledgr_schedule_validate","read_branch_or_equality","length(version) != 1L",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
+"R/strategy-schedule.R",237,"ledgr_schedule_validate","read_branch_or_equality","is.na(version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.na",FALSE,FALSE
+"R/strategy-schedule.R",238,"ledgr_schedule_validate","read_branch_or_equality","version != floor(version)",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
+"R/strategy-schedule.R",239,"ledgr_schedule_validate","read_branch_or_equality","as.integer(version) != ledgr_schedule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
 "R/sweep-filter.R",1,"ledgr_sweep_filter_schema_version","binding","ledgr_sweep_filter_schema_version <- 1L",FALSE,"none",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep-filter.R",432,"ledgr_sweep_filter_result_validate","read_branch_or_equality","identical(as.integer(x$metadata$schema_version), ledgr_sweep_filter_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/sweep-persistence-schema.R",239,"ledgr_sweep_storage_assert_sweep","read_branch_or_equality","identical(identity_rule, ledgr_identity_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE

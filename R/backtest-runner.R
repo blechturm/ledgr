@@ -753,7 +753,7 @@ ledgr_run_fold_impl <- function(config,
   schedule <- ledgr_compile_strategy_schedule(
     declaration = cfg$strategy_schedule,
     strategy_params = schedule_params,
-    sessions = availability_sessions,
+    sessions = ledgr_strategy_schedule_sessions(history_substrate),
     pulses_posix = pulses_posix
   )
   output_handler$set_schedule_counts(
@@ -903,7 +903,7 @@ ledgr_run_fold_impl <- function(config,
     } else {
       NULL
     },
-    schedule_sessions = availability_sessions,
+    schedule_sessions = ledgr_strategy_schedule_sessions(history_substrate),
     schedule_params = schedule_params,
     decision_due = schedule$decision_due,
     decision_pulse_count = schedule$decision_pulse_count,

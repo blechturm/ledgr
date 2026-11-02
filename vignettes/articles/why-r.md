@@ -45,7 +45,7 @@ logic:
 ``` r
 ctx |>
   ledgr_signal_return(lookback = 20) |>
-  ledgr_select_top(10) |>
+  ledgr_select_top(10, within = ctx$buyable) |>
   ledgr_weight_equal() |>
   ledgr_target_rebalance(ctx, weights = _, invest_fraction = 1)
 ```

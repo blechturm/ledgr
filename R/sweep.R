@@ -1690,11 +1690,7 @@ ledgr_sweep_candidate_execution <- function(exp,
   risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
   strategy_fn <- ledgr_strategy_schedule_inner(exp$strategy)
   signature <- ledgr_strategy_signature(strategy_fn)
-  schedule_sessions <- if (identical(history_substrate$clock_kind, "declared_sessions")) {
-    history_substrate$sessions
-  } else {
-    NULL
-  }
+  schedule_sessions <- ledgr_strategy_schedule_sessions(history_substrate)
   schedule <- ledgr_compile_strategy_schedule(
     declaration = ledgr_strategy_schedule_declaration(exp$strategy),
     strategy_params = params,

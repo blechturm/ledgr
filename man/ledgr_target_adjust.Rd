@@ -23,12 +23,15 @@ to at most one.}
 
 \item{exit}{Optional logical mask over the decision axis.}
 
-\item{invest_fraction}{Fraction of the selected capital base to invest.}
+\item{invest_fraction}{Fraction of the chosen capital base to invest.}
 
 \item{capital_base}{Optional allocation base: \code{"total_equity"} or
 \code{"remaining_equity"}. Weighted rebalance requires a choice when preserved
 or added exposure makes the bases differ; weighted adjust defaults to
 \code{"total_equity"}.}
+}
+\value{
+A full-universe \code{ledgr_target} object.
 }
 \description{
 \code{ledgr_target_adjust()} keeps every unmentioned position at its current
@@ -42,3 +45,14 @@ Strategy helper pipelines:
 \code{system.file("doc", "strategy-development.html", package = "ledgr")}
 }
 
+\examples{
+ctx <- list(
+  universe = c("AAA", "BBB"), equity = 1000,
+  close = c(AAA = 50, BBB = 100),
+  member = c(AAA = TRUE, BBB = TRUE),
+  buyable = c(AAA = TRUE, BBB = TRUE),
+  position = c(AAA = 2, BBB = 0),
+  holding_value = c(AAA = 100, BBB = 0)
+)
+ledgr_target_adjust(ctx, add_value = c(BBB = 200))
+}

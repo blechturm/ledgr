@@ -16,7 +16,8 @@
 "R/precompute-features.R",4,4,1
 "R/run-snapshot.R",1,1,0
 "R/run-store.R",1,1,0
-"R/sweep.R",2,6,2
+"R/strategy-schedule.R",1,1,0
+"R/sweep.R",2,5,2
 "R/valuation-summary.R",2,2,0
 "R/walk-forward-folds.R",1,1,0
 "R/walk-forward.R",4,5,0

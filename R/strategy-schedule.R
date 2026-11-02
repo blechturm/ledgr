@@ -122,6 +122,13 @@ ledgr_schedule_from_param <- function(name) {
 #' @param ctx The current ledgr strategy context.
 #' @param schedule A declaration from a `ledgr_schedule_*()` helper.
 #' @return One non-missing logical value.
+#' @examples
+#' rebalance_monthly <- function(ctx, params) {
+#'   if (!ledgr_schedule_due(ctx, ledgr_schedule_month_start())) {
+#'     return(ctx$hold("not_a_decision_date"))
+#'   }
+#'   ctx$flat("monthly_decision")
+#' }
 #' @export
 ledgr_schedule_due <- function(ctx, schedule) {
   if (!inherits(ctx, "ledgr_pulse_context")) {
@@ -142,29 +149,43 @@ ledgr_schedule_due <- function(ctx, schedule) {
 }
 
 ledgr_strategy_schedule_query <- function(sessions, pulses_posix, strategy_params) {
-  cache <- new.env(parent = emptyenv())
-  last_declaration <- NULL
-  last_due <- NULL
+  declarations <- list()
+  due_vectors <- list()
+  hashes <- character()
   force(sessions)
   force(pulses_posix)
   force(strategy_params)
   function(schedule, pulse_idx) {
-    declaration <- ledgr_schedule_validate(schedule)
-    if (!identical(declaration, last_declaration)) {
-      key <- ledgr_strategy_schedule_hash(declaration)
-      if (!exists(key, envir = cache, inherits = FALSE)) {
+    # The public due helper validates once before entering this private query.
+    # Match the small run-local declaration set before paying for a hash.
+    hit <- which(vapply(declarations, identical, logical(1), y = schedule))
+    if (length(hit) == 0L) {
+      key <- ledgr_strategy_schedule_hash_validated(schedule)
+      hash_hit <- match(key, hashes)
+      if (!is.na(hash_hit)) {
+        hit <- hash_hit
+      } else {
         compiled <- ledgr_compile_strategy_schedule(
-          declaration,
+          schedule,
           strategy_params = strategy_params,
           sessions = sessions,
           pulses_posix = pulses_posix
         )
-        assign(key, compiled$decision_due, envir = cache)
+        declarations[[length(declarations) + 1L]] <<- schedule
+        due_vectors[[length(due_vectors) + 1L]] <<- compiled$decision_due
+        hashes[[length(hashes) + 1L]] <<- key
+        hit <- length(declarations)
       }
-      last_declaration <<- declaration
-      last_due <<- get(key, envir = cache, inherits = FALSE)
     }
-    last_due[[pulse_idx]]
+    due_vectors[[hit]][[pulse_idx]]
+  }
+}
+
+ledgr_strategy_schedule_sessions <- function(history_substrate) {
+  if (identical(history_substrate$clock_kind, "declared_sessions")) {
+    history_substrate$sessions
+  } else {
+    NULL
   }
 }
 
@@ -279,7 +300,11 @@ ledgr_strategy_schedule_declaration <- function(strategy) {
 ledgr_strategy_schedule_hash <- function(declaration) {
   if (is.null(declaration)) return(NULL)
   declaration <- unclass(ledgr_schedule_validate(declaration))
-  digest::digest(canonical_json(declaration), algo = "sha256")
+  ledgr_strategy_schedule_hash_validated(declaration)
+}
+
+ledgr_strategy_schedule_hash_validated <- function(declaration) {
+  digest::digest(canonical_json(unclass(declaration)), algo = "sha256")
 }
 
 ledgr_strategy_schedule_json <- function(declaration) {

@@ -305,6 +305,13 @@ ledgr_experiment <- function(snapshot,
     universe_all
   }
   ledgr_experiment_validate_strategy(strategy)
+  if (!is.null(attr(strategy, "ledgr_schedule", exact = TRUE)) ||
+      inherits(strategy, "ledgr_scheduled_strategy")) {
+    ledgr_schedule_abort(
+      "Supply strategy schedules through the `schedule` argument to `ledgr_experiment()`.",
+      "ledgr_schedule_identity_mismatch"
+    )
+  }
   schedule <- if (is.null(schedule)) NULL else ledgr_schedule_validate(schedule)
   if (!is.null(schedule) && !isTRUE(availability$active)) {
     ledgr_schedule_abort(
@@ -674,7 +681,12 @@ print.ledgr_experiment <- function(x, ...) {
   cat("Features:    ", feature_desc, "\n", sep = "")
   cat("Opening:     cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
       ", positions=", length(x$opening$positions), "\n", sep = "")
-  cat("Costs:       supplied (", x$cost_model$type_id, ")\n", sep = "")
+  cat(
+    "Costs:       supplied; ",
+    gsub("\n", "; ", ledgr_cost_describe(x$cost_model), fixed = TRUE),
+    "\n",
+    sep = ""
+  )
   cat("Mode:        ", x$execution_mode, "\n", sep = "")
   cat("Clock:       ", if (isTRUE(x$availability$active)) "declared_sessions" else "bar_native", "\n", sep = "")
   cat(
@@ -693,14 +705,12 @@ print.ledgr_experiment <- function(x, ...) {
   cat(ledgr_experiment_plan_policy_lines(ledgr_experiment_plan(x), width = 13L), sep = "")
   cat("Metrics:     ", ledgr_calendar_display(x$metric_context$calendar), "\n", sep = "")
   strategy_schedule <- x$schedule %||% ledgr_strategy_schedule_declaration(x$strategy)
-  if (!is.null(strategy_schedule)) {
-    cat(
-      "Strategy schedule: ",
-      ledgr_strategy_schedule_label(strategy_schedule),
-      "\n",
-      sep = ""
-    )
-  }
+  cat(
+    "Strategy schedule: ",
+    ledgr_strategy_schedule_label(strategy_schedule),
+    "\n",
+    sep = ""
+  )
   invisible(x)
 }
 

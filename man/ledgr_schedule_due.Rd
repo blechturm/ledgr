@@ -20,3 +20,11 @@ session axis. It does not skip the callback: use it inside an every-pulse
 strategy when stops or state updates must still run between allocation
 decisions.
 }
+\examples{
+rebalance_monthly <- function(ctx, params) {
+  if (!ledgr_schedule_due(ctx, ledgr_schedule_month_start())) {
+    return(ctx$hold("not_a_decision_date"))
+  }
+  ctx$flat("monthly_decision")
+}
+}

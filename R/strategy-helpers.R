@@ -255,13 +255,13 @@ ledgr_weight_equal <- function(selection, each = NULL) {
 #' `ledgr_target_adjust()` changes only the named positions. Both use the same
 #' sizing engine and return a complete `ledgr_target` over `ctx$universe`.
 #'
-#' In a dense run, allocatable equity is current equity. In an
-#' availability-aware run, ledgr first reserves the absolute marked exposure of
-#' ineligible holdings, held nonmembers and target-restricted members alike, and
-#' preserves their current quantities; weights may name eligible instruments
-#' only. IDs named in `keep`
-#' are likewise preserved and reserved exactly once. Weights and
-#' `invest_fraction` applies to the chosen capital base after reservations.
+#' ledgr reserves the absolute marked exposure of every preserved position
+#' exactly once before sizing weighted requests. In availability-aware runs,
+#' this includes ineligible holdings, held nonmembers and target-restricted
+#' members; weights may name buyable instruments only. IDs named by a character
+#' `keep` are also preserved. `invest_fraction` applies to the chosen capital
+#' base; with `capital_base = "remaining_equity"`, that base is equity after
+#' preserved and added exposure has been reserved.
 #' Share quantities are floored to whole numbers with
 #' `floor(weight * invest_fraction * allocation_equity / close_price)`. An
 #' exact zero member weight targets zero without consulting that instrument's
@@ -285,13 +285,15 @@ ledgr_weight_equal <- function(selection, each = NULL) {
 #' @param ctx ledgr strategy context.
 #' @param weights Optional ordinary named finite non-negative weights summing
 #'   to at most one.
-#' @param invest_fraction Fraction of the selected capital base to invest.
+#' @param invest_fraction Fraction of the chosen capital base to invest.
 #' @param capital_base Optional allocation base: `"total_equity"` or
 #'   `"remaining_equity"`. Weighted rebalance requires a choice when preserved
 #'   or added exposure makes the bases differ; weighted adjust defaults to
 #'   `"total_equity"`.
 #' @param keep Current decision-axis positions to preserve. Kept IDs must not
-#'   also appear in `weights`, even at zero weight.
+#'   also appear in `weights`, even at zero weight. A character keep decides
+#'   named leavers first; `index_leavers` then decides all other held leavers;
+#'   a logical keep has lowest precedence and cannot override a leaver sale.
 #' @param index_leavers Required policy for held instruments outside current
 #'   membership that are not named by a character `keep`: `"sell"` or
 #'   `"keep"`. There is no implicit leaver policy.
@@ -344,6 +346,17 @@ ledgr_target_rebalance <- function(ctx,
 #' @inheritParams ledgr_target_rebalance
 #' @param add_value Optional named finite non-negative currency exposure to add.
 #' @param exit Optional logical mask over the decision axis.
+#' @return A full-universe `ledgr_target` object.
+#' @examples
+#' ctx <- list(
+#'   universe = c("AAA", "BBB"), equity = 1000,
+#'   close = c(AAA = 50, BBB = 100),
+#'   member = c(AAA = TRUE, BBB = TRUE),
+#'   buyable = c(AAA = TRUE, BBB = TRUE),
+#'   position = c(AAA = 2, BBB = 0),
+#'   holding_value = c(AAA = 100, BBB = 0)
+#' )
+#' ledgr_target_adjust(ctx, add_value = c(BBB = 200))
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`

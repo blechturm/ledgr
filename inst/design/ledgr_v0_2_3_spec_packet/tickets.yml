@@ -1096,6 +1096,19 @@ workstreams:
     name: "Selection, targets and investor setup (macro WS5)"
     cut: 7
     status: "pending"
+    close_review: >-
+      CHANGES_REQUIRED in close_review_16.md. The correction keeps the
+      accepted design: one declared-session schedule authority is shared by
+      run and sweep; alternating due queries validate once per call and cache
+      each distinct declaration; fractional selection and unavailable-weight
+      non-redistribution have detecting oracles; the three WS16 mutation
+      families are registered; retired test shims are deleted; teaching,
+      printed defaults and public schedule ownership are explicit. Focused
+      suites, all three mutations, the WS5 inventory, the codebase census and
+      the ordinary-fast functional lane pass. The 211.540-second fast timing
+      exceeds the advisory 112-second hint and is not recorded as a timing
+      pass. Source build and R CMD check pass; the two expected missing-
+      inst/doc warnings follow the requested --no-build-vignettes check.
     depends_on_workstream: 15
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations and the Section 4 item 6 default-disclosure detector fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
@@ -2414,6 +2427,21 @@ tickets:
       - "equal weights, explicit each and empty selection return exact named vectors; invalid names, finiteness, signs and sums refuse rather than normalize"
       - "return classes and empty shapes are exactly plain character IDs for selections and plain named doubles for weights; no wrapper class is introduced"
       - "retired spellings are absent from exports, help and maintained sources, and one injected alias fails the export/source census"
+    evidence:
+      - >-
+        Close-review correction: LTB-0529 now uses a three-instrument,
+        fraction-0.5 witness, so replacing floor with ceiling fails. LCL-0519
+        assigns locale-independent tie detection to LTB-0229 rather than
+        overstating the non-discriminating mixed-case fixture. The registered
+        D4_selection_weights mutation command in
+        dev/bench/v0_2_3_ws5/ownership_matrix.csv applies and is detected.
+      - >-
+        Migration record: the registered context-entrance tests now pass
+        ordinary character IDs and named double weights to the public helpers;
+        no wrapper expectation or retired selection/weight shim remains. Empty
+        selections retain character(0) and named numeric(0). The why-r and
+        causal-history rank examples explicitly use within = ctx$buyable and
+        both rendered Markdown outputs are current.
   - id: "LDG-3183"
     title: "Implement the two ctx-first target verbs"
     workstream: 16
@@ -2445,6 +2473,22 @@ tickets:
       - "unavailable marks or state inputs use one sizing_unavailable diagnostic with identical economics through a committed run (durable sink) and a sweep candidate (memory sink); a test pins which of those rows the memory sink retains; holding_value is never fabricated; capital-base origin and effective invest_fraction in the target origin are exact"
       - "LDG-3180's private vec adapter is absent from source after the target helpers migrate"
       - "every returned target is full-axis and compatible with the existing target validator; execution, risk, affordability, costs and fills remain exact"
+    evidence:
+      - >-
+        Close-review correction: LTB-0530 includes an unguarded AAA=0.4 plus
+        unavailable MISS=0.2 request and requires AAA to remain 40 percent of
+        the chosen capital base. Redistributing the unavailable share fails
+        the registered D3_target_verbs mutation. The helper documentation now
+        states the chosen-capital-base rule and the lowest precedence of a
+        logical keep relative to explicit index_leavers.
+      - >-
+        Migration record: registered context-entrance callers invoke the
+        ctx-first public target verbs directly with explicit index_leavers and
+        capital_base choices; tests assert target origin/sizing separately
+        instead of stripping it. The argument-swap and fabricated member,
+        position and holding-value test shims are deleted. LCL-0095 now records
+        the implemented boundary: a flat feature read is plain data, while the
+        explicit signal helper carries its buyable evidence.
   - id: "LDG-3184"
     title: "Require investor inputs and expose mixed-cadence scheduling"
     workstream: 16
@@ -2475,6 +2519,35 @@ tickets:
       - "the off-period stop example executes and proves that ledgr_schedule_due() gates only the inner allocation decision"
       - "ledgr_strategy_schedule() is absent from exports/help/call sites; every former implicit-opening experiment supplies opening and cost_model explicitly, while pulse inspection labels its synthetic cash as inspection-only"
       - "plan and print identify the supplied capital/cost model and each effective default; removing that disclosure fails a registered Section 4 item 6 detector"
+    evidence:
+      - >-
+        Close-review correction: run and sweep now obtain query sessions only
+        through ledgr_strategy_schedule_sessions(), which returns an axis only
+        for declared_sessions. A bar-native run refuses inside the callback and
+        the same sweep candidate records FAILED with the same declared-axis
+        reason. Alternating weekly/monthly queries across eight pulses count
+        eight validations, two hashes and two compiles: validation is once per
+        public call and each distinct validated declaration is hashed and
+        compiled once per candidate.
+      - >-
+        Public ownership and teaching: ledgr_experiment() refuses a strategy
+        carrying a pre-attached schedule, so schedule= is the only public
+        entrance. Registered schedule tests rebuild experiments through that
+        argument rather than attaching attributes. Experiment and plan print
+        every-pulse when omitted and use the cost-model description. The
+        registered D6_D7_schedule_inputs mutation, which synthesizes a
+        bar-native session axis, applies and is detected. ledgr_schedule_due()
+        has an executable example.
+      - >-
+        Final correction gates: focused WS16 and all shim-migrated files pass;
+        all three registered WS16 mutations apply and are detected;
+        dev/bench/v0_2_3_ws5/check.R reports WS5_INVENTORY_OK;
+        tools/check-codebase-contracts.R reports LEDGR_CODEBASE_CENSUS_OK;
+        ordinary-fast executes 636/636 blocks in 211.540 seconds (functional
+        pass, advisory 112-second hint exceeded); source build passes and
+        R CMD check --no-manual --no-build-vignettes has no errors or notes
+        attributable to the product change, with the two expected missing-
+        inst/doc warnings.
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17
@@ -2631,6 +2704,13 @@ tickets:
       - "the article executes from a clean source build and each example is a complete readable strategy with its meaningful setup"
       - "the maintainer cold read can explain each paragraph from the code and identify scheduling, leaver, state and rounding semantics without hidden setup"
       - "documentation contracts fail removal of required topics or return of retired spellings, and the final export/reference inventory matches the cut decision exactly"
+    evidence:
+      - >-
+        WS16 routing note: ledgr_target_quantity() still consumes its existing
+        classed selection rather than the new plain character selection. The
+        teaching/public-grammar reconciliation remains owned here and broader
+        context-selection pruning remains WS11b; WS16 added no compatibility
+        adapter or new product semantics.
   - id: "LDG-3190"
     title: "Verify WS5 and hand the flat layout to WS6"
     workstream: 18
@@ -2660,3 +2740,10 @@ tickets:
       - "the descriptive timing record reproduces, retains economic controls and attributes every material regression or miss without serving as an acceptance clock"
       - "contracts, exports, reference, articles, NEWS, decisions bridge, RFC pipeline and packet status describe only implemented behavior; WS6 receives one unambiguous flat-layout handoff"
       - "the closeout hands D8 field/fact consumption to WS7 and leaves join J open; it does not claim full macro-WS5 acceptance prematurely"
+    evidence:
+      - >-
+        WS16 handoff: the final inventory must reconcile the classed
+        ledgr_target_quantity() entrance with the plain-selection grammar and
+        record any surviving WS11b owner. The causal-history rendered reason
+        change from status_unknown to target_restricted is attributed to
+        WS15's flat-context/buyable migration, not to a WS16 economic change.

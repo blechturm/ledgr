@@ -100,11 +100,12 @@ ws58_fixture <- function(closes, strategy, days = ws58_days(),
   )
   experiment <- ledgr_experiment(
     snapshot,
-    ws16_attach_schedule_to_strategy_for_legacy_path_test(strategy, ledgr_schedule_month_start()),
+    strategy,
     features = list(ledgr_ind_returns(1L)),
     universe = ledgr_universe_members("u"),
     cost_model = ledgr_cost_zero(),
-    opening = opening
+    opening = opening,
+    schedule = ledgr_schedule_month_start()
   )
   list(snapshot = snapshot, exp = experiment, days = days, closes = closes)
 }

@@ -94,5 +94,26 @@ mutations <- list(
     new = "inspection$position_fact_unknown_basis <- character()",
     filter = "position-facts-context",
     blocks = "pulse inspection reports unknown basis and anchors for supplied positions"
+  ),
+  D3_target_verbs = list(
+    file = "R/strategy-helpers.R",
+    old = "requested_value <- weights[positive_ids[valid]] * invest_fraction * base",
+    new = "requested_value <- weights[positive_ids[valid]] / sum(weights[positive_ids[valid]]) * invest_fraction * base",
+    filter = "strategy-authoring-ws16",
+    blocks = "ctx-first target verbs share sizing and make book policy explicit"
+  ),
+  D4_selection_weights = list(
+    file = "R/strategy-helpers.R",
+    old = "max(1L, floor(length(pool) * fraction))",
+    new = "max(1L, ceiling(length(pool) * fraction))",
+    filter = "strategy-authoring-ws16",
+    blocks = "plain selection and weights bind rank, pool and empty rules"
+  ),
+  D6_D7_schedule_inputs = list(
+    file = "R/strategy-schedule.R",
+    old = "if (identical(history_substrate$clock_kind, \"declared_sessions\")) {\n    history_substrate$sessions\n  } else {\n    NULL\n  }",
+    new = "history_substrate$sessions",
+    filter = "strategy-authoring-ws16",
+    blocks = "construction requires investor inputs and schedule queries are pure"
   )
 )

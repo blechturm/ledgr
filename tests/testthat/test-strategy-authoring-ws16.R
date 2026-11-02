@@ -24,6 +24,10 @@ testthat::test_that("[LTB-0529] plain selection and weights bind rank, pool and 
     "A"
   )
   testthat::expect_identical(
+    ledgr_select_top(c(A = 3, B = 2, C = 1), fraction = 0.5),
+    "A"
+  )
+  testthat::expect_identical(
     ledgr_select_top(score, n = 4, within = c(q = TRUE, z = NA, A = TRUE, b = FALSE)),
     c("A", "q")
   )
@@ -210,6 +214,19 @@ testthat::test_that("[LTB-0530] ctx-first target verbs share sizing and make boo
   testthat::expect_identical(attr(unavailable, "sizing_skipped"), "MISS")
   testthat::expect_identical(ctx$.notes$sizing_skipped, "MISS")
 
+  # An unavailable request is not redistributed even when there is no guard
+  # scaling: AAA keeps its requested 40% of total equity.
+  unguarded <- ws16_target_context()
+  unguarded$position[["MISS"]] <- 0
+  unguarded$holding_value[["MISS"]] <- 0
+  no_redistribution <- ledgr_target_adjust(
+    unguarded,
+    weights = c(AAA = 0.4, MISS = 0.2),
+    capital_base = "total_equity"
+  )
+  testthat::expect_identical(no_redistribution[["AAA"]], 40)
+  testthat::expect_identical(no_redistribution[["MISS"]], 0)
+
   guard_ctx <- ws16_target_context()
   guard_ctx$holding_value[["MISS"]] <- 300
   guarded <- ledgr_target_adjust(
@@ -276,7 +293,8 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
     testthat::expect_match(text, "cash=0", fixed = TRUE)
     testthat::expect_match(text, "positions=1", fixed = TRUE)
     testthat::expect_match(text, "Costs:", fixed = TRUE)
-    testthat::expect_match(text, "supplied (zero)", fixed = TRUE)
+    testthat::expect_match(text, "ledgr cost model: zero cost", fixed = TRUE)
+    testthat::expect_match(text, "Strategy schedule: every pulse", fixed = TRUE)
   }
 
   calls <- 0L
@@ -295,21 +313,93 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
   testthat::expect_identical(calls, 2L)
 
   compiler_calls <- 0L
+  hash_calls <- 0L
+  validation_calls <- 0L
+  weekly <- ledgr_schedule_week_start()
+  monthly <- ledgr_schedule_month_start()
+  validate_schedule <- ledgr:::ledgr_schedule_validate
+  hash_schedule <- ledgr:::ledgr_strategy_schedule_hash_validated
   testthat::with_mocked_bindings({
     query <- ledgr:::ledgr_strategy_schedule_query(
       sessions = data.frame(),
-      pulses_posix = as.POSIXct(c("2021-01-04", "2021-01-05"), tz = "UTC"),
+      pulses_posix = as.POSIXct("2021-01-04", tz = "UTC") + 86400 * 0:7,
       strategy_params = list()
     )
-    testthat::expect_true(query(declaration, 1L))
-    testthat::expect_false(query(ledgr_schedule_month_start(), 2L))
-    testthat::expect_identical(compiler_calls, 1L)
+    pulse <- 0L
+    query_ctx <- structure(
+      list(.schedule_query = function(schedule) {
+        pulse <<- pulse + 1L
+        query(schedule, pulse)
+      }),
+      class = c("ledgr_pulse_context", "list")
+    )
+    for (i in seq_len(8L)) {
+      use_weekly <- i %% 2L == 1L
+      testthat::expect_true(
+        ledgr_schedule_due(query_ctx, if (use_weekly) weekly else monthly)
+      )
+    }
+    testthat::expect_identical(validation_calls, 8L)
+    testthat::expect_identical(hash_calls, 2L)
+    testthat::expect_identical(compiler_calls, 2L)
   },
+    ledgr_schedule_validate = function(schedule) {
+      validation_calls <<- validation_calls + 1L
+      validate_schedule(schedule)
+    },
+    ledgr_strategy_schedule_hash_validated = function(schedule) {
+      hash_calls <<- hash_calls + 1L
+      hash_schedule(schedule)
+    },
     ledgr_compile_strategy_schedule = function(...) {
       compiler_calls <<- compiler_calls + 1L
-      list(decision_due = c(TRUE, FALSE))
+      list(decision_due = if (compiler_calls == 1L) {
+        rep(c(TRUE, FALSE), 4L)
+      } else {
+        rep(c(FALSE, TRUE), 4L)
+      })
     },
     .package = "ledgr"
+  )
+
+  attached <- strategy
+  attr(attached, "ledgr_schedule") <- unclass(ledgr_schedule_month_start())
+  testthat::expect_error(
+    ledgr_experiment(
+      snapshot,
+      attached,
+      opening = ledgr_opening(cash = 1),
+      cost_model = ledgr_cost_zero()
+    ),
+    class = "ledgr_schedule_identity_mismatch",
+    regexp = "schedule"
+  )
+
+  due_strategy <- function(ctx, params) {
+    ledgr_schedule_due(ctx, ledgr_schedule_month_start())
+    ctx$hold()
+  }
+  dense_due <- ledgr_experiment(
+    snapshot,
+    due_strategy,
+    opening = ledgr_opening(cash = 1),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_error(
+    ledgr_run(dense_due, run_id = "ws16-dense-due-run"),
+    class = "ledgr_schedule_sessions_required"
+  )
+  dense_sweep <- ledgr_sweep(
+    dense_due,
+    ledgr_grid_named(one = list(strategy = list())),
+    seed = 532L
+  )
+  testthat::expect_identical(dense_sweep$status, "FAILED")
+  testthat::expect_identical(dense_sweep$error_class, "ledgr_strategy_error")
+  testthat::expect_match(
+    dense_sweep$error_msg,
+    "declared venue-session axis",
+    fixed = TRUE
   )
 
   stop_strategy <- function(ctx, params) {

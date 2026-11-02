@@ -86,7 +86,7 @@
 "R/precompute-features.R","ledgr_validate_precomputed_features","branch","availability$active","if: isTRUE(exp$availability$active)",1
 "R/run-snapshot.R","ledgr_run_snapshot_guard","branch","availability_active","if: !isTRUE(availability_active) && length(pulses) < 2L",1
 "R/run-store.R","ledgr_run_open","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(cfg)",1
-"R/sweep.R","ledgr_sweep_candidate_execution","branch","$clock_kind","if: identical(history_substrate$clock_kind, ""declared_sessions"")",1
+"R/strategy-schedule.R","ledgr_strategy_schedule_sessions","branch","$clock_kind","if: identical(history_substrate$clock_kind, ""declared_sessions"")",1
 "R/sweep.R","ledgr_sweep_candidate_execution","branch","is.null(availability_provider)","if: is.null(availability_provider)",1
 "R/sweep.R","ledgr_sweep_impl","branch","$clock_kind","if: identical(history_substrate$clock_kind, ""declared_sessions"")",1
 "R/sweep.R","ledgr_sweep_impl","branch","availability_active","if: availability_active",1

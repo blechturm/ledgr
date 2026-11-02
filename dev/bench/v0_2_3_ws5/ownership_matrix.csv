@@ -11,11 +11,11 @@ D2_prefix_rebuild,LDG-3181,R/position-facts.R,test-position-facts-context.R,rebu
 D2_resume_carry,LDG-3181,R/backtest-runner.R;R/walk-forward.R,test-position-facts-context.R,drop carried anchors,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D2_resume_carry -
 D2_shared_axis,LDG-3181,R/position-facts.R,test-position-facts-context.R,snap a pre-axis transition to bar one,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D2_shared_axis -
 D2_pulse_unknown,LDG-3181,R/pulse-snapshot.R,test-position-facts-context.R,report synthetic zero basis as entry price,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D2_pulse_unknown -
-D3_target_verbs,LDG-3183,pending_WS16,tickets.yml,omit a Section 4 item 3 case,Rscript dev/bench/v0_2_3_ws5/check.R
-D4_selection_weights,LDG-3182,pending_WS16,tickets.yml,omit a selection or weight case,Rscript dev/bench/v0_2_3_ws5/check.R
+D3_target_verbs,LDG-3183,R/strategy-helpers.R,test-strategy-authoring-ws16.R,redistribute an unavailable request,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D3_target_verbs -
+D4_selection_weights,LDG-3182,R/strategy-helpers.R,test-strategy-authoring-ws16.R,round a fractional selection up,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D4_selection_weights -
 D5_state_declaration,LDG-3185,pending_WS17,tickets.yml,omit a declared-state type case,Rscript dev/bench/v0_2_3_ws5/check.R
 D5_state_checkpoint,LDG-3186,pending_WS17,tickets.yml,restore per-pulse payload encoding,Rscript dev/bench/v0_2_3_ws5/check.R
-D6_D7_schedule_inputs,LDG-3184,pending_WS16,tickets.yml,add a second scheduler or implicit input,Rscript dev/bench/v0_2_3_ws5/check.R
+D6_D7_schedule_inputs,LDG-3184,R/strategy-schedule.R,test-strategy-authoring-ws16.R,allow bar-native schedule queries to synthesize sessions,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D6_D7_schedule_inputs -
 D8_rounding_evidence,LDG-3187,pending_WS18,tickets.yml,omit a typed sizing category,Rscript dev/bench/v0_2_3_ws5/check.R
 D9_pattern_teaching,LDG-3189,pending_WS18,tickets.yml,teach an unexecuted pattern,Rscript dev/bench/v0_2_3_ws5/check.R
 S4_item_5_reader_cut,LDG-3188,pending_WS18,tickets.yml,retain a retired frame reader,Rscript dev/bench/v0_2_3_ws5/check.R

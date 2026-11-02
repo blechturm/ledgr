@@ -359,7 +359,8 @@ ledgr_experiment_plan <- function(x, ...) {
       cost_model = list(
         supplied = TRUE,
         type_id = x$cost_model$type_id,
-        hash = x$cost_model_hash
+        hash = x$cost_model_hash,
+        description = ledgr_cost_describe(x$cost_model)
       ),
       checks = tibble::as_tibble(checks),
       assumptions = ledgr_experiment_plan_assumptions(
@@ -386,15 +387,18 @@ print.ledgr_experiment_plan <- function(x, ...) {
     "Opening:      supplied; cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
     ", positions=", x$opening$position_count, "\n", sep = ""
   )
-  cat("Costs:        supplied (", x$cost_model$type_id, ")\n", sep = "")
-  if (!is.null(x$strategy_schedule)) {
-    cat(
-      "Strategy schedule: ",
-      ledgr_strategy_schedule_label(x$strategy_schedule),
-      "\n",
-      sep = ""
-    )
-  }
+  cat(
+    "Costs:        supplied; ",
+    gsub("\n", "; ", x$cost_model$description, fixed = TRUE),
+    "\n",
+    sep = ""
+  )
+  cat(
+    "Strategy schedule: ",
+    ledgr_strategy_schedule_label(x$strategy_schedule),
+    "\n",
+    sep = ""
+  )
   if (isTRUE(x$availability_active)) {
     cat("Universe:     ", x$universe_type, "\n", sep = "")
     cat(ledgr_experiment_plan_policy_lines(x, width = 14L), sep = "")

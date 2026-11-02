@@ -20,13 +20,15 @@ ledgr_target_rebalance(
 to at most one.}
 
 \item{keep}{Current decision-axis positions to preserve. Kept IDs must not
-also appear in \code{weights}, even at zero weight.}
+also appear in \code{weights}, even at zero weight. A character keep decides
+named leavers first; \code{index_leavers} then decides all other held leavers;
+a logical keep has lowest precedence and cannot override a leaver sale.}
 
 \item{index_leavers}{Required policy for held instruments outside current
 membership that are not named by a character \code{keep}: \code{"sell"} or
 \code{"keep"}. There is no implicit leaver policy.}
 
-\item{invest_fraction}{Fraction of the selected capital base to invest.}
+\item{invest_fraction}{Fraction of the chosen capital base to invest.}
 
 \item{capital_base}{Optional allocation base: \code{"total_equity"} or
 \code{"remaining_equity"}. Weighted rebalance requires a choice when preserved
@@ -42,13 +44,13 @@ A full-universe \code{ledgr_target} object.
 sizing engine and return a complete \code{ledgr_target} over \code{ctx$universe}.
 }
 \details{
-In a dense run, allocatable equity is current equity. In an
-availability-aware run, ledgr first reserves the absolute marked exposure of
-ineligible holdings, held nonmembers and target-restricted members alike, and
-preserves their current quantities; weights may name eligible instruments
-only. IDs named in \code{keep}
-are likewise preserved and reserved exactly once. Weights and
-\code{invest_fraction} applies to the chosen capital base after reservations.
+ledgr reserves the absolute marked exposure of every preserved position
+exactly once before sizing weighted requests. In availability-aware runs,
+this includes ineligible holdings, held nonmembers and target-restricted
+members; weights may name buyable instruments only. IDs named by a character
+\code{keep} are also preserved. \code{invest_fraction} applies to the chosen capital
+base; with \code{capital_base = "remaining_equity"}, that base is equity after
+preserved and added exposure has been reserved.
 Share quantities are floored to whole numbers with
 \code{floor(weight * invest_fraction * allocation_equity / close_price)}. An
 exact zero member weight targets zero without consulting that instrument's
