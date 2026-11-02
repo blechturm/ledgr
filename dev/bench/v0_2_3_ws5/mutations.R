@@ -123,6 +123,41 @@ mutations <- list(
     filter = "strategy-state-ws17",
     blocks = "unchanged cursors resume without replay or encoding"
   ),
+  D5_merge_to_replacement = list(
+    file = "R/fold-engine.R",
+    old = "context_ids, patch = TRUE,",
+    new = "context_ids, patch = FALSE,",
+    filter = "strategy-state-ws17",
+    blocks = "helper patches and raw replacements stay distinct"
+  ),
+  D5_metadata_to_state = list(
+    file = "R/strategy-state.R",
+    old = "  patch <- list(...)\n  if (length(patch) > 0L",
+    new = "  patch <- list(...)\n  if (!is.null(intent_reason)) patch$intent_reason <- intent_reason\n  if (length(patch) > 0L",
+    filter = "strategy-state-ws17",
+    blocks = "helper patches and raw replacements stay distinct"
+  ),
+  D5_axis_checkpoint = list(
+    file = "R/fold-engine.R",
+    old = "changed <- isTRUE(fold_state$state_axis_changed) ||\n    !ledgr_strategy_state_equal(next_state, previous_state)",
+    new = "changed <- !ledgr_strategy_state_equal(next_state, previous_state)",
+    filter = "strategy-state-ws17",
+    blocks = "asset state follows ID lifecycle and axis checkpoints"
+  ),
+  D5_marker_resume = list(
+    file = "R/strategy-state.R",
+    old = "WHERE run_id = ? AND ts_utc <= ? AND state_json <> ?",
+    new = "WHERE run_id = ? AND ts_utc <= ?",
+    filter = "strategy-state-ws17",
+    blocks = "unchanged cursors resume without replay or encoding"
+  ),
+  D5_candidate_leak = list(
+    file = "R/sweep.R",
+    old = "values = ledgr_strategy_state_defaults(\n        exp$strategy_state, exp$universe,\n        default_scalars = strategy_state_default_scalars\n      ),",
+    new = "values = if (identical(candidate_id, \"second\")) {\n        ledgr_strategy_state_apply_values(\n          ledgr_strategy_state_defaults(\n            exp$strategy_state, exp$universe,\n            default_scalars = strategy_state_default_scalars\n          ),\n          list(count = 1L), exp$strategy_state, exp$universe, patch = TRUE,\n          default_scalars = strategy_state_default_scalars\n        )\n      } else {\n        ledgr_strategy_state_defaults(\n          exp$strategy_state, exp$universe,\n          default_scalars = strategy_state_default_scalars\n        )\n      },",
+    filter = "strategy-state-ws17",
+    blocks = "sweep candidates isolate declared state across workers"
+  ),
   D6_D7_schedule_inputs = list(
     file = "R/strategy-schedule.R",
     old = "if (identical(history_substrate$clock_kind, \"declared_sessions\")) {\n    history_substrate$sessions\n  } else {\n    NULL\n  }",

@@ -551,7 +551,8 @@ ledgr_fold_stage_observe_settle <- function(
         fold_state$strategy_state,
         services$strategy_state_declaration,
         fold_state$state_axis %||% character(),
-        context_ids
+        context_ids,
+        default_scalars = services$strategy_state_default_scalars
       )
       fold_state$state_axis_changed <- !is.null(fold_state$state_axis)
       fold_state$state_axis <- context_ids
@@ -1481,19 +1482,22 @@ ledgr_fold_stage_commit <- function(
   previous_state <- fold_state$strategy_state
   if (inherits(state_update, "ledgr_strategy_state_reset")) {
     next_state <- ledgr_strategy_state_defaults(
-      services$strategy_state_declaration, context_ids
+      services$strategy_state_declaration, context_ids,
+      default_scalars = services$strategy_state_default_scalars
     )
   } else if (inherits(state_update, "ledgr_strategy_state_patch")) {
     next_state <- ledgr_strategy_state_apply_values(
       previous_state, unclass(state_update), services$strategy_state_declaration,
-      context_ids, patch = TRUE
+      context_ids, patch = TRUE,
+      default_scalars = services$strategy_state_default_scalars
     )
   } else if (is.null(state_update)) {
     next_state <- previous_state
   } else {
     next_state <- ledgr_strategy_state_apply_values(
       previous_state, state_update, services$strategy_state_declaration,
-      context_ids, patch = FALSE
+      context_ids, patch = FALSE,
+      default_scalars = services$strategy_state_default_scalars
     )
   }
   changed <- isTRUE(fold_state$state_axis_changed) ||
@@ -1779,6 +1783,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     strategy_call_signature = strategy_call_signature,
     strategy_is_functional = strategy_is_functional,
     strategy_state_declaration = execution$strategy_state_declaration,
+    strategy_state_default_scalars = execution$strategy_state_default_scalars,
     availability_provider = availability_provider,
     valuation_state = valuation_state,
     corporate_action_plan = corporate_action_plan,

@@ -814,13 +814,20 @@ ledgr_run_fold_impl <- function(config,
   output_handler$record_run_status("RUNNING", NA_character_)
 
   strategy_state_declaration <- ledgr_strategy_state_from_identity(cfg$strategy_state)
+  strategy_state_default_scalars <- ledgr_strategy_state_default_scalars(
+    strategy_state_declaration
+  )
   strategy_state_mem <- list(
-    values = ledgr_strategy_state_defaults(strategy_state_declaration, instrument_ids),
+    values = ledgr_strategy_state_defaults(
+      strategy_state_declaration, instrument_ids,
+      default_scalars = strategy_state_default_scalars
+    ),
     axis = instrument_ids
   )
   if (is_resume) {
     strategy_state_mem <- ledgr_strategy_state_restore(
-      con, run_id, resume_iso, strategy_state_declaration, instrument_ids
+      con, run_id, resume_iso, strategy_state_declaration, instrument_ids,
+      default_scalars = strategy_state_default_scalars
     )
   }
   current_positions <- state_env$current$positions
@@ -859,6 +866,7 @@ ledgr_run_fold_impl <- function(config,
     state = state_env$current,
     strategy_state = strategy_state_mem,
     strategy_state_declaration = strategy_state_declaration,
+    strategy_state_default_scalars = strategy_state_default_scalars,
     position_facts = position_facts,
     history_substrate = history_substrate,
     feature_defs = feature_defs,

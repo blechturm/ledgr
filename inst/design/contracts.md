@@ -1318,7 +1318,7 @@ Accepted change pending:
   `ledgr_invalid_strategy_state`. Departed IDs are removed and newly visible or
   re-entering IDs receive their declared defaults.
 - `ledgr_strategy_result()` returns a declared-field patch: omitted fields
-  retain their values and `NA` restores the field's declared default. A raw
+  retain their values and a typed `NA` restores the field's declared default. A raw
   `state_update` is a complete replacement, so omitted fields restore defaults;
   `list()` restores all defaults. An omitted update retains state.
   `reset_state = TRUE` restores all defaults and cannot accompany a patch.

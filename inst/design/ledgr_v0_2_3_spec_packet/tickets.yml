@@ -1128,7 +1128,17 @@ workstreams:
     name: "Typed declared strategy state (macro WS5)"
     cut: 7
     status: "review_pending"
-    close_review: "Implementation complete in strategy_state_closeout.md; awaiting the independent Type 1 close review required after LDG-3186."
+    close_review: >-
+      The independent Type 1 close review returned CHANGES_REQUIRED in
+      close_review_17.md. The correction makes patch and replacement,
+      metadata separation, post-marker resume, payload-axis restoration,
+      axis-only checkpoints, attributed/cast-invalid values and equal-
+      declaration candidate isolation failure-sensitive. It removes repeated
+      declaration/default work and cached durable encoding from the pulse
+      path, adds the 500-ID/four-field record, refreshes the fingerprint census
+      and records all seven detected D5 mutations. Focused suites, the WS5
+      inventory, codebase census and exact-source build/R CMD check pass; the
+      workstream awaits focused confirmation and maintainer acceptance.
     depends_on_workstream: 16
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors with an explicit type/missing encoding; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, durable resume cursor, restored state and candidate isolation are exact; unchanged pulses do no state encoding; the accepted cursor/checkpoint design reconstructs complete state without silently consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
@@ -2681,18 +2691,23 @@ tickets:
         R/fold-engine.R keeps one complete typed state, writes one existing-
         table cursor/checkpoint row per completed pulse, writes the constant
         marker without encoding when value and axis are unchanged, and restores
-        from the latest cursor plus preceding payload. The retired untyped JSON
-        cache/normalizer and every-pulse validation encodes are absent.
+        from the latest cursor plus preceding payload. Strategy-state payloads
+        no longer use the general canonical JSON cache, while its remaining
+        configuration/declaration-identity and metadata owners remain; the
+        retired untyped state normalizer and every-pulse validation encodes are
+        absent.
       - >-
         Detecting evidence: LTB-0533/LCL-0523 covers patch, replacement,
         omission, reset, broadcast/alignment, typed missing reset and illegal
-        combinations. LTB-0534/LCL-0524 pins N-to-N+1 resume, exactly one row
-        per completed pulse, encoder counts and the three unchanged workloads.
+        combinations. LTB-0534/LCL-0524 pins N-to-N+1 and post-marker resume,
+        resumed narrowed-axis parity, exactly one row per completed pulse,
+        encoder counts and the three unchanged workloads.
         LTB-0537/LCL-0527 and LTB-0538/LCL-0528 cover worker candidate
-        isolation and walk-forward reset. Both executable D5 isolated-copy
-        mutations apply once and are detected in
+        isolation and walk-forward test-run reset. All seven executable D5
+        isolated-copy mutations apply once and are detected in
         dev/bench/v0_2_3_strategy_state/evidence/current/mutations.csv. The
-        seven-shape record and four 500-pulse measurements are in
+        seven-shape record, four 500-pulse measurements and two descriptive
+        500-ID/four-field measurements are in
         dev/bench/v0_2_3_strategy_state/; the closeout is
         strategy_state_closeout.md. Exact-source build and R CMD check pass
         installation, namespace, documentation, all tests, examples and all

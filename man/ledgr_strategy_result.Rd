@@ -9,7 +9,8 @@ ledgr_strategy_result(targets, ..., intent_reason = NULL, reset_state = FALSE)
 \arguments{
 \item{targets}{Complete named target quantities.}
 
-\item{...}{Named declared strategy-state fields to patch.}
+\item{...}{Named declared strategy-state fields to patch. A typed missing
+value restores that field's declared default.}
 
 \item{intent_reason}{Optional non-empty decision note.}
 

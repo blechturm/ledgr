@@ -1717,6 +1717,9 @@ ledgr_sweep_candidate_execution <- function(exp,
     start_idx = 1L,
     dispositions_active = TRUE
   )
+  strategy_state_default_scalars <- ledgr_strategy_state_default_scalars(
+    exp$strategy_state
+  )
   execution <- ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = exp$universe,
@@ -1732,10 +1735,14 @@ ledgr_sweep_candidate_execution <- function(exp,
     telemetry_stride = 0L,
     state = list(cash = exp$opening$cash, positions = initial_positions, lot_state = initial_lot_state),
     strategy_state = list(
-      values = ledgr_strategy_state_defaults(exp$strategy_state, exp$universe),
+      values = ledgr_strategy_state_defaults(
+        exp$strategy_state, exp$universe,
+        default_scalars = strategy_state_default_scalars
+      ),
       axis = exp$universe
     ),
     strategy_state_declaration = exp$strategy_state,
+    strategy_state_default_scalars = strategy_state_default_scalars,
     position_fact_unknown_basis = exp$position_fact_unknown_basis %||% character(),
     history_substrate = history_substrate,
     feature_defs = feature_defs,

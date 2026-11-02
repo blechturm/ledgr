@@ -166,20 +166,34 @@ ledgr_strategy_state_default_value <- function(field, n = 1L, names = NULL) {
   out
 }
 
-ledgr_strategy_state_defaults <- function(declaration, axis) {
-  ledgr_strategy_state_declaration_validate(declaration)
+ledgr_strategy_state_default_scalars <- function(declaration) {
+  values <- vector("list", length(declaration$fields))
+  names(values) <- vapply(declaration$fields, `[[`, character(1L), "name")
+  for (i in seq_along(declaration$fields)) {
+    values[[i]] <- ledgr_strategy_state_default_value(declaration$fields[[i]])
+  }
+  values
+}
+
+ledgr_strategy_state_defaults <- function(declaration, axis,
+                                          default_scalars = NULL) {
   axis <- as.character(axis)
   if (anyNA(axis) || any(!nzchar(axis)) || anyDuplicated(axis)) {
     ledgr_strategy_state_abort("Strategy-state asset axis must use unique non-empty IDs.")
   }
-  values <- vector("list", length(declaration$fields))
-  names(values) <- vapply(declaration$fields, `[[`, character(1L), "name")
+  if (is.null(default_scalars)) {
+    default_scalars <- ledgr_strategy_state_default_scalars(declaration)
+  }
+  values <- vector("list", length(default_scalars))
+  names(values) <- names(default_scalars)
   for (i in seq_along(declaration$fields)) {
     field <- declaration$fields[[i]]
     values[[i]] <- if (identical(field$scope, "asset")) {
-      ledgr_strategy_state_default_value(field, length(axis), axis)
+      out <- rep(default_scalars[[i]], length(axis))
+      names(out) <- axis
+      out
     } else {
-      ledgr_strategy_state_default_value(field)
+      default_scalars[[i]]
     }
   }
   values
@@ -227,19 +241,27 @@ ledgr_strategy_state_field <- function(declaration, name) {
 
 ledgr_strategy_state_validate_value <- function(value, field, axis,
                                                 allow_broadcast = TRUE) {
+  if (is.object(value) || (!is.null(attributes(value)) &&
+      !identical(names(attributes(value)), "names"))) {
+    ledgr_strategy_state_abort(sprintf(
+      "Strategy-state field `%s` must be an unclassed atomic value.", field$name
+    ))
+  }
   is_asset <- identical(field$scope, "asset")
   if (is_asset && length(value) == 1L && is.null(names(value)) && allow_broadcast) {
     value <- rep(value, length(axis))
     names(value) <- axis
   } else if (is_asset) {
-    if (is.null(names(value)) || anyNA(names(value)) || any(!nzchar(names(value))) ||
-        anyDuplicated(names(value)) || !setequal(names(value), axis)) {
+    value_names <- names(value)
+    index <- match(axis, value_names)
+    if (length(value_names) != length(axis) || anyNA(value_names) ||
+        any(!nzchar(value_names)) || anyDuplicated(value_names) || anyNA(index)) {
       ledgr_strategy_state_abort(sprintf(
         "Asset state `%s` must be an unnamed scalar or a named full-axis vector.",
         field$name
       ))
     }
-    value <- value[axis]
+    if (!identical(value_names, axis)) value <- value[index]
   } else if (length(value) != 1L || !is.null(names(value))) {
     ledgr_strategy_state_abort(sprintf("Portfolio state `%s` must stay scalar.", field$name))
   }
@@ -258,8 +280,11 @@ ledgr_strategy_state_validate_value <- function(value, field, axis,
   value
 }
 
-ledgr_strategy_state_align <- function(values, declaration, from_axis, to_axis) {
-  defaults <- ledgr_strategy_state_defaults(declaration, to_axis)
+ledgr_strategy_state_align <- function(values, declaration, from_axis, to_axis,
+                                       default_scalars = NULL) {
+  defaults <- ledgr_strategy_state_defaults(
+    declaration, to_axis, default_scalars = default_scalars
+  )
   if (length(values) == 0L) return(defaults)
   unknown <- setdiff(names(values), names(defaults))
   if (length(unknown) > 0L) ledgr_strategy_state_abort(sprintf(
@@ -282,7 +307,8 @@ ledgr_strategy_state_align <- function(values, declaration, from_axis, to_axis) 
 }
 
 ledgr_strategy_state_apply_values <- function(previous, update, declaration,
-                                              axis, patch = FALSE) {
+                                              axis, patch = FALSE,
+                                              default_scalars = NULL) {
   if (!is.list(update) || is.data.frame(update) ||
       (length(update) > 0L && (is.null(names(update)) || anyNA(names(update)) ||
         any(!nzchar(names(update))) || anyDuplicated(names(update))))) {
@@ -292,14 +318,18 @@ ledgr_strategy_state_apply_values <- function(previous, update, declaration,
   if (length(unknown) > 0L) ledgr_strategy_state_abort(sprintf(
     "Strategy state update contains undeclared fields: %s.", paste(unknown, collapse = ", ")
   ))
-  out <- if (patch) previous else ledgr_strategy_state_defaults(declaration, axis)
+  if (is.null(default_scalars)) {
+    default_scalars <- ledgr_strategy_state_default_scalars(declaration)
+  }
+  out <- if (patch) previous else ledgr_strategy_state_defaults(
+    declaration, axis, default_scalars = default_scalars
+  )
   for (name in names(update)) {
     field <- ledgr_strategy_state_field(declaration, name)
     value <- ledgr_strategy_state_validate_value(update[[name]], field, axis)
     reset <- is.na(value)
     if (any(reset)) {
-      defaults <- ledgr_strategy_state_defaults(declaration, axis)[[name]]
-      value[reset] <- defaults[reset]
+      value[reset] <- default_scalars[[name]]
     }
     out[[name]] <- value
   }
@@ -310,8 +340,7 @@ ledgr_strategy_state_encode <- function(values, declaration, axis) {
   fields <- vector("list", length(declaration$fields))
   for (i in seq_along(declaration$fields)) {
     field <- declaration$fields[[i]]
-    value <- ledgr_strategy_state_validate_value(values[[field$name]], field, axis,
-      allow_broadcast = FALSE)
+    value <- values[[field$name]]
     missing <- is.na(value)
     safe <- value
     safe[missing] <- switch(field$type,
@@ -321,7 +350,7 @@ ledgr_strategy_state_encode <- function(values, declaration, axis) {
       missing = as.logical(missing), value = unname(safe)
     )
   }
-  canonical_json(list(
+  ledgr_canonical_json_encode(list(
     rule_version = ledgr_strategy_state_rule_version,
     axis = as.character(axis), fields = fields
   ))
@@ -368,11 +397,17 @@ ledgr_strategy_state_decode <- function(json, declaration) {
       ledgr_strategy_state_abort("Persisted strategy-state type or field identity differs from its declaration.")
     }
     seen <- c(seen, entry$name)
-    value <- ledgr_strategy_state_cast(unlist(entry$value, use.names = FALSE), field$type)
+    raw_value <- unlist(entry$value, use.names = FALSE)
+    value <- suppressWarnings(ledgr_strategy_state_cast(raw_value, field$type))
     missing <- as.logical(unlist(entry$missing, use.names = FALSE))
     expected_n <- if (identical(field$scope, "asset")) length(axis) else 1L
     if (length(value) != expected_n || length(missing) != expected_n || anyNA(missing)) {
       ledgr_strategy_state_abort("Persisted strategy-state field has the wrong shape.")
+    }
+    if (any(is.na(value) & !missing)) {
+      ledgr_strategy_state_abort(
+        "Persisted strategy-state value cannot be cast to its declared type."
+      )
     }
     value[missing] <- switch(field$type,
       numeric = NA_real_, integer = NA_integer_, logical = NA, character = NA_character_)
@@ -388,13 +423,16 @@ ledgr_strategy_state_decode <- function(json, declaration) {
 ledgr_strategy_state_equal <- function(x, y) identical(x, y)
 
 ledgr_strategy_state_restore <- function(con, run_id, ts_utc,
-                                         declaration, resume_axis) {
+                                         declaration, resume_axis,
+                                         default_scalars = NULL) {
   ts_iso <- ledgr_normalize_ts_utc(ts_utc)
   cursor <- DBI::dbGetQuery(con, paste(
     "SELECT ts_utc FROM strategy_state",
     "WHERE run_id = ? AND ts_utc < ? ORDER BY ts_utc DESC LIMIT 1"
   ), params = list(run_id, ts_iso))
-  defaults <- ledgr_strategy_state_defaults(declaration, resume_axis)
+  defaults <- ledgr_strategy_state_defaults(
+    declaration, resume_axis, default_scalars = default_scalars
+  )
   if (nrow(cursor) == 0L) return(list(values = defaults, axis = resume_axis))
   payload <- DBI::dbGetQuery(con, paste(
     "SELECT state_json FROM strategy_state",
@@ -402,19 +440,14 @@ ledgr_strategy_state_restore <- function(con, run_id, ts_utc,
     "ORDER BY ts_utc DESC LIMIT 1"
   ), params = list(run_id, cursor$ts_utc[[1L]], ledgr_strategy_state_cursor_marker))
   if (nrow(payload) == 0L) return(list(values = defaults, axis = resume_axis))
-  restored <- ledgr_strategy_state_decode(payload$state_json[[1L]], declaration)
-  list(
-    values = ledgr_strategy_state_align(
-      restored$values, declaration, restored$axis, resume_axis
-    ),
-    axis = resume_axis
-  )
+  ledgr_strategy_state_decode(payload$state_json[[1L]], declaration)
 }
 
 #' Return targets with a declared strategy-state patch
 #'
 #' @param targets Complete named target quantities.
-#' @param ... Named declared strategy-state fields to patch.
+#' @param ... Named declared strategy-state fields to patch. A typed missing
+#'   value restores that field's declared default.
 #' @param intent_reason Optional non-empty decision note.
 #' @param reset_state Whether to restore every declared default. It cannot be
 #'   combined with state fields in `...`.

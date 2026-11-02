@@ -57,6 +57,7 @@ ledgr_execution_spec <- function(run_id,
                                  state,
                                  strategy_state,
                                  strategy_state_declaration,
+                                 strategy_state_default_scalars = NULL,
                                  position_facts = NULL,
                                  position_fact_unknown_basis = character(),
                                  history_substrate = NULL,
@@ -84,6 +85,11 @@ ledgr_execution_spec <- function(run_id,
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
+  if (is.null(strategy_state_default_scalars)) {
+    strategy_state_default_scalars <- ledgr_strategy_state_default_scalars(
+      strategy_state_declaration
+    )
+  }
   spec <- list(
     spec_version = ledgr_execution_spec_version(),
     run_id = run_id,
@@ -102,6 +108,7 @@ ledgr_execution_spec <- function(run_id,
     state = state,
     strategy_state = strategy_state,
     strategy_state_declaration = strategy_state_declaration,
+    strategy_state_default_scalars = strategy_state_default_scalars,
     position_facts = position_facts,
     position_fact_unknown_basis = as.character(position_fact_unknown_basis),
     history_substrate = history_substrate,
@@ -259,6 +266,13 @@ ledgr_validate_execution_spec <- function(spec) {
     "`execution$strategy_state` must contain typed values and their asset axis."
   )
   ledgr_strategy_state_declaration_validate(spec$strategy_state_declaration)
+  ledgr_execution_spec_check(
+    identical(
+      spec$strategy_state_default_scalars,
+      ledgr_strategy_state_default_scalars(spec$strategy_state_declaration)
+    ),
+    "`execution$strategy_state_default_scalars` must match its declaration."
+  )
   ledgr_execution_spec_check(
     is.null(spec$position_facts) ||
       (is.list(spec$position_facts) &&

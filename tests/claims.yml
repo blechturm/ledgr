@@ -4756,7 +4756,7 @@ claims:
     overlapping_evidence: "LCL-0524 owns cursor persistence; this claim owns candidate isolation."
   - id: "LCL-0528"
     source: "v0.2.3 Cut 7 LDG-3186; strategy-authoring synthesis D5"
-    scope: "Every walk-forward training and test run starts from declared strategy-state defaults"
+    scope: "Every walk-forward test run starts from declared strategy-state defaults"
     oracle_class: "First durable checkpoint in each of two test folds"
     detecting_blocks: ["LTB-0538"]
     promised_profile: "heavy_protocol"

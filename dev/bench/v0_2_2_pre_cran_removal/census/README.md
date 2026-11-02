@@ -171,3 +171,11 @@ partial-prefix commit in `ledgr_run_fold_impl()` keeps its branch and owner;
 its recorded condition now reads the record's used-row count
 (`fold_result$equity_facts$n > 0L` for `length(fold_result$equity_facts) >
 0L`). This is the LTB-0331 entry of `ws4a_carrier_design.md` Section 5.
+## Workstream 17 refresh
+
+The source census was regenerated in check mode on the WS17 correction tree
+after adding `ledgr_strategy_state_rule_version` to the tool's literal
+fingerprint membership oracle. Check mode passed with 70 connection entries,
+175 version rows, 90 hand-built run-config rows, 2,002 helpers and 2,479
+condition call sites. The binding is now classified inside the format
+fingerprint, matching the product's pattern-derived store gate.

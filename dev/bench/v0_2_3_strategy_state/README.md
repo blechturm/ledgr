@@ -10,7 +10,9 @@ package root with:
   dev/bench/v0_2_3_strategy_state/evidence/current
 ```
 
-The four 500-pulse dense runs share one constant-price snapshot. `cursor_rows`
+The four 500-pulse dense runs share one constant-price snapshot. Two additional
+100-pulse runs use 500 instruments and four asset fields: one never changes
+state and one changes all four fields on every pulse. `cursor_rows`
 counts durable completion cursors. `payload_encodes` is the number of rows that
 contain a typed checkpoint rather than the constant marker; the implementation
 has exactly one encoder call per such row. Byte counts are UTF-8 bytes stored in
@@ -31,8 +33,13 @@ has exactly one encoder call per such row. Byte counts are UTF-8 bytes stored in
   query, never one query per pulse.
 - Copies and frames: pulse views copy declared atomic values to freeze them; the
   fold retains one complete typed state and creates no per-pulse data frame.
-- Repeated invariant preparation: declarations and defaults are normalized once
-  per candidate; pulse work consumes the prepared declaration.
+- Repeated invariant preparation: declarations are validated and their typed
+  default scalars are prepared once per candidate; pulse work consumes both.
+
+The state view deliberately copies each declared atomic vector before it is
+handed to user code. That bounded copy freezes the pulse view against later
+fold mutation; it is the isolation cost measured by the wide cells, not an
+accidental conversion or data-frame materialization.
 
 Restoring an every-pulse state encode/write is detected by LTB-0534: no-state,
 declared-unchanged and raw-identical runs must contain only the marker and the
