@@ -1025,141 +1025,216 @@ cuts:
     name: "Hot-path ban-list test (macro rule 17)"
     cut: "2026-11-02"
     status: "draft"
+    revision: "2, applying cut_review_8.md findings 1-9 and the maintainer's Type 2 dispositions of 2026-11-02."
     opening: >-
       Written by Claude on 2026-11-02 at the maintainer's request, as the
       chore cut that macro rule 17 names ("the next cut drafted ... WS6 or a
-      chore cut"). It runs in parallel with Cut 7's acceptance, on branch
-      claude/rule17-banlist from Cut 7 head e04786ef, and lands after Cut 7
-      merges. The cut adds a test and tooling only. It removes no banned call:
-      the baseline records today's instances, and later cuts shrink it (WS8
-      and the WS14a subtraction cut first). The measurement step is
-      dev/bench/v0_2_3_hot_path_bans/findings.md. Once accepted, this entry,
-      workstream 19 and LDG-3191 through LDG-3193 are the operative brief;
-      tickets.yml is the sole ticket and sequencing authority. If a
-      concurrently drafted cut takes these numbers first, this cut is
-      renumbered in order, as cut 4 was.
+      chore cut"). Branch claude/rule17-banlist carries release/v0.2.3 after
+      Cut 7 closed (merge 18204bf2), so the cited authority is in the
+      reviewed tree. The cut adds a test and tooling only. It removes no
+      banned call: the baseline records today's instances, and later cuts
+      shrink it (WS8 and the WS14a subtraction cut first). The measurement
+      step is dev/bench/v0_2_3_hot_path_bans/findings.md. Once accepted, this
+      entry, workstream 19 and LDG-3191 through LDG-3193 are the operative
+      brief; tickets.yml is the sole ticket and sequencing authority. If a
+      concurrently drafted cut takes these numbers first, this cut and every
+      reference to it are renumbered in order, as cut 4 was.
+    cut_review: >-
+      Round 1: NEEDS_TYPE_2 in cut_review_8.md (independent clean-context
+      Codex, reviewed head 48a25dcf). Necessity, grain, the exact ratchet and
+      the identity declarations stand. Findings: the five stage roots omit
+      the pulse loop body, including the scheduled-skip helpers (F1);
+      commonplace indirection and a lexical-name collision lose calls (F2);
+      the runtime witness traces only namespace bindings, ignores trace
+      failures and leaves workers open (F3); the JSON list omits the
+      package's serializer backend (F4); the name-based cold exemption hides
+      per-pulse work (F5); coverage can shrink silently under regeneration
+      (F6); the gates need anti-vacuity checks and an explicit fast-lane
+      disposition (F7); the surface table needs a family coverage map (F8);
+      the reviewed tree lacked the cited authority (F9). The maintainer's
+      Type 2 dispositions of 2026-11-02 are decisions (1), (3), (5) and (6)
+      below; revision 2 applies every finding.
     authority: >-
       inst/design/ledgr_v0_2_3_spec_packet/macro_plan.md Section 1 rules 14
       (no JSON on per-pulse or per-fill paths) and 17 (hot-path bans enforced
-      by a test, shrink-only baseline), WS14a (the baseline is review input)
-      and the WS8 fill-heavy baseline amendment;
-      inst/design/manual/optimization_coding_style.qmd, The Seven Shapes And
-      Their Replacements; dev/bench/v0_2_3_hot_path_bans/findings.md;
+      by a test, shrink-only baseline), WS14a (the baseline is review input;
+      the test cut owns the fast lane) and the WS8 fill-heavy baseline
+      amendment; inst/design/manual/optimization_coding_style.qmd, The Seven
+      Shapes And Their Replacements; dev/bench/v0_2_3_hot_path_bans/findings.md;
       dev/bench/v0_2_3_fill_heavy_profile/README.md; tests/README.md (profile
-      runner, heavy protocols).
+      runner, heavy protocols); cut_review_8.md.
     source_table: >-
-      Cut 7 head e04786ef. The fold stages are ledgr_fold_stage_observe_settle,
-      _decide, _plan, _apply and _commit (R/fold-engine.R). They reach most
-      per-pulse code indirectly: through services$history_reader,
+      Measured at Cut 7 head e04786ef; Cut 7's closing corrections may move
+      individual rows, and LDG-3193 regenerates on the final base. The pulse
+      loop is the `for` loop over pulses inside the run_loop closure of
+      ledgr_fold_envelope (R/fold-engine.R). Besides the five
+      ledgr_fold_stage_* calls, its body runs ledgr_fold_scheduled_skip_decision
+      (which contains %in%), ledgr_fold_scheduled_skip_plan,
+      ledgr_fold_apply_stop and inline expressions. Most per-pulse code is
+      reached indirectly: services$history_reader,
       services$availability_provider, services$valuation_state and
-      services$corporate_action_plan members; through output_handler methods
-      built as closures in R/output-handler.R; through cost_resolver passed as
-      an argument (R/fold-carrier.R ledgr_plan_resolve); through the prepared
-      membership closures returned by a factory
-      (R/availability-provider-prepared.R); and, from user strategy code,
-      through `$.ledgr_pulse_context`, `$.ledgr_strategy_state_view`, the
-      helper-bundle closures and ledgr_strategy_result(). The probe's static
-      walk with the context surface as roots reaches 310 functions, 95 of them
-      with 203 banned calls; the runtime trace of the nine dense recipes
-      (ledgr_run plus one-candidate ledgr_sweep) sees 112 package functions
-      under a stage, all inside the static set. No test guards rule 14 or rule
-      17 today; both are prose that review applies by hand.
+      services$corporate_action_plan members; output_handler methods built as
+      closures in R/output-handler.R; cost_resolver passed as an argument
+      (R/fold-carrier.R ledgr_plan_resolve); prepared membership closures
+      returned by a factory (R/availability-provider-prepared.R); and, from
+      strategy code, the context and state-view S3 methods, the helper-bundle
+      closures and the exported authoring helpers. In the probe's reached
+      code, 11 call sites in 10 functions call through a variable, an
+      argument or `[[`, and the walker cannot resolve them by name.
+      Serialization goes through ledgr wrappers (canonical_json,
+      ledgr_canonical_json_encode, ledgr_json_write_canonical_v2 and the
+      verbatim and NDJSON writers) to yyjsonr and jsonlite
+      (R/config-canonical-json.R); per-diagnostic reconciliation detail is
+      serialized through ledgr_json_write_canonical_v2. No test guards rule
+      14 or rule 17 today.
     decisions: >-
-      Proposed for maintainer acceptance with the cut; decision (1) is
-      already the maintainer's.
+      Proposed for maintainer acceptance with the cut; decisions (1), (3),
+      (5) and (6) are already the maintainer's.
       (1) Roots: everything that can run per pulse (maintainer, 2026-11-02:
-      "everything that is potentially per pulse should be checked"). The
-      roots are the five fold stage functions, the
-      ledgr_pulse_context_helper_bundle closures, and every export and
-      registered S3 method classified per_pulse in a surface table. The table
-      classifies all of them (182 exports and 99 S3 methods at e04786ef) as
-      per_pulse or not, each with a reason. per_pulse covers anything a
-      strategy may call while deciding: the context and state-view methods,
-      ledgr_strategy_result(), the signal, selection, weight, target and
-      sizing helpers and the S3 methods of their classes, the history readers
-      and small utilities. An export or S3 method missing from the table, or
-      a table row naming nothing, fails, so every new export must be
-      classified when it is added. Closures that per-pulse services build at
-      setup (cost resolver, risk plan, availability provider, output handler)
-      are reached through the fold, by member dispatch or a declared edge.
-      The probe's narrower ring without the authoring helpers reached 310
-      functions with 203 calls; with them, 344 functions with 251 calls.
-      (2) The walker reads the installed namespace, not R/ source, so the test
-      runs unchanged in CRAN mode. Nodes are namespace functions and the
-      closures defined inside them (keyed owner$name). Edges come from direct
-      calls, function symbols passed as arguments, x$m() calls resolved to
-      every closure bound to member m (named list element, x$m <- function,
-      x$m <- f, m = x$y), owner-local calls by name, and a declared-edge table
-      for function-valued arguments and factory returns. Over-approximation
-      is accepted: a row on a cold branch costs one recorded line.
-      (3) Banned calls are rule 17's list (match, %in%, setdiff, setNames,
-      unique, data.frame, as.data.frame, rbind, all.equal) as call heads or as
-      apply-family function arguments, plus canonical JSON encode or parse
-      (jsonlite toJSON, fromJSON, parse_json, serializeJSON and ledgr's
-      wrappers canonical_json, ledgr_canonical_json_encode,
-      ledgr_canonical_json, ledgr_json_read_nested, ledgr_json_read_config,
-      ledgr_parse_json_field) as call heads or argument symbols. JSON wrappers
-      are leaves, flagged at the call site. collapse::fmatch(), duplicated()
-      and order() are not banned. Calls inside the arguments of a
-      condition signal (rlang::abort, warn, inform, stop, warning, message,
-      signalCondition, and ledgr helpers named *abort, *_fail, *_refuse or
-      *_error) are exempt, because message building runs only on failure;
-      the condition guarding the signal is not exempt.
-      (4) Exact ratchet. The baseline file records node, call, count and
-      reason, and the test requires the current scan to equal it. A lower
-      count or a vanished row fails too, with a message to regenerate, so a
-      stale allowance can never hide a later regression. The regeneration
-      tool writes lower or removed rows freely and refuses a new or increased
-      row without a stated reason, which it records. Acceptance of that
-      reason is a review duty, not a test.
-      (5) The declared-edge table records from, to and reason; an edge whose
-      endpoint no longer exists fails.
-      (6) Runtime witness. A heavy_protocol block, in a fresh R process with
-      every namespace closure traced, runs:
+      "everything that is potentially per pulse should be checked"; Type 2
+      disposition of F1, "scan the loop body"). The roots are:
+      - the pulse loop body: the inline expressions of the one `for` loop
+        over pulses in ledgr_fold_envelope's run_loop, including its stage
+        calls, skip and stop branches, located by AST in the test without
+        any product change. The test fails unless exactly one such loop is
+        found;
+      - the ledgr_pulse_context_helper_bundle closures;
+      - every export and registered S3 method that a surface table
+        classifies as per_pulse.
+      The table classifies all exports and registered S3 methods (182 and 99
+      at e04786ef), each as per_pulse or not, with a reason. per_pulse covers
+      anything a strategy may call while deciding: the context and
+      state-view methods, ledgr_strategy_result(), the history readers and
+      the history-matrix methods (subsetting, replacement, Math/Ops group
+      generics and coercion), the signal, selection, weight, target and
+      sizing helpers with their classes' methods and the signal-strategy
+      wrapper callbacks, and small utilities. An export or S3 method missing
+      from the table fails, and so does a row naming nothing. An S4 class or
+      method in the namespace (none today) fails until classified. User
+      strategy bodies are not scanned.
+      (2) Walker. It reads the installed namespace, not R/ source, so the
+      test runs unchanged in CRAN mode. Nodes are namespace functions and the
+      closures defined inside them, keyed by their lexical path (for example
+      ledgr_fold_envelope/run_loop); two different definitions under one key
+      fail rather than overwrite. Each node's formals defaults and body are
+      scanned. Edges come from:
+      - direct calls;
+      - function values passed as arguments, bare or qualified (base::match);
+      - do.call() with a literal function name;
+      - simple local aliases (f <- match; f(x));
+      - x$m() and literal x[["m"]]() calls, resolved to every closure bound
+        to member m by a named list element, x$m <- function, x$m <- f or
+        m = x$y;
+      - lexically visible local closures called by name;
+      - named inline functions passed as arguments (FUN = function(z) ...),
+        walked as invoked.
+      Over-approximation is accepted. A generated provenance report (not the
+      baseline) records, for each reached node, a root path that reaches it,
+      so every row is explainable. Baseline totals are static call counts,
+      not measured hot executions.
+      (3) Unresolved callables fail until declared (maintainer Type 2
+      disposition of F2). Any call in reached code whose target the walker
+      cannot resolve (a call through a variable, an argument, a computed `[[`
+      or a non-literal do.call) fails until a declaration names its targets
+      or marks it terminal, with a reason. About 11 sites today. Each declared
+      target that no longer exists fails.
+      (4) Banned calls. Rule 17's list (match, %in%, setdiff, setNames,
+      unique, data.frame, as.data.frame, rbind, all.equal) is counted wherever
+      the walker resolves a call to it, by any of the edge forms in (2).
+      Rule 14's JSON set is inventoried from the package: ledgr's serializer
+      and parser wrappers (canonical_json, ledgr_canonical_json_encode,
+      ledgr_canonical_json, ledgr_json_write_canonical_v2, the verbatim and
+      NDJSON writers, ledgr_json_read_nested, ledgr_json_read_config,
+      ledgr_parse_json_field and any wrapper the inventory finds) and the
+      yyjsonr and jsonlite read and write functions, kept with qualified
+      identity. Each JSON call site counts once, in the node where it
+      appears. Package wrapper bodies are scanned like any node, so a base
+      ban added inside a wrapper is counted; traversal stops at the external
+      packages. collapse::fmatch(), duplicated() and order() are not banned.
+      (5) No exemption (maintainer Type 2 disposition of F5). Calls inside
+      the arguments of abort(), warning(), message() or any helper are
+      counted like any other. A genuine error-path call is a baseline row
+      with the reason "error path".
+      (6) Runtime witness, sequential paths only (maintainer Type 2
+      disposition of F3's worker question). Workers load the same installed
+      package and run the one fold core (AGENTS.md: one fold core, no second
+      execution path), so they execute the same functions; worker dispatch
+      itself is not per pulse. A heavy_protocol block, in a fresh R process
+      with every namespace function traced, runs:
       - the nine dense peer recipes through ledgr_run() and a one-candidate
-        ledgr_sweep();
-      - the eight A0 output-freeze workloads on their recorded paths
+        sequential ledgr_sweep();
+      - the A0 output-freeze workloads on their single-process recorded paths
         (dev/bench/v0_2_3_output_freeze/fixtures.R), which cover costs
         including the compiled and db_live paths, risk with features,
         dividends with state, availability resume, acquisition and
         incomplete runs, walk-forward and failures;
-      - the WS5 semantic ports (dev/bench/v0_2_3_ws5/semantic_ports.R), which
-        exercise the authoring helpers.
-      It fails if a package function executes under a fold stage outside the
-      static reachable set (JSON leaves excepted). It catches an undeclared
-      indirection on an exercised path; an unexercised one remains possible,
-      and that limit is recorded.
-      (7) Review duty. The packet's review_obligations gain one sentence:
-      every close review reads the baseline and declared-edge diff, and an
-      added or increased row needs a reason the maintainer accepts.
-      (8) Identity, per macro rule 5: snapshot content none; run
+      - the WS5 semantic ports (dev/bench/v0_2_3_ws5/semantic_ports.R).
+      The runtime pulse boundary matches decision (1). It opens at each
+      pulse's observe/settle entry and closes at commit exit or when a stop
+      is applied. The block fails, naming them, if package functions execute
+      inside that boundary but outside the static reachable set. It also
+      fails if:
+      - a trace cannot be installed, unless it is on a reasoned exclusion
+        list;
+      - any named workload or path records no observations or does not
+        complete.
+      Namespace tracing does not see closures; decision (3)'s gate covers
+      them statically.
+      (7) Exact ratchet, extended to coverage. The test requires the scan to
+      equal the baseline (node, call, count, reason); a lower count or a
+      vanished row also fails, with a message to regenerate. The
+      regeneration tool separates removed calls from coverage changes. It
+      writes removed calls and lower counts freely. It refuses, until given a
+      reason, which it records:
+      - a new or increased row;
+      - a change to the surface table, the declarations or the roots;
+      - a node that leaves the reachable set.
+      It also refuses duplicate keys and blank reasons.
+      (8) Review duty. The packet's review_obligations gain one sentence:
+      every close review reads the diff of the baseline, surface table,
+      declarations and reachable-set report, and an added row, an increased
+      count or lost coverage needs a reason the maintainer accepts.
+      (9) Fast-lane timing. The ordinary fast lane already misses its
+      112-second backstop as a maintainer-accepted miss (214 s at Cut 7's
+      final candidate); macro WS14a's test cut owns that lane. This cut
+      measures the added fast membership in-process from an installed
+      library and holds it to 3 s. LDG-3193 reports, separately, the
+      functional profile results, this cut's measured cost and the
+      inherited miss. It does not widen the bound, retier tests or count a
+      small delta as a pass.
+      (10) Identity, per macro rule 5: snapshot content none; run
       configuration none; store format fingerprint none. Release impact, per
-      rule 6: tests, test tooling and packet text; no product, NEWS,
-      documentation or dependency change.
+      rule 6: tests, test tooling and packet text, including the
+      tests/README.md pointer and the macro rule 17 cross-reference; no
+      product, NEWS, user documentation or dependency change.
     sequencing: >-
-      One workstream, serial tickets. LDG-3191 builds the walker, baseline,
-      edge table and fast test with synthetic witnesses; LDG-3192 adds the
-      runtime witness; LDG-3193 wires the review duty, regenerates the
-      baseline on the merged base after Cut 7 lands, verifies and closes.
-      Independent of WS7/WS8 drafting; if both are open at once, whichever
-      merges second regenerates the baseline.
+      One workstream, serial tickets. LDG-3191 builds the walker, surface
+      table, declarations, baseline, regeneration tool and fast test with
+      synthetic witnesses; LDG-3192 adds the runtime witness; LDG-3193 wires
+      the review duty, regenerates on the final base, verifies and closes.
+      Independent of WS7/WS8 drafting. Identifiers are checked against any
+      concurrently drafted cut before landing, and whichever cut merges
+      second regenerates the baseline.
     out_of_scope: >-
       Removing or rewriting any banned call (WS8, WS14a and later owners);
       result-reader, preparation, finalisation and once-per-run paths outside
-      the fold (WS7 owns reader replay); user strategy code; extending the
-      banned list beyond rule 17 and rule 14; dynamic tracing in ordinary
-      lanes; per-stage timing budgets (WS14a); any product, fixture or oracle
-      change.
+      the pulse loop (WS7 owns reader replay); user strategy code; extending
+      the banned list beyond rules 14 and 17; certifying the seven shapes
+      beyond these bans (review keeps that duty); tracing inside worker
+      processes; dynamic tracing in ordinary lanes; per-stage timing budgets
+      (WS14a); widening or retiering the fast lane; any product, fixture or
+      oracle change.
     workstreams: [19]
     review_lifecycle: >-
-      An independent clean-context Codex cut review challenges the walker's
-      precision and blind spots, the exact-ratchet and exemption rules,
-      whether every gate can fail, and whether the surface table and witness
-      workloads really cover everything that can run per pulse. The workstream receives
-      one Type 1 close review that reruns the static test and the runtime
-      witness on the merged base, applies each synthetic mutation, and checks
-      that the baseline equals the scan with every non-initial row reasoned.
-      A Type 1 design concern returns NEEDS_TYPE_2. Finding-bearing reviews
+      Round 1 returned NEEDS_TYPE_2 (cut_review_8.md); the maintainer
+      dispositioned the Type 2 questions on 2026-11-02. A targeted
+      clean-context Codex re-review of revision 2 checks each finding's
+      disposition and whether the revised gates can fail. The workstream
+      receives one Type 1 close review. It reruns the static test and the
+      runtime witness on the final base, applies each synthetic mutation and
+      both runtime controls, exercises the regeneration tool, and checks that
+      the baseline equals the scan with every non-initial row reasoned. A
+      Type 1 design concern returns NEEDS_TYPE_2. Finding-bearing reviews
       write a file in this packet; a third correction round stops for
       maintainer disposition.
 review_gate:
@@ -1341,7 +1416,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 19, after LDG-3193", reason: "One claim joins LDG-3191 through LDG-3193: an ordinary fast test walks the installed namespace from the stages and every export or S3 method the surface table classifies per_pulse, fails on any unclassified export or method, and fails when any banned call in a reached function differs from the recorded baseline; each synthetic witness (banned head, apply argument, member dispatch, alias, declared edge, cold exemption, stale row, stale edge) fails or passes as specified; the runtime witness finds no package function executed under a fold stage outside the static set on the merged base and fails when a declared edge is removed; the baseline equals the scan on the merged base; the review duty is recorded; and no product, fixture or oracle changed."}
+    review: {mode: "Type 1", point: "close of workstream 19, after LDG-3193", reason: "One claim joins LDG-3191 through LDG-3193. An ordinary fast test walks the installed namespace from the pulse loop body, the helper-bundle closures and every export or S3 method the surface table classifies per_pulse. It fails on an unclassified export or method, an undeclared unresolved callable, or any difference between the scan and the recorded baseline. Each synthetic witness fails or passes as specified. The regeneration tool refuses unreasoned growth and coverage loss. The runtime witness covers its named workloads with nonempty observations, finds no function executed inside the pulse boundary outside the static set, and fails under both controls. The baseline equals the scan on the final base. The review duty is recorded, and no product, fixture or oracle changed."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -3104,70 +3179,112 @@ tickets:
     effort: "M"
     dependencies: []
     scope: >-
-      Write the walker of cut 8 decisions (1)-(3) over the installed
-      namespace. Under tests/testthat/fixtures/hot-path-bans/, write the
-      surface table classifying every export and registered S3 method
-      (per_pulse or not, with a reason), the baseline and the declared-edge
-      file. Write a regeneration tool that
-      writes lower or removed rows freely and refuses a new or increased row
-      without --reason. Seed the baseline from the scan with reason "initial
-      baseline, cut 8" and the declared edges from the probe's three, each
-      with its reason. Write one fast test file named for the contract (hot
-      path bans) whose first block compares the scan with the baseline
-      exactly and names each differing row, and whose other blocks run the
-      walker on a small synthetic namespace as negative witnesses: a banned
-      call head, a banned apply argument, member dispatch through each binding
-      form, an owner-local call, a declared edge, a JSON leaf, the cold
-      exemption and the guarded-condition non-exemption, a stale baseline row
-      and a stale declared edge. A further block requires the surface table
-      to classify every export and registered S3 method exactly once, and
-      every row to name one that exists. Each block title states its claim as
-      a sentence. Measure the fast block's wall time.
+      Implement cut 8 decisions (1)-(5) and (7). Write the walker over the
+      installed namespace with lexical-path node keys, collision failure,
+      formals scanning and the edge forms of decision (2). Under
+      tests/testthat/fixtures/hot-path-bans/, write:
+      - the surface table classifying every export and registered S3 method;
+      - a family map tying each callable family to its static roots, the
+        package closures it returns and its representative runtime workload,
+        or an explicit uncovered-path statement. The families are the
+        context and state methods, history readers and history-matrix
+        methods, the signal, selection, weight, target and sizing families,
+        the signal-strategy wrapper callbacks, the service factories (cost,
+        risk, availability, valuation, corporate actions, output handler,
+        diagnostic writer, history reader) and the pulse loop with its skip
+        and stop helpers;
+      - the unresolved-callable declarations;
+      - the JSON inventory;
+      - the baseline.
+      Write the regeneration tool of decision (7) and the provenance report.
+      Seed the baseline from the scan with reason "initial baseline, cut 8"
+      and each declaration with its reason. Write one fast test file named
+      for the contract (hot path bans). Its first block compares the scan
+      with the baseline exactly and names each differing row. A synthetic
+      namespace drives the negative witnesses, each of which must count or
+      fail:
+      - a banned call head and a banned call in a formals default;
+      - bare and qualified function arguments, a literal-string do.call and
+        a simple local alias;
+      - member dispatch through each binding form and literal `[[`, and a
+        named inline FUN closure;
+      - two same-named local closures, which must fail as a collision;
+      - an unresolved call through an argument, which must fail until
+        declared, and a stale declaration;
+      - a direct yyjsonr call, a ledgr JSON wrapper call, and a base ban
+        inside a wrapper body;
+      - message(match(x, x)) and a returning helper named *_abort, which
+        must both count;
+      - a stale baseline row, an unclassified export and a table row naming
+        nothing;
+      - a banned call added directly in a pulse-loop body and in a
+        scheduled-skip helper.
+      Further blocks require the surface table to classify every export and
+      S3 method exactly once, and require exactly one pulse loop to be found.
+      Each block title states its claim as a sentence. Exercise the
+      regeneration tool in sequence: delete a call, see the old baseline
+      fail, regenerate, reintroduce the call and see it fail again; also
+      check its refusals for new, increased, coverage-losing and unreasoned
+      rows. Measure the added fast membership in-process from an installed
+      library.
     acceptance:
-      - "an unclassified export or S3 method, and a table row naming nothing, each fail with the name reported"
       - "the scan on the branch equals the seeded baseline, and the test fails with the differing rows named when one banned call is added to, or removed from, any reached function"
-      - "every synthetic witness fails or passes exactly as its title states, and none depends on product code"
-      - "the regeneration tool refuses a new or increased row without a reason and records the reason it is given"
-      - "the test runs from an installed library without R/ sources, and its fast block costs at most 3 s"
+      - "every synthetic witness counts or fails exactly as its title states, and none depends on product code"
+      - "an unclassified export or S3 method, a row naming nothing, an undeclared unresolved callable, a stale declaration and a lexical collision each fail with the name reported"
+      - "the regeneration sequence and every refusal behave as decision (7) states"
+      - "the test runs from an installed library without R/ sources, and the added fast membership costs at most 3 s"
     evidence: []
   - id: "LDG-3192"
-    title: "Witness at runtime that the static walk covers what the fold executes"
+    title: "Witness at runtime that the static walk covers what the pulse loop executes"
     workstream: 19
     status: "pending"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3191"]
     scope: >-
-      Add one heavy_protocol block that, in a fresh R process, traces every
-      namespace closure of the installed build and runs the workloads of cut
-      8 decision (6): the nine dense peer recipes, the eight A0 workloads on
-      their recorded paths and the WS5 semantic ports. It reuses their
-      fixtures without copying or editing them. It fails, naming the
-      functions, if any package function executes while a
-      fold stage is on the stack outside the static reachable set, JSON leaves
-      excepted. Its positive control removes one declared edge and must fail.
-      Record the protocol census entry and the block's wall time.
+      Add one heavy_protocol block implementing cut 8 decision (6). In a
+      fresh R process, trace every namespace function of the installed build
+      and run the decision's workloads on their single-process paths, reusing
+      their fixtures without copying or editing them. Record observations per
+      named workload and path, and assert each path completed. Fail, naming
+      the functions, if any package function executes inside the pulse
+      boundary outside the static reachable set. Also fail if a trace cannot
+      be installed and is not on a reasoned exclusion list, or if any named
+      workload or path has no observations. Two controls run against the
+      final graph:
+      - namespace control: removing the cost-resolver declaration loses
+        ledgr_cost_model_resolve from the static set, and the witness must
+        fail naming it;
+      - callback control: a declared callable whose target has no unique
+        namespace descendant, when undeclared, must fail through the static
+        unresolved-callable gate.
+      Disabling tracing, or dropping one required path, must also fail.
+      Reconcile the block with the registered heavy-protocol census and
+      checker, and record its wall time.
     acceptance:
-      - "the witness passes on the branch and fails, naming the unreached closure, when the cost-resolver edge is removed"
-      - "the traced process leaves the test session's namespace untouched"
-      - "the full-heavy protocol and its checker pass with the new block counted"
+      - "the witness passes on the branch with nonempty observations for every named workload and path"
+      - "both controls fail as specified, as do disabled tracing, a skipped path and an uninstalled trace without an exclusion"
+      - "the traced process leaves the test session's namespace untouched, and the full-heavy protocol and its checker pass with the new block counted"
     evidence: []
   - id: "LDG-3193"
-    title: "Record the review duty, regenerate on the merged base and close"
+    title: "Record the review duty, regenerate on the final base and close"
     workstream: 19
     status: "pending"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3192"]
     scope: >-
-      Add the cut 8 decision (7) sentence to review_obligations. Point
-      tests/README.md and macro rule 17 at the test and the regeneration tool.
-      After Cut 7 merges into release/v0.2.3, rebase this branch, regenerate
-      the baseline and record every changed row with its cause. Run the fast
-      and review profiles, the heavy protocol, source build and R CMD check,
-      and record the fast-lane time against its bound.
+      Add the cut 8 decision (8) sentence to review_obligations. Point
+      tests/README.md and macro rule 17 at the test and the regeneration
+      tool. On the final base, check identifiers against any concurrently
+      drafted cut and renumber if needed. Regenerate the baseline and
+      provenance report, and attribute every changed row to a named commit.
+      Rerun both runtime controls on that final graph. Run the fast, review
+      and heavy profiles, source build and R CMD check. Report decision (9)'s
+      three items separately: the functional profile results, this cut's
+      measured fast cost and the inherited fast-lane miss.
     acceptance:
-      - "on the merged base the scan equals the baseline, the runtime witness passes and each changed row since LDG-3191 is attributed to a named commit"
-      - "fast, review and heavy profiles, source build and R CMD check pass; the fast-lane delta is recorded"
-      - "no file under R/, no fixture or oracle outside tests/testthat/fixtures/hot-path-bans/, and no NEWS or documentation page changed"
+      - "on the final base the scan equals the baseline, the runtime witness and both controls behave as specified, and each changed row since LDG-3191 is attributed to a named commit"
+      - "fast, review and heavy profiles pass functionally, source build and R CMD check pass, and the closeout reports the three timing items of decision (9) separately without widening any bound"
+      - "no file under R/, no fixture or oracle outside tests/testthat/fixtures/hot-path-bans/, and no NEWS or user documentation page changed"
     evidence: []
