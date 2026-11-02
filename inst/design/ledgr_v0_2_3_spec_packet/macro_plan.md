@@ -362,6 +362,11 @@ required capital and costs) follows WS4b. H3 is settled in this cut.
   construction is about 19% of the dense no-fill floor, and the WS4b
   amendment covers only the availability context refresh. Evidence:
   `dev/spikes/shape-audit/`.
+- **Amendment (maintainer, 2026-11-02, ID matching):** the WS14 ID-matching
+  rule applies already to the code WS5 touches. The close reviews of its
+  target and state workstreams check it there: no per-pulse ID matching
+  inside the fold, and an identity fast path before one `fmatch()` at the
+  strategy's target boundary.
 
 ### WS6. Context frame retirement (C2)
 
@@ -495,6 +500,22 @@ product change.
 WS3 reruns the affected peer cells after any product change. Release
 certification records the final targets, results and any consciously accepted
 semantic premium; it may not describe an uninvestigated miss as unavoidable.
+
+- **Amendment (maintainer, 2026-11-02, ID matching):** no per-pulse ID
+  matching inside the fold. Internal reads use integer positions prepared once
+  per run or candidate (the run axis and `context_pos`); `match()`,
+  name-indexed `x[ids]`, `setNames()`, `setdiff()` and `unique()` on
+  instrument IDs do not run per pulse. The one unavoidable boundary, the
+  strategy's named target vector, first checks
+  `identical(names(targets), axis_ids)` and skips matching when it holds;
+  otherwise it matches once with `collapse::fmatch()`. Evidence: a local probe
+  (500 IDs, collapse 2.1.8, 2026-11-02) measured per call base `match()` 8.5,
+  `fmatch()` 2.5, name-indexed `x[ids]` 11.0 and a prepared integer read 3.0
+  microseconds. The shape audit (`dev/spikes/shape-audit/`, P1, P9, P11, P12)
+  counts about 25 name-indexed lookups per pulse, roughly 0.3-0.5 ms or a
+  tenth of the post-WS4b no-fill loop. At the stretch target, 25 `fmatch()`
+  calls alone would use a third to half of the pulse budget, so the rule is
+  removal, with `fmatch()` only at the boundary.
 
 ## 4. Cut strategy
 
