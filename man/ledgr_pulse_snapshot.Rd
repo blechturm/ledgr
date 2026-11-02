@@ -12,8 +12,10 @@ ledgr_pulse_snapshot(
   feature_params = list(),
   cash = 1e+05,
   positions = NULL,
-  state_prev = NULL,
-  params = NULL
+  asset_state = list(),
+  portfolio_state = list(),
+  params = NULL,
+  ...
 )
 }
 \arguments{
@@ -33,18 +35,23 @@ close.}
 declarations when \code{features} (or the experiment's features) is a feature
 map.}
 
-\item{cash}{Cash held alongside \code{positions}. It is not total account value;
-pulse equity is \verb{cash + sum(positions * current close)}.}
+\item{cash}{Cash held alongside \code{positions}. The snapshot-form default is
+synthetic inspection-only cash: it is not an investor default and never
+enters run identity. Cash is not total account value; pulse equity is
+\verb{cash + sum(positions * current close)}.}
 
 \item{positions}{Named numeric vector of positions (NULL = flat).}
 
-\item{state_prev}{Optional JSON-safe previous strategy state. This supports
-dense one-pulse strategy checks; availability-aware state normalization is
-not simulated.}
+\item{asset_state, portfolio_state}{Flat named lists declaring typed scalar
+strategy-state defaults. Asset fields become vectors over the inspection
+axis; portfolio fields remain scalar.}
 
 \item{params}{JSON-safe strategy parameters used to resolve the experiment's
 feature factory and risk plan, as in \code{\link[=ledgr_run]{ledgr_run()}} (experiment form
 only).}
+
+\item{...}{Reserved. The retired \code{state_prev} argument is refused here with
+no compatibility alias.}
 }
 \value{
 A \code{ledgr_pulse_context} object with the accessors and planes of the
@@ -87,11 +94,11 @@ pulse <- ledgr_pulse_snapshot(
   ts_utc = "2020-01-03T00:00:00Z",
   features = list(ledgr_ind_sma(2)),
   positions = c(AAA = 2),
-  state_prev = list(pulses_seen = 1)
+  portfolio_state = list(pulses_seen = 1L)
 )
-pulse$close("AAA")
-pulse$feature("AAA", "sma_2")
-pulse$state_prev
+pulse$close[["AAA"]]
+pulse$sma_2[["AAA"]]
+pulse$state$pulses_seen
 close(pulse)
 ledgr_snapshot_close(snapshot)
 }

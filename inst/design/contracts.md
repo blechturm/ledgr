@@ -42,12 +42,14 @@ current contract merely because they are newer or nearby.
   run helpers use `ledgr_run_*`, snapshot helpers use `ledgr_snapshot_*`, sweep
   helpers use `ledgr_sweep_*`, and walk-forward helpers use
   `ledgr_walk_forward_*`.
-- Verb-first exports are limited to:
+- General verb-first exports are limited to:
   `ledgr_compute_metrics()`, `ledgr_precompute_features()`,
   `ledgr_validate_schema()`, `ledgr_backtest_bench()`, and
   `ledgr_promote()`. Execution entry points such as `ledgr_run()`,
   `ledgr_sweep()`, and `ledgr_walk_forward()` are family roots, not allowlist
-  cases.
+  cases. The strategy-authoring grammar separately allowlists
+  `ledgr_passed_warmup()` and `ledgr_align_weights()`; they are ordinary
+  strategy/panel bridges, not durable-artifact methods.
 - Reopen surfaces for durable evidence use `open`, for example
   `ledgr_run_open()`, `ledgr_sweep_open()`, and `ledgr_walk_forward_open()`.
 - Public evidence accessors must not use `extract_`, `get_`, or `fetch_` as
@@ -216,7 +218,7 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   state and buffers already changed are not restored. The compiled
   spot-FIFO branch keeps its state-before-append order.
 - Stages write pulse diagnostics into the typed staging in emission order.
-  Its capacity is fixed in E at `max(5N + 3, Q_pulse)` rows (`N` run
+  Its capacity is fixed in E at `max(6N + 4, Q_pulse)` rows (`N` run
   instruments, `Q_pulse` the most disposition rows due on one pulse); a row
   beyond it refuses with `ledgr_invalid_fold_execution`. P5, or E on a stop,
   hands the used rows to the existing bounded diagnostic writer as one block
@@ -580,6 +582,11 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   and requires an
   explicit classed `cost_model`, such as `ledgr_cost_zero()` when the caller
   wants zero transaction costs.
+- Public experiment construction requires an explicit `opening` and explicit
+  `cost_model`. `ledgr_opening(cash = 0, positions = ..., cost_basis = ...)`
+  is valid when `positions` contains a non-zero holding; omitted capital is not
+  an investor default. Extracted, resumed and carried books propagate their
+  evidenced opening rather than asking again.
 
 <a id="contract-execution-cost-model"></a>
 ### Cost-Model Identity And Arithmetic
@@ -1147,6 +1154,16 @@ Accepted change pending:
   and summary printing use the same line and additionally print exactly
   `Decision pulses: <n>; scheduled skips: <n>`. Unscheduled result printing
   omits both lines and does not read schedule evidence from the store.
+- Public scheduling is declared as `schedule =` on `ledgr_experiment()`.
+  Omitting it means every executable pulse. `ledgr_schedule_due(ctx, schedule)`
+  is a pure query over the same compiled parent axis and is available only
+  inside a real strategy context; it lets a callback run every pulse while
+  gating an inner allocation decision. It does not alter outer scheduler
+  ownership, execute a callback, compile a second calendar or make an outer
+  skipped callback run.
+- Experiment and plan printing identify the supplied opening cash and position
+  count and whether the explicitly supplied cost model is zero. They disclose
+  effective scheduling and sizing defaults without executing strategy code.
 - `ledgr_experiment_plan()` is read-only disclosure of effective availability,
   universe, valuation, and fact-family checks. It distinguishes disabled,
   omitted, declared, and assumption-backed families without executing a
@@ -1278,10 +1295,11 @@ Accepted change pending:
 <a id="contract-availability-context-and-state"></a>
 ### Context Planes And Strategy State
 
-- Every context exposes `ctx$members` and universe-aligned
-  `ctx$vec$member`, `held`, `target_restricted`,
-  `target_restriction_reason`, `admissible`, `priced`, `mark_age`, `risk_mark`
-  and `mark_source` planes. `risk_mark` is the close a holding is valued and
+- Every context exposes `ctx$members` and the universe-aligned flat columns
+  `ctx$member`, `ctx$held`, `ctx$buyable` and `ctx$holding_value`. The engine's
+  private P2 view additionally carries `target_restricted`,
+  `target_restriction_reason`, `priced`, `mark_age`, `risk_mark`
+  and `mark_source`. `risk_mark` is the close a holding is valued and
   risk-checked at (`NA` without a permissible or frozen mark) and
   `mark_source` names it: `current_close`, `stale_close`, `frozen_close`,
   `expired_close` or `missing`.
@@ -1294,12 +1312,22 @@ Accepted change pending:
   accepts a named numeric zero-length target while preserving portfolio-level
   state. Empty M with nonempty Daxis is a holdings-only decision, not an empty
   portfolio.
-- Asset-scoped strategy state lives at `ctx$state_prev$asset_state` as a named
-  list keyed by stable instrument ID. Entries outside the current axis are
-  removed before callback, newly visible and re-entering IDs receive `list()`,
-  returned keys outside the current axis fail closed with
-  `ledgr_invalid_strategy_state`, and non-asset portfolio state remains under
-  the existing replacement semantics.
+- Strategy state is declared once through the experiment's flat typed
+  `asset_state` and `portfolio_state` defaults. `ctx$state` is a pulse-frozen
+  complete view: asset fields are named vectors aligned to the current decision
+  axis and portfolio fields are typed scalars. Unknown reads, undeclared
+  updates, type changes and malformed asset coverage fail with
+  `ledgr_invalid_strategy_state`. Departed IDs are removed and newly visible or
+  re-entering IDs receive their declared defaults.
+- `ledgr_strategy_result()` returns a declared-field patch: omitted fields
+  retain their values and a typed `NA` restores the field's declared default. A raw
+  `state_update` is a complete replacement, so omitted fields restore defaults;
+  `list()` restores all defaults. An omitted update retains state.
+  `reset_state = TRUE` restores all defaults and cannot accompany a patch.
+  Every completed pulse writes the durable resume cursor. A changed state or
+  asset axis writes one complete typed checkpoint; an unchanged pulse writes
+  the fixed unchanged marker without invoking the state codec. Resume restores
+  the latest preceding checkpoint and aligns it to the resumed axis.
 
 <a id="contract-availability-targets"></a>
 ### Execution And Target Semantics
@@ -1313,25 +1341,21 @@ Accepted change pending:
   not increasing its magnitude. New or enlarged short exposure fails before
   any fill from that pulse is accepted; existing short quantities remain
   algebraically holdable and coverable without defining short financing.
-- Rebalance helpers initialize every ineligible axis ID,
-  held nonmember or target-restricted member, at its current quantity,
-  reserve its absolute marked exposure, and size only eligible IDs from
-  accepted current closes. Helper weights and
-  `equity_fraction` apply to allocatable capital A, where A is
-  `max(0, NAV - sum(abs(quantity * mark)))` over preserved ineligible holdings. A
-  positive member weight targets
-  `floor(weight * equity_fraction * A / close)`. For NAV 100, held-nonmember
-  exposure 40 and member close 10, full member weight targets 6 shares and
-  weight 0.6 targets 3; these are residual-budget weights, not total-NAV
-  weights. An explicit zero member weight targets zero without consulting a
-  sizing close. Raw full named numeric target vectors remain literal.
+- The two ctx-first target verbs share one sizing implementation.
+  `ledgr_target_rebalance()` replaces the eligible allocation, subject to
+  explicit `keep` and `index_leavers` decisions. `ledgr_target_adjust()` changes
+  only named positions. Both return complete targets; raw full named numeric
+  targets remain literal. Weighted rebalance requires `capital_base` when
+  preserved or added exposure makes total and remaining equity differ.
+  Weighted adjust defaults to total equity. `invest_fraction` applies to the
+  chosen base. Preserved and added exposure is reserved exactly once.
 - Unpriced members (Cut 10, LDG-2973). In a rebalance, an
   eligible member with a positive weight but no positive accepted current
   close is skipped for that rebalance: it keeps its current quantity, zero if
-  unheld, and its weight is never redistributed. Let A be allocatable capital,
-  V the sum of `weight * equity_fraction * A` over priced positive-weight
+  unheld, and its weight is never redistributed. Let A be the chosen capital
+  base, V the sum of `weight * invest_fraction * A` over priced positive-weight
   members and E the sum of `abs(quantity * risk_mark)` over held skipped
-  members. Priced targets are `floor(s * weight * equity_fraction * A / close)`
+  members. Priced targets are `floor(s * weight * invest_fraction * A / close)`
   with `s = 1` when `V + E <= A` and `s = max(0, A - E) / V` otherwise. A held
   skipped member, or a preserved holding, without a finite mark fails with
   `ledgr_target_sizing_unavailable`. Each skip is written to the fold's
@@ -1736,10 +1760,10 @@ Accepted change pending:
 - Ordinary target inspection uses the numeric-vector contract:
   `target[[instrument_id]]` extracts one named quantity and `c(target)` returns
   the full named numeric vector. No separate target-values reader is required.
-- Strategy helper pipelines may use `ledgr_signal`, `ledgr_selection`, and
-  `ledgr_weights` as intermediate value types, but those objects are invalid
-  direct strategy outputs. Helper pipelines must terminate in `ledgr_target` or
-  a plain full named numeric target vector.
+- Strategy calculations may use ordinary named numeric scores, plain character
+  selections and plain named double weights. Those intermediate values are
+  invalid direct strategy outputs. Pipelines terminate in `ledgr_target` or a
+  plain full named numeric target vector.
 - `ledgr_signal()` and `ledgr_selection()` accept either their established
   value forms or a `ledgr_pulse_context` first argument. In context mode,
   signals require named `values`; selections accept no payload, named `ids`, or
@@ -1763,45 +1787,65 @@ Accepted change pending:
   the execution contract, and target constructors must reject negative weights
   or leverage until explicit short-selling and leverage semantics are specified.
 - The reference helper pipeline is deliberately small:
-  `ledgr_signal_return()` reads already-registered `return_<lookback>` features,
-  `ledgr_select_top_n()` ignores missing signals and breaks ties by instrument ID
-  in C-locale (radix) order, the provider's id order, whatever the session
-  collation (Cut 12 LDG-3002),
-  `ledgr_weight_equal()` creates long-only equal weights, and `ledgr_target_rebalance()`
-  converts weights into full-universe `ledgr_target` quantities using
-  decision-time equity and close prices. These helpers must not auto-register
-  indicators, silently normalize weights, or add a second execution path.
+  `ledgr_signal_return()` reads an already-registered concrete return feature;
+  any other feature is read from the flat context by its authored name.
+  `ledgr_select_top()` and `ledgr_select_lowest()` rank ordinary named scores,
+  exclude missing values and unknown logical pool decisions, and break ties by
+  instrument-ID C-locale (radix) order. `ledgr_weight_equal()` returns strict
+  long-only named weights. The ctx-first target verbs convert weights into
+  full-axis quantities through the existing execution path. These helpers do
+  not auto-register indicators, silently normalize weights, or add a second
+  execution path.
 - The helper composition contract is
-  `signal -> selection -> weights -> target quantities -> existing execution
+  `score -> selection -> weights -> target quantities -> existing execution
   path`. A fixed-quantity rule may skip the weights: `ledgr_target_quantity()`
   maps `selection -> target quantities`, giving each selected eligible ID
   the same non-negative quantity, every other eligible ID zero, and every
   ineligible decision-axis ID its current quantity, as
-  `ledgr_target_rebalance()` does. It performs no sizing and needs no price. Signal, selection, and weight objects are research objects with origin
-  metadata; `ledgr_target` is the only helper value type that may unwrap into
-  executable target quantities.
-- `ledgr_target_rebalance()` floors share quantities to whole numbers after sizing
-  long-only positive weights from allocatable capital and current close prices.
-  A validated zero member weight becomes a zero target without a price lookup.
-  IDs named in `keep` preserve their current quantities and reserve their
-  absolute marked exposure exactly once; weights and `equity_fraction` apply
-  to the remaining capital. A kept ID must not also occur in the weights.
-  Sizing requires one position per decision-axis ID and
-  fails with `ledgr_invalid_strategy_helper` when that plane is absent.
-  It must not silently create fractional share targets, and ranking, leverage,
-  negative-weight and final-target rules are unchanged.
-- `ledgr_signal_feature()` reads one active alias or registered feature ID over
-  the decision axis through the same alias-first resolver as the strategy
-  context. It records the literal author-supplied name as origin.
-  `ledgr_signal_return()` is the exact-ID specialization for one concrete
-  return lookback; a parameterized return map is read through its stable alias
-  with `ledgr_signal_feature()`.
-  Neither masks: ineligible IDs keep their raw score, and eligibility travels
-  in the signal's `eligible` attribute, so ineligible is never reported as
-  missing. `ledgr_select_top_n()` ranks only eligible, non-missing scores with
-  its stable tie policy. A short ranking warns by default, counting eligible
-  usable scores only; `partial = "allow"` explicitly accepts fewer than `n`
-  usable scores without changing the selection.
+  `ledgr_target_rebalance()` does. It performs no sizing and needs no price.
+  `ledgr_target` is the only helper value type that may unwrap into executable
+  target quantities.
+- `ledgr_target_rebalance(ctx, ...)` replaces the decided eligible allocation;
+  `ledgr_target_adjust(ctx, ...)` changes only named positions. Empty adjust
+  holds. Empty rebalance clears the decided eligible allocation while honoring
+  preservation and explicit leaver policy. Both floor positive weighted or
+  added requests to whole shares, preserve unavailable weighted holdings rather
+  than redistributing their weight, reserve permitted marked exposure once and
+  emit `sizing_unavailable` through the common decision-diagnostic path.
+- A target made by either ctx-first helper carries typed sizing evidence only
+  to the strategy-return boundary. Durable `run_diagnostics` rows use stage
+  `sizing`: `target_before_risk` is requested quantity, `target` is post-guard
+  pre-floor quantity, `quantity` is rounded quantity, and `price` and
+  `position_before` are the accepted sizing mark and pulse-start holding.
+  Reason codes distinguish ordinary rounding, rounded-to-zero addition,
+  rounded-to-zero liquidation, exact zero/liquidation and unavailable sizing.
+  `reasons` carries the optional strategy intent reason; the physical non-null
+  column uses an empty sentinel when none was supplied and the public result
+  surface exposes typed missing. If ordinary R code changes a helper target after
+  construction, its stale private sizing evidence is discarded and the pulse
+  follows the raw-target unavailable-evidence path; malformed evidence still
+  refuses. The pulse path never JSON-encodes these values. Raw quantity
+  strategies instead emit one `sizing_intent_unavailable` notice per run.
+- D8 coverage belongs only to durable committed runs. A sweep candidate's
+  memory sink retains no sizing row and makes no coverage claim; a promoted
+  candidate reports it after durable execution. Summary and print report
+  exposure-weighted pooled, minimum-decision and last-decision coverage with
+  the decision clock and currency, alongside native final actual invested
+  exposure. Cross-decision quantity/value sums are diagnostics, never
+  portfolio exposure or P&L. Decisions with no sizing instruction are distinct
+  from unavailable sizing evidence; evidenced and unavailable counts may
+  overlap when different instruments on one decision have each outcome.
+  Undefined denominators remain typed missing.
+- `keep` accepts unique IDs or an exact logical decision-axis mask. For held
+  leavers, a character `keep` is the most specific decision, followed by
+  `index_leavers`, followed by a logical keep mask. Undecided held leavers make
+  rebalance refuse. Adjust has no leaver policy: unmentioned quantities stay
+  held and `exit` may close them. Contradictory keep, weight, add and exit
+  instructions fail.
+- `ledgr_signal_return()` remains the exact-ID convenience for a concrete
+  return lookback. Parameterized or other features are read directly from the
+  flat context by their stable alias or concrete ID. A plain score does not
+  carry automatic eligibility; ranking examples state `within = ctx$buyable`.
 
 <a id="contract-strategy-decision-axis"></a>
 ### Decision Axis And Eligibility
@@ -1811,20 +1855,16 @@ declared-session clocks alike, so a strategy written as named-vector
 manipulation, or as a helper pipeline, means the same thing on both.
 
 - **Eligibility.** An ID is eligible when it is a member and not
-  target-restricted. `ctx$vec$admissible` is that plane in every context:
+  target-restricted. `ctx$buyable` is that plane in every context:
   declared-session folds, bar-native folds, `ledgr_pulse_snapshot()` and
   interactive contexts. Fixed-basket contexts expose `ctx$members` as
   `ctx$universe`, and
-  `member` (all `TRUE`), `target_restricted` (all `FALSE`),
-  `target_restriction_reason` (all `""`) and `admissible` (all `TRUE`),
-  allocated once per run and reused on every pulse. No second eligibility
+  `ctx$member` and `ctx$buyable` (both all `TRUE`). No second eligibility
   plane exists: a context helper never rebuilds eligibility from
   `ctx$members`. An availability context without a logical, axis-length,
-  non-missing `admissible` plane, or any context whose plane is present but
+  non-missing `buyable` column, or any context whose column is present but
   malformed, fails with `ledgr_invalid_strategy_helper`
   (`ledgr_invalid_strategy_result` in the `ledgr_signal_strategy()` wrapper).
-  `ctx$tradable()` stays a character vector of IDs that also requires a
-  price.
 - **Context payloads.** An unnamed `values`, `where` or warmup payload has
   exactly length(Daxis) and aligns by position. A named payload uses unique
   Daxis IDs in any order and covers every eligible ID; an uncovered ineligible
@@ -1834,33 +1874,20 @@ manipulation, or as a helper pipeline, means the same thing on both.
   unchanged: `universe` in context mode, an unknown, duplicated, combined or
   `NULL` payload, a missing required payload and an invalid `missing` value
   fail with `ledgr_invalid_strategy_helper`.
-- **Signals.** `ledgr_signal_feature()`, `ledgr_signal_return()` and
-  `ledgr_signal(ctx, values = ...)` return one value per Daxis ID in
-  `ctx$universe` order, with the raw value for every ID including ineligible
-  ones, and carry `ctx$vec$admissible` as the `eligible` attribute. The origin
-  is the feature ID, or the supplied `origin`. Arithmetic on a signal keeps
-  its class and `eligible` attribute. Comparison, subsetting, `rank()` and
-  `c()` return plain named vectors without them. Helpers that take `ctx`
-  derive eligibility from `ctx`, never from the attribute. Only
-  `ledgr_select_top_n()` reads the attribute, and it refuses anything that is
-  not a `ledgr_signal`. A transformed vector becomes a signal again through
-  `ledgr_signal(ctx, values = ...)`.
-- **Selections and rankings.** A context selection covers the axis and is
-  `FALSE` for every ineligible ID, whatever the payload: no payload selects
-  every eligible ID, `where` decides eligible IDs only, and `ids` naming an
-  ineligible axis ID leave it unselected. The `missing` policy covers
-  eligible IDs only. `ledgr_select_top_n()` ranks eligible, non-missing scores
-  with its stable tie policy, counts only those in its short-ranking warning,
-  and returns a selection over the signal's axis; with nothing usable it
-  returns an all-`FALSE` `ledgr_empty_selection` over that axis. Its `n` and
-  `partial` validation is unchanged.
-- **Target helpers.** `ledgr_target_rebalance()`, `ledgr_target_quantity()`
-  and `ledgr_signal_strategy()` keep every ineligible axis ID at its current
-  quantity, whether a held nonmember or a target-restricted member, and
-  rebalancing reserves its absolute marked exposure exactly once, `keep`
-  included. They size or assign eligible IDs only. A selection that selects,
-  or weights that weight, an ineligible ID fail with
-  `ledgr_invalid_strategy_helper`; unselected ineligible names are accepted.
+- **Scores and rankings.** A strategy reads registered features directly from
+  the flat context. `ledgr_signal_return()` is a retained exact-ID convenience,
+  while ordinary ranking consumes a plain named numeric score vector.
+  `ledgr_select_top()` and `ledgr_select_lowest()` accept exactly one of `n`
+  or `fraction`, return plain character IDs, exclude missing scores and unknown
+  logical pool decisions, and use radix ID order for ties. `within` supplies
+  the candidate pool and aligns logical input by exact names or exact
+  positional length. Short and empty pools are valid.
+- **Target helpers.** The ctx-first target verbs and
+  `ledgr_target_quantity()` never buy an ineligible ID. Rebalance requires an
+  explicit decision for each held leaver and otherwise follows its `keep` and
+  `index_leavers` policy. Adjust leaves unmentioned positions unchanged.
+  Positive unavailable requests preserve quantity and report
+  `sizing_unavailable`; zero weights target zero without a price lookup.
   `ledgr_signal_strategy()` requires a signal for every eligible ID, may omit
   or include ineligible ones, and fails with `ledgr_invalid_strategy_result`
   otherwise. A frozen holding is a target-restricted member: the helpers keep
@@ -1885,7 +1912,7 @@ manipulation, or as a helper pipeline, means the same thing on both.
   than holding or exiting fails with `ledgr_restricted_target`. Exiting or
   reducing an ineligible holding is a valid target, so the validators do not
   catch a hand-built rule that does so without meaning to; that is what
-  masking with `ctx$vec$admissible` is for.
+  masking with `ctx$buyable` is for.
 - **Empty axis.** Every context helper returns a zero-length named result.
   `ledgr_signal_strategy()` still invokes its function and returns a named
   zero-length target; a zero-length signal is valid whenever no ID is
@@ -1903,12 +1930,15 @@ manipulation, or as a helper pipeline, means the same thing on both.
   clocks.
 - **History selection.** `ledgr_history_frame()` selects from this plane at
   its cutoff. `instruments = "admissible"` requests the `ctx$universe` IDs
-  whose `ctx$vec$admissible` is `TRUE`, `"decision_axis"` requests every
+  whose `ctx$buyable` is `TRUE`, `"decision_axis"` requests every
   `ctx$universe` ID, and an explicit vector requests known instrument IDs in
   its own order. An explicit ID is never dropped for current
   inadmissibility; its selection row records `admissible` and an
-  `admissibility_reason` (the target-restriction reason, `not_member` or
-  `not_on_decision_axis`). Membership at a past session does not by itself
+  `admissibility_reason` (`target_restricted` for a current-axis restriction,
+  `not_member` or `not_on_decision_axis`). The flat context currently exposes
+  only the combined `buyable` plane, so current-axis restriction subtypes are
+  intentionally collapsed; WS6's inspection handoff owns restoring a more
+  specific prepared reason without rebuilding facts. Membership at a past session does not by itself
   remove an otherwise admissible observation from the returned history.
 
 Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
@@ -1916,12 +1946,12 @@ and `AAA` a held nonmember, each holding 5:
 
 | Object | Type | Domain | Names | Ineligible entries | Example |
 |---|---|---|---|---|---|
-| `ctx$vec` planes | numeric, logical or character | Daxis | unnamed, positional | marked by `admissible` | `ctx$vec$admissible` is `FALSE, TRUE, FALSE` |
+| flat context columns | numeric or logical | Daxis | named | `ctx$buyable` marks eligibility | `ctx$buyable` is `BBB=FALSE, CCC=TRUE, AAA=FALSE` |
 | `ctx$members` | character IDs | allocation membership M | not applicable | not applicable | `BBB, CCC`; fixed basket: `ctx$universe` |
 | context signals | `ledgr_signal` (numeric) | Daxis | named | raw value; `eligible` attribute | `ledgr_signal_return(ctx, 1)` is `BBB=0.02 CCC=-0.01 AAA=0.01` |
 | context selections | `ledgr_selection` (logical) | Daxis | named | always `FALSE` | `ledgr_selection(ctx)` is `BBB=FALSE CCC=TRUE AAA=FALSE` |
-| rankings | `ledgr_selection` (logical) | the signal's Daxis | named | never selected or counted | `ledgr_select_top_n(signal, 2)` selects `CCC` and warns `ledgr_partial_selection` |
-| weights | `ledgr_weights` (numeric) | selected IDs | named | a weight on one fails | `ledgr_weight_equal()` gives `CCC=1` |
+| rankings | plain character IDs | the named score pool | IDs are values | excluded by `within` | `ledgr_select_top(score, 2, within = ctx$buyable)` returns `CCC` when it is the only usable candidate |
+| weights | plain named double | selected IDs | named | a weight on one fails at the target boundary | `ledgr_weight_equal("CCC")` gives `CCC=1` |
 | helper targets | `ledgr_target` (numeric) | Daxis | named | current quantity | `ledgr_selection(ctx) \|> ledgr_target_quantity(ctx, 10)` is `BBB=5 CCC=10 AAA=5` |
 | raw targets, `ctx$flat()`, `ctx$hold()` | named numeric | Daxis | named | literal | `ctx$flat()` sells `AAA` at the next open |
 | value-mode signals, selections, weights | their class | their `universe` | named | none: every entry is eligible | unchanged |
@@ -2047,7 +2077,7 @@ and `AAA` a held nonmember, each holding 5:
   time.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
-  strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top_n()`,
+  strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top()`,
   `ledgr_weight_equal()`, `ledgr_target_rebalance()`, and `ledgr_passed_warmup()` must not be
   treated as unresolved Tier 3 symbols merely because examples omit the
   `ledgr::` qualifier.
@@ -2192,32 +2222,35 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-pulse-data"></a>
 ### Pulse Data And Axis-Aligned Accessors
 
-- Runtime and interactive pulse contexts expose data-frame-compatible
-  `ctx$bars` and long-table `ctx$feature_table`.
-- Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, `ctx$idx()`,
-  and `ctx$vec` are derived views over pulse-known data; they do not change
-  feature computation semantics or no-lookahead boundaries.
-- `ctx$idx(instrument_id, missing = c("error", "na"))` returns the 1-based
-  universe position for an instrument. Unknown IDs fail loudly by default and
-  return `NA_integer_` only when `missing = "na"` is requested explicitly.
-- `ctx$vec` exposes universe-aligned vector views for cross-sectional strategy
-  logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
-  `position`, and `feature`, and in every context the eligibility planes
-  `member`, `held`, `target_restricted`, `target_restriction_reason`,
-  `admissible`, `priced`, `mark_age`, `risk_mark` and `mark_source`.
-  `ctx$vec$feature(feature_id)` returns the current
-  universe-aligned vector for one active alias or registered engine feature
-  ID. Active aliases resolve before concrete IDs; an unknown name fails with
-  `ledgr_unknown_feature_id` and lists both namespaces separately.
-- Declared-session pulse contexts restrict bars, feature tables, scalar
-  feature access, vector feature access, positions, and errors to the current
-  decision axis. Fixed-basket contexts use the same shape with constant
-  membership, tradability and current-mark planes.
-- `ctx$position(instrument_id)` and unnamed `ctx$vec$position` are the scalar
-  and Daxis-aligned reads of pulse-start position state. Cross scalar reads to
-  the plane with `ctx$idx()`. There is no public `ctx$positions` snapshot.
-  `ctx$hold()` copies the state into full named portfolio intent; editing that
-  target does not mutate either state read.
+- Runtime and interactive pulse contexts are flat named lazy views over
+  `ctx$universe`. The asset columns are `open`, `high`, `low`, `close`,
+  `volume`, `position`, `held`, `member`, `buyable`, `holding_value`,
+  `entry_price`, `entry_at`, `exit_at`, `bars_since_entry` and
+  `bars_since_exit`; every declared feature alias and registered engine ID is
+  also directly readable. Aliases resolve first. Unknown and retired names
+  fail with `ledgr_unknown_context_field`.
+- The run-axis service, fill-axis map and feature resolver are prepared once
+  per run or candidate; the changing decision axis is bound once per pulse.
+  Each requested column is built at most once in one view;
+  `names()` and `str()` enumerate without forcing columns. A saved view is
+  pulse-frozen and cannot observe later book, state or reusable fold buffers.
+- `member`, `held` and `buyable` are named logical columns on the decision
+  axis. `holding_value` is zero when unheld and signed quantity times the
+  permissible mark when held; it is `NA_real_` for a held instrument without
+  such a mark. Fixed-basket and declared-session contexts use the same shape.
+- `entry_price` is remaining FIFO basis divided by held quantity;
+  `entry_at` and `exit_at` are the shared-axis bars of the current opening and
+  last closing fill. Additions and partial exits retain the entry anchor.
+  Non-fill closes clear entry facts without inventing an exit, and non-fill
+  openings have unknown entry facts. Ages use the shared absolute bar axis;
+  supplied openings and pulse inspection never fabricate anchors.
+- `ctx$vec`, `ctx$feature()`, `ctx$features()`, scalar OHLCV readers,
+  `ctx$position(id)`, `ctx$idx()` and `ctx$tradable()` are not public context
+  members. Use flat columns and ordinary named-vector indexing or `match()`.
+  `ctx$bars`, `ctx$feature_table`, `ctx$features_wide` and `ctx$bar(id)` retain
+  their existing frame contracts until the WS6 reader cut.
+- `ctx$hold()` copies pulse-start positions into full named portfolio intent;
+  editing that target or a returned flat column never mutates the view.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
@@ -2369,16 +2402,12 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-feature-resolution"></a>
 ### Feature Resolution And Explicit Maps
 
-- `ctx$feature(instrument_id, feature_id)` uses the same alias-first singular
-  resolver as `ctx$vec$feature()`. It fails loudly for unknown names, including
-  the requested feature, instrument, active aliases and concrete feature IDs.
-  A known feature whose current value is warmup `NA` remains a normal `NA`
-  lookup, not an error.
-- `ctx$features(instrument_id, feature_map)` is a pulse-scoped bundled view
-  over `ctx$feature()`. It must preserve no-lookahead semantics, fail loudly
-  for unregistered mapped feature IDs, and return warmup `NA` for known
-  features that are not usable yet.
-- Every explicit-map consumer (`ctx$features()`, `ledgr_pulse_features()` and
+- Each declared feature alias and registered concrete feature ID is a flat
+  named numeric column on `ctx$universe`. Resolution is alias-first and fails
+  loudly for unknown names. A known feature whose current value is warmup
+  `NA` remains a normal `NA` lookup, not an error. No alias or concrete ID may
+  shadow a reserved context field.
+- Every explicit-map inspection consumer (`ledgr_pulse_features()` and
   `ledgr_pulse_wide()`) may add a call-local alias but may not redefine an
   active alias or registered engine ID to mean another feature. A conflict
   fails with `ledgr_invalid_feature_map`, naming the alias, requested feature
@@ -2386,8 +2415,9 @@ and `AAA` a held nonmember, each holding 5:
 - The decision-time guarantee concerns supported context operations. Public
   accessors may retain engine-owned prepared state internally only when every
   supported operation enforces the invoking pulse and permitted axis.
-  Instrument, universe and feature-ID indexes and the active alias map are
-  prepared once for one run-local context factory. The active alias map is
+  Instrument and feature-ID indexes and the active alias map are prepared
+  once for one run-local context factory; the pulse-local decision axis is
+  bound positionally. The active alias map is
   fixed for that run and prepared state is never shared across runs or sweep
   candidates. A bundled accessor may retain only its last successfully
   resolved explicit feature map, whether supplied as a character map or a
@@ -2410,18 +2440,18 @@ and `AAA` a held nonmember, each holding 5:
   feature accessors and the wide view carry current values. No equivalence is
   promised between these representations and none is materialized merely to
   make another look complete.
-- `ctx$tradable()` is a non-default convenience predicate. It returns
-  `admissible & priced` on every clock. A permissible stale mark may satisfy `priced` while
-  still failing current-close sizing, so this helper guarantees neither a
-  current sizing close nor execution at the next open.
+- `ctx$buyable` is the public target-admission column. A permissible stale
+  mark may remain priced while still failing current-close sizing, so
+  `buyable` guarantees neither a current sizing close nor execution at the
+  next open.
 - A frozen holding stays on the decision axis with its position. Its
   `risk_mark` is its last close, `mark_source` is `frozen_close`, `priced` is
   `TRUE` and `mark_age` keeps increasing. It is `target_restricted` with
   reason `valuation_frozen` unless an earlier restriction reason applies, so
-  `admissible` is `FALSE` and `ctx$tradable()` excludes it. The frozen close
+  `ctx$buyable` is `FALSE`. The frozen close
   is not an observed close and is never an execution price.
-- `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
-  produced by `ctx$features()`. It is not a helper-pipeline transformation and
+- `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric flat
+  feature columns. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
   The context-aware form `ledgr_passed_warmup(ctx, values)` reads a
   decision-axis vector and considers eligible IDs only; there, no eligible ID
@@ -2439,19 +2469,15 @@ and `AAA` a held nonmember, each holding 5:
   `{instrument_id}__feature_{key}`. A mapped view uses its stable alias as
   `key`; an unmapped view uses the engine feature ID. The long
   `ledgr_pulse_features()` view retains both `alias` and `feature_id`.
-- `ledgr_signal_feature()` uses the singular alias-first resolver, keeps raw
-  decision-axis values and eligibility unchanged, and records the literal
-  author-supplied name as signal origin. `ledgr_signal_return()` remains the
-  exact-ID convenience for one concrete return lookback; parameterized return
-  maps are read through a stable alias with `ledgr_signal_feature()`.
+- Strategy callbacks read features directly from the flat context, whose
+  singular alias-first resolver preserves decision-axis order.
+  `ledgr_signal_return()` remains the exact-ID convenience for one concrete
+  return lookback; parameterized maps are read through their stable flat-context
+  alias.
 - `ledgr_feature_contracts()` and `ledgr_feature_contract_check()` accept
   `feature_params` and resolve parameterized maps through the same validator
   and resolver as execution. Without concrete parameters they retain a classed
   refusal; no general map materializer is exported.
-- On an axis of at least 100 instruments, scalar and active-map bundle loops
-  warn once per run when calls in one pulse reach the axis size. The warning
-  names singular `ctx$vec$feature()` reads as the replacement. Explicit-map
-  bundle loops remain unrecorded.
 - Feature maps do not add a new `ctx$features_wide()` contract; the
   public wide pulse inspection API is `ledgr_pulse_wide()`.
 - `ledgr_pulse_snapshot()` is an external development and inspection helper;

@@ -20,7 +20,7 @@ ledgr_ws59_dust_bars <- function(n = 5L) {
 }
 
 ledgr_ws59_dust_strategy <- function(ctx, params) {
-  c(AAA = if (ctx$position("AAA") > 0) params$residue else 0)
+  c(AAA = if (ctx$position[["AAA"]] > 0) params$residue else 0)
 }
 
 ledgr_ws59_dust_experiment <- function(snapshot, values) {
@@ -38,7 +38,7 @@ ledgr_ws59_dust_experiment <- function(snapshot, values) {
 
 ledgr_ws59_multi_lot_strategy <- function(ctx, params) {
   index <- match("AAA", ctx$universe)
-  if (!is.na(index) && !isTRUE(ctx$vec$admissible[[index]])) {
+  if (!is.na(index) && !isTRUE(ctx$buyable[[index]])) {
     return(c(AAA = 0))
   }
   day <- as.Date(substr(ctx$ts_utc, 1L, 10L))

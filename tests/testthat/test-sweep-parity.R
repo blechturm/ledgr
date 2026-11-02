@@ -457,10 +457,10 @@ testthat::test_that("feature-factory sweep parity covers candidate-varying featu
   }
   strategy <- function(ctx, params) {
     feature_id <- paste0("sma_", params$n)
-    value <- ctx$feature("AAA", feature_id)
+    value <- ctx[[feature_id]][["AAA"]]
     observed[[ctx$run_id]] <- c(observed[[ctx$run_id]] %||% numeric(), value)
     targets <- ctx$flat()
-    if (!is.na(value) && ctx$close("AAA") > value) {
+    if (!is.na(value) && ctx$close[["AAA"]] > value) {
       targets["AAA"] <- params$qty
     }
     targets

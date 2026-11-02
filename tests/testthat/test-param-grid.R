@@ -109,8 +109,8 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
     targets[["AAA"]] <- params$n
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  invalid_exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
+  invalid_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       ctx$flat()
@@ -140,7 +140,7 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
   for (bad in invalid) {
     testthat::expect_error(ledgr_sweep(invalid_exp, bad), class = "ledgr_invalid_grid")
   }
-  empty_exp <- ledgr_experiment(
+  empty_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
@@ -240,7 +240,7 @@ testthat::test_that("[LTB-0494] rectangular strategy grids keep identity and nam
   )
 
   fmap <- ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n")))
-  feature_exp <- ledgr_experiment(snapshot, strategy, features = fmap, cost_model = ledgr_cost_zero())
+  feature_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, features = fmap, cost_model = ledgr_cost_zero())
   strategy_only <- ledgr:::ledgr_executable_grid_normalize(data.frame(n = 2L))
   unresolved <- ledgr:::ledgr_resolve_feature_candidates(feature_exp, strategy_only)
   testthat::expect_identical(unresolved$candidate_features$feature_params, list(list()))
@@ -261,7 +261,7 @@ testthat::test_that("[LTB-0495] sweep prints show readable parameter namespaces"
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(
     empty = list(),
     strategy_only = list(strategy = list(qty = 1L)),

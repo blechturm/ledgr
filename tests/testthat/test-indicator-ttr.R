@@ -577,8 +577,8 @@ testthat::test_that("TTR output bundles flatten at feature boundaries", {
   snapshot <- ledgr_snapshot_from_df(ledgr_test_ttr_bars(45L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp_static <- ledgr_experiment(snapshot, strategy, features = list(bundle), cost_model = ledgr_cost_zero())
-  exp_factory <- ledgr_experiment(
+  exp_static <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, features = list(bundle), cost_model = ledgr_cost_zero())
+  exp_factory <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = function(params) {

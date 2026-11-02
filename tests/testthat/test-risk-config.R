@@ -22,7 +22,7 @@ testthat::test_that("experiment and run configs carry no-op risk identity by def
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
 
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   noop <- ledgr_risk_none()
   testthat::expect_s3_class(exp$risk_chain, "ledgr_risk_model")
   testthat::expect_identical(exp$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(noop))
@@ -62,7 +62,10 @@ testthat::test_that("risk identity participates in config_hash without a separat
       snapshot_hash = "test-hash"
     ),
     identity_rule_version = 5L,
-    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy()),
+    strategy_state = ledgr:::ledgr_strategy_state_identity(
+      ledgr:::ledgr_strategy_state_normalize(list(), list())
+    )
   )
 
   cfg_missing <- cfg
@@ -122,7 +125,10 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
       snapshot_hash = "test-hash"
     ),
     identity_rule_version = 5L,
-    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy()),
+    strategy_state = ledgr:::ledgr_strategy_state_identity(
+      ledgr:::ledgr_strategy_state_normalize(list(), list())
+    )
   )
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)

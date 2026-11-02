@@ -172,8 +172,8 @@ greedy <- function(ctx, params) {
   target <- ctx$flat()
   # Size each position as a fraction of equity, converted to whole shares
   # at the current price.
-  target[[large_id]] <- floor(0.90 * ctx$equity / ctx$close(large_id))
-  target[[small_id]] <- floor(0.20 * ctx$equity / ctx$close(small_id))
+  target[[large_id]] <- floor(0.90 * ctx$equity / ctx$close[[large_id]])
+  target[[small_id]] <- floor(0.20 * ctx$equity / ctx$close[[small_id]])
   target
 }
 ```

@@ -263,10 +263,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
   )
   withr::defer(ledgr_snapshot_close(snapshot))
   strategy <- function(ctx, params) {
-    list(
-      targets = ctx$hold(),
-      state_update = list(observed_cash = ctx$cash)
-    )
+    ledgr_strategy_result(ctx$hold(), observed_cash = ctx$cash)
   }
   experiment <- ledgr_experiment(
     snapshot,
@@ -276,7 +273,8 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
       positions = c(AAA = 2),
       cost_basis = c(AAA = 100)
     ),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(observed_cash = 0)
   )
   run <- ledgr_run(experiment, run_id = "corporate-action-cash")
   withr::defer(close(run))
@@ -302,9 +300,10 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
     params = list(run$run_id)
   )
-  observed_cash <- vapply(state_rows$state_json, function(value) {
-    as.numeric(ledgr:::ledgr_json_read_nested(value)$observed_cash)
-  }, numeric(1))
+  observed_cash <- vapply(
+    availability_state_values(run), function(value) value$observed_cash,
+    numeric(1L)
+  )
   testthat::expect_identical(
     unname(observed_cash),
     c(1000, 1002.5, 1002.5, 1002.5)
@@ -330,7 +329,8 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     cost_model = ledgr_cost_zero(),
     corporate_action_policy = ledgr_corporate_actions(
       cash_posting = "next_open"
-    )
+    ),
+    portfolio_state = list(observed_cash = 0)
   )
   next_open_run <- ledgr_run(
     next_open_experiment,
@@ -353,11 +353,9 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     params = list(next_open_run$run_id)
   )
   next_open_context_cash <- vapply(
-    next_open_state$state_json,
-    function(value) {
-      as.numeric(ledgr:::ledgr_json_read_nested(value)$observed_cash)
-    },
-    numeric(1)
+    availability_state_values(next_open_run),
+    function(value) value$observed_cash,
+    numeric(1L)
   )
   testthat::expect_identical(
     unname(next_open_equity$cash),
@@ -388,6 +386,9 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     ),
     cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
+    strategy_state = ledgr:::ledgr_strategy_state_normalize(
+      portfolio_state = list(observed_cash = 0)
+    ),
     db_path = snapshot$db_path
   )
   ledgr:::ledgr_run_fold(
@@ -418,7 +419,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     if (identical(ctx$ts_utc, params$decision_ts)) {
       target[["AAA"]] <- params$target
     }
-    list(targets = target, state_update = list(observed_cash = ctx$cash))
+    ledgr_strategy_result(target, observed_cash = ctx$cash)
   }
   boundary_experiment <- function(opening_quantity, snapshot_value = snapshot) {
     opening <- if (opening_quantity == 0) {
@@ -434,7 +435,8 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
       snapshot_value,
       boundary_strategy,
       opening = opening,
-      cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero(),
+      portfolio_state = list(observed_cash = 0)
     )
   }
   decision_params <- function(target) {
@@ -499,6 +501,9 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     ),
     cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
+    strategy_state = ledgr:::ledgr_strategy_state_normalize(
+      portfolio_state = list(observed_cash = 0)
+    ),
     db_path = late_snapshot$db_path
   )
   partial <- ledgr:::ledgr_run_fold(

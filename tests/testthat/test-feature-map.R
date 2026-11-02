@@ -158,7 +158,8 @@ testthat::test_that("[LTB-0115] feature maps refuse cross-entry alias collisions
     snapshot,
     function(ctx, params) ctx$flat(),
     features = parameterized,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 100000)
   )
   testthat::expect_error(
     ledgr_run(experiment, feature_params = list(n = 10L)),
@@ -200,13 +201,15 @@ testthat::test_that("ledgr_experiment accepts feature maps and preserves list be
     snapshot = snapshot,
     strategy = strategy,
     features = feature_list,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 100000)
   )
   exp_map <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
     features = feature_map,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 100000)
   )
 
   testthat::expect_identical(exp_list$features_mode, "list")
@@ -232,7 +235,7 @@ testthat::test_that("feature maps returned by feature functions materialize to i
     ledgr_feature_map(ret = ledgr_ind_returns(params$lookback))
   }
 
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_fn, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = feature_fn, cost_model = ledgr_cost_zero())
   features <- ledgr_experiment_materialize_features(exp, list(lookback = 3))
 
   testthat::expect_identical(exp$features_mode, "function")
@@ -264,7 +267,7 @@ testthat::test_that("parameterized feature maps resolve with concrete feature pa
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   materialized <- ledgr:::ledgr_experiment_materialize_features(exp, list(fast_n = 10L))
   testthat::expect_identical(ledgr_feature_id(materialized), c("sma_10", "sma_20"))
   testthat::expect_error(
@@ -309,7 +312,7 @@ testthat::test_that("feature maps are copied into experiments at construction", 
   }
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
 
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   features$indicators[[1]] <- ledgr_ind_returns(3)
   features$feature_ids[["signal"]] <- "return_3"
 
@@ -331,8 +334,8 @@ testthat::test_that("feature maps preserve concrete feature-set identity while a
   feature_list <- list(sma, ret)
   feature_map <- ledgr_feature_map(sma_alias = sma, ret_alias = ret)
 
-  exp_list <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_list, cost_model = ledgr_cost_zero())
-  exp_map <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_map, cost_model = ledgr_cost_zero())
+  exp_list <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = feature_list, cost_model = ledgr_cost_zero())
+  exp_map <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = feature_map, cost_model = ledgr_cost_zero())
 
   cfg_list <- ledgr_config(
     snapshot = snapshot,

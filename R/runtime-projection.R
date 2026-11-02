@@ -348,44 +348,6 @@ ledgr_projection_features_wide <- function(projection, pulse_idx, feature_ids = 
   ledgr_fast_data_frame(cols, length(instruments))
 }
 
-ledgr_projection_feature_accessor <- function(projection,
-                                               pulse_idx,
-                                               feature_ids = NULL,
-                                               active_alias_map = NULL,
-                                               prepared = NULL) {
-  force(projection)
-  force(pulse_idx)
-  pulse_idx <- as.integer(pulse_idx)
-  if (is.null(prepared)) {
-    prepared <- ledgr_projection_feature_lookup_state(
-      projection,
-      feature_ids = feature_ids,
-      active_alias_map = active_alias_map
-    )
-  }
-  instrument_index <- projection$instrument_index
-  feature_values <- projection$feature_values
-  function(instrument_id, feature_name, default = NA_real_) {
-    if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
-      rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-    }
-    feature_name <- ledgr_resolve_feature_name(
-      feature_name,
-      prepared$name_lookup,
-      instrument_id = instrument_id
-    )
-    inst_idx <- unname(instrument_index[instrument_id])
-    if (length(inst_idx) != 1L || is.na(inst_idx)) {
-      return(default)
-    }
-    mat <- feature_values[[feature_name]]
-    if (is.null(mat)) {
-      return(default)
-    }
-    mat[[as.integer(inst_idx), pulse_idx]]
-  }
-}
-
 ledgr_projection_feature_vector_accessor <- function(projection,
                                                       pulse_idx,
                                                       feature_ids = NULL,
@@ -417,16 +379,17 @@ ledgr_projection_feature_name_state <- function(projection,
                                                 feature_ids = NULL,
                                                 active_alias_map = NULL) {
   available_features <- ledgr_projection_feature_ids(projection, feature_ids)
-  active_lookup <- tryCatch(
+  active_lookup <- if (is.null(active_alias_map)) {
+    list(valid = FALSE, value = NULL)
+  } else {
     list(
       valid = TRUE,
       value = ledgr_feature_lookup_map(
         NULL,
         active_alias_map = active_alias_map
       )
-    ),
-    error = function(e) list(valid = FALSE, value = NULL, error = e)
-  )
+    )
+  }
   name_lookup <- ledgr_feature_name_lookup_state(
     available_features,
     active_alias_map = if (isTRUE(active_lookup$valid)) {
@@ -436,6 +399,16 @@ ledgr_projection_feature_name_state <- function(projection,
     },
     normalized = TRUE
   )
+  # A concrete ID remains readable even when an alias maps to it, so every ID
+  # must be reserved against flat context fields.
+  public_names <- c(name_lookup$aliases, name_lookup$feature_ids)
+  collision <- intersect(public_names, ledgr_pulse_context_reserved_fields())
+  if (length(collision) > 0L) {
+    rlang::abort(
+      sprintf("Feature `%s` collides with a reserved pulse context field.", collision[[1L]]),
+      class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+    )
+  }
   list(
     available_features = available_features,
     available_message = ledgr_feature_names_message(sort(

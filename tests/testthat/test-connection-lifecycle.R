@@ -129,7 +129,7 @@ testthat::test_that("[LTB-0241] composite and interactive calls open the store o
   wf_snapshot <- ledgr_snapshot_from_df(wf_bars, db_path = wf_path)
   wf_strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    if (ctx$close("AAA") >= params$threshold) targets["AAA"] <- params$qty
+    if (ctx$close[["AAA"]] >= params$threshold) targets["AAA"] <- params$qty
     targets
   }
   wf_exp <- ledgr_experiment(

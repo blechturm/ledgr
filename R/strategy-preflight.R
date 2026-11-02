@@ -395,6 +395,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
 ledgr_pulse_context_private_fields <- function() {
   c(
     ".feature_table_current", ".feature_vector", ".history", ".notes",
+    ".schedule_query",
     ".positions", ".pulse_lookup", ".safety_state"
   )
 }

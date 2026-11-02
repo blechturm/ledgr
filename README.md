@@ -87,9 +87,9 @@ next fill: a number of shares for every instrument.
 
 ``` r
 above_trend <- function(ctx, params) {
-  trend <- ctx$vec$feature("sma_20")
+  trend <- ctx$sma_20
   if (!ledgr_passed_warmup(trend)) return(ctx$flat())
-  above <- ctx$vec$close > trend * (1 + params$buffer)
+  above <- ctx$close > trend * (1 + params$buffer)
   targets <- ctx$flat()
   targets[above] <- params$qty
   targets
@@ -98,7 +98,7 @@ above_trend <- function(ctx, params) {
 
 This one holds `qty` shares of every instrument whose close is above its
 20-day moving average by at least `buffer`, and nothing otherwise.
-`ctx$flat()` starts from zero shares for every instrument, and `ctx$vec`
+`ctx$flat()` starts from zero shares for every instrument, and flat columns
 holds today's values for all of them at once. For the first 19 bars the
 average does not exist yet, so the strategy holds nothing until it does.
 

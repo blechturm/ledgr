@@ -126,7 +126,7 @@ testthat::test_that("execution facts resolve at the declared next opening", {
       if (identical(ctx$ts_utc, "2020-01-01T21:00:00Z")) c(AAA = 1) else ctx$hold()
     }
     bt <- ledgr_run(
-      ledgr_experiment(
+      ledgr_experiment(opening = ledgr_opening(cash = 100000),
         snapshot,
         strategy,
         valuation_policy = ledgr_valuation_stale(1),
@@ -178,7 +178,7 @@ testthat::test_that("lifetime restrictions also resolve at the declared opening"
     session_close = "21:00:00"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       if (identical(ctx$ts_utc, "2020-01-01T21:00:00Z")) c(AAA = 1) else ctx$hold()
@@ -208,7 +208,7 @@ testthat::test_that("lifetime restrictions also resolve at the declared opening"
 testthat::test_that("the terminal availability decision has no execution opportunity", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) c(AAA = 1) else ctx$flat()
@@ -279,23 +279,28 @@ testthat::test_that("active rebalance preserves held nonmembers and reserves exp
     members = "MEMBER",
     availability_active = TRUE,
     equity = 1000,
-    vec = list(
-      positions = c(3, 0),
-      close = c(NA, 50),
-      risk_mark = c(100, 50),
-      admissible = c(FALSE, TRUE)
-    ),
-    idx = function(id) match(id, c("FORMER", "MEMBER"))
+    position = c(FORMER = 3, MEMBER = 0),
+    close = c(FORMER = NA, MEMBER = 50),
+    holding_value = c(FORMER = 300, MEMBER = 0),
+    buyable = c(FORMER = FALSE, MEMBER = TRUE),
+    member = c(FORMER = FALSE, MEMBER = TRUE)
   )
   target <- ledgr_target_rebalance(
-    ledgr_weights(c(MEMBER = 1), universe = "MEMBER"),
-    ctx
+    ctx,
+    weights = c(MEMBER = 1),
+    keep = "FORMER",
+    capital_base = "remaining_equity"
   )
   testthat::expect_identical(c(target), c(FORMER = 3, MEMBER = 14))
 
   # Cut 10: an unpriced, unheld member is skipped at zero instead of failing.
-  ctx$vec$close[[2L]] <- NA_real_
-  skipped <- ledgr_target_rebalance(ledgr_weights(c(MEMBER = 1), universe = "MEMBER"), ctx)
+  ctx$close[["MEMBER"]] <- NA_real_
+  skipped <- ledgr_target_rebalance(
+    ctx,
+    weights = c(MEMBER = 1),
+    keep = "FORMER",
+    capital_base = "remaining_equity"
+  )
   testthat::expect_identical(c(skipped), c(FORMER = 3, MEMBER = 0))
   testthat::expect_identical(attr(skipped, "sizing_skipped"), "MEMBER")
 })
@@ -348,7 +353,7 @@ testthat::test_that("affordability credits accepted reductions before purchases"
 testthat::test_that("availability short guard runs after explicit long-only risk", {
   snapshot <- availability_economics_snapshot(c("AAA", "BBB"), days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  short_exp <- ledgr_experiment(
+  short_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) c(AAA = -1, BBB = 5),
     valuation_policy = ledgr_valuation_stale(1),
@@ -365,7 +370,7 @@ testthat::test_that("availability short guard runs after explicit long-only risk
   )
   ledgr_test_close_duckdb(opened$con, opened$drv)
   testthat::expect_equal(nrow(failed_events), 0L)
-  long_only_exp <- ledgr_experiment(
+  long_only_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) stats::setNames(rep(-1, length(ctx$universe)), ctx$universe),
     valuation_policy = ledgr_valuation_stale(1),
@@ -401,7 +406,7 @@ testthat::test_that("new positive exposure without a risk mark stops before fill
   )
   snapshot <- availability_economics_snapshot(c("AAA", "CLOCK"), bars = bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) c(AAA = 1, CLOCK = 0),
     valuation_policy = ledgr_valuation_stale(1),
@@ -770,7 +775,7 @@ testthat::test_that("execution diagnostics retain ordered gate reasons", {
   )
   snapshot <- availability_economics_snapshot("AAA", days = 3L, bars = bars, status = status)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) c(AAA = 1) else ctx$hold()
@@ -805,7 +810,7 @@ testthat::test_that("execution-time membership changes are diagnostic only", {
   )
   snapshot <- availability_economics_snapshot("AAA", days = 3L, membership = membership)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) c(AAA = 1) else ctx$hold()
@@ -839,7 +844,7 @@ testthat::test_that("decision traces append across deliberate interruption and r
     }
     ctx$flat()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(1),
@@ -886,7 +891,7 @@ testthat::test_that("decision traces append across deliberate interruption and r
 testthat::test_that("unexpected fold errors roll back economics and retain error diagnostics", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       if (identical(ctx$ts_utc, "2020-01-02T16:00:00Z")) stop("injected fold failure")
@@ -930,7 +935,7 @@ testthat::test_that("unexpected fold errors roll back economics and retain error
 testthat::test_that("[LTB-0282] availability exception stages retain baseline labels", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  hold_experiment <- ledgr_experiment(
+  hold_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$hold(),
     valuation_policy = ledgr_valuation_stale(1),
@@ -947,21 +952,24 @@ testthat::test_that("[LTB-0282] availability exception stages retain baseline la
     class = "ledgr_test_context_failure"
   )
 
-  state_experiment <- ledgr_experiment(
+  state_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
-    function(ctx, params) list(targets = ctx$hold(), state_update = 5),
+    function(ctx, params) list(
+      targets = ctx$hold(), state_update = list(step = 1L)
+    ),
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(step = 0L)
   )
-  original_normalize <- ledgr:::ledgr_fold_asset_state_normalize
+  original_apply <- ledgr:::ledgr_strategy_state_apply_values
   testthat::expect_error(
     testthat::with_mocked_bindings(
       ledgr_run(state_experiment, run_id = "p5-state-stage"),
-      ledgr_fold_asset_state_normalize = function(state, ...) {
-        if (identical(state, 5)) {
+      ledgr_strategy_state_apply_values = function(previous, update, ...) {
+        if (identical(update$step, 1L)) {
           rlang::abort("injected state failure", class = "ledgr_test_state_failure")
         }
-        original_normalize(state, ...)
+        original_apply(previous, update, ...)
       },
       .package = "ledgr"
     ),

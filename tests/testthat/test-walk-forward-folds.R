@@ -14,7 +14,7 @@ ledgr_wf_test_bars <- function() {
 
 ledgr_wf_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ctx$close("AAA") >= params$threshold) {
+  if (ctx$close[["AAA"]] >= params$threshold) {
     targets["AAA"] <- params$qty
   }
   targets
@@ -188,7 +188,7 @@ testthat::test_that("experiment windows validate pulse coverage and derive fold 
   bars <- utils::head(ledgr_wf_test_bars(), 7L)
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot, ledgr_wf_strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, ledgr_wf_strategy, cost_model = ledgr_cost_zero())
   fold <- ledgr_fold("2020-01-02", "2020-01-04", "2020-01-05", "2020-01-07")
 
   train <- ledgr:::ledgr_experiment_window_from_fold(exp, fold, window = "train")
@@ -224,8 +224,8 @@ testthat::test_that("windowed run and sweep match equivalent sliced snapshots", 
   on.exit(ledgr_snapshot_close(snapshot_full), add = TRUE)
   on.exit(ledgr_snapshot_close(snapshot_slice), add = TRUE)
 
-  exp_full <- ledgr_experiment(snapshot_full, ledgr_wf_strategy, cost_model = ledgr_cost_zero())
-  exp_slice <- ledgr_experiment(snapshot_slice, ledgr_wf_strategy, cost_model = ledgr_cost_zero())
+  exp_full <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot_full, ledgr_wf_strategy, cost_model = ledgr_cost_zero())
+  exp_slice <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot_slice, ledgr_wf_strategy, cost_model = ledgr_cost_zero())
   window <- ledgr:::ledgr_experiment_window(exp_full, "2020-01-02", "2020-01-06")
   params <- list(qty = 1, threshold = 103)
 
@@ -271,7 +271,7 @@ testthat::test_that("windowed execution preserves final-bar no-fill semantics at
   bars <- utils::head(ledgr_wf_test_bars(), 4L)
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot, ledgr_wf_final_bar_strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, ledgr_wf_final_bar_strategy, cost_model = ledgr_cost_zero())
   window <- ledgr:::ledgr_experiment_window(exp, "2020-01-02", "2020-01-04")
 
   run <- ledgr:::ledgr_run_window(
@@ -292,7 +292,7 @@ testthat::test_that("windowed execution preserves final-bar no-fill semantics at
 testthat::test_that("walk-forward routes every candidate and test through the fold core", {
   snapshot <- ledgr_snapshot_from_df(ledgr_wf_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     ledgr_wf_strategy,
     cost_model = ledgr_cost_zero()

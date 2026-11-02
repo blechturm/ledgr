@@ -21,7 +21,7 @@ testthat::test_that("availability policies activate explicitly and preserve dens
   dense_snapshot <- ledgr_snapshot_from_df(dense_bars)
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$hold()
-  dense <- ledgr_experiment(dense_snapshot, strategy, cost_model = ledgr_cost_zero())
+  dense <- ledgr_experiment(opening = ledgr_opening(cash = 100000), dense_snapshot, strategy, cost_model = ledgr_cost_zero())
   testthat::expect_null(dense$availability)
   dense_plan <- ledgr_experiment_plan(dense)
   testthat::expect_false(dense_plan$availability_active)
@@ -34,13 +34,13 @@ testthat::test_that("availability policies activate explicitly and preserve dens
   sma <- ledgr_ind_sma(2)
   sma_without_gap <- sma
   sma_without_gap$gap_contract <- NULL
-  dense_feature <- ledgr_experiment(
+  dense_feature <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy,
     features = list(sma),
     cost_model = ledgr_cost_zero()
   )
-  dense_feature_without_gap <- ledgr_experiment(
+  dense_feature_without_gap <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy,
     features = list(sma_without_gap),
@@ -60,10 +60,10 @@ testthat::test_that("availability policies activate explicitly and preserve dens
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   # Facts activate availability; an omitted policy is the disclosed default.
   testthat::expect_identical(
-    ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())$valuation_policy,
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())$valuation_policy,
     ledgr_valuation_stale()
   )
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(1),
@@ -110,7 +110,7 @@ testthat::test_that("effective plans disclose assumption-backed fact families", 
   )
   snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(sessions), price_basis = "split_adjusted")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$hold(),
     valuation_policy = ledgr_valuation_stale(1),
@@ -138,17 +138,17 @@ testthat::test_that("fixed baskets remain fixed when availability facts are decl
   snapshot <- availability_runtime_fixture(membership = membership)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    list(
-      targets = ctx$hold(),
-      state_update = list(members = ctx$members)
+    ledgr_strategy_result(
+      ctx$hold(), members = paste(ctx$members, collapse = ",")
     )
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = "AAA",
     valuation_policy = ledgr_valuation_stale(0),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(members = "")
   )
   testthat::expect_identical(ledgr_experiment_plan(exp)$universe_type, "fixed")
   bt <- ledgr_run(exp)
@@ -182,7 +182,7 @@ testthat::test_that(
   on.exit(ledgr_snapshot_close(no_sessions), add = TRUE)
   strategy <- function(ctx, params) ctx$hold()
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       no_sessions,
       strategy,
       valuation_policy = ledgr_valuation_stale(1),
@@ -194,7 +194,7 @@ testthat::test_that(
   snapshot <- availability_runtime_fixture(days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       universe = ledgr_universe_members("missing"),

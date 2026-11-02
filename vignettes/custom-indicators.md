@@ -35,7 +35,7 @@ definition. The important fields are:
 
 | Field | Meaning |
 |----|----|
-| `id` | Stable feature ID a strategy reads with `ctx$vec$feature(feature_id)`. |
+| `id` | Stable feature ID a strategy reads as the flat named column `ctx[[feature_id]]`. |
 | `fn` | Scalar function for one bounded historical window. |
 | `series_fn` | Optional vectorized function for one instrument’s full bar series. |
 | `requires_bars` | Minimum lookback requirement for the indicator definition. |
@@ -277,7 +277,7 @@ snapshot <- ledgr_snapshot_from_df(
 features <- list(range_3)
 
 strategy <- function(ctx, params) {
-  narrow <- ledgr_signal_feature(ctx, "range_3") < params$max_range
+  narrow <- ctx[["range_3"]] < params$max_range
   ctx |>
     ledgr_selection(where = narrow, missing = "exclude") |>
     ledgr_target_quantity(ctx, params$qty)
@@ -295,7 +295,7 @@ ledgr_feature_id(features)
 #> [1] "range_3"
 ```
 
-Inside the strategy, `ledgr_signal_feature(ctx, "range_3")` reads the
+Inside the strategy, `ctx[["range_3"]]` reads the
 exact feature ID for the whole decision axis in one call. Unknown IDs
 fail loudly; warmup for a known feature is `NA_real_`, which
 `missing = "exclude"` leaves unselected.

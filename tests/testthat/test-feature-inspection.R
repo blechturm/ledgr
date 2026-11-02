@@ -235,7 +235,8 @@ testthat::test_that("[LTB-0186] feature params resolve inspection like execution
       snapshot,
       function(ctx, params) ctx$flat(),
       features = features,
-      cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 100000)
     ),
     feature_params = params,
     run_id = "feature-contract-params"
@@ -324,10 +325,10 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
     )
   )
 
-  testthat::expect_equal(wide[["AAA__ohlcv_close"]], pulse$close("AAA"))
-  testthat::expect_equal(wide[["BBB__ohlcv_volume"]], pulse$volume("BBB"))
-  testthat::expect_equal(wide[["AAA__feature_ret"]], pulse$feature("AAA", "return_2"))
-  testthat::expect_equal(wide[["BBB__feature_sma"]], pulse$feature("BBB", "sma_3"))
+  testthat::expect_equal(wide[["AAA__ohlcv_close"]], pulse$close[["AAA"]])
+  testthat::expect_equal(wide[["BBB__ohlcv_volume"]], pulse$volume[["BBB"]])
+  testthat::expect_equal(wide[["AAA__feature_ret"]], pulse$return_2[["AAA"]])
+  testthat::expect_equal(wide[["BBB__feature_sma"]], pulse$sma_3[["BBB"]])
 
   wide_all <- ledgr_pulse_wide(pulse)
   testthat::expect_s3_class(wide_all, "tbl_df")
@@ -374,7 +375,7 @@ testthat::test_that("pulse snapshots resolve active aliases with feature params"
   )
   on.exit(close(pulse), add = TRUE)
 
-  x <- pulse$features("AAA")
+  x <- c(z_short = pulse$z_short[["AAA"]], a_long = pulse$a_long[["AAA"]])
   testthat::expect_identical(names(x), c("z_short", "a_long"))
   testthat::expect_identical(pulse$active_alias_map, c(z_short = "sma_2", a_long = "sma_3"))
   testthat::expect_match(pulse$alias_map_hash, "^[0-9a-f]{64}$")
@@ -464,7 +465,7 @@ testthat::test_that("feature inspection views match across execution modes", {
       wide_all = wide_all
     )
     targets <- ctx$flat()
-    x <- ctx$features("AAA", features)
+    x <- c(ret = ctx$ret[["AAA"]], sma = ctx$sma[["AAA"]])
     if (ledgr_passed_warmup(x) && x[["ret"]] > 0) {
       targets["AAA"] <- 1
     }

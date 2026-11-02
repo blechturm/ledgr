@@ -100,11 +100,12 @@ ws58_fixture <- function(closes, strategy, days = ws58_days(),
   )
   experiment <- ledgr_experiment(
     snapshot,
-    ledgr_strategy_schedule(strategy, ledgr_schedule_month_start()),
+    strategy,
     features = list(ledgr_ind_returns(1L)),
     universe = ledgr_universe_members("u"),
     cost_model = ledgr_cost_zero(),
-    opening = opening
+    opening = opening,
+    schedule = ledgr_schedule_month_start()
   )
   list(snapshot = snapshot, exp = experiment, days = days, closes = closes)
 }
@@ -196,11 +197,8 @@ testthat::test_that("[LTB-0431] the strategy acts on month starts and writes spa
   read_reasons <- function(x) {
     diagnostics <- as.data.frame(ledgr_results(x, "diagnostics"))
     intent <- diagnostics[diagnostics$reason_code == "strategy_intent", , drop = FALSE]
-    vapply(
-      intent$detail_json,
-      function(json) ledgr:::ledgr_json_read_nested(json)$intent_reason,
-      character(1L)
-    )
+    testthat::expect_identical(intent$detail_json, rep("{}", nrow(intent)))
+    as.character(intent$reasons)
   }
   live <- read_reasons(run)
   testthat::expect_identical(
@@ -366,8 +364,8 @@ testthat::test_that("[LTB-0437] the article teaches one focused causal optimizat
   for (word in c(
     "intent_reason = \"insufficient_sample\"",
     "intent_reason = \"rebalanced\"",
-    "ledgr_align_weights(returns)",
-    "targets[!ctx$vec$member] <- 0",
+    "ledgr_align_weights(solution, returns)",
+    "index_leavers = \"sell\"",
     "Amat = cbind(rep(1, n), diag(n))",
     "bvec = c(1, rep(0, n))",
     "meq = 1L",

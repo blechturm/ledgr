@@ -26,6 +26,9 @@ ledgr_test_current_config <- function(config) {
   config$corporate_actions <- ledgr:::ledgr_corporate_action_policy_identity(
     ledgr_corporate_actions_research()
   )
+  config$strategy_state <- ledgr:::ledgr_strategy_state_identity(
+    ledgr:::ledgr_strategy_state_normalize(list(), list())
+  )
   config
 }
 
@@ -234,10 +237,10 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
   )
   cfg <- ledgr_test_current_config(cfg)
 
-  # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002.
+  # Cut 7 LDG-3185 adds normalized declared strategy state to identity.
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "84194b28bec7337ad8f14cdd300d7f6ed166924a296616d41b31869565a7a01c"
+    "7559b6eb684c2a983aa2122ec1b9b197ff0fd1ba44a5750fe0613ef875976b9a"
   )
 })
 

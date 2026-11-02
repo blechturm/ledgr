@@ -37,7 +37,8 @@ The historical body is retained verbatim from peer_strategy('fast','slow')
 at accepted source commit 7879e8ba, attributed in recipes.R, with base R's
 %||% (R >= 4.6).
 Its public feature map uses ledgr_ind_ttr('SMA', input='close', id='fast',
-n=5L), and id='slow', n=10L. New recipes use ctx$vec$feature aliases.
+n=5L), and id='slow', n=10L. New recipes read the flat `ctx$fast` and
+`ctx$slow` alias columns.
 Scoring opens at data start except historical_late (session 30). Dense
 history starts at scoring start; fact-bearing history starts at data start
 (contracts#contract-execution-window-start). Usable scores hold during

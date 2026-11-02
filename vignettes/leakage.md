@@ -204,7 +204,7 @@ no market-data object from which it can casually index tomorrow’s bar.
 
 ``` r
 strategy <- function(ctx, params) {
-  up <- ctx$vec$close > ctx$vec$open
+  up <- ctx$close > ctx$open
   ctx |>
     ledgr_selection(where = up) |>
     ledgr_target_quantity(ctx, params$qty)
@@ -261,7 +261,7 @@ custom feature code must be written with causal discipline.
 | Boundary | ledgr behavior |
 |----|----|
 | Strategy reads future rows | Strategy receives a pulse context, not a future table; an object captured from your session is noted by preflight, not blocked. |
-| Unknown feature ID | `ctx$feature()` fails loudly instead of returning warmup. |
+| Unknown feature ID | A flat context lookup fails loudly instead of returning warmup. |
 | Known feature in warmup | Values are explicitly `NA_real_` until usable. |
 | Invalid target shape | Missing or extra target instruments are rejected. |
 | Scalar indicator history | Scalar indicators are evaluated on bounded windows ending at the current bar. |

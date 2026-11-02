@@ -117,7 +117,8 @@ ledgr_test_execution_spec <- function(...) {
       checkpoint_every = 0L,
       telemetry_stride = 0L,
       state = list(cash = 1000, positions = stats::setNames(c(0, 0), instrument_ids)),
-      state_prev = NULL,
+      strategy_state = list(values = list(), axis = instrument_ids),
+      strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
       history_substrate = prepared$substrate,
       feature_defs = list(),
       active_alias_map = NULL,
@@ -222,7 +223,8 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
         cost_basis = opening_cost_basis
       )
     ),
-    state_prev = NULL,
+    strategy_state = list(values = list(), axis = instrument_ids),
+    strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
     history_substrate = prepared$substrate,
     feature_defs = list(),
     active_alias_map = NULL,
@@ -350,7 +352,8 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
         cost_basis = opening_cost_basis
       )
     ),
-    state_prev = NULL,
+    strategy_state = list(values = list(), axis = instrument_ids),
+    strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
     history_substrate = prepared$substrate,
     feature_defs = list(),
     active_alias_map = NULL,
@@ -412,7 +415,11 @@ testthat::test_that("execution spec constructor exposes only the canonical subst
       "checkpoint_every",
       "telemetry_stride",
       "state",
-      "state_prev",
+      "strategy_state",
+      "strategy_state_declaration",
+      "strategy_state_default_scalars",
+      "position_facts",
+      "position_fact_unknown_basis",
       "history_substrate",
       "feature_defs",
       "active_alias_map",
@@ -424,7 +431,8 @@ testthat::test_that("execution spec constructor exposes only the canonical subst
       "event_mode",
       "compiled_accounting_model",
       "availability_provider",
-      "execution_opportunities_posix"
+      "execution_opportunities_posix",
+      "schedule_params"
     )
   )
   testthat::expect_identical(spec$id_to_idx, stats::setNames(as.integer(1:2), c("AAA", "BBB")))
@@ -905,10 +913,10 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
   strategy <- function(ctx, params) {
     observed[[length(observed) + 1L]] <<- list(
       positions = ctx$hold(),
-      vec_positions = ctx$vec$position,
-      idx_aaa = ctx$idx("AAA"),
-      idx_bad = ctx$idx("ZZZ", missing = "na"),
-      idx_error = testthat::capture_error(ctx$idx("ZZZ"))
+      vec_positions = ctx$position,
+      idx_aaa = match("AAA", ctx$universe),
+      idx_bad = match("ZZZ", ctx$universe),
+      idx_error = testthat::capture_error(match("ZZZ", ctx$universe))
     )
     stats::setNames(c(1, 0), c("AAA", "BBB"))
   }
@@ -923,11 +931,11 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
 
   testthat::expect_identical(names(observed[[1L]]$positions), c("AAA", "BBB"))
   testthat::expect_equal(as.numeric(observed[[1L]]$positions), c(0, 0))
-  testthat::expect_null(names(observed[[1L]]$vec_positions))
-  testthat::expect_equal(observed[[2L]]$vec_positions, c(1, 0))
+  testthat::expect_identical(names(observed[[1L]]$vec_positions), c("AAA", "BBB"))
+  testthat::expect_equal(observed[[2L]]$vec_positions, c(AAA = 1, BBB = 0))
   testthat::expect_identical(observed[[1L]]$idx_aaa, 1L)
   testthat::expect_identical(observed[[1L]]$idx_bad, NA_integer_)
-  testthat::expect_s3_class(observed[[1L]]$idx_error, "ledgr_invalid_pulse_context")
+  testthat::expect_null(observed[[1L]]$idx_error)
 })
 
 # ledgr-test-profile: review
@@ -945,7 +953,7 @@ testthat::test_that("[LTB-0015] run and sweep share execution construction and f
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     cost_model = ledgr_cost_zero()

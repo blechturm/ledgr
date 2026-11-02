@@ -15,8 +15,9 @@ ledgr_strategy_context_list <- function(x, max_items = 8L) {
 
 ledgr_strategy_error_features <- function(ctx) {
   feature_table <- ctx$feature_table
-  if (is.null(feature_table) && is.data.frame(ctx$features)) {
-    feature_table <- ctx$features
+  raw <- unclass(ctx)
+  if (is.null(feature_table) && is.data.frame(raw$features)) {
+    feature_table <- raw$features
   }
   if (!is.data.frame(feature_table)) {
     feature_table <- data.frame()
@@ -630,6 +631,9 @@ ledgr_run_fold_impl <- function(config,
     cost_basis = opening_cost_basis,
     lots = opening_carried$lots
   )
+  position_facts <- ledgr_position_facts_from_carried(
+    opening_carried, instrument_ids, history_axis
+  )
   if (identical(execution_mode, "audit_log")) {
     initial_positions <- rep(0, length(instrument_ids))
     names(initial_positions) <- instrument_ids
@@ -643,7 +647,12 @@ ledgr_run_fold_impl <- function(config,
   instrument_index <- seq_along(instrument_ids)
   names(instrument_index) <- instrument_ids
   if (is_resume && !isTRUE(terminal_recovery) && length(pulses) > 0) {
-    resume_state <- ledgr_state_asof(con, run_id, initial_cash, resume_posix, instrument_ids = instrument_ids)
+    resume_state <- ledgr_state_asof(
+      con, run_id, initial_cash, resume_posix,
+      instrument_ids = instrument_ids, bar_axis = history_axis,
+      initial_position_facts = position_facts
+    )
+    position_facts <- resume_state$position_facts
     if (identical(execution_mode, "audit_log")) {
       pos_vec <- rep(0, length(instrument_ids))
       names(pos_vec) <- instrument_ids
@@ -744,7 +753,7 @@ ledgr_run_fold_impl <- function(config,
   schedule <- ledgr_compile_strategy_schedule(
     declaration = cfg$strategy_schedule,
     strategy_params = schedule_params,
-    sessions = availability_sessions,
+    sessions = ledgr_strategy_schedule_sessions(history_substrate),
     pulses_posix = pulses_posix
   )
   output_handler$set_schedule_counts(
@@ -804,14 +813,22 @@ ledgr_run_fold_impl <- function(config,
   ledgr_run_resume_preflight(is_resume, strategy_preflight)
   output_handler$record_run_status("RUNNING", NA_character_)
 
-  state_prev_mem <- list(
-    asset_state = stats::setNames(
-      rep(list(list()), length(instrument_ids)),
-      instrument_ids
-    )
+  strategy_state_declaration <- ledgr_strategy_state_from_identity(cfg$strategy_state)
+  strategy_state_default_scalars <- ledgr_strategy_state_default_scalars(
+    strategy_state_declaration
+  )
+  strategy_state_mem <- list(
+    values = ledgr_strategy_state_defaults(
+      strategy_state_declaration, instrument_ids,
+      default_scalars = strategy_state_default_scalars
+    ),
+    axis = instrument_ids
   )
   if (is_resume) {
-    state_prev_mem <- ledgr_strategy_state_prev(con, run_id, resume_iso)
+    strategy_state_mem <- ledgr_strategy_state_restore(
+      con, run_id, resume_iso, strategy_state_declaration, instrument_ids,
+      default_scalars = strategy_state_default_scalars
+    )
   }
   current_positions <- state_env$current$positions
   full_positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
@@ -832,6 +849,15 @@ ledgr_run_fold_impl <- function(config,
     dispositions_active = TRUE,
     carried = opening_carried$pending
   )
+  raw_sizing_notice_written <- isTRUE(DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT COUNT(*) > 0 AS present FROM run_diagnostics",
+      "WHERE run_id = ? AND stage = 'sizing'",
+      "AND reason_code = 'sizing_intent_unavailable'"
+    ),
+    params = list(run_id)
+  )$present[[1L]])
 
   fold_execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -847,7 +873,10 @@ ledgr_run_fold_impl <- function(config,
     checkpoint_every = checkpoint_every,
     telemetry_stride = telemetry_stride,
     state = state_env$current,
-    state_prev = state_prev_mem,
+    strategy_state = strategy_state_mem,
+    strategy_state_declaration = strategy_state_declaration,
+    strategy_state_default_scalars = strategy_state_default_scalars,
+    position_facts = position_facts,
     history_substrate = history_substrate,
     feature_defs = feature_defs,
     active_alias_map = active_alias_map,
@@ -893,9 +922,12 @@ ledgr_run_fold_impl <- function(config,
     } else {
       NULL
     },
+    schedule_sessions = ledgr_strategy_schedule_sessions(history_substrate),
+    schedule_params = schedule_params,
     decision_due = schedule$decision_due,
     decision_pulse_count = schedule$decision_pulse_count,
-    scheduled_skip_count = schedule$scheduled_skip_count
+    scheduled_skip_count = schedule$scheduled_skip_count,
+    raw_sizing_notice_written = raw_sizing_notice_written
   )
 
   fold_result <- tryCatch(
@@ -1021,33 +1053,9 @@ ledgr_pulse_timestamps <- function(con, instrument_ids, start_ts_utc, end_ts_utc
   }
 }
 
-ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
-  }
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-
-  ts_iso <- ledgr_normalize_ts_utc(ts_utc)
-
-  row <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT state_json
-    FROM strategy_state
-    WHERE run_id = ? AND ts_utc < ?
-    ORDER BY ts_utc DESC
-    LIMIT 1
-    ",
-    params = list(run_id, ts_iso)
-  )
-
-  if (nrow(row) == 0) return(NULL)
-  ledgr_json_read_nested(row$state_json[[1]])
-}
-
-ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids = character()) {
+ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc,
+                             instrument_ids = character(), bar_axis = NULL,
+                             initial_position_facts = NULL) {
   rows <- DBI::dbGetQuery(
     con,
     "
@@ -1086,7 +1094,12 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
     cash = cash,
     positions = pos,
     equity = cash + positions_value,
-    lot_state = replay$lot_state
+    lot_state = replay$lot_state,
+    position_facts = if (is.null(bar_axis)) NULL else {
+      ledgr_position_facts_from_replay(
+        replay, bar_axis, initial_state = initial_position_facts
+      )
+    }
   )
 }
 
@@ -1219,7 +1232,6 @@ ledgr_strategy_from_config <- function(cfg) {
   if (identical(id, "hold_zero")) return(strategy(ledgr_strategy_hold_zero, params))
   if (identical(id, "echo")) return(strategy(ledgr_strategy_echo, params))
   if (identical(id, "ts_rule")) return(strategy(ledgr_strategy_ts_rule, params))
-  if (identical(id, "state_prev")) return(strategy(ledgr_strategy_state_prev_targets, params))
   if (identical(id, "functional")) {
     key <- params$strategy_key
     signature <- params$call_signature

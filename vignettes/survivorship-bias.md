@@ -27,17 +27,18 @@ library(ledgr)
 library(dplyr)
 ```
 
-> [!WARNING]
->
-> ### Survivorship bias
->
-> Selection on what remained observable. When a sample is truncated by
-> survival, the surviving history can show returns the strategy could not
-> have earned. Brown, Goetzmann, Ibbotson, and Ross (1992) measured the
-> effect on performance studies. Shumway (1997) documented the related
-> delisting bias that appears when large negative delisting returns are
-> missing from equity data.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Survivorship bias**
+
+Selection on what remained observable. When a sample is truncated by
+survival, the surviving history can show returns the strategy could not
+have earned. Brown, Goetzmann, Ibbotson, and Ross (1992) measured the
+effect on performance studies. Shumway (1997) documented the related
+delisting bias that appears when large negative delisting returns are
+missing from equity data.
+
+</div>
 
 By the end of this article you will be able to declare a universe-aware
 experiment, explain the assumptions it rests on, and say why its
@@ -107,16 +108,17 @@ entire feed is absent on January 9 even though the venue was open. Both
 instruments resume on January 10, but `AAA` stops printing prices after
 that session while `BBB` continues.
 
-> [!NOTE]
->
-> ### A missing price is not a reason
->
-> Nothing in this table says *why* an observation is absent. A delisting,
-> a trading halt, and a vendor feed gap all look identical here. This
-> example declares no lifetime or trading-status facts, so ledgr is never
-> told which one occurred. The prose below supplies that story; the data
-> does not.
+<div class="ledgr-callout ledgr-callout-note">
 
+**A missing price is not a reason**
+
+Nothing in this table says *why* an observation is absent. A delisting,
+a trading halt, and a vendor feed gap all look identical here. This
+example declares no lifetime or trading-status facts, so ledgr is never
+told which one occurred. The prose below supplies that story; the data
+does not.
+
+</div>
 
 ## The Selection Problem
 
@@ -310,28 +312,29 @@ decided, announced, and takes effect on three separate days. A
 downloaded constituent list carries neither timestamp, which is why it
 leaks.
 
-> [!TIP]
->
-> ### Which timestamp goes in `knowledge_time`?
->
-> Record when the assertion became available to the research process you
-> are modelling:
->
-> - The provider timestamps the announcement: use that.
-> - The file has a publication or delivery date: use that.
-> - You only know when you downloaded it: use the download time. It
->   establishes receipt, not historical publication, so disclose it as the
->   assumption it is.
->
-> The two timestamps may legitimately coincide when the evidence supports
-> it, as the January 13 removal does here: it was announced the day it
-> took effect. What you cannot do is copy `effective_from` as a default,
-> because that asserts every change was knowable the instant it took
-> effect. That is a different leak from survivorship: it makes information
-> available too early, while survivorship removes opportunities the
-> strategy really had. The two often travel together, but neither requires
-> the other.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Which timestamp goes in `knowledge_time`?**
+
+Record when the assertion became available to the research process you
+are modelling:
+
+- The provider timestamps the announcement: use that.
+- The file has a publication or delivery date: use that.
+- You only know when you downloaded it: use the download time. It
+  establishes receipt, not historical publication, so disclose it as the
+  assumption it is.
+
+The two timestamps may legitimately coincide when the evidence supports
+it, as the January 13 removal does here: it was announced the day it
+took effect. What you cannot do is copy `effective_from` as a default,
+because that asserts every change was knowable the instant it took
+effect. That is a different leak from survivorship: it makes information
+available too early, while survivorship removes opportunities the
+strategy really had. The two often travel together, but neither requires
+the other.
+
+</div>
 
 ``` r
 membership_facts <- ledgr_facts_membership_snapshots(
@@ -529,25 +532,28 @@ strategy path rather than merely something inspected after the run.
 
 What happens to a departed holding depends on how the rule is written.
 `ctx$flat()` is literal, so a rule starting from it sells a departed
-holding at the next open. The strategy helpers keep departed holdings,
-as the rule below does. Increasing a holding outside the universe fails
-with an error. What ledgr should do by default here is open design work.
+holding at the next open. The rule below makes the opposite choice
+explicit with `index_leavers = "keep"`. Increasing a holding outside the
+universe fails with an error; ledgr never invents a default leaver
+policy.
 
 ``` r
 rebalance_declared_members <- function(ctx, params) {
-  ctx |>
-    ledgr_selection() |>
+  ctx$universe[ctx$buyable] |>
     ledgr_weight_equal() |>
-    ledgr_target_rebalance(ctx, equity_fraction = params$invested)
+    ledgr_target_rebalance(
+      ctx,
+      weights = _,
+      index_leavers = "keep",
+      capital_base = "remaining_equity",
+      invest_fraction = params$invested
+    )
 }
 
 rebalance_schedule <- ledgr_schedule_dates(
   as.Date(c("2020-01-06", "2020-01-13"))
 )
-scheduled_rebalance <- ledgr_strategy_schedule(
-  rebalance_declared_members,
-  rebalance_schedule
-)
+scheduled_rebalance <- rebalance_declared_members
 ```
 
 Only those two sessions call the portfolio rule. On the other eight
@@ -556,7 +562,7 @@ events, value the holdings, and age stale marks. The scheduling section
 of `vignette("strategy-authoring-tools", package = "ledgr")` develops
 that distinction from a smaller example.
 
-In this availability-aware experiment, `equity_fraction` is deliberately
+In this availability-aware experiment, `invest_fraction` is deliberately
 below 1. Sizing uses the decision close while execution uses the next
 observed open; the later price and the availability rules together
 determine whether a target can fill. Leaving headroom is a research
@@ -567,11 +573,14 @@ need not be the same as this availability-aware case.
 The path is explicit. `ledgr_universe_members("demo_members")` selects
 the named history. At each decision, its cutoff resolution becomes
 `ctx$members`. `ctx$universe` is the members-plus-holdings axis, so a
-held former member stays visible. `ledgr_selection()` without a
-condition selects every current member that can trade, so a held former
-member is never selected. The rebalance helper creates one full-axis
-target; execution and valuation then decide independently what can fill
-and what can be marked.
+held former member stays visible. `ctx$universe[ctx$buyable]` selects
+every current member that can be bought, so a held former member is
+never selected. The explicit leaver policy keeps that position. Because
+the kept position already uses capital,
+`capital_base = "remaining_equity"` sizes the current members from what
+remains rather than counting the same equity twice. The rebalance helper
+creates one full-axis target; execution and valuation then decide
+independently what can fill and what can be marked.
 
 ## Comparing Survivor and Point-in-Time Universes
 
@@ -610,6 +619,7 @@ about it. Here is the whole thing, written out once:
 point_in_time_experiment <- ledgr_experiment(
   snapshot,
   scheduled_rebalance,
+  schedule = rebalance_schedule,
   universe = ledgr_universe_members("demo_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2),
   cost_model = ledgr_cost_zero(),
@@ -629,9 +639,12 @@ below, so the comparison isolates the universe.
 ``` r
 ledgr_experiment_plan(point_in_time_experiment)
 #> ledgr experiment plan
-#> Availability: active
+#> Execution clock: declared_sessions
+#> Point-in-time facts: active
 #> Price basis:  split_adjusted (declared)
 #> Metrics:      US equity daily (default) (252 days/year * 1 bars/day = 252 bars/year)
+#> Opening:      supplied; cash=10000, positions=0
+#> Costs:        supplied (zero)
 #> Strategy schedule: explicit dates (2)
 #> Universe:     membership
 #> Valuation:    stale-mark horizon 2 sessions (declared)
@@ -670,6 +683,7 @@ universe_experiment <- function(universe) {
   ledgr_experiment(
     snapshot,
     scheduled_rebalance,
+    schedule = rebalance_schedule,
     universe = universe,
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     cost_model = ledgr_cost_zero(),
@@ -709,21 +723,22 @@ budget on 11 more `BBB` shares. Each fill’s read-only
 January 7 for the first two rows and January 14 for the third, where the
 resulting account state appears on the equity curve.
 
-> [!NOTE]
->
-> ### Two clocks in one fill row
->
-> - `ts_utc` and `price` identify the **open** of the next session. That
->   is where execution happened.
-> - `recording_pulse_ts_utc` is that session’s **close**, the accounting
->   pulse to which the fill belongs.
->
-> A target decided at session *t* is evaluated and priced at session
-> *t+1*’s open. Strategy code still sees only decision-time evidence. To
-> align fills with equity, aggregate fills by recording pulse first;
-> joining raw economic timestamps to close-stamped equity is not session
-> alignment.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Two clocks in one fill row**
+
+- `ts_utc` and `price` identify the **open** of the next session. That
+  is where execution happened.
+- `recording_pulse_ts_utc` is that session’s **close**, the accounting
+  pulse to which the fill belongs.
+
+A target decided at session *t* is evaluated and priced at session
+*t+1*’s open. Strategy code still sees only decision-time evidence. To
+align fills with equity, aggregate fills by recording pulse first;
+joining raw economic timestamps to close-stamped equity is not session
+alignment.
+
+</div>
 
 ``` r
 fills_by_pulse <- ledgr_results(point_in_time, "fills") |>
@@ -875,31 +890,33 @@ equity curve at its January 10 close, but that value is now an
 assumption rather than an observation, and `admissible` is `FALSE`
 because ledgr will not size new exposure on it.
 
-> [!NOTE]
->
-> ### `priced = TRUE` is not a tradable price
->
-> A permissible mark values a holding on the equity curve. It says nothing
-> about whether an executable price exists. Fills come only from observed
-> bars.
+<div class="ledgr-callout ledgr-callout-note">
 
+**`priced = TRUE` is not a tradable price**
 
-> [!TIP]
->
-> ### Try it: preserve a held nonmember
->
-> At the January 13 pulse, compare `ctx$hold()` with a target built only
-> from `ctx$members`. Which one preserves `AAA`? Then remove one current
-> bar for a still-held instrument and seal the changed bars under a new
-> `snapshot_id`. A feed gap must not become an accidental liquidation;
-> start from holdings and change only the positions your rule intends to
-> change.
->
-> Expected result: `ctx$hold()` retains the nonzero `AAA` position.
-> Replacing it with a member-only zero vector requests an exit, but with
-> no observed execution bar that request cannot fill and does not become a
-> standing order.
+A permissible mark values a holding on the equity curve. It says nothing
+about whether an executable price exists. Fills come only from observed
+bars.
 
+</div>
+
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it: preserve a held nonmember**
+
+At the January 13 pulse, compare `ctx$hold()` with a target built only
+from `ctx$members`. Which one preserves `AAA`? Then remove one current
+bar for a still-held instrument and seal the changed bars under a new
+`snapshot_id`. A feed gap must not become an accidental liquidation;
+start from holdings and change only the positions your rule intends to
+change.
+
+Expected result: `ctx$hold()` retains the nonzero `AAA` position.
+Replacing it with a member-only zero vector requests an exit, but with
+no observed execution bar that request cannot fill and does not become a
+standing order.
+
+</div>
 
 <div id="fig-timeline">
 
@@ -930,6 +947,7 @@ point_in_time
 #>
 #> Run ID:                            pit-universe
 #> Period:                            2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
+#> Execution Clock:                   declared_sessions
 #> Opening Cash:                      $10000.00
 #> Final Equity:                      $8593.00
 #> Total Return:                      -14.07%
@@ -985,19 +1003,20 @@ that holding paid nothing. It is a bound for the long-only case, not a
 corrected return: Sharpe ratio and drawdown still follow the assumed
 path.
 
-> [!IMPORTANT]
->
-> ### Frozen equity is an estimate
->
-> During a freeze, cash, quantity and the ledger stay exact; the equity
-> number does not. It assumes the last close still holds. If the holding
-> later trades again, the whole price move lands on the session it
-> resumes, so the endpoint return converges, provided the carried mark
-> changed no decision in between, but the path statistics stay distorted.
-> A run that ends with a holding still frozen is a complete run built on a
-> stated assumption, which is why every result surface carries
-> `valuation_state`.
+<div class="ledgr-callout ledgr-callout-important">
 
+**Frozen equity is an estimate**
+
+During a freeze, cash, quantity and the ledger stay exact; the equity
+number does not. It assumes the last close still holds. If the holding
+later trades again, the whole price move lands on the session it
+resumes, so the endpoint return converges, provided the carried mark
+changed no decision in between, but the path statistics stay distorted.
+A run that ends with a holding still frozen is a complete run built on a
+stated assumption, which is why every result surface carries
+`valuation_state`.
+
+</div>
 
 If you would rather have no number than an assumed one, say so:
 `ledgr_valuation_stale(max_sessions = 2, exhausted = "refuse")` stops
@@ -1011,19 +1030,20 @@ order-management behaviour, and general imputation are outside this
 availability surface. Cash distributions are modelled, as
 `vignette("corporate-action-cash", package = "ledgr")` shows.
 
-> [!TIP]
->
-> ### Try it: move the valuation boundary
->
-> Rebuild `point_in_time_experiment` with
-> `ledgr_valuation_stale(max_sessions = 1)`, use a new `run_id`, and rerun
-> it. Predict first: does freezing start earlier, later, or on the same
-> session? Then compare `frozen_instrument_sessions` in
-> `ledgr_valuation_summary()`. Finally add `exhausted = "refuse"` and
-> compare `achieved_end_utc` with the frozen run’s. One fewer permitted
-> stale session moves the boundary. It does not change when `AAA` was
-> delisted.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it: move the valuation boundary**
+
+Rebuild `point_in_time_experiment` with
+`ledgr_valuation_stale(max_sessions = 1)`, use a new `run_id`, and rerun
+it. Predict first: does freezing start earlier, later, or on the same
+session? Then compare `frozen_instrument_sessions` in
+`ledgr_valuation_summary()`. Finally add `exhausted = "refuse"` and
+compare `achieved_end_utc` with the frozen run’s. One fewer permitted
+stale session moves the boundary. It does not change when `AAA` was
+delisted.
+
+</div>
 
 ## Telling ledgr What Happened To AAA
 
@@ -1068,6 +1088,7 @@ terminal_experiment <- function(policy) {
   ledgr_experiment(
     terminal_snapshot,
     scheduled_rebalance,
+    schedule = rebalance_schedule,
     universe = ledgr_universe_members("demo_members"),
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     corporate_action_policy = policy,
@@ -1118,6 +1139,7 @@ written_off
 #>
 #> Run ID:                            pit-terminal-write-off
 #> Period:                            2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
+#> Execution Clock:                   declared_sessions
 #> Opening Cash:                      $10000.00
 #> Final Equity:                      $6613.00
 #> Total Return:                      -33.87%
@@ -1194,7 +1216,7 @@ bind_rows(lapply(
 This date branch injects three specific requests to demonstrate a
 missing-bar execution scenario; it is not a recurring rebalance
 calendar. Periodic strategy scheduling belongs in
-`ledgr_strategy_schedule()` as shown above.
+`schedule = rebalance_schedule` on the experiment, as shown above.
 
 Follow the dates against the contract stated earlier:
 
@@ -1272,27 +1294,28 @@ bars while the expected session stays on the calendar. For that
 workflow, read
 `vignette("missing-data-and-sessions", package = "ledgr")`.
 
-> [!TIP]
->
-> ### Try it: spend the whole account
->
-> The snapshot above has been closed, so first point `snapshot` at the
-> reopened handle with `snapshot <- reopened_snapshot`, then call
-> `universe_experiment(c("BBB"))`. Rerun the survivor experiment with
-> `params = list(invested = 1)` and a new `run_id`. Predict first: does
-> its single target fill? Sizing uses the January 6 close of 50, so the
-> whole account asks for 200 shares, but execution happens at the January
-> 7 open where `BBB` costs 51 and those shares now cost 10,200. Check
-> `ledgr_results(run, "diagnostics")` for the execution row and its reason
-> code.
->
-> Then try the same on `point_in_time`. Its two targets cost 9,700 at that
-> same opening and both fill, because `AAA` fell overnight while `BBB`
-> rose. Full allocation is not what rejects an order; the overnight move
-> against you is. This is the availability-aware execution outcome in this
-> experiment, not a universal statement about every ledgr path or future
-> broker policy.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it: spend the whole account**
+
+The snapshot above has been closed, so first point `snapshot` at the
+reopened handle with `snapshot <- reopened_snapshot`, then call
+`universe_experiment(c("BBB"))`. Rerun the survivor experiment with
+`params = list(invested = 1)` and a new `run_id`. Predict first: does
+its single target fill? Sizing uses the January 6 close of 50, so the
+whole account asks for 200 shares, but execution happens at the January
+7 open where `BBB` costs 51 and those shares now cost 10,200. Check
+`ledgr_results(run, "diagnostics")` for the execution row and its reason
+code.
+
+Then try the same on `point_in_time`. Its two targets cost 9,700 at that
+same opening and both fill, because `AAA` fell overnight while `BBB`
+rose. Full allocation is not what rejects an order; the overnight move
+against you is. This is the availability-aware execution outcome in this
+experiment, not a universal statement about every ledgr path or future
+broker policy.
+
+</div>
 
 ## Where This Fits
 
@@ -1351,17 +1374,18 @@ their checks remain omitted. The gap shown here belongs to one synthetic
 example chosen to make the mechanism legible; it is not an estimate of
 survivorship bias in any real index.
 
-> [!WARNING]
->
-> ### A carried price is not a missing price
->
-> Freezing starts only when a bar is absent. Halts and untraded sessions
-> that a data source encodes as zero-volume bars carrying the previous
-> close, as the reference Sharadar data does, are still read as observed
-> prices: they can fill and they bypass valuation ageing and freezing. If
-> your source fills untraded sessions that way, remove those rows or mark
-> the instrument halted with a trading-status fact before you seal.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**A carried price is not a missing price**
+
+Freezing starts only when a bar is absent. Halts and untraded sessions
+that a data source encodes as zero-volume bars carrying the previous
+close, as the reference Sharadar data does, are still read as observed
+prices: they can fill and they bypass valuation ageing and freezing. If
+your source fills untraded sessions that way, remove those rows or mark
+the instrument halted with a trading-status fact before you seal.
+
+</div>
 
 For sealing details, read
 `vignette("data-input-and-snapshots", package = "ledgr")`. For execution

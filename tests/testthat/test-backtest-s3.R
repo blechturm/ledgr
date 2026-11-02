@@ -44,6 +44,23 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "  Avg Trade:           N/A (no trades)", "",
       "Exposure:",
       "  Time in Market:      83.33%", "",
+      "Sizing Evidence:",
+      "  Decision clock:                    accepted decision mark",
+      "  Currency:                          USD",
+      "  Aggregation:                       exposure-weighted across priced sizing rows",
+      "  Evidenced decisions (may overlap): 0",
+      "  Decisions with unavailable intent: 6",
+      "  Decisions with no sizing instruction: 0",
+      "  Rounded-to-zero instructions:      0",
+      "  Coverage (pooled):                 N/A",
+      "  Coverage (minimum decision):       N/A",
+      "  Coverage (last decision):          N/A",
+      "  Final actual invested exposure:    10.04% (final valued pulse)",
+      "  Decision-exposure diagnostics (cross-decision sums; not portfolio exposure or P&L):",
+      "    Requested value:                 NA",
+      "    Post-guard pre-floor value:       NA",
+      "    Rounded value:                   NA",
+      "    Rounding difference:             NA", "",
       "Execution Evidence:",
       "  Execution Clock:      bar_native",
       "  Fill Timing:         dense_bar_timestamp", "",
@@ -162,7 +179,7 @@ testthat::test_that("summary surfaces impossible warmup diagnostics without chan
   features <- list(ledgr_ind_sma(20))
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    value <- ctx$feature("AAA", "sma_20")
+    value <- ctx[["sma_20"]][["AAA"]]
     if (is.finite(value)) {
       targets["AAA"] <- 1
     }

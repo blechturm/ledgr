@@ -391,6 +391,13 @@ required capital and costs) follows WS4b. H3 is settled in this cut.
   target and state workstreams check it there: no per-pulse ID matching
   inside the fold, and an identity fast path before one `fmatch()` at the
   strategy's target boundary.
+- **Implementation close (2026-11-02):** Cut 7 completed workstreams 15-18
+  through `34a06c6d`. The flat lazy context, canonical position facts, plain
+  selection and strict weights, ctx-first targets, required investor inputs,
+  typed declared state, sizing evidence and executed strategy teaching are
+  implemented and independently reviewed. WS6 receives the accepted flat
+  layout; WS7 receives the D8 diagnostic fields. Join J remains open until
+  the merged WS7 reader consumes those fields.
 
 ### WS6. Context frame retirement (C2)
 

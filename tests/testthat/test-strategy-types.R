@@ -79,7 +79,7 @@ testthat::test_that("functional strategies may return ledgr_target", {
   strategy <- function(ctx, params) {
     ledgr_target(c(AAA = params$qty, BBB = 0), universe = ctx$universe)
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
   bt <- ledgr_run(exp, params = list(qty = 1), run_id = "target-return-run")
   on.exit(close(bt), add = TRUE)
 
@@ -100,7 +100,7 @@ testthat::test_that("intermediate strategy helper types fail when returned direc
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  make_exp <- function(strategy) ledgr_experiment(snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
+  make_exp <- function(strategy) ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
 
   testthat::expect_error(
     ledgr_run(

@@ -59,12 +59,6 @@ ledgr_strategy_type_origin <- function(origin) {
   origin
 }
 
-ledgr_strategy_type_empty_universe <- function(x) {
-  universe <- attr(x, "universe", exact = TRUE)
-  if (is.character(universe) && length(universe) > 0L) return(universe)
-  names(x)
-}
-
 ledgr_strategy_type_stats <- function(x) {
   if (is.logical(x)) {
     return(sprintf("%d selected", sum(x, na.rm = TRUE)))
@@ -73,13 +67,13 @@ ledgr_strategy_type_stats <- function(x) {
   sprintf("non-NA: %d/%d", non_na, length(x))
 }
 
-# The eligibility plane over the decision axis is `ctx$vec$admissible` and
+# The eligibility plane over the decision axis is `ctx$buyable` and
 # carries one non-missing logical per axis ID.
 ledgr_strategy_eligible <- function(ctx, axis, class = "ledgr_invalid_strategy_helper") {
-  admissible <- ctx$vec$admissible
+  admissible <- ctx$buyable
   if (!is.logical(admissible) || length(admissible) != length(axis) || anyNA(admissible)) {
     rlang::abort(
-      "`ctx$vec$admissible` must hold one non-missing logical value per decision-axis instrument.",
+      "`ctx$buyable` must hold one non-missing logical value per decision-axis instrument.",
       class = class
     )
   }
@@ -105,11 +99,14 @@ ledgr_strategy_context_parts <- function(ctx, helper) {
       sprintf("`ctx$universe` is invalid for `%s()`.", helper)
     )
   }
-  vec <- ctx$vec
-  if (!is.list(vec) || !identical(as.character(vec$id), axis)) {
-    ledgr_strategy_context_abort(
-      sprintf("`ctx$vec$id` must match `ctx$universe` for `%s()`.", helper)
+  position <- tryCatch(
+    ctx$position,
+    error = function(err) ledgr_strategy_context_abort(
+      sprintf("Flat context columns are unavailable for `%s()`.", helper)
     )
+  )
+  if (!identical(names(position), axis)) {
+    ledgr_strategy_context_abort(sprintf("Flat context columns must match `ctx$universe` for `%s()`.", helper))
   }
   members <- as.character(ctx$members %||% character())
   expected_members <- axis[axis %in% members]
@@ -289,7 +286,17 @@ ledgr_print_strategy_vector <- function(x, type, ...) {
   origin <- attr(x, "origin", exact = TRUE)
   cat(sprintf("<%s> [%d asset%s]\n", type, length(x), if (length(x) == 1L) "" else "s"))
   if (!is.null(origin)) {
-    cat("origin: ", origin, "\n", sep = "")
+    origin_label <- if (is.list(origin)) {
+      paste(
+        vapply(names(origin), function(name) {
+          sprintf("%s=%s", name, paste(origin[[name]], collapse = ","))
+        }, character(1)),
+        collapse = "; "
+      )
+    } else {
+      as.character(origin)
+    }
+    cat("origin: ", origin_label, "\n", sep = "")
   }
   cat(ledgr_strategy_type_stats(x), "\n", sep = "")
   if (length(x) > 0L) {
@@ -305,7 +312,7 @@ ledgr_print_strategy_vector <- function(x, type, ...) {
 #' directly. A zero-length named signal represents an empty decision domain.
 #'
 #' In context mode, `ledgr_signal(ctx, values = ...)` returns one value per
-#' instrument in `ctx$universe` and carries `ctx$vec$admissible` as its
+#' instrument in `ctx$universe` and carries `ctx$buyable` as its
 #' `eligible` attribute. Unnamed `values` align by position and must have one
 #' value per instrument; named `values` may come in any order and must cover
 #' every eligible instrument, and uncovered instruments are `NA`.
@@ -388,7 +395,7 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
 #'   instruments fail (`"error"`, the default) or count as not selected
 #'   (`"exclude"`). A subsequent rebalance targets excluded held members to zero; use
 #'   `ctx$hold()` when the intended action is to preserve positions. This is a
-#'   decision policy, unlike `ctx$idx(id, missing = "na")`, which controls a
+#'   decision policy, unlike `match(id, ctx$universe)`, which controls a
 #'   missing instrument lookup.
 #' @return A `ledgr_selection` object.
 #' @examples
@@ -396,10 +403,9 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
 #' ctx <- structure(
 #'   list(
 #'     universe = c("AAA", "BBB"),
-#'     vec = list(
-#'       id = c("AAA", "BBB"),
-#'       admissible = c(TRUE, TRUE)
-#'     )
+#'     position = c(AAA = 0, BBB = 0),
+#'     buyable = c(AAA = TRUE, BBB = TRUE),
+#'     members = c("AAA", "BBB")
 #'   ),
 #'   class = "ledgr_pulse_context"
 #' )

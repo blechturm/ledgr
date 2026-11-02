@@ -74,14 +74,11 @@ corporate_action_axis_state <- function(bt) {
     "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
     params = list(bt$run_id)
   )
+  values <- availability_state_values(bt)
   data.frame(
     ts_utc = as.POSIXct(rows$ts_utc, tz = "UTC"),
-    axis = vapply(rows$state_json, function(value) {
-      ledgr:::ledgr_json_read_nested(value)$axis
-    }, character(1)),
-    cross_mean = vapply(rows$state_json, function(value) {
-      ledgr:::ledgr_json_read_nested(value)$cross_mean
-    }, character(1)),
+    axis = vapply(values, `[[`, character(1L), "axis"),
+    cross_mean = vapply(values, `[[`, character(1L), "cross_mean"),
     stringsAsFactors = FALSE
   )
 }
@@ -98,17 +95,15 @@ testthat::test_that("[LTB-0056] physical recipient closure does not leak before 
   strategy <- function(ctx, params) {
     targets <- ctx$hold()
     if (identical(ctx$ts_utc, params$first_pulse)) targets[["AAA"]] <- 2
-    values <- ctx$vec$feature("sma_2")
-    list(
-      targets = targets,
-      state_update = list(
-        axis = paste(ctx$vec$id, collapse = "|"),
-        cross_mean = if (all(is.na(values))) {
+    values <- ctx[["sma_2"]]
+    ledgr_strategy_result(
+      targets,
+      axis = paste(ctx$universe, collapse = "|"),
+      cross_mean = if (all(is.na(values))) {
           "unavailable"
         } else {
           format(mean(values, na.rm = TRUE), scientific = FALSE)
         }
-      )
     )
   }
   runs <- lapply(names(fixtures), function(name) {
@@ -125,7 +120,8 @@ testthat::test_that("[LTB-0056] physical recipient closure does not leak before 
       universe = ledgr_universe_members("research"),
       valuation_policy = ledgr_valuation_stale(0L),
       cost_model = ledgr_cost_zero(),
-      corporate_action_policy = ledgr_corporate_actions_research()
+      corporate_action_policy = ledgr_corporate_actions_research(),
+      portfolio_state = list(axis = "", cross_mean = "unavailable")
     )
     ledgr_run(
       exp,

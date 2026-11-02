@@ -49,7 +49,7 @@ history_foundation_snapshot <- function(history_policy = ledgr_history_policy())
     price_basis = "split_adjusted"
   )
   strategy <- function(ctx, params) ctx$hold()
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = ledgr_universe_members("research"),
@@ -617,7 +617,7 @@ testthat::test_that("[LTB-0286] corporate-action clocks distinguish three cases"
     price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$hold(),
     cost_model = ledgr_cost_zero()
@@ -676,7 +676,7 @@ testthat::test_that("[LTB-0287] history policy is canonical identity input", {
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   default <- ledgr_run(fixture$experiment, run_id = "history-default")
   on.exit(close(default), add = TRUE)
-  disabled_exp <- ledgr_experiment(
+  disabled_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     fixture$snapshot,
     fixture$experiment$strategy,
     universe = ledgr_universe_members("research"),
@@ -691,7 +691,7 @@ testthat::test_that("[LTB-0287] history policy is canonical identity input", {
   on.exit(close(repeated), add = TRUE)
   testthat::expect_identical(config_hash(default$config), config_hash(repeated$config))
   # Public omission uses the documented default; only an internal NULL refuses.
-  omitted_exp <- ledgr_experiment(
+  omitted_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     fixture$snapshot,
     fixture$experiment$strategy,
     universe = ledgr_universe_members("research"),
@@ -751,20 +751,20 @@ testthat::test_that("[LTB-0290] precomputed features bind causal history identit
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
   features <- list(ledgr_ind_sma(2L))
-  default <- ledgr_experiment(
+  default <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = features,
     cost_model = ledgr_cost_zero()
   )
-  strict <- ledgr_experiment(
+  strict <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = features,
     cost_model = ledgr_cost_zero(),
     history_policy = ledgr_history_policy(price_carry = NULL)
   )
-  output <- ledgr_experiment(
+  output <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = features,

@@ -285,7 +285,7 @@ testthat::test_that("resume reads the same pulse seeds as a straight run on the 
     rec$ts <- c(rec$ts, ctx$ts_utc)
     rec$seed <- c(rec$seed, if (is.null(ctx$pulse_seed)) NA_integer_ else ctx$pulse_seed)
     rec$tag <- c(rec$tag, "")
-    n <- if (is.null(ctx$state_prev$n)) 0L else ctx$state_prev$n
+    n <- ctx$state$n
     targets <- ctx$flat()
     targets[[1L]] <- params$qty
     list(targets = targets, state_update = list(n = n + 1L))
@@ -306,6 +306,9 @@ testthat::test_that("resume reads the same pulse seeds as a straight run on the 
       db_path = db_path,
       checkpoint_every = 1L,
       seed = 7L,
+      strategy_state = ledgr:::ledgr_strategy_state_normalize(
+        portfolio_state = list(n = 0L)
+      ),
       cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
       cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
     )
@@ -393,9 +396,15 @@ testthat::test_that("scheduled skips keep their index on the run's calendar", {
   ps2_clear(rec)
 
   due_idx <- c(3L, 6L)
-  scheduled_exp <- fixture$exp
-  scheduled_exp$strategy <- ledgr_strategy_schedule(record, ledgr_schedule_dates(fixture$days[due_idx]))
-  scheduled_run <- suppressWarnings(ledgr_run(scheduled_exp, run_id = "ps2-schedule-due", seed = 5L))
+  scheduled_fixture <- ws42_history_fixture(
+    strategy = record,
+    features = list(),
+    schedule = ledgr_schedule_dates(fixture$days[due_idx])
+  )
+  on.exit(ledgr_snapshot_close(scheduled_fixture$snapshot), add = TRUE)
+  scheduled_run <- suppressWarnings(ledgr_run(
+    scheduled_fixture$exp, run_id = "ps2-schedule-due", seed = 5L
+  ))
   on.exit(close(scheduled_run), add = TRUE)
   scheduled <- ps2_seeds_by_ts(rec)
 
@@ -473,7 +482,7 @@ testthat::test_that("actual draws agree for continuous, resumed and windowed run
     targets <- ctx$flat()
     if (is.null(ctx$pulse_seed)) stop("this strategy needs `seed =`")
     targets[[1L]] <- withr::with_seed(ctx$pulse_seed, sample.int(10L, 1L))
-    n <- if (is.null(ctx$state_prev$n)) 0L else ctx$state_prev$n
+    n <- ctx$state$n
     list(targets = targets, state_update = list(n = n + 1L))
   }
   bars <- ledgr_rng_test_bars("AAA", 12L)
@@ -485,6 +494,9 @@ testthat::test_that("actual draws agree for continuous, resumed and windowed run
       backtest = ledgr_backtest_config(start = snapshot$metadata$start_date, end = snapshot$metadata$end_date,
         initial_cash = 1e5),
       db_path = db_path, checkpoint_every = 1L, seed = 13L,
+      strategy_state = ledgr:::ledgr_strategy_state_normalize(
+        portfolio_state = list(n = 0L)
+      ),
       cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
       cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
     )
@@ -525,8 +537,14 @@ testthat::test_that("actual draws agree for continuous, resumed and windowed run
   snapshot_slice <- ledgr_snapshot_from_df(slice, db_path = tempfile(fileext = ".duckdb"), snapshot_id = "ps2_draw_slice")
   on.exit(ledgr_snapshot_close(snapshot_full), add = TRUE)
   on.exit(ledgr_snapshot_close(snapshot_slice), add = TRUE)
-  exp_full <- ledgr_experiment(snapshot_full, drawing, opening = ledgr_opening(cash = 1e5), cost_model = ledgr_cost_zero())
-  exp_slice <- ledgr_experiment(snapshot_slice, drawing, opening = ledgr_opening(cash = 1e5), cost_model = ledgr_cost_zero())
+  exp_full <- ledgr_experiment(snapshot_full, drawing,
+    portfolio_state = list(n = 0L),
+    opening = ledgr_opening(cash = 1e5), cost_model = ledgr_cost_zero()
+  )
+  exp_slice <- ledgr_experiment(snapshot_slice, drawing,
+    portfolio_state = list(n = 0L),
+    opening = ledgr_opening(cash = 1e5), cost_model = ledgr_cost_zero()
+  )
   window <- ledgr:::ledgr_experiment_window(exp_full, "2021-01-04", "2021-01-10")
   windowed <- suppressWarnings(ledgr:::ledgr_run_window(exp_full, window = window, run_id = "ps2-draw-window", seed = 13L))
   direct <- suppressWarnings(ledgr_run(exp_slice, run_id = "ps2-draw-direct", seed = 13L))
@@ -724,11 +742,11 @@ testthat::test_that("identical canonical input keeps its snapshot hash", {
   testthat::expect_identical(ledgr:::ledgr_snapshot_content_hash_rule_version, 4L)
 })
 
-testthat::test_that("seeded configuration identity changes by the rule field only; unseeded is unchanged", {
-  # Rule 5 changes every configuration identity. Within rule 5 the seeded
-  # form differs only by engine.pulse_seed_rule and the seed itself.
-  base_unseeded_hash <- "15db9b54b5bd277faed426ef7b291e4b2e84990cd1e1f8fffbdbcf8ce7ce6b08"
-  base_seeded_hash <- "12944da5b2c7bc7e4460a3dda8443712b1d0ed5c998134a5640b4771a9bded80"
+testthat::test_that("seeded configuration identity changes by the rule field only", {
+  # The typed empty state declaration is part of every current configuration.
+  # Within that identity the seeded form differs only by
+  # engine.pulse_seed_rule and the seed itself.
+  base_seeded_hash <- "2256b7084dc2dbfd63bac5f678cb8fe21b4e25fdc9a96e61b42c3b021b955ab8"
   strategy <- function(ctx, params) { targets <- ctx$flat(); targets[[1L]] <- params$qty; targets }
   snapshot <- ledgr_snapshot_from_df(ledgr_rng_test_bars("AAA", 12L), db_path = tempfile(fileext = ".duckdb"),
     snapshot_id = "id_cfg")
@@ -740,11 +758,11 @@ testthat::test_that("seeded configuration identity changes by the rule field onl
   on.exit(close(unseeded), add = TRUE)
   unseeded_hash <- ledgr_run_info(snapshot, unseeded$run_id)$config_hash
   seeded_hash <- ledgr_run_info(snapshot, seeded$run_id)$config_hash
-  testthat::expect_identical(unseeded_hash, base_unseeded_hash)
-  testthat::expect_identical(unseeded$run_id, "run_bd19d2c1c127df40")
+  testthat::expect_identical(unseeded_hash, "2748c490f1ace13090ac25d245324ad3e8e3057d39354c9133d7102be74a904a")
+  testthat::expect_identical(unseeded$run_id, "run_ac6959065ddab7ba")
   testthat::expect_false(identical(seeded_hash, base_seeded_hash))
-  testthat::expect_identical(seeded_hash, "8aefa40d5aab669b2a10fc7e72a97ab114b782c8747b6a00c5e4d7a9912d9177")
-  testthat::expect_identical(seeded$run_id, "run_6709b2c87d05487c")
+  testthat::expect_identical(seeded_hash, "8e11024215c2a4871dd1225520d1ac01f49c3a068aa1c3f5fffd885a70325493")
+  testthat::expect_identical(seeded$run_id, "run_7818fbdff98433e0")
   # Removing the one field restores the base seeded hash.
   base_form <- seeded$config
   base_form$engine$pulse_seed_rule <- NULL

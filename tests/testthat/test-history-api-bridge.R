@@ -45,7 +45,7 @@ testthat::test_that("[LTB-0407] history results expose requirements, align weigh
   testthat::expect_identical(info$selection$instrument_id, c("AAA", "BBB", "CCC"))
   testthat::expect_identical(info$selection$included, c(TRUE, TRUE, FALSE))
   testthat::expect_true(nzchar(info$selection$exclusion_reason[[3L]]))
-  testthat::expect_identical(info$selection$admissibility_reason[[3L]], "lifetime_inactive")
+  testthat::expect_identical(info$selection$admissibility_reason[[3L]], "target_restricted")
   testthat::expect_true(is.logical(info$used_before_window) && length(info$used_before_window) == 1L)
   # Ordinary wide and matrix reads carry structural selection provenance,
   # not the diagnostic cell planes exposed by the explicit long request.
@@ -151,7 +151,7 @@ testthat::test_that("[LTB-0407] history results expose requirements, align weigh
       min_instruments = 2L)
     if (!ledgr_passed_warmup(returns)) return(ctx$hold())
     n <- length(ledgr_history_info(returns)$included_ids)
-    ledgr_target_rebalance(ledgr_align_weights(rep(1 / n, n), returns), ctx, equity_fraction = 1)
+    ledgr_target_rebalance(ctx, weights = ledgr_align_weights(rep(1 / n, n), returns))
   }
   testthat::expect_identical(ledgr_strategy_preflight(strategy)$tier, "tier_1")
   bought <- ws42_history_fixture(strategy = strategy)

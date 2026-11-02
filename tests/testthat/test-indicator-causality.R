@@ -151,7 +151,7 @@ testthat::test_that("[LTB-0315] sampled prefix invariance refuses look-ahead bef
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   ran <- new.env(parent = emptyenv())
   ran$n <- 0L
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       ran$n <- ran$n + 1L

@@ -74,16 +74,12 @@ full future dataset.
 |----|----|
 | `ctx$ts_utc` | current decision timestamp |
 | `ctx$universe` | instruments in the run |
-| `ctx$idx(id)` | 1-based universe position for one instrument |
-| `ctx$open(id)`, `ctx$close(id)` | current bar values for one instrument |
-| `ctx$vec$close` | current close values for the full universe |
-| `ctx$feature(id, feature_id)` | current indicator value for one instrument by engine feature ID |
-| `ctx$vec$feature(feature_id)` | current indicator values for the full universe by engine feature ID |
-| `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias, using the supplied feature map |
-| `ctx$position(id)` | current simulated position |
-| `ctx$vec$position` | current simulated positions aligned to `ctx$universe` |
+| `ctx$open`, `ctx$close` | current bar columns, named and aligned to `ctx$universe` |
+| `ctx[[feature_id]]` | current named indicator column by active alias or engine feature ID |
+| `ctx$position` | current named simulated positions |
+| `ctx$buyable` | current named eligibility mask |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
-| `ctx$state_prev` | what the strategy returned as `state_update` at the previous pulse |
+| `ctx$state` | declared typed strategy memory at this pulse |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |
 
@@ -93,14 +89,10 @@ For the installed accessor reference, see `?ledgr_strategy_context`.
 
 **One instrument or everyone**
 
-The `ctx$vec$` forms return a value for the whole universe in one read.
-The scalar forms answer for one instrument you have already singled out.
-Both are correct; only the first is cheap when you want every name,
-because the scalar form costs per call and a universe-wide loop pays it
-once per instrument per pulse.
-`vignette("strategy-authoring-tools", package = "ledgr")` shows the
-plane-based pattern and documents the `ledgr_scalar_accessor_loop`
-warning emitted for that shape on large universes.
+Flat context columns return one named vector over the whole universe in
+one read. Index that vector only after you have singled out an
+instrument. `vignette("strategy-authoring-tools", package = "ledgr")`
+shows this pattern.
 
 </div>
 
@@ -141,18 +133,18 @@ I already own, unless today’s bar gives me a reason to leave.”
 
 ``` r
 hold_unless_down <- function(ctx, params) {
-  down <- ctx$vec$close < ctx$vec$open
+  down <- ctx$close < ctx$open
   targets <- ctx$hold()
   targets[down] <- 0
   targets
 }
 ```
 
-`ctx$vec$close < ctx$vec$open` compares every instrument at once, in the
-order of `ctx$universe`, and gives the condition a name: `down` holds
-one `TRUE` or `FALSE` per instrument. Assigning through it changes
-exactly the instruments where it is `TRUE`; every other instrument keeps
-its current quantity.
+`ctx$close < ctx$open` compares every instrument at once, in the order
+of `ctx$universe`, and gives the condition a name: `down` holds one
+`TRUE` or `FALSE` per instrument. Assigning through it changes exactly
+the instruments where it is `TRUE`; every other instrument keeps its
+current quantity.
 
 ## A Strategy That Does Nothing
 
@@ -213,7 +205,7 @@ observable data becomes a target.
 
 ``` r
 buy_if_up <- function(ctx, params) {
-  up <- ctx$vec$close > ctx$vec$open
+  up <- ctx$close > ctx$open
   targets <- ctx$flat()
   targets[up] <- 1
   targets
@@ -257,7 +249,7 @@ different assumptions.
 
 ``` r
 buy_if_up_qty <- function(ctx, params) {
-  up <- ctx$vec$close > ctx$vec$open
+  up <- ctx$close > ctx$open
   targets <- ctx$flat()
   targets[up] <- params$qty
   targets
@@ -272,22 +264,24 @@ separate makes the strategy easier to test, compare, and store.
 
 ## Remembering Between Pulses
 
-Most strategies decide from the current pulse alone. A strategy that has
-to remember something between pulses, such as how many pulses have
-passed or the price at which it bought, returns
-`list(targets = ..., state_update = ...)` instead of a bare target.
-ledgr stores the `state_update` with the run and hands it back as
-`ctx$state_prev` at the next pulse.
+Most strategies decide from the current pulse alone. If a strategy must
+remember something between pulses, declare that memory when constructing
+the experiment. A portfolio field is one scalar; an asset field is one
+aligned value per instrument. The declared defaults are already present
+on the first pulse, so a typo fails instead of quietly returning `NULL`.
 
-The state must be plain data: numbers, strings, logical values, and
-lists of them. A new `state_update` replaces the previous one; returning
-a bare target keeps it. On the first pulse there is nothing to remember
-yet, so check each field for `NULL` before using it.
+Inside the strategy, read declared fields from `ctx$state`. Return
+`ledgr_strategy_result()` to patch only the fields named after the
+targets; omitted fields keep their values. A bare target changes no
+strategy memory. For example, an experiment can declare
+`portfolio_state = list(decisions_seen = 0L)`, then its strategy can
+return
+`ledgr_strategy_result(targets, decisions_seen = ctx$state$decisions_seen + 1L)`.
 
 `vignette("strategy-authoring-tools", package = "ledgr")` builds a
 strategy that uses state step by step. `?ledgr_strategy_context` states
-the full rules, including the per-instrument `asset_state` of
-availability-aware runs.
+the full typed declaration, patch, replacement, reset, axis and resume
+rules.
 
 ## Prepare A Small Experiment
 
@@ -322,7 +316,7 @@ unknown feature, not warmup.
 
 ``` r
 positive_return <- function(ctx, params) {
-  ret <- ctx$vec$feature("return_5")
+  ret <- ctx$return_5
   if (!ledgr_passed_warmup(ret)) return(ctx$flat())
   rising <- ret > params$min_return
   targets <- ctx$flat()
@@ -340,26 +334,26 @@ exists. Handle warmup explicitly like this rather than letting a missing
 value slip through the assignment unseen.
 `vignette("indicators", package = "ledgr")` covers warmup in full.
 
-## The Same Rule With Helpers
+## The Same Rule With Named Vectors
 
-Every strategy, however it is written, returns the same thing: shares
-per instrument. ledgr’s strategy helpers build that named vector for you
-in named steps. Here is the same rule as a helper pipeline:
+Every strategy returns the same thing: shares per instrument. Ordinary R
+vector operations are often the clearest way to build that complete
+target. Here is the same rule with the candidate set named explicitly:
 
 ``` r
 positive_return_helpers <- function(ctx, params) {
-  rising <- ledgr_signal_return(ctx, lookback = 5) > params$min_return
-  ctx |>
-    ledgr_selection(where = rising, missing = "exclude") |>
-    ledgr_target_quantity(ctx, params$qty)
+  rising <- ctx$return_5 > params$min_return
+  selected <- ctx$universe[ctx$buyable & !is.na(rising) & rising]
+  targets <- ctx$flat()
+  targets[selected] <- params$qty
+  targets
 }
 ```
 
-`ledgr_signal_return()` reads the registered 5-bar return,
-`ledgr_selection()` keeps the instruments where the condition holds, and
-`missing = "exclude"` says what a warmup `NA` means: not selected.
-`ledgr_target_quantity()` turns the selection into `qty` shares for the
-selected instruments and zero for the rest.
+The flat column reads the registered 5-bar return. `ctx$buyable` limits
+the candidate set and `!is.na(rising)` says what a warmup `NA` means:
+not selected. The complete target starts flat, then assigns `qty` shares
+to the selected IDs.
 
 To see that both forms agree, ask each for its target on one decision
 date. `ledgr_pulse_snapshot()` builds the `ctx` a strategy would receive
@@ -388,10 +382,10 @@ identical(unclass(piped), hand_built)
 close(pulse)
 ```
 
-The helpers return the same named vector, with a class that prints a
-short summary. Use whichever form makes the rule easier to read. The
-later articles use the helpers for rules like this one and write the
-vector by hand when manipulating it is the lesson.
+Both forms return the same complete named vector. Use named-vector code
+when it makes the rule easiest to read; use selection and weighting
+helpers when the strategy ranks a cross-section or sizes from account
+equity.
 
 The pipeline has four kinds of step. A rule that ranks instruments or
 sizes positions from the account swaps in the ranking and weighting
@@ -399,9 +393,9 @@ steps:
 
 | Step | Use |
 |----|----|
-| `ledgr_signal_return()` or `ledgr_signal_feature()` | read one registered feature as comparable scores |
-| `ledgr_select_top_n(..., partial = )` or `ledgr_selection(..., missing = )` | choose instruments and state how incomplete inputs behave |
-| `ledgr_weight_equal()` or `ledgr_weights()` | divide the allocation budget |
+| a flat feature column such as `ctx$return_5` | read one registered feature as comparable scores |
+| `ledgr_select_top(..., within = ctx$buyable)` | choose instruments from an explicit candidate pool |
+| `ledgr_weight_equal()` | divide the allocation budget |
 | `ledgr_target_rebalance(..., keep = )` | convert weights into shares using the current account context |
 
 The weights carry only relative allocations. Rebalancing needs `ctx`

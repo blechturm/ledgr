@@ -19,16 +19,13 @@ A \code{ledgr_signal} object.
 in \code{ctx$universe} and returns a \code{ledgr_signal}. The required indicator must
 already be registered on the experiment, for example with
 \code{features = list(ledgr_ind_returns(20))}; this helper never auto-registers
-indicators. Like \code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}, it returns raw scores over the
-whole decision axis and marks eligibility in the \code{eligible} attribute.
+indicators. It returns raw scores over the whole decision axis and marks
+eligibility in the \code{eligible} attribute.
 }
 \details{
 For a fixed concrete lookback, register the matching return indicator. For
 a parameterized sweep, put \code{ledgr_ind_returns(ledgr_param("lookback"))} in a
-feature map and read its stable active alias with \code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}.
-The generic helper resolves that alias to each candidate's concrete return
-feature; strategy code does not need to register or switch among every
-concrete \verb{return_<lookback>} name.
+feature map and read its stable active alias directly from the flat context.
 }
 \section{Articles}{
 
@@ -40,14 +37,12 @@ Strategy helper pipelines:
 \examples{
 ctx <- list(
   universe = c("AAA", "BBB"),
-  vec = list(
-    feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_),
-    admissible = c(TRUE, TRUE)
-  )
+  return_5 = c(AAA = 0.03, BBB = NA_real_),
+  buyable = c(AAA = TRUE, BBB = TRUE)
 )
 ledgr_signal_return(ctx, lookback = 5)
 
 }
 \seealso{
-\code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}, \code{\link[=ledgr_signal]{ledgr_signal()}}
+\code{\link[=ledgr_signal]{ledgr_signal()}}
 }

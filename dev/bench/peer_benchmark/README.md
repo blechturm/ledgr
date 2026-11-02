@@ -196,8 +196,9 @@ All engines use SMA crossover-event semantics:
 - market fills occur at the next bar open;
 - final-bar target changes are not fillable.
 
-The ledgr row stores the previous `fast > slow` relation in `state_update` and
-reads it from `ctx$state_prev` on the next pulse. This matches the event-style
+The ledgr row declares the previous `fast > slow` relation as asset state,
+updates it with `ledgr_strategy_result()`, and reads it from
+`ctx$state$above` on the next pulse. This matches the event-style
 Backtrader `CrossOver`, quantstrat `sigCrossover`, the full zipline
 `run_algorithm` row, and a real LEAN CLI row when that CLI is locally usable.
 

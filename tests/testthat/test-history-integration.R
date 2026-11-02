@@ -11,7 +11,11 @@ ws42_integration_reader <- function(ctx) {
     fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L),
     fast_matrix = ledgr_history_matrix(ctx, feature = "fast", lookback = 2L),
     bbb_fast = ledgr_history_frame(ctx, feature = "fast", lookback = 2L, instruments = "BBB"),
-    planes = ctx$vec[c("id", "member", "admissible", "target_restriction_reason", "close", "position")],
+    planes = list(
+      id = ctx$universe, member = unname(ctx$member),
+      admissible = unname(ctx$buyable), close = unname(ctx$close),
+      position = unname(ctx$position)
+    ),
     cash = ctx$cash,
     equity = ctx$equity
   )
@@ -363,7 +367,7 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
     ts_utc = as.POSIXct("2021-01-06 21:00:00", tz = "UTC")
   )
   on.exit(close(dense_pulse), add = TRUE)
-  testthat::expect_identical(dense_pulse$close("BBB"), 23)
+  testthat::expect_identical(dense_pulse$close[["BBB"]], 23)
   testthat::expect_s3_class(
     ledgr_history_frame(dense_pulse, bar = "close", lookback = 2L),
     "ledgr_history"
@@ -373,8 +377,8 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
     universe = c("AAA", "BBB"), ts_utc = "2021-01-06T21:00:00Z"
   )
   on.exit(close(pulse), add = TRUE)
-  testthat::expect_identical(pulse$close("BBB"), 23)
-  testthat::expect_null(pulse$.history)
+  testthat::expect_identical(pulse$close[["BBB"]], 23)
+  testthat::expect_null(unclass(pulse)[[".history"]])
   testthat::expect_error(
     ledgr_history_frame(pulse, bar = "close", lookback = Inf),
     class = "ledgr_history_unavailable"

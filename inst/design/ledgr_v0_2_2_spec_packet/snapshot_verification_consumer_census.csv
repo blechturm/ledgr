@@ -28,6 +28,7 @@ snapshots-hash.R,verifier,3,ledgr_snapshot_validate,forced complete verification
 snapshots-info.R,metadata_reader,1,ledgr_snapshot_info,no proof; reports registry state
 snapshots-list.R,metadata_and_reader,1+3,ledgr_snapshot_list|ledgr_snapshot_open,metadata unless verify TRUE; forced complete verification when eager
 snapshot-source.R,reader,3,run|reconstruction|snapshot-dependent result reports,enclosing class-3 guard keyed by snapshot path
+sizing-evidence.R,reader,3,print.ledgr_backtest|summary.ledgr_backtest,enclosing class-3 guard
 snapshots-seal.R,verifier_writer,3,ledgr_snapshot_seal,complete check; register only after commit
 snapshot-verification.R,verifier,3,all class-3 entries,ledgr_snapshot_ensure_verified
 sweep-persistence.R,durable_and_reader,2+3,ledgr_sweep_save|ledgr_sweep_list|ledgr_sweep_open,durable-only except ensure before sweep_open universe rows

@@ -28,7 +28,15 @@ continuity_ii_snapshot <- function(bars, ids, days, calendar = days, lifetime = 
 }
 
 continuity_ii_equal_weight <- function(ctx, params) {
-  ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = 0.9)
+  ctx$universe[ctx$buyable] |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(
+      ctx,
+      weights = _,
+      index_leavers = "keep",
+      invest_fraction = 0.9,
+      capital_base = "remaining_equity"
+    )
 }
 
 continuity_ii_experiment <- function(snapshot, strategy, stale = 2L) {
@@ -373,7 +381,15 @@ testthat::test_that("[LTB-0208] flat_test_state still runs gapped, overlapping a
 testthat::test_that("[LTB-0205] an interrupted walk-forward resumes its test run on rerun", {
   interrupt_march <- function(ctx, params) {
     if (identical(getOption("ledgr.test.wf_interrupt"), substr(ctx$ts_utc, 1, 10))) rlang::interrupt()
-    ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = params$f)
+    ctx$universe[ctx$buyable] |>
+      ledgr_weight_equal() |>
+      ledgr_target_rebalance(
+        ctx,
+        weights = _,
+        index_leavers = "keep",
+        invest_fraction = params$f,
+        capital_base = "remaining_equity"
+      )
   }
   grid <- ledgr_strategy_grid(f = c(0.5, 0.9))
   folds <- ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",

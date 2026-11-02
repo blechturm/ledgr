@@ -1399,6 +1399,7 @@ ledgr_sweep_exp_payload <- function(exp) {
     strategy = exp$strategy,
     universe = exp$universe,
     opening = exp$opening,
+    position_fact_unknown_basis = exp$position_fact_unknown_basis %||% character(),
     timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash %||% NULL,
     cost_plan_json = exp$cost_plan_json %||% NULL,
@@ -1410,7 +1411,8 @@ ledgr_sweep_exp_payload <- function(exp) {
     valuation_policy = exp$valuation_policy %||% NULL,
     corporate_action_policy = exp$corporate_action_policy %||%
       ledgr_corporate_actions_research(),
-    history_policy = exp$history_policy
+    history_policy = exp$history_policy,
+    strategy_state = exp$strategy_state
   )
 }
 
@@ -1689,14 +1691,11 @@ ledgr_sweep_candidate_execution <- function(exp,
   risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
   strategy_fn <- ledgr_strategy_schedule_inner(exp$strategy)
   signature <- ledgr_strategy_signature(strategy_fn)
+  schedule_sessions <- ledgr_strategy_schedule_sessions(history_substrate)
   schedule <- ledgr_compile_strategy_schedule(
     declaration = ledgr_strategy_schedule_declaration(exp$strategy),
     strategy_params = params,
-    sessions = if (identical(history_substrate$clock_kind, "declared_sessions")) {
-      history_substrate$sessions
-    } else {
-      NULL
-    },
+    sessions = schedule_sessions,
     pulses_posix = pulses_posix
   )
   if (!is.null(schedule$decision_due) &&
@@ -1718,6 +1717,9 @@ ledgr_sweep_candidate_execution <- function(exp,
     start_idx = 1L,
     dispositions_active = TRUE
   )
+  strategy_state_default_scalars <- ledgr_strategy_state_default_scalars(
+    exp$strategy_state
+  )
   execution <- ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = exp$universe,
@@ -1732,7 +1734,16 @@ ledgr_sweep_candidate_execution <- function(exp,
     checkpoint_every = 0L,
     telemetry_stride = 0L,
     state = list(cash = exp$opening$cash, positions = initial_positions, lot_state = initial_lot_state),
-    state_prev = NULL,
+    strategy_state = list(
+      values = ledgr_strategy_state_defaults(
+        exp$strategy_state, exp$universe,
+        default_scalars = strategy_state_default_scalars
+      ),
+      axis = exp$universe
+    ),
+    strategy_state_declaration = exp$strategy_state,
+    strategy_state_default_scalars = strategy_state_default_scalars,
+    position_fact_unknown_basis = exp$position_fact_unknown_basis %||% character(),
     history_substrate = history_substrate,
     feature_defs = feature_defs,
     active_alias_map = candidate$alias_map,
@@ -1747,6 +1758,8 @@ ledgr_sweep_candidate_execution <- function(exp,
     execution_opportunities_posix = execution_opportunities_posix,
     corporate_action_plan = corporate_action_plan,
     corporate_action_policy = exp$corporate_action_policy,
+    schedule_sessions = schedule_sessions,
+    schedule_params = params,
     decision_due = schedule$decision_due,
     decision_pulse_count = schedule$decision_pulse_count,
     scheduled_skip_count = schedule$scheduled_skip_count

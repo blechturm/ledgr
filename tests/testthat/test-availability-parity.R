@@ -28,7 +28,7 @@ availability_incomplete_experiment <- function(path, calls) {
   }
   list(
     snapshot = copied,
-    experiment = ledgr_experiment(
+    experiment = ledgr_experiment(opening = ledgr_opening(cash = 100000),
       copied,
       strategy,
       valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
@@ -243,7 +243,7 @@ testthat::test_that("completion affected IDs come only from stopped diagnostics"
     target[c("AAA", "BBB")] <- 1
     target
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = c("AAA", "BBB"),
@@ -349,7 +349,7 @@ testthat::test_that("complete availability runs recover finalization without str
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       calls$n <- calls$n + 1L
@@ -516,7 +516,7 @@ testthat::test_that("availability completion propagates through sweep persistenc
     target[["AAA"]] <- params$qty
     target
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
@@ -557,7 +557,7 @@ testthat::test_that("parallel availability sweeps return the same compact termin
   ledgr_test_skip_workers_in_coverage()
   snapshot <- availability_runtime_fixture(days = 4L, bar_days = c(1L, 2L, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       target <- ctx$hold()
@@ -613,7 +613,7 @@ testthat::test_that("direct and sweep paths both apply the opening-time status c
       ctx$flat()
     }
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
@@ -645,7 +645,7 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
     target[["AAA"]] <- 1
     target
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
@@ -797,7 +797,7 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
 testthat::test_that("[LTB-0065] fixed baskets expose canonical completion and decision evidence", {
   snapshot <- ledgr_snapshot_from_df(utils::head(ledgr_demo_bars, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()

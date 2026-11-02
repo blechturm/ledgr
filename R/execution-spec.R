@@ -55,7 +55,11 @@ ledgr_execution_spec <- function(run_id,
                                  checkpoint_every,
                                  telemetry_stride,
                                  state,
-                                 state_prev = NULL,
+                                 strategy_state,
+                                 strategy_state_declaration,
+                                 strategy_state_default_scalars = NULL,
+                                 position_facts = NULL,
+                                 position_fact_unknown_basis = character(),
                                  history_substrate = NULL,
                                  feature_defs,
                                  active_alias_map = NULL,
@@ -73,12 +77,20 @@ ledgr_execution_spec <- function(run_id,
                                  frozen_at_resume = NULL,
                                  last_executed_at_resume = NULL,
                                  final_execution_posix = NULL,
+                                 schedule_sessions = NULL,
+                                 schedule_params = list(),
                                  decision_due = NULL,
                                  decision_pulse_count = NULL,
-                                 scheduled_skip_count = NULL) {
+                                 scheduled_skip_count = NULL,
+                                 raw_sizing_notice_written = FALSE) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
+  if (is.null(strategy_state_default_scalars)) {
+    strategy_state_default_scalars <- ledgr_strategy_state_default_scalars(
+      strategy_state_declaration
+    )
+  }
   spec <- list(
     spec_version = ledgr_execution_spec_version(),
     run_id = run_id,
@@ -95,7 +107,11 @@ ledgr_execution_spec <- function(run_id,
     checkpoint_every = as.integer(checkpoint_every),
     telemetry_stride = as.integer(telemetry_stride),
     state = state,
-    state_prev = state_prev,
+    strategy_state = strategy_state,
+    strategy_state_declaration = strategy_state_declaration,
+    strategy_state_default_scalars = strategy_state_default_scalars,
+    position_facts = position_facts,
+    position_fact_unknown_basis = as.character(position_fact_unknown_basis),
     history_substrate = history_substrate,
     feature_defs = feature_defs,
     active_alias_map = active_alias_map,
@@ -121,6 +137,8 @@ ledgr_execution_spec <- function(run_id,
   }
   spec$availability_provider <- availability_provider
   spec$execution_opportunities_posix <- execution_opportunities_posix
+  spec$schedule_sessions <- schedule_sessions
+  spec$schedule_params <- schedule_params
   if (length(final_execution_posix) == 1L && !is.na(final_execution_posix)) {
     spec$final_execution_posix <- as.POSIXct(final_execution_posix, tz = "UTC")
   }
@@ -128,6 +146,9 @@ ledgr_execution_spec <- function(run_id,
     spec$decision_due <- decision_due
     spec$decision_pulse_count <- as.integer(decision_pulse_count)
     spec$scheduled_skip_count <- as.integer(scheduled_skip_count)
+  }
+  if (isTRUE(raw_sizing_notice_written)) {
+    spec$raw_sizing_notice_written <- TRUE
   }
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
@@ -180,6 +201,14 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     inherits(spec$pulses_posix, "POSIXct"),
     "`execution$pulses_posix` must be POSIXct."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$schedule_sessions) || is.data.frame(spec$schedule_sessions),
+    "`execution$schedule_sessions` must be NULL or a session data frame."
+  )
+  ledgr_execution_spec_check(
+    is.list(spec$schedule_params),
+    "`execution$schedule_params` must be a list."
   )
   if (!is.null(spec$decision_due)) {
     ledgr_execution_spec_check(
@@ -235,6 +264,35 @@ ledgr_validate_execution_spec <- function(spec) {
     "`execution$state` must include scalar cash and numeric positions."
   )
   ledgr_execution_spec_check(
+    is.list(spec$strategy_state) &&
+      is.list(spec$strategy_state$values) &&
+      is.character(spec$strategy_state$axis),
+    "`execution$strategy_state` must contain typed values and their asset axis."
+  )
+  ledgr_strategy_state_declaration_validate(spec$strategy_state_declaration)
+  ledgr_execution_spec_check(
+    identical(
+      spec$strategy_state_default_scalars,
+      ledgr_strategy_state_default_scalars(spec$strategy_state_declaration)
+    ),
+    "`execution$strategy_state_default_scalars` must match its declaration."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$position_facts) ||
+      (is.list(spec$position_facts) &&
+        identical(names(spec$position_facts), c("entry_bar", "exit_bar")) &&
+        length(spec$position_facts$entry_bar) == length(spec$instrument_ids) &&
+        length(spec$position_facts$exit_bar) == length(spec$instrument_ids)),
+    "`execution$position_facts` must be NULL or run-axis entry/exit anchors."
+  )
+  ledgr_execution_spec_check(
+    is.character(spec$position_fact_unknown_basis) &&
+      !anyNA(spec$position_fact_unknown_basis) &&
+      !anyDuplicated(spec$position_fact_unknown_basis) &&
+      all(spec$position_fact_unknown_basis %in% spec$instrument_ids),
+    "`execution$position_fact_unknown_basis` must contain unique run-axis instrument_ids."
+  )
+  ledgr_execution_spec_check(
     ledgr_history_substrate_is(spec$history_substrate),
     "`execution$history_substrate` must be a current ledgr history substrate."
   )
@@ -286,6 +344,11 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     ledgr_execution_spec_is_integer_like(spec$event_seq_start, min = 1L),
     "`execution$event_seq_start` must be an integer-like scalar >= 1."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$raw_sizing_notice_written) ||
+      identical(spec$raw_sizing_notice_written, TRUE),
+    "`execution$raw_sizing_notice_written` must be TRUE when present."
   )
   ledgr_execution_spec_check(
     is.environment(spec$telemetry) || is.list(spec$telemetry),

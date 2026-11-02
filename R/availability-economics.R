@@ -166,7 +166,7 @@ ledgr_availability_exhausted_choice <- function(valuation_policy) {
 }
 
 # A frozen holding stays on the decision axis but is target-restricted, so
-# ctx$tradable() and helper allocation exclude it while hold and zero targets
+# ctx$buyable and helper allocation exclude it while hold and zero targets
 # remain admissible.
 ledgr_availability_restrict_frozen <- function(view, valuation) {
   frozen <- valuation$frozen

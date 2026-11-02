@@ -30,6 +30,7 @@ validate_ledgr_config <- function(config) {
   if (!is.list(config)) {
     rlang::abort("`config` must be a list (or parsed JSON list).", class = "ledgr_invalid_config")
   }
+  ledgr_strategy_state_from_identity(config$strategy_state)
   cfg_get <- function(path) {
     cur <- config
     for (key in path) {
@@ -253,6 +254,13 @@ validate_ledgr_config <- function(config) {
       class = "ledgr_invalid_config"
     )
   }
+  if (!is.null(carried$position_facts) &&
+      length(setdiff(carried$position_facts$instrument_id, instrument_ids)) > 0L) {
+    rlang::abort(
+      "Config field opening.carried.position_facts names instruments outside the universe.",
+      class = "ledgr_invalid_config"
+    )
+  }
 
   pulse <- cfg_get(c("backtest", "pulse"))
   assert_scalar_chr(pulse, "backtest.pulse")
@@ -262,8 +270,14 @@ validate_ledgr_config <- function(config) {
 
   initial_cash <- cfg_get(c("backtest", "initial_cash"))
   assert_scalar_num(initial_cash, "backtest.initial_cash")
-  if (initial_cash <= 0) {
-    rlang::abort("Config field backtest.initial_cash must be > 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
+  if (initial_cash < 0) {
+    rlang::abort("Config field backtest.initial_cash must be >= 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
+  }
+  if (initial_cash == 0 && length(opening_positions) == 0L) {
+    rlang::abort(
+      "Config field backtest.initial_cash may be zero only with opening positions.",
+      class = c("ledgr_invalid_args", "ledgr_invalid_config")
+    )
   }
 
   timing_type <- cfg_get(c("timing_model", "type_id"))

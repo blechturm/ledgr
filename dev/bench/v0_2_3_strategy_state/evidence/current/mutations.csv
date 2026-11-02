@@ -1,0 +1,9 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"D5_state_declaration",TRUE,"1","declared state preserves type, missingness and axis","[LTB-0532] declared state preserves type, missingness and axis || [LTB-0533] helper patches and raw replacements stay distinct || [LTB-0534] unchanged cursors resume without replay or encoding || [LTB-0538] walk-forward resets declared state for every run",TRUE
+"D5_state_checkpoint",TRUE,"1","unchanged cursors resume without replay or encoding","[LTB-0534] unchanged cursors resume without replay or encoding || [LTB-0536] asset state follows ID lifecycle and axis checkpoints",TRUE
+"D5_merge_to_replacement",TRUE,"1","helper patches and raw replacements stay distinct","[LTB-0533] helper patches and raw replacements stay distinct",TRUE
+"D5_metadata_to_state",TRUE,"1","helper patches and raw replacements stay distinct","[LTB-0533] helper patches and raw replacements stay distinct",TRUE
+"D5_axis_checkpoint",TRUE,"1","asset state follows ID lifecycle and axis checkpoints","[LTB-0536] asset state follows ID lifecycle and axis checkpoints",TRUE
+"D5_marker_resume",TRUE,"1","unchanged cursors resume without replay or encoding","[LTB-0534] unchanged cursors resume without replay or encoding",TRUE
+"D5_candidate_leak",TRUE,"1","sweep candidates isolate declared state across workers","[LTB-0537] sweep candidates isolate declared state across workers",TRUE
+"D5_update_alignment",TRUE,"1","helper patches and raw replacements stay distinct","[LTB-0533] helper patches and raw replacements stay distinct",TRUE

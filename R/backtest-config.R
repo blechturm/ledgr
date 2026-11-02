@@ -13,8 +13,8 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000, final_execu
   if (!is.numeric(initial_cash) || length(initial_cash) != 1 || is.na(initial_cash) || !is.finite(initial_cash)) {
     rlang::abort("`initial_cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
   }
-  if (initial_cash <= 0) {
-    rlang::abort("`initial_cash` must be > 0.", class = "ledgr_invalid_args")
+  if (initial_cash < 0) {
+    rlang::abort("`initial_cash` must be >= 0.", class = "ledgr_invalid_args")
   }
 
   out <- list(start = start_iso, end = end_iso, initial_cash = as.numeric(initial_cash))
@@ -105,8 +105,9 @@ ledgr_config <- function(snapshot,
                           availability = NULL,
                           universe_rule = NULL,
                           valuation_policy = NULL,
-                          corporate_action_policy = ledgr_corporate_actions_research(),
+                         corporate_action_policy = ledgr_corporate_actions_research(),
                           history_policy = ledgr_history_policy(),
+                          strategy_state = ledgr_strategy_state_normalize(),
                           price_basis = ledgr_snapshot_execution_price_basis(snapshot),
                           snapshot_hash = ledgr_snapshot_stored_hash(snapshot)) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
@@ -146,6 +147,7 @@ ledgr_config <- function(snapshot,
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   ledgr_validate_corporate_action_policy(corporate_action_policy)
   history_policy <- ledgr_history_policy_normalize(history_policy)
+  ledgr_strategy_state_declaration_validate(strategy_state)
   # Experiments pass the basis they already read, so the snapshot is not reopened.
   force(price_basis)
   force(snapshot_hash)
@@ -295,7 +297,8 @@ ledgr_config <- function(snapshot,
     ),
     corporate_actions = ledgr_corporate_action_policy_identity(
       corporate_action_policy
-    )
+    ),
+    strategy_state = ledgr_strategy_state_identity(strategy_state)
   )
 
   if (isTRUE(availability$active)) {
@@ -435,7 +438,7 @@ print.ledgr_config <- function(x, ...) {
 # field is coerced to its atomic type.
 ledgr_opening_carried_normalize <- function(carried) {
   if (is.null(carried)) {
-    return(list(lots = NULL, pending = NULL, frozen = character()))
+    return(list(lots = NULL, pending = NULL, frozen = character(), position_facts = NULL))
   }
   if (!is.list(carried)) {
     rlang::abort("A carried opening must be a list.", class = c("ledgr_invalid_opening", "ledgr_invalid_config"))
@@ -484,10 +487,36 @@ ledgr_opening_carried_normalize <- function(carried) {
       class = c("ledgr_invalid_opening", "ledgr_invalid_config")
     )
   }
+  position_facts <- carried$position_facts
+  position_facts <- if (is.null(position_facts) || length(unlist(position_facts$instrument_id)) == 0L) {
+    NULL
+  } else {
+    list(
+      instrument_id = atomic(position_facts$instrument_id, as.character),
+      entry_at = atomic(position_facts$entry_at, as.character),
+      exit_at = atomic(position_facts$exit_at, as.character)
+    )
+  }
+  if (!is.null(position_facts) && (
+      length(unique(lengths(position_facts))) != 1L ||
+      anyNA(position_facts$instrument_id) || any(!nzchar(position_facts$instrument_id)) ||
+      anyDuplicated(position_facts$instrument_id) ||
+      anyNA(position_facts$entry_at) || anyNA(position_facts$exit_at) ||
+      anyNA(ledgr_history_utc_many(c(
+        position_facts$entry_at[nzchar(position_facts$entry_at)],
+        position_facts$exit_at[nzchar(position_facts$exit_at)]
+      )))
+  )) {
+    rlang::abort(
+      "A carried opening's position facts must be aligned unique IDs and valid UTC bar labels.",
+      class = c("ledgr_invalid_opening", "ledgr_invalid_config")
+    )
+  }
   list(
     lots = lots,
     pending = pending,
-    frozen = sort(unique(atomic(carried$frozen, as.character)), method = "radix")
+    frozen = sort(unique(atomic(carried$frozen, as.character)), method = "radix"),
+    position_facts = position_facts
   )
 }
 
@@ -502,6 +531,7 @@ ledgr_opening_carried_storage <- function(carried) {
       quantity = carried$pending$quantity,
       posting_ts_utc = carried$pending$posting_ts_utc
     ),
-    frozen = carried$frozen
+    frozen = carried$frozen,
+    position_facts = carried$position_facts
   )
 }

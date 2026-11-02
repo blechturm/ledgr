@@ -24,7 +24,7 @@
 #'   targets[] <- params$qty
 #'   targets
 #' }
-#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+#' exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
 #' grid <- data.frame(qty = c(1, 2))
 #' folds <- ledgr_folds_rolling(
 #'   start = min(bars$ts_utc),

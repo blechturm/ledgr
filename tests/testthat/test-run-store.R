@@ -164,11 +164,11 @@ testthat::test_that("feature_set_hash is exposed on run config, info, list, and 
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    signal <- ctx$features("TEST_A")[["fast"]]
+    signal <- ctx$fast[["TEST_A"]]
     if (!is.na(signal)) targets["TEST_A"] <- 1
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     features = ledgr_feature_map(fast = ledgr_ind_sma(2)),

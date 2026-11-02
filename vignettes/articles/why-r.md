@@ -45,9 +45,9 @@ logic:
 ``` r
 ctx |>
   ledgr_signal_return(lookback = 20) |>
-  ledgr_select_top_n(10) |>
+  ledgr_select_top(10, within = ctx$buyable) |>
   ledgr_weight_equal() |>
-  ledgr_target_rebalance(ctx, equity_fraction = 1)
+  ledgr_target_rebalance(ctx, weights = _, invest_fraction = 1)
 ```
 
 That helper pipeline is not a second execution path. It is authoring
@@ -74,7 +74,7 @@ if (!ledgr_passed_warmup(returns)) {
 
 solution |>
   ledgr_align_weights(returns) |>
-  ledgr_target_rebalance(ctx, equity_fraction = params$equity_fraction)
+  ledgr_target_rebalance(ctx, weights = _, invest_fraction = params$equity_fraction)
 ```
 
 The estimator between those two fragments remains ordinary R. ledgr owns

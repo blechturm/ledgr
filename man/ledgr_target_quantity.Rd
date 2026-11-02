@@ -55,10 +55,8 @@ selection <- ledgr_selection(c(AAA = TRUE, BBB = FALSE),
                              universe = c("AAA", "BBB"))
 ctx <- list(
   universe = c("AAA", "BBB"),
-  vec = list(
-    admissible = c(TRUE, TRUE),
-    position = c(AAA = 0, BBB = 0)
-  )
+  buyable = c(TRUE, TRUE),
+  position = c(AAA = 0, BBB = 0)
 )
 ledgr_target_quantity(selection, ctx, qty = 10)
 

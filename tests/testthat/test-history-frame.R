@@ -14,8 +14,8 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
       empty_long = ledgr_history_frame(ctx, bar = "close", lookback = 0L, layout = "long"),
       none = ledgr_history_frame(ctx, bar = "close", lookback = 2L, instruments = character()),
       scalar = list(
-        close = ctx$close("AAA"), vec_close = ctx$vec$close, ids = ctx$universe,
-        feature = ctx$feature("AAA", "fast"), vec_fast = ctx$vec$feature("fast")
+        close = ctx$close[["AAA"]], vec_close = ctx$close, ids = ctx$universe,
+        feature = ctx[["fast"]][["AAA"]], vec_fast = ctx[["fast"]]
       ),
       ctx = ctx
     )
@@ -94,7 +94,7 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   # Scalar and vector reads agree with the last returned observed row.
   testthat::expect_identical(at5$scalar$close, 15)
   testthat::expect_identical(at5$scalar$ids, c("AAA", "BBB", "CCC"))
-  testthat::expect_identical(at5$scalar$vec_close, unname(matrix5[5L, ]))
+  testthat::expect_identical(at5$scalar$vec_close, matrix5[5L, ])
 
   # Features resolve active alias first, then concrete ID, and agree with the
   # scalar feature reads: SMA(2) of 10 + k is 9.5 + k.
@@ -106,7 +106,10 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_identical(fast5$CCC, c(33.5, 34.5))
   testthat::expect_identical(attr(fast5, "ledgr_history")$source$id, "sma_2")
   testthat::expect_identical(at5$scalar$feature, 14.5)
-  testthat::expect_identical(at5$scalar$vec_fast, c(14.5, 23.5, 34.5))
+  testthat::expect_identical(
+    at5$scalar$vec_fast,
+    stats::setNames(c(14.5, 23.5, 34.5), c("AAA", "BBB", "CCC"))
+  )
   testthat::expect_identical(
     as.matrix(ledgr_history_matrix(at5$concrete)),
     as.matrix(ledgr_history_matrix(fast5))
@@ -139,7 +142,7 @@ testthat::test_that("[LTB-0297] history frame, matrix and scalar reads agree wit
   testthat::expect_true(ccc$requested)
   testthat::expect_true(ccc$included)
   testthat::expect_false(ccc$admissible)
-  testthat::expect_identical(ccc$admissibility_reason, "lifetime_inactive")
+  testthat::expect_identical(ccc$admissibility_reason, "target_restricted")
   bbb <- explicit_selection[explicit_selection$instrument_id == "BBB", ]
   testthat::expect_false(bbb$requested)
   testthat::expect_identical(bbb$exclusion_reason, "not_requested")
@@ -409,8 +412,11 @@ testthat::test_that("[LTB-0298] history results are cutoff-exact suffixes and st
   testthat::expect_identical(serialize(at6$inf, NULL), six_bytes)
   reread6 <- at7$ctx
   reread6$.history <- ledgr:::ledgr_history_view(reread6$.history$service, 6L)
-  reread6$universe <- at6$ctx$universe
-  reread6$vec <- at6$ctx$vec
+  for (field in c(
+    "universe", "member", "buyable", "held"
+  )) {
+    reread6[[field]] <- at6$ctx[[field]]
+  }
   testthat::expect_identical(
     ledgr_history_frame(reread6, bar = "close", lookback = Inf,
       instruments = "decision_axis", min_observations = 0L),

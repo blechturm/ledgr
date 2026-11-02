@@ -187,10 +187,10 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   )
   root <- testthat::test_path("..", "..")
   help_files <- c(
-    "ledgr_signal_feature.Rd",
-    "ledgr_select_top_n.Rd",
+    "ledgr_select_top.Rd",
     "ledgr_target_rebalance.Rd",
-    "ledgr_selection.Rd",
+    "ledgr_target_adjust.Rd",
+    "ledgr_schedule_due.Rd",
     "ledgr_pulse_snapshot.Rd"
   )
   help <- vapply(help_files, function(path) {
@@ -213,10 +213,10 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   cleanup_chunk <- qmd_chunk(authoring_qmd_lines, "cleanup")
 
   for (needle in c(
-    'ledgr_select_top_n(short_signal, n = 2, partial = "allow")',
-    'feature_signal <- ledgr_signal_feature(pulse, "return_5")',
-    'ledgr_target_rebalance(keep_pulse, keep = "DEMO_04")',
-    'ledgr_selection(where = rising, missing = "exclude")',
+    'ledgr_select_top(short_signal, n = 2)',
+    'score <- pulse[["return_5"]]',
+    'keep = "DEMO_04"',
+    'selection <- ctx$universe[ctx$buyable & !is.na(rising) & rising]',
     "ledgr_schedule_week_start()",
     "weights |>\n    ledgr_target_rebalance(ctx"
   )) {
@@ -225,15 +225,15 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   for (chunk in list(trend_chunk, weekly_chunk)) {
     testthat::expect_match(
       chunk,
-      'ledgr_selection(where = rising, missing = "exclude")',
+      'ctx$universe[ctx$buyable & !is.na(rising) & rising]',
       fixed = TRUE
     )
-    testthat::expect_no_match(chunk, "is.na(", fixed = TRUE)
+    testthat::expect_match(chunk, "is.na(", fixed = TRUE)
   }
   testthat::expect_no_match(top_chunk, 'partial = "allow"', fixed = TRUE)
   testthat::expect_no_match(
     development_qmd,
-    'ledgr_select_top_n(n = params$n, partial = "allow")',
+    'ledgr_select_top(n = params$n)',
     fixed = TRUE
   )
   testthat::expect_match(weekly_chunk, "decisions_seen", fixed = TRUE)
@@ -265,9 +265,8 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
     "nrow(top_momentum_fills)\n#> [1] 136",
     'nrow(ledgr_results(trend_momentum_run, what = "fills"))\n#> [1] 177',
     paste0(
-      'ledgr_select_top_n(short_signal, n = 2, partial = "allow")\n',
-      "#> <ledgr_selection> [4 assets]\n",
-      "#> 1 selected"
+      'short_selection\n',
+      '#> [1] "DEMO_01"'
     ),
     "#>       0       8       0       4"
   )) {
@@ -275,11 +274,11 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   }
 
   example_needles <- c(
-    "ledgr_signal_feature(ctx, \"return_5\")",
-    "partial = \"allow\"",
+    "ledgr_select_top(score, n = 1)",
     "keep = \"AAA\"",
-    "missing = \"exclude\"",
-    "state_prev = list(pulses_seen = 1)"
+    "keeps every unmentioned position",
+    "pure query",
+    "synthetic inspection-only cash"
   )
   for (i in seq_along(help)) {
     testthat::expect_match(
@@ -289,6 +288,11 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
       info = help_files[[i]]
     )
   }
+  testthat::expect_match(
+    help[[5L]],
+    "portfolio_state = list(pulses_seen = 1L)",
+    fixed = TRUE
+  )
 })
 
 
@@ -298,11 +302,11 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
     indicators_doc <- readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE)
 
     first_strategy_feature_id <- grep("ledgr_feature_id", strategy_doc)[[1]]
-    first_strategy_lookup <- grep("\\$feature\\([^)]*\"", strategy_doc)[[1]]
+    first_strategy_lookup <- grep("\\$(return_5|sma_10)", strategy_doc)[[1]]
     testthat::expect_lt(first_strategy_feature_id, first_strategy_lookup)
 
     first_indicator_feature_id <- grep("ledgr_feature_id", indicators_doc)[[1]]
-    first_indicator_lookup <- grep("\\$feature\\([^)]*\"", indicators_doc)[[1]]
+    first_indicator_lookup <- grep("\\[\\[ids\\[\\[", indicators_doc)[[1]]
     testthat::expect_lt(first_indicator_feature_id, first_indicator_lookup)
   })
 
@@ -352,25 +356,25 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
     testthat::expect_match(indicators_doc, "The strategy still returns ordinary target quantities.", fixed = TRUE)
     testthat::expect_match(indicators_doc, "do not create `ledgr_ind_returns(params$lookback)` lazily inside the strategy", fixed = TRUE)
     testthat::expect_match(indicators_doc, "The canonical strategy workflow is: register features on", fixed = TRUE)
-    testthat::expect_match(indicators_doc, "axis with `ctx$vec$feature()`", fixed = TRUE)
+    testthat::expect_match(indicators_doc, "flat named feature column across the decision axis", fixed = TRUE)
     testthat::expect_match(indicators_doc, "For exploratory sweeps over ledgr-owned indicator parameters", fixed = TRUE)
     testthat::expect_match(indicators_doc, "it closes over a value\\s+built from the feature map")
     testthat::expect_match(indicators_doc, "stored strategy source refers to `ids` only by name", fixed = TRUE)
-    testthat::expect_match(indicators_doc, "ret_5 <- ctx$vec$feature(ids[[\"ret_5\"]])", fixed = TRUE)
+    testthat::expect_match(indicators_doc, "ret_5 <- ctx[[ids[[\"ret_5\"]]]]", fixed = TRUE)
     testthat::expect_no_match(indicators_doc, "for (id in ctx$universe)", fixed = TRUE)
     testthat::expect_match(indicators_doc, "ledgr_pulse_wide(pulse, features)", fixed = TRUE)
     testthat::expect_match(indicators_doc, "feature map gives\\s+your strategy code readable aliases")
     testthat::expect_match(indicators_doc, "feature_id` is the stable engine ID")
-    testthat::expect_match(indicators_doc, "Mapped access returns a named numeric vector keyed by alias")
+    testthat::expect_match(indicators_doc, "Aliases are the primary column names", fixed = TRUE)
     testthat::expect_match(indicators_doc, "Feature columns\\s+use")
-    testthat::expect_match(indicators_doc, "The table views and the accessors are not competing APIs", fixed = TRUE)
-    testthat::expect_match(indicators_doc, "uses the engine ID, not the alias", fixed = TRUE)
+    testthat::expect_match(indicators_doc, "same pulse-known values as flat named columns", fixed = TRUE)
+    testthat::expect_match(indicators_doc, "engine-ID read selects one column", fixed = TRUE)
     testthat::expect_match(indicators_doc, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
     testthat::expect_match(feature_map_help, "Plain lists remain valid", fixed = TRUE)
     testthat::expect_match(feature_map_help, "keyed by alias", fixed = TRUE)
-    testthat::expect_match(feature_map_help, "ctx$features", fixed = TRUE)
+    testthat::expect_match(feature_map_help, "ctx$ret_5", fixed = TRUE)
     testthat::expect_match(feature_map_help, "ledgr_passed_warmup", fixed = TRUE)
-    testthat::expect_match(feature_map_help, "x[[\"ret_5\"]]", fixed = TRUE)
+    testthat::expect_match(feature_map_help, "targets[ready & ctx$ret_5 > params$min_return]", fixed = TRUE)
     testthat::expect_match(warmup_help, "not a signal pipeline transformation", fixed = TRUE)
     testthat::expect_match(warmup_help, "ledgr_empty_warmup_input", fixed = TRUE)
   })
@@ -538,7 +542,7 @@ testthat::test_that("help pages provide browser-free paths to installed articles
       ledgr_weights = "strategy-development",
       ledgr_target = "strategy-development",
       ledgr_signal_return = "strategy-development",
-      ledgr_select_top_n = "strategy-development",
+      ledgr_select_top = "strategy-development",
       ledgr_weight_equal = "strategy-development",
       ledgr_target_rebalance = "strategy-development",
       ledgr_feature_map = c("strategy-development", "indicators"),
@@ -718,7 +722,7 @@ testthat::test_that("public result and helper documentation states current seman
     target_help <- paste(readLines(file.path(root, "man", "ledgr_target_rebalance.Rd"), warn = FALSE), collapse = "\n")
     signal_strategy_help <- paste(readLines(file.path(root, "man", "ledgr_signal_strategy.Rd"), warn = FALSE), collapse = "\n")
     signal_help <- paste(readLines(file.path(root, "man", "ledgr_signal_return.Rd"), warn = FALSE), collapse = "\n")
-    select_help <- paste(readLines(file.path(root, "man", "ledgr_select_top_n.Rd"), warn = FALSE), collapse = "\n")
+    select_help <- paste(readLines(file.path(root, "man", "ledgr_select_top.Rd"), warn = FALSE), collapse = "\n")
     target_rebalance_help <- paste(readLines(file.path(root, "man", "ledgr_target_rebalance.Rd"), warn = FALSE), collapse = "\n")
     selection_type_help <- paste(readLines(file.path(root, "man", "ledgr_selection.Rd"), warn = FALSE), collapse = "\n")
     context_help <- paste(readLines(file.path(root, "man", "ledgr_strategy_context.Rd"), warn = FALSE), collapse = "\n")
@@ -730,7 +734,7 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "ledgr refuses a missing decision instead of quietly treating it as\\s+`FALSE`")
     testthat::expect_match(strategy_authoring_doc, "hold-then-edit pattern", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "*held nonmember*", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "Neither membership nor `ctx$tradable()` guarantees", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "Neither membership nor the `ctx$buyable` mask guarantees", fixed = TRUE)
     testthat::expect_match(strategy_doc, "Affordability is not automatic", fixed = TRUE)
     # The affordability and risk-chain facts moved to their homes in LDG-2900;
     # Strategy Basics keeps a gloss that links the home.
@@ -745,40 +749,55 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "Decide What A Missing Input Should Do", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "holding_pulse <- ledgr_pulse_snapshot", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "| zero, including an instrument left out of the selection | sell down to zero |", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "if (!ledgr_passed_warmup(ctx$vec$feature(\"sma_10\"))) return(ctx$hold())", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "ledgr_signal_return(lookback = 5) |>", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "if (!ledgr_passed_warmup(ctx$sma_10)) return(ctx$hold())", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "ctx$return_5", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "it never\\s+registers a feature for you")
     testthat::expect_match(strategy_authoring_doc, "ledgr_run_compare(snapshot)", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Schedule Decisions And Keep Strategy Memory", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "`ctx$state_prev$decisions_seen` is `NULL`", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "ctx$state$decisions_seen", fixed = TRUE)
+    for (heading in c(
+      "### 1. Fixed Mix", "### 2. Filter", "### 3. Rank And Rotate",
+      "### 4. Fill A Fixed Number Of Slots",
+      "### 5. Preserve Holdings And Decide Index Leavers",
+      "### 6. Use Position Facts And Declared Memory"
+    )) {
+      testthat::expect_match(strategy_authoring_doc, heading, fixed = TRUE)
+    }
+    testthat::expect_match(strategy_authoring_doc, "open_slots <- max(0L", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "length(selected)", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "length(retained)", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, 'index_leavers = "sell"', fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "remaining FIFO cost basis divided by held quantity", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "counts positions on the\\s+shared bar axis")
+    testthat::expect_match(strategy_authoring_doc, "reset_state = TRUE", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, 'intent_reason = "risk_checked"', fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ctx$state_prev", fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ctx$vec", fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ledgr_select_top_n", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "\n## Remembering Between Pulses\n", fixed = TRUE)
-    testthat::expect_match(strategy_development_doc, "check each\\s+field for `NULL` before using it")
-    testthat::expect_match(strategy_development_doc, "`?ledgr_strategy_context` states the full rules", fixed = TRUE)
+    testthat::expect_match(strategy_development_doc, "a typo fails instead of quietly returning `NULL`", fixed = TRUE)
+    testthat::expect_match(strategy_development_doc, "`?ledgr_strategy_context` states the full typed", fixed = TRUE)
     # Strategy Basics teaches whole-vector rules, not the scalar loop its own
     # tip calls slow, and keeps accelerator internals out of the first article.
     testthat::expect_no_match(strategy_development_doc, "for (id in ctx$universe)", fixed = TRUE)
     testthat::expect_match(
       strategy_development_doc,
-      "up <- ctx$vec$close > ctx$vec$open\n  targets <- ctx$flat()\n  targets[up] <- 1",
+      "up <- ctx$close > ctx$open\n  targets <- ctx$flat()\n  targets[up] <- 1",
       fixed = TRUE
     )
     testthat::expect_no_match(strategy_development_doc, "compiled_accounting_model", fixed = TRUE)
     testthat::expect_no_match(strategy_development_doc, "`signal_*()`", fixed = TRUE)
     testthat::expect_no_match(strategy_development_doc, "```{r cleanup}", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "#| label: incomplete-target", fixed = TRUE)
-    testthat::expect_match(
-      strategy_authoring_doc,
-      "or active-map bundle accessor triggers one",
-      fixed = TRUE
-    )
+    testthat::expect_match(strategy_authoring_doc, "aliases are the primary names", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "### Keep A Position While Rebalancing The Rest", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "This is exactly the target a backtest would receive", fixed = TRUE)
-    testthat::expect_match(context_help, "carries\\s+\\\\code\\{asset_state\\}")
-    testthat::expect_match(context_help, "asset_state_from_first_pulse", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "Returning a bare target keeps the previous state unchanged.", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "state_update = list(decisions_seen = decisions_seen + 1L)", fixed = TRUE)
+    testthat::expect_match(context_help, "Asset fields are named vectors aligned to")
+    testthat::expect_match(context_help, "\\code\\{ledgr_strategy_result\\(\\)\\} returns a patch")
+    testthat::expect_match(strategy_authoring_doc, "returning a bare target keeps the previous state unchanged.", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "decisions_seen = decisions_seen + 1L", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Read whole vectors, not one instrument at a time", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "`ledgr_scalar_accessor_loop` warning", fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ledgr_scalar_accessor_loop", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "The optimization manual carries the measurements", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "for (id in ctx$universe)", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "summary(bt_mapped)", fixed = TRUE)
@@ -795,9 +814,9 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_doc, "strategy authoring question separate", fixed = TRUE)
     testthat::expect_match(strategy_doc, "?ledgr_strategy_context", fixed = TRUE)
     testthat::expect_match(target_help, "floored to whole numbers", fixed = TRUE)
-    testthat::expect_match(target_help, "allocatable equity", fixed = TRUE)
+    testthat::expect_match(target_help, "chosen capital base", fixed = TRUE)
     testthat::expect_match(target_help, "held nonmembers", fixed = TRUE)
-    testthat::expect_match(target_help, "floor(weight * equity_fraction * allocation_equity /", fixed = TRUE)
+    testthat::expect_match(target_help, "floor(weight * invest_fraction * allocation_equity /", fixed = TRUE)
 
     testthat::expect_match(signal_strategy_help, "called as \\code{fn(ctx)}", fixed = TRUE)
     testthat::expect_match(signal_strategy_help, "not \\code{params}", fixed = TRUE)
@@ -805,24 +824,17 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(signal_strategy_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
     testthat::expect_match(signal_help, "\\examples{", fixed = TRUE)
     testthat::expect_match(signal_help, "ledgr_signal_return(ctx, lookback = 5)", fixed = TRUE)
-    testthat::expect_match(
-      signal_help,
-      "stable active alias with \\code{\\link[=ledgr_signal_feature]{ledgr_signal_feature()}}",
-      fixed = TRUE
-    )
+    testthat::expect_match(signal_help, "read its stable active alias directly from the flat context", fixed = TRUE)
     testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(ledgr_param(\"lookback\"))}", fixed = TRUE)
-    testthat::expect_match(select_help, "\\code{ledgr_empty_selection}", fixed = TRUE)
-    testthat::expect_match(select_help, "without warning", fixed = TRUE)
-    testthat::expect_match(select_help, "\\code{ledgr_partial_selection}", fixed = TRUE)
-    testthat::expect_match(target_rebalance_help, "\\code{ledgr_invalid_target_price}", fixed = TRUE)
-    testthat::expect_match(target_rebalance_help, "\\code{ledgr_negative_weights}", fixed = TRUE)
-    testthat::expect_match(target_rebalance_help, "\\code{ledgr_levered_weights}", fixed = TRUE)
+    testthat::expect_match(select_help, "plain character vector", fixed = TRUE)
+    testthat::expect_match(select_help, "Missing scores", fixed = TRUE)
+    testthat::expect_match(target_rebalance_help, "\\code{ledgr_target_sizing_unavailable}", fixed = TRUE)
     testthat::expect_match(selection_type_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
-    testthat::expect_match(context_help, "\\code{ctx$feature(id, feature_id)}", fixed = TRUE)
-    testthat::expect_match(context_help, "\\code{ctx$idx(id)}", fixed = TRUE)
-    testthat::expect_match(context_help, "\\code{ctx$vec$feature(feature_id)}", fixed = TRUE)
-    testthat::expect_match(context_help, "\\code{ctx$vec$position}", fixed = TRUE)
-    testthat::expect_match(context_help, "\\code{ctx$features(id, feature_map)}", fixed = TRUE)
+    testthat::expect_match(context_help, "\\code{ctx[[\"return_5\"]]}", fixed = TRUE)
+    testthat::expect_match(context_help, "ordinary named-vector indexing or \\code{match()}", fixed = TRUE)
+    testthat::expect_match(context_help, "former \\code{ctx$vec}", fixed = TRUE)
+    testthat::expect_match(context_help, "plane | position |", fixed = TRUE)
+    testthat::expect_match(context_help, "\\code{ctx$features()}", fixed = TRUE)
     testthat::expect_match(context_help, "\\code{ctx$flat()}", fixed = TRUE)
     testthat::expect_match(context_help, "\\code{ctx$hold()}", fixed = TRUE)
     testthat::expect_match(context_help, "Feature Object Compatibility", fixed = TRUE)
@@ -851,17 +863,17 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
 
   testthat::expect_match(quickstart, "strategy <- function(ctx, params)", fixed = TRUE)
   testthat::expect_no_match(quickstart, "ledgr_demo_sma_crossover_strategy", fixed = TRUE)
-  testthat::expect_match(indicators, "ctx$vec$feature(feature_id)", fixed = TRUE)
+  testthat::expect_match(indicators, "ctx[[feature_id]]", fixed = TRUE)
   testthat::expect_no_match(
     indicators,
-    "The canonical workflow is: register features on `ledgr_experiment()`, then read\npulse-known values through `ctx$feature()` or `ctx$features()` inside the\nstrategy.",
+    "The canonical workflow is: register features on `ledgr_experiment(opening = ledgr_opening(cash = 100000), )`, then read\npulse-known values through `ctx$feature()` or `ctx$features()` inside the\nstrategy.",
     fixed = TRUE
   )
   testthat::expect_match(indicators, "#| eval: !expr requireNamespace(\"TTR\"", fixed = TRUE)
   testthat::expect_match(leakage, "lead(close)", fixed = TRUE)
   testthat::expect_no_match(strategy_basics, "tomorrow_close = lead(close)", fixed = TRUE)
   testthat::expect_match(survivorship, "ledgr_schedule_dates(", fixed = TRUE)
-  testthat::expect_match(survivorship, "ledgr_strategy_schedule(", fixed = TRUE)
+  testthat::expect_match(survivorship, "schedule = rebalance_schedule", fixed = TRUE)
   testthat::expect_match(
     survivorship,
     'as.Date(c("2020-01-06", "2020-01-13"))',
@@ -946,7 +958,7 @@ testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
   )
 })
 
-testthat::test_that("[LTB-0103] feature-loop teaching names the actionable boundary", {
+testthat::test_that("[LTB-0103] feature teaching uses flat whole-axis columns", {
   root <- testthat::test_path("..", "..")
   strategy_doc <- paste(
     readLines(
@@ -963,25 +975,11 @@ testthat::test_that("[LTB-0103] feature-loop teaching names the actionable bound
     collapse = "\n"
   )
 
-  testthat::expect_match(
-    strategy_doc,
-    "or active-map bundle accessor triggers one",
-    fixed = TRUE
-  )
-  testthat::expect_match(
-    strategy_doc,
-    "Read each required active alias once with\\s+`ctx\\$vec\\$feature\\(\"alias\"\\)`"
-  )
-  testthat::expect_match(
-    context_help,
-    "ctx$vec$feature(feature_id)",
-    fixed = TRUE
-  )
-  testthat::expect_match(
-    context_help,
-    "Explicit-map bundle",
-    fixed = TRUE
-  )
+  testthat::expect_match(strategy_doc, "flat named feature column", fixed = TRUE)
+  testthat::expect_match(context_help, "flat named context column", fixed = TRUE)
+  testthat::expect_false(grepl("scalar accessor loop", strategy_doc, fixed = TRUE))
+  testthat::expect_false(grepl("ctx$vec$feature", strategy_doc, fixed = TRUE))
+  testthat::expect_false(grepl("ctx$vec$feature", context_help, fixed = TRUE))
 })
 
 testthat::test_that("cost documentation contains runnable examples and the current API surface", {
@@ -1013,7 +1011,7 @@ testthat::test_that("cost documentation contains runnable examples and the curre
         "ledgr_cost_chain",
         "ledgr_cost_steps(cost)",
         "ledgr_cost_describe(cost)",
-        "try(ledgr_experiment(snapshot, strategy), silent = TRUE)",
+        "try(ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy), silent = TRUE)",
         "cost_model = zero"
       )) {
         testthat::expect_match(cost_help, term, fixed = TRUE)
@@ -1572,11 +1570,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
         "holding_pulse$hold()",
         fixed = TRUE
       )
-      testthat::expect_match(
-        docs$strategy,
-        "`where` contains missing decisions for current members: DEMO_01, DEMO_02, DEMO_03, DEMO_04.",
-        fixed = TRUE
-      )
+      testthat::expect_match(docs$strategy, "anyNA(rising)\n#> [1] TRUE", fixed = TRUE)
       testthat::expect_match(
         docs$strategy_qmd,
         "trend_momentum_run <- ledgr_experiment(",
@@ -1593,7 +1587,14 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
         "#> 2 v2_rule    <NA>        10874.",
         "#> 3 v3_weekly  <NA>         9913.",
         "#> 1 2019-01-29 10:00:00 DEMO_01       BUY      27",
-        "trend_momentum(holding_pulse, params)\n#> <ledgr_target> [4 assets]\n#> non-NA: 4/4\n#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n#>       0       0       0       0",
+        paste0(
+          "trend_momentum(holding_pulse, params)\n",
+          "#> <ledgr_target> [4 assets]\n",
+          "#> origin: helper=ledgr_target_rebalance; capital_base=not_required; ",
+          "capital_base_origin=not_required; invest_fraction=0.5\n",
+          "#> non-NA: 4/4\n#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n",
+          "#>       0       0       0       0"
+        ),
         "holding_pulse$hold()\n#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n#>       0      40       0       0"
       )
       for (outcome in strategy_outcomes) {
@@ -1990,15 +1991,15 @@ testthat::test_that("[LTB-0187] feature-map read teaching matches the accepted c
     character(1)
   )
 
-  testthat::expect_match(contracts, "active alias or registered engine feature")
+  testthat::expect_match(contracts, "every declared feature alias and registered engine ID", fixed = TRUE)
   testthat::expect_match(contracts, "may not redefine an\\s+active alias")
   testthat::expect_match(contracts, "A mapped view uses its stable alias")
-  testthat::expect_match(context_help, "No plural whole-universe accessor")
+  testthat::expect_match(context_help, "former \\code{ctx$vec}", fixed = TRUE)
   testthat::expect_match(return_help, "stable active alias")
-  testthat::expect_match(demo, 'ctx\\$vec\\$feature\\("fast"\\)')
-  testthat::expect_match(demo, 'ctx\\$vec\\$feature\\("slow"\\)')
+  testthat::expect_match(demo, 'ctx\\$fast')
+  testthat::expect_match(demo, 'ctx\\$slow')
   testthat::expect_no_match(demo, "for \\(id in ctx\\$universe\\)")
-  testthat::expect_true(all(grepl("ctx\\$vec\\$feature", articles)))
+  testthat::expect_true(all(grepl("flat named", articles, fixed = TRUE)))
   testthat::expect_false(any(grepl(
     "no alias-aware whole-universe feature read yet", articles,
     fixed = TRUE
@@ -2027,7 +2028,7 @@ ledgr_doc_fact_home_problems <- function(root) {
     c("execution-semantics", "rejected and recorded with reason `insufficient_cash`"),
     c("execution-semantics", "`Execution Clock: bar_native` means"),
     c("indicators", "| Registered TTR form | `ledgr_ind_ttr()` on a catalogued function, output and argument form | Supported: per catalogue row |"),
-    c("indicators", "Read it once across the decision axis with `ctx$vec$feature(\"alias\")`"),
+    c("indicators", "Strategy code reads one flat named feature column across the decision axis."),
     c("sweeps", "Promotion records a choice; it does not make that choice out-of-sample."),
     c("selection-integrity", "Deflated Sharpe Ratio with effective trials"),
     c("walk-forward", "so a good walk-forward result does not prove that the rule generalizes"),
@@ -2156,7 +2157,7 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   rendered_authoring <- read("vignettes/strategy-authoring-tools.md")
   reproducibility <- read("vignettes/reproducibility.qmd")
   store <- read("vignettes/experiment-store.qmd")
-  help <- read("man/ledgr_strategy_schedule.Rd")
+  help <- read("man/ledgr_schedule_month_start.Rd")
   reference <- read("_pkgdown.yml")
   news <- read("NEWS.md")
   help_flat <- gsub("\\s+", " ", help)
@@ -2236,12 +2237,12 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(help_flat, "resolves to no decision pulses", fixed = TRUE)
   testthat::expect_match(help_flat, "inner strategy's source identity remains", fixed = TRUE)
   for (topic in c(
-    "ledgr_strategy_schedule", "ledgr_schedule_weekday",
-    "ledgr_schedule_month_day"
+    "ledgr_schedule_month_start", "ledgr_schedule_due",
+    "ledgr_schedule_weekday", "ledgr_schedule_month_day"
   )) {
     testthat::expect_match(reference, paste0("- ", topic), fixed = TRUE)
   }
-  testthat::expect_match(news_flat, "ledgr_strategy_schedule()", fixed = TRUE)
+  testthat::expect_match(news_flat, "schedule =", fixed = TRUE)
   testthat::expect_match(news_flat, "ledgr_schedule_weekday()", fixed = TRUE)
   testthat::expect_match(news_flat, "ledgr_schedule_month_day()", fixed = TRUE)
   testthat::expect_match(news_flat, "schema 124", fixed = TRUE)
@@ -2252,4 +2253,47 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   )) {
     testthat::expect_match(news_flat, version, fixed = TRUE)
   }
+})
+
+test_that("[LTB-0544] strategy pattern teaching stays complete and current", {
+  root <- testthat::test_path("..", "..")
+  source <- paste(
+    readLines(file.path(root, "vignettes", "strategy-authoring-tools.qmd"),
+      warn = FALSE, encoding = "UTF-8"
+    ),
+    collapse = "\n"
+  )
+  rendered <- paste(
+    readLines(file.path(root, "vignettes", "strategy-authoring-tools.md"),
+      warn = FALSE, encoding = "UTF-8"
+    ),
+    collapse = "\n"
+  )
+  headings <- c(
+    "### 1. Fixed Mix", "### 2. Filter",
+    "### 3. Rank And Rotate", "### 4. Fill A Fixed Number Of Slots",
+    "### 5. Preserve Holdings And Decide Index Leavers",
+    "### 6. Use Position Facts And Declared Memory"
+  )
+  for (heading in headings) {
+    testthat::expect_match(source, heading, fixed = TRUE)
+    testthat::expect_match(rendered, sub("^### ", "### ", heading), fixed = TRUE)
+  }
+  for (needle in c(
+    "open_slots <- max(0L", "index_leavers = \"sell\"",
+    "capital_base = \"total_equity\"",
+    "capital_base = \"remaining_equity\"", "ctx$entry_price",
+    "ctx$bars_since_exit", "asset_state = list(peak = NA_real_)",
+    "reset_state = TRUE", "summary(weekly_run)",
+    "trailing_run <- ledgr_run(", "params = list(stop = 0.05, wait = 5L)",
+    "ledgr_results(trailing_run, what = \"fills\")", "close(trailing_run)"
+  )) {
+    testthat::expect_match(source, needle, fixed = TRUE)
+  }
+  testthat::expect_match(
+    rendered, "capital_base = \"total_equity\"", fixed = TRUE
+  )
+  testthat::expect_no_match(source, "ctx$vec", fixed = TRUE)
+  testthat::expect_no_match(source, "ctx$feature(", fixed = TRUE)
+  testthat::expect_no_match(source, "ctx$features(", fixed = TRUE)
 })

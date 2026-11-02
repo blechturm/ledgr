@@ -844,7 +844,13 @@ ledgr_history_choice <- function(value, choices, argument) {
 }
 
 ledgr_history_context_view <- function(ctx) {
-  view <- if (is.environment(ctx) || is.list(ctx)) ctx[[".history"]] else NULL
+  view <- if (inherits(ctx, "ledgr_pulse_context")) {
+    unclass(ctx)[[".history"]]
+  } else if (is.environment(ctx) || is.list(ctx)) {
+    ctx[[".history"]]
+  } else {
+    NULL
+  }
   if (!inherits(ctx, "ledgr_pulse_context") || !inherits(view, "ledgr_history_view")) {
     rlang::abort(
       paste(
@@ -1015,7 +1021,20 @@ ledgr_history_request_plan <- function(ctx,
     min_observations = min_observations,
     min_instruments = min_instruments,
     decision_ids = as.character(ctx$universe),
-    decision_planes = ctx$vec,
+    decision_planes = {
+      member <- unname(ctx$member)
+      buyable <- unname(ctx$buyable)
+      list(
+        id = as.character(ctx$universe),
+        open = unname(ctx$open), high = unname(ctx$high), low = unname(ctx$low),
+        close = unname(ctx$close), volume = unname(ctx$volume),
+        position = unname(ctx$position), member = member,
+        held = unname(ctx$held), admissible = buyable,
+        target_restriction_reason = ifelse(
+          member & !buyable, "target_restricted", ""
+        )
+      )
+    },
     diagnostic = diagnostic,
     manifestation = manifestation
   )
@@ -1736,7 +1755,7 @@ print.ledgr_history_info <- function(x, ...) {
 #'   w <- 1 / apply(x, 2L, stats::sd)
 #'   unname(w / sum(w)) |>
 #'     ledgr_align_weights(returns) |>
-#'     ledgr_target_rebalance(ctx, equity_fraction = 0.95)
+#'     ledgr_target_rebalance(ctx, weights = _, invest_fraction = 0.95)
 #' }
 #' }
 #' @section Articles:

@@ -718,7 +718,7 @@ ledgr_carrier_mark_source_text <- function(code) {
 }
 
 # P2 input boundary (availability): the public context's availability
-# planes, keyed by the context IDs as ledgr_pulse_context_vec() reads them,
+# planes, keyed by the context IDs as the flat context reads them,
 # with the restriction and mark-source text decoded once for the pulse.
 ledgr_carrier_p2_input <- function(packet, context_ids) {
   named <- function(v) stats::setNames(v, context_ids)
@@ -781,11 +781,12 @@ ledgr_fold_diagnostic_staging <- function(capacity) {
   ledgr_carrier_new(c(list(n = 0L, capacity = capacity), columns), "diagnostics", NA_integer_)
 }
 
-# Design note 2.4's pinned bound: max(5N + 3, Q_pulse), where Q_pulse is the
+# The WS5 sizing rows add at most N rows to design note 2.4's bound:
+# max(6N + 4, Q_pulse), where Q_pulse is the
 # most due disposition rows of any pulse (0 without a corporate-action plan).
 ledgr_fold_diagnostic_capacity <- function(n_inst, corporate_action_plan) {
   due <- lengths(corporate_action_plan$state$disposition_due_by_pulse)
-  max(5L * as.integer(n_inst) + 3L, due, 0L)
+  max(6L * as.integer(n_inst) + 4L, due, 0L)
 }
 
 # One producer segment as a fully used block of the staging schema: each

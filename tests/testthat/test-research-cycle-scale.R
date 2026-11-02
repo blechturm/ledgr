@@ -7,8 +7,8 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   rotate <- function(ctx, params) {
     day <- as.integer(format(as.Date(substr(ctx$ts_utc, 1, 10)), "%d"))
     weights <- if (day %% 2L == 0L) c(AAA = 0.6, BBB = 0.2, CCC = 0.2) else c(AAA = 0.2, BBB = 0.5, CCC = 0.3)
-    ids <- ctx$universe[ctx$vec$admissible]
-    ledgr_weights(weights[ids], universe = ctx$universe) |> ledgr_target_rebalance(ctx, equity_fraction = 0.9)
+    ids <- ctx$universe[ctx$buyable]
+    ledgr_weights(weights[ids], universe = ctx$universe) |> ledgr_target_rebalance(ctx, weights = _, invest_fraction = 0.9)
   }
   bt <- ledgr_run(ledgr_experiment(snapshot, rotate,
     universe = ledgr_universe_members("u"),
@@ -164,87 +164,6 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
   testthat::expect_null(ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("empty"))$diagnostics())
 })
 
-testthat::test_that("[LTB-0212] vectorised asset-state normalisation equals the per-ID rule", {
-  reference <- function(state_value, axis) {
-    if (is.null(state_value) || !is.list(state_value) ||
-        is.null(state_value$asset_state)) return(state_value)
-    asset_state <- state_value$asset_state %||% list()
-    if (identical(names(asset_state), axis)) return(state_value)
-    normalized <- stats::setNames(rep(list(list()), length(axis)), axis)
-    for (id in axis) {
-      value <- asset_state[id]
-      if (length(value) == 1L && !is.null(value[[1L]])) normalized[id] <- value
-    }
-    state_value$asset_state <- normalized
-    state_value
-  }
-  cases <- list(
-    list(state = list(month = "m"), axis = c("B", "A")),
-    list(state = list(asset_state = list(A = list(x = 1), C = NULL, D = list())), axis = c("C", "A", "B", "D")),
-    list(state = list(asset_state = list(Z = list(y = 2))), axis = character()),
-    list(state = NULL, axis = "A")
-  )
-  for (case in cases) {
-    once <- ledgr:::ledgr_fold_asset_state_normalize(case$state, case$axis, drop_exited = TRUE)
-    testthat::expect_identical(once, reference(case$state, case$axis))
-    testthat::expect_identical(ledgr:::ledgr_fold_asset_state_normalize(once, case$axis), once)
-    testthat::expect_identical(ledgr:::ledgr_fold_asset_state_normalize(once, case$axis, drop_exited = TRUE), once)
-  }
-})
-
-testthat::test_that("[LTB-0214] carried strategy state equals normalising it on every pulse", {
-  snapshot <- scale_test_events_snapshot(second_members = c("AAA", "BBB"))
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  reference <- function(state_value, axis) {
-    if (is.null(state_value) || !is.list(state_value) ||
-        is.null(state_value$asset_state)) return(state_value)
-    asset_state <- state_value$asset_state %||% list()
-    if (identical(names(asset_state), axis)) return(state_value)
-    normalized <- stats::setNames(rep(list(list()), length(axis)), axis)
-    for (id in axis) {
-      value <- asset_state[id]
-      if (length(value) == 1L && !is.null(value[[1L]])) normalized[id] <- value
-    }
-    state_value$asset_state <- normalized
-    state_value
-  }
-  seen <- new.env()
-  seen$axes <- list()
-  seen$updates <- list()
-  carry <- function(ctx, params) {
-    k <- length(seen$axes) + 1L
-    seen$axes[[k]] <- ctx$universe
-    extra <- if ("CCC" %in% ctx$universe) list(CCC = list(m = k)) else list()
-    update <- if (k %% 3L == 2L) list(k = k, asset_state = c(list(AAA = list(n = k), BBB = NULL), extra)) else NULL
-    seen$updates[k] <- list(update)
-    list(targets = ctx$flat(), state_update = update)
-  }
-  bt <- ledgr_run(ledgr_experiment(snapshot, carry,
-    universe = ledgr_universe_members("u"),
-    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
-    opening = ledgr_opening(cash = 1000)
-  ), run_id = "carry")
-  on.exit(close(bt), add = TRUE)
-  testthat::expect_true(any(lengths(seen$axes) == 3L) && any(lengths(seen$axes) == 2L))
-  expected <- character(length(seen$axes))
-  previous <- list(
-    asset_state = stats::setNames(
-      rep(list(list()), length(seen$axes[[1L]])),
-      seen$axes[[1L]]
-    )
-  )
-  for (k in seq_along(seen$axes)) {
-    state <- if (is.null(seen$updates[[k]])) previous else seen$updates[[k]]
-    previous <- reference(state, seen$axes[[k]])
-    expected[[k]] <- as.character(ledgr:::canonical_json(previous))
-  }
-  got <- DBI::dbGetQuery(
-    ledgr:::get_connection(snapshot),
-    "SELECT state_json FROM strategy_state WHERE run_id = 'carry' ORDER BY ts_utc"
-  )$state_json
-  testthat::expect_identical(got, expected)
-})
-
 testthat::test_that("[LTB-0213] pair keys keep the original duplicates and order", {
   a <- c("x", "x", "y", NA, "NA", "y")
   b <- c("t1", "t1", "t1", "t2", "t2", NA)
@@ -265,34 +184,27 @@ testthat::test_that("[LTB-0213] pair keys keep the original duplicates and order
 
 })
 
-testthat::test_that("[LTB-0215] strategy state changed in place is persisted as it is on every pulse", {
+testthat::test_that("[LTB-0215] typed strategy state changed in place is persisted exactly", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:5)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   live <- new.env()
   live$x <- numeric()
   mutate <- function(ctx, params) {
-    st <- ctx$state_prev
-    if (!is.list(st) || is.null(st$x)) {
-      st <- list(x = 0)
-    } else {
-      collapse::setv(st, 1L, st$x + 1, vind1 = TRUE)
-    }
+    st <- unclass(ctx$state)
+    collapse::setv(st, 1L, st$x + 1, vind1 = TRUE)
     live$x <- c(live$x, st$x)
     list(targets = ctx$flat(), state_update = st)
   }
   bt <- ledgr_run(ledgr_experiment(snapshot, mutate,
+    portfolio_state = list(x = 0),
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   ), run_id = "in_place")
   on.exit(close(bt), add = TRUE)
-  got <- DBI::dbGetQuery(
-    ledgr:::get_connection(snapshot),
-    "SELECT state_json FROM strategy_state WHERE run_id = 'in_place' ORDER BY ts_utc"
-  )$state_json
-  expected <- vapply(live$x, function(x) as.character(ledgr:::canonical_json(list(x = x))), character(1))
+  got <- vapply(availability_state_values(bt), function(state) state$x, numeric(1))
   testthat::expect_gt(length(unique(live$x)), 3L)
-  testthat::expect_identical(got, expected)
+  testthat::expect_identical(got, live$x)
 })
 
 testthat::test_that("[LTB-0216] the dense results plane replays the ledger once, not per time", {

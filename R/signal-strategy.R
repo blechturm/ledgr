@@ -5,7 +5,7 @@
 #' contract: the returned strategy maps signals to a full named numeric target
 #' vector before the shared StrategyResult validator runs.
 #'
-#' Only eligible instruments (`ctx$vec$admissible`) are mapped from their
+#' Only eligible instruments (`ctx$buyable`) are mapped from their
 #' signals. Every ineligible instrument, a held nonmember or a target-restricted
 #' member, keeps its current quantity, whatever signal it received. On an empty
 #' decision axis the function is still called and the strategy returns a named
@@ -33,7 +33,8 @@
 #' strategy(
 #'   list(
 #'     universe = "AAA",
-#'     vec = list(admissible = TRUE, position = c(AAA = 0))
+#'     buyable = c(AAA = TRUE),
+#'     position = c(AAA = 0)
 #'   ),
 #'   list()
 #' )
@@ -71,10 +72,10 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
     }
     eligible <- ledgr_strategy_eligible(ctx, universe, class = "ledgr_invalid_strategy_result")
     current_targets <- function() {
-      position <- ctx$vec$position
+      position <- ctx$position
       if (is.null(position) || length(position) != length(universe)) {
         rlang::abort(
-          "`ctx$vec$position` must provide one value per decision-axis instrument when an instrument is ineligible.",
+          "`ctx$position` must provide one value per decision-axis instrument when an instrument is ineligible.",
           class = "ledgr_invalid_strategy_result"
         )
       }

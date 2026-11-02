@@ -8,12 +8,15 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
                                  policy = ledgr_history_policy(),
                                  opening = ledgr_opening(cash = 1000),
                                  features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
+                                 schedule = NULL,
                                  availability = TRUE,
                                  dividend = NULL,
                                  ccc_known = 7L,
                                  bbb_gaps = c(3L, 4L),
                                  valuation_policy = ledgr_valuation_stale(3),
-                                 corporate_action_policy = ledgr_corporate_actions_research()) {
+                                 corporate_action_policy = ledgr_corporate_actions_research(),
+                                 asset_state = list(),
+                                 portfolio_state = list()) {
   days <- as.Date("2021-01-04") + c(0:4, 7:9)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   k <- seq_along(days)
@@ -79,12 +82,54 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
       snapshot, strategy, universe = ledgr_universe_members("u"),
       features = features, valuation_policy = valuation_policy,
       cost_model = ledgr_cost_zero(), opening = opening, history_policy = policy,
-      corporate_action_policy = corporate_action_policy
+      schedule = schedule,
+      corporate_action_policy = corporate_action_policy,
+      asset_state = asset_state,
+      portfolio_state = portfolio_state
     )
   } else {
     NULL
   }
   list(snapshot = snapshot, exp = exp, days = days, axis = utc(days))
+}
+
+ws42_state_scope_defaults <- function(exp, scope) {
+  fields <- Filter(
+    function(field) identical(field$scope, scope),
+    exp$strategy_state$fields
+  )
+  stats::setNames(lapply(fields, function(field) {
+    if (!isTRUE(field$default_missing)) return(field$default_value)
+    switch(field$type,
+      numeric = NA_real_, integer = NA_integer_, logical = NA,
+      character = NA_character_)
+  }), vapply(fields, `[[`, character(1L), "name"))
+}
+
+ws42_with_schedule <- function(exp, schedule, strategy = NULL) {
+  if (is.null(strategy)) {
+    strategy <- ledgr:::ledgr_strategy_schedule_inner(exp$strategy)
+  }
+  universe <- if (is.null(exp$universe_rule)) exp$universe else exp$universe_rule
+  valuation_policy <- if (is.null(exp$valuation_policy)) NULL else exp$valuation_policy
+  ledgr_experiment(
+    snapshot = exp$snapshot,
+    strategy = strategy,
+    features = exp$features,
+    opening = exp$opening,
+    schedule = schedule,
+    universe = universe,
+    valuation_policy = valuation_policy,
+    timing_model = exp$timing_model,
+    cost_model = exp$cost_model,
+    risk_chain = exp$risk_chain,
+    execution_mode = exp$execution_mode,
+    metric_context = exp$metric_context,
+    corporate_action_policy = exp$corporate_action_policy,
+    history_policy = exp$history_policy,
+    asset_state = ws42_state_scope_defaults(exp, "asset"),
+    portfolio_state = ws42_state_scope_defaults(exp, "portfolio")
+  )
 }
 
 ws42_iso <- function(x) format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")

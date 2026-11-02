@@ -82,7 +82,7 @@ testthat::test_that("single-run cadence warning is honesty-only and identity-neu
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     metric_context = ledgr_metric_us_equity(),
@@ -198,7 +198,7 @@ testthat::test_that("summary discloses risk-free rate and annualization assumpti
     targets["AAA"] <- 1
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",

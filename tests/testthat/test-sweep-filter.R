@@ -257,7 +257,7 @@ testthat::test_that("ledgr_sweep_filter evaluates reopened retained evidence", {
     targets
   }
   sweep <- ledgr_sweep(
-    ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero()),
     ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2))),
     seed = 123L,
     retain = ledgr_sweep_retention("completed")

@@ -141,11 +141,8 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
 
   ind <- ledgr_adapter_r("TTR::RSI", id = "test_ttr_rsi", requires_bars = 15L, n = 14L)
   capture_strategy <- function(ctx, params) {
-    values <- vapply(ctx$universe, function(id) ctx$feature(id, params$feature), numeric(1))
-    list(
-      targets = ctx$flat(),
-      state_update = list(finite = as.list(stats::setNames(is.finite(values), names(values))))
-    )
+    values <- ctx[[params$feature]]
+    ledgr_strategy_result(ctx$flat(), finite = is.finite(values))
   }
 
   bt <- ledgr_test_run(
@@ -157,12 +154,13 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
     end = "2020-01-16",
     features = list(ind),
     db_path = db_path,
-  cost_model = ledgr_cost_zero()
+  cost_model = ledgr_cost_zero(),
+  asset_state = list(finite = NA)
   )
 
   state <- availability_last_state(bt)
   testthat::expect_setequal(names(state$finite), c("TEST_A", "TEST_B"))
-  testthat::expect_true(all(unlist(state$finite, use.names = FALSE)))
+  testthat::expect_true(all(state$finite))
 })
 
 # ledgr-test-profile: heavy_protocol
@@ -186,8 +184,8 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
 
   ind <- ledgr_adapter_csv(csv_path = csv_path, value_col = "signal", id = "test_csv_signal")
   capture_strategy <- function(ctx, params) {
-    values <- vapply(ctx$universe, function(id) ctx$feature(id, params$feature), numeric(1))
-    list(targets = ctx$flat(), state_update = list(values = as.list(values)))
+    values <- ctx[[params$feature]]
+    ledgr_strategy_result(ctx$flat(), values = values)
   }
 
   bt <- ledgr_test_run(
@@ -199,7 +197,8 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
     end = "2020-01-06",
     features = list(ind),
     db_path = db_path,
-  cost_model = ledgr_cost_zero()
+  cost_model = ledgr_cost_zero(),
+  asset_state = list(values = NA_real_)
   )
 
   state <- availability_last_state(bt)
@@ -208,7 +207,7 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
   last_keys <- paste(vapply(bars$ts_utc[last_rows], ledgr_iso_utc, character(1)), bars$instrument_id[last_rows], sep = "||")
   expected_key <- paste(csv_df$ts_utc, csv_df$instrument_id, sep = "||")
   testthat::expect_equal(
-    unlist(state$values[c("TEST_A", "TEST_B")], use.names = FALSE),
+    unname(state$values[c("TEST_A", "TEST_B")]),
     csv_df$signal[match(last_keys, expected_key)]
   )
 })

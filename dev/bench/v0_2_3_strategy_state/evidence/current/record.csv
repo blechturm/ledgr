@@ -1,0 +1,7 @@
+"case","pulses","instruments","state_fields","cursor_rows","payload_encodes","payload_bytes","marker_bytes","elapsed_seconds"
+"no_state",500,1,0,500,0,0,18500,2.6
+"declared_unchanged",500,1,1,500,0,0,18500,2.45
+"raw_identical",500,1,1,500,0,0,18500,1.46
+"changed_every_pulse",500,1,1,500,500,51892,0,1.36
+"wide_unchanged",100,500,4,100,0,0,3700,0.640000000000001
+"wide_changed",100,500,4,100,100,2568900,0,0.67

@@ -8,7 +8,7 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
@@ -81,7 +81,7 @@ testthat::test_that("feature factories resolve per candidate and dedupe by finge
     calls$n <- calls$n + 1L
     list(ledgr_ind_sma(params$n))
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
@@ -123,7 +123,7 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
@@ -166,12 +166,12 @@ testthat::test_that("windowed sweeps validate precomputed scoring and hydration 
   )
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    if (ctx$feature("AAA", "custom_close") > params$threshold) {
+    if (ctx[["custom_close"]][["AAA"]] > params$threshold) {
       targets[["AAA"]] <- params$qty
     }
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
@@ -220,7 +220,7 @@ testthat::test_that("runtime projection flattens bundle outputs to concrete feat
 
   bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = 5)
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
@@ -247,7 +247,7 @@ testthat::test_that("precompute aborts on static scoring coverage gaps", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
@@ -273,7 +273,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
 
   strategy <- function(ctx, params) ctx$flat()
   feature_factory <- function(params) list(ledgr_ind_sma(params$n))
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
@@ -292,7 +292,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
   on.exit(unlink(other_path), add = TRUE)
   other_snapshot <- ledgr_snapshot_from_df(changed_bars, db_path = other_path)
   on.exit(ledgr_snapshot_close(other_snapshot), add = TRUE)
-  other_exp <- ledgr_experiment(
+  other_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = other_snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
@@ -304,7 +304,7 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     class = "ledgr_precomputed_snapshot_mismatch"
   )
 
-  one_universe_exp <- ledgr_experiment(
+  one_universe_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
@@ -355,12 +355,12 @@ testthat::test_that("precomputed features refuse after a direct capture changes"
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     target <- ctx$flat()
-    value <- ctx$feature("AAA", "captured_scale")
+    value <- ctx[["captured_scale"]][["AAA"]]
     if (is.finite(value) && value > params$threshold) target[["AAA"]] <- 1
     target
   }
   experiment <- function(scale) {
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       features = list(make_indicator(scale)),
@@ -407,11 +407,11 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   windows <- c(fast = 5, slow = 20)
   strategy <- function(ctx, params) {
     target <- ctx$flat()
-    value <- ctx$feature("AAA", "trend")
+    value <- ctx[["trend"]][["AAA"]]
     if (is.finite(value)) target[["AAA"]] <- 1
     target
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = function(params) {
@@ -483,11 +483,11 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
   nm <- c("fast", "slow")
   alias_strategy <- function(ctx, params) {
     target <- ctx$flat()
-    value <- ctx$feature("AAA", "fast")
-    if (is.finite(value) && ctx$close("AAA") > value) target[["AAA"]] <- 1
+    value <- ctx[["fast"]][["AAA"]]
+    if (is.finite(value) && ctx$close[["AAA"]] > value) target[["AAA"]] <- 1
     target
   }
-  alias_exp <- ledgr_experiment(
+  alias_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     alias_strategy,
     features = function(params) {
@@ -584,7 +584,7 @@ testthat::test_that("precomputed candidates stay bound when captured windows are
     reordered_fresh$n_trades
   )
 
-  parameterized_exp <- ledgr_experiment(
+  parameterized_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     features = ledgr_feature_map(
@@ -628,7 +628,7 @@ testthat::test_that("candidate feature resolution captures candidate-specific fa
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
@@ -663,7 +663,7 @@ testthat::test_that("structural feature-factory invalidity aborts before candida
   strategy <- function(ctx, params) ctx$flat()
 
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot = snapshot,
       strategy = strategy,
       universe = "AAA",
@@ -702,7 +702,7 @@ testthat::test_that("future-only bar changes preserve eligible feature prefixes"
   make_precomputed <- function(input, path, snapshot_id) {
     snapshot <- ledgr_snapshot_from_df(input, db_path = path, snapshot_id = snapshot_id)
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-    exp <- ledgr_experiment(
+    exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       function(ctx, params) ctx$flat(),
       features = list(ledgr_ind_sma(3)),

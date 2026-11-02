@@ -83,7 +83,7 @@ testthat::test_that("[LTB-0196] availability features carry their state from the
   # (SMA 7), fills at session 9's open of 9 and ends at 1002. Restarted, SMA(3)
   # never exceeds 10 and the run ends flat at 1000.
   level_strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "window")
+    value <- ctx[["window"]][["AAA"]]
     target <- ctx$flat()
     if (!is.na(value) && value > 10) target[["AAA"]] <- 1
     target
@@ -92,7 +92,7 @@ testthat::test_that("[LTB-0196] availability features carry their state from the
   # session 6, fills at 7 and ends at 1003; restarted it would first exist on
   # session 8, fill at 9 and end at 1001.
   sma_strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "window")
+    value <- ctx[["window"]][["AAA"]]
     target <- ctx$flat()
     if (!is.na(value)) target[["AAA"]] <- 1
     target
@@ -154,7 +154,7 @@ testthat::test_that("[LTB-0196] availability features carry their state from the
     fixture$experiment(level_strategy, ledgr_opening(cash = 1000)),
     ts_utc = axis[[6L]]
   )
-  testthat::expect_identical(inspected$feature("AAA", "window"), 22)
+  testthat::expect_identical(inspected$window[["AAA"]], 22)
 })
 
 # ledgr-test-profile: review
@@ -176,7 +176,7 @@ testthat::test_that("fixed-basket entry points share the data-start feature rule
   # strategy buys on day 8, fills at the day-9 open of 9, still holds on day 10
   # (EMA 9) and ends at 1001; carrying the day-1 state it never trades.
   strategy <- function(ctx, params) {
-    recursive <- ctx$feature("AAA", "ttr_ema_3")
+    recursive <- ctx[["ttr_ema_3"]][["AAA"]]
     target <- ctx$flat()
     if (!is.na(recursive) && recursive <= 9) target[["AAA"]] <- 1
     target
@@ -258,7 +258,7 @@ testthat::test_that("fixed-basket entry points share the data-start feature rule
   # start it exists on day 6, fills at 7 and ends at 1003. Training on days
   # 6-8 buys at 7 and closes at 8 (1001).
   sma_strategy <- function(ctx, params) {
-    value <- ctx$feature("AAA", "sma_3")
+    value <- ctx[["sma_3"]][["AAA"]]
     target <- ctx$flat()
     if (!is.na(value)) target[["AAA"]] <- 1
     target
@@ -357,7 +357,7 @@ testthat::test_that("[LTB-0197] history has one start and no hydration seam rema
   fixture <- ws42_history_fixture()
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   pulse <- ledgr_pulse_snapshot(fixture$exp, ts_utc = fixture$axis[[2L]])
-  testthat::expect_identical(pulse$feature("AAA", "fast"), 11.5)
+  testthat::expect_identical(pulse$fast[["AAA"]], 11.5)
   windowed <- ledgr_precompute_features(
     fixture$exp, ledgr_grid_named(only = list(strategy = list())),
     start = fixture$days[[6L]]

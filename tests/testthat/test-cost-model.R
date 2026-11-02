@@ -120,7 +120,7 @@ testthat::test_that("timing constructor is accepted by ledgr_experiment", {
   strategy <- function(ctx, params) ctx$flat()
 
   timing <- ledgr_timing_next_open()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     timing_model = timing,
@@ -131,7 +131,7 @@ testthat::test_that("timing constructor is accepted by ledgr_experiment", {
   testthat::expect_s3_class(exp$timing_model, "ledgr_timing_model")
   testthat::expect_identical(exp$timing_model$type_id, "next_open")
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot = snapshot,
       strategy = strategy,
       timing_model = list(type_id = "next_open"),
@@ -149,7 +149,7 @@ testthat::test_that("optional cost identity is stored on experiments and configs
   strategy <- function(ctx, params) ctx$flat()
   cost <- ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
 
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     cost_model = cost
@@ -184,11 +184,11 @@ testthat::test_that("cost model is required and removed fill_model is unsupporte
   strategy <- function(ctx, params) ctx$flat()
 
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = strategy),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy),
     class = "ledgr_cost_model_unspecified"
   )
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot = snapshot,
       strategy = strategy,
       cost_model = ledgr_cost_zero(),
@@ -214,7 +214,7 @@ testthat::test_that("[LTB-0005] cost model applies half-spread price transforms 
     targets
   }
   cost <- ledgr_cost_chain(ledgr_cost_spread_bps(100), ledgr_cost_fixed_fee(2))
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = cost)
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = cost)
   bt <- ledgr_run(exp, run_id = "cost-arithmetic")
   on.exit(close(bt), add = TRUE)
   fills <- ledgr_results(bt, "fills")
@@ -254,7 +254,7 @@ testthat::test_that("direct run, sweep candidate, and promotion preserve cost id
     targets
   }
   cost <- ledgr_cost_chain(ledgr_cost_spread_bps(25), ledgr_cost_fixed_fee(1))
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = cost)
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = cost)
   grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1)))
 
   sweep <- ledgr_sweep(exp, grid, seed = 123L)
@@ -286,7 +286,7 @@ testthat::test_that("experiments require costs and have no fill_model formal", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   on.exit(unlink(db_path), add = TRUE)
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       cost_model = ledgr_cost_zero(),

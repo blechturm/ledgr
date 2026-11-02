@@ -28,6 +28,9 @@ source is available.}
 \item{strategy_source_hash}{Stored source hash, or \code{NA} if unavailable.}
 \item{strategy_params}{Decoded strategy parameter list.}
 \item{strategy_params_hash}{Stored strategy parameter hash.}
+\item{strategy_schedule}{Verified canonical schedule declaration, or
+\code{NULL} for an unscheduled run. To rebuild the run, pass this field to
+\code{\link[=ledgr_experiment]{ledgr_experiment()}} as \code{schedule = strategy_schedule}.}
 \item{reproducibility_level}{Stored reproducibility tier.}
 \item{strategy_type}{Stored strategy type.}
 \item{strategy_source_capture_method}{How source was captured.}

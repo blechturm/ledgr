@@ -1,8 +1,4 @@
 strategy_context_projection_capture <- function(ctx, params) {
-  previous <- ctx$state_prev$history
-  if (is.null(previous)) previous <- character()
-  previous_exposure <- ctx$state_prev$projection_exposed
-  if (is.null(previous_exposure)) previous_exposure <- logical()
   retired_names <- c(
     ".feature_projection", ".feature_pulse_idx", ".feature_ids"
   )
@@ -29,20 +25,16 @@ strategy_context_projection_capture <- function(ctx, params) {
     vapply(context_values, exposed_value, logical(1)),
     vapply(context_values, exposed_container, logical(1))
   ))
-  scalar <- ctx$feature("AAA", "sma_2")
-  plane <- ctx$vec$feature("sma_2")[[1L]]
-  bundle <- ctx$features("AAA")[["signal"]]
+  scalar <- ctx[["sma_2"]][["AAA"]]
+  plane <- ctx[["sma_2"]][[1L]]
+  bundle <- ctx$signal[["AAA"]]
   encode <- function(value) {
     if (is.na(value)) "NA" else format(value, digits = 17, trim = TRUE)
   }
   entry <- paste(vapply(c(scalar, plane, bundle), encode, character(1)),
                  collapse = "|")
-  list(
-    targets = ctx$hold(),
-    state_update = list(
-      history = c(as.character(previous), entry),
-      projection_exposed = c(previous_exposure, projection_exposed)
-    )
+  ledgr_strategy_result(
+    ctx$hold(), entry = entry, projection_exposed = projection_exposed
   )
 }
 
@@ -76,23 +68,23 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     feature_ids = "signal"
   )
 
-  testthat::expect_null(ctx$.feature_projection)
-  testthat::expect_null(ctx$.feature_pulse_idx)
-  testthat::expect_null(ctx$.feature_ids)
+  testthat::expect_error(ctx$.feature_projection, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$.feature_pulse_idx, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$.feature_ids, class = "ledgr_unknown_context_field")
   testthat::expect_false(any(vapply(
     unclass(ctx),
     function(value) inherits(value, "ledgr_runtime_projection"),
     logical(1)
   )))
   testthat::expect_true(is.function(ctx$.feature_table_current))
-  testthat::expect_identical(ctx$feature("AAA", "signal"), NA_real_)
-  testthat::expect_identical(ctx$vec$feature("signal"), c(NA_real_, NA_real_))
+  testthat::expect_identical(ctx[["signal"]][["AAA"]], NA_real_)
+  testthat::expect_identical(ctx[["signal"]], c(AAA = NA_real_, BBB = NA_real_))
   first_table <- ledgr_pulse_features(ctx)
   testthat::expect_true(all(first_table$ts_utc == pulses[[1L]]))
   testthat::expect_equal(first_table$feature_value, c(NA_real_, NA_real_))
   testthat::expect_error(
-    ctx$feature("AAA", "future_signal"),
-    class = "ledgr_unknown_feature_id"
+    ctx[["future_signal"]][["AAA"]],
+    class = "ledgr_unknown_context_field"
   )
 
   second_bars <- bars
@@ -106,7 +98,7 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     pulse_idx = 2L,
     feature_ids = "signal"
   )
-  testthat::expect_identical(second$vec$feature("signal"), c(11, 21))
+  testthat::expect_identical(second[["signal"]], c(AAA = 11, BBB = 21))
   second_table <- ledgr_pulse_features(second)
   testthat::expect_true(all(second_table$ts_utc == pulses[[2L]]))
   testthat::expect_equal(second_table$feature_value, c(11, 21))
@@ -132,18 +124,20 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(availability_snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
-  dense_run <- ledgr_run(ledgr_experiment(
+  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy_context_projection_capture,
     features = features,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(entry = "", projection_exposed = FALSE)
   ))
-  availability_run <- ledgr_run(ledgr_experiment(
+  availability_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     availability_snapshot,
     strategy_context_projection_capture,
     features = features,
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(entry = "", projection_exposed = FALSE)
   ))
   on.exit(close(dense_run), add = TRUE)
   on.exit(close(availability_run), add = TRUE)
@@ -151,19 +145,19 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     "NA|NA|NA", "101.5|101.5|101.5", "102.5|102.5|102.5",
     "103.5|103.5|103.5", "104.5|104.5|104.5"
   )
-  dense_state <- availability_last_state(dense_run)
-  availability_state <- availability_last_state(availability_run)
-  testthat::expect_identical(dense_state$history, expected)
+  dense_state <- availability_state_values(dense_run)
+  availability_state <- availability_state_values(availability_run)
+  testthat::expect_identical(vapply(dense_state, `[[`, character(1L), "entry"), expected)
   testthat::expect_identical(
-    availability_state$history,
+    vapply(availability_state, `[[`, character(1L), "entry"),
     expected
   )
   testthat::expect_identical(
-    dense_state$projection_exposed,
+    vapply(dense_state, `[[`, logical(1L), "projection_exposed"),
     rep(FALSE, length(expected))
   )
   testthat::expect_identical(
-    availability_state$projection_exposed,
+    vapply(availability_state, `[[`, logical(1L), "projection_exposed"),
     rep(FALSE, length(expected))
   )
 })

@@ -470,11 +470,11 @@ testthat::test_that("availability parser optimization ships with the single-asse
 testthat::test_that("availability marks use one query and preserve the prefix oracle", {
   snapshot <- availability_runtime_fixture(days = 5L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       target <- ctx$hold()
-      target[ctx$vec$member & !ctx$vec$target_restricted] <- 1
+      target[ctx$buyable] <- 1
       target
     },
     valuation_policy = ledgr_valuation_stale(2),

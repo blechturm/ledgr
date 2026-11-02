@@ -460,6 +460,7 @@ ledgr_walk_forward_base_config <- function(exp, meta) {
     valuation_policy = exp$valuation_policy,
     corporate_action_policy = exp$corporate_action_policy,
     history_policy = exp$history_policy,
+    strategy_state = exp$strategy_state,
     price_basis = exp$data_identity$price_basis
   )
 }
@@ -1274,6 +1275,20 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
     ledgr_prepare_accounting_events(events, universe),
     initial_cash = as.numeric(exp$opening$cash)
   )
+  initial_facts <- ledgr_position_facts_from_carried(
+    exp$opening$carried,
+    replay$prepared$instrument_ids,
+    history_substrate$axis
+  )
+  carried_facts <- ledgr_position_facts_carried(
+    ledgr_position_facts_from_replay(
+      replay,
+      history_substrate$axis,
+      initial_state = initial_facts
+    ),
+    replay$prepared$instrument_ids,
+    history_substrate$axis
+  )
   positions <- replay$positions
   held <- positions[is.finite(positions) & abs(positions) > 1e-12]
   if (any(held < 0)) {
@@ -1295,7 +1310,10 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
   )
   if (length(held) == 0L) {
     opening <- ledgr_opening(cash = replay$cash)
-    opening$carried <- list(lots = NULL, pending = pending, frozen = frozen)
+    opening$carried <- list(
+      lots = NULL, pending = pending, frozen = frozen,
+      position_facts = carried_facts
+    )
     return(opening)
   }
   # Result boundary: the replayed book's live lots of each held ID, in
@@ -1316,7 +1334,10 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
     positions = held,
     cost_basis = stats::setNames(basis, ids)
   )
-  opening$carried <- list(lots = lots, pending = pending, frozen = frozen)
+  opening$carried <- list(
+    lots = lots, pending = pending, frozen = frozen,
+    position_facts = carried_facts
+  )
   opening
 }
 

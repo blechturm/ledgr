@@ -397,7 +397,7 @@ ws43_parity_snapshot <- function() {
 ws43_parity_strategy <- function(ctx, params) {
   ids <- c("sma_2", "ret", "ema", "macd_signal", "bb_up", "custom")
   values <- unlist(lapply(c("AAA", "BBB"), function(instrument) {
-    vapply(ids, function(id) ctx$features(instrument)[[id]], numeric(1))
+    vapply(ids, function(id) ctx[[id]][[instrument]], numeric(1))
   }))
   warning(
     sprintf(
@@ -429,7 +429,7 @@ testthat::test_that("[LTB-0312] feature bytes and failure classes match across r
     bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 3L),
     custom = ledgr_indicator("custom_last", function(window) window$close[[nrow(window)]], requires_bars = 2L)
   )
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     ws43_parity_strategy,
     features = features,
@@ -468,7 +468,7 @@ testthat::test_that("[LTB-0312] feature bytes and failure classes match across r
     history_class = "bounded",
     required_fields = "close"
   )
-  refusing <- ledgr_experiment(
+  refusing <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) stop("strategy must not run"),
     features = list(mismatch),
@@ -580,7 +580,7 @@ testthat::test_that("[LTB-0314] a custom input_carry declaration excludes carrie
   snapshot <- availability_runtime_fixture(days = 4L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   testthat::expect_error(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       function(ctx, params) stop("strategy must not run"),
       features = list(relabelled),

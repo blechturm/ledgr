@@ -670,6 +670,7 @@ fingerprint_names <- c(
   "ledgr_saved_sweep_schema_version",
   "ledgr_selection_rule_schema_version",
   "ledgr_snapshot_content_hash_rule_version",
+  "ledgr_strategy_state_rule_version",
   "ledgr_sweep_filter_schema_version",
   "ledgr_sweep_retention_schema_version",
   "ledgr_timing_schema_version",

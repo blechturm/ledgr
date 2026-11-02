@@ -2,8 +2,10 @@
   "cash",
   "positions",
   "lot_state",
-  "state_prev",
+  "strategy_state",
+  "position_facts",
   "state_axis",
+  "state_axis_changed",
   "event_seq",
   "status",
   "stop_reason",
@@ -25,8 +27,10 @@ ledgr_fold_state_new <- function(
     cash,
     positions,
     lot_state,
-    state_prev = NULL,
+    strategy_state = list(),
+    position_facts = NULL,
     state_axis = NULL,
+    state_axis_changed = FALSE,
     event_seq = 1L,
     status = "DONE",
     stop_reason = NA_character_,
@@ -51,8 +55,10 @@ ledgr_fold_state_new <- function(
   out$cash <- cash
   out$positions <- positions
   out$lot_state <- lot_state
-  out$state_prev <- state_prev
+  out$strategy_state <- strategy_state
+  out$position_facts <- position_facts %||% ledgr_position_fact_state(length(positions))
   out$state_axis <- state_axis
+  out$state_axis_changed <- state_axis_changed
   out$event_seq <- event_seq
   out$status <- status
   out$stop_reason <- stop_reason
@@ -106,8 +112,14 @@ ledgr_fold_state_validate <- function(x) {
   # holding positions without lots). Settled by the cut 5 amendment of 2026-10-30 (LDG-3164).
   exposure_fields <- c("value", "details", "ts_utc", "specified")
   if (!is.numeric(x$cash) || length(x$cash) != 1L || !is.finite(x$cash) ||
-      is.data.frame(x$state_prev) ||
+      !is.list(x$strategy_state) ||
+      !is.list(x$position_facts) ||
+      !identical(names(x$position_facts), c("entry_bar", "exit_bar")) ||
+      length(x$position_facts$entry_bar) != length(x$positions) ||
+      length(x$position_facts$exit_bar) != length(x$positions) ||
       !(is.null(x$state_axis) || is.character(x$state_axis)) ||
+      !is.logical(x$state_axis_changed) || length(x$state_axis_changed) != 1L ||
+      is.na(x$state_axis_changed) ||
       !is.integer(x$event_seq) || length(x$event_seq) != 1L ||
       is.na(x$event_seq) || x$event_seq < 1L ||
       !is.character(x$status) || length(x$status) != 1L ||

@@ -34,10 +34,14 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
     seen <- new.env(parent = emptyenv())
     for (id in ids) seen[[id]] <- numeric()
     strategy <- function(ctx, params) {
-      for (id in names(seen)) seen[[id]] <- c(seen[[id]], ctx$feature("AAA", id))
+      for (id in names(seen)) seen[[id]] <- c(seen[[id]], ctx[[id]][["AAA"]])
       ctx$hold()
     }
-    args <- list(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
+    args <- list(
+      snapshot, strategy, features = features,
+      opening = ledgr_opening(cash = 1000),
+      cost_model = ledgr_cost_zero()
+    )
     if (isTRUE(availability)) args$valuation_policy <- ledgr_valuation_stale(1L)
     exp <- do.call(ledgr_experiment, args)
     close(ledgr_run(exp, run_id = run_id))
@@ -90,7 +94,7 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
 
   # Runs, sweeps and two-worker sweeps leave the registry as they found it.
   grid <- ledgr_grid_named(one = list(strategy = list()))
-  sweep_exp <- ledgr_experiment(
+  sweep_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     availability, function(ctx, params) ctx$hold(),
     features = c(custom, custom_3),
     valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero()
@@ -107,7 +111,7 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
   # experiment construction and again when a config is built.
   clash <- list(custom_3[[1L]], ledgr_indicator("sma_3", function(window) 44, requires_bars = 3L))
   testthat::expect_error(
-    ledgr_experiment(dense, function(ctx, params) ctx$hold(), features = clash, cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), dense, function(ctx, params) ctx$hold(), features = clash, cost_model = ledgr_cost_zero()),
     class = "ledgr_duplicate_feature_id"
   )
   testthat::expect_error(ledgr:::ledgr_feature_indicator_index(clash), class = "ledgr_invalid_args")

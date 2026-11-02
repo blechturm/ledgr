@@ -1,5 +1,36 @@
 # ledgr (development version)
 
+- Strategy sizing now leaves typed, per-instrument decision evidence for
+  requested, pre-floor and rounded quantities, the sizing price, prior
+  position and reason. Run summaries distinguish exposure-weighted sizing
+  coverage from final actual exposure; raw named-quantity strategies report
+  helper coverage as unavailable rather than inferring it from fills.
+- The maintained peer and long-window benchmark strategies now use the flat
+  strategy context, declared strategy state, external schedules and current
+  selection, weighting and target verbs. Frozen trailing-stop and Turtle
+  ports preserve their 58- and 741-fill reference outcomes.
+- `vignette("strategy-authoring-tools")` now teaches six reusable portfolio
+  patterns: fixed mix, filter, rank-and-rotate, fixed-slot filling, preserved
+  holdings and leavers, and position facts with declared memory.
+- Strategy authoring now ranks ordinary named score vectors with
+  `ledgr_select_top()` or `ledgr_select_lowest()`, produces strict plain named
+  weights with `ledgr_weight_equal()`, and sizes complete targets through the
+  ctx-first `ledgr_target_rebalance()` and `ledgr_target_adjust()` verbs.
+  Experiments require explicit `opening` and `cost_model` inputs and accept a
+  schedule through `schedule =`; mixed-cadence callbacks can query the same
+  compiled calendar through `ledgr_schedule_due()`. The former public
+  signal-feature, top-n and schedule-wrapper constructors are removed without
+  aliases.
+- Strategy pulse contexts are now flat named lazy views. Read bar, position,
+  eligibility, holding-value, position-fact and declared-feature columns
+  directly (for example `ctx$close`, `ctx$buyable`, `ctx$entry_price` and
+  `ctx$return_5`). Each requested column is built at most once per pulse and
+  saved views are frozen. The nested `ctx$vec`, scalar readers,
+  `ctx$feature()`, `ctx$features()`, `ctx$idx()` and `ctx$tradable()` surfaces
+  and scalar-loop warnings are removed; unknown fields raise
+  `ledgr_unknown_context_field`. Position facts are maintained and rebuilt by
+  the canonical accounting transition and survive resume and contiguous
+  carry without a second replay path.
 - Every experiment now prepares one execution substrate and enters one fold
   path. Fixed baskets derive a disclosed `bar_native` pulse clock from their
   sealed bar timestamps; experiments with declared sessions keep that clock.

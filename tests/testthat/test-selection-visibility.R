@@ -311,7 +311,7 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   )
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   dense <- ledgr_run(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       dense_snapshot,
       function(ctx, params) ctx$flat(),
       cost_model = ledgr_cost_zero()

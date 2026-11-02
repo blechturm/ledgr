@@ -8,7 +8,7 @@ testthat::test_that("ledgr_run stores recoverable metric context outside executi
   context <- ledgr_metric_us_equity(
     risk_free_rate = ledgr_risk_free_rate(0.04, label = "policy label", source = "manual", as_of = "2026-05-24")
   )
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     metric_context = context,
@@ -49,13 +49,13 @@ testthat::test_that("metric context changes do not change execution config hashe
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
 
-  exp_zero <- ledgr_experiment(
+  exp_zero <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     metric_context = ledgr_metric_context(risk_free_rate = 0),
     cost_model = ledgr_cost_zero()
   )
-  exp_rf <- ledgr_experiment(
+  exp_rf <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     metric_context = ledgr_metric_context(risk_free_rate = 0.05),

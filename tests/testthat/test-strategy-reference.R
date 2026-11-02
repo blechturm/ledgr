@@ -32,52 +32,26 @@ testthat::test_that("ledgr_signal_return reads registered return features", {
 
   testthat::expect_error(
     ledgr_signal_return(ctx, lookback = 3),
-    class = "ledgr_unknown_feature_id"
+    class = "ledgr_unknown_context_field"
   )
 })
 
-testthat::test_that("[LTB-0096] ledgr_select_top_n makes short rankings explicit", {
-  signal <- ledgr_signal(c(BBB = 0.3, AAA = 0.3, CCC = NA_real_, DDD = 0.1))
+testthat::test_that("[LTB-0096] ledgr_select_top makes short rankings explicit", {
+  score <- c(BBB = 0.3, AAA = 0.3, CCC = NA_real_, DDD = 0.1)
 
-  selected <- ledgr_select_top_n(signal, 2)
-  testthat::expect_s3_class(selected, "ledgr_selection")
-  testthat::expect_identical(unclass(selected), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = FALSE))
+  selected <- ledgr_select_top(score, n = 2)
+  testthat::expect_identical(selected, c("AAA", "BBB"))
+  testthat::expect_identical(ledgr_select_top(score, n = 4), c("AAA", "BBB", "DDD"))
+  testthat::expect_identical(
+    ledgr_select_top(score, fraction = 0.5),
+    c("AAA", "BBB")
+  )
 
-  testthat::expect_warning(
-    partial <- ledgr_select_top_n(signal, 4),
-    regexp = 'partial = "allow"',
-    class = "ledgr_partial_selection"
-  )
-  testthat::expect_identical(unclass(partial), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = TRUE))
-  testthat::expect_no_warning(
-    allowed <- ledgr_select_top_n(signal, 4, partial = "allow")
-  )
-  testthat::expect_identical(allowed, partial)
-
-  empty_signal <- ledgr_signal(c(AAA = NA_real_, BBB = NA_real_), origin = "return_60")
-  testthat::expect_silent(
-    empty <- ledgr_select_top_n(empty_signal, 1)
-  )
-  testthat::expect_s3_class(empty, "ledgr_empty_selection")
-  testthat::expect_s3_class(empty, "ledgr_selection")
-  testthat::expect_identical(unclass(empty)[c("AAA", "BBB")], c(AAA = FALSE, BBB = FALSE))
-  testthat::expect_identical(names(empty), c("AAA", "BBB"))
-  testthat::expect_identical(attr(empty, "origin"), "return_60")
-  testthat::expect_silent(
-    empty_allowed <- ledgr_select_top_n(empty_signal, 1, partial = "allow")
-  )
-  testthat::expect_identical(empty_allowed, empty)
-  testthat::expect_error(
-    ledgr_select_top_n(signal, 2, partial = "quiet"),
-    regexp = '"warn" or "allow"',
-    class = "ledgr_invalid_strategy_helper"
-  )
+  empty <- ledgr_select_top(c(AAA = NA_real_, BBB = NA_real_), n = 1)
+  testthat::expect_identical(empty, character())
 
   weights <- ledgr_weight_equal(empty)
-  testthat::expect_s3_class(weights, "ledgr_weights")
-  testthat::expect_identical(length(weights), 0L)
-  testthat::expect_identical(attr(weights, "universe"), c("AAA", "BBB"))
-  testthat::expect_identical(attr(weights, "origin"), "return_60")
+  testthat::expect_identical(weights, stats::setNames(numeric(), character()))
 
   ts <- ledgr_utc("2020-01-03")
   bars <- data.frame(
@@ -97,24 +71,21 @@ testthat::test_that("[LTB-0096] ledgr_select_top_n makes short rankings explicit
     cash = 1000,
     equity = 1000
   )
-  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
+  target <- ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.5)
   testthat::expect_s3_class(target, "ledgr_target")
   testthat::expect_identical(as.numeric(target), c(0, 0))
   testthat::expect_identical(names(target), c("AAA", "BBB"))
-  testthat::expect_identical(attr(target, "origin"), "return_60")
+  testthat::expect_identical(attr(target, "origin")$invest_fraction, 0.5)
 })
 
 testthat::test_that("ledgr_weight_equal creates long-only equal weights", {
-  selection <- ledgr_selection(c(AAA = TRUE, BBB = FALSE, CCC = TRUE))
+  selection <- c("AAA", "CCC")
   weights <- ledgr_weight_equal(selection)
 
-  testthat::expect_s3_class(weights, "ledgr_weights")
-  testthat::expect_identical(unclass(weights), c(AAA = 0.5, CCC = 0.5))
+  testthat::expect_identical(weights, c(AAA = 0.5, CCC = 0.5))
 
-  empty <- ledgr_weight_equal(ledgr_selection(c(AAA = FALSE, BBB = FALSE)))
-  testthat::expect_s3_class(empty, "ledgr_weights")
-  testthat::expect_identical(length(empty), 0L)
-  testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
+  empty <- ledgr_weight_equal(character())
+  testthat::expect_identical(empty, stats::setNames(numeric(), character()))
 })
 
 testthat::test_that("ledgr_target_rebalance builds full-universe targets and rejects invalid weights", {
@@ -137,31 +108,31 @@ testthat::test_that("ledgr_target_rebalance builds full-universe targets and rej
     equity = 1000
   )
 
-  target <- ledgr_target_rebalance(ledgr_weights(c(AAA = 0.5, BBB = 0.25)), ctx)
+  target <- ledgr_target_rebalance(ctx, weights = c(AAA = 0.5, BBB = 0.25))
   testthat::expect_s3_class(target, "ledgr_target")
-  testthat::expect_identical(unclass(target), c(AAA = 5, BBB = 5, CCC = 0))
+  testthat::expect_identical(stats::setNames(as.numeric(target), names(target)), c(AAA = 5, BBB = 5, CCC = 0))
 
-  empty <- ledgr_target_rebalance(ledgr_weights(numeric()), ctx)
-  testthat::expect_identical(unclass(empty), c(AAA = 0, BBB = 0, CCC = 0))
+  empty <- ledgr_target_rebalance(ctx)
+  testthat::expect_identical(stats::setNames(as.numeric(empty), names(empty)), c(AAA = 0, BBB = 0, CCC = 0))
 
   testthat::expect_no_warning(
-    bad_price <- ledgr_target_rebalance(ledgr_weights(c(CCC = 0.25)), ctx)
+    bad_price <- ledgr_target_rebalance(ctx, weights = c(CCC = 0.25))
   )
   testthat::expect_identical(as.numeric(bad_price), c(0, 0, 0))
   testthat::expect_identical(names(bad_price), c("AAA", "BBB", "CCC"))
   testthat::expect_identical(attr(bad_price, "sizing_skipped", exact = TRUE), "CCC")
 
   testthat::expect_error(
-    ledgr_target_rebalance(ledgr_weights(c(AAA = -0.1)), ctx),
-    class = "ledgr_negative_weights"
+    ledgr_target_rebalance(ctx, weights = c(AAA = -0.1)),
+    class = "ledgr_invalid_strategy_type"
   )
   testthat::expect_error(
-    ledgr_target_rebalance(ledgr_weights(c(AAA = 0.8, BBB = 0.3)), ctx),
-    class = "ledgr_levered_weights"
+    ledgr_target_rebalance(ctx, weights = c(AAA = 0.8, BBB = 0.3)),
+    class = "ledgr_invalid_strategy_type"
   )
   testthat::expect_error(
-    ledgr_target_rebalance(ledgr_weights(c(ZZZ = 0.1)), ctx),
-    class = "ledgr_invalid_strategy_helper"
+    ledgr_target_rebalance(ctx, weights = c(ZZZ = 0.1)),
+    class = "ledgr_invalid_strategy_type"
   )
 })
 
@@ -191,21 +162,18 @@ testthat::test_that("[LTB-0066] strategy helpers consume only vector accessors",
     cash = 1000,
     equity = 1000
   )
-  ctx$feature <- function(...) rlang::abort("scalar feature path should not be used")
-  ctx$close <- function(...) rlang::abort("scalar close path should not be used")
-
   signal <- ledgr_signal_return(ctx, lookback = 2)
-  weights <- ledgr_weight_equal(ledgr_select_top_n(signal, 1))
-  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
+  weights <- ledgr_weight_equal(ledgr_select_top(signal, n = 1))
+  target <- ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.5)
 
   testthat::expect_identical(as.numeric(signal), c(0.02, 0.01))
   testthat::expect_identical(as.numeric(target), c(5, 0))
   testthat::expect_identical(names(target), c("AAA", "BBB"))
 
-  empty <- ledgr_target_rebalance(ledgr_weights(numeric()), ctx)
+  empty <- ledgr_target_rebalance(ctx)
   all_names <- ledgr_target_rebalance(
-    ledgr_weights(c(AAA = 0.5, BBB = 0.5)),
-    ctx
+    ctx,
+    weights = c(AAA = 0.5, BBB = 0.5)
   )
   testthat::expect_identical(as.numeric(empty), c(0, 0))
   testthat::expect_identical(as.numeric(all_names), c(5, 10))
@@ -231,11 +199,11 @@ testthat::test_that("[LTB-0092] context helper pipeline agrees across run and sw
   strategy <- function(ctx, params) {
     signal <- ledgr_signal(
       ctx,
-      values = ctx$vec$feature(paste0("return_", params$lookback))
+      values = ctx[[paste0("return_", params$lookback)]]
     )
-    selection <- ledgr_select_top_n(signal, params$n)
+    selection <- ledgr_select_top(signal, n = params$n)
     weights <- ledgr_weight_equal(selection)
-    ledgr_target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
+    ledgr_target_rebalance(ctx, weights = weights, invest_fraction = params$equity_fraction)
   }
   exp <- ledgr_experiment(
     snapshot = snapshot,

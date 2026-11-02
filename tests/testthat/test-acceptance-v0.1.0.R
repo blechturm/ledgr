@@ -287,9 +287,10 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
     ),
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
     features = list(enabled = TRUE, defs = list(list(id = "sma_2"))),
-    strategy = list(id = "state_prev", params = list())
+    strategy = list(id = "hold_zero", params = list())
   )
   cfg <- ledgr_test_modernize_config(cfg)
+  cfg <- ledgr_test_use_state_counter(cfg)
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at8_snapshot")
 
   run_id <- "at8-run-1"

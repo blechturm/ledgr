@@ -50,9 +50,9 @@ to work with it does not exist, and the strategy holds nothing.
 features <- list(ledgr_ind_sma(20))
 
 strategy <- function(ctx, params) {
-  sma <- ctx$vec$feature("sma_20")
+  sma <- ctx$sma_20
   if (!ledgr_passed_warmup(sma)) return(ctx$flat())
-  above <- ctx$vec$close / sma - 1 > params$threshold
+  above <- ctx$close / sma - 1 > params$threshold
   targets <- ctx$flat()
   targets[above] <- params$qty
   targets

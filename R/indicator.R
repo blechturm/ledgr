@@ -175,7 +175,7 @@ ledgr_indicator <- function(id,
 #' Get feature IDs from ledgr indicators
 #'
 #' Returns the exact feature ID strings that strategies should pass to
-#' `ctx$feature(instrument_id, name)`. This helper reads the existing indicator
+#' `ctx[[name]][[instrument_id]]`. This helper reads the existing indicator
 #' IDs; it does not generate aliases or change the ID scheme.
 #'
 #' @param x A `ledgr_indicator` object, a `ledgr_indicator_bundle`, a list of

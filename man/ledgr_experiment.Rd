@@ -8,7 +8,10 @@ ledgr_experiment(
   snapshot,
   strategy,
   features = list(),
-  opening = ledgr_opening(cash = 1e+05),
+  opening,
+  schedule = NULL,
+  asset_state = list(),
+  portfolio_state = list(),
   universe = NULL,
   valuation_policy = NULL,
   timing_model = ledgr_timing_next_open(),
@@ -34,6 +37,14 @@ advanced exact-ID workflows, but new parameterized feature sweeps should use
 \code{ledgr_strategy_grid()}, and \code{ledgr_grid_cross()}.}
 
 \item{opening}{A \code{ledgr_opening} object.}
+
+\item{schedule}{Optional declaration from a \verb{ledgr_schedule_*()} helper.
+When supplied, the outer scheduler invokes the strategy only on due
+pulses. Omit it for every-pulse or mixed-cadence callbacks.}
+
+\item{asset_state, portfolio_state}{Flat named lists of typed scalar defaults
+for declared strategy state. Asset fields are exposed as ID-named vectors
+over each pulse's decision axis; portfolio fields remain scalar.}
 
 \item{universe}{Character vector of instrument IDs, \code{NULL} for all
 instruments in the snapshot, or a rule from \code{\link[=ledgr_universe_members]{ledgr_universe_members()}}.}
@@ -115,7 +126,7 @@ snapshot <- ledgr_snapshot_from_df(bars)
 strategy <- function(ctx, params) {
   stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
 }
-exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
 inherits(exp, "ledgr_experiment")
 ledgr_snapshot_close(snapshot)
 }

@@ -728,8 +728,8 @@ testthat::test_that("[LTB-0229] top-n ties break in C-locale order under any col
   picked <- list()
   for (locale in c("C", "English_United States.1252", "en_US.UTF-8")) {
     if (!nzchar(suppressWarnings(Sys.setlocale("LC_COLLATE", locale)))) next
-    selection <- ledgr_select_top_n(signal, 2)
-    picked[[locale]] <- names(selection)[selection]
+    selection <- ledgr_select_top(signal, 2)
+    picked[[locale]] <- selection
   }
   testthat::expect_gte(length(picked), 2L)
   for (p in picked) testthat::expect_identical(sort(p, method = "radix"), c("A4", "B1"))
@@ -980,13 +980,13 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   buy <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- params$qty
     target
   }
   buy_twice <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- 2 * params$qty
     target
   }
@@ -1054,13 +1054,13 @@ testthat::test_that("[LTB-0242] promotion warns on each policy, universe and ope
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   buy <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- params$qty
     target
   }
   buy_twice <- function(ctx, params) {
     target <- ctx$hold()
-    ids <- ctx$tradable()
+    ids <- names(ctx$buyable)[ctx$buyable]
     if (length(ids)) target[ids] <- 2 * params$qty
     target
   }

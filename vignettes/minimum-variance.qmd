@@ -248,16 +248,13 @@ min_variance <- function(ctx, params) {
   solution[solution < 0] <- 0
   solution <- solution / sum(solution)
 
-  targets <- solution |>
-    ledgr_align_weights(returns) |>
-    ledgr_target_rebalance(
-      ctx,
-      equity_fraction = params$equity_fraction
-    )
-
-  # This strategy follows the point-in-time index. A holding that has left
-  # the membership universe is therefore assigned a zero target.
-  targets[!ctx$vec$member] <- 0
+  weights <- ledgr_align_weights(solution, returns)
+  targets <- ledgr_target_rebalance(
+    ctx,
+    weights = weights,
+    index_leavers = "sell",
+    invest_fraction = params$equity_fraction
+  )
 
   list(targets = targets, intent_reason = "rebalanced")
 }
@@ -286,13 +283,12 @@ same target intent costs; it does not change the covariance estimate.
 
 exp <- ledgr_experiment(
   snapshot,
-  ledgr_strategy_schedule(
-    min_variance,
-    ledgr_schedule_month_start()
-  ),
+  min_variance,
+  schedule = ledgr_schedule_month_start(),
   features = list(ledgr_ind_returns(1L)),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
-  cost_model = ledgr_cost_zero()
+  cost_model = ledgr_cost_zero(),
+  opening = ledgr_opening(cash = 100000)
 )
 ```
 

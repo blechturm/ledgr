@@ -4,17 +4,20 @@
 \alias{ledgr_weight_equal}
 \title{Convert a selection to equal long-only weights}
 \usage{
-ledgr_weight_equal(selection)
+ledgr_weight_equal(selection, each = NULL)
 }
 \arguments{
-\item{selection}{A \code{ledgr_selection} object.}
+\item{selection}{Unique instrument IDs.}
+
+\item{each}{Optional finite non-negative weight assigned to every selected
+instrument. Without it, the selected instruments share weight one.}
 }
 \value{
-A \code{ledgr_weights} object.
+A plain named double vector.
 }
 \description{
-\code{ledgr_weight_equal()} assigns equal positive weights to selected instruments.
-Empty selections produce empty weights.
+\code{ledgr_weight_equal()} assigns equal non-negative weights to an ordinary
+character selection. Empty selections produce a plain named \code{numeric(0)}.
 }
 \section{Articles}{
 
@@ -24,7 +27,8 @@ Strategy helper pipelines:
 }
 
 \examples{
-selection <- ledgr_selection(c(AAA = TRUE, BBB = TRUE), universe = c("AAA", "BBB"))
+selection <- c("AAA", "BBB")
 ledgr_weight_equal(selection)
+ledgr_weight_equal(selection, each = 0.2)
 
 }

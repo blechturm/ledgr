@@ -35,24 +35,25 @@ strict_dispatch_experiment <- function(snapshot, instruments) {
   sma_id <- ledgr_feature_id(ledgr_ind_sma(2L))
   returns_id <- ledgr_feature_id(ledgr_ind_returns(2L))
   strategy <- function(ctx, params) {
-    sma <- unname(ctx$vec$feature(sma_id))
-    returns <- unname(ctx$vec$feature(returns_id))
-    list(
-      targets = ctx$flat(),
-      state_update = if (all(is.finite(c(sma, returns)))) {
-        list(sma = sma, returns = returns)
-      } else {
-        list()
-      }
-    )
+    sma <- unname(ctx[[sma_id]])
+    returns <- unname(ctx[[returns_id]])
+    if (all(is.finite(c(sma, returns)))) {
+      return(ledgr_strategy_result(
+        ctx$flat(),
+        sma = stats::setNames(sma, ctx$universe),
+        returns = stats::setNames(returns, ctx$universe)
+      ))
+    }
+    ctx$flat()
   }
-  ledgr_experiment(
+  ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = instruments,
     features = list(ledgr_ind_sma(2L), ledgr_ind_returns(2L)),
     valuation_policy = ledgr_valuation_stale(1L),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    asset_state = list(sma = NA_real_, returns = NA_real_)
   )
 }
 
@@ -81,8 +82,8 @@ testthat::test_that("[LTB-0157] strict dispatch resolves once per definition", {
     state <- availability_last_state(bt)
     expected_sma <- 100 * seq_len(count) + 4.5
     expected_returns <- 2 / (100 * seq_len(count) + 3)
-    testthat::expect_identical(unname(unlist(state$sma)), expected_sma)
-    testthat::expect_identical(unname(unlist(state$returns)), expected_returns)
+    testthat::expect_identical(unname(state$sma), expected_sma)
+    testthat::expect_identical(unname(state$returns), expected_returns)
   }
 
   instruments <- c("I01", "I02")

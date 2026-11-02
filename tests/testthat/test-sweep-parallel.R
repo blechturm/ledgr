@@ -83,7 +83,7 @@ testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   reference <- ledgr_sweep(exp, grid, seed = 123L)
@@ -109,7 +109,7 @@ testthat::test_that("risk plans in sweep payloads are PSOCK-safe value objects",
     ledgr_risk_long_only(),
     ledgr_risk_max_weight(ledgr_param("cap"))
   )
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     risk_chain = risk,
@@ -199,7 +199,7 @@ testthat::test_that("parallel sweep preserves parameterized risk identity and ro
     ctx$hold()
   }
   risk <- ledgr_risk_max_weight(ledgr_param("cap"))
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     risk_chain = risk,
@@ -248,7 +248,7 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     risk_chain = ledgr_risk_max_weight(0.50),
@@ -285,7 +285,7 @@ testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep i
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1)))
 
   sequential <- ledgr_sweep(exp, grid, seed = 123L)
@@ -312,7 +312,7 @@ testthat::test_that("parallel sweep workers do not write persistent artifacts", 
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   before <- ledgr_parallel_sweep_artifact_counts(snapshot)
@@ -338,7 +338,7 @@ testthat::test_that("parallel sweep rejects ambient RNG strategies", {
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid, workers = 2L))

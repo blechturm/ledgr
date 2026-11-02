@@ -94,7 +94,8 @@ ledgr_risk_fold_test_execution <- function(strategy,
     checkpoint_every = 0L,
     telemetry_stride = 0L,
     state = list(cash = cash, positions = positions[instrument_ids]),
-    state_prev = NULL,
+    strategy_state = list(values = list(), axis = instrument_ids),
+    strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
     history_substrate = substrate,
     feature_defs = list(),
     active_alias_map = NULL,
@@ -328,7 +329,7 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
     targets[] <- params$qty
     targets
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     cost_model = ledgr_cost_zero()
@@ -441,7 +442,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     targets
   }
   experiments <- lapply(snapshots, function(snapshot) {
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       cost_model = ledgr_cost_zero(),
@@ -547,7 +548,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     targets
   }
   two_pulse <- lapply(snapshots, function(snapshot) {
-    ledgr_experiment(snapshot, rising, cost_model = ledgr_cost_zero(), execution_mode = "db_live")
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, rising, cost_model = ledgr_cost_zero(), execution_mode = "db_live")
   })
   for (mode in names(two_pulse)) {
     run_id <- paste0("handler-fault-two-pulse-", mode)
@@ -753,7 +754,7 @@ testthat::test_that("max-weight preserves negative target direction", {
   out <- ledgr:::ledgr_apply_risk_step_max_weight(
     c(AAA = -50),
     list(args = list(max_weight = 0.1)),
-    list(equity = 1000, vec = list(close = c(AAA = 10)))
+    list(equity = 1000, close = c(AAA = 10))
   )
 
   testthat::expect_equal(out, c(AAA = -10))
@@ -763,7 +764,7 @@ testthat::test_that("max-weight zeros nonzero targets when equity is zero", {
   out <- ledgr:::ledgr_apply_risk_step_max_weight(
     c(AAA = 50, BBB = 0),
     list(args = list(max_weight = 0.1)),
-    list(equity = 0, vec = list(close = c(AAA = 10, BBB = NA_real_)))
+    list(equity = 0, close = c(AAA = 10, BBB = NA_real_))
   )
 
   testthat::expect_equal(out, c(AAA = 0, BBB = 0))
@@ -814,7 +815,7 @@ testthat::test_that("max-weight fails closed when nonzero targets need invalid d
   ctx <- list(
     universe = c("AAA", "BBB"),
     equity = 1000,
-    vec = list(close = c(NA_real_, NA_real_))
+    close = c(NA_real_, NA_real_)
   )
   risk_plan <- ledgr:::ledgr_risk_plan_compile(
     ledgr_risk_max_weight(0.1),
@@ -840,7 +841,7 @@ testthat::test_that("public run applies long-only risk step", {
     }
     ctx$hold()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     risk_chain = ledgr_risk_long_only(),
@@ -867,7 +868,7 @@ testthat::test_that("public sweep applies parameterized max-weight risk step", {
     }
     ctx$hold()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     risk_chain = ledgr_risk_max_weight(ledgr_param("cap")),
@@ -909,7 +910,7 @@ testthat::test_that("risk failures are captured as sweep candidate failures", {
     ctx$hold()
   }
   risk <- ledgr_risk_max_weight(ledgr_param("cap"))
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     risk_chain = risk,

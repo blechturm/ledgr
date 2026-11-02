@@ -131,7 +131,7 @@ ws14_matrix_snapshot <- function(db_path = tempfile(fileext = ".duckdb")) {
 }
 
 ws14_matrix_experiment <- function(snapshot) {
-  ledgr_experiment(
+  ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     universe = ledgr_universe_members("matrix"),

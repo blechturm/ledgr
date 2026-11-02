@@ -378,7 +378,7 @@ testthat::test_that("[LTB-0256] serialized research objects start cold in a fres
     verification_test_bars(3L),
     db_path = tempfile(fileext = ".duckdb")
   )
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
@@ -438,7 +438,7 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
     target["AAA"] <- if (is.null(params$qty)) 0 else params$qty
     target
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = "AAA",
@@ -488,7 +488,7 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
     bar_days = c(1L, 2L, 4L)
   )
   on.exit(ledgr_snapshot_close(incomplete_snapshot), add = TRUE)
-  incomplete_exp <- ledgr_experiment(
+  incomplete_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     incomplete_snapshot,
     function(ctx, params) {
       target <- ctx$hold()

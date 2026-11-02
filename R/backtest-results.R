@@ -728,6 +728,7 @@ print.ledgr_backtest <- function(x, ...) {
   metric_context <- ledgr_run_metric_context_from_db(con, x$run_id)
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
   valuation <- ledgr_valuation_summary(x, con = con)
+  sizing <- ledgr_run_sizing_summary(x, con = con)
   completion <- ledgr_run_completion_info(con, x$run_id)
   schedule_evidence <- if (!is.null(cfg$strategy_schedule)) {
     ledgr_run_schedule_evidence(con, x$run_id)
@@ -757,6 +758,7 @@ print.ledgr_backtest <- function(x, ...) {
   cat(sprintf("%-34s %.2f%%\n", return_label, headline$total_return * 100))
   cat(sprintf("%-34s %.2f%%\n", drawdown_label, headline$max_drawdown * 100))
   cat(sprintf("%-34s %d\n", "Closed Trades:", headline$n_trades))
+  ledgr_print_sizing_summary(sizing, compact = TRUE)
   ledgr_print_run_schedule_evidence(schedule_evidence)
   cat(sprintf(
     "%-34s %s\n\n",
@@ -921,6 +923,7 @@ summary.ledgr_backtest <- function(object,
   }
   corporate_actions <- ledgr_corporate_action_summary(object)
   valuation <- ledgr_valuation_summary(object)
+  sizing <- ledgr_run_sizing_summary(object)
   ledgr_print_result_assumption_warning(valuation, corporate_actions)
 
   completion <- ledgr_backtest_completion_info(object)
@@ -971,6 +974,7 @@ summary.ledgr_backtest <- function(object,
 
   cat("\nExposure:\n")
   cat(sprintf("  Time in Market:      %.2f%%\n", computed$time_in_market * 100))
+  ledgr_print_sizing_summary(sizing)
 
   diagnostics <- tryCatch(
     ledgr_backtest_warmup_diagnostics(object),

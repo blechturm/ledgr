@@ -54,7 +54,7 @@ strategy <- function(ctx, params) {
   w <- 1 / apply(x, 2L, stats::sd)
   unname(w / sum(w)) |>
     ledgr_align_weights(returns) |>
-    ledgr_target_rebalance(ctx, equity_fraction = 0.95)
+    ledgr_target_rebalance(ctx, weights = _, invest_fraction = 0.95)
 }
 }
 }

@@ -25,7 +25,7 @@ ledgr_selection(
 instruments fail (\code{"error"}, the default) or count as not selected
 (\code{"exclude"}). A subsequent rebalance targets excluded held members to zero; use
 \code{ctx$hold()} when the intended action is to preserve positions. This is a
-decision policy, unlike \code{ctx$idx(id, missing = "na")}, which controls a
+decision policy, unlike \code{match(id, ctx$universe)}, which controls a
 missing instrument lookup.}
 }
 \value{
@@ -54,10 +54,9 @@ ledgr_selection(c(AAA = TRUE, BBB = FALSE), universe = c("AAA", "BBB"))
 ctx <- structure(
   list(
     universe = c("AAA", "BBB"),
-    vec = list(
-      id = c("AAA", "BBB"),
-      admissible = c(TRUE, TRUE)
-    )
+    position = c(AAA = 0, BBB = 0),
+    buyable = c(AAA = TRUE, BBB = TRUE),
+    members = c("AAA", "BBB")
   ),
   class = "ledgr_pulse_context"
 )

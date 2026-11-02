@@ -186,42 +186,15 @@ peer_strategy <- function(fast_id, slow_id) {
   force(fast_id); force(slow_id)
   function(ctx, params) {
     targets <- ctx$hold()
-    fw <- ctx$features_wide
-    instruments <- as.character(fw$instrument_id)
-    n <- length(instruments)
-    fast <- if (fast_id %in% names(fw)) {
-      suppressWarnings(as.numeric(fw[[fast_id]]))
-    } else {
-      rep(NA_real_, n)
-    }
-    slow <- if (slow_id %in% names(fw)) {
-      suppressWarnings(as.numeric(fw[[slow_id]]))
-    } else {
-      rep(NA_real_, n)
-    }
+    instruments <- ctx$universe
+    fast <- ctx[[fast_id]]
+    slow <- ctx[[slow_id]]
     current_above <- is.finite(fast) & is.finite(slow) & fast > slow
-    prev_above <- ctx$state_prev$above %||% list()
-
-    was_above <- rep(FALSE, n)
-    prev_names <- names(prev_above)
-    if (length(prev_above) > 0L && length(prev_names) > 0L) {
-      idx <- match(instruments, prev_names)
-      ok <- !is.na(idx)
-      if (any(ok)) {
-        was_above[ok] <- as.logical(unlist(prev_above[idx[ok]], use.names = FALSE))
-        was_above[is.na(was_above)] <- FALSE
-      }
-    }
-
-    cross_up <- current_above & !was_above
-    cross_down <- !current_above & was_above
+    cross_up <- current_above & !ctx$state$above
+    cross_down <- !current_above & ctx$state$above
     if (any(cross_up)) targets[instruments[cross_up]] <- 1
     if (any(cross_down)) targets[instruments[cross_down]] <- 0
-
-    list(
-      targets = targets,
-      state_update = list(above = as.list(stats::setNames(current_above, instruments)))
-    )
+    ledgr_strategy_result(targets, above = current_above)
   }
 }
 
@@ -405,6 +378,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
     strategy = strategy,
     features = features,
     opening = ledgr_opening(cash = 1e7),
+    asset_state = list(above = FALSE),
     cost_model = cost_model,
     risk_chain = risk_chain
   )
@@ -582,6 +556,7 @@ peer_indicator_feature_parity <- function(bars_path, fast, slow) {
       strategy = strategy,
       features = features,
       opening = ledgr_opening(cash = 1e7),
+      asset_state = list(above = FALSE),
       cost_model = peer_cost_zero_model(),
       risk_chain = peer_risk_none_model()
     )
@@ -728,6 +703,12 @@ peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy
     cost_resolver <- ledgr:::ledgr_cost_resolver_from_model(cost_model)
   }
   risk_plan <- ledgr:::ledgr_risk_plan_compile(risk_chain, params = list())
+  strategy_state_declaration <- ledgr:::ledgr_strategy_state_normalize(
+    asset_state = list(above = FALSE)
+  )
+  strategy_state_default_scalars <- ledgr:::ledgr_strategy_state_default_scalars(
+    strategy_state_declaration
+  )
   execution <- ledgr:::ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = prep$universe,
@@ -742,12 +723,15 @@ peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy
     checkpoint_every = 0L,
     telemetry_stride = 0L,
     state = list(cash = 1e7, positions = initial_positions),
-    state_prev = list(
-      asset_state = stats::setNames(
-        rep(list(list()), length(prep$universe)),
-        prep$universe
-      )
+    strategy_state = list(
+      values = ledgr:::ledgr_strategy_state_defaults(
+        strategy_state_declaration, prep$universe,
+        default_scalars = strategy_state_default_scalars
+      ),
+      axis = prep$universe
     ),
+    strategy_state_declaration = strategy_state_declaration,
+    strategy_state_default_scalars = strategy_state_default_scalars,
     history_substrate = prep$history_substrate,
     feature_defs = prep$feature_defs,
     active_alias_map = prep$active_alias_map,
@@ -1086,6 +1070,7 @@ peer_run_ledgr_sweep <- function(engine, bars_path, features, strategy, seed,
     strategy = strategy,
     features = features,
     opening = ledgr_opening(cash = 1e7),
+    asset_state = list(above = FALSE),
     cost_model = cost_model,
     risk_chain = risk_chain
   )

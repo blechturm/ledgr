@@ -110,7 +110,7 @@ testthat::test_that("[LTB-0406] results, plans and experiments name the stale-ma
   # A dense run has no history policy to disclose.
   dense <- ws42_dense_snapshot()
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
-  dense_exp <- ledgr_experiment(dense, function(ctx, params) ctx$hold(), cost_model = ledgr_cost_zero())
+  dense_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), dense, function(ctx, params) ctx$hold(), cost_model = ledgr_cost_zero())
   bt_dense <- ledgr_run(dense_exp, run_id = "disclosure-dense")
   on.exit(close(bt_dense), add = TRUE)
   testthat::expect_false(any(grepl("History", utils::capture.output(print(bt_dense)), fixed = TRUE)))

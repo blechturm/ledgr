@@ -32,7 +32,7 @@ corporate_action_result_fixture <- function(with_facts) {
     facts <- ledgr_facts(ledgr_facts_equity_corporate_actions(rows))
   }
   snapshot <- ledgr_snapshot_from_df(bars, facts = facts)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
@@ -171,7 +171,7 @@ testthat::test_that("[LTB-0453] an unheld refused fact is counted as sealed and 
   # The strict preset refuses only held effects, so the unheld refused fact
   # leaves the run DONE with the same fidelity.
   strict <- ledgr_run(
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       supplied$snapshot,
       function(ctx, params) ctx$flat(),
       cost_model = ledgr_cost_zero(),
