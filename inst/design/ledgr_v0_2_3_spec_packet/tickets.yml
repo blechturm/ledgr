@@ -1127,7 +1127,8 @@ workstreams:
   - id: 17
     name: "Typed declared strategy state (macro WS5)"
     cut: 7
-    status: "review_pending"
+    status: "complete"
+    accepted: "2026-11-02 under the maintainer's standing authorization after the final independent focused confirmation returned PASS at 4a6430ac."
     close_review: >-
       The independent Type 1 close review returned CHANGES_REQUIRED in
       close_review_17.md. The correction makes patch and replacement,
@@ -1142,8 +1143,9 @@ workstreams:
       and finds one remaining alignment oracle gap. The bounded correction
       adds a permuted asset-update witness, registers the eighth D5 mutation,
       keeps the identity fast path ahead of name matching and makes benchmark
-      provenance reproducible. The workstream awaits final focused
-      confirmation and maintainer acceptance.
+      provenance reproducible. The final independent focused confirmation at
+      4a6430ac returned PASS: the alignment oracle and eighth mutation are
+      exact, records reproduce, the tree is clean and no Type 2 issue remains.
     depends_on_workstream: 16
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors with an explicit type/missing encoding; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, durable resume cursor, restored state and candidate isolation are exact; unchanged pulses do no state encoding; the accepted cursor/checkpoint design reconstructs complete state without silently consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
@@ -2598,7 +2600,7 @@ tickets:
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3184"]
@@ -2648,7 +2650,7 @@ tickets:
   - id: "LDG-3186"
     title: "Apply patches, replacements and state checkpoints"
     workstream: 17
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3185"]

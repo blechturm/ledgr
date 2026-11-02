@@ -44,6 +44,19 @@ Focused tests and registered mutations pass; the source build and package
 check pass. The ordinary-fast lane executed 636/636 blocks in 211.540 seconds;
 that functional result exceeded the advisory 112-second timing hint and is not
 recorded as a timing pass.
+
+Workstream 17 (LDG-3185--LDG-3186) is complete through `4a6430ac`. Its
+independent [close review](close_review_17.md) found correctness, detector and
+hot-path issues in typed state; its focused
+[re-review](close_review_17_rereview_1.md) closed those findings and exposed
+one final reordered-ID oracle gap. The bounded correction registered the
+eighth state mutation, and the final independent confirmation returned
+`PASS`. Typed asset and portfolio state now has explicit declarations,
+type/missing/axis-preserving checkpoints, exact resume and candidate
+isolation. Unchanged pulses encode no payload. The 500-ID, four-field record
+uses 0 payloads in 0.64 seconds when unchanged and 100 payloads in 0.67
+seconds when changed; these clocks are descriptive. Exact-source build and
+package check pass with only the two expected no-build-vignettes warnings.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.
