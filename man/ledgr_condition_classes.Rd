@@ -275,7 +275,6 @@
 \alias{ledgr_invalid_worker_packages}
 \alias{ledgr_invariant_violation}
 \alias{ledgr_legacy_feature_factory_feature_params_unsupported}
-\alias{ledgr_levered_weights}
 \alias{ledgr_lot_state_invariant}
 \alias{ledgr_missing_bars}
 \alias{ledgr_missing_dependency}
@@ -283,7 +282,6 @@
 \alias{ledgr_missing_optional_dependency}
 \alias{ledgr_missing_precomputed_features_warning}
 \alias{ledgr_mixed_metric_cadence}
-\alias{ledgr_negative_weights}
 \alias{ledgr_no_active_alias_map}
 \alias{ledgr_observation_invalid_shape}
 \alias{ledgr_observation_quarantine_duplicate}
@@ -297,7 +295,6 @@
 \alias{ledgr_parallel_worker_package_missing}
 \alias{ledgr_param_missing}
 \alias{ledgr_param_non_scalar}
-\alias{ledgr_partial_selection}
 \alias{ledgr_position_fact_off_axis}
 \alias{ledgr_precomputed_coverage_error}
 \alias{ledgr_precomputed_engine_mismatch}
@@ -1155,7 +1152,6 @@ input.
 \item \code{ledgr_invariant_violation} reports the invariant violation boundary.
 \item \code{ledgr_legacy_feature_factory_feature_params_unsupported} reports the
 legacy feature factory feature params unsupported boundary.
-\item \code{ledgr_levered_weights} reports the levered weights boundary.
 \item \code{ledgr_lot_state_invariant} reports the lot state invariant boundary.
 \item \code{ledgr_missing_bars} reports missing bars evidence.
 \item \code{ledgr_missing_dependency} reports missing dependency evidence.
@@ -1165,7 +1161,6 @@ evidence.
 \item \code{ledgr_missing_precomputed_features_warning} reports missing precomputed
 features warning evidence.
 \item \code{ledgr_mixed_metric_cadence} reports the mixed metric cadence boundary.
-\item \code{ledgr_negative_weights} reports the negative weights boundary.
 \item \code{ledgr_no_active_alias_map} reports the no active alias map boundary.
 \item \code{ledgr_observation_invalid_shape} reports the observation invalid shape
 boundary.
@@ -1187,7 +1182,6 @@ boundary.
 package missing boundary.
 \item \code{ledgr_param_missing} reports the param missing boundary.
 \item \code{ledgr_param_non_scalar} reports the param non scalar boundary.
-\item \code{ledgr_partial_selection} reports the partial selection boundary.
 \item \code{ledgr_position_fact_off_axis} reports a position-fact transition that
 cannot be placed on the prepared canonical bar axis.
 \item \code{ledgr_precomputed_coverage_error} reports the precomputed coverage

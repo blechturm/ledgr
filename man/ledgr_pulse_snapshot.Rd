@@ -33,8 +33,10 @@ close.}
 declarations when \code{features} (or the experiment's features) is a feature
 map.}
 
-\item{cash}{Cash held alongside \code{positions}. It is not total account value;
-pulse equity is \verb{cash + sum(positions * current close)}.}
+\item{cash}{Cash held alongside \code{positions}. The snapshot-form default is
+synthetic inspection-only cash: it is not an investor default and never
+enters run identity. Cash is not total account value; pulse equity is
+\verb{cash + sum(positions * current close)}.}
 
 \item{positions}{Named numeric vector of positions (NULL = flat).}
 

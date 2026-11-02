@@ -158,7 +158,7 @@ testthat::test_that("plain, uncarried and carried configuration hashes bind exac
   snapshot <- ledgr_snapshot_from_df(ledgr_test_make_bars("AAA", dates))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   first <- ledgr_run(exp, run_id = "position-fact-hash-1")
   second <- ledgr_run(exp, run_id = "position-fact-hash-2")
   plain <- first$config
@@ -309,7 +309,7 @@ testthat::test_that("three contiguous walk-forward windows retain entry and exit
     if (identical(day, "2020-01-06")) target[["AAA"]] <- 1
     target
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   folds <- ledgr:::ledgr_fold_list(list(
     ledgr_fold(sessions[[1L]], sessions[[3L]], sessions[[4L]], sessions[[7L]], fold_seq = 1L),
     ledgr_fold(sessions[[4L]], sessions[[7L]], sessions[[8L]], sessions[[10L]], fold_seq = 2L),
@@ -364,7 +364,7 @@ testthat::test_that("position facts build only on first read and services prepar
     }
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   no_read <- ledgr_run(exp, params = list(read = FALSE), run_id = "facts-lazy-none")
   close(no_read)
   lookup <- unclass(counters$ctx)[[".pulse_lookup"]]
@@ -397,7 +397,7 @@ testthat::test_that("preparation counters increment at one site per run and cand
     invisible(ctx$entry_price)
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   run <- ledgr_run(exp, run_id = "preparation-one-run")
   close(run)
   testthat::expect_identical(
@@ -420,7 +420,7 @@ testthat::test_that("preparation counters increment at one site per run and cand
 testthat::test_that("scheduled decision skips still count absolute entry age", {
   seen <- new.env(parent = emptyenv())
   seen$rows <- list()
-  strategy <- ledgr_strategy_schedule(function(ctx, params) {
+  strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(function(ctx, params) {
     rows <- seen$rows
     rows[[length(rows) + 1L]] <- list(
       ts = ctx$ts_utc, entry = ctx$entry_at[["AAA"]], age = ctx$bars_since_entry[["AAA"]]

@@ -378,7 +378,11 @@ testthat::test_that("[LTB-0167] frozen holdings are preserved and reserved by st
       )
       seen$tradable <- names(ctx$buyable)[ctx$buyable]
       seen$equity <- ctx$equity
-      seen$target <- ledgr_target_rebalance(ledgr_weights(c(BBB = 1)), ctx)
+      seen$target <- ledgr_target_rebalance(
+        ctx,
+        weights = c(BBB = 1),
+        capital_base = "remaining_equity"
+      )
       return(seen$target)
     }
     ctx$hold()

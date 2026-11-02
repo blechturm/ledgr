@@ -22,7 +22,7 @@ testthat::test_that("experiment and run configs carry no-op risk identity by def
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
 
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   noop <- ledgr_risk_none()
   testthat::expect_s3_class(exp$risk_chain, "ledgr_risk_model")
   testthat::expect_identical(exp$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(noop))

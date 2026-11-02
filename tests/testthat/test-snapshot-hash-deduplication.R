@@ -78,7 +78,7 @@ testthat::test_that("[LTB-0250] every content reader refuses a non-current hash 
     )
     id <- snapshot$snapshot_id
     strategy <- function(ctx, params) ctx$flat()
-    experiment <- ledgr_experiment(
+    experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       cost_model = ledgr_cost_zero()
@@ -94,7 +94,7 @@ testthat::test_that("[LTB-0250] every content reader refuses a non-current hash 
       days = 4L,
       bar_days = c(1L, 2L, 4L)
     )
-    incomplete_experiment <- ledgr_experiment(
+    incomplete_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       incomplete_snapshot,
       function(ctx, params) {
         target <- ctx$hold()
@@ -177,7 +177,7 @@ testthat::test_that("run, timestamp, price, and stored-hash guards still detect 
   con <- ledgr:::get_connection(snapshot)
   id <- snapshot$snapshot_id
   stored <- ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()

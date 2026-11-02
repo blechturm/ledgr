@@ -112,7 +112,7 @@ new R session, recover the handle with
 features <- list(ledgr_ind_sma(20))
 
 trend_strategy <- function(ctx, params) {
-  above <- ctx$close > ledgr_signal_feature(ctx, "sma_20")
+  above <- ctx$close > ctx[["sma_20"]]
   ctx |>
     ledgr_selection(where = above, missing = "exclude") |>
     ledgr_target_quantity(ctx, params$qty)

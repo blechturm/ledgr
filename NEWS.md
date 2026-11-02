@@ -1,5 +1,14 @@
 # ledgr (development version)
 
+- Strategy authoring now ranks ordinary named score vectors with
+  `ledgr_select_top()` or `ledgr_select_lowest()`, produces strict plain named
+  weights with `ledgr_weight_equal()`, and sizes complete targets through the
+  ctx-first `ledgr_target_rebalance()` and `ledgr_target_adjust()` verbs.
+  Experiments require explicit `opening` and `cost_model` inputs and accept a
+  schedule through `schedule =`; mixed-cadence callbacks can query the same
+  compiled calendar through `ledgr_schedule_due()`. The former public
+  signal-feature, top-n and schedule-wrapper constructors are removed without
+  aliases.
 - Strategy pulse contexts are now flat named lazy views. Read bar, position,
   eligibility, holding-value, position-fact and declared-feature columns
   directly (for example `ctx$close`, `ctx$buyable`, `ctx$entry_price` and

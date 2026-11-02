@@ -13,8 +13,8 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000, final_execu
   if (!is.numeric(initial_cash) || length(initial_cash) != 1 || is.na(initial_cash) || !is.finite(initial_cash)) {
     rlang::abort("`initial_cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
   }
-  if (initial_cash <= 0) {
-    rlang::abort("`initial_cash` must be > 0.", class = "ledgr_invalid_args")
+  if (initial_cash < 0) {
+    rlang::abort("`initial_cash` must be >= 0.", class = "ledgr_invalid_args")
   }
 
   out <- list(start = start_iso, end = end_iso, initial_cash = as.numeric(initial_cash))

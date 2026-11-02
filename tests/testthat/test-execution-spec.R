@@ -426,7 +426,8 @@ testthat::test_that("execution spec constructor exposes only the canonical subst
       "event_mode",
       "compiled_accounting_model",
       "availability_provider",
-      "execution_opportunities_posix"
+      "execution_opportunities_posix",
+      "schedule_params"
     )
   )
   testthat::expect_identical(spec$id_to_idx, stats::setNames(as.integer(1:2), c("AAA", "BBB")))
@@ -947,7 +948,7 @@ testthat::test_that("[LTB-0015] run and sweep share execution construction and f
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     cost_model = ledgr_cost_zero()

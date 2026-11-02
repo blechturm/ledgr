@@ -63,7 +63,7 @@ testthat::test_that("demo SMA crossover strategy runs and keeps qty zero baselin
     fast = ledgr_ind_sma(ledgr_param("fast_n")),
     slow = ledgr_ind_sma(ledgr_param("slow_n"))
   )
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
     features = features,
@@ -100,7 +100,7 @@ testthat::test_that("demo SMA crossover strategy sweeps feature and strategy gri
     fast = ledgr_ind_sma(ledgr_param("fast_n")),
     slow = ledgr_ind_sma(ledgr_param("slow_n"))
   )
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
     features = features,
@@ -125,7 +125,7 @@ testthat::test_that("demo SMA crossover strategy fails through active alias clas
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  no_alias_exp <- ledgr_experiment(
+  no_alias_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
     features = list(ledgr_ind_sma(2)),
@@ -143,7 +143,7 @@ testthat::test_that("demo SMA crossover strategy fails through active alias clas
     fixed = TRUE
   )
 
-  wrong_alias_exp <- ledgr_experiment(
+  wrong_alias_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
     features = ledgr_feature_map(

@@ -361,7 +361,7 @@ testthat::test_that("timing version enters active identity and stays absent from
   )
   dense_snapshot <- ledgr_snapshot_from_df(dense_bars)
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
-  dense_exp <- ledgr_experiment(
+  dense_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()

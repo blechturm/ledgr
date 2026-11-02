@@ -6,7 +6,7 @@
 # through ledgr's own parallel sweep path, inside mirai worker processes.
 
 ledgr_sink_witness_experiment <- function(snapshot) {
-  ledgr_experiment(
+  ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       target <- ctx$hold()

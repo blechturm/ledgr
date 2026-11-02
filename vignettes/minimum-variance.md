@@ -53,14 +53,15 @@ For the preparation workflow, read
 meaning of a causal history window, read
 `vignette("causal-history", package = "ledgr")`.
 
-> [!NOTE]
->
-> ### Demo data
->
-> The snapshot is synthetic. One asset deliberately resembles a high-beta
-> version of another so the long-only constraint becomes visible. The
-> example proves the workflow, not an investment result.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Demo data**
+
+The snapshot is synthetic. One asset deliberately resembles a high-beta
+version of another so the long-only constraint becomes visible. The
+example proves the workflow, not an investment result.
+
+</div>
 
 ## State The Research Choices
 
@@ -142,16 +143,13 @@ min_variance <- function(ctx, params) {
   solution[solution < 0] <- 0
   solution <- solution / sum(solution)
 
-  targets <- solution |>
-    ledgr_align_weights(returns) |>
-    ledgr_target_rebalance(
-      ctx,
-      equity_fraction = params$equity_fraction
-    )
-
-  # This strategy follows the point-in-time index. A holding that has left
-  # the membership universe is therefore assigned a zero target.
-  targets[!ctx$member] <- 0
+  weights <- ledgr_align_weights(solution, returns)
+  targets <- ledgr_target_rebalance(
+    ctx,
+    weights = weights,
+    index_leavers = "sell",
+    invest_fraction = params$equity_fraction
+  )
 
   list(targets = targets, intent_reason = "rebalanced")
 }
@@ -179,13 +177,12 @@ covariance estimate.
 ``` r
 exp <- ledgr_experiment(
   snapshot,
-  ledgr_strategy_schedule(
-    min_variance,
-    ledgr_schedule_month_start()
-  ),
+  min_variance,
+  schedule = ledgr_schedule_month_start(),
   features = list(ledgr_ind_returns(1L)),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
-  cost_model = ledgr_cost_zero()
+  cost_model = ledgr_cost_zero(),
+  opening = ledgr_opening(cash = 100000)
 )
 ```
 
@@ -294,6 +291,7 @@ bt
 
     Run ID:                            minimum-variance
     Period:                            2018-01-01T16:00:00Z to 2020-12-31T16:00:00Z
+    Execution Clock:                   declared_sessions
     Opening Cash:                      $100000.00
     Final Equity:                      $109185.86
     Total Return:                      9.19%
@@ -376,15 +374,16 @@ a shrinkage value from the same period used to report it would overstate
 the evidence. For held-out evaluation, continue with
 `vignette("walk-forward", package = "ledgr")`.
 
-> [!TIP]
->
-> ### Try it
->
-> Which shrinkage value has the highest in-sample Sharpe ratio in the
-> compact table? Replace the three `lookback` values with `126L` and rerun
-> the sweep. Does the ranking change, and why would neither ranking by
-> itself validate the choice?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Which shrinkage value has the highest in-sample Sharpe ratio in the
+compact table? Replace the three `lookback` values with `126L` and rerun
+the sweep. Does the ranking change, and why would neither ranking by
+itself validate the choice?
+
+</div>
 
 ## What This Article Deliberately Leaves Elsewhere
 

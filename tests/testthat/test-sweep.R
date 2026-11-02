@@ -18,7 +18,7 @@ ledgr_sweep_test_bars <- function(n_pulses = 6L) {
 ledgr_sweep_test_precomputed <- function(bars, indicators, feature_defs) {
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     features = indicators,
@@ -378,7 +378,7 @@ testthat::test_that("sweep public compiled accounting preserves risk parity", {
     ctx$hold()
   }
   risk <- ledgr_risk_max_weight(ledgr_param("cap"))
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     risk_chain = risk,
@@ -474,7 +474,7 @@ testthat::test_that("ledgr_sweep returns ordered summary rows without store writ
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   before_counts <- ledgr_sweep_artifact_counts(snapshot)
@@ -505,7 +505,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   unseeded <- ledgr_sweep(exp, grid)
@@ -583,7 +583,7 @@ testthat::test_that("ledgr_sweep preserves warning conditions", {
     rlang::warn("candidate warning", class = "ledgr_test_sweep_warning")
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
@@ -597,7 +597,7 @@ testthat::test_that("ledgr_sweep_results prints a curated view", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
@@ -625,7 +625,7 @@ testthat::test_that("ledgr_sweep_results print footer stays neutral after reorde
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   out <- ledgr_sweep(exp, grid, seed = 123L)
   reordered <- out[c(2L, 1L), ]
@@ -645,7 +645,7 @@ testthat::test_that("ledgr_candidate selects by label or position and handles fa
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   out <- ledgr_sweep(exp, grid, seed = 123L)
 
@@ -670,7 +670,7 @@ testthat::test_that("ledgr_candidate selects by label or position and handles fa
     }
     list(ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1))
   }
-  failed_exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$flat(), features = features, cost_model = ledgr_cost_zero())
+  failed_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, function(ctx, params) ctx$flat(), features = features, cost_model = ledgr_cost_zero())
   failed_grid <- ledgr_grid_named(good = list(strategy = list(n = 1)), bad = list(strategy = list(n = 0)))
   failed <- ledgr_sweep(failed_exp, failed_grid)
   testthat::expect_error(ledgr_candidate(failed, "bad"), class = "ledgr_failed_sweep_candidate")
@@ -688,7 +688,7 @@ testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   out <- ledgr_sweep(exp, grid, seed = 123L)
   plain <- tibble::as_tibble(out)
@@ -722,7 +722,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, features = list(ind), cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, features = list(ind), cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list(qty = 1, threshold = 102)))
 
   before_counts <- ledgr_sweep_artifact_counts(snapshot)
@@ -775,7 +775,7 @@ testthat::test_that("ledgr_promote forwards candidate params and execution seed"
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   out <- ledgr_sweep(exp, grid, seed = 123L)
   candidate <- ledgr_candidate(out, "b")
@@ -821,8 +821,8 @@ testthat::test_that("ledgr_promote validates same-snapshot provenance when reque
   on.exit(ledgr_snapshot_close(other_snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
-  other_exp <- ledgr_experiment(other_snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
+  other_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), other_snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   candidate <- ledgr_candidate(ledgr_sweep(exp, grid), "candidate")
 
@@ -855,7 +855,7 @@ testthat::test_that("ledgr_sweep_candidate print shows strategy name and hash wh
 
   strategy <- function(ctx, params) ctx$flat()
   attr(strategy, "name") <- "named_strategy"
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   candidate <- ledgr_candidate(ledgr_sweep(exp, grid, seed = 123L), "candidate")
 
@@ -875,7 +875,7 @@ testthat::test_that("derived execution seeds are stable across sweep invocations
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
 
   one <- ledgr_sweep(exp, grid, seed = 123L)
@@ -899,7 +899,7 @@ testthat::test_that("ledgr_sweep captures candidate failures and stop_on_error r
     }
     list(ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1))
   }
-  exp <- ledgr_experiment(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(good = list(strategy = list(n = 1)), bad = list(strategy = list(n = 0)))
 
   out <- ledgr_sweep(exp, grid)
@@ -919,7 +919,7 @@ testthat::test_that("ledgr_sweep stop_on_error preserves unique strategy error c
   strategy <- function(ctx, params) {
     rlang::abort("bad strategy", class = "ledgr_test_bad_strategy")
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid, stop_on_error = TRUE))
@@ -936,7 +936,7 @@ testthat::test_that("ledgr_sweep rejects Tier 3 strategies before candidate exec
   strategy <- function(ctx, params) {
     helper(ctx)
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid))
@@ -958,7 +958,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
     Sys.time()
     ctx$flat()
   }
-  sys_time_exp <- ledgr_experiment(snapshot, sys_time_strategy, cost_model = ledgr_cost_zero())
+  sys_time_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, sys_time_strategy, cost_model = ledgr_cost_zero())
   sys_time_err <- testthat::capture_error(ledgr_sweep(sys_time_exp, grid))
   testthat::expect_s3_class(sys_time_err, "ledgr_strategy_preflight_error")
   testthat::expect_s3_class(sys_time_err, "ledgr_strategy_tier3")
@@ -969,7 +969,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
     do.call("Sys.time", list())
     ctx$flat()
   }
-  do_call_exp <- ledgr_experiment(snapshot, do_call_strategy, cost_model = ledgr_cost_zero())
+  do_call_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, do_call_strategy, cost_model = ledgr_cost_zero())
   do_call_err <- testthat::capture_error(ledgr_sweep(do_call_exp, grid))
   testthat::expect_s3_class(do_call_err, "ledgr_strategy_preflight_error")
   testthat::expect_s3_class(do_call_err, "ledgr_strategy_tier3")
@@ -981,7 +981,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
     attr(ctx, "secret") <- 1
     ctx$flat()
   }
-  attr_exp <- ledgr_experiment(snapshot, attr_strategy, cost_model = ledgr_cost_zero())
+  attr_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, attr_strategy, cost_model = ledgr_cost_zero())
   attr_err <- testthat::capture_error(ledgr_sweep(attr_exp, grid))
   testthat::expect_s3_class(attr_err, "ledgr_strategy_preflight_error")
   testthat::expect_s3_class(attr_err, "ledgr_strategy_tier3")
@@ -992,7 +992,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
     counter <<- counter + 1L
     ctx$flat()
   }
-  global_assign_exp <- ledgr_experiment(snapshot, global_assign_strategy, cost_model = ledgr_cost_zero())
+  global_assign_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, global_assign_strategy, cost_model = ledgr_cost_zero())
   global_assign_err <- testthat::capture_error(ledgr_sweep(global_assign_exp, grid))
   testthat::expect_s3_class(global_assign_err, "ledgr_strategy_preflight_error")
   testthat::expect_s3_class(global_assign_err, "ledgr_strategy_tier3")
@@ -1021,7 +1021,7 @@ testthat::test_that("feature-consuming sweep strategies see the same feature val
     targets["AAA"] <- if (value > 101) 1 else 0
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, features = list(ind), cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, features = list(ind), cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   out <- ledgr_sweep(exp, grid)
@@ -1049,7 +1049,7 @@ testthat::test_that("precomputed features validate current factory identity befo
     targets["AAA"] <- if (value > 101) 1 else 0
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list()), b = list(strategy = list()))
   precomputed <- ledgr_precompute_features(exp, grid)
 

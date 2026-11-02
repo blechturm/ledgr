@@ -857,7 +857,8 @@ ledgr_fold_stage_decide <- function(
     seed = services$execution_seed,
     pulse_seed = ledgr_pulse_seed_at(services, pulse_idx),
     state_prev = fold_state$state_prev,
-    .safety_state = "GREEN"
+    .safety_state = "GREEN",
+    .schedule_query = function(schedule) services$schedule_query(schedule, pulse_idx)
   )
   ctx$members <- p2$members
   ctx$.history <- observation$data$history
@@ -1784,6 +1785,11 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
   pulse_notes <- new.env(parent = emptyenv())
+  schedule_query <- ledgr_strategy_schedule_query(
+    execution$schedule_sessions,
+    pulses_posix,
+    execution$schedule_params
+  )
   ledgr_context_preparation_increment(context_preparation_counts, "service")
   services <- list(
     run_id = run_id,
@@ -1817,6 +1823,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     position_fact_unknown_basis = execution$position_fact_unknown_basis,
     position_fact_unknown_basis_mask = instrument_ids %in% execution$position_fact_unknown_basis,
     pulse_notes = pulse_notes,
+    schedule_query = schedule_query,
     execution_opportunities_posix = execution_opportunities_posix,
     execution_epochs = execution_epochs,
     execution_epoch_valid = execution_epoch_valid,

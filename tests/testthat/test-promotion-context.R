@@ -21,7 +21,7 @@ testthat::test_that("promoted runs write and read durable promotion context", {
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
   results <- ledgr_sweep(exp, grid, seed = 123L)
   selection <- results[c(2, 1), ]
@@ -74,7 +74,7 @@ testthat::test_that("ranked reopened sweeps retain lineage through promotion", {
     targets
   }
   risk <- ledgr_risk_max_weight(0.20)
-  sweep_exp <- ledgr_experiment(
+  sweep_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     risk_chain = risk,
@@ -109,7 +109,7 @@ testthat::test_that("ranked reopened sweeps retain lineage through promotion", {
   )
 
   candidate <- ledgr_candidate(review$ranked, 1L)
-  promote_exp <- ledgr_experiment(
+  promote_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     risk_chain = ledgr_risk_none(),
@@ -141,7 +141,7 @@ testthat::test_that("direct runs return NULL promotion context without executing
     calls$n <- calls$n + 1L
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   bt <- ledgr_run(exp, params = list(), run_id = "direct-run")
   on.exit(close(bt), add = TRUE)
 
@@ -163,7 +163,7 @@ testthat::test_that("promotion context stores warning summaries only", {
     rlang::warn("candidate warning", class = "ledgr_test_promotion_warning")
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   results <- ledgr_sweep(exp, grid)
   candidate <- ledgr_candidate(results, "candidate")
@@ -182,7 +182,7 @@ testthat::test_that("promotion context write failures warn without rolling back 
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   candidate <- ledgr_candidate(ledgr_sweep(exp, ledgr_grid_named(candidate = list(strategy = list()))), "candidate")
   candidate$selection_view$params[[1]] <- list(non_serializable = new.env(parent = emptyenv()))
 

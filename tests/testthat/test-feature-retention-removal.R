@@ -79,7 +79,7 @@ testthat::test_that("deleted feature-retention surfaces cannot return", {
     "ledgr_backtest", envir = asNamespace("ledgr"), inherits = FALSE
   ))
   testthat::expect_error(
-    ledgr_experiment(persist_features = TRUE),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), persist_features = TRUE),
     "unused argument"
   )
 })
@@ -112,7 +112,7 @@ testthat::test_that("changed captures recompute values and repeated captures sta
       series_fn = function(series, params) series$close * scale,
       requires_bars = 1L
     )
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       features = list(indicator),

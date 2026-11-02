@@ -148,7 +148,7 @@ testthat::test_that("qlcal metadata and assumptions enter existing identity", {
     )
     snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(family), price_basis = "split_adjusted")
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-    experiment <- ledgr_experiment(
+    experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       function(ctx, params) ctx$hold(),
       valuation_policy = ledgr_valuation_stale(1),
@@ -196,7 +196,7 @@ testthat::test_that("materialized qlcal sessions reopen without calendar state",
   history <- ledgr_facts_history(reopened, "sessions", "XNYS")
   testthat::expect_equal(nrow(history$rows), 3L)
   testthat::expect_identical(history$metadata$source, "snapshot")
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     reopened,
     function(ctx, params) ctx$hold(),
     valuation_policy = ledgr_valuation_stale(1),

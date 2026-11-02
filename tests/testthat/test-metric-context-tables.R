@@ -64,7 +64,7 @@ testthat::test_that("comparison tables fail loudly for mixed observed cadences",
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, universe = "AAA", cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, universe = "AAA", cost_model = ledgr_cost_zero())
   bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "mixed-daily")
   on.exit(close(bt_a), add = TRUE)
   bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "mixed-hourly")

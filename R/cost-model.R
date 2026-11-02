@@ -37,8 +37,8 @@ ledgr_timing_schema_version <- 1L
 #' strategy <- function(ctx, params) ctx$flat()
 #' snapshot <- ledgr_snapshot_from_df(bars)
 #' # raises ledgr_cost_model_unspecified: cost_model is required.
-#' try(ledgr_experiment(snapshot, strategy), silent = TRUE)
-#' exp <- ledgr_experiment(snapshot, strategy, cost_model = zero)
+#' try(ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy), silent = TRUE)
+#' exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = zero)
 #' bt <- ledgr_run(exp)
 #' close(bt)
 #' @export

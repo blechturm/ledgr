@@ -107,7 +107,7 @@ testthat::test_that("saved fold views freeze lazy buffers and sweep candidates i
     }
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   run <- ledgr_run(exp, run_id = "flat-buffer-freeze")
   close(run)
   testthat::expect_identical(saved$later_open, c(AAA = bars$open[[1L]]))
@@ -122,7 +122,7 @@ testthat::test_that("saved fold views freeze lazy buffers and sweep candidates i
     target[["AAA"]] <- params$qty
     target
   }
-  candidate_exp <- ledgr_experiment(
+  candidate_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot, candidate_strategy, cost_model = ledgr_cost_zero()
   )
   result <- ledgr_sweep(

@@ -528,27 +528,29 @@ than merely something inspected after the run.
 
 What happens to a departed holding depends on how the rule is written.
 `ctx$flat()` is literal, so a rule starting from it sells a departed holding at
-the next open. The strategy helpers keep departed holdings, as the rule below
-does. Increasing a holding outside the universe fails with an error. What
-ledgr should do by default here is open design work.
+the next open. The rule below makes the opposite choice explicit with
+`index_leavers = "keep"`. Increasing a holding outside the universe fails with
+an error; ledgr never invents a default leaver policy.
 
 ```{r}
 #| label: strategy
 
 rebalance_declared_members <- function(ctx, params) {
-  ctx |>
-    ledgr_selection() |>
+  ctx$universe[ctx$buyable] |>
     ledgr_weight_equal() |>
-    ledgr_target_rebalance(ctx, equity_fraction = params$invested)
+    ledgr_target_rebalance(
+      ctx,
+      weights = _,
+      index_leavers = "keep",
+      capital_base = "remaining_equity",
+      invest_fraction = params$invested
+    )
 }
 
 rebalance_schedule <- ledgr_schedule_dates(
   as.Date(c("2020-01-06", "2020-01-13"))
 )
-scheduled_rebalance <- ledgr_strategy_schedule(
-  rebalance_declared_members,
-  rebalance_schedule
-)
+scheduled_rebalance <- rebalance_declared_members
 ```
 
 Only those two sessions call the portfolio rule. On the other eight sessions,
@@ -557,7 +559,7 @@ holdings, and age stale marks. The scheduling section of
 `vignette("strategy-authoring-tools", package = "ledgr")` develops that
 distinction from a smaller example.
 
-In this availability-aware experiment, `equity_fraction` is deliberately below
+In this availability-aware experiment, `invest_fraction` is deliberately below
 1. Sizing uses the decision close while execution uses the next observed open;
 the later price and the availability rules together determine whether a target
 can fill. Leaving headroom is a research choice, and the exercise at the end of
@@ -567,10 +569,13 @@ but their refusal reasons need not be the same as this availability-aware case.
 The path is explicit. `ledgr_universe_members("demo_members")` selects the
 named history. At each decision, its cutoff resolution becomes `ctx$members`.
 `ctx$universe` is the members-plus-holdings axis, so a held former member stays
-visible. `ledgr_selection()` without a condition selects every current member
-that can trade, so a held former member is never selected. The rebalance
-helper creates one full-axis target; execution and valuation then decide
-independently what can fill and what can be marked.
+visible. `ctx$universe[ctx$buyable]` selects every current member that can be
+bought, so a held former member is never selected. The explicit leaver policy
+keeps that position. Because the kept position already uses capital,
+`capital_base = "remaining_equity"` sizes the current members from what remains
+rather than counting the same equity twice. The rebalance helper creates one
+full-axis target; execution and valuation then decide independently what can
+fill and what can be marked.
 
 ## Comparing Survivor and Point-in-Time Universes
 
@@ -612,6 +617,7 @@ Here is the whole thing, written out once:
 point_in_time_experiment <- ledgr_experiment(
   snapshot,
   scheduled_rebalance,
+  schedule = rebalance_schedule,
   universe = ledgr_universe_members("demo_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2),
   cost_model = ledgr_cost_zero(),
@@ -650,6 +656,7 @@ universe_experiment <- function(universe) {
   ledgr_experiment(
     snapshot,
     scheduled_rebalance,
+    schedule = rebalance_schedule,
     universe = universe,
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     cost_model = ledgr_cost_zero(),
@@ -1040,6 +1047,7 @@ terminal_experiment <- function(policy) {
   ledgr_experiment(
     terminal_snapshot,
     scheduled_rebalance,
+    schedule = rebalance_schedule,
     universe = ledgr_universe_members("demo_members"),
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     corporate_action_policy = policy,
@@ -1129,7 +1137,8 @@ bind_rows(lapply(
 
 This date branch injects three specific requests to demonstrate a missing-bar
 execution scenario; it is not a recurring rebalance calendar. Periodic
-strategy scheduling belongs in `ledgr_strategy_schedule()` as shown above.
+strategy scheduling belongs in `schedule = rebalance_schedule` on the
+experiment, as shown above.
 
 Follow the dates against the contract stated earlier:
 

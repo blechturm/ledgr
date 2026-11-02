@@ -17,25 +17,11 @@ ledgr_strategy_helper_validate_lookback <- function(lookback) {
   as.integer(lookback)
 }
 
-ledgr_strategy_helper_validate_n <- function(n) {
-  if (!is.numeric(n) || length(n) != 1L || is.na(n) || !is.finite(n) || n < 1L || n != as.integer(n)) {
-    rlang::abort("`n` must be a positive integer scalar.", class = "ledgr_invalid_strategy_helper")
+ledgr_strategy_helper_validate_invest_fraction <- function(invest_fraction) {
+  if (!is.numeric(invest_fraction) || length(invest_fraction) != 1L || is.na(invest_fraction) || !is.finite(invest_fraction) || invest_fraction < 0 || invest_fraction > 1) {
+    rlang::abort("`invest_fraction` must be a finite numeric scalar between 0 and 1.", class = "ledgr_invalid_strategy_helper")
   }
-  as.integer(n)
-}
-
-ledgr_strategy_helper_validate_equity_fraction <- function(equity_fraction) {
-  if (!is.numeric(equity_fraction) || length(equity_fraction) != 1L || is.na(equity_fraction) || !is.finite(equity_fraction) || equity_fraction < 0 || equity_fraction > 1) {
-    rlang::abort("`equity_fraction` must be a finite numeric scalar between 0 and 1.", class = "ledgr_invalid_strategy_helper")
-  }
-  as.numeric(equity_fraction)
-}
-
-ledgr_strategy_empty_selection <- function(universe, origin = NULL) {
-  selection <- ledgr_selection(stats::setNames(logical(length(universe)), universe),
-                               universe = universe, origin = origin)
-  class(selection) <- c("ledgr_empty_selection", class(selection))
-  selection
+  as.numeric(invest_fraction)
 }
 
 ledgr_strategy_helper_context_equity <- function(ctx) {
@@ -46,56 +32,11 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
   as.numeric(equity)
 }
 
-ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
+ledgr_signal_values <- function(ctx, feature_id, universe) {
   values <- if (length(universe) == 0L) numeric() else as.numeric(ctx[[feature_id]])
   signal <- ledgr_signal(stats::setNames(values, universe), universe = universe, origin = feature_id)
   attr(signal, "eligible") <- ledgr_strategy_eligible(ctx, universe)
   signal
-}
-
-#' Build a signal from one registered feature
-#'
-#' `ledgr_signal_feature()` reads one already-registered feature plane and
-#' returns one raw score per instrument in `ctx$universe`, in that order. The
-#' signal carries `ctx$buyable` as its `eligible` attribute: an
-#' instrument that is not a member, or is target-restricted, keeps its raw score
-#' but is marked ineligible, so ineligible is never reported as missing.
-#' [ledgr_select_top_n()] ranks eligible scores only, and [ledgr_selection()]
-#' decides eligible instruments only.
-#'
-#' Arithmetic on a signal keeps its class and `eligible` attribute; comparison,
-#' subsetting, `rank()` and `c()` return plain vectors. Use [ledgr_signal()] with
-#' its `values` entrance to turn a transformed vector back into a signal.
-#'
-#' @param ctx ledgr strategy context.
-#' @param feature_id One non-empty active feature-map alias or registered
-#'   feature ID. The supplied name is retained as the signal origin.
-#' @return A `ledgr_signal` object.
-#' @examples
-#' ctx <- list(
-#'   universe = c("AAA", "BBB"),
-#'   return_5 = c(AAA = 0.03, BBB = NA_real_),
-#'   buyable = c(AAA = TRUE, BBB = TRUE)
-#' )
-#' ledgr_signal_feature(ctx, "return_5")
-#'
-#' @seealso [ledgr_signal()], [ledgr_signal_return()]
-#' @section Articles:
-#' Strategy helper pipelines:
-#' `vignette("strategy-development", package = "ledgr")`
-#' `system.file("doc", "strategy-development.html", package = "ledgr")`
-#' @export
-ledgr_signal_feature <- function(ctx, feature_id) {
-  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_feature")
-  if (!is.character(feature_id) || length(feature_id) != 1L ||
-      is.na(feature_id) || !nzchar(feature_id)) {
-    rlang::abort(
-      "`feature_id` must be one non-empty character scalar.",
-      class = "ledgr_invalid_strategy_helper"
-    )
-  }
-
-  ledgr_signal_feature_values(ctx, feature_id, universe)
 }
 
 #' Build a return signal from registered return features
@@ -104,15 +45,12 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' in `ctx$universe` and returns a `ledgr_signal`. The required indicator must
 #' already be registered on the experiment, for example with
 #' `features = list(ledgr_ind_returns(20))`; this helper never auto-registers
-#' indicators. Like [ledgr_signal_feature()], it returns raw scores over the
-#' whole decision axis and marks eligibility in the `eligible` attribute.
+#' indicators. It returns raw scores over the whole decision axis and marks
+#' eligibility in the `eligible` attribute.
 #'
 #' For a fixed concrete lookback, register the matching return indicator. For
 #' a parameterized sweep, put `ledgr_ind_returns(ledgr_param("lookback"))` in a
-#' feature map and read its stable active alias with [ledgr_signal_feature()].
-#' The generic helper resolves that alias to each candidate's concrete return
-#' feature; strategy code does not need to register or switch among every
-#' concrete `return_<lookback>` name.
+#' feature map and read its stable active alias directly from the flat context.
 #'
 #' @param ctx ledgr strategy context.
 #' @param lookback Positive integer return lookback.
@@ -125,7 +63,7 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' )
 #' ledgr_signal_return(ctx, lookback = 5)
 #'
-#' @seealso [ledgr_signal_feature()], [ledgr_signal()]
+#' @seealso [ledgr_signal()]
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -135,127 +73,187 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
   universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_return")
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
-  ledgr_signal_feature_values(ctx, feature_id, universe)
+  ledgr_signal_values(ctx, feature_id, universe)
 }
 
-#' Select the top instruments from a signal
+#' Select instruments by ranked score
 #'
-#' `ledgr_select_top_n()` selects the highest non-missing signal values among
-#' eligible instruments: a signal built from a context marks ineligible
-#' instruments in its `eligible` attribute, and they are never selected or
-#' counted. Missing values are ignored. Ties are broken deterministically by
-#' instrument ID in C-locale (byte) order, whatever the session collation. The
-#' result covers the signal's whole axis. If no values are usable, the function returns a classed empty selection,
-#' all `FALSE`, without warning; it keeps the signal origin and flows through
-#' `ledgr_weight_equal()` and `ledgr_target_rebalance()` to a target that keeps
-#' ineligible holdings and zeroes the rest.
+#' These helpers rank an ordinary named numeric score vector. Missing scores
+#' and unknown logical pool decisions are excluded. Ties use instrument-ID byte
+#' order, independently of the process locale. Supply exactly one of `n` or
+#' `fraction`; a fraction selects the floored share of the candidate pool, with
+#' a minimum of one from a non-empty pool.
 #'
-#' Selection and warning classes:
-#' - `ledgr_empty_selection` for the classed object returned when every signal
-#'   value is missing;
-#' - `ledgr_partial_selection` for the warning emitted when fewer than `n`
-#'   eligible, non-missing values are available under `partial = "warn"`.
-#'
-#' @param signal A `ledgr_signal` object.
-#' @param n Number of instruments to select.
-#' @param partial Whether a short selection warns (`"warn"`, the default) or
-#'   is accepted silently (`"allow"`).
-#' @return A `ledgr_selection` object. When all signal values are missing, the
-#'   object also inherits from `ledgr_empty_selection`.
+#' @param score Named numeric scores.
+#' @param n Non-negative whole number of instruments to request.
+#' @param fraction Fraction in `(0, 1]` of the candidate pool to request.
+#' @param within Candidate IDs or a logical vector aligned by name or exact
+#'   position. `NULL` uses the whole score axis.
+#' @return A plain character vector of instrument IDs.
 #' @examples
-#' signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
-#' ledgr_select_top_n(signal, n = 1)
-#' ledgr_select_top_n(signal, n = 3, partial = "allow")
-#'
+#' score <- c(AAA = 0.03, BBB = NA_real_, CCC = 0.01)
+#' ledgr_select_top(score, n = 1)
+#' ledgr_select_lowest(score, fraction = 0.5)
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-ledgr_select_top_n <- function(signal, n, partial = c("warn", "allow")) {
-  if (!inherits(signal, "ledgr_signal")) {
-    rlang::abort("`signal` must be a ledgr_signal object.", class = "ledgr_invalid_strategy_helper")
+ledgr_select_top <- function(score, n = NULL, fraction = NULL, within = NULL) {
+  ledgr_select_ranked(score, n, fraction, within, decreasing = TRUE)
+}
+
+#' @rdname ledgr_select_top
+#' @export
+ledgr_select_lowest <- function(score, n = NULL, fraction = NULL, within = NULL) {
+  ledgr_select_ranked(score, n, fraction, within, decreasing = FALSE)
+}
+
+ledgr_select_ranked <- function(score, n, fraction, within, decreasing) {
+  if (!is.numeric(score) || is.factor(score)) {
+    rlang::abort("`score` must be a named numeric vector.", class = "ledgr_invalid_strategy_type")
   }
-  n <- ledgr_strategy_helper_validate_n(n)
-  partial <- tryCatch(
-    match.arg(partial),
-    error = function(err) {
-      rlang::abort(
-        "`partial` must be one of \"warn\" or \"allow\".",
-        class = "ledgr_invalid_strategy_helper",
-        parent = err
-      )
-    }
-  )
-
-  values <- as.numeric(signal)
-  ids <- names(signal)
-  eligible <- attr(signal, "eligible", exact = TRUE)
-  if (is.null(eligible)) eligible <- rep(TRUE, length(ids))
-  usable <- which(eligible & !is.na(values))
-  if (length(usable) == 0L) {
-    return(ledgr_strategy_empty_selection(ids, origin = attr(signal, "origin")))
-  }
-
-  # Ties break by instrument id in C-locale (radix) order, as the availability
-  # provider orders ids, whatever LC_COLLATE is.
-  ranked <- usable[order(-values[usable], ids[usable], method = "radix")]
-  selected_idx <- ranked[seq_len(min(n, length(ranked)))]
-
-  if (length(selected_idx) < n && identical(partial, "warn")) {
-    rlang::warn(
-      sprintf(
-        paste0(
-          "Only %d available signal value(s); selecting all available instruments. ",
-          "If this short selection is intentional, use `partial = \"allow\"`."
-        ),
-        length(selected_idx)
-      ),
-      class = "ledgr_partial_selection"
+  ids <- names(score)
+  if (is.null(ids) || length(ids) != length(score) || anyNA(ids) ||
+      any(!nzchar(ids)) || anyDuplicated(ids)) {
+    rlang::abort(
+      "`score` must have unique, non-missing instrument names.",
+      class = "ledgr_invalid_strategy_type"
     )
   }
+  if (sum(!vapply(list(n, fraction), is.null, logical(1))) != 1L) {
+    rlang::abort(
+      "Supply exactly one of `n` or `fraction`.",
+      class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+    )
+  }
+  pool <- ledgr_select_pool(within, ids)
+  requested <- if (!is.null(n)) {
+    if (!is.numeric(n) || length(n) != 1L || is.na(n) || !is.finite(n) ||
+        n < 0 || n != floor(n) || n > .Machine$integer.max) {
+      rlang::abort(
+        "`n` must be one non-negative whole number.",
+        class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+      )
+    }
+    as.integer(n)
+  } else {
+    if (!is.numeric(fraction) || length(fraction) != 1L || is.na(fraction) ||
+        !is.finite(fraction) || fraction <= 0 || fraction > 1) {
+      rlang::abort(
+        "`fraction` must be one finite number in (0, 1].",
+        class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+      )
+    }
+    if (length(pool) == 0L) 0L else max(1L, floor(length(pool) * fraction))
+  }
+  if (requested == 0L || length(pool) == 0L) return(character())
+  index <- match(pool, ids)
+  usable <- index[!is.na(score[index])]
+  if (length(usable) == 0L) return(character())
+  primary <- if (decreasing) -as.numeric(score[usable]) else as.numeric(score[usable])
+  ranked <- usable[order(primary, ids[usable], method = "radix")]
+  ids[ranked[seq_len(min(requested, length(ranked)))]]
+}
 
-  selection <- stats::setNames(rep(FALSE, length(ids)), ids)
-  selection[selected_idx] <- TRUE
-  ledgr_selection(selection, universe = ids, origin = attr(signal, "origin"))
+ledgr_select_pool <- function(within, ids) {
+  if (is.null(within)) return(ids)
+  if (is.character(within) && !is.factor(within)) {
+    if (anyNA(within) || any(!nzchar(within)) || anyDuplicated(within)) {
+      rlang::abort(
+        "Character `within` must contain unique, non-missing instrument IDs.",
+        class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+      )
+    }
+    unknown <- setdiff(within, ids)
+    if (length(unknown) > 0L) {
+      rlang::abort(
+        sprintf("`within` names instruments outside `score`: %s.", paste(unknown, collapse = ", ")),
+        class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+      )
+    }
+    return(within)
+  }
+  if (!is.logical(within)) {
+    rlang::abort(
+      "`within` must be instrument IDs or a logical vector.",
+      class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+    )
+  }
+  within_names <- names(within)
+  if (is.null(within_names)) {
+    if (length(within) != length(ids)) {
+      rlang::abort(
+        "Unnamed logical `within` must have one value per score.",
+        class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+      )
+    }
+    return(ids[!is.na(within) & within])
+  }
+  if (length(within_names) != length(within) || anyNA(within_names) ||
+      any(!nzchar(within_names)) || anyDuplicated(within_names) ||
+      !setequal(within_names, ids)) {
+    rlang::abort(
+      "Named logical `within` must cover the score axis exactly once.",
+      class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+    )
+  }
+  aligned <- within[match(ids, within_names)]
+  ids[!is.na(aligned) & aligned]
 }
 
 #' Convert a selection to equal long-only weights
 #'
-#' `ledgr_weight_equal()` assigns equal positive weights to selected instruments.
-#' Empty selections produce empty weights.
+#' `ledgr_weight_equal()` assigns equal non-negative weights to an ordinary
+#' character selection. Empty selections produce a plain named `numeric(0)`.
 #'
-#' @param selection A `ledgr_selection` object.
-#' @return A `ledgr_weights` object.
+#' @param selection Unique instrument IDs.
+#' @param each Optional finite non-negative weight assigned to every selected
+#'   instrument. Without it, the selected instruments share weight one.
+#' @return A plain named double vector.
 #' @examples
-#' selection <- ledgr_selection(c(AAA = TRUE, BBB = TRUE), universe = c("AAA", "BBB"))
+#' selection <- c("AAA", "BBB")
 #' ledgr_weight_equal(selection)
+#' ledgr_weight_equal(selection, each = 0.2)
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-ledgr_weight_equal <- function(selection) {
-  if (!inherits(selection, "ledgr_selection")) {
-    rlang::abort("`selection` must be a ledgr_selection object.", class = "ledgr_invalid_strategy_helper")
+ledgr_weight_equal <- function(selection, each = NULL) {
+  if (!is.character(selection) || is.factor(selection) || anyNA(selection) ||
+      any(!nzchar(selection)) || anyDuplicated(selection)) {
+    rlang::abort(
+      "`selection` must be a unique character vector of instrument IDs.",
+      class = "ledgr_invalid_strategy_type"
+    )
   }
-  selected <- names(selection)[as.logical(selection)]
-  if (length(selected) == 0L) {
-    # Empty selections created from all-FALSE vectors keep their universe in
-    # names(); selections created as logical() carry it in an attribute.
-    return(ledgr_weights(numeric(), universe = ledgr_strategy_type_empty_universe(selection), origin = attr(selection, "origin")))
+  if (length(selection) == 0L) return(stats::setNames(numeric(), character()))
+  if (is.null(each)) {
+    each <- 1 / length(selection)
+  } else if (!is.numeric(each) || length(each) != 1L || is.na(each) ||
+             !is.finite(each) || each < 0) {
+    rlang::abort(
+      "`each` must be one finite non-negative number.",
+      class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+    )
   }
-  weights <- stats::setNames(rep(1 / length(selected), length(selected)), selected)
-  ledgr_weights(weights, universe = names(selection), origin = attr(selection, "origin"))
+  weights <- stats::setNames(rep(as.numeric(each), length(selection)), selection)
+  if (sum(weights) > 1 + sqrt(.Machine$double.eps)) {
+    rlang::abort(
+      "Equal weights must sum to at most one.",
+      class = "ledgr_invalid_strategy_type"
+    )
+  }
+  weights
 }
 
-#' Construct full target quantities from weights
+#' Size a full-axis portfolio target
 #'
-#' `ledgr_target_rebalance()` converts long-only weights into a full-universe
-#' `ledgr_target`. It uses current pulse equity and current close prices at
-#' decision time; fills still occur at the next open, so small drift between
-#' decision-time sizing and fill-time value is expected.
+#' `ledgr_target_rebalance()` replaces the decided eligible allocation.
+#' `ledgr_target_adjust()` changes only the named positions. Both use the same
+#' sizing engine and return a complete `ledgr_target` over `ctx$universe`.
 #'
 #' In a dense run, allocatable equity is current equity. In an
 #' availability-aware run, ledgr first reserves the absolute marked exposure of
@@ -263,9 +261,9 @@ ledgr_weight_equal <- function(selection) {
 #' preserves their current quantities; weights may name eligible instruments
 #' only. IDs named in `keep`
 #' are likewise preserved and reserved exactly once. Weights and
-#' `equity_fraction` apply to the residual capital after those reservations.
+#' `invest_fraction` applies to the chosen capital base after reservations.
 #' Share quantities are floored to whole numbers with
-#' `floor(weight * equity_fraction * allocation_equity / close_price)`. An
+#' `floor(weight * invest_fraction * allocation_equity / close_price)`. An
 #' exact zero member weight targets zero without consulting that instrument's
 #' sizing close.
 #'
@@ -280,178 +278,392 @@ ledgr_weight_equal <- function(selection) {
 #' `ledgr_results(bt, "diagnostics")`.
 #'
 #' Warning and error classes:
-#' - `ledgr_invalid_target_price` when a selected instrument has missing,
-#'   non-finite, or non-positive close price in a dense run, which targets zero;
 #' - `ledgr_target_sizing_unavailable` when an availability-aware rebalance
 #'   must keep a held member, or reserve a preserved holding, that has no
-#'   permissible valuation mark;
-#' - `ledgr_negative_weights` for negative weights;
-#' - `ledgr_levered_weights` when `sum(abs(weights)) > 1`.
+#'   permissible valuation mark.
 #'
-#' @param weights A `ledgr_weights` object.
 #' @param ctx ledgr strategy context.
-#' @param equity_fraction Fraction of allocatable equity to allocate, between 0
-#'   and 1.
+#' @param weights Optional ordinary named finite non-negative weights summing
+#'   to at most one.
+#' @param invest_fraction Fraction of the selected capital base to invest.
+#' @param capital_base Optional allocation base: `"total_equity"` or
+#'   `"remaining_equity"`. Weighted rebalance requires a choice when preserved
+#'   or added exposure makes the bases differ; weighted adjust defaults to
+#'   `"total_equity"`.
 #' @param keep Current decision-axis positions to preserve. Kept IDs must not
 #'   also appear in `weights`, even at zero weight.
+#' @param index_leavers Required policy for held instruments outside current
+#'   membership that are not named by a character `keep`: `"sell"` or
+#'   `"keep"`. There is no implicit leaver policy.
 #' @return A full-universe `ledgr_target` object.
 #' @examples
-#' weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5),
-#'                          universe = c("AAA", "BBB"))
+#' weights <- c(AAA = 0.5, BBB = 0.5)
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   equity = 1000,
 #'   close = c(AAA = 50, BBB = 100),
+#'   member = c(AAA = TRUE, BBB = TRUE),
 #'   buyable = c(AAA = TRUE, BBB = TRUE),
 #'   position = c(AAA = 0, BBB = 0),
 #'   holding_value = c(AAA = 0, BBB = 0)
 #' )
-#' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
+#' ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.5)
 #'
 #' ctx$position <- c(AAA = 2, BBB = 0)
-#' weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
-#' ledgr_target_rebalance(weights, ctx, keep = "AAA")
+#' weights <- c(BBB = 1)
+#' ledgr_target_rebalance(ctx, weights = weights, keep = "AAA")
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-ledgr_target_rebalance <- function(weights,
-                                   ctx,
-                                   equity_fraction = 1.0,
-                                   keep = NULL) {
-  if (!inherits(weights, "ledgr_weights")) {
-    rlang::abort("`weights` must be a ledgr_weights object.", class = "ledgr_invalid_strategy_helper")
-  }
-  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_target_rebalance")
+ledgr_target_rebalance <- function(ctx,
+                                   weights = NULL,
+                                   keep = NULL,
+                                   index_leavers = NULL,
+                                   invest_fraction = 1,
+                                   capital_base = NULL) {
+  ledgr_target_size(
+    ctx = ctx,
+    verb = "rebalance",
+    weights = weights,
+    keep = keep,
+    index_leavers = index_leavers,
+    invest_fraction = invest_fraction,
+    capital_base = capital_base
+  )
+}
+
+#' Adjust named positions without replacing the rest of the portfolio
+#'
+#' `ledgr_target_adjust()` keeps every unmentioned position at its current
+#' quantity. Named weights replace exposure for those IDs, `add_value` adds
+#' decision-value exposure, and `exit` closes the selected positions.
+#'
+#' @inheritParams ledgr_target_rebalance
+#' @param add_value Optional named finite non-negative currency exposure to add.
+#' @param exit Optional logical mask over the decision axis.
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#' @export
+ledgr_target_adjust <- function(ctx,
+                                weights = NULL,
+                                add_value = NULL,
+                                exit = NULL,
+                                invest_fraction = 1,
+                                capital_base = NULL) {
+  ledgr_target_size(
+    ctx = ctx,
+    verb = "adjust",
+    weights = weights,
+    add_value = add_value,
+    exit = exit,
+    invest_fraction = invest_fraction,
+    capital_base = capital_base
+  )
+}
+
+ledgr_target_size <- function(ctx,
+                              verb,
+                              weights = NULL,
+                              keep = NULL,
+                              index_leavers = NULL,
+                              add_value = NULL,
+                              exit = NULL,
+                              invest_fraction = 1,
+                              capital_base = NULL) {
+  universe <- ledgr_validate_strategy_helper_ctx(ctx, paste0("ledgr_target_", verb))
   equity <- ledgr_strategy_helper_context_equity(ctx)
-  equity_fraction <- ledgr_strategy_helper_validate_equity_fraction(equity_fraction)
+  invest_fraction <- ledgr_strategy_helper_validate_invest_fraction(invest_fraction)
+  weights <- ledgr_target_named_amount(weights, "weights", universe, allow_null = TRUE)
+  add_value <- ledgr_target_named_amount(add_value, "add_value", universe, allow_null = TRUE)
+  if (sum(weights) > 1 + sqrt(.Machine$double.eps)) {
+    rlang::abort("`weights` must sum to at most one.", class = "ledgr_invalid_strategy_type")
+  }
+  buyable <- ledgr_strategy_eligible(ctx, universe)
+  member <- as.logical(ctx$member)
+  if (length(member) != length(universe) || anyNA(member)) {
+    rlang::abort("`ctx$member` must cover the decision axis.", class = "ledgr_invalid_strategy_helper")
+  }
+  position <- as.numeric(ctx$position)
+  if (length(position) != length(universe) || any(!is.finite(position))) {
+    rlang::abort("`ctx$position` must provide one finite value per decision-axis instrument.", class = "ledgr_invalid_strategy_helper")
+  }
+  names(position) <- universe
+  holding_value <- as.numeric(ctx$holding_value)
+  if (length(holding_value) != length(universe)) {
+    rlang::abort("`ctx$holding_value` must cover the decision axis.", class = "ledgr_invalid_strategy_helper")
+  }
+  names(holding_value) <- universe
+  close <- as.numeric(ctx$close)
+  if (length(close) != length(universe)) {
+    rlang::abort("`ctx$close` must cover the decision axis.", class = "ledgr_invalid_strategy_helper")
+  }
+  names(close) <- universe
 
-  if (is.null(keep)) keep <- character()
-  if (!is.character(keep) || is.factor(keep) || anyNA(keep) ||
-      any(!nzchar(keep)) || anyDuplicated(keep)) {
+  weighted_ids <- names(weights)
+  addition_ids <- names(add_value)
+  requested_ids <- union(weighted_ids, addition_ids)
+  ineligible <- requested_ids[!buyable[match(requested_ids, universe)]]
+  if (length(ineligible) > 0L) {
     rlang::abort(
-      "`keep` must be NULL or a unique character vector of non-empty instrument IDs.",
+      sprintf("Sizing requests name instruments that are not buyable: %s.", paste(ineligible, collapse = ", ")),
       class = "ledgr_invalid_strategy_helper"
     )
   }
-  unknown_keep <- setdiff(keep, universe)
-  if (length(unknown_keep) > 0L) {
-    rlang::abort(
-      sprintf("`keep` names instruments outside the decision axis: %s.", paste(unknown_keep, collapse = ", ")),
-      class = "ledgr_invalid_strategy_helper"
-    )
-  }
-  overlap <- intersect(keep, names(weights))
-  if (length(overlap) > 0L) {
-    rlang::abort(
-      sprintf("Instruments must not appear in both `keep` and `weights`: %s.", paste(overlap, collapse = ", ")),
-      class = "ledgr_invalid_strategy_helper"
-    )
+  if (length(intersect(weighted_ids, addition_ids)) > 0L) {
+    rlang::abort("An instrument cannot be both weighted and added.", class = "ledgr_invalid_strategy_result")
   }
 
-  members <- universe[ledgr_strategy_eligible(ctx, universe)]
+  target <- position
+  preserve <- rep(TRUE, length(universe))
+  explicit_keep <- character()
+  logical_keep <- rep(FALSE, length(universe))
+  exits <- rep(FALSE, length(universe))
 
-  extra <- setdiff(names(weights), members)
-  if (length(extra) > 0L) {
-    rlang::abort(
-      sprintf("`weights` names instruments that are not eligible: %s.", paste(extra, collapse = ", ")),
-      class = "ledgr_invalid_strategy_helper"
-    )
-  }
-  if (any(as.numeric(weights) < 0)) {
-    rlang::abort("Negative weights are not supported until short-selling semantics are defined.", class = "ledgr_negative_weights")
-  }
-  if (sum(abs(as.numeric(weights))) > 1 + sqrt(.Machine$double.eps)) {
-    rlang::abort("Levered weights are not supported; `sum(abs(weights))` must be <= 1.", class = "ledgr_levered_weights")
-  }
-
-  position <- ctx$position
-  if (is.null(position) || length(position) != length(universe)) {
-    rlang::abort(
-      paste0(
-        "`ctx$position` must provide one value per decision-axis ",
-        "instrument."
-      ),
-      class = "ledgr_invalid_strategy_helper"
-    )
-  }
-  position_vec <- stats::setNames(as.numeric(position), universe)
-  target <- position_vec
-  if (length(members) > 0L) target[members] <- 0
-  if (length(keep) > 0L) target[keep] <- position_vec[keep]
-  allocation_equity <- equity
-  held_nonmembers <- setdiff(universe[position_vec != 0], members)
-  reserved_ids <- union(held_nonmembers, keep[position_vec[keep] != 0])
-  if (length(reserved_ids) > 0L) {
-    idx <- match(reserved_ids, universe)
-    reserved_value <- as.numeric(ctx$holding_value[idx])
-    if (any(!is.finite(reserved_value))) {
+  if (identical(verb, "rebalance")) {
+    parsed_keep <- ledgr_target_keep(keep, universe)
+    explicit_keep <- parsed_keep$ids
+    logical_keep <- parsed_keep$mask
+    if (!is.null(index_leavers) &&
+        (!is.character(index_leavers) || length(index_leavers) != 1L ||
+         is.na(index_leavers) || !index_leavers %in% c("sell", "keep"))) {
       rlang::abort(
-        "Cannot reserve kept exposure without a permissible valuation mark.",
-        class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper")
+        "`index_leavers` must be NULL, \"sell\", or \"keep\".",
+        class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
       )
     }
-    allocation_equity <- max(0, equity - sum(abs(reserved_value)))
-  }
-  if (length(weights) == 0L || equity_fraction == 0 || equity == 0) {
-    return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
+    held_leavers <- universe[position != 0 & !member]
+    undecided <- setdiff(held_leavers, explicit_keep)
+    if (length(undecided) > 0L && is.null(index_leavers)) {
+      rlang::abort(
+        sprintf(
+          paste0("Held index leavers need an explicit decision: %s. Name exceptions in `keep`, ",
+                 "or set `index_leavers = \"sell\"` or `\"keep\"`."),
+          paste(undecided, collapse = ", ")
+        ),
+        class = "ledgr_invalid_strategy_result"
+      )
+    }
+    if (identical(index_leavers, "sell") && length(undecided) > 0L) {
+      target[undecided] <- 0
+      preserve[match(undecided, universe)] <- FALSE
+    }
+    replaceable <- buyable & !logical_keep & !universe %in% explicit_keep
+    target[replaceable] <- 0
+    preserve[replaceable] <- FALSE
+    keep_ids <- union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, "sell"))])
+    target[keep_ids] <- position[keep_ids]
+    preserve[match(keep_ids, universe)] <- TRUE
+    overlap <- intersect(weighted_ids, keep_ids)
+    if (length(overlap) > 0L) {
+      rlang::abort(
+        sprintf("Instruments cannot be both weighted and kept: %s.", paste(overlap, collapse = ", ")),
+        class = "ledgr_invalid_strategy_result"
+      )
+    }
+  } else {
+    if (!is.null(keep) || !is.null(index_leavers)) {
+      rlang::abort("`keep` and `index_leavers` belong to `ledgr_target_rebalance()`.", class = "ledgr_invalid_strategy_helper")
+    }
+    exits <- ledgr_target_logical(exit, universe, "exit")
+    conflict <- union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))
+    if (length(conflict) > 0L) {
+      rlang::abort(
+        sprintf("Instruments cannot be both sized and exited: %s.", paste(conflict, collapse = ", ")),
+        class = "ledgr_invalid_strategy_result"
+      )
+    }
+    target[exits] <- 0
+    preserve[exits] <- FALSE
   }
 
-  weight_values <- as.numeric(weights)
-  positive_weight <- weight_values > 0
-  if (!any(positive_weight)) {
-    return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
+  preserved_ids <- universe[preserve & position != 0 & !universe %in% weighted_ids]
+  # Existing quantities in addition IDs are preserved and therefore reserve
+  # their marked exposure; the requested additions themselves enter A once.
+  preserved_values <- holding_value[match(preserved_ids, universe)]
+  if (any(!is.finite(preserved_values))) {
+    bad <- preserved_ids[which(!is.finite(preserved_values))[[1L]]]
+    ledgr_target_sizing_abort(sprintf("Cannot preserve `%s` without a permissible valuation mark.", bad), bad)
   }
-
-  close_vec <- as.numeric(ctx$close)
-  weight_ids <- names(weights)[positive_weight]
-  weight_values <- weight_values[positive_weight]
-  price <- close_vec[match(weight_ids, universe)]
-  invalid_price <- is.na(price) | !is.finite(price) | price <= 0
-  valid <- !invalid_price
-  sized_value <- weight_values[valid] * equity_fraction * allocation_equity
-  skipped <- character()
-  scale <- 1
-  if (any(invalid_price)) {
-    # An eligible member without a current close is skipped for this
-    # rebalance: it keeps its current quantity and its weight is not
-    # redistributed. Priced members keep their fully priced size unless a held
-    # skipped member's marked exposure would push the total above allocatable
-    # equity, in which case they are scaled down before flooring.
-    skipped <- weight_ids[invalid_price]
-    skip_idx <- match(skipped, universe)
-    target[skipped] <- position_vec[skip_idx]
-    held <- position_vec[skip_idx] != 0
-    held_exposure <- 0
-    if (any(held)) {
-      held_values <- as.numeric(ctx$holding_value[skip_idx[held]])
-      if (any(!is.finite(held_values))) {
-        id <- skipped[held][which(!is.finite(held_values))[[1L]]]
+  reserved <- sum(abs(preserved_values))
+  additions <- sum(add_value)
+  if (!is.finite(reserved) || !is.finite(additions)) {
+    rlang::abort(
+      "Preserved and added exposure must have finite totals.",
+      class = "ledgr_invalid_strategy_type"
+    )
+  }
+  positive_weights <- weights > 0
+  needs_base <- any(positive_weights)
+  bases_differ <- reserved + additions > 0
+  base_origin <- "not_required"
+  if (needs_base) {
+    if (is.null(capital_base)) {
+      if (identical(verb, "rebalance") && bases_differ) {
         rlang::abort(
-          sprintf("Cannot keep `%s` while skipping it: it has no current close and no permissible valuation mark.", id),
-          class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
-          instrument_id = id
+          "Choose `capital_base = \"total_equity\"` or `\"remaining_equity\"` because preserved or added exposure makes them differ.",
+          class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
         )
       }
-      held_exposure <- sum(abs(held_values))
-    }
-    priced_value <- sum(sized_value)
-    if (priced_value > 0 && priced_value + held_exposure > allocation_equity) {
-      scale <- max(0, allocation_equity - held_exposure) / priced_value
-    }
-    notes <- unclass(ctx)[[".notes"]]
-    if (is.environment(notes)) {
-      notes$sizing_skipped <- union(notes$sizing_skipped, skipped)
+      capital_base <- "total_equity"
+      base_origin <- "default"
+    } else {
+      base_origin <- "supplied"
     }
   }
-  if (scale != 1) sized_value <- scale * sized_value
-  target[weight_ids[valid]] <- floor(sized_value / price[valid])
+  if (!is.null(capital_base) &&
+      (!is.character(capital_base) || length(capital_base) != 1L ||
+       is.na(capital_base) || !capital_base %in% c("total_equity", "remaining_equity"))) {
+    rlang::abort(
+      "`capital_base` must be NULL, \"total_equity\", or \"remaining_equity\".",
+      class = c("ledgr_invalid_strategy_helper", "ledgr_invalid_args")
+    )
+  }
+  base <- if (identical(capital_base, "remaining_equity")) {
+    max(0, equity - reserved - additions)
+  } else {
+    equity
+  }
 
-  out <- ledgr_target(target, universe = universe, origin = attr(weights, "origin"))
+  skipped <- character()
+  if (length(weighted_ids) > 0L) {
+    zero <- weights == 0
+    if (any(zero)) target[weighted_ids[zero]] <- 0
+    positive_ids <- weighted_ids[positive_weights]
+    if (length(positive_ids) > 0L) {
+      price <- close[positive_ids]
+      valid <- is.finite(price) & price > 0
+      skipped_weight <- positive_ids[!valid]
+      if (length(skipped_weight) > 0L) {
+        target[skipped_weight] <- position[skipped_weight]
+        skipped <- union(skipped, skipped_weight)
+      }
+      requested_value <- weights[positive_ids[valid]] * invest_fraction * base
+      skipped_held <- skipped_weight[position[skipped_weight] != 0]
+      unavailable_value <- if (length(skipped_held) == 0L) 0 else {
+        value <- holding_value[skipped_held]
+        if (any(!is.finite(value))) {
+          bad <- skipped_held[which(!is.finite(value))[[1L]]]
+          ledgr_target_sizing_abort(sprintf("Cannot keep skipped `%s` without a permissible valuation mark.", bad), bad)
+        }
+        total <- sum(abs(value))
+        if (!is.finite(total)) {
+          ledgr_target_sizing_abort("Skipped marked exposure must have a finite total.")
+        }
+        total
+      }
+      scale <- 1
+      priced_value <- sum(requested_value)
+      if (priced_value > 0 && priced_value + unavailable_value > base) {
+        scale <- max(0, base - unavailable_value) / priced_value
+      }
+      if (length(requested_value) > 0L) {
+        target[positive_ids[valid]] <- floor(requested_value * scale / price[valid])
+      }
+    }
+  }
+  if (length(addition_ids) > 0L) {
+    price <- close[addition_ids]
+    valid <- is.finite(price) & price > 0
+    if (any(valid)) {
+      target[addition_ids[valid]] <- position[addition_ids[valid]] +
+        floor(add_value[valid] / price[valid])
+    }
+    if (any(!valid)) {
+      target[addition_ids[!valid]] <- position[addition_ids[!valid]]
+      skipped <- union(skipped, addition_ids[!valid])
+    }
+  }
+
+  notes <- unclass(ctx)[[".notes"]]
+  if (is.environment(notes) && length(skipped) > 0L) {
+    notes$sizing_skipped <- union(notes$sizing_skipped %||% character(), skipped)
+  }
+  out <- ledgr_target(target, universe = universe, origin = paste0("ledgr_target_", verb))
+  attr(out, "origin") <- list(
+    helper = paste0("ledgr_target_", verb),
+    capital_base = capital_base %||% "not_required",
+    capital_base_origin = base_origin,
+    invest_fraction = invest_fraction
+  )
+  attr(out, "sizing") <- list(
+    equity = equity,
+    preserved_value = reserved,
+    addition_value = additions,
+    capital_base_value = base,
+    unavailable_ids = skipped
+  )
   if (length(skipped) > 0L) attr(out, "sizing_skipped") <- skipped
   out
+}
+
+ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
+  if (is.null(x) && allow_null) return(stats::setNames(numeric(), character()))
+  if (!is.numeric(x) || is.factor(x) || !is.null(dim(x))) {
+    rlang::abort(sprintf("`%s` must be a named numeric vector.", label), class = "ledgr_invalid_strategy_type")
+  }
+  x_names <- names(x)
+  if (is.null(x_names) || length(x_names) != length(x) || anyNA(x_names) ||
+      any(!nzchar(x_names)) || anyDuplicated(x_names) || any(!is.finite(x)) || any(x < 0)) {
+    rlang::abort(
+      sprintf("`%s` must contain finite non-negative values with unique instrument names.", label),
+      class = "ledgr_invalid_strategy_type"
+    )
+  }
+  unknown <- setdiff(x_names, universe)
+  if (length(unknown) > 0L) {
+    rlang::abort(
+      sprintf("`%s` names instruments outside the decision axis: %s.", label, paste(unknown, collapse = ", ")),
+      class = "ledgr_invalid_strategy_type"
+    )
+  }
+  stats::setNames(as.numeric(x), x_names)
+}
+
+ledgr_target_logical <- function(x, universe, label) {
+  if (is.null(x)) return(stats::setNames(rep(FALSE, length(universe)), universe))
+  if (!is.logical(x) || is.factor(x) || anyNA(x)) {
+    rlang::abort(sprintf("`%s` must be a non-missing logical vector.", label), class = "ledgr_invalid_strategy_type")
+  }
+  x_names <- names(x)
+  if (is.null(x_names)) {
+    if (length(x) != length(universe)) {
+      rlang::abort(sprintf("Unnamed `%s` must cover the decision axis.", label), class = "ledgr_invalid_strategy_type")
+    }
+    return(stats::setNames(x, universe))
+  }
+  if (length(x_names) != length(x) || anyNA(x_names) || any(!nzchar(x_names)) ||
+      anyDuplicated(x_names) || !setequal(x_names, universe)) {
+    rlang::abort(sprintf("Named `%s` must cover the decision axis exactly once.", label), class = "ledgr_invalid_strategy_type")
+  }
+  stats::setNames(as.logical(x[match(universe, x_names)]), universe)
+}
+
+ledgr_target_keep <- function(keep, universe) {
+  if (is.null(keep)) return(list(ids = character(), mask = rep(FALSE, length(universe))))
+  if (is.character(keep) && !is.factor(keep)) {
+    if (anyNA(keep) || any(!nzchar(keep)) || anyDuplicated(keep)) {
+      rlang::abort("Character `keep` must contain unique instrument IDs.", class = "ledgr_invalid_strategy_type")
+    }
+    unknown <- setdiff(keep, universe)
+    if (length(unknown) > 0L) {
+      rlang::abort(sprintf("`keep` names instruments outside the decision axis: %s.", paste(unknown, collapse = ", ")), class = "ledgr_invalid_strategy_type")
+    }
+    return(list(ids = keep, mask = rep(FALSE, length(universe))))
+  }
+  list(ids = character(), mask = as.logical(ledgr_target_logical(keep, universe, "keep")))
+}
+
+ledgr_target_sizing_abort <- function(message, instrument_id = NULL) {
+  rlang::abort(
+    message,
+    class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
+    instrument_id = instrument_id
+  )
 }
 
 #' Construct full target quantities from a selection

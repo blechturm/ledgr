@@ -8,6 +8,7 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
                                  policy = ledgr_history_policy(),
                                  opening = ledgr_opening(cash = 1000),
                                  features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
+                                 schedule = NULL,
                                  availability = TRUE,
                                  dividend = NULL,
                                  ccc_known = 7L,
@@ -79,12 +80,77 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
       snapshot, strategy, universe = ledgr_universe_members("u"),
       features = features, valuation_policy = valuation_policy,
       cost_model = ledgr_cost_zero(), opening = opening, history_policy = policy,
+      schedule = schedule,
       corporate_action_policy = corporate_action_policy
     )
   } else {
     NULL
   }
   list(snapshot = snapshot, exp = exp, days = days, axis = utc(days))
+}
+
+ws42_with_schedule <- function(exp, schedule) {
+  schedule <- ledgr:::ledgr_schedule_validate(schedule)
+  exp$schedule <- schedule
+  strategy <- exp$strategy
+  attr(strategy, "ledgr_schedule") <- unclass(schedule)
+  exp$strategy <- strategy
+  exp
+}
+
+ws16_attach_schedule_to_strategy_for_legacy_path_test <- function(strategy, schedule) {
+  stopifnot(is.function(strategy))
+  if (!is.null(attr(strategy, "ledgr_schedule", exact = TRUE))) {
+    ledgr:::ledgr_schedule_abort("The test strategy already carries a schedule.")
+  }
+  attr(strategy, "ledgr_schedule") <- unclass(ledgr:::ledgr_schedule_validate(schedule))
+  strategy
+}
+
+ws16_weight_equal_from_legacy_selection <- function(selection, ...) {
+  if (inherits(selection, "ledgr_selection")) {
+    selection <- names(selection)[!is.na(selection) & as.logical(selection)]
+  }
+  ledgr_weight_equal(selection, ...)
+}
+
+ws16_select_top_for_legacy_test <- function(score, n, ...) {
+  within <- attr(score, "eligible", exact = TRUE)
+  ids <- ledgr_select_top(score, n = n, within = within)
+  universe <- names(score)
+  out <- ledgr_selection(stats::setNames(universe %in% ids, universe), universe = universe)
+  if (length(ids) == 0L) class(out) <- c("ledgr_empty_selection", class(out))
+  out
+}
+
+ws16_target_from_legacy_call <- function(ctx,
+                                         weights = NULL,
+                                         equity_fraction = NULL,
+                                         ...) {
+  if ((!is.list(ctx) && !is.environment(ctx)) &&
+      (is.list(weights) || is.environment(weights))) {
+    swap <- ctx
+    ctx <- weights
+    weights <- swap
+  }
+  if (inherits(weights, "ledgr_weights")) weights <- unclass(weights)
+  if (is.null(ctx$member)) ctx$member <- stats::setNames(rep(TRUE, length(ctx$universe)), ctx$universe)
+  if (is.null(ctx$position)) ctx$position <- stats::setNames(numeric(length(ctx$universe)), ctx$universe)
+  if (is.null(ctx$holding_value)) ctx$holding_value <- stats::setNames(numeric(length(ctx$universe)), ctx$universe)
+  args <- list(ctx = ctx, weights = weights, ...)
+  if (!is.null(equity_fraction)) args$invest_fraction <- equity_fraction
+  held_leavers <- ctx$universe[as.numeric(ctx$position) != 0 & !as.logical(ctx$member)]
+  if (length(held_leavers) > 0L && is.null(args$index_leavers) && is.null(args$keep)) {
+    args$index_leavers <- "keep"
+  }
+  if (is.null(args$capital_base) && length(weights) > 0L &&
+      (any(as.numeric(ctx$position) != 0) || !is.null(args$keep))) {
+    args$capital_base <- "remaining_equity"
+  }
+  out <- do.call(ledgr_target_rebalance, args)
+  attr(out, "origin") <- NULL
+  attr(out, "sizing") <- NULL
+  out
 }
 
 ws42_iso <- function(x) format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")

@@ -5,7 +5,7 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
     invisible(ctx[["sma_2"]])
     ctx$flat()
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = list(ledgr_ind_sma(2L)),

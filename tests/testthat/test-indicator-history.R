@@ -395,7 +395,7 @@ testthat::test_that("[LTB-0309] rule-4 feature identity binds every history decl
     history_class = "bounded",
     required_fields = "close"
   )
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$hold(),
     features = list(ledgr_ind_sma(2L), ledgr_ind_returns(1L), golden_bounded),

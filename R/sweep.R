@@ -1690,14 +1690,15 @@ ledgr_sweep_candidate_execution <- function(exp,
   risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
   strategy_fn <- ledgr_strategy_schedule_inner(exp$strategy)
   signature <- ledgr_strategy_signature(strategy_fn)
+  schedule_sessions <- if (identical(history_substrate$clock_kind, "declared_sessions")) {
+    history_substrate$sessions
+  } else {
+    NULL
+  }
   schedule <- ledgr_compile_strategy_schedule(
     declaration = ledgr_strategy_schedule_declaration(exp$strategy),
     strategy_params = params,
-    sessions = if (identical(history_substrate$clock_kind, "declared_sessions")) {
-      history_substrate$sessions
-    } else {
-      NULL
-    },
+    sessions = schedule_sessions,
     pulses_posix = pulses_posix
   )
   if (!is.null(schedule$decision_due) &&
@@ -1749,6 +1750,8 @@ ledgr_sweep_candidate_execution <- function(exp,
     execution_opportunities_posix = execution_opportunities_posix,
     corporate_action_plan = corporate_action_plan,
     corporate_action_policy = exp$corporate_action_policy,
+    schedule_sessions = schedule_sessions,
+    schedule_params = params,
     decision_due = schedule$decision_due,
     decision_pulse_count = schedule$decision_pulse_count,
     scheduled_skip_count = schedule$scheduled_skip_count

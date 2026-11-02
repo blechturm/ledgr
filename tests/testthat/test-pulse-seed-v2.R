@@ -394,7 +394,7 @@ testthat::test_that("scheduled skips keep their index on the run's calendar", {
 
   due_idx <- c(3L, 6L)
   scheduled_exp <- fixture$exp
-  scheduled_exp$strategy <- ledgr_strategy_schedule(record, ledgr_schedule_dates(fixture$days[due_idx]))
+  scheduled_exp$strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(record, ledgr_schedule_dates(fixture$days[due_idx]))
   scheduled_run <- suppressWarnings(ledgr_run(scheduled_exp, run_id = "ps2-schedule-due", seed = 5L))
   on.exit(close(scheduled_run), add = TRUE)
   scheduled <- ps2_seeds_by_ts(rec)

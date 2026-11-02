@@ -48,7 +48,7 @@ testthat::test_that("ledgr_run evaluates feature functions once per run", {
     list(ledgr_ind_sma(params$n))
   }
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     features = features,
@@ -78,7 +78,7 @@ testthat::test_that("ledgr_run accepts execution seeds and stores them in config
     }
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     cost_model = ledgr_cost_zero()
@@ -113,7 +113,7 @@ testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without 
     }
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     cost_model = ledgr_cost_zero()
@@ -145,7 +145,7 @@ testthat::test_that("pulse_seed is exposed as a stable per-pulse strategy input"
     observed$pulse_seed <- c(observed$pulse_seed, ctx$pulse_seed)
     ctx$flat()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     cost_model = ledgr_cost_zero()
@@ -446,7 +446,7 @@ testthat::test_that("ledgr_run accepts params = list()", {
     testthat::expect_identical(params, list())
     ctx$flat()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     cost_model = ledgr_cost_zero()
@@ -464,7 +464,7 @@ testthat::test_that("ledgr_run validates run_id", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
@@ -483,7 +483,7 @@ testthat::test_that("ledgr_run validates params before execution", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
@@ -514,7 +514,7 @@ testthat::test_that("[LTB-0283] dense resume carries scalar strategy state", {
   )
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       list(targets = ctx$hold(), state_update = 5)

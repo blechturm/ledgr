@@ -74,14 +74,16 @@ testthat::test_that("ledgr_experiment stores resolved metric context metadata on
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
+    opening = ledgr_opening(cash = 1000),
     metric_context = ledgr_metric_crypto(risk_free_rate = 0.03),
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
   shorthand <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
+    opening = ledgr_opening(cash = 1000),
     risk_free_rate = 0.03,
-  cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero()
   )
 
   testthat::expect_s3_class(ledgr_metric_context(exp), "ledgr_metric_context")
@@ -91,9 +93,10 @@ testthat::test_that("ledgr_experiment stores resolved metric context metadata on
     ledgr_experiment(
       snapshot = snapshot,
       strategy = strategy,
+      opening = ledgr_opening(cash = 1000),
       metric_context = ledgr_metric_context(),
       risk_free_rate = 0,
-    cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_experiment"
   )
@@ -107,7 +110,7 @@ testthat::test_that("ledgr_experiment defaults universe to all snapshot instrume
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
 
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
 
   testthat::expect_identical(exp$universe, c("AAA", "BBB"))
 })
@@ -126,7 +129,7 @@ testthat::test_that("ledgr_experiment rejects unsealed snapshots", {
   }
 
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment"
   )
 })
@@ -141,27 +144,27 @@ testthat::test_that("ledgr_experiment validates strategy, universe, features, an
   }
 
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = function(ctx) ctx, cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = function(ctx) ctx, cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment_strategy"
   )
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = function(ctx, params, extra) ctx, cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = function(ctx, params, extra) ctx, cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment_strategy"
   )
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = strategy, universe = "CCC", cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, universe = "CCC", cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment"
   )
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = strategy, universe = c("AAA", "AAA"), cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, universe = c("AAA", "AAA"), cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment"
   )
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = strategy, features = list("bad"), cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = list("bad"), cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment_features"
   )
   testthat::expect_error(
-    ledgr_experiment(snapshot = snapshot, strategy = strategy, features = function(x) list(), cost_model = ledgr_cost_zero()),
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = function(x) list(), cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_experiment_features"
   )
   testthat::expect_error(
@@ -189,7 +192,7 @@ testthat::test_that("ledgr_experiment accepts feature functions without executin
     list(ledgr_ind_sma(params$n))
   }
 
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_fn, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, features = feature_fn, cost_model = ledgr_cost_zero())
 
   testthat::expect_s3_class(exp, "ledgr_experiment")
   testthat::expect_identical(exp$features_mode, "function")
@@ -203,7 +206,7 @@ testthat::test_that("experiment-related print methods are concise", {
   strategy <- function(ctx, params) {
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero())
 
   opening_out <- utils::capture.output(print(exp$opening))
   experiment_out <- utils::capture.output(print(exp))

@@ -550,7 +550,7 @@ testthat::test_that("[WS4a D12a-c D12e] identity, dependency, export and compile
   db <- tempfile(fileext = ".duckdb")
   snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(), cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, function(ctx, params) ctx$hold(), cost_model = ledgr_cost_zero())
   close(ledgr_run(exp, run_id = "d12a", seed = 1L))
   h <- ledgr_test_open_duckdb(db)
   runs <- DBI::dbGetQuery(h$con, "SELECT * FROM runs WHERE run_id = 'd12a'")
@@ -1393,7 +1393,7 @@ testthat::test_that("[WS4a D4] the strategy return is normalized once per decide
   dense <- function() {
     snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = tempfile(fileext = ".duckdb"))
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-    exp <- ledgr_experiment(snapshot, function(ctx, params) {
+    exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, function(ctx, params) {
       target <- ctx$hold()
       target[[1L]] <- 1
       target
@@ -1420,7 +1420,7 @@ testthat::test_that("[WS4a missing targets] a missing target is refused on both 
   }
   snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  dense <- ledgr_experiment(snapshot, drop_first, cost_model = ledgr_cost_zero())
+  dense <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, drop_first, cost_model = ledgr_cost_zero())
   testthat::expect_error(ledgr_run(dense, run_id = "missing-dense"), "missing instruments",
     class = "ledgr_invalid_strategy_result")
   f <- availability_v201_fold_fixture()
@@ -1461,7 +1461,7 @@ testthat::test_that("[WS4a O3.28] the compiled risk plan is validated in E, not 
   )
   snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot, function(ctx, params) {
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, function(ctx, params) {
     target <- ctx$hold()
     target[[1L]] <- 2
     target

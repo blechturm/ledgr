@@ -175,7 +175,7 @@ ledgr_metric_fixture <- function(name) {
       bars = ledgr_metric_bars(c(100, 101, 101, 101, 101)),
       strategy = function(ctx, params) {
         weights <- ledgr_weights(c(AAA = 1))
-        ledgr_target_rebalance(weights, ctx, equity_fraction = 0.255)
+        ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.255)
       },
       initial_cash = 1000
     ),

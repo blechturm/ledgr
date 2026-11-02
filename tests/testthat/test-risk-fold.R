@@ -328,7 +328,7 @@ testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", 
     targets[] <- params$qty
     targets
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     cost_model = ledgr_cost_zero()
@@ -441,7 +441,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     targets
   }
   experiments <- lapply(snapshots, function(snapshot) {
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       cost_model = ledgr_cost_zero(),
@@ -547,7 +547,7 @@ testthat::test_that("[LTB-0280] handler faults preserve fold atomicity in both d
     targets
   }
   two_pulse <- lapply(snapshots, function(snapshot) {
-    ledgr_experiment(snapshot, rising, cost_model = ledgr_cost_zero(), execution_mode = "db_live")
+    ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, rising, cost_model = ledgr_cost_zero(), execution_mode = "db_live")
   })
   for (mode in names(two_pulse)) {
     run_id <- paste0("handler-fault-two-pulse-", mode)
@@ -840,7 +840,7 @@ testthat::test_that("public run applies long-only risk step", {
     }
     ctx$hold()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     risk_chain = ledgr_risk_long_only(),
@@ -867,7 +867,7 @@ testthat::test_that("public sweep applies parameterized max-weight risk step", {
     }
     ctx$hold()
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     risk_chain = ledgr_risk_max_weight(ledgr_param("cap")),
@@ -909,7 +909,7 @@ testthat::test_that("risk failures are captured as sweep candidate failures", {
     ctx$hold()
   }
   risk <- ledgr_risk_max_weight(ledgr_param("cap"))
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot = snapshot,
     strategy = strategy,
     risk_chain = risk,

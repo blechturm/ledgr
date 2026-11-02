@@ -42,7 +42,7 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
       )
     )
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = ledgr_universe_members("dynamic"),
@@ -341,7 +341,7 @@ testthat::test_that("fixed baskets use the canonical valuation-state service", {
     instruments_df = data.frame(instrument_id = "AAA")
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()

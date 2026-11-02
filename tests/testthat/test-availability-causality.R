@@ -15,7 +15,7 @@ testthat::test_that("provider resolves facts only after effective and knowledge 
     history[[length(history) + 1L]] <- unname(ctx$buyable)
     list(targets = ctx$hold(), state_update = list(history = history))
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(1),
@@ -103,7 +103,7 @@ testthat::test_that("future facts change identity without rewriting prior contex
     list(targets = ctx$hold(), state_update = list(history = history))
   }
   runs <- lapply(snapshots, function(snapshot) {
-    ledgr_run(ledgr_experiment(
+    ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       valuation_policy = ledgr_valuation_stale(1),

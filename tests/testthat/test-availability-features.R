@@ -180,7 +180,7 @@ availability_strict_policy <- function() {
 testthat::test_that("[LTB-0093] lifetime inactivity keeps venue feature sessions", {
   snapshot <- availability_session_axis_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     availability_strict_probe_strategy,
     features = ledgr_feature_map(signal = ledgr_ind_sma(2L)),
@@ -748,7 +748,7 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     list(ledgr_ind_ttr("RSI", input = "close", n = 2L)),
     list(ledgr_ind_ttr_outputs("MACD", input = "close", nSlow = 3L, nFast = 2L, nSig = 2L))
   )) {
-    experiment <- ledgr_experiment(
+    experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       function(ctx, params) ctx$hold(),
       features = history_feature,
@@ -805,7 +805,7 @@ testthat::test_that("undeclared indicators run as history-dependent in availabil
     history[[length(history) + 1L]] <- if (is.na(value)) "NA" else format(value, digits = 17)
     list(targets = ctx$hold(), state_update = list(history = history))
   }
-  run <- ledgr_run(ledgr_experiment(
+  run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = list(undeclared),
@@ -843,7 +843,7 @@ testthat::test_that("future facts do not change earlier features", {
     list(targets = ctx$hold(), state_update = list(history = history))
   }
   runs <- lapply(snapshots, function(snapshot) {
-    ledgr_run(ledgr_experiment(
+    ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       features = list(ledgr_ind_sma(2)),

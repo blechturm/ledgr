@@ -347,7 +347,7 @@ testthat::test_that("[LTB-0031] experiment construction enforces the declared pr
 
   strategy <- function(ctx, params) ctx$flat()
   make_experiment <- function(snapshot) {
-    ledgr_experiment(
+    ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot = snapshot,
       strategy = strategy,
       cost_model = ledgr_cost_zero()

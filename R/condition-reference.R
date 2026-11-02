@@ -842,7 +842,6 @@
 #' - `ledgr_invariant_violation` reports the invariant violation boundary.
 #' - `ledgr_legacy_feature_factory_feature_params_unsupported` reports the
 #'   legacy feature factory feature params unsupported boundary.
-#' - `ledgr_levered_weights` reports the levered weights boundary.
 #' - `ledgr_lot_state_invariant` reports the lot state invariant boundary.
 #' - `ledgr_missing_bars` reports missing bars evidence.
 #' - `ledgr_missing_dependency` reports missing dependency evidence.
@@ -852,7 +851,6 @@
 #' - `ledgr_missing_precomputed_features_warning` reports missing precomputed
 #'   features warning evidence.
 #' - `ledgr_mixed_metric_cadence` reports the mixed metric cadence boundary.
-#' - `ledgr_negative_weights` reports the negative weights boundary.
 #' - `ledgr_no_active_alias_map` reports the no active alias map boundary.
 #' - `ledgr_observation_invalid_shape` reports the observation invalid shape
 #'   boundary.
@@ -874,7 +872,6 @@
 #'   package missing boundary.
 #' - `ledgr_param_missing` reports the param missing boundary.
 #' - `ledgr_param_non_scalar` reports the param non scalar boundary.
-#' - `ledgr_partial_selection` reports the partial selection boundary.
 #' - `ledgr_position_fact_off_axis` reports a position-fact transition that
 #'   cannot be placed on the prepared canonical bar axis.
 #' - `ledgr_precomputed_coverage_error` reports the precomputed coverage
@@ -1148,7 +1145,6 @@
 #' @aliases ledgr_invalid_worker_packages
 #' @aliases ledgr_invariant_violation
 #' @aliases ledgr_legacy_feature_factory_feature_params_unsupported
-#' @aliases ledgr_levered_weights
 #' @aliases ledgr_lot_state_invariant
 #' @aliases ledgr_missing_bars
 #' @aliases ledgr_missing_dependency
@@ -1156,7 +1152,6 @@
 #' @aliases ledgr_missing_optional_dependency
 #' @aliases ledgr_missing_precomputed_features_warning
 #' @aliases ledgr_mixed_metric_cadence
-#' @aliases ledgr_negative_weights
 #' @aliases ledgr_no_active_alias_map
 #' @aliases ledgr_observation_invalid_shape
 #' @aliases ledgr_observation_quarantine_duplicate
@@ -1170,7 +1165,6 @@
 #' @aliases ledgr_parallel_worker_package_missing
 #' @aliases ledgr_param_missing
 #' @aliases ledgr_param_non_scalar
-#' @aliases ledgr_partial_selection
 #' @aliases ledgr_position_fact_off_axis
 #' @aliases ledgr_precomputed_coverage_error
 #' @aliases ledgr_precomputed_engine_mismatch

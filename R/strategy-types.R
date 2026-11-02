@@ -59,12 +59,6 @@ ledgr_strategy_type_origin <- function(origin) {
   origin
 }
 
-ledgr_strategy_type_empty_universe <- function(x) {
-  universe <- attr(x, "universe", exact = TRUE)
-  if (is.character(universe) && length(universe) > 0L) return(universe)
-  names(x)
-}
-
 ledgr_strategy_type_stats <- function(x) {
   if (is.logical(x)) {
     return(sprintf("%d selected", sum(x, na.rm = TRUE)))
@@ -292,7 +286,17 @@ ledgr_print_strategy_vector <- function(x, type, ...) {
   origin <- attr(x, "origin", exact = TRUE)
   cat(sprintf("<%s> [%d asset%s]\n", type, length(x), if (length(x) == 1L) "" else "s"))
   if (!is.null(origin)) {
-    cat("origin: ", origin, "\n", sep = "")
+    origin_label <- if (is.list(origin)) {
+      paste(
+        vapply(names(origin), function(name) {
+          sprintf("%s=%s", name, paste(origin[[name]], collapse = ","))
+        }, character(1)),
+        collapse = "; "
+      )
+    } else {
+      as.character(origin)
+    }
+    cat("origin: ", origin_label, "\n", sep = "")
   }
   cat(ledgr_strategy_type_stats(x), "\n", sep = "")
   if (length(x) > 0L) {

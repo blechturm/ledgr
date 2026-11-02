@@ -350,7 +350,17 @@ ledgr_experiment_plan <- function(x, ...) {
       valuation_policy = x$valuation_policy,
       history_policy = x$history_policy,
       metric_calendar = ledgr_calendar_display(x$metric_context$calendar),
-      strategy_schedule = ledgr_strategy_schedule_declaration(x$strategy),
+      strategy_schedule = x$schedule %||% ledgr_strategy_schedule_declaration(x$strategy),
+      opening = list(
+        supplied = TRUE,
+        cash = x$opening$cash,
+        position_count = length(x$opening$positions)
+      ),
+      cost_model = list(
+        supplied = TRUE,
+        type_id = x$cost_model$type_id,
+        hash = x$cost_model_hash
+      ),
       checks = tibble::as_tibble(checks),
       assumptions = ledgr_experiment_plan_assumptions(
         x$valuation_policy,
@@ -372,6 +382,11 @@ print.ledgr_experiment_plan <- function(x, ...) {
   }
   cat("Price basis:  ", ledgr_price_basis_display(x$price_basis %||% "undeclared", x$price_basis_default), "\n", sep = "")
   cat("Metrics:      ", x$metric_calendar, "\n", sep = "")
+  cat(
+    "Opening:      supplied; cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
+    ", positions=", x$opening$position_count, "\n", sep = ""
+  )
+  cat("Costs:        supplied (", x$cost_model$type_id, ")\n", sep = "")
   if (!is.null(x$strategy_schedule)) {
     cat(
       "Strategy schedule: ",

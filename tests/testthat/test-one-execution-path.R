@@ -24,7 +24,7 @@ testthat::test_that("[LTB-0523] run and sweep refuse the same invalid strategy s
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   cases <- list(
     list(
-      exp = ledgr_experiment(
+      exp = ledgr_experiment(opening = ledgr_opening(cash = 100000),
         snapshot,
         function(ctx, params) {
           list(targets = ctx$hold(), state_update = list(value = Inf))
@@ -34,7 +34,7 @@ testthat::test_that("[LTB-0523] run and sweep refuse the same invalid strategy s
       class = "ledgr_config_non_finite"
     ),
     list(
-      exp = ledgr_experiment(
+      exp = ledgr_experiment(opening = ledgr_opening(cash = 100000),
         snapshot,
         function(ctx, params) {
           list(
@@ -117,7 +117,7 @@ testthat::test_that("[LTB-0525] final-pulse diagnostic sequences match memory an
     if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) target[["AAA"]] <- 1
     target
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
   sweep <- ledgr_sweep(exp, grid)
   bt <- ledgr_run(exp, run_id = "final-pulse-sequence")
@@ -174,7 +174,7 @@ testthat::test_that("[LTB-0528] identity rule four artifacts refuse at each curr
   snapshot <- ledgr_snapshot_from_df(ws4b_bars(3L), db_path = db_path)
   on.exit(try(ledgr_snapshot_close(snapshot), silent = TRUE), add = TRUE)
 
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()

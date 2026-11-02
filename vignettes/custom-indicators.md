@@ -277,7 +277,7 @@ snapshot <- ledgr_snapshot_from_df(
 features <- list(range_3)
 
 strategy <- function(ctx, params) {
-  narrow <- ledgr_signal_feature(ctx, "range_3") < params$max_range
+  narrow <- ctx[["range_3"]] < params$max_range
   ctx |>
     ledgr_selection(where = narrow, missing = "exclude") |>
     ledgr_target_quantity(ctx, params$qty)
@@ -295,7 +295,7 @@ ledgr_feature_id(features)
 #> [1] "range_3"
 ```
 
-Inside the strategy, `ledgr_signal_feature(ctx, "range_3")` reads the
+Inside the strategy, `ctx[["range_3"]]` reads the
 exact feature ID for the whole decision axis in one call. Unknown IDs
 fail loudly; warmup for a known feature is `NA_real_`, which
 `missing = "exclude"` leaves unselected.

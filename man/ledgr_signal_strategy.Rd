@@ -54,7 +54,8 @@ strategy <- ledgr_signal_strategy(
 strategy(
   list(
     universe = "AAA",
-    vec = list(admissible = TRUE, position = c(AAA = 0))
+    buyable = c(AAA = TRUE),
+    position = c(AAA = 0)
   ),
   list()
 )

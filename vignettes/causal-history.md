@@ -32,14 +32,15 @@ snapshot <- ledgr_snapshot_open(snapshot_path)
 momentum <- function(ctx, params) {
   ctx |>
     ledgr_signal_return(params$lookback) |>
-    ledgr_select_top_n(params$n, partial = "allow") |>
+    ledgr_select_top(params$n) |>
     ledgr_weight_equal() |>
-    ledgr_target_rebalance(ctx, equity_fraction = 0.95)
+    ledgr_target_rebalance(ctx, weights = _, invest_fraction = 0.95)
 }
 
 exp <- ledgr_experiment(
   snapshot,
   momentum,
+  opening = ledgr_opening(cash = 100000),
   features = list(ledgr_ind_returns(20L)),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
@@ -54,6 +55,7 @@ bt
 
     Run ID:                            hello-history
     Period:                            2020-01-01T16:00:00Z to 2020-12-31T16:00:00Z
+    Execution Clock:                   declared_sessions
     Opening Cash:                      $100000.00
     Final Equity:                      $107536.73
     Total Return:                      7.54%
@@ -253,7 +255,7 @@ returns
     5                                         5                   0                   0
     6                                         5                   0                   0
     7                                         5                   0                   0
-    8       status_unknown                   NA                  NA                  NA
+    8    target_restricted                   NA                  NA                  NA
       finite_observation_count
     1                        5
     2                        5
@@ -568,6 +570,7 @@ computed from two observed closes follows.
 ``` r
 with_return <- ledgr_experiment(
   snapshot, momentum,
+  opening = ledgr_opening(cash = 100000),
   features = list(ledgr_ind_returns(1L)),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
@@ -631,11 +634,18 @@ estimate <- function(ctx, params) {
   if (!isTRUE(params$keep)) keep <- character()
   w |>
     ledgr_align_weights(returns) |>
-    ledgr_target_rebalance(ctx, equity_fraction = 0.95, keep = keep)
+    ledgr_target_rebalance(
+      ctx,
+      weights = _,
+      keep = keep,
+      invest_fraction = 0.95,
+      capital_base = "remaining_equity"
+    )
 }
 
 estimating <- ledgr_experiment(
   snapshot, estimate,
+  opening = ledgr_opening(cash = 100000),
   features = list(ledgr_ind_returns(1L)),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
@@ -723,6 +733,7 @@ estimated
 
     Run ID:                            history-estimate
     Period:                            2020-01-01T16:00:00Z to 2020-12-31T16:00:00Z
+    Execution Clock:                   declared_sessions
     Opening Cash:                      $100000.00
     Final Equity:                      $114198.49
     Total Return:                      14.20%
@@ -792,6 +803,7 @@ late_exp <- ledgr_experiment(
   late_snapshot, function(ctx, params) {
     ctx$hold()
   },
+  opening = ledgr_opening(cash = 100000),
   features = ledgr_feature_map(sma = ledgr_ind_sma(2)),
   universe = ledgr_universe_members("late"),
   cost_model = ledgr_cost_zero()
@@ -856,6 +868,7 @@ count_history <- function(ctx, params) {
 }
 counting <- ledgr_experiment(
   snapshot, count_history,
+  opening = ledgr_opening(cash = 100000),
   universe = ledgr_universe_members("DEMO_UNIVERSE"),
   cost_model = ledgr_cost_zero()
 )
@@ -919,7 +932,7 @@ vapply(list(full = full, last_60 = last_60),
 ```
 
          full   last_60
-    "24.6 Kb" "22.1 Kb"
+    "24.6 Kb" "22.2 Kb"
 
 Both reads end at the same pulse and agree on every session they share;
 the first grows with every pulse of a run, the second does not.

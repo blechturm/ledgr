@@ -222,7 +222,7 @@ testthat::test_that("[LTB-0077] PIT inputs seal, reopen, and run publicly", {
     price_basis = inputs$recipe$price_basis
   )
   snapshot_id <- snapshot$snapshot_id
-  testthat::expect_true(ledgr_experiment_plan(ledgr_experiment(
+  testthat::expect_true(ledgr_experiment_plan(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     universe = ledgr_universe_members(inputs$recipe$scopes$universe_id),
@@ -233,7 +233,7 @@ testthat::test_that("[LTB-0077] PIT inputs seal, reopen, and run publicly", {
 
   reopened <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
   on.exit(ledgr_snapshot_close(reopened), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     reopened,
     function(ctx, params) ctx$flat(),
     universe = ledgr_universe_members(inputs$recipe$scopes$universe_id),
@@ -306,7 +306,7 @@ testthat::test_that("[LTB-0077] PIT inputs seal, reopen, and run publicly", {
     db_path = gap_path,
     price_basis = gap_inputs$recipe$price_basis
   )
-  gap_experiment <- ledgr_experiment(
+  gap_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     gap_snapshot,
     function(ctx, params) ctx$flat(),
     universe = ledgr_universe_members(
@@ -425,7 +425,7 @@ testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
   ledgr_snapshot_close(snapshot)
   reopened <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
   on.exit(ledgr_snapshot_close(reopened), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     reopened,
     function(ctx, params) ctx$flat(),
     universe = ledgr_universe_members(

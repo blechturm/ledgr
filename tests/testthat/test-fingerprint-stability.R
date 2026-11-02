@@ -128,7 +128,7 @@ testthat::test_that("feature-factory sweep identity remains stable", {
     }
     targets
   }
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = function(params) list(ledgr_ind_sma(params$n)),

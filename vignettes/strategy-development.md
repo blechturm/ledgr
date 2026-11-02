@@ -89,11 +89,10 @@ For the installed accessor reference, see `?ledgr_strategy_context`.
 
 **One instrument or everyone**
 
-Flat context columns return one named vector over the whole universe in one
-read. Index that vector only after you have singled out an instrument.
-`vignette("strategy-authoring-tools", package = "ledgr")` shows the
-plane-based pattern and documents the `ledgr_scalar_accessor_loop`
-warning emitted for that shape on large universes.
+Flat context columns return one named vector over the whole universe in
+one read. Index that vector only after you have singled out an
+instrument. `vignette("strategy-authoring-tools", package = "ledgr")`
+shows this pattern.
 
 </div>
 
@@ -141,11 +140,11 @@ hold_unless_down <- function(ctx, params) {
 }
 ```
 
-`ctx$close < ctx$open` compares every instrument at once, in the
-order of `ctx$universe`, and gives the condition a name: `down` holds
-one `TRUE` or `FALSE` per instrument. Assigning through it changes
-exactly the instruments where it is `TRUE`; every other instrument keeps
-its current quantity.
+`ctx$close < ctx$open` compares every instrument at once, in the order
+of `ctx$universe`, and gives the condition a name: `down` holds one
+`TRUE` or `FALSE` per instrument. Assigning through it changes exactly
+the instruments where it is `TRUE`; every other instrument keeps its
+current quantity.
 
 ## A Strategy That Does Nothing
 
@@ -333,26 +332,26 @@ exists. Handle warmup explicitly like this rather than letting a missing
 value slip through the assignment unseen.
 `vignette("indicators", package = "ledgr")` covers warmup in full.
 
-## The Same Rule With Helpers
+## The Same Rule With Named Vectors
 
-Every strategy, however it is written, returns the same thing: shares
-per instrument. ledgr’s strategy helpers build that named vector for you
-in named steps. Here is the same rule as a helper pipeline:
+Every strategy returns the same thing: shares per instrument. Ordinary R
+vector operations are often the clearest way to build that complete
+target. Here is the same rule with the candidate set named explicitly:
 
 ``` r
 positive_return_helpers <- function(ctx, params) {
-  rising <- ledgr_signal_return(ctx, lookback = 5) > params$min_return
-  ctx |>
-    ledgr_selection(where = rising, missing = "exclude") |>
-    ledgr_target_quantity(ctx, params$qty)
+  rising <- ctx$return_5 > params$min_return
+  selected <- ctx$universe[ctx$buyable & !is.na(rising) & rising]
+  targets <- ctx$flat()
+  targets[selected] <- params$qty
+  targets
 }
 ```
 
-`ledgr_signal_return()` reads the registered 5-bar return,
-`ledgr_selection()` keeps the instruments where the condition holds, and
-`missing = "exclude"` says what a warmup `NA` means: not selected.
-`ledgr_target_quantity()` turns the selection into `qty` shares for the
-selected instruments and zero for the rest.
+The flat column reads the registered 5-bar return. `ctx$buyable` limits
+the candidate set and `!is.na(rising)` says what a warmup `NA` means:
+not selected. The complete target starts flat, then assigns `qty` shares
+to the selected IDs.
 
 To see that both forms agree, ask each for its target on one decision
 date. `ledgr_pulse_snapshot()` builds the `ctx` a strategy would receive
@@ -381,10 +380,10 @@ identical(unclass(piped), hand_built)
 close(pulse)
 ```
 
-The helpers return the same named vector, with a class that prints a
-short summary. Use whichever form makes the rule easier to read. The
-later articles use the helpers for rules like this one and write the
-vector by hand when manipulating it is the lesson.
+Both forms return the same complete named vector. Use named-vector code
+when it makes the rule easiest to read; use selection and weighting
+helpers when the strategy ranks a cross-section or sizes from account
+equity.
 
 The pipeline has four kinds of step. A rule that ranks instruments or
 sizes positions from the account swaps in the ranking and weighting
@@ -392,9 +391,9 @@ steps:
 
 | Step | Use |
 |----|----|
-| `ledgr_signal_return()` or `ledgr_signal_feature()` | read one registered feature as comparable scores |
-| `ledgr_select_top_n(..., partial = )` or `ledgr_selection(..., missing = )` | choose instruments and state how incomplete inputs behave |
-| `ledgr_weight_equal()` or `ledgr_weights()` | divide the allocation budget |
+| a flat feature column such as `ctx$return_5` | read one registered feature as comparable scores |
+| `ledgr_select_top(..., within = ctx$buyable)` | choose instruments from an explicit candidate pool |
+| `ledgr_weight_equal()` | divide the allocation budget |
 | `ledgr_target_rebalance(..., keep = )` | convert weights into shares using the current account context |
 
 The weights carry only relative allocations. Rebalancing needs `ctx`

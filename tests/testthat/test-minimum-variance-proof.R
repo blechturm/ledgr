@@ -100,7 +100,7 @@ ws58_fixture <- function(closes, strategy, days = ws58_days(),
   )
   experiment <- ledgr_experiment(
     snapshot,
-    ledgr_strategy_schedule(strategy, ledgr_schedule_month_start()),
+    ws16_attach_schedule_to_strategy_for_legacy_path_test(strategy, ledgr_schedule_month_start()),
     features = list(ledgr_ind_returns(1L)),
     universe = ledgr_universe_members("u"),
     cost_model = ledgr_cost_zero(),
@@ -366,8 +366,8 @@ testthat::test_that("[LTB-0437] the article teaches one focused causal optimizat
   for (word in c(
     "intent_reason = \"insufficient_sample\"",
     "intent_reason = \"rebalanced\"",
-    "ledgr_align_weights(returns)",
-    "targets[!ctx$member] <- 0",
+    "ledgr_align_weights(solution, returns)",
+    "index_leavers = \"sell\"",
     "Amat = cbind(rep(1, n), diag(n))",
     "bvec = c(1, rep(0, n))",
     "meq = 1L",

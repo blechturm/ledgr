@@ -151,7 +151,7 @@ testthat::test_that("[LTB-0407] history results expose requirements, align weigh
       min_instruments = 2L)
     if (!ledgr_passed_warmup(returns)) return(ctx$hold())
     n <- length(ledgr_history_info(returns)$included_ids)
-    ledgr_target_rebalance(ledgr_align_weights(rep(1 / n, n), returns), ctx, equity_fraction = 1)
+    ledgr_target_rebalance(ctx, weights = ledgr_align_weights(rep(1 / n, n), returns))
   }
   testthat::expect_identical(ledgr_strategy_preflight(strategy)$tier, "tier_1")
   bought <- ws42_history_fixture(strategy = strategy)

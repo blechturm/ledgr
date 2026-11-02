@@ -260,7 +260,7 @@ testthat::test_that("retained-series parity matrix covers final-bar and failed-c
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, universe = c("AAA", "BBB"), cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, universe = c("AAA", "BBB"), cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(
     final_bar = list(strategy = list(qty = 1, fail = FALSE)),
     failed = list(strategy = list(qty = 1, fail = TRUE))

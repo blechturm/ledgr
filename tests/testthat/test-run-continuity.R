@@ -148,33 +148,34 @@ testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped a
       position = position,
       holding_value = position * risk_mark,
       buyable = c(TRUE, TRUE),
+      member = c(TRUE, TRUE),
       .notes = new.env(parent = emptyenv())
     )
     ctx$.notes$sizing_skipped <- character()
     ctx
   }
-  weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
+  weights <- c(AAA = 0.5, BBB = 0.5)
 
   # Unheld skip: AAA keeps its fully priced size, BBB stays flat, weight unspent.
   ctx <- ctx_with(close = c(10, NA), position = c(0, 0), risk_mark = c(10, NA))
-  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.9)
+  target <- ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.9)
   testthat::expect_identical(unclass(target)[c("AAA", "BBB")], c(AAA = 45, BBB = 0))
   testthat::expect_identical(attr(target, "sizing_skipped"), "BBB")
   testthat::expect_identical(ctx$.notes$sizing_skipped, "BBB")
 
   # Held skip below the cap: AAA unchanged at 45, BBB keeps 22 (E = 440).
   ctx <- ctx_with(close = c(10, NA), position = c(45, 22), risk_mark = c(10, 20))
-  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.9)
+  target <- ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.9)
   testthat::expect_identical(unclass(target)[c("AAA", "BBB")], c(AAA = 45, BBB = 22))
 
   # Cap binds: E = 900, V = 500, s = 0.2, AAA = floor(0.2 * 500 / 10) = 10.
   ctx <- ctx_with(close = c(10, NA), position = c(10, 45), risk_mark = c(10, 20))
-  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 1)
+  target <- ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 1)
   testthat::expect_identical(unclass(target)[c("AAA", "BBB")], c(AAA = 10, BBB = 45))
 
   # A held skipped member without any permissible mark still fails closed.
   ctx <- ctx_with(close = c(10, NA), position = c(10, 45), risk_mark = c(10, NA))
-  testthat::expect_error(ledgr_target_rebalance(weights, ctx, equity_fraction = 1),
+  testthat::expect_error(ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 1),
                          class = "ledgr_target_sizing_unavailable")
 
   # End to end: the canonical pipeline completes and records each skip even
@@ -195,12 +196,16 @@ testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped a
                                      db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    c(ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = 0.9))
+    weights <- ledgr_weight_equal(names(ctx$buyable)[ctx$buyable])
+    c(ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.9))
   }
+  exp <- ledgr_experiment(
+    snapshot, strategy, universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
   bt <- ledgr_run(
-    ledgr_experiment(snapshot, strategy, universe = ledgr_universe_members("u"),
-                     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = 1000)),
+    exp,
     run_id = "skip-and-record"
   )
   on.exit(close(bt), add = TRUE)
@@ -211,6 +216,19 @@ testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped a
   testthat::expect_identical(skips$instrument_id, c("BBB", "BBB"))
   testthat::expect_identical(as.Date(skips$ts_utc), days[c(1, 4)])
   testthat::expect_identical(skips$target, c(0, 22))
+
+  sweep <- ledgr_sweep(exp, data.frame(candidate = 1L), seed = 1L)
+  memory <- ledgr_candidate(sweep, 1L)$diagnostics
+  memory_skips <- memory[
+    memory$stage == "decision" & memory$reason_code == "sizing_unavailable",
+    ,
+    drop = FALSE
+  ]
+  # Candidate retention keeps the live holding-preservation decision but not
+  # the opening zero-target note. The durable run records both economics.
+  testthat::expect_identical(memory_skips$instrument_id, "BBB")
+  testthat::expect_identical(as.Date(memory_skips$ts_utc), days[[4]])
+  testthat::expect_identical(memory_skips$target, 22)
 })
 
 testthat::test_that("[LTB-0200] the walk-forward no-selection policy and current record", {

@@ -46,7 +46,7 @@ strict_dispatch_experiment <- function(snapshot, instruments) {
       }
     )
   }
-  ledgr_experiment(
+  ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = instruments,

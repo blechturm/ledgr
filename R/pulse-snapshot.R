@@ -31,8 +31,10 @@
 #' @param params JSON-safe strategy parameters used to resolve the experiment's
 #'   feature factory and risk plan, as in [ledgr_run()] (experiment form
 #'   only).
-#' @param cash Cash held alongside `positions`. It is not total account value;
-#'   pulse equity is `cash + sum(positions * current close)`.
+#' @param cash Cash held alongside `positions`. The snapshot-form default is
+#'   synthetic inspection-only cash: it is not an investor default and never
+#'   enters run identity. Cash is not total account value; pulse equity is
+#'   `cash + sum(positions * current close)`.
 #' @param positions Named numeric vector of positions (NULL = flat).
 #' @param state_prev Optional JSON-safe previous strategy state. This supports
 #'   dense one-pulse strategy checks; availability-aware state normalization is

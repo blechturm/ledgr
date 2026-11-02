@@ -903,6 +903,8 @@ ledgr_run_fold_impl <- function(config,
     } else {
       NULL
     },
+    schedule_sessions = availability_sessions,
+    schedule_params = schedule_params,
     decision_due = schedule$decision_due,
     decision_pulse_count = schedule$decision_pulse_count,
     scheduled_skip_count = schedule$scheduled_skip_count

@@ -194,7 +194,7 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(availability_snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
-  dense_run <- ledgr_run(ledgr_experiment(
+  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy_context_surface_capture,
     features = features,
@@ -306,7 +306,7 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
     masked = list(1, 1)
   )
 
-  dense_run <- ledgr_run(ledgr_experiment(
+  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     eligibility_plane_capture,
     cost_model = ledgr_cost_zero()

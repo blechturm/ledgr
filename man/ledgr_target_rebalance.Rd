@@ -2,29 +2,44 @@
 % Please edit documentation in R/strategy-helpers.R
 \name{ledgr_target_rebalance}
 \alias{ledgr_target_rebalance}
-\title{Construct full target quantities from weights}
+\title{Size a full-axis portfolio target}
 \usage{
-ledgr_target_rebalance(weights, ctx, equity_fraction = 1, keep = NULL)
+ledgr_target_rebalance(
+  ctx,
+  weights = NULL,
+  keep = NULL,
+  index_leavers = NULL,
+  invest_fraction = 1,
+  capital_base = NULL
+)
 }
 \arguments{
-\item{weights}{A \code{ledgr_weights} object.}
-
 \item{ctx}{ledgr strategy context.}
 
-\item{equity_fraction}{Fraction of allocatable equity to allocate, between 0
-and 1.}
+\item{weights}{Optional ordinary named finite non-negative weights summing
+to at most one.}
 
 \item{keep}{Current decision-axis positions to preserve. Kept IDs must not
 also appear in \code{weights}, even at zero weight.}
+
+\item{index_leavers}{Required policy for held instruments outside current
+membership that are not named by a character \code{keep}: \code{"sell"} or
+\code{"keep"}. There is no implicit leaver policy.}
+
+\item{invest_fraction}{Fraction of the selected capital base to invest.}
+
+\item{capital_base}{Optional allocation base: \code{"total_equity"} or
+\code{"remaining_equity"}. Weighted rebalance requires a choice when preserved
+or added exposure makes the bases differ; weighted adjust defaults to
+\code{"total_equity"}.}
 }
 \value{
 A full-universe \code{ledgr_target} object.
 }
 \description{
-\code{ledgr_target_rebalance()} converts long-only weights into a full-universe
-\code{ledgr_target}. It uses current pulse equity and current close prices at
-decision time; fills still occur at the next open, so small drift between
-decision-time sizing and fill-time value is expected.
+\code{ledgr_target_rebalance()} replaces the decided eligible allocation.
+\code{ledgr_target_adjust()} changes only the named positions. Both use the same
+sizing engine and return a complete \code{ledgr_target} over \code{ctx$universe}.
 }
 \details{
 In a dense run, allocatable equity is current equity. In an
@@ -33,9 +48,9 @@ ineligible holdings, held nonmembers and target-restricted members alike, and
 preserves their current quantities; weights may name eligible instruments
 only. IDs named in \code{keep}
 are likewise preserved and reserved exactly once. Weights and
-\code{equity_fraction} apply to the residual capital after those reservations.
+\code{invest_fraction} applies to the chosen capital base after reservations.
 Share quantities are floored to whole numbers with
-\code{floor(weight * equity_fraction * allocation_equity / close_price)}. An
+\code{floor(weight * invest_fraction * allocation_equity / close_price)}. An
 exact zero member weight targets zero without consulting that instrument's
 sizing close.
 
@@ -51,13 +66,9 @@ is recorded as a \code{sizing_unavailable} decision row in
 
 Warning and error classes:
 \itemize{
-\item \code{ledgr_invalid_target_price} when a selected instrument has missing,
-non-finite, or non-positive close price in a dense run, which targets zero;
 \item \code{ledgr_target_sizing_unavailable} when an availability-aware rebalance
 must keep a held member, or reserve a preserved holding, that has no
-permissible valuation mark;
-\item \code{ledgr_negative_weights} for negative weights;
-\item \code{ledgr_levered_weights} when \code{sum(abs(weights)) > 1}.
+permissible valuation mark.
 }
 }
 \section{Articles}{
@@ -68,20 +79,20 @@ Strategy helper pipelines:
 }
 
 \examples{
-weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5),
-                         universe = c("AAA", "BBB"))
+weights <- c(AAA = 0.5, BBB = 0.5)
 ctx <- list(
   universe = c("AAA", "BBB"),
   equity = 1000,
   close = c(AAA = 50, BBB = 100),
+  member = c(AAA = TRUE, BBB = TRUE),
   buyable = c(AAA = TRUE, BBB = TRUE),
   position = c(AAA = 0, BBB = 0),
   holding_value = c(AAA = 0, BBB = 0)
 )
-ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
+ledgr_target_rebalance(ctx, weights = weights, invest_fraction = 0.5)
 
 ctx$position <- c(AAA = 2, BBB = 0)
-weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
-ledgr_target_rebalance(weights, ctx, keep = "AAA")
+weights <- c(BBB = 1)
+ledgr_target_rebalance(ctx, weights = weights, keep = "AAA")
 
 }

@@ -130,7 +130,7 @@ testthat::test_that("production consumers build one prepared plan at each bounda
   original <- ledgr:::ledgr_availability_provider_prepare
   snapshot <- availability_v201_membership_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     universe = ledgr_universe_members("U"),
@@ -190,7 +190,7 @@ testthat::test_that("an INCOMPLETE run builds one prepared provider plan and its
     bar_days = c(1L, 2L, 4L)
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       target <- ctx$hold()

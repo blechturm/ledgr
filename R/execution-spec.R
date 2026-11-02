@@ -75,6 +75,8 @@ ledgr_execution_spec <- function(run_id,
                                  frozen_at_resume = NULL,
                                  last_executed_at_resume = NULL,
                                  final_execution_posix = NULL,
+                                 schedule_sessions = NULL,
+                                 schedule_params = list(),
                                  decision_due = NULL,
                                  decision_pulse_count = NULL,
                                  scheduled_skip_count = NULL) {
@@ -125,6 +127,8 @@ ledgr_execution_spec <- function(run_id,
   }
   spec$availability_provider <- availability_provider
   spec$execution_opportunities_posix <- execution_opportunities_posix
+  spec$schedule_sessions <- schedule_sessions
+  spec$schedule_params <- schedule_params
   if (length(final_execution_posix) == 1L && !is.na(final_execution_posix)) {
     spec$final_execution_posix <- as.POSIXct(final_execution_posix, tz = "UTC")
   }
@@ -184,6 +188,14 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     inherits(spec$pulses_posix, "POSIXct"),
     "`execution$pulses_posix` must be POSIXct."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$schedule_sessions) || is.data.frame(spec$schedule_sessions),
+    "`execution$schedule_sessions` must be NULL or a session data frame."
+  )
+  ledgr_execution_spec_check(
+    is.list(spec$schedule_params),
+    "`execution$schedule_params` must be a list."
   )
   if (!is.null(spec$decision_due)) {
     ledgr_execution_spec_check(

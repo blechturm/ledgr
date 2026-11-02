@@ -281,7 +281,7 @@ testthat::test_that("[LTB-0492] malformed intent reasons refuse before economic 
 
   snapshot <- ledgr_snapshot_from_df(intent_evidence_bars(2L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       list(targets = stats::setNames(1, ctx$universe), intent_reason = params$reason)
@@ -330,7 +330,7 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
       intent_reason = paste0("pulse_", n)
     )
   }
-  exp <- ledgr_experiment(snapshot, interrupting, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, interrupting, cost_model = ledgr_cost_zero())
   options(ledgr.interrupt = FALSE)
   first <- ledgr_run(
     exp,
@@ -358,7 +358,7 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
   )
   testthat::expect_identical(anyDuplicated(resumed_rows$ts_utc), 0L)
 
-  wf_exp <- ledgr_experiment(
+  wf_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       list(

@@ -36,7 +36,7 @@ testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
     check_calls <<- 0L
     snapshot <- availability_runtime_fixture(days = days)
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-    experiment <- ledgr_experiment(
+    experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       function(ctx, params) ctx$hold(),
       features = list(ledgr_ind_sma(20L), ledgr_ind_returns(20L)),

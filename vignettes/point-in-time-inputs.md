@@ -311,6 +311,7 @@ flat_strategy <- function(ctx, params) ctx$flat()
 pit_experiment <- ledgr_experiment(
   pit_snapshot,
   flat_strategy,
+  opening = ledgr_opening(cash = 100000),
   universe = ledgr_universe_members("demo_members"),
   valuation_policy = ledgr_valuation_stale(2),
   cost_model = ledgr_cost_zero()
@@ -401,7 +402,7 @@ are different scopes.
 
 <div class="ledgr-diagram ledgr-input-entities">
 
-```mermaid
+``` mermaid
 erDiagram
   SNAPSHOT ||--o{ INSTRUMENT : contains
   INSTRUMENT ||--o{ BAR : observed_as

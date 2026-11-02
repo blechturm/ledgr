@@ -99,7 +99,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
   experiments <- list()
   for (case_name in names(cases)) {
     case <- cases[[case_name]]
-    experiment <- ledgr_experiment(
+    experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       ledgr_ws28_strategy,
       features = case$features,
@@ -167,7 +167,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
     experiments[[case_name]] <- experiment
   }
 
-  mismatched <- ledgr_experiment(
+  mismatched <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     ledgr_ws28_strategy,
     features = ledgr_feature_map(signal = ledgr_ind_returns(ledgr_param("n"))),
@@ -185,7 +185,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
   close(mismatch_run)
   testthat::expect_true("feature_set_hash" %in% mismatch$mismatched)
 
-  featureless <- ledgr_experiment(
+  featureless <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     ledgr_ws28_strategy,
     cost_model = ledgr_cost_zero()
@@ -196,7 +196,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
   )
   ledgr_sweep_save(featureless_sweep, snapshot, sweep_id = "featureless")
 
-  multi_feature <- ledgr_experiment(
+  multi_feature <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     ledgr_ws28_strategy,
     features = list(ledgr_ind_sma(2L), ledgr_ind_returns(1L)),

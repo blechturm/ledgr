@@ -320,7 +320,8 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
       snapshot,
       strategy,
       valuation_policy = policy,
-      cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 100000)
     )
     ledgr:::ledgr_walk_forward_base_config(exp, meta)
   })
@@ -357,7 +358,8 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
       snapshot,
       strategy,
       valuation_policy = old_object,
-      cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 100000)
     ),
     class = "ledgr_invalid_valuation_policy"
   )

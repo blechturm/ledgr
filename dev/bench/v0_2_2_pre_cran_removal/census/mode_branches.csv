@@ -52,7 +52,7 @@
 "R/derived-state.R","ledgr_rebuild_derived_state","flow","ledgr_availability_config_active()","assign:availability_active",1
 "R/execution-timing.R","ledgr_execution_timing_provenance","branch","availability$active","if: !is.list(availability) || !isTRUE(availability$active)",1
 "R/execution-timing.R","ledgr_execution_timing_require_current","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
-"R/experiment.R","ledgr_experiment","branch","availability$active","if: !is.null(ledgr_strategy_schedule_declaration(strategy)) && !isTRUE(availability$active)",1
+"R/experiment.R","ledgr_experiment","branch","availability$active","if: !is.null(schedule) && !isTRUE(availability$active)",1
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active)",1
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active)",2
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: isTRUE(availability$active) && !is.null(opening$date_civil)",1

@@ -269,8 +269,14 @@ validate_ledgr_config <- function(config) {
 
   initial_cash <- cfg_get(c("backtest", "initial_cash"))
   assert_scalar_num(initial_cash, "backtest.initial_cash")
-  if (initial_cash <= 0) {
-    rlang::abort("Config field backtest.initial_cash must be > 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
+  if (initial_cash < 0) {
+    rlang::abort("Config field backtest.initial_cash must be >= 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
+  }
+  if (initial_cash == 0 && length(opening_positions) == 0L) {
+    rlang::abort(
+      "Config field backtest.initial_cash may be zero only with opening positions.",
+      class = c("ledgr_invalid_args", "ledgr_invalid_config")
+    )
   }
 
   timing_type <- cfg_get(c("timing_model", "type_id"))

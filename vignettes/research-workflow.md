@@ -177,7 +177,7 @@ inputs exist.
 ``` r
 momentum_v2 <- function(ctx, params) {
   rising <- ledgr_signal_return(ctx, lookback = 20) > 0
-  above_trend <- ctx$close > ledgr_signal_feature(ctx, "sma_50")
+  above_trend <- ctx$close > ctx[["sma_50"]]
   ctx |>
     ledgr_selection(where = rising & above_trend, missing = "exclude") |>
     ledgr_target_quantity(ctx, params$qty)

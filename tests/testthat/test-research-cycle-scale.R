@@ -8,7 +8,7 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
     day <- as.integer(format(as.Date(substr(ctx$ts_utc, 1, 10)), "%d"))
     weights <- if (day %% 2L == 0L) c(AAA = 0.6, BBB = 0.2, CCC = 0.2) else c(AAA = 0.2, BBB = 0.5, CCC = 0.3)
     ids <- ctx$universe[ctx$buyable]
-    ledgr_weights(weights[ids], universe = ctx$universe) |> ledgr_target_rebalance(ctx, equity_fraction = 0.9)
+    ledgr_weights(weights[ids], universe = ctx$universe) |> ledgr_target_rebalance(ctx, weights = _, invest_fraction = 0.9)
   }
   bt <- ledgr_run(ledgr_experiment(snapshot, rotate,
     universe = ledgr_universe_members("u"),

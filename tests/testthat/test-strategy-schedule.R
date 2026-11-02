@@ -12,9 +12,7 @@ schedule_test_axis <- function() {
 }
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0501] schedule declarations are inert and serializable", {
-  captured <- 7
-  strategy <- function(ctx, params) ctx$hold(reason = as.character(captured))
+testthat::test_that("[LTB-0501] experiment schedules are inert and serializable", {
   rules <- list(
     ledgr_schedule_month_start(), ledgr_schedule_month_end(),
     ledgr_schedule_week_start(), ledgr_schedule_quarter_start(),
@@ -25,14 +23,8 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
   )
 
   for (rule in rules) {
-    scheduled <- ledgr_strategy_schedule(strategy, rule)
-    testthat::expect_s3_class(scheduled, "ledgr_scheduled_strategy")
-    testthat::expect_identical(body(scheduled), body(strategy))
-    testthat::expect_identical(environment(scheduled), environment(strategy))
-    testthat::expect_identical(
-      unserialize(serialize(attr(scheduled, "ledgr_schedule"), NULL)),
-      attr(scheduled, "ledgr_schedule")
-    )
+    validated <- ledgr:::ledgr_schedule_validate(rule)
+    testthat::expect_identical(unserialize(serialize(validated, NULL)), validated)
     json_declaration <- ledgr:::ledgr_json_read_nested(
       as.character(canonical_json(unclass(rule)))
     )
@@ -42,21 +34,9 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
     )
   }
   testthat::expect_error(
-    ledgr_strategy_schedule(
-      ledgr_strategy_schedule(strategy, ledgr_schedule_month_start()),
-      ledgr_schedule_month_end()
-    ),
-    class = "ledgr_invalid_strategy_schedule"
-  )
-  testthat::expect_error(
-    ledgr_strategy_schedule(
-      strategy,
+    ledgr:::ledgr_schedule_validate(
       list(type_id = "month_start", version = 1.5, args = list())
     ),
-    class = "ledgr_invalid_strategy_schedule"
-  )
-  testthat::expect_error(
-    ledgr_strategy_schedule(1L, ledgr_schedule_month_start()),
     class = "ledgr_invalid_strategy_schedule"
   )
   malformed_dates <- list(
@@ -67,7 +47,7 @@ testthat::test_that("[LTB-0501] schedule declarations are inert and serializable
   )
   for (declaration in malformed_dates) {
     testthat::expect_error(
-      ledgr_strategy_schedule(strategy, declaration),
+      ledgr:::ledgr_schedule_validate(declaration),
       class = "ledgr_invalid_strategy_schedule"
     )
   }
@@ -82,7 +62,7 @@ testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
     n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
     list(targets = ctx$hold(), state_update = list(n = n + 1L), intent_reason = "rebalanced")
   }
-  scheduled_strategy <- ledgr_strategy_schedule(
+  scheduled_strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) {
       previous <- ctx$state_prev
       n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
@@ -608,8 +588,8 @@ testthat::test_that("[LTB-0510] common calendar schedules stay inside their peri
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0503] schedule identity is separate from strategy source", {
   strategy <- function(ctx, params) ctx$hold()
-  month <- ledgr_strategy_schedule(strategy, ledgr_schedule_month_start())
-  year <- ledgr_strategy_schedule(strategy, ledgr_schedule_year_start())
+  month <- ws16_attach_schedule_to_strategy_for_legacy_path_test(strategy, ledgr_schedule_month_start())
+  year <- ws16_attach_schedule_to_strategy_for_legacy_path_test(strategy, ledgr_schedule_year_start())
   plain <- ledgr:::ledgr_strategy_spec(strategy)
   month_spec <- ledgr:::ledgr_strategy_spec(month)
   year_spec <- ledgr:::ledgr_strategy_spec(year)
@@ -633,7 +613,7 @@ testthat::test_that("[LTB-0503] schedule identity is separate from strategy sour
     owner_source <- paste(deparse(body(getFromNamespace(owner, "ledgr"))), collapse = "\n")
     testthat::expect_match(owner_source, "ledgr_strategy_schedule_inner", fixed = TRUE)
   }
-  tier3 <- ledgr_strategy_schedule(
+  tier3 <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) missing_user_helper(ctx),
     ledgr_schedule_month_start()
   )
@@ -667,7 +647,7 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
     .package = "ledgr"
   )
 
-  strategy <- ledgr_strategy_schedule(
+  strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) ctx$hold(),
     ledgr_schedule_week_start()
   )
@@ -706,7 +686,7 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
   ))
 
   year_exp <- fixture$exp
-  year_exp$strategy <- ledgr_strategy_schedule(
+  year_exp$strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     ledgr:::ledgr_strategy_schedule_inner(strategy),
     ledgr_schedule_year_start()
   )
@@ -805,7 +785,10 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
   dense <- ws42_dense_snapshot()
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
   testthat::expect_error(
-    ledgr_experiment(dense, strategy, cost_model = ledgr_cost_zero()),
+    ledgr_experiment(
+      opening = ledgr_opening(cash = 100000), dense, strategy,
+      schedule = ledgr_schedule_month_start(), cost_model = ledgr_cost_zero()
+    ),
     class = "ledgr_schedule_sessions_required"
   )
 })
@@ -849,7 +832,7 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
     .package = "ledgr"
   )
 
-  strategy <- ledgr_strategy_schedule(
+  strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) {
       previous <- ctx$state_prev
       n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
@@ -937,7 +920,7 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   testthat::expect_identical(max(state_n), info$decision_pulse_count)
   testthat::expect_identical(sum(diff(state_n) != 0L), info$decision_pulse_count)
 
-  year_strategy <- ledgr_strategy_schedule(
+  year_strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     ledgr:::ledgr_strategy_schedule_inner(strategy),
     ledgr_schedule_year_start()
   )
@@ -974,7 +957,7 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses schedules", {
-  strategy <- ledgr_strategy_schedule(
+  strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) list(targets = ctx$hold(), intent_reason = "rebalanced"),
     ledgr_schedule_week_start()
   )
@@ -1180,7 +1163,7 @@ testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses sched
     declaration
   )
 
-  unresolved_strategy <- ledgr_strategy_schedule(
+  unresolved_strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) ctx$hold(),
     ledgr_schedule_from_param("when")
   )
@@ -1237,7 +1220,7 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     cost_basis = c(AAA = 10)
   )
   plain_strategy <- function(ctx, params) ctx$hold()
-  scheduled_strategy <- ledgr_strategy_schedule(
+  scheduled_strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     plain_strategy,
     ledgr_schedule_week_start()
   )
@@ -1277,7 +1260,7 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     economic_rows(scheduled, scheduled_run$run_id)
   )
 
-  state_strategy <- ledgr_strategy_schedule(
+  state_strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     function(ctx, params) {
       previous <- ctx$state_prev
       n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
@@ -1370,12 +1353,10 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
     target["AAA"] <- params$qty
     target
   }
-  strategy <- ledgr_strategy_schedule(
-    inner,
-    ledgr_schedule_from_param("when")
-  )
+  strategy <- inner
   fixture <- ws42_history_fixture(
     strategy = strategy,
+    schedule = ledgr_schedule_from_param("when"),
     features = list(),
     opening = ledgr_opening(
       cash = 1000,
@@ -1437,13 +1418,12 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
 
   testthat::expect_length(captured_tasks, 2L)
   testthat::expect_true(all(vapply(captured_tasks, function(task) {
-    inherits(task$exp$strategy, "ledgr_scheduled_strategy") &&
-      identical(
-        ledgr:::ledgr_strategy_schedule_hash(
-          ledgr:::ledgr_strategy_schedule_declaration(task$exp$strategy)
-        ),
-        provenance[[1L]]$schedule_hash
-      )
+    identical(
+      ledgr:::ledgr_strategy_schedule_hash(
+        ledgr:::ledgr_strategy_schedule_declaration(task$exp$strategy)
+      ),
+      provenance[[1L]]$schedule_hash
+    )
   }, logical(1))))
   nested_names <- function(x) {
     if (!is.list(x)) return(character())
@@ -1584,9 +1564,9 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
   testthat::expect_identical(context$source_sweep$schedule_hash, provenance[[1L]]$schedule_hash)
 
   week_exp <- fixture$exp
-  week_exp$strategy <- ledgr_strategy_schedule(inner, ledgr_schedule_week_start())
+  week_exp$strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(inner, ledgr_schedule_week_start())
   month_exp <- fixture$exp
-  month_exp$strategy <- ledgr_strategy_schedule(inner, ledgr_schedule_month_start())
+  month_exp$strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(inner, ledgr_schedule_month_start())
   fixed_grid <- ledgr_grid_named(one = list(strategy = list(qty = 2)))
   testthat::expect_warning(
     scheduled_into_plain <- ledgr_promote(
@@ -1801,7 +1781,7 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
     target["AAA"] <- if (decision_n %% 2L == 1L) params$qty else 0
     list(targets = target, state_update = list(decision_n = decision_n))
   }
-  weekday_strategy <- ledgr_strategy_schedule(
+  weekday_strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     inner,
     ledgr_schedule_weekday("monday")
   )
@@ -1888,7 +1868,7 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
   )
 
   month_day_exp <- fixture$exp
-  month_day_exp$strategy <- ledgr_strategy_schedule(
+  month_day_exp$strategy <- ws16_attach_schedule_to_strategy_for_legacy_path_test(
     inner,
     ledgr_schedule_month_day(4L)
   )

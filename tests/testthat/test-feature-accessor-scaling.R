@@ -197,7 +197,7 @@ testthat::test_that("[LTB-0140] prepared feature state stays inside one sweep ca
     if (is.finite(value)) targets[["AAA"]] <- 1
     targets
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = features,
@@ -389,7 +389,7 @@ testthat::test_that("[LTB-0189] availability folds prepare hashed feature lookup
     target[is.finite(signal) & signal > 51] <- 1
     target
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = feature_map,
@@ -510,7 +510,7 @@ testthat::test_that("[LTB-0191] availability feature reads enforce the current d
     }
     ctx$flat()
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     universe = ledgr_universe_members("shrinking"),

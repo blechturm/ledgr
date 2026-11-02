@@ -89,7 +89,7 @@ testthat::test_that("[LTB-0009] snapshot ingestion and nonempty fill reads prese
   on.exit(unlink(run_path), add = TRUE)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = run_path, snapshot_id = "rng-fills")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       targets <- ctx$flat()
@@ -127,7 +127,7 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:29)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "rng-run")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       targets <- ctx$hold()
@@ -155,7 +155,7 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
     exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   )
 
-  failing_experiment <- ledgr_experiment(
+  failing_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       stats::runif(1L)
@@ -174,7 +174,7 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
     failure_before
   )
 
-  interrupt_experiment <- ledgr_experiment(
+  interrupt_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       stats::runif(1L)

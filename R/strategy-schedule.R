@@ -1,9 +1,10 @@
-#' Declare when a strategy should make decisions
+#' Declare a strategy decision schedule
 #'
 #' A strategy schedule is a declarative calendar rule. It is compiled once,
 #' before execution, against the snapshot's authoritative open-session axis.
-#' The decorated strategy remains an ordinary `function(ctx, params)`; the
-#' schedule does not wrap or call it.
+#' Supply the declaration as `schedule =` to [ledgr_experiment()]. The strategy
+#' remains an ordinary `function(ctx, params)`; a schedule never wraps or calls
+#' it.
 #'
 #' Fixed calendar rules select real boundaries on the complete parent session
 #' axis. They do not manufacture a boundary at the start or end of a partial
@@ -36,41 +37,23 @@
 #' orchestration identity, while the inner strategy's source identity remains
 #' unchanged. The compiled decision mask is ephemeral and is not persisted.
 #'
-#' @param strategy A strategy function with signature `function(ctx, params)`.
-#' @param schedule A schedule made by one of the `ledgr_schedule_*()` helpers.
-#' @return `strategy`, with class `ledgr_scheduled_strategy` and a declarative
-#'   `ledgr_schedule` attribute.
-#' @export
-ledgr_strategy_schedule <- function(strategy, schedule) {
-  if (!is.function(strategy)) {
-    ledgr_schedule_abort("`strategy` must be a function.")
-  }
-  if (!is.null(attr(strategy, "ledgr_schedule", exact = TRUE))) {
-    ledgr_schedule_abort("A strategy may declare only one schedule.")
-  }
-  schedule <- ledgr_schedule_validate(schedule)
-  attr(strategy, "ledgr_schedule") <- unclass(schedule)
-  class(strategy) <- unique(c("ledgr_scheduled_strategy", class(strategy)))
-  strategy
-}
-
-#' @rdname ledgr_strategy_schedule
+#' @return A declarative `ledgr_schedule` object.
 #' @export
 ledgr_schedule_month_start <- function() ledgr_schedule_rule("month_start")
 
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_month_end <- function() ledgr_schedule_rule("month_end")
 
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_week_start <- function() ledgr_schedule_rule("week_start")
 
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_quarter_start <- function() ledgr_schedule_rule("quarter_start")
 
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_year_start <- function() ledgr_schedule_rule("year_start")
 
@@ -80,16 +63,9 @@ ledgr_schedule_year_start <- function() ledgr_schedule_rule("year_start")
 #'   weekday name from `"monday"` through `"sunday"`. For
 #'   `ledgr_schedule_month_day()`, one whole number from 1 through 31.
 #' @examples
-#' strategy <- function(ctx, params) ctx$hold()
-#' wednesday_strategy <- ledgr_strategy_schedule(
-#'   strategy,
-#'   ledgr_schedule_weekday("wednesday")
-#' )
-#' monthly_strategy <- ledgr_strategy_schedule(
-#'   strategy,
-#'   ledgr_schedule_month_day(15)
-#' )
-#' @rdname ledgr_strategy_schedule
+#' wednesday <- ledgr_schedule_weekday("wednesday")
+#' monthly <- ledgr_schedule_month_day(15)
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_dates <- function(dates) {
   if (!inherits(dates, "Date") || inherits(dates, "POSIXt") ||
@@ -99,7 +75,7 @@ ledgr_schedule_dates <- function(dates) {
   ledgr_schedule_rule("dates", list(dates = sort(unique(format(dates, "%Y-%m-%d")))))
 }
 
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_weekday <- function(day) {
   if (!is.character(day) || length(day) != 1L || is.na(day) ||
@@ -114,7 +90,7 @@ ledgr_schedule_weekday <- function(day) {
   ledgr_schedule_rule("weekday", list(day = day))
 }
 
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_month_day <- function(day) {
   valid <- is.numeric(day) && length(day) == 1L && !is.na(day) &&
@@ -127,13 +103,69 @@ ledgr_schedule_month_day <- function(day) {
 
 #' @param name Name of a scalar character strategy parameter resolving to one
 #'   of the fixed schedule names.
-#' @rdname ledgr_strategy_schedule
+#' @rdname ledgr_schedule_month_start
 #' @export
 ledgr_schedule_from_param <- function(name) {
   if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) {
     ledgr_schedule_abort("`name` must be a non-empty character scalar.")
   }
   ledgr_schedule_rule("param", list(name = name))
+}
+
+#' Ask whether a mixed-cadence decision is due
+#'
+#' `ledgr_schedule_due()` is a pure query over the run's authoritative parent
+#' session axis. It does not skip the callback: use it inside an every-pulse
+#' strategy when stops or state updates must still run between allocation
+#' decisions.
+#'
+#' @param ctx The current ledgr strategy context.
+#' @param schedule A declaration from a `ledgr_schedule_*()` helper.
+#' @return One non-missing logical value.
+#' @export
+ledgr_schedule_due <- function(ctx, schedule) {
+  if (!inherits(ctx, "ledgr_pulse_context")) {
+    ledgr_schedule_abort("`ctx` must be a ledgr strategy context.")
+  }
+  query <- ctx$.schedule_query
+  if (!is.function(query)) {
+    ledgr_schedule_abort(
+      "This context has no declared parent-session axis for schedule queries.",
+      "ledgr_schedule_sessions_required"
+    )
+  }
+  due <- query(ledgr_schedule_validate(schedule))
+  if (!is.logical(due) || length(due) != 1L || is.na(due)) {
+    ledgr_schedule_abort("The schedule query returned an invalid verdict.", "ledgr_schedule_axis_invalid")
+  }
+  due
+}
+
+ledgr_strategy_schedule_query <- function(sessions, pulses_posix, strategy_params) {
+  cache <- new.env(parent = emptyenv())
+  last_declaration <- NULL
+  last_due <- NULL
+  force(sessions)
+  force(pulses_posix)
+  force(strategy_params)
+  function(schedule, pulse_idx) {
+    declaration <- ledgr_schedule_validate(schedule)
+    if (!identical(declaration, last_declaration)) {
+      key <- ledgr_strategy_schedule_hash(declaration)
+      if (!exists(key, envir = cache, inherits = FALSE)) {
+        compiled <- ledgr_compile_strategy_schedule(
+          declaration,
+          strategy_params = strategy_params,
+          sessions = sessions,
+          pulses_posix = pulses_posix
+        )
+        assign(key, compiled$decision_due, envir = cache)
+      }
+      last_declaration <<- declaration
+      last_due <<- get(key, envir = cache, inherits = FALSE)
+    }
+    last_due[[pulse_idx]]
+  }
 }
 
 ledgr_schedule_version <- 1L

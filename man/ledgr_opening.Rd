@@ -7,7 +7,8 @@
 ledgr_opening(cash, date = NULL, positions = NULL, cost_basis = NULL)
 }
 \arguments{
-\item{cash}{Finite positive cash balance.}
+\item{cash}{Finite non-negative cash balance. Zero is valid when explicit
+non-zero opening positions are supplied.}
 
 \item{date}{Optional opening timestamp or civil Date. It is also the scoring start: runs,
 sweeps, promotion and feature precompute evaluate the strategy and start

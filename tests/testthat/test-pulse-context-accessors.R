@@ -117,12 +117,14 @@ testthat::test_that("[LTB-0061] ctx$buyable is eligibility and not a price plane
 
   testthat::expect_identical(names(ctx$buyable)[ctx$buyable], c("UNPRICED", "MEMBER"))
 
-  weights <- ledgr_weight_equal(ledgr_selection(
-    stats::setNames(ids %in% names(ctx$buyable)[ctx$buyable], ids),
-    universe = ids
-  ))
+  weights <- ledgr_weight_equal(names(ctx$buyable)[ctx$buyable])
   testthat::expect_error(
-    ledgr_target_rebalance(weights, ctx),
+    ledgr_target_rebalance(
+      ctx,
+      weights = weights,
+      index_leavers = "keep",
+      capital_base = "total_equity"
+    ),
     NA
   )
 
@@ -588,7 +590,7 @@ testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valua
         cash = ctx$cash,
         equity = ctx$equity,
         positions = ctx$hold(),
-        target = ledgr_target_rebalance(weights, ctx)
+        target = ledgr_target_rebalance(ctx, weights = weights)
       )
       state_update <- list(pulses_seen = 3L)
     } else {
@@ -622,7 +624,7 @@ testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valua
   testthat::expect_identical(pulse$equity, observed$first$equity)
   testthat::expect_identical(pulse$hold(), observed$first$positions)
   testthat::expect_identical(
-    ledgr_target_rebalance(weights, pulse),
+    ledgr_target_rebalance(pulse, weights = weights),
     observed$first$target
   )
 

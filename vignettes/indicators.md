@@ -23,10 +23,10 @@ once, predict their IDs and warmup, and read their pulse-known values
 inside a strategy without ever reaching into future data.
 
 An **indicator** is a declared feature computation. ledgr computes
-indicators into pulse-known values; scalar accessors, mapped accessors,
-long tables, and wide tables are different views of that same
-pulse-known data. That model is the same for built-in ledgr indicators,
-TTR-backed indicators, and custom indicators.
+indicators into pulse-known values; flat named columns, long tables, and
+wide tables are different views of that same pulse-known data. That
+model is the same for built-in ledgr indicators, TTR-backed indicators,
+and custom indicators.
 
 ## Prerequisites
 
@@ -66,7 +66,7 @@ Feature objects appear in three registration and inspection places:
 
 | Surface | Accepted feature shape | How names are used |
 |----|----|----|
-| `ledgr_experiment(features = ...)` | indicator, list, named list, or feature map | registers feature definitions for the run |
+| `ledgr_experiment(opening = ledgr_opening(cash = 100000), features = ...)` | indicator, list, named list, or feature map | registers feature definitions for the run |
 | `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs |
 | `ledgr_pulse_snapshot(features = ...)` | static list or feature map | computes pulse-known values for inspection |
 
@@ -86,7 +86,7 @@ The feature path has five steps:
 
 <div class="ledgr-diagram ledgr-feature-lifecycle">
 
-```mermaid
+``` mermaid
 
 flowchart LR
   declare["declare<br/>indicator or map"]
@@ -256,12 +256,8 @@ by flat feature columns.
 ## Access Features In A Strategy
 
 The long and wide pulse views are useful when you want to inspect the
-computed data, compare instruments, or think in model-like rows. They
-are not always the clearest shape for strategy code. A strategy often
-wants to ask a smaller question: “what are the current values for this
-instrument?”
-
-Strategy code reads the same pulse-known data as flat named columns.
+computed data, compare instruments, or think in model-like rows.
+Strategy code reads the same pulse-known values as flat named columns.
 Index a column by instrument only when you deliberately need one value.
 This engine-ID read selects one column, then one instrument:
 
@@ -290,13 +286,14 @@ ledgr_passed_warmup(x)
 produce a usable value. A warmup `NA` is not an unknown feature; it is a
 known feature that is not ready yet.
 
-> [!TIP]
->
-> ### Try it
->
-> Change the lookup to `pulse[["returns_5"]]`. Why does that fail while
-> `pulse[[ids[["ret_5"]]]]` works?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Change the lookup to `pulse[["returns_5"]]`. Why does that fail while
+`pulse[[ids[["ret_5"]]]]` works?
+
+</div>
 
 A strategy decides for every instrument at once. One flat feature-column
 read returns a named value for every instrument in `ctx$universe` order:
@@ -324,10 +321,10 @@ That pattern keeps the signal logic readable:
 - The rest of the condition is the economic rule.
 - The strategy still returns ordinary target quantities.
 
-The rule reads the feature vectors by hand because reading them is this
-section’s lesson. `ledgr_signal_feature(ctx, ids[["ret_5"]])` reads the
-same vector for the helper pipeline that
-`vignette("strategy-development", package = "ledgr")` shows.
+The rule reads the feature vectors directly because reading them is this
+section’s lesson. `ctx[[ids[["ret_5"]]]]` reads the same registered
+engine ID when code needs the concrete name rather than its active
+alias.
 
 Indexing flat feature columns by instrument would give the same targets,
 but it repeats per-instrument work at every pulse. Read each column once
@@ -549,10 +546,11 @@ Use this checklist before changing the strategy:
     is still `NA` for every instrument near the end of the sample, the
     issue is no longer ordinary early warmup. Check the lookback length,
     sample length, universe, and feature registration.
-6.  If the helper pipeline returns a `ledgr_empty_selection` on a late
-    diagnostic pulse, inspect the signal values directly. Ordinary early
-    warmup should have passed by then; a late all-missing signal usually
-    points to sample length, universe, or feature-registration issues.
+6.  If `ledgr_select_top()` or `ledgr_select_lowest()` returns
+    `character(0)` on a late diagnostic pulse, inspect the score values
+    directly. Ordinary early warmup should have passed by then; late
+    all-missing scores usually point to sample length, universe, or
+    feature-registration issues.
 
 Timestamp checks should compare normalized UTC values, not local string
 representations. The chunk is a fragment for use inside a strategy or on

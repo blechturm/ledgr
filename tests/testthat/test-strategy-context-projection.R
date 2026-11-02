@@ -132,13 +132,13 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(availability_snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
-  dense_run <- ledgr_run(ledgr_experiment(
+  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy_context_projection_capture,
     features = features,
     cost_model = ledgr_cost_zero()
   ))
-  availability_run <- ledgr_run(ledgr_experiment(
+  availability_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     availability_snapshot,
     strategy_context_projection_capture,
     features = features,

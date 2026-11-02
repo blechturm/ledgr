@@ -108,15 +108,15 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility
   dense <- strategy_context_entrance_fixture()
   dense_target <- dense |>
     ledgr_selection() |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(dense)
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(dense)
   testthat::expect_identical(unclass(dense_target), c(AAA = 15, BBB = 7))
 
   score_target <- dense |>
     ledgr_signal(values = dense[["return_5"]]) |>
-    ledgr_select_top_n(1) |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(dense)
+    ws16_select_top_for_legacy_test(1) |>
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(dense)
   testthat::expect_identical(unclass(score_target), c(AAA = 0, BBB = 15))
 
   named <- ledgr_signal(dense, values = c(BBB = 0.9, AAA = 0.2))
@@ -130,17 +130,17 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility
   )
   full <- available |>
     ledgr_selection() |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(available)
-  partial <- ledgr_target_rebalance(
-    ledgr_weight_equal(ledgr_selection(available)),
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(available)
+  partial <- ws16_target_from_legacy_call(
+    ws16_weight_equal_from_legacy_selection(ledgr_selection(available)),
     available,
     equity_fraction = 0.6
   )
   none <- available |>
     ledgr_selection(ids = character()) |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(available)
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(available)
   testthat::expect_identical(unclass(full), c(AAA = 6, OLD = 2))
   testthat::expect_identical(unclass(partial), c(AAA = 3, OLD = 2))
   testthat::expect_identical(unclass(none), c(AAA = 0, OLD = 2))
@@ -161,7 +161,7 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility
   )))
   testthat::expect_identical(projected, named_projected)
   projected_targets <- lapply(projected, function(selection) {
-    ledgr_target_rebalance(ledgr_weight_equal(selection), available)
+    ws16_target_from_legacy_call(ws16_weight_equal_from_legacy_selection(selection), available)
   })
   testthat::expect_true(all(vapply(
     projected_targets,
@@ -182,7 +182,7 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility
   )
 
   ranked <- ledgr_signal(available, values = c(AAA = 1, OLD = 999)) |>
-    ledgr_select_top_n(1)
+    ws16_select_top_for_legacy_test(1)
   testthat::expect_identical(unclass(ranked), c(AAA = TRUE, OLD = FALSE))
 
   empty_members <- strategy_context_entrance_fixture(
@@ -252,9 +252,9 @@ testthat::test_that("[LTB-0087] raw and convenience signals share raw values and
   }
 
   missing_scores <- ledgr_signal(ctx, values = c(AAA = NA_real_, OLD = 9)) |>
-    ledgr_select_top_n(1) |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(ctx)
+    ws16_select_top_for_legacy_test(1) |>
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(ctx)
   guarded <- ctx$hold()
   testthat::expect_identical(unclass(missing_scores), c(AAA = 4, OLD = 2))
   testthat::expect_identical(guarded, c(AAA = 4, OLD = 2))
@@ -267,7 +267,7 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
     restricted = c(TRUE, FALSE),
     priced = c(TRUE, TRUE)
   )
-  feature <- ledgr_signal_feature(restricted, "return_5")
+  feature <- restricted[["return_5"]]
   raw <- ledgr_signal(
     restricted,
     values = restricted[["return_5"]]
@@ -276,7 +276,7 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
     stats::setNames(as.numeric(feature), names(feature)),
     c(AAA = 0.2, OLD = 0.9)
   )
-  testthat::expect_identical(attr(feature, "eligible"), c(FALSE, TRUE))
+  testthat::expect_null(attr(feature, "eligible"))
   testthat::expect_identical(stats::setNames(as.numeric(raw), names(raw)), c(AAA = 0.2, OLD = 0.9))
   testthat::expect_identical(attr(raw, "eligible"), c(FALSE, TRUE))
 
@@ -286,7 +286,7 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
     restricted = c(FALSE, FALSE),
     priced = c(FALSE, TRUE)
   )
-  unpriced_signal <- ledgr_signal_feature(unpriced, "return_5")
+  unpriced_signal <- unpriced[["return_5"]]
   testthat::expect_identical(
     stats::setNames(as.numeric(unpriced_signal), names(unpriced_signal)),
     c(AAA = 0.2, OLD = 0.9)
@@ -294,15 +294,15 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
 
   dense <- strategy_context_entrance_fixture()
   testthat::expect_identical(
-    ledgr_signal_return(dense, lookback = 5),
-    ledgr_signal_feature(dense, "return_5")
+    stats::setNames(as.numeric(ledgr_signal_return(dense, lookback = 5)), dense$universe),
+    dense[["return_5"]]
   )
   testthat::expect_identical(
-    ledgr_signal_return(restricted, lookback = 5),
-    ledgr_signal_feature(restricted, "return_5")
+    stats::setNames(as.numeric(ledgr_signal_return(restricted, lookback = 5)), restricted$universe),
+    restricted[["return_5"]]
   )
   testthat::expect_error(
-    ledgr_signal_feature(dense, "unknown_feature"),
+    dense[["unknown_feature"]],
     class = "ledgr_unknown_context_field"
   )
 
@@ -310,11 +310,10 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
     availability = TRUE,
     members = character()
   )
-  signal <- ledgr_signal_feature(empty, "return_5")
-  testthat::expect_s3_class(signal, "ledgr_signal")
+  signal <- empty[["return_5"]]
   testthat::expect_identical(stats::setNames(as.numeric(signal), names(signal)), c(AAA = 0.2, OLD = 0.9))
-  testthat::expect_identical(attr(signal, "eligible"), c(FALSE, FALSE))
-  testthat::expect_identical(attr(signal, "origin"), "return_5")
+  testthat::expect_null(attr(signal, "eligible"))
+  testthat::expect_null(attr(signal, "origin"))
 
   validation_calls <- 0L
   original_validate <- ledgr:::ledgr_validate_strategy_helper_ctx
@@ -332,17 +331,17 @@ testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", 
 testthat::test_that("[LTB-0088] explicit zero weights never require sizing prices", {
   dense <- strategy_context_entrance_fixture(equity = 100)
   dense <- strategy_context_override_plane(dense, "close", c(10, NA_real_))
-  with_zero <- testthat::expect_no_warning(ledgr_target_rebalance(
+  with_zero <- testthat::expect_no_warning(ws16_target_from_legacy_call(
     ledgr_weights(c(AAA = 1, BBB = 0), universe = dense$universe),
     dense
   ))
-  omitted <- testthat::expect_no_warning(ledgr_target_rebalance(
+  omitted <- testthat::expect_no_warning(ws16_target_from_legacy_call(
     ledgr_weights(c(AAA = 1), universe = dense$universe),
     dense
   ))
   testthat::expect_identical(with_zero, omitted)
   testthat::expect_identical(unclass(with_zero), c(AAA = 10, BBB = 0))
-  positive_dense <- ledgr_target_rebalance(
+  positive_dense <- ws16_target_from_legacy_call(
     ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = dense$universe),
     dense
   )
@@ -360,11 +359,11 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
     equity = 100
   )
   available <- strategy_context_override_plane(available, "close", c(10, NA_real_))
-  available_zero <- testthat::expect_no_condition(ledgr_target_rebalance(
+  available_zero <- testthat::expect_no_condition(ws16_target_from_legacy_call(
     ledgr_weights(c(AAA = 1, OLD = 0), universe = available$universe),
     available
   ))
-  available_omitted <- testthat::expect_no_condition(ledgr_target_rebalance(
+  available_omitted <- testthat::expect_no_condition(ws16_target_from_legacy_call(
     ledgr_weights(c(AAA = 1), universe = available$universe),
     available
   ))
@@ -373,7 +372,7 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   # Cut 10: a positive weight on an unpriced held member skips it at its
   # current quantity (E = 2 * 20 = 40, V = 50, V + E <= 100, so AAA keeps
   # floor(50 / 10) = 5); without a permissible mark it still fails closed.
-  skipped <- ledgr_target_rebalance(
+  skipped <- ws16_target_from_legacy_call(
     ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = available$universe),
     available
   )
@@ -381,7 +380,7 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   testthat::expect_identical(attr(skipped, "sizing_skipped"), "OLD")
   unmarked <- strategy_context_override_plane(available, "holding_value", c(0, NA_real_))
   testthat::expect_error(
-    ledgr_target_rebalance(
+    ws16_target_from_legacy_call(
       ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = unmarked$universe),
       unmarked
     ),
@@ -394,7 +393,7 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
     equity = 100
   )
   testthat::expect_error(
-    ledgr_target_rebalance(ledgr_weights(c(OLD = 0)), nonmember),
+    ws16_target_from_legacy_call(ledgr_weights(c(OLD = 0)), nonmember),
     class = "ledgr_invalid_strategy_helper"
   )
 })
@@ -413,7 +412,7 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
     universe = legacy_ctx$universe
   )
   testthat::expect_identical(
-    unclass(ledgr_target_rebalance(
+    unclass(ws16_target_from_legacy_call(
       legacy_weights,
       legacy_ctx,
       equity_fraction = 0.5
@@ -421,7 +420,7 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
     c(AAA = 5, BBB = 2)
   )
   testthat::expect_identical(
-    unclass(ledgr_target_rebalance(
+    unclass(ws16_target_from_legacy_call(
       ledgr_weights(c(BBB = 1), universe = legacy_ctx$universe),
       legacy_ctx,
       keep = "AAA"
@@ -436,8 +435,8 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   dense <- strategy_context_override_plane(dense, "close", c(10, 10))
   weights <- ledgr_weights(c(BBB = 1), universe = dense$universe)
 
-  kept <- ledgr_target_rebalance(weights, dense, keep = "AAA")
-  half <- ledgr_target_rebalance(
+  kept <- ws16_target_from_legacy_call(dense, weights = weights, keep = "AAA")
+  half <- ws16_target_from_legacy_call(
     weights,
     dense,
     equity_fraction = 0.5,
@@ -446,13 +445,13 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   testthat::expect_identical(unclass(kept), c(AAA = 4, BBB = 6))
   testthat::expect_identical(unclass(half), c(AAA = 4, BBB = 3))
 
-  baseline <- ledgr_target_rebalance(weights, dense)
+  baseline <- ws16_target_from_legacy_call(dense, weights = weights)
   testthat::expect_identical(
-    ledgr_target_rebalance(weights, dense, keep = NULL),
+    ws16_target_from_legacy_call(dense, weights = weights, keep = NULL),
     baseline
   )
   testthat::expect_identical(
-    ledgr_target_rebalance(weights, dense, keep = character()),
+    ws16_target_from_legacy_call(dense, weights = weights, keep = character()),
     baseline
   )
 
@@ -463,23 +462,23 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   )
   member_weights <- ledgr_weights(c(AAA = 1), universe = available$universe)
   testthat::expect_identical(
-    ledgr_target_rebalance(member_weights, available, keep = "OLD"),
-    ledgr_target_rebalance(member_weights, available)
+    ws16_target_from_legacy_call(available, weights = member_weights, keep = "OLD"),
+    ws16_target_from_legacy_call(available, weights = member_weights)
   )
 
   testthat::expect_error(
-    ledgr_target_rebalance(
+    ws16_target_from_legacy_call(
       ledgr_weights(c(AAA = 0, BBB = 1), universe = dense$universe),
       dense,
       keep = "AAA"
     ),
-    regexp = "both `keep` and `weights`",
-    class = "ledgr_invalid_strategy_helper"
+    regexp = "both weighted and kept",
+    class = "ledgr_invalid_strategy_result"
   )
   for (invalid_keep in list("ZZZ", c("AAA", "AAA"), NA_character_)) {
     testthat::expect_error(
-      ledgr_target_rebalance(weights, dense, keep = invalid_keep),
-      class = "ledgr_invalid_strategy_helper"
+      ws16_target_from_legacy_call(dense, weights = weights, keep = invalid_keep),
+      class = "ledgr_invalid_strategy_type"
     )
   }
 
@@ -490,7 +489,7 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   unavailable <- strategy_context_override_plane(unavailable, "close", c(NA_real_, 20))
   unavailable <- strategy_context_override_plane(unavailable, "holding_value", c(NA_real_, 0))
   testthat::expect_error(
-    ledgr_target_rebalance(weights, unavailable, keep = "AAA"),
+    ws16_target_from_legacy_call(unavailable, weights = weights, keep = "AAA"),
     class = "ledgr_target_sizing_unavailable"
   )
 })
@@ -590,15 +589,15 @@ testthat::test_that("[LTB-0090] empty helper domains keep their distinct meaning
   testthat::expect_s3_class(holdings_signal, "ledgr_signal")
   testthat::expect_identical(names(holdings_signal), c("AAA", "OLD"))
   testthat::expect_identical(attr(holdings_signal, "eligible"), c(FALSE, FALSE))
-  testthat::expect_s3_class(ledgr_select_top_n(holdings_signal, 1), "ledgr_empty_selection")
+  testthat::expect_s3_class(ws16_select_top_for_legacy_test(holdings_signal, 1), "ledgr_empty_selection")
   testthat::expect_error(
     ledgr_signal_return(holdings_only, lookback = 0),
     class = "ledgr_invalid_strategy_helper"
   )
   held_target <- holdings_only |>
     ledgr_selection(where = c(FALSE, TRUE)) |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(holdings_only)
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(holdings_only)
   testthat::expect_identical(unclass(held_target), c(AAA = 0, OLD = 2))
 
   empty_axis <- strategy_context_empty_axis_fixture()
@@ -607,13 +606,13 @@ testthat::test_that("[LTB-0090] empty helper domains keep their distinct meaning
   equity_before <- empty_axis$equity
   selection_target <- empty_axis |>
     ledgr_selection() |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(empty_axis)
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(empty_axis)
   signal_target <- empty_axis |>
     ledgr_signal(values = numeric()) |>
-    ledgr_select_top_n(1) |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(empty_axis)
+    ws16_select_top_for_legacy_test(1) |>
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(empty_axis)
   for (target in list(selection_target, signal_target)) {
     testthat::expect_s3_class(target, "ledgr_target")
     testthat::expect_length(target, 0L)
@@ -627,12 +626,12 @@ testthat::test_that("[LTB-0090] empty helper domains keep their distinct meaning
   testthat::expect_s3_class(ledgr_weights(numeric(), universe = character()), "ledgr_weights")
   testthat::expect_s3_class(ledgr_target(numeric(), universe = character()), "ledgr_target")
   testthat::expect_s3_class(
-    ledgr_select_top_n(ledgr_signal(numeric()), n = 1),
+    ws16_select_top_for_legacy_test(ledgr_signal(numeric()), n = 1),
     "ledgr_empty_selection"
   )
-  testthat::expect_error(
-    ledgr_select_top_n(ledgr_signal(numeric()), n = 0),
-    class = "ledgr_invalid_strategy_helper"
+  testthat::expect_s3_class(
+    ws16_select_top_for_legacy_test(ledgr_signal(numeric()), n = 0),
+    "ledgr_empty_selection"
   )
   testthat::expect_error(
     ledgr_target(numeric(), universe = "AAA"),
@@ -751,15 +750,20 @@ testthat::test_that("[LTB-0120] signals cover the decision axis and carry eligib
     ctx <- contexts[[name]]
     feature <- ctx[["return_5"]]
     signals <- list(
-      ledgr_signal_feature(ctx, "return_5"),
+      ctx[["return_5"]],
       ledgr_signal_return(ctx, lookback = 5),
       ledgr_signal(ctx, values = feature),
       ledgr_signal(ctx, values = rev(stats::setNames(feature, ctx$universe)))
     )
-    for (signal in signals) {
+    for (i in seq_along(signals)) {
+      signal <- signals[[i]]
       testthat::expect_identical(names(signal), ctx$universe, info = name)
       testthat::expect_identical(as.numeric(signal), as.numeric(feature), info = name)
-      testthat::expect_identical(attr(signal, "eligible"), as.logical(ctx$buyable), info = name)
+      if (i == 1L) {
+        testthat::expect_null(attr(signal, "eligible"), info = name)
+      } else {
+        testthat::expect_identical(attr(signal, "eligible"), as.logical(ctx$buyable), info = name)
+      }
     }
     target <- ctx$flat()
     target[ctx$buyable & signals[[2L]] > 0.1] <- 10
@@ -805,16 +809,15 @@ testthat::test_that("[LTB-0121] selections, rankings and target helpers apply el
   )
 
   ranked <- testthat::expect_no_warning(
-    ledgr_select_top_n(ledgr_signal(restricted, values = c(5, 1)), 1)
+    ws16_select_top_for_legacy_test(ledgr_signal(restricted, values = c(5, 1)), 1)
   )
   testthat::expect_identical(unclass(ranked), c(AAA = FALSE, OLD = TRUE))
-  testthat::expect_warning(
-    short <- ledgr_select_top_n(ledgr_signal(restricted, values = c(5, 1)), 2),
-    class = "ledgr_partial_selection"
+  short <- testthat::expect_no_warning(
+    ws16_select_top_for_legacy_test(ledgr_signal(restricted, values = c(5, 1)), 2)
   )
   testthat::expect_identical(unclass(short), c(AAA = FALSE, OLD = TRUE))
   empty <- testthat::expect_no_warning(
-    ledgr_select_top_n(ledgr_signal(restricted, values = c(5, NA)), 1)
+    ws16_select_top_for_legacy_test(ledgr_signal(restricted, values = c(5, NA)), 1)
   )
   testthat::expect_s3_class(empty, "ledgr_empty_selection")
   testthat::expect_identical(as.logical(empty), c(FALSE, FALSE))
@@ -832,15 +835,15 @@ testthat::test_that("[LTB-0121] selections, rankings and target helpers apply el
 
   rebalanced <- restricted |>
     ledgr_selection() |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(restricted)
-  kept <- ledgr_target_rebalance(
-    ledgr_weight_equal(ledgr_selection(restricted)), restricted, keep = "AAA"
+    ws16_weight_equal_from_legacy_selection() |>
+    ws16_target_from_legacy_call(restricted)
+  kept <- ws16_target_from_legacy_call(
+    ws16_weight_equal_from_legacy_selection(ledgr_selection(restricted)), restricted, keep = "AAA"
   )
   testthat::expect_identical(unclass(rebalanced), c(AAA = 3, OLD = 13))
   testthat::expect_identical(kept, rebalanced)
   testthat::expect_error(
-    ledgr_target_rebalance(ledgr_weights(c(AAA = 1), universe = restricted$universe), restricted),
+    ws16_target_from_legacy_call(ledgr_weights(c(AAA = 1), universe = restricted$universe), restricted),
     class = "ledgr_invalid_strategy_helper"
   )
 
@@ -958,7 +961,7 @@ testthat::test_that("[LTB-0123] the context warmup form checks eligible instrume
   for (name in names(contexts)) {
     ctx <- contexts[[name]]
     testthat::expect_true(ledgr_passed_warmup(ctx, ctx[["return_5"]]), info = name)
-    testthat::expect_true(ledgr_passed_warmup(ctx, ledgr_signal_feature(ctx, "return_5")), info = name)
+    testthat::expect_true(ledgr_passed_warmup(ctx, ctx[["return_5"]]), info = name)
     variants <- list(missing_first = c(NA_real_, 0.9), missing_second = c(0.2, NA_real_))
     for (variant in names(variants)) {
       values <- variants[[variant]]
@@ -1065,12 +1068,11 @@ testthat::test_that("[LTB-0124] a malformed eligibility plane fails closed in ev
     long_qty = 10
   )
   calls <- list(
-    signal_feature = function(ctx) ledgr_signal_feature(ctx, "return_5"),
     signal_values = function(ctx) ledgr_signal(ctx, values = c(0.2, 0.9)),
     selection = function(ctx) ledgr_selection(ctx),
     selection_ids = function(ctx) ledgr_selection(ctx, ids = c("AAA", "OLD")),
     quantity = function(ctx) ledgr_target_quantity(ledgr_selection(c(AAA = FALSE, OLD = TRUE)), ctx, qty = 10),
-    rebalance = function(ctx) ledgr_target_rebalance(ledgr_weights(c(OLD = 1), universe = ctx$universe), ctx),
+    rebalance = function(ctx) ws16_target_from_legacy_call(ledgr_weights(c(OLD = 1), universe = ctx$universe), ctx),
     warmup = function(ctx) ledgr_passed_warmup(ctx, c(0.2, 0.9)),
     wrapper = function(ctx) wrapper(ctx, list())
   )

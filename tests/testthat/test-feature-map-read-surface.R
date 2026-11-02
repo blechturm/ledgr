@@ -63,11 +63,11 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
     sma_2 = stats::setNames(plane("sma_2"), c("AAA", "BBB")),
     buyable = stats::setNames(c(TRUE, TRUE), c("AAA", "BBB"))
   )
-  alias_signal <- ledgr_signal_feature(ctx, "short")
-  id_signal <- ledgr_signal_feature(ctx, "sma_2")
+  alias_signal <- ctx[["short"]]
+  id_signal <- ctx[["sma_2"]]
   testthat::expect_identical(as.numeric(alias_signal), as.numeric(id_signal))
-  testthat::expect_identical(attr(alias_signal, "eligible"), c(TRUE, TRUE))
-  testthat::expect_identical(attr(alias_signal, "origin"), "short")
+  testthat::expect_null(attr(alias_signal, "eligible"))
+  testthat::expect_null(attr(alias_signal, "origin"))
   testthat::expect_error(
     plane("missing"),
     "Unknown feature name `missing`. Active aliases: short, long. Concrete feature IDs: sma_2, sma_3.",
@@ -196,17 +196,16 @@ testthat::test_that("[LTB-0184] public execution and pulse inspection agree on a
       ctx[["signal"]][[id]]
     }, numeric(1))
     bundle <- ctx$signal
-    signal <- ledgr_signal_feature(ctx, "signal")
+    signal <- ctx[["signal"]]
     if (!identical(as.numeric(alias), as.numeric(exact)) ||
         !identical(as.numeric(alias), as.numeric(scalar)) ||
         !identical(as.numeric(alias), as.numeric(bundle)) ||
-        !identical(as.numeric(alias), as.numeric(signal)) ||
-        !identical(attr(signal, "origin"), "signal")) {
+        !identical(as.numeric(alias), as.numeric(signal))) {
       stop("singular feature reads diverged")
     }
     ctx$flat()
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = features,
@@ -234,7 +233,7 @@ testthat::test_that("[LTB-0184] public execution and pulse inspection agree on a
     pulse$sma_2
   )
 
-  sweep_experiment <- ledgr_experiment(
+  sweep_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
       alias <- ctx[["signal"]]

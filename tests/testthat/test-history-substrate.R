@@ -592,7 +592,7 @@ testthat::test_that("[LTB-0291] causal history substrate preserves two-clock fac
     price_basis = "split_adjusted"
   )
   withr::defer(ledgr_snapshot_close(path_snapshot))
-  path_experiment <- ledgr_experiment(
+  path_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     path_snapshot,
     function(ctx, params) ctx$hold(),
     universe = c("AAA", "BBB"),
@@ -1374,7 +1374,7 @@ testthat::test_that("[LTB-0294] staged history identity is exact and tasks are l
 
   snapshot <- availability_runtime_fixture(days = 4L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) ctx$flat(),
     cost_model = ledgr_cost_zero()
@@ -1446,12 +1446,12 @@ testthat::test_that("[LTB-0295] availability sweeps stage history without semant
     target[["AAA"]] <- params$qty
     target
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     cost_model = ledgr_cost_zero()
   )
-  strict_experiment <- ledgr_experiment(
+  strict_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     cost_model = ledgr_cost_zero(),
@@ -1621,7 +1621,7 @@ testthat::test_that("[LTB-0296] availability walk-forward accepts staged workers
     target[["AAA"]] <- params$qty
     target
   }
-  experiment <- ledgr_experiment(
+  experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     features = list(ledgr_ind_returns(2L)),

@@ -4,7 +4,8 @@
 #' experiment-first workflow. It records starting cash and, optionally, existing
 #' long positions and cost basis.
 #'
-#' @param cash Finite positive cash balance.
+#' @param cash Finite non-negative cash balance. Zero is valid when explicit
+#'   non-zero opening positions are supplied.
 #' @param date Optional opening timestamp or civil Date. It is also the scoring start: runs,
 #'   sweeps, promotion and feature precompute evaluate the strategy and start
 #'   feature state from the first pulse at or after it, so indicators warm up
@@ -32,8 +33,8 @@ ledgr_opening <- function(cash,
   if (!is.numeric(cash) || length(cash) != 1L || is.na(cash) || !is.finite(cash)) {
     rlang::abort("`cash` must be a finite numeric scalar.", class = "ledgr_invalid_opening")
   }
-  if (cash <= 0) {
-    rlang::abort("`cash` must be > 0.", class = "ledgr_invalid_opening")
+  if (cash < 0) {
+    rlang::abort("`cash` must be >= 0.", class = "ledgr_invalid_opening")
   }
 
   date_iso <- NULL
@@ -51,6 +52,12 @@ ledgr_opening <- function(cash,
   }
 
   positions <- ledgr_opening_normalize_positions(positions)
+  if (cash == 0 && !any(positions != 0)) {
+    rlang::abort(
+      "`cash = 0` requires explicit opening positions.",
+      class = "ledgr_invalid_opening"
+    )
+  }
   cost_basis <- ledgr_opening_normalize_cost_basis(cost_basis, positions)
 
   structure(
@@ -157,6 +164,9 @@ print.ledgr_opening <- function(x, ...) {
 #'
 #' @param snapshot A sealed `ledgr_snapshot`.
 #' @param strategy A function with signature `function(ctx, params)`.
+#' @param schedule Optional declaration from a `ledgr_schedule_*()` helper.
+#'   When supplied, the outer scheduler invokes the strategy only on due
+#'   pulses. Omit it for every-pulse or mixed-cadence callbacks.
 #' @param features List of `ledgr_indicator`/`ledgr_indicator_bundle` objects, a
 #'   single indicator or bundle, or a `ledgr_feature_map`. Compatibility note:
 #'   `function(params)` feature factories remain supported for old flat-grid and
@@ -223,14 +233,15 @@ print.ledgr_opening <- function(x, ...) {
 #' strategy <- function(ctx, params) {
 #'   stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
 #' }
-#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+#' exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, strategy, cost_model = ledgr_cost_zero())
 #' inherits(exp, "ledgr_experiment")
 #' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_experiment <- function(snapshot,
                              strategy,
                              features = list(),
-                             opening = ledgr_opening(cash = 100000),
+                             opening,
+                             schedule = NULL,
                              universe = NULL,
                              valuation_policy = NULL,
                              timing_model = ledgr_timing_next_open(),
@@ -241,6 +252,15 @@ ledgr_experiment <- function(snapshot,
                              risk_free_rate = NULL,
                              corporate_action_policy = ledgr_corporate_actions_research(),
                              history_policy = ledgr_history_policy()) {
+  if (missing(opening) || is.null(opening)) {
+    rlang::abort(
+      "`opening` is required because it describes the investor's starting capital. Supply `opening = ledgr_opening(cash = ...)`.",
+      class = "ledgr_invalid_experiment"
+    )
+  }
+  if (missing(cost_model) || is.null(cost_model)) {
+    ledgr_cost_model_unspecified()
+  }
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_experiment")
   }
@@ -285,12 +305,16 @@ ledgr_experiment <- function(snapshot,
     universe_all
   }
   ledgr_experiment_validate_strategy(strategy)
-  if (!is.null(ledgr_strategy_schedule_declaration(strategy)) &&
-      !isTRUE(availability$active)) {
+  schedule <- if (is.null(schedule)) NULL else ledgr_schedule_validate(schedule)
+  if (!is.null(schedule) && !isTRUE(availability$active)) {
     ledgr_schedule_abort(
       "A strategy schedule requires an availability-aware experiment with declared sessions.",
       "ledgr_schedule_sessions_required"
     )
+  }
+  if (!is.null(schedule)) {
+    attr(strategy, "ledgr_schedule") <- unclass(schedule)
+    class(strategy) <- unique(c("ledgr_scheduled_strategy", class(strategy)))
   }
   features_mode <- ledgr_experiment_validate_features(features)
   features <- ledgr_experiment_copy_features(features, features_mode)
@@ -298,9 +322,6 @@ ledgr_experiment <- function(snapshot,
     ledgr_availability_validate_features(features, features_mode)
   }
 
-  if (missing(cost_model) || is.null(cost_model)) {
-    ledgr_cost_model_unspecified()
-  }
   if (!inherits(opening, "ledgr_opening")) {
     rlang::abort("`opening` must be a ledgr_opening object.", class = "ledgr_invalid_experiment")
   }
@@ -328,6 +349,7 @@ ledgr_experiment <- function(snapshot,
   out <- list(
       snapshot = snapshot,
       strategy = strategy,
+      schedule = schedule,
       features = features,
       features_mode = features_mode,
       opening = opening,
@@ -652,6 +674,7 @@ print.ledgr_experiment <- function(x, ...) {
   cat("Features:    ", feature_desc, "\n", sep = "")
   cat("Opening:     cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
       ", positions=", length(x$opening$positions), "\n", sep = "")
+  cat("Costs:       supplied (", x$cost_model$type_id, ")\n", sep = "")
   cat("Mode:        ", x$execution_mode, "\n", sep = "")
   cat("Clock:       ", if (isTRUE(x$availability$active)) "declared_sessions" else "bar_native", "\n", sep = "")
   cat(
@@ -669,7 +692,7 @@ print.ledgr_experiment <- function(x, ...) {
   # basis, as the plan discloses them (LDG-3081).
   cat(ledgr_experiment_plan_policy_lines(ledgr_experiment_plan(x), width = 13L), sep = "")
   cat("Metrics:     ", ledgr_calendar_display(x$metric_context$calendar), "\n", sep = "")
-  strategy_schedule <- ledgr_strategy_schedule_declaration(x$strategy)
+  strategy_schedule <- x$schedule %||% ledgr_strategy_schedule_declaration(x$strategy)
   if (!is.null(strategy_schedule)) {
     cat(
       "Strategy schedule: ",

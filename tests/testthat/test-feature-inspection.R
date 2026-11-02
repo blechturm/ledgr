@@ -235,7 +235,8 @@ testthat::test_that("[LTB-0186] feature params resolve inspection like execution
       snapshot,
       function(ctx, params) ctx$flat(),
       features = features,
-      cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 100000)
     ),
     feature_params = params,
     run_id = "feature-contract-params"
