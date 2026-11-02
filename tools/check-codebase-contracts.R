@@ -219,8 +219,9 @@ mode_branch_record_path <- value_arg(
     "mode_branches.csv"
   )
 )
+hot_path_only <- "--hot-path-only" %in% args
 mode_branch_sites <- ledgr_mode_branch_scan(root)
-if (identical(mode, "check")) {
+if (identical(mode, "check") && !hot_path_only) {
   if (!file.exists(mode_branch_record_path)) {
     stop(sprintf(
       "LEDGR_MODE_BRANCH_CENSUS_FAILED the committed record %s is missing.",
@@ -237,37 +238,74 @@ if (identical(mode, "check")) {
   ledgr_mode_branch_check(mode_branch_sites, mode_branch_record)
 }
 
+# Hot-path bans (macro rule 17) are validated completely before any directory
+# is created or record written. The prior record set is read from the checkout
+# record directory (or --hot-path-input), never from --output, so an empty
+# output directory cannot reset allowances. Report mode refuses unreasoned
+# growth, coverage loss and input or analyzer changes.
+hot_path_input <- value_arg("hot-path-input", ledgr_hot_path_record_dir(root))
+hot_path_initial <- "--hot-path-initial" %in% args
+hot_path_reason <- value_arg("hot-path-reason", "")
+hot_path_records <- ledgr_hot_path_read_records(hot_path_input, initial = hot_path_initial)
+hot_path_evaluation <- ledgr_hot_path_evaluate(root, hot_path_records)
+hot_path_hash <- ledgr_hot_path_analyzer_hash(root)
+hot_path_write <- NULL
+if (identical(mode, "check")) {
+  if (hot_path_initial) stop("--hot-path-initial is a report-mode operation.", call. = FALSE)
+  ledgr_hot_path_check(hot_path_evaluation, hot_path_records, hot_path_hash)
+} else {
+  hot_path_write <- ledgr_hot_path_regenerate(
+    hot_path_evaluation, hot_path_records, hot_path_hash,
+    reason = hot_path_reason, initial = hot_path_initial
+  )
+}
+
+# Report mode writes the complete hot-path record set: the regenerated
+# records and, when --output is elsewhere, byte copies of the inputs.
+write_hot_path_records <- function() {
+  if (is.null(hot_path_write)) return(invisible(NULL))
+  hot_path_files <- ledgr_hot_path_record_files()
+  same_dir <- identical(
+    normalizePath(output, winslash = "/", mustWork = FALSE),
+    normalizePath(hot_path_input, winslash = "/", mustWork = FALSE)
+  )
+  for (name in names(hot_path_files)) {
+    if (name %in% c("bans", "reach", "policy")) {
+      utils::write.csv(hot_path_write[[name]], file.path(output, hot_path_files[[name]]),
+                       row.names = FALSE, na = "", fileEncoding = "UTF-8", eol = "\n")
+    } else if (!same_dir) {
+      file.copy(file.path(hot_path_input, hot_path_files[[name]]),
+                file.path(output, hot_path_files[[name]]), overwrite = TRUE)
+    }
+  }
+  invisible(NULL)
+}
+
+# --hot-path-only runs just this section: preflight, then the hot-path
+# records in report mode. It skips the mode-branch check and every other
+# census family.
+if (hot_path_only) {
+  dir.create(output, recursive = TRUE, showWarnings = FALSE)
+  write_hot_path_records()
+  cat(ledgr_hot_path_status(mode, hot_path_evaluation))
+  quit(save = "no", status = 0L)
+}
+
 dir.create(output, recursive = TRUE, showWarnings = FALSE)
 
 radix_order <- function(...) order(..., method = "radix", na.last = TRUE)
 
-relative_path <- function(path) {
-  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
-  prefix <- paste0(root, "/")
-  ifelse(startsWith(path, prefix), substring(path, nchar(prefix) + 1L), path)
-}
+# The source-index primitives live in tools/codebase-structure.R so the fast
+# hot-path scanner can share them; these wrappers keep the historical names.
+relative_path <- function(path) ledgr_census_relative_path(root, path)
 
-source_files <- function(paths) {
-  files <- unlist(lapply(paths, function(path) {
-    full <- file.path(root, path)
-    if (!dir.exists(full)) return(character())
-    list.files(full, pattern = "\\.[Rr]$", recursive = TRUE, full.names = TRUE)
-  }), use.names = FALSE)
-  files[radix_order(relative_path(files))]
-}
+source_files <- function(paths) ledgr_census_source_files(root, paths)
 
 read_source <- function(path) {
   readLines(path, warn = FALSE, encoding = "UTF-8")
 }
 
-parse_source <- function(path) {
-  tryCatch(
-    parse(path, keep.source = TRUE, encoding = "UTF-8"),
-    error = function(e) {
-      stop(sprintf("Cannot parse %s: %s", relative_path(path), conditionMessage(e)), call. = FALSE)
-    }
-  )
-}
+parse_source <- function(path) ledgr_census_parse_source(root, path)
 
 call_name <- function(x) {
   if (!is.call(x)) return(NA_character_)
@@ -335,32 +373,7 @@ ast_nodes <- function(x) {
 }
 
 top_definitions <- function(path, parsed = parse_source(path)) {
-  refs <- attr(parsed, "srcref")
-  out <- vector("list", 0L)
-  for (i in seq_along(parsed)) {
-    expr <- parsed[[i]]
-    if (!is.call(expr) || length(expr) < 3L || !is.symbol(expr[[1L]]) ||
-        !as.character(expr[[1L]]) %in% c("<-", "=")) next
-    lhs <- expr[[2L]]
-    rhs <- expr[[3L]]
-    if (!is.symbol(lhs)) next
-    ref <- refs[[i]]
-    line_start <- if (is.null(ref)) NA_integer_ else as.integer(ref)[[1L]]
-    line_end <- if (is.null(ref)) line_start else as.integer(ref)[[3L]]
-    is_function <- is.call(rhs) && identical(as.character(rhs[[1L]]), "function")
-    formals <- if (is_function) names(as.list(rhs[[2L]])) else character()
-    out[[length(out) + 1L]] <- list(
-      name = as.character(lhs),
-      file = relative_path(path),
-      line = line_start,
-      line_end = line_end,
-      is_function = is_function,
-      formals = formals,
-      rhs = rhs,
-      expression = expr
-    )
-  }
-  out
+  ledgr_census_top_definitions(root, path, parsed)
 }
 
 source_index <- function(paths) {
@@ -1612,6 +1625,8 @@ cat(sprintf(
   nrow(condition_rows),
   sum(summary$findings)
 ))
+write_hot_path_records()
+cat(ledgr_hot_path_status(mode, hot_path_evaluation))
 cat(sprintf(
   "LEDGR_MODE_BRANCH_CENSUS mode=%s files=%d functions=%d branch_sites=%d flow_sites=%d\n",
   mode,

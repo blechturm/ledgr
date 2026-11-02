@@ -1026,6 +1026,7 @@ cuts:
     cut: "2026-11-02"
     status: "accepted"
     accepted: "2026-11-02 by the maintainer, revision 3.1, after independent cut review (cut_review_8.md: round 1 NEEDS_TYPE_2 with Type 2 dispositions; re-review 1 PASS_AFTER_PATCHES, R1-R5 applied verbatim; focused census-delivery review PASS_AFTER_PATCHES, C1-C4 applied verbatim). Decisions (1)-(10) are accepted with the cut. Implementation starts with LDG-3191; no implementation is claimed by this acceptance."
+    amendment: "2026-11-02 by the maintainer, during LDG-3191. Measurement found six same-key duplicate definitions in the product, all branch alternatives: ledgr_output_handler$append_event_rows, $flush_pending and $pending_event_count; ledgr_backtest_read_connection$close; ledgr_availability_snapshot_connection$close; and ledgr_backtest_bar_counts/close_query. Decision (2)'s same-key rule would fail them on day one without a product change, which the cut rules out. Disposition (option: fail unless declared): every definition stays its own node, the first under its key and later ones with an occurrence suffix (#2, #3). All are scanned, and member or lexical dispatch reaches all of them, so none overwrites another. A same-key duplicate fails unless the declarations record it with a reason; the six existing ones are seeded as branch alternatives. R2's distinct-scope rule is unchanged."
     revision: "3.1, applying the focused review's delivery patches C1-C4 verbatim; revision 3 applied re-review 1's patches R1-R5 verbatim and moved delivery into the existing codebase census (maintainer, 2026-11-02); revision 2 applied cut_review_8.md findings 1-9 and the maintainer's Type 2 dispositions."
     opening: >-
       Written by Claude on 2026-11-02 at the maintainer's request, as the
@@ -3267,7 +3268,7 @@ tickets:
   - id: "LDG-3191"
     title: "Walk the per-pulse call graph and pin banned calls in an exact baseline"
     workstream: 19
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -3374,7 +3375,57 @@ tickets:
       - "tools/check-codebase-contracts.R --mode=check fails before writing when the scan differs from the records; rejected check or report operations leave every prior and output record byte-identical under the missing/partial-input, empty-output-directory and late-policy controls; and the CLI and fast scanner give equal hot-path results on the same synthetic input"
       - "the fast test follows decision (2)'s context rule: in a checkout, missing records fail and the full comparison runs; outside a checkout, discovery is nonempty and every synthetic witness runs; empty discovery and a broken synthetic checker fail"
       - "no shared parsing/index helper is duplicated, LTB-0270 to LTB-0272 and LTB-0331 pass unchanged, the six-family summary and product fingerprint membership are unchanged, and the added fast membership, including attributable shared-index cost, costs at most 3 s in both checkout and isolated contexts"
-    evidence: []
+    evidence:
+      - >-
+        Scanner: tools/codebase-structure.R gains the extracted source-index
+        primitives (ledgr_census_relative_path, _source_files, _parse_source,
+        _top_definitions; the CLI keeps its historical names as one-line
+        wrappers) and the hot-path section between the analyzer markers.
+        tools/check-codebase-contracts.R runs the hot-path preflight after the
+        mode-branch check and before the first dir.create(output); report mode
+        writes the generated records after a successful preflight.
+        --hot-path-only runs just this section (needed to run the command on
+        a synthetic package for the C2 equality control).
+      - >-
+        Records in dev/bench/v0_2_2_pre_cran_removal/census/. The surface
+        table classifies 182 exports and 99 S3 methods, 32 of them per_pulse
+        across six families. The family map has eight families; history,
+        strategy factories, utilities and most authoring helpers state that
+        they are covered statically only. The declarations record the six
+        branch-alternative duplicates and 12 callable sites: user strategy
+        and signal functions and anonymous caller closures are terminal;
+        others name the cost resolver, the prepared membership, the feature
+        accessor factories and the schedule query. The JSON inventory has
+        four counted yyjsonr backends, two option constructors and nine
+        ledgr wrappers. The cut's list named ledgr_canonical_json, which is
+        an attribute name, not a function, so it is not in the inventory.
+        Seeded with --hot-path-initial and reason "initial baseline, cut 8":
+        2285 nodes, 465 reached, 211 rows, 312 banned calls, 12 unresolved
+        sites, all declared. The baseline includes the per-fill JSON in
+        ledgr_fill_event_payload, the strategy-state encode and the
+        scheduled-skip helper's %in% (round 1, F1). No row is marked "error
+        path" yet; that is a review judgement (R5).
+      - >-
+        Tests: tests/testthat/test-hot-path-bans.R. Fast LTB-0546 to LTB-0554
+        (claim LCL-0535) and review LTB-0555 (claim LCL-0536, seven Rscript
+        controls on a synthetic package with before/after file hashes). Fast
+        blocks take 2.47 s in the checkout and 2.20 s in a simulated isolated
+        source tree without .git, .Rbuildignore or dev/ (sum of block times,
+        including the first sourcing of the scanner); the review block takes
+        4.45 s. test-codebase-contracts.R (LTB-0270 to LTB-0272, LTB-0331),
+        test-test-control-plane.R, test-governance-report.R and
+        test-project-metadata.R pass unchanged. Both CLI self-tests pass.
+        A full --mode=check run writes legacy census output byte-identical to
+        a run on the unmodified tree; the committed legacy records were
+        already stale against the Cut 7 tree before this ticket and are
+        regenerated in LDG-3193.
+      - >-
+        Implementation found six same-key duplicates in the product;
+        maintainer amendment of 2026-11-02 (fail unless declared) applies.
+        Performance work on the scanner itself removed two pairwise lookups
+        (node keys by base name, occurrence counting) in favour of split()
+        and hashed environments; one evaluation of the real package takes
+        about 2.2 s in a loaded session.
   - id: "LDG-3192"
     title: "Witness at runtime that the static walk covers what the pulse loop executes"
     workstream: 19
