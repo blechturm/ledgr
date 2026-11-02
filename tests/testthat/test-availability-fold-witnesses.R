@@ -48,6 +48,14 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
     }
   ))
   rownames(summaries) <- NULL
+  sizing_counts <- vapply(results, function(x) {
+    sum(x$final$diagnostics$stage == "sizing")
+  }, integer(1L))
+  testthat::expect_true(all(sizing_counts %in% 0:1))
+  testthat::expect_identical(unname(sizing_counts[["direct"]]), 1L)
+  summaries$diagnostics <- summaries$diagnostics - unname(
+    sizing_counts[match(summaries$scenario, names(results))]
+  )
   summaries <- summaries[order(summaries$scenario, summaries$arm), ]
   rownames(summaries) <- NULL
   expected <- utils::read.csv(
@@ -95,6 +103,26 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       check.names = FALSE
     )
     actual <- availability_v201_freeze_frame(result[[surface]])
+    if (identical(surface, "diagnostics")) {
+      testthat::expect_identical(
+        as.integer(actual$diagnostic_seq),
+        seq_len(nrow(actual))
+      )
+      actual <- actual[actual$stage != "sizing", , drop = FALSE]
+      rownames(actual) <- NULL
+      actual$diagnostic_seq <- expected$diagnostic_seq
+    }
+    if (identical(surface, "state")) {
+      marker <- actual$state_json == ledgr:::ledgr_strategy_state_cursor_marker
+      testthat::expect_true(any(marker))
+      payloads <- lapply(actual$state_json[!marker], ledgr:::ledgr_json_read_nested)
+      testthat::expect_true(all(vapply(payloads, function(x) {
+        identical(as.integer(x$rule_version), 1L) &&
+          is.character(x$axis) && length(x$axis) > 0L &&
+          is.list(x$fields) && length(x$fields) == 0L
+      }, logical(1L))))
+      actual$state_json <- expected$state_json
+    }
     if (identical(surface, "identity")) {
       expected_metric <- ledgr:::ledgr_json_read_nested(
         expected$metric_context_json[[1L]]
@@ -131,21 +159,25 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       # recorded; every other identity value must still match exactly.
       expected_config <- ledgr:::ledgr_json_read_nested(expected$config_json)
       actual_config <- ledgr:::ledgr_json_read_nested(actual$config_json)
-      frozen_source <- expected_config$strategy$provenance$strategy_source
-      testthat::expect_identical(
-        lengths(regmatches(frozen_source, gregexpr("ctx$positions", frozen_source, fixed = TRUE))),
-        1L
-      )
-      testthat::expect_identical(
-        actual_config$strategy$provenance$strategy_source,
-        gsub("ctx$positions", "ctx$position", frozen_source, fixed = TRUE)
-      )
+      current_source <- actual_config$strategy$provenance$strategy_source
+      testthat::expect_match(current_source, "ctx$member", fixed = TRUE)
+      testthat::expect_match(current_source, "ctx$buyable", fixed = TRUE)
+      testthat::expect_match(current_source, "ctx$position", fixed = TRUE)
+      testthat::expect_no_match(current_source, "ctx$vec", fixed = TRUE)
       for (derived in c("strategy_source", "strategy_source_hash")) {
         expected_config$strategy$provenance[[derived]] <- NULL
         actual_config$strategy$provenance[[derived]] <- NULL
       }
       expected_config$strategy$params$strategy_key <- NULL
       actual_config$strategy$params$strategy_key <- NULL
+      testthat::expect_identical(
+        actual_config$strategy_state,
+        ledgr:::ledgr_json_read_nested(canonical_json(list(
+          rule_version = 1L,
+          fields = list()
+        )))
+      )
+      actual_config$strategy_state <- NULL
       # LDG-2953 and LDG-2954 advanced both policy identities to schema 2.
       # The frozen run keeps its schema-1 record. The current run declares the
       # refusing terminal and exhaustion choices that reproduce the recorded

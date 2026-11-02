@@ -197,6 +197,22 @@ testthat::test_that("[LTB-0540] runs persist and report sizing evidence without 
   testthat::expect_false(raw_summary$available)
   testthat::expect_identical(raw_summary$unavailable_decisions, 4L)
   testthat::expect_true(is.na(raw_summary$pooled_coverage))
+
+  resume_experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(cash = 100),
+    cost_model = ledgr_cost_zero()
+  )
+  resume_experiment$control <- list(max_pulses = 1L)
+  partial <- ledgr_run(resume_experiment, run_id = "sizing-evidence-resume")
+  close(partial)
+  resumed <- ledgr_run(resume_experiment, run_id = "sizing-evidence-resume")
+  on.exit(close(resumed), add = TRUE)
+  resumed_rows <- ledgr_results(resumed, "diagnostics")
+  testthat::expect_identical(sum(
+    resumed_rows$reason_code == "sizing_intent_unavailable"
+  ), 1L)
 })
 
 # ledgr-test-profile: review

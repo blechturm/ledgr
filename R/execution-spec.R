@@ -81,7 +81,8 @@ ledgr_execution_spec <- function(run_id,
                                  schedule_params = list(),
                                  decision_due = NULL,
                                  decision_pulse_count = NULL,
-                                 scheduled_skip_count = NULL) {
+                                 scheduled_skip_count = NULL,
+                                 raw_sizing_notice_written = FALSE) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
@@ -145,6 +146,9 @@ ledgr_execution_spec <- function(run_id,
     spec$decision_due <- decision_due
     spec$decision_pulse_count <- as.integer(decision_pulse_count)
     spec$scheduled_skip_count <- as.integer(scheduled_skip_count)
+  }
+  if (isTRUE(raw_sizing_notice_written)) {
+    spec$raw_sizing_notice_written <- TRUE
   }
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
@@ -340,6 +344,11 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     ledgr_execution_spec_is_integer_like(spec$event_seq_start, min = 1L),
     "`execution$event_seq_start` must be an integer-like scalar >= 1."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$raw_sizing_notice_written) ||
+      identical(spec$raw_sizing_notice_written, TRUE),
+    "`execution$raw_sizing_notice_written` must be TRUE when present."
   )
   ledgr_execution_spec_check(
     is.environment(spec$telemetry) || is.list(spec$telemetry),

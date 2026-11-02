@@ -2255,7 +2255,7 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   }
 })
 
-test_that("LTB-0544: strategy pattern teaching stays complete and current", {
+test_that("[LTB-0544] strategy pattern teaching stays complete and current", {
   root <- testthat::test_path("..", "..")
   source <- paste(
     readLines(file.path(root, "vignettes", "strategy-authoring-tools.qmd"),

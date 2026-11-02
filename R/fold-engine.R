@@ -1797,7 +1797,9 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
   pulse_notes <- new.env(parent = emptyenv())
-  pulse_notes$raw_sizing_notice_written <- FALSE
+  pulse_notes$raw_sizing_notice_written <- isTRUE(
+    execution$raw_sizing_notice_written
+  )
   schedule_query <- ledgr_strategy_schedule_query(
     execution$schedule_sessions,
     pulses_posix,

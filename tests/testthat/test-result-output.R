@@ -127,7 +127,7 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   output <- utils::capture.output(print(daily$bt))
   blob <- paste(output, collapse = "\n")
 
-  testthat::expect_lte(length(output), 17L)
+  testthat::expect_lte(length(output), 20L)
   testthat::expect_match(blob, "Run ID:", fixed = TRUE)
   testthat::expect_match(blob, "Period:.*2020-01-01 to 2020-01-04")
   testthat::expect_match(blob, "Execution Clock:.*bar_native")
@@ -136,6 +136,9 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   testthat::expect_match(blob, sprintf("%.2f%%", metrics$total_return * 100), fixed = TRUE)
   testthat::expect_match(blob, sprintf("%.2f%%", metrics$max_drawdown * 100), fixed = TRUE)
   testthat::expect_match(blob, sprintf("Closed Trades:.*%d", metrics$n_trades))
+  testthat::expect_match(blob, "Sizing coverage (pooled):", fixed = TRUE)
+  testthat::expect_match(blob, "Final actual invested exposure:", fixed = TRUE)
+  testthat::expect_match(blob, "Sizing intent coverage:.*unavailable")
   testthat::expect_match(blob, "US equity daily (default)", fixed = TRUE)
   testthat::expect_false(grepl("Execution Mode:", blob, fixed = TRUE))
   testthat::expect_match(
@@ -246,12 +249,13 @@ testthat::test_that("[LTB-0108] summary answers before compact evidence", {
       )
     },
     ledgr_corporate_action_summary = function(...) policy,
+    ledgr_run_sizing_summary = function(...) ledgr:::ledgr_sizing_summary_empty(),
     ledgr_backtest_off_session_bar_count = function(...) 0L,
     .package = "ledgr"
   )
 
   output <- utils::capture.output(summary(bt))
-  testthat::expect_lte(length(output), 30L)
+  testthat::expect_lte(length(output), 48L)
   performance <- match("Performance Metrics:", output)
   execution <- match("Execution Evidence:", output)
   corporate <- match("Corporate-Action Evidence:", output)

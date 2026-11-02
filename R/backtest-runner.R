@@ -849,6 +849,15 @@ ledgr_run_fold_impl <- function(config,
     dispositions_active = TRUE,
     carried = opening_carried$pending
   )
+  raw_sizing_notice_written <- isTRUE(DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT COUNT(*) > 0 AS present FROM run_diagnostics",
+      "WHERE run_id = ? AND stage = 'sizing'",
+      "AND reason_code = 'sizing_intent_unavailable'"
+    ),
+    params = list(run_id)
+  )$present[[1L]])
 
   fold_execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -917,7 +926,8 @@ ledgr_run_fold_impl <- function(config,
     schedule_params = schedule_params,
     decision_due = schedule$decision_due,
     decision_pulse_count = schedule$decision_pulse_count,
-    scheduled_skip_count = schedule$scheduled_skip_count
+    scheduled_skip_count = schedule$scheduled_skip_count,
+    raw_sizing_notice_written = raw_sizing_notice_written
   )
 
   fold_result <- tryCatch(
