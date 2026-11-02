@@ -23,12 +23,14 @@ Type 1 reviews in [close_review_15.md](close_review_15.md) and
 [close_review_15_rereview_1.md](close_review_15_rereview_1.md). Its final
 focused [re-review 2](close_review_15_rereview_2.md) also returned
 `CHANGES_REQUIRED`; the maintainer authorized one third and final bounded
-correction on 2026-11-02. That correction is complete and awaits maintainer
-disposition. The record is
+correction on 2026-11-02. Commit `7e3f477a` completes that correction: exact
+UTC carry parsing and the public 21:00 three-window witness pass, all 12
+registered mutations are detected, and the maintainer accepted the workstream
+on the bounded evidence without another review round. The record is
 [ws15_implementation_matrix.md](ws15_implementation_matrix.md) with runnable
 inventories under `dev/bench/v0_2_3_ws5/` and timing preregistration under
-`dev/bench/timing/protocols/ws5-timing-1/`. Ticket statuses remain pending
-until maintainer acceptance; integrated Cut 7 timing is
+`dev/bench/timing/protocols/ws5-timing-1/`. Workstream 15 and LDG-3179 through
+LDG-3181 are complete; integrated Cut 7 timing is
 descriptive milestone evidence, not a WS15 correctness gate.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole

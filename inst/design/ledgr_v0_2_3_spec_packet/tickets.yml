@@ -1086,7 +1086,9 @@ workstreams:
   - id: 15
     name: "Flat lazy context and canonical position facts (macro WS5)"
     cut: 7
-    status: "pending"
+    status: "complete"
+    accepted: "2026-11-02 by the maintainer after authorizing the final bounded correction and accepting direct close on its recorded evidence; product through 7e3f477a."
+    close_review: "CHANGES_REQUIRED in close_review_15.md; correction 3a6dc7de. Focused CHANGES_REQUIRED in close_review_15_rereview_1.md; correction 5471d835. Final narrow confirmation CHANGES_REQUIRED in close_review_15_rereview_2.md for the non-midnight carried-timestamp regression; the maintainer authorized one final bounded correction without another review round. Commit 7e3f477a uses the exact UTC parser, adds the public 21:00 three-window witness, narrows the LTB-0304 claim, detects all 12 registered mutations and passes 633/633 ordinary-fast blocks. The 211.300-second timing hint is recorded as exceeded, not passed, and remains a cut-level descriptive timing obligation rather than a WS15 correctness gate."
     depends_on_workstream: 14
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 15, after LDG-3181", reason: "One claim joins LDG-3179 through LDG-3181: every strategy receives one pulse-frozen flat lazy context prepared from the common substrate; named bar, eligibility, position, valuation, feature and fact columns are built at most once on demand with exact axis/cutoff identity; canonical entry/exit facts update from accounting transitions and reconstruct identically across resume and contiguous walk-forward; public vec, singular feature/bundle readers, scalar OHLCV/position/index reads and tradable() are absent while ctx$bars, feature_table, features_wide and ctx$bar(id) remain owned by WS6; every Section 4 item 1/2 mutation fails; fixed-basket and declared-session economics stay within the frozen difference matrix; and the eager-context floor is measured without serving as an acceptance clock."}
@@ -2293,7 +2295,7 @@ tickets:
   - id: "LDG-3179"
     title: "Freeze the WS5 surface, detector and timing matrix"
     workstream: 15
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -2323,11 +2325,11 @@ tickets:
       - "the timing protocol uses the shared harness, eight alternating pairs, both named comparison bases, the six named workload cells, fixed-basket-wide state cells and an experiment-construction cell; its thresholds are disposition triggers under macro rule 16"
       - "source, export, claim, identity and schema censuses are literal enough to fail when one named current reader/helper or owner is omitted"
     evidence:
-      - "Third and final bounded correction evidence (2026-11-02): close_review_15_rereview_2.md records CHANGES_REQUIRED, H1, N1-N7 and the maintainer's explicit correction authority. The literal dev/bench/v0_2_3_ws5/check.R gate reports WS5_INVENTORY_OK; both YAML registries parse; git diff --check passes; tools/check-codebase-contracts.R --mode=check reports LEDGR_CODEBASE_CENSUS_OK (70 connections, 172 versions, 90 run configs, 1974 helpers, 2446 conditions, 87 findings) and the mode-branch census (21 files, 44 functions, 72 branch sites, 31 flow sites). All 12 registered isolated-copy D1/D2 mutations apply and are detected. The quiet ordinary-fast correctness membership passes 633/633 blocks in 211.300 seconds; its separate timing hint exceeds the 112-second host bound and is not represented as integrated Cut 7 timing evidence. Integrated timing remains a Cut 7 milestone obligation. Ticket status remains pending for maintainer acceptance."
+      - "Third and final bounded correction evidence (2026-11-02): close_review_15_rereview_2.md records CHANGES_REQUIRED, H1, N1-N7 and the maintainer's explicit correction authority. The literal dev/bench/v0_2_3_ws5/check.R gate reports WS5_INVENTORY_OK; both YAML registries parse; git diff --check passes; tools/check-codebase-contracts.R --mode=check reports LEDGR_CODEBASE_CENSUS_OK (70 connections, 172 versions, 90 run configs, 1974 helpers, 2446 conditions, 87 findings) and the mode-branch census (21 files, 44 functions, 72 branch sites, 31 flow sites). All 12 registered isolated-copy D1/D2 mutations apply and are detected. The quiet ordinary-fast correctness membership passes 633/633 blocks in 211.300 seconds; its separate timing hint exceeds the 112-second host bound and is not represented as integrated Cut 7 timing evidence. Integrated timing remains a Cut 7 milestone obligation. The maintainer accepted the ticket on this bounded record."
   - id: "LDG-3180"
     title: "Build one flat lazy pulse context"
     workstream: 15
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3179"]
@@ -2358,11 +2360,11 @@ tickets:
       - "a held instrument without a permissible mark never receives fabricated holding_value, and the corresponding sizing/refusal path is detected"
       - "the Section 4 item 1 mutations and the fixed-basket/declared route matrix fail independently, while accepted economic controls remain exact"
     evidence:
-      - "Third and final bounded correction evidence (2026-11-02): the D1 implementation remains at the actual service, feature-resolver and integer fill-axis preparation sites in R/fold-engine.R and R/pulse-context.R; test-position-facts-context.R and test-flat-lazy-context.R retain multi-pulse, two-candidate, repeated-read, shared-buffer and isolation witnesses. All six registered D1 isolated-copy mutations apply and are detected. LCL-0298 and LTB-0304 now state the exact retained proof: mark values on the exercised scoring routes, promoted availability age/source, reconstructed equity and walk-forward feature continuity, with no claim of age/source parity on every route. Focused files and the 633-block ordinary-fast correctness membership pass; ticket status remains pending for maintainer acceptance."
+      - "Third and final bounded correction evidence (2026-11-02): the D1 implementation remains at the actual service, feature-resolver and integer fill-axis preparation sites in R/fold-engine.R and R/pulse-context.R; test-position-facts-context.R and test-flat-lazy-context.R retain multi-pulse, two-candidate, repeated-read, shared-buffer and isolation witnesses. All six registered D1 isolated-copy mutations apply and are detected. LCL-0298 and LTB-0304 now state the exact retained proof: mark values on the exercised scoring routes, promoted availability age/source, reconstructed equity and walk-forward feature continuity, with no claim of age/source parity on every route. Focused files and the 633-block ordinary-fast correctness membership pass. The maintainer accepted the ticket on this bounded record."
   - id: "LDG-3181"
     title: "Maintain and rebuild canonical position facts"
     workstream: 15
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3180"]
@@ -2386,7 +2388,7 @@ tickets:
       - "runtime/source checks reject a second replay engine, an instrument loop and recomputation of indices in P2"
       - "pulse inspection with supplied positions reports typed unknown entry/exit facts; fabricated entry or exit facts fail the detector"
     evidence:
-      - "Third and final bounded correction evidence (2026-11-02): R/position-facts.R:269-283 parses carried entry_at and exit_at labels through the existing exact ledgr_history_utc_many() parser before shared-axis lookup. tests/testthat/test-position-facts-context.R:288-336 is the public explicit carry_test_state three-window witness on a 21:00 UTC axis; before the product fix it failed in the third-window inverse parse with ledgr_position_fact_off_axis, and after the fix it retains both entry/exit anchors and ages. The focused position-facts and history-continuity files pass, and all six registered D2 isolated-copy mutations apply and are detected. No new replay engine, validator, schema, manifest or instrument loop was added. Ticket status remains pending for maintainer acceptance."
+      - "Third and final bounded correction evidence (2026-11-02): R/position-facts.R:269-283 parses carried entry_at and exit_at labels through the existing exact ledgr_history_utc_many() parser before shared-axis lookup. tests/testthat/test-position-facts-context.R:288-336 is the public explicit carry_test_state three-window witness on a 21:00 UTC axis; before the product fix it failed in the third-window inverse parse with ledgr_position_fact_off_axis, and after the fix it retains both entry/exit anchors and ages. The focused position-facts and history-continuity files pass, and all six registered D2 isolated-copy mutations apply and are detected. No new replay engine, validator, schema, manifest or instrument loop was added. The maintainer accepted the ticket on this bounded record."
   - id: "LDG-3182"
     title: "Ship plain selection and strict named weights"
     workstream: 16
