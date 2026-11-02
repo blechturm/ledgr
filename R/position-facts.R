@@ -272,10 +272,14 @@ ledgr_position_facts_from_carried <- function(carried, instrument_ids, bar_axis)
   if (is.null(facts) || length(facts$instrument_id) == 0L) return(state)
   pos <- match(facts$instrument_id, instrument_ids, nomatch = 0L)
   keep <- pos > 0L
-  entry <- nzchar(facts$entry_at) & keep
-  exit <- nzchar(facts$exit_at) & keep
-  state$entry_bar[pos[entry]] <- ledgr_position_fact_bar_index(facts$entry_at[entry], bar_axis)
-  state$exit_bar[pos[exit]] <- ledgr_position_fact_bar_index(facts$exit_at[exit], bar_axis)
+  entry <- !is.na(facts$entry_at) & nzchar(facts$entry_at) & keep
+  exit <- !is.na(facts$exit_at) & nzchar(facts$exit_at) & keep
+  state$entry_bar[pos[entry]] <- ledgr_position_fact_bar_index(
+    ledgr_history_utc_many(facts$entry_at[entry]), bar_axis
+  )
+  state$exit_bar[pos[exit]] <- ledgr_position_fact_bar_index(
+    ledgr_history_utc_many(facts$exit_at[exit]), bar_axis
+  )
   state
 }
 

@@ -287,7 +287,8 @@ testthat::test_that("durable resume preserves carried opening anchors", {
 
 testthat::test_that("three contiguous walk-forward windows retain entry and exit facts", {
   dates <- as.Date("2020-01-01") + 0:14
-  snapshot <- ledgr_snapshot_from_df(ledgr_test_make_bars("AAA", dates))
+  sessions <- as.POSIXct(paste(dates, "21:00:00"), tz = "UTC")
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_make_bars("AAA", sessions))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   seen <- new.env(parent = emptyenv())
   seen$rows <- list()
@@ -310,24 +311,25 @@ testthat::test_that("three contiguous walk-forward windows retain entry and exit
   }
   exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   folds <- ledgr:::ledgr_fold_list(list(
-    ledgr_fold("2020-01-01", "2020-01-03", "2020-01-04", "2020-01-07", fold_seq = 1L),
-    ledgr_fold("2020-01-04", "2020-01-07", "2020-01-08", "2020-01-10", fold_seq = 2L),
-    ledgr_fold("2020-01-08", "2020-01-10", "2020-01-11", "2020-01-13", fold_seq = 3L)
+    ledgr_fold(sessions[[1L]], sessions[[3L]], sessions[[4L]], sessions[[7L]], fold_seq = 1L),
+    ledgr_fold(sessions[[4L]], sessions[[7L]], sessions[[8L]], sessions[[10L]], fold_seq = 2L),
+    ledgr_fold(sessions[[8L]], sessions[[10L]], sessions[[11L]], sessions[[13L]], fold_seq = 3L)
   ), constructor = list(type_id = "position_fact_chain"))
   wf <- ledgr_walk_forward(
     exp,
     ledgr_grid_named(only = list(strategy = list())),
     folds,
     ledgr_rule_argmax("annualized_return"),
+    opening_state_policy = "carry_test_state",
     no_selection = "previous",
     seed = 17L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
   testthat::expect_length(wf$test_runs, 3L)
   rows <- lapply(wf$test_runs, function(run) seen$rows[[run$run_id]][[1L]])
-  testthat::expect_equal(rows[[2L]]$entry_at, as.POSIXct("2020-01-07", tz = "UTC"))
+  testthat::expect_equal(rows[[2L]]$entry_at, as.POSIXct("2020-01-07 21:00:00", tz = "UTC"))
   testthat::expect_equal(rows[[3L]]$entry_at, rows[[2L]]$entry_at)
-  testthat::expect_equal(rows[[2L]]$exit_at, as.POSIXct("2020-01-06", tz = "UTC"))
+  testthat::expect_equal(rows[[2L]]$exit_at, as.POSIXct("2020-01-06 21:00:00", tz = "UTC"))
   testthat::expect_equal(rows[[3L]]$exit_at, rows[[2L]]$exit_at)
   testthat::expect_identical(rows[[2L]]$entry_age, 1)
   testthat::expect_identical(rows[[3L]]$entry_age, 4)

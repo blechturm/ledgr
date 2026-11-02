@@ -329,7 +329,7 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0304] every entry point reads feature, mark and entitlement history from the data start", {
+testthat::test_that("[LTB-0304] scoring starts retain data-start feature and mark values", {
   seen <- new.env()
   reader <- function(ctx) {
     list(
