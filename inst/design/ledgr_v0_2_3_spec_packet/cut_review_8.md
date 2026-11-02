@@ -549,3 +549,241 @@ measurement was needed to settle them. The old probe was not rerun as if it
 implemented revision 2, and no future gate is claimed to have passed. The branch
 ref was read directly to confirm the head; no global Git configuration changed.
 Only this appended review section was written; no commit was made.
+
+## Focused review (revision 3, census delivery)
+
+Mode: focused Type 1 review of delivery change only.
+Reviewer: Codex. Date: 2026-11-02.
+Reviewed head: `bef6dfb6e00d844dd198a2bf7bf6d8a5447ca58f`.
+Verdict: **PASS_AFTER_PATCHES**, conditional on C1-C4 below.
+
+Census delivery is suitable for rule 17. Revision 3 retains the substantive
+loop, lexical identity, unresolved-callable, JSON, exact-ratchet and runtime
+obligations, including R1-R5 (`tickets.yml:1149-1245`, `:3278-3319`,
+`:3330-3366`). Those decisions are closed. The remaining patches specify how
+the new delivery works without weakening isolated tests, confusing specialized
+census projections with the lexical graph, or leaving existing records stale.
+No new Type 2 disposition is required for these bounded delivery corrections.
+
+References use this worktree; `tickets.yml` is in this packet and `census/`
+means `dev/bench/v0_2_2_pre_cran_removal/census/`.
+
+### 1. Gate preservation and isolated-context enforcement
+
+One former acceptance criterion is intentionally replaced: revision 2 required
+an installed-library scan without R/ sources. Revision 3 parses source, with
+record comparison only in a checkout (`tickets.yml:1129-1149`, `:3320`). It
+cannot claim source-free installed enforcement. This is consistent with the
+maintainer's selected census delivery, provided the record-backed checkout
+check remains mandatory at closeout (`:3381-3387`). Rule 17 can be enforced
+there; CRAN need not carry the development baseline. CRAN scan execution is
+portability evidence, not evidence that its package matches the baseline.
+
+The actual precedent locates a source package, including `00_pkg_src/ledgr`,
+or uses `LEDGR_TEST_SOURCE_ROOT`; it does not recover R syntax from the installed
+namespace (`tests/test-control-plane.R:12-52`). Checkout detection uses `.git`
+or `.Rbuildignore`, not the presence of dev/ (`tests/testthat/helper-test-control-plane.R:3-6`).
+The built package excludes dev/ (`.Rbuildignore:4`), while LTB-0331 still loads
+tools and scans R/ in its located source tree
+(`tests/testthat/test-codebase-contracts.R:114-139`).
+
+### C1. "Only asserts that the scan runs" understates the precedent
+
+**Failure scenario:** an implementer follows `tickets.yml:1145-1146` literally
+and puts all comparisons, negative witnesses and malformed-input checks under
+the checkout guard. The isolated test then passes for an empty scan or broken
+checker. LTB-0331 does more: nonempty inventories and expected production-file
+coverage are asserted before the guard, and its synthetic add/remove/checker
+tests and ordering assertion run after the guard in either context
+(`tests/testthat/test-codebase-contracts.R:118-124`, `:142-233`). Missing dev/
+in a checkout also must not become permission to skip comparison.
+
+There is an input issue unique to this section: surface, declarations and policy
+are also under dev/ (`tickets.yml:1137-1141`), so they are absent in isolated
+source. The mode-branch scanner needs no equivalent tables. An isolated scan
+must not silently mark unresolved sites terminal to manufacture a successful
+checked result (`tickets.yml:1168-1180`).
+
+**Exact patch:** replace decision (2)'s isolated-context bullet and mirror it in
+LDG-3191's scope/acceptance with:
+
+> Use ledgr_test_source_root() and ledgr_test_checkout_context(). In a checkout,
+> missing hot-path records or inputs fail; compare the complete scan with the
+> committed records. Outside a checkout, assert dev/ is absent and exercise
+> source discovery with nonempty function/loop inventories. Discovery may
+> return unresolved sites as data; it is not a successful record-backed check.
+> All synthetic checker, locator, collision, unresolved-callable, JSON and
+> regeneration witnesses run in both contexts with their explicit synthetic
+> inputs. Only comparison with the development record set is checkout-only.
+
+Add isolated-context witnesses for empty discovery and a broken synthetic
+checker, plus a checkout-with-missing-record failure. This preserves the
+accepted fail-until-declared rule in actual checks and follows the precedent's
+test placement. No records need to be installed or copied into another fixture.
+
+### 2. Reuse fit and permitted new code
+
+The source index is reusable: it retains parsed expressions, parse data and
+top-level definitions with full RHS ASTs
+(`tools/check-codebase-contracts.R:337-380`). Its derived projections are not
+the required hot-path graph:
+
+- `call_rows()` assigns calls to top-level owners and loses qualification and
+  local scope (`tools/check-codebase-contracts.R:383-389`, `:438-454`). A small
+  in-memory probe put calls from `root/a/f` and `root/b/f` under owner `root`.
+- `reachable_guards()` returns selected guard names, not the full reached-node
+  graph (`tools/check-codebase-contracts.R:627-642`). Executing it with
+  A -> B, A -> guard, B -> A returned guard for A, then an empty result for B:
+  its cached partial cyclic result is unsuitable as complete reachability.
+- `build_dynamic_map()` is a name-to-location reference map, not an invocation
+  map. It collects literal strings from all arguments and discards call-site
+  argument role (`tools/check-codebase-contracts.R:1060-1084`). An in-memory
+  `get("target", mode="function")` probe recorded both target and function as
+  keys. It cannot establish callable targets or declaration identities alone.
+
+These are existing specialized behaviors, not regressions introduced by the
+draft. Decision (2)'s "where they fit" permits retaining the stronger lexical
+and qualified semantics rather than forcing these projections onto them
+(`tickets.yml:1147-1163`, `:3243-3245`).
+
+### C2. Shared helpers currently live behind the CLI's write path
+
+**Failure scenario:** the fast scanner in tools/codebase-structure.R cannot
+directly call source_index(), call_rows() or build_dynamic_map(): they are
+defined inside the executable checker. Sourcing that checker to obtain them
+executes its default report mode and writes records
+(`tools/check-codebase-contracts.R:157-172`, `:240`, `:1554-1600`). Copying
+them instead creates the duplicate census helpers the delivery decision is
+intended to avoid. Calling them before the new pre-write check is also
+impossible at their current definition positions (`:366`, `:438`, `:1060`).
+
+**Exact patch:** append to decision (2) and LDG-3191:
+
+> Extract reusable parsing/index primitives into tools/codebase-structure.R
+> once, with existing census callers using them through unchanged interfaces
+> where needed. The fast scanner must not source or execute the CLI. Preserve
+> the existing census projections; add the lexical, qualified, callable-site
+> graph and complete reachability needed by this contract where the existing
+> projections do not fit. New contract-specific code is allowed; duplicate
+> copies of shared parsing/index helpers are not. Build the index and complete
+> all hot-path validation before entering the record-write phase.
+
+Run the same synthetic input through the CLI and fast scanner to require equal
+hot-path results. This is a concrete extraction allowance, not a requirement to
+broaden or repair the old guard census in this cut.
+
+### 3. Record conventions and existing tests
+
+The seven hot_path_* tables can be an additive section like mode_branches and
+mode_branch_counts (`tickets.yml:1137-1141`;
+`tools/check-codebase-contracts.R:1574-1583`). They should not be added to the
+six-family ledgr_census_summary() contract: it requires exactly the six declared
+schemas, and LTB-0272 explicitly expects six zero row/finding counts
+(`tools/codebase-structure.R:12-55`, `:77-114`;
+`tests/testthat/test-codebase-contracts.R:83-110`). A separate hot-path status
+line can report nodes, call sites, counted bans and unresolved sites, without
+changing summary.csv. Policy/source hashes are tooling provenance, not members
+of the product format fingerprint. The existing fingerprint_members metadata
+counts the 23 named product bindings; adding seven CSVs must not change it
+(`tools/check-codebase-contracts.R:657-680`, `:1595-1600`; `census/metadata.csv:1-5`).
+
+LTB-0331 can remain unchanged if its exact check call stays before the first
+write and its semantics stay unchanged. LTB-0271's condition inventory need not
+move because new tooling functions are outside R/. LTB-0270 still requires
+concrete contracts for actual test-only package seams; it must not be weakened
+to accommodate the new tests (`tests/testthat/test-codebase-contracts.R:20-79`).
+
+### C3. The absolute ban on other record changes conflicts with regeneration
+
+**Failure scenario:** a new test refers to a package helper, changing its
+test_reference_count and reference_locations in helpers.csv. For existing
+test-only helpers the same change propagates into test_only_seams.csv
+(`tools/check-codebase-contracts.R:1040-1057`, `:1103-1154`, `:1496-1521`).
+The in-memory symbol-map probe confirmed that adding an ordinary test reference
+creates a new recorded location. New tools functions themselves are not package
+helpers; their location in tools/ is not the problem.
+
+The CLI also rewrites metadata.csv's mode and source_commit on each run
+(`tools/check-codebase-contracts.R:1595-1600`). Its committed source_commit is
+currently d154a2d7 (`census/metadata.csv:5`). Running final-candidate regeneration
+with that candidate's identity changes this record even if all product rows
+remain identical. Thus LDG-3193's blanket "no other census record" condition
+(`tickets.yml:3388`) is not a sound invariant. It can encourage leaving generated
+reference/provenance evidence stale, or suppressing natural test references to
+avoid a diff. An implementation with no new package references might avoid the
+helper diffs; that cannot be assumed as a contract.
+
+**Exact patch:** replace the final LDG-3193 acceptance item with:
+
+> No R/ product file, unrelated fixture/oracle, NEWS or user documentation page
+> changes. New hot_path_* records are allowed. Existing census record changes
+> are limited to source-derived test reference locations/counts and resulting
+> test-seam rows or summary counts, plus regeneration metadata naming the
+> candidate. Every such diff has its generating cause recorded. Product
+> inventory, mode-branch keys/counts, condition/schema/config semantics, the
+> six-family summary contract and product fingerprint membership are unchanged.
+> Do not edit a test or suppress a reference to obtain an empty record diff.
+
+Also state in decision (10)/LDG-3191 that hot-path reporting uses a separate
+status/count output and does not extend the six summary families or product
+fingerprint. Preserve LTB-0270..0272 and LTB-0331; any genuine need to change
+their predicates requires its own stated reason, rather than being implied by
+the new section. This is a bounded record-refresh allowance, not permission to
+change product or existing oracles.
+
+### C4. Report-mode inputs and all-record preflight must be explicit
+
+**Failure scenario:** the current --output option controls where the CLI writes,
+while the committed mode-branch input is resolved independently from root
+(`tools/check-codebase-contracts.R:160-167`, `:215-237`). If the new section
+treats an empty output directory as its prior baseline, --mode=report
+--output=<fresh-dir> can lose the prior policy/inventory and bypass the agreed
+refusals. If it writes the baseline before validating a later inventory or
+policy refusal, it can partially bless itself. Conversely, placing the new
+check after the index's current definition at :433 would put it after
+dir.create(output) at :240, contrary to the stated pre-write boundary.
+
+**Exact patch:** append to LDG-3191's CLI integration and acceptance:
+
+> Resolve the prior seven-file hot-path record set independently of --output,
+> from the checkout record directory or an explicit input-record directory.
+> A different/empty output directory does not reset prior policy or allowances.
+> Missing or partial prior records fail except for an explicit initial-seeding
+> operation with its recorded initial reason. Before any directory creation or
+> record write, check mode validates the complete hot-path section and report
+> mode validates every regeneration refusal against that prior set. A rejected
+> operation leaves every prior and output record byte-identical. Only after
+> successful preflight may the existing record-write phase run.
+
+> Prove this with missing/partial-input, empty-output-directory and late-policy
+> refusal controls, using temp copies and before/after file hashes for both the
+> hot-path set and the existing census records. Check mode never updates an
+> allowance; report mode records each required reason before a later check.
+
+This retains the mode-branch check-before-write precedent, whose check is at
+`tools/check-codebase-contracts.R:237`, before :240; its test inspects this
+ordering (`tests/testthat/test-codebase-contracts.R:223-233`). It does not claim
+that the entire legacy CLI is transactionally read-only: after a successful
+mode-branch precheck it currently writes tables even in check mode, and its
+current-only refusal comes later (`tools/check-codebase-contracts.R:1554-1639`).
+The new section must protect its own refusals before that write phase.
+
+### Delivery disposition and evidence
+
+The 3 s budget and inherited fast-lane disposition remain intact
+(`tickets.yml:1246-1258`, `:3320`). Measure the complete added fast membership,
+including shared-index construction costs attributable to this cut, in both
+checkout and isolated contexts. The heavy runtime witness still compares the
+named installed package's execution with the new source-derived graph; record
+matching source/installed identities so source discovery is not mistaken for
+evidence about a different build (`tickets.yml:3330-3332`, `:3386`). This is
+ordinary evidence provenance, not an additional execution path.
+
+Read the revised brief, census code, records/README, context helpers and tests
+before probing. Executed only selectively loaded function definitions in a
+fresh Rscript process and tiny in-memory parsed examples: flattened owners,
+cyclic guard caching, dispatch-map over-approximation, reference-map change and
+the six schema names. The CLI's write path was not executed. These probes
+establish reuse constraints; no revision-3 hot-path implementation or future
+3 s result is claimed. The branch ref confirms the reviewed head. Only this
+review section was appended; no commit or global Git configuration change.

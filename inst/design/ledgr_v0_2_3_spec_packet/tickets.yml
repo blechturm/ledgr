@@ -1025,7 +1025,7 @@ cuts:
     name: "Hot-path ban-list test (macro rule 17)"
     cut: "2026-11-02"
     status: "draft"
-    revision: "3, applying re-review 1's patches R1-R5 verbatim and moving delivery into the existing codebase census (maintainer, 2026-11-02); revision 2 applied cut_review_8.md findings 1-9 and the maintainer's Type 2 dispositions."
+    revision: "3.1, applying the focused review's delivery patches C1-C4 verbatim; revision 3 applied re-review 1's patches R1-R5 verbatim and moved delivery into the existing codebase census (maintainer, 2026-11-02); revision 2 applied cut_review_8.md findings 1-9 and the maintainer's Type 2 dispositions."
     opening: >-
       Written by Claude on 2026-11-02 at the maintainer's request, as the
       chore cut that macro rule 17 names ("the next cut drafted ... WS6 or a
@@ -1064,7 +1064,18 @@ cuts:
       - R5: reconcile the seeding reason with error-path rows.
       Revision 3 applies R1-R5 verbatim. It also moves delivery from a
       standalone walker into tools/codebase-structure.R and the census check
-      (decision (2)), following the mode-branch precedent.
+      (decision (2)), following the mode-branch precedent. Focused review of
+      that delivery change (same file, reviewed head bef6dfb6):
+      PASS_AFTER_PATCHES, with R1-R5 and the maintainer decisions closed.
+      Exact patches:
+      - C1: isolated-context behavior follows the precedent fully;
+      - C2: shared index primitives are extracted once, and the fast scanner
+        never sources the CLI;
+      - C3: a bounded refresh allowance for existing census records;
+      - C4: prior records are resolved independently of --output, with an
+        all-record preflight before any write.
+      Revision 3.1 applies C1-C4 verbatim, with the review's evidence notes
+      on the separate status line and on source/installed identity.
     authority: >-
       inst/design/ledgr_v0_2_3_spec_packet/macro_plan.md Section 1 rules 14
       (no JSON on per-pulse or per-fill paths) and 17 (hot-path bans enforced
@@ -1142,8 +1153,25 @@ cuts:
       - --mode=check compares before it writes, so a failed check cannot
         refresh its own baseline;
       - --mode=report regenerates the records under decision (7)'s refusals;
-      - the fast test compares records in a checkout and, like LTB-0331,
-        only asserts that the scan runs in an isolated context without dev/.
+      - the fast test uses ledgr_test_source_root() and
+        ledgr_test_checkout_context(). In a checkout, missing hot-path records
+        or inputs fail; compare the complete scan with the committed records.
+        Outside a checkout, assert dev/ is absent and exercise source
+        discovery with nonempty function/loop inventories. Discovery may
+        return unresolved sites as data; it is not a successful record-backed
+        check. All synthetic checker, locator, collision, unresolved-callable,
+        JSON and regeneration witnesses run in both contexts with their
+        explicit synthetic inputs. Only comparison with the development
+        record set is checkout-only.
+      Extract reusable parsing/index primitives into tools/codebase-structure.R
+      once, with existing census callers using them through unchanged
+      interfaces where needed. The fast scanner must not source or execute
+      the CLI. Preserve the existing census projections; add the lexical,
+      qualified, callable-site graph and complete reachability needed by this
+      contract where the existing projections do not fit. New
+      contract-specific code is allowed; duplicate copies of shared
+      parsing/index helpers are not. Build the index and complete all
+      hot-path validation before entering the record-write phase.
       The scan reuses the census's source index, per-owner call rows,
       transitive reachability and literal-string dispatch map where they
       fit, and parses R/ source like the rest of the census. Nodes are package functions and the
@@ -1256,6 +1284,12 @@ cuts:
       functional profile results, this cut's measured cost and the
       inherited miss. It does not widen the bound, retier tests or count a
       small delta as a pass.
+      Hot-path reporting uses a separate status/count output (nodes, call
+      sites, counted bans, unresolved sites). It does not extend the six
+      ledgr_census_summary() families, summary.csv or the product format
+      fingerprint; policy and source hashes are tooling provenance.
+      LTB-0270 to LTB-0272 and LTB-0331 keep their predicates; any genuine
+      need to change one requires its own stated reason.
       (10) Identity, per macro rule 5: snapshot content none; run
       configuration none; store format fingerprint none. Release impact, per
       rule 6: tests, census tooling and records (tools/codebase-structure.R,
@@ -1285,10 +1319,9 @@ cuts:
       Round 1 returned NEEDS_TYPE_2 (cut_review_8.md); the maintainer
       dispositioned the Type 2 questions on 2026-11-02. Re-review 1 of
       revision 2 returned PASS_AFTER_PATCHES, applied verbatim in revision 3.
-      The census delivery change of decision (2) is new in revision 3. A
-      focused clean-context Codex review of that change confirms that it
-      keeps every gate and fits the census precedent; R1-R5 are not
-      reopened. The workstream
+      The focused clean-context Codex review of revision 3's census delivery
+      returned PASS_AFTER_PATCHES, and revision 3.1 applies C1-C4 verbatim;
+      the cut is ready for maintainer acceptance. The workstream
       receives one Type 1 close review. It reruns the static test and the
       runtime witness on the final base, applies each synthetic mutation and
       both runtime controls, exercises the regeneration tool, and checks that
@@ -3244,7 +3277,25 @@ tickets:
       and the edge forms of decision (2), reusing the census's source index,
       call rows, reachability and literal-string dispatch map where they fit.
       Wire the check into tools/check-codebase-contracts.R --mode=check
-      before any record is written, as the mode-branch check is. Under
+      before any record is written, as the mode-branch check is. Extract the
+      shared parsing/index primitives into tools/codebase-structure.R as
+      decision (2) states; the fast scanner never sources the CLI. Resolve
+      the prior seven-file hot-path record set independently of --output,
+      from the checkout record directory or an explicit input-record
+      directory. A different/empty output directory does not reset prior
+      policy or allowances. Missing or partial prior records fail except for
+      an explicit initial-seeding operation with its recorded initial reason.
+      Before any directory creation or record write, check mode validates the
+      complete hot-path section and report mode validates every regeneration
+      refusal against that prior set. A rejected operation leaves every prior
+      and output record byte-identical. Only after successful preflight may
+      the existing record-write phase run. Prove this with missing or
+      partial-input, empty-output-directory and late-policy refusal controls,
+      using temp copies and before/after file hashes for both the hot-path
+      set and the existing census records. Check mode never updates an
+      allowance; report mode records each required reason before a later
+      check. Run the same synthetic input through the CLI and the fast
+      scanner and require equal hot-path results. Under
       dev/bench/v0_2_2_pre_cran_removal/census/, write:
       - the surface table classifying every export and registered S3 method;
       - a family map tying each callable family to its static roots, the
@@ -3270,7 +3321,9 @@ tickets:
       ordinary rows. Both kinds retain their full counts and participate in
       exact equality; neither reason grants an exemption. Seed each
       declaration with its reason. Write one fast test file named for the
-      contract (hot path bans), following LTB-0331's checkout-context rule.
+      contract (hot path bans), following decision (2)'s context rule. Add
+      isolated-context witnesses for empty discovery and a broken synthetic
+      checker, and a checkout-with-missing-record failure.
       Its first block compares the scan with the committed baseline exactly
       and names each differing row. A synthetic
       namespace drives the negative witnesses, each of which must count or
@@ -3317,7 +3370,9 @@ tickets:
       - "every synthetic witness counts or fails exactly as its title states, and none depends on product code"
       - "an unclassified export or S3 method, a row naming nothing, an undeclared unresolved callable (direct or higher-order), a stale declaration, a same-key collision and a missing or duplicated pulse loop each fail with the name reported, while same-named closures in distinct scopes keep their counts"
       - "the regeneration sequence and every refusal behave as decision (7) states, including refusal of an unreasoned JSON inventory or policy weakening with a stable reachable set"
-      - "tools/check-codebase-contracts.R --mode=check fails before writing when the scan differs from the records, the fast test follows LTB-0331's checkout and isolated-context behavior, and the added fast membership costs at most 3 s"
+      - "tools/check-codebase-contracts.R --mode=check fails before writing when the scan differs from the records; rejected check or report operations leave every prior and output record byte-identical under the missing/partial-input, empty-output-directory and late-policy controls; and the CLI and fast scanner give equal hot-path results on the same synthetic input"
+      - "the fast test follows decision (2)'s context rule: in a checkout, missing records fail and the full comparison runs; outside a checkout, discovery is nonempty and every synthetic witness runs; empty discovery and a broken synthetic checker fail"
+      - "no shared parsing/index helper is duplicated, LTB-0270 to LTB-0272 and LTB-0331 pass unchanged, the six-family summary and product fingerprint membership are unchanged, and the added fast membership, including attributable shared-index cost, costs at most 3 s in both checkout and isolated contexts"
     evidence: []
   - id: "LDG-3192"
     title: "Witness at runtime that the static walk covers what the pulse loop executes"
@@ -3358,7 +3413,9 @@ tickets:
       test-side synthetic code and instrumentation; do not add sentinels to
       product files or change the frozen workload fixtures. Reconcile the
       block with the registered heavy-protocol census and checker, and
-      record its wall time.
+      record its wall time. Record matching source and installed identities,
+      so that source discovery is not mistaken for evidence about a different
+      build.
     acceptance:
       - "the witness passes on the branch with nonempty observations for every named workload and path"
       - "each boundary control observes its sentinel inside the boundary and fails when that boundary is displaced past it, and the out-of-loop sentinel is excluded"
@@ -3385,5 +3442,5 @@ tickets:
     acceptance:
       - "on the final base the scan equals the baseline, the runtime witness and both controls behave as specified, and each changed row since LDG-3191 is attributed to a named commit"
       - "fast, review and heavy profiles pass functionally, source build and R CMD check pass, and the closeout reports the three timing items of decision (9) separately without widening any bound"
-      - "no file under R/, no fixture or oracle other than the cut's own hot_path_* census records, no other census record, and no NEWS or user documentation page changed"
+      - "No R/ product file, unrelated fixture/oracle, NEWS or user documentation page changes. New hot_path_* records are allowed. Existing census record changes are limited to source-derived test reference locations/counts and resulting test-seam rows or summary counts, plus regeneration metadata naming the candidate. Every such diff has its generating cause recorded. Product inventory, mode-branch keys/counts, condition/schema/config semantics, the six-family summary contract and product fingerprint membership are unchanged. Do not edit a test or suppress a reference to obtain an empty record diff."
     evidence: []
