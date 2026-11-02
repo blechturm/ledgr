@@ -165,7 +165,7 @@ Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
           WS10 economics implementation (as each RFC is accepted)
           WS3 full suite timing after WS4b and WS8
           completed hot-path cuts -> WS14a holistic review -> product
-          subtraction cut -> test subtraction cut -> WS14 performance convergence
+          subtraction cut -> test cut (fold-core rebuild) -> WS14 convergence
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
@@ -189,7 +189,7 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS3 post-consolidation record -> WS14 | evidence prerequisite: the peer suite supplies the attribution and comparison |
 | WS6 and the WS7/WS8 cut -> WS14a review | evidence prerequisite: review the surviving core once, not intermediate shapes |
 | WS14a product subtraction cut -> WS14 checkpoint | evidence prerequisite: measure the core after deletion, so the optimization budget is not spent on waste |
-| WS14a product subtraction cut -> test subtraction cut | binding constraint: each cut freezes the other side, so tests guard product deletions and the product guards test deletions |
+| WS14a product subtraction cut -> test cut | binding constraint: each cut freezes the other side, so tests guard product deletions and the product guards test deletions |
 | WS14a product subtraction cut -> final format/data freeze | binding constraint (rule 5): deletions that change identity land before the freeze |
 | each economics RFC -> its implementation | binding constraint |
 | R2 -> M5, M7; H4 -> M5 | binding constraint |
@@ -525,14 +525,35 @@ execution-sensitive economics cuts are held to rule 17 instead.
   an executed vignette already covers the drift, documentation text checks
   that executed articles already gate, and files named after a workstream
   or version rather than a contract.
+- **Fold-core tests are rebuilt, not pruned (maintainer, 2026-11-02).** The
+  tests of the fold core (entry, preparation, the E/P1-P5 stages, the
+  carrier, accounting replay, publication and finalisation) are written
+  again from the contracts; the rest of the suite is pruned as above. The
+  new fold-core suite has three layers: reference runs on a small set of
+  fixtures compared byte for byte with recorded results (the v0.2.2
+  real-data reference, A0 and the dense oracle stay the external anchors);
+  invariants checked on every such run (cash conservation, positions equal
+  to their lots, fee reconciliation, and no lookahead: perturbing later bars
+  changes no earlier decision); and one negative witness per registered
+  claim, named for its contract. The first test file and the shared fixture
+  helpers are written deliberately, by the maintainer or under a tight
+  brief, before agents extend them, because later tests copy the first ones.
+- **Proof before retirement.** A recorded mutant set covers the fold core:
+  the registered mutations plus a generated batch (for example off-by-one
+  positions, a dropped fee, a flipped comparison, a missed carry). The old
+  suite's detected set is recorded first. The rebuilt suite must detect
+  every mutant the old one detects, or carry an accepted reason for each
+  miss (such as an equivalent mutant). Only then are the old fold-core files
+  retired and the claims registry remapped to the new blocks; that record is
+  the stated reason AGENTS.md requires for the test change.
 - **Order.** The product subtraction cut runs with the test suite frozen,
-  so the tests are the safety net for the deletions. A separate test
-  subtraction cut follows with the product frozen; each removed or merged
-  block carries its stated reason in the ticket evidence, as AGENTS.md
-  requires for any test change. Both precede the WS14 checkpoint. The test
-  cut's evidence is the removed block and line counts, the claims and
-  registered mutations still detected (all of them) and the fast-lane time
-  against its bound.
+  so the old tests are the safety net for the deletions. The test cut
+  follows with the product frozen: the fold-core rebuild with its mutant
+  proof, and the subtraction of the rest, where each removed or merged
+  block carries its stated reason in the ticket evidence. Both cuts precede
+  the WS14 checkpoint. The test cut's evidence is the mutant record, the
+  removed and added block and line counts, every registered claim still
+  detected and the fast-lane time against its bound.
 
 ### WS14. Performance convergence checkpoint
 
@@ -604,9 +625,10 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   WS4b cannot begin or inherit evidence until WS4a is accepted.
 - RFC-track work needs no cut; its implementation does.
 - The final cut is the release cut of rule 8.
-- WS14a is one review round and two subtraction cuts (product with tests
-  frozen, then tests with product frozen), after the WS7/WS8 cut and before
-  the WS14 checkpoint.
+- WS14a is one review round and two cuts (product subtraction with tests
+  frozen, then the fold-core test rebuild and remaining test subtraction
+  with product frozen), after the WS7/WS8 cut and before the WS14
+  checkpoint.
 - WS14 is conditional on its checkpoint: one measurement/disposition cut,
   with at most one bounded product-optimization workstream before the final
   release rehearsal.
@@ -668,8 +690,10 @@ defined there.
   rarely remove a layer. Rule 17 enforces the hot-path bans with a
   shrink-only test from the next drafted cut; WS14a reviews the surviving
   core once for deletion and lands one subtraction cut before WS14 measures.
-  The test suite gets the same review and its own subtraction cut, run with
-  the product frozen, after the product cut.
+  The test suite gets the same review and its own cut, run with the product
+  frozen, after the product cut: the fold-core tests are rebuilt from the
+  contracts and retire the old ones only after a mutant comparison shows
+  the new suite detects everything the old one did; the rest is pruned.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on
@@ -689,10 +713,10 @@ accepted on 2026-10-31; the WS4b behavior amendment was accepted on
   difference decided; full peer suite timed after the consolidations; WS14's
   targets met or each remaining premium measured and consciously accepted;
   warm independent-book and actual parameter-grid scaling both recorded.
-- WS14a review dispositioned and both subtraction cuts closed; the rule-17
-  baseline empty or each remaining entry carrying an accepted reason; every
-  registered claim and mutation still detected and the fast lane within its
-  bound.
+- WS14a review dispositioned and both cuts closed; the rule-17 baseline
+  empty or each remaining entry carrying an accepted reason; the fold-core
+  tests rebuilt with a mutant record showing no unexplained loss; every
+  registered claim still detected and the fast lane within its bound.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
 - A certified candidate promoted under the WS13 process.
