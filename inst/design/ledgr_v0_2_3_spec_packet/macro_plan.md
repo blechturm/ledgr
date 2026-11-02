@@ -1,6 +1,6 @@
 # ledgr v0.2.3 Macro Plan
 
-**Status:** Accepted by the maintainer on 2026-10-28 (revision 7, written by
+**Status:** Accepted by the maintainer on 2026-10-28 (revision 8, written by
 Claude and amended by the maintainer). It is the within-release order for
 uncut work. Revision 2 applies
 the [Type 2 review](macro_plan_review.md) (RESTRUCTURE) as dispositioned in
@@ -24,6 +24,10 @@ the implied bar-native pulse clock, strict dense coverage, removal of the
 exported `ledgr_backtest()` constructor and one structured final-pulse
 non-execution diagnostic, plus the Option B rule that a fixed basket is the
 full-membership, always-tradable, never-stale case of the canonical substrate.
+Revision 8 records the maintainer's 2026-11-02 entropy amendment: a hot-path
+ban-list test that may only shrink (rule 17), and one holistic core review
+with one subtraction cut (WS14a) between the WS7/WS8 cut and the WS14
+measurement.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -117,6 +121,19 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     surviving core is measured, WS14 provides the one bounded response to a
     material miss; milestone deferral is not permission to ship an
     uninvestigated performance result.
+17. **Hot-path bans are enforced by a test, not by prose.** Agents copy the
+    nearest existing code more readily than they follow written rules, so
+    one surviving instance of a banned pattern becomes the template for the
+    next change. A test walks the call graph from the fold stage functions
+    and fails on canonical JSON encode or parse, `match()`, `%in%`,
+    `setdiff()`, `setNames()`, `unique()`, `data.frame()`,
+    `as.data.frame()`, `rbind()` and `all.equal()` in any function reached
+    per pulse or per fill. Current instances start in a recorded baseline
+    that may only shrink; a new entry needs a stated reason accepted by the
+    maintainer, such as the single `collapse::fmatch()` at the strategy
+    target boundary (WS14, ID-matching amendment). The test lands in the
+    next cut drafted after this amendment (WS6 or a chore cut), not inside
+    the accepted Cut 7 (maintainer, 2026-11-02).
 
 ## 2. Dependency structure
 
@@ -147,7 +164,8 @@ Phase C   WS5 runtime ---> WS6 frame retirement --.
 Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
           WS10 economics implementation (as each RFC is accepted)
           WS3 full suite timing after WS4b and WS8
-          completed hot-path cuts -> WS14 performance convergence
+          completed hot-path cuts -> WS14a holistic review -> subtraction cut
+          -> WS14 performance convergence
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
@@ -169,6 +187,9 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS9b budget decision -> H9 | technical prerequisite (inventory H9) |
 | WS4b, WS5, WS6, WS7/WS8 and execution-sensitive WS10 cuts -> WS14 | evidence prerequisite: optimize the surviving core, not an intermediate representation |
 | WS3 post-consolidation record -> WS14 | evidence prerequisite: the peer suite supplies the attribution and comparison |
+| WS6 and the WS7/WS8 cut -> WS14a review | evidence prerequisite: review the surviving core once, not intermediate shapes |
+| WS14a subtraction cut -> WS14 checkpoint | evidence prerequisite: measure the core after deletion, so the optimization budget is not spent on waste |
+| WS14a subtraction cut -> final format/data freeze | binding constraint (rule 5): deletions that change identity land before the freeze |
 | each economics RFC -> its implementation | binding constraint |
 | R2 -> M5, M7; H4 -> M5 | binding constraint |
 | H4 -> C10 ADR -> C9 | binding constraint (inventory chain 2) |
@@ -462,10 +483,38 @@ rebuilding; site deployed from the built artifact.
   bound after the first rehearsal measures them.
 - The playbook's release order is replaced once the RFC is accepted.
 
+### WS14a. Holistic core review and subtraction cut
+
+Each cut so far was reviewed on its own diff, and each fix added code: a
+check, a normalizer, a cache guard. No review has asked what the whole core
+no longer needs. WS14a does that once, after WS6 and the WS7/WS8 cut, when
+the fold has reached its surviving v0.2.3 shape. It does not wait for WS10;
+execution-sensitive economics cuts are held to rule 17 instead.
+
+- **Review.** Two independent clean-context reviewers, one Claude and one
+  Codex, each under a maintainer-written Type 2 brief, read the whole run
+  path in one pass: entry (`ledgr_run()`, `ledgr_sweep()`, walk-forward),
+  preparation, the fold stages, publication, finalisation and the result
+  reader. Deletion comes first: what can be removed with every registered
+  test, oracle and the v0.2.2 reference unchanged? The reviewers look for
+  validation repeated after a trusted boundary, two representations of one
+  concept, helpers that duplicate each other (starting from the census
+  `helpers.csv`) and every remaining rule-17 baseline entry. The rule 15
+  cold read extends to the whole fold: a stage the reviewer cannot explain
+  from its code and the carrier contract is a finding. Each reviewer writes
+  one findings file; the maintainer dispositions both together.
+- **Subtraction cut.** One cut implements the accepted deletions. It adds
+  no behavior and changes no registered test, fixture or oracle. Its
+  evidence is the removed line count, the rule-17 baseline after the cut
+  (empty, or each remaining entry with an accepted reason) and its identity
+  impact under rule 5. A finding that needs a behavior or contract change is
+  routed to its owner, not done here.
+
 ### WS14. Performance convergence checkpoint
 
 After the execution paths, strategy context, context frames, accounting
-readers and typed persistence have reached their surviving v0.2.3 shape, run
+readers and typed persistence have reached their surviving v0.2.3 shape and
+the WS14a subtraction cut has landed, run
 the shared timing harness and full peer suite as one attributed performance
 checkpoint. Separate cold setup, warm no-fill pulse cost, strategy work,
 warm book construction/finalisation/teardown, feature and indicator
@@ -531,6 +580,8 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   WS4b cannot begin or inherit evidence until WS4a is accepted.
 - RFC-track work needs no cut; its implementation does.
 - The final cut is the release cut of rule 8.
+- WS14a is one review round and one subtraction cut, after the WS7/WS8 cut
+  and before the WS14 checkpoint.
 - WS14 is conditional on its checkpoint: one measurement/disposition cut,
   with at most one bounded product-optimization workstream before the final
   release rehearsal.
@@ -587,12 +638,17 @@ defined there.
   basket is the full-membership, always-tradable, never-stale case of the
   canonical substrate. They preserve one execution semantics and do not
   authorize an alternate dense policy or inferred venue clock.
+- **Entropy, 2026-11-02:** cleanup rounds kept losing ground because agents
+  copy the nearest existing pattern, and per-diff reviews add code but
+  rarely remove a layer. Rule 17 enforces the hot-path bans with a
+  shrink-only test from the next drafted cut; WS14a reviews the surviving
+  core once for deletion and lands one subtraction cut before WS14 measures.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on
 2026-10-29; the performance-convergence and peer-scaling amendments were
 accepted on 2026-10-31; the WS4b behavior amendment was accepted on
-2026-11-01.
+2026-11-01; the entropy amendment was accepted on 2026-11-02.
 
 ## 7. Release definition of done
 
@@ -606,6 +662,8 @@ accepted on 2026-10-31; the WS4b behavior amendment was accepted on
   difference decided; full peer suite timed after the consolidations; WS14's
   targets met or each remaining premium measured and consciously accepted;
   warm independent-book and actual parameter-grid scaling both recorded.
+- WS14a review dispositioned and its subtraction cut closed; the rule-17
+  baseline empty or each remaining entry carrying an accepted reason.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
 - A certified candidate promoted under the WS13 process.
