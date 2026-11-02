@@ -1047,15 +1047,25 @@ cuts:
       under a stage, all inside the static set. No test guards rule 14 or rule
       17 today; both are prose that review applies by hand.
     decisions: >-
-      Proposed for maintainer acceptance with the cut.
-      (1) Roots. The five fold stage functions plus the strategy-facing
-      per-pulse surface: `$`, `[[` and `names` methods of ledgr_pulse_context,
-      `$` of ledgr_strategy_state_view, the ledgr_pulse_context_helper_bundle
-      closures and ledgr_strategy_result(). Option B adds the exported
-      authoring helpers (strategy-helpers.R, sizing-evidence.R), which run
-      inside every strategy that uses them: 29 more rows and 48 more calls.
-      Claude recommends B, because WS18 just made those helpers the taught
-      pattern and their per-ID matching is exactly what rule 17 targets.
+      Proposed for maintainer acceptance with the cut; decision (1) is
+      already the maintainer's.
+      (1) Roots: everything that can run per pulse (maintainer, 2026-11-02:
+      "everything that is potentially per pulse should be checked"). The
+      roots are the five fold stage functions, the
+      ledgr_pulse_context_helper_bundle closures, and every export and
+      registered S3 method classified per_pulse in a surface table. The table
+      classifies all of them (182 exports and 99 S3 methods at e04786ef) as
+      per_pulse or not, each with a reason. per_pulse covers anything a
+      strategy may call while deciding: the context and state-view methods,
+      ledgr_strategy_result(), the signal, selection, weight, target and
+      sizing helpers and the S3 methods of their classes, the history readers
+      and small utilities. An export or S3 method missing from the table, or
+      a table row naming nothing, fails, so every new export must be
+      classified when it is added. Closures that per-pulse services build at
+      setup (cost resolver, risk plan, availability provider, output handler)
+      are reached through the fold, by member dispatch or a declared edge.
+      The probe's narrower ring without the authoring helpers reached 310
+      functions with 203 calls; with them, 344 functions with 251 calls.
       (2) The walker reads the installed namespace, not R/ source, so the test
       runs unchanged in CRAN mode. Nodes are namespace functions and the
       closures defined inside them (keyed owner$name). Edges come from direct
@@ -1086,13 +1096,21 @@ cuts:
       reason is a review duty, not a test.
       (5) The declared-edge table records from, to and reason; an edge whose
       endpoint no longer exists fails.
-      (6) Runtime witness. A heavy_protocol block runs the nine dense recipes
-      through ledgr_run() and a one-candidate ledgr_sweep() in a fresh R
-      process with every namespace closure traced. It fails if a package
-      function executes under a fold stage outside the static reachable set
-      (JSON leaves excepted). It catches an undeclared indirection on an
-      exercised path; an unexercised one remains possible, and that limit is
-      recorded.
+      (6) Runtime witness. A heavy_protocol block, in a fresh R process with
+      every namespace closure traced, runs:
+      - the nine dense peer recipes through ledgr_run() and a one-candidate
+        ledgr_sweep();
+      - the eight A0 output-freeze workloads on their recorded paths
+        (dev/bench/v0_2_3_output_freeze/fixtures.R), which cover costs
+        including the compiled and db_live paths, risk with features,
+        dividends with state, availability resume, acquisition and
+        incomplete runs, walk-forward and failures;
+      - the WS5 semantic ports (dev/bench/v0_2_3_ws5/semantic_ports.R), which
+        exercise the authoring helpers.
+      It fails if a package function executes under a fold stage outside the
+      static reachable set (JSON leaves excepted). It catches an undeclared
+      indirection on an exercised path; an unexercised one remains possible,
+      and that limit is recorded.
       (7) Review duty. The packet's review_obligations gain one sentence:
       every close review reads the baseline and declared-edge diff, and an
       added or increased row needs a reason the maintainer accepts.
@@ -1118,7 +1136,8 @@ cuts:
     review_lifecycle: >-
       An independent clean-context Codex cut review challenges the walker's
       precision and blind spots, the exact-ratchet and exemption rules,
-      whether every gate can fail, and decision (1). The workstream receives
+      whether every gate can fail, and whether the surface table and witness
+      workloads really cover everything that can run per pulse. The workstream receives
       one Type 1 close review that reruns the static test and the runtime
       witness on the merged base, applies each synthetic mutation, and checks
       that the baseline equals the scan with every non-initial row reasoned.
@@ -1284,7 +1303,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 19, after LDG-3193", reason: "One claim joins LDG-3191 through LDG-3193: an ordinary fast test walks the installed namespace from the accepted roots and fails when any banned call in a reached function differs from the recorded baseline; each synthetic witness (banned head, apply argument, member dispatch, alias, declared edge, cold exemption, stale row, stale edge) fails or passes as specified; the runtime witness finds no package function executed under a fold stage outside the static set on the merged base and fails when a declared edge is removed; the baseline equals the scan on the merged base; the review duty is recorded; and no product, fixture or oracle changed."}
+    review: {mode: "Type 1", point: "close of workstream 19, after LDG-3193", reason: "One claim joins LDG-3191 through LDG-3193: an ordinary fast test walks the installed namespace from the stages and every export or S3 method the surface table classifies per_pulse, fails on any unclassified export or method, and fails when any banned call in a reached function differs from the recorded baseline; each synthetic witness (banned head, apply argument, member dispatch, alias, declared edge, cold exemption, stale row, stale edge) fails or passes as specified; the runtime witness finds no package function executed under a fold stage outside the static set on the merged base and fails when a declared edge is removed; the baseline equals the scan on the merged base; the review duty is recorded; and no product, fixture or oracle changed."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2983,8 +3002,10 @@ tickets:
     dependencies: []
     scope: >-
       Write the walker of cut 8 decisions (1)-(3) over the installed
-      namespace, the baseline and declared-edge files under
-      tests/testthat/fixtures/hot-path-bans/, and a regeneration tool that
+      namespace. Under tests/testthat/fixtures/hot-path-bans/, write the
+      surface table classifying every export and registered S3 method
+      (per_pulse or not, with a reason), the baseline and the declared-edge
+      file. Write a regeneration tool that
       writes lower or removed rows freely and refuses a new or increased row
       without --reason. Seed the baseline from the scan with reason "initial
       baseline, cut 8" and the declared edges from the probe's three, each
@@ -2995,9 +3016,12 @@ tickets:
       call head, a banned apply argument, member dispatch through each binding
       form, an owner-local call, a declared edge, a JSON leaf, the cold
       exemption and the guarded-condition non-exemption, a stale baseline row
-      and a stale declared edge. Each block title states its claim as a
-      sentence. Measure the fast block's wall time.
+      and a stale declared edge. A further block requires the surface table
+      to classify every export and registered S3 method exactly once, and
+      every row to name one that exists. Each block title states its claim as
+      a sentence. Measure the fast block's wall time.
     acceptance:
+      - "an unclassified export or S3 method, and a table row naming nothing, each fail with the name reported"
       - "the scan on the branch equals the seeded baseline, and the test fails with the differing rows named when one banned call is added to, or removed from, any reached function"
       - "every synthetic witness fails or passes exactly as its title states, and none depends on product code"
       - "the regeneration tool refuses a new or increased row without a reason and records the reason it is given"
@@ -3012,9 +3036,11 @@ tickets:
     dependencies: ["LDG-3191"]
     scope: >-
       Add one heavy_protocol block that, in a fresh R process, traces every
-      namespace closure of the installed build and runs the nine dense peer
-      recipes through ledgr_run() and a one-candidate ledgr_sweep(). It
-      fails, naming the functions, if any package function executes while a
+      namespace closure of the installed build and runs the workloads of cut
+      8 decision (6): the nine dense peer recipes, the eight A0 workloads on
+      their recorded paths and the WS5 semantic ports. It reuses their
+      fixtures without copying or editing them. It fails, naming the
+      functions, if any package function executes while a
       fold stage is on the stack outside the static reachable set, JSON leaves
       excepted. Its positive control removes one declared edge and must fail.
       Record the protocol census entry and the block's wall time.
