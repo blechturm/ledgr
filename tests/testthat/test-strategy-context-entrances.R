@@ -362,7 +362,18 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   omitted <- testthat::expect_no_warning(ledgr_target_rebalance(
     dense, weights = c(AAA = 1)
   ))
-  testthat::expect_identical(with_zero, omitted)
+  testthat::expect_identical(
+    strategy_target_values(with_zero),
+    strategy_target_values(omitted)
+  )
+  zero_evidence <- attr(with_zero, "sizing_evidence", exact = TRUE)
+  omitted_evidence <- attr(omitted, "sizing_evidence", exact = TRUE)
+  testthat::expect_identical(zero_evidence$instrument_id, c("AAA", "BBB"))
+  testthat::expect_identical(
+    zero_evidence$reason_code,
+    c("sizing_rounded", "sizing_zero_target")
+  )
+  testthat::expect_identical(omitted_evidence$instrument_id, "AAA")
   testthat::expect_identical(strategy_target_values(with_zero), c(AAA = 10, BBB = 0))
   positive_dense <- ledgr_target_rebalance(
     dense, weights = c(AAA = 0.5, BBB = 0.5)

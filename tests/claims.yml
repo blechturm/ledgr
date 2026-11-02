@@ -4831,10 +4831,10 @@ claims:
     scope: "The strategy-authoring article teaches six executable public-grammar patterns, including explicit fixed slots, leaver policy, remaining-equity sizing, position facts, declared asset memory and reset semantics, without retired context readers"
     oracle_class: "Literal source-and-rendered teaching inventory"
     detecting_blocks: ["LTB-0544"]
-    promised_profile: "fast"
+    promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "A teaching edit could silently drop one reusable pattern or restore an obsolete reader while the package API remains green."
     oracle_independence: "The test names the six accepted pattern headings and their load-bearing public spellings directly rather than deriving them from the article."
     smallest_failing_change: "Remove one pattern, its defining policy or state field, the sizing disclosure, or restore one retired context reader."
-    cheapest_adequate_lane: "Read the source and committed rendered article; fast."
+    cheapest_adequate_lane: "Read the source and committed rendered article in the documentation file's review profile."
     overlapping_evidence: "The WS5 checker owns the cross-file inventory; this claim owns the public teaching artifact."
