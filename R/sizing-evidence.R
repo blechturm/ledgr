@@ -81,9 +81,12 @@ ledgr_validate_sizing_evidence <- function(x, targets, context_ids,
   same_number <- function(a, b) {
     identical(as.numeric(a), as.numeric(b))
   }
+  unevidenced <- rep(TRUE, length(context_ids))
+  unevidenced[k] <- FALSE
   if (!same_number(x$rounded_quantity, targets[k]) ||
       !same_number(x$position_before, position[k]) ||
-      !same_number(x$price[priced], mark[k[priced]])) {
+      !same_number(x$price[priced], mark[k[priced]]) ||
+      !same_number(targets[unevidenced], position[unevidenced])) {
     # Ordinary R transformations can preserve attributes while changing the
     # target values. The internal helper evidence is then stale, not an
     # invalid strategy result. Discard it and let the fold disclose that the

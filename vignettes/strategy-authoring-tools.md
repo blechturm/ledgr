@@ -841,13 +841,14 @@ fixed_mix <- function(ctx, params) {
   ledgr_target_rebalance(
     ctx,
     weights = weights,
-    invest_fraction = params$invested
+    invest_fraction = params$invested,
+    capital_base = "total_equity"
   )
 }
 
 fixed_mix(pulse, list(invested = 0.8))
 #> <ledgr_target> [4 assets]
-#> origin: helper=ledgr_target_rebalance; capital_base=total_equity; capital_base_origin=default; invest_fraction=0.8
+#> origin: helper=ledgr_target_rebalance; capital_base=total_equity; capital_base_origin=supplied; invest_fraction=0.8
 #> non-NA: 4/4
 #> DEMO_01 DEMO_02 DEMO_03 DEMO_04
 #>     454     472       0       0
@@ -856,7 +857,8 @@ fixed_mix(pulse, list(invested = 0.8))
 The named mix is intersected with the current buyable pool before
 sizing. A temporarily unavailable constituent is therefore not
 requested, while an existing unavailable holding remains visible and
-preserved by the target helper.
+preserved by the target helper. Naming the capital base makes that
+reservation rule explicit.
 
 ### 2. Filter
 

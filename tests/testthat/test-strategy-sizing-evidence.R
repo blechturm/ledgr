@@ -260,39 +260,64 @@ testthat::test_that("[LTB-0540] runs persist and report sizing evidence without 
   testthat::expect_identical(no_op_summary$unavailable_decisions, 0L)
   testthat::expect_identical(no_op_summary$no_instruction_decisions, 4L)
 
-  modified_strategies <- list(
-    override = function(ctx, params) {
+  modified_cases <- list(
+    override = list(strategy = function(ctx, params) {
       target <- ledgr_target_rebalance(
         ctx, weights = c(AAA = 1), capital_base = "total_equity"
       )
       target[["AAA"]] <- target[["AAA"]] + 1
       target
-    },
-    capped = function(ctx, params) {
+    }, opening = ledgr_opening(cash = 100)),
+    capped = list(strategy = function(ctx, params) {
       target <- ledgr_target_rebalance(
         ctx, weights = c(AAA = 1), capital_base = "total_equity"
       )
       pmin(target, 0)
-    }
+    }, opening = ledgr_opening(cash = 100)),
+    preserved_edit = list(strategy = function(ctx, params) {
+      target <- ledgr_target_adjust(
+        ctx, add_value = c(AAA = 60), capital_base = "total_equity"
+      )
+      target[["CCC"]] <- 0
+      target
+    }, opening = ledgr_opening(
+      cash = 100, positions = c(CCC = 5), cost_basis = c(CCC = 10)
+    )),
+    rebalance_extra_id = list(strategy = function(ctx, params) {
+      target <- ledgr_target_rebalance(
+        ctx, weights = c(AAA = 0.5), capital_base = "total_equity"
+      )
+      target[["CCC"]] <- 20
+      target
+    }, opening = ledgr_opening(cash = 100))
   )
-  for (variant in names(modified_strategies)) {
+  for (variant in names(modified_cases)) {
+    case <- modified_cases[[variant]]
     modified <- ledgr_run(
       ledgr_experiment(
         snapshot,
-        modified_strategies[[variant]],
-        opening = ledgr_opening(cash = 100),
+        case$strategy,
+        opening = case$opening,
         cost_model = ledgr_cost_zero()
       ),
       run_id = paste0("sizing-evidence-modified-", variant)
     )
-    on.exit(close(modified), add = TRUE)
-    modified_rows <- ledgr_results(modified, "diagnostics")
+    modified_rows <- tryCatch(
+      ledgr_results(modified, "diagnostics"),
+      finally = close(modified)
+    )
     modified_sizing <- modified_rows[modified_rows$stage == "sizing", , drop = FALSE]
     testthat::expect_identical(
       sum(modified_sizing$reason_code == "sizing_intent_unavailable"),
       1L
     )
-    testthat::expect_false(any(nzchar(modified_sizing$instrument_id)))
+    notice_time <- modified_sizing$ts_utc[
+      modified_sizing$reason_code == "sizing_intent_unavailable"
+    ]
+    testthat::expect_false(any(
+      modified_sizing$ts_utc == notice_time &
+        nzchar(modified_sizing$instrument_id)
+    ))
   }
 
   resume_experiment <- ledgr_experiment(

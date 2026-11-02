@@ -1166,7 +1166,13 @@ workstreams:
       adds the requested/post-guard integration and mutation witnesses,
       separates no-instruction from unavailable decisions, executes pattern 6,
       restores the accepted reason mapping and records the actual oracle
-      causes. Focused confirmation remains required before acceptance.
+      causes. The first focused re-review appended to close_review_18.md closes
+      B2-B6 and returns CHANGES_REQUIRED on R1-R3: unevidenced target edits,
+      the fixed-mix capital-base teaching and one wrong detector citation. The
+      second bounded correction validates every unevidenced target against its
+      held position, adds preserved-holding and extra-ID cases, names and pins
+      total-equity sizing in the article, and fixes the LTB-0545 citation.
+      Final clean confirmation remains required before acceptance.
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2784,7 +2790,7 @@ tickets:
         intent reason (typed missing when absent), distinguish no-instruction
         decisions from unavailable evidence, and make post-construction target
         edits discard stale helper evidence. The isolated category mutation
-        and the requested/post-guard swap both fail LTB-0540.
+        fails LTB-0540, and the requested/post-guard swap fails LTB-0545.
   - id: "LDG-3188"
     title: "Migrate maintained strategies to the accepted grammar"
     workstream: 18

@@ -290,3 +290,112 @@ review tree was changed except this file.
   decision axis".
 - Hash probe (B6): the LTB-0309 fixture yields `6cde2b07...` at both
   `8086b288` and `ece1edde`.
+
+## Focused re-review (correction range `ece1edde..8e8935aa`)
+
+Mode: Type 1, fresh independent focused re-review (Claude Opus). Scope: B1-B6
+closure, N1-N6 accuracy, and new defects in the correction only.
+
+### Verdict
+
+**CHANGES_REQUIRED.** No Type 2 issue. B2-B6 are resolved. B1 is only partly
+resolved: the abort is gone and an edit to an *evidenced* instrument discards
+the evidence, but an edit to an instrument the helper did not evidence keeps
+the stale evidence and suppresses the raw notice. The new contract and closeout
+sentences claim the general case.
+
+### Remaining findings
+
+#### R1 (Medium). An edit outside the evidenced rows keeps stale evidence (B1 incomplete)
+
+- Location: `R/sizing-evidence.R:84`; claim at `inst/design/contracts.md:1824`
+  and `strategy_authoring_closeout.md:36`.
+- Failure: the validator compares only `targets[k]`, the evidenced rows.
+  Probe on head (3 instruments, four pulses, zero costs):
+  `t <- ledgr_target_adjust(ctx, add_value = c(AAA = 60)); t["CCC"] <- 0; t`
+  with an opening holding `CCC = 5`. The run sells 5 CCC on pulse 1. It writes
+  four `sizing_rounded` AAA rows and no `sizing_intent_unavailable` notice.
+  The summary reports 4 evidenced, 0 unavailable, `raw_intent_unavailable =
+  FALSE`, pooled coverage 1. A raw liquidation is therefore reported as fully
+  evidenced helper intent. A second probe, `ledgr_target_rebalance(ctx,
+  weights = c(AAA = .5)); t["CCC"] <- 20`, keeps pulse-1 AAA evidence while
+  buying 20 CCC without a sizing row. This is the `targets[down] <- 0` shape
+  the original B1 cited.
+- Minimal fix: the helper leaves every unevidenced instrument at its held
+  quantity. That covers preserved, kept, flat-replaceable and flat-exit
+  instruments. So also require
+  `identical(as.numeric(targets[-k]), as.numeric(position[-k]))`, and treat a
+  mismatch as the stale-evidence path. This is one vectorized comparison and
+  no loop. Add the preserved-holding edit to the LTB-0540 modified-target loop.
+
+#### R2 (Low). The new fixed-mix prose is false for a held unbuyable constituent
+
+- Location: `vignettes/strategy-authoring-tools.qmd:787` (N6 correction).
+- Failure: the prose says an existing unavailable holding "remains visible and
+  preserved by the target helper". With `DEMO_02` held and unbuyable, the
+  preserved value makes the two capital bases differ. `fixed_mix()` passes no
+  `capital_base`, so `ledgr_target_rebalance()` refuses with
+  `ledgr_invalid_strategy_helper` ("Choose `capital_base = ...`"). The flat
+  case works (48/0).
+- Minimal fix: pass `capital_base = "total_equity"` in `fixed_mix()`, or
+  narrow the sentence to non-held constituents.
+
+#### R3 (Low, record). The LDG-3187 evidence names the wrong detecting block
+
+- Location: `tickets.yml:2787`.
+- Failure: it says both mutations "fail LTB-0540". `D8_boundary_swap` is
+  registered against, and detected only by, LTB-0545. The closeout and the
+  ownership matrix are correct.
+- Minimal fix: say "fails LTB-0545".
+
+### Non-blocking
+
+- LTB-0540's modified-target loop registers `on.exit(close(modified))` with
+  lazy evaluation, so the last handle closes twice and `override` is left to
+  auto-checkpoint. The test output shows the message. Close each handle inside
+  the loop.
+
+### Closure status
+
+- B1: **partly resolved** (see R1). Ordinary edits to an evidenced instrument
+  and `pmin()` no longer abort. Their evidence is discarded to one raw notice,
+  both verified by probe and LTB-0540. A forged invalid `reason_code` still
+  refuses with `ledgr_invalid_strategy_result`, both in the run probe and in
+  LTB-0539.
+- B2: resolved. The helper fixture gives requested 8 and post-guard 2. The
+  durable LTB-0545 availability fixture has guarded AAA rows with
+  `target_before_risk > target`. Its summary requested/post-guard values and
+  the pooled denominator are pinned against the durable columns.
+  `D8_boundary_swap` applies once and is detected by LTB-0545. The matrix text
+  is corrected.
+- B3: resolved. The article's pattern-6 run now reports 10 evidenced, 0
+  unavailable and 119 no-instruction, with `raw_intent_unavailable = FALSE`.
+  Flat exits emit no row; the helper refuses a sized+exit overlap, so no
+  weighted evidence can survive under a flat exit. The overlap label and the
+  contract text are present.
+- B4: resolved. Pattern 6 runs with `stop = 0.05, wait = 5L`, gives 10 fills,
+  shows fills and closes. LTB-0544 and `check.R` require the run, params,
+  fills and close needles.
+- B5: resolved. Sizing `reasons` is the intent reason, or `""` physically and
+  typed `NA_character_` through `ledgr_results(..., "diagnostics")`.
+  `detail_json` is `{}`. A real empty intent reason cannot collide, because
+  `ledgr_validate_strategy_intent_reason()` refuses `""`. The filtered reader
+  excludes stage `sizing`.
+- B6: resolved. The hash comment names the real cause. The `lifetime_inactive
+  -> target_restricted` collapse is recorded in LDG-3190, the closeout and
+  `contracts.md`, and routed to WS6 consistently.
+- N1-N5 are accurate: NA diagnostics, overlap label, the Turtle digest (pinned
+  and passing in LTB-0543), the long-window 21x and partial-month record, and
+  `identical()`. N6 is accurate for the flat case only (R2).
+
+### Evidence rerun here
+
+- Targeted files strategy-sizing-evidence, backtest-s3, strategy-ports-ws18,
+  indicator-history, documentation-contracts and history-frame: 5,520 passed,
+  0 failed.
+- `D8_rounding_evidence` was detected by LTB-0540 and `D8_boundary_swap` by
+  LTB-0545, each in an isolated copy.
+- Purled article run of pattern 6 as above. Build/check and the 61-chunk render
+  were accepted as records and not rerun.
+- No cpp11 or generated files are in the correction commit. Worktree clean
+  apart from this appendix.

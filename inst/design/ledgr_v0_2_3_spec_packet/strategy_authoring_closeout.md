@@ -194,3 +194,12 @@ article executes all 61 chunks. The source package builds, and `R CMD check
 --no-manual --no-build-vignettes` passes tests, examples and executable
 vignette code with zero errors and the same two expected missing-`inst/doc`
 warnings.
+
+The first focused re-review found one remaining stale-evidence boundary: an
+ordinary edit to an instrument without an evidence row. The second bounded
+correction compares every unevidenced target with its held quantity in one
+vectorized check; preserved-holding liquidation and extra-ID rebalance edits
+both fall back to the raw notice, while malformed evidence still refuses. The
+fixed-mix teaching now names `capital_base = "total_equity"`, so its statement
+about preserving a held unbuyable constituent is executable rather than
+implicit.

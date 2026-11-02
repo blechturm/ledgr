@@ -109,6 +109,7 @@ for (topic in c(
   "### 5. Preserve Holdings And Decide Index Leavers",
   "### 6. Use Position Facts And Declared Memory",
   "open_slots <- max(0L", "index_leavers = \"sell\"",
+  "capital_base = \"total_equity\"",
   "reset_state = TRUE", "intent_reason = \"risk_checked\"",
   "trailing_run <- ledgr_run(", "params = list(stop = 0.05, wait = 5L)",
   "close(trailing_run)"
