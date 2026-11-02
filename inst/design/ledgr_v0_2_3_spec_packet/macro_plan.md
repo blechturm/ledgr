@@ -426,6 +426,24 @@ edited. Bounded no-fill, sparse-rebalance and wide all-fill comparisons remain
 part of its evidence.
 - **Gate:** the synthesis's Section 6 evidence, end-to-end runtime and an
   allocation gate named at the cut.
+- **Amendment (maintainer, 2026-11-02, fill-heavy baseline):** the WS7/WS8
+  cut takes `dev/bench/v0_2_3_fill_heavy_profile/` as its "before" for the
+  wide all-fill cell. That cell is the published 500 x 1,260 benchmark
+  workload with about 54 fills per pulse. At the Cut 7 head (`e04786ef`)
+  `ledgr_run()` takes 9.7 s and the fills read 1.7 s, against 20.1 s and
+  3.8 s at v0.2.2. Cut 7's timing gate measured no change because its cells
+  have few or no fills. The profile names four costs that this cut already
+  owns:
+  - per-fill canonical JSON metadata in `ledgr_fill_event_payload()`, most of
+    P apply's 2.2 s (WS8; rule 14);
+  - DuckDB writes: the per-pulse `ledgr_store_append()` in P commit and the
+    envelope flush, about 1.8 s together (WS8; the cut decides whether durable
+    writes are batched);
+  - the fills reader's FIFO replay, 1.7 s (WS7);
+  - the quadratic terminal recovery above (WS7).
+
+  The cut reruns the profile on its candidate and reports each of these
+  stages next to the baseline, not only the end-to-end time.
 
 ### WS9. Memory and worker budgets (C5, H9, H11; C3 RFC)
 
@@ -521,6 +539,21 @@ execution-sensitive economics cuts are held to rule 17 instead.
   cold read extends to the whole fold: a stage the reviewer cannot explain
   from its code and the carrier contract is a finding. Each reviewer writes
   one findings file; the maintainer dispositions both together.
+- **Unowned per-pulse costs (maintainer, 2026-11-02).** The fill-heavy
+  profile (`dev/bench/v0_2_3_fill_heavy_profile/`) shows two costs that grew
+  after v0.2.2 and that no workstream owns. Cuts 5 and 6 added them, and they
+  stayed hidden behind larger per-fill gains:
+  - `ledgr_carrier_problem()` validation, reached from every fold stage on
+    every pulse (from LDG-3165);
+  - E observe/settle, which grew from 0.08 s to 0.8 s per run.
+
+  P decide also grew, from 1.2 s to 1.7 s. Its per-pulse frames belong to
+  WS6, and the reviewers check what remains after WS6. The reviewers decide
+  for each check whether it is validation repeated after a trusted boundary,
+  which can then be done once at construction or in tests, or a guard that
+  must stay per pulse. They also set a per-stage budget so that no stage can
+  grow unnoticed inside a smaller total. The profile is rerun after the
+  subtraction cut, and its per-stage table is part of that cut's evidence.
 - **Subtraction cut.** One cut implements the accepted deletions. It adds
   no behavior and changes no registered test, fixture or oracle. Its
   evidence is the removed line count, the rule-17 baseline after the cut
