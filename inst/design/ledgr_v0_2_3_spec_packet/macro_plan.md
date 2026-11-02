@@ -134,6 +134,15 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     target boundary (WS14, ID-matching amendment). The test lands in the
     next cut drafted after this amendment (WS6 or a chore cut), not inside
     the accepted Cut 7 (maintainer, 2026-11-02).
+    **Amended (maintainer, 2026-11-02, later the same day): no enforcing
+    test.** Cut 8 built the test and the maintainer withdrew it as tooling
+    the WS14a test cleanup would remove again; the cut is not merged
+    (branch `claude/rule17-banlist`). The bans stand and are enforced in
+    review: close reviews walk the seven shapes, and code added to per-pulse
+    paths may not add these calls. A one-off scan of today's instances
+    (`dev/bench/v0_2_3_hot_path_scan/`, 267 calls in 186 function rows) is
+    WS14a input. Read "rule-17 baseline" below as that scan, re-run by
+    hand.
 
 ## 2. Dependency structure
 
@@ -582,6 +591,18 @@ execution-sensitive economics cuts are held to rule 17 instead.
   an executed vignette already covers the drift, documentation text checks
   that executed articles already gate, and files named after a workstream
   or version rather than a contract.
+- **A0 no longer runs cleanly (finding, 2026-11-02).** The A0 output-freeze
+  harness (`dev/bench/v0_2_3_output_freeze/`), one of the external anchors
+  below, has been stale since Cut 7. Its `run_db_live` path calls the
+  removed `ledgr_backtest()`. The `avail_incomplete` and `failures` fixtures
+  call `ledgr_experiment()` without the now-required `opening`. The
+  `dense_risk_features` strategy reads the retired `ctx$feature`, and
+  `dense_dividend_state` returns an undeclared state field, so every run and
+  sweep candidate of those two fails at its first pulse instead of the
+  recorded DONE. Found by the withdrawn cut 8 runtime prototype. A0 is
+  repaired, or explicitly retired as an anchor, before the test cut relies
+  on it; the repair is a small chore cut of its own and re-records A0 only
+  where an accepted change explains the difference.
 - **Fold-core tests are rebuilt, not pruned (maintainer, 2026-11-02).** The
   tests of the fold core (entry, preparation, the E/P1-P5 stages, the
   carrier, accounting replay, publication and finalisation) are written
