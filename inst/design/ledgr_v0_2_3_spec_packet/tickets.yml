@@ -1024,7 +1024,8 @@ cuts:
   - id: 8
     name: "Hot-path ban-list test (macro rule 17)"
     cut: "2026-11-02"
-    status: "draft"
+    status: "accepted"
+    accepted: "2026-11-02 by the maintainer, revision 3.1, after independent cut review (cut_review_8.md: round 1 NEEDS_TYPE_2 with Type 2 dispositions; re-review 1 PASS_AFTER_PATCHES, R1-R5 applied verbatim; focused census-delivery review PASS_AFTER_PATCHES, C1-C4 applied verbatim). Decisions (1)-(10) are accepted with the cut. Implementation starts with LDG-3191; no implementation is claimed by this acceptance."
     revision: "3.1, applying the focused review's delivery patches C1-C4 verbatim; revision 3 applied re-review 1's patches R1-R5 verbatim and moved delivery into the existing codebase census (maintainer, 2026-11-02); revision 2 applied cut_review_8.md findings 1-9 and the maintainer's Type 2 dispositions."
     opening: >-
       Written by Claude on 2026-11-02 at the maintainer's request, as the
