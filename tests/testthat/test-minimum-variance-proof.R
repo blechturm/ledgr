@@ -197,11 +197,8 @@ testthat::test_that("[LTB-0431] the strategy acts on month starts and writes spa
   read_reasons <- function(x) {
     diagnostics <- as.data.frame(ledgr_results(x, "diagnostics"))
     intent <- diagnostics[diagnostics$reason_code == "strategy_intent", , drop = FALSE]
-    vapply(
-      intent$detail_json,
-      function(json) ledgr:::ledgr_json_read_nested(json)$intent_reason,
-      character(1L)
-    )
+    testthat::expect_identical(intent$detail_json, rep("{}", nrow(intent)))
+    as.character(intent$reasons)
   }
   live <- read_reasons(run)
   testthat::expect_identical(

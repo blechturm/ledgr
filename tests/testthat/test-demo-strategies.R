@@ -131,15 +131,14 @@ testthat::test_that("demo SMA crossover strategy fails through active alias clas
     features = list(ledgr_ind_sma(2)),
   cost_model = ledgr_cost_zero()
   )
-  # Without a feature map the strategy's alias reads name no known feature;
-  # under the feature-map read surface that is ledgr_unknown_feature_id.
+  # Without a feature map the strategy's flat alias column is absent.
   no_alias_err <- testthat::expect_error(
     ledgr_run(no_alias_exp, params = list(qty = 1, threshold = 0), run_id = "demo_no_alias"),
-    class = "ledgr_unknown_feature_id"
+    class = "ledgr_unknown_context_field"
   )
   testthat::expect_match(
     conditionMessage(no_alias_err),
-    "Unknown feature name `fast`. Active aliases: <none>. Concrete feature IDs: sma_2.",
+    "Unknown pulse context field `fast`.",
     fixed = TRUE
   )
 
@@ -159,11 +158,11 @@ testthat::test_that("demo SMA crossover strategy fails through active alias clas
       params = list(qty = 1, threshold = 0),
       run_id = "demo_missing_fast_alias"
     ),
-    class = "ledgr_unknown_feature_id"
+    class = "ledgr_unknown_context_field"
   )
   testthat::expect_match(
     conditionMessage(wrong_alias_err),
-    "Unknown feature name `fast`. Active aliases: quick, slow. Concrete feature IDs: sma_2, sma_4.",
+    "Unknown pulse context field `fast`.",
     fixed = TRUE
   )
 })

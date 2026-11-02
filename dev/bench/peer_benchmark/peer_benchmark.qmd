@@ -884,10 +884,10 @@ Tier 3 trade-level parity: trade count, win rate and average trade
 where the peer exposes comparable realized trade data, and explicit
 unavailable metadata where the peer does not.
 
-The ledgr crossover strategy used by this report is vectorized over
-`ctx$features_wide`. It keeps previous crossover state in
-`ctx$state_prev`, but the current feature comparison and target updates
-are vector operations rather than a per-instrument R loop.
+The ledgr crossover strategy used by this report reads the flat, named feature
+columns. It keeps previous crossover state in declared `ctx$state$above`, but
+the current feature comparison and target updates are vector operations rather
+than a per-instrument R loop.
 
 ### Parity glossary
 

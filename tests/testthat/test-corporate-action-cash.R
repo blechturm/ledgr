@@ -386,6 +386,9 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     ),
     cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
+    strategy_state = ledgr:::ledgr_strategy_state_normalize(
+      portfolio_state = list(observed_cash = 0)
+    ),
     db_path = snapshot$db_path
   )
   ledgr:::ledgr_run_fold(
@@ -498,6 +501,9 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     ),
     cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
+    strategy_state = ledgr:::ledgr_strategy_state_normalize(
+      portfolio_state = list(observed_cash = 0)
+    ),
     db_path = late_snapshot$db_path
   )
   partial <- ledgr:::ledgr_run_fold(

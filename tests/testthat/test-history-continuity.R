@@ -45,6 +45,13 @@ ws42_rows <- function(runs, what, drop) {
   out
 }
 
+ws42_economic_diagnostics <- function(runs) {
+  out <- ws42_rows(runs, "diagnostics", c("run_id", "diagnostic_seq"))
+  out <- out[out$reason_code != "sizing_intent_unavailable", , drop = FALSE]
+  rownames(out) <- NULL
+  out
+}
+
 # AAA and BBB close at 10 + k and 20 + k on the eight fixture sessions; the
 # holdings open with AAA 2 and BBB 1. One BBB corporate action has its
 # entitlement and effective clocks at session `effective` and becomes known
@@ -118,7 +125,7 @@ ws42_chain_record <- function(runs) {
   list(
     events = events,
     equity = ws42_rows(runs, "equity", character())[, c("ts_utc", "cash", "positions_value", "equity")],
-    diagnostics = ws42_rows(runs, "diagnostics", c("run_id", "diagnostic_seq"))
+    diagnostics = ws42_economic_diagnostics(runs)
   )
 }
 
@@ -208,10 +215,17 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
   )
 
   # Decision traces, freeze state and the boundary execution agree too.
-  diag_drop <- c("run_id", "diagnostic_seq")
+  notice_count <- function(bt) {
+    sum(ledgr_results(bt, "diagnostics")$reason_code == "sizing_intent_unavailable")
+  }
   testthat::expect_identical(
-    ws42_rows(chain$test_runs, "diagnostics", diag_drop),
-    ws42_frame(ledgr_results(single, "diagnostics"), diag_drop)
+    vapply(chain$test_runs, notice_count, integer(1L)),
+    rep(1L, length(chain$test_runs))
+  )
+  testthat::expect_identical(notice_count(single), 1L)
+  testthat::expect_identical(
+    ws42_economic_diagnostics(chain$test_runs),
+    ws42_economic_diagnostics(list(single))
   )
   availability_cols <- c("ts_utc", "instrument_id", "priced", "mark_source", "mark_age", "target_restricted")
   testthat::expect_identical(

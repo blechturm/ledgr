@@ -86,10 +86,10 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
   )
   on.exit(ledgr:::close.ledgr_pulse_context(ctx2), add = TRUE)
 
-  testthat::expect_true(is.function(ctx2$features))
+  testthat::expect_error(ctx2$features, class = "ledgr_unknown_context_field")
   testthat::expect_equal(
-    ctx2$features("TEST_A", feature_map)[["signal"]],
-    ctx2$feature("TEST_A", "sma_3")
+    ctx2[["signal"]][["TEST_A"]],
+    ctx2[["sma_3"]][["TEST_A"]]
   )
 
   printed <- capture.output(print(ctx))

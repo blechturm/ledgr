@@ -37,7 +37,11 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
       for (id in names(seen)) seen[[id]] <- c(seen[[id]], ctx[[id]][["AAA"]])
       ctx$hold()
     }
-    args <- list(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
+    args <- list(
+      snapshot, strategy, features = features,
+      opening = ledgr_opening(cash = 1000),
+      cost_model = ledgr_cost_zero()
+    )
     if (isTRUE(availability)) args$valuation_policy <- ledgr_valuation_stale(1L)
     exp <- do.call(ledgr_experiment, args)
     close(ledgr_run(exp, run_id = run_id))

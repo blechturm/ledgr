@@ -844,7 +844,13 @@ ledgr_history_choice <- function(value, choices, argument) {
 }
 
 ledgr_history_context_view <- function(ctx) {
-  view <- if (is.environment(ctx) || is.list(ctx)) ctx[[".history"]] else NULL
+  view <- if (inherits(ctx, "ledgr_pulse_context")) {
+    unclass(ctx)[[".history"]]
+  } else if (is.environment(ctx) || is.list(ctx)) {
+    ctx[[".history"]]
+  } else {
+    NULL
+  }
   if (!inherits(ctx, "ledgr_pulse_context") || !inherits(view, "ledgr_history_view")) {
     rlang::abort(
       paste(

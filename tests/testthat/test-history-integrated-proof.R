@@ -260,7 +260,7 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
   testthat::expect_identical(sma6$input_carried, c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE))
   testthat::expect_identical(sma6$missing_reason[[1L]], "not_ready")
   testthat::expect_identical(at6$scalar, 58)
-  testthat::expect_identical(at6$vec, c(15.5, 58))
+  testthat::expect_identical(at6$vec, c(AAA = 15.5, DDD = 58))
 
   for (session in 7:8) {
     after <- default$at(session)
@@ -287,7 +287,7 @@ testthat::test_that("[LTB-0409] a late-known lifetime fact changes later reads o
   }
   testthat::expect_identical(default$at(7L)$scalar, 59)
   testthat::expect_identical(default$at(8L)$scalar, 72)
-  testthat::expect_identical(default$at(8L)$vec, c(17.5, 72))
+  testthat::expect_identical(default$at(8L)$vec, c(AAA = 17.5, DDD = 72))
   testthat::expect_identical(ws44_cells(default$at(8L)$sma, "DDD")$value[[8L]], 72)
 
   # The session-6 objects were returned before the fact was known; later
@@ -407,7 +407,7 @@ testthat::test_that("[LTB-0410] every entry point and read surface agrees with t
       info = info
     )
     testthat::expect_identical(got$scalar, unname(want$sma), info = info)
-    testthat::expect_identical(got$vec, unname(want$sma), info = info)
+    testthat::expect_identical(got$vec, want$sma, info = info)
     testthat::expect_identical(got$bar, want$bar, info = info)
   }
   for (session in 6:8) {

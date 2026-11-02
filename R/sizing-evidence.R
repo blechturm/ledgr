@@ -192,7 +192,7 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
     }
     finite_coverage <- coverage[is.finite(coverage)]
     out$minimum_decision_coverage <- if (length(finite_coverage)) min(finite_coverage) else NA_real_
-    out$last_decision_coverage <- if (length(coverage)) tail(coverage, 1L) else NA_real_
+    out$last_decision_coverage <- if (length(coverage)) utils::tail(coverage, 1L) else NA_real_
     out$requested_value_diagnostic <- sum(requested_value, na.rm = TRUE)
     out$post_guard_value_diagnostic <- sum(post_guard_value, na.rm = TRUE)
     out$rounded_value_diagnostic <- sum(rounded_value, na.rm = TRUE)

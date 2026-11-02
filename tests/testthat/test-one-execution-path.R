@@ -24,16 +24,19 @@ testthat::test_that("[LTB-0523] run and sweep refuse the same invalid strategy s
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   cases <- list(
     list(
+      id = "non-finite",
       exp = ledgr_experiment(opening = ledgr_opening(cash = 100000),
         snapshot,
         function(ctx, params) {
           list(targets = ctx$hold(), state_update = list(value = Inf))
         },
+        portfolio_state = list(value = 0),
         cost_model = ledgr_cost_zero()
       ),
-      class = "ledgr_config_non_finite"
+      class = "ledgr_invalid_strategy_state"
     ),
     list(
+      id = "non-deterministic",
       exp = ledgr_experiment(opening = ledgr_opening(cash = 100000),
         snapshot,
         function(ctx, params) {
@@ -42,16 +45,17 @@ testthat::test_that("[LTB-0523] run and sweep refuse the same invalid strategy s
             state_update = list(value = function(x) x)
           )
         },
+        portfolio_state = list(value = 0),
         cost_model = ledgr_cost_zero()
       ),
-      class = "ledgr_config_non_deterministic"
+      class = "ledgr_invalid_strategy_state"
     )
   )
   grid <- ledgr_grid_named(candidate = list(strategy = list()))
 
   for (case in cases) {
     run_error <- testthat::expect_error(
-      ledgr_run(case$exp, run_id = paste0("bad-state-", case$class)),
+      ledgr_run(case$exp, run_id = paste0("bad-state-", case$id)),
       class = case$class
     )
     sweep <- ledgr_sweep(case$exp, grid)
