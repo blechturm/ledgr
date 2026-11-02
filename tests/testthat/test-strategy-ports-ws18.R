@@ -11,6 +11,10 @@ testthat::test_that("[LTB-0543] frozen strategy ports keep fills and declared st
 
   testthat::expect_identical(nrow(result$trailing), 58L)
   testthat::expect_identical(nrow(result$turtle), 741L)
+  testthat::expect_identical(
+    result$turtle_fill_digest,
+    "063721a2f68cd5977b703f5b5b44373d08786aa6cdbb0f52597f85241800bb6e"
+  )
   testthat::expect_true(all(c("BUY", "SELL") %in% result$trailing$side))
   testthat::expect_true(all(c("BUY", "SELL") %in% result$turtle$side))
   testthat::expect_identical(

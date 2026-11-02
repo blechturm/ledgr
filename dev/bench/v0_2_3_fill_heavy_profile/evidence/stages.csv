@@ -1,0 +1,22 @@
+"build","commit","region","seconds","ms_per_pulse"
+"v0.2.2","7539be45","P apply",7.37,5.85
+"v0.2.2","7539be45","run outside stages",5.64,4.48
+"v0.2.2","7539be45","P commit",3.28,2.6
+"v0.2.2","7539be45","P plan",2.52,2
+"v0.2.2","7539be45","P decide",1.2,0.95
+"v0.2.2","7539be45","E observe/settle",0.08,0.06
+"v0.2.2","7539be45","results read (fills)",3.78,3
+"cut6","14252ffb","P commit",3.6,2.86
+"cut6","14252ffb","run outside stages",2.41,1.91
+"cut6","14252ffb","P apply",2.34,1.86
+"cut6","14252ffb","P decide",1.86,1.48
+"cut6","14252ffb","P plan",0.97,0.77
+"cut6","14252ffb","E observe/settle",0.85,0.67
+"cut6","14252ffb","results read (fills)",1.5,1.19
+"cut7","e04786ef","run outside stages",2.33,1.85
+"cut7","e04786ef","P apply",2.19,1.74
+"cut7","e04786ef","P commit",1.9,1.51
+"cut7","e04786ef","P decide",1.73,1.37
+"cut7","e04786ef","E observe/settle",0.81,0.64
+"cut7","e04786ef","P plan",0.8,0.63
+"cut7","e04786ef","results read (fills)",1.66,1.32

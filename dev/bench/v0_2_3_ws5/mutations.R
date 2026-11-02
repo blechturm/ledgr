@@ -178,5 +178,22 @@ mutations <- list(
     new = "      reason_code = rep(\"sizing_rounded\", length(sizing_evidence$reason_code)),",
     filter = "strategy-sizing-evidence",
     blocks = "[LTB-0540] runs persist and report sizing evidence without JSON"
+  ),
+  D8_boundary_swap = list(
+    file = "R/fold-engine.R",
+    old = paste0(
+      "      target = sizing_evidence$pre_floor_quantity,\n",
+      "      quantity = sizing_evidence$rounded_quantity,\n",
+      "      price = sizing_evidence$price,\n",
+      "      target_before_risk = sizing_evidence$requested_quantity,"
+    ),
+    new = paste0(
+      "      target = sizing_evidence$requested_quantity,\n",
+      "      quantity = sizing_evidence$rounded_quantity,\n",
+      "      price = sizing_evidence$price,\n",
+      "      target_before_risk = sizing_evidence$pre_floor_quantity,"
+    ),
+    filter = "strategy-sizing-evidence",
+    blocks = "[LTB-0545] binding guards keep requested and post-guard sizing distinct"
   )
 )

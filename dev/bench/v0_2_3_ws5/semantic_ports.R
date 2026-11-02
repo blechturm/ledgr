@@ -150,6 +150,15 @@ ws5_turtle_strategy <- function(ctx, params) {
   ledgr_strategy_result(target, stop = stop)
 }
 
+ws5_fill_digest <- function(fills) {
+  values <- fills[c("ts_utc", "instrument_id", "side", "qty", "price")]
+  values$ts_utc <- format(
+    values$ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+  )
+  payload <- ledgr:::canonical_json(lapply(values, unname))
+  digest::digest(as.character(payload), algo = "sha256", serialize = FALSE)
+}
+
 ws5_run_semantic_ports <- function(snapshot = ws5_port_snapshot()) {
   close_snapshot <- missing(snapshot)
   if (close_snapshot) on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -200,6 +209,7 @@ ws5_run_semantic_ports <- function(snapshot = ws5_port_snapshot()) {
   list(
     trailing = trailing_fills,
     turtle = turtle_fills,
+    turtle_fill_digest = ws5_fill_digest(turtle_fills),
     state = state_rows,
     trailing_experiment = trailing,
     turtle_experiment = turtle

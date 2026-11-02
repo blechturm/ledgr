@@ -1,0 +1,10 @@
+cell,workload,clock,args,pairs
+fixed_nofill_run,ws4a_path,run,producer=dense;shape=nofill;path=run;reps=2,8
+declared_nofill_run,ws4a_path,run,producer=availability;shape=nofill;path=run;reps=1,8
+fixed_sparse_run,ws4a_path,run,producer=dense;shape=sparse;path=run;reps=2,8
+declared_sparse_run,ws4a_path,run,producer=availability;shape=sparse;path=run;reps=1,8
+fixed_wide_run,ws4a_path,run,producer=dense;shape=wide;path=run;reps=1,8
+declared_wide_run,ws4a_path,run,producer=availability;shape=wide;path=run;reps=1,8
+fixed_wide_state_change,ws5_fixed_state,run,changing=true;reps=1,8
+fixed_wide_state_unchanged,ws5_fixed_state,run,changing=false;reps=1,8
+experiment_construction,ws5_experiment_construction,construct,reps=100,8

@@ -2281,12 +2281,18 @@ test_that("[LTB-0544] strategy pattern teaching stays complete and current", {
   }
   for (needle in c(
     "open_slots <- max(0L", "index_leavers = \"sell\"",
+    "capital_base = \"total_equity\"",
     "capital_base = \"remaining_equity\"", "ctx$entry_price",
     "ctx$bars_since_exit", "asset_state = list(peak = NA_real_)",
-    "reset_state = TRUE", "summary(weekly_run)"
+    "reset_state = TRUE", "summary(weekly_run)",
+    "trailing_run <- ledgr_run(", "params = list(stop = 0.05, wait = 5L)",
+    "ledgr_results(trailing_run, what = \"fills\")", "close(trailing_run)"
   )) {
     testthat::expect_match(source, needle, fixed = TRUE)
   }
+  testthat::expect_match(
+    rendered, "capital_base = \"total_equity\"", fixed = TRUE
+  )
   testthat::expect_no_match(source, "ctx$vec", fixed = TRUE)
   testthat::expect_no_match(source, "ctx$feature(", fixed = TRUE)
   testthat::expect_no_match(source, "ctx$features(", fixed = TRUE)

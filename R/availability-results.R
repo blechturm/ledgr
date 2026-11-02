@@ -33,14 +33,21 @@ ledgr_backtest_terminal_evidence <- function(bt, con = NULL) {
 }
 
 ledgr_backtest_diagnostics <- function(con, run_id) {
-  tibble::as_tibble(DBI::dbGetQuery(
+  rows <- DBI::dbGetQuery(
     con,
     paste(
       "SELECT * FROM run_diagnostics WHERE run_id = ?",
       "ORDER BY diagnostic_seq"
     ),
     params = list(run_id)
-  ))
+  )
+  # `run_diagnostics.reasons` predates optional strategy intent and is
+  # physically non-null. Sizing rows use the empty storage sentinel when the
+  # strategy supplied no intent reason; the typed result surface exposes that
+  # absence as character NA.
+  absent_sizing_reason <- rows$stage == "sizing" & !nzchar(rows$reasons)
+  rows$reasons[absent_sizing_reason] <- NA_character_
+  tibble::as_tibble(rows)
 }
 
 ledgr_backtest_diagnostics_filtered <- function(con,

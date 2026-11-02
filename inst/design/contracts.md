@@ -1819,15 +1819,23 @@ Accepted change pending:
   `position_before` are the accepted sizing mark and pulse-start holding.
   Reason codes distinguish ordinary rounding, rounded-to-zero addition,
   rounded-to-zero liquidation, exact zero/liquidation and unavailable sizing.
-  The pulse path never JSON-encodes these values. Raw quantity strategies
-  instead emit one `sizing_intent_unavailable` notice per run.
+  `reasons` carries the optional strategy intent reason; the physical non-null
+  column uses an empty sentinel when none was supplied and the public result
+  surface exposes typed missing. If ordinary R code changes a helper target after
+  construction, its stale private sizing evidence is discarded and the pulse
+  follows the raw-target unavailable-evidence path; malformed evidence still
+  refuses. The pulse path never JSON-encodes these values. Raw quantity
+  strategies instead emit one `sizing_intent_unavailable` notice per run.
 - D8 coverage belongs only to durable committed runs. A sweep candidate's
   memory sink retains no sizing row and makes no coverage claim; a promoted
   candidate reports it after durable execution. Summary and print report
   exposure-weighted pooled, minimum-decision and last-decision coverage with
   the decision clock and currency, alongside native final actual invested
   exposure. Cross-decision quantity/value sums are diagnostics, never
-  portfolio exposure or P&L. Undefined denominators remain typed missing.
+  portfolio exposure or P&L. Decisions with no sizing instruction are distinct
+  from unavailable sizing evidence; evidenced and unavailable counts may
+  overlap when different instruments on one decision have each outcome.
+  Undefined denominators remain typed missing.
 - `keep` accepts unique IDs or an exact logical decision-axis mask. For held
   leavers, a character `keep` is the most specific decision, followed by
   `index_leavers`, followed by a logical keep mask. Undecided held leavers make
@@ -1926,8 +1934,11 @@ manipulation, or as a helper pipeline, means the same thing on both.
   `ctx$universe` ID, and an explicit vector requests known instrument IDs in
   its own order. An explicit ID is never dropped for current
   inadmissibility; its selection row records `admissible` and an
-  `admissibility_reason` (the target-restriction reason, `not_member` or
-  `not_on_decision_axis`). Membership at a past session does not by itself
+  `admissibility_reason` (`target_restricted` for a current-axis restriction,
+  `not_member` or `not_on_decision_axis`). The flat context currently exposes
+  only the combined `buyable` plane, so current-axis restriction subtypes are
+  intentionally collapsed; WS6's inspection handoff owns restoring a more
+  specific prepared reason without rebuilding facts. Membership at a past session does not by itself
   remove an otherwise admissible observation from the returned history.
 
 Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
