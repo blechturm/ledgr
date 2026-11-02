@@ -994,8 +994,19 @@ testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses sched
   )
   recovered <- ledgr_run_strategy(fixture$snapshot, run$run_id, trust = TRUE)
   testthat::expect_identical(
-    ledgr:::ledgr_strategy_schedule_declaration(recovered$strategy_function),
+    unclass(ledgr:::ledgr_schedule_validate(recovered$strategy_schedule)),
     declaration
+  )
+  testthat::expect_null(attr(recovered$strategy_function, "ledgr_schedule", exact = TRUE))
+  testthat::expect_false(inherits(recovered$strategy_function, "ledgr_scheduled_strategy"))
+  rebuilt <- ws42_with_schedule(
+    fixture$exp,
+    recovered$strategy_schedule,
+    strategy = recovered$strategy_function
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_strategy_schedule_hash(rebuilt$schedule),
+    provenance$schedule_hash[[1L]]
   )
   reopened <- ledgr_run_open(fixture$snapshot, run$run_id)
   on.exit(close(reopened), add = TRUE)
@@ -1817,7 +1828,7 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
 
   recovered <- ledgr_run_strategy(fixture$snapshot, run$run_id, trust = TRUE)
   testthat::expect_identical(
-    ledgr:::ledgr_strategy_schedule_declaration(recovered$strategy_function),
+    unclass(ledgr:::ledgr_schedule_validate(recovered$strategy_schedule)),
     unclass(ledgr_schedule_weekday("monday"))
   )
 

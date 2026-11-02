@@ -1109,6 +1109,11 @@ workstreams:
       exceeds the advisory 112-second hint and is not recorded as a timing
       pass. Source build and R CMD check pass; the two expected missing-
       inst/doc warnings follow the requested --no-build-vignettes check.
+      Focused re-review 1 in close_review_16_rereview_1.md closes F1-F9 and
+      finds F10: trusted recovery reattached the newly refused hidden schedule
+      attribute. The bounded correction returns a bare recovered function,
+      keeps the declaration in strategy_schedule and pins public
+      reconstruction with the original schedule hash.
     depends_on_workstream: 15
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations and the Section 4 item 6 default-disclosure detector fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
@@ -2548,6 +2553,16 @@ tickets:
         R CMD check --no-manual --no-build-vignettes has no errors or notes
         attributable to the product change, with the two expected missing-
         inst/doc warnings.
+      - >-
+        Focused re-review F10 correction: ledgr_run_strategy(trust = TRUE)
+        returns a bare recovered function and exposes the canonical declaration
+        only in strategy_schedule. LTB-0506 rebuilds an experiment through the
+        public schedule= argument and requires its schedule hash to equal the
+        original durable provenance hash; the common-calendar orchestration
+        witness reads the same separate field. No help signature or WS17+
+        behavior changes. The strategy-schedule and WS16 authoring files pass,
+        and the registered D6_D7_schedule_inputs mutation still applies and is
+        detected.
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17

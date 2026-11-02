@@ -251,13 +251,6 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
       rlang::abort(sprintf("Stored strategy source for run '%s' did not evaluate to a function.", run_id), class = "ledgr_strategy_not_function")
     }
     out$strategy_function <- fn
-    if (!is.null(schedule)) {
-      attr(out$strategy_function, "ledgr_schedule") <- schedule
-      class(out$strategy_function) <- unique(c(
-        "ledgr_scheduled_strategy",
-        class(out$strategy_function)
-      ))
-    }
   }
 
   structure(out, class = c("ledgr_extracted_strategy", "list"))
