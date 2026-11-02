@@ -169,7 +169,8 @@ Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
-          -> rehearsal -> final cut: certify, promote
+          -> editorial pass (after WS11b and WS14) -> rehearsal
+          -> final cut: certify, promote
 ```
 
 | Edge | Kind |
@@ -190,6 +191,7 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS6 and the WS7/WS8 cut -> WS14a review | evidence prerequisite: review the surviving core once, not intermediate shapes |
 | WS14a product subtraction cut -> WS14 checkpoint | evidence prerequisite: measure the core after deletion, so the optimization budget is not spent on waste |
 | WS14a product subtraction cut -> test cut | binding constraint: each cut freezes the other side, so tests guard product deletions and the product guards test deletions |
+| R2 decision, WS11b and WS14 -> editorial pass -> rehearsal | evidence prerequisite: edit the documentation once, for the surviving API and core, before certification |
 | WS14a product subtraction cut -> final format/data freeze | binding constraint (rule 5): deletions that change identity land before the freeze |
 | each economics RFC -> its implementation | binding constraint |
 | R2 -> M5, M7; H4 -> M5 | binding constraint |
@@ -465,6 +467,21 @@ CRAN release.
 - **WS4b close note, 2026-11-01:** refresh the `ledgr_pulse_snapshot()` help
   so its experiment form teaches both bar-native fixed baskets and declared
   sessions; only the snapshot-and-universe form lacks causal history.
+- **Amendment (maintainer, 2026-11-02, editorial pass):** the documentation
+  accumulated the same sediment as the core and the tests. On 2026-11-02 it
+  held 26 vignettes and 2 articles (about 13,500 `.qmd` lines, each with a
+  rendered `.md` twin) and 157 help pages for 180 exports. One focused
+  editorial pass over the whole documentation runs at the end of the plan,
+  after WS11b settles the surviving API and after WS14, before the release
+  rehearsal, so every executed article runs against the final core. Its
+  input is R2, widened into a rethink of the documentation approach: the R2
+  Type 2 decision also decides which pages ledgr keeps at all, and moves
+  background writing such as `why-r` and `who-ledgr-is-for` to the
+  maintainer's blechturm.com, with the package linking to it rather than
+  carrying it. The pass works deletion first, reads every kept page as a
+  first-time learner, gives each kept page one role and keeps all code
+  executed. Cuts before it still teach what they change (rule 7); the pass
+  reorganizes and prunes rather than re-teaching each cut.
 
 ### WS13. Release-candidate certification (R1, M4)
 
@@ -705,7 +722,9 @@ defined there.
   rarely remove a layer. Rule 17 enforces the hot-path bans with a
   shrink-only test from the next drafted cut; WS14a reviews the surviving
   core once for deletion and lands one subtraction cut before WS14 measures.
-  The test suite gets the same review and its own cut, run with the product
+  The documentation gets one editorial pass at the end of the plan (WS12),
+  fed by a widened R2 decision that moves background articles to
+  blechturm.com. The test suite gets the same review and its own cut, run with the product
   frozen, after the product cut: the fold-core tests are rebuilt from the
   contracts and retire the old ones only after a mutant comparison shows
   the new suite detects everything the old one did; the rest is pruned.
@@ -733,6 +752,8 @@ accepted on 2026-10-31; the WS4b behavior amendment was accepted on
   tests rebuilt, self-documenting, with a generated contract-to-test index
   and a mutant record showing no unexplained loss; every
   registered claim still detected and the fast lane within its bound.
+- The R2 documentation decision accepted and the editorial pass closed; the
+  background articles moved to blechturm.com and linked.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
 - A certified candidate promoted under the WS13 process.
