@@ -1310,12 +1310,22 @@ Accepted change pending:
   accepts a named numeric zero-length target while preserving portfolio-level
   state. Empty M with nonempty Daxis is a holdings-only decision, not an empty
   portfolio.
-- Asset-scoped strategy state lives at `ctx$state_prev$asset_state` as a named
-  list keyed by stable instrument ID. Entries outside the current axis are
-  removed before callback, newly visible and re-entering IDs receive `list()`,
-  returned keys outside the current axis fail closed with
-  `ledgr_invalid_strategy_state`, and non-asset portfolio state remains under
-  the existing replacement semantics.
+- Strategy state is declared once through the experiment's flat typed
+  `asset_state` and `portfolio_state` defaults. `ctx$state` is a pulse-frozen
+  complete view: asset fields are named vectors aligned to the current decision
+  axis and portfolio fields are typed scalars. Unknown reads, undeclared
+  updates, type changes and malformed asset coverage fail with
+  `ledgr_invalid_strategy_state`. Departed IDs are removed and newly visible or
+  re-entering IDs receive their declared defaults.
+- `ledgr_strategy_result()` returns a declared-field patch: omitted fields
+  retain their values and `NA` restores the field's declared default. A raw
+  `state_update` is a complete replacement, so omitted fields restore defaults;
+  `list()` restores all defaults. An omitted update retains state.
+  `reset_state = TRUE` restores all defaults and cannot accompany a patch.
+  Every completed pulse writes the durable resume cursor. A changed state or
+  asset axis writes one complete typed checkpoint; an unchanged pulse writes
+  the fixed unchanged marker without invoking the state codec. Resume restores
+  the latest preceding checkpoint and aligns it to the resumed axis.
 
 <a id="contract-availability-targets"></a>
 ### Execution And Target Semantics

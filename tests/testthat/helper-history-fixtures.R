@@ -14,7 +14,9 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
                                  ccc_known = 7L,
                                  bbb_gaps = c(3L, 4L),
                                  valuation_policy = ledgr_valuation_stale(3),
-                                 corporate_action_policy = ledgr_corporate_actions_research()) {
+                                 corporate_action_policy = ledgr_corporate_actions_research(),
+                                 asset_state = list(),
+                                 portfolio_state = list()) {
   days <- as.Date("2021-01-04") + c(0:4, 7:9)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   k <- seq_along(days)
@@ -81,12 +83,27 @@ ws42_history_fixture <- function(strategy = function(ctx, params) ctx$hold(),
       features = features, valuation_policy = valuation_policy,
       cost_model = ledgr_cost_zero(), opening = opening, history_policy = policy,
       schedule = schedule,
-      corporate_action_policy = corporate_action_policy
+      corporate_action_policy = corporate_action_policy,
+      asset_state = asset_state,
+      portfolio_state = portfolio_state
     )
   } else {
     NULL
   }
   list(snapshot = snapshot, exp = exp, days = days, axis = utc(days))
+}
+
+ws42_state_scope_defaults <- function(exp, scope) {
+  fields <- Filter(
+    function(field) identical(field$scope, scope),
+    exp$strategy_state$fields
+  )
+  stats::setNames(lapply(fields, function(field) {
+    if (!isTRUE(field$default_missing)) return(field$default_value)
+    switch(field$type,
+      numeric = NA_real_, integer = NA_integer_, logical = NA,
+      character = NA_character_)
+  }), vapply(fields, `[[`, character(1L), "name"))
 }
 
 ws42_with_schedule <- function(exp, schedule, strategy = NULL) {
@@ -109,7 +126,9 @@ ws42_with_schedule <- function(exp, schedule, strategy = NULL) {
     execution_mode = exp$execution_mode,
     metric_context = exp$metric_context,
     corporate_action_policy = exp$corporate_action_policy,
-    history_policy = exp$history_policy
+    history_policy = exp$history_policy,
+    asset_state = ws42_state_scope_defaults(exp, "asset"),
+    portfolio_state = ws42_state_scope_defaults(exp, "portfolio")
   )
 }
 

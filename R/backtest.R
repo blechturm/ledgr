@@ -227,6 +227,7 @@ ledgr_run_experiment <- function(exp,
     valuation_policy = exp$valuation_policy,
     corporate_action_policy = exp$corporate_action_policy,
     history_policy = exp$history_policy,
+    strategy_state = exp$strategy_state,
     price_basis = exp$data_identity$price_basis,
     snapshot_hash = exp$snapshot_hash %||% ledgr_snapshot_stored_hash(exp$snapshot)
   )

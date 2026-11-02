@@ -954,19 +954,22 @@ testthat::test_that("[LTB-0282] availability exception stages retain baseline la
 
   state_experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
-    function(ctx, params) list(targets = ctx$hold(), state_update = 5),
+    function(ctx, params) list(
+      targets = ctx$hold(), state_update = list(step = 1L)
+    ),
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(step = 0L)
   )
-  original_normalize <- ledgr:::ledgr_fold_asset_state_normalize
+  original_apply <- ledgr:::ledgr_strategy_state_apply_values
   testthat::expect_error(
     testthat::with_mocked_bindings(
       ledgr_run(state_experiment, run_id = "p5-state-stage"),
-      ledgr_fold_asset_state_normalize = function(state, ...) {
-        if (identical(state, 5)) {
+      ledgr_strategy_state_apply_values = function(previous, update, ...) {
+        if (identical(update$step, 1L)) {
           rlang::abort("injected state failure", class = "ledgr_test_state_failure")
         }
-        original_normalize(state, ...)
+        original_apply(previous, update, ...)
       },
       .package = "ledgr"
     ),

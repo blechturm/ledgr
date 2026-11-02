@@ -138,9 +138,8 @@ testthat::test_that("fixed baskets remain fixed when availability facts are decl
   snapshot <- availability_runtime_fixture(membership = membership)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    list(
-      targets = ctx$hold(),
-      state_update = list(members = ctx$members)
+    ledgr_strategy_result(
+      ctx$hold(), members = paste(ctx$members, collapse = ",")
     )
   }
   exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
@@ -148,7 +147,8 @@ testthat::test_that("fixed baskets remain fixed when availability facts are decl
     strategy,
     universe = "AAA",
     valuation_policy = ledgr_valuation_stale(0),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(members = "")
   )
   testthat::expect_identical(ledgr_experiment_plan(exp)$universe_type, "fixed")
   bt <- ledgr_run(exp)

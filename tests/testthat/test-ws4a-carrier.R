@@ -455,7 +455,8 @@ ws4a_d11_sources <- c(
   ledgr_replay_accounting_events = "positions[idx[last]] <- position_after[last]",
   # Settlement install: positions returned by the settlement boundary.
   ledgr_carrier_settlement_install = "positions <- value$positions",
-  ledgr_carrier_settlement_install = "fold_state$positions <- as.numeric(positions)"
+  ledgr_carrier_settlement_install = "positions <- as.numeric(positions)",
+  ledgr_carrier_settlement_install = "fold_state$positions <- positions"
 )
 ws4a_d11_hits <- function(fns) {
   unlist(lapply(names(fns), function(nm) {
@@ -500,10 +501,21 @@ testthat::test_that("[WS4a D12a-c D12e] identity, dependency, export and compile
   default_model <- function(f) deparse(formals(f)$compiled_accounting_model)
   testthat::expect_identical(deps(desc), frozen[["D12b"]])
   frozen_exports <- strsplit(frozen[["D12c"]], ";", fixed = TRUE)[[1L]]
-  expected_exports <- paste(
-    setdiff(frozen_exports, "export(ledgr_backtest)"),
-    collapse = ";"
-  )
+  expected_exports <- paste(sort(c(
+    setdiff(frozen_exports, c(
+      "export(ledgr_backtest)", "export(ledgr_select_top_n)",
+      "export(ledgr_signal_feature)", "export(ledgr_strategy_schedule)"
+    )),
+    'S3method("$",ledgr_pulse_context)',
+    'S3method("$",ledgr_strategy_state_view)',
+    'S3method("[[",ledgr_pulse_context)',
+    'S3method("[[",ledgr_strategy_state_view)',
+    "S3method(names,ledgr_pulse_context)",
+    "S3method(str,ledgr_pulse_context)",
+    "export(ledgr_schedule_due)", "export(ledgr_select_lowest)",
+    "export(ledgr_select_top)", "export(ledgr_strategy_result)",
+    "export(ledgr_target_adjust)"
+  ), method = "radix"), collapse = ";")
   testthat::expect_identical(exports(ns_lines), expected_exports)
   testthat::expect_identical(default_model(ledgr_run), frozen[["D12e"]])
   changed <- desc
@@ -564,7 +576,14 @@ testthat::test_that("[WS4a D12a-c D12e] identity, dependency, export and compile
   }))))
   stored <- read(runs$config_json)
   testthat::expect_identical(ledgr:::config_hash(stored), runs$config_hash)
-  testthat::expect_identical(fields(stored), fields(read(gsub("\\\\", "\\", config_json, fixed = TRUE))))
+  recorded_fields <- fields(read(gsub("\\\\", "\\", config_json, fixed = TRUE)))
+  testthat::expect_identical(
+    fields(stored),
+    sort(c(
+      recorded_fields,
+      "strategy_state", "strategy_state/fields", "strategy_state/rule_version"
+    ), method = "radix")
+  )
   added <- utils::modifyList(stored, list(engine = list(added_field = 1)))
   testthat::expect_false(identical(fields(added), fields(stored)))
   testthat::expect_false(identical(ledgr:::config_hash(added), runs$config_hash))
@@ -2400,7 +2419,9 @@ ws4a_json_shapes <- function(e) {
   shape <- function(x) paste0(ws4a_head(x), "(", paste(vapply(as.list(x)[-1L], function(y) {
     if (is.call(y) && ws4a_head(y) == "list") paste0("list(", paste(names(y)[-1L], collapse = ","), ")") else ws4a_txt(y)
   }, ""), collapse = "; "), ")")
-  vapply(Filter(function(x) grepl("json|JSON", ws4a_head(x)), ws4a_calls(e)), shape, "")
+  vapply(Filter(function(x) {
+    grepl("json|JSON", ws4a_head(x)) || identical(ws4a_head(x), "ledgr_strategy_state_encode")
+  }, ws4a_calls(e)), shape, "")
 }
 ws4a_d6_routed <- c(
   ledgr_fold_stage_observe_settle = "ledgr_availability_detail_json(affected$details[[k]])",
@@ -2409,7 +2430,7 @@ ws4a_d6_routed <- c(
   ledgr_fold_stage_plan = "canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash))",
   ledgr_fold_stage_commit = paste0("canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash,intended_gross_exposure,",
     "post_risk_gross_exposure,actual_gross_exposure,exposure_basis))"),
-  ledgr_fold_stage_commit = "canonical_json(state_update)"
+  ledgr_fold_stage_commit = "ledgr_strategy_state_encode(next_state; services$strategy_state_declaration; context_ids)"
 )
 ws4a_d6_hits <- function(fns) {
   unlist(lapply(names(fns), function(nm) {
@@ -2428,7 +2449,10 @@ testthat::test_that("[WS4a D6] the fold stages encode JSON only at the routed si
   hit <- function(nm, stmt) length(ws4a_d6_hits(ws4a_inject_into(fns, nm, stmt))) > 0L
   testthat::expect_true(hit("ledgr_fold_stage_apply", "meta_json <- canonical_json(list(fee = fill$fee))"))
   testthat::expect_true(hit("ledgr_fold_stage_plan", "canonical_json(list(intent_reason = x))"))
-  testthat::expect_true(hit("ledgr_fold_stage_commit", "canonical_json(state_update)"))
+  testthat::expect_true(hit(
+    "ledgr_fold_stage_commit",
+    "ledgr_strategy_state_encode(state_update, services$strategy_state_declaration, context_ids)"
+  ))
 })
 
 # The published blocks and legs of the dense fixture: its durable run

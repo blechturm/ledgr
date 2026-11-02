@@ -404,14 +404,17 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
 
   stop_strategy <- function(ctx, params) {
     decision_day <- substr(ctx$ts_utc, 1L, 10L)
-    state <- ctx$state_prev
-    state$dates <- c(state$dates, decision_day)
-    state$due <- c(
-      state$due,
-      ledgr_schedule_due(ctx, ledgr_schedule_weekday("wednesday"))
-    )
+    dates <- paste(c(ctx$state$dates, decision_day), collapse = ",")
+    due <- paste(c(
+      ctx$state$due,
+      as.character(ledgr_schedule_due(ctx, ledgr_schedule_weekday("wednesday")))
+    ), collapse = ",")
+    dates <- sub("^,", "", dates)
+    due <- sub("^,", "", due)
     targets <- if (identical(decision_day, "2021-01-05")) ctx$flat() else ctx$hold()
-    list(targets = targets, state_update = state)
+    ledgr_strategy_result(
+      targets, dates = dates, due = due
+    )
   }
   fixture <- ws42_history_fixture(
     strategy = stop_strategy,
@@ -420,15 +423,21 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
       cash = 1000,
       positions = c(AAA = 1),
       cost_basis = c(AAA = 11)
-    )
+    ),
+    portfolio_state = list(dates = "", due = "")
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   run <- ledgr_run(fixture$exp, run_id = "ws16-mixed-cadence-stop")
   on.exit(close(run), add = TRUE, after = FALSE)
   fills <- ledgr_results(run, "fills")
   seen <- availability_last_state(run)
-  testthat::expect_identical(length(seen$dates), length(fixture$days))
-  testthat::expect_identical(seen$due, as.integer(format(fixture$days, "%u")) == 3L)
+  testthat::expect_identical(
+    strsplit(seen$dates, ",", fixed = TRUE)[[1L]], as.character(fixture$days)
+  )
+  testthat::expect_identical(
+    strsplit(seen$due, ",", fixed = TRUE)[[1L]] == "TRUE",
+    as.integer(format(fixture$days, "%u")) == 3L
+  )
   testthat::expect_identical(fills$side, "SELL")
   testthat::expect_identical(as.Date(fills$ts_utc), as.Date("2021-01-06"))
 

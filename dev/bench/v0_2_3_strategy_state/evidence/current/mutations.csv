@@ -1,0 +1,3 @@
+"mutation","applied","hits","blocks","failed_blocks","detected"
+"D5_state_declaration",TRUE,"1","declared state preserves type, missingness and axis","[LTB-0532] declared state preserves type, missingness and axis || [LTB-0533] helper patches and raw replacements stay distinct || [LTB-0534] unchanged cursors resume without replay or encoding || [LTB-0538] walk-forward resets declared state for every run",TRUE
+"D5_state_checkpoint",TRUE,"1","unchanged cursors resume without replay or encoding","[LTB-0534] unchanged cursors resume without replay or encoding",TRUE

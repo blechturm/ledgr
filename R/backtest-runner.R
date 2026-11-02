@@ -813,14 +813,15 @@ ledgr_run_fold_impl <- function(config,
   ledgr_run_resume_preflight(is_resume, strategy_preflight)
   output_handler$record_run_status("RUNNING", NA_character_)
 
-  state_prev_mem <- list(
-    asset_state = stats::setNames(
-      rep(list(list()), length(instrument_ids)),
-      instrument_ids
-    )
+  strategy_state_declaration <- ledgr_strategy_state_from_identity(cfg$strategy_state)
+  strategy_state_mem <- list(
+    values = ledgr_strategy_state_defaults(strategy_state_declaration, instrument_ids),
+    axis = instrument_ids
   )
   if (is_resume) {
-    state_prev_mem <- ledgr_strategy_state_prev(con, run_id, resume_iso)
+    strategy_state_mem <- ledgr_strategy_state_restore(
+      con, run_id, resume_iso, strategy_state_declaration, instrument_ids
+    )
   }
   current_positions <- state_env$current$positions
   full_positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
@@ -856,7 +857,8 @@ ledgr_run_fold_impl <- function(config,
     checkpoint_every = checkpoint_every,
     telemetry_stride = telemetry_stride,
     state = state_env$current,
-    state_prev = state_prev_mem,
+    strategy_state = strategy_state_mem,
+    strategy_state_declaration = strategy_state_declaration,
     position_facts = position_facts,
     history_substrate = history_substrate,
     feature_defs = feature_defs,
@@ -1031,32 +1033,6 @@ ledgr_pulse_timestamps <- function(con, instrument_ids, start_ts_utc, end_ts_utc
   } else {
     as.POSIXct(ts_raw, tz = "UTC")
   }
-}
-
-ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
-  }
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-
-  ts_iso <- ledgr_normalize_ts_utc(ts_utc)
-
-  row <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT state_json
-    FROM strategy_state
-    WHERE run_id = ? AND ts_utc < ?
-    ORDER BY ts_utc DESC
-    LIMIT 1
-    ",
-    params = list(run_id, ts_iso)
-  )
-
-  if (nrow(row) == 0) return(NULL)
-  ledgr_json_read_nested(row$state_json[[1]])
 }
 
 ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc,
@@ -1238,7 +1214,6 @@ ledgr_strategy_from_config <- function(cfg) {
   if (identical(id, "hold_zero")) return(strategy(ledgr_strategy_hold_zero, params))
   if (identical(id, "echo")) return(strategy(ledgr_strategy_echo, params))
   if (identical(id, "ts_rule")) return(strategy(ledgr_strategy_ts_rule, params))
-  if (identical(id, "state_prev")) return(strategy(ledgr_strategy_state_prev_targets, params))
   if (identical(id, "functional")) {
     key <- params$strategy_key
     signature <- params$call_signature

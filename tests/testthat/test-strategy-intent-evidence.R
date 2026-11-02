@@ -18,7 +18,7 @@ intent_evidence_bars <- function(days = 8L, session_close = FALSE) {
 }
 
 intent_evidence_strategy <- function(ctx, params) {
-  n <- if (is.null(ctx$state_prev$n)) 1L else ctx$state_prev$n + 1L
+  n <- ctx$state$n + 1L
   targets <- if (n == 1L) {
     stats::setNames(rep(params$quantity, length(ctx$universe)), ctx$universe)
   } else {
@@ -76,7 +76,7 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
   old_option <- options(ledgr.test.intent.record = TRUE)
   on.exit(options(old_option), add = TRUE)
   strategy <- function(ctx, params) {
-    n <- if (is.null(ctx$state_prev$n)) 1L else ctx$state_prev$n + 1L
+    n <- ctx$state$n + 1L
     targets <- if (n == 1L) {
       stats::setNames(rep(params$quantity, length(ctx$universe)), ctx$universe)
     } else {
@@ -96,6 +96,7 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
   exp <- ledgr_experiment(
     snapshot,
     strategy,
+    portfolio_state = list(n = 0L),
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
@@ -216,6 +217,7 @@ testthat::test_that("[LTB-0491] availability explanations join intent by decisio
     snapshot,
     intent_evidence_strategy,
     universe = ledgr_universe_members("U"),
+    portfolio_state = list(n = 0L),
     valuation_policy = ledgr_valuation_stale(1L),
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
@@ -322,7 +324,7 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
   prior_interrupt <- getOption("ledgr.interrupt")
   on.exit(options(ledgr.interrupt = prior_interrupt), add = TRUE)
   interrupting <- function(ctx, params) {
-    n <- if (is.null(ctx$state_prev$n)) 1L else ctx$state_prev$n + 1L
+    n <- ctx$state$n + 1L
     if (n == 2L && isTRUE(params$interrupt)) options(ledgr.interrupt = TRUE)
     list(
       targets = ctx$hold(),
@@ -330,7 +332,10 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
       intent_reason = paste0("pulse_", n)
     )
   }
-  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, interrupting, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot,
+    interrupting, portfolio_state = list(n = 0L),
+    cost_model = ledgr_cost_zero()
+  )
   options(ledgr.interrupt = FALSE)
   first <- ledgr_run(
     exp,

@@ -14,32 +14,11 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
   snapshot <- availability_runtime_fixture(days = 4L, membership = membership)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
-    step <- if (is.null(ctx$state_prev$step)) 1L else as.integer(ctx$state_prev$step) + 1L
-    history[[length(history) + 1L]] <- list(
-      universe = ctx$universe,
-      members = ctx$members,
-      portfolio = ctx$state_prev$portfolio,
-      asset_empty = length(ctx$state_prev$asset_state) == 0L ||
-        ("AAA" %in% names(ctx$state_prev$asset_state) &&
-         length(ctx$state_prev$asset_state$AAA) == 0L),
-      plane_names = intersect(
-        c(
-          "member", "held", "buyable", "holding_value"
-        ),
-        names(ctx)
-      )
-    )
-    asset_state <- stats::setNames(vector("list", length(ctx$universe)), ctx$universe)
-    for (id in ctx$universe) asset_state[[id]] <- list(seen = TRUE)
-    list(
-      targets = stats::setNames(numeric(length(ctx$universe)), ctx$universe),
-      state_update = list(
-        portfolio = "kept",
-        step = step,
-        history = history,
-        asset_state = asset_state
-      )
+    ledgr_strategy_result(
+      stats::setNames(numeric(length(ctx$universe)), ctx$universe),
+      portfolio = "kept",
+      step = ctx$state$step + 1L,
+      asset_value = 1
     )
   }
   exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
@@ -47,32 +26,19 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
     strategy,
     universe = ledgr_universe_members("dynamic"),
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    asset_state = list(asset_value = NA_real_),
+    portfolio_state = list(portfolio = "kept", step = 0L)
   )
   bt <- ledgr_run(exp)
   on.exit(close(bt), add = TRUE)
-  final_state <- availability_last_state(bt)
-  seen <- final_state$history
-  # The fixture declares four membership states, ending with a second removal.
-  testthat::expect_identical(
-    lapply(seen, `[[`, "universe"),
-    list("AAA", list(), "AAA", list())
-  )
-  testthat::expect_identical(
-    lapply(seen, `[[`, "members"),
-    list("AAA", list(), "AAA", list())
-  )
-  testthat::expect_identical(final_state$step, 4L)
-  testthat::expect_identical(seen[[2L]]$portfolio, "kept")
-  testthat::expect_true(seen[[3L]]$asset_empty)
-  testthat::expect_identical(
-    seen[[1L]]$plane_names,
-    c(
-      "member", "held", "target_restricted", "target_restriction_reason",
-      "admissible", "priced", "mark_age"
-    )
-  )
-  testthat::expect_equal(nrow(availability_state_rows(bt)), 4L)
+  rows <- availability_state_rows(bt)
+  decoded <- lapply(rows$state_json, ledgr:::ledgr_strategy_state_decode,
+    declaration = exp$strategy_state)
+  testthat::expect_identical(lapply(decoded, `[[`, "axis"), list("AAA", character(), "AAA", character()))
+  testthat::expect_identical(vapply(decoded, function(x) x$values$step, integer(1L)), 1:4)
+  testthat::expect_identical(decoded[[4L]]$values$portfolio, "kept")
+  testthat::expect_equal(nrow(rows), 4L)
 })
 
 # ledgr-test-profile: review
@@ -165,37 +131,18 @@ testthat::test_that("provider orders members before stable held nonmembers", {
   }
 })
 
-testthat::test_that("asset state prunes exits, resets re-entry, and fails closed", {
-  state <- list(
-    portfolio = "kept",
-    asset_state = list(AAA = list(seen = TRUE), EXIT = list(old = TRUE))
+testthat::test_that("asset state prunes exits and defaults re-entry", {
+  declaration <- ledgr:::ledgr_strategy_state_normalize(
+    asset_state = list(seen = NA), portfolio_state = list(step = 0L)
   )
-  pruned <- ledgr:::ledgr_fold_asset_state_normalize(state, "AAA", drop_exited = TRUE)
-  testthat::expect_identical(names(pruned$asset_state), "AAA")
-  testthat::expect_identical(pruned$asset_state$AAA, list(seen = TRUE))
-  testthat::expect_identical(pruned$portfolio, "kept")
-
-  empty <- ledgr:::ledgr_fold_asset_state_normalize(pruned, character(), drop_exited = TRUE)
-  testthat::expect_identical(
-    empty$asset_state,
-    stats::setNames(vector("list", 0L), character())
-  )
-  reentered <- ledgr:::ledgr_fold_asset_state_normalize(empty, "EXIT", drop_exited = TRUE)
-  testthat::expect_identical(reentered$asset_state, list(EXIT = list()))
-  testthat::expect_identical(reentered$portfolio, "kept")
-
-  testthat::expect_error(
-    ledgr:::ledgr_fold_asset_state_normalize(state, "AAA"),
-    class = "ledgr_invalid_strategy_state"
-  )
-  testthat::expect_error(
-    ledgr:::ledgr_fold_asset_state_normalize(list(asset_state = 1), "AAA"),
-    class = "ledgr_invalid_strategy_state"
-  )
-  testthat::expect_error(
-    ledgr:::ledgr_fold_asset_state_normalize(list(asset_state = list(list())), "AAA"),
-    class = "ledgr_invalid_strategy_state"
-  )
+  state <- list(seen = c(AAA = TRUE, EXIT = TRUE), step = 2L)
+  pruned <- ledgr:::ledgr_strategy_state_align(state, declaration, c("AAA", "EXIT"), "AAA")
+  testthat::expect_identical(pruned$seen, c(AAA = TRUE))
+  empty <- ledgr:::ledgr_strategy_state_align(pruned, declaration, "AAA", character())
+  testthat::expect_identical(empty$seen, stats::setNames(logical(), character()))
+  reentered <- ledgr:::ledgr_strategy_state_align(empty, declaration, character(), "EXIT")
+  testthat::expect_identical(reentered$seen, c(EXIT = NA))
+  testthat::expect_identical(reentered$step, 2L)
 })
 
 testthat::test_that("prepared valuation advances finite closes without rescanning prefixes", {

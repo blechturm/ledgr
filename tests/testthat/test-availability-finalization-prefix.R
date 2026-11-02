@@ -225,12 +225,13 @@ testthat::test_that("fixed-basket resume commits the valued prefix and resumes i
     )) {
       options(ledgr.interrupt = TRUE)
     }
-    list(targets = ctx$flat(), state_update = list(ts_utc = ctx$ts_utc))
+    ledgr_strategy_result(ctx$flat(), ts_utc = ctx$ts_utc)
   }
   experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(ts_utc = "")
   )
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L

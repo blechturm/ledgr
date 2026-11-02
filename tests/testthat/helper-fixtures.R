@@ -237,6 +237,11 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
   )
   cfg$identity_rule_version <- 5L
   cfg$history <- ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+  if (is.null(cfg$strategy_state)) {
+    cfg$strategy_state <- ledgr:::ledgr_strategy_state_identity(
+      ledgr:::ledgr_strategy_state_normalize()
+    )
+  }
   # A seeded configuration names its pulse-seed rule (LDG-3159).
   if (is.list(cfg$engine) && !is.null(cfg$engine$seed)) {
     cfg$engine$pulse_seed_rule <- ledgr:::ledgr_pulse_seed_rule_version
@@ -271,6 +276,24 @@ ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
       if (nrow(row) == 1L) cfg$data$snapshot_hash <- row$snapshot_hash[[1L]]
     }
   }
+  cfg
+}
+
+ledgr_test_state_counter_strategy <- function(ctx, params) {
+  step <- ctx$state$step + 1L
+  ledgr_strategy_result(
+    stats::setNames(rep(as.numeric(step), length(ctx$universe)), ctx$universe),
+    step = step
+  )
+}
+
+ledgr_test_use_state_counter <- function(cfg) {
+  cfg$strategy <- ledgr:::ledgr_strategy_spec(ledgr_test_state_counter_strategy)
+  cfg$strategy_state <- ledgr:::ledgr_strategy_state_identity(
+    ledgr:::ledgr_strategy_state_normalize(
+      portfolio_state = list(step = 0L)
+    )
+  )
   cfg
 }
 
@@ -362,6 +385,8 @@ ledgr_test_run <- function(snapshot = NULL,
                            run_id = NULL,
                            data = NULL,
                            corporate_action_policy = ledgr_corporate_actions_research(),
+                           asset_state = list(),
+                           portfolio_state = list(),
                            ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
@@ -396,7 +421,9 @@ ledgr_test_run <- function(snapshot = NULL,
     cost_model = cost_model,
     risk_chain = risk_chain,
     execution_mode = control$execution_mode %||% execution_mode,
-    corporate_action_policy = corporate_action_policy
+    corporate_action_policy = corporate_action_policy,
+    asset_state = asset_state,
+    portfolio_state = portfolio_state
   )
   # Test-only engine controls exercise telemetry and early-exit paths without
   # adding those diagnostics knobs to the public experiment surface.

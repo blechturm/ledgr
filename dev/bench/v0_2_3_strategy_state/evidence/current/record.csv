@@ -1,0 +1,5 @@
+"case","pulses","cursor_rows","payload_encodes","payload_bytes","marker_bytes","elapsed_seconds"
+"no_state",500,500,0,0,18500,2.78
+"declared_unchanged",500,500,0,0,18500,2.69
+"raw_identical",500,500,0,0,18500,1.66
+"changed_every_pulse",500,500,500,51892,0,1.53

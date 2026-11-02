@@ -189,7 +189,8 @@ pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = instruments,
   ts_utc = ledgr_utc("2019-03-12 16:00:00"),
-  features = features
+  features = features,
+  portfolio_state = list(decisions_seen = 0L)
 )
 
 tibble(
@@ -531,10 +532,9 @@ Scheduling and strategy memory solve different problems. The schedule decides
 from one decision to the next. This final version counts its decisions so the
 difference stays visible.
 
-Return `state_update` beside the targets. At the next decision it arrives as
-`ctx$state_prev`; on the first decision,
-`ctx$state_prev$decisions_seen` is `NULL`.
-Returning a bare target keeps the previous state unchanged. State records
+Declare the memory once on the experiment, then read its typed default or
+current value from `ctx$state`. `ledgr_strategy_result()` patches the named
+field; returning a bare target keeps the previous state unchanged. State records
 decisions, not fills: a target returned at one pulse still fills at the next
 open.
 
@@ -542,8 +542,7 @@ open.
 #| label: weekly-trend-momentum
 
 weekly_trend_momentum <- function(ctx, params) {
-  decisions_seen <- ctx$state_prev$decisions_seen
-  if (is.null(decisions_seen)) decisions_seen <- 0L
+  decisions_seen <- ctx$state$decisions_seen
 
   momentum <- ctx$return_5
   trend <- ctx$sma_10
@@ -559,9 +558,9 @@ weekly_trend_momentum <- function(ctx, params) {
       ledgr_target_rebalance(ctx, weights = _, invest_fraction = params$invested)
   }
 
-  list(
-    targets = targets,
-    state_update = list(decisions_seen = decisions_seen + 1L)
+  ledgr_strategy_result(
+    targets,
+    decisions_seen = decisions_seen + 1L
   )
 }
 
@@ -597,6 +596,7 @@ weekly_run <- ledgr_experiment(
   strategy = weekly_trend_momentum,
   schedule = ledgr_schedule_week_start(),
   features = features,
+  portfolio_state = list(decisions_seen = 0L),
   opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 ) |>
@@ -756,10 +756,9 @@ you may invest in changes too; `vignette("survivorship-bias", package =
   character `keep`, or set `index_leavers = "keep"` or `"sell"`. When kept
   exposure makes total and remaining capital differ, choose the intended
   `capital_base` explicitly.
-- `ctx$state_prev` also carries `asset_state`, one entry per instrument in
-  `ctx$universe` for state that belongs to that instrument. An instrument that
-  leaves the universe loses its entry; `?ledgr_strategy_context` states the
-  rules.
+- A declared `asset_state` field appears in `ctx$state` as one typed vector
+  aligned to `ctx$universe`. A departed instrument loses its value; a newly
+  visible or re-entering instrument starts from the declared default.
 
 Neither membership nor the `ctx$buyable` mask guarantees that an order fills at the
 next open.

@@ -460,6 +460,7 @@ ledgr_walk_forward_base_config <- function(exp, meta) {
     valuation_policy = exp$valuation_policy,
     corporate_action_policy = exp$corporate_action_policy,
     history_policy = exp$history_policy,
+    strategy_state = exp$strategy_state,
     price_basis = exp$data_identity$price_basis
   )
 }

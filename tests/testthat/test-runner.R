@@ -222,8 +222,9 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
       cost_plan_json = ledgr:::ledgr_cost_plan_json(cost)
     ),
     features = list(enabled = FALSE, defs = list()),
-    strategy = list(id = "state_prev", params = list())
+    strategy = list(id = "hold_zero", params = list())
   )
+  cfg <- ledgr_test_use_state_counter(cfg)
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars)
 
   run_id <- "run-state-prev"
@@ -243,7 +244,10 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
     "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
     params = list(run_id)
   )
-  steps <- vapply(states$state_json, function(x) ledgr:::ledgr_json_read_nested(x)$step, numeric(1))
+  declaration <- ledgr:::ledgr_strategy_state_from_identity(cfg$strategy_state)
+  steps <- vapply(states$state_json, function(x) {
+    ledgr:::ledgr_strategy_state_decode(x, declaration)$values$step
+  }, integer(1L))
   testthat::expect_identical(states$ts_utc, c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z", "2020-01-04T00:00:00Z"))
   testthat::expect_identical(as.integer(steps), c(1L, 2L, 3L, 4L))
 })
@@ -333,8 +337,9 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
         risk_plan_json = ledgr:::ledgr_risk_plan_json(risk)
       ),
       features = list(enabled = TRUE, defs = list(list(id = "sma_2"))),
-      strategy = list(id = "state_prev", params = list())
+      strategy = list(id = "hold_zero", params = list())
     )
+    cfg <- ledgr_test_use_state_counter(cfg)
     ledgr_test_snapshot_backed_config(cfg, bars, "finalization-recovery-snapshot")
   }
   read_artifacts <- function(path, run_id) {

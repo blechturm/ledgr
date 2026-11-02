@@ -501,7 +501,7 @@ testthat::test_that("ledgr_run validates params before execution", {
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0283] dense resume carries scalar strategy state", {
+testthat::test_that("[LTB-0283] dense resume carries a typed portfolio scalar", {
   bars <- data.frame(
     instrument_id = "AAA",
     ts_utc = as.POSIXct("2024-01-01", tz = "UTC") + 86400 * 0:2,
@@ -517,8 +517,9 @@ testthat::test_that("[LTB-0283] dense resume carries scalar strategy state", {
   experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
-      list(targets = ctx$hold(), state_update = 5)
+      list(targets = ctx$hold(), state_update = list(value = 5))
     },
+    portfolio_state = list(value = 0),
     cost_model = ledgr_cost_zero()
   )
   old_options <- options(ledgr.interrupt = TRUE)
@@ -529,20 +530,7 @@ testthat::test_that("[LTB-0283] dense resume carries scalar strategy state", {
   resumed <- ledgr_run(experiment, run_id = "dense-scalar-state")
   on.exit(close(resumed), add = TRUE)
 
-  states <- DBI::dbGetQuery(
-    get_connection(snapshot),
-    paste0(
-      "SELECT state_json FROM strategy_state ",
-      "WHERE run_id = 'dense-scalar-state' ORDER BY ts_utc"
-    )
-  )
-  testthat::expect_equal(nrow(states), 3L)
-  testthat::expect_identical(
-    unname(vapply(
-      states$state_json,
-      ledgr:::ledgr_json_read_nested,
-      numeric(1L)
-    )),
-    rep(5, 3L)
-  )
+  states <- availability_state_values(resumed)
+  testthat::expect_equal(length(states), 3L)
+  testthat::expect_identical(vapply(states, function(state) state$value, numeric(1L)), rep(5, 3L))
 })

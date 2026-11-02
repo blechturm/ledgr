@@ -290,7 +290,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   }
   testthat::expect_match(
     help[[5L]],
-    "state_prev = list(pulses_seen = 1)",
+    "portfolio_state = list(pulses_seen = 1L)",
     fixed = TRUE
   )
 })
@@ -754,10 +754,10 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "it never\\s+registers a feature for you")
     testthat::expect_match(strategy_authoring_doc, "ledgr_run_compare(snapshot)", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Schedule Decisions And Keep Strategy Memory", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "`ctx$state_prev$decisions_seen` is `NULL`", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "ctx$state$decisions_seen", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "\n## Remembering Between Pulses\n", fixed = TRUE)
-    testthat::expect_match(strategy_development_doc, "check each\\s+field for `NULL` before using it")
-    testthat::expect_match(strategy_development_doc, "`?ledgr_strategy_context` states the full rules", fixed = TRUE)
+    testthat::expect_match(strategy_development_doc, "a typo fails instead of quietly returning `NULL`", fixed = TRUE)
+    testthat::expect_match(strategy_development_doc, "`?ledgr_strategy_context` states the full typed", fixed = TRUE)
     # Strategy Basics teaches whole-vector rules, not the scalar loop its own
     # tip calls slow, and keeps accelerator internals out of the first article.
     testthat::expect_no_match(strategy_development_doc, "for (id in ctx$universe)", fixed = TRUE)
@@ -773,10 +773,10 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "aliases are the primary names", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "### Keep A Position While Rebalancing The Rest", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "This is exactly the target a backtest would receive", fixed = TRUE)
-    testthat::expect_match(context_help, "its\\s+\\\\code\\{asset_state\\}")
-    testthat::expect_match(context_help, "asset_state_from_first_pulse", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "Returning a bare target keeps the previous state unchanged.", fixed = TRUE)
-    testthat::expect_match(strategy_authoring_doc, "state_update = list(decisions_seen = decisions_seen + 1L)", fixed = TRUE)
+    testthat::expect_match(context_help, "Asset fields are named vectors aligned to")
+    testthat::expect_match(context_help, "\\code\\{ledgr_strategy_result\\(\\)\\} returns a patch")
+    testthat::expect_match(strategy_authoring_doc, "returning a bare target keeps the previous state unchanged.", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "decisions_seen = decisions_seen + 1L", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Read whole vectors, not one instrument at a time", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "ledgr_scalar_accessor_loop", fixed = TRUE)
     testthat::expect_no_match(strategy_authoring_doc, "The optimization manual carries the measurements", fixed = TRUE)

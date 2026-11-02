@@ -64,60 +64,6 @@ ledgr_context_preparation_increment <- function(counts, name) {
   invisible(NULL)
 }
 
-ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FALSE) {
-  if (is.null(state_value)) return(NULL)
-  # Scalar or otherwise JSON-safe generic strategy memory has no per-asset
-  # axis to normalize. The `asset_state` contract applies only to lists that
-  # explicitly declare that field.
-  if (!is.list(state_value)) return(state_value)
-  asset_state <- state_value$asset_state
-  # Generic strategy memory is not per-asset state. Preserve it byte-for-byte;
-  # only strategies that declare `asset_state` opt into axis normalization.
-  if (is.null(asset_state)) return(state_value)
-  if (!is.list(asset_state)) {
-    rlang::abort(
-      "`state_update$asset_state` must be a named list.",
-      class = "ledgr_invalid_strategy_state"
-    )
-  }
-  if (length(asset_state) > 0L &&
-      (is.null(names(asset_state)) || anyNA(names(asset_state)) ||
-       any(!nzchar(names(asset_state))) || anyDuplicated(names(asset_state)))) {
-    rlang::abort(
-      "`state_update$asset_state` must use unique non-empty stable instrument IDs.",
-      class = "ledgr_invalid_strategy_state"
-    )
-  }
-  extra <- setdiff(names(asset_state), axis)
-  if (length(extra) > 0L && !isTRUE(drop_exited)) {
-    rlang::abort(
-      sprintf(
-        "`state_update$asset_state` contains IDs outside the current axis: %s.",
-        paste(extra, collapse = ", ")
-      ),
-      class = "ledgr_invalid_strategy_state"
-    )
-  }
-  if (identical(names(asset_state), axis)) {
-    return(state_value)
-  }
-  # One positional match instead of a named assignment per axis ID; an entry
-  # that is missing or NULL becomes list().
-  normalized <- stats::setNames(rep(list(list()), length(axis)), axis)
-  if (length(asset_state) > 0L) {
-    idx <- match(axis, names(asset_state))
-    present <- !is.na(idx)
-    # Only zero-length entries can be NULL; is.null() runs on those alone.
-    empty <- which(lengths(asset_state) == 0L)
-    is_null <- logical(length(asset_state))
-    is_null[empty] <- vapply(asset_state[empty], is.null, logical(1))
-    present[present] <- !is_null[idx[present]]
-    normalized[present] <- asset_state[idx[present]]
-  }
-  state_value$asset_state <- normalized
-  state_value
-}
-
 ledgr_fold_target_changed <- function(target, reference,
                                       tolerance = sqrt(.Machine$double.eps)) {
   target <- as.numeric(target)
@@ -601,11 +547,13 @@ ledgr_fold_stage_observe_settle <- function(
     }
     fold_state$frozen_set <- frozen_now
     if (!identical(context_ids, fold_state$state_axis)) {
-      fold_state$state_prev <- ledgr_fold_asset_state_normalize(
-        fold_state$state_prev,
-        context_ids,
-        drop_exited = TRUE
+      fold_state$strategy_state <- ledgr_strategy_state_align(
+        fold_state$strategy_state,
+        services$strategy_state_declaration,
+        fold_state$state_axis %||% character(),
+        context_ids
       )
+      fold_state$state_axis_changed <- !is.null(fold_state$state_axis)
       fold_state$state_axis <- context_ids
     }
   }
@@ -856,7 +804,7 @@ ledgr_fold_stage_decide <- function(
     equity = fold_state$cash + observation$positions_value,
     seed = services$execution_seed,
     pulse_seed = ledgr_pulse_seed_at(services, pulse_idx),
-    state_prev = fold_state$state_prev,
+    state = ledgr_strategy_state_view(fold_state$strategy_state),
     .safety_state = "GREEN",
     .schedule_query = function(schedule) services$schedule_query(schedule, pulse_idx)
   )
@@ -1530,23 +1478,43 @@ ledgr_fold_stage_commit <- function(
     ts
   )
 
-  if (is.null(state_update)) {
-    # The carried state is already normalized for this pulse's axis.
-    state_update <- fold_state$state_prev
+  previous_state <- fold_state$strategy_state
+  if (inherits(state_update, "ledgr_strategy_state_reset")) {
+    next_state <- ledgr_strategy_state_defaults(
+      services$strategy_state_declaration, context_ids
+    )
+  } else if (inherits(state_update, "ledgr_strategy_state_patch")) {
+    next_state <- ledgr_strategy_state_apply_values(
+      previous_state, unclass(state_update), services$strategy_state_declaration,
+      context_ids, patch = TRUE
+    )
+  } else if (is.null(state_update)) {
+    next_state <- previous_state
   } else {
-    state_update <- ledgr_fold_asset_state_normalize(state_update, context_ids)
+    next_state <- ledgr_strategy_state_apply_values(
+      previous_state, state_update, services$strategy_state_declaration,
+      context_ids, patch = FALSE
+    )
   }
+  changed <- isTRUE(fold_state$state_axis_changed) ||
+    !ledgr_strategy_state_equal(next_state, previous_state)
   fold_state$state_axis <- context_ids
-  fold_state$state_prev <- state_update
-  # Every sink validates the state at the same pulse and precedence. The
-  # durable sink persists these bytes; the memory sink deliberately discards
-  # them after using the same serializability boundary.
+  fold_state$state_axis_changed <- FALSE
+  fold_state$strategy_state <- next_state
+  # The existing row is the resume cursor on every completed pulse. A changed
+  # state carries one complete typed checkpoint; an unchanged pulse writes the
+  # constant marker without invoking the codec.
   if (sample_telemetry) sample_start <- ledgr_time_now()
-  state_json <- canonical_json(state_update)
+  state_json <- ledgr_strategy_state_cursor_marker
+  if (changed && isTRUE(output_handler$persists_strategy_state)) {
+    state_json <- ledgr_strategy_state_encode(
+      next_state, services$strategy_state_declaration, context_ids
+    )
+  }
   if (isTRUE(output_handler$persists_strategy_state)) {
     # This row is also the durable resume cursor, so even a strategy with no
-    # user state records every completed pulse. User state may be changed in
-    # place and is therefore serialized on every pulse as well.
+    # user state records every completed pulse. Only changed typed state is
+    # encoded; an unchanged cursor carries the constant marker above.
     if (identical(services$event_mode, "live")) {
       output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)
     } else {
@@ -1734,7 +1702,8 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     cash = state$cash,
     positions = state$positions,
     lot_state = state$lot_state,
-    state_prev = execution$state_prev,
+    strategy_state = execution$strategy_state$values,
+    state_axis = execution$strategy_state$axis,
     position_facts = execution$position_facts,
     event_seq = as.integer(execution$event_seq_start),
     affected_exposure = affected,
@@ -1809,6 +1778,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     strategy_params = strategy_params,
     strategy_call_signature = strategy_call_signature,
     strategy_is_functional = strategy_is_functional,
+    strategy_state_declaration = execution$strategy_state_declaration,
     availability_provider = availability_provider,
     valuation_state = valuation_state,
     corporate_action_plan = corporate_action_plan,
@@ -2037,7 +2007,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     full_run = fold_state$full_run,
     telemetry = telemetry,
     state = ledgr_carrier_result_state(fold_state, instrument_ids),
-    state_prev = fold_state$state_prev,
+    strategy_state = ledgr_strategy_state_view(fold_state$strategy_state),
     next_event_seq = fold_state$event_seq,
     # The frozen valued prefix for finalisation and the inline summary.
     equity_facts = ledgr_fold_equity_prefix(fold_state$equity_facts)

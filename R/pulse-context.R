@@ -8,7 +8,7 @@ ledgr_pulse_context <- function(run_id,
                                 equity,
                                 seed = NULL,
                                 pulse_seed = NULL,
-                                state_prev = NULL,
+                                state = ledgr_strategy_state_view(list()),
                                 safety_state = "GREEN") {
   ctx <- list(
     run_id = run_id,
@@ -21,7 +21,7 @@ ledgr_pulse_context <- function(run_id,
     equity = equity,
     seed = seed,
     pulse_seed = pulse_seed,
-    state_prev = state_prev,
+    state = state,
     members = universe,
     .safety_state = safety_state
   )
@@ -52,7 +52,7 @@ ledgr_pulse_context_reserved_fields <- function() {
   unique(c(
     "run_id", "ts_utc", "universe", "members", "bars", "bar",
     "feature_table", "features_wide", "cash", "equity", "seed",
-    "pulse_seed", "state_prev", "state", "flat", "hold",
+    "pulse_seed", "state", "flat", "hold",
     ledgr_pulse_context_asset_fields(), ledgr_pulse_context_retired_fields()
   ))
 }
@@ -998,11 +998,8 @@ ledgr_validate_pulse_context <- function(ctx) {
   validate_optional_seed(ctx$seed, "seed")
   validate_optional_seed(ctx$pulse_seed, "pulse_seed")
 
-  if (!is.null(ctx$state_prev)) {
-    if (!(is.list(ctx$state_prev) || (is.character(ctx$state_prev) && length(ctx$state_prev) == 1))) {
-      rlang::abort("PulseContext `state_prev` must be NULL or a JSON-safe list (or JSON string).", class = "ledgr_invalid_pulse_context")
-    }
-    invisible(canonical_json(ctx$state_prev))
+  if (!inherits(ctx$state, "ledgr_strategy_state_view")) {
+    rlang::abort("PulseContext `state` must be a declared strategy-state view.", class = "ledgr_invalid_pulse_context")
   }
 
   if (!is.character(ctx$.safety_state) || length(ctx$.safety_state) != 1 || is.na(ctx$.safety_state) || !nzchar(ctx$.safety_state)) {

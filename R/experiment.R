@@ -167,6 +167,9 @@ print.ledgr_opening <- function(x, ...) {
 #' @param schedule Optional declaration from a `ledgr_schedule_*()` helper.
 #'   When supplied, the outer scheduler invokes the strategy only on due
 #'   pulses. Omit it for every-pulse or mixed-cadence callbacks.
+#' @param asset_state,portfolio_state Flat named lists of typed scalar defaults
+#'   for declared strategy state. Asset fields are exposed as ID-named vectors
+#'   over each pulse's decision axis; portfolio fields remain scalar.
 #' @param features List of `ledgr_indicator`/`ledgr_indicator_bundle` objects, a
 #'   single indicator or bundle, or a `ledgr_feature_map`. Compatibility note:
 #'   `function(params)` feature factories remain supported for old flat-grid and
@@ -242,6 +245,8 @@ ledgr_experiment <- function(snapshot,
                              features = list(),
                              opening,
                              schedule = NULL,
+                             asset_state = list(),
+                             portfolio_state = list(),
                              universe = NULL,
                              valuation_policy = NULL,
                              timing_model = ledgr_timing_next_open(),
@@ -281,6 +286,7 @@ ledgr_experiment <- function(snapshot,
   price_basis <- sealed$price_basis
   ledgr_validate_corporate_action_policy(corporate_action_policy)
   history_policy <- ledgr_history_policy_normalize(history_policy)
+  strategy_state <- ledgr_strategy_state_normalize(asset_state, portfolio_state)
 
   universe_all <- ledgr_experiment_snapshot_universe(snapshot)
   availability <- ledgr_availability_validate_experiment(
@@ -372,6 +378,7 @@ ledgr_experiment <- function(snapshot,
       metric_context = metric_context,
       corporate_action_policy = corporate_action_policy,
       history_policy = history_policy,
+      strategy_state = strategy_state,
       data_identity = list(price_basis = price_basis),
       # Read once here so runs bind the content hash without reopening (LDG-3004).
       snapshot_hash = sealed$snapshot_hash

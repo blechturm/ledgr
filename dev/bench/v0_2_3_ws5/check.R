@@ -36,7 +36,7 @@ expected_families <- c(
 stopifnot(identical(owners$family, expected_families), !anyDuplicated(owners$family))
 stopifnot(all(grepl("^LDG-31(79|8[0-9]|90)$", owners$owner)))
 stopifnot(all(nzchar(owners$mutation)), all(startsWith(owners$mutation_command, "Rscript")))
-implemented_mutations <- grepl("^D[1-4]_", owners$family) |
+implemented_mutations <- grepl("^D[1-5]_", owners$family) |
   owners$family == "D6_D7_schedule_inputs"
 stopifnot(all(grepl("v0_2_3_ws5/mutations[.]R", owners$mutation_command[implemented_mutations])))
 stopifnot(all(vapply(

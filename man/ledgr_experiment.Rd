@@ -10,6 +10,8 @@ ledgr_experiment(
   features = list(),
   opening,
   schedule = NULL,
+  asset_state = list(),
+  portfolio_state = list(),
   universe = NULL,
   valuation_policy = NULL,
   timing_model = ledgr_timing_next_open(),
@@ -39,6 +41,10 @@ advanced exact-ID workflows, but new parameterized feature sweeps should use
 \item{schedule}{Optional declaration from a \verb{ledgr_schedule_*()} helper.
 When supplied, the outer scheduler invokes the strategy only on due
 pulses. Omit it for every-pulse or mixed-cadence callbacks.}
+
+\item{asset_state, portfolio_state}{Flat named lists of typed scalar defaults
+for declared strategy state. Asset fields are exposed as ID-named vectors
+over each pulse's decision axis; portfolio fields remain scalar.}
 
 \item{universe}{Character vector of instrument IDs, \code{NULL} for all
 instruments in the snapshot, or a rule from \code{\link[=ledgr_universe_members]{ledgr_universe_members()}}.}

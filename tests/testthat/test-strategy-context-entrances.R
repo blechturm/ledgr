@@ -93,7 +93,7 @@ strategy_context_empty_axis_fixture <- function() {
     equity = 100,
     seed = NULL,
     pulse_seed = NULL,
-    state_prev = NULL,
+    state = ledgr:::ledgr_strategy_state_view(list()),
     .safety_state = "GREEN",
     members = character()
   )
@@ -957,7 +957,7 @@ testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and
     equity = 100,
     seed = NULL,
     pulse_seed = NULL,
-    state_prev = NULL,
+    state = ledgr:::ledgr_strategy_state_view(list()),
     .safety_state = "GREEN",
     members = character()
   )

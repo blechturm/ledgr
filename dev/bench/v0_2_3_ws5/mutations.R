@@ -109,6 +109,20 @@ mutations <- list(
     filter = "strategy-authoring-ws16",
     blocks = "plain selection and weights bind rank, pool and empty rules"
   ),
+  D5_state_declaration = list(
+    file = "R/strategy-state.R",
+    old = "name = field$name, type = field$type,",
+    new = "name = field$name, type = \"numeric\",",
+    filter = "strategy-state-ws17",
+    blocks = "declared state preserves type, missingness and axis"
+  ),
+  D5_state_checkpoint = list(
+    file = "R/fold-engine.R",
+    old = "if (changed && isTRUE(output_handler$persists_strategy_state)) {",
+    new = "if (isTRUE(output_handler$persists_strategy_state)) {",
+    filter = "strategy-state-ws17",
+    blocks = "unchanged cursors resume without replay or encoding"
+  ),
   D6_D7_schedule_inputs = list(
     file = "R/strategy-schedule.R",
     old = "if (identical(history_substrate$clock_kind, \"declared_sessions\")) {\n    history_substrate$sessions\n  } else {\n    NULL\n  }",

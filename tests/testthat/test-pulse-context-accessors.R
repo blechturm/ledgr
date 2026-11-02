@@ -592,12 +592,11 @@ testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valua
         positions = ctx$hold(),
         target = ledgr_target_rebalance(ctx, weights = weights)
       )
-      state_update <- list(pulses_seen = 3L)
+      return(ledgr_strategy_result(ctx$hold(), pulses_seen = 3L))
     } else {
-      observed$state_prev <- ctx$state_prev
-      state_update <- ctx$state_prev
+      observed$state <- ctx$state
     }
-    list(targets = ctx$hold(), state_update = state_update)
+    ctx$hold()
   }
   experiment <- ledgr_experiment(
     snapshot = snapshot,
@@ -607,7 +606,8 @@ testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valua
       positions = c(BBB = 2, AAA = 1),
       cost_basis = c(BBB = 20, AAA = 10)
     ),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(pulses_seen = 0L)
   )
   backtest <- ledgr_run(experiment, run_id = "pulse-snapshot-fold-oracle")
   on.exit(close(backtest), add = TRUE)
@@ -634,16 +634,16 @@ testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valua
     ts_utc = ts[[2L]],
     cash = 100,
     positions = c(BBB = 2, AAA = 1),
-    state_prev = list(pulses_seen = 3L)
+    portfolio_state = list(pulses_seen = 3L)
   )
   on.exit(close(state_pulse), add = TRUE)
-  testthat::expect_identical(state_pulse$state_prev, observed$state_prev)
+  testthat::expect_identical(state_pulse$state$pulses_seen, observed$state$pulses_seen)
 
   printed <- capture.output(print(state_pulse))
   testthat::expect_true(any(grepl("Cash:      100", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("Equity:    150", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("Positions: 2 nonzero", printed, fixed = TRUE)))
-  testthat::expect_true(any(grepl("State:     supplied", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("State:     declared", printed, fixed = TRUE)))
   testthat::expect_false(any(grepl("pulses_seen", printed, fixed = TRUE)))
 
   testthat::expect_false("initial_cash" %in% names(formals(ledgr_pulse_snapshot)))
@@ -654,31 +654,27 @@ testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valua
       ts_utc = ts[[1L]],
       initial_cash = 100
     ),
-    regexp = "unused argument"
+    regexp = "Unused pulse-inspection argument"
   )
 
-  bad_state <- list(callback = function() NULL)
-  bad_strategy <- function(ctx, params) {
-    list(targets = ctx$hold(), state_update = bad_state)
-  }
-  bad_experiment <- ledgr_experiment(
-    snapshot = snapshot,
-    strategy = bad_strategy,
-    opening = ledgr_opening(cash = 100),
-    cost_model = ledgr_cost_zero()
-  )
   testthat::expect_error(
-    ledgr_run(bad_experiment, run_id = "pulse-snapshot-bad-state-fold"),
-    class = "ledgr_config_non_deterministic"
+    ledgr_experiment(
+      snapshot = snapshot,
+      strategy = function(ctx, params) ctx$hold(),
+      opening = ledgr_opening(cash = 100),
+      cost_model = ledgr_cost_zero(),
+      portfolio_state = list(callback = function() NULL)
+    ),
+    class = "ledgr_invalid_strategy_state"
   )
   testthat::expect_error(
     ledgr_pulse_snapshot(
       snapshot,
       universe = c("AAA", "BBB"),
       ts_utc = ts[[1L]],
-      state_prev = bad_state
+      portfolio_state = list(callback = function() NULL)
     ),
-    class = "ledgr_config_non_deterministic"
+    class = "ledgr_invalid_strategy_state"
   )
 })
 

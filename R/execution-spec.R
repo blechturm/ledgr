@@ -55,7 +55,8 @@ ledgr_execution_spec <- function(run_id,
                                  checkpoint_every,
                                  telemetry_stride,
                                  state,
-                                 state_prev = NULL,
+                                 strategy_state,
+                                 strategy_state_declaration,
                                  position_facts = NULL,
                                  position_fact_unknown_basis = character(),
                                  history_substrate = NULL,
@@ -99,7 +100,8 @@ ledgr_execution_spec <- function(run_id,
     checkpoint_every = as.integer(checkpoint_every),
     telemetry_stride = as.integer(telemetry_stride),
     state = state,
-    state_prev = state_prev,
+    strategy_state = strategy_state,
+    strategy_state_declaration = strategy_state_declaration,
     position_facts = position_facts,
     position_fact_unknown_basis = as.character(position_fact_unknown_basis),
     history_substrate = history_substrate,
@@ -250,6 +252,13 @@ ledgr_validate_execution_spec <- function(spec) {
       ),
     "`execution$state` must include scalar cash and numeric positions."
   )
+  ledgr_execution_spec_check(
+    is.list(spec$strategy_state) &&
+      is.list(spec$strategy_state$values) &&
+      is.character(spec$strategy_state$axis),
+    "`execution$strategy_state` must contain typed values and their asset axis."
+  )
+  ledgr_strategy_state_declaration_validate(spec$strategy_state_declaration)
   ledgr_execution_spec_check(
     is.null(spec$position_facts) ||
       (is.list(spec$position_facts) &&

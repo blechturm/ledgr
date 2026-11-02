@@ -117,7 +117,8 @@ ledgr_test_execution_spec <- function(...) {
       checkpoint_every = 0L,
       telemetry_stride = 0L,
       state = list(cash = 1000, positions = stats::setNames(c(0, 0), instrument_ids)),
-      state_prev = NULL,
+      strategy_state = list(values = list(), axis = instrument_ids),
+      strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
       history_substrate = prepared$substrate,
       feature_defs = list(),
       active_alias_map = NULL,
@@ -222,7 +223,8 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
         cost_basis = opening_cost_basis
       )
     ),
-    state_prev = NULL,
+    strategy_state = list(values = list(), axis = instrument_ids),
+    strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
     history_substrate = prepared$substrate,
     feature_defs = list(),
     active_alias_map = NULL,
@@ -350,7 +352,8 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
         cost_basis = opening_cost_basis
       )
     ),
-    state_prev = NULL,
+    strategy_state = list(values = list(), axis = instrument_ids),
+    strategy_state_declaration = ledgr:::ledgr_strategy_state_normalize(),
     history_substrate = prepared$substrate,
     feature_defs = list(),
     active_alias_map = NULL,
@@ -412,7 +415,8 @@ testthat::test_that("execution spec constructor exposes only the canonical subst
       "checkpoint_every",
       "telemetry_stride",
       "state",
-      "state_prev",
+      "strategy_state",
+      "strategy_state_declaration",
       "position_facts",
       "position_fact_unknown_basis",
       "history_substrate",

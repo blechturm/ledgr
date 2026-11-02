@@ -1,8 +1,4 @@
 strategy_context_projection_capture <- function(ctx, params) {
-  previous <- ctx$state_prev$history
-  if (is.null(previous)) previous <- character()
-  previous_exposure <- ctx$state_prev$projection_exposed
-  if (is.null(previous_exposure)) previous_exposure <- logical()
   retired_names <- c(
     ".feature_projection", ".feature_pulse_idx", ".feature_ids"
   )
@@ -37,12 +33,8 @@ strategy_context_projection_capture <- function(ctx, params) {
   }
   entry <- paste(vapply(c(scalar, plane, bundle), encode, character(1)),
                  collapse = "|")
-  list(
-    targets = ctx$hold(),
-    state_update = list(
-      history = c(as.character(previous), entry),
-      projection_exposed = c(previous_exposure, projection_exposed)
-    )
+  ledgr_strategy_result(
+    ctx$hold(), entry = entry, projection_exposed = projection_exposed
   )
 }
 
@@ -136,14 +128,16 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     dense_snapshot,
     strategy_context_projection_capture,
     features = features,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(entry = "", projection_exposed = FALSE)
   ))
   availability_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     availability_snapshot,
     strategy_context_projection_capture,
     features = features,
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(entry = "", projection_exposed = FALSE)
   ))
   on.exit(close(dense_run), add = TRUE)
   on.exit(close(availability_run), add = TRUE)
@@ -151,19 +145,19 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     "NA|NA|NA", "101.5|101.5|101.5", "102.5|102.5|102.5",
     "103.5|103.5|103.5", "104.5|104.5|104.5"
   )
-  dense_state <- availability_last_state(dense_run)
-  availability_state <- availability_last_state(availability_run)
-  testthat::expect_identical(dense_state$history, expected)
+  dense_state <- availability_state_values(dense_run)
+  availability_state <- availability_state_values(availability_run)
+  testthat::expect_identical(vapply(dense_state, `[[`, character(1L), "entry"), expected)
   testthat::expect_identical(
-    availability_state$history,
+    vapply(availability_state, `[[`, character(1L), "entry"),
     expected
   )
   testthat::expect_identical(
-    dense_state$projection_exposed,
+    vapply(dense_state, `[[`, logical(1L), "projection_exposed"),
     rep(FALSE, length(expected))
   )
   testthat::expect_identical(
-    availability_state$projection_exposed,
+    vapply(availability_state, `[[`, logical(1L), "projection_exposed"),
     rep(FALSE, length(expected))
   )
 })

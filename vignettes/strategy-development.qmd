@@ -122,7 +122,7 @@ accessing those values. It is deliberately not the full future dataset.
 | `ctx$position` | current named simulated positions |
 | `ctx$buyable` | current named eligibility mask |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
-| `ctx$state_prev` | what the strategy returned as `state_update` at the previous pulse |
+| `ctx$state` | declared typed strategy memory at this pulse |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |
 
@@ -302,20 +302,22 @@ the strategy easier to test, compare, and store. `vignette("sweeps", package =
 
 ## Remembering Between Pulses
 
-Most strategies decide from the current pulse alone. A strategy that has to
-remember something between pulses, such as how many pulses have passed or the
-price at which it bought, returns `list(targets = ..., state_update = ...)`
-instead of a bare target. ledgr stores the `state_update` with the run and
-hands it back as `ctx$state_prev` at the next pulse.
+Most strategies decide from the current pulse alone. If a strategy must
+remember something between pulses, declare that memory when constructing the
+experiment. A portfolio field is one scalar; an asset field is one aligned
+value per instrument. The declared defaults are already present on the first
+pulse, so a typo fails instead of quietly returning `NULL`.
 
-The state must be plain data: numbers, strings, logical values, and lists of
-them. A new `state_update` replaces the previous one; returning a bare target
-keeps it. On the first pulse there is nothing to remember yet, so check each
-field for `NULL` before using it.
+Inside the strategy, read declared fields from `ctx$state`. Return
+`ledgr_strategy_result()` to patch only the fields named after the targets;
+omitted fields keep their values. A bare target changes no strategy memory.
+For example, an experiment can declare
+`portfolio_state = list(decisions_seen = 0L)`, then its strategy can return
+`ledgr_strategy_result(targets, decisions_seen = ctx$state$decisions_seen + 1L)`.
 
 `vignette("strategy-authoring-tools", package = "ledgr")` builds a strategy
-that uses state step by step. `?ledgr_strategy_context` states the full rules,
-including the per-instrument `asset_state` of availability-aware runs.
+that uses state step by step. `?ledgr_strategy_context` states the full typed
+declaration, patch, replacement, reset, axis and resume rules.
 
 ## Prepare A Small Experiment
 

@@ -36,9 +36,11 @@
 #'   enters run identity. Cash is not total account value; pulse equity is
 #'   `cash + sum(positions * current close)`.
 #' @param positions Named numeric vector of positions (NULL = flat).
-#' @param state_prev Optional JSON-safe previous strategy state. This supports
-#'   dense one-pulse strategy checks; availability-aware state normalization is
-#'   not simulated.
+#' @param asset_state,portfolio_state Flat named lists declaring typed scalar
+#'   strategy-state defaults. Asset fields become vectors over the inspection
+#'   axis; portfolio fields remain scalar.
+#' @param ... Reserved. The retired `state_prev` argument is refused here with
+#'   no compatibility alias.
 #'
 #' @return A `ledgr_pulse_context` object with the accessors and planes of the
 #'   strategy context (see `?ledgr_strategy_context`). The snapshot form makes
@@ -60,11 +62,11 @@
 #'   ts_utc = "2020-01-03T00:00:00Z",
 #'   features = list(ledgr_ind_sma(2)),
 #'   positions = c(AAA = 2),
-#'   state_prev = list(pulses_seen = 1)
+#'   portfolio_state = list(pulses_seen = 1L)
 #' )
 #' pulse$close[["AAA"]]
 #' pulse$sma_2[["AAA"]]
-#' pulse$state_prev
+#' pulse$state$pulses_seen
 #' close(pulse)
 #' ledgr_snapshot_close(snapshot)
 #' @export
@@ -75,14 +77,17 @@ ledgr_pulse_snapshot <- function(snapshot,
                                  feature_params = list(),
                                  cash = 100000,
                                  positions = NULL,
-                                 state_prev = NULL,
-                                 params = NULL) {
+                                 asset_state = list(),
+                                 portfolio_state = list(),
+                                 params = NULL,
+                                 ...) {
   ledgr_rng_force_args()
   universe_missing <- missing(universe)
   features_missing <- missing(features)
   cash_missing <- missing(cash)
   positions_missing <- missing(positions)
-  state_prev_missing <- missing(state_prev)
+  asset_state_missing <- missing(asset_state)
+  portfolio_state_missing <- missing(portfolio_state)
   ledgr_rng_preserve_caller(ledgr_pulse_snapshot_impl(
     snapshot = snapshot,
     universe = universe,
@@ -91,14 +96,17 @@ ledgr_pulse_snapshot <- function(snapshot,
     feature_params = feature_params,
     cash = cash,
     positions = positions,
-    state_prev = state_prev,
+    asset_state = asset_state,
+    portfolio_state = portfolio_state,
     params = params,
+    extras = list(...),
     supplied = c(
       universe = !universe_missing,
       features = !features_missing,
       cash = !cash_missing,
       positions = !positions_missing,
-      state_prev = !state_prev_missing
+      asset_state = !asset_state_missing,
+      portfolio_state = !portfolio_state_missing
     )
   ))
 }
@@ -110,9 +118,20 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
                                       feature_params,
                                       cash,
                                       positions,
-                                      state_prev,
+                                      asset_state,
+                                      portfolio_state,
                                       params,
+                                      extras,
                                       supplied) {
+  if (length(extras) > 0L) {
+    retired <- intersect(names(extras), "state_prev")
+    if (length(retired) > 0L) {
+      ledgr_strategy_state_abort(
+        "`state_prev` is retired; declare `asset_state` and `portfolio_state` and read `ctx$state`."
+      )
+    }
+    rlang::abort("Unused pulse-inspection argument.", class = "ledgr_invalid_args")
+  }
   if (inherits(snapshot, "ledgr_experiment")) {
     if (any(supplied)) {
       rlang::abort(
@@ -175,7 +194,7 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
   if (!is.numeric(cash) || length(cash) != 1 || is.na(cash) || !is.finite(cash)) {
     rlang::abort("`cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
   }
-  if (!is.null(state_prev)) invisible(canonical_json(state_prev))
+  ledgr_strategy_state_normalize(asset_state, portfolio_state)
   ts_norm <- ledgr_normalize_ts_utc(ts_utc)
 
   if (is.null(positions)) {
@@ -220,7 +239,9 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
       cost_basis = inspection_cost_basis
     ),
     features = feature_declaration,
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    asset_state = asset_state,
+    portfolio_state = portfolio_state
   )
   # Zero is required only to construct an internally valid opening book. It is
   # not evidence of the caller's cost basis and must not leak as entry_price.
@@ -231,7 +252,6 @@ ledgr_pulse_snapshot_impl <- function(snapshot,
     params = list(),
     feature_params = feature_params
   )
-  if (!is.null(state_prev)) out$state_prev <- state_prev
   if (is.function(out$.feature_table_current)) {
     out$feature_table <- out$.feature_table_current()
   }
@@ -274,7 +294,7 @@ print.ledgr_pulse_context <- function(x, ...) {
   cat("Cash:      ", format(x$cash, scientific = FALSE, trim = TRUE), "\n", sep = "")
   cat("Equity:    ", format(x$equity, scientific = FALSE, trim = TRUE), "\n", sep = "")
   cat("Positions: ", sum(as.numeric(x$position) != 0), " nonzero\n", sep = "")
-  cat("State:     ", if (is.null(x$state_prev)) "none" else "supplied", "\n", sep = "")
+  cat("State:     ", if (length(x$state) == 0L) "none" else "declared", "\n", sep = "")
   cat("Bars:      ", nrow(x$bars), "\n", sep = "")
   cat("Features:  ", length(ledgr_pulse_context_feature_columns(x$.pulse_lookup)), " columns\n", sep = "")
   invisible(x)

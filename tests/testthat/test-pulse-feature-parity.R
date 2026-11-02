@@ -83,10 +83,9 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
         paste,
         sep = "::"
       )))
-      return(list(
-        targets = ctx$flat(),
-        state_update = list(values = as.list(values))
-      ))
+      return(ledgr_strategy_result(ctx$flat(), values = paste(
+        names(values), format(values, digits = 17), sep = "=", collapse = ";"
+      )))
     }
     ctx$flat()
   }
@@ -95,7 +94,8 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
     strategy,
     features = fixture$features,
     opening = ledgr_opening(cash = 10000),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(values = "")
   )
   run <- ledgr_run(
     experiment,
@@ -107,17 +107,11 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
     run_id = "pulse-feature-parity"
   )
   on.exit(close(run), add = TRUE)
-  state_json <- DBI::dbGetQuery(
-    ledgr:::get_connection(snapshot),
-    paste0(
-      "SELECT state_json FROM strategy_state ",
-      "WHERE run_id = ? ORDER BY ts_utc DESC LIMIT 1"
-    ),
-    params = list(run$run_id)
-  )$state_json[[1L]]
-  run_values <- unlist(
-    ledgr:::ledgr_json_read_nested(state_json)$values,
-    use.names = TRUE
+  encoded <- availability_last_state(run)$values
+  pieces <- strsplit(encoded, ";", fixed = TRUE)[[1L]]
+  run_values <- stats::setNames(
+    as.numeric(sub("^[^=]*=", "", pieces)),
+    sub("=.*$", "", pieces)
   )
 
   pulse <- ledgr_pulse_snapshot(

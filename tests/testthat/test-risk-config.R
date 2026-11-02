@@ -62,7 +62,10 @@ testthat::test_that("risk identity participates in config_hash without a separat
       snapshot_hash = "test-hash"
     ),
     identity_rule_version = 5L,
-    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy()),
+    strategy_state = ledgr:::ledgr_strategy_state_identity(
+      ledgr:::ledgr_strategy_state_normalize(list(), list())
+    )
   )
 
   cfg_missing <- cfg
@@ -122,7 +125,10 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
       snapshot_hash = "test-hash"
     ),
     identity_rule_version = 5L,
-    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy())
+    history = ledgr:::ledgr_history_policy_identity(ledgr_history_policy()),
+    strategy_state = ledgr:::ledgr_strategy_state_identity(
+      ledgr:::ledgr_strategy_state_normalize(list(), list())
+    )
   )
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)

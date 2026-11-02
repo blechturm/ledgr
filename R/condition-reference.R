@@ -162,8 +162,9 @@
 #' tolerance without a bounded `fn`/`series_fn` pair, or a registered TTR form
 #' declared against its catalogue row.
 #'
-#' `ledgr_invalid_strategy_state` is raised when availability-aware asset state
-#' is not a named list keyed only by instruments on the current public axis.
+#' `ledgr_invalid_strategy_state` is raised when a declared strategy-state
+#' field, default, patch, replacement, checkpoint, asset axis, or runtime read
+#' violates the typed state contract.
 #'
 #' `ledgr_target_sizing_unavailable` is raised when an availability-aware
 #' rebalance helper needs a permissible mark it cannot obtain: to reserve the

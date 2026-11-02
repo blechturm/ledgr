@@ -11,22 +11,21 @@ testthat::test_that("provider resolves facts only after effective and knowledge 
   snapshot <- availability_runtime_fixture(status = status)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
-    history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
-    history[[length(history) + 1L]] <- unname(ctx$buyable)
-    list(targets = ctx$hold(), state_update = list(history = history))
+    ledgr_strategy_result(ctx$hold(), observed = unname(ctx$buyable[["AAA"]]))
   }
   exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     strategy,
     valuation_policy = ledgr_valuation_stale(1),
-    cost_model = ledgr_cost_zero()
+    cost_model = ledgr_cost_zero(),
+    portfolio_state = list(observed = NA)
   )
   bt <- ledgr_run(exp)
   on.exit(close(bt), add = TRUE)
-  observed <- availability_last_state(bt)$history
-  testthat::expect_identical(observed[[1L]], FALSE)
-  testthat::expect_identical(observed[[2L]], FALSE)
-  testthat::expect_identical(observed[[3L]], TRUE)
+  observed <- vapply(
+    availability_state_values(bt), function(state) state$observed, logical(1L)
+  )
+  testthat::expect_identical(observed[1:3], c(FALSE, FALSE, TRUE))
 
   config <- list(
     data = list(snapshot_id = snapshot$snapshot_id),
@@ -98,22 +97,21 @@ testthat::test_that("future facts change identity without rewriting prior contex
   )
   on.exit(lapply(snapshots, ledgr_snapshot_close), add = TRUE)
   strategy <- function(ctx, params) {
-    history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
-    history[[length(history) + 1L]] <- unname(ctx$buyable)
-    list(targets = ctx$hold(), state_update = list(history = history))
+    ledgr_strategy_result(ctx$hold(), observed = unname(ctx$buyable[["AAA"]]))
   }
   runs <- lapply(snapshots, function(snapshot) {
     ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
       valuation_policy = ledgr_valuation_stale(1),
-      cost_model = ledgr_cost_zero()
+      cost_model = ledgr_cost_zero(),
+      portfolio_state = list(observed = NA)
     ))
   })
   on.exit(lapply(runs, close), add = TRUE)
   testthat::expect_identical(
-    availability_last_state(runs[[1L]])$history,
-    availability_last_state(runs[[2L]])$history
+    lapply(availability_state_values(runs[[1L]]), `[[`, "observed"),
+    lapply(availability_state_values(runs[[2L]]), `[[`, "observed")
   )
   testthat::expect_false(identical(
     ledgr_snapshot_info(snapshots[[1L]])$snapshot_hash[[1L]],

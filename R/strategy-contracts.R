@@ -124,26 +124,3 @@ ledgr_strategy_echo <- function(ctx, params) {
   ledgr_validate_strategy_targets(targets, ctx$universe)
   list(targets = targets, state_update = state_update)
 }
-
-ledgr_strategy_state_prev_targets <- function(ctx, params) {
-  prev <- ctx$state_prev
-
-  # The unified context starts every run with the canonical, empty
-  # asset-scoped state. This legacy fixture strategy did not opt into that
-  # state and therefore treats the empty carrier as its former NULL start.
-  if (is.list(prev) && identical(names(prev), "asset_state") &&
-      is.list(prev$asset_state) && all(lengths(prev$asset_state) == 0L)) {
-    prev <- NULL
-  }
-
-  step <- 1L
-  if (!is.null(prev)) {
-    if (!is.list(prev) || is.null(prev$step) || !is.numeric(prev$step) || length(prev$step) != 1 || is.na(prev$step) || !is.finite(prev$step)) {
-      rlang::abort("state_prev strategy requires ctx$state_prev$step as a finite numeric scalar.", class = "ledgr_invalid_strategy")
-    }
-    step <- as.integer(prev$step) + 1L
-  }
-
-  targets <- stats::setNames(rep(as.numeric(step), length(ctx$universe)), ctx$universe)
-  list(targets = targets, state_update = list(step = as.integer(step)))
-}

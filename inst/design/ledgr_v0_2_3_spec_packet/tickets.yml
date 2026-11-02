@@ -1127,7 +1127,8 @@ workstreams:
   - id: 17
     name: "Typed declared strategy state (macro WS5)"
     cut: 7
-    status: "pending"
+    status: "review_pending"
+    close_review: "Implementation complete in strategy_state_closeout.md; awaiting the independent Type 1 close review required after LDG-3186."
     depends_on_workstream: 16
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors with an explicit type/missing encoding; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, durable resume cursor, restored state and candidate isolation are exact; unchanged pulses do no state encoding; the accepted cursor/checkpoint design reconstructs complete state without silently consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
@@ -2582,7 +2583,7 @@ tickets:
   - id: "LDG-3185"
     title: "Normalize declared typed strategy state"
     workstream: 17
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3184"]
@@ -2610,10 +2611,29 @@ tickets:
       - "new, departed and re-entering IDs follow the declared default lifecycle; saved state views remain pulse-frozen and candidate isolation holds"
       - "configuration hashes change for a declaration/default/type change and stay equal for equivalent normalized declarations; old/missing strategy-state rule markers refuse and the format binding is unconditional"
       - "pulse inspection accepts the declared-state grammar and refuses the retired JSON-safe state_prev argument with no alias"
+    evidence:
+      - >-
+        Product evidence: R/strategy-state.R owns declaration normalization,
+        typed identity, the explicit missing/type/axis codec, pulse-frozen
+        views and current-only rule validation. R/experiment.R,
+        R/backtest-config.R and R/config-validate.R put the normalized
+        declaration in public run identity; ledgr_strategy_state_rule_version
+        is an unconditional store-format fingerprint component. The old
+        state_prev read has no compatibility alias; pulse inspection refuses
+        it explicitly.
+      - >-
+        Detecting evidence: LTB-0532/LCL-0522 covers the four atomic types,
+        typed missingness, empty and non-alphabetical axes, whole-number
+        doubles, normalized-equivalent and changed declaration hashes,
+        malformed declarations and old/missing rule refusal. LTB-0535/LCL-0525
+        covers declared-state pulse inspection and state_prev refusal.
+        LTB-0536/LCL-0526 exercises departure, re-entry and default lifecycle
+        through a real changing-membership run. LTB-0537/LCL-0527 proves fresh
+        candidate isolation through sequential and two-worker sweeps.
   - id: "LDG-3186"
     title: "Apply patches, replacements and state checkpoints"
     workstream: 17
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3185"]
@@ -2653,6 +2673,31 @@ tickets:
       - "on a constant decision axis, a no-state strategy, a never-changed declared state and a raw state_update returning identical values every pulse write only markers and resume exactly, from declared defaults or the last payload; a marker-equals-payload mutation fails"
       - "the changed-every-pulse and unchanged-state workload cells report encoding, row count, bytes and wall time without treating the future storage architecture as implemented"
       - "the seven optimization shapes and identity/format assertions pass, including a detector that fails a restored every-pulse state encode/write"
+    evidence:
+      - >-
+        Product evidence: ledgr_strategy_result() is the declared-field patch
+        path; raw state_update remains complete replacement; reset_state is a
+        distinct whole-state operation and intent_reason remains metadata.
+        R/fold-engine.R keeps one complete typed state, writes one existing-
+        table cursor/checkpoint row per completed pulse, writes the constant
+        marker without encoding when value and axis are unchanged, and restores
+        from the latest cursor plus preceding payload. The retired untyped JSON
+        cache/normalizer and every-pulse validation encodes are absent.
+      - >-
+        Detecting evidence: LTB-0533/LCL-0523 covers patch, replacement,
+        omission, reset, broadcast/alignment, typed missing reset and illegal
+        combinations. LTB-0534/LCL-0524 pins N-to-N+1 resume, exactly one row
+        per completed pulse, encoder counts and the three unchanged workloads.
+        LTB-0537/LCL-0527 and LTB-0538/LCL-0528 cover worker candidate
+        isolation and walk-forward reset. Both executable D5 isolated-copy
+        mutations apply once and are detected in
+        dev/bench/v0_2_3_strategy_state/evidence/current/mutations.csv. The
+        seven-shape record and four 500-pulse measurements are in
+        dev/bench/v0_2_3_strategy_state/; the closeout is
+        strategy_state_closeout.md. Exact-source build and R CMD check pass
+        installation, namespace, documentation, all tests, examples and all
+        executable vignette code; the two warnings are the expected missing
+        inst/doc outputs under --no-build-vignettes.
   - id: "LDG-3187"
     title: "Persist and report typed sizing and rounding evidence"
     workstream: 18

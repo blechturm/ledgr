@@ -1411,7 +1411,8 @@ ledgr_sweep_exp_payload <- function(exp) {
     valuation_policy = exp$valuation_policy %||% NULL,
     corporate_action_policy = exp$corporate_action_policy %||%
       ledgr_corporate_actions_research(),
-    history_policy = exp$history_policy
+    history_policy = exp$history_policy,
+    strategy_state = exp$strategy_state
   )
 }
 
@@ -1730,7 +1731,11 @@ ledgr_sweep_candidate_execution <- function(exp,
     checkpoint_every = 0L,
     telemetry_stride = 0L,
     state = list(cash = exp$opening$cash, positions = initial_positions, lot_state = initial_lot_state),
-    state_prev = NULL,
+    strategy_state = list(
+      values = ledgr_strategy_state_defaults(exp$strategy_state, exp$universe),
+      axis = exp$universe
+    ),
+    strategy_state_declaration = exp$strategy_state,
     position_fact_unknown_basis = exp$position_fact_unknown_basis %||% character(),
     history_substrate = history_substrate,
     feature_defs = feature_defs,

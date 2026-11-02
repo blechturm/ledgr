@@ -10,7 +10,7 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
     cash = 100,
     positions = c(1, 0),
     lot_state = book_aaa,
-    state_prev = list(month = "2026-10"),
+    strategy_state = list(month = "2026-10"),
     state_axis = c("AAA", "BBB"),
     event_seq = 3L
   )
@@ -30,17 +30,19 @@ testthat::test_that("[LTB-0278] fold state and stop results have one closed type
       cash = 100,
       positions = 1,
       lot_state = book_one,
-      state_prev = data.frame(value = 1)
+      strategy_state = data.frame(value = 1)
     ),
     class = "ledgr_internal_error"
   )
-  scalar_state <- ledgr_fold_state_new(
-    cash = 100,
-    positions = 1,
-    lot_state = book_one,
-    state_prev = 5
+  testthat::expect_error(
+    ledgr_fold_state_new(
+      cash = 100,
+      positions = 1,
+      lot_state = book_one,
+      strategy_state = 5
+    ),
+    class = "ledgr_internal_error"
   )
-  testthat::expect_identical(scalar_state$state_prev, 5)
   # LDG-3168 (decision 10, categories 1 and 5): the fold-owned equity record
   # replaces the accumulator (Synthesis 3.6). It keeps the appended facts in
   # order, hands out only its valued prefix and refuses a write beyond its

@@ -45,11 +45,14 @@ the pulse-start position target. The existing frame helpers \code{bar()},
 Use \code{ctx$buyable & is.finite(ctx$close) & ctx$close > 0} for an explicit
 current-close sizing predicate; it does not promise execution at the next open.
 
-A strategy that returns \code{list(targets = ..., state_update = ...)} receives
-that \code{state_update} as \code{ctx$state_prev} on the next pulse. Returning a
-bare target keeps the previous state. State must be JSON-serializable plain
-data. In every run \code{ctx$state_prev} is a list from the first pulse and its
-\code{asset_state} is keyed by IDs on \code{ctx$universe}.
+Declare typed defaults with \code{asset_state=} and \code{portfolio_state=}
+when constructing the experiment. Read the complete pulse-frozen state through
+\code{ctx$state}. Asset fields are named vectors aligned to
+\code{ctx$universe}; portfolio fields are scalars. Unknown fields fail.
+\code{ledgr_strategy_result()} returns a patch, while a raw
+\code{list(targets = ..., state_update = ...)} is a complete replacement.
+Omitting an update retains state, and \code{reset_state = TRUE} restores every
+declared default.
 
 Strategies should return full named numeric target vectors. In an
 availability-aware run \code{ctx$universe} is the decision axis and
@@ -73,7 +76,7 @@ top | cash | all | numeric_scalar | portfolio | currency | never | none
 top | equity | all | numeric_scalar | portfolio | currency | never | none
 top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
-top | state_prev | all | list | portfolio_and_Daxis | strategy_state | asset_state_from_first_pulse | none
+top | state | all | list | portfolio_and_Daxis | strategy_state | declared_defaults | none
 top | members | all | character_vector | Daxis_subset | instrument_id | empty_allowed | member
 top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars
 top | flat | all | function | Daxis | target_quantity | never | none

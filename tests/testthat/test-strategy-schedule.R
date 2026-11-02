@@ -58,18 +58,19 @@ testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
   opening <- ledgr_opening(cash = 1000, positions = c(BBB = 2), cost_basis = c(BBB = 42))
   manual_strategy <- function(ctx, params) {
     if (!ctx$ts_utc %in% params$due) return(ctx$hold())
-    previous <- ctx$state_prev
-    n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
-    list(targets = ctx$hold(), state_update = list(n = n + 1L), intent_reason = "rebalanced")
+    ledgr_strategy_result(
+      ctx$hold(), n = ctx$state$n + 1L, intent_reason = "rebalanced"
+    )
   }
   scheduled_strategy <- function(ctx, params) {
-    previous <- ctx$state_prev
-    n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
-    list(targets = ctx$hold(), state_update = list(n = n + 1L), intent_reason = "rebalanced")
+    ledgr_strategy_result(
+      ctx$hold(), n = ctx$state$n + 1L, intent_reason = "rebalanced"
+    )
   }
   fixture <- ws42_history_fixture(
     strategy = manual_strategy, features = list(), opening = opening,
-    valuation_policy = ledgr_valuation_stale(1)
+    valuation_policy = ledgr_valuation_stale(1),
+    portfolio_state = list(n = 0L)
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   # week_start waits for the first proved boundary, so the partial first week
@@ -181,7 +182,8 @@ testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
 
   stale_fixture <- ws42_history_fixture(
     strategy = manual_strategy, features = list(), opening = opening,
-    valuation_policy = ledgr_valuation_stale(3)
+    valuation_policy = ledgr_valuation_stale(3),
+    portfolio_state = list(n = 0L)
   )
   on.exit(ledgr_snapshot_close(stale_fixture$snapshot), add = TRUE)
   stale_due <- ws42_iso(stale_fixture$axis[[6L]])
@@ -829,18 +831,17 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   )
 
   strategy <- function(ctx, params) {
-    previous <- ctx$state_prev
-    n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
-    list(
-      targets = ctx$hold(),
-      state_update = list(n = n + 1L),
+    ledgr_strategy_result(
+      ctx$hold(),
+      n = ctx$state$n + 1L,
       intent_reason = "rebalanced"
     )
   }
   fixture <- ws42_history_fixture(
     strategy = strategy,
     features = list(),
-    schedule = ledgr_schedule_week_start()
+    schedule = ledgr_schedule_week_start(),
+    portfolio_state = list(n = 0L)
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   run <- ledgr_run(fixture$exp, run_id = "scheduled-stage-gate")
@@ -900,17 +901,9 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   )
   testthat::expect_identical(as.integer(reconciliation$n[[1L]]), info$pulse_count)
 
-  states <- DBI::dbGetQuery(
-    opened$con,
-    "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(run$run_id)
-  )
   state_n <- vapply(
-    states$state_json,
-    function(json) {
-      value <- ledgr:::ledgr_json_read_config(json)$n
-      if (length(value) != 1L) 0L else as.integer(value)
-    },
+    availability_state_values(run),
+    function(state) state$n,
     integer(1)
   )
   testthat::expect_identical(length(state_n), info$pulse_count)
@@ -1261,19 +1254,19 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
   )
 
   state_strategy <- function(ctx, params) {
-    previous <- ctx$state_prev
-    n <- if (is.null(previous) || is.null(previous$n)) 0L else previous$n
+    n <- ctx$state$n
     if (isTRUE(getOption("ledgr.schedule.interrupt_on_decision", FALSE)) && n == 0L) {
       options(ledgr.interrupt = TRUE)
     }
-    list(targets = ctx$hold(), state_update = list(n = n + 1L))
+    ledgr_strategy_result(ctx$hold(), n = n + 1L)
   }
   resumed <- ws42_history_fixture(
     strategy = state_strategy,
     features = list(),
     opening = opening,
     dividend = c(2L, 3L),
-    schedule = ledgr_schedule_week_start()
+    schedule = ledgr_schedule_week_start(),
+    portfolio_state = list(n = 0L)
   )
   on.exit(ledgr_snapshot_close(resumed$snapshot), add = TRUE)
   reference <- ledgr_run(resumed$exp, run_id = "schedule-resume-reference")
@@ -1771,15 +1764,10 @@ testthat::test_that("[LTB-0508] orchestration formats preserve schedule identity
 testthat::test_that("[LTB-0511] common calendar schedules use generic orchestration carriers", {
   ledgr_test_skip_workers_in_coverage()
   inner <- function(ctx, params) {
-    previous <- ctx$state_prev
-    decision_n <- if (is.null(previous) || is.null(previous$decision_n)) {
-      1L
-    } else {
-      previous$decision_n + 1L
-    }
+    decision_n <- ctx$state$decision_n + 1L
     target <- ctx$flat()
     target["AAA"] <- if (decision_n %% 2L == 1L) params$qty else 0
-    list(targets = target, state_update = list(decision_n = decision_n))
+    ledgr_strategy_result(target, decision_n = decision_n)
   }
   fixture <- ws42_history_fixture(
     strategy = inner,
@@ -1789,7 +1777,8 @@ testthat::test_that("[LTB-0511] common calendar schedules use generic orchestrat
       positions = c(AAA = 1),
       cost_basis = c(AAA = 11)
     ),
-    schedule = ledgr_schedule_weekday("monday")
+    schedule = ledgr_schedule_weekday("monday"),
+    portfolio_state = list(decision_n = 0L)
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   grid <- ledgr_grid_named(one = list(strategy = list(qty = 2)))

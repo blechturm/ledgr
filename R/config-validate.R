@@ -30,6 +30,7 @@ validate_ledgr_config <- function(config) {
   if (!is.list(config)) {
     rlang::abort("`config` must be a list (or parsed JSON list).", class = "ledgr_invalid_config")
   }
+  ledgr_strategy_state_from_identity(config$strategy_state)
   cfg_get <- function(path) {
     cur <- config
     for (key in path) {
