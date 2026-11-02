@@ -123,7 +123,7 @@ ws5_fixed_state <- function(args, work_dir) {
   }
   t1 <- ws4a_now()
   runs <- as.data.frame(ledgr_run_list(fx$snapshot))
-  timed <- runs[startsWith(runs$run_id, "ws5-state-"), , drop = FALSE]
+  timed <- runs[grepl("^ws5-state-[0-9]+$", runs$run_id), , drop = FALSE]
   if (nrow(timed) != reps || any(timed$status != "DONE") || any(timed$n_trades != 0L)) stop("state workload economic control failed")
   list(seconds = c(run = t1 - t0), work = sprintf("fixed wide state changing=%s; DONE, zero trades x%d", changing, reps))
 }
