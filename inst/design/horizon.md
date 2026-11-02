@@ -29,6 +29,44 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-02-execution-intraday-speed-and-memory-readiness"></a>
+### 2026-11-02 [execution] Intraday speed and memory readiness
+
+A maintainer stretch goal: the engine should be fast and lean enough for
+minute-bar research. This is the performance side of the
+[intraday support arc](#2026-05-27-execution-intraday-support-arc-and-pre-v02x-architectural-footguns);
+that entry owns the semantics (sessions, fill timing, OMS, metric
+cadence). Minute bars stay inside the whole-second timestamp contract;
+sub-second and HFT remain non-goals.
+
+The peer benchmark of 2026-10-31
+(<https://blechturm.com/benchmarks/backtesting/2026-10-31/report.html>,
+ledgr build `891c23c8`) already contains an intraday-shaped workload:
+20 instruments x 23,400 bars is 60 trading days of one-minute bars. It is
+ledgr's weakest cell: 45.8 s durable, about 2 ms per pulse, against
+backtrader 34 s, PyBroker 10.7 s and PMwR 0.57 s (about 24 us per pulse).
+Intraday multiplies the pulse count about 400-fold over daily bars, so the
+fixed per-pulse cost dominates: at 2 ms one year of minute bars (about
+98,000 pulses) on a narrow book takes three to four minutes; at about
+150 us, the v0.2.3 WS14 stretch level, it takes about 15 s and the
+20 x 23,400 cell about 3.5 s.
+
+A rough budget for the 500 x 1,260 headline cell (2026-11-02) puts a durable
+run near 0.9 s in plain R and DuckDB: about 0.2 s fixed pulse cost, 0.2 s
+vector work, 0.15 s fills, 0.1 s writes, 0.1 s replay, 0.05 s features and
+0.05 s setup, against 22.5 s measured. The same per-component discipline is
+what makes intraday feasible.
+
+Memory, not speed, is the next limit for wide intraday books: 500
+instruments over one year of minute bars is about 49 million bar rows,
+roughly 2 GB of OHLCV doubles before features. That needs bounded,
+chunked or streaming feature preparation and writes rather than
+whole-history materialization. The v0.2.3 work that bears on this is the
+WS14a/WS14 per-component budget and WS9's memory budgets. The 20 x 23,400
+cell is the natural scoreboard for the speed half.
+
+This entry authorizes no implementation.
+
 <a id="2026-10-31-infrastructure-coverage-collection-fails-on-windows"></a>
 ### 2026-10-31 [infrastructure] Coverage collection fails on the Windows host
 
