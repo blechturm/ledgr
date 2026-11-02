@@ -362,6 +362,13 @@ required capital and costs) follows WS4b. H3 is settled in this cut.
   construction is about 19% of the dense no-fill floor, and the WS4b
   amendment covers only the availability context refresh. Evidence:
   `dev/spikes/shape-audit/`.
+- **Implementation close (2026-11-02):** Cut 7 completed workstreams 15-18
+  through `34a06c6d`. The flat lazy context, canonical position facts, plain
+  selection and strict weights, ctx-first targets, required investor inputs,
+  typed declared state, sizing evidence and executed strategy teaching are
+  implemented and independently reviewed. WS6 receives the accepted flat
+  layout; WS7 receives the D8 diagnostic fields. Join J remains open until
+  the merged WS7 reader consumes those fields.
 
 ### WS6. Context frame retirement (C2)
 

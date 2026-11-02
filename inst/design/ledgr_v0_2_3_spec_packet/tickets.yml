@@ -792,6 +792,24 @@ cuts:
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
     status: "accepted"
+    implementation_close: >-
+      Complete on 2026-11-02 through 34a06c6d. Workstreams 15-18 and
+      LDG-3179 through LDG-3190 are complete. The independent close-review
+      chain for Workstream 18 ends PASS after the Type 1 review and focused
+      re-review in close_review_18.md plus a clean final confirmation of
+      8e8935aa..34a06c6d. Cut 7 closes the WS5 implementation; macro join J
+      remains open until WS7's merged reader consumes the D8 fields.
+    review_accounting: >-
+      Cut close records 16 independent verdicts over 12 completed tickets.
+      Thirteen verdicts returned findings and changed the design,
+      implementation, detecting evidence or records; three were clean final
+      PASS confirmations. One cut review escalated a Type 2 persistence
+      choice and the maintainer selected option A. The remaining findings
+      were Type 1. Three maintainer decision turns changed the outcome: the
+      option-A cursor/checkpoint choice, authorization of WS15's final bounded
+      correction, and acceptance of the functional fast lane while retaining
+      the 112-second timing result as a recorded miss. The retired review
+      ratio is not used as a gate.
     cut_review: "Initial NEEDS_TYPE_2 in cut_review_7.md (independent clean-context Claude Opus, 2026-11-01). Maintainer decision accepts option A: one cursor row per completed pulse and a typed payload only on change; the split progress/checkpoint architecture is parked as the preferred future direction. Focused re-review PASS_AFTER_PATCHES in cut_review_7_rereview_1.md: all original items resolved or corrected; its ten bounded patches are applied. Final confirmation CHANGES_REQUIRED in cut_review_7_confirmation_1.md for four exact acceptance/status patches and one wording nit; all are applied verbatim. A final narrow clean-context Claude Opus check at ec5fe2be returned PASS. The maintainer accepted Cut 7 on 2026-11-01; workstreams 15-18 and LDG-3179 through LDG-3190 are operative."
     opening: >-
       Written by Codex after accepted Cut 6 merged at 14252ffb. This cut
@@ -1152,7 +1170,8 @@ workstreams:
   - id: 18
     name: "Disclosure, teaching and WS5 integration (macro WS5)"
     cut: 7
-    status: "pending"
+    status: "complete"
+    accepted: "2026-11-02 under the maintainer's standing authorization after the final independent focused confirmation returned PASS at 34a06c6d."
     depends_on_workstream: 17
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 18, after LDG-3190", reason: "One claim joins LDG-3187 through LDG-3190: typed sizing evidence and native actual exposure are separately reported with exact coverage and aggregation labels; all maintained strategies, the peer recipe and one executed pattern article teach the final flat API and required inputs; the export/contract inventory has no retired reader/helper or accidental compatibility alias; Section 4 items 5/6 and every workstream detector fail under their mutations; full profiles, build/check, integrated oracles and descriptive timing pass or differ only by owned accepted rows; WS6 receives one stable flat input layout; and join J remains open until the merged WS7 reader consumes the D8 facts."}
@@ -1172,7 +1191,9 @@ workstreams:
       second bounded correction validates every unevidenced target against its
       held position, adds preserved-holding and extra-ID cases, names and pins
       total-equity sizing in the article, and fixes the LTB-0545 citation.
-      Final clean confirmation remains required before acceptance.
+      A fresh final clean confirmation of 8e8935aa..34a06c6d returned PASS:
+      R1-R3 and the handle-cleanup note are closed, both D8 mutations remain
+      detecting, the correction is vectorized and no new defect was found.
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2740,7 +2761,7 @@ tickets:
   - id: "LDG-3187"
     title: "Persist and report typed sizing and rounding evidence"
     workstream: 18
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-3186"]
@@ -2794,7 +2815,7 @@ tickets:
   - id: "LDG-3188"
     title: "Migrate maintained strategies to the accepted grammar"
     workstream: 18
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3187"]
@@ -2829,7 +2850,7 @@ tickets:
   - id: "LDG-3189"
     title: "Teach one complete strategy-authoring pattern"
     workstream: 18
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3188"]
@@ -2867,7 +2888,7 @@ tickets:
   - id: "LDG-3190"
     title: "Verify WS5 and hand the flat layout to WS6"
     workstream: 18
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3189"]

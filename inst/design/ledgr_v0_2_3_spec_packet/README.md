@@ -2,7 +2,7 @@
 
 Role: living; current packet front door.
 Status: working; macro plan revision 7 records the accepted within-release
-order. Cuts 1, 2, 4 and 5 are closed. Cut 6 (WS4b, one execution path) is
+order. Cuts 1, 2, 4, 5 and 7 are closed. Cut 6 (WS4b, one execution path) is
 implemented and accepted through `14252ffb`: its final independent Type 1
 confirmation is `PASS`, and workstream 14/LDG-3178 are complete. Cut 7 is the
 accepted WS5 strategy-authoring implementation cut (workstreams 15-18,
@@ -57,6 +57,18 @@ isolation. Unchanged pulses encode no payload. The 500-ID, four-field record
 uses 0 payloads in 0.64 seconds when unchanged and 100 payloads in 0.67
 seconds when changed; these clocks are descriptive. Exact-source build and
 package check pass with only the two expected no-build-vignettes warnings.
+
+Workstream 18 (LDG-3187--LDG-3190) and Cut 7 are complete through
+`34a06c6d`. The independent [close review](close_review_18.md) and focused
+re-review found and closed stale helper-evidence, boundary-witness,
+classification, teaching and record defects. A final clean-context Claude
+Opus confirmation returned `PASS`: ordinary post-helper edits discard stale
+evidence to one raw notice, malformed evidence still refuses, both D8
+mutations are detected, and the executed article and records agree. The fast
+profile is functionally green but its 214.22-second result remains an explicit
+maintainer-accepted miss against the historical 112-second backstop; no test
+was retiered. Cut 7 closes WS5 implementation. Macro join J remains open for
+WS7's merged result reader.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.
