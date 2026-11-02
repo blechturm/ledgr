@@ -1003,6 +1003,128 @@ cuts:
       optimization shapes and report timing. A Type 1 design concern returns
       NEEDS_TYPE_2. Finding-bearing reviews get packet files; a third correction
       round on one workstream stops for maintainer disposition.
+  - id: 8
+    name: "Hot-path ban-list test (macro rule 17)"
+    cut: "2026-11-02"
+    status: "draft"
+    opening: >-
+      Written by Claude on 2026-11-02 at the maintainer's request, as the
+      chore cut that macro rule 17 names ("the next cut drafted ... WS6 or a
+      chore cut"). It runs in parallel with Cut 7's acceptance, on branch
+      claude/rule17-banlist from Cut 7 head e04786ef, and lands after Cut 7
+      merges. The cut adds a test and tooling only. It removes no banned call:
+      the baseline records today's instances, and later cuts shrink it (WS8
+      and the WS14a subtraction cut first). The measurement step is
+      dev/bench/v0_2_3_hot_path_bans/findings.md. Once accepted, this entry,
+      workstream 19 and LDG-3191 through LDG-3193 are the operative brief;
+      tickets.yml is the sole ticket and sequencing authority. If a
+      concurrently drafted cut takes these numbers first, this cut is
+      renumbered in order, as cut 4 was.
+    authority: >-
+      inst/design/ledgr_v0_2_3_spec_packet/macro_plan.md Section 1 rules 14
+      (no JSON on per-pulse or per-fill paths) and 17 (hot-path bans enforced
+      by a test, shrink-only baseline), WS14a (the baseline is review input)
+      and the WS8 fill-heavy baseline amendment;
+      inst/design/manual/optimization_coding_style.qmd, The Seven Shapes And
+      Their Replacements; dev/bench/v0_2_3_hot_path_bans/findings.md;
+      dev/bench/v0_2_3_fill_heavy_profile/README.md; tests/README.md (profile
+      runner, heavy protocols).
+    source_table: >-
+      Cut 7 head e04786ef. The fold stages are ledgr_fold_stage_observe_settle,
+      _decide, _plan, _apply and _commit (R/fold-engine.R). They reach most
+      per-pulse code indirectly: through services$history_reader,
+      services$availability_provider, services$valuation_state and
+      services$corporate_action_plan members; through output_handler methods
+      built as closures in R/output-handler.R; through cost_resolver passed as
+      an argument (R/fold-carrier.R ledgr_plan_resolve); through the prepared
+      membership closures returned by a factory
+      (R/availability-provider-prepared.R); and, from user strategy code,
+      through `$.ledgr_pulse_context`, `$.ledgr_strategy_state_view`, the
+      helper-bundle closures and ledgr_strategy_result(). The probe's static
+      walk with the context surface as roots reaches 310 functions, 95 of them
+      with 203 banned calls; the runtime trace of the nine dense recipes
+      (ledgr_run plus one-candidate ledgr_sweep) sees 112 package functions
+      under a stage, all inside the static set. No test guards rule 14 or rule
+      17 today; both are prose that review applies by hand.
+    decisions: >-
+      Proposed for maintainer acceptance with the cut.
+      (1) Roots. The five fold stage functions plus the strategy-facing
+      per-pulse surface: `$`, `[[` and `names` methods of ledgr_pulse_context,
+      `$` of ledgr_strategy_state_view, the ledgr_pulse_context_helper_bundle
+      closures and ledgr_strategy_result(). Option B adds the exported
+      authoring helpers (strategy-helpers.R, sizing-evidence.R), which run
+      inside every strategy that uses them: 29 more rows and 48 more calls.
+      Claude recommends B, because WS18 just made those helpers the taught
+      pattern and their per-ID matching is exactly what rule 17 targets.
+      (2) The walker reads the installed namespace, not R/ source, so the test
+      runs unchanged in CRAN mode. Nodes are namespace functions and the
+      closures defined inside them (keyed owner$name). Edges come from direct
+      calls, function symbols passed as arguments, x$m() calls resolved to
+      every closure bound to member m (named list element, x$m <- function,
+      x$m <- f, m = x$y), owner-local calls by name, and a declared-edge table
+      for function-valued arguments and factory returns. Over-approximation
+      is accepted: a row on a cold branch costs one recorded line.
+      (3) Banned calls are rule 17's list (match, %in%, setdiff, setNames,
+      unique, data.frame, as.data.frame, rbind, all.equal) as call heads or as
+      apply-family function arguments, plus canonical JSON encode or parse
+      (jsonlite toJSON, fromJSON, parse_json, serializeJSON and ledgr's
+      wrappers canonical_json, ledgr_canonical_json_encode,
+      ledgr_canonical_json, ledgr_json_read_nested, ledgr_json_read_config,
+      ledgr_parse_json_field) as call heads or argument symbols. JSON wrappers
+      are leaves, flagged at the call site. collapse::fmatch(), duplicated()
+      and order() are not banned. Calls inside the arguments of a
+      condition signal (rlang::abort, warn, inform, stop, warning, message,
+      signalCondition, and ledgr helpers named *abort, *_fail, *_refuse or
+      *_error) are exempt, because message building runs only on failure;
+      the condition guarding the signal is not exempt.
+      (4) Exact ratchet. The baseline file records node, call, count and
+      reason, and the test requires the current scan to equal it. A lower
+      count or a vanished row fails too, with a message to regenerate, so a
+      stale allowance can never hide a later regression. The regeneration
+      tool writes lower or removed rows freely and refuses a new or increased
+      row without a stated reason, which it records. Acceptance of that
+      reason is a review duty, not a test.
+      (5) The declared-edge table records from, to and reason; an edge whose
+      endpoint no longer exists fails.
+      (6) Runtime witness. A heavy_protocol block runs the nine dense recipes
+      through ledgr_run() and a one-candidate ledgr_sweep() in a fresh R
+      process with every namespace closure traced. It fails if a package
+      function executes under a fold stage outside the static reachable set
+      (JSON leaves excepted). It catches an undeclared indirection on an
+      exercised path; an unexercised one remains possible, and that limit is
+      recorded.
+      (7) Review duty. The packet's review_obligations gain one sentence:
+      every close review reads the baseline and declared-edge diff, and an
+      added or increased row needs a reason the maintainer accepts.
+      (8) Identity, per macro rule 5: snapshot content none; run
+      configuration none; store format fingerprint none. Release impact, per
+      rule 6: tests, test tooling and packet text; no product, NEWS,
+      documentation or dependency change.
+    sequencing: >-
+      One workstream, serial tickets. LDG-3191 builds the walker, baseline,
+      edge table and fast test with synthetic witnesses; LDG-3192 adds the
+      runtime witness; LDG-3193 wires the review duty, regenerates the
+      baseline on the merged base after Cut 7 lands, verifies and closes.
+      Independent of WS7/WS8 drafting; if both are open at once, whichever
+      merges second regenerates the baseline.
+    out_of_scope: >-
+      Removing or rewriting any banned call (WS8, WS14a and later owners);
+      result-reader, preparation, finalisation and once-per-run paths outside
+      the fold (WS7 owns reader replay); user strategy code; extending the
+      banned list beyond rule 17 and rule 14; dynamic tracing in ordinary
+      lanes; per-stage timing budgets (WS14a); any product, fixture or oracle
+      change.
+    workstreams: [19]
+    review_lifecycle: >-
+      An independent clean-context Codex cut review challenges the walker's
+      precision and blind spots, the exact-ratchet and exemption rules,
+      whether every gate can fail, and decision (1). The workstream receives
+      one Type 1 close review that reruns the static test and the runtime
+      witness on the merged base, applies each synthetic mutation, and checks
+      that the baseline equals the scan with every non-initial row reasoned.
+      A Type 1 design concern returns NEEDS_TYPE_2. Finding-bearing reviews
+      write a file in this packet; a third correction round stops for
+      maintainer disposition.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -1156,6 +1278,13 @@ workstreams:
     depends_on_workstream: 17
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 18, after LDG-3190", reason: "One claim joins LDG-3187 through LDG-3190: typed sizing evidence and native actual exposure are separately reported with exact coverage and aggregation labels; all maintained strategies, the peer recipe and one executed pattern article teach the final flat API and required inputs; the export/contract inventory has no retired reader/helper or accidental compatibility alias; Section 4 items 5/6 and every workstream detector fail under their mutations; full profiles, build/check, integrated oracles and descriptive timing pass or differ only by owned accepted rows; WS6 receives one stable flat input layout; and join J remains open until the merged WS7 reader consumes the D8 facts."}
+  - id: 19
+    name: "Hot-path ban-list test (macro rule 17)"
+    cut: 8
+    status: "pending"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 19, after LDG-3193", reason: "One claim joins LDG-3191 through LDG-3193: an ordinary fast test walks the installed namespace from the accepted roots and fails when any banned call in a reached function differs from the recorded baseline; each synthetic witness (banned head, apply argument, member dispatch, alias, declared edge, cold exemption, stale row, stale edge) fails or passes as specified; the runtime witness finds no package function executed under a fold stage outside the static set on the merged base and fails when a declared edge is removed; the baseline equals the scan on the merged base; the review duty is recorded; and no product, fixture or oracle changed."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2845,3 +2974,71 @@ tickets:
         record any surviving WS11b owner. The causal-history rendered reason
         change from status_unknown to target_restricted is attributed to
         WS15's flat-context/buyable migration, not to a WS16 economic change.
+  - id: "LDG-3191"
+    title: "Walk the per-pulse call graph and pin banned calls in an exact baseline"
+    workstream: 19
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Write the walker of cut 8 decisions (1)-(3) over the installed
+      namespace, the baseline and declared-edge files under
+      tests/testthat/fixtures/hot-path-bans/, and a regeneration tool that
+      writes lower or removed rows freely and refuses a new or increased row
+      without --reason. Seed the baseline from the scan with reason "initial
+      baseline, cut 8" and the declared edges from the probe's three, each
+      with its reason. Write one fast test file named for the contract (hot
+      path bans) whose first block compares the scan with the baseline
+      exactly and names each differing row, and whose other blocks run the
+      walker on a small synthetic namespace as negative witnesses: a banned
+      call head, a banned apply argument, member dispatch through each binding
+      form, an owner-local call, a declared edge, a JSON leaf, the cold
+      exemption and the guarded-condition non-exemption, a stale baseline row
+      and a stale declared edge. Each block title states its claim as a
+      sentence. Measure the fast block's wall time.
+    acceptance:
+      - "the scan on the branch equals the seeded baseline, and the test fails with the differing rows named when one banned call is added to, or removed from, any reached function"
+      - "every synthetic witness fails or passes exactly as its title states, and none depends on product code"
+      - "the regeneration tool refuses a new or increased row without a reason and records the reason it is given"
+      - "the test runs from an installed library without R/ sources, and its fast block costs at most 3 s"
+    evidence: []
+  - id: "LDG-3192"
+    title: "Witness at runtime that the static walk covers what the fold executes"
+    workstream: 19
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3191"]
+    scope: >-
+      Add one heavy_protocol block that, in a fresh R process, traces every
+      namespace closure of the installed build and runs the nine dense peer
+      recipes through ledgr_run() and a one-candidate ledgr_sweep(). It
+      fails, naming the functions, if any package function executes while a
+      fold stage is on the stack outside the static reachable set, JSON leaves
+      excepted. Its positive control removes one declared edge and must fail.
+      Record the protocol census entry and the block's wall time.
+    acceptance:
+      - "the witness passes on the branch and fails, naming the unreached closure, when the cost-resolver edge is removed"
+      - "the traced process leaves the test session's namespace untouched"
+      - "the full-heavy protocol and its checker pass with the new block counted"
+    evidence: []
+  - id: "LDG-3193"
+    title: "Record the review duty, regenerate on the merged base and close"
+    workstream: 19
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3192"]
+    scope: >-
+      Add the cut 8 decision (7) sentence to review_obligations. Point
+      tests/README.md and macro rule 17 at the test and the regeneration tool.
+      After Cut 7 merges into release/v0.2.3, rebase this branch, regenerate
+      the baseline and record every changed row with its cause. Run the fast
+      and review profiles, the heavy protocol, source build and R CMD check,
+      and record the fast-lane time against its bound.
+    acceptance:
+      - "on the merged base the scan equals the baseline, the runtime witness passes and each changed row since LDG-3191 is attributed to a named commit"
+      - "fast, review and heavy profiles, source build and R CMD check pass; the fast-lane delta is recorded"
+      - "no file under R/, no fixture or oracle outside tests/testthat/fixtures/hot-path-bans/, and no NEWS or documentation page changed"
+    evidence: []
