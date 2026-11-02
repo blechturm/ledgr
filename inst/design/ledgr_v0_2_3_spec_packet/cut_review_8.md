@@ -346,3 +346,206 @@ unresolved-callable policy and cold exceptions, followed by a revised cut and
 targeted re-review. This follows the cut's own Type 1 escalation rule
 (`tickets.yml:1144-1146`); it does not reopen the need for rule 17 or authorize
 product optimization in this chore.
+
+## Re-review 1 (revision 2)
+
+Mode: targeted Type 1 cut re-review.
+Reviewer: Codex. Date: 2026-11-02.
+Reviewed head: `8984329916ed3d7f75461dce5e4a21f4d2e44b26`.
+Verdict: **PASS_AFTER_PATCHES**, conditional on R1-R5 below.
+
+Revision 2 faithfully records the four maintainer dispositions: static scanning
+of the loop body, refusal of unresolved callables, no error-path exemption, and
+single-process runtime evidence relying on the one fold core
+(`tickets.yml:1093-1100`, `:1135-1140`, `:1154-1162`). None is reopened here.
+The remaining defects have bounded text patches. This verdict approves the
+revised cut after those patches; implementation and close-review evidence are
+still pending (`tickets.yml:3177`, `:3241`, `:3273`).
+
+References below use this worktree, including its macro plan. The earlier
+section's separate-main-checkout convention does not apply to this re-review.
+
+### Disposition of round-one findings, in order
+
+| Original | Status in revision 2 | Revised evidence and remaining issue |
+| --- | --- | --- |
+| F1 pulse envelope | Partially resolved | The complete AST loop body is now a root, including inline, skip and stop work; direct-body and skip mutations are required (`tickets.yml:1096-1100`, `:3220-3223`). The runtime window still differs: R1. |
+| F2 indirection/collisions | Partially resolved | Defaults, qualified values, literal do.call, aliases, indexed members and inline callbacks are bound; unresolved targets fail (`tickets.yml:1115-1140`, `:3206-3213`). Lexical identity versus the same-name fixture needs R2; unresolved higher-order arguments need explicit R3 coverage. |
+| F3 runtime limitations | Resolved in direction and controls | The witness admits its local-closure limitation, refuses trace failures without an exclusion, and covers only sequential paths as decided (`tickets.yml:1158-1182`). The namespace control now names the descendant; the callback control uses the static gate (`:3255-3260`). R1 fixes the separate boundary defect; worker tracing is no longer an obligation. |
+| F4 JSON | Partially resolved | Current ledgr wrappers and yyjsonr/jsonlite functions are included; wrapper bodies remain scanned and counting is per static call site (`tickets.yml:1144-1153`, `:3214-3215`). This covers the current backend (`R/config-canonical-json.R:68-99`). Inventory weakening still needs R4. |
+| F5 cold exemption | Resolved in direction | All helper and signal arguments count; both original bypasses have required witnesses (`tickets.yml:1154-1157`, `:3216-3217`). R5 reconciles the prescribed reason with initial seeding. |
+| F6 regeneration | Partially resolved | Surface/declaration/root changes and departing nodes need reasons, as do new/increased rows; duplicate keys and blank reasons fail; the full delete/regenerate/reintroduce sequence is required (`tickets.yml:1183-1196`, `:3224-3227`). R4 closes the omitted inventory/analyzer-policy category. |
+| F7 gates/budget | Resolved in direction | Per-path observations/completion, both controls, disabled tracing and dropped-path failures are specified (`tickets.yml:3248-3267`). Added fast membership has its own budget; inherited timing is separate (`:1197-1204`, `:3282-3288`). Boundary and fixture corrections remain R1-R3. |
+| F8 surface coverage | Resolved as a cut obligation | History/group methods, returned signal callbacks, S4 discovery and a family-to-root/closure/workload or uncovered-path map are required (`tickets.yml:1104-1114`, `:3186-3195`). This is an obligation to produce evidence, not a claim that every family is runtime-covered. |
+| F9 governance/base | Resolved | Authority is now present (`macro_plan.md:95-100`, `:124-136`, `:436-450`, `:529-628`). Identifier checks, full reference renumbering, final-base regeneration, controls and permitted test/packet pointers are explicit (`tickets.yml:1032-1041`, `:1205-1217`, `:3277-3289`). |
+
+### R1. Runtime and static pulse boundaries still disagree
+
+**Concrete scenario:** the static root includes `ledgr_time_now()` and pulse
+setup before observe/settle (`R/fold-engine.R:1895-1902`). The proposed runtime
+window opens only at observe/settle entry (`tickets.yml:1172-1174`). After each
+stop application, the loop still calls `flush_pulse_block(ts)` before breaking
+(`R/fold-engine.R:1915-1917`, `:1947-1949`, `:1970-1972`), but the window has
+already closed. It also closes before the post-commit `isTRUE`/continue check
+at `:1994-1996`. Thus a dynamically reached package helper in these regions can
+escape the runtime comparison even on an exercised path. Static scanning still
+covers these regions; the defect is the claim of matching runtime evidence.
+
+There is a possible mismatch in the other direction on exceptions: an error
+escaping before commit or stop application has no specified closing hook. A
+sticky active flag can count the outer exception diagnostic as pulse work
+(`R/fold-engine.R:2024-2049`). This is an implementation risk inferred from
+the specified hooks, not an observed failure of an implemented witness.
+
+**Exact patch:** replace decision (6)'s two boundary sentences at
+`tickets.yml:1172-1174` with:
+
+> The runtime boundary is the same AST-located loop body as decision (1).
+> Test-side instrumentation opens before its first expression and closes after
+> its last expression, or when that iteration exits by break, next, error or
+> interrupt. Stop application does not close the boundary before the remaining
+> in-loop drain. Unwinding clears the boundary before out-of-loop recovery or
+> finalisation; there is no product change.
+
+Add to LDG-3192's scope and acceptance:
+
+> Boundary controls observe a synthetic package sentinel before observe/settle,
+> after stop application during the drain, and after commit before iteration
+> exit. Each is subject to the reachable-set comparison. A sentinel outside the
+> loop after normal exit or error unwinding is excluded. Each control fails if
+> its entry/exit boundary is displaced past the sentinel.
+
+Use test-side synthetic code/instrumentation; do not add sentinels to product
+files or change the frozen workload fixtures. This implements the accepted AST
+boundary decision rather than adding another runtime mode.
+
+### R2. Same name in different lexical scopes is not a key collision
+
+**Concrete scenario:** decision (2) keys definitions by lexical path and rejects
+two different definitions under one key (`tickets.yml:1117-1119`). The ticket
+instead requires "two same-named local closures" to fail (`:3211`). The original
+regression has `root/a/f` and `root/b/f`: these must coexist and preserve the
+first closure's banned call. A literal same-name rejection would fail legitimate
+distinct scopes; merely rejecting both could pass the ticket without proving
+that lexical lookup works. The probe's overwriting behavior is the historical
+defect (`probe/probe_static.R:29-40`, `:60`), not the revised implementation.
+
+**Exact patch:** replace the `:3211` witness with:
+
+> Two different closure definitions assigned to the same lexical key fail with
+> that key reported. Two same-named closures in different lexical scopes have
+> distinct keys; calling the first reaches and counts its banned operation even
+> when the second has none. No definition may overwrite another silently.
+
+Keep collision rejection in decision (2) and the acceptance at `:3233`, qualified
+as a same-key collision. Add both positive and failing cases to the synthetic
+namespace. No product restriction on ordinary shadowing is authorized.
+
+### R3. Make the unresolved gate cover higher-order callable arguments explicitly
+
+**Concrete scenario:** `function(xs, f) lapply(xs, FUN = f)` has a resolved call
+head, `base::lapply`, but an unresolved invoked callable `f`. The current gate
+speaks of a "call ... whose target ... cannot resolve" (`tickets.yml:1135-1139`),
+and its mandated negative witness only says "call through an argument"
+(`:3212-3213`). An implementation that checks unresolved call heads can pass
+`f(xs)` while silently dropping `FUN = f`; it can still pass the specified
+bare/qualified known-function and named-inline witnesses (`:3207-3210`).
+The external apply implementation is intentionally not traversed
+(`:1151-1153`), so the missing invocation will not be found there.
+
+**Exact patch:** append to decision (3), mirrored in LDG-3191:
+
+> Unresolved invoked function-valued arguments count as unresolved callable
+> sites even when the enclosing call head resolves, including apply-family
+> FUN arguments. Declarations identify the lexical node and callable site,
+> including the invoked argument where applicable. A declaration for one site
+> does not discharge a newly added site. A synthetic lapply(xs, FUN = f) fails
+> until that site's callable is declared; deleting its declaration fails again.
+
+This clarifies the maintainer's fail-until-declared decision. Known external
+targets can remain terminals; it does not require scanning arbitrary dependency
+implementations or user strategy bodies.
+
+### R4. JSON inventory and analyzer policy can still weaken counts freely
+
+**Concrete scenario:** remove an active JSON function from the inventory, keeping
+its external call resolved as a terminal. Reached nodes, roots, declarations and
+surface classification can remain unchanged while JSON counts decrease. Decision
+(7) permits lower counts freely and lists none of the JSON inventory or analyzer
+policy among the reason-required changes (`tickets.yml:1183-1192`). A synthetic
+direct yyjsonr case alone need not detect removal of a different jsonlite/parser
+entry (`:3214-3215`). The same loophole applies to weakening counting/resolution
+rules while retaining the reached nodes.
+
+**Exact patch:** add this bullet to decision (7)'s reason-required list:
+
+> A change to the JSON inventory or analyzer policy, including callable
+> resolution, ban counting and the pulse-loop locator; these changes are
+> distinguished from product call removals even if the reachable set is stable.
+
+Add those diffs to decision (8)'s review duty and LDG-3193's sentence. Require
+LDG-3191 to retain the prior policy/inventory identity as regeneration input and
+demonstrate refusal without a reason when an active JSON entry is removed while
+reachability is unchanged. Validate inventory identities against installed
+functions and add a failing missing-entry inventory check using an independent
+expected backend case. Reason acceptance stays with the maintainer. This closes
+coverage loss; it does not enlarge the accepted ban list.
+
+### R5. Initial seeding contradicts the error-path reason requirement
+
+**Concrete scenario:** decision (5) requires a genuine error-path row's reason
+to be "error path" (`tickets.yml:1154-1157`); LDG-3191 requires seeding the
+baseline with "initial baseline, cut 8" (`:3199-3201`). One reason field cannot
+satisfy both literal instructions for the same row.
+
+**Exact patch:** replace the baseline seeding sentence with:
+
+> Seed ordinary rows with reason "initial baseline, cut 8". Rows established by
+> review to occur only on an error path use reason "error path". Mixed-path
+> node/call rows remain ordinary rows. Both kinds retain their full counts and
+> participate in exact equality; neither reason grants an exemption.
+
+The mixed-path qualifier follows the chosen node/call/count grain. Add one
+synthetic error-only baseline row to verify that its reason does not suppress
+counting or permit a count change.
+
+### Acceptance audit and timing disposition
+
+Every revised acceptance category has a concrete failing construction after
+R1-R5. Close review should apply the following bounded mutations, rather than
+infer detector quality from a green seeded baseline:
+
+| Gate | Required failure / successful counterpart |
+| --- | --- |
+| Pulse-loop locator | Remove or duplicate the structurally identified pulse loop inside the lexical run_loop; zero/two candidates fail. An unrelated loop must not be selected. Add these explicit locator fixtures to LDG-3191 (`tickets.yml:1096-1100`, `:3222-3223`). |
+| Collision and resolution | Same-key duplicate fails; distinct-scope names preserve counts (R2). All listed edge forms count their known bans; direct and higher-order unresolved targets fail until declared (R3); nonexistent declared targets fail (`:1135-1140`, `:3206-3213`). |
+| JSON and signals | Direct backend, package wrapper and base ban inside wrapper each count; inventory weakening fails (R4). Signals/lookalike helpers never suppress counts; error reasons do not exempt (R5) (`:3214-3217`). |
+| Exact baseline and regeneration | Add/remove a call; delete/regenerate/reintroduce; change each surface/root/declaration/policy input; remove a reachable node; supply duplicate keys or blank reasons. Unreasoned changes fail under decision (7), including stable-reachability policy loss (R4) (`:1183-1192`, `:3224-3227`). |
+| Namespace runtime control | Remove the cost-resolver declaration and require loss of the named observed descendant on the final graph (`:3255-3257`, `:3282`). If another edge keeps it reachable, the control has not met acceptance; do not edit the reachable set to manufacture loss. |
+| Callback control | Remove the declaration of an unresolved callback with no unique namespace descendant; the static unresolved gate must fail (`:3258-3260`). No assertion that namespace tracing observes local closures is needed. |
+| Runtime validity | Disabled/uninstalled tracing and one omitted required path fail. Each path has its own observations and expected completion outcome, rather than a cumulative seen-set inherited from an earlier path (`:3248-3266`). Expected FAILED/INCOMPLETE workloads complete their protocol when their recorded expected outcome is obtained, not only on DONE. Apply R1 boundary controls as well. |
+| Packaging/profile evidence | Installed/source-free execution, the 3 s added-membership bound, process isolation and reconciled heavy census remain required (`:3235`, `:3267`); missing evidence cannot be recorded as success. |
+
+Decision (9)'s separation is sound and non-evasive. It measures all added fast
+membership in-process, retains the 3 s limit, reports functional results
+separately, and explicitly denies treating a small delta as a whole-lane pass
+(`tickets.yml:1197-1204`, `:3228-3235`, `:3282-3288`). The inherited 214.22 s
+functional run and accepted 112 s miss are recorded (`tickets.yml:3154-3155`);
+WS14a owns the test-suite response (`macro_plan.md:570-578`, `:621-628`).
+The old source-probe timing is not evidence of compliance with the new bound
+(`probe/findings.md:90-94`).
+
+At closeout, retain the ordinary timing record/checker outcome under the existing
+median procedure (`tests/README.md:25-33`), alongside the accepted inherited miss.
+Functional success does not turn that checker outcome green. A breach of this
+cut's own 3 s bound, a new functional failure or a missing heavy path remains
+this cut's failure; none is covered by the inherited exception. No timing gate
+or product change is silently authorized by this re-review.
+
+Evidence limits: read revision 2, the current pulse loop, JSON implementation,
+authority, test protocol and old probe/evidence description before assessment.
+These remaining findings follow from text and code boundaries; no runtime
+measurement was needed to settle them. The old probe was not rerun as if it
+implemented revision 2, and no future gate is claimed to have passed. The branch
+ref was read directly to confirm the head; no global Git configuration changed.
+Only this appended review section was written; no commit was made.
