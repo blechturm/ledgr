@@ -32,6 +32,18 @@ inventories under `dev/bench/v0_2_3_ws5/` and timing preregistration under
 `dev/bench/timing/protocols/ws5-timing-1/`. Workstream 15 and LDG-3179 through
 LDG-3181 are complete; integrated Cut 7 timing is
 descriptive milestone evidence, not a WS15 correctness gate.
+
+Workstream 16 (LDG-3182--LDG-3184) is complete through `4fcb4bbf`. Its
+independent [close review](close_review_16.md) and two focused confirmations
+([one](close_review_16_rereview_1.md),
+[two](close_review_16_rereview_2.md)) found and closed the declared-session
+parity, cache, detector, explicit-policy, teaching and scheduled-recovery
+issues. The final public surface uses plain selections and weights, two
+ctx-first target verbs, explicit investor inputs and explicit schedules.
+Focused tests and registered mutations pass; the source build and package
+check pass. The ordinary-fast lane executed 636/636 blocks in 211.540 seconds;
+that functional result exceeded the advisory 112-second timing hint and is not
+recorded as a timing pass.
 Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.

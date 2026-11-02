@@ -1095,7 +1095,8 @@ workstreams:
   - id: 16
     name: "Selection, targets and investor setup (macro WS5)"
     cut: 7
-    status: "pending"
+    status: "complete"
+    accepted: "2026-11-02 under the maintainer's standing authorization after the independent Type 1 chain closed every runtime, detector and documentation finding through 4fcb4bbf."
     close_review: >-
       CHANGES_REQUIRED in close_review_16.md. The correction keeps the
       accepted design: one declared-session schedule authority is shared by
@@ -1117,7 +1118,9 @@ workstreams:
       close_review_16_rereview_2.md closes F10 and finds only F11, the missing
       public documentation for that separate field. The doc-only closure names
       strategy_schedule in the return contract and teaches the explicit
-      schedule= rerun path.
+      schedule= rerun path. The maintainer's standing authorization closes the
+      workstream on that exact-source build and package-check record; no Type 2
+      question remains.
     depends_on_workstream: 15
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 16, after LDG-3184", reason: "One claim joins LDG-3182 through LDG-3184: plain named scores, strict weights and the two ctx-first target verbs implement the accepted selection, reservation, leaver, unavailable-sizing and contradiction rules through one shared sizing path; experiment construction requires investor capital and costs; mixed cadence queries the existing scheduler; all Section 4 item 3 mutations and the Section 4 item 6 default-disclosure detector fail; retired helper spellings have no alias; and execution, risk, affordability and schedule semantics outside the accepted synthesis do not change."}
@@ -2414,7 +2417,7 @@ tickets:
   - id: "LDG-3182"
     title: "Ship plain selection and strict named weights"
     workstream: 16
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3181"]
@@ -2454,7 +2457,7 @@ tickets:
   - id: "LDG-3183"
     title: "Implement the two ctx-first target verbs"
     workstream: 16
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3182"]
@@ -2501,7 +2504,7 @@ tickets:
   - id: "LDG-3184"
     title: "Require investor inputs and expose mixed-cadence scheduling"
     workstream: 16
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3183"]
