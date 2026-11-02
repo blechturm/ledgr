@@ -40,7 +40,7 @@ stopifnot(identical(owners$family, expected_families), !anyDuplicated(owners$fam
 stopifnot(all(grepl("^LDG-31(79|8[0-9]|90)$", owners$owner)))
 stopifnot(all(nzchar(owners$mutation)), all(startsWith(owners$mutation_command, "Rscript")))
 implemented_mutations <- grepl("^D[1-5]_", owners$family) |
-  owners$family == "D6_D7_schedule_inputs"
+  owners$family %in% c("D6_D7_schedule_inputs", "D8_rounding_evidence")
 stopifnot(all(grepl("v0_2_3_ws5/mutations[.]R", owners$mutation_command[implemented_mutations])))
 stopifnot(all(vapply(
   owners$family[implemented_mutations],
@@ -54,7 +54,7 @@ expected_consumers <- c(
   "dev/bench/long_window/lw_sweepwf.R"
 )
 stopifnot(identical(state$consumer, expected_consumers))
-stopifnot(all(grepl("scalar|descriptive", state$state_shape)), all(nzchar(state$disposition)))
+stopifnot(all(grepl("scalar|declared|descriptive", state$state_shape)), all(nzchar(state$disposition)))
 
 stopifnot(identical(differences$item, c(
   "public_context_surface", "position_facts", "uncarried_window_config_hash",
@@ -92,7 +92,24 @@ stopifnot(!grepl("position_facts_view", fold_source, fixed = TRUE))
 stopifnot(!grepl("for (", position_source, fixed = TRUE))
 
 consumer_text <- paste(unlist(lapply(file.path(root, expected_consumers[3:5]), readLines, warn = FALSE)), collapse = "\n")
-stopifnot(!grepl("ctx$vec", consumer_text, fixed = TRUE))
+port_text <- paste(readLines(file.path(dir, "semantic_ports.R"), warn = FALSE), collapse = "\n")
+for (retired in c(
+  "ctx$vec", "ctx$state_prev", "ledgr_select_top_n", "ledgr_weight_each",
+  "ledgr_signal_return(lookback", "ledgr_strategy_schedule("
+)) {
+  stopifnot(!grepl(retired, paste(consumer_text, port_text), fixed = TRUE))
+}
+article <- paste(readLines(file.path(root, "vignettes", "strategy-authoring-tools.qmd"), warn = FALSE), collapse = "\n")
+for (topic in c(
+  "### 1. Fixed Mix", "### 2. Filter", "### 3. Rank And Rotate",
+  "### 4. Fill A Fixed Number Of Slots",
+  "### 5. Preserve Holdings And Decide Index Leavers",
+  "### 6. Use Position Facts And Declared Memory",
+  "open_slots <- max(0L", "index_leavers = \"sell\"",
+  "reset_state = TRUE", "intent_reason = \"risk_checked\""
+)) {
+  stopifnot(grepl(topic, article, fixed = TRUE))
+}
 claims <- paste(readLines(file.path(root, "tests", "claims.yml"), warn = FALSE), collapse = "\n")
 stopifnot(grepl("LCL-0066", claims, fixed = TRUE), grepl("LCL-0103", claims, fixed = TRUE))
 stopifnot(!grepl("LCL-0071", claims, fixed = TRUE), !grepl("LCL-0102", claims, fixed = TRUE))

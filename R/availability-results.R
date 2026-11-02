@@ -82,38 +82,6 @@ ledgr_backtest_diagnostics_filtered <- function(con,
   ))
 }
 
-ledgr_strategy_intent_reasons <- function(detail_json) {
-  detail_json <- as.character(detail_json)
-  if (length(detail_json) == 0L) return(character())
-
-  # The diagnostics contract fixes each payload to one JSON object with one
-  # key. Decode the selected objects as one JSON array so explanation cost has
-  # one parser call rather than one parser setup per decision pulse.
-  parsed <- ledgr_json_read_nested(
-    paste0("[", paste(detail_json, collapse = ","), "]")
-  )
-  flattened <- unlist(parsed, recursive = TRUE, use.names = TRUE)
-  valid_shape <- is.list(parsed) &&
-    length(parsed) == length(detail_json) &&
-    all(lengths(parsed) == 1L) &&
-    is.character(flattened) &&
-    length(flattened) == length(detail_json) &&
-    identical(names(flattened), rep("intent_reason", length(detail_json)))
-  reasons <- if (valid_shape) {
-    unname(flattened)
-  } else {
-    NULL
-  }
-  if (!is.character(reasons) || length(reasons) != length(detail_json) ||
-      anyNA(reasons) || any(!nzchar(reasons))) {
-    rlang::abort(
-      "The retained strategy intent evidence is malformed.",
-      class = "ledgr_run_explanation_unavailable"
-    )
-  }
-  reasons
-}
-
 ledgr_run_completion_info_empty <- function() {
   missing_time <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
   list(
@@ -809,9 +777,16 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   intent_reason <- rep(NA_character_, length(intent_idx))
   found_intent <- !is.na(intent_idx)
   if (any(found_intent)) {
-    intent_reason[found_intent] <- ledgr_strategy_intent_reasons(
-      intent$detail_json[intent_idx[found_intent]]
+    intent_reason[found_intent] <- as.character(
+      intent$reasons[intent_idx[found_intent]]
     )
+    if (anyNA(intent_reason[found_intent]) ||
+        any(!nzchar(intent_reason[found_intent]))) {
+      rlang::abort(
+        "The retained strategy intent evidence is malformed.",
+        class = "ledgr_run_explanation_unavailable"
+      )
+    }
   }
   available <- if (nrow(decision) == 0L) {
     ledgr_availability_result_empty()

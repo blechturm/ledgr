@@ -890,6 +890,7 @@ ledgr_fold_stage_decide <- function(
   }
 
   intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
+  sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
 
   # P2 return boundary: the strategy return is normalized once, on the
   # complete context axis; a missing or extra target is refused, never
@@ -910,9 +911,47 @@ ledgr_fold_stage_decide <- function(
       stage = "decision",
       outcome = "recorded",
       reason_code = "strategy_intent",
-      reasons = "strategy_intent",
-      detail_json = canonical_json(list(intent_reason = intent_reason))
+      reasons = intent_reason,
+      detail_json = "{}"
     ))
+  }
+  sizing_evidence <- ledgr_validate_sizing_evidence(
+    sizing_evidence,
+    targets = targets,
+    context_ids = context_ids,
+    position = position,
+    mark = packet$mark
+  )
+  if (!is.null(sizing_evidence) && length(sizing_evidence$instrument_id) > 0L) {
+    add_segment(list(
+      n = length(sizing_evidence$instrument_id),
+      instrument_id = sizing_evidence$instrument_id,
+      stage = "sizing",
+      outcome = "recorded",
+      reason_code = sizing_evidence$reason_code,
+      reasons = sizing_evidence$reason_code,
+      target = sizing_evidence$pre_floor_quantity,
+      quantity = sizing_evidence$rounded_quantity,
+      price = sizing_evidence$price,
+      target_before_risk = sizing_evidence$requested_quantity,
+      position_before = sizing_evidence$position_before,
+      detail_json = "{}"
+    ))
+  } else if (is.null(sizing_evidence) &&
+             !isTRUE(services$pulse_notes$raw_sizing_notice_written)) {
+    # A literal quantity return has no observable pre-rounding intent. Persist
+    # one run-level notice; decision counts are recovered from the ordinary
+    # decision rows without repeating this notice on every pulse.
+    add_segment(list(
+      n = 1L,
+      instrument_id = "",
+      stage = "sizing",
+      outcome = "unavailable",
+      reason_code = "sizing_intent_unavailable",
+      reasons = "raw_quantity_targets",
+      detail_json = "{}"
+    ))
+    services$pulse_notes$raw_sizing_notice_written <- TRUE
   }
   append_decision_trace <- function(target_after = NULL) {
     if (length(context_ids) == 0L) {
@@ -1758,6 +1797,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   # 3.4). Current configs always carry the decoded policy.
   terminal_policy <- execution$corporate_action_policy
   pulse_notes <- new.env(parent = emptyenv())
+  pulse_notes$raw_sizing_notice_written <- FALSE
   schedule_query <- ledgr_strategy_schedule_query(
     execution$schedule_sessions,
     pulses_posix,

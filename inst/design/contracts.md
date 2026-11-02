@@ -42,12 +42,14 @@ current contract merely because they are newer or nearby.
   run helpers use `ledgr_run_*`, snapshot helpers use `ledgr_snapshot_*`, sweep
   helpers use `ledgr_sweep_*`, and walk-forward helpers use
   `ledgr_walk_forward_*`.
-- Verb-first exports are limited to:
+- General verb-first exports are limited to:
   `ledgr_compute_metrics()`, `ledgr_precompute_features()`,
   `ledgr_validate_schema()`, `ledgr_backtest_bench()`, and
   `ledgr_promote()`. Execution entry points such as `ledgr_run()`,
   `ledgr_sweep()`, and `ledgr_walk_forward()` are family roots, not allowlist
-  cases.
+  cases. The strategy-authoring grammar separately allowlists
+  `ledgr_passed_warmup()` and `ledgr_align_weights()`; they are ordinary
+  strategy/panel bridges, not durable-artifact methods.
 - Reopen surfaces for durable evidence use `open`, for example
   `ledgr_run_open()`, `ledgr_sweep_open()`, and `ledgr_walk_forward_open()`.
 - Public evidence accessors must not use `extract_`, `get_`, or `fetch_` as
@@ -216,7 +218,7 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   state and buffers already changed are not restored. The compiled
   spot-FIFO branch keeps its state-before-append order.
 - Stages write pulse diagnostics into the typed staging in emission order.
-  Its capacity is fixed in E at `max(5N + 3, Q_pulse)` rows (`N` run
+  Its capacity is fixed in E at `max(6N + 4, Q_pulse)` rows (`N` run
   instruments, `Q_pulse` the most disposition rows due on one pulse); a row
   beyond it refuses with `ledgr_invalid_fold_execution`. P5, or E on a stop,
   hands the used rows to the existing bounded diagnostic writer as one block
@@ -1810,6 +1812,22 @@ Accepted change pending:
   added requests to whole shares, preserve unavailable weighted holdings rather
   than redistributing their weight, reserve permitted marked exposure once and
   emit `sizing_unavailable` through the common decision-diagnostic path.
+- A target made by either ctx-first helper carries typed sizing evidence only
+  to the strategy-return boundary. Durable `run_diagnostics` rows use stage
+  `sizing`: `target_before_risk` is requested quantity, `target` is post-guard
+  pre-floor quantity, `quantity` is rounded quantity, and `price` and
+  `position_before` are the accepted sizing mark and pulse-start holding.
+  Reason codes distinguish ordinary rounding, rounded-to-zero addition,
+  rounded-to-zero liquidation, exact zero/liquidation and unavailable sizing.
+  The pulse path never JSON-encodes these values. Raw quantity strategies
+  instead emit one `sizing_intent_unavailable` notice per run.
+- D8 coverage belongs only to durable committed runs. A sweep candidate's
+  memory sink retains no sizing row and makes no coverage claim; a promoted
+  candidate reports it after durable execution. Summary and print report
+  exposure-weighted pooled, minimum-decision and last-decision coverage with
+  the decision clock and currency, alongside native final actual invested
+  exposure. Cross-decision quantity/value sums are diagnostics, never
+  portfolio exposure or P&L. Undefined denominators remain typed missing.
 - `keep` accepts unique IDs or an exact logical decision-axis mask. For held
   leavers, a character `keep` is the most specific decision, followed by
   `index_leavers`, followed by a logical keep mask. Undecided held leavers make

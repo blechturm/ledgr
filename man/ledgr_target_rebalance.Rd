@@ -65,6 +65,11 @@ allocatable equity; then the priced quantities are scaled down, before
 flooring, by \code{max(0, allocatable - held_exposure) / priced_value}. Each skip
 is recorded as a \code{sizing_unavailable} decision row in
 \code{ledgr_results(bt, "diagnostics")}.
+The same typed diagnostic rows preserve requested, pre-floor and rounded
+quantities for committed runs. \code{summary(bt)} and \code{print(bt)} report their
+exposure-weighted coverage separately from final actual exposure. Raw named
+quantity strategies have no helper sizing evidence and report that coverage
+as unavailable; ledgr does not infer it from fills.
 
 Warning and error classes:
 \itemize{

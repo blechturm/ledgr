@@ -755,6 +755,25 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(strategy_authoring_doc, "ledgr_run_compare(snapshot)", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "Schedule Decisions And Keep Strategy Memory", fixed = TRUE)
     testthat::expect_match(strategy_authoring_doc, "ctx$state$decisions_seen", fixed = TRUE)
+    for (heading in c(
+      "### 1. Fixed Mix", "### 2. Filter", "### 3. Rank And Rotate",
+      "### 4. Fill A Fixed Number Of Slots",
+      "### 5. Preserve Holdings And Decide Index Leavers",
+      "### 6. Use Position Facts And Declared Memory"
+    )) {
+      testthat::expect_match(strategy_authoring_doc, heading, fixed = TRUE)
+    }
+    testthat::expect_match(strategy_authoring_doc, "open_slots <- max(0L", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "length(selected)", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "length(retained)", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, 'index_leavers = "sell"', fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "remaining FIFO cost basis divided by held quantity", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, "counts positions on the\\s+shared bar axis")
+    testthat::expect_match(strategy_authoring_doc, "reset_state = TRUE", fixed = TRUE)
+    testthat::expect_match(strategy_authoring_doc, 'intent_reason = "risk_checked"', fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ctx$state_prev", fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ctx$vec", fixed = TRUE)
+    testthat::expect_no_match(strategy_authoring_doc, "ledgr_select_top_n", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "\n## Remembering Between Pulses\n", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "a typo fails instead of quietly returning `NULL`", fixed = TRUE)
     testthat::expect_match(strategy_development_doc, "`?ledgr_strategy_context` states the full typed", fixed = TRUE)
@@ -2234,4 +2253,41 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   )) {
     testthat::expect_match(news_flat, version, fixed = TRUE)
   }
+})
+
+test_that("LTB-0544: strategy pattern teaching stays complete and current", {
+  root <- testthat::test_path("..", "..")
+  source <- paste(
+    readLines(file.path(root, "vignettes", "strategy-authoring-tools.qmd"),
+      warn = FALSE, encoding = "UTF-8"
+    ),
+    collapse = "\n"
+  )
+  rendered <- paste(
+    readLines(file.path(root, "vignettes", "strategy-authoring-tools.md"),
+      warn = FALSE, encoding = "UTF-8"
+    ),
+    collapse = "\n"
+  )
+  headings <- c(
+    "### 1. Fixed Mix", "### 2. Filter",
+    "### 3. Rank And Rotate", "### 4. Fill A Fixed Number Of Slots",
+    "### 5. Preserve Holdings And Decide Index Leavers",
+    "### 6. Use Position Facts And Declared Memory"
+  )
+  for (heading in headings) {
+    testthat::expect_match(source, heading, fixed = TRUE)
+    testthat::expect_match(rendered, sub("^### ", "### ", heading), fixed = TRUE)
+  }
+  for (needle in c(
+    "open_slots <- max(0L", "index_leavers = \"sell\"",
+    "capital_base = \"remaining_equity\"", "ctx$entry_price",
+    "ctx$bars_since_exit", "asset_state = list(peak = NA_real_)",
+    "reset_state = TRUE", "summary(weekly_run)"
+  )) {
+    testthat::expect_match(source, needle, fixed = TRUE)
+  }
+  testthat::expect_no_match(source, "ctx$vec", fixed = TRUE)
+  testthat::expect_no_match(source, "ctx$feature(", fixed = TRUE)
+  testthat::expect_no_match(source, "ctx$features(", fixed = TRUE)
 })

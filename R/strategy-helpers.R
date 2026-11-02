@@ -276,6 +276,11 @@ ledgr_weight_equal <- function(selection, each = NULL) {
 #' flooring, by `max(0, allocatable - held_exposure) / priced_value`. Each skip
 #' is recorded as a `sizing_unavailable` decision row in
 #' `ledgr_results(bt, "diagnostics")`.
+#' The same typed diagnostic rows preserve requested, pre-floor and rounded
+#' quantities for committed runs. `summary(bt)` and `print(bt)` report their
+#' exposure-weighted coverage separately from final actual exposure. Raw named
+#' quantity strategies have no helper sizing evidence and report that coverage
+#' as unavailable; ledgr does not infer it from fills.
 #'
 #' Warning and error classes:
 #' - `ledgr_target_sizing_unavailable` when an availability-aware rebalance
@@ -417,6 +422,16 @@ ledgr_target_size <- function(ctx,
   }
   names(close) <- universe
 
+  # The sizing helper carries typed, per-instrument evidence to the fold. The
+  # public target remains the ordinary complete quantity vector; these
+  # columns are consumed once at the strategy-return boundary and never
+  # encoded as JSON in the pulse loop.
+  sizing_requested <- rep(NA_real_, length(universe))
+  sizing_pre_floor <- rep(NA_real_, length(universe))
+  sizing_price <- rep(NA_real_, length(universe))
+  sizing_reason <- rep("", length(universe))
+  sizing_used <- rep(FALSE, length(universe))
+
   weighted_ids <- names(weights)
   addition_ids <- names(add_value)
   requested_ids <- union(weighted_ids, addition_ids)
@@ -463,11 +478,23 @@ ledgr_target_size <- function(ctx,
     }
     if (identical(index_leavers, "sell") && length(undecided) > 0L) {
       target[undecided] <- 0
-      preserve[match(undecided, universe)] <- FALSE
+      leaver_pos <- match(undecided, universe)
+      preserve[leaver_pos] <- FALSE
+      sizing_used[leaver_pos] <- TRUE
+      sizing_requested[leaver_pos] <- 0
+      sizing_pre_floor[leaver_pos] <- 0
+      sizing_price[leaver_pos] <- close[undecided]
+      sizing_reason[leaver_pos] <- "sizing_liquidation"
     }
     replaceable <- buyable & !logical_keep & !universe %in% explicit_keep
     target[replaceable] <- 0
     preserve[replaceable] <- FALSE
+    liquidated <- replaceable & position != 0
+    sizing_used[liquidated] <- TRUE
+    sizing_requested[liquidated] <- 0
+    sizing_pre_floor[liquidated] <- 0
+    sizing_price[liquidated] <- close[liquidated]
+    sizing_reason[liquidated] <- "sizing_liquidation"
     keep_ids <- union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, "sell"))])
     target[keep_ids] <- position[keep_ids]
     preserve[match(keep_ids, universe)] <- TRUE
@@ -492,6 +519,11 @@ ledgr_target_size <- function(ctx,
     }
     target[exits] <- 0
     preserve[exits] <- FALSE
+    sizing_used[exits] <- TRUE
+    sizing_requested[exits] <- 0
+    sizing_pre_floor[exits] <- 0
+    sizing_price[exits] <- close[exits]
+    sizing_reason[exits] <- "sizing_liquidation"
   }
 
   preserved_ids <- universe[preserve & position != 0 & !universe %in% weighted_ids]
@@ -545,7 +577,20 @@ ledgr_target_size <- function(ctx,
   skipped <- character()
   if (length(weighted_ids) > 0L) {
     zero <- weights == 0
-    if (any(zero)) target[weighted_ids[zero]] <- 0
+    if (any(zero)) {
+      zero_ids <- weighted_ids[zero]
+      zero_pos <- match(zero_ids, universe)
+      target[zero_ids] <- 0
+      sizing_used[zero_pos] <- TRUE
+      sizing_requested[zero_pos] <- 0
+      sizing_pre_floor[zero_pos] <- 0
+      sizing_price[zero_pos] <- close[zero_ids]
+      sizing_reason[zero_pos] <- ifelse(
+        position[zero_ids] != 0,
+        "sizing_liquidation",
+        "sizing_zero_target"
+      )
+    }
     positive_ids <- weighted_ids[positive_weights]
     if (length(positive_ids) > 0L) {
       price <- close[positive_ids]
@@ -554,6 +599,12 @@ ledgr_target_size <- function(ctx,
       if (length(skipped_weight) > 0L) {
         target[skipped_weight] <- position[skipped_weight]
         skipped <- union(skipped, skipped_weight)
+        skipped_pos <- match(skipped_weight, universe)
+        sizing_used[skipped_pos] <- TRUE
+        sizing_requested[skipped_pos] <- NA_real_
+        sizing_pre_floor[skipped_pos] <- NA_real_
+        sizing_price[skipped_pos] <- NA_real_
+        sizing_reason[skipped_pos] <- "sizing_unavailable"
       }
       requested_value <- weights[positive_ids[valid]] * invest_fraction * base
       skipped_held <- skipped_weight[position[skipped_weight] != 0]
@@ -575,7 +626,25 @@ ledgr_target_size <- function(ctx,
         scale <- max(0, base - unavailable_value) / priced_value
       }
       if (length(requested_value) > 0L) {
-        target[positive_ids[valid]] <- floor(requested_value * scale / price[valid])
+        valid_ids <- positive_ids[valid]
+        valid_pos <- match(valid_ids, universe)
+        requested_quantity <- requested_value / price[valid]
+        pre_floor_quantity <- requested_value * scale / price[valid]
+        target[valid_ids] <- floor(pre_floor_quantity)
+        sizing_used[valid_pos] <- TRUE
+        sizing_requested[valid_pos] <- requested_quantity
+        sizing_pre_floor[valid_pos] <- pre_floor_quantity
+        sizing_price[valid_pos] <- price[valid]
+        sizing_reason[valid_pos] <- "sizing_rounded"
+        rounded_zero <- target[valid_ids] == 0 & pre_floor_quantity > 0
+        if (any(rounded_zero)) {
+          rounded_zero_pos <- valid_pos[rounded_zero]
+          sizing_reason[rounded_zero_pos] <- ifelse(
+            position[valid_ids[rounded_zero]] != 0,
+            "sizing_rounded_to_zero_liquidation",
+            "sizing_rounded_to_zero_addition"
+          )
+        }
       }
     }
   }
@@ -583,12 +652,35 @@ ledgr_target_size <- function(ctx,
     price <- close[addition_ids]
     valid <- is.finite(price) & price > 0
     if (any(valid)) {
-      target[addition_ids[valid]] <- position[addition_ids[valid]] +
-        floor(add_value[valid] / price[valid])
+      valid_ids <- addition_ids[valid]
+      valid_pos <- match(valid_ids, universe)
+      requested_quantity <- position[valid_ids] + add_value[valid] / price[valid]
+      target[valid_ids] <- position[valid_ids] + floor(add_value[valid] / price[valid])
+      sizing_used[valid_pos] <- TRUE
+      sizing_requested[valid_pos] <- requested_quantity
+      sizing_pre_floor[valid_pos] <- requested_quantity
+      sizing_price[valid_pos] <- price[valid]
+      sizing_reason[valid_pos] <- "sizing_rounded"
+      rounded_zero <- target[valid_ids] == 0 & requested_quantity > 0
+      if (any(rounded_zero)) {
+        rounded_zero_pos <- valid_pos[rounded_zero]
+        sizing_reason[rounded_zero_pos] <- ifelse(
+          position[valid_ids[rounded_zero]] != 0,
+          "sizing_rounded_to_zero_liquidation",
+          "sizing_rounded_to_zero_addition"
+        )
+      }
     }
     if (any(!valid)) {
-      target[addition_ids[!valid]] <- position[addition_ids[!valid]]
-      skipped <- union(skipped, addition_ids[!valid])
+      skipped_ids <- addition_ids[!valid]
+      skipped_pos <- match(skipped_ids, universe)
+      target[skipped_ids] <- position[skipped_ids]
+      skipped <- union(skipped, skipped_ids)
+      sizing_used[skipped_pos] <- TRUE
+      sizing_requested[skipped_pos] <- NA_real_
+      sizing_pre_floor[skipped_pos] <- NA_real_
+      sizing_price[skipped_pos] <- NA_real_
+      sizing_reason[skipped_pos] <- "sizing_unavailable"
     }
   }
 
@@ -611,6 +703,18 @@ ledgr_target_size <- function(ctx,
     unavailable_ids = skipped
   )
   if (length(skipped) > 0L) attr(out, "sizing_skipped") <- skipped
+  attr(out, "sizing_evidence") <- structure(
+    list(
+      instrument_id = universe[sizing_used],
+      requested_quantity = sizing_requested[sizing_used],
+      pre_floor_quantity = sizing_pre_floor[sizing_used],
+      rounded_quantity = as.numeric(target[sizing_used]),
+      price = sizing_price[sizing_used],
+      position_before = as.numeric(position[sizing_used]),
+      reason_code = sizing_reason[sizing_used]
+    ),
+    class = "ledgr_sizing_evidence"
+  )
   out
 }
 

@@ -1,5 +1,17 @@
 # ledgr (development version)
 
+- Strategy sizing now leaves typed, per-instrument decision evidence for
+  requested, pre-floor and rounded quantities, the sizing price, prior
+  position and reason. Run summaries distinguish exposure-weighted sizing
+  coverage from final actual exposure; raw named-quantity strategies report
+  helper coverage as unavailable rather than inferring it from fills.
+- The maintained peer and long-window benchmark strategies now use the flat
+  strategy context, declared strategy state, external schedules and current
+  selection, weighting and target verbs. Frozen trailing-stop and Turtle
+  ports preserve their 58- and 741-fill reference outcomes.
+- `vignette("strategy-authoring-tools")` now teaches six reusable portfolio
+  patterns: fixed mix, filter, rank-and-rotate, fixed-slot filling, preserved
+  holdings and leavers, and position facts with declared memory.
 - Strategy authoring now ranks ordinary named score vectors with
   `ledgr_select_top()` or `ledgr_select_lowest()`, produces strict plain named
   weights with `ledgr_weight_equal()`, and sizes complete targets through the

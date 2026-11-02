@@ -3271,7 +3271,7 @@ testthat::test_that("[WS4a V-diagnostics V-equity V-stop U-3168] staging, equity
   state$equity_facts <- equity
   # The pinned capacity (design note 2.4), its overflow refusal and the
   # existing segment-length refusal.
-  testthat::expect_identical(ns$ledgr_fold_diagnostic_capacity(4L, NULL), 23L)
+  testthat::expect_identical(ns$ledgr_fold_diagnostic_capacity(4L, NULL), 28L)
   plan <- list(state = list(disposition_due_by_pulse = list(`2` = 1:9, `5` = 1:40)))
   testthat::expect_identical(ns$ledgr_fold_diagnostic_capacity(4L, plan), 40L)
   testthat::expect_error(

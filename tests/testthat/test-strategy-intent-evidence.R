@@ -113,16 +113,11 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
   testthat::expect_identical(rows$stage, rep("decision", 2L))
   testthat::expect_identical(rows$outcome, rep("recorded", 2L))
   testthat::expect_identical(rows$reason_code, rep("strategy_intent", 2L))
-  testthat::expect_identical(rows$reasons, rep("strategy_intent", 2L))
-  parsed <- lapply(rows$detail_json, ledgr:::ledgr_json_read_nested)
   testthat::expect_identical(
-    lapply(parsed, names),
-    rep(list("intent_reason"), 2L)
-  )
-  testthat::expect_identical(
-    vapply(parsed, `[[`, character(1L), "intent_reason"),
+    rows$reasons,
     c("minimum_variance_solution", "hold_current_portfolio")
   )
+  testthat::expect_identical(rows$detail_json, rep("{}", 2L))
   bar_native_intent_query <- NULL
   diagnostics_filtered <- ledgr:::ledgr_backtest_diagnostics_filtered
   dense_explanation <- testthat::with_mocked_bindings(
@@ -243,7 +238,7 @@ testthat::test_that("[LTB-0491] availability explanations join intent by decisio
   explanation <- ledgr_run_explain(bt, "AAA")
 
   testthat::expect_identical(nrow(rows), 2L)
-  testthat::expect_identical(intent_parser_calls, 1L)
+  testthat::expect_identical(intent_parser_calls, 0L)
   testthat::expect_type(explanation$intent_reason, "character")
   testthat::expect_identical(
     explanation$intent_reason,
@@ -255,7 +250,7 @@ testthat::test_that("[LTB-0491] availability explanations join intent by decisio
   )
   scalar_explanation <- ledgr_run_explain(bt, "AAA", explanation$ts_utc[[1L]])
   testthat::expect_identical(scalar_explanation$intent_reason, "minimum_variance_solution")
-  testthat::expect_identical(intent_parser_calls, 2L)
+  testthat::expect_identical(intent_parser_calls, 0L)
 
   close(bt)
   reopened <- ledgr_run_open(snapshot, "intent-availability")
@@ -356,11 +351,10 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
   resumed_rows <- intent_evidence_rows(resumed)
   testthat::expect_identical(nrow(resumed_rows), 8L)
   testthat::expect_identical(
-    unname(vapply(resumed_rows$detail_json, function(x) {
-      ledgr:::ledgr_json_read_nested(x)$intent_reason
-    }, character(1L))),
+    unname(resumed_rows$reasons),
     paste0("pulse_", seq_len(8L))
   )
+  testthat::expect_identical(resumed_rows$detail_json, rep("{}", 8L))
   testthat::expect_identical(anyDuplicated(resumed_rows$ts_utc), 0L)
 
   wf_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
@@ -388,7 +382,6 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
   testthat::expect_identical(length(wf$test_runs), 1L)
   test_rows <- intent_evidence_rows(wf$test_runs[[1L]])
   testthat::expect_identical(nrow(test_rows), 3L)
-  testthat::expect_true(all(vapply(test_rows$detail_json, function(x) {
-    identical(ledgr:::ledgr_json_read_nested(x)$intent_reason, "candidate_only")
-  }, logical(1L))))
+  testthat::expect_identical(test_rows$reasons, rep("candidate_only", 3L))
+  testthat::expect_identical(test_rows$detail_json, rep("{}", 3L))
 })

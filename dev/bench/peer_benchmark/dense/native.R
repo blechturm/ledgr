@@ -35,6 +35,7 @@ dense_run <- function(label, case, fixture, pkg) {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(snapshot, fixture$strategy, features = fixture$features,
     opening = fixture$opening, cost_model = fixture$cost, risk_chain = ledgr_risk_none(),
+    asset_state = fixture$asset_state,
     universe = if (case$facts) ledgr_universe_members("u") else NULL)
   warnings <- list()
   bt <- withCallingHandlers(

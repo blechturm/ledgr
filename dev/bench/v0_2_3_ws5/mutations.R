@@ -171,5 +171,12 @@ mutations <- list(
     new = "history_substrate$sessions",
     filter = "strategy-authoring-ws16",
     blocks = "construction requires investor inputs and schedule queries are pure"
+  ),
+  D8_rounding_evidence = list(
+    file = "R/fold-engine.R",
+    old = "      reason_code = sizing_evidence$reason_code,",
+    new = "      reason_code = rep(\"sizing_rounded\", length(sizing_evidence$reason_code)),",
+    filter = "strategy-sizing-evidence",
+    blocks = "[LTB-0540] runs persist and report sizing evidence without JSON"
   )
 )

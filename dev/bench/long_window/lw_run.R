@@ -18,18 +18,18 @@ momentum <- function(ctx, params) {
   if (is.null(.lw$first)) .lw$first <- now
   .lw$last <- now
   .lw$calls <- .lw$calls + 1L
-  month <- format(ledgr_utc(ctx$ts_utc), "%Y-%m", tz = "UTC")
-  if (identical(ctx$state_prev$month, month)) return(ctx$hold())
   if (sum(is.finite(ctx$return_252)) < 20L) {
-    return(list(targets = ctx$hold(), state_update = list(month = month)))
+    return(ctx$hold())
   }
   .lw$decisions <- .lw$decisions + 1L
-  targets <- ctx |>
-    ledgr_signal_return(lookback = 252) |>
-    ledgr_select_top_n(10, partial = "allow") |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(ctx, equity_fraction = 0.95)
-  list(targets = targets, state_update = list(month = month))
+  selected <- ledgr_select_top(ctx$return_252, n = 10L, within = ctx$buyable)
+  ledgr_target_rebalance(
+    ctx,
+    weights = ledgr_weight_equal(selected),
+    index_leavers = "sell",
+    invest_fraction = 0.95,
+    capital_base = "total_equity"
+  )
 }
 flat <- function(ctx, params) {
   now <- proc.time()[["elapsed"]]
@@ -43,6 +43,7 @@ strategy <- switch(strategy_name, momentum = momentum, flat = flat)
 snapshot <- ledgr_snapshot_open(db)
 exp <- ledgr_experiment(
   snapshot, strategy,
+  schedule = if (identical(strategy_name, "momentum")) ledgr_schedule_month_start() else NULL,
   features = if (identical(Sys.getenv("LW_NOFEAT"), "1")) list() else list(ledgr_ind_returns(63), ledgr_ind_returns(126), ledgr_ind_returns(252)),
   universe = ledgr_universe_members("synthetic_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2L),

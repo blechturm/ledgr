@@ -5,22 +5,23 @@ repo <- args[[1]]; db <- args[[2]]; out_json <- args[[3]]
 suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 
 momentum <- function(ctx, params) {
-  month <- format(ledgr_utc(ctx$ts_utc), "%Y-%m", tz = "UTC")
-  if (identical(ctx$state_prev$month, month)) return(ctx$hold())
   if (sum(is.finite(ctx$return_252)) < 20L) {
-    return(list(targets = ctx$hold(), state_update = list(month = month)))
+    return(ctx$hold())
   }
-  targets <- ctx |>
-    ledgr_signal_return(lookback = 252) |>
-    ledgr_select_top_n(params$n, partial = "allow") |>
-    ledgr_weight_equal() |>
-    ledgr_target_rebalance(ctx, equity_fraction = params$frac)
-  list(targets = targets, state_update = list(month = month))
+  selected <- ledgr_select_top(ctx$return_252, n = params$n, within = ctx$buyable)
+  ledgr_target_rebalance(
+    ctx,
+    weights = ledgr_weight_equal(selected),
+    index_leavers = "sell",
+    invest_fraction = params$frac,
+    capital_base = "total_equity"
+  )
 }
 
 snapshot <- ledgr_snapshot_open(db)
 exp <- ledgr_experiment(
   snapshot, momentum,
+  schedule = ledgr_schedule_month_start(),
   features = list(ledgr_ind_returns(63), ledgr_ind_returns(126), ledgr_ind_returns(252)),
   universe = ledgr_universe_members("synthetic_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2L),

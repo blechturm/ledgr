@@ -22,12 +22,12 @@ D5_marker_resume,LDG-3186,R/strategy-state.R,test-strategy-state-ws17.R,restore 
 D5_candidate_leak,LDG-3186,R/sweep.R,test-strategy-state-ws17.R,seed the second same-declaration candidate from non-default state,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D5_candidate_leak -
 D5_update_alignment,LDG-3186,R/strategy-state.R,test-strategy-state-ws17.R,skip ID reordering for a permuted full-axis update,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D5_update_alignment -
 D6_D7_schedule_inputs,LDG-3184,R/strategy-schedule.R,test-strategy-authoring-ws16.R,allow bar-native schedule queries to synthesize sessions,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D6_D7_schedule_inputs -
-D8_rounding_evidence,LDG-3187,pending_WS18,tickets.yml,omit a typed sizing category,Rscript dev/bench/v0_2_3_ws5/check.R
-D9_pattern_teaching,LDG-3189,pending_WS18,tickets.yml,teach an unexecuted pattern,Rscript dev/bench/v0_2_3_ws5/check.R
-S4_item_5_reader_cut,LDG-3188,pending_WS18,tickets.yml,retain a retired frame reader,Rscript dev/bench/v0_2_3_ws5/check.R
+D8_rounding_evidence,LDG-3187,R/strategy-helpers.R;R/fold-engine.R;R/sizing-evidence.R,test-strategy-sizing-evidence.R,swap requested and post-guard typed sizing fields,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D8_rounding_evidence -
+D9_pattern_teaching,LDG-3189,vignettes/strategy-authoring-tools.qmd,test-documentation-contracts.R,remove one complete taught pattern,Rscript dev/bench/v0_2_3_ws5/check.R
+S4_item_5_reader_cut,LDG-3188,dev/bench/peer_benchmark/dense/recipes.R;dev/bench/long_window/lw_run.R;dev/bench/long_window/lw_sweepwf.R;dev/bench/v0_2_3_ws5/semantic_ports.R,check.R,restore a retired context/state reader or helper,Rscript dev/bench/v0_2_3_ws5/check.R
 S4_item_6_timing,LDG-3179,dev/bench/timing/protocols/ws5-timing-1,check.R,remove a registered timing cell,Rscript dev/bench/v0_2_3_ws5/check.R
 consumer_strategy_authoring,LDG-3189,vignettes/strategy-authoring-tools.qmd,maintained_state_census.csv,omit maintained teaching,Rscript dev/bench/v0_2_3_ws5/check.R
 consumer_strategy_development,LDG-3189,vignettes/strategy-development.qmd,maintained_state_census.csv,omit maintained teaching,Rscript dev/bench/v0_2_3_ws5/check.R
-consumer_peer_dense,LDG-3180,dev/bench/peer_benchmark/dense/recipes.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
-consumer_long_window_run,LDG-3180,dev/bench/long_window/lw_run.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
-consumer_long_window_sweepwf,LDG-3180,dev/bench/long_window/lw_sweepwf.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_peer_dense,LDG-3188,dev/bench/peer_benchmark/dense/recipes.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_long_window_run,LDG-3188,dev/bench/long_window/lw_run.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R
+consumer_long_window_sweepwf,LDG-3188,dev/bench/long_window/lw_sweepwf.R,maintained_state_census.csv,restore ctx$vec consumer call,Rscript dev/bench/v0_2_3_ws5/check.R

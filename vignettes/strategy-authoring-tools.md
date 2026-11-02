@@ -688,6 +688,100 @@ ledgr_results(weekly_run, what = "fills") |>
 #> 8 2019-02-19 10:00:00 DEMO_01       BUY      12
 ```
 
+The run summary also tells you how much of the helper’s requested
+exposure survived whole-share sizing. This is decision evidence: it
+explains sizing at the pulses where the helper was called. It is
+deliberately distinct from the portfolio’s actual exposure at the end of
+the run, which the same summary labels separately.
+
+``` r
+summary(weekly_run)
+#> ledgr Backtest Summary
+#> ======================
+#>
+#> Strategy schedule: week start
+#> Decision pulses: 25; scheduled skips: 104
+#> Performance Metrics:
+#>   Total Return:        -0.87%
+#>   Annualized Return:   -1.70%
+#>   Max Drawdown:        -7.00%
+#>
+#> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily (default))
+#>   Volatility (annual): 8.05%
+#>   Sharpe Ratio:        -0.173
+#>
+#> Trade Statistics:
+#>   Closed Trades:       26
+#>   Win Rate:            69.23%
+#>   Avg Trade:           $2.97
+#>
+#> Exposure:
+#>   Time in Market:      68.99%
+#>
+#> Sizing Evidence:
+#>   Decision clock:                    accepted decision mark
+#>   Currency:                          USD
+#>   Aggregation:                       exposure-weighted across priced sizing rows
+#>   Evidenced decisions:               21
+#>   Decisions with unavailable intent: 4
+#>   Rounded-to-zero instructions:      0
+#>   Coverage (pooled):                 97.96%
+#>   Coverage (minimum decision):       95.86%
+#>   Coverage (last decision):          99.15%
+#>   Final actual invested exposure:    48.68% (final valued pulse)
+#>   Decision-exposure diagnostics (cross-decision sums; not portfolio exposure or P&L):
+#>     Requested value:                 91888.11
+#>     Post-guard pre-floor value:       91888.11
+#>     Rounded value:                   90011.28
+#>     Rounding difference:             1876.824
+#>
+#> Execution Evidence:
+#>   Execution Clock:      declared_sessions
+#>   Fill Timing:         availability_open_v2
+#>   Timing Version:      2
+#>
+#> Valuation Evidence:
+#> Valuation: CURRENT - every held mark was a current close
+#>   Universe:                    fixed basket
+#>   Assumption-backed facts:     sessions (knowledge assumed effective)
+#>   Stale-mark horizon:          5 sessions (default)
+#>   Exhausted marks:             freeze
+#>   Stale instrument-sessions:   0
+#>   Frozen instrument-sessions:  0
+#>   Longest freeze:              0 sessions
+#>   Max frozen value:            0
+#>   Max frozen weight:           0.00%
+#>   Frozen at end:               0 holdings, 0 (0.00% of equity)
+#>   Return if frozen worthless:  not applicable
+#>
+#> History Policy:
+#>   Price carry:                 5 sessions (default)
+#>   Output carry:                off (default)
+#>   Segment limit:               4 per fact, at least 16 (default)
+#>
+#> Completion Evidence:
+#>   Status:           DONE
+#>   Requested Window: 2019-01-01T16:00:00Z to 2019-06-28T16:00:00Z
+#>   Achieved Window:  2019-01-01T16:00:00Z to 2019-06-28T16:00:00Z
+#>   Stop Reason:      none
+#>   Last Fully Valued: 2019-06-28T16:00:00Z
+#>   Last Executed:    2019-06-18T10:00:00Z
+#>   Performance:       complete
+#>   Affected IDs:      none recorded
+#>
+#> Corporate-Action Evidence:
+#> Economic events: NOT SUPPLIED - returns may omit distributions
+#> Price basis: split_adjusted (declared)
+#>   Full policy record: ledgr_corporate_action_summary(bt)
+```
+
+Raw named-quantity strategies have no helper sizing evidence, so their
+sizing coverage is reported as unavailable rather than guessed. ledgr
+persists these typed facts for committed runs; it does not retain every
+intermediate signal, selection, or weight vector.
+
 Purchases happen only after scheduled decision pulses. Between them the
 strategy is not called, but ledgr continues the economic and accounting
 work of the run. The schedule is part of run identity and provenance, so
@@ -718,10 +812,10 @@ may move to a later open session in that month, never into the next one.
 `ledgr_schedule_month_start()` requires a provable boundary from the
 preceding month.
 
-In v0.2.2, these declarations require an availability-aware axis with
-exactly one pulse per expected venue session. Dense runs and multi-pulse
-intraday runs refuse them rather than silently choosing which pulse
-represents the session.
+In the current release, these declarations require an availability-aware
+axis with exactly one pulse per expected venue session. Dense runs and
+multi-pulse intraday runs refuse them rather than silently choosing
+which pulse represents the session.
 
 The following executable check uses a calendar with Thursday and Monday
 open, but Friday and the weekend closed. Its complete decision table is
@@ -729,6 +823,183 @@ empty:
 
     #> # A tibble: 0 x 1
     #> # i 1 variable: decision_date <date>
+
+## Six Patterns You Can Reuse
+
+The momentum example combined several ideas. The following catalogue
+separates the six recurring portfolio patterns. Every function returns a
+complete target; none introduces a second strategy language.
+
+### 1. Fixed Mix
+
+A fixed mix starts from ordinary named weights. It does not need a
+signal or a rank.
+
+``` r
+fixed_mix <- function(ctx, params) {
+  weights <- c(DEMO_01 = 0.60, DEMO_02 = 0.40)
+  ledgr_target_rebalance(
+    ctx,
+    weights = weights,
+    invest_fraction = params$invested
+  )
+}
+
+fixed_mix(pulse, list(invested = 0.8))
+#> <ledgr_target> [4 assets]
+#> origin: helper=ledgr_target_rebalance; capital_base=total_equity; capital_base_origin=default; invest_fraction=0.8
+#> non-NA: 4/4
+#> DEMO_01 DEMO_02 DEMO_03 DEMO_04
+#>     454     472       0       0
+```
+
+### 2. Filter
+
+`trend_momentum()` is the filter pattern: a plain logical expression
+decides which instruments qualify, missing decisions are resolved
+explicitly, and `ledgr_weight_equal()` converts the chosen IDs to
+weights. Use a filter when there is no meaningful ordering among the
+instruments that pass.
+
+### 3. Rank And Rotate
+
+`top_momentum()` is the rank-and-rotate pattern. The first stock rank
+should always name its candidate pool with `within = ctx$buyable`. That
+keeps a held but ineligible instrument visible to the strategy without
+allowing the rank to buy it again.
+
+### 4. Fill A Fixed Number Of Slots
+
+A slot strategy preserves existing holdings and opens only enough new
+names to reach a limit. Clamp the number of open slots at zero: without
+`max(0L, ...)`, a fully invested book would pass a negative count into
+the ranking helper.
+
+``` r
+fill_slots <- function(ctx, params) {
+  retained <- ctx$universe[ctx$held]
+  candidates <- ctx$universe[ctx$buyable & !ctx$held]
+  open_slots <- max(0L, params$slots - length(retained))
+  selected <- ledgr_select_top(
+    ctx$return_5,
+    n = open_slots,
+    within = candidates
+  )
+
+  ledgr_target_adjust(
+    ctx,
+    weights = ledgr_weight_equal(selected, each = params$slot_weight),
+    capital_base = "total_equity"
+  )
+}
+
+fill_slots(pulse, list(slots = 2L, slot_weight = 0.25))
+#> <ledgr_target> [4 assets]
+#> origin: helper=ledgr_target_adjust; capital_base=total_equity; capital_base_origin=supplied; invest_fraction=1
+#> non-NA: 4/4
+#> DEMO_01 DEMO_02 DEMO_03 DEMO_04
+#>       0     369     305       0
+```
+
+`length(selected)` is the number of new choices. `length(retained)` is
+the number of positions carried into the decision. They answer different
+questions and should not be reported as one count.
+
+### 5. Preserve Holdings And Decide Index Leavers
+
+Estimation and execution are separate. A rank may exclude a holding, but
+that does not decide whether to keep or sell it. This version retains
+named nonmembers only when the strategy parameter says so and explicitly
+sells every other index leaver:
+
+``` r
+rotation_with_leavers <- function(ctx, params) {
+  selected <- ledgr_select_top(
+    ctx$return_5,
+    n = params$n,
+    within = ctx$buyable
+  )
+  weights <- ledgr_weight_equal(selected)
+  nonmembers <- ctx$universe[ctx$held & !ctx$member]
+  preserved <- if (isTRUE(params$keep_leavers)) nonmembers else character()
+
+  ledgr_target_rebalance(
+    ctx,
+    weights = weights,
+    keep = preserved,
+    index_leavers = "sell",
+    capital_base = "remaining_equity"
+  )
+}
+
+rotation_with_leavers(pulse, list(n = 2L, keep_leavers = FALSE))
+#> <ledgr_target> [4 assets]
+#> origin: helper=ledgr_target_rebalance; capital_base=remaining_equity; capital_base_origin=supplied; invest_fraction=1
+#> non-NA: 4/4
+#> DEMO_01 DEMO_02 DEMO_03 DEMO_04
+#>       0     739     611       0
+```
+
+Named `keep` decisions have precedence. `index_leavers = "sell"` then
+closes any other held nonmember. `remaining_equity` sizes the selected
+names only after preserved exposure has been reserved.
+
+### 6. Use Position Facts And Declared Memory
+
+Position facts describe the accounted book; declared state stores a
+strategy’s own memory. This one-asset example exits either 5% below the
+remaining FIFO basis or 5% below the highest decision close seen while
+held. After an exit it waits five bars before re-entering.
+
+``` r
+trailing_stop <- function(ctx, params) {
+  peak <- pmax(ctx$state$peak, ctx$close, na.rm = TRUE)
+  basis_stop <- ctx$held & is.finite(ctx$entry_price) &
+    ctx$close < (1 - params$stop) * ctx$entry_price
+  trailing_exit <- ctx$held & ctx$close < (1 - params$stop) * peak
+  exit <- basis_stop | trailing_exit
+  enter <- !ctx$held &
+    (is.na(ctx$bars_since_exit) | ctx$bars_since_exit >= params$wait)
+
+  target <- ledgr_target_adjust(
+    ctx,
+    weights = ledgr_weight_equal(ctx$universe[enter], each = 0.2),
+    exit = exit,
+    capital_base = "total_equity"
+  )
+  peak[exit | !(ctx$held | enter)] <- NA_real_
+
+  if (!any(ctx$held | enter)) {
+    return(ledgr_strategy_result(
+      target,
+      reset_state = TRUE,
+      intent_reason = "state_reset"
+    ))
+  }
+  ledgr_strategy_result(target, peak = peak, intent_reason = "risk_checked")
+}
+
+trailing_experiment <- ledgr_experiment(
+  snapshot,
+  trailing_stop,
+  universe = "DEMO_01",
+  asset_state = list(peak = NA_real_),
+  opening = ledgr_opening(
+    cash = 9000,
+    positions = c(DEMO_01 = 10),
+    cost_basis = c(DEMO_01 = 100)
+  ),
+  cost_model = ledgr_cost_zero()
+)
+```
+
+`ctx$entry_price` is remaining FIFO cost basis divided by held quantity;
+it is not simply the latest fill price. `bars_since_exit` counts
+positions on the shared bar axis, not civil days. Additions and partial
+exits keep the original entry anchor. A typed missing value resets one
+declared field; the `reset_state = TRUE` branch above restores every
+declared field to its default. The optional `intent_reason` is a short
+decision note, not a store for signals, ranks or model predictions.
 
 ## With A Changing Investment Universe
 

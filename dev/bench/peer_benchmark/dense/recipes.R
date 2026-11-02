@@ -5,42 +5,15 @@ dense_historical_strategy <- function(fast_id, slow_id) {
   force(fast_id); force(slow_id)
   function(ctx, params) {
     targets <- ctx$hold()
-    fw <- ctx$features_wide
-    instruments <- as.character(fw$instrument_id)
-    n <- length(instruments)
-    fast <- if (fast_id %in% names(fw)) {
-      suppressWarnings(as.numeric(fw[[fast_id]]))
-    } else {
-      rep(NA_real_, n)
-    }
-    slow <- if (slow_id %in% names(fw)) {
-      suppressWarnings(as.numeric(fw[[slow_id]]))
-    } else {
-      rep(NA_real_, n)
-    }
+    instruments <- ctx$universe
+    fast <- ctx[[fast_id]]
+    slow <- ctx[[slow_id]]
     current_above <- is.finite(fast) & is.finite(slow) & fast > slow
-    prev_above <- ctx$state_prev$above %||% list()
-
-    was_above <- rep(FALSE, n)
-    prev_names <- names(prev_above)
-    if (length(prev_above) > 0L && length(prev_names) > 0L) {
-      idx <- match(instruments, prev_names)
-      ok <- !is.na(idx)
-      if (any(ok)) {
-        was_above[ok] <- as.logical(unlist(prev_above[idx[ok]], use.names = FALSE))
-        was_above[is.na(was_above)] <- FALSE
-      }
-    }
-
-    cross_up <- current_above & !was_above
-    cross_down <- !current_above & was_above
+    cross_up <- current_above & !ctx$state$above
+    cross_down <- !current_above & ctx$state$above
     if (any(cross_up)) targets[instruments[cross_up]] <- 1
     if (any(cross_down)) targets[instruments[cross_down]] <- 0
-
-    list(
-      targets = targets,
-      state_update = list(above = as.list(stats::setNames(current_above, instruments)))
-    )
+    ledgr_strategy_result(targets, above = current_above)
   }
 }
 
@@ -51,20 +24,12 @@ dense_transition <- function(ctx, params) {
   ids <- ctx$universe
   usable <- is.finite(fast) & is.finite(slow)
   above <- usable & fast > slow
-  prior_above <- prior_usable <- stats::setNames(rep(FALSE, length(ids)), ids)
-  old_above <- unlist(ctx$state_prev$above)
-  old_usable <- unlist(ctx$state_prev$usable)
-  prior_above[names(old_above)] <- old_above
-  prior_usable[names(old_usable)] <- old_usable
   targets <- ctx$hold()
-  enter <- prior_usable & usable & above & !prior_above
-  exit <- prior_usable & usable & !above & prior_above
+  enter <- ctx$state$usable & usable & above & !ctx$state$above
+  exit <- ctx$state$usable & usable & !above & ctx$state$above
   targets[enter] <- 1
   targets[exit] <- 0
-  list(targets = targets, state_update = list(
-    above = as.list(stats::setNames(above, ids)),
-    usable = as.list(stats::setNames(usable, ids))
-  ))
+  ledgr_strategy_result(targets, above = above, usable = usable)
 }
 
 dense_positive_return <- function(ctx, params) {
@@ -165,7 +130,15 @@ dense_fixture <- function(case) {
   strategy <- if (identical(case$recipe, "historical")) {
     dense_historical_strategy("fast", "slow")
   } else get(paste0("dense_", case$recipe), mode = "function")
+  state <- if (case$recipe == "transition") {
+    list(above = FALSE, usable = FALSE)
+  } else if (case$recipe == "historical") {
+    list(above = FALSE)
+  } else {
+    list()
+  }
   list(bars = bars, facts = facts, features = features, strategy = strategy,
+    asset_state = state,
     opening = ledgr_opening(cash = if (cost) 10000 else 1e7,
       date = if (case$late) days[30L] else NULL),
     cost = if (cost) ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))

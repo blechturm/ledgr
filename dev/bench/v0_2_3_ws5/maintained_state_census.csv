@@ -1,6 +1,6 @@
 consumer,state_shape,disposition
 vignettes/strategy-authoring-tools.qmd,scalar_integer_portfolio_state,compatible_with_LDG-3185
 vignettes/strategy-development.qmd,descriptive_only,compatible_with_LDG-3185
-dev/bench/peer_benchmark/dense/recipes.R,scalar_and_asset_vector_state,compatible_with_LDG-3185
-dev/bench/long_window/lw_run.R,scalar_character_month,compatible_with_LDG-3185
-dev/bench/long_window/lw_sweepwf.R,scalar_character_month,compatible_with_LDG-3185
+dev/bench/peer_benchmark/dense/recipes.R,declared_asset_vector_state,migrated_by_LDG-3188
+dev/bench/long_window/lw_run.R,descriptive_schedule_no_state,migrated_by_LDG-3188
+dev/bench/long_window/lw_sweepwf.R,descriptive_schedule_no_state,migrated_by_LDG-3188
