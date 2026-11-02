@@ -31,15 +31,17 @@ has exactly one encoder call per such row. Byte counts are UTF-8 bytes stored in
   runtime validation does not encode, and unchanged pulses use a constant marker.
 - Query shape: resume performs one latest-cursor query and one preceding-payload
   query, never one query per pulse.
-- Copies and frames: pulse views copy declared atomic values to freeze them; the
-  fold retains one complete typed state and creates no per-pulse data frame.
+- Copies and frames: pulse views copy declared atomic values to isolate
+  fold-owned state from by-reference user mutation; the fold retains one
+  complete typed state and creates no per-pulse data frame.
 - Repeated invariant preparation: declarations are validated and their typed
   default scalars are prepared once per candidate; pulse work consumes both.
 
 The state view deliberately copies each declared atomic vector before it is
-handed to user code. That bounded copy freezes the pulse view against later
-fold mutation; it is the isolation cost measured by the wide cells, not an
-accidental conversion or data-frame materialization.
+handed to user code. Ordinary R copy-on-modify already freezes a saved view;
+this bounded copy prevents a strategy's by-reference mutation from modifying
+fold-owned state outside its returned update. It is an isolation cost measured
+by the wide cells, not accidental conversion or data-frame materialization.
 
 Restoring an every-pulse state encode/write is detected by LTB-0534: no-state,
 declared-unchanged and raw-identical runs must contain only the marker and the

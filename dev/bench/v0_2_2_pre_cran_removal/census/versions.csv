@@ -139,7 +139,7 @@
 "R/strategy-schedule.R",238,"ledgr_schedule_validate","read_branch_or_equality","version != floor(version)",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
 "R/strategy-schedule.R",239,"ledgr_schedule_validate","read_branch_or_equality","as.integer(version) != ledgr_schedule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
 "R/strategy-state.R",1,"ledgr_strategy_state_rule_version","binding","ledgr_strategy_state_rule_version <- 1L",TRUE,"write_site:ledgr_strategy_state_declaration_validate",TRUE,TRUE,FALSE,"",FALSE,FALSE
-"R/strategy-state.R",378,"ledgr_strategy_state_decode","read_branch_or_equality","identical(as.integer(decoded$rule_version), ledgr_strategy_state_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/strategy-state.R",380,"ledgr_strategy_state_decode","read_branch_or_equality","identical(as.integer(decoded$rule_version), ledgr_strategy_state_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/strategy-state.R",88,"ledgr_strategy_state_declaration_validate","read_branch_or_equality","identical(as.integer(x$rule_version), ledgr_strategy_state_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/sweep-filter.R",1,"ledgr_sweep_filter_schema_version","binding","ledgr_sweep_filter_schema_version <- 1L",FALSE,"none",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep-filter.R",432,"ledgr_sweep_filter_result_validate","read_branch_or_equality","identical(as.integer(x$metadata$schema_version), ledgr_sweep_filter_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE

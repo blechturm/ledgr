@@ -158,6 +158,13 @@ mutations <- list(
     filter = "strategy-state-ws17",
     blocks = "sweep candidates isolate declared state across workers"
   ),
+  D5_update_alignment = list(
+    file = "R/strategy-state.R",
+    old = "      value <- value[index]",
+    new = "      value <- value",
+    filter = "strategy-state-ws17",
+    blocks = "helper patches and raw replacements stay distinct"
+  ),
   D6_D7_schedule_inputs = list(
     file = "R/strategy-schedule.R",
     old = "if (identical(history_substrate$clock_kind, \"declared_sessions\")) {\n    history_substrate$sessions\n  } else {\n    NULL\n  }",

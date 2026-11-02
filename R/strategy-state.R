@@ -253,15 +253,17 @@ ledgr_strategy_state_validate_value <- function(value, field, axis,
     names(value) <- axis
   } else if (is_asset) {
     value_names <- names(value)
-    index <- match(axis, value_names)
-    if (length(value_names) != length(axis) || anyNA(value_names) ||
-        any(!nzchar(value_names)) || anyDuplicated(value_names) || anyNA(index)) {
-      ledgr_strategy_state_abort(sprintf(
-        "Asset state `%s` must be an unnamed scalar or a named full-axis vector.",
-        field$name
-      ))
+    if (!identical(value_names, axis)) {
+      index <- match(axis, value_names)
+      if (length(value_names) != length(axis) || anyNA(value_names) ||
+          any(!nzchar(value_names)) || anyDuplicated(value_names) || anyNA(index)) {
+        ledgr_strategy_state_abort(sprintf(
+          "Asset state `%s` must be an unnamed scalar or a named full-axis vector.",
+          field$name
+        ))
+      }
+      value <- value[index]
     }
-    if (!identical(value_names, axis)) value <- value[index]
   } else if (length(value) != 1L || !is.null(names(value))) {
     ledgr_strategy_state_abort(sprintf("Portfolio state `%s` must stay scalar.", field$name))
   }

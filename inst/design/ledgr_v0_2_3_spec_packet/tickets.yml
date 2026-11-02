@@ -1136,9 +1136,14 @@ workstreams:
       declaration candidate isolation failure-sensitive. It removes repeated
       declaration/default work and cached durable encoding from the pulse
       path, adds the 500-ID/four-field record, refreshes the fingerprint census
-      and records all seven detected D5 mutations. Focused suites, the WS5
+      and records the first seven detected D5 mutations. Focused suites, the WS5
       inventory, codebase census and exact-source build/R CMD check pass; the
-      workstream awaits focused confirmation and maintainer acceptance.
+      first focused re-review in close_review_17_rereview_1.md closes F1-F6
+      and finds one remaining alignment oracle gap. The bounded correction
+      adds a permuted asset-update witness, registers the eighth D5 mutation,
+      keeps the identity fast path ahead of name matching and makes benchmark
+      provenance reproducible. The workstream awaits final focused
+      confirmation and maintainer acceptance.
     depends_on_workstream: 16
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 17, after LDG-3186", reason: "One claim joins LDG-3185 and LDG-3186: normalized scalar declarations produce typed portfolio scalars and asset vectors with an explicit type/missing encoding; helper patches, raw replacement and full reset remain distinct and failure-sensitive; axis lifecycle, durable resume cursor, restored state and candidate isolation are exact; unchanged pulses do no state encoding; the accepted cursor/checkpoint design reconstructs complete state without silently consuming WS8 schema 125; every Section 4 item 4 mutation fails; and the seven shapes find no per-ID padding, repeated normalization or hidden compatibility state path."}
@@ -2703,7 +2708,7 @@ tickets:
         resumed narrowed-axis parity, exactly one row per completed pulse,
         encoder counts and the three unchanged workloads.
         LTB-0537/LCL-0527 and LTB-0538/LCL-0528 cover worker candidate
-        isolation and walk-forward test-run reset. All seven executable D5
+        isolation and walk-forward test-run reset. All eight executable D5
         isolated-copy mutations apply once and are detected in
         dev/bench/v0_2_3_strategy_state/evidence/current/mutations.csv. The
         seven-shape record, four 500-pulse measurements and two descriptive

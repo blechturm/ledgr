@@ -20,6 +20,7 @@ D5_metadata_to_state,LDG-3186,R/strategy-state.R,test-strategy-state-ws17.R,copy
 D5_axis_checkpoint,LDG-3186,R/fold-engine.R,test-strategy-state-ws17.R,ignore an axis-only state change,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D5_axis_checkpoint -
 D5_marker_resume,LDG-3186,R/strategy-state.R,test-strategy-state-ws17.R,restore from the latest marker instead of the latest payload,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D5_marker_resume -
 D5_candidate_leak,LDG-3186,R/sweep.R,test-strategy-state-ws17.R,seed the second same-declaration candidate from non-default state,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D5_candidate_leak -
+D5_update_alignment,LDG-3186,R/strategy-state.R,test-strategy-state-ws17.R,skip ID reordering for a permuted full-axis update,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D5_update_alignment -
 D6_D7_schedule_inputs,LDG-3184,R/strategy-schedule.R,test-strategy-authoring-ws16.R,allow bar-native schedule queries to synthesize sessions,Rscript dev/bench/v0_2_2_indicator_history/scripts/mutate.R dev/bench/v0_2_3_ws5/mutations.R D6_D7_schedule_inputs -
 D8_rounding_evidence,LDG-3187,pending_WS18,tickets.yml,omit a typed sizing category,Rscript dev/bench/v0_2_3_ws5/check.R
 D9_pattern_teaching,LDG-3189,pending_WS18,tickets.yml,teach an unexecuted pattern,Rscript dev/bench/v0_2_3_ws5/check.R

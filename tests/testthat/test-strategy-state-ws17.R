@@ -272,6 +272,11 @@ testthat::test_that("[LTB-0533] helper patches and raw replacements stay distinc
     previous, list(peak = 7), declaration, c("BBB", "AAA"), patch = TRUE
   )
   testthat::expect_identical(broadcast$peak, c(BBB = 7, AAA = 7))
+  reordered_update <- ledgr:::ledgr_strategy_state_apply_values(
+    previous, list(peak = c(AAA = 1, BBB = 2)), declaration,
+    c("BBB", "AAA"), patch = TRUE
+  )
+  testthat::expect_identical(reordered_update$peak, c(BBB = 2, AAA = 1))
   reset_one <- ledgr:::ledgr_strategy_state_apply_values(
     broadcast, list(peak = c(BBB = NA_real_, AAA = 4)), declaration,
     c("BBB", "AAA"), patch = TRUE

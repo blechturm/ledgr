@@ -6,3 +6,4 @@
 "D5_axis_checkpoint",TRUE,"1","asset state follows ID lifecycle and axis checkpoints","[LTB-0536] asset state follows ID lifecycle and axis checkpoints",TRUE
 "D5_marker_resume",TRUE,"1","unchanged cursors resume without replay or encoding","[LTB-0534] unchanged cursors resume without replay or encoding",TRUE
 "D5_candidate_leak",TRUE,"1","sweep candidates isolate declared state across workers","[LTB-0537] sweep candidates isolate declared state across workers",TRUE
+"D5_update_alignment",TRUE,"1","helper patches and raw replacements stay distinct","[LTB-0533] helper patches and raw replacements stay distinct",TRUE

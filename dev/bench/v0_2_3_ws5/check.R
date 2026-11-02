@@ -30,6 +30,7 @@ expected_families <- c(
   "D4_selection_weights", "D5_state_declaration", "D5_state_checkpoint",
   "D5_merge_to_replacement", "D5_metadata_to_state",
   "D5_axis_checkpoint", "D5_marker_resume", "D5_candidate_leak",
+  "D5_update_alignment",
   "D6_D7_schedule_inputs", "D8_rounding_evidence", "D9_pattern_teaching",
   "S4_item_5_reader_cut", "S4_item_6_timing", "consumer_strategy_authoring",
   "consumer_strategy_development", "consumer_peer_dense",

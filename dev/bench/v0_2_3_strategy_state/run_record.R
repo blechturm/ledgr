@@ -156,12 +156,26 @@ wide_records <- lapply(seq_along(wide_cases), function(i) {
 record <- rbind(record, do.call(rbind, wide_records))
 utils::write.csv(record, file.path(out_dir, "record.csv"), row.names = FALSE)
 
+source_files <- c(
+  "R/strategy-state.R", "R/execution-spec.R", "R/fold-engine.R",
+  "R/backtest-runner.R", "R/sweep.R"
+)
+source_md5 <- tools::md5sum(source_files)
+source_state <- paste0(
+  "sha256:",
+  digest::digest(
+    paste(names(source_md5), unname(source_md5), collapse = "\n"),
+    algo = "sha256",
+    serialize = FALSE
+  )
+)
+
 meta <- data.frame(
   key = c("source_base", "source_state", "R", "platform", "pulses",
     "strategy_state_rule_version"),
   value = c(
     "d566de6e",
-    "WS17 candidate working tree before implementation commit",
+    source_state,
     R.version.string,
     R.version$platform,
     paste0(n_pulses, "; wide=", wide_pulses),

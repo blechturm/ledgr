@@ -1921,7 +1921,7 @@
 "R/strategy-schedule.R",206,"abort_dynamic","",FALSE,"classes[!is.na(classes) & nzchar(classes)]",FALSE,FALSE,FALSE
 "R/strategy-schedule.R",365,"stop","",FALSE,"stop(resolution_error)",FALSE,FALSE,FALSE
 "R/strategy-state.R",11,"abort_class","ledgr_invalid_strategy_state",TRUE,"""ledgr_invalid_strategy_state""",TRUE,TRUE,FALSE
-"R/strategy-state.R",369,"abort_class","ledgr_invalid_strategy_state",TRUE,"""ledgr_invalid_strategy_state""",TRUE,TRUE,FALSE
+"R/strategy-state.R",371,"abort_class","ledgr_invalid_strategy_state",TRUE,"""ledgr_invalid_strategy_state""",TRUE,TRUE,FALSE
 "R/strategy-types.R",104,"abort_wrapper_class","ledgr_invalid_strategy_helper",TRUE,"ledgr_strategy_context_abort(sprintf(""Flat context columns are unavailable for `%s()`."", helper))",TRUE,TRUE,FALSE
 "R/strategy-types.R",109,"abort_wrapper_class","ledgr_invalid_strategy_helper",TRUE,"ledgr_strategy_context_abort(sprintf(""Flat context columns must match `ctx$universe` for `%s()`."", helper))",TRUE,TRUE,FALSE
 "R/strategy-types.R",115,"abort_wrapper_class","ledgr_invalid_strategy_helper",TRUE,"ledgr_strategy_context_abort(sprintf(""`ctx$members` is invalid for `%s()`."", helper))",TRUE,TRUE,FALSE

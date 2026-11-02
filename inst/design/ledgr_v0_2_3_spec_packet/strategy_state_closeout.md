@@ -1,6 +1,6 @@
 # Workstream 17 Closeout: Typed Declared Strategy State
 
-Status: close-review corrections complete; awaiting focused confirmation.
+Status: focused re-review correction complete; awaiting final confirmation.
 
 ## Product boundary
 
@@ -62,8 +62,8 @@ cells over 100 pulses. No-state, declared-unchanged and raw-identical
 strategies each write 500 cursor rows, zero payload encodes and zero payload
 bytes; changed-every-pulse writes 500 payloads totaling 51,892 bytes. Wall
 times are descriptive, single-pass observations, not a performance gate. The
-wide changed cell encodes 100 payloads (2,568,900 bytes) in 0.69 seconds; the
-unchanged cell encodes no payload in 0.61 seconds on the recorded host.
+wide changed cell encodes 100 payloads (2,568,900 bytes) in 0.67 seconds; the
+unchanged cell encodes no payload in 0.64 seconds on the recorded host.
 
 The benchmark README walks all seven optimization shapes. Declarations are
 validated and their typed default scalars prepared once per candidate; resume
@@ -74,15 +74,18 @@ remains owned by configuration/declaration identities and persisted metadata;
 strategy-state payloads are no longer an owner. LTB-0534 fails if every-pulse
 payload encoding or writing returns.
 
-`evidence/current/mutations.csv` records seven isolated-copy mutations. They
+`evidence/current/mutations.csv` records eight isolated-copy mutations. They
 cover type identity, every-pulse encoding, helper-patch replacement, metadata
 leakage, axis-only checkpoint omission, restoring from a marker and seeding a
-same-declaration candidate from non-default state. Every mutation applies
-exactly once and is detected.
+same-declaration candidate from non-default state, and skipping ID alignment
+for a permuted full-axis update. Every mutation applies exactly once and is
+detected.
 
 `ledgr_strategy_state_view()` deliberately copies each declared atomic vector
-before user code sees it. This keeps a saved pulse view frozen against later
-fold mutation; it is a bounded isolation copy, not accidental materialization.
+before user code sees it. Ordinary R copy-on-modify already freezes a saved
+view; this bounded copy prevents by-reference strategy code from modifying
+fold-owned state outside its returned update. It is not accidental
+materialization.
 The availability-state migration dropped local `members` and `plane_names`
 assertions that remain owned by `test-flat-lazy-context.R` and
 `test-availability-workflow.R`; no semantic oracle was retired.
