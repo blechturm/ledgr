@@ -770,7 +770,8 @@ rank.
 #| label: pattern-fixed-mix
 
 fixed_mix <- function(ctx, params) {
-  weights <- c(DEMO_01 = 0.60, DEMO_02 = 0.40)
+  mix <- c(DEMO_01 = 0.60, DEMO_02 = 0.40)
+  weights <- mix[names(mix) %in% ctx$universe[ctx$buyable]]
   ledgr_target_rebalance(
     ctx,
     weights = weights,
@@ -780,6 +781,11 @@ fixed_mix <- function(ctx, params) {
 
 fixed_mix(pulse, list(invested = 0.8))
 ```
+
+The named mix is intersected with the current buyable pool before sizing. A
+temporarily unavailable constituent is therefore not requested, while an
+existing unavailable holding remains visible and preserved by the target
+helper.
 
 ### 2. Filter
 
@@ -913,6 +919,16 @@ trailing_experiment <- ledgr_experiment(
   ),
   cost_model = ledgr_cost_zero()
 )
+
+trailing_run <- ledgr_run(
+  trailing_experiment,
+  params = list(stop = 0.05, wait = 5L),
+  run_id = "pattern_trailing"
+)
+
+ledgr_results(trailing_run, what = "fills") |>
+  select(ts_utc, instrument_id, side, qty, price) |>
+  slice_head(n = 6)
 ```
 
 `ctx$entry_price` is remaining FIFO cost basis divided by held quantity; it is
@@ -956,6 +972,7 @@ next open.
 close(top_momentum_run)
 close(trend_momentum_run)
 close(weekly_run)
+close(trailing_run)
 close(pulse)
 close(first_pulse)
 close(holding_pulse)

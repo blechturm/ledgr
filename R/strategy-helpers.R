@@ -519,11 +519,12 @@ ledgr_target_size <- function(ctx,
     }
     target[exits] <- 0
     preserve[exits] <- FALSE
-    sizing_used[exits] <- TRUE
-    sizing_requested[exits] <- 0
-    sizing_pre_floor[exits] <- 0
-    sizing_price[exits] <- close[exits]
-    sizing_reason[exits] <- "sizing_liquidation"
+    held_exits <- exits & position != 0
+    sizing_used[held_exits] <- TRUE
+    sizing_requested[held_exits] <- 0
+    sizing_pre_floor[held_exits] <- 0
+    sizing_price[held_exits] <- close[held_exits]
+    sizing_reason[held_exits] <- "sizing_liquidation"
   }
 
   preserved_ids <- universe[preserve & position != 0 & !universe %in% weighted_ids]

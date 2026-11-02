@@ -178,18 +178,17 @@ pulse’s default of 100,000 in cash. Calling a strategy on a pulse is the
 fastest way to catch a wrong feature ID, a reversed comparison, or an
 unexpected position size before you run months of bars.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Read whole vectors, not one instrument at a time
+>
+> Each flat named feature column, such as `ctx$return_5`, returns one
+> value per instrument in a single read. Bar, position, eligibility and
+> position-fact columns work the same way. Index a returned vector only
+> after you have singled out an instrument; do not rebuild the column in
+> an instrument loop. Active aliases are the primary names, and a
+> registered engine ID is also readable with `ctx[[feature_id]]`.
 
-**Read whole vectors, not one instrument at a time**
-
-Each flat named feature column, such as `ctx$return_5`, returns one
-value per instrument in a single read. Bar, position, eligibility and
-position-fact columns work the same way. Index a returned vector only
-after you have singled out an instrument; do not rebuild the column in
-an instrument loop. Active aliases are the primary names, and a
-registered engine ID is also readable with `ctx[[feature_id]]`.
-
-</div>
 
 ## From Scores To Shares
 
@@ -657,17 +656,16 @@ nothing reliable about performance.
 `vignette("selection-integrity", package = "ledgr")` covers how to
 compare candidates without fooling yourself.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Run the same strategy with `schedule = ledgr_schedule_month_start()`
+> under a new `run_id`, since a store keeps one run per ID. Compare the
+> decision and skip counts with the weekly run. Checks like this are a
+> cheap way to confirm that a new cadence changed only what you meant to
+> change.
 
-**Try it**
-
-Run the same strategy with `schedule = ledgr_schedule_month_start()`
-under a new `run_id`, since a store keeps one run per ID. Compare the
-decision and skip counts with the weekly run. Checks like this are a
-cheap way to confirm that a new cadence changed only what you meant to
-change.
-
-</div>
 
 The fills show the trades caused by weekly decisions:
 
@@ -724,8 +722,9 @@ summary(weekly_run)
 #>   Decision clock:                    accepted decision mark
 #>   Currency:                          USD
 #>   Aggregation:                       exposure-weighted across priced sizing rows
-#>   Evidenced decisions:               21
+#>   Evidenced decisions (may overlap): 21
 #>   Decisions with unavailable intent: 4
+#>   Decisions with no sizing instruction: 0
 #>   Rounded-to-zero instructions:      0
 #>   Coverage (pooled):                 97.96%
 #>   Coverage (minimum decision):       95.86%
@@ -837,7 +836,8 @@ signal or a rank.
 
 ``` r
 fixed_mix <- function(ctx, params) {
-  weights <- c(DEMO_01 = 0.60, DEMO_02 = 0.40)
+  mix <- c(DEMO_01 = 0.60, DEMO_02 = 0.40)
+  weights <- mix[names(mix) %in% ctx$universe[ctx$buyable]]
   ledgr_target_rebalance(
     ctx,
     weights = weights,
@@ -852,6 +852,11 @@ fixed_mix(pulse, list(invested = 0.8))
 #> DEMO_01 DEMO_02 DEMO_03 DEMO_04
 #>     454     472       0       0
 ```
+
+The named mix is intersected with the current buyable pool before
+sizing. A temporarily unavailable constituent is therefore not
+requested, while an existing unavailable holding remains visible and
+preserved by the target helper.
 
 ### 2. Filter
 
@@ -991,6 +996,25 @@ trailing_experiment <- ledgr_experiment(
   ),
   cost_model = ledgr_cost_zero()
 )
+
+trailing_run <- ledgr_run(
+  trailing_experiment,
+  params = list(stop = 0.05, wait = 5L),
+  run_id = "pattern_trailing"
+)
+
+ledgr_results(trailing_run, what = "fills") |>
+  select(ts_utc, instrument_id, side, qty, price) |>
+  slice_head(n = 6)
+#> # A tibble: 6 x 5
+#>   ts_utc              instrument_id side    qty price
+#>   <dttm>              <chr>         <chr> <dbl> <dbl>
+#> 1 2019-01-02 10:00:00 DEMO_01       SELL     10  91.5
+#> 2 2019-01-10 10:00:00 DEMO_01       BUY      22  88.3
+#> 3 2019-03-20 10:00:00 DEMO_01       SELL     22 101.
+#> 4 2019-03-28 10:00:00 DEMO_01       BUY      19 103.
+#> 5 2019-04-25 10:00:00 DEMO_01       SELL     19 101.
+#> 6 2019-05-03 10:00:00 DEMO_01       BUY      20  99.9
 ```
 
 `ctx$entry_price` is remaining FIFO cost basis divided by held quantity;
@@ -1034,6 +1058,7 @@ fills at the next open.
 close(top_momentum_run)
 close(trend_momentum_run)
 close(weekly_run)
+close(trailing_run)
 close(pulse)
 close(first_pulse)
 close(holding_pulse)

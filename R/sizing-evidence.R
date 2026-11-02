@@ -79,16 +79,16 @@ ledgr_validate_sizing_evidence <- function(x, targets, context_ids,
     )
   }
   same_number <- function(a, b) {
-    isTRUE(all.equal(unname(as.numeric(a)), unname(as.numeric(b)),
-      tolerance = 0, check.attributes = FALSE))
+    identical(as.numeric(a), as.numeric(b))
   }
   if (!same_number(x$rounded_quantity, targets[k]) ||
       !same_number(x$position_before, position[k]) ||
       !same_number(x$price[priced], mark[k[priced]])) {
-    rlang::abort(
-      "Strategy sizing evidence does not match the accepted decision boundary.",
-      class = "ledgr_invalid_strategy_result"
-    )
+    # Ordinary R transformations can preserve attributes while changing the
+    # target values. The internal helper evidence is then stale, not an
+    # invalid strategy result. Discard it and let the fold disclose that the
+    # pulse's sizing intent is unavailable.
+    return(NULL)
   }
   x
 }
@@ -101,6 +101,8 @@ ledgr_sizing_summary_empty <- function() {
     aggregation = "exposure-weighted across priced sizing rows",
     evidenced_decisions = 0L,
     unavailable_decisions = 0L,
+    no_instruction_decisions = 0L,
+    raw_intent_unavailable = FALSE,
     rounded_to_zero_instructions = 0L,
     pooled_coverage = NA_real_,
     minimum_decision_coverage = NA_real_,
@@ -142,11 +144,12 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
   )$ts_utc
   out <- ledgr_sizing_summary_empty()
   if (nrow(rows) == 0L) {
-    out$unavailable_decisions <- length(decision_times)
+    out$no_instruction_decisions <- length(decision_times)
   } else {
     time <- as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC"))
     decision_time <- as.numeric(as.POSIXct(decision_times, tz = "UTC"))
     unavailable <- rows$reason_code == "sizing_unavailable"
+    raw_notice <- rows$reason_code == "sizing_intent_unavailable"
     instrument_row <- !is.na(rows$instrument_id) & nzchar(rows$instrument_id)
     priced <- instrument_row & !unavailable & is.finite(rows$price) &
       rows$price > 0 & is.finite(rows$target) & is.finite(rows$quantity)
@@ -173,14 +176,17 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
         denominator_by_time[covered]
     }
     evidenced_times <- unique(time[instrument_row & !unavailable])
+    missing_times <- decision_time[!decision_time %in% unique(time[instrument_row])]
     unavailable_times <- unique(c(
       time[unavailable],
-      decision_time[!decision_time %in% unique(time[instrument_row])]
+      if (any(raw_notice)) missing_times else numeric()
     ))
     denominator <- sum(post_guard_value, na.rm = TRUE)
     out$available <- any(instrument_row)
+    out$raw_intent_unavailable <- any(raw_notice)
     out$evidenced_decisions <- length(evidenced_times)
     out$unavailable_decisions <- length(unavailable_times)
+    out$no_instruction_decisions <- if (any(raw_notice)) 0L else length(missing_times)
     out$rounded_to_zero_instructions <- sum(rows$reason_code %in% c(
       "sizing_rounded_to_zero_addition",
       "sizing_rounded_to_zero_liquidation"
@@ -193,10 +199,12 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
     finite_coverage <- coverage[is.finite(coverage)]
     out$minimum_decision_coverage <- if (length(finite_coverage)) min(finite_coverage) else NA_real_
     out$last_decision_coverage <- if (length(coverage)) utils::tail(coverage, 1L) else NA_real_
-    out$requested_value_diagnostic <- sum(requested_value, na.rm = TRUE)
-    out$post_guard_value_diagnostic <- sum(post_guard_value, na.rm = TRUE)
-    out$rounded_value_diagnostic <- sum(rounded_value, na.rm = TRUE)
-    out$rounding_difference_diagnostic <- out$post_guard_value_diagnostic - out$rounded_value_diagnostic
+    if (any(priced)) {
+      out$requested_value_diagnostic <- sum(requested_value, na.rm = TRUE)
+      out$post_guard_value_diagnostic <- sum(post_guard_value, na.rm = TRUE)
+      out$rounded_value_diagnostic <- sum(rounded_value, na.rm = TRUE)
+      out$rounding_difference_diagnostic <- out$post_guard_value_diagnostic - out$rounded_value_diagnostic
+    }
   }
   snapshot_id <- bt$config$data$snapshot_id
   currencies <- DBI::dbGetQuery(
@@ -232,15 +240,18 @@ ledgr_print_sizing_summary <- function(x, compact = FALSE) {
   if (isTRUE(compact)) {
     cat(sprintf("%-34s %s\n", "Sizing coverage (pooled):", ledgr_sizing_percent(x$pooled_coverage)))
     cat(sprintf("%-34s %s\n", "Final actual invested exposure:", ledgr_sizing_percent(x$final_actual_invested_exposure)))
-    if (!isTRUE(x$available)) cat(sprintf("%-34s %s\n", "Sizing intent coverage:", "unavailable (raw quantity targets)"))
+    if (isTRUE(x$raw_intent_unavailable)) {
+      cat(sprintf("%-34s %s\n", "Sizing intent coverage:", "unavailable (raw quantity targets)"))
+    }
     return(invisible(x))
   }
   cat("\nSizing Evidence:\n")
   cat(sprintf("  Decision clock:                    %s\n", x$decision_clock))
   cat(sprintf("  Currency:                          %s\n", x$currency))
   cat(sprintf("  Aggregation:                       %s\n", x$aggregation))
-  cat(sprintf("  Evidenced decisions:               %d\n", x$evidenced_decisions))
+  cat(sprintf("  Evidenced decisions (may overlap): %d\n", x$evidenced_decisions))
   cat(sprintf("  Decisions with unavailable intent: %d\n", x$unavailable_decisions))
+  cat(sprintf("  Decisions with no sizing instruction: %d\n", x$no_instruction_decisions))
   cat(sprintf("  Rounded-to-zero instructions:      %d\n", x$rounded_to_zero_instructions))
   cat(sprintf("  Coverage (pooled):                 %s\n", ledgr_sizing_percent(x$pooled_coverage)))
   cat(sprintf("  Coverage (minimum decision):       %s\n", ledgr_sizing_percent(x$minimum_decision_coverage)))

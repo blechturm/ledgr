@@ -87,6 +87,47 @@ testthat::test_that("[LTB-0539] target helpers carry exact typed sizing evidence
     addition_evidence$reason_code,
     "sizing_rounded_to_zero_addition"
   )
+
+  guarded <- sizing_evidence_context()
+  guarded$equity <- 100
+  guarded$position <- c(AAA = 0, BBB = 0, OLD = 0, MISS = 8)
+  guarded$held <- guarded$position != 0
+  guarded$holding_value <- c(AAA = 0, BBB = 0, OLD = 0, MISS = 80)
+  guarded_target <- ledgr_target_rebalance(
+    guarded,
+    weights = c(AAA = 0.8, MISS = 0.2),
+    capital_base = "total_equity"
+  )
+  guarded_evidence <- attr(guarded_target, "sizing_evidence", exact = TRUE)
+  aaa <- match("AAA", guarded_evidence$instrument_id)
+  testthat::expect_identical(guarded_evidence$requested_quantity[[aaa]], 8)
+  testthat::expect_identical(guarded_evidence$pre_floor_quantity[[aaa]], 2)
+  testthat::expect_identical(guarded_evidence$rounded_quantity[[aaa]], 2)
+
+  flat_exit <- sizing_evidence_context()
+  flat_exit$position[c("AAA", "OLD", "MISS")] <- 0
+  flat_exit$held <- flat_exit$position != 0
+  flat_exit$holding_value[c("AAA", "OLD", "MISS")] <- 0
+  exited <- ledgr_target_adjust(
+    flat_exit,
+    exit = stats::setNames(rep(TRUE, 4L), flat_exit$universe)
+  )
+  exit_evidence <- attr(exited, "sizing_evidence", exact = TRUE)
+  testthat::expect_identical(exit_evidence$instrument_id, "BBB")
+  testthat::expect_identical(exit_evidence$reason_code, "sizing_liquidation")
+
+  malformed <- evidence
+  malformed$reason_code[[1L]] <- "not_a_sizing_reason"
+  testthat::expect_error(
+    ledgr:::ledgr_validate_sizing_evidence(
+      malformed,
+      targets = target,
+      context_ids = ctx$universe,
+      position = ctx$position,
+      mark = ctx$close
+    ),
+    class = "ledgr_invalid_strategy_result"
+  )
 })
 
 # ledgr-test-profile: review
@@ -136,6 +177,7 @@ testthat::test_that("[LTB-0540] runs persist and report sizing evidence without 
   testthat::expect_identical(first$quantity, c(1, 0, 0))
   testthat::expect_identical(first$price, c(30, 200, 10))
   testthat::expect_identical(first$position_before, c(0, 0, 1))
+  testthat::expect_identical(first$reasons, rep("rebalanced", 3L))
   testthat::expect_identical(first$detail_json, rep("{}", 3L))
 
   intent <- diagnostics[diagnostics$reason_code == "strategy_intent", , drop = FALSE]
@@ -195,8 +237,63 @@ testthat::test_that("[LTB-0540] runs persist and report sizing evidence without 
   testthat::expect_identical(raw_rows$reason_code, "sizing_intent_unavailable")
   raw_summary <- ledgr:::ledgr_run_sizing_summary(raw)
   testthat::expect_false(raw_summary$available)
+  testthat::expect_true(raw_summary$raw_intent_unavailable)
   testthat::expect_identical(raw_summary$unavailable_decisions, 4L)
+  testthat::expect_identical(raw_summary$no_instruction_decisions, 0L)
   testthat::expect_true(is.na(raw_summary$pooled_coverage))
+  testthat::expect_true(is.na(raw_summary$requested_value_diagnostic))
+  testthat::expect_true(is.na(raw_summary$post_guard_value_diagnostic))
+  testthat::expect_true(is.na(raw_summary$rounded_value_diagnostic))
+
+  no_op <- ledgr_run(
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) ledgr_target_adjust(ctx),
+      opening = ledgr_opening(cash = 100),
+      cost_model = ledgr_cost_zero()
+    ),
+    run_id = "sizing-evidence-no-op"
+  )
+  on.exit(close(no_op), add = TRUE)
+  no_op_summary <- ledgr:::ledgr_run_sizing_summary(no_op)
+  testthat::expect_false(no_op_summary$raw_intent_unavailable)
+  testthat::expect_identical(no_op_summary$unavailable_decisions, 0L)
+  testthat::expect_identical(no_op_summary$no_instruction_decisions, 4L)
+
+  modified_strategies <- list(
+    override = function(ctx, params) {
+      target <- ledgr_target_rebalance(
+        ctx, weights = c(AAA = 1), capital_base = "total_equity"
+      )
+      target[["AAA"]] <- target[["AAA"]] + 1
+      target
+    },
+    capped = function(ctx, params) {
+      target <- ledgr_target_rebalance(
+        ctx, weights = c(AAA = 1), capital_base = "total_equity"
+      )
+      pmin(target, 0)
+    }
+  )
+  for (variant in names(modified_strategies)) {
+    modified <- ledgr_run(
+      ledgr_experiment(
+        snapshot,
+        modified_strategies[[variant]],
+        opening = ledgr_opening(cash = 100),
+        cost_model = ledgr_cost_zero()
+      ),
+      run_id = paste0("sizing-evidence-modified-", variant)
+    )
+    on.exit(close(modified), add = TRUE)
+    modified_rows <- ledgr_results(modified, "diagnostics")
+    modified_sizing <- modified_rows[modified_rows$stage == "sizing", , drop = FALSE]
+    testthat::expect_identical(
+      sum(modified_sizing$reason_code == "sizing_intent_unavailable"),
+      1L
+    )
+    testthat::expect_false(any(nzchar(modified_sizing$instrument_id)))
+  }
 
   resume_experiment <- ledgr_experiment(
     snapshot,
@@ -213,6 +310,68 @@ testthat::test_that("[LTB-0540] runs persist and report sizing evidence without 
   testthat::expect_identical(sum(
     resumed_rows$reason_code == "sizing_intent_unavailable"
   ), 1L)
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0545] binding guards keep requested and post-guard sizing distinct", {
+  strategy <- function(ctx, params) {
+    if (as.Date(ctx$ts_utc, tz = "UTC") < as.Date("2021-01-06")) {
+      return(ctx$hold())
+    }
+    ledgr_target_rebalance(
+      ctx,
+      weights = c(AAA = 0.8, BBB = 0.2),
+      capital_base = "total_equity"
+    )
+  }
+  fixture <- ws42_history_fixture(
+    strategy = strategy,
+    opening = ledgr_opening(
+      cash = 100,
+      positions = c(BBB = 4),
+      cost_basis = c(BBB = 20)
+    ),
+    features = list(),
+    bbb_gaps = c(3L, 4L),
+    valuation_policy = ledgr_valuation_stale(3)
+  )
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  bt <- ledgr_run(fixture$exp, run_id = "sizing-evidence-binding-guard")
+  on.exit(close(bt), add = TRUE)
+  diagnostics <- ledgr_results(bt, "diagnostics")
+  rows <- diagnostics[
+    diagnostics$stage == "sizing" & diagnostics$instrument_id == "AAA",
+    , drop = FALSE
+  ]
+  guarded <- rows[rows$target_before_risk != rows$target, , drop = FALSE]
+  testthat::expect_true(nrow(guarded) > 0L)
+  testthat::expect_true(all(guarded$target_before_risk > guarded$target))
+  testthat::expect_true(all(is.na(guarded$reasons)))
+
+  priced <- nzchar(diagnostics$instrument_id) &
+    diagnostics$stage == "sizing" &
+    diagnostics$reason_code != "sizing_unavailable" &
+    is.finite(diagnostics$price)
+  requested_value <- sum(abs(
+    diagnostics$target_before_risk[priced] * diagnostics$price[priced]
+  ))
+  post_guard_value <- sum(abs(
+    diagnostics$target[priced] * diagnostics$price[priced]
+  ))
+  rounded_value <- sum(abs(
+    diagnostics$quantity[priced] * diagnostics$price[priced]
+  ))
+  summary_value <- ledgr:::ledgr_run_sizing_summary(bt)
+  testthat::expect_gt(requested_value, post_guard_value)
+  testthat::expect_equal(summary_value$requested_value_diagnostic, requested_value)
+  testthat::expect_equal(summary_value$post_guard_value_diagnostic, post_guard_value)
+  testthat::expect_equal(summary_value$pooled_coverage, rounded_value / post_guard_value)
+  testthat::expect_gt(summary_value$evidenced_decisions, 0L)
+  testthat::expect_gt(summary_value$unavailable_decisions, 0L)
+  printed <- capture.output(summary(bt))
+  testthat::expect_true(any(grepl(
+    "Evidenced decisions (may overlap)", printed, fixed = TRUE
+  )))
 })
 
 # ledgr-test-profile: review

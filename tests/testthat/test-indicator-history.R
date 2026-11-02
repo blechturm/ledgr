@@ -465,8 +465,10 @@ testthat::test_that("[LTB-0309] rule-4 feature identity binds every history decl
       bt$config$features$feature_set_hash,
       "3286cf4679b732aadc8b73f009e4c2f05806a04d92291cd609bfaf27e3cb3ea9"
     )
-    # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002;
-    # v0.2.3 Cut 7 LDG-3187 added the sizing-evidence store-format binding.
+    # Cut 17 LDG-3089 moved the unsupported_quantity identity to v002. The
+    # earlier Cut 7 experiment contract then added opening and declared
+    # strategy state to configuration identity; LDG-3187's store-format
+    # binding does not participate in config_hash().
     testthat::expect_identical(
       config_hash(bt$config),
       "6cde2b07001dd5b46928ee93e0b7e63b8a7732fe8637df8c984f55e1c72ed609"

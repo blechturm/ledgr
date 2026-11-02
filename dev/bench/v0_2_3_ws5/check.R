@@ -31,7 +31,8 @@ expected_families <- c(
   "D5_merge_to_replacement", "D5_metadata_to_state",
   "D5_axis_checkpoint", "D5_marker_resume", "D5_candidate_leak",
   "D5_update_alignment",
-  "D6_D7_schedule_inputs", "D8_rounding_evidence", "D9_pattern_teaching",
+  "D6_D7_schedule_inputs", "D8_rounding_evidence", "D8_boundary_swap",
+  "D9_pattern_teaching",
   "S4_item_5_reader_cut", "S4_item_6_timing", "consumer_strategy_authoring",
   "consumer_strategy_development", "consumer_peer_dense",
   "consumer_long_window_run", "consumer_long_window_sweepwf"
@@ -40,7 +41,9 @@ stopifnot(identical(owners$family, expected_families), !anyDuplicated(owners$fam
 stopifnot(all(grepl("^LDG-31(79|8[0-9]|90)$", owners$owner)))
 stopifnot(all(nzchar(owners$mutation)), all(startsWith(owners$mutation_command, "Rscript")))
 implemented_mutations <- grepl("^D[1-5]_", owners$family) |
-  owners$family %in% c("D6_D7_schedule_inputs", "D8_rounding_evidence")
+  owners$family %in% c(
+    "D6_D7_schedule_inputs", "D8_rounding_evidence", "D8_boundary_swap"
+  )
 stopifnot(all(grepl("v0_2_3_ws5/mutations[.]R", owners$mutation_command[implemented_mutations])))
 stopifnot(all(vapply(
   owners$family[implemented_mutations],
@@ -106,7 +109,9 @@ for (topic in c(
   "### 5. Preserve Holdings And Decide Index Leavers",
   "### 6. Use Position Facts And Declared Memory",
   "open_slots <- max(0L", "index_leavers = \"sell\"",
-  "reset_state = TRUE", "intent_reason = \"risk_checked\""
+  "reset_state = TRUE", "intent_reason = \"risk_checked\"",
+  "trailing_run <- ledgr_run(", "params = list(stop = 0.05, wait = 5L)",
+  "close(trailing_run)"
 )) {
   stopifnot(grepl(topic, article, fixed = TRUE))
 }

@@ -929,7 +929,10 @@ ledgr_fold_stage_decide <- function(
       stage = "sizing",
       outcome = "recorded",
       reason_code = sizing_evidence$reason_code,
-      reasons = sizing_evidence$reason_code,
+      reasons = rep(
+        if (is.null(intent_reason)) "" else intent_reason,
+        length(sizing_evidence$instrument_id)
+      ),
       target = sizing_evidence$pre_floor_quantity,
       quantity = sizing_evidence$rounded_quantity,
       price = sizing_evidence$price,
