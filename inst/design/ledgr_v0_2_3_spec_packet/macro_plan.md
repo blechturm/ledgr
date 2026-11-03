@@ -161,7 +161,8 @@ Phase A (now, parallel)
 |   typed-accounting boundary (field census, then focused RFC)
 |-- WS11a H4 real-data audit; C10 census and coupling map
 |-- WS5 preparation: spec cut, schema, selection, article drafts
-`-- chores: roxygen pin, UX-brief reconcile, M8a, C12b
+`-- chores: roxygen pin, UX-brief reconcile, M8a, C12b,
+    ledgr_utc() vectorisation (WS12)
                               |
 Phase B   WS4a typed fold carrier -> WS4b minimal C1 consolidation
                               |
@@ -511,6 +512,21 @@ Roxygen pin (H5b) and UX-brief reconcile (U1) now. R2 opens with the first
 cut and precedes M5 and M7; M5 also waits for H4's decisions. M7: six plots,
 each signed off. M1 audit after WS1 and WS4b. M6 NEWS collapse only for the
 CRAN release.
+- **`ledgr_utc()` vectorisation chore (maintainer, 2026-11-03).** The
+  exported parser handles character input one element at a time: a
+  `vapply()` over a closure that calls `grepl()`, `ledgr_iso_utc()` and
+  `as.POSIXct()` for each value. One string costs about 230 us; 500 strings
+  cost about 60 ms, against about 1.3 ms for one vectorised
+  `as.POSIXct(format = )` over the same 500. A small chore cut rewrites the
+  character branch as whole-vector passes: classify each element's accepted
+  form with one regex per form, parse each form's subset once, and reject
+  the first invalid value with the current condition class and message.
+  Accepted inputs, errors and output stay unchanged. The existing tests are
+  the oracle, plus one 500-element equality check against the current
+  per-element results. No identity impact; the chore may land any time
+  before the editorial pass. This is not hot-path work: per-pulse, per-fill
+  and per-event code still never calls `ledgr_utc()` or any other POSIXct
+  conversion (optimization manual, "No POSIXct in the hot loop").
 - **WS4b close note, 2026-11-01:** refresh the `ledgr_pulse_snapshot()` help
   so its experiment form teaches both bar-native fixed baskets and declared
   sessions; only the snapshot-and-universe form lacks causal history.
