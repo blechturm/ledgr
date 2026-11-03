@@ -356,6 +356,10 @@ ledgr_feature_vector_accessor <- function(features,
   }
 }
 
+ledgr_pulse_context_fixture_cutoff <- function(ts_utc) {
+  as.numeric(ledgr_utc(ts_utc))
+}
+
 ledgr_attach_feature_helpers <- function(ctx,
                                          features = NULL,
                                          universe = ctx$universe,
@@ -386,7 +390,11 @@ ledgr_attach_feature_helpers <- function(ctx,
     ctx$.pulse_lookup$feature_lookup <- prepared_feature_lookup
     ctx$.pulse_lookup$feature_vector <- feature_vector
     ctx$.pulse_lookup$projection_idx <- as.integer(pulse_idx)
-    ctx$.pulse_lookup$cutoff_num <- cutoff_num %||% NA_real_
+    cutoff_num <- cutoff_num %||% NA_real_
+    if (!is.finite(cutoff_num)) {
+      cutoff_num <- ledgr_pulse_context_fixture_cutoff(ctx$ts_utc)
+    }
+    ctx$.pulse_lookup$cutoff_num <- cutoff_num
     ctx$.pulse_lookup$readable_feature_names <-
       prepared_feature_lookup$readable_names
     if (is.environment(ctx)) {
@@ -447,7 +455,7 @@ ledgr_attach_feature_helpers <- function(ctx,
   )
   ctx$.pulse_lookup$feature_vector <- feature_vector
   ctx$.pulse_lookup$cutoff_num <- cutoff_num %||%
-    as.numeric(ledgr_utc(ctx$ts_utc))
+    ledgr_pulse_context_fixture_cutoff(ctx$ts_utc)
 
   if (is.environment(ctx)) {
     ctx$.feature_vector <- feature_vector
