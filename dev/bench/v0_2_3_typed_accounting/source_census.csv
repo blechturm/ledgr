@@ -20,7 +20,7 @@ accounting_replay,R/availability-results.R,2
 accounting_replay,R/backtest-fills.R,1
 accounting_replay,R/backtest-results.R,1
 accounting_replay,R/backtest-runner.R,1
-accounting_replay,R/corporate-action-results.R,2
+accounting_replay,R/corporate-action-results.R,3
 accounting_replay,R/corporate-action-settlement.R,1
 accounting_replay,R/derived-state.R,1
 accounting_replay,R/fold-reconstruction.R,3

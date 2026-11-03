@@ -3597,11 +3597,14 @@ tickets:
       - "the producer/writer/reader/test/doc census is a literal expected set reconciled to source, and adding or deleting a matched production seam makes the census checker fail"
       - "frozen records cover all seven Section 6 proof families, full and filtered reads, point/history explanation, summaries, public economics and close/reopen; the private aggregate record holds canonical per-table digests and row counts for full/filtered diagnostics, point/history explanations, D8/valuation summaries and economics, and missing private evidence is an open gate, never a pass"
       - "records name exact source/input identities, package/runtime versions, one-thread settings where applicable, raw repetitions, rows/bytes, latency and peak-memory boundaries; all current-tree checkers pass"
-    evidence: []
+    evidence:
+      - "Commit 16b64066 adds dev/bench/v0_2_3_typed_accounting/: a literal 93-seam source census, 30-field accounting map, 22-field diagnostic map and a checker over the 290-file frozen A0 manifest. The checker passes on the WS23 candidate and reports the private gate OPEN."
+      - "dev/bench/timing/protocols/cut11-accounting-1 freezes the fill-heavy, quiet and two-candidate sweep cells against immutable base 0d6c0b11. The final invocation refused before provisioning on the registered affinity check, so no descriptive clock is claimed."
+      - "typed_accounting_reader_closeout.md records two open evidence items without treating either as a pass: the unavailable private Sharadar aggregate record and the historical A0 successor fixture's refusal on the now-required opening argument."
   - id: "LDG-3201"
     title: "Build the typed accounting carrier, validator and replay"
     workstream: 23
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3200"]
@@ -3622,11 +3625,14 @@ tickets:
       - "one block and splits inside opening, between cash/disposition, before a position-dependent disposition, before duplicate sequence and before decreasing time produce identical facts/final state or the bound refusal; removing carried boundary state fails"
       - "mutations where disposition qty/price disagrees with position/mark, realized_model_pnl exceeds dust tolerance or a disposition leaves a live lot all fail"
       - "memory-sink and DuckDB prepared carriers are identical before replay; source checks find no meta list, event attributes, one-row frame or per-event validation loop in the new boundary"
-    evidence: []
+    evidence:
+      - "Commit ce3371da adds R/accounting-replay.R's flat prepared carrier, grouped schema-124 validator, carried sequence/time boundary and typed lot replay. LTB-0550/LCL-0539 covers the field matrix, split boundaries, memory/DuckDB equality and disposition reconciliation."
+      - "Commit 29b6dd1e removes the empty-payload fill-effect fallback and keeps formula comparisons exact as synthesis Section 3.3 requires. The superseded WS4a D8 inconsistent-effect arm is now a failure-sensitive wrong-effect refusal; normal publication and one-P3-computation witnesses remain green."
+      - "Focused accounting-core, derived-state and WS4a carrier suites pass; current-format hand-built fixtures now state their required typed effects/evidence explicitly."
   - id: "LDG-3202"
     title: "Route accounting-semantic readers through one replay"
     workstream: 23
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3201"]
@@ -3649,7 +3655,11 @@ tickets:
       - "a source/runtime census proves every accounting-semantic durable/reconstruction reader calls the preparer/replay, every exempt query is named and derives no accounting state, and restoring any old reader/position walk fails"
       - "terminal recovery performs one replay over the event stream and grows linearly on the registered pulse/event ladder; removing the forward state or restoring pulse-by-pulse replay fails its detector"
       - "inline_summary production use and exact parity with durable supported candidate shapes are detected separately; the seven-shape walk is complete"
-    evidence: []
+    evidence:
+      - "Commits 29b6dd1e and d3b8dfef route headline trades, corporate-action entitlement/composition/summary, terminal outcomes and terminal recovery through one preparation/replay family; terminal recovery queries/replays once and projects forward; the corporate summary passes one replay into composition."
+      - "LTB-0551/LCL-0540 pins the reader census, deleted JSON parser, one terminal replay, linear 200-event projection and the live inline_summary exception. Corporate-action, terminal, result, accounting-core, derived-state and finalization suites pass."
+      - "LTB-0552/LCL-0541 pins typed NA_real_ for the in-memory and reopened INCOMPLETE availability sweep annualized return. Availability parity passes."
+      - "typed_accounting_reader_closeout.md records the seven-shape walk and exact open evidence boundaries. Workstream 23 remains pending independent Type 1 review and disposition of the two evidence gaps."
   - id: "LDG-3204"
     title: "Switch atomically to schema 125 and direct typed publication"
     workstream: 24
