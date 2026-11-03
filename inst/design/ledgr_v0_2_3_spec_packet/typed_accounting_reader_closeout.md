@@ -115,28 +115,38 @@ January solely to append monotonically after its 2 and 3 January witnesses.
 The successor A0 comparator now recomputes each file's size and SHA-256 rather
 than trusting a stored manifest.
 
-## Private-gate reader correction
+## Private-gate reader corrections
 
 The first private aggregate arm completed, but its public `ledgr_run_info()`,
 corporate-action summary and metric reads exposed a reader-only regression.
-`yyjsonr` rectangularizes the whole metadata block: a subtype on one valid
-non-disposition event creates a missing subtype cell on every other row. The
-typed validator incorrectly treated the column's existence as a subtype on
-every DISPOSITION. No in-repository writer emits these keys; the resumed
-aggregate comparison is the confirmation of this diagnosis. Product
-`01cc546d` evaluates the prohibition per row. LTB-0050 keeps an actual
-disposition subtype forbidden, while LTB-0553 pins the three public readers
-before and after a synthetic non-disposition subtype is added to an opening
-CASHFLOW row. Focused typed-boundary, terminal-reporting, corporate-action,
-result-output and run-store suites pass. The source and codebase census
-checkers pass, and A0 remains exact.
+Product `01cc546d` correctly narrowed subtype prohibitions to the event row;
+LTB-0050 keeps an actual DISPOSITION subtype forbidden. That correction did
+not close the private failure.
+
+A non-reconstructive predicate census then isolated the real boundary defect:
+the 146 lifetime DISPOSITION rows validate when decoded alone, but in the
+35,264-row heterogeneous block every one loses its disposition evidence.
+`yyjsonr::read_ndjson_str()` inferred the rectangular schema from its default
+first 100 rows, before any disposition appeared, and therefore omitted all
+later-only evidence columns. Product `b0c54217` supplies the complete block
+length as `nprobe`, retaining one bulk decode and one final frame without a
+per-row parser or growing collection. LTB-0550 pins the late typed fields in a
+102-row mixed block. LTB-0553 moves a real terminal disposition behind 100
+valid zero-effect accounting rows and exercises run info, corporate-action
+summary and metrics. Restoring the default probe makes both blocks fail.
+
+Focused typed-boundary, terminal-reporting, corporate-action, result-output,
+run-store and run-compare suites pass. The source and A0 checkers pass after
+the new test seams are registered. The private gate remains open for an
+independent exact-candidate rerun; no private value was copied into this tree.
 
 ## Open evidence gates
 
-The private Sharadar aggregate record is **OPEN**. Its first candidate arm
-found the row-scoping defect above before producing an accepted comparison;
-the aggregate comparison must resume on the corrected candidate. No digest,
-count, latency or peak-memory pass is claimed yet.
+The private Sharadar aggregate record is **OPEN**. Its first candidate arm and
+predicate census found the bulk schema-probe defect above before producing an
+accepted comparison; Claude must resume the aggregate comparison on product
+candidate `b0c54217` plus these record-only changes. No digest, count, latency
+or peak-memory pass is claimed yet.
 
 The private record is routed as a mandatory precondition before Workstream 24
 changes the store: take it from immutable base `0d6c0b11`, compare it with the

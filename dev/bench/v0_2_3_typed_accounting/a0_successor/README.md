@@ -19,3 +19,6 @@ product-tree identities. The record was regenerated at `7361951e`. Correction
 `fbf90cb1` changes `R/`, and regenerating at its tree reproduces all 281 files
 byte for byte. The later row-scoped subtype reader correction at `01cc546d`
 changes no recorded A0 output; the committed pair still passes `compare.R`.
+The complete-block metadata probe correction at `b0c54217` likewise changes
+no A0 output; `compare.R` still reports only the four accepted typed-missing
+cells.
