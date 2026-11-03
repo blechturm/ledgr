@@ -3107,7 +3107,7 @@ tickets:
   - id: "LDG-3194"
     title: "Freeze the WS6 removal, parity and shape matrix"
     workstream: 20
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -3130,7 +3130,9 @@ tickets:
       - "the baseline record registers as named expected differences, each with one owner, exactly: B1's four retired names leaving names()/str() and refusing on $/[[; B4's three deliberate changes (runtime/experiment aliasing, unmapped Daxis order, mapped-empty return); and B5's five removed snapshot names with the alias hash; condition controls compare class and feature-ID set, not prose; every other control must reproduce unchanged"
       - "the mutation matrix names one failing registered witness for each eager frame constructor, helper-call-closure shape, readable-name rebuild, memo, retired-name, alias/order/empty, metadata/alias-hash, frozen-ownership live-buffer leak, print/strategy-error frame-or-hash, and fixture per-row timestamp-normalization regression"
       - "the response probe remains descriptive and no timing or absent-function claim relies on it as the failure-sensitive oracle"
-    evidence: []
+    evidence:
+      - "dev/spikes/ctx_frame_views/ws6_prechange_inventory.md (commit pending): source-derived B1-B11 runtime, test, maintained-consumer, contract/manual and registered-claim population; named expected differences and ten-family failure-sensitive mutation matrix, frozen before product edits."
+      - "Empirical: input dev/spikes/ctx_frame_views/response_probe.R against unchanged product tree 74015f96 through planning commit 4342c39b; environment Windows 11 x64, R 4.6.1, collapse 2.1.8; reproduction command Rscript dev/spikes/ctx_frame_views/response_probe.R .; result declared-session run DONE, held nonmember and missing bar present, runtime/experiment inspection agreement, retained helper results frozen, empty-axis current behavior recorded, 600 x 3 descriptive timings completed; clock 16.3 seconds wall; the probe remains descriptive and owns no mutation claim."
   - id: "LDG-3195"
     title: "Retire context frames and rebase pulse inspection"
     workstream: 20
