@@ -991,11 +991,12 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
   first_final <- first_equity[nrow(first_equity), , drop = FALSE]
   opened <- ledgr:::ledgr_run_store_open(snapshot$db_path)
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
-  first_positions <- ledgr:::ledgr_availability_positions_asof(
+  first_timeline <- ledgr:::ledgr_availability_positions_timeline(
     opened$con,
     wf$test_runs[[1L]]$run_id,
-    first_final$ts_utc[[1L]]
+    first_final$ts_utc
   )
+  first_positions <- stats::setNames(first_timeline$position[, 1L], first_timeline$ids)
   first_positions <- first_positions[abs(first_positions) > 1e-12]
   # LDG-3164 (decision 10, category 2): the basis comes from the typed
   # as-of book, whose axis starts with the universe.

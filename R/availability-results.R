@@ -355,23 +355,6 @@ ledgr_availability_feature_identity_json <- function(config) {
   )))
 }
 
-ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
-  events <- DBI::dbGetQuery(
-    con,
-    paste(
-      paste(
-        "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
-        "qty, price, fee, meta_json, event_seq FROM ledger_events"
-      ),
-      "WHERE run_id = ? AND ts_utc <= ? ORDER BY event_seq"
-    ),
-    params = list(run_id, ts_utc)
-  )
-  if (nrow(events) == 0L) return(numeric())
-  prepared <- ledgr_prepare_accounting_events(events)
-  ledgr_replay_accounting_events(prepared)$positions
-}
-
 # Each instrument's position at each requested time, from one ledger read and
 # one replay: the position after its last event at or before that time. Event
 # timestamps never decrease in event order, so the events at or before a time
@@ -380,8 +363,8 @@ ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
 # above). ledgr_accounting_positions_at_pulses() uses the same replayed
 # position_after vector for an instrument-by-pulse matrix. One findInterval()
 # over sorted (instrument, event position) keys
-# resolves every instrument and time pair. Returns NULL when timestamps do
-# decrease in event order; callers then replay per time.
+# resolves every instrument and time pair. The preparer refuses a decreasing
+# event timestamp, so no per-time fallback exists.
 ledgr_availability_positions_timeline <- function(con, run_id, times) {
   events <- DBI::dbGetQuery(
     con,
@@ -398,9 +381,8 @@ ledgr_availability_positions_timeline <- function(con, run_id, times) {
   if (nrow(events) == 0L) {
     return(list(ids = character(), position = matrix(0, 0L, n_times)))
   }
-  event_num <- as.numeric(as.POSIXct(events$ts_utc, tz = "UTC"))
-  if (is.unsorted(event_num)) return(NULL)
   prepared <- ledgr_prepare_accounting_events(events)
+  event_num <- as.numeric(prepared$ts_utc)
   replay <- ledgr_replay_accounting_events(prepared)
   ids <- prepared$instrument_ids
   inst <- prepared$instrument_index
@@ -540,7 +522,6 @@ ledgr_backtest_availability_declared <- function(bt,
   }
   timeline <- ledgr_availability_positions_timeline(con, bt$run_id, times)
   positions_at <- function(i) {
-    if (is.null(timeline)) return(ledgr_availability_positions_asof(con, bt$run_id, times[[i]]))
     timeline$position[, i]
   }
   # The decision view and the valuation state are sequential per pulse, as in
@@ -625,16 +606,8 @@ ledgr_backtest_availability_bar_native <- function(bt,
   }
   timeline <- ledgr_availability_positions_timeline(con, bt$run_id, times)
   quantity <- matrix(0, nrow = length(ids), ncol = length(times))
-  if (is.null(timeline)) {
-    for (i in seq_along(times)) {
-      positions <- ledgr_availability_positions_asof(con, bt$run_id, times[[i]])
-      matched <- intersect(names(positions), ids)
-      quantity[match(matched, ids), i] <- positions[matched]
-    }
-  } else {
-    row <- match(ids, timeline$ids)
-    quantity[!is.na(row), ] <- timeline$position[row[!is.na(row)], , drop = FALSE]
-  }
+  row <- match(ids, timeline$ids)
+  quantity[!is.na(row), ] <- timeline$position[row[!is.na(row)], , drop = FALSE]
   n <- length(ids) * length(times)
   tibble::as_tibble(data.frame(
     ts_utc = .POSIXct(rep(as.numeric(times), each = length(ids)), tz = "UTC"),

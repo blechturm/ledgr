@@ -16,6 +16,11 @@ ledgr_fill_publication_deltas <- function(side, qty, fill_price, fee) {
   list(cash_delta = cash_delta, position_delta = position_delta)
 }
 
+# The reader boundary validates published effects against the same formula
+# without becoming another P3 computation site. This binding is refreshed
+# from ledgr_fill_publication_deltas() whenever the namespace is loaded.
+.ledgr_fill_publication_formula <- ledgr_fill_publication_deltas
+
 # The db_live writer: row `i` of the typed fill group `fill` (P3's columns
 # and computed effects), published for `instrument_id`. A zero-length `i` is
 # the no-op.

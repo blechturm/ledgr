@@ -183,6 +183,8 @@ testthat::test_that("[LTB-0021] chunked reader is identical across its fetch bou
   side_cycle <- c("BUY", "BUY", "BUY", "SELL", "SELL", "SELL")
   sides <- rep(side_cycle, length.out = n)
   prices <- 100 + event_seq * 1e-6
+  cash_delta <- ifelse(sides == "BUY", -prices, prices)
+  position_delta <- ifelse(sides == "BUY", 1L, -1L)
   rows <- data.frame(
     event_id = sprintf("ev_chunk_%05d", event_seq),
     run_id = "run_accounting_chunk_boundary",
@@ -193,7 +195,11 @@ testthat::test_that("[LTB-0021] chunked reader is identical across its fetch bou
     qty = 1,
     price = prices,
     fee = 0,
-    meta_json = NA_character_,
+    meta_json = paste0(
+      '{"cash_delta":',
+      format(cash_delta, scientific = FALSE, trim = TRUE, digits = 17L),
+      ',"position_delta":', position_delta, "}"
+    ),
     event_seq = event_seq,
     stringsAsFactors = FALSE
   )

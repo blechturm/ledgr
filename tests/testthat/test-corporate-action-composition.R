@@ -461,7 +461,7 @@ testthat::test_that("[LTB-0053] quantity refusal and transaction identity fail c
       ledgr:::canonical_json(list(
         source = "corporate_action_disposition", source_fact_id = "acquisition-1",
         cash_delta = 10, position_delta = -1, quantity = 1, mark = 10,
-        mark_source = "current_close", mark_source_raw = "current_close",
+        mark_source = "current_close",
         mark_source_ts_utc = "2020-01-02T16:00:00Z", mark_age = 0,
         position_before = 1, position_after = 0, realized_model_pnl = 0,
         disposition_policy_id = "p", disposition_choice = "last_mark",

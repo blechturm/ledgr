@@ -153,7 +153,11 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
   straddling <- data.frame(
     event_id = paste0("s", 1:3), run_id = "s", ts_utc = straddling_times,
     event_type = "FILL", instrument_id = "AAA", side = "BUY", qty = c(1, 2, 4),
-    price = 10, fee = 0, meta_json = "{}", event_seq = 1:3, stringsAsFactors = FALSE
+    price = 10, fee = 0,
+    meta_json = vapply(c(1, 2, 4), function(qty) canonical_json(list(
+      cash_delta = -(qty * 10), position_delta = qty
+    )), character(1)),
+    event_seq = 1:3, stringsAsFactors = FALSE
   )
   straddling_replay <- ledgr:::ledgr_replay_accounting_events(
     ledgr:::ledgr_prepare_accounting_events(straddling)
@@ -177,10 +181,15 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   close <- day + 21 * 3600
   open <- day + 14.5 * 3600
   fill <- function(seq, ts, side, qty) {
+    sign <- if (identical(side, "BUY")) 1 else -1
     data.frame(
       event_id = paste0("r_", seq), run_id = "r", ts_utc = ts, event_type = "FILL",
       instrument_id = "AAA", side = side, qty = qty, price = 50, fee = 0,
-      meta_json = "{}", event_seq = seq, stringsAsFactors = FALSE
+      meta_json = canonical_json(list(
+        cash_delta = if (sign > 0) -(qty * 50) else qty * 50,
+        position_delta = sign * qty
+      )),
+      event_seq = seq, stringsAsFactors = FALSE
     )
   }
   bound <- function(events, entitlement_pulse) {

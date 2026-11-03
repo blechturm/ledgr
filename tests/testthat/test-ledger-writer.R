@@ -924,7 +924,7 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
     ),
     no_fee = ledgr_test_next_open_fill(
       desired_qty_delta = 4,
-      next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-02T00:00:00Z", open = 50),
+      next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-04T00:00:00Z", open = 50),
       spread_bps = 0,
       commission_fixed = 0
     )
@@ -1034,8 +1034,9 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
 
   check(publish(), shift = 0)
 
-  # Perturbing the one computation moves every publication path with it: one
-  # computation per fill, none in the sinks, and a NO_OP never reaches it.
+  # Perturbing the one P3 computation is refused by the independent typed
+  # append validator. Sinks still perform no second P3 computation, and a
+  # NO_OP never reaches it.
   original <- ledgr:::ledgr_fill_publication_deltas
   calls <- 0L
   testthat::local_mocked_bindings(
@@ -1049,7 +1050,10 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
   )
   fills <- make_fills()
   testthat::expect_identical(calls, 3L)
-  check(publish(), shift = 1)
+  testthat::expect_error(
+    publish(),
+    class = "ledgr_invalid_accounting_event"
+  )
   testthat::expect_identical(calls, 3L)
 })
 

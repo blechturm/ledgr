@@ -119,7 +119,16 @@ ledgr_corporate_action_result_events <- function(con,
   instrument_ids <- instrument_ids[!is.na(instrument_ids) &
     nzchar(instrument_ids)]
   if (length(instrument_ids) == 0L) {
-    return(data.frame())
+    return(DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+        "qty, price, fee, meta_json, event_seq FROM ledger_events",
+        "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
+        "ORDER BY event_seq"
+      ),
+      params = list(run_id)
+    ))
   }
   placeholders <- paste(rep("?", length(instrument_ids)), collapse = ",")
   DBI::dbGetQuery(
@@ -127,8 +136,9 @@ ledgr_corporate_action_result_events <- function(con,
     paste0(
       "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, ",
       "price, fee, meta_json, event_seq FROM ledger_events WHERE run_id = ? ",
-      "AND event_type IN ('FILL','CASHFLOW','DISPOSITION') ",
-      "AND instrument_id IN (", placeholders, ") ORDER BY event_seq"
+      "AND (event_type IN ('CASHFLOW','DISPOSITION') OR ",
+      "(event_type = 'FILL' AND instrument_id IN (", placeholders, "))) ",
+      "ORDER BY event_seq"
     ),
     params = c(list(run_id), as.list(instrument_ids))
   )
@@ -191,7 +201,11 @@ ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows
 # that settles nothing: a complete fact of a subtype ledgr does not model
 # (`refusal_reason` NA) or a refused (complete = FALSE) fact (Cut 17
 # decision 12), with its entitled parent quantity.
-ledgr_corporate_action_held_unsupported <- function(con, snapshot_id, run_id, rows) {
+ledgr_corporate_action_held_unsupported <- function(con,
+                                                     snapshot_id,
+                                                     run_id,
+                                                     rows,
+                                                     replay = NULL) {
   none <- data.frame(
     refusal_reason = character(),
     entitled_quantity = numeric(),
@@ -200,9 +214,13 @@ ledgr_corporate_action_held_unsupported <- function(con, snapshot_id, run_id, ro
   if (is.null(rows) || nrow(rows) == 0L) return(none)
   selected <- which(!rows$complete | !rows$subtype %in% ledgr_corporate_action_supported_subtypes())
   if (length(selected) == 0L) return(none)
-  events <- ledgr_corporate_action_result_events(con, run_id, rows$parent_instrument_id[selected])
-  if (nrow(events) == 0L) return(none)
-  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+  if (is.null(replay)) {
+    events <- ledgr_corporate_action_result_events(con, run_id, rows$parent_instrument_id[selected])
+    if (nrow(events) == 0L) return(none)
+    replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+  } else if (length(replay$prepared$event_seq) == 0L) {
+    return(none)
+  }
   quantity <- ledgr_corporate_action_run_quantities(con, snapshot_id, run_id, rows, selected, replay)
   held <- selected[quantity != 0]
   reason <- as.character(rows$refusal_reason[held])
@@ -428,15 +446,13 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     integer(length(ledgr_corporate_action_choice_keys())),
     ledgr_corporate_action_choice_keys()
   )
-  event_rows <- DBI::dbGetQuery(
+  # Corporate summaries need corporate postings plus the parent-instrument
+  # history used to bind entitlement quantities. Keep this query narrow: a
+  # fill-only run with no supplied facts prepares an empty carrier.
+  event_rows <- ledgr_corporate_action_result_events(
     con,
-    paste(
-      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
-      "qty, price, fee, meta_json, event_seq FROM ledger_events",
-      "WHERE run_id = ? AND event_type IN ('FILL','CASHFLOW','DISPOSITION')",
-      "ORDER BY event_seq"
-    ),
-    params = list(bt$run_id)
+    bt$run_id,
+    unique(as.character(facts$rows$parent_instrument_id))
   )
   replay <- ledgr_replay_accounting_events(
     ledgr_prepare_accounting_events(event_rows)
@@ -494,7 +510,9 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       if (!dispositions_active) "cash_acquisition"
     )
   }
-  held_route <- ledgr_corporate_action_held_unsupported(con, snapshot_id, bt$run_id, facts$rows)
+  held_route <- ledgr_corporate_action_held_unsupported(
+    con, snapshot_id, bt$run_id, facts$rows, replay = replay
+  )
   unsupported <- c(unsupported, rep(TRUE, nrow(held_route)))
   # Under report_only every held fact on the unsupported-quantity route,
   # refused facts included, exercised that choice (Cut 17 LDG-3091).

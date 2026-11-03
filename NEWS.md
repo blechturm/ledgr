@@ -1,5 +1,9 @@
 # ledgr (development version)
 
+- An availability sweep that stops `INCOMPLETE` at valuation-horizon
+  exhaustion now reports `annualized_return = NA_real_` in memory and after
+  reopening. The achieved prefix is not presented as a complete-horizon
+  annualized return.
 - Strategy sizing now leaves typed, per-instrument decision evidence for
   requested, pre-floor and rounded quantities, the sizing price, prior
   position and reason. Run summaries distinguish exposure-weighted sizing

@@ -180,6 +180,8 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
     cost_basis = 10,
     opening_position = TRUE
   ))
+  sell_meta <- canonical_json(list(cash_delta = 120, position_delta = -10))
+  buy_meta <- canonical_json(list(cash_delta = -99, position_delta = 9))
   events <- data.frame(
     event_id = paste0("headline_", 1:3),
     run_id = "headline",
@@ -190,7 +192,7 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
     qty = c(4, 10, 9),
     price = c(10, 12, 11),
     fee = 0,
-    meta_json = c(opening_meta, NA, NA),
+    meta_json = c(opening_meta, sell_meta, buy_meta),
     event_seq = 1:3,
     stringsAsFactors = FALSE
   )

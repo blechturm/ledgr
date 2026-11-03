@@ -396,6 +396,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   state <- new.env(parent = emptyenv())
   state$event_cols <- NULL
   state$event_count <- 0L
+  state$last_event_seq <- NULL
+  state$last_event_ts_utc <- NULL
   state$event_capacity <- 0L
   state$event_max_capacity <- .Machine$integer.max
   state$event_initial_capacity <- ledgr_event_buffer_checked_capacity(
@@ -497,6 +499,24 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     inherits(write_res, "ledgr_ledger_write_result") && identical(write_res$status, "WROTE")
   }
 
+  validate_append <- function(rows,
+                              cash_delta = NULL,
+                              position_delta = NULL,
+                              commit_boundary = TRUE) {
+    prepared <- ledgr_validate_accounting_append(
+      rows,
+      cash_delta = cash_delta,
+      position_delta = position_delta,
+      prior_event_seq = state$last_event_seq,
+      prior_ts_utc = state$last_event_ts_utc
+    )
+    if (isTRUE(commit_boundary) && length(prepared$event_seq) > 0L) {
+      state$last_event_seq <- tail(prepared$event_seq, 1L)
+      state$last_event_ts_utc <- tail(prepared$ts_utc, 1L)
+    }
+    prepared
+  }
+
   handler$init_buffers <- function(max_events) {
     if (isTRUE(sink$drains)) {
       # A draining sink starts every fold with an empty buffer.
@@ -569,9 +589,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   # built and checked as this sink would publish it, but neither staged nor
   # written (the fold's refusal order, ledgr_fold_stage_apply()).
   handler$write_fill_events <- function(fill, i, instrument_id, event_seq, use_transaction = FALSE, stage = TRUE) {
-    if (isTRUE(stage) && isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
-      return(sink$write_fill_live(fill, i, instrument_id, event_seq))
-    }
     block <- ledgr_fill_event_payload(
       run_id = run_id,
       fill = fill,
@@ -580,13 +597,32 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       event_seq = event_seq,
       serialize_meta_json = sink$serialize_meta_json
     )
+    if (isTRUE(stage) && isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
+      if (identical(block$status, "WROTE")) {
+        rows <- block[ledgr_output_event_columns]
+        rows$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
+        validate_append(
+          rows,
+          cash_delta = block$cash_delta,
+          position_delta = block$position_delta,
+          commit_boundary = FALSE
+        )
+      }
+      result <- sink$write_fill_live(fill, i, instrument_id, event_seq)
+      if (identical(block$status, "WROTE")) {
+        state$last_event_seq <- tail(block$event_seq, 1L)
+        state$last_event_ts_utc <- .POSIXct(tail(block$ts_utc, 1L), tz = "UTC")
+      }
+      return(result)
+    }
     if (identical(block$status, "WROTE")) {
       rows <- block[ledgr_output_event_columns]
       rows$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
-      ledgr_validate_accounting_append(
+      validate_append(
         rows,
         cash_delta = block$cash_delta,
-        position_delta = block$position_delta
+        position_delta = block$position_delta,
+        commit_boundary = isTRUE(stage)
       )
     }
     if (isTRUE(stage)) stage_fill_block(block)
@@ -692,7 +728,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     handler$write_strategy_state <- sink$write_state
     handler$append_event_rows <- function(rows) {
       if (!is.null(rows) && nrow(rows) > 0L) {
-        ledgr_validate_accounting_append(rows)
+        validate_append(rows)
         sink$append_events(rows)
       }
       invisible(TRUE)
@@ -740,7 +776,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
 
   handler$append_event_rows <- function(rows) {
     if (!is.null(rows) && nrow(rows) > 0L) {
-      prepared <- ledgr_validate_accounting_append(rows)
+      prepared <- validate_append(rows)
       n <- nrow(rows)
       start <- state$event_count + 1L
       end <- state$event_count + n
@@ -784,7 +820,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       event_seq = batch$event_seq,
       stringsAsFactors = FALSE
     )
-    ledgr_validate_accounting_append(
+    validate_append(
       rows,
       cash_delta = batch$cash_delta,
       position_delta = batch$position_delta

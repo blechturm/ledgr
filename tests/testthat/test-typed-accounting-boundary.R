@@ -169,4 +169,68 @@ testthat::test_that("[LTB-0550] typed accounting carrier owns fields and block b
     ledgr:::ledgr_prepare_accounting_events(bad_cash),
     class = "ledgr_invalid_ledger_meta"
   )
+
+  replace_meta <- function(row, name, value) {
+    meta <- yyjsonr::read_json_str(row$meta_json[[1L]])
+    meta[[name]] <- value
+    row$meta_json[[1L]] <- canonical_json(meta)
+    row
+  }
+  mutation_cases <- list(
+    list(category = "required", row = replace_meta(disposition, "disposition_policy_id", NULL)),
+    list(category = "required", row = transform(disposition, qty = NA_real_)),
+    list(category = "required", row = transform(disposition, price = NA_real_)),
+    list(category = "null", row = replace_meta(disposition, "entitled_quantity", 1)),
+    list(category = "null", row = replace_meta(disposition, "amount_policy_id", "not-applicable")),
+    list(category = "null", row = replace_meta(disposition, "late_arrival", FALSE)),
+    list(category = "null", row = replace_meta(disposition, "cost_basis", 100)),
+    list(category = "integral", row = replace_meta(disposition, "mark_age", 1.5)),
+    list(category = "non-negative", row = replace_meta(disposition, "mark_age", -1)),
+    list(category = "integral", row = transform(disposition, event_seq = 4.5)),
+    list(category = "vocabulary", row = replace_meta(disposition, "unexpected_key", "x")),
+    list(category = "formula", row = replace_meta(disposition, "cash_delta", 1099))
+  )
+  for (case in mutation_cases) {
+    testthat::expect_error(
+      ledgr:::ledgr_prepare_accounting_events(case$row),
+      class = "ledgr_invalid_accounting_event",
+      info = case$category
+    )
+  }
+
+  handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_memory("typed-accounting")
+  )
+  handler$init_buffers(4L)
+  handler$append_event_rows(typed_accounting_opening(1L))
+  duplicate_append <- typed_accounting_opening(1L)
+  testthat::expect_error(
+    handler$append_event_rows(duplicate_append),
+    class = "ledgr_invalid_accounting_event"
+  )
+  decreasing_append <- typed_accounting_opening(2L)
+  decreasing_append$ts_utc <- as.POSIXct("2019-12-31", tz = "UTC")
+  testthat::expect_error(
+    handler$append_event_rows(decreasing_append),
+    class = "ledgr_invalid_accounting_event"
+  )
+
+  live_sink <- ledgr:::ledgr_output_sink_memory("typed-accounting")
+  live_sink$serialize_meta_json <- TRUE
+  live_sink$write_fill_live <- function(...) {
+    structure(list(status = "WROTE"), class = "ledgr_ledger_write_result")
+  }
+  live <- ledgr:::ledgr_output_handler(live_sink)
+  invalid_live_fill <- list(
+    side = 1L, qty = 1, price = 100, fee = 0,
+    cash_delta = -99, position_delta = 1,
+    exec_ts = as.numeric(as.POSIXct("2020-01-02", tz = "UTC"))
+  )
+  testthat::expect_error(
+    live$write_fill_events(
+      invalid_live_fill, 1L, "AAA", 1L,
+      use_transaction = TRUE, stage = TRUE
+    ),
+    class = "ledgr_invalid_accounting_event"
+  )
 })

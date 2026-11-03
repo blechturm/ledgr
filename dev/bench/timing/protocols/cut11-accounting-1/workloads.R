@@ -2,7 +2,7 @@ cut11_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   if (identical(params$shape, "fill_heavy")) {
     pulse <- as.integer(as.Date(ctx$ts_utc))
-    targets[[1L]] <- if (pulse %% 2L) params$qty else 0
+    targets[] <- if (pulse %% 2L) params$qty else 0
   }
   targets
 }
@@ -53,7 +53,16 @@ typed_accounting <- function(args, work_dir) {
   )
   elapsed <- as.numeric(Sys.time()) - t0
   on.exit(close(run), add = TRUE)
-  info <- ledgr_run_info(run)
-  work <- paste(info$status, info$n_fills, format(info$final_equity, digits = 17), sep = "|")
+  info <- ledgr_run_info(fx$snapshot, run$run_id)
+  ledger <- ledgr_results(run, "ledger")
+  ledger_digest <- digest::digest(serialize(ledger, NULL, version = 3L), algo = "sha256")
+  work <- paste(
+    info$status,
+    nrow(ledger),
+    sum(ledger$event_type == "FILL"),
+    format(info$final_equity, digits = 17),
+    ledger_digest,
+    sep = "|"
+  )
   list(seconds = c(run = elapsed), work = work)
 }
