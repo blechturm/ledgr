@@ -1,0 +1,3 @@
+"n_inst","n_sessions","history","pulses","fields_identical","fields_compared","mismatches","lean_us_per_pulse","ledgr_decide_us_per_pulse","retained_view_frozen","prepared_planes_mb"
+200,250,FALSE,250,13,13,"",30,664.275862068966,TRUE,3.92874908447266
+200,250,TRUE,250,14,14,"",50,1479.41052631579,TRUE,3.92874908447266

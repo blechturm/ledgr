@@ -128,6 +128,58 @@ of a small run. The rest: run setup and finalisation outside the loop
 138 ms, result reads 80 ms, close 28 ms, snapshot metadata 27 ms, snapshot
 connection 26 ms, provider data 10 ms, strategy spec 9 ms.
 
+## Stage 3: the strategy-context boundary on a changing axis
+
+**Question** (the bounded prerequisite from the lean-fold-core Type 2
+response, finding 7): can ledgr's real strategy-context boundary run lean
+over a changing axis, with retained views frozen and cutoff-bound history,
+at materially lower matched cost? Kill condition: the lean boundary must
+hand the strategy exactly what ledgr hands it on every pulse.
+
+**Outcome: green for the boundary.** `probe_axes.R` recorded the behaviour
+first (`probe_findings.md`). `seam_p2.R` builds each pulse's context as a
+fresh list from prepared planes; `run3.R` records, inside a real ledgr run,
+everything the strategy reads on every pulse (axis, membership, holdings,
+`buyable`, OHLCV, both SMAs, `hold()`, a ten-session `ledgr_history_matrix()`)
+and its targets, and requires the lean side to reproduce all of it.
+Holdings come from ledgr's own fills; P3 to P5 are not this seam.
+
+| changing axis (`axes_fixture.R`) | lean P2 | ledgr decide stage | parity |
+| --- | ---: | ---: | --- |
+| 30 x 250 | 14 us | 675 us | 13 of 13 fields, every pulse |
+| 30 x 250, history read every pulse | 26 us | 965 us | 14 of 14 |
+| 200 x 250 | 30 us | 664 us | 13 of 13 |
+| 200 x 250, history read every pulse | 50 us | 1,479 us | 14 of 14 |
+
+A retained lean view stays unchanged in every run. ledgr's decide stage is
+measured from profile samples scaled to its wall time, with the same rule
+and no recording; another R process was running on the host, so read the
+ratios (about 22 to 48 times) as approximate.
+
+Rules parity taught, all first wrong in the seam:
+
+- the decision axis is the members in stable order, then held former
+  members, not one sorted list;
+- `buyable` follows membership, not whether the instrument has a bar today;
+- `ledgr_history_matrix()` admits an instrument only with a complete
+  lookback window, and returns no columns before one exists;
+- missing price inputs are carried for up to five sessions for features and
+  history (history projection v11), while `ctx$close` stays `NA`; TTR's
+  running sum passes through the carried value, so a per-segment SMA
+  differs in the last digit;
+- stored prices are rounded to eight decimals;
+- a fill at the next session's open belongs to the first decision after it.
+
+**Memory.** The prepared planes take about 80 bytes per instrument-session
+(0.6 MB at 30 x 250, 3.9 MB at 200 x 250). That is about 50 MB at
+500 x 1,260 but several GB for a Sharadar-scale 5,000 x 7,000 run, so a lean
+core needs chunked preparation by time window; this seam does not bound
+memory.
+
+**Not in this seam.** P3 to P5 with ledgr's own FIFO lot accounting reused,
+restrictions and terminals, schedules, corporate actions, sizing helpers,
+costs, risk and RNG.
+
 ## What the spec may consume, and what is open
 
 The spec may cite the floor and the layer prices as lower bounds for this

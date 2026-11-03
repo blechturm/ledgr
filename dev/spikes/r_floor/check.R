@@ -35,6 +35,22 @@ for (st in stages) {
     problems <- c(problems, sprintf("%s rows differ from the recorded evidence", st$timings))
   }
 }
+# Stage 3: the lean P2 seam, one recorded file per shape; parity columns
+# must match exactly (timings vary and are not compared).
+for (f in list.files(evidence, "^p2_seam_[0-9]+x[0-9]+[.]csv$")) {
+  dims <- regmatches(f, regexpr("[0-9]+x[0-9]+", f))
+  n <- strsplit(dims, "x")[[1]]
+  rc <- system2(file.path(R.home("bin"), "Rscript"),
+                c(file.path(here, "run3.R"), lib, scratch, n[[1]], n[[2]]), stdout = FALSE, stderr = FALSE)
+  if (rc != 0L) { problems <- c(problems, sprintf("run3.R %s exited %d", dims, rc)); next }
+  cols <- c("n_inst", "n_sessions", "history", "pulses", "fields_identical",
+            "fields_compared", "mismatches", "retained_view_frozen")
+  fresh <- read(scratch, f)[cols]; recorded <- read(evidence, f)[cols]
+  if (!identical(fresh, recorded)) problems <- c(problems, sprintf("%s parity differs from the recorded evidence", f))
+  if (any(fresh$fields_identical != fresh$fields_compared) || !all(fresh$retained_view_frozen)) {
+    problems <- c(problems, sprintf("%s: the lean P2 no longer reproduces what the strategy sees", f))
+  }
+}
 if (!identical(status(), before)) problems <- c(problems, "package scope changed during the run")
 
 if (length(problems)) {
