@@ -1,0 +1,4 @@
+cell,workload,clock,args,pairs
+fill_heavy,typed_accounting,run,shape=fill_heavy,8
+quiet,typed_accounting,run,shape=quiet,8
+sweep,typed_accounting,sweep,shape=sweep;workers=1,8

@@ -1,0 +1,31 @@
+field,type,presence,origin,derivation,order_owner
+event_id,character,all,event producer,primitive identity,event_seq
+run_id,character,all,run service,primitive identity,event_seq
+ts_utc,POSIXct,all,pulse execution,primitive timestamp nondecreasing,event_seq
+event_type,character,all,event producer,typed discriminator,event_seq
+instrument_id,character,fill/opening/disposition,event producer,primitive identity,event_seq
+side,character,fill,execution fill,BUY or SELL,event_seq
+qty,double,fill/opening/disposition,execution or held position,positive magnitude,event_seq
+price,double,fill/opening/disposition,execution or resolved mark,fill positive; disposition nonnegative,event_seq
+fee,double,all,cost model,fill nonnegative else zero,event_seq
+cash_delta,double,all,event arithmetic,exact signed cash effect,event_seq
+position_delta,double,all,event arithmetic,exact signed position effect,event_seq
+source,character,opening/cash/disposition,event policy,durable discriminator,event_seq
+source_fact_id,character,corporate cash/disposition,sealed fact,durable fact identity,event_seq
+entitled_quantity,double,corporate cash,entitlement boundary,held quantity at entitlement,event_seq
+gross_cash_per_parent_unit,double,corporate cash,sealed fact,validated cash amount,event_seq
+amount_policy_id,character,corporate cash,corporate-action policy,policy identity,event_seq
+posting_policy_id,character,corporate cash,corporate-action policy,policy identity,event_seq
+late_arrival,logical,corporate cash,fact timing,knowledge after entitlement,event_seq
+affected_marked_exposure,double,corporate cash/disposition,held quantity and mark,absolute marked exposure,event_seq
+terminal_event,character,lifetime disposition,sealed lifetime fact,exact terminal label,event_seq
+matched_label,character,lifetime disposition,terminal policy,matched rule label,event_seq
+disposition_policy_id,character,disposition,terminal policy,policy identity,event_seq
+disposition_choice,character,disposition,terminal policy,resolved choice,event_seq
+disposition_basis,character,disposition,terminal policy,evidence/label/default/frozen fallback,event_seq
+mark_source,character,disposition,valuation,mark provenance,event_seq
+mark_source_ts_utc,POSIXct,disposition,valuation,mark timestamp,event_seq
+mark_age,integer,disposition,valuation,expected-session age,event_seq
+haircut_fraction,double,haircut disposition,terminal policy,bound haircut,event_seq
+position_before,double,disposition,live lot state,pre-disposition net,event_seq
+realized_model_pnl,double,disposition,lot replay,model reconciliation witness,event_seq

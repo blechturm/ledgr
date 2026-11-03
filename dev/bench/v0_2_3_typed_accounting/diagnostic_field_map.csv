@@ -1,0 +1,23 @@
+field,type,presence,origin,derivation,order_owner
+run_id,character,all,run service,primitive identity,diagnostic_seq
+diagnostic_seq,integer,all,output handler,strict per-run sequence,diagnostic_seq
+ts_utc,POSIXct,all,pulse,logical observation time,diagnostic_seq
+instrument_id,character,all,pulse axis,primitive identity,diagnostic_seq
+stage,character,all,fold stage,closed stage vocabulary,diagnostic_seq
+outcome,character,all,stage result,closed outcome vocabulary,diagnostic_seq
+reason_code,character,all,stage result,closed reason vocabulary,diagnostic_seq
+reasons,character,all,stage result,exact reason text bytes,diagnostic_seq
+target,double,nullable,strategy intent,requested target,diagnostic_seq
+quantity,double,nullable,execution/valuation,observed quantity,diagnostic_seq
+price,double,nullable,execution/valuation,observed price,diagnostic_seq
+mark_source,character,nullable,valuation,mark provenance,diagnostic_seq
+mark_age,integer,nullable,valuation,expected-session age,diagnostic_seq
+decision_ts_utc,POSIXct,nullable,decision stage,decision pulse timestamp,diagnostic_seq
+execution_ts_utc,POSIXct,nullable,execution stage,execution pulse timestamp,diagnostic_seq
+event_seq,integer,nullable,accounting append,associated event sequence,diagnostic_seq
+target_before_risk,double,nullable,risk stage,pre-risk target,diagnostic_seq
+target_after_risk,double,nullable,risk stage,post-risk target,diagnostic_seq
+position_before,double,nullable,execution stage,pre-event position,diagnostic_seq
+position_after,double,nullable,execution stage,post-event position,diagnostic_seq
+feature_identity_json,character,nullable,decision stage,canonical feature identity bytes,diagnostic_seq
+detail_json,character,all,stage recorder,canonical residual evidence bytes,diagnostic_seq
