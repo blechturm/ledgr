@@ -791,6 +791,7 @@ ledgr_fold_stage_decide <- function(
     universe = context_ids,
     projection = services$runtime_projection,
     pulse_idx = projection_idx,
+    cutoff_num = packet$ts,
     feature_ids = services$def_ids,
     active_alias_map = services$active_alias_map,
     feature_name_state = services$availability_feature_name_state,

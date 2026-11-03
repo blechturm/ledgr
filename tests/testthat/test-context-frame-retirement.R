@@ -162,7 +162,7 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
   testthat::expect_identical(ctx$.pulse_lookup$projection_idx, 3L)
   testthat::expect_identical(
     ctx$.pulse_lookup$cutoff_num,
-    as.numeric(ledgr:::ledgr_utc(ctx$ts_utc))
+    as.numeric(target_ts)
   )
 
   first_map <- c(first = "return_1")
@@ -211,6 +211,19 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
   )) {
     testthat::expect_false(grepl(forbidden, decide_source, fixed = TRUE), info = forbidden)
   }
+  for (forbidden in c("ledgr_utc", "as.POSIXct", "as.POSIXlt", "strptime", "regex")) {
+    testthat::expect_false(grepl(forbidden, decide_source, fixed = TRUE), info = forbidden)
+  }
+  testthat::expect_true(
+    grepl("cutoff_num = packet$ts", decide_source, fixed = TRUE)
+  )
+  attach_source <- paste(deparse(ledgr:::ledgr_attach_feature_helpers), collapse = "\n")
+  testthat::expect_false(
+    grepl("cutoff_num <- as.numeric(ledgr_utc", attach_source, fixed = TRUE)
+  )
+  testthat::expect_true(
+    grepl("cutoff_num <- cutoff_num %||% NA_real_", attach_source, fixed = TRUE)
+  )
   ns <- asNamespace("ledgr")
   for (removed in c(
     "ledgr_history_bar_packet_frame", "ledgr_projection_feature_table",

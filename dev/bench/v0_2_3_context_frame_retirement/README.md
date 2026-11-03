@@ -17,6 +17,12 @@ The earlier `fast_profile_exact` and `review_profile_exact` directories record
 the pre-correction `fc9cf955` candidate and are retained as superseded review
 evidence.
 
+A bounded post-review timing on the registered Windows host compared 10,000
+calls in five pairs. Reparsing one ISO timestamp through `ledgr_utc()` took a
+median 2.400 seconds (about 240 microseconds per call); reading the already
+prepared numeric `POSIXct` value was below the timer's resolution. This is
+diagnostic evidence for removing the reparse, not a package performance gate.
+
 Reproduction:
 
 ```text

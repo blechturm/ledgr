@@ -361,6 +361,7 @@ ledgr_attach_feature_helpers <- function(ctx,
                                          universe = ctx$universe,
                                          projection = NULL,
                                          pulse_idx = NULL,
+                                         cutoff_num = NULL,
                                          feature_ids = NULL,
                                          active_alias_map = NULL,
                                          feature_name_state = NULL,
@@ -385,7 +386,7 @@ ledgr_attach_feature_helpers <- function(ctx,
     ctx$.pulse_lookup$feature_lookup <- prepared_feature_lookup
     ctx$.pulse_lookup$feature_vector <- feature_vector
     ctx$.pulse_lookup$projection_idx <- as.integer(pulse_idx)
-    ctx$.pulse_lookup$cutoff_num <- as.numeric(ledgr_utc(ctx$ts_utc))
+    ctx$.pulse_lookup$cutoff_num <- cutoff_num %||% NA_real_
     ctx$.pulse_lookup$readable_feature_names <-
       prepared_feature_lookup$readable_names
     if (is.environment(ctx)) {
@@ -462,6 +463,7 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                universe = ctx$universe,
                                                projection = NULL,
                                                pulse_idx = NULL,
+                                               cutoff_num = NULL,
                                                feature_ids = NULL,
                                                active_alias_map = NULL,
                                                feature_name_state = NULL,
@@ -482,6 +484,7 @@ ledgr_update_pulse_context_helpers <- function(ctx,
       universe = universe,
       projection = projection,
       pulse_idx = pulse_idx,
+      cutoff_num = cutoff_num,
       feature_ids = feature_ids,
       active_alias_map = active_alias_map,
       feature_name_state = feature_name_state,

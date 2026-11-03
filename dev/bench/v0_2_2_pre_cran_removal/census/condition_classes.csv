@@ -12,7 +12,7 @@
 "LEDGR_SNAPSHOT_SEAL_FAILED","R/snapshots-seal.R",176,2,FALSE,FALSE,FALSE,FALSE,"non_public_label"
 "LEDGR_SNAPSHOT_SUBSECOND_TS","R/snapshots-seal.R",358,1,FALSE,FALSE,FALSE,FALSE,"non_public_label"
 "LEDGR_SUBSECOND_TIMESTAMP","R/availability-facts.R",1687,8,FALSE,FALSE,FALSE,FALSE,"non_public_label"
-"ledgr_affordability_reconciliation_failed","R/fold-engine.R",1448,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_affordability_reconciliation_failed","R/fold-engine.R",1449,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_ambiguous_bundle_output","R/feature-parameters.R",257,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_availability_inactive","R/availability-policy.R",227,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_availability_sessions_required","R/availability-policy.R",235,1,TRUE,FALSE,TRUE,TRUE,"documented_public"

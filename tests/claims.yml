@@ -4859,7 +4859,7 @@ claims:
     owner: "maintainer"
     protected_contract_or_defect: "Eager frames or expensive trust-boundary work could silently return to every decision pulse."
     oracle_independence: "Literal forbidden function names and operations are checked independently of runtime timing."
-    smallest_failing_change: "Call one retired constructor from P2, restore a deleted builder, rebuild readable names in a read, prepare the resolver per pulse or outside each candidate, normalize fixture feature timestamps row by row, use rbind in either helper, or make print/error handling build a long feature table."
+    smallest_failing_change: "Call one retired constructor from P2, restore a deleted builder, rebuild readable names in a read, prepare the resolver per pulse or outside each candidate, reparse the pulse timestamp while constructing P2, normalize fixture feature timestamps row by row, use rbind in either helper, or make print/error handling build a long feature table."
     cheapest_adequate_lane: "One namespace and source inspection; fast."
     overlapping_evidence: "Performance records remain descriptive; this claim owns structural absence only."
   - id: "LCL-0537"

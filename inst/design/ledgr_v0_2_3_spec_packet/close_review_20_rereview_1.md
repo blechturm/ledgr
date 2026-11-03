@@ -25,6 +25,12 @@ remain.
 5. **N5, low:** the evidence README still called the pre-correction profile
    directories final. Point it at the `376ae796` successor records.
 
+After this re-review, profiling found one correction-side hot-path regression:
+`cutoff_num` reparsed the already-formatted context timestamp on every pulse.
+The accepted private lookup keeps the field, but the fold now supplies its
+already-prepared numeric pulse time. A registered structural witness refuses
+timestamp parsing in P2 and pins the numeric cutoff.
+
 ## Verified
 
 Readable names and hashed membership are prepared once and reused;
