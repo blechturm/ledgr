@@ -51,6 +51,37 @@ What remains is mostly the kernel's own arithmetic and the row-by-row Kahan
 scan in event order (52 percent self time), then `pmax()` for the dust
 tolerance (9 percent).
 
+## Compiled with quickr
+
+The compiler spike (`ledgr-research`, `dev/spikes/compiler-native-functions/`)
+found quickr the best fit for typed numerical kernels. `quickr_kernel.R`
+writes the lean kernel's arithmetic core in quickr's subset: one loop per
+row (rows of a block are distinct instruments, so each row performs the same
+operations in the same order), the Kahan scan, the dust snaps and the
+through check. Compaction, growth and appends stay in R; anything unusual
+falls back to the canonical kernel. quickr takes no `NA` input and declares
+inputs read-only, so dead lot slots enter as 0 (a live lot is never 0) and
+the core updates local copies.
+
+`run_quickr.R` (quickr 0.3.0 from the compiler spike's library, gfortran
+through R's toolchain, compiled once in about 5.3 s) runs the same streams:
+**zero blocks differing on every stream**, book and all eight applied-row
+fields, so the Fortran arithmetic kept R's order exactly.
+
+| us per block (pinned) | 30 x 250 | 200 x 250 |
+| --- | ---: | ---: |
+| canonical `ledgr_lot_fill()` | 223 | 417 |
+| lean R | 92 | 190 |
+| quickr core with its R wrapper | 38 | 81 |
+| quickr core alone (`split_quickr.R`) | | 7.5 |
+
+91 percent of the quickr kernel's time is the R wrapper: converting `NA`
+slots to sentinels and back, unpacking the packed result and rebuilding the
+book list on every call. The compiled FIFO arithmetic itself costs about 0.1
+us per fill. A lean core that keeps the book in a compiler-friendly typed
+form inside the fold, converting only at its boundaries, would pay about
+10 us per pulse for FIFO instead of 220 to 420.
+
 ## Gutted path
 
 `run.R <lib> <out> plain_sum` replaces the Kahan step with a plain sum. The
@@ -65,5 +96,6 @@ copy-on-modify can stay. Not covered: openings and dispositions (only fills
 were reimplemented), and refusal paths beyond the fallback. A further gain
 would come from the Kahan scan, which must keep its event order.
 
-Reproduce: `Rscript dev/spikes/lean_fifo/run.R <lib> <out dir>`, then
-`Rscript dev/spikes/lean_fifo/check.R <lib> <scratch dir>`.
+Reproduce: `Rscript dev/spikes/lean_fifo/run.R <lib> <out dir>`,
+`Rscript dev/spikes/lean_fifo/run_quickr.R <lib> <quickr lib> <out dir>`, then
+`Rscript dev/spikes/lean_fifo/check.R <lib> <scratch dir> [quickr lib]`.

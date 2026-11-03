@@ -1,6 +1,7 @@
 # Checker: rerun into a scratch directory, diff parity against the recorded
 # evidence, require the gutted kernel to fail, and guard package scope.
-# Usage: Rscript dev/spikes/lean_fifo/check.R <ledgr lib> <scratch dir>
+# Usage: Rscript dev/spikes/lean_fifo/check.R <ledgr lib> <scratch dir> [quickr lib]
+# With a quickr library, the compiled kernel's parity is checked too.
 args <- commandArgs(TRUE)
 lib <- args[[1]]; scratch <- args[[2]]
 here <- file.path("dev", "spikes", "lean_fifo")
@@ -22,6 +23,17 @@ if (rscript(file.path(here, "run.R"), lib, file.path(scratch, "gut"), "plain_sum
   problems <- c(problems, "gutted run exited non-zero")
 } else if (all(utils::read.csv(file.path(scratch, "gut", "parity.csv"))$blocks_differing == 0L)) {
   problems <- c(problems, "the gutted kernel (no Kahan step) was not detected")
+}
+if (length(args) >= 3L) {
+  if (rscript(file.path(here, "run_quickr.R"), lib, args[[3]], file.path(scratch, "quickr")) != 0L) {
+    problems <- c(problems, "run_quickr.R exited non-zero")
+  } else {
+    fresh <- utils::read.csv(file.path(scratch, "quickr", "parity_quickr.csv"))
+    if (!identical(fresh, utils::read.csv(file.path(here, "evidence", "parity_quickr.csv")))) {
+      problems <- c(problems, "parity_quickr.csv differs from the recorded evidence")
+    }
+    if (any(fresh$blocks_differing != 0L)) problems <- c(problems, "the quickr kernel differs from ledgr's")
+  }
 }
 if (!identical(status(), before)) problems <- c(problems, "package scope changed during the run")
 if (length(problems)) {
