@@ -157,7 +157,7 @@
 "ledgr_invalid_promotion_context_summary","R/promotion-context.R",252,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_pulse_context","R/corporate-action-results.R",366,48,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_pulse_plan","R/compiled-spot-fifo.R",88,5,TRUE,FALSE,TRUE,TRUE,"documented_public"
-"ledgr_invalid_pulse_wide_names","R/feature-inspection.R",503,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_invalid_pulse_wide_names","R/feature-inspection.R",512,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_result_table","R/backtest-results.R",1405,4,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_return_panel","R/sweep-retention.R",378,13,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_return_panel_input","R/sweep-retention.R",580,2,TRUE,FALSE,TRUE,TRUE,"documented_public"

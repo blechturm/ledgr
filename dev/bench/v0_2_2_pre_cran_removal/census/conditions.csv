@@ -810,13 +810,13 @@
 "R/feature-inspection.R",225,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-inspection.R",251,"abort_class","ledgr_feature_factory_requires_params",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-inspection.R",251,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_feature_factory_requires_params"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/feature-inspection.R",378,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/feature-inspection.R",386,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/feature-inspection.R",465,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/feature-inspection.R",503,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/feature-inspection.R",503,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/feature-inspection.R",511,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/feature-inspection.R",511,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/feature-inspection.R",382,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/feature-inspection.R",390,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/feature-inspection.R",474,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/feature-inspection.R",512,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/feature-inspection.R",512,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/feature-inspection.R",520,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/feature-inspection.R",520,"abort_class","ledgr_invalid_pulse_wide_names",TRUE,"c(""ledgr_invalid_pulse_wide_names"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-map.R",104,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-map.R",104,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-map.R",116,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE

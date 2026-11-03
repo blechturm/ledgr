@@ -1349,7 +1349,7 @@ workstreams:
   - id: 21
     name: "Context-frame migration and WS6 closure (macro WS6)"
     cut: 9
-    status: "pending"
+    status: "review_pending"
     accepted: null
     depends_on_workstream: 20
     requires_review_acceptance: true
@@ -3236,7 +3236,7 @@ tickets:
   - id: "LDG-3197"
     title: "Verify and close context-frame retirement"
     workstream: 21
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3196"]
@@ -3265,4 +3265,11 @@ tickets:
       - "descriptive clocks report P2 and both helper shapes with complete provenance and make no contractual speed or whole-run claim"
       - "contracts, reference, manuals, NEWS, claims, RFC pipeline, decisions bridge and packet status describe only implemented behavior and preserve every unrelated future obligation"
       - "a final source census finds no compatibility alias, second carrier, manifested-frame cache, hash, seal, database query or provenance path added by the cut"
-    evidence: []
+    evidence:
+      - "Final candidate commits abc0ee80 and ae289ce0. Relative to the accepted post-profiler WS20 product at 5e21ba51, R/src differs only in the two inspection helpers' roxygen teaching; every mutation-bearing product body is byte-identical. The registered LTB-0546-LTB-0548 matrix reruns in both profiles, the exact-name census is empty, and the accepted WS20 mutation results therefore retain the same detecting source under the final candidate."
+      - "Committed profile records under dev/bench/v0_2_3_context_frame_retirement/evidence: fast-ws21-ae289ce0 records 635/635 blocks, zero skips and zero failures in 364.830 seconds; review-ws21-ae289ce0 records 524/524 blocks, one registered optional-package skip and zero failures in 780.030 seconds. Both use R 4.6.1, testthat 3.3.2, High performance and affinity 0xFFFFFF. The review record explicitly uses the supported Windows UTF-8 locale; a first default-locale attempt is not a pass and exposed only inherited UTF-8 decoding failures. Timing remains advisory."
+      - "The six focused WS21 files pass. dev/bench/shared/run_benchmarks.R completes all 26 smoke scenarios at one repeat and zero warmups. tests/testthat/test-peer-benchmark-boundary.R re-executes the already-flat public peer recipe with unchanged fill, equity and trade oracles. The broader cross-engine Backtrader retention red and the deprecated dense-warning expectation reproduce unchanged at exact base 61984c0a and the candidate; cut_review_9.md assigns WS21 the shared smoke and frozen in-package peer boundary, so neither inherited external red is weakened or claimed as a pass."
+      - "dev/spikes/ctx_frame_views/response_probe.R passes every behavioral check and reports descriptive after-arm medians at 600 instruments x 3 features: primitive P2 binding 1.7 microseconds, ordinary flat feature-matrix construction 191.3 microseconds, explicit-one/active-three long inspection 2003.45/1824.75 microseconds and active-three wide inspection 21430.55 microseconds. These are host observations only, with no speed or whole-run contract."
+      - "dev/bench/v0_2_3_hot_path_scan/scan.csv reruns on the candidate at 173 function/call rows and 251 calls, down from the Cut 7 record's 186 rows and 267 calls. Retired frame rows are absent and WS21 adds no product hot-path row. The codebase checker reports LEDGR_CODEBASE_CENSUS_OK (70 connections, 176 versions, 90 run configs, 1991 helpers, 2474 conditions, 88 findings), and the fold-phase checker reports LEDGR_FOLD_PHASE_CONTRACT_OK."
+      - "A standard R CMD build passes with vignette creation. R CMD check --no-manual --no-build-vignettes on the resulting ledgr_0.2.2.tar.gz finishes Status: OK with package tests, examples and every executable vignette passing. Both package YAML authorities parse and git diff --check is clean; generated tarball, check directory and binding line-ending churn are removed."
+      - "The accepted six contract groups, help, source/rendered manuals, NEWS and claims are reconciled. The context-frame decision bridge is removed; the RFC row is Implemented; the strategy-authoring flat-context handoff and fold-phase P2 limit are consumed; the roadmap and macro plan record closure while external-helper, historical-panel, persisted-placement and compiled-envelope obligations remain open."
