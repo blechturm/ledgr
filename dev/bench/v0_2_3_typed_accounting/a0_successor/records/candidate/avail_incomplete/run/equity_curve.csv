@@ -1,0 +1,5 @@
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
+"a0-avail_incomplete-one","2020-01-01T16:00:00Z","100000","0","100000","0","0"
+"a0-avail_incomplete-one","2020-01-02T16:00:00Z","99898","102","100000","0","0"
+"a0-avail_incomplete-two","2020-01-01T16:00:00Z","100000","0","100000","0","0"
+"a0-avail_incomplete-two","2020-01-02T16:00:00Z","99796","204","100000","0","0"

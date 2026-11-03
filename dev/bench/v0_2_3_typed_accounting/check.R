@@ -32,6 +32,63 @@ key <- function(x) paste(x$family, x$path, as.integer(x$count), sep = "|")
 if (!identical(sort(key(expected), method = "radix"), sort(key(actual), method = "radix"))) {
   stop("source_census.csv differs from the production source scan", call. = FALSE)
 }
+
+surface_patterns <- c(
+  producer_append = "append_event_rows(",
+  producer_fill = "ledgr_fill_event_payload(",
+  writer_insert = "INSERT INTO ledger_events",
+  writer_append = "ledgr_store_append(con, \"ledger_events\"",
+  reader_prepare = "ledgr_prepare_accounting_events(",
+  reader_replay = "ledgr_replay_accounting_events(",
+  writer_validate = "ledgr_validate_accounting_append(",
+  ledger_reference = "ledger_events"
+)
+surface_files <- c(
+  list.files(file.path(root, "R"), "[.]R$", recursive = TRUE, full.names = TRUE),
+  list.files(file.path(root, "tests", "testthat"), "[.]R$", recursive = TRUE, full.names = TRUE),
+  list.files(file.path(root, "man"), "[.]Rd$", recursive = TRUE, full.names = TRUE),
+  list.files(file.path(root, "vignettes"), "[.](qmd|md|Rmd)$", recursive = TRUE, full.names = TRUE),
+  file.path(root, "NEWS.md"),
+  file.path(root, "inst", "design", "contracts.md")
+)
+surface_files <- sort(unique(surface_files[file.exists(surface_files)]), method = "radix")
+surface_actual <- do.call(rbind, lapply(surface_files, function(path) {
+  text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  rel <- substring(normalizePath(path, winslash = "/"), nchar(root) + 2L)
+  rows <- lapply(names(surface_patterns), function(family) {
+    count <- lengths(regmatches(text, gregexpr(surface_patterns[[family]], text, fixed = TRUE)))
+    if (count == 0L) return(NULL)
+    role <- if (startsWith(rel, "tests/testthat/")) {
+      "test"
+    } else if (startsWith(rel, "man/") || startsWith(rel, "vignettes/") ||
+        rel %in% c("NEWS.md", "inst/design/contracts.md")) {
+      "doc"
+    } else if (startsWith(family, "producer")) {
+      "producer"
+    } else if (startsWith(family, "writer")) {
+      "writer"
+    } else if (startsWith(family, "reader")) {
+      "reader"
+    } else {
+      "storage_reference"
+    }
+    data.frame(role = role, family = family, path = rel, count = count, stringsAsFactors = FALSE)
+  })
+  do.call(rbind, rows[!vapply(rows, is.null, logical(1))])
+}))
+surface_expected <- utils::read.csv(
+  file.path(here, "accounting_surface_census.csv"), stringsAsFactors = FALSE
+)
+surface_key <- function(x) paste(x$role, x$family, x$path, as.integer(x$count), sep = "|")
+if (!identical(
+  sort(surface_key(surface_expected), method = "radix"),
+  sort(surface_key(surface_actual), method = "radix")
+)) {
+  stop("accounting_surface_census.csv differs from the producer/writer/reader/test/doc scan", call. = FALSE)
+}
+if (!all(c("producer", "writer", "reader", "test", "doc") %in% surface_expected$role)) {
+  stop("accounting surface census omits a required ownership role", call. = FALSE)
+}
 accounting <- utils::read.csv(file.path(here, "accounting_field_map.csv"), stringsAsFactors = FALSE)
 diagnostic <- utils::read.csv(file.path(here, "diagnostic_field_map.csv"), stringsAsFactors = FALSE)
 required_accounting <- c(

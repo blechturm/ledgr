@@ -2,27 +2,25 @@
 
 Status: LDG-3200 baseline frozen before the first accounting reader change.
 
-The canonical current-format output record is the existing
-`dev/bench/v0_2_3_output_freeze/records/` corpus. It covers the seven required
-proof families (`dense_cost`, `dense_risk_features`, `dense_dividend_state`,
-`avail_terminal_resume`, `avail_acquisition`, `avail_incomplete`, and
-`walk_forward`) plus the registered failure family. Its manifest pins every
-stored table, full diagnostics, public fills/trades/metrics, memory-sink
-diagnostics and inline summaries, close/reopen, interrupt/resume and ordering.
-`check.R` verifies that corpus's own manifest before checking the new literal
-seam census and the two field maps.
+The WS23 public-output oracle is the separately named
+`a0_successor/records/` pair. Its immutable before arm is commit `0d6c0b11`;
+the candidate arm has the same 281-file set and is byte-identical except for
+the four accepted INCOMPLETE-sweep `annualized_return` cells checked by
+`a0_successor/compare.R`.
 
-The record was produced at `20034e00` from the fixture identities documented
-in the output-freeze inventory. This ticket deliberately references those
-frozen bytes instead of copying 290 files into a second directory. Current
-package and runtime versions, canonical types/missings, row keys and byte
-encoding are recorded by that harness and its manifest.
+The older `dev/bench/v0_2_3_output_freeze/records/` corpus was produced at
+`20034e00`. `check.R` still verifies its own 290-file manifest as a historical
+integrity check; it is not the WS23 before arm and is not claimed as parity
+evidence for this cut.
 
 `source_census.csv` is a literal source-count inventory. Each family is
 reconciled against every `R/*.R` file: a new file, deleted seam or changed
-count fails `check.R`. `accounting_field_map.csv` assigns every schema-124
-logical accounting field to its current source and its typed-carrier rule.
-`diagnostic_field_map.csv` pins all 22 logical diagnostic fields, their types,
+count fails `check.R`. `accounting_surface_census.csv` classifies the matched
+production, test and teaching seams as producer, writer, reader, test, doc or
+storage reference. Adding, deleting or reclassifying a matched seam fails the
+checker. `accounting_field_map.csv` assigns every schema-124 logical
+accounting field to its current source and typed-carrier rule;
+`diagnostic_field_map.csv` pins all 22 diagnostic fields, their types,
 nullability and ordering owner.
 
 Private Sharadar evidence is an **open gate**. No private data was available
@@ -35,6 +33,8 @@ Raw vendor data must not enter the repository.
 The shared timing protocol is registered as `cut11-accounting-1`. Its three
 cells are descriptive under macro-plan rule 16. The immutable before arm is
 commit `0d6c0b11`; fill-heavy, quiet and sweep records are taken by the shared
-fresh-process harness when a candidate commit exists.
+fresh-process harness when required. `protocol_smoke.csv` is one explicitly
+non-gating candidate execution that proves the repaired public API, event/fill
+counts and ledger digest work string execute at product commit `7361951e`.
 
 Run `Rscript dev/bench/v0_2_3_typed_accounting/check.R`.

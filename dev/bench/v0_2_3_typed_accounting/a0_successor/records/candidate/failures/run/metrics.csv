@@ -1,0 +1,10 @@
+"run_id:character","metric:character","value:numeric","error:character"
+"a0-failures-ok","annualized_return","0.0033655837031221214",NA
+"a0-failures-ok","avg_trade",NA,NA
+"a0-failures-ok","max_drawdown","0",NA
+"a0-failures-ok","n_trades","0",NA
+"a0-failures-ok","sharpe_ratio","18.330302777073872",NA
+"a0-failures-ok","time_in_market","0.75",NA
+"a0-failures-ok","total_return","4.0000000000040004e-05",NA
+"a0-failures-ok","volatility","0.0001833011948321132",NA
+"a0-failures-ok","win_rate",NA,NA

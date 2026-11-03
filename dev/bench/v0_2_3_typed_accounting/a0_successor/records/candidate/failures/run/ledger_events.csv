@@ -1,0 +1,2 @@
+"event_id:character","run_id:character","ts_utc:POSIXct/POSIXt","event_type:character","instrument_id:character","side:character","qty:numeric","price:numeric","fee:numeric","meta_json:character","event_seq:integer"
+"a0-failures-ok_00000001","a0-failures-ok","2020-01-02T09:30:00Z","FILL","AAA","BUY","2","101","0","{""cash_delta"":-202.0,""fee"":0.0,""position_delta"":2.0,""realized_pnl"":null}","1"

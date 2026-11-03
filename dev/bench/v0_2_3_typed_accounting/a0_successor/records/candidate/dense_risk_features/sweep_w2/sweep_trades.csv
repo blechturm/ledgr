@@ -1,0 +1,1 @@
+"candidate_id:character","candidate_row:integer","trade_seq:integer","close_ts_utc:POSIXct/POSIXt","realized_pnl:numeric","win_loss:character","seq:integer"

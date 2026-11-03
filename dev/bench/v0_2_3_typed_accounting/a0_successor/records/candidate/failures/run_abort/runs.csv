@@ -1,0 +1,1 @@
+"run_id:character","config_json:character","config_hash:character","snapshot_id:character","status:character","error_msg:character","label:character","archived:logical","archived_at_utc:POSIXct/POSIXt","archive_reason:character","execution_mode:character","schema_version:integer","metric_context_json:character","metric_context_hash:character","metric_context_version:integer"

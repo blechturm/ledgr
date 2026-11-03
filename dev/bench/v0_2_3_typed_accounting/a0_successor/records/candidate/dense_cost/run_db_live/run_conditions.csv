@@ -1,0 +1,4 @@
+"run_id:character","seq:integer","kind:character","class:character","message:character"
+"a0-dense_cost-flat-db_live","1","error","simpleError/error/condition","object 'ledgr_backtest' not found"
+"a0-dense_cost-partial-db_live","2","error","simpleError/error/condition","object 'ledgr_backtest' not found"
+"a0-dense_cost-open_end-db_live","3","error","simpleError/error/condition","object 'ledgr_backtest' not found"

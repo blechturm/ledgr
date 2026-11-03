@@ -1,0 +1,7 @@
+"run_id:character","ts_utc:POSIXct/POSIXt","cash:numeric","positions_value:numeric","equity:numeric","realized_pnl:numeric","unrealized_pnl:numeric"
+"a0-avail_terminal_resume-resumed","2020-01-01T16:00:00Z","1000","400","1400","0","-200"
+"a0-avail_terminal_resume-resumed","2020-01-02T16:00:00Z","1000","400","1400","0","-200"
+"a0-avail_terminal_resume-resumed","2020-01-03T16:00:00Z","1000","400","1400","0","-200"
+"a0-avail_terminal_resume-resumed","2020-01-04T16:00:00Z","1000","400","1400","0","-200"
+"a0-avail_terminal_resume-resumed","2020-01-05T16:00:00Z","1180","0","1180","-420","0"
+"a0-avail_terminal_resume-resumed","2020-01-06T16:00:00Z","1180","0","1180","-420","0"
