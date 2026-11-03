@@ -1,8 +1,9 @@
 # Workstream 23 implementation closeout
 
-Status: two close-review correction rounds complete; focused independent
-confirmation pending. The private Sharadar aggregate remains an explicit open
-gate before Workstream 24 product implementation.
+Status: two close-review correction rounds complete; final bounded independent
+confirmation is PASS_AFTER_PATCHES and its exact record patches are applied.
+The private Sharadar aggregate remains an explicit open gate before Workstream
+24 product implementation.
 
 Workstream 23 implements the schema-124 half of the accepted typed-accounting
 boundary. It does not change the ledger DDL or publish schema 125. The product
@@ -49,7 +50,9 @@ recovery queries and replays once, then projects positions, cash, realized
 PnL and basis forward over requested pulses. The former unsorted and per-time
 availability fallbacks are deleted. Walk-forward's former dead NULL-substrate
 branch now projects the one prepared timeline, and its tests use an independent
-prefix-query/replay oracle rather than a deleted product helper.
+prefix-query/replay oracle rather than a deleted product helper. The branch
+remains unreachable from `ledgr_walk_forward()`; a direct review probe confirms
+its result.
 `inline_summary()` remains the detected memory-candidate exception. Raw
 ledger, identity/order, cleanup and typed dedupe queries remain narrow
 exceptions and derive no competing state.
@@ -130,6 +133,7 @@ fill-heavy. `protocol_smoke.csv` records one successful, explicitly non-gating
 candidate execution at product commit `7361951e`; clocks remain descriptive
 under macro-plan rule 16 and no timing pass is claimed.
 
-The independent close review is preserved in `close_review_23.md`, and its
-focused re-review in `close_review_23_rereview_1.md`. Their findings drove the
-two correction rounds; neither review is overwritten by this closeout.
+The independent close review is preserved in `close_review_23.md`, its focused
+re-review in `close_review_23_rereview_1.md`, and its bounded final confirmation
+in `close_review_23_rereview_2.md`. Their findings drove the correction rounds;
+none is overwritten by this closeout.

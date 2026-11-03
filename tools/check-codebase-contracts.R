@@ -1487,6 +1487,12 @@ test_seam_contracts <- c(
   ),
   ledgr_history_feature_planes = paste(
     "Observe per-instrument feature evidence planes from the production calculation before public history results consume them."
+  ),
+  ledgr_write_fill_events = paste(
+    "Publish one typed fill group directly to DuckDB for writer and derived-state fixtures."
+  ),
+  ledgr_lot_dust_tolerance = paste(
+    "Pin the scalar dust-tolerance rule that the row-wise lot kernel applies."
   )
 )
 

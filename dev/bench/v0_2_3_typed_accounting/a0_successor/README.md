@@ -15,6 +15,6 @@ for exactly four accepted cells: the two candidates in each of
 `annualized_return` from `"0"` to typed missing.
 
 `record_identities.csv` binds both record arms to their exact commits and
-product-tree identities. The candidate record was regenerated from the
-committed correction product at `7361951e`; later evidence-only commits do not
-change its `R/` or `src/` trees.
+product-tree identities. The record was regenerated at `7361951e`. Correction
+`fbf90cb1` changes `R/`, and regenerating at its tree reproduces all 281 files
+byte for byte.
