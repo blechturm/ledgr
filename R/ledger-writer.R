@@ -21,6 +21,70 @@ ledgr_fill_publication_deltas <- function(side, qty, fill_price, fee) {
 # from ledgr_fill_publication_deltas() whenever the namespace is loaded.
 .ledgr_fill_publication_formula <- ledgr_fill_publication_deltas
 
+# Write one already-validated publication row. The output handler constructs
+# and validates the publication block once; db_live uses this boundary so it
+# does not rebuild the same metadata and publication columns per fill.
+ledgr_write_fill_publication_row <- function(con, publication, row, use_transaction = TRUE) {
+  if (!DBI::dbIsValid(con)) {
+    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
+  }
+  if (!is.logical(use_transaction) || length(use_transaction) != 1L || is.na(use_transaction)) {
+    rlang::abort("`use_transaction` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  n <- length(publication$event_seq)
+  if (!is.numeric(row) || length(row) != 1L || is.na(row) ||
+      row < 1L || row > n || row %% 1 != 0) {
+    rlang::abort("`row` must identify one publication row.", class = "ledgr_invalid_args")
+  }
+  row <- as.integer(row)
+  run_id <- publication$run_id[[row]]
+  run_exists <- DBI::dbGetQuery(
+    con,
+    "SELECT COUNT(*) AS n FROM runs WHERE run_id = ?",
+    params = list(run_id)
+  )$n[[1L]] > 0
+  if (!isTRUE(run_exists)) {
+    rlang::abort(sprintf("run_id not found in runs table: %s", run_id), class = "ledgr_invalid_args")
+  }
+
+  do_write <- function() {
+    DBI::dbExecute(
+      con,
+      paste(
+        "INSERT INTO ledger_events (",
+        "event_id, run_id, ts_utc, event_type, instrument_id, side,",
+        "qty, price, fee, meta_json, event_seq",
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ),
+      params = list(
+        publication$event_id[[row]],
+        run_id,
+        .POSIXct(publication$ts_utc[[row]], tz = "UTC"),
+        publication$event_type[[row]],
+        publication$instrument_id[[row]],
+        publication$side[[row]],
+        publication$qty[[row]],
+        publication$price[[row]],
+        publication$fee[[row]],
+        publication$meta_json[[row]],
+        publication$event_seq[[row]]
+      )
+    )
+    structure(
+      list(
+        status = "WROTE",
+        event_id = publication$event_id[[row]],
+        event_seq = publication$event_seq[[row]],
+        next_event_seq = publication$event_seq[[row]] + 1L,
+        cash_delta = publication$cash_delta[[row]],
+        position_delta = publication$position_delta[[row]]
+      ),
+      class = "ledgr_ledger_write_result"
+    )
+  }
+  if (isTRUE(use_transaction)) DBI::dbWithTransaction(con, do_write()) else do_write()
+}
+
 # The db_live writer: row `i` of the typed fill group `fill` (P3's columns
 # and computed effects), published for `instrument_id`. A zero-length `i` is
 # the no-op.
@@ -76,95 +140,22 @@ ledgr_write_fill_events <- function(con, run_id, fill, i, instrument_id, event_s
     event_seq_start <- as.integer(event_seq_start)
   }
 
-  run_exists <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM runs WHERE run_id = ?", params = list(run_id))$n[[1]] > 0
-  if (!isTRUE(run_exists)) {
-    rlang::abort(sprintf("run_id not found in runs table: %s", run_id), class = "ledgr_invalid_args")
-  }
-
-  # The effects P3 computed for this fill.
-  signed_qty <- fill$position_delta[[i]]
-  cash_delta <- fill$cash_delta[[i]]
-
-  # The execution epoch materializes as POSIXct at this output boundary.
-  ts_exec_posix <- ledgr_assert_whole_second_utc(
-    .POSIXct(fill$exec_ts[[i]], tz = "UTC"),
-    label = "`fill_intent$ts_exec_utc`",
-    class = "ledgr_invalid_fill_intent"
-  )
-  side_token <- if (side > 0L) "BUY" else "SELL"
-
-  meta_json <- canonical_json(
-    list(
-      fee = as.numeric(fee),
-      cash_delta = as.numeric(cash_delta),
-      position_delta = as.numeric(signed_qty),
-      realized_pnl = NULL
-    )
-  )
-
-  do_write <- function() {
-    event_seq <- event_seq_start
-    if (is.null(event_seq)) {
-      event_seq <- DBI::dbGetQuery(
-        con,
-        "SELECT COALESCE(MAX(event_seq), 0) + 1 AS next_seq FROM ledger_events WHERE run_id = ?",
-        params = list(run_id)
-      )$next_seq[[1]]
-      event_seq <- as.integer(event_seq)
-    }
-
-    event_id <- paste0(run_id, "_", sprintf("%08d", event_seq))
-
-    DBI::dbExecute(
+  if (is.null(event_seq_start)) {
+    event_seq_start <- DBI::dbGetQuery(
       con,
-      "
-      INSERT INTO ledger_events (
-        event_id,
-        run_id,
-        ts_utc,
-        event_type,
-        instrument_id,
-        side,
-        qty,
-        price,
-        fee,
-        meta_json,
-        event_seq
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ",
-      params = list(
-        event_id,
-        run_id,
-        ts_exec_posix,
-        "FILL",
-        instrument_id,
-        side_token,
-        as.numeric(qty),
-        as.numeric(fill_price),
-        as.numeric(fee),
-        meta_json,
-        as.integer(event_seq)
-      )
-    )
-
-    structure(
-      list(
-        status = "WROTE",
-        event_id = event_id,
-        event_seq = as.integer(event_seq),
-        next_event_seq = as.integer(event_seq) + 1L,
-        cash_delta = as.numeric(cash_delta),
-        position_delta = as.numeric(signed_qty)
-      ),
-      class = "ledgr_ledger_write_result"
-    )
+      "SELECT COALESCE(MAX(event_seq), 0) + 1 AS next_seq FROM ledger_events WHERE run_id = ?",
+      params = list(run_id)
+    )$next_seq[[1L]]
   }
-
-  if (isTRUE(use_transaction)) {
-    DBI::dbWithTransaction(con, do_write())
-  } else {
-    do_write()
-  }
+  publication <- ledgr_fill_event_payload(
+    run_id = run_id,
+    fill = fill,
+    i = i,
+    instrument_id = instrument_id,
+    event_seq = as.integer(event_seq_start),
+    serialize_meta_json = TRUE
+  )
+  ledgr_write_fill_publication_row(con, publication, 1L, use_transaction)
 }
 
 # The fill input of a publication boundary: a typed fill group (its

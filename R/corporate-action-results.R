@@ -119,16 +119,7 @@ ledgr_corporate_action_result_events <- function(con,
   instrument_ids <- instrument_ids[!is.na(instrument_ids) &
     nzchar(instrument_ids)]
   if (length(instrument_ids) == 0L) {
-    return(DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
-        "qty, price, fee, meta_json, event_seq FROM ledger_events",
-        "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
-        "ORDER BY event_seq"
-      ),
-      params = list(run_id)
-    ))
+    return(data.frame())
   }
   placeholders <- paste(rep("?", length(instrument_ids)), collapse = ",")
   DBI::dbGetQuery(
@@ -136,12 +127,31 @@ ledgr_corporate_action_result_events <- function(con,
     paste0(
       "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, ",
       "price, fee, meta_json, event_seq FROM ledger_events WHERE run_id = ? ",
-      "AND (event_type IN ('CASHFLOW','DISPOSITION') OR ",
-      "(event_type = 'FILL' AND instrument_id IN (", placeholders, "))) ",
-      "ORDER BY event_seq"
+      "AND event_type IN ('FILL','CASHFLOW','DISPOSITION') ",
+      "AND instrument_id IN (", placeholders, ") ORDER BY event_seq"
     ),
     params = c(list(run_id), as.list(instrument_ids))
   )
+}
+
+# Corporate-action summaries also own lifetime dispositions, which may have
+# no corporate fact parent. Replay only instruments that can affect the
+# summary: a corporate fact parent, or an instrument with a CASHFLOW or
+# DISPOSITION row. Fill-only instruments stay outside this read.
+ledgr_corporate_action_summary_events <- function(con,
+                                                   run_id,
+                                                   parent_instrument_ids) {
+  event_ids <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT DISTINCT instrument_id FROM ledger_events",
+      "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
+      "ORDER BY instrument_id"
+    ),
+    params = list(run_id)
+  )$instrument_id
+  ids <- union(as.character(parent_instrument_ids), as.character(event_ids))
+  ledgr_corporate_action_result_events(con, run_id, ids)
 }
 
 # Each selected fact's entitled parent quantity as the run's fold bound it,
@@ -449,7 +459,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   # Corporate summaries need corporate postings plus the parent-instrument
   # history used to bind entitlement quantities. Keep this query narrow: a
   # fill-only run with no supplied facts prepares an empty carrier.
-  event_rows <- ledgr_corporate_action_result_events(
+  event_rows <- ledgr_corporate_action_summary_events(
     con,
     bt$run_id,
     unique(as.character(facts$rows$parent_instrument_id))

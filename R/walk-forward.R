@@ -1202,7 +1202,12 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
   final_cash <- as.numeric(equity$cash[[nrow(equity)]])
   final_ts <- as.POSIXct(equity$ts_utc[[nrow(equity)]], tz = "UTC")
   if (isTRUE(exp$availability$active)) {
-    held <- ledgr_availability_positions_asof(opened$con, run_id, final_ts)
+    timeline <- ledgr_availability_positions_timeline(opened$con, run_id, final_ts)
+    held <- if (length(timeline$ids) == 0L) {
+      numeric()
+    } else {
+      stats::setNames(timeline$position[, 1L], timeline$ids)
+    }
   } else {
     positions <- state$positions
     held <- positions$qty

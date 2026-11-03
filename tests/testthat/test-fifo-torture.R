@@ -32,7 +32,15 @@ testthat::test_that("FIFO lot engine handles stress sequences", {
       100, 50, 110
     ),
     fee = c(0, 10, rep(0, 8)),
-    meta_json = rep(NA_character_, 10),
+    meta_json = ledgr_test_fill_meta_json(
+      c(
+        "BUY", "SELL", "BUY", "BUY", "BUY", "BUY", "SELL",
+        "BUY", "BUY", "SELL"
+      ),
+      c(100, 250, 150, 10, 10, 10, 25, 1, 2, 1),
+      c(10, 12, 11, 10, 11, 12, 13, 100, 50, 110),
+      c(0, 10, rep(0, 8))
+    ),
     event_seq = seq_len(10),
     stringsAsFactors = FALSE
   )

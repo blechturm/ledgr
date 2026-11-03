@@ -143,20 +143,21 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   # fill JSON is routed to WS7/WS8). The fold is already inside
   # run_transaction(), so no nested DuckDB transaction is opened. Returns the
   # writer's result for the last row, or its no-op for an empty block.
-  sink$write_fill_live <- function(fill, i, instrument_id, event_seq) {
-    write <- function(rows, event_seq_start) {
-      ledgr_write_fill_events(
+  sink$write_fill_live <- function(publication) {
+    if (!identical(publication$status, "WROTE")) {
+      return(structure(
+        list(status = "NO_OP", next_event_seq = publication$next_event_seq),
+        class = "ledgr_ledger_write_result"
+      ))
+    }
+    for (k in seq_along(publication$event_seq)) {
+      res <- ledgr_write_fill_publication_row(
         con = con,
-        run_id = run_id,
-        fill = fill,
-        i = i[rows],
-        instrument_id = instrument_id[rows],
-        event_seq_start = event_seq_start,
+        publication = publication,
+        row = k,
         use_transaction = FALSE
       )
     }
-    if (length(i) == 0L) return(write(integer(), event_seq))
-    for (k in seq_along(i)) res <- write(k, event_seq + k - 1L)
     res
   }
   sink$set_schedule_counts <- function(decision_pulse_count, scheduled_skip_count) {
@@ -420,6 +421,30 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   handler$diagnostic_keep <- sink$diagnostic_keep
   handler$persists_strategy_state <- isTRUE(sink$drains)
 
+  # Install the durable append boundary before a run continues. Opening rows
+  # and resumed rows may have been written before this handler was created;
+  # the first new block must still be checked against their final sequence and
+  # timestamp.
+  handler$seed_event_boundary <- function(event_seq, ts_utc) {
+    event_seq_value <- as.numeric(event_seq)
+    if (length(event_seq_value) != 1L || is.na(event_seq_value) ||
+        !is.finite(event_seq_value) || event_seq_value < 1 ||
+        event_seq_value > .Machine$integer.max || event_seq_value %% 1 != 0) {
+      rlang::abort("`event_seq` must be an integer >= 1.", class = "ledgr_invalid_args")
+    }
+    ts <- ledgr_assert_whole_second_utc(
+      ledgr_utc(ts_utc),
+      label = "`ts_utc`",
+      class = "ledgr_invalid_args"
+    )
+    if (length(ts) != 1L || is.na(ts)) {
+      rlang::abort("`ts_utc` must be one finite UTC timestamp.", class = "ledgr_invalid_args")
+    }
+    state$last_event_seq <- as.integer(event_seq_value)
+    state$last_event_ts_utc <- ts
+    invisible(TRUE)
+  }
+
   # -- Event column buffer and capacity growth -------------------------------
 
   init_event_cols <- function(capacity) {
@@ -608,7 +633,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
           commit_boundary = FALSE
         )
       }
-      result <- sink$write_fill_live(fill, i, instrument_id, event_seq)
+      result <- sink$write_fill_live(block)
       if (identical(block$status, "WROTE")) {
         state$last_event_seq <- tail(block$event_seq, 1L)
         state$last_event_ts_utc <- .POSIXct(tail(block$ts_utc, 1L), tz = "UTC")

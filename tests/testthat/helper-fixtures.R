@@ -438,3 +438,24 @@ ledgr_test_run <- function(snapshot = NULL,
   }
   ledgr_run(exp, params = strategy_params, run_id = run_id)
 }
+
+# Complete fill metadata for hand-built ledger fixtures. These fixtures test
+# readers rather than publication, so they use the literal accounting formula
+# without calling the product helper whose behavior they are meant to expose.
+ledgr_test_fill_meta_json <- function(side, qty, price, fee) {
+  n <- max(length(side), length(qty), length(price), length(fee))
+  side <- rep_len(side, n)
+  qty <- rep_len(as.numeric(qty), n)
+  price <- rep_len(as.numeric(price), n)
+  fee <- rep_len(as.numeric(fee), n)
+  buy <- side %in% c("BUY", 1L, 1)
+  cash_delta <- qty * price - fee
+  cash_delta[buy] <- -(qty[buy] * price[buy] + fee[buy])
+  position_delta <- -qty
+  position_delta[buy] <- qty[buy]
+  vapply(seq_len(n), function(i) canonical_json(list(
+    cash_delta = cash_delta[[i]],
+    position_delta = position_delta[[i]],
+    realized_pnl = NULL
+  )), character(1))
+}

@@ -14,7 +14,7 @@ testthat::test_that("ledgr_run_fills is an eager one-argument reader", {
     qty = rep(1, n),
     price = rep(100, n),
     fee = rep(0, n),
-    meta_json = rep(NA_character_, n),
+    meta_json = ledgr_test_fill_meta_json("BUY", 1, 100, 0),
     event_seq = seq_len(n),
     stringsAsFactors = FALSE
   )
@@ -69,7 +69,7 @@ testthat::test_that("fill extraction is eager for empty and borrowed reads", {
     qty = rep(1, n),
     price = rep(100, n),
     fee = rep(0, n),
-    meta_json = rep(NA_character_, n),
+    meta_json = ledgr_test_fill_meta_json("BUY", 1, 100, 0),
     event_seq = seq_len(n),
     stringsAsFactors = FALSE
   )
@@ -145,7 +145,10 @@ testthat::test_that("large fill extraction remains eager and ordered", {
     qty = rep(1, n),
     price = 100 + seq_len(n) * 0.01,
     fee = rep(0, n),
-    meta_json = rep(NA_character_, n),
+    meta_json = ledgr_test_fill_meta_json(
+      rep(c("BUY", "SELL"), length.out = n), 1,
+      100 + seq_len(n) * 0.01, 0
+    ),
     event_seq = seq_len(n),
     stringsAsFactors = FALSE
   )

@@ -75,7 +75,9 @@ testthat::test_that("canonical replay preserves real same-bar order and non-fill
     ts_utc = rep(axis[[2L]], 3L), event_type = "FILL",
     instrument_id = "AAA", side = c("BUY", "SELL", "BUY"),
     qty = c(1, 1, 2), price = c(100, 101, 102), fee = 0,
-    meta_json = NA_character_, event_seq = 1:3, stringsAsFactors = FALSE
+    meta_json = ledgr_test_fill_meta_json(
+      c("BUY", "SELL", "BUY"), c(1, 1, 2), c(100, 101, 102), 0
+    ), event_seq = 1:3, stringsAsFactors = FALSE
   )
   replay <- ledgr:::ledgr_replay_accounting_events(
     ledgr:::ledgr_prepare_accounting_events(fill_rows, "AAA"), initial_cash = 1000
@@ -95,9 +97,11 @@ testthat::test_that("canonical replay preserves real same-bar order and non-fill
   disposition_meta <- list(
     source = "corporate_action_disposition", source_fact_id = "fact-1",
     position_delta = -1, cash_delta = 90, quantity = 1, mark = 90,
+    disposition_choice = "last_mark", disposition_basis = "evidence",
+    mark_source = "current_close",
     mark_source_ts_utc = "2020-01-03T00:00:00Z", mark_age = 0L,
     position_before = 1, position_after = 0, realized_model_pnl = -10,
-    disposition_policy_id = "test-policy"
+    affected_marked_exposure = 90, disposition_policy_id = "test-policy"
   )
   nonfill_rows <- fill_rows[1L, , drop = FALSE]
   nonfill_rows$event_id <- "entry"

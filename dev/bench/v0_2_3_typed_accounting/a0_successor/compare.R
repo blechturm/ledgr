@@ -13,8 +13,27 @@ candidate <- normalizePath(arg("candidate"), winslash = "/")
 read_manifest <- function(path) {
   utils::read.csv(file.path(path, "manifest.csv"), colClasses = "character")
 }
+verify_manifest <- function(path, manifest) {
+  actual <- list.files(path, recursive = TRUE, all.files = FALSE, no.. = TRUE)
+  actual <- gsub("\\\\", "/", actual)
+  actual <- sort(setdiff(actual, "manifest.csv"), method = "radix")
+  expected <- sort(gsub("\\\\", "/", manifest$file), method = "radix")
+  if (!identical(actual, expected)) {
+    stop(sprintf("successor A0 manifest file set is stale: %s", path), call. = FALSE)
+  }
+  located <- file.path(path, manifest$file)
+  bytes <- vapply(located, function(file) sprintf("%d", as.integer(file.size(file))), character(1))
+  hashes <- vapply(located, digest::digest, character(1), algo = "sha256", file = TRUE)
+  if (!identical(unname(bytes), manifest$bytes) ||
+      !identical(unname(hashes), manifest$sha256)) {
+    stop(sprintf("successor A0 manifest hashes are stale: %s", path), call. = FALSE)
+  }
+  invisible(TRUE)
+}
 base_manifest <- read_manifest(base)
 candidate_manifest <- read_manifest(candidate)
+verify_manifest(base, base_manifest)
+verify_manifest(candidate, candidate_manifest)
 if (!identical(base_manifest$file, candidate_manifest$file)) {
   stop("successor A0 file sets differ", call. = FALSE)
 }

@@ -295,7 +295,7 @@ ledgr_prepare_accounting_events <- function(columns,
   disposition_basis <- field_chr("disposition_basis", disposition_rows)
   mark_source <- field_chr("mark_source", disposition_rows)
   mark_source_raw <- field_chr("mark_source_ts_utc", disposition_rows)
-  mark_source_ts_utc <- as.POSIXct(rep(NA_character_, n), tz = "UTC")
+  mark_source_ts_utc <- .POSIXct(rep(NA_real_, n), tz = "UTC")
   if (length(disposition_rows) > 0L) {
     mark_source_ts_utc[disposition_rows] <- suppressWarnings(as.POSIXct(
       mark_source_raw[disposition_rows],

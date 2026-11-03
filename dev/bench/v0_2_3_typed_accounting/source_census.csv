@@ -31,7 +31,7 @@
 "ledger_table","R/availability-results.R",1
 "ledger_table","R/backtest-fills.R",2
 "ledger_table","R/backtest-results.R",2
-"ledger_table","R/backtest-runner.R",3
+"ledger_table","R/backtest-runner.R",4
 "ledger_table","R/corporate-action-results.R",2
 "ledger_table","R/corporate-action-settlement.R",1
 "ledger_table","R/db-schema-current.R",2

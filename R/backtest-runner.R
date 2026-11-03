@@ -583,6 +583,30 @@ ledgr_run_fold_impl <- function(config,
   start_idx <- resume$start_idx
   next_event_seq <- resume$next_event_seq
 
+  # Opening publication and resume cleanup happen against the durable store.
+  # Seed the handler from the surviving tail so its first new block is checked
+  # across that boundary, not merely within the new block.
+  if (!isTRUE(terminal_recovery) && is.finite(next_event_seq) && next_event_seq > 1L) {
+    durable_boundary <- DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT event_seq, ts_utc FROM ledger_events",
+        "WHERE run_id = ? ORDER BY event_seq DESC LIMIT 1"
+      ),
+      params = list(run_id)
+    )
+    if (nrow(durable_boundary) != 1L) {
+      rlang::abort(
+        "The durable event boundary is missing for a non-empty run.",
+        class = "ledgr_invalid_accounting_event"
+      )
+    }
+    output_handler$seed_event_boundary(
+      durable_boundary$event_seq[[1L]],
+      durable_boundary$ts_utc[[1L]]
+    )
+  }
+
   prepared_control <- ledgr_run_prepare_control(control)
   max_pulses <- prepared_control$max_pulses
   cost_resolver <- ledgr_cost_resolver_from_plan_json(cfg$cost_model$cost_plan_json)

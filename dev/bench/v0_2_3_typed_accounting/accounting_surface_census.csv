@@ -13,7 +13,7 @@
 "reader","reader_prepare","R/backtest-runner.R",1
 "reader","reader_replay","R/backtest-runner.R",1
 "writer","writer_validate","R/backtest-runner.R",1
-"storage_reference","ledger_reference","R/backtest-runner.R",3
+"storage_reference","ledger_reference","R/backtest-runner.R",4
 "reader","reader_prepare","R/corporate-action-results.R",3
 "reader","reader_replay","R/corporate-action-results.R",3
 "storage_reference","ledger_reference","R/corporate-action-results.R",2
@@ -27,6 +27,7 @@
 "storage_reference","ledger_reference","R/derived-state.R",1
 "reader","reader_prepare","R/fold-reconstruction.R",3
 "reader","reader_replay","R/fold-reconstruction.R",3
+"producer","producer_fill","R/ledger-writer.R",1
 "writer","writer_insert","R/ledger-writer.R",1
 "storage_reference","ledger_reference","R/ledger-writer.R",2
 "reader","reader_prepare","R/lot-accounting.R",2
@@ -91,9 +92,9 @@
 "test","reader_prepare","tests/testthat/test-position-facts-context.R",4
 "test","reader_replay","tests/testthat/test-position-facts-context.R",4
 "test","producer_fill","tests/testthat/test-release-coverage-branches.R",7
-"test","reader_prepare","tests/testthat/test-research-cycle-scale.R",1
+"test","reader_prepare","tests/testthat/test-research-cycle-scale.R",2
 "test","reader_replay","tests/testthat/test-research-cycle-scale.R",1
-"test","ledger_reference","tests/testthat/test-research-cycle-scale.R",4
+"test","ledger_reference","tests/testthat/test-research-cycle-scale.R",5
 "test","reader_prepare","tests/testthat/test-result-output.R",1
 "test","reader_replay","tests/testthat/test-result-output.R",1
 "test","ledger_reference","tests/testthat/test-risk-fold.R",3
@@ -112,7 +113,7 @@
 "test","producer_append","tests/testthat/test-sweep.R",3
 "test","producer_fill","tests/testthat/test-sweep.R",2
 "test","ledger_reference","tests/testthat/test-sweep.R",3
-"test","producer_append","tests/testthat/test-typed-accounting-boundary.R",3
+"test","producer_append","tests/testthat/test-typed-accounting-boundary.R",5
 "test","reader_prepare","tests/testthat/test-typed-accounting-boundary.R",8
 "test","reader_replay","tests/testthat/test-typed-accounting-boundary.R",3
 "test","ledger_reference","tests/testthat/test-walk-forward-orchestrator.R",2

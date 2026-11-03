@@ -363,6 +363,7 @@ ws4a_d3_census <- c(
   ledgr_state_asof = "close_by_id[held_ids]",
   ledgr_run_terminal_recovery_equity = "match(held, instrument_ids)",
   # Walk-forward: as-of book and carried lots to the next window's opening.
+  ledgr_walk_forward_opening_from_run = "stats::setNames(timeline$position[, 1L], timeline$ids)",
   ledgr_walk_forward_opening_from_run = "names(held) <- positions$instrument_id",
   ledgr_walk_forward_opening_from_run = "match(names(held), exp$universe)",
   ledgr_walk_forward_opening_from_run = "names(cost_basis) <- names(held)",
@@ -1910,7 +1911,8 @@ testthat::test_that("[WS4a D3 3166] the planners and publication inputs index by
 # planners only.
 ws4a_d8_regions <- c("ledgr_fold_stage_plan", "ledgr_fold_stage_apply", "ledgr_fold_stage_commit", "ledgr_fold_scheduled_skip_plan",
   "ledgr_output_handler", "ledgr_output_sink_duckdb", "ledgr_output_sink_memory", "ledgr_fill_event_payload",
-  "ledgr_fill_leg_block", "ledgr_write_fill_events", "ledgr_run_compiled_spot_fifo_batch")
+  "ledgr_fill_leg_block", "ledgr_write_fill_events", "ledgr_write_fill_publication_row",
+  "ledgr_run_compiled_spot_fifo_batch")
 ws4a_d8_hits <- function(fns) {
   intent <- c("ledgr_fill_intent", "ledgr_fill_none", "ledgr_fill_proposal", "ledgr_fill_context")
   unlist(lapply(names(fns), function(nm) {
@@ -1925,7 +1927,11 @@ ws4a_d8_hits <- function(fns) {
         (h == "-" && length(x) == 2L && "qty" %in% all.names(x[[2L]]))
     }, calls)
     h <- c(intersect(strings, intent), intersect(vapply(calls, ws4a_head, ""),
-      c("ledgr_fill_publication_deltas", "ledgr_next_open_fill_proposal", "ledgr_resolve_fill_proposal", "ledgr_fill_context")),
+      c(
+        "ledgr_fill_publication_deltas", ".ledgr_fill_publication_formula",
+        "ledgr_next_open_fill_proposal", "ledgr_resolve_fill_proposal",
+        "ledgr_fill_context"
+      )),
       vapply(arith, function(x) substr(ws4a_txt(x), 1L, 60L), ""))
     if (length(h)) paste0(nm, ": ", h)
   }))
@@ -1942,6 +1948,8 @@ testthat::test_that("[WS4a D8] no fill-intent object in the fold or sinks; effec
   }
   testthat::expect_gt(length(inject("ledgr_fill_event_payload", "intent <- structure(list(), class = \"ledgr_fill_intent\")")), 0L)
   testthat::expect_gt(length(inject("ledgr_write_fill_events", "fx <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)")), 0L)
+  testthat::expect_gt(length(inject("ledgr_write_fill_events", "fx <- .ledgr_fill_publication_formula(side, qty, fill_price, fee)")), 0L)
+  testthat::expect_gt(length(inject("ledgr_write_fill_publication_row", "fx <- ledgr_fill_publication_deltas(side, qty, fill_price, fee)")), 0L)
   # Inline recomputation is caught even though it yields identical numbers.
   testthat::expect_gt(length(inject("ledgr_fill_event_payload", "cash_delta <- -(fill$qty[[i]] * fill$price[[i]] + fill$fee[[i]])")), 0L)
   testthat::expect_gt(length(inject("ledgr_write_fill_events", "signed_qty <- -fill$qty[[i]]")), 0L)
@@ -2227,7 +2235,8 @@ testthat::test_that("[WS4b F1 arithmetic NaN] typed plan validation keeps accoun
 # handler and sink closures that publish fills, keyed "<function>/<assigned
 # name>" for a closure (two definitions of one name are joined).
 ws4a_pub_fns <- c("ledgr_fold_stage_apply", "ledgr_fold_fill_candidate", "ledgr_fill_event_payload",
-  "ledgr_fill_meta_rows", "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many")
+  "ledgr_fill_meta_rows", "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many",
+  "ledgr_write_fill_publication_row")
 ws4a_pub_closures <- c(
   ledgr_output_handler = "stage_fill_block", ledgr_output_handler = "handler$write_fill_events",
   ledgr_output_handler = "handler$flush_pulse_events", ledgr_output_handler = "handler$record_accounting_fact",
@@ -2263,9 +2272,11 @@ ws4a_inject_into <- function(fns, nm, stmt) {
 ws4a_d1_pub_allowed <- c(
   ledgr_fill_event_payload = ".POSIXct", "ledgr_output_handler/handler$flush_pulse_events" = ".POSIXct",
   "ledgr_output_handler/handler$write_fill_events" = ".POSIXct",
+  ledgr_write_fill_publication_row = ".POSIXct", ledgr_write_fill_publication_row = "structure",
   ledgr_fill_row_buffer_add_many = "as.POSIXct", ledgr_fill_meta_rows = "Map", ledgr_fill_meta_rows = "list",
   ledgr_fill_event_payload = "vapply", "ledgr_output_handler/handler$append_event_rows" = "lapply",
-  "ledgr_output_handler/handler$append_event_rows" = "vapply"
+  "ledgr_output_handler/handler$append_event_rows" = "vapply",
+  "ledgr_output_sink_duckdb/sink$write_fill_live" = "structure"
 )
 ws4a_d1_pub_loops <- c(
   ledgr_fold_fill_candidate = "while (failed - ok > 1L)",
@@ -2273,7 +2284,7 @@ ws4a_d1_pub_loops <- c(
   "ledgr_output_handler/handler$flush_pulse_events" = "for (name in setdiff(ledgr_output_event_columns, \"ts_utc\"))",
   "ledgr_output_sink_memory/sink$stage_legs" = "for (name in names(legs))",
   "ledgr_output_handler/handler$append_event_rows" = "for (name in ledgr_output_event_columns)",
-  "ledgr_output_sink_duckdb/sink$write_fill_live" = "for (k in seq_along(i))"
+  "ledgr_output_sink_duckdb/sink$write_fill_live" = "for (k in seq_along(publication$event_seq))"
 )
 ws4a_d1_pub_hits <- function(fns) {
   banned <- c("structure", "class<-", "oldClass<-", "as.POSIXct", ".POSIXct", "as.POSIXlt", "strptime",

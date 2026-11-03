@@ -67,6 +67,36 @@ testthat::test_that("[LTB-0172] terminal outcomes reconcile to events and name t
   testthat::expect_true(
     "    AAA 2020-01-04: default: assumed worthless, proceeds 0 (label bankruptcy)" %in% detailed
   )
+
+  # A terminal position acquired by an ordinary fill has no opening row and
+  # no corporate fact parent. The public summary/print path must retain that
+  # fill in the narrow replay needed to consume the terminal disposition.
+  filled_lifetime <- terminal_outcome_lifetime("AAA", 4L)
+  filled_snapshot <- terminal_outcome_snapshot(
+    list(AAA = rep(100, 5L)),
+    lifetime = filled_lifetime
+  )
+  on.exit(ledgr_snapshot_close(filled_snapshot), add = TRUE)
+  buy_two <- function(ctx, params) {
+    target <- ctx$flat()
+    if (isTRUE(ctx$buyable[["AAA"]])) target[["AAA"]] <- 2
+    target
+  }
+  filled_bt <- ledgr_run(
+    terminal_outcome_experiment(
+      filled_snapshot,
+      strategy = buy_two,
+      policy = ledgr_corporate_actions(held_terminal_position = "last_mark"),
+      positions = NULL
+    ),
+    run_id = "terminal-reporting-fill-acquired"
+  )
+  on.exit(close(filled_bt), add = TRUE)
+  filled_events <- terminal_outcome_tables(filled_bt)$events$event_type
+  testthat::expect_true(all(c("FILL", "DISPOSITION") %in% filled_events))
+  filled_summary <- ledgr_corporate_action_summary(filled_bt)
+  testthat::expect_identical(filled_summary$positions_disposed, 1L)
+  testthat::expect_no_error(utils::capture.output(print(filled_bt)))
 })
 
 # ledgr-test-profile: fast

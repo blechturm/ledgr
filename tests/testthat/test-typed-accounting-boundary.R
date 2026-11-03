@@ -215,6 +215,24 @@ testthat::test_that("[LTB-0550] typed accounting carrier owns fields and block b
     class = "ledgr_invalid_accounting_event"
   )
 
+  resumed <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_memory("typed-accounting")
+  )
+  resumed$seed_event_boundary(8L, as.POSIXct("2020-01-08", tz = "UTC"))
+  resumed$init_buffers(2L)
+  stale_sequence <- typed_accounting_opening(8L)
+  stale_sequence$ts_utc <- as.POSIXct("2020-01-09", tz = "UTC")
+  testthat::expect_error(
+    resumed$append_event_rows(stale_sequence),
+    class = "ledgr_invalid_accounting_event"
+  )
+  stale_time <- typed_accounting_opening(9L)
+  stale_time$ts_utc <- as.POSIXct("2020-01-07", tz = "UTC")
+  testthat::expect_error(
+    resumed$append_event_rows(stale_time),
+    class = "ledgr_invalid_accounting_event"
+  )
+
   live_sink <- ledgr:::ledgr_output_sink_memory("typed-accounting")
   live_sink$serialize_meta_json <- TRUE
   live_sink$write_fill_live <- function(...) {

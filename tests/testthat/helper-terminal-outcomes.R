@@ -88,7 +88,11 @@ terminal_outcome_experiment <- function(snapshot,
     opening = ledgr_opening(
       cash = 1000,
       positions = positions,
-      cost_basis = stats::setNames(rep(100, length(positions)), names(positions))
+      cost_basis = if (is.null(positions) || length(positions) == 0L) {
+        NULL
+      } else {
+        stats::setNames(rep(100, length(positions)), names(positions))
+      }
     ),
     valuation_policy = valuation,
     corporate_action_policy = policy,

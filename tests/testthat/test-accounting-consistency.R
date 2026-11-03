@@ -65,7 +65,9 @@ testthat::test_that("[LTB-0004] reversal fee projection conserves source economi
     qty = c(4, 10, 9),
     price = c(10, 12, 11),
     fee = c(1, 3, 6),
-    meta_json = NA_character_,
+    meta_json = ledgr_test_fill_meta_json(
+      c("BUY", "SELL", "BUY"), c(4, 10, 9), c(10, 12, 11), c(1, 3, 6)
+    ),
     event_seq = 1:3,
     stringsAsFactors = FALSE
   )

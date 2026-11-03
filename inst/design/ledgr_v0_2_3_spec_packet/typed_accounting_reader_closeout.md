@@ -1,8 +1,8 @@
 # Workstream 23 implementation closeout
 
-Status: close-review corrections complete; focused independent confirmation
-pending. The private Sharadar aggregate remains an explicit open gate before
-Workstream 24 product implementation.
+Status: two close-review correction rounds complete; focused independent
+confirmation pending. The private Sharadar aggregate remains an explicit open
+gate before Workstream 24 product implementation.
 
 Workstream 23 implements the schema-124 half of the accepted typed-accounting
 boundary. It does not change the ledger DDL or publish schema 125. The product
@@ -13,6 +13,14 @@ commits are:
 - `29b6dd1e`: accounting-semantic readers and terminal recovery converge on
   that replay; the accepted INCOMPLETE annualized-return correction lands;
 - `d3b8dfef`: the corporate-action summary reuses one prepared replay.
+
+The focused re-review found that the narrowed corporate-action query omitted
+FILL history for a position acquired during the run and later disposed at a
+terminal. The correction keeps the parent-only query for composition, gives
+the public summary a separate instrument-scoped query, and pins a public run
+whose `FILL, DISPOSITION` ledger prints with one disposed position. Durable
+and resumed handlers also seed their append boundary from the durable ledger
+tail before accepting the first new block.
 
 The pre-change evidence commit is `16b64066`. The corrected evidence separates
 the 290-file historical integrity corpus from the 281-file successor A0
@@ -39,9 +47,12 @@ trade counts, corporate-action entitlement/composition/summary projections,
 terminal outcomes and terminal recovery read the prepared replay. Terminal
 recovery queries and replays once, then projects positions, cash, realized
 PnL and basis forward over requested pulses. The former unsorted and per-time
-availability fallbacks are deleted. `inline_summary()` remains the detected
-memory-candidate exception. Raw ledger, identity/order, cleanup and typed
-dedupe queries remain narrow exceptions and derive no competing state.
+availability fallbacks are deleted. Walk-forward's former dead NULL-substrate
+branch now projects the one prepared timeline, and its tests use an independent
+prefix-query/replay oracle rather than a deleted product helper.
+`inline_summary()` remains the detected memory-candidate exception. Raw
+ledger, identity/order, cleanup and typed dedupe queries remain narrow
+exceptions and derive no competing state.
 
 ## Evidence run
 
@@ -53,6 +64,13 @@ The following focused suites passed on the final product tree:
 - terminal outcomes and terminal reporting;
 - result output, accounting-core consolidation, derived state and
   availability finalization/parity (LTB-0552).
+
+The complete package suite passed every WS23-owned block. Eight failures in
+three historical/environment groups reproduce unchanged at immutable base
+`0d6c0b11`: LTB-0408 and LTB-0416 scan a malformed historical v0.2.2 YAML
+record; LTB-0247 is a Windows latin1 assertion; and five sweep-retention
+assertions depend on native UTF-8 escaping. They are therefore not represented
+as WS23 passes or regressions. One optional-package skip is unchanged.
 
 The successor A0 comparator passes over 281 files. Exactly the two
 `avail_incomplete` sweep files differ, each in two `annualized_return` cells
@@ -79,6 +97,21 @@ The seven optimization shapes were walked over every changed reader:
    all-missing mark timestamps; replay adds no JSON encode, database write or
    hash.
 
+The focused re-review correction removes the all-missing character timestamp
+parse and makes db-live write the publication row it already validated instead
+of rebuilding its payload. In a same-process descriptive replay of 400 calls
+per arm, seven medians compared reviewed product `20026602` with the corrected
+tree: 1/20/200-row fill blocks were 950/825/1175 microseconds before and
+800/475/875 microseconds after (ratios 0.842/0.576/0.745). Clocks remain
+descriptive under macro-plan rule 16.
+
+LTB-0515 again shifts the publication formula through durable, db-live and
+memory paths; the alias is included in the D8 source/runtime census so it
+cannot hide a second publication computation. Its no-fee fixture uses 4
+January solely to append monotonically after its 2 and 3 January witnesses.
+The successor A0 comparator now recomputes each file's size and SHA-256 rather
+than trusting a stored manifest.
+
 ## Open evidence gates
 
 The private Sharadar aggregate record is **OPEN**. No private data was
@@ -97,5 +130,6 @@ fill-heavy. `protocol_smoke.csv` records one successful, explicitly non-gating
 candidate execution at product commit `7361951e`; clocks remain descriptive
 under macro-plan rule 16 and no timing pass is claimed.
 
-The independent close review is preserved in `close_review_23.md`. Its seven
-findings drove these corrections; it is not overwritten by this closeout.
+The independent close review is preserved in `close_review_23.md`, and its
+focused re-review in `close_review_23_rereview_1.md`. Their findings drove the
+two correction rounds; neither review is overwritten by this closeout.

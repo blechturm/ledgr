@@ -845,13 +845,6 @@ ledgr_lot_book_asof <- function(con, run_id, instrument_ids, ts_utc) {
   ledgr_lot_book_from_events(rows, instrument_ids = instrument_ids)
 }
 
-ledgr_lot_meta_is_opening <- function(meta) {
-  is.list(meta) &&
-    identical(meta$source, "opening_position") &&
-    !is.null(meta$position_delta) &&
-    !is.null(meta$cost_basis)
-}
-
 ledgr_lot_parse_meta <- function(meta_json) {
   if (is.null(meta_json) ||
     (is.atomic(meta_json) && length(meta_json) == 1L && is.na(meta_json)) ||

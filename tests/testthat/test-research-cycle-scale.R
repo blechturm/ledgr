@@ -1,6 +1,27 @@
 # Cut 11 Workstream 22: research-cycle scaling repairs. Each rewritten shape
 # is compared with the original algorithm, kept here as the reference.
 
+scale_test_reference_positions_asof <- function(con,
+                                                 run_id,
+                                                 ids,
+                                                 time,
+                                                 replay_fn = ledgr:::ledgr_replay_accounting_events) {
+  events <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+      "qty, price, fee, meta_json, event_seq FROM ledger_events",
+      "WHERE run_id = ? AND ts_utc <= ? ORDER BY event_seq"
+    ),
+    params = list(run_id, as.POSIXct(time, tz = "UTC"))
+  )
+  out <- stats::setNames(rep(0, length(ids)), ids)
+  if (nrow(events) == 0L) return(out)
+  replay <- replay_fn(ledgr:::ledgr_prepare_accounting_events(events, ids))
+  out[names(replay$positions)] <- replay$positions
+  out
+}
+
 testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledger up to each time", {
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -21,10 +42,7 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   testthat::expect_gt(nrow(ledgr_results(bt, "fills")), 5L)
   testthat::expect_true(any(ledgr_results(bt, "ledger")$event_type == "DISPOSITION"))
   full_expected <- function(run_id, ids, time) {
-    expected <- ledgr:::ledgr_availability_positions_asof(con, run_id, time)
-    out <- stats::setNames(rep(0, length(ids)), ids)
-    out[names(expected)] <- expected
-    out
+    scale_test_reference_positions_asof(con, run_id, ids, time)
   }
   timeline <- ledgr:::ledgr_availability_positions_timeline(con, "timeline", times)
   for (i in seq_along(times)) {
@@ -45,7 +63,9 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   synthetic$qty <- c(rep(0.1, 10L), 1)
   synthetic$price <- 10
   synthetic$fee <- 0
-  synthetic$meta_json <- "{}"
+  synthetic$meta_json <- ledgr_test_fill_meta_json(
+    synthetic$side, synthetic$qty, synthetic$price, synthetic$fee
+  )
   DBI::dbAppendTable(con, "ledger_events", synthetic)
   at <- as.POSIXct("2021-02-01 21:00", tz = "UTC") + 86400 * c(-1, 0:9)
   fractional <- ledgr:::ledgr_availability_positions_timeline(con, "synthetic", at)
@@ -61,19 +81,17 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
     unname(fractional$position["AAA", ])
   )
 
-  # A ledger whose timestamps decrease in event order is refused, so readers
-  # replay per time.
+  # A ledger whose timestamps decrease in event order is refused. There is no
+  # per-time fallback that can silently give a different answer.
   backwards <- synthetic[1:3, , drop = FALSE]
   backwards$run_id <- "backwards"
   backwards$event_id <- sprintf("backwards_%08d", 1:3)
   backwards$ts_utc <- as.POSIXct("2021-03-01 21:00", tz = "UTC") + 86400 * c(2, 0, 1)
   DBI::dbAppendTable(con, "ledger_events", backwards)
-  testthat::expect_null(ledgr:::ledgr_availability_positions_timeline(con, "backwards", at))
-
-  # The active result branch equals its per-time fallback.
-  active <- ledgr_results(bt, "availability")
-  testthat::local_mocked_bindings(ledgr_availability_positions_timeline = function(...) NULL, .package = "ledgr")
-  testthat::expect_identical(ledgr_results(bt, "availability"), active)
+  testthat::expect_error(
+    ledgr:::ledgr_availability_positions_timeline(con, "backwards", at),
+    class = "ledgr_invalid_accounting_event"
+  )
 })
 
 # The per-fill loop the vectorised resolver replaced.
@@ -222,20 +240,30 @@ testthat::test_that("[LTB-0216] the dense results plane replays the ledger once,
   ), run_id = "dense_once"))
   on.exit(close(bt), add = TRUE)
   testthat::expect_gt(nrow(ledgr_results(bt, "fills")), 4L)
-  per_time <- new.env()
-  per_time$calls <- 0L
-  asof <- ledgr:::ledgr_availability_positions_asof
+  replay_count <- new.env()
+  replay_count$calls <- 0L
+  replay_original <- ledgr:::ledgr_replay_accounting_events
   testthat::local_mocked_bindings(
-    ledgr_availability_positions_asof = function(...) {
-      per_time$calls <- per_time$calls + 1L
-      asof(...)
+    ledgr_replay_accounting_events = function(...) {
+      replay_count$calls <- replay_count$calls + 1L
+      replay_original(...)
     },
     .package = "ledgr"
   )
   once <- ledgr_results(bt, "availability")
-  testthat::expect_identical(per_time$calls, 0L)
+  testthat::expect_identical(replay_count$calls, 1L)
   testthat::expect_true(any(once$held))
-  testthat::local_mocked_bindings(ledgr_availability_positions_timeline = function(...) NULL, .package = "ledgr")
-  testthat::expect_identical(ledgr_results(bt, "availability"), once)
-  testthat::expect_identical(per_time$calls, length(unique(once$ts_utc)))
+  con <- ledgr:::get_connection(bt)
+  expected_held <- logical(nrow(once))
+  result_times <- unique(once$ts_utc)
+  for (time_idx in seq_along(result_times)) {
+    time <- result_times[[time_idx]]
+    rows <- which(once$ts_utc == time)
+    ids <- as.character(once$instrument_id[rows])
+    position <- scale_test_reference_positions_asof(
+      con, bt$run_id, ids, time, replay_fn = replay_original
+    )
+    expected_held[rows] <- unname(position[ids] != 0)
+  }
+  testthat::expect_identical(once$held, expected_held)
 })

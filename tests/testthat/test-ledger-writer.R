@@ -924,6 +924,8 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
     ),
     no_fee = ledgr_test_next_open_fill(
       desired_qty_delta = 4,
+      # The three fixture fills are appended to the same handler in order;
+      # Jan 4 keeps the append-boundary timestamp monotone after Jan 2/3.
       next_bar = list(instrument_id = "BBB", ts_utc = "2020-01-04T00:00:00Z", open = 50),
       spread_bps = 0,
       commission_fixed = 0
@@ -1034,26 +1036,27 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
 
   check(publish(), shift = 0)
 
-  # Perturbing the one P3 computation is refused by the independent typed
-  # append validator. Sinks still perform no second P3 computation, and a
-  # NO_OP never reaches it.
+  # Perturb the one P3 computation and its validation oracle together. All
+  # three sinks must publish the same shifted typed effects without another
+  # computation; the independent wrong-effect refusal lives in LTB-0550.
   original <- ledgr:::ledgr_fill_publication_deltas
   calls <- 0L
+  shifted <- function(side, qty, fill_price, fee, count = TRUE) {
+    if (isTRUE(count)) calls <<- calls + 1L
+    out <- original(side, qty, fill_price, fee)
+    out$cash_delta <- out$cash_delta + 1
+    out
+  }
   testthat::local_mocked_bindings(
-    ledgr_fill_publication_deltas = function(side, qty, fill_price, fee) {
-      calls <<- calls + 1L
-      out <- original(side, qty, fill_price, fee)
-      out$cash_delta <- out$cash_delta + 1
-      out
+    ledgr_fill_publication_deltas = shifted,
+    .ledgr_fill_publication_formula = function(side, qty, fill_price, fee) {
+      shifted(side, qty, fill_price, fee, count = FALSE)
     },
     .package = "ledgr"
   )
   fills <- make_fills()
   testthat::expect_identical(calls, 3L)
-  testthat::expect_error(
-    publish(),
-    class = "ledgr_invalid_accounting_event"
-  )
+  check(publish(), shift = 1)
   testthat::expect_identical(calls, 3L)
 })
 
@@ -1148,7 +1151,7 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "abort_run", "append_event_rows", "buffer_event", "buffer_strategy_state",
     "flush_pending", "flush_pulse_events", "init_buffers", "pending_event_count",
     "pending_state_count", "record_failure", "record_run_status", "run_transaction",
-    "set_schedule_counts", "store_session_telemetry", "terminal_status_written",
+    "seed_event_boundary", "set_schedule_counts", "store_session_telemetry", "terminal_status_written",
     "write_exception_diagnostic", "write_fill_events", "write_run_diagnostics",
     "write_run_evidence", "write_strategy_state", "write_telemetry"
   )
@@ -1160,14 +1163,14 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "buffer_strategy_state", "completion", "diagnostics", "events", "flush_pending",
     "flush_pulse_events", "init_buffers", "inline_summary", "pending_event_count",
     "pending_state_count", "record_accounting_fact",
-    "record_failure", "record_run_status", "run_transaction", "store_session_telemetry",
+    "record_failure", "record_run_status", "run_transaction", "seed_event_boundary", "store_session_telemetry",
     "typed_events", "write_exception_diagnostic", "write_fill_events",
     "write_run_diagnostics", "write_run_evidence", "write_strategy_state",
     "write_telemetry"
   )
-  testthat::expect_length(duckdb_methods, 23L)
-  testthat::expect_length(memory_methods, 28L)
-  testthat::expect_length(intersect(duckdb_methods, memory_methods), 21L)
+  testthat::expect_length(duckdb_methods, 24L)
+  testthat::expect_length(memory_methods, 29L)
+  testthat::expect_length(intersect(duckdb_methods, memory_methods), 22L)
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
