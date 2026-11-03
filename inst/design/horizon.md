@@ -29,6 +29,33 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-03-ux-showcase-exact-decision-explanations"></a>
+### 2026-11-03 [ux] Showcase exact decision explanations with a worked example
+
+ledgr can explain any decision of a finished run after the fact, exactly
+and without re-running strategy code: `ledgr_run_explain(bt, instrument_id,
+ts_utc)` answers "why did (or didn't) it trade X on day Y" from stored
+evidence. Nothing user-facing shows this yet, although it is one of the
+clearest demonstrations of the "backtest that can't lie to you" pitch. The
+maintainer wants it shown at some point with a good example (2026-11-03).
+
+A good example lets a reader see an explanation they could not get from a
+naive backtest: an instrument that was not yet an index member on the day a
+naive run bought it, a held former member valued at a stale mark, an order
+blocked or cut for cash, a quantity rounded away. Each answer should name
+the reason in plain words and point at the evidence. The example must run
+for real (executed chunks), on data anyone can use, so no vendor rows.
+
+Show it after the per-pulse durable records RFC
+([seed v2](rfc/rfc_per_pulse_durable_records_v0_2_3_seed_v2.md)) settles
+what a run stores, so the example teaches the final behaviour, and after the
+explanation read cost is fixed: on the private Sharadar reference one
+explanation took 9.3 s at a 2.6 GB R heap (history-proof Phase B closeout,
+routed to WS8). Natural homes are the survivorship-bias article the
+asset-availability synthesis asked for, or the README.
+
+This entry authorizes no implementation.
+
 <a id="2026-11-02-execution-intraday-speed-and-memory-readiness"></a>
 ### 2026-11-02 [execution] Intraday speed and memory readiness
 
