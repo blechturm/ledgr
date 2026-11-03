@@ -352,3 +352,47 @@ testthat::test_that("[LTB-0175] reporting is identical from memory, reopen and r
   testthat::expect_identical(reopened, memory)
   testthat::expect_identical(resumed, memory)
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0553] run readers admit row-scoped legacy subtype metadata", {
+  snapshot <- terminal_outcome_snapshot(
+    list(AAA = c(100, 90, 91)),
+    corporate = terminal_outcome_acquisition("AAA", 2L)
+  )
+  withr::defer(ledgr_snapshot_close(snapshot))
+  bt <- ledgr_run(
+    terminal_outcome_experiment(snapshot, positions = c(AAA = 2)),
+    run_id = "row-scoped-legacy-subtype"
+  )
+  withr::defer(close(bt))
+
+  # Current publication shape.
+  testthat::expect_no_error(ledgr_run_info(snapshot, bt$run_id))
+  testthat::expect_no_error(ledgr_corporate_action_summary(bt))
+  testthat::expect_no_error(ledgr_compute_metrics(bt))
+
+  # Base-shaped stores may have a subtype on a different accounting row.
+  # Preserve that row's value while the disposition's rectangular cell stays
+  # missing, then exercise the three public readers that replay the block.
+  opened <- ledgr:::ledgr_snapshot_connection(snapshot)
+  opening <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT event_seq, meta_json FROM ledger_events",
+      "WHERE run_id = ? AND event_type = 'CASHFLOW' ORDER BY event_seq LIMIT 1"
+    ),
+    params = list(bt$run_id)
+  )
+  meta <- ledgr:::ledgr_json_read_nested(opening$meta_json[[1L]])
+  meta$subtype <- "legacy_opening_position"
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE ledger_events SET meta_json = ? WHERE run_id = ? AND event_seq = ?",
+    params = list(
+      ledgr:::canonical_json(meta), bt$run_id, opening$event_seq[[1L]]
+    )
+  )
+  testthat::expect_no_error(ledgr_run_info(snapshot, bt$run_id))
+  testthat::expect_no_error(ledgr_corporate_action_summary(bt))
+  testthat::expect_no_error(ledgr_compute_metrics(bt))
+})

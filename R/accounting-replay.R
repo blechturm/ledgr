@@ -381,14 +381,20 @@ ledgr_prepare_accounting_events <- function(columns,
       "ledgr_invalid_ledger_meta"
     )
   }
-  forbidden <- intersect(names(meta), c("subtype", "equity_subtype", "vendor_subtype"))
+  # yyjsonr forms one rectangular frame for the whole event block. A subtype
+  # used by another event therefore creates an all-missing subtype cell on a
+  # DISPOSITION row. Refuse the cell, not the block-wide column name.
+  forbidden_subtype <- any_present(
+    c("subtype", "equity_subtype", "vendor_subtype"),
+    as.character
+  )
   scheduled <- disposition & !is.na(source) & source == "corporate_action_disposition"
   lifetime <- disposition & !is.na(source) & source == "lifetime_terminal_disposition"
   scheduled_zero <- scheduled & mark <= 0
   lifetime_zero <- lifetime &
     mark == 0 & disposition_choice == "write_off"
   invalid_disposition <- disposition & (
-    length(forbidden) > 0L | !(source %in% ledgr_disposition_sources()) |
+    forbidden_subtype | !(source %in% ledgr_disposition_sources()) |
       is.na(instrument_id) | !nzchar(instrument_id) |
       !is.na(side) | fee != 0 | !is.finite(qty) | !is.finite(price) |
       !is.finite(quantity) | quantity <= 0 | !is.finite(mark) | mark < 0 |

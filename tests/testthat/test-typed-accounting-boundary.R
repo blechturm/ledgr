@@ -112,6 +112,18 @@ testthat::test_that("[LTB-0550] typed accounting carrier owns fields and block b
   ))
   testthat::expect_equal(prepared$affected_marked_exposure, c(NA, NA, 600, 0))
 
+  # A legacy non-disposition row may carry its own subtype. yyjsonr widens
+  # that key to an all-missing column cell on the DISPOSITION row; the typed
+  # matrix refuses only a subtype value on the disposition itself.
+  cash_with_subtype <- cash
+  cash_meta <- yyjsonr::read_json_str(cash_with_subtype$meta_json[[1L]])
+  cash_meta$subtype <- "ordinary_cash_dividend"
+  cash_with_subtype$meta_json[[1L]] <- canonical_json(cash_meta)
+  testthat::expect_no_error(ledgr:::ledgr_prepare_accounting_events(
+    rbind(opening, fill, cash_with_subtype, disposition),
+    "AAA"
+  ))
+
   replay <- ledgr:::ledgr_replay_accounting_events(prepared, initial_cash = 1000)
   testthat::expect_equal(replay$cash, 2845)
   testthat::expect_equal(unname(replay$positions[["AAA"]]), 0)
