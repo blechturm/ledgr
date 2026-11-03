@@ -4,8 +4,9 @@ title: "Optimization Coding Style"
 
 **Status:** Maintainer coding-style article updated after v0.2.0.1
 productionization (LDG-2732); rules revised 2026-10-30 after the v0.2.3
-PMwR, JSON and shape audits and an external review; the hot-loop POSIXct
-rule added 2026-11-03 after the WS20 timestamp re-parse.
+PMwR, JSON and shape audits and an external review; the hot-loop POSIXct,
+kernel-to-context, boundary-helper and test-scaffolding rules added
+2026-11-03 after the WS20 timestamp re-parse.
 
 **Authority:** Synthesis plus implementation trace. Binding rules remain in the
 v0.1.8.9 spec (column-buffer write rule), `../contracts.md`, the accepted RFC
@@ -142,6 +143,14 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   pulse loop reads by index and advances cursors; it does not filter, sort,
   split, or subset a data frame. Canonical sparse tables remain the durable
   input; compiled planes are transient.
+- **Data flows from the kernel to the context, never back** (maintainer,
+  2026-11-03). The kernel never reads a value from what it hands the
+  strategy (`ctx`, its views, its display fields). When the kernel needs a
+  value, it takes it from the packet, the carrier or a prepared axis. The
+  WS20 correction derived the pulse's numeric cutoff from `ctx$ts_utc`, the
+  strategy-facing ISO string, although the decision packet already held the
+  epoch. This rule alone would have prevented the regression, whatever the
+  type of the value.
 - **Frames manifest at boundaries only.** Public results, persistence
   chunks, and inspection surfaces are data frames or tibbles. Inside the fold
   and inside compile steps, state lives in typed atomic vectors, matrices, or
@@ -181,6 +190,15 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   function received them. A join, alignment, user callback, deserialization,
   or synthetic-row step may invalidate a guarantee; name that edge and check
   the changed property there rather than replaying every upstream validator.
+- **Boundary helpers stay at the boundary** (maintainer, 2026-11-03).
+  Normalisers and validators written for untrusted input never run per pulse,
+  fill or event on values a boundary already accepted. That covers
+  `ledgr_utc()`, `ledgr_normalize_*()`, `*_problem()` checks, `match.arg()`
+  and `stopifnot()`-style guards. Such a helper pays for type dispatch,
+  regexes, NA scans and error construction. That is correct at ingest and
+  pure overhead on trusted data: `ledgr_utc()` costs about 250 us on one
+  trusted ISO string. The per-stage `ledgr_carrier_problem()` checks in the
+  Cut 7 fill-heavy profile have the same shape.
 - **Keep timestamps as timestamps.** POSIXct formatting is an external-boundary
   operation for display, serialization, or a contract that explicitly binds
   canonical text. Equality, ordering, grouping, alignment, and range checks on
@@ -201,6 +219,12 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   POSIXct or text are prepared once for the whole axis before the loop and
   indexed by position. Conversion back belongs to result readers and other
   boundaries.
+- **Tests do not make the product compute things** (maintainer,
+  2026-11-03). Tests pin behaviour and output, not private per-pulse fields
+  the product does not consume. A hot-path field whose only reader is a test
+  is test scaffolding that runs in production. The WS20 correction's
+  `cutoff_num` existed because a review witness pinned it; nothing in `R/`
+  read it, and computing it cost 0.3 s per run.
 - **No JSON on per-pulse or per-fill paths** (maintainer, 2026-10-30). Fold,
   planning, accounting and reader hot paths carry typed vectors. Canonical
   JSON is allowed only for identity hashing and cold, once-per-run records.
@@ -607,6 +631,12 @@ One diagnostic block per pulse versus one frame per instrument:
   or align it? If so, keep it as POSIXct or an epoch vector.
 - Does any code that runs per pulse, fill or event touch POSIXct, POSIXlt or
   timestamp text, even once on a scalar? Which prepared epoch replaces it?
+- Does kernel code read anything from `ctx` or another strategy-facing
+  value? Which packet, carrier or axis field should it read instead?
+- Does a per-pulse path call a normaliser or validator on values a boundary
+  already accepted?
+- Does the change add a private hot-path field? Which product code reads it,
+  or is a test its only reader?
 - Is state inside the fold held in typed vectors, matrices, or segment tables
   with cursors, and do frames appear only at boundaries?
 - Are per-row writes by index into preallocated buffers, with no append?
