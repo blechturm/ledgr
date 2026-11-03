@@ -203,6 +203,28 @@ fill plus a fixed cost per call; without it the lean fold would be about 40
 to 70 us per pulse. The one FIFO kernel is therefore the largest cost of a
 lean core on trading workloads, and a target in its own right.
 
+`probe_lot.R` splits that kernel time by replaying the seam's fill blocks
+through variants of the same kernel, each required to end with an identical
+book (pinned, quiet host; microseconds per pulse block of fills):
+
+| part of the kernel | 30 instruments | 200 instruments |
+| --- | ---: | ---: |
+| input validation (`ledgr_lot_input()`) | 36 | 40 |
+| applied-row validation (`ledgr_lot_applied()`) | 23 | 31 |
+| dust-tolerance helper | 52 | 67 |
+| book copies (copy-on-modify, decision 7) | 0 | 0 |
+| remaining FIFO arithmetic | 116 | 254 |
+| total | 221 | 390 |
+
+The book holds 116 and 788 lot slots, so copy-on-modify costs nothing
+measurable and by-reference writes would not help. About half the kernel is
+checks (validation that a trusted boundary could do once, and a dust helper
+whose rule must stay but whose cost need not); the rest is generic FIFO
+arithmetic (a loop over lot steps with many `ifelse()` calls on small
+vectors), a fixed cost per call far above the floor's whole pulse. The
+target is a leaner implementation of the one kernel, not a second kernel and
+not by-reference writes.
+
 Together, the two seams cost about 280 us (30 instruments) and 500 us (200
 instruments) per pulse against about 3.7 and 6.9 ms in ledgr's fold, 12 to
 14 times less, with every compared output identical.
