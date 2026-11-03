@@ -3,8 +3,10 @@
 - Mode: Decision synthesis, RFC cycle stage 7; Codex; 2026-11-03.
 - Status: accepted by the maintainer on 2026-11-03 with the
   [acceptance amendment](#amendment-maintainer-2026-11-03-acceptance-conditions)
-  (four maintainability rules; Q5 decided as no cap), pending the
-  independent stage 8 final review. This document starts no implementation.
+  (four maintainability rules; Q5 decided as no cap). The independent stage
+  8 [final review](rfc_lean_fold_core_v0_2_3_final_review.md) returned
+  PASS_AFTER_PATCHES; its patch P1 is applied. This document starts no
+  implementation.
 - Baseline: `release/v0.2.3`, `df7ad1aeac0d0a939b19310b092e9282b6635ada`.
 - Read in order: [historical v1](rfc_lean_fold_core_v0_2_3_seed.md),
   [response](rfc_lean_fold_core_v0_2_3_response.md),
@@ -13,8 +15,14 @@
 - Citation aliases: `macro` = `inst/design/ledgr_v0_2_3_spec_packet/macro_plan.md`;
   `floor/` = `dev/spikes/r_floor/`; `fifo/` = `dev/spikes/lean_fifo/`.
   Other R paths are repository-relative. Source citations use this baseline.
+- Final-review revision (2026-11-03): added the acceptance amendment's
+  addressed supersession table and local notices; decisions unchanged.
 
 ## 1. Decision And Its Evidence
+
+**Amended 2026-11-03:** the [acceptance amendment](#amendment-maintainer-2026-11-03-acceptance-conditions)
+retains family-sized reviewed growth and replaces this section's aggregate-cap
+qualification with Q5's no-cap decision.
 
 **ADOPT bounded B with the constraints below:** grow a lean R core under
 `dev/lean_core/`, review it in family-sized workstreams against a pinned current
@@ -131,6 +139,10 @@ this synthesis creates no obligation to investigate it.
 
 ## 4. Memory And Family Order (D3; Q1)
 
+**Amended 2026-11-03:** [A1 and Q5](#amendment-maintainer-2026-11-03-acceptance-conditions)
+add the maintainer-reviewed skeleton/first-family prerequisite and replace
+the cap reference below. Memory and kernel prerequisites remain gates.
+
 **Q1: the first growth checkpoint has separate memory-preparation and complete
 kernel operation/refusal workstreams; next is P1 settlement/valuation/terminal
 barriers on declared sessions.** This next family exercises the non-fill operations
@@ -178,6 +190,10 @@ These are ordered evidence claims, not a charter for one giant multi-stage spike
 
 ## 5. Reference And Switch Proof (D4; Q2)
 
+**Amended 2026-11-03:** [A3](#amendment-maintainer-2026-11-03-acceptance-conditions)
+adds the rules ledger and its pre-switch disposition requirement; the
+reference-pin and correctness-change rules below remain binding.
+
 **Q2: pin the accepted WS7/WS8/WS15 close**, including its complete evidence gates,
 as the initial normative reference build for this replacement. Record its exact
 commit/toolchain and reuse its canonical records. Today's `df7ad1ae`, the original
@@ -220,6 +236,10 @@ No private-data access or memory results are claimed by the local probes here.
 
 ## 6. Tests, Plan Amendment And Promotion (D5; Q3)
 
+**Amended 2026-11-03:** [A4](#amendment-maintainer-2026-11-03-acceptance-conditions)
+adds subtraction review and same-workstream correction at every family close.
+The remap, isolation and atomic-promotion constraints below remain binding.
+
 **Q3: no blanket test-file exemption.** Only references to retired private
 helper names, internal call sites or representation-only shape detectors may be
 mechanically remapped. Every remap needs an explicit before/after block and claim,
@@ -260,6 +280,14 @@ termination, not create a hybrid fallback architecture.
 
 ## 7. Objectives, Cap And Escalation (D6; Q5)
 
+**Amended 2026-11-03:** [A2 and Q5](#amendment-maintainer-2026-11-03-acceptance-conditions)
+add per-family speed/line budgets and supersede the Q5 paragraphs below:
+there is no aggregate cap or current-core release alternative. Record "none"
+under macro WS14 as decided by the maintainer. The initial re-estimate is a
+progress report; memory/kernel failures and a third correction round still
+stop the affected work for maintainer disposition. The aspirations and
+baseline-derived measurement requirements below remain binding.
+
 Adopt 50/150 us quiet-pulse, 100 ms outside-loop and PMwR 1.5x narrow/parity-wide
 figures only as aspirations for defined, semantically matched workloads.
 Retain the durable/ephemeral approximately 2x aspiration and existing WS14
@@ -288,6 +316,10 @@ calendar estimate inferred from microsecond timings. Until the cap is recorded,
 this is a proposed route, not an operative uncapped implementation authorization.
 
 ## 8. Rejections And Remaining Routing
+
+**Amended 2026-11-03:** [Q5](#amendment-maintainer-2026-11-03-acceptance-conditions)
+is decided as no cap. References below to its pending escalation or a bounded
+aggregate plan are historical; the rejection reasons and other routing remain.
 
 | Rejected direction | Consequential reason |
 | --- | --- |
@@ -360,6 +392,17 @@ local({
 The maintainer accepted this synthesis on 2026-11-03, choosing "correct and
 fast" over an earlier release, with the conditions below. They bind with
 Sections 1 to 8; where they differ, they prevail.
+
+| Target artifact | Addressed section / group | Disposition | Replacement or retained authority |
+| --- | --- | --- | --- |
+| This synthesis | Section 1, aggregate-cap qualification | Amended | This amendment, Q5; family-sized reviewed growth retained |
+| This synthesis | Sections 2-3, binding boundaries and FIFO | Unchanged | Sections 2-3 |
+| This synthesis | Section 4, growth prerequisites and cap reference | Amended | This amendment, A1 and Q5; Section 4 memory/kernel gates retained |
+| This synthesis | Section 5, correctness-rule disposition | Amended | This amendment, A3, together with Section 5's pin/change rules |
+| This synthesis | Section 6, family-close review | Amended | This amendment, A4; Section 6 test/promotion rules retained |
+| This synthesis | Section 7, family budgets | Amended | This amendment, A2, together with Section 7's measurement requirements |
+| This synthesis | Section 7, Q5 cap, cap-stop and release alternatives | Superseded | This amendment, Q5; memory/kernel and correction-round escalations retained |
+| This synthesis | Section 8, Q5 pending routing and aggregate-bound framing | Amended | This amendment, Q5; other Section 8 rejections/routing retained |
 
 **A1. A deliberately written skeleton.** The lean core's skeleton and its
 first family are written by the maintainer, or under a tight maintainer

@@ -36,6 +36,10 @@ Revision 10 records the maintainer's 2026-11-03 acceptance of Cut 11:
 workstreams 23, 24 and 25 own macro WS7, WS8 and WS15 in that order, with
 LDG-3200 freezing the shared trace before any reader change. tickets.yml now
 solely governs their implementation sequence.
+Revision 11 records the maintainer's 2026-11-03 acceptance of the lean fold
+core synthesis with its amendment: a lean core grows under `dev/lean_core/`
+as WS16 after the WS7/WS8/WS15 cut, WS14a's product subtraction cut becomes
+the atomic switch cut, and there is no cap.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -182,8 +186,11 @@ Phase C   WS5 runtime ---> WS6 frame retirement --.
 Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
           WS10 economics implementation (as each RFC is accepted)
           WS3 full suite timing after WS4b and WS8
-          completed hot-path cuts -> WS14a holistic review -> product
-          subtraction cut -> test cut (fold-core rebuild) -> WS14 convergence
+          WS16 lean core under dev/lean_core/: skeleton, memory and kernel,
+          then families
+          completed hot-path cuts and WS16 -> WS14a holistic review -> switch
+          cut (product subtraction) -> test cut (fold-core rebuild) -> WS14
+          convergence
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
@@ -209,6 +216,9 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS4b, WS5, WS6, WS7/WS8/WS15 and execution-sensitive WS10 cuts -> WS14 | evidence prerequisite: optimize the surviving core, not an intermediate representation |
 | WS3 post-consolidation record -> WS14 | evidence prerequisite: the peer suite supplies the attribution and comparison |
 | WS6 and the WS7/WS8/WS15 cut -> WS14a review | evidence prerequisite: review the surviving core once, not intermediate shapes |
+| WS7/WS8/WS15 cut accepted -> WS16 | binding constraint: its close is the pinned reference build (lean-fold-core synthesis Q2) |
+| WS16 families accepted, memory and worker evidence (WS9b) -> WS14a switch cut | binding constraint: lean-fold-core synthesis Section 5 switch gate |
+| WS16 open -> execution-sensitive WS10 cuts | binding constraint: wait for the switch, or rebase and reprove the lean core after each accepted change |
 | WS14a product subtraction cut -> WS14 checkpoint | evidence prerequisite: measure the core after deletion, so the optimization budget is not spent on waste |
 | WS14a product subtraction cut -> test cut | binding constraint: each cut freezes the other side, so tests guard product deletions and the product guards test deletions |
 | R2 decision, WS11b and WS14 -> editorial pass -> rehearsal | evidence prerequisite: edit the documentation once, for the surviving API and core, before certification |
@@ -543,6 +553,9 @@ freezes behavior (synthesis Section 6).
   typed-accounting work must also prove that shared result reconstruction is
   chunk-bounded and report its peak RSS. Evidence:
   `dev/spikes/pulse-first-batch/` (batching helped; pulse-first did not).
+- **Lean core (2026-11-03).** WS9b measures parent and worker peak memory
+  on the WS16 lean core before the switch, including whether sweep workers
+  share prepared tiles (lean core skeleton brief, Section 6 item 4).
 
 ### WS10. Economics (C11, C12a, U2, X2): design and implementation
 
@@ -553,6 +566,9 @@ separate capital, NMOF as reference estimator). Each implementation follows
 its accepted RFC after WS4b, in its own cut (maintainer, 2026-10-28: in
 scope). A cut that changes helper granularity, sizing or results updates the
 affected taught examples and parity rows in the same cut.
+While WS16 is open, an execution-sensitive WS10 cut waits for the switch, or
+the lean core is rebased and reproved against it before WS16 continues
+(lean-fold-core synthesis Section 6).
 
 ### WS11. Surface and CRAN preparation (H4, H1, C10, C9, U3)
 
@@ -620,6 +636,48 @@ rebuilding; site deployed from the built artifact.
   bound after the first rehearsal measures them.
 - The playbook's release order is replaced once the RFC is accepted.
 
+### WS16. Lean fold core (accepted synthesis)
+
+The maintainer accepted the
+[lean fold core synthesis](../rfc/rfc_lean_fold_core_v0_2_3_synthesis.md)
+on 2026-11-03 with its acceptance amendment (A1 to A4, no cap); the
+independent [final review](../rfc/rfc_lean_fold_core_v0_2_3_final_review.md)
+passed after patch P1, which is applied. The current fold is replaced by a
+lean core with the same public behavior, grown and proven family by family
+against the current core and switched in one cut.
+
+- **Where.** `dev/lean_core/`, excluded from the package. Nothing in `R/`
+  imports, calls, dispatches to or falls back to it before the switch.
+- **When.** After the WS7/WS8/WS15 cut is accepted; its close is the pinned
+  reference build. Lean-core evidence before that close is provisional.
+- **Skeleton first (A1).** The skeleton and the first family are written by
+  the maintainer or under a tight maintainer brief with line-by-line
+  review, from the
+  [lean core skeleton brief](lean_core_skeleton_brief.md), before agents
+  extend them.
+- **Family order (synthesis Q1).** The first checkpoint is two workstreams:
+  memory-bounded preparation, and the complete lean FIFO kernel (openings,
+  dispositions, refusals). Failing either stops the work for maintainer
+  disposition. Then P1 settlement, valuation and terminals; P2 authoring,
+  state, sizing and risk; P3 restrictions, costs and affordability with
+  P4/P5 publication; schedules and RNG; carry windows; sweep, workers and
+  promotion.
+- **Every family close (A2, A4).** A microsecond budget set from the pinned
+  baseline and a line budget for the code it adds; per-function profile
+  samples and the line count are reported against both. A subtraction
+  review comes first. Exceeding a budget is a finding that is fixed or
+  explicitly accepted by the maintainer.
+- **Rules ledger (A3).** Every ledgr rule a parity failure surfaces goes
+  into the [rules ledger](lean_core_rules_ledger.md). Before the switch each
+  entry is written into `contracts.md` or changed deliberately with a
+  recorded oracle difference.
+- **Escalation.** A family that cannot reach parity after two correction
+  rounds goes to the maintainer, who may assign it option A: a
+  release-ready change in the current core, after which the lean core is
+  rebased. No hybrid or fallback path.
+- **Switch.** WS14a's product subtraction cut becomes the switch cut
+  (WS14a, "Lean core switch").
+
 ### WS14a. Holistic core and test-suite review, subtraction cuts
 
 Each cut so far was reviewed on its own diff, and each fix added code: a
@@ -672,6 +730,17 @@ execution-sensitive economics cuts are held to rule 17 instead.
   fill-heavy 500 x 1,260 cell runs about twice as fast as v0.2.2. The
   reviewers start from these buckets; the probes are scratch and are
   re-recorded by whichever cut relies on them.
+- **Lean core switch (maintainer, 2026-11-03).** With WS16 open, the two
+  holistic reviews read the integrated path including the lean core, before
+  the switch. The product subtraction cut becomes the atomic switch cut: it
+  moves the lean core into `R/`, deletes the current fold and FIFO kernel
+  with no shim, and removes the temporary AGENTS.md note, with the test
+  suite frozen. Its gate is the synthesis's Section 5: full public parity
+  against the pinned reference, the proof families, the witnesses while
+  both cores exist, parent and worker memory, and the private Sharadar
+  reference. Structural tests that only detect old helper shapes may be
+  remapped individually under synthesis Q3, each approved by the
+  maintainer. The test cut follows as below.
 - **Subtraction cut.** One cut implements the accepted deletions. It adds
   no behavior and changes no registered test, fixture or oracle. Its
   evidence is the removed line count, the rule-17 baseline after the cut
@@ -829,6 +898,14 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   the first probe counts quiet pulses on the peer workloads and what each
   costs. The R implementation stays the oracle, and a compiled stage is
   considered only for a stage that still dominates after these R options.
+- **Lean-core cap (maintainer, 2026-11-03): none.** v0.2.3 ships with the
+  WS16 lean core however long it takes ("correct and fast" over an earlier
+  release). The quality escalations stay: failing the memory or kernel
+  prerequisite, or a third correction round on any workstream, stops that
+  work for maintainer disposition. The re-estimate after the first memory
+  and kernel checkpoint is a progress report, not a gate. With the lean
+  core, the objectives above are aspirations measured on the switched core
+  (lean-fold-core synthesis Section 7).
 - **Amendment (maintainer, 2026-11-03, FIFO kernel and dependencies):** the
   R-floor and lean-FIFO spikes (`dev/spikes/r_floor/`,
   `dev/spikes/lean_fifo/`) show the one FIFO lot kernel is the largest cost
@@ -880,7 +957,9 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
 - WS14a is one review round and two cuts (product subtraction with tests
   frozen, then the fold-core test rebuild and remaining test subtraction
   with product frozen), after the WS7/WS8 cut and before the WS14
-  checkpoint.
+  checkpoint. With WS16, the product cut is the lean core switch cut.
+- WS16 runs as reviewed workstreams under `dev/lean_core/`, each cut on its
+  own; none changes `R/` until the switch cut.
 - WS14 is conditional on its checkpoint: one measurement/disposition cut,
   with at most one bounded product-optimization workstream before the final
   release rehearsal.

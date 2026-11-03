@@ -12,6 +12,8 @@ the execution contracts in `inst/design/contracts.md`.
   semantics: do not add a new execution-mode branch (`availability_active` or
   equivalent) to fold, run, sweep or walk-forward code. Dense mode is frozen
   until the execution-core consolidation removes it (macro plan, 2026-10-14).
+  A lean core grows under `dev/lean_core/` as a parity harness; nothing in
+  `R/` calls it; its switch cut deletes the current fold and this note.
 - Do not bypass snapshot creation, sealing, hash verification, or no-lookahead
   pulse execution.
 - Interactive tools must remain read-only against persistent ledgr tables.
@@ -72,8 +74,7 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - Spike protocol (binding for spikes and prototypes): `inst/design/spike_protocol.md`
-- Optimization coding style (maintainer manual; review criteria for hot-path,
-  ingest, seal, and reader code): `inst/design/manual/optimization_coding_style.qmd`
+- Optimization coding style: `inst/design/manual/optimization_coding_style.qmd`
 - ADRs: `inst/design/adr/`
 
 ## Current State
@@ -118,6 +119,7 @@ planning are evidence, not authorization for new work.
 ## Local Verification
 
 Current Windows R path used here; it does not change the `DESCRIPTION` floor.
+Prefer targeted checks while editing, then full tests and package check.
 
 ```powershell
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
@@ -125,8 +127,6 @@ Current Windows R path used here; it does not change the `DESCRIPTION` floor.
 & "C:\Program Files\R\R-4.6.1\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" tools/check-coverage.R
 ```
-
-Prefer targeted checks while editing, then full tests and package check.
 
 Local pkgdown builds use `dev/build-site.R`. It sets Quarto/Pandoc and the user
 library fallback, cleans stale compiled `src/` artifacts, then runs pkgdown.
