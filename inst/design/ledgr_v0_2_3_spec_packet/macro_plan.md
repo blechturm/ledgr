@@ -848,6 +848,16 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
     decision this section already requires; that same change retires the
     opt-in `spot_fifo.cpp`, so ledgr keeps one R oracle and at most one
     compiled FIFO.
+- **Measured history-read cost (2026-11-03), review input.** On a real
+  context from `ledgr_pulse_snapshot()`, `ledgr_history_matrix()` costs
+  about 240 us for a 5-session bar window over 10 instruments and 450 us
+  for the same feature window; a 252-session feature window over 500
+  instruments costs 12.6 ms, against 750 us for the same bar window
+  (`dev/spikes/data_layout/q7_history_read.R`). A strategy reading one
+  feature window per pulse pays more for that read than the whole lean
+  pulse budget. The lean core replaces this path (lean core skeleton brief,
+  history reads); until the switch, the feature-window growth is a known
+  cost of the current core.
 
 ## 4. Cut strategy
 
