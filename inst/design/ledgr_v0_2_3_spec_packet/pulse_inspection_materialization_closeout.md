@@ -38,8 +38,20 @@ to 726,690 bytes per wide call. Its checker and gutted allocation record pass.
 
 Registered LTB-0549 uses a real mapped pulse, literal long interleave and wide
 radix names, counted vector reads, a hard-failing mocked long helper during
-wide inspection and source-shape refusals. The eight focused feature-map,
-feature-inspection, pulse-context and strategy-context files pass.
+wide inspection, a shifted numeric-cutoff witness, a hard-failing fallback
+parser during production pulse preparation and source-shape refusals. The
+eight focused feature-map, feature-inspection, pulse-context and
+strategy-context files pass.
+
+The close-review mutation that replaced the numeric time conversion with an
+indirect call through `ledgr_pulse_context_fixture_cutoff()` now fails
+LTB-0549 at the mocked parser boundary. This closes the detector gap that a
+literal source-name search alone could not see.
+
+A no-build-vignettes source tarball completed `R CMD check --no-manual
+--no-build-vignettes`. Package tests, examples and executable vignette code
+passed; the only warnings were the two expected missing-`inst/doc` vignette
+warnings caused by intentionally omitting vignette rendering from the build.
 
 ## Optimization-shape walk
 
@@ -57,3 +69,11 @@ Snapshot, store, run, strategy, configuration and result identity are
 unchanged. There is no schema, dependency, compatibility or documentation
 surface change. The accepted no-callback-cost-promise remains unchanged; the
 clock is an implementation gate only.
+
+## Recorded pre-existing boundary
+
+Both base `04fac1bf` and this cut raise the same unclassed base error when
+`ledgr_pulse_wide()` receives a nonempty universe with zero features. Cut 10
+preserves error behavior, so this is not repaired here. A later inspection
+helper polish cut should decide and pin whether that call returns the one-row
+metadata/OHLCV surface or gives a classed refusal before changing it.

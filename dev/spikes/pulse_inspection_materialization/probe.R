@@ -5,6 +5,12 @@ if (length(args) != 3L) {
 root <- normalizePath(args[[1L]], winslash = "/")
 label <- args[[2L]]
 out <- args[[3L]]
+source_commit <- switch(
+  label,
+  base = "04fac1bf",
+  candidate = "9a3b3f2a",
+  stop("label must be base or candidate")
+)
 .libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
 pkgload::load_all(root, quiet = TRUE)
 
@@ -59,6 +65,11 @@ long <- ledgr_pulse_features(pulse)
 wide <- ledgr_pulse_wide(pulse)
 result <- data.frame(
   label = label,
+  source_commit = source_commit,
+  reproduction_command = paste(
+    "Rscript dev/spikes/pulse_inspection_materialization/probe.R",
+    sprintf("<package-root-at-%s> %s <out.csv>", source_commit, label)
+  ),
   helper = c("long", "wide"),
   bytes_per_call = c(
     allocated(function() ledgr_pulse_features(pulse)),

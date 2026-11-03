@@ -12,12 +12,18 @@ not change that carrier.
 cache or a change to alias, ordering, empty-axis or refusal semantics.
 
 The probe ran the public helpers on a real 600-instrument, three-feature pulse.
-The registered shared timing protocol compares `04fac1bf` with `68799f1b` in
-eight alternating fresh-process pairs. Its median candidate/base ratios are
-0.0797 for long inspection and 0.0617 for wide inspection. The separate
-Rprofmem record reports 168,482 to 167,618 bytes per long call and 1,341,018
-to 726,690 bytes per wide call. Output dimensions and numeric summaries are
-equal.
+The final registered shared timing record compares base `04fac1bf` with exact
+product candidate `9a3b3f2a` in eight alternating fresh-process pairs. Its
+median candidate/base ratios are 0.0808 for long inspection and 0.0629 for
+wide inspection. The separate Rprofmem record uses the same two source commits
+and reports 168,482 to 167,618 bytes per long call and 1,341,018 to 726,690
+bytes per wide call. Output dimensions and numeric summaries are equal.
+
+Reproduce each allocation arm with
+`Rscript dev/spikes/pulse_inspection_materialization/probe.R
+<package-root-at-commit> <base|candidate> <out.csv>`, combine the two outputs
+in base/candidate order as `record.csv`, then run `check.R record.csv` and
+`gut.R record.csv` from the same directory.
 
 Direct typed construction wins. `collapse::pivot()` was also tested and was
 fast, but remained slower and allocated more because the source is already in

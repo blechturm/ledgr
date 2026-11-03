@@ -372,16 +372,28 @@ testthat::test_that("[LTB-0549] pulse inspection manifests prepared primitives d
     z_ret = ledgr_ind_returns(2),
     a_sma = ledgr_ind_sma(3)
   )
-  pulse <- ledgr_pulse_snapshot(
-    snapshot,
-    universe = c("BBB", "AAA"),
-    ts_utc = ledgr_utc("2020-01-06"),
-    features = features,
-    cash = 1000
+  pulse <- testthat::with_mocked_bindings(
+    ledgr_pulse_snapshot(
+      snapshot,
+      universe = c("BBB", "AAA"),
+      ts_utc = ledgr_utc("2020-01-06"),
+      features = features,
+      cash = 1000
+    ),
+    ledgr_pulse_context_fixture_cutoff = function(...) {
+      stop("production pulse preparation must not parse its cutoff")
+    },
+    .package = "ledgr"
   )
   on.exit(close(pulse), add = TRUE)
 
-  long <- ledgr_pulse_features(pulse)
+  long <- testthat::with_mocked_bindings(
+    ledgr_pulse_features(pulse),
+    ledgr_pulse_context_fixture_cutoff = function(...) {
+      stop("inspection must use its prepared numeric cutoff")
+    },
+    .package = "ledgr"
+  )
   testthat::expect_identical(
     long$ts_utc,
     rep(ledgr_utc("2020-01-06"), 4L)
@@ -407,6 +419,25 @@ testthat::test_that("[LTB-0549] pulse inspection manifests prepared primitives d
   )
 
   original_lookup <- unclass(pulse)[[".pulse_lookup"]]
+  shifted_lookup <- list2env(
+    as.list.environment(original_lookup, all.names = TRUE),
+    parent = emptyenv()
+  )
+  shifted_lookup$cutoff_num <- original_lookup$cutoff_num + 86400
+  shifted_raw <- unclass(pulse)
+  shifted_raw[[".pulse_lookup"]] <- shifted_lookup
+  shifted <- structure(shifted_raw, class = class(pulse))
+  shifted_time <- structure(
+    shifted_lookup$cutoff_num,
+    class = c("POSIXct", "POSIXt"),
+    tzone = "UTC"
+  )
+  testthat::expect_identical(
+    ledgr_pulse_features(shifted)$ts_utc,
+    rep(shifted_time, 4L)
+  )
+  testthat::expect_identical(ledgr_pulse_wide(shifted)$ts_utc, shifted_time)
+
   counted_lookup <- list2env(
     as.list.environment(original_lookup, all.names = TRUE),
     parent = emptyenv()
@@ -427,6 +458,9 @@ testthat::test_that("[LTB-0549] pulse inspection manifests prepared primitives d
   wide <- testthat::with_mocked_bindings(
     ledgr_pulse_wide(counted),
     ledgr_pulse_features = function(...) stop("wide inspection must not build long rows"),
+    ledgr_pulse_context_fixture_cutoff = function(...) {
+      stop("inspection must use its prepared numeric cutoff")
+    },
     .package = "ledgr"
   )
   testthat::expect_identical(calls, 2L)
