@@ -1271,19 +1271,28 @@ cuts:
       writes); the JSON hot-path audit showing quadratic terminal recovery;
       and the 2026-11-03 10 x 7,200 quiet-run profile showing about 360-460 us
       per pulse in diagnostic staging/flushing and about 3 us in the resume
-      cursor. These numbers are attribution inputs, not acceptance clocks.
+      cursor. LDG-3200 reruns the existing A0, dense and real-data checkers on
+      the unchanged base and registers one shared protocol folder under
+      dev/bench/timing/protocols/; that discharges macro rule 11 for this cut.
+      These numbers are attribution inputs, not acceptance clocks.
     decisions: >-
       (1) The final physical accounting authority is one ordered wide typed
       ledger_events table with no meta_json, the synthesis field matrix, one
       grouped validator at append and read, canonical lots as position
       authority and cash_delta as cash authority. (2) WS23 may temporarily
       extract typed evidence from current JSON, but that extraction and every
-      accounting JSON encode/decode are deleted by WS24. (3) The raw public
+      accounting JSON encode/decode are deleted by WS24. Memory-sink auxiliaries
+      move with the WS24 producer rewrite because that is where their replacement
+      typed columns first exist. (3) The raw public
       ledger remains SELECT * and therefore gains the bound typed columns;
       every other public table, print and summary is exact except the decided
-      INCOMPLETE annualized_return correction. (4) The final store format is
-      schema 125 and includes the typed ledger, exact diagnostic codec,
-      summaries, association evidence and removal of strategy_state. Every
+      INCOMPLETE annualized_return correction. Its exact value is a pending
+      maintainer choice recorded by the cut review; no implementation starts
+      until acceptance binds it. Audit S2-014 stays out of scope. (4) The
+      final store format uses schema-version 125 plus a new diagnostic-codec
+      store-format rule binding. Together they cover the typed ledger, exact
+      diagnostic codec, summaries, association evidence and removal of
+      strategy_state. Every
       older, unmarked or mismatched store refuses; there is no migration,
       compatibility reader, alias or missing-marker fallback. (5) Full
       logical diagnostics remain the default public result. Physical omission
@@ -1293,23 +1302,33 @@ cuts:
       ledgr.interrupt are removed. Nonterminal attempts restart at pulse one;
       DONE/INCOMPLETE idempotence and completion-based publication recovery
       remain. (7) The compiled execution envelope is untouched. (8) Under
-      macro rule 16, clocks and memory are measured at the completed-cut
+      macro rule 16, clocks and memory are measured once at the completed-cut
       milestone and attributed, but correctness and exactness are the workstream
-      gates; a material miss is routed to WS14 rather than hidden or retiered.
+      gates; this supersedes typed-accounting synthesis Section 6 item 11's
+      no-regression clocks and macro WS8's named allocation gate. The one
+      exception is contracts.md's paired H1 history resource gate: it must pass
+      1.10x or receive an explicit maintainer exception. Any other material miss
+      is routed to WS14 rather than hidden or retiered.
     identity_and_release_impact: >-
       Snapshot content identity and run-configuration identity do not change.
-      Store format identity changes once to schema 125 and the final DDL/fingerprint;
+      Store format identity changes once through schema 125, the diagnostic-codec
+      rule binding and the final DDL/fingerprint;
       development uses fresh fixtures and the private lake is rebuilt only at
-      the later final format/data freeze. Release impact: product tests,
+      the later final format/data freeze. Cut evidence may use a disposable
+      candidate-format private rebuild after reproducing the registered snapshot
+      hash and fact digests; it is not the final lake rebuild. Release impact: product tests,
       schema/identity, result documentation, metrics vignette, NEWS, contracts,
       private aggregate evidence and performance/memory records. No package
       dependency or strategy/economic policy changes.
     sequencing: >-
-      Three serial workstreams and ten serial tickets. LDG-3200 freezes the
+      Three serial workstreams and nine operative serial tickets. LDG-3203 was
+      retired during cut review because changing DDL before producers would
+      leave a red tree; its ownership is merged into LDG-3204 and its ID is not
+      reused. LDG-3200 freezes the
       shared baseline before LDG-3201 changes a reader. Workstream 23
       (LDG-3200 -> LDG-3201 -> LDG-3202) leaves one typed accounting
       preparation/replay and exact result projections. Workstream 24
-      (LDG-3203 -> LDG-3204 -> LDG-3205) changes the store and every producer
+      (LDG-3204 -> LDG-3205) changes the store and every producer atomically
       to direct typed publication, deleting the temporary extraction and JSON.
       Workstream 25 (LDG-3206 -> LDG-3207 -> LDG-3208 -> LDG-3209) retires
       pulse resume, implements exact diagnostic encoding/decoding and closes
@@ -1336,7 +1355,7 @@ cuts:
       integrated records. Finding-bearing reviews write packet files. A design
       concern returns NEEDS_TYPE_2; a third correction round stops for maintainer
       disposition.
-    cut_review: "Pending independent cut review."
+    cut_review: "CHANGES_REQUIRED in cut_review_11.md (independent clean-context Claude CLI, Opus/high): R1-R12 require ticket ordering, fingerprint, evidence, census and documentation patches; all are applied in the draft. R13, the exact INCOMPLETE annualized_return value, remains pending maintainer decision before focused confirmation."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -1562,7 +1581,7 @@ workstreams:
     close_review: null
     depends_on_workstream: 23
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 24, after LDG-3205", reason: "One claim joins LDG-3203 through LDG-3205: schema 125 and its fingerprint pin the final typed ledger shape and refuse every older/unmarked/mismatched store; every producer and all three durable paths publish validated typed effects/evidence directly; the temporary extraction, meta_json and every accounting JSON encode/decode are absent; typed dedupe and exempt bookkeeping queries derive no accounting state; compiled dispatch is unchanged; documentation describes SELECT * accurately; and the seven-shape/cold-read review finds no row loop, repeated preparation or hidden compatibility path."}
+    review: {mode: "Type 1", point: "close of workstream 24, after LDG-3205", reason: "One claim joins LDG-3204 and LDG-3205: one atomic switch introduces schema 125 and the typed ledger while every producer and all three durable paths publish validated typed effects/evidence directly; every older/unmarked/mismatched store refuses; the temporary extraction, meta_json and every accounting JSON encode/decode are absent; typed dedupe and exempt bookkeeping queries derive no accounting state; compiled dispatch is unchanged; documentation describes SELECT * accurately; and the seven-shape/cold-read review finds no red intermediate tree, row loop, repeated preparation or hidden compatibility path."}
   - id: 25
     name: "Exact compact diagnostics and restart semantics (macro WS15)"
     cut: 11
@@ -1571,7 +1590,7 @@ workstreams:
     close_review: null
     depends_on_workstream: 24
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 25, after LDG-3209", reason: "One claim joins LDG-3206 through LDG-3209: pulse cursors/checkpoints/restore and ledgr.interrupt are gone; nonterminal attempts restart atomically from pulse one while terminal idempotence and completion publication recovery remain exact; the writer chooses a certified implicit form or explicit typed residual before row expansion; all full/filtered diagnostics, explanations, D8/valuation/corporate-action summaries, sequence positions and economics reconstruct exactly without strategy code or writes; scheduled skips and irreducible sizing remain; retention and association are non-circular; all seven proof families including the private reference pass; and the completed cut has one final schema-125 fingerprint and one rebuild obligation."}
+    review: {mode: "Type 1", point: "close of workstream 25, after LDG-3209", reason: "One claim joins LDG-3206 through LDG-3209: pulse cursors/checkpoints/restore and ledgr.interrupt are gone; nonterminal attempts restart atomically from pulse one while terminal idempotence and completion publication recovery remain exact; all diagnostic consumers first move behind an exact logical decoder while physical rows are still complete; only then may the writer select a certified implicit form or explicit typed residual before row expansion; full/filtered diagnostics, explanations, summaries, sequence positions and economics reconstruct exactly without strategy code or writes; scheduled skips and irreducible sizing remain; retention and association are non-circular/no-lookahead; all proof families and the H1 memory gate pass or have explicit disposition; and the completed cut has one final schema-125 plus codec-binding fingerprint."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -3560,13 +3579,17 @@ tickets:
       private Sharadar reference. Write a literal source-derived census of all
       accounting producers, writers, readers, tests and docs, and a field-by-field
       derivation/presence/order map assigning every non-derivable diagnostic item
-      to explicit residual evidence. Record the fill-heavy, quiet and sweep
-      before arms using the shared timing harness. This ticket changes no
+      to explicit residual evidence. Extend the literal census to every
+      run_diagnostics, strategy_state and run_completion reader/writer/deleter,
+      every cursor/resume/finalization branch, ledgr.interrupt/max_pulses use,
+      resume condition and resume document. Register one Cut 11 protocol folder
+      and record the fill-heavy, quiet and sweep before arms using the shared
+      timing harness. This ticket changes no
       product behavior and creates no runtime old-format reader.
     acceptance:
       - "the checked-in derivation map covers every logical row kind, field, type, missing value, timestamp, reason/detail byte, event association, order and diagnostic_seq; an intentionally omitted field makes its checker fail"
       - "the producer/writer/reader/test/doc census is a literal expected set reconciled to source, and adding or deleting a matched production seam makes the census checker fail"
-      - "frozen records cover all seven Section 6 proof families, full and filtered reads, point/history explanation, summaries, public economics and close/reopen; missing private evidence is recorded as an open gate, never a pass"
+      - "frozen records cover all seven Section 6 proof families, full and filtered reads, point/history explanation, summaries, public economics and close/reopen; the private aggregate record holds canonical per-table digests and row counts for full/filtered diagnostics, point/history explanations, D8/valuation summaries and economics, and missing private evidence is an open gate, never a pass"
       - "records name exact source/input identities, package/runtime versions, one-thread settings where applicable, raw repetitions, rows/bytes, latency and peak-memory boundaries; all current-tree checkers pass"
     evidence: []
   - id: "LDG-3201"
@@ -3588,9 +3611,10 @@ tickets:
       calls and the named fallbacks, without changing any producer or durable
       DDL yet.
     acceptance:
-      - "independently calculated fixtures for FILL, opening, corporate cash, scheduled disposition and lifetime disposition (including negative/zero opening basis, haircut and zero-price write-off) match the field matrix exactly"
+      - "independently calculated fixtures for FILL partial close and reversal, opening with negative/zero basis, corporate cash with/without a mark, scheduled disposition, lifetime last-mark/haircut and zero-price write-off match the field matrix exactly"
       - "mutating every required/null/formula vocabulary class and every named empty/negative/invalid-time rule refuses with the registered class; a zero-price scheduled disposition refuses while a lifetime write-off at zero passes"
-      - "one block and every registered split produce identical replay facts/final state; duplicate sequence or decreasing timestamp across a block boundary refuses when carried boundary state is removed"
+      - "one block and splits inside opening, between cash/disposition, before a position-dependent disposition, before duplicate sequence and before decreasing time produce identical facts/final state or the bound refusal; removing carried boundary state fails"
+      - "mutations where disposition qty/price disagrees with position/mark, realized_model_pnl exceeds dust tolerance or a disposition leaves a live lot all fail"
       - "memory-sink and DuckDB prepared carriers are identical before replay; source checks find no meta list, event attributes, one-row frame or per-event validation loop in the new boundary"
     evidence: []
   - id: "LDG-3202"
@@ -3614,40 +3638,24 @@ tickets:
       - "the LDG-3200 records are byte/exact equal after normalization except the explicitly recorded INCOMPLETE annualized_return correction; ledger shape has not changed yet"
       - "a source/runtime census proves every accounting-semantic durable/reconstruction reader calls the preparer/replay, every exempt query is named and derives no accounting state, and restoring any old reader/position walk fails"
       - "terminal recovery performs one replay over the event stream and grows linearly on the registered pulse/event ladder; removing the forward state or restoring pulse-by-pulse replay fails its detector"
-      - "inline_summary production use and exact parity with durable supported candidate shapes are detected separately; the seven-shape walk and attributed milestone record are complete"
-    evidence: []
-  - id: "LDG-3203"
-    title: "Introduce schema 125 and the typed ledger catalogue"
-    workstream: 24
-    status: "pending"
-    priority: "P0"
-    effort: "M"
-    dependencies: ["LDG-3202"]
-    scope: >-
-      Replace ledger_events DDL with the synthesis's one ordered wide typed
-      table: ten common columns, cash_delta, position_delta, source and the
-      bound evidence columns; remove meta_json; tighten instrument_id and fee;
-      retain vocabulary/sequence constraints and add the source vocabulary.
-      Bump ledgr_experiment_store_schema_version to 125, update the golden
-      catalogue/fingerprint and make every open/read/write/attach path refuse
-      older, unmarked or mismatched stores before use. This is the cut's only
-      version number; later WS25 DDL is included in the final fingerprint.
-    acceptance:
-      - "the literal golden catalogue and store-format bindings contain exactly the accepted DDL, constraints and schema 125; each column/type/nullability/constraint mutation is detected"
-      - "public and borrowed/cached/split-store entry points refuse schema 124, unmarked and fingerprint-mismatched stores with ledgr_store_rebuild_required before any read/write; no migration, legacy reader or fallback exists"
-      - "fresh stores created through every registered path carry schema 125 and the current fingerprint in the same transaction as schema creation; failure cannot leave a current marker on partial DDL"
-      - "the final-fingerprint ticket LDG-3209 is named as the owner of WS25 additions; no intermediate store is claimed as a release artifact"
+      - "inline_summary production use and exact parity with durable supported candidate shapes are detected separately; the seven-shape walk is complete"
     evidence: []
   - id: "LDG-3204"
-    title: "Publish typed accounting evidence directly"
+    title: "Switch atomically to schema 125 and direct typed publication"
     workstream: 24
     status: "pending"
     priority: "P0"
     effort: "L"
-    dependencies: ["LDG-3203"]
+    dependencies: ["LDG-3202"]
     scope: >-
-      Change every named producer and all three durable write paths to publish
-      the typed schema directly: fills, opening positions, corporate cash,
+      In one green commit, replace ledger_events DDL with the synthesis's one
+      ordered wide typed table (common, effect, source and evidence columns;
+      no meta_json; tightened nullability and bound vocabulary/sequence
+      constraints), bump the only schema-version number to 125, update the
+      golden catalogue/fingerprint and make every open/read/write/attach path
+      refuse older, unmarked or mismatched stores. In that same commit change
+      every named producer and all three durable write paths to publish the
+      typed schema directly: fills, opening positions, corporate cash,
       scheduled/lifetime dispositions, compiled handler storage and resume
       opening append. Validate typed blocks before append. Replace resume
       dedupe with source/source_fact_id primitives. Delete the WS23 temporary
@@ -3655,12 +3663,20 @@ tickets:
       auxiliary/attribute and handler basis/realized vector superseded by the
       carrier. Keep spot_fifo.cpp and compiled dispatch unchanged. Decide the
       durable append batching shape from the registered evidence without
-      changing transaction or recovery semantics.
+      changing transaction or recovery semantics; WS25 reuses that mechanism
+      rather than adding a second batching path. Migrate the A0 lib.R memory
+      attachment and the five synthesis-named test attachment points to typed
+      columns under Cut 1 decision (1), without changing their semantic oracles.
     acceptance:
+      - "the literal golden catalogue and store-format bindings contain exactly the accepted ledger DDL, constraints and schema 125; each column/type/nullability/constraint mutation is detected"
+      - "public and borrowed/cached/split-store entry points refuse schema 124, unmarked and fingerprint-mismatched stores with ledgr_store_rebuild_required before any read/write; no migration, legacy reader or fallback exists"
+      - "fresh stores from every registered path carry schema 125/current fingerprint in the schema transaction, partial creation cannot leave a current marker, and no commit exposes new DDL with old producers or vice versa"
       - "the literal producer/write-path census is exhausted and each path writes the exact per-kind typed fixture; omitting any producer or swapping a typed effect/evidence value fails"
       - "call-graph/source checks find no meta_json, canonical_json, nested JSON reader, temporary extraction, meta list, event attribute or superseded auxiliary on an accounting per-fill/per-event path"
       - "typed resume dedupe refuses a repeated fact within one posting source or across cash/disposition without scanning fill rows; mutating either rule fails"
-      - "compiled parity compares typed effects/fees and dispatch/envelope source is byte-identical; transaction, failure and recovery witnesses pass for the chosen append batching shape"
+      - "a wrong-effect producer block refuses before any durable write and removing the append-boundary validator fails; typed dedupe retains its walk-forward consumer after resume retirement"
+      - "compiled parity compares typed effects/fees and dispatch/envelope source is byte-identical; transaction, failure and recovery witnesses pass for the one chosen append batching shape"
+      - "the A0 attachment and test-accounting-core-consolidation, test-execution-spec, test-ledger-writer, test-output-handler-sinks and test-sweep migrate only their attachment points and reproduce frozen records except the explicitly recorded memory-event column shape"
     evidence: []
   - id: "LDG-3205"
     title: "Close typed accounting persistence and public ledger teaching"
@@ -3673,15 +3689,14 @@ tickets:
       Reconcile accounting-event/current-format contracts, ledgr_results(...,
       'ledger') help, the metrics vignette, reference/manual text and NEWS with
       the typed SELECT * ledger. Run every WS23/WS24 mutation, public parity,
-      source census, build/check and profile. Record attributed fill-heavy,
-      no-fill, sparse-rebalance and wide-all-fill run/read/write/allocation/peak
-      results against LDG-3200, including each macro-plan hotspot. Do not call
-      an intermediate WS24 fingerprint final or rebuild the private lake.
+      source census, build/check and bounded design measurement that settles
+      the one durable batching mechanism reused by WS25. Do not call an
+      intermediate WS24 fingerprint final or rebuild the private lake.
     acceptance:
       - "ledger documentation lists the typed shape and every other public result/summary/print remains exact against LDG-3200, with only the decided INCOMPLETE correction"
       - "contracts, help, vignette, NEWS and source contain no accounting meta_json or schema-124 current-format teaching; exact-name searches and documentation-contract blocks detect restoration"
       - "all WS23/WS24 registered mutations, focused profiles, full package tests, source build and R CMD check pass; the seven-shape and cold-read records find no unexplained stage or antipattern"
-      - "the milestone record reports each named hotspot, end-to-end and peak memory honestly under macro rule 16; a miss is attributed/routed and is not relabelled as a pass"
+      - "the batching decision cites the bounded measurement that settled it as rule-16 design evidence, not a workstream timing/memory gate"
     evidence: []
   - id: "LDG-3206"
     title: "Retire pulse-level resume and restart nonterminal attempts"
@@ -3699,58 +3714,74 @@ tickets:
       all prior derived attempt output and restarts at pulse one, posting
       openings once. Keep real interrupt rollback/FAILED behavior,
       DONE/INCOMPLETE idempotence and completion-based publication recovery
-      without strategy execution.
+      without strategy execution. max_pulses partial runs remain nonterminal
+      and restart from pulse one unless committed completion evidence permits
+      publication recovery; delete the finalization-only resume branch.
+      checkpoint_every remains the buffer-flush control and configuration
+      field, with no pulse-durability promise. Update resume retirement in
+      contracts, ledgr_run()/walk-forward/preflight/condition help, the
+      experiment-store/reproducibility/strategy-development vignettes and NEWS.
     acceptance:
       - "schema/source/exports/options contain no strategy_state table, cursor/checkpoint write/read, restore helper or ledgr.interrupt; restoring any one makes a registered census fail"
-      - "CREATED/RUNNING/FAILED nonterminal attempts restart at pulse one with one opening posting and no mixed old/new diagnostics, summaries, codec coverage or projections; invalid terminal evidence refuses before deletion"
+      - "CREATED/RUNNING/FAILED/max_pulses attempts restart at pulse one with one opening posting and no mixed old/new diagnostics, summaries, codec coverage or projections; invalid terminal evidence refuses before deletion, and restarted output equals the LDG-3200 uninterrupted record for the same configuration"
       - "DONE and INCOMPLETE reruns remain idempotent, publication recovery invokes no strategy, real interrupts roll back and remain FAILED, and walk-forward skips terminal test runs"
       - "seed-v2 behavior, caller RNG restoration and parallel restrictions remain exact; only resume-specific ambient-RNG and continuation rules disappear"
+      - "checkpoint_every remains in configuration and controls buffer flushing; a fixed experiment's configuration hash equals LDG-3200"
+      - "every removed/migrated registered resume test is listed with its retired-resume reason, no other fixture/oracle changes, and exact-name documentation/condition searches detect stale continuation teaching"
     evidence: []
   - id: "LDG-3207"
-    title: "Encode exact diagnostics before row expansion"
+    title: "Decode the logical trace and route every diagnostic consumer"
     workstream: 25
     status: "pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3206"]
     scope: >-
-      From canonical typed fold carriers, choose a certified exact implicit
-      form or explicit typed residual before diagnostic row expansion,
-      validation/JSON and publication. Implement the LDG-3200 derivation map,
-      exact sequence accounting, association evidence and compact D8/decision
-      summaries. Preserve every non-derivable reason/detail/timestamp/value,
-      sub-tolerance intent difference, risk/restriction/unfilled/final-pulse
-      evidence, exact sizing tuple and reconciliation arithmetic. Keep one
-      physical scheduled-skip disclosure row per skipped pulse plus valuation
-      evidence. Apply retention before expansion; no strategy replay exists.
+      Add one logical diagnostic decoder over the current all-explicit physical
+      rows, then move ledgr_results(..., 'diagnostics'), point/history explain,
+      D8, valuation/assumption, stopped outcomes, completion,
+      corporate-action, sweep/walk-forward/promotion, diagnostic sequence and
+      every other LDG-3200 census consumer onto it or exact summaries. Remove
+      the fills reader's dependency on execution diagnostics and derive unique
+      association from typed event sequence/opportunity calendars or explicit
+      association evidence. Decode filtered explanations from only their
+      dependency prefix/window. No physical row is omitted in this ticket.
+      Reads execute no user callback and write nothing. Update fold-evidence
+      and completion-evidence contracts for the decoder boundary.
     acceptance:
-      - "every LDG-3200 logical row/field decodes from a named implicit rule or explicit residual, and corrupt/missing coverage, residual or association evidence refuses rather than inferring hold"
-      - "raw/mixed/helper sizing includes the unchanged-integer placement witness, guard/rounding, zero/liquidation, unavailable and no-instruction distinctions with exact sequence positions"
-      - "clean trades may omit physical decision/execution rows only when all logical fields and unique event association reconstruct; scheduled skips always remain physical and never become holds"
-      - "writer-side counters prove retention/encoding occurs before general row/data-frame/JSON expansion; the seven-shape walk finds no instrument-by-pulse padding or growing accumulator"
+      - "full/filtered diagnostics and point/history explanations decode identically to LDG-3200 with every physical row still written, including columns/types/missings/numbers/bytes/timestamps/associations/order/diagnostic_seq after close/reopen"
+      - "D8, valuation, stopped outcomes, corporate-action, completion, sweep/walk-forward, promotion and next-sequence consumers exhaust the LDG-3200 census and never read physical rows as the logical trace"
+      - "fills and diagnostics have no circular call edge; unique association derives from typed events/calendars or explicit evidence, and clock/ambiguity mutations fail"
+      - "runtime/call-graph witnesses prove reads invoke no strategy/custom indicator/risk/cost code and write no table/projection/metadata/cache; filtered reads do not expand the full run first"
+      - "always-physical stop/error/scheduled-skip readers are classified and detected; sweep candidates retain existing evidence, numbering and metrics and gain no full-trace or D8 claim"
     evidence: []
   - id: "LDG-3208"
-    title: "Decode exact results and remove diagnostic circularity"
+    title: "Select exact implicit forms before row expansion"
     workstream: 25
     status: "pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3207"]
     scope: >-
-      Make ledgr_results(..., 'diagnostics'), point/history
-      ledgr_run_explain(), D8, valuation/assumption, completion,
-      corporate-action, fill-association, sweep/walk-forward completion and
-      promotion consumers read the current codec or exact summaries. Remove
-      the fills reader's dependency on execution diagnostics and derive unique
-      association from typed event sequence/opportunity calendars or explicit
-      residual evidence. Decode filtered explanations from only their required
-      dependency prefix/window. Reads execute no user strategy/indicator/risk/
-      cost code, write nothing and create no persistent cache.
+      From canonical typed fold carriers, select a certified exact implicit
+      form or explicit typed residual before diagnostic row expansion,
+      validation/JSON and publication. Implement the LDG-3200 derivation map,
+      exact sequence accounting, association evidence and compact D8/decision
+      summaries. Preserve every non-derivable reason/detail/timestamp/value,
+      sub-tolerance intent difference, risk/restriction/unfilled/final-pulse
+      evidence, exact sizing tuple and reconciliation arithmetic. Keep one
+      physical scheduled-skip row per skipped pulse plus valuation evidence.
+      Apply retention before expansion without exposing next-bar outcomes to
+      P2/risk. Add ledgr_diagnostic_codec_rule_version as a store-format binding
+      only, not run identity; no second batching path or strategy replay exists.
     acceptance:
-      - "full and filtered diagnostics/explanations are identical to LDG-3200 in columns, types, missing values, numbers, canonical bytes, timestamps, associations, row order and diagnostic_seq after close/reopen"
-      - "D8, valuation, corporate-action, completion, sweep/walk-forward and promotion consumers match the frozen summaries/economics and never treat sparse physical rows as the logical trace"
-      - "a call-graph/runtime witness proves no result read invokes strategy/custom callbacks or writes tables/projections/metadata; filtered reads do not expand the complete run first"
-      - "fills and diagnostics have no circular call edge; ambiguous association is stored explicitly and mutations to decision/execution/recording clocks fail"
+      - "every LDG-3200 row/field decodes from a named implicit rule or explicit residual; corrupt/missing coverage, residual or association evidence refuses rather than inferring hold"
+      - "raw/mixed/helper sizing includes the unchanged-integer placement witness, guard/rounding, zero/liquidation, unavailable and no-instruction distinctions with exact sequence positions"
+      - "clean trades omit physical decision/execution rows only when all logical fields and association reconstruct; scheduled skips remain physical and never become holds"
+      - "writer counters prove retention/encoding precedes general row/data-frame/JSON expansion; seven-shape review finds no instrument-by-pulse padding/growing accumulator; candidate retention remains unchanged"
+      - "a mutation exposing the next-bar outcome to P2 or risk before retention fails the registered no-lookahead witness, and fill timing remains identical to LDG-3200"
+      - "the codec rule binding changes the store fingerprint but not run identity; one shared durable batching path serves the surviving writes"
+      - "full/filtered trace, explanations, summaries and close/reopen remain exact after physical omission, and every registered corruption refuses"
     evidence: []
   - id: "LDG-3209"
     title: "Verify the final schema, proof families and Cut 11"
@@ -3761,18 +3792,24 @@ tickets:
     dependencies: ["LDG-3208"]
     scope: >-
       On one exact final candidate, regenerate the schema-125 golden catalogue
-      and fingerprint including all WS24/WS25 DDL, prove one final rebuild
+      and schema-plus-codec fingerprint including all WS24/WS25 DDL, prove one final rebuild
       boundary and rerun every Cut 11 oracle/mutation. Compare all seven proof
-      families against LDG-3200, including private Sharadar aggregates,
+      families against LDG-3200, including a disposable candidate-format
+      private rebuild that first reproduces the registered snapshot hash and
+      fact digests and then emits only the checked-in aggregates,
       interrupted publication, close/reopen and current-format refusal. Record
-      quiet/fill-heavy durable and sweep clocks, physical/logical rows and
-      bytes, full/filtered explanation latency, summary/decode cost and peak
-      memory with exact attribution. Reconcile contracts/docs/NEWS/RFC pipeline,
-      decisions bridge, macro plan and packet status only after independent
-      review and maintainer acceptance.
+      the single rule-16 milestone against LDG-3200 and v0.2.2: each four
+      fill-heavy hotspot; no-fill, sparse-rebalance and wide-all-fill cells;
+      10 x 7,200 quiet per-function samples; helper-sizing rows/bytes;
+      physical/logical rows/bytes; full/filtered explanation and summary/decode
+      cost; and peak memory. Run the paired H1 history resource protocol.
+      Reconcile only RFC pipeline, decisions bridge, macro plan and packet
+      status after independent review and maintainer acceptance.
     acceptance:
-      - "the final schema-125 catalogue/fingerprint is reproducible and every earlier store refuses; no second version, migration, old reader or missing-marker fallback exists"
+      - "the final schema-125 plus codec-binding catalogue/fingerprint is reproducible and every earlier store refuses; specifically a schema-125 store carrying the WS24-close fingerprint refuses with fingerprint_mismatch; no migration, old reader or fallback exists"
       - "all seven proof families have exact trace/explanation/summary/sequence/economic parity and corruption/refusal witnesses; absent private evidence keeps the gate open for explicit maintainer disposition"
       - "full tests, registered profiles, A0/frozen references, fixture lanes, source census, package build and R CMD check pass on the exact final candidate"
-      - "milestone evidence reports logical/physical rows and bytes plus all requested clocks/memory honestly; governance links remove pending obligations only after the implementation evidence exists"
+      - "the one milestone record reports both named bases, all four WS8 hotspots, all three shape cells, quiet per-function counts, helper-sizing and logical/physical rows/bytes plus requested read/decode/memory evidence honestly"
+      - "the paired H1 history resource protocol is at most 1.10x for elapsed and peak memory, or an explicit maintainer exception is recorded; this is the one binding memory gate retained by decision (8)"
+      - "the golden catalogue and binding list change at each DDL/rule change so every intermediate commit is green; governance links remove pending obligations only after implementation evidence and acceptance"
     evidence: []

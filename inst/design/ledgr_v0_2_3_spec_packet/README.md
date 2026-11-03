@@ -92,11 +92,14 @@ no product defect; its detector and evidence corrections landed at `daa30f06`,
 and a fresh focused review returned PASS.
 
 Cut 11 is the draft "Typed accounting and exact durable evidence"
-cut (workstreams 23-25, LDG-3200-LDG-3209). It freezes one canonical logical
+cut (workstreams 23-25, nine operative tickets across LDG-3200-LDG-3209;
+LDG-3203 retired during review). It freezes one canonical logical
 trace before changes, merges accounting readers behind one typed replay,
 publishes the schema-125 ledger without accounting JSON, then retires
 pulse-level resume and stores an exactly reconstructible diagnostic trace.
-Its independent cut review is pending. The cut remains unaccepted and
+Its independent [cut review](cut_review_11.md) returned `CHANGES_REQUIRED`;
+R1-R12 are applied, while the exact INCOMPLETE annualized-return value awaits
+the maintainer before focused confirmation. The cut remains unaccepted and
 authorizes no implementation until the maintainer accepts it.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows

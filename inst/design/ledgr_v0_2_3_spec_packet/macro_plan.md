@@ -32,10 +32,11 @@ Revision 9 records the maintainer's 2026-11-03 acceptance of the per-pulse
 durable records synthesis: pulse-level resume is retired, the logical
 decision trace stays exact with physical compression only by exact
 reconstruction, and the work joins the ordered WS7/WS8 cut as WS15.
-Revision 10 records the draft Cut 11 routing: workstreams 23, 24 and
-25 own macro WS7, WS8 and WS15 in that order, with LDG-3200 freezing the one
-shared trace before any reader changes. Cut acceptance remains a maintainer
-decision; this routing alone authorizes no implementation.
+**Draft-routing note (not an accepted plan revision):** Cut 11 proposes
+workstreams 23, 24 and 25 as the owners of macro WS7, WS8 and WS15 in that
+order, with LDG-3200 freezing the shared trace first. The record is preserved
+for review history; only maintainer acceptance makes this ticket routing
+operative.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
