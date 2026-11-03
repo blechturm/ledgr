@@ -410,7 +410,14 @@ required capital and costs) follows WS4b. H3 is settled in this cut.
 
 ### WS6. Context frame retirement (C2)
 
-Focused seed now; implementation after WS5's runtime, before J.
+The accepted
+[context-frame-retirement synthesis](../rfc/rfc_context_frame_retirement_v0_2_3_synthesis.md)
+binds the flat primitive context and the two explicit current-pulse inspection
+helpers. Accepted Cut 9 implements it after WS5 and before J: remove the four retained
+frame/bar surfaces without aliases, stop P2 constructing frames, preserve the
+test-only fixture adapter, and rebuild `ledgr_pulse_features()` and
+`ledgr_pulse_wide()` over the frozen primitive lookup. No bars helper, frame
+DSL, helper performance promise, hash, seal or durable context is added.
 
 ### WS7. One result reader and print (C8)
 

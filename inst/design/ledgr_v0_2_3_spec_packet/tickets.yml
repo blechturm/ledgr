@@ -1021,6 +1021,144 @@ cuts:
       optimization shapes and report timing. A Type 1 design concern returns
       NEEDS_TYPE_2. Finding-bearing reviews get packet files; a third correction
       round on one workstream stops for maintainer disposition.
+  - id: 9
+    name: "Context frame retirement (macro WS6)"
+    cut: "2026-11-03"
+    status: "accepted"
+    accepted: >-
+      2026-11-03 by the maintainer after independent clean-context Claude
+      review, focused PASS_AFTER_PATCHES and final focused PASS. The accepted
+      decisions include preserving target_restricted and routing richer
+      current-axis restriction reasons to availability-follow-ups.
+    opening: >-
+      Written by Codex after the maintainer accepted the context-frame-
+      retirement synthesis at 74015f96. Cut 7 has completed the flat-context
+      handoff. This cut implements macro WS6 before join J and before WS7/WS8.
+      Cut 8, workstream 19 and LDG-3191 through LDG-3193 were allocated on
+      branch claude/rule17-banlist, which the maintainer withdrew unmerged on
+      2026-11-02 (macro-plan rule 17 amendment, e3bb4cec). Those identifiers
+      stay retired and are not reused; this cut uses Cut 9, workstreams 20-21
+      and LDG-3194 through LDG-3197. Nothing here claims implementation before
+      maintainer acceptance; tickets.yml remains the sole sequencing
+      authority.
+    cut_review: >-
+      CHANGES_REQUIRED in cut_review_9.md (independent clean-context Claude
+      Opus Type 1 plus ticket-grain challenge): F1-F2 and F4-F9 require bounded
+      ownership, detector, expected-difference, migration and record patches;
+      F3 requires maintainer disposition of Cut 7's history-selection reason
+      handoff because the accepted WS6 RFC did not decide that vocabulary.
+      F3 was dispositioned by maintainer decision 2026-11-03 (decisions (5));
+      F1-F2 and F4-F9 were applied. Focused re-review in
+      cut_review_9_rereview_1.md returned PASS_AFTER_PATCHES with five bounded
+      ownership and record patches; those patches were applied. A final fresh
+      Claude Opus focused confirmation returned PASS with no further finding.
+    authority: >-
+      inst/design/rfc/rfc_context_frame_retirement_v0_2_3_synthesis.md,
+      accepted 2026-11-03, Sections 1 and 4-7; its Type 1 final review and
+      maintainer acceptance; macro_plan.md rules 2, 4-6, 10-16, amended rule
+      17 and WS6;
+      Cut 7 LDG-3190's flat-layout handoff; contracts.md rule groups
+      contract-context-pulse-data, contract-context-feature-resolution,
+      contract-context-prepared-views, contract-context-inspection,
+      contract-strategy-reproducibility and
+      contract-documentation-strategy-context, plus
+      contract-strategy-decision-axis for the accepted reason-vocabulary
+      routing; optimization_coding_style.qmd.
+      Accepted RFC choices are not reopened here.
+    measured_input: >-
+      The durable response probe at e3bb4cec reports the two old view builders
+      absent and the current inspection helpers present. At its 600-instrument,
+      three-feature shape it records about 423 microseconds for P2's frame
+      block versus 1.8 microseconds for primitive binding, about 487
+      microseconds for an on-demand bars frame, 171 microseconds for a flat
+      feature matrix, 60-223 milliseconds for ledgr_pulse_features() and about
+      850 milliseconds for ledgr_pulse_wide(). These clocks are descriptive,
+      not gates. A separate unpreserved session A/B observed roughly 5-7% run
+      wall savings; the synthesis correctly makes no whole-run speed claim.
+      Source inspection at 74015f96 finds P2 constructing bars_current,
+      features_current and features_wide_current, the synthesis's 35 direct
+      test-constructor calls plus current product definition/call sites, direct
+      maintained benchmark uses of ctx$features_wide, and stale contract/manual
+      references.
+    decisions: >-
+      Accepted synthesis semantics govern. Spec-cut calibration is resolved as
+      follows. (1) Workstream 20 owns one coherent runtime claim: one frozen
+      primitive lookup feeds flat reads and both inspection helpers, and P2
+      stores no current bar, long-feature or wide-feature frame. Workstream 20
+      also rewrites the tests its removal breaks; workstream 21 migrates
+      maintained non-test consumers, contracts and teaching and closes
+      integrated evidence. The peer recipes already read flat columns (Cut 7);
+      only the shared benchmark grid migrates, outside the field-removal
+      ticket. (2) Reuse the existing private .pulse_lookup rather than adding
+      a carrier. Its bars member becomes a named list of atomic aligned OHLCV
+      columns, never a data frame. Keep universe, availability, position_facts,
+      feature_lookup and feature_vector; add only projection_idx, cutoff_num
+      and readable_feature_names as the prepared ordinal, numeric cutoff and
+      once-prepared readable-name set. Existing positions, cache, counts and
+      alignment members remain unchanged. Private spelling has no public
+      guarantee. (3) Detect eager frames with
+      counted constructor witnesses on a real run; detect inspection shape
+      regressions by rejecting nested instrument-by-feature loops, rbind,
+      repeated growth, per-row timestamp formatting and repeated ID scans in
+      the two helpers and every package function they call; detect
+      readable-name rebuilding by counting preparation and
+      repeated reads; detect an explicit-map memo by forbidding persistent
+      assignment/cache state anywhere in that call closure and mutating in a
+      last-map reuse branch. Runtime value/parity tests remain the semantic
+      oracle. (4) The targeted refusal template is: "`ctx$<name>` is retired;
+      read flat named columns for current-pulse values, use
+      `ledgr_pulse_features()` or `ledgr_pulse_wide()` for current-pulse
+      inspection, and use `ledgr_history_frame()` for causal history." The
+      condition classes are API; exact prose is guidance and is not pinned.
+      (5) Maintainer decision 2026-11-03: Cut 9 preserves the current
+      `target_restricted` history-selection reason. Restoring more specific
+      current-axis restriction subtypes requires a focused availability/history
+      disclosure decision and is routed to the `availability-follow-ups` RFC
+      pipeline row; it is not inferred from context-frame retirement.
+    identity_and_release_impact: >-
+      Snapshot content identity, store format fingerprint, result schema and
+      execution/accounting semantics do not change. No compatibility alias,
+      migration or fallback is added. Rewritten strategy and benchmark-grid
+      source receives ordinary new configuration/source identity; targets,
+      fills and public results remain equal, with source identity the only
+      allowed peer-oracle difference. Public context surface removes four
+      experimental names and retains the two exported inspection helpers. The
+      cut changes R, tests, contracts, reference, internal manuals, maintained
+      benchmark source and NEWS; no dependency change is planned.
+    sequencing: >-
+      Two serial workstreams. Workstream 20 freezes the source/evidence matrix,
+      then atomically removes eager frames and rebases both inspection helpers
+      on the primitive lookup. Workstream 21 migrates maintained consumers,
+      contracts and teaching, then reruns integrated parity and package gates.
+      LDG-3194 -> LDG-3195 -> LDG-3196 -> LDG-3197 binds the order. The product
+      switch stays in one ticket so no commit leaves the helpers without their
+      data source. Cut 9 has no merge or runtime dependency on the withdrawn
+      Cut 8; the numbering gap is intentional.
+    out_of_scope: >-
+      A ledgr_pulse_bars() helper; generic frame/layout DSL; feature-matrix
+      successor; callback-grade performance contract for inspection helpers;
+      manifested-frame cache; context persistence or serialization; hashing,
+      sealing, database queries or provenance inside P2/helpers; history-panel
+      semantics; external-helper preflight; WS7/WS8 result/accounting work;
+      restoring current-axis restriction subtypes in
+      `ledgr_history_frame()`'s `admissibility_reason` (the Cut 7 handoff now
+      routed to `availability-follow-ups` for a focused decision);
+      deletion of the synthesis-named general accessors
+      (`ledgr_feature_accessor()`, `ledgr_feature_bundle_accessor()` and
+      `ledgr_features_wide()`) reserved for WS14a; re-recording the frozen peer
+      oracle; store, snapshot or result-format changes.
+    workstreams: [20, 21]
+    review_lifecycle: >-
+      A fresh clean-context Claude CLI cut review first challenges necessity,
+      ticket grain, calibration decisions and whether every synthesis duty has
+      one owner and a failing gate. Each workstream receives one independent
+      Type 1 close review. Workstream 20's review walks all seven optimization
+      shapes over P2 and both helper bodies, verifies the runtime mutations,
+      frozen ownership and descriptive clock. Workstream 21's review checks
+      the exact-name census, contracts, manuals, peer parity, fixture lane,
+      registered profiles, source build and R CMD check. A design concern
+      returns NEEDS_TYPE_2. Finding-bearing reviews get packet files; a third
+      correction round on one workstream stops for maintainer disposition.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -1194,6 +1332,24 @@ workstreams:
       A fresh final clean confirmation of 8e8935aa..34a06c6d returned PASS:
       R1-R3 and the handle-cleanup note are closed, both D8 mutations remain
       detecting, the correction is vectorized and no new defect was found.
+  - id: 20
+    name: "Primitive pulse context and inspection (macro WS6)"
+    cut: 9
+    status: "pending"
+    accepted: null
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 20, after LDG-3195", reason: "One runtime claim joins LDG-3194 and LDG-3195: P2 binds one frozen primitive lookup and constructs no frame; the four retired fields refuse without aliases; both inspection helpers manifest typed output from that lookup with one alias source, Daxis order and honest empty axes; prepared names are reused; retained contexts stay frozen; and every WS20-owned registered mutation fails."}
+    close_review: null
+  - id: 21
+    name: "Context-frame migration and WS6 closure (macro WS6)"
+    cut: 9
+    status: "pending"
+    accepted: null
+    depends_on_workstream: 20
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 21, after LDG-3197", reason: "One migration/closure claim joins LDG-3196 and LDG-3197: every maintained consumer, contract, reference and manual teaches only flat pulse columns, explicit current-pulse inspection and causal history; the exact-name census is clean; the peer strategy preserves targets, fills and public results without re-recording its oracle; all profiles, fixture parity, build and package check pass; and RFC/decision routing closes only after implementation evidence exists."}
+    close_review: null
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -2948,3 +3104,143 @@ tickets:
         rendered article executes 61 chunks; YAML parses and git diff --check
         is clean. Source build and R CMD check pass with zero errors and the
         same two expected no-build-vignettes warnings.
+  - id: "LDG-3194"
+    title: "Freeze the WS6 removal, parity and shape matrix"
+    workstream: 20
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Before product edits, record a source-derived inventory of every P2
+      frame constructor, private context/frame helper, public retired field,
+      inspection-helper entrance, snapshot-only metadata field, direct test
+      fixture, maintained benchmark consumer, exact contract/manual/reference
+      sentence and registered claim affected by the synthesis. Rerun and retain
+      the current response probe as descriptive evidence. Freeze one real
+      declared-session run with a held nonmember, missing bar and active map;
+      all three context entrances; mapped and unmapped order; empty Daxis;
+      retained-context freezing; peer targets/fills/public results; and the
+      existing fixture-lane families. Register the exact mutation matrix for
+      synthesis Section 7 and seed-v2 Section 8 without changing product code
+      or re-recording the frozen peer oracle.
+    acceptance:
+      - "the inventory is source-derived and covers every named synthesis B1-B11 seam, all 13 seed-v2 evidence items and synthesis Section 7 additions"
+      - "the baseline runner reproduces the real-run, three-entrance, empty-axis, retained-context, peer and fixture controls on 74015f96"
+      - "the baseline record registers as named expected differences, each with one owner, exactly: B1's four retired names leaving names()/str() and refusing on $/[[; B4's three deliberate changes (runtime/experiment aliasing, unmapped Daxis order, mapped-empty return); and B5's five removed snapshot names with the alias hash; condition controls compare class and feature-ID set, not prose; every other control must reproduce unchanged"
+      - "the mutation matrix names one failing registered witness for each eager frame constructor, helper-call-closure shape, readable-name rebuild, memo, retired-name, alias/order/empty, metadata/alias-hash, frozen-ownership live-buffer leak, print/strategy-error frame-or-hash, and fixture per-row timestamp-normalization regression"
+      - "the response probe remains descriptive and no timing or absent-function claim relies on it as the failure-sensitive oracle"
+    evidence: []
+  - id: "LDG-3195"
+    title: "Retire context frames and rebase pulse inspection"
+    workstream: 20
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3194"]
+    scope: >-
+      Implement synthesis B1-B10 atomically. P2 binds aligned OHLCV columns,
+      decision-axis state, feature lookup/vector, projection_idx, cutoff_num
+      and readable_feature_names into the existing private .pulse_lookup and
+      constructs/stores no bars, long-feature or wide-feature frame. Remove
+      bars, bar, feature_table and features_wide from names()/str(); reserve
+      and refuse them through the targeted classed path with no alias or
+      fallback. Rebase ledgr_pulse_features() and ledgr_pulse_wide() on the
+      frozen lookup, allocate typed columns once, use the prepared resolver as
+      the only alias source, follow Daxis/map/radix order and return typed empty
+      mapped output. Remove the five snapshot-only context metadata fields and
+      redundant alias hash. Keep the private constructor's named frame inputs
+      only as a once-normalizing test adapter; P2 never calls it. Prepare
+      readable names once, update print/error/preflight readers and preserve
+      in-process freezing. Delete directly retired frame machinery made dead by
+      this change: the ctx$bar row/index implementation, the bar-packet frame
+      builder, projection feature-wide/table/schema builders,
+      services$empty_feature_table and the .feature_table_current wrapper.
+      Leave the synthesis-named general accessors to WS14a. In this same
+      ticket, rewrite or delete every test/helper that reads a retired field,
+      .feature_table_current or removed constructor output, as inventoried by
+      LDG-3194, recording representation retirement as each change's reason.
+      Add no hashing, sealing, query or provenance work.
+    acceptance:
+      - "runtime and both inspection entrances omit and refuse all four retired names; they remain reserved against aliases and no bars/frame export appears"
+      - "a flat-only real callback constructs zero bar, long or wide frames: no member of the callback context or its .pulse_lookup is a data.frame, and restoring either P2 frame constructor fails its counted detector"
+      - "long/wide helper values, aliases, concrete IDs, Daxis/map/radix order and typed empty behavior match B3-B5; unknown IDs, collisions and ledgr_invalid_pulse_wide_names delimiter refusal retain their classes"
+      - "names() is identical across runtime, experiment-form and snapshot-form contexts for the same pulse; names() enumerates aliases plus unmapped IDs while $ still accepts every concrete ID; the missing-bar cell asserts is.na(ctx$close) and no test asserts a gap_type or is_synthetic value"
+      - "a retained context and helper result remain frozen after later pulses; snapshot inspection exposes none of the five removed metadata fields and computes no alias hash"
+      - "the private fixture adapter normalizes frame inputs once into primitives with one vectorized timestamp normalization, stores no frame and is absent from P2"
+      - "the readable-name enumeration and lookup sets are prepared once per run or sweep candidate, shown by preparation counts over a multi-pulse run and a two-candidate sweep; P2 and repeated names()/field reads only reuse them; restoring per-pulse or per-read assembly fails, and a last-map memo/cache mutation fails"
+      - "strategy errors report run, timestamp, instruments and the resolver function's available_message feature IDs, and print(ctx) reports Daxis size and prepared feature count, without reading a retired field or constructing a frame or hash"
+      - "the fast and review profiles pass on the LDG-3195 candidate; each rewritten/deleted test records representation retirement as its reason and keeps every applicable semantic fixture, condition and numeric oracle"
+      - "the seven optimization-shape walk over both helpers and every package callee finds no nested growing loop, rbind, repeated growth, per-row timestamp formatting, repeated ID scan, hash, seal, query or provenance work"
+      - "every LDG-3194-registered mutation owned by B1-B10 applies once and fails its named witness on the LDG-3195 candidate; LDG-3197 reruns them"
+      - "every test whose subject is ledgr_pulse_features() or ledgr_pulse_wide() builds its context from a real run or ledgr_pulse_snapshot(), never the private fixture adapter (B8), recording B8 as the setup-change reason"
+    evidence: []
+  - id: "LDG-3196"
+    title: "Migrate context-frame consumers and contracts"
+    workstream: 21
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3195"]
+    scope: >-
+      Implement synthesis B11 and Section 6. Migrate maintained non-test
+      consumers, including dev/bench/shared/run_benchmarks.R, to flat columns
+      or the two explicit inspection helpers; test migration completed in
+      LDG-3195. Do not change a semantic oracle to hide failure.
+      Amend the six named contract groups, deleting only the obsolete memo
+      sentences while retaining prepared-state guarantees. Update
+      roxygen and Rd for ledgr_pulse_features(), ledgr_pulse_wide() and
+      ledgr_strategy_context, plus the execution_fold_core, features and
+      observability_determinism manuals in source and rendered form. Teach flat
+      columns for decisions, helpers for current-pulse inspection, history for
+      windows, and one ordinary named-column feature-matrix idiom. Run the
+      executable exact-name census using field-boundary patterns for $, [[ and
+      names plus .feature_table_current and removed helper names, allowlisting
+      only targeted-refusal tests and forbidden-string teaching lists, so
+      bars_since_entry/exit are not false positives. Remove stale R comments
+      that teach ctx$bars. Add one NEWS entry naming the four removals, B4's
+      three inspection changes and B5's five removed snapshot names. Do not
+      re-record the frozen peer oracle. Amend the
+      `contract-strategy-decision-axis` History selection sentence so the
+      richer current-axis restriction-reason vocabulary points to the
+      `availability-follow-ups` focused decision rather than WS6.
+    acceptance:
+      - "R/, tests/, vignettes/, man/, inst/design/manual/ and the shared benchmark contain no supported exact use of a retired field or old frame helper"
+      - "all six contract groups match synthesis Section 6; the valid prepared-state and anti-shadowing guarantees remain"
+      - "contract-strategy-decision-axis History selection keeps target_restricted, names availability-follow-ups as the owner of richer current-axis restriction reasons, and no longer names WS6"
+      - "source and rendered teaching and both helper help pages state alias/order rules, cleanly distinguish flat pulse data, explicit current-pulse inspection and causal history, say only that is.na(ctx$close) means no observed bar (not why), and add no bars/helper successor"
+      - "the already-flat peer recipes still reproduce targets, fills and public results against the frozen oracle without re-recording; the migrated run_benchmarks.R strategies reproduce their pre-migration targets on its smoke preset"
+    evidence: []
+  - id: "LDG-3197"
+    title: "Verify and close context-frame retirement"
+    workstream: 21
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3196"]
+    scope: >-
+      On one named final candidate rerun the LDG-3194 matrix and every
+      registered mutation, all relevant context/feature/history/inspection
+      suites, the fixture lane, peer checker, test profiles, source build and
+      R CMD check. Record descriptive before/after P2 and helper clocks without
+      turning them into an acceptance gate or whole-run claim. Reconcile
+      contracts, help, manuals, NEWS, claims, RFC pipeline, decisions bridge
+      and packet status with implemented behavior. Remove the context-frame
+      decision bridge and discharge only the inspection-boundary portion of
+      the strategy-context-preflight row after all accepted duties are complete;
+      keep the external-helper and historical-panel owners open. Reconcile the
+      strategy-authoring-api row's WS6 handoff, the fold-phase row's trigger
+      and P2/context-helper limit, and the roadmap's scheduled-surface bullet.
+      Rerun dev/bench/v0_2_3_hot_path_scan/scan.R --write descriptively and
+      show P2 rows shrink without adding a new hot-path row. After-clocks come
+      from the response probe updated in place: retired reads become refusal
+      checks and E7 times the candidate's P2 binding and both helpers at the
+      same 600x3 shape; LDG-3194's retained 74015f96 output is the before
+      record.
+    acceptance:
+      - "every Section 7/Section 8 detector fails independently under its named mutation; registered expected differences have their sole named owner and every other baseline semantic/parity control passes"
+      - "focused suites, registered profiles, fixture lane, peer checker, source build and R CMD check pass on the exact candidate"
+      - "descriptive clocks report P2 and both helper shapes with complete provenance and make no contractual speed or whole-run claim"
+      - "contracts, reference, manuals, NEWS, claims, RFC pipeline, decisions bridge and packet status describe only implemented behavior and preserve every unrelated future obligation"
+      - "a final source census finds no compatibility alias, second carrier, manifested-frame cache, hash, seal, database query or provenance path added by the cut"
+    evidence: []

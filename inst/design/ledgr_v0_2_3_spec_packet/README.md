@@ -73,6 +73,14 @@ Authority: routing only. The roadmap binds release scope, accepted RFCs bind
 design, contracts bind shipped behavior, and `tickets.yml` is the sole
 implementation and sequencing authority for accepted cuts.
 
+Cut 9 is the accepted WS6 context-frame-retirement implementation cut
+(workstreams 20-21, LDG-3194-LDG-3197). It implements the accepted synthesis
+after Cut 7's flat-context handoff. The findings in `cut_review_9.md` and
+`cut_review_9_rereview_1.md` are patched, final focused confirmation returned
+PASS, and implementation begins with LDG-3194.
+Cut 8, workstream 19 and LDG-3191-LDG-3193 belong to the withdrawn, unmerged
+hot-path ban-list branch; their numbers are not reused.
+
 v0.2.3 is the cleanup, performance and research-authoring release that follows
 the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were
 accepted on 2026-10-28; later cuts are added to `tickets.yml` as the
