@@ -1,0 +1,5 @@
+"label","source_commit","reproduction_command","helper","bytes_per_call","rows","columns","numeric_sum"
+"base","04fac1bf","Rscript dev/spikes/pulse_inspection_materialization/probe.R <package-root-at-04fac1bf> base <out.csv>","long",168482.4,1800,5,161164.552996836
+"base","04fac1bf","Rscript dev/spikes/pulse_inspection_materialization/probe.R <package-root-at-04fac1bf> base <out.csv>","wide",1341018.4,1,4803,62665434.5529968
+"candidate","9a3b3f2a","Rscript dev/spikes/pulse_inspection_materialization/probe.R <package-root-at-9a3b3f2a> candidate <out.csv>","long",167618.4,1800,5,161164.552996836
+"candidate","9a3b3f2a","Rscript dev/spikes/pulse_inspection_materialization/probe.R <package-root-at-9a3b3f2a> candidate <out.csv>","wide",726690.4,1,4803,62665434.5529968

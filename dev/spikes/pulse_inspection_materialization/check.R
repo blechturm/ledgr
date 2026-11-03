@@ -1,0 +1,8 @@
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1L) stop("usage: Rscript check.R <record.csv>")
+here <- dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]))
+source(file.path(here, "lib.R"))
+record <- utils::read.csv(args[[1L]], stringsAsFactors = FALSE)
+problems <- cut10_allocation_problems(record)
+if (length(problems)) stop(paste(problems, collapse = "; "))
+cat("PULSE_INSPECTION_ALLOCATION_CHECK_OK\n")
