@@ -35,11 +35,16 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
   )
   captured <- new.env(parent = emptyenv())
   target_iso <- ledgr_iso_utc(as.POSIXct(dates[[3L]], tz = "UTC"))
+  unread_iso <- ledgr_iso_utc(as.POSIXct(dates[[2L]], tz = "UTC"))
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, target_iso)) {
       captured$ctx <- ctx
       captured$long <- ledgr_pulse_features(ctx)
       captured$wide <- ledgr_pulse_wide(ctx)
+    } else if (identical(ctx$ts_utc, unread_iso)) {
+      # Keep one context whose close is not read until after the run. This is
+      # the independent oracle for a live-buffer leak hidden by the cache.
+      captured$unread_ctx <- ctx
     }
     ctx$hold()
   }
@@ -51,8 +56,18 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
     opening = ledgr_opening(cash = 1000),
     cost_model = ledgr_cost_zero()
   )
-  run <- ledgr_run(experiment, run_id = "ws20-frame-retirement")
+  name_preparations <- 0L
+  original_name_state <- ledgr:::ledgr_projection_feature_name_state
+  run <- testthat::with_mocked_bindings(
+    ledgr_run(experiment, run_id = "ws20-frame-retirement"),
+    ledgr_projection_feature_name_state = function(...) {
+      name_preparations <<- name_preparations + 1L
+      original_name_state(...)
+    },
+    .package = "ledgr"
+  )
   on.exit(close(run), add = TRUE)
+  testthat::expect_identical(name_preparations, 1L)
   ctx <- captured$ctx
   testthat::expect_s3_class(ctx, "ledgr_pulse_context")
   testthat::expect_false(ws20_context_has_data_frame(ctx))
@@ -107,6 +122,11 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
     bars$instrument_id == id & bars$ts_utc == target_ts
   ], numeric(1)), ids)
   testthat::expect_identical(ctx$close, expected_close)
+  unread_ts <- as.POSIXct(dates[[2L]], tz = "UTC")
+  unread_close <- stats::setNames(vapply(ids, function(id) bars$close[
+    bars$instrument_id == id & bars$ts_utc == unread_ts
+  ], numeric(1)), ids)
+  testthat::expect_identical(captured$unread_ctx$close, unread_close)
   saved_long <- captured$long
   saved_wide <- captured$wide
   testthat::expect_identical(ctx$close, expected_close)
@@ -205,8 +225,17 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
     deparse(ledgr_pulse_wide),
     deparse(ledgr:::ledgr_pulse_inspection_feature_map)
   ), collapse = "\n")
-  for (forbidden in c("rbind(", "canonical_json", "sha256", "dbGet", "dbExecute", "seal")) {
+  for (forbidden in c("rbind(", "dbGet", "dbExecute", "seal")) {
     testthat::expect_false(grepl(forbidden, helper_source, fixed = TRUE), info = forbidden)
+  }
+  identity_source <- paste(c(
+    helper_source,
+    deparse(print.ledgr_pulse_context),
+    deparse(ledgr_pulse_snapshot),
+    deparse(ledgr:::ledgr_strategy_error_features)
+  ), collapse = "\n")
+  for (forbidden in c("canonical_json", "sha256")) {
+    testthat::expect_false(grepl(forbidden, identity_source, fixed = TRUE), info = forbidden)
   }
   testthat::expect_false(grepl("feature_table", paste(deparse(print.ledgr_pulse_context), collapse = "\n"), fixed = TRUE))
   testthat::expect_false(grepl("feature_table", paste(deparse(ledgr:::ledgr_strategy_error_features), collapse = "\n"), fixed = TRUE))
@@ -216,6 +245,15 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
   ), collapse = "\n")
   for (forbidden in c("unique(", "setdiff(", "$aliases", "$feature_ids", "$alias_map")) {
     testthat::expect_false(grepl(forbidden, lookup_source, fixed = TRUE), info = forbidden)
+  }
+  read_source <- paste(c(
+    deparse(`$.ledgr_pulse_context`),
+    deparse(names.ledgr_pulse_context),
+    deparse(ledgr:::ledgr_pulse_context_available_fields),
+    deparse(ledgr:::ledgr_pulse_context_lazy_field)
+  ), collapse = "\n")
+  for (forbidden in c("$aliases", "$feature_ids", "$alias_map", "name_lookup")) {
+    testthat::expect_false(grepl(forbidden, read_source, fixed = TRUE), info = forbidden)
   }
 
   fixture_ctx <- ledgr:::ledgr_pulse_context(
@@ -317,14 +355,12 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
     b = list(strategy = list(tag = 2L))
   )
   preparations <- 0L
-  original_increment <- ledgr:::ledgr_context_preparation_increment
+  original_name_state <- ledgr:::ledgr_projection_feature_name_state
   testthat::with_mocked_bindings(
     ledgr_sweep(sweep_experiment, grid, seed = 1L, workers = 1L),
-    ledgr_context_preparation_increment = function(counts, name) {
-      if (identical(name, "feature_resolver")) {
-        preparations <<- preparations + 1L
-      }
-      original_increment(counts, name)
+    ledgr_projection_feature_name_state = function(...) {
+      preparations <<- preparations + 1L
+      original_name_state(...)
     },
     .package = "ledgr"
   )
