@@ -32,6 +32,10 @@ Revision 9 records the maintainer's 2026-11-03 acceptance of the per-pulse
 durable records synthesis: pulse-level resume is retired, the logical
 decision trace stays exact with physical compression only by exact
 reconstruction, and the work joins the ordered WS7/WS8 cut as WS15.
+Revision 10 records the draft Cut 11 routing: workstreams 23, 24 and
+25 own macro WS7, WS8 and WS15 in that order, with LDG-3200 freezing the one
+shared trace before any reader changes. Cut acceptance remains a maintainer
+decision; this routing alone authorizes no implementation.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -796,6 +800,8 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   adds WS15 as a third reviewed workstream of that cut, sharing its store
   version; the cut writer may move WS15 into an adjacent prerequisite cut.
   Low-stakes choices are batched for the maintainer at acceptance.
+- Draft Cut 11 is the named WS7 -> WS8 -> WS15 packet: workstreams 23-25 and
+  LDG-3200-LDG-3209. It remains non-operative until maintainer acceptance.
 - WS4a and WS4b are separately reviewed workstreams. Their focused design
   decides whether they use adjacent cuts or one ordered packet; either way,
   WS4b cannot begin or inherit evidence until WS4a is accepted.
