@@ -66,18 +66,13 @@ ledgr_pulse_context_reserved_fields <- function() {
 ledgr_pulse_context_feature_columns <- function(lookup) {
   prepared <- lookup$feature_lookup
   if (!is.list(prepared)) return(character())
-  aliases <- as.character(prepared$name_lookup$aliases %||% character())
-  ids <- as.character(prepared$name_lookup$feature_ids %||% character())
-  mapped <- unname(prepared$name_lookup$alias_map %||% character())
-  c(aliases, setdiff(ids, mapped))
+  as.character(prepared$readable_columns %||% character())
 }
 
-ledgr_pulse_context_feature_reads <- function(lookup) {
+ledgr_pulse_context_feature_readable <- function(lookup, name) {
   prepared <- lookup$feature_lookup
-  if (!is.list(prepared)) return(character())
-  aliases <- as.character(prepared$name_lookup$aliases %||% character())
-  ids <- as.character(prepared$name_lookup$feature_ids %||% character())
-  unique(c(aliases, ids))
+  is.list(prepared) && is.environment(prepared$readable_env) &&
+    exists(name, envir = prepared$readable_env, inherits = FALSE)
 }
 
 ledgr_pulse_context_available_fields <- function(x) {
@@ -155,7 +150,7 @@ ledgr_pulse_context_lazy_field <- function(x, name) {
       }
     }
     value <- ledgr_pulse_context_named(value, ids)
-  } else if (name %in% ledgr_pulse_context_feature_reads(lookup)) {
+  } else if (ledgr_pulse_context_feature_readable(lookup, name)) {
     value <- lookup$feature_vector(name)
     value <- ledgr_pulse_context_named(as.numeric(value), ids)
   } else {
@@ -178,8 +173,8 @@ ledgr_pulse_context_lazy_field <- function(x, name) {
     )
   }
   if (name %in% names(raw) && !startsWith(name, ".")) return(raw[[name]])
-  if (name %in% c(ledgr_pulse_context_asset_fields(),
-      ledgr_pulse_context_feature_reads(raw[[".pulse_lookup"]]))) {
+  if (name %in% ledgr_pulse_context_asset_fields() ||
+      ledgr_pulse_context_feature_readable(raw[[".pulse_lookup"]], name)) {
     return(ledgr_pulse_context_lazy_field(x, name))
   }
   if (startsWith(name, ".") && name %in% names(raw)) return(raw[[name]])
@@ -389,6 +384,10 @@ ledgr_attach_feature_helpers <- function(ctx,
     )
     ctx$.pulse_lookup$feature_lookup <- prepared_feature_lookup
     ctx$.pulse_lookup$feature_vector <- feature_vector
+    ctx$.pulse_lookup$projection_idx <- as.integer(pulse_idx)
+    ctx$.pulse_lookup$cutoff_num <- as.numeric(ledgr_utc(ctx$ts_utc))
+    ctx$.pulse_lookup$readable_feature_names <-
+      prepared_feature_lookup$readable_names
     if (is.environment(ctx)) {
       ctx$.feature_vector <- feature_vector
       return(invisible(ctx))
@@ -400,6 +399,36 @@ ledgr_attach_feature_helpers <- function(ctx,
 
   if (is.null(features)) return(ctx)
 
+  foreign <- setdiff(
+    unique(as.character(features$instrument_id)),
+    as.character(universe)
+  )
+  foreign <- foreign[!is.na(foreign) & nzchar(foreign)]
+  if (length(foreign) > 0L) {
+    rlang::abort(
+      sprintf("Unknown instrument_id '%s'. Available ctx$universe: %s.",
+        foreign[[1L]], ledgr_pulse_context_universe_message(universe)),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  if (nrow(features) > 0L && !"ts_utc" %in% names(features)) {
+    rlang::abort(
+      "Nonempty pulse-context fixture features must include `ts_utc`.",
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  if (nrow(features) > 0L) {
+    feature_ts <- ledgr_utc(features$ts_utc)
+    context_ts <- ledgr_utc(ctx$ts_utc)
+    if (any(is.na(feature_ts)) ||
+        any(as.numeric(feature_ts) != as.numeric(context_ts))) {
+      rlang::abort(
+        "Every feature row must match the pulse context `ts_utc`.",
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
+  }
+
   prepared_feature_lookup <- ledgr_feature_name_lookup_state(
     ledgr_feature_names(features),
     active_alias_map = active_alias_map
@@ -409,7 +438,12 @@ ledgr_attach_feature_helpers <- function(ctx,
     universe,
     prepared = prepared_feature_lookup
   )
-  ctx$.pulse_lookup$feature_lookup <- list(name_lookup = prepared_feature_lookup)
+  ctx$.pulse_lookup$feature_lookup <- list(
+    name_lookup = prepared_feature_lookup,
+    readable_names = prepared_feature_lookup$readable_names,
+    readable_columns = prepared_feature_lookup$readable_columns,
+    readable_env = prepared_feature_lookup$readable_env
+  )
   ctx$.pulse_lookup$feature_vector <- feature_vector
 
   if (is.environment(ctx)) {
@@ -453,20 +487,6 @@ ledgr_update_pulse_context_helpers <- function(ctx,
       feature_name_state = feature_name_state,
       feature_lookup_state = feature_lookup_state
     )
-  } else if (!is.null(active_alias_map)) {
-    lookup <- unclass(ctx)[[".pulse_lookup"]]
-    existing <- lookup$feature_lookup$name_lookup$feature_ids %||% character()
-    name_lookup <- ledgr_feature_name_lookup_state(
-      existing,
-      active_alias_map = active_alias_map
-    )
-    concrete_vector <- lookup$feature_vector
-    lookup$feature_lookup$name_lookup <- name_lookup
-    lookup$feature_vector <- function(feature_name, default = NA_real_) {
-      feature_id <- ledgr_resolve_feature_name(feature_name, name_lookup)
-      concrete_vector(feature_id, default = default)
-    }
-    ctx$.feature_vector <- lookup$feature_vector
   }
   ledgr_refresh_pulse_context_lookup(
     ctx,
@@ -484,18 +504,25 @@ ledgr_update_pulse_context_helpers <- function(ctx,
   )
 }
 
+ledgr_filtered_feature_vector <- function(feature_vector, context_index) {
+  force(feature_vector)
+  force(context_index)
+  function(feature_name, default = NA_real_) {
+    feature_vector(feature_name, default = default)[context_index]
+  }
+}
+
 ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe,
                                                 context_pos = NULL) {
   universe <- as.character(universe)
   private_universe <- as.character(private_universe)
-  raw <- unclass(ctx)
-  feature_vector <- raw$.feature_vector
-  force(feature_vector)
+  feature_vector <- unclass(ctx)[[".feature_vector"]]
   context_index <- context_pos %||% match(universe, private_universe)
   ctx$universe <- universe
-  ctx$.feature_vector <- function(feature_name, default = NA_real_) {
-    feature_vector(feature_name, default = default)[context_index]
-  }
+  ctx$.feature_vector <- ledgr_filtered_feature_vector(
+    feature_vector,
+    context_index
+  )
   ctx$.pulse_lookup$feature_vector <- ctx$.feature_vector
   ctx
 }

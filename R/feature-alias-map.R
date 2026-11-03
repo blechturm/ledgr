@@ -230,12 +230,23 @@ ledgr_feature_name_lookup_state <- function(feature_ids,
     hash = TRUE,
     parent = emptyenv()
   )
+  aliases <- names(alias_map) %||% character()
+  readable_names <- unique(c(aliases, feature_ids))
+  readable_columns <- c(aliases, setdiff(feature_ids, unname(alias_map)))
+  readable_env <- list2env(
+    stats::setNames(as.list(rep(TRUE, length(readable_names))), readable_names),
+    hash = TRUE,
+    parent = emptyenv()
+  )
   list(
     alias_map = alias_map,
-    aliases = names(alias_map) %||% character(),
+    aliases = aliases,
     feature_ids = feature_ids,
     alias_env = alias_env,
-    feature_env = feature_env
+    feature_env = feature_env,
+    readable_names = readable_names,
+    readable_columns = readable_columns,
+    readable_env = readable_env
   )
 }
 

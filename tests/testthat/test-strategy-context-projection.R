@@ -89,6 +89,8 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
   second_bars <- bars
   second_bars$ts_utc <- pulses[[2L]]
   second <- ctx
+  # The retired feature frame no longer supplies the fixture pulse clock;
+  # advance the context scalar before the primitive helper lookup is refreshed.
   second$ts_utc <- ledgr_iso_utc(pulses[[2L]])
   second <- ledgr:::ledgr_update_pulse_context_helpers(
     second,

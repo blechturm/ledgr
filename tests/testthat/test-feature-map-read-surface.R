@@ -75,10 +75,11 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
     fixed = TRUE
   )
 
+  # WS20: this private empty-axis resolver fixture now supplies only the
+  # scalar clock and primitives; the retired frame slots are not setup data.
   empty_ctx <- list(
+    ts_utc = ledgr_iso_utc(as.POSIXct("2020-01-02", tz = "UTC")),
     universe = c("AAA", "BBB"),
-    feature_table = data.frame(),
-    features_wide = data.frame(),
     .positions = c(AAA = 0, BBB = 0),
     .pulse_lookup = new.env(parent = emptyenv())
   )

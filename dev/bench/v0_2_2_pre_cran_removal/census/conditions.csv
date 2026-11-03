@@ -790,10 +790,10 @@
 "R/feature-alias-map.R",181,"abort_class","ledgr_no_active_alias_map",TRUE,"c(""ledgr_no_active_alias_map"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
 "R/feature-alias-map.R",205,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-alias-map.R",205,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/feature-alias-map.R",247,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/feature-alias-map.R",261,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",TRUE,TRUE,FALSE
-"R/feature-alias-map.R",282,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
-"R/feature-alias-map.R",282,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/feature-alias-map.R",258,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/feature-alias-map.R",272,"abort_class","ledgr_unknown_feature_id",TRUE,"""ledgr_unknown_feature_id""",TRUE,TRUE,FALSE
+"R/feature-alias-map.R",293,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
+"R/feature-alias-map.R",293,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-alias-map.R",62,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-alias-map.R",62,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/feature-alias-map.R",84,"abort_class","ledgr_invalid_alias_map",TRUE,"c(""ledgr_invalid_alias_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
@@ -1437,53 +1437,56 @@
 "R/public-api.R",32,"stop","",FALSE,"stop(last_err)",FALSE,FALSE,FALSE
 "R/public-api.R",75,"abort_class","ledgr_checkpoint_failed",TRUE,"""ledgr_checkpoint_failed""",TRUE,TRUE,FALSE
 "R/public-api.R",98,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/pulse-context.R",108,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",162,"abort_class","ledgr_invalid_pulse_context",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
-"R/pulse-context.R",162,"abort_class","ledgr_unknown_context_field",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
-"R/pulse-context.R",175,"abort_class","ledgr_invalid_pulse_context",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
-"R/pulse-context.R",175,"abort_class","ledgr_unknown_context_field",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
-"R/pulse-context.R",186,"abort_class","ledgr_invalid_pulse_context",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
-"R/pulse-context.R",186,"abort_class","ledgr_unknown_context_field",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
-"R/pulse-context.R",195,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/pulse-context.R",240,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/pulse-context.R",275,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/pulse-context.R",278,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",297,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",TRUE,TRUE,FALSE
-"R/pulse-context.R",548,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",567,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",576,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",663,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",678,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",681,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",713,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",724,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",735,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",103,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",157,"abort_class","ledgr_invalid_pulse_context",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
+"R/pulse-context.R",157,"abort_class","ledgr_unknown_context_field",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
+"R/pulse-context.R",170,"abort_class","ledgr_invalid_pulse_context",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
+"R/pulse-context.R",170,"abort_class","ledgr_unknown_context_field",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
+"R/pulse-context.R",181,"abort_class","ledgr_invalid_pulse_context",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
+"R/pulse-context.R",181,"abort_class","ledgr_unknown_context_field",TRUE,"c(""ledgr_unknown_context_field"", ""ledgr_invalid_pulse_context"")",TRUE,TRUE,FALSE
+"R/pulse-context.R",190,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/pulse-context.R",235,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/pulse-context.R",270,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/pulse-context.R",273,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",292,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",TRUE,TRUE,FALSE
+"R/pulse-context.R",408,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",415,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",425,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",575,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",594,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",603,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",690,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",705,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",708,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",740,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",752,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",768,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/pulse-context.R",786,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",789,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",793,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",800,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",814,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",751,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",762,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",767,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",779,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",795,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/pulse-context.R",813,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",816,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",820,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",827,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",835,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",843,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",841,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",847,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",854,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",860,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",865,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",873,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",862,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",870,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",874,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",881,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",885,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",889,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",895,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",887,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",892,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",900,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",903,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",911,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",908,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",912,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",916,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-context.R",922,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/pulse-context.R",926,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",927,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",930,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",938,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",949,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/pulse-context.R",953,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/pulse-snapshot.R",133,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/pulse-snapshot.R",137,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/pulse-snapshot.R",150,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
@@ -1627,12 +1630,12 @@
 "R/runtime-projection.R",288,"abort_class","ledgr_invalid_args",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/runtime-projection.R",288,"abort_class","ledgr_invalid_feature_map",TRUE,"c(""ledgr_invalid_feature_map"", ""ledgr_invalid_args"")",TRUE,TRUE,FALSE
 "R/runtime-projection.R",29,"abort_class","ledgr_invalid_runtime_projection",TRUE,"""ledgr_invalid_runtime_projection""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",368,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",400,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",442,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",445,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",512,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/runtime-projection.R",515,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",374,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",406,"abort_class","ledgr_invalid_feature_value",TRUE,"""ledgr_invalid_feature_value""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",448,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",451,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",518,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/runtime-projection.R",521,"abort_class","ledgr_invalid_pulse_context",TRUE,"""ledgr_invalid_pulse_context""",TRUE,TRUE,FALSE
 "R/signal-strategy.R",106,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",TRUE,TRUE,FALSE
 "R/signal-strategy.R",119,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",TRUE,TRUE,FALSE
 "R/signal-strategy.R",127,"abort_class","ledgr_invalid_strategy_result",TRUE,"""ledgr_invalid_strategy_result""",TRUE,TRUE,FALSE

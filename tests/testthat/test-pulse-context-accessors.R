@@ -354,8 +354,11 @@ testthat::test_that("pulse context exposes active aliases as flat columns", {
     cash = 1000,
     equity = 1000
   )
+  # WS20 removed the unreachable alias-only refresh branch. A fixture that
+  # changes its alias map must reattach the primitive feature input explicitly.
   ctx <- ledgr:::ledgr_update_pulse_context_helpers(
     ctx,
+    features = features,
     active_alias_map = c(trend = "sma_2", ret = "return_2")
   )
 

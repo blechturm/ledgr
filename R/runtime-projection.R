@@ -298,7 +298,10 @@ ledgr_projection_feature_name_state <- function(projection,
     )),
     known_features = name_lookup$feature_env,
     active_lookup = active_lookup,
-    name_lookup = name_lookup
+    name_lookup = name_lookup,
+    readable_names = name_lookup$readable_names,
+    readable_columns = name_lookup$readable_columns,
+    readable_env = name_lookup$readable_env
   )
 }
 
@@ -344,7 +347,10 @@ ledgr_projection_feature_lookup_state <- function(projection,
     universe = universe,
     universe_members = universe_members,
     active_lookup = active_lookup,
-    name_lookup = name_lookup
+    name_lookup = name_lookup,
+    readable_names = feature_name_state$readable_names,
+    readable_columns = feature_name_state$readable_columns,
+    readable_env = feature_name_state$readable_env
   )
 }
 
