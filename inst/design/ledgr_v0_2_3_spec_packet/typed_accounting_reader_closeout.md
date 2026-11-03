@@ -122,9 +122,11 @@ corporate-action summary and metric reads exposed a reader-only regression.
 `yyjsonr` rectangularizes the whole metadata block: a subtype on one valid
 non-disposition event creates a missing subtype cell on every other row. The
 typed validator incorrectly treated the column's existence as a subtype on
-every DISPOSITION. Product `01cc546d` evaluates the prohibition per row. An
-actual disposition subtype remains forbidden, while LTB-0553 pins the three
-public readers before and after adding a legacy subtype only to an opening
+every DISPOSITION. No in-repository writer emits these keys; the resumed
+aggregate comparison is the confirmation of this diagnosis. Product
+`01cc546d` evaluates the prohibition per row. LTB-0050 keeps an actual
+disposition subtype forbidden, while LTB-0553 pins the three public readers
+before and after a synthetic non-disposition subtype is added to an opening
 CASHFLOW row. Focused typed-boundary, terminal-reporting, corporate-action,
 result-output and run-store suites pass. The source and codebase census
 checkers pass, and A0 remains exact.
@@ -151,4 +153,5 @@ under macro-plan rule 16 and no timing pass is claimed.
 The independent close review is preserved in `close_review_23.md`, its focused
 re-review in `close_review_23_rereview_1.md`, and its bounded final confirmation
 in `close_review_23_rereview_2.md`. Their findings drove the correction rounds;
-none is overwritten by this closeout.
+the private-gate correction review is preserved in
+`close_review_23_private_gate_fix.md`. None is overwritten by this closeout.
