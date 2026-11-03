@@ -71,6 +71,19 @@ ws4a_refused <- function(expr) {
   }, error = identity), "error")
 }
 
+# Schema 124 stores fill effects in meta_json. Cut 11 deletes the historical
+# reader fallback that silently re-derived absent effects, so hand-built
+# ledger fixtures state the independently expected publication values.
+ws4a_fill_meta <- function(side, qty, price, fee) {
+  cash <- ifelse(side == "BUY", -(qty * price + fee), qty * price - fee)
+  position <- ifelse(side == "BUY", qty, -qty)
+  vapply(seq_along(side), function(i) {
+    as.character(canonical_json(list(
+      cash_delta = cash[[i]], position_delta = position[[i]]
+    )))
+  }, character(1))
+}
+
 # Static helpers over the package's R/ sources (the fold phase checker's
 # parser is reused, not copied).
 ws4a_sources <- function() {
@@ -334,8 +347,7 @@ ws4a_d3_census <- c(
   ledgr_fold_positions_to_vec = "match(matched, instrument_ids)",
   ledgr_fold_positions_to_vec = "positions[matched]",
   # Replay import: ledger rows onto the replay axis; metadata fields by name.
-  ledgr_prepare_accounting_events = "value[[name]]",
-  ledgr_prepare_accounting_events = "intersect(names(meta[[i]]), c(\"subtype\", \"equity_subtype\", \"vendor_sub",
+  ledgr_prepare_accounting_events = "intersect(names(meta), c(\"subtype\", \"equity_subtype\", \"vendor_subtype\"",
   ledgr_prepare_accounting_events = "match(instrument_id, ids)",
   # Replay initial positions (imported as given) and its named result.
   ledgr_replay_accounting_events = "stats::setNames(rep(0, length(ids)), ids)",
@@ -349,8 +361,7 @@ ws4a_d3_census <- c(
   ledgr_carrier_result_state = "stats::setNames(fold_state$positions, instrument_ids)",
   ledgr_state_asof = "stats::setNames(as.numeric(bars$close), bars$instrument_id)",
   ledgr_state_asof = "close_by_id[held_ids]",
-  ledgr_run_terminal_recovery_equity = "stats::setNames(rep(0, length(instrument_ids)), instrument_ids)",
-  ledgr_run_terminal_recovery_equity = "intersect(names(state$positions), instrument_ids)",
+  ledgr_run_terminal_recovery_equity = "match(held, instrument_ids)",
   # Walk-forward: as-of book and carried lots to the next window's opening.
   ledgr_walk_forward_opening_from_run = "names(held) <- positions$instrument_id",
   ledgr_walk_forward_opening_from_run = "match(names(held), exp$universe)",
@@ -627,8 +638,8 @@ testthat::test_that("[WS4a D17 F4.35] the lot kernel computes no cash and openin
   ns <- ws4a_ns()
   rows <- data.frame(
     event_id = "o1", run_id = "r", ts_utc = as.POSIXct("2020-01-02", tz = "UTC"),
-    event_type = "CASHFLOW", instrument_id = "AAA", side = NA_character_, qty = NA_real_,
-    price = NA_real_, fee = NA_real_, event_seq = 1L, stringsAsFactors = FALSE,
+    event_type = "CASHFLOW", instrument_id = "AAA", side = NA_character_, qty = 3,
+    price = 12, fee = 0, event_seq = 1L, stringsAsFactors = FALSE,
     meta_json = as.character(canonical_json(list(
       source = "opening_position", cash_delta = 0, position_delta = 3, cost_basis = 12
     )))
@@ -685,7 +696,8 @@ testthat::test_that("[WS4a D23] replay adds each published cash effect exactly o
     event_id = c("e1", "e2"), run_id = c("r", "r"),
     ts_utc = as.POSIXct(c("2020-01-02 21:00:00", "2020-01-03 21:00:00"), tz = "UTC"),
     event_type = c("FILL", "FILL"), instrument_id = c("A", "A"), side = c("BUY", "SELL"),
-    qty = c(2, 1), price = c(10, 12), fee = c(1, 1), meta_json = c(NA_character_, NA_character_),
+    qty = c(2, 1), price = c(10, 12), fee = c(1, 1),
+    meta_json = ws4a_fill_meta(c("BUY", "SELL"), c(2, 1), c(10, 12), c(1, 1)),
     event_seq = 1:2
   )
   cash_ok <- function(replay) {
@@ -786,7 +798,11 @@ testthat::test_that("[WS4a D25] independent lot work is vectorized; replay appli
     event_id = paste0("e", 1:4), run_id = rep("r", 4),
     ts_utc = as.POSIXct("2020-01-02 21:00:00", tz = "UTC") + c(0, 0, 0, 86400),
     event_type = rep("FILL", 4), instrument_id = c("A", "B", "C", "A"), side = c("BUY", "BUY", "SELL", "SELL"),
-    qty = c(2, 1, 3, 1), price = c(10, 12, 9, 11), fee = c(1, 0, 0.5, 0), meta_json = rep(NA_character_, 4),
+    qty = c(2, 1, 3, 1), price = c(10, 12, 9, 11), fee = c(1, 0, 0.5, 0),
+    meta_json = ws4a_fill_meta(
+      c("BUY", "BUY", "SELL", "SELL"), c(2, 1, 3, 1),
+      c(10, 12, 9, 11), c(1, 0, 0.5, 0)
+    ),
     event_seq = 1:4
   )
   prepared <- ns$ledgr_prepare_accounting_events(ev, c("A", "B", "C"))
@@ -813,15 +829,21 @@ testthat::test_that("[WS4a replay blocks] block replay equals one operation per 
     event_type = c("CASHFLOW", "CASHFLOW", "CASHFLOW", "CASHFLOW", "FILL", "FILL", "CASHFLOW", "FILL", "FILL"),
     instrument_id = c("A", "A", "B", "C", "A", "B", "A", "B", "C"),
     side = c(NA, NA, NA, NA, "SELL", "SELL", NA, "BUY", "BUY"),
-    qty = c(NA, NA, NA, NA, 2.5, 1.25, NA, 3, 0.75),
-    price = c(NA, NA, NA, NA, 11.37, 20.11, NA, 19.5, 33.3),
-    fee = c(NA, NA, NA, NA, 0.4, 0.2, NA, 0, 0.1),
+    qty = c(1.5, 1.75, 0.5, -2, 2.5, 1.25, NA, 3, 0.75),
+    price = c(10.25, 10.5, 21, 30, 11.37, 20.11, NA, 19.5, 33.3),
+    fee = c(0, 0, 0, 0, 0.4, 0.2, 0, 0, 0.1),
     meta_json = c(
       meta(source = "opening_position", cash_delta = 0, position_delta = 1.5, cost_basis = 10.25),
       meta(source = "opening_position", cash_delta = 0, position_delta = 1.75, cost_basis = 10.5),
       meta(source = "opening_position", cash_delta = 0, position_delta = 0.5, cost_basis = 21),
       meta(source = "opening_position", cash_delta = 0, position_delta = -2, cost_basis = 30),
-      NA, NA, meta(cash_delta = 3.5, position_delta = 0), NA, NA
+      ws4a_fill_meta(c("SELL", "SELL"), c(2.5, 1.25), c(11.37, 20.11), c(0.4, 0.2)), meta(
+        source = "corporate_action_cash", source_fact_id = "cash-7",
+        cash_delta = 3.5, position_delta = 0, entitled_quantity = 1,
+        gross_cash_per_parent_unit = 3.5, amount_policy_id = "gross",
+        posting_policy_id = "effective_close", late_arrival = FALSE,
+        affected_marked_exposure = 0
+      ), ws4a_fill_meta(c("BUY", "BUY"), c(3, 0.75), c(19.5, 33.3), c(0, 0.1))
     ),
     event_seq = 1:9, stringsAsFactors = FALSE
   )
@@ -1004,7 +1026,10 @@ testthat::test_that("[WS4a F1] replay refuses the earliest failing event with th
   disp <- function(x) as.character(canonical_json(list(
     source = "corporate_action_disposition", source_fact_id = paste0("f-", x$id), position_delta = -x$before,
     cash_delta = x$before * x$mark, quantity = x$quantity, mark = x$mark, mark_source_ts_utc = "2020-01-03T21:00:00Z",
-    mark_age = 0, position_before = x$before, position_after = 0, realized_model_pnl = x$pnl, disposition_policy_id = "p")))
+    mark_age = 0, mark_source = "current_close", disposition_choice = "last_mark",
+    disposition_basis = "evidence", affected_marked_exposure = abs(x$before * x$mark),
+    position_before = x$before, position_after = 0, realized_model_pnl = x$pnl,
+    disposition_policy_id = "p")))
   # Buys AAA 2 at 10 and BBB 3 at 20, then the given dispositions.
   replay <- function(...) {
     d <- list(...)
@@ -1014,7 +1039,10 @@ testthat::test_that("[WS4a F1] replay refuses the earliest failing event with th
       event_type = c("FILL", "FILL", rep("DISPOSITION", length(d))),
       instrument_id = c("AAA", "BBB", vapply(d, `[[`, "", "id")), side = c("BUY", "BUY", rep(NA, length(d))),
       qty = c(2, 3, vapply(d, `[[`, 0, "quantity")), price = c(10, 20, vapply(d, `[[`, 0, "mark")), fee = 0,
-      meta_json = c(NA, NA, vapply(d, disp, "")), event_seq = seq_len(n), stringsAsFactors = FALSE)
+      meta_json = c(
+        ws4a_fill_meta(c("BUY", "BUY"), c(2, 3), c(10, 20), c(0, 0)),
+        vapply(d, disp, "")
+      ), event_seq = seq_len(n), stringsAsFactors = FALSE)
     ns$ledgr_replay_accounting_events(ns$ledgr_prepare_accounting_events(ev, c("AAA", "BBB")))
   }
   witness_a <- list(id = "AAA", before = 2, quantity = 2, mark = 12, pnl = 999, day = 1)
@@ -2062,11 +2090,12 @@ testthat::test_that("[WS4a D24] the execution view is called only from P3", {
 # --- LDG-3166 correction round 1 (ws13_checkpoint_review.md) ----------------
 
 # D8 production handoff: every published fill's cash and position effects are
-# P3's carried columns. The planners' effects are shifted by 0.5 (the
-# availability plan's expected cash with them) so a consumer recomputing from
-# quantity, price and fee is visible. Paths: durable and db_live dense runs,
-# a canonical availability sweep and a compiled dense sweep.
-ws4a_handoff <- function(recompute = FALSE, native = FALSE) {
+# P3's validated carried columns. The former +0.5 inconsistent-effect arm is
+# superseded by the typed-accounting boundary: an effect that disagrees with
+# quantity, price and fee must now refuse before publication. Paths: durable
+# and db_live dense runs, a canonical availability sweep and a compiled dense
+# sweep.
+ws4a_handoff <- function(wrong_effect = FALSE) {
   ns <- ws4a_ns()
   seen <- new.env()
   seen$carried <- list()
@@ -2076,20 +2105,17 @@ ws4a_handoff <- function(recompute = FALSE, native = FALSE) {
     seen$carried[[key]] <- c(seen$carried[[key]], fill$cash_delta)
   }
   shift <- function(plan) {
-    plan$fill$cash_delta <- plan$fill$cash_delta + 0.5
-    if (!is.na(plan$expected_final_cash)) plan$expected_final_cash <- plan$expected_final_cash + 0.5 * length(plan$fill$k)
+    if (wrong_effect && length(plan$fill$k)) {
+      plan$fill$cash_delta <- plan$fill$cash_delta + 0.5
+      if (!is.na(plan$expected_final_cash)) {
+        plan$expected_final_cash <- plan$expected_final_cash + 0.5 * length(plan$fill$k)
+      }
+    }
     add(plan$fill)
     plan
   }
   avail_plan <- ns$ledgr_fold_build_availability_pulse_plan
   handler <- ns$ledgr_output_handler
-  payload <- ns$ledgr_fill_event_payload
-  writer <- ns$ledgr_write_fill_events
-  compiled <- ns$ledgr_run_compiled_spot_fifo_batch
-  recomputed <- function(fill) {
-    fill$cash_delta <- ifelse(fill$side > 0L, -(fill$qty * fill$price + fill$fee), fill$qty * fill$price - fill$fee)
-    fill
-  }
   testthat::local_mocked_bindings(
     ledgr_fold_build_availability_pulse_plan = function(...) shift(avail_plan(...)),
     ledgr_output_handler = function(sink, ...) {
@@ -2097,15 +2123,6 @@ ws4a_handoff <- function(recompute = FALSE, native = FALSE) {
       h <- handler(sink, ...)
       seen$handlers[[sink$run_id]] <- h
       h
-    },
-    # Controls: a sink recomputing the cash effect; the compiled wrapper
-    # publishing natively recomputed effects.
-    ledgr_fill_event_payload = function(run_id, fill, ...) payload(run_id, if (recompute) recomputed(fill) else fill, ...),
-    ledgr_write_fill_events = function(con, run_id, fill, ...) writer(con, run_id, if (recompute) recomputed(fill) else fill, ...),
-    ledgr_run_compiled_spot_fifo_batch = function(run_id, fills, ...) {
-      out <- compiled(run_id, fills, ...)
-      if (native && !is.null(out)) out$cash_delta <- recomputed(fills)$cash_delta
-      out
     },
     .package = "ledgr"
   )
@@ -2136,9 +2153,12 @@ testthat::test_that("[WS4a D8 handoff] durable, db_live, memory and compiled pub
   # sweep candidate, canonical availability sweep candidate.
   testthat::expect_length(clean$keys, 4L)
   testthat::expect_true(all(clean$same))
-  testthat::expect_false(all(ws4a_handoff(recompute = TRUE)$same))
-  native <- ws4a_handoff(native = TRUE)
-  testthat::expect_identical(sum(!native$same), 1L)
+  # The accepted typed boundary supersedes the old inconsistent-effect
+  # transport arm. Removing formula validation makes this mutation run.
+  testthat::expect_error(
+    ws4a_handoff(wrong_effect = TRUE),
+    class = "ledgr_invalid_ledger_meta"
+  )
 })
 
 # F1 successor: Workstream 14 deleted the dense planner. Its inherited
@@ -2242,6 +2262,7 @@ ws4a_inject_into <- function(fns, nm, stmt) {
 # columns; db_live's one INSERT per fill; the refusal path's bisection.
 ws4a_d1_pub_allowed <- c(
   ledgr_fill_event_payload = ".POSIXct", "ledgr_output_handler/handler$flush_pulse_events" = ".POSIXct",
+  "ledgr_output_handler/handler$write_fill_events" = ".POSIXct",
   ledgr_fill_row_buffer_add_many = "as.POSIXct", ledgr_fill_meta_rows = "Map", ledgr_fill_meta_rows = "list",
   ledgr_fill_event_payload = "vapply", "ledgr_output_handler/handler$append_event_rows" = "lapply",
   "ledgr_output_handler/handler$append_event_rows" = "vapply"

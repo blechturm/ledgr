@@ -196,19 +196,19 @@ testthat::test_that("[LTB-0068] composition evidence is filtered and prepared on
   testthat::expect_true("BBB" %in% all_events$instrument_id)
 
   query_calls <- 0L
-  decode_calls <- 0L
-  decoded_events <- list()
+  prepare_calls <- 0L
+  prepared_events <- list()
   original_query <- ledgr:::ledgr_corporate_action_result_events
-  original_decode <- ledgr:::ledgr_corporate_action_event_meta
+  original_prepare <- ledgr:::ledgr_prepare_accounting_events
   testthat::local_mocked_bindings(
     ledgr_corporate_action_result_events = function(...) {
       query_calls <<- query_calls + 1L
       original_query(...)
     },
-    ledgr_corporate_action_event_meta = function(events) {
-      decode_calls <<- decode_calls + 1L
-      decoded_events[[decode_calls]] <<- events
-      original_decode(events)
+    ledgr_prepare_accounting_events = function(events, ...) {
+      prepare_calls <<- prepare_calls + 1L
+      prepared_events[[prepare_calls]] <<- events
+      original_prepare(events, ...)
     },
     .package = "ledgr"
   )
@@ -219,9 +219,9 @@ testthat::test_that("[LTB-0068] composition evidence is filtered and prepared on
     facts
   )
   testthat::expect_identical(query_calls, 1L)
-  testthat::expect_identical(decode_calls, 1L)
-  testthat::expect_true(nrow(decoded_events[[1L]]) > 0L)
-  testthat::expect_true(all(decoded_events[[1L]]$instrument_id == "AAA"))
+  testthat::expect_identical(prepare_calls, 1L)
+  testthat::expect_true(nrow(prepared_events[[1L]]) > 0L)
+  testthat::expect_true(all(prepared_events[[1L]]$instrument_id == "AAA"))
   testthat::expect_identical(report$entitled_parent_quantity, 2)
   testthat::expect_identical(report$modeled_cash_credited, 180)
   testthat::expect_identical(
@@ -266,7 +266,7 @@ testthat::test_that("[LTB-0068] composition evidence is filtered and prepared on
   testthat::expect_identical(nrow(dividend), 0L)
   testthat::expect_identical(nrow(unheld), 0L)
   testthat::expect_identical(query_calls, 2L)
-  testthat::expect_identical(decode_calls, 1L)
+  testthat::expect_identical(prepare_calls, 1L)
 
   body_text <- paste(deparse(
     body(ledgr:::ledgr_corporate_action_composition_report)
@@ -299,9 +299,9 @@ testthat::test_that("[LTB-0220] composition binds each fact at the fold's bounda
   seen <- list()
   original <- ledgr:::ledgr_corporate_action_past_quantities
   testthat::local_mocked_bindings(
-    ledgr_corporate_action_past_quantities = function(events, meta, rows, selected, instrument_ids, cum_boundaries) {
+    ledgr_corporate_action_past_quantities = function(replay, rows, selected, instrument_ids, cum_boundaries) {
       seen[[length(seen) + 1L]] <<- list(fact_id = rows$fact_id[selected], boundary = cum_boundaries)
-      original(events, meta, rows, selected, instrument_ids, cum_boundaries)
+      original(replay, rows, selected, instrument_ids, cum_boundaries)
     },
     .package = "ledgr"
   )
@@ -441,16 +441,34 @@ testthat::test_that("[LTB-0053] quantity refusal and transaction identity fail c
     recipient_quantity_validated = TRUE,
     stringsAsFactors = FALSE
   )
-  events <- data.frame(meta_json = c(
-    ledgr:::canonical_json(list(
-      source = "corporate_action_cash",
-      source_fact_id = "acquisition-1"
-    )),
-    ledgr:::canonical_json(list(
-      source = "corporate_action_disposition",
-      source_fact_id = "acquisition-1"
-    ))
-  ))
+  events <- data.frame(
+    event_id = c("cash", "disposition"), run_id = "r",
+    ts_utc = as.POSIXct(
+      c("2020-01-01 16:00:00", "2020-01-02 16:00:00"),
+      tz = "UTC"
+    ),
+    event_type = c("CASHFLOW", "DISPOSITION"), instrument_id = "AAA",
+    side = NA_character_, qty = c(NA_real_, 1), price = c(NA_real_, 10),
+    fee = 0, event_seq = 1:2, stringsAsFactors = FALSE,
+    meta_json = c(
+      ledgr:::canonical_json(list(
+        source = "corporate_action_cash", source_fact_id = "acquisition-1",
+        cash_delta = 1, position_delta = 0, entitled_quantity = 1,
+        gross_cash_per_parent_unit = 1, amount_policy_id = "gross",
+        posting_policy_id = "effective_close", late_arrival = FALSE,
+        affected_marked_exposure = 0
+      )),
+      ledgr:::canonical_json(list(
+        source = "corporate_action_disposition", source_fact_id = "acquisition-1",
+        cash_delta = 10, position_delta = -1, quantity = 1, mark = 10,
+        mark_source = "current_close", mark_source_raw = "current_close",
+        mark_source_ts_utc = "2020-01-02T16:00:00Z", mark_age = 0,
+        position_before = 1, position_after = 0, realized_model_pnl = 0,
+        disposition_policy_id = "p", disposition_choice = "last_mark",
+        disposition_basis = "evidence", affected_marked_exposure = 10
+      ))
+    )
+  )
   testthat::expect_error(
     ledgr:::ledgr_corporate_action_plan(
       rows,

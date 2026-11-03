@@ -161,23 +161,45 @@ ledgr_run_terminal_recovery_equity <- function(con,
     ledgr_availability_exhausted_choice(availability_provider$valuation_policy),
     pulse_columns = pulse_columns
   )
-  # The recovered rows as a frozen equity record (Synthesis 3.6); each
-  # achieved pulse still replays the committed ledger (WS7 owns that).
-  rows <- vapply(keep, function(i) {
-    ts <- pulses[[i]]
-    state <- ledgr_state_asof(
-      con,
-      run_id,
-      initial_cash,
-      ts,
-      instrument_ids = instrument_ids
-    )
-    positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
-    present <- intersect(names(state$positions), instrument_ids)
-    if (length(present) > 0L) positions[present] <- as.numeric(state$positions[present])
-    held <- names(positions)[positions != 0]
+  events <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+      "qty, price, fee, meta_json, event_seq FROM ledger_events",
+      "WHERE run_id = ? ORDER BY event_seq"
+    ),
+    params = list(run_id)
+  )
+  replay <- ledgr_replay_accounting_events(
+    ledgr_prepare_accounting_events(events, instrument_ids),
+    initial_cash = initial_cash
+  )
+  positions <- ledgr_accounting_positions_at_pulses(
+    replay,
+    pulses[keep],
+    instrument_ids
+  )
+  event_at <- findInterval(
+    as.numeric(pulses[keep]),
+    as.numeric(replay$prepared$ts_utc)
+  )
+  has_event <- event_at > 0L
+  cash <- rep(as.numeric(initial_cash), length(keep))
+  realized <- numeric(length(keep))
+  basis <- numeric(length(keep))
+  cash[has_event] <- replay$cash_after[event_at[has_event]]
+  realized[has_event] <- replay$event_realized[event_at[has_event]]
+  basis[has_event] <- replay$event_cost_basis[event_at[has_event]]
+
+  # The recovered rows as a frozen equity record (Synthesis 3.6). The
+  # committed ledger is prepared and replayed once; valuation alone advances
+  # pulse by pulse because its stale/frozen state is sequential.
+  positions_value <- vapply(seq_along(keep), function(j) {
+    i <- keep[[j]]
+    pulse_positions <- positions[, j]
+    held <- instrument_ids[pulse_positions != 0]
     if (length(held) == 0L) {
-      positions_value <- 0
+      return(0)
     } else {
       valuation <- valuation_state$advance(i, held, held = rep(TRUE, length(held)))
       if (any(!valuation$priced[held])) {
@@ -185,19 +207,15 @@ ledgr_run_terminal_recovery_equity <- function(con,
           "Committed terminal evidence cannot reconstruct every achieved valuation row."
         )
       }
-      positions_value <- sum(as.numeric(positions[held]) * as.numeric(valuation$mark[held]))
+      sum(
+        pulse_positions[match(held, instrument_ids)] *
+          as.numeric(valuation$mark[held])
+      )
     }
-    c(
-      as.numeric(ts),
-      as.numeric(state$cash),
-      as.numeric(positions_value),
-      as.numeric(state$lot_state$realized_pnl),
-      as.numeric(state$lot_state$total_cost_basis)
-    )
-  }, numeric(5L))
+  }, numeric(1L))
   ledgr_carrier_new(list(
-    ts = rows[1L, ], cash = rows[2L, ], positions_value = rows[3L, ],
-    realized_pnl = rows[4L, ], cost_basis = rows[5L, ], n = length(keep)
+    ts = as.numeric(pulses[keep]), cash = cash, positions_value = positions_value,
+    realized_pnl = realized, cost_basis = basis, n = length(keep)
   ), "equity", NA_integer_)
 }
 

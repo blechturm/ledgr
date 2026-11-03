@@ -510,77 +510,12 @@ print.ledgr_metrics <- function(x, ...) {
 
 ledgr_headline_closed_trade_count <- function(events) {
   if (!is.data.frame(events) || nrow(events) == 0L) return(0L)
-  required <- c(
-    "event_type", "instrument_id", "side", "qty", "price", "meta_json",
-    "event_seq"
+  replay <- ledgr_replay_accounting_events(
+    ledgr_prepare_accounting_events(events)
   )
-  if (any(!required %in% names(events))) {
-    rlang::abort(
-      "Headline trade events are missing required columns.",
-      class = "ledgr_invalid_ledger_event"
-    )
-  }
-  events <- events[order(as.integer(events$event_seq)), , drop = FALSE]
-  event_instrument <- as.character(events$instrument_id)
-  instrument_ids <- unique(event_instrument[
-    !is.na(event_instrument) & nzchar(event_instrument)
-  ])
-  instrument_index <- match(event_instrument, instrument_ids)
-  positions <- numeric(length(instrument_ids))
-  closed <- 0L
-
-  for (i in seq_len(nrow(events))) {
-    event_type <- as.character(events$event_type[[i]])
-    idx <- instrument_index[[i]]
-    if (identical(event_type, "FILL")) {
-      side <- as.character(events$side[[i]])
-      qty <- suppressWarnings(as.numeric(events$qty[[i]]))
-      price <- suppressWarnings(as.numeric(events$price[[i]]))
-      if (is.na(idx) || !side %in% c("BUY", "SELL") ||
-          !is.finite(qty) || qty <= 0 || !is.finite(price) || price <= 0) {
-        rlang::abort(
-          "Headline trade counting encountered a malformed FILL.",
-          class = "ledgr_invalid_ledger_event"
-        )
-      }
-      delta <- if (identical(side, "BUY")) qty else -qty
-      before <- positions[[idx]]
-      tolerance <- ledgr_lot_dust_tolerance(before, delta, qty, price)
-      if (abs(before) > tolerance && sign(before) != sign(delta)) {
-        closed <- closed + 1L
-      }
-      after <- before + delta
-      if (abs(after) <= tolerance) after <- 0
-      positions[[idx]] <- after
-      next
-    }
-
-    meta_json <- as.character(events$meta_json[[i]])
-    meta <- if (is.na(meta_json) || !nzchar(meta_json)) {
-      list()
-    } else {
-      ledgr_json_read_nested(meta_json)
-    }
-    delta <- as.numeric(meta$position_delta %||% 0)
-    if (length(delta) != 1L || !is.finite(delta)) {
-      rlang::abort(
-        "Headline trade counting encountered a non-finite position delta.",
-        class = "ledgr_invalid_ledger_event"
-      )
-    }
-    if (delta == 0) next
-    if (is.na(idx)) {
-      rlang::abort(
-        "A position-changing accounting event requires an instrument ID.",
-        class = "ledgr_invalid_ledger_event"
-      )
-    }
-    after <- positions[[idx]] + delta
-    tolerance <- ledgr_lot_dust_tolerance(positions[[idx]], delta, after)
-    if (abs(after) <= tolerance) after <- 0
-    positions[[idx]] <- after
-  }
-  as.integer(closed)
+  as.integer(sum(
+    replay$prepared$operation == .ledgr_lot_fill & replay$close_qty > 0
+  ))
 }
 
 ledgr_backtest_headline_metrics <- function(con, run_id) {
@@ -618,7 +553,8 @@ ledgr_backtest_headline_metrics <- function(con, run_id) {
   events <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_type, instrument_id, side, qty, price, meta_json, event_seq
+    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,
+           qty, price, fee, meta_json, event_seq
     FROM ledger_events
     WHERE run_id = ?
       AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')

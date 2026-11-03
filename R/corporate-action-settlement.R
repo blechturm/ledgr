@@ -21,18 +21,6 @@ ledgr_corporate_action_existing_events <- function(con, run_id) {
   )
 }
 
-ledgr_corporate_action_event_meta <- function(events) {
-  if (is.null(events) || nrow(events) == 0L) {
-    return(list())
-  }
-  lapply(events$meta_json, function(value) {
-    if (is.na(value) || !nzchar(value)) {
-      return(list())
-    }
-    ledgr_json_read_nested(value)
-  })
-}
-
 # The quantity each selected fact is entitled to, recounted from the ledger as
 # the fresh fold binds it. The fold binds pulse e's entitlement while it
 # processes pulse e - 1, after that pulse's dispositions and the fills decided
@@ -40,107 +28,40 @@ ledgr_corporate_action_event_meta <- function(events) {
 # session open (or bar, in a dense run). So the recount is the position after
 # every event at or before pulse e - 1 (`cum_boundaries`); an entitlement on
 # the run's first pulse (NA boundary) binds the opening positions. Only the
-# facts' parent instruments are read. Position deltas come from the caller's
-# parsed `meta` (a fill without one moves by its signed quantity, as the
-# accounting replay reads it), and positions from one canonical lot-aware
-# replay. A ledger whose
-# timestamps decrease in event order (never written by ledgr) has no prefix to
-# look up, so each boundary then adds its own events in order.
-ledgr_corporate_action_past_quantities <- function(events,
-                                                   meta,
+# facts' parent instruments are read from the one canonical typed replay.
+ledgr_corporate_action_past_quantities <- function(replay,
                                                    rows,
                                                    selected,
                                                    instrument_ids,
                                                    cum_boundaries) {
   out <- rep(0, length(selected))
-  if (length(selected) == 0L || is.null(events) || nrow(events) == 0L) {
+  if (length(selected) == 0L || length(replay$prepared$event_seq) == 0L) {
     return(out)
   }
   ids <- as.character(rows$parent_instrument_id[selected])
   cum_boundaries <- as.POSIXct(cum_boundaries, tz = "UTC")
   known <- ids %in% instrument_ids
-  keep <- which(as.character(events$instrument_id) %in% ids[known])
-  if (length(keep) == 0L) {
-    return(out)
-  }
-  keep <- keep[order(as.integer(events$event_seq[keep]))]
-  meta <- meta[keep]
-  event_instrument <- as.character(events$instrument_id[keep])
-  delta <- vapply(meta, function(x) {
-    value <- x$position_delta
-    if (is.numeric(value) && length(value) == 1L) as.numeric(value) else NA_real_
-  }, numeric(1))
-  fill <- events$event_type[keep] == "FILL" & is.na(delta)
-  side <- toupper(as.character(events$side[keep]))
-  delta[fill] <- ifelse(side[fill] == "SELL", -1, 1) * as.numeric(events$qty[keep][fill])
-  delta[is.na(delta)] <- 0
-  if (any(!is.finite(delta))) {
-    rlang::abort(
-      "Corporate-action entitlement encountered a non-finite position delta.",
-      class = c("ledgr_invalid_corporate_action_event", "ledgr_invalid_state")
-    )
-  }
-  parents <- unique(event_instrument)
-  ledger <- list(
-    ts_utc = as.POSIXct(events$ts_utc[keep], tz = "UTC"),
-    instrument_id = event_instrument,
-    instrument_index = match(event_instrument, parents),
-    instrument_ids = parents,
-    position_delta = delta
-  )
-  replay_rows <- which(delta != 0)
-  if (length(replay_rows) == 0L) {
-    return(out)
-  }
-  replay_events <- data.frame(
-    event_id = paste0("entitlement_replay_", seq_along(replay_rows)),
-    run_id = "entitlement_replay",
-    ts_utc = ledger$ts_utc[replay_rows],
-    event_type = "FILL",
-    instrument_id = event_instrument[replay_rows],
-    side = ifelse(delta[replay_rows] < 0, "SELL", "BUY"),
-    qty = abs(delta[replay_rows]),
-    price = 1,
-    fee = 0,
-    meta_json = "{}",
-    event_seq = seq_along(replay_rows),
-    stringsAsFactors = FALSE
-  )
-  prepared <- ledgr_prepare_accounting_events(replay_events, parents)
-  replay <- ledgr_replay_accounting_events(prepared)
 
   later <- which(known & !is.na(cum_boundaries))
   if (length(later) > 0L) {
-    position <- ledgr_accounting_positions_at_pairs(
+    out[later] <- ledgr_accounting_positions_at_pairs(
       replay,
       ids[later],
       cum_boundaries[later]
     )
-    if (is.null(position)) {
-      event_num <- as.numeric(ledger$ts_utc)
-      position <- vapply(later, function(k) {
-        own <- event_instrument == ids[[k]] & event_num <= as.numeric(cum_boundaries[[k]])
-        if (!any(own)) return(0)
-        own_prepared <- ledgr_prepare_accounting_events(
-          replay_events[
-            replay_rows %in% which(own),
-            ,
-            drop = FALSE
-          ],
-          ids[[k]]
-        )
-        own_replay <- ledgr_replay_accounting_events(own_prepared)
-        unname(own_replay$positions[[ids[[k]]]])
-      }, numeric(1))
-    }
-    out[later] <- position
   }
 
   first <- which(known & is.na(cum_boundaries))
   if (length(first) > 0L) {
-    opening <- vapply(meta, function(x) identical(x$source, "opening_position"), logical(1))
-    opening_position <- rowsum(delta[opening], group = event_instrument[opening], reorder = FALSE)
-    value <- opening_position[match(ids[first], rownames(opening_position)), 1L]
+    prepared <- replay$prepared
+    opening <- prepared$operation == .ledgr_lot_opening
+    opening_position <- rowsum(
+      prepared$position_delta[opening],
+      group = prepared$instrument_id[opening],
+      reorder = FALSE
+    )
+    value <- if (nrow(opening_position) == 0L) rep(NA_real_, length(first)) else
+      opening_position[match(ids[first], rownames(opening_position)), 1L]
     out[first] <- ifelse(is.na(value), 0, value)
   }
   out
@@ -370,23 +291,21 @@ ledgr_corporate_action_plan <- function(rows,
   )
   state$quantity_due_by_pulse <- split(seq_len(nrow(rows)), quantity_due_idx)
 
-  meta <- ledgr_corporate_action_event_meta(existing_events)
-  cash_fact_ids <- vapply(meta, function(x) {
-    if (identical(x$source, "corporate_action_cash")) {
-      as.character(x$source_fact_id %||% "")
-    } else {
-      ""
-    }
-  }, character(1))
-  cash_fact_ids <- cash_fact_ids[nzchar(cash_fact_ids)]
-  disposition_fact_ids <- vapply(meta, function(x) {
-    if (identical(x$source, "corporate_action_disposition")) {
-      as.character(x$source_fact_id %||% "")
-    } else {
-      ""
-    }
-  }, character(1))
-  disposition_fact_ids <- disposition_fact_ids[nzchar(disposition_fact_ids)]
+  prepared_existing <- ledgr_prepare_accounting_events(existing_events, instrument_ids)
+  cash_fact_ids <- ifelse(
+    prepared_existing$source == "corporate_action_cash",
+    prepared_existing$source_fact_id,
+    ""
+  )
+  cash_fact_ids <- cash_fact_ids[!is.na(cash_fact_ids) & nzchar(cash_fact_ids)]
+  disposition_fact_ids <- ifelse(
+    prepared_existing$source == "corporate_action_disposition",
+    prepared_existing$source_fact_id,
+    ""
+  )
+  disposition_fact_ids <- disposition_fact_ids[
+    !is.na(disposition_fact_ids) & nzchar(disposition_fact_ids)
+  ]
   duplicated_effect <- intersect(cash_fact_ids, disposition_fact_ids)
   if (length(duplicated_effect) > 0L) {
     rlang::abort(
@@ -407,6 +326,7 @@ ledgr_corporate_action_plan <- function(rows,
       class = c("ledgr_duplicate_corporate_action_event", "ledgr_invalid_state")
     )
   }
+  replay_existing <- ledgr_replay_accounting_events(prepared_existing)
   state$cash_posted <- rows$fact_id %in% cash_fact_ids
   state$disposition_posted <- rows$fact_id %in% disposition_fact_ids
   if (length(carried_rows) > 0L) {
@@ -426,8 +346,7 @@ ledgr_corporate_action_plan <- function(rows,
       tz = "UTC"
     )
     past_quantity <- ledgr_corporate_action_past_quantities(
-      existing_events,
-      meta,
+      replay_existing,
       rows,
       past,
       instrument_ids,

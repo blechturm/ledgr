@@ -226,7 +226,25 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   bought$meta_json <- '{"position_delta":10,"cash_delta":-500}'
   disposed <- fill(2L, close[[2L]], "SELL", 10)
   disposed$event_type <- "DISPOSITION"
-  disposed$meta_json <- '{"position_delta":-10,"cash_delta":500,"source":"delisting"}'
+  disposed$side <- NA_character_
+  disposed$meta_json <- canonical_json(list(
+    source = "corporate_action_disposition",
+    source_fact_id = "entitlement-disposition",
+    disposition_policy_id = "entitlement-policy",
+    disposition_choice = "last_mark",
+    disposition_basis = "evidence",
+    mark_source = "current_close",
+    mark_source_ts_utc = format(close[[2L]], "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"),
+    mark_age = 0L,
+    quantity = 10,
+    mark = 50,
+    position_before = 10,
+    position_after = 0,
+    position_delta = -10,
+    cash_delta = 500,
+    realized_model_pnl = 0,
+    affected_marked_exposure = 500
+  ))
   testthat::expect_identical(bound(bought, 3L), 10)
   testthat::expect_identical(bound(rbind(bought, disposed), 3L), 0)
   # The entitlement recount agrees with canonical replay for interleaved

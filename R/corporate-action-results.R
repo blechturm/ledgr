@@ -137,7 +137,7 @@ ledgr_corporate_action_result_events <- function(con,
 # Each selected fact's entitled parent quantity as the run's fold bound it,
 # recounted from the run's ledger `events` (with their parsed `meta`); 0 for
 # a fact entitled outside the pulses the run processed.
-ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows, selected, events, meta) {
+ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows, selected, replay) {
   instrument_ids <- DBI::dbGetQuery(
     con,
     paste(
@@ -178,8 +178,7 @@ ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows
   cum_boundaries <- .POSIXct(ifelse(before >= 1L, pulses[pmax(before, 1L)], NA_real_), tz = "UTC")
   quantity <- numeric(length(selected))
   quantity[inside] <- ledgr_corporate_action_past_quantities(
-    events,
-    meta,
+    replay,
     rows,
     selected[inside],
     as.character(instrument_ids),
@@ -203,8 +202,8 @@ ledgr_corporate_action_held_unsupported <- function(con, snapshot_id, run_id, ro
   if (length(selected) == 0L) return(none)
   events <- ledgr_corporate_action_result_events(con, run_id, rows$parent_instrument_id[selected])
   if (nrow(events) == 0L) return(none)
-  meta <- ledgr_corporate_action_event_meta(events)
-  quantity <- ledgr_corporate_action_run_quantities(con, snapshot_id, run_id, rows, selected, events, meta)
+  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+  quantity <- ledgr_corporate_action_run_quantities(con, snapshot_id, run_id, rows, selected, replay)
   held <- selected[quantity != 0]
   reason <- as.character(rows$refusal_reason[held])
   reason[rows$complete[held]] <- NA_character_
@@ -249,25 +248,17 @@ ledgr_corporate_action_composition_report <- function(con,
     source_rows$parent_instrument_id
   )
   if (nrow(events) == 0L) return(empty)
-  meta <- ledgr_corporate_action_event_meta(events)
+  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
   quantity <- ledgr_corporate_action_run_quantities(
-    con, snapshot_id, run_id, rows, selected, events, meta
+    con, snapshot_id, run_id, rows, selected, replay
   )
   relevant <- quantity != 0
   if (!any(relevant)) return(empty)
   selected <- selected[relevant]
   quantity <- quantity[relevant]
   source_rows <- source_rows[relevant, , drop = FALSE]
-  source_fact_id <- vapply(
-    meta,
-    function(value) as.character(value$source_fact_id %||% ""),
-    character(1)
-  )
-  cash_delta <- vapply(
-    meta,
-    function(value) as.numeric(value$cash_delta %||% 0),
-    numeric(1)
-  )
+  source_fact_id <- replay$prepared$source_fact_id
+  cash_delta <- replay$prepared$cash_delta
   usable_cash <- nzchar(source_fact_id)
   cash_keys <- unique(source_fact_id[usable_cash])
   cash_by_source <- if (length(cash_keys) == 0L) {
@@ -433,33 +424,22 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   event_rows <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT ts_utc, instrument_id, qty, price, meta_json FROM ledger_events",
+      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+      "qty, price, fee, meta_json, event_seq FROM ledger_events",
       "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
       "ORDER BY event_seq"
     ),
     params = list(bt$run_id)
   )
-  event_meta <- ledgr_corporate_action_event_meta(event_rows)
-  cash_meta <- Filter(
-    function(value) identical(value$source, "corporate_action_cash"),
-    event_meta
-  )
+  prepared <- ledgr_prepare_accounting_events(event_rows)
+  cash_index <- which(prepared$source == "corporate_action_cash")
   # Scheduled corporate-action dispositions and lifetime terminal
   # dispositions share one terminal fidelity authority.
-  event_sources <- vapply(
-    event_meta,
-    function(value) as.character(value$source %||% ""),
-    character(1)
-  )
-  is_disposition <- event_sources %in% ledgr_disposition_sources()
-  disposition_meta <- event_meta[is_disposition]
-  terminal_outcomes <- ledgr_terminal_outcome_rows(
-    event_rows[is_disposition, , drop = FALSE],
-    disposition_meta
-  )
-  if (length(cash_meta) > 0L) {
-    amount_ids <- vapply(cash_meta, `[[`, character(1), "amount_policy_id")
-    posting_ids <- vapply(cash_meta, `[[`, character(1), "posting_policy_id")
+  disposition_index <- which(prepared$source %in% ledgr_disposition_sources())
+  terminal_outcomes <- ledgr_terminal_outcome_rows(prepared, disposition_index)
+  if (length(cash_index) > 0L) {
+    amount_ids <- prepared$amount_policy_id[cash_index]
+    posting_ids <- prepared$posting_policy_id[cash_index]
     ids <- ledgr_corporate_action_policy_ids()
     choice_counts[["cash_amount.gross"]] <- sum(
       amount_ids == ids$cash_amount[["gross"]]
@@ -471,13 +451,8 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       posting_ids == ids$cash_posting[["next_open"]]
     )
   }
-  if (length(disposition_meta) > 0L) {
-    disposition_ids <- vapply(
-      disposition_meta,
-      `[[`,
-      character(1),
-      "disposition_policy_id"
-    )
+  if (length(disposition_index) > 0L) {
+    disposition_ids <- prepared$disposition_policy_id[disposition_index]
     # A frozen-terminal fallback is counted under its own field.
     keys <- ledgr_terminal_policy_id_keys()
     disposition_keys <- unname(keys[disposition_ids])
@@ -485,13 +460,9 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       choice_counts[[key]] <- sum(disposition_keys == key, na.rm = TRUE)
     }
   }
-  sum_meta <- function(values, name) {
-    if (length(values) == 0L) return(0)
-    sum(vapply(
-      values,
-      function(value) as.numeric(value[[name]] %||% 0),
-      numeric(1)
-    ))
+  sum_prepared <- function(index, name) {
+    if (length(index) == 0L) return(0)
+    sum(as.numeric(prepared[[name]][index]), na.rm = TRUE)
   }
   composition <- ledgr_corporate_action_composition_report(
     con,
@@ -543,7 +514,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     corporate_action_fidelity = ledgr_corporate_action_fidelity(
       if (any(unsupported) || refusal_stop) {
         "unsupported"
-      } else if (length(cash_meta) > 0L || length(disposition_meta) > 0L) {
+      } else if (length(cash_index) > 0L || length(disposition_index) > 0L) {
         "modeled"
       } else if (facts$supplied) {
         "none"
@@ -561,18 +532,18 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     refusal_counts = refusal_counts,
     refusal_entitled_quantity = refusal_entitled_quantity,
     sealed_refusal_counts = facts$sealed_refusal_counts,
-    late_arrival_count = as.integer(sum_meta(cash_meta, "late_arrival")),
+    late_arrival_count = as.integer(sum_prepared(cash_index, "late_arrival")),
     affected_marked_exposure = sum(
       c(
-        sum_meta(cash_meta, "affected_marked_exposure"),
+        sum_prepared(cash_index, "affected_marked_exposure"),
         composition$affected_marked_exposure
       ),
       na.rm = TRUE
     ),
-    gross_cash_posted = sum_meta(cash_meta, "cash_delta"),
-    modeled_terminal_proceeds = sum_meta(disposition_meta, "cash_delta"),
-    positions_disposed = as.integer(length(disposition_meta)),
-    realized_model_pnl = sum_meta(disposition_meta, "realized_model_pnl"),
+    gross_cash_posted = sum_prepared(cash_index, "cash_delta"),
+    modeled_terminal_proceeds = sum_prepared(disposition_index, "cash_delta"),
+    positions_disposed = as.integer(length(disposition_index)),
+    realized_model_pnl = sum_prepared(disposition_index, "realized_model_pnl"),
     unsupported_facts = as.integer(sum(unsupported)),
     omitted_value = composition
   )

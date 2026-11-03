@@ -73,6 +73,14 @@ ledgr_validate_accounting_append <- function(rows,
                                              prior_event_seq = NULL,
                                              prior_ts_utc = NULL) {
   if (!is.null(cash_delta) || !is.null(position_delta)) {
+    if (any(!is.finite(c(cash_delta, position_delta)))) {
+      # Durable fill publication formerly reached canonical JSON first; keep
+      # that public refusal precedence for every sink while schema 124 is live.
+      rlang::abort(
+        "canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).",
+        class = "ledgr_config_non_finite"
+      )
+    }
     attr(rows, "ledgr_event_cash_delta") <- cash_delta
     attr(rows, "ledgr_event_position_delta") <- position_delta
   }
@@ -90,6 +98,9 @@ ledgr_prepare_accounting_events <- function(columns,
                                              prior_ts_utc = NULL) {
   if (!is.list(columns)) {
     ledgr_accounting_event_error("Accounting events must be supplied as column vectors.")
+  }
+  if (length(columns) == 0L) {
+    return(ledgr_empty_prepared_accounting_events(instrument_ids))
   }
   required <- ledgr_accounting_event_columns()
   missing <- setdiff(required, names(columns))
@@ -168,10 +179,6 @@ ledgr_prepare_accounting_events <- function(columns,
   }
   fill <- event_type == "FILL"
   direction <- ifelse(side == "BUY", 1, ifelse(side == "SELL", -1, NA_real_))
-  cash_delta[fill & is.na(cash_delta)] <-
-    (-direction * qty * price - fee)[fill & is.na(cash_delta)]
-  position_delta[fill & is.na(position_delta)] <-
-    (direction * qty)[fill & is.na(position_delta)]
   if (anyNA(cash_delta) || any(!is.finite(cash_delta)) ||
     anyNA(position_delta) || any(!is.finite(position_delta))) {
     ledgr_accounting_event_error(
@@ -201,9 +208,19 @@ ledgr_prepare_accounting_events <- function(columns,
       "FILL requires BUY or SELL, a non-empty instrument, positive qty and price, and non-negative fee."
     )
   }
+  expected_fill_cash <- rep(NA_real_, n)
+  expected_fill_position <- rep(NA_real_, n)
+  buy_fill <- fill & side == "BUY"
+  sell_fill <- fill & side == "SELL"
+  expected_fill_cash[buy_fill] <-
+    -(qty[buy_fill] * price[buy_fill] + fee[buy_fill])
+  expected_fill_cash[sell_fill] <-
+    +(qty[sell_fill] * price[sell_fill] - fee[sell_fill])
+  expected_fill_position[buy_fill] <- qty[buy_fill]
+  expected_fill_position[sell_fill] <- -qty[sell_fill]
   invalid_fill_effect <- fill & (
-    cash_delta != -direction * qty * price - fee |
-      position_delta != direction * qty
+    cash_delta != expected_fill_cash |
+      position_delta != expected_fill_position
   )
   if (any(invalid_fill_effect, na.rm = TRUE)) {
     ledgr_accounting_event_error(
@@ -538,14 +555,11 @@ ledgr_replay_accounting_events <- function(prepared,
 # what replaying that prefix produces (cumsum() over deltas accumulates in
 # long double and can differ in the last bit). One findInterval() over sorted
 # (instrument, event position) keys resolves every pair. A pair whose
-# instrument has no event by then, or whose time is NA, is 0. Returns NULL
-# when timestamps decrease in event order; callers then replay per prefix.
+# instrument has no event by then, or whose time is NA, is 0. Preparation
+# already refuses decreasing event timestamps, so every query is a prefix.
 ledgr_accounting_positions_at_pairs <- function(replay, query_ids, query_times) {
   prepared <- replay$prepared
   event_num <- as.numeric(prepared$ts_utc)
-  if (is.unsorted(event_num)) {
-    return(NULL)
-  }
   inst <- prepared$instrument_index
   has <- !is.na(inst)
   big <- length(event_num) + 1

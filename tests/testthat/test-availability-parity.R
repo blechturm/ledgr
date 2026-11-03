@@ -508,7 +508,7 @@ testthat::test_that("achieved incomplete shortcuts require their finalized prefi
 })
 
 # ledgr-test-profile: review
-testthat::test_that("availability completion propagates through sweep persistence", {
+testthat::test_that("[LTB-0552] incomplete sweep metrics stay typed missing", {
   snapshot <- availability_runtime_fixture(days = 4L, bar_days = c(1L, 2L, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
@@ -530,6 +530,7 @@ testthat::test_that("availability completion propagates through sweep persistenc
   )
 
   testthat::expect_identical(sweep$status, "INCOMPLETE")
+  testthat::expect_identical(sweep$annualized_return, NA_real_)
   testthat::expect_match(sweep$completion_json, "valuation_horizon_exhausted")
   testthat::expect_error(
     ledgr_candidate(sweep, 1L, allow_failed = TRUE),
@@ -538,6 +539,7 @@ testthat::test_that("availability completion propagates through sweep persistenc
   saved_id <- ledgr_sweep_save(sweep, snapshot, sweep_id = "incomplete-sweep")
   reopened <- ledgr_sweep_open(snapshot, saved_id)
   testthat::expect_identical(reopened$status, sweep$status)
+  testthat::expect_identical(reopened$annualized_return, NA_real_)
   testthat::expect_identical(reopened$completion_json, sweep$completion_json)
   testthat::expect_gt(nrow(ledgr_sweep_returns(reopened, candidates = "one")), 0L)
   testthat::expect_error(

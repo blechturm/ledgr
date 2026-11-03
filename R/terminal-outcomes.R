@@ -240,7 +240,7 @@ ledgr_terminal_assumption_label <- function(choice, assumption, haircut = NA_rea
   paste0(assumption, ": ", text)
 }
 
-ledgr_terminal_outcome_rows <- function(events, meta) {
+ledgr_terminal_outcome_rows <- function(prepared, index = which(prepared$operation == .ledgr_lot_disposition)) {
   empty <- tibble::tibble(
     ts_utc = as.POSIXct(character(), tz = "UTC"),
     instrument_id = character(),
@@ -259,46 +259,33 @@ ledgr_terminal_outcome_rows <- function(events, meta) {
     realized_model_pnl = numeric(),
     haircut_fraction = numeric()
   )
-  if (length(meta) == 0L) return(empty)
-  field <- function(name, default, type) {
-    vapply(meta, function(m) {
-      value <- m[[name]]
-      if (is.null(value) || length(value) != 1L) default else type(value)
-    }, type(default))
-  }
-  keys <- ledgr_terminal_policy_id_keys()
-  policy_id <- field("disposition_policy_id", NA_character_, as.character)
-  # Events recorded before choice and basis were persisted derive the choice
-  # from the policy id; a scheduled row is always settlement evidence.
-  key_choice <- sub("^[a-z_]+[.]", "", unname(keys[policy_id]))
-  choice <- field("disposition_choice", NA_character_, as.character)
-  choice[is.na(choice)] <- key_choice[is.na(choice)]
-  source <- field("source", NA_character_, as.character)
-  basis <- field("disposition_basis", NA_character_, as.character)
-  basis[is.na(basis) & source == "corporate_action_disposition"] <- "evidence"
-  basis[is.na(basis)] <- "default"
+  if (length(index) == 0L) return(empty)
+  policy_id <- prepared$disposition_policy_id[index]
+  choice <- prepared$disposition_choice[index]
+  source <- prepared$source[index]
+  basis <- prepared$disposition_basis[index]
   assumption <- ifelse(
     basis == "evidence",
     "evidence",
     ifelse(basis == "label", "declared", "default")
   )
-  haircut <- field("haircut_fraction", NA_real_, as.numeric)
+  haircut <- prepared$haircut_fraction[index]
   tibble::tibble(
-    ts_utc = as.POSIXct(events$ts_utc, tz = "UTC"),
-    instrument_id = as.character(events$instrument_id),
+    ts_utc = as.POSIXct(prepared$ts_utc[index], tz = "UTC"),
+    instrument_id = prepared$instrument_id[index],
     source = ifelse(source == "corporate_action_disposition", "scheduled_evidence", "lifetime_terminal"),
-    source_fact_id = field("source_fact_id", NA_character_, as.character),
-    terminal_event = field("terminal_event", NA_character_, as.character),
-    matched_label = field("matched_label", NA_character_, as.character),
+    source_fact_id = prepared$source_fact_id[index],
+    terminal_event = prepared$terminal_event[index],
+    matched_label = prepared$matched_label[index],
     choice = choice,
     basis = basis,
     assumption = assumption,
     assumption_label = ledgr_terminal_assumption_label(choice, assumption, haircut),
     disposition_policy_id = policy_id,
-    quantity = as.numeric(events$qty),
-    price = as.numeric(events$price),
-    proceeds = field("cash_delta", NA_real_, as.numeric),
-    realized_model_pnl = field("realized_model_pnl", NA_real_, as.numeric),
+    quantity = prepared$qty[index],
+    price = prepared$price[index],
+    proceeds = prepared$cash_delta[index],
+    realized_model_pnl = prepared$realized_model_pnl[index],
     haircut_fraction = haircut
   )
 }

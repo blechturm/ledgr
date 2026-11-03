@@ -1865,6 +1865,9 @@ ledgr_sweep_run_candidate <- function(exp,
   telemetry$t_fills_extract <- 0
 
   completion <- output_handler$completion()
+  if (identical(fold_result$status, "INCOMPLETE")) {
+    summary$metrics$annualized_return <- NA_real_
+  }
   candidate_diagnostics <- output_handler$diagnostics()
   candidate_flags <- ledgr_assumption_flags_from_memory(
     availability_provider$valuation_policy,

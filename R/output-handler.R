@@ -581,7 +581,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       serialize_meta_json = sink$serialize_meta_json
     )
     if (identical(block$status, "WROTE")) {
-      rows <- as.data.frame(block[ledgr_output_event_columns], stringsAsFactors = FALSE)
+      rows <- block[ledgr_output_event_columns]
       rows$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
       ledgr_validate_accounting_append(
         rows,
