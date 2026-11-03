@@ -28,6 +28,10 @@ Revision 8 records the maintainer's 2026-11-02 entropy amendment: a hot-path
 ban-list test that may only shrink (rule 17), and one holistic review of the
 core and the test suite with two subtraction cuts (WS14a) between the
 WS7/WS8 cut and the WS14 measurement.
+Revision 9 records the maintainer's 2026-11-03 acceptance of the per-pulse
+durable records synthesis: pulse-level resume is retired, the logical
+decision trace stays exact with physical compression only by exact
+reconstruction, and the work joins the ordered WS7/WS8 cut as WS15.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -167,7 +171,7 @@ Phase A (now, parallel)
 Phase B   WS4a typed fold carrier -> WS4b minimal C1 consolidation
                               |
 Phase C   WS5 runtime ---> WS6 frame retirement --.
-          WS7 -> WS8 typed accounting cut --------+--> J: disclosures,
+          WS7 -> WS8 -> WS15 ordered cut ---------+--> J: disclosures,
           H10 settlement state                         pattern article,
                                                        cold read
                               |
@@ -193,12 +197,14 @@ Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
 | WS4b -> WS5 runtime | binding constraint: dense is frozen and synthesis D3 authorizes no new execution-mode branch |
 | WS4b -> WS7/WS8 cut | binding constraint (roadmap: merge readers after one run shape) |
 | accepted typed-accounting synthesis -> WS7/WS8 cut | binding constraint: the synthesis binds the authoritative fields, typed replay boundary and ordered workstreams |
+| accepted per-pulse durable records synthesis -> WS15 | binding constraint: Sections 2-7 bind what runs store and how diagnostics read; one store version with WS7/WS8 |
+| frozen full-trace baseline -> WS7, WS8 and WS15 | evidence prerequisite: record the canonical trace before any reader or writer in the cut changes |
 | WS5 -> WS6 | technical prerequisite (synthesis D1 fixes the input layout) |
 | WS5, WS6, WS7 -> J | evidence prerequisite for WS5 acceptance |
 | WS9b budget decision -> H9 | technical prerequisite (inventory H9) |
-| WS4b, WS5, WS6, WS7/WS8 and execution-sensitive WS10 cuts -> WS14 | evidence prerequisite: optimize the surviving core, not an intermediate representation |
+| WS4b, WS5, WS6, WS7/WS8/WS15 and execution-sensitive WS10 cuts -> WS14 | evidence prerequisite: optimize the surviving core, not an intermediate representation |
 | WS3 post-consolidation record -> WS14 | evidence prerequisite: the peer suite supplies the attribution and comparison |
-| WS6 and the WS7/WS8 cut -> WS14a review | evidence prerequisite: review the surviving core once, not intermediate shapes |
+| WS6 and the WS7/WS8/WS15 cut -> WS14a review | evidence prerequisite: review the surviving core once, not intermediate shapes |
 | WS14a product subtraction cut -> WS14 checkpoint | evidence prerequisite: measure the core after deletion, so the optimization budget is not spent on waste |
 | WS14a product subtraction cut -> test cut | binding constraint: each cut freezes the other side, so tests guard product deletions and the product guards test deletions |
 | R2 decision, WS11b and WS14 -> editorial pass -> rehearsal | evidence prerequisite: edit the documentation once, for the surviving API and core, before certification |
@@ -475,6 +481,47 @@ part of its evidence.
   The cut reruns the profile on its candidate and reports each of these
   stages next to the baseline, not only the end-to-end time.
 
+### WS15. Per-pulse durable records (accepted synthesis)
+
+The [accepted synthesis](../rfc/rfc_per_pulse_durable_records_v0_2_3_synthesis.md)
+(maintainer, 2026-11-03) retires pulse-level resume and stores per-pulse
+diagnostics compactly while every logical row stays exactly as today. WS15 is
+the third reviewed workstream of the ordered WS7/WS8 cut and shares its one
+store version and rebuild. The cut writer may move it into an adjacent
+prerequisite cut with its own identity record, but not into WS14a, which
+freezes behavior (synthesis Section 6).
+
+- **Scope (synthesis Sections 2-5):** remove the `strategy_state` cursor
+  table, its restore reader, intermediate checkpoints and the
+  `ledgr.interrupt` option; keep completion-based publication recovery and
+  run-level idempotence; a nonterminal run restarts at pulse 1.
+  `ledgr_results(bt, "diagnostics")` and `ledgr_run_explain()` return exactly
+  today's rows, rebuilt on read from stored evidence, sealed facts and
+  identity-bound rules, never by running strategy code. A row is omitted
+  physically only when its presence, fields and sequence position are rebuilt
+  exactly. Retention is selected before rows are expanded. The fills reader's
+  dependency on execution diagnostics is removed before clean-fill rows go.
+- **Order inside the cut:** the frozen full-trace baseline (synthesis Section
+  6, cut-entry gate) is recorded before WS7 changes any reader, so all three
+  workstreams compare against one canonical record. WS15 builds on WS8's
+  typed publication path; WS8's batching decision for P commit covers what
+  WS15 leaves to write (today's per-pulse append there is the diagnostic
+  flush).
+- **Watch item:** strategies that size with helpers emit sizing evidence for
+  each instrument on each decision pulse, and that evidence cannot be rebuilt
+  (synthesis Section 3). Its storage must be compact, or the authoring style
+  ledgr teaches keeps most of today's cost. The cut measures this case.
+- **Before:** the 2026-11-03 profile of a hold-only 10 x 7,200 durable run at
+  `ae289ce0`: staging and flushing trace rows cost about 360 to 460 us of a
+  1.8 ms pulse, the resume cursor about 3 us (seed v1 Section 3). The cut
+  reports per-function sample counts against it (benchmark methodology
+  manual), plus stored rows and bytes, explanation latency and peak memory on
+  quiet, fill-heavy and sweep workloads.
+- **Gate:** synthesis Section 6: the field-by-field derivation map and frozen
+  baselines at cut entry; at close, exact trace, explanation, summary,
+  sequence and economic parity on the seven proof families, including the
+  private Sharadar reference.
+
 ### WS9. Memory and worker budgets (C5, H9, H11; C3 RFC)
 
 - **WS9a, now:** phase-level memory and worker baselines; the C3 placement RFC.
@@ -740,8 +787,10 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
 - Each later workstream gets its own cut; a cut may split one when its
   evidence is independent. The accepted typed-accounting synthesis is the
   named exception: WS7 and WS8 are two reviewed workstreams in one ordered
-  cut and one store rebuild. Low-stakes choices are batched for the maintainer
-  at acceptance.
+  cut and one store rebuild. The accepted per-pulse durable records synthesis
+  adds WS15 as a third reviewed workstream of that cut, sharing its store
+  version; the cut writer may move WS15 into an adjacent prerequisite cut.
+  Low-stakes choices are batched for the maintainer at acceptance.
 - WS4a and WS4b are separately reviewed workstreams. Their focused design
   decides whether they use adjacent cuts or one ordered packet; either way,
   WS4b cannot begin or inherit evidence until WS4a is accepted.
@@ -818,12 +867,20 @@ defined there.
   frozen, after the product cut: the fold-core tests are rebuilt from the
   contracts and retire the old ones only after a mutant comparison shows
   the new suite detects everything the old one did; the rest is pruned.
+- **Per-pulse durable records, 2026-11-03:** ledgr is a research
+  backtester, so a run keeps what cannot be rebuilt and rebuilds the rest.
+  The maintainer accepted the synthesis after a PASS final review:
+  pulse-level resume is retired (a crash already restarted at pulse 1), the
+  logical decision trace and every explanation stay exactly as today, rows
+  are omitted physically only when rebuilt exactly, and no read executes
+  strategy code. Routed as WS15 into the ordered WS7/WS8 cut.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on
 2026-10-29; the performance-convergence and peer-scaling amendments were
 accepted on 2026-10-31; the WS4b behavior amendment was accepted on
-2026-11-01; the entropy amendment was accepted on 2026-11-02.
+2026-11-01; the entropy amendment was accepted on 2026-11-02; the
+per-pulse durable records routing was accepted on 2026-11-03.
 
 ## 7. Release definition of done
 

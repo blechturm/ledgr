@@ -7320,3 +7320,29 @@ Until it is accepted, the current workaround is to re-quote micro-priced assets
 and construct fractional targets explicitly; do not infer granularity from an
 instrument symbol or silently add a crypto exception. Cut 20 owns neither the
 fixed-decimal rule nor quantity-step semantics.
+
+<a id="v023-h084"></a>
+
+**Disposition:** closed 2026-11-03. The accepted [per-pulse durable records synthesis](rfc/rfc_per_pulse_durable_records_v0_2_3_synthesis.md) removes pulse-level resume and the `strategy_state` cursor for sealed research runs; a durable progress/state split is not built. Live or paper extension needs its own design.
+
+### 2026-11-01 [execution] Split run progress from typed strategy state
+
+Cut 7 of v0.2.3 deliberately keeps the existing `strategy_state` table: one
+small cursor row records every completed pulse, while only a changed state
+produces a typed checkpoint payload. This preserves current resume semantics
+and avoids redesigning storage before a measured state workload requires it.
+
+The preferred goal architecture separates these concerns: a durable run-
+progress carrier records the last committed pulse, and a dedicated typed
+strategy-state checkpoint store records state only when it changes. That split
+would make resume, inspection and eventual paper/live execution easier to read
+and extend, while avoiding one cursor row per intraday pulse. It must not become
+a row-per-asset normalized table without evidence; wide state could make that
+representation slower and larger than the current payload.
+
+Revisit through the strategy-authoring synthesis's triggered storage RFC when
+a measured dense or intraday state workload, durable field inspection, or a
+paper/live workflow justifies the schema and recovery work. Keep the Cut 7
+codec and persistence seams private so the carrier can change later. This
+entry makes the split the preferred future direction but authorizes no schema,
+API or v0.2.3 implementation.

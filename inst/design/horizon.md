@@ -47,7 +47,7 @@ the reason in plain words and point at the evidence. The example must run
 for real (executed chunks), on data anyone can use, so no vendor rows.
 
 Show it after the per-pulse durable records RFC
-([seed v2](rfc/rfc_per_pulse_durable_records_v0_2_3_seed_v2.md)) settles
+([accepted synthesis](rfc/rfc_per_pulse_durable_records_v0_2_3_synthesis.md)) settles
 what a run stores, so the example teaches the final behaviour, and after the
 explanation read cost is fixed: on the private Sharadar reference one
 explanation took 9.3 s at a 2.6 GB R heap (history-proof Phase B closeout,
@@ -93,29 +93,6 @@ WS14a/WS14 per-component budget and WS9's memory budgets. The 20 x 23,400
 cell is the natural scoreboard for the speed half.
 
 This entry authorizes no implementation.
-
-<a id="2026-11-01-execution-split-progress-and-typed-strategy-state"></a>
-### 2026-11-01 [execution] Split run progress from typed strategy state
-
-Cut 7 of v0.2.3 deliberately keeps the existing `strategy_state` table: one
-small cursor row records every completed pulse, while only a changed state
-produces a typed checkpoint payload. This preserves current resume semantics
-and avoids redesigning storage before a measured state workload requires it.
-
-The preferred goal architecture separates these concerns: a durable run-
-progress carrier records the last committed pulse, and a dedicated typed
-strategy-state checkpoint store records state only when it changes. That split
-would make resume, inspection and eventual paper/live execution easier to read
-and extend, while avoiding one cursor row per intraday pulse. It must not become
-a row-per-asset normalized table without evidence; wide state could make that
-representation slower and larger than the current payload.
-
-Revisit through the strategy-authoring synthesis's triggered storage RFC when
-a measured dense or intraday state workload, durable field inspection, or a
-paper/live workflow justifies the schema and recovery work. Keep the Cut 7
-codec and persistence seams private so the carrier can change later. This
-entry makes the split the preferred future direction but authorizes no schema,
-API or v0.2.3 implementation.
 
 <a id="2026-10-31-infrastructure-coverage-collection-fails-on-windows"></a>
 ### 2026-10-31 [infrastructure] Coverage collection fails on the Windows host
@@ -3891,6 +3868,11 @@ This entry records direction, not committed work.
 These exact headings preserve links into bodies moved to
 `horizon_archive.md`. Redirects are navigation, not active parking or
 authority.
+
+<a id="2026-11-01-execution-split-progress-and-typed-strategy-state"></a>
+### 2026-11-01 [execution] Split run progress from typed strategy state
+
+Closed: the accepted [per-pulse durable records synthesis](rfc/rfc_per_pulse_durable_records_v0_2_3_synthesis.md) (2026-11-03) removes pulse-level resume and the `strategy_state` cursor; sealed research runs restart from pulse 1, so no durable progress carrier or checkpoint split is built. The strategy-authoring state-storage obligation stays conditional. [Historical body](horizon_archive.md#v023-h084).
 
 ### 2026-10-12 [research] Prove or retire the thinly used product surfaces with real data
 

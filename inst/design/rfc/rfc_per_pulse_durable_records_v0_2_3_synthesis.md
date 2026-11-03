@@ -2,9 +2,11 @@
 
 - Mode: Decision synthesis, RFC cycle stage 7.
 - Author: Codex; date: 2026-11-03.
-- Status: proposed, provisional pending maintainer acceptance of the drafted
-  brief and this synthesis together (`../rfc_cycle.md#briefs`), then stage 8
-  final review by a different session. No implementation is claimed.
+- Status: accepted by the maintainer on 2026-11-03, after the drafted brief
+  and this synthesis were read together (`../rfc_cycle.md#briefs`) and the
+  independent [Type 1 final review](rfc_per_pulse_durable_records_v0_2_3_final_review.md)
+  returned PASS. Sections 2-7 bind the pending v0.2.3 scope routed to macro
+  plan WS15. No implementation is claimed.
 - Baseline: `release/v0.2.3`, `04fac1bfff9055c440d09c0d98b6e6da652303b8`.
   Code citations resolve at this commit.
 - Inputs, in order: [historical v1](rfc_per_pulse_durable_records_v0_2_3_seed.md),
