@@ -91,11 +91,11 @@ remove the entry guard to gain speed.
 
 A normal pulse has this shape:
 
-1.  Build the current pulse view from already accepted bars, feature
-    values, positions, cash, equity, seeds, and strategy state.
-2.  Attach strategy helpers such as scalar bar accessors,
-    `ctx$feature()`, `ctx$idx()`, `ctx$vec`, `ctx$flat()`, and
-    `ctx$hold()`.
+1.  Bind the current pulse's accepted primitive columns, positions,
+    cash, equity, seeds, and strategy state to the flat strategy
+    context.
+2.  Attach the small target and scheduling helpers, including
+    `ctx$flat()`, `ctx$hold()`, and the schedule query.
 3.  Call `strategy_fn(ctx, params)`.
 4.  Validate the returned target shape.
 5.  Compare desired targets with current positions.
@@ -262,27 +262,30 @@ validator keeps these shapes strict across `R/execution-spec.R:120`,
 `R/execution-spec.R:241`.
 
 At each pulse, `R/fold-engine.R:510` constructs the strategy context as
-a plain list with class `ledgr_pulse_context` at `R/fold-engine.R:528`.
-The runtime shape is:
+a list with class `ledgr_pulse_context` in the decide stage. The
+author-facing shape is flat; current bar and feature values are named
+vectors aligned to `ctx$universe` and materialize lazily from one private
+primitive lookup:
 
 | Slot | Type / shape | Source anchor |
 |----|----|----|
-| `run_id` | scalar character | `R/fold-engine.R:511` |
-| `ts_utc` | scalar ISO UTC character | `R/fold-engine.R:512` |
-| `universe` | character vector of instrument ids | `R/fold-engine.R:513` |
-| `bars` | current-pulse bars view, never future bars | `R/fold-engine.R:514` |
-| `feature_table` | current-pulse feature table | `R/fold-engine.R:515` |
-| `positions` | named numeric snapshot before strategy call | `R/fold-engine.R:516` |
-| `cash` / `equity` | numeric scalar fold state | `R/fold-engine.R:517`, `R/fold-engine.R:518` |
-| `seed` | execution seed or `NULL` | `R/fold-engine.R:519` |
-| `pulse_seed` | deterministic per-pulse seed or `NULL` | `R/fold-engine.R:520` |
-| `state_prev` | prior strategy state object, JSON-derived list, or `NULL` | `R/fold-engine.R:521` |
+| `run_id` | scalar character | fold service identity |
+| `ts_utc` | scalar ISO UTC character | current pulse |
+| `universe` | character vector of instrument ids | current decision axis |
+| `open`, `high`, `low`, `close`, `volume` | named current-pulse vectors | private pulse lookup |
+| each declared feature name | named current-pulse numeric vector | private pulse lookup |
+| `position`, `held`, `member`, `buyable` | named current state vectors | private pulse lookup |
+| `cash` / `equity` | numeric scalar fold state | decide-stage snapshot |
+| `seed` | execution seed or `NULL` | fold services |
+| `pulse_seed` | deterministic per-pulse seed or `NULL` | fold services |
+| `state` | prior strategy-state view | fold state |
 | `.safety_state` | private scalar risk-state label | fold context boundary |
 
-`ctx` helper attachment is deliberately a dispatch choice, not a
-semantic choice. Fast helpers are attached at `R/fold-engine.R:530`;
-regular helpers are attached at `R/fold-engine.R:543`. Both operate over
-the same pulse data.
+Current-pulse inspection is explicit: `ledgr_pulse_features(ctx)` returns
+a long table and `ledgr_pulse_wide(ctx)` returns a wide table. These
+helpers materialize ordinary R objects for inspection and promise neither
+hot-path cost nor persistence. Causal multi-pulse data comes from
+`ledgr_history_frame()`, not from the current-pulse context.
 
 Strategy state is carried separately from portfolio state. On committed
 resume, the previous strategy state is read before execution at
@@ -442,14 +445,14 @@ ctx <- list(
   run_id = "run_001",
   ts_utc = "2024-01-03T00:00:00Z",
   universe = c("AAA", "BBB"),
-  bars = data.frame(instrument_id = c("AAA", "BBB"), close = c(101, 52)),
-  feature_table = data.frame(instrument_id = c("AAA", "BBB"), sma_3 = c(100, 51)),
-  positions = c(AAA = 1, BBB = 0),
+  close = c(AAA = 101, BBB = 52),
+  sma_3 = c(AAA = 100, BBB = 51),
+  position = c(AAA = 1, BBB = 0),
   cash = 99890,
   equity = 99991,
   seed = 2026L,
   pulse_seed = 123456789L,
-  state_prev = list(last_signal = "AAA"),
+  state = list(last_signal = "AAA"),
   .safety_state = "GREEN"
 )
 class(ctx) <- "ledgr_pulse_context"

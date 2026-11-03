@@ -269,6 +269,40 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
     testthat::expect_false(grepl(forbidden, read_source, fixed = TRUE), info = forbidden)
   }
 
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  census_roots <- c(
+    "R", "vignettes", "man", "inst/design/manual", "dev/bench/shared",
+    "tests/testthat"
+  )
+  census_files <- unlist(lapply(census_roots, function(path) {
+    list.files(
+      file.path(root, path), pattern = "[.](R|qmd|md|Rd)$",
+      recursive = TRUE, full.names = TRUE
+    )
+  }), use.names = FALSE)
+  retired_pattern <- paste0(
+    "ctx\\$(bars|bar|feature_table|features_wide)([^[:alnum:]_]|$)",
+    "|ctx\\[\\[[\"'](bars|bar|feature_table|features_wide)[\"']\\]\\]",
+    "|\\.feature_table_current",
+    "|ledgr_(history_bar_packet_frame|projection_feature_table(_schema)?|",
+    "projection_features_wide(_columns)?|features_wide|pulse_context_bar|",
+    "pulse_feature_table)([^[:alnum:]_]|$)"
+  )
+  allowed_tests <- c(
+    "test-context-frame-retirement.R", "test-history-substrate.R",
+    "test-history-teaching.R", "test-indicator-tools.R",
+    "test-pulse-context-accessors.R", "test-strategy-context-projection.R"
+  )
+  unexpected <- character()
+  for (path in census_files) {
+    lines <- readLines(path, warn = FALSE)
+    at <- grep(retired_pattern, lines, perl = TRUE)
+    if (length(at) == 0L || basename(path) %in% allowed_tests) next
+    rel <- substring(normalizePath(path, winslash = "/"), nchar(root) + 2L)
+    unexpected <- c(unexpected, sprintf("%s:%d:%s", rel, at, trimws(lines[at])))
+  }
+  testthat::expect_identical(unexpected, character())
+
   fixture_ctx <- ledgr:::ledgr_pulse_context(
     run_id = "ws20-fixture",
     ts_utc = as.POSIXct("2020-01-02", tz = "UTC"),

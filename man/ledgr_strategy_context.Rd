@@ -38,10 +38,13 @@ retain the opening anchor. A non-fill close clears entry facts without
 inventing an exit, while a non-fill opening has unknown entry facts. The age
 columns use the shared bar axis. Unknown anchors remain missing; no known prior
 exit is represented by infinite \code{bars_since_exit}.
-
 \code{ctx$flat()} returns a full named zero target and \code{ctx$hold()} returns
-the pulse-start position target. The existing frame helpers \code{bar()},
-\code{features_wide}, \code{feature_table}, and \code{bars} remain available.
+the pulse-start position target. The retired \code{bar()}, \code{bars},
+\code{feature_table}, and \code{features_wide} members refuse. Read flat named
+columns for decisions, use \code{ledgr_pulse_features()} or
+\code{ledgr_pulse_wide()} for explicit current-pulse inspection, and use
+\code{ledgr_history_frame()} or \code{ledgr_history_matrix()} for causal
+windows.
 Use \code{ctx$buyable & is.finite(ctx$close) & ctx$close > 0} for an explicit
 current-close sizing predicate; it does not promise execution at the next open.
 
@@ -70,23 +73,19 @@ scope | member | applies | shape | axis | units | missingness | counterpart
 top | run_id | all | character_scalar | none | identifier | never | none
 top | ts_utc | all | character_scalar | none | UTC_time | never | none
 top | universe | all | character_vector | Daxis | instrument_id | empty_allowed | plane_names
-top | bars | all | data_frame | current_Daxis_rows | market_data | rows_may_be_absent | bar
-top | feature_table | all | data_frame | current_Daxis_rows | feature_value | warmup_NA_or_schema_only | declared_feature
 top | cash | all | numeric_scalar | portfolio | currency | never | none
 top | equity | all | numeric_scalar | portfolio | currency | never | none
 top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | state | all | list | portfolio_and_Daxis | strategy_state | declared_defaults | none
 top | members | all | character_vector | Daxis_subset | instrument_id | empty_allowed | member
-top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars
 top | flat | all | function | Daxis | target_quantity | never | none
 top | hold | all | function | Daxis | target_quantity | never | position
-top | features_wide | all | data_frame | current_Daxis_rows | feature_value | warmup_NA | declared_feature
-plane | open | all | numeric_vector | Daxis | price | NA_allowed | bars
-plane | high | all | numeric_vector | Daxis | price | NA_allowed | bars
-plane | low | all | numeric_vector | Daxis | price | NA_allowed | bars
-plane | close | all | numeric_vector | Daxis | price | NA_allowed | bars
-plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | bars
+plane | open | all | numeric_vector | Daxis | price | NA_allowed | none
+plane | high | all | numeric_vector | Daxis | price | NA_allowed | none
+plane | low | all | numeric_vector | Daxis | price | NA_allowed | none
+plane | close | all | numeric_vector | Daxis | price | NA_allowed | none
+plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | none
 plane | position | all | numeric_vector | Daxis | quantity | never | hold
 plane | held | all | logical_vector | Daxis | flag | never | position
 plane | member | all | logical_vector | Daxis | flag | never | members
@@ -97,7 +96,7 @@ plane | entry_at | all | double_vector | Daxis | UTC_time | NA_when_unheld_or_un
 plane | exit_at | all | double_vector | Daxis | UTC_time | NA_when_no_known_exit | position
 plane | bars_since_entry | all | numeric_vector | Daxis | bars | NA_when_unheld_or_unknown | entry_at
 plane | bars_since_exit | all | numeric_vector | Daxis | bars | Inf_when_no_known_exit | exit_at
-plane | declared_feature | all | numeric_vector | Daxis | feature_value | warmup_NA | feature_table
+plane | declared_feature | all | numeric_vector | Daxis | feature_value | warmup_NA | ledgr_pulse_features
 }
 }
 \section{Feature Object Compatibility}{

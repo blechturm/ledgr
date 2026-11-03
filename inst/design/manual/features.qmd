@@ -117,18 +117,21 @@ is active.
 
 ## Runtime Lookup
 
-During fold execution, each pulse context receives feature helpers:
+During fold execution, each declared feature is a flat named numeric context
+column, resolved active-alias first and then by concrete engine ID. Strategy
+decisions read those columns directly, for example `ctx$ret_20`. Explicit
+current-pulse inspection uses `ledgr_pulse_features(ctx)` or
+`ledgr_pulse_wide(ctx)`; causal windows use `ledgr_history_frame()` or
+`ledgr_history_matrix()`. There is no context frame or replacement frame API.
 
-- `ctx$feature()` for scalar exact-ID lookup;
-- `ctx$.feature_vector()` for internal vector lookup;
-- `ctx$features()` for alias-keyed feature-map lookup;
-- `ctx$features_wide()` for inspection-style wide feature views.
+Ordinary R builds a cross-sectional matrix when an estimator needs several
+current-pulse features:
 
-The scalar accessor validates instrument and feature IDs, returns the current
-pulse value when present, and returns the configured default for absent values.
-The alias-vector accessor validates the alias map, checks that each requested
-feature resolves to a scalar numeric value, and returns a named vector keyed by
-alias.
+```r
+ids <- c("ret_20", "sma_50")
+x <- do.call(cbind, lapply(ids, function(id) ctx[[id]]))
+colnames(x) <- ids
+```
 
 Missing feature IDs fail loudly. Warmup values are legitimate `NA` values and
 are left for strategy logic to handle.
@@ -150,7 +153,7 @@ anchors; it does not authorize new behavior.
 | materialized feature result | experiment-time list | `features`, `alias_map`, `alias_map_json`, `alias_map_hash`, `alias_map_version` |
 | `ledgr_precomputed_features` | sweep feature artifact | snapshot hash, universe, ranges, grid labels, feature union, candidate features, projection, warmup |
 | runtime projection | matrix-backed feature payload | instrument index, feature IDs, feature value matrices |
-| pulse context | per-pulse list | `feature_table`, `features_wide`, `active_alias_map`, time-bounded feature helper closures, and a private current-pulse inspection closure |
+| pulse context | per-pulse flat view | declared feature columns plus a private primitive lookup used by the explicit inspection helpers |
 
 Alias storage is canonicalized by sorting aliases, serializing a payload of
 `alias_map_version` plus `mappings`, and hashing the canonical JSON with

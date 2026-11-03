@@ -1935,10 +1935,11 @@ manipulation, or as a helper pipeline, means the same thing on both.
   its own order. An explicit ID is never dropped for current
   inadmissibility; its selection row records `admissible` and an
   `admissibility_reason` (`target_restricted` for a current-axis restriction,
-  `not_member` or `not_on_decision_axis`). The flat context currently exposes
-  only the combined `buyable` plane, so current-axis restriction subtypes are
-  intentionally collapsed; WS6's inspection handoff owns restoring a more
-  specific prepared reason without rebuilding facts. Membership at a past session does not by itself
+  `not_member` or `not_on_decision_axis`). The flat context exposes only the
+  combined `buyable` plane, so current-axis restriction subtypes remain
+  intentionally collapsed. Richer current-axis restriction reasons belong to
+  the focused `availability-follow-ups` decision, not context inspection.
+  Membership at a past session does not by itself
   remove an otherwise admissible observation from the returned history.
 
 Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
@@ -2031,10 +2032,10 @@ and `AAA` a held nonmember, each holding 5:
   internals and environment-reaching functions (Cut 16 LDG-3072):
   - a `$`, `@`, `[[` or `[` extraction, on any object, of a literal private
     context field name (`ledgr_pulse_context_private_fields()`: `.history`,
-    `.pulse_lookup`, `.feature_vector`, `.feature_table_current`, `.notes`,
+    `.pulse_lookup`, `.feature_vector`, `.notes`,
     `.positions`, `.safety_state`);
   - a field that holds prepared data beyond the pulse (`.history`,
-    `.pulse_lookup`, `.feature_vector`, `.feature_table_current`) named
+    `.pulse_lookup`, `.feature_vector`) named
     anywhere, as a string or as a symbol, including inside `quote()`,
     `bquote()` or `substitute()`;
   - a non-exported ledgr object, named as a symbol (also inside `quote()`)
@@ -2231,6 +2232,9 @@ and `AAA` a held nonmember, each holding 5:
   fail with `ledgr_unknown_context_field`.
 - The run-axis service, fill-axis map and feature resolver are prepared once
   per run or candidate; the changing decision axis is bound once per pulse.
+  P2 binds only aligned primitive columns, lookup metadata, the projection
+  ordinal, numeric cutoff and once-prepared readable feature names; it stores
+  no current bar, long-feature or wide-feature frame.
   Each requested column is built at most once in one view;
   `names()` and `str()` enumerate without forcing columns. A saved view is
   pulse-frozen and cannot observe later book, state or reusable fold buffers.
@@ -2247,8 +2251,10 @@ and `AAA` a held nonmember, each holding 5:
 - `ctx$vec`, `ctx$feature()`, `ctx$features()`, scalar OHLCV readers,
   `ctx$position(id)`, `ctx$idx()` and `ctx$tradable()` are not public context
   members. Use flat columns and ordinary named-vector indexing or `match()`.
-  `ctx$bars`, `ctx$feature_table`, `ctx$features_wide` and `ctx$bar(id)` retain
-  their existing frame contracts until the WS6 reader cut.
+  `ctx$bars`, `ctx$feature_table`, `ctx$features_wide` and `ctx$bar(id)` are
+  retired and reserved. They refuse through `ledgr_unknown_context_field`;
+  no alias, warning period or compatibility path exists. Current-pulse
+  inspection uses `ledgr_pulse_features()` or `ledgr_pulse_wide()`.
 - `ctx$hold()` copies pulse-start positions into full named portfolio intent;
   editing that target or a returned flat column never mutates the view.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
@@ -2419,11 +2425,7 @@ and `AAA` a held nonmember, each holding 5:
   once for one run-local context factory; the pulse-local decision axis is
   bound positionally. The active alias map is
   fixed for that run and prepared state is never shared across runs or sweep
-  candidates. A bundled accessor may retain only its last successfully
-  resolved explicit feature map, whether supplied as a character map or a
-  concrete feature-map object, and may reuse that lookup only when the next
-  map is `identical()`; a non-identical or failed feature-map input clears the
-  memo.
+  candidates. The inspection helpers keep no explicit-map memo or cache.
   Dot-prefixed context fields are not API and carry no guarantees; deliberate
   R introspection of closure environments, call stacks or internal bindings is
   outside this contract.
@@ -2435,11 +2437,6 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-prepared-views"></a>
 ### Prepared Views And Eligibility
 
-- `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` remain available.
-  The long feature table may be a schema-only zero-row frame while registered
-  feature accessors and the wide view carry current values. No equivalence is
-  promised between these representations and none is materialized merely to
-  make another look complete.
 - `ctx$buyable` is the public target-admission column. A permissible stale
   mark may remain priced while still failing current-close sizing, so
   `buyable` guarantees neither a current sizing close nor execution at the
@@ -2463,12 +2460,19 @@ and `AAA` a held nonmember, each holding 5:
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
   `ledgr_pulse_wide()` are read-only inspection views over declared features
   and pulse-known data. They must not precompute unavailable data, mutate
-  persistent ledgr tables, or change strategy execution semantics.
+  persistent ledgr tables, or change strategy execution semantics. They
+  materialize fresh ephemeral R values from the pulse context's prepared
+  primitives and make no callback-cost, durability or serialization promise.
 - `ledgr_pulse_wide()` uses stable names
   `{instrument_id}__ohlcv_{field}` and
   `{instrument_id}__feature_{key}`. A mapped view uses its stable alias as
   `key`; an unmapped view uses the engine feature ID. The long
   `ledgr_pulse_features()` view retains both `alias` and `feature_id`.
+  Long rows follow decision-axis instrument order. Feature rows follow map
+  declaration order when mapped and radix concrete-ID order otherwise; wide
+  instrument blocks use radix instrument order. A known mapped feature over an
+  empty decision axis returns typed empty output, while unknown IDs and map
+  collisions retain their classed refusals.
 - Strategy callbacks read features directly from the flat context, whose
   singular alias-first resolver preserves decision-axis order.
   `ledgr_signal_return()` remains the exact-ID convenience for one concrete
@@ -2478,8 +2482,8 @@ and `AAA` a held nonmember, each holding 5:
   `feature_params` and resolve parameterized maps through the same validator
   and resolver as execution. Without concrete parameters they retain a classed
   refusal; no general map materializer is exported.
-- Feature maps do not add a new `ctx$features_wide()` contract; the
-  public wide pulse inspection API is `ledgr_pulse_wide()`.
+- There is no context frame or `ctx$features_wide()` contract; the public wide
+  current-pulse inspection API is `ledgr_pulse_wide()`.
 - `ledgr_pulse_snapshot()` is an external development and inspection helper;
   no strategy callback calls it, receives an experiment or supplies a history
   policy. Called with a `ledgr_experiment`, its concrete
@@ -3267,6 +3271,11 @@ Accepted change pending:
   contract compares the authored table in both directions against real
   bar-native and declared-session callbacks; it is not generated from the
   observed fixture.
+- Strategy teaching distinguishes flat named columns for decision logic,
+  `ledgr_pulse_features()` and `ledgr_pulse_wide()` for explicit current-pulse
+  inspection, and `ledgr_history_frame()` or `ledgr_history_matrix()` for
+  causal windows. It teaches an ordinary named-column matrix idiom rather than
+  a replacement context-frame API.
 - Strategy-authoring documentation teaches both allocation pipelines and
   hold-and-edit intent. Representative executed examples cover equal-member
   allocation, a predicate with a held nonmember, momentum with an explicit

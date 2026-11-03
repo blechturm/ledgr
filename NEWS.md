@@ -31,6 +31,18 @@
   `ledgr_unknown_context_field`. Position facts are maintained and rebuilt by
   the canonical accounting transition and survive resume and contiguous
   carry without a second replay path.
+- The former current-pulse frame fields `ctx$bars`, `ctx$bar`,
+  `ctx$feature_table` and `ctx$features_wide` are now reserved and refuse
+  with `ledgr_unknown_context_field`. Use flat named context columns in a
+  strategy, `ledgr_pulse_features()` or `ledgr_pulse_wide()` for explicit
+  current-pulse inspection, and `ledgr_history_frame()` for causal
+  multi-pulse history. Inspection helpers materialize ordinary R objects on
+  demand and make no hot-path, persistence or serialization promise. Runtime
+  and experiment inspection now use declared aliases, unmapped long rows use
+  decision-axis instrument order, and mapped empty axes return typed empty
+  results. Snapshot pulse contexts no longer carry `feature_params`,
+  `active_alias_map`, `alias_map_json`, `alias_map_hash` or
+  `alias_map_version` inspection metadata.
 - Every experiment now prepares one execution substrate and enters one fold
   path. Fixed baskets derive a disclosed `bar_native` pulse clock from their
   sealed bar timestamps; experiments with declared sessions keep that clock.

@@ -303,9 +303,13 @@ ledgr_indicator_source <- function(indicator) {
 #' Inspect pulse feature rows
 #'
 #' `ledgr_pulse_features()` returns the long feature rows available at one
-#' pulse. With a feature map or active alias map, the result is filtered and
-#' ordered to the map and includes aliases. Without a map, all rows are returned
-#' with `alias = NA`.
+#' pulse as a fresh inspection value. Strategy decisions normally read flat
+#' named feature columns directly; causal windows use [ledgr_history_frame()] or
+#' [ledgr_history_matrix()]. With a feature map or active alias map, the result
+#' is filtered and ordered to the map and includes aliases. Without a map, all
+#' rows are returned with `alias = NA` in radix feature-ID order. Instrument
+#' rows follow the context decision axis. The helper makes no callback-cost,
+#' durability, or serialization promise.
 #'
 #' @param pulse A `ledgr_pulse_context`.
 #' @param feature_map Optional `ledgr_feature_map` or named alias map. Filters
@@ -408,11 +412,16 @@ ledgr_pulse_inspection_feature_map <- function(lookup, feature_map = NULL) {
 #'
 #' `ledgr_pulse_wide()` returns one row for a pulse. It includes pulse metadata,
 #' portfolio state, per-instrument OHLCV columns, and per-instrument feature
-#' columns. OHLCV columns use `{instrument_id}__ohlcv_{field}`. Feature columns
+#' columns as a fresh inspection value. Strategy decisions normally read flat
+#' named columns directly; causal windows use [ledgr_history_frame()] or
+#' [ledgr_history_matrix()]. OHLCV columns use
+#' `{instrument_id}__ohlcv_{field}`. Feature columns
 #' use `{instrument_id}__feature_{feature_id}`. The delimiter `__` is reserved
 #' for this naming contract and must not appear in instrument IDs or feature IDs
 #' used in the wide output. A feature map or active alias map filters and orders
-#' feature columns and uses aliases as feature keys.
+#' feature columns and uses aliases as feature keys. Instrument blocks use
+#' radix instrument order. The helper makes no callback-cost, durability, or
+#' serialization promise.
 #'
 #' @param pulse A `ledgr_pulse_context`.
 #' @param feature_map Optional `ledgr_feature_map` or named alias map. Filters

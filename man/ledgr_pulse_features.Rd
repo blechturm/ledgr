@@ -18,9 +18,13 @@ A tibble with columns \code{ts_utc}, \code{instrument_id}, \code{feature_id},
 }
 \description{
 \code{ledgr_pulse_features()} returns the long feature rows available at one
-pulse. With a feature map or active alias map, the result is filtered and
-ordered to the map and includes aliases. Without a map, all rows are returned
-with \code{alias = NA}.
+pulse as a fresh inspection value. Strategy decisions normally read flat
+named feature columns directly; causal windows use \code{\link[=ledgr_history_frame]{ledgr_history_frame()}} or
+\code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}}. With a feature map or active alias map, the result
+is filtered and ordered to the map and includes aliases. Without a map, all
+rows are returned with \code{alias = NA} in radix feature-ID order. Instrument
+rows follow the context decision axis. The helper makes no callback-cost,
+durability, or serialization promise.
 }
 \section{Articles}{
 

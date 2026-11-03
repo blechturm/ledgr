@@ -3190,7 +3190,7 @@ tickets:
   - id: "LDG-3196"
     title: "Migrate context-frame consumers and contracts"
     workstream: 21
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3195"]
@@ -3226,7 +3226,13 @@ tickets:
       - "source and rendered teaching and both helper help pages state alias/order rules, cleanly distinguish flat pulse data, explicit current-pulse inspection and causal history, say only that is.na(ctx$close) means no observed bar (not why), and add no bars/helper successor"
       - "the already-flat peer recipes still reproduce targets, fills and public results against the frozen oracle without re-recording; the migrated run_benchmarks.R strategies reproduce their pre-migration targets on its smoke preset"
       - "LTB-0091 no longer excludes the four retired rows from the authored table, and LCL-0091 describes the exact installed surface without transition wording"
-    evidence: []
+    evidence:
+      - "R/feature-inspection.R, man/ledgr_pulse_features.Rd, man/ledgr_pulse_wide.Rd and man/ledgr_strategy_context.Rd: public help distinguishes flat decision columns, explicit current-pulse inspection and causal history; mapped alias/order/empty rules and the helpers' no cost, persistence or serialization promise are explicit."
+      - "inst/design/contracts.md and inst/design/manual/{execution_fold_core,features,observability_determinism}.{qmd,md}: the six accepted contract groups and source/rendered manuals teach the primitive-only P2 carrier and ordinary named-column matrix construction; contract-strategy-decision-axis keeps target_restricted and routes richer reasons to availability-follow-ups."
+      - "dev/bench/shared/run_benchmarks.R: all three retired-frame consumers use flat named feature columns; the maintained harness also uses the current explicit cost model and executable named-grid grammar. The smoke preset completed every scenario with one repeat and no warmup, writing scratch-only output under C:/tmp/ledgr-ws21-shared-smoke."
+      - "tests/testthat/test-context-frame-retirement.R LTB-0547 and tests/claims.yml LCL-0536: the executable exact-name census scans R/, tests/, vignettes/, man/, inst/design/manual/ and dev/bench/shared with field boundaries and permits only the named targeted-refusal/forbidden-string tests. LTB-0091 again checks the complete authored context table with no four-row transition exclusion, and LCL-0091 states the exact installed surface."
+      - "Focused candidate checks: test-context-frame-retirement.R, test-strategy-context-surface.R, test-feature-inspection.R, test-documentation-contracts.R, test-history-substrate.R and test-peer-benchmark-boundary.R pass. The peer boundary test re-executes the public SMA recipe and its fill/equity/trade parity oracles without editing the frozen peer record."
+      - "NEWS.md names the four retired fields, B4's runtime/experiment aliasing, Daxis unmapped order and typed mapped-empty changes, and B5's five removed snapshot-only metadata names. No bars helper, compatibility alias, query, hash, seal or provenance route was added."
   - id: "LDG-3197"
     title: "Verify and close context-frame retirement"
     workstream: 21

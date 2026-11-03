@@ -143,12 +143,6 @@ strategy_context_surface_table <- function() {
     "scope", "member", "applies", "shape", "axis", "units",
     "missingness", "counterpart"
   )
-  # LDG-3195 retires these runtime members before LDG-3196 rewrites the
-  # installed surface table. Keep this semantic callback oracle executable
-  # across that serial ticket boundary without treating stale rows as runtime.
-  out <- out[!out$member %in% c(
-    "bars", "bar", "feature_table", "features_wide"
-  ), , drop = FALSE]
   out
 }
 

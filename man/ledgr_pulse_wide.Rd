@@ -19,11 +19,16 @@ block per instrument, and feature columns for the requested pulse.
 \description{
 \code{ledgr_pulse_wide()} returns one row for a pulse. It includes pulse metadata,
 portfolio state, per-instrument OHLCV columns, and per-instrument feature
-columns. OHLCV columns use \verb{\{instrument_id\}__ohlcv_\{field\}}. Feature columns
+columns as a fresh inspection value. Strategy decisions normally read flat
+named columns directly; causal windows use \code{\link[=ledgr_history_frame]{ledgr_history_frame()}} or
+\code{\link[=ledgr_history_matrix]{ledgr_history_matrix()}}. OHLCV columns use
+\verb{\{instrument_id\}__ohlcv_\{field\}}. Feature columns
 use \verb{\{instrument_id\}__feature_\{feature_id\}}. The delimiter \verb{__} is reserved
 for this naming contract and must not appear in instrument IDs or feature IDs
 used in the wide output. A feature map or active alias map filters and orders
-feature columns and uses aliases as feature keys.
+feature columns and uses aliases as feature keys. Instrument blocks use
+radix instrument order. The helper makes no callback-cost, durability, or
+serialization promise.
 }
 \section{Articles}{
 

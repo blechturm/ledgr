@@ -275,12 +275,11 @@ bench_sma_crossover_strategy <- function(trade, fast_id = "sma_fast_20", slow_id
   function(ctx, params) {
     targets <- ctx$flat()
     if (!TRADE) return(targets)
-    fw <- ctx$features_wide
-    fast <- fw[[FAST_ID]]
-    slow <- fw[[SLOW_ID]]
+    fast <- ctx[[FAST_ID]]
+    slow <- ctx[[SLOW_ID]]
     long <- !is.na(fast) & !is.na(slow) & fast > slow
     if (any(long)) {
-      targets[fw$instrument_id[long]] <- params$qty
+      targets[ctx$universe[long]] <- params$qty
     }
     targets
   }
@@ -297,10 +296,10 @@ bench_strategy <- function(name, n_feat, trade) {
       return(targets)
     }
     if (length(FEATURE_COLS) > 0L) {
-      fw <- ctx$features_wide
-      score <- .rowSums(as.matrix(fw[FEATURE_COLS]), nrow(fw), length(FEATURE_COLS))
+      feature_matrix <- do.call(cbind, lapply(FEATURE_COLS, function(id) ctx[[id]]))
+      score <- .rowSums(feature_matrix, length(ctx$universe), length(FEATURE_COLS))
       if (TRADE && length(score) > 0L) {
-        targets[[fw$instrument_id[[which.max(score)]]]] <- params$qty
+        targets[[ctx$universe[[which.max(score)]]]] <- params$qty
       }
     }
     targets
@@ -380,7 +379,8 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
     snapshot = snapshot,
     strategy = strategy,
     features = features,
-    opening = ledgr_opening(cash = 1e7)
+    opening = ledgr_opening(cash = 1e7),
+    cost_model = ledgr_cost_zero()
   )
   run_id <- sprintf("bench_%s_%03d_%s", name, iter, paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
   warnings <- character()
@@ -500,19 +500,23 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup, compiled_acc
     function(ctx, params) {
       targets <- ctx$flat()
       if (length(FEATURE_COLS) > 0L) {
-        fw <- ctx$features_wide
-        score <- .rowSums(as.matrix(fw[FEATURE_COLS]), nrow(fw), length(FEATURE_COLS))
-        targets[[fw$instrument_id[[which.max(score)]]]] <- params$qty
+        feature_matrix <- do.call(cbind, lapply(FEATURE_COLS, function(id) ctx[[id]]))
+        score <- .rowSums(feature_matrix, length(ctx$universe), length(FEATURE_COLS))
+        targets[[ctx$universe[[which.max(score)]]]] <- params$qty
       }
       targets
     }
   }
-  exp <- ledgr_experiment(snapshot, strategy, features = features, opening = ledgr_opening(cash = 1e7))
+  exp <- ledgr_experiment(
+    snapshot, strategy, features = features,
+    opening = ledgr_opening(cash = 1e7),
+    cost_model = ledgr_cost_zero()
+  )
   candidate_list <- stats::setNames(
-    lapply(seq_len(spec$candidates), function(i) list(qty = i)),
+    lapply(seq_len(spec$candidates), function(i) list(strategy = list(qty = i))),
     sprintf("candidate_%02d", seq_len(spec$candidates))
   )
-  grid <- do.call(ledgr_param_grid, candidate_list)
+  grid <- do.call(ledgr_grid_named, candidate_list)
   warnings <- character()
   elapsed <- system.time({
     captured <- bench_capture_warnings(ledgr_sweep(
