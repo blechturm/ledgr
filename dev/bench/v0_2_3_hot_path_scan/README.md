@@ -14,8 +14,13 @@ calls in each function it reaches. Calls through variables, arguments or
 computed `[[` are not followed, so the list is a floor, not a complete
 inventory.
 
-`scan.csv` holds the result on `release/v0.2.3` after Cut 7: 186
-function/call rows and 267 calls. It includes the per-fill JSON in
+`scan.csv` holds the result on `release/v0.2.3` after Cut 9 Workstream 20:
+173 function/call rows and 251 calls. Context-frame retirement removes the
+bar-frame, feature-table and wide-frame construction rows from P2. The few
+newly visible rows versus the old Cut 7 record belong to the accepted flat
+lookup preparation already present at the Workstream 20 base; Workstream 21
+changes no product hot path and adds no scan row. The record still includes
+the per-fill JSON in
 `ledgr_fill_event_payload`, the strategy-state encode and the
 scheduled-skip helper's `%in%`. Re-run it with
 `Rscript dev/bench/v0_2_3_hot_path_scan/scan.R --write` and compare the

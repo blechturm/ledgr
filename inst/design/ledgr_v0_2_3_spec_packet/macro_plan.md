@@ -419,6 +419,12 @@ test-only fixture adapter, and rebuild `ledgr_pulse_features()` and
 `ledgr_pulse_wide()` over the frozen primitive lookup. No bars helper, frame
 DSL, helper performance promise, hash, seal or durable context is added.
 
+- **Implementation close (2026-11-03):** Cut 9 Workstream 20 implements the
+  primitive lookup and on-demand inspection boundary; Workstream 21 migrates
+  maintained consumers, contracts and teaching, restores the exact surface
+  census and completes final verification. The decision bridge is removed;
+  the external-helper and historical-panel owners remain open.
+
 ### WS7. One result reader and print (C8)
 
 Merge the three reader families behind one chunked, typed accounting projection

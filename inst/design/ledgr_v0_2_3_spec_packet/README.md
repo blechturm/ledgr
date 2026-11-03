@@ -77,7 +77,8 @@ Cut 9 is the accepted WS6 context-frame-retirement implementation cut
 (workstreams 20-21, LDG-3194-LDG-3197). It implements the accepted synthesis
 after Cut 7's flat-context handoff. The findings in `cut_review_9.md` and
 `cut_review_9_rereview_1.md` are patched, final focused confirmation returned
-PASS, and implementation begins with LDG-3194.
+PASS. Workstream 20 is accepted; Workstream 21 implementation is complete and
+awaits its independent Type 1 close review.
 Cut 8, workstream 19 and LDG-3191-LDG-3193 belong to the withdrawn, unmerged
 hot-path ban-list branch; their numbers are not reused.
 

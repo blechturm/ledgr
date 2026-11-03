@@ -123,9 +123,10 @@ order and cut implementation respectively.
   accepted release-line decision in commit `4397f58f` supersedes Cut 15's
   earlier both-modes wording; the current owner is
   [macro-plan execution-core consolidation](ledgr_v0_2_2_spec_packet/macro_plan.md#execution-core-consolidation).
-- **Scheduled surface work:** retire context-frame views through the
-  [context-frame retirement RFC row](rfc/README.md#ctx-frame-retirement), and
-  decide persisted-data execution placement through its
+- **Scheduled surface work:** context-frame views are retired by v0.2.3 Cut 9;
+  current behavior is consolidated in the
+  [context-frame retirement RFC row](rfc/README.md#ctx-frame-retirement).
+  Persisted-data execution placement remains open through its
   [focused RFC row](rfc/README.md#persisted-data-execution-placement).
 - **Pulse-seed hot path (maintainer, 2026-10-21):** replace per-pulse canonical
   JSON plus SHA-256 derivation with a cheap, versioned and platform-independent
