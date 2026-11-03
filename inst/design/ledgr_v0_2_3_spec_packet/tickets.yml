@@ -1432,7 +1432,7 @@ workstreams:
   - id: 22
     name: "Direct pulse inspection materialization"
     cut: 10
-    status: "pending"
+    status: "review_pending"
     accepted: null
     depends_on_workstream: 21
     requires_review_acceptance: true
@@ -3358,7 +3358,7 @@ tickets:
   - id: "LDG-3198"
     title: "Materialize long pulse features directly"
     workstream: 22
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -3376,11 +3376,14 @@ tickets:
       - "the helper reads the prepared numeric cutoff and contains no ledgr_utc, as.POSIXct character parse, regex, per-row timestamp conversion, rbind or growing output"
       - "a counted lookup witness proves each requested feature vector is read once, and changing the direct interleave or prepared timestamp fails a registered block"
       - "on the registered 600x3 paired protocol, candidate median time is at most 0.40 of base and measured allocation does not exceed base"
-    evidence: []
+    evidence:
+      - "Product b87b230c: R/feature-inspection.R resolves the prepared map once, reads each requested vector once, constructs the final typed long columns through tibble::new_tibble() and gets UTC time from lookup$cutoff_num without a character parse. R/pulse-context.R prepares the cutoff once for private fixture contexts; production P2 retains the numeric packet handoff."
+      - "Registered LTB-0549/LCL-0538 uses a real two-instrument mapped pulse, literal instrument-feature interleave, exact values and timestamp, a counted feature-vector wrapper and source-shape refusals. The existing mapped/unmapped, retained-context, typed-empty and condition suites pass unchanged."
+      - "Exact-final shared timing record dev/bench/timing/records/cut10-pulse-inspection-1/cut10-final/attempt-1: eight pairs, base 04fac1bf, product candidate 9a3b3f2a; long medians 0.9436134 and 0.07620883 seconds per 1,000 calls, ratio 0.08076277 against 0.40, CHECK PASS."
   - id: "LDG-3199"
     title: "Materialize wide pulse inspection directly and close Cut 10"
     workstream: 22
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3198"]
@@ -3399,4 +3402,8 @@ tickets:
       - "source and mutation witnesses reject any call to ledgr_pulse_features(), pivot, long-table construction, per-cell name growth, timestamp reparsing, rbind or database/provenance work"
       - "on the registered 600x3 paired protocol, candidate median time is at most 0.25 of base and measured allocation does not exceed base"
       - "focused feature-inspection and context-retirement suites, YAML, dependency, claims and diff checks pass; the review finds no new optimization antipattern"
-    evidence: []
+    evidence:
+      - "Product b87b230c: ledgr_pulse_wide() resolves the prepared map and reads aligned lookup$bars and feature vectors directly; its body contains no ledgr_pulse_features(), pivot, long table, timestamp parse, rbind, query, hash, seal or provenance path. LTB-0549 runs it with ledgr_pulse_features mocked to stop and pins radix names and values."
+      - "Exact-final shared timing record dev/bench/timing/records/cut10-pulse-inspection-1/cut10-final/attempt-1: wide medians 2.3469269 and 0.14764953 seconds per 200 calls, ratio 0.06291186 against 0.25, every work string equal, CHECK PASS."
+      - "dev/spikes/pulse_inspection_materialization: public-API Rprofmem record reports long 168482.4 -> 167618.4 bytes and wide 1341018.4 -> 726690.4 bytes per call with equal dimensions and numeric summaries; check.R and gut.R pass."
+      - "pulse_inspection_materialization_closeout.md: eight focused files pass and the seven-shape walk finds only bounded lapply over the requested feature set and fixed OHLCV fields, with no growing collection or repeated preparation. YAML and git diff checks are clean before independent review."
