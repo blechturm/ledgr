@@ -340,6 +340,66 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   probe executed is returned. The order is smallest runnable fork, run it,
   let failures generate at most ten cases, then freeze expected answers.
 
+## Reference Costs
+
+What common operations cost per call, measured 2026-11-03
+(`../../../dev/bench/v0_2_3_r_cost_reference/`, which holds the full tables
+of 138 operations and 53 base/collapse pairs). The scale to keep in mind:
+at 1,260 pulses, 1 us per pulse costs 1.3 ms per run and 1 ms per pulse
+costs 1.3 s. A full 500 x 1,260 fill-heavy run is about 7 ms per pulse. The
+numbers are isolated warm-cache medians on the maintainer host; read them
+as lower bounds and orders of magnitude.
+
+| operation (500 instruments unless stated) | us per call |
+| --- | ---: |
+| epoch compare `e1 <= e2` | 0.08 |
+| POSIXct compare `t1 <= t2` | 6.9 |
+| `as.numeric(<POSIXct>)` | 0.41 |
+| `format(<POSIXct>)`, one value | 13.6 |
+| `ledgr_utc()` on one ISO string | 228 |
+| `env[[id]]` in a hashed environment | 0.07 |
+| `match(id, ids)`, one id | 1.5 |
+| `match(ids, ids)`, 500 ids | 6.1 |
+| `collapse::fmatch(ids, ids)`, 500 ids | 2.0 |
+| `setdiff(ids, other)` | 24.8 |
+| empty closure call / create a closure | 0.05 / 0.02 |
+| S3 dispatch via `UseMethod` | 1.3 |
+| `match.arg()` / `tryCatch()` | 3.0 / 3.0 |
+| `vapply()` or `lapply()` over 500 with a closure | about 150 |
+| `for` loop with 500 scalar writes | 32 |
+| `sort(ids)`, locale default | 782 |
+| `order(ids, method = "radix")` | 20 |
+| `data.frame()` 500 x 9 / `tibble()` 500 x 9 | 212 / 768 |
+| `structure(<list>, class = "data.frame")` / `collapse::qDF()` | 2.1 / 1.7 |
+| `df[rows, ]`, 54 of 500 rows | 33 |
+| `ledgr_canonical_json_encode()`, small fill record | 21 |
+| yyjsonr encode, small fill record | 2.0 |
+| DuckDB `dbAppendTable()`, 54 or 500 rows | about 6,000 |
+| DuckDB one-row parameterised insert | 884 |
+
+**Base or collapse.** Every collapse call carries about 2 to 2.5 us of fixed
+overhead (generic dispatch and argument handling), so the choice depends on
+the operation:
+
+- Use collapse for matching, sets, grouping, ordering and frames at any
+  size: `fmatch()` (3 to 4x faster than `match()`), `%iin%` and `%!in%`
+  (2 to 3x), `a[a %!iin% b]` for `setdiff()` of unique ids (4 to 6x),
+  `fnunique()` (6 to 9x), `fsum(x, g)`, `fbetween()` and `fwithin()` (1.6 to
+  12x over `tapply()`, `rowsum()` and `ave()`), `qF()` (13x over
+  `factor()`), `qDF()`, `ss()` and `rowbind()` (4 to 100x), and column-wise
+  `fmax()` and `fcumsum()` on matrices (7 to 15x over `apply()`).
+- Keep base for elementwise arithmetic and simple reductions on
+  instrument-axis vectors: `sum()`, `max()`, `cumsum()`, a lag or a
+  difference on 500 elements are 2 to 6x faster in base, and `x[lgl]` is
+  faster in base at both 500 and 5,000. The two cross over around 5,000
+  elements.
+- In-place writes (`setv()`, `setop()`, `%+=%`) are at most 2.7x faster per
+  call at these sizes; their reason is no allocation across pulses, not
+  speed per call.
+- Never order ids with the locale default. `order(ids)` and `sort(ids)` are
+  40 to 64x slower than `radixorder()` or `order(method = "radix")` and
+  depend on the session locale.
+
 ## Sealed Snapshot Guarantee Graph
 
 The optimization rule is not "skip validation." It is "do not pay twice for

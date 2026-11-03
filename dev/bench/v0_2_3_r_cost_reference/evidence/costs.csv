@@ -1,0 +1,139 @@
+"group","case","scale","median_us","p10_us","p90_us","reps","inner","ms_per_run_1260"
+"baseline","empty closure call `f()`","scalar",0.051,0.04801,0.05601,5000,100,0.06426
+"baseline","closure call with 3 args","scalar",0.14202,0.13901,0.170118,5000,100,0.1789452
+"baseline","`do.call(f, list(1, 2, 3))`","scalar",0.90801,0.879009,1.00001,5000,100,1.1440926
+"baseline","S3 dispatch via `UseMethod`","scalar",1.348,1.31901,1.450111,5000,100,1.69848
+"baseline","`inherits(x, ""cls"")`","scalar",0.09601,0.09301,0.10501,5000,100,0.1209726
+"baseline","`match.arg()` on 3 choices","scalar",3.043005,2.93101,3.446119,5000,100,3.8341863
+"baseline","`stopifnot(is.numeric(x))`","scalar",0.91901,0.89301,1.01301,5000,100,1.1579526
+"baseline","`if (!is.numeric(x)) stop()`","scalar",0.07501,0.07201,0.083011,5000,100,0.0945126
+"baseline","`tryCatch(1, error = )`","scalar",2.972,2.874,3.26311,5000,100,3.74472
+"baseline","`withCallingHandlers(1, warning = )`","scalar",0.8,0.701,0.9,4000,1,1.008
+"baseline","`suppressWarnings(1)`","scalar",0.89301,0.86501,0.977109,5000,100,1.1251926
+"baseline","`new.env()`","scalar",0.31101,0.29802,0.36,5000,100,0.3918726
+"baseline","`Sys.time()`","scalar",0.71601,0.70202,0.77701,5000,100,0.9021726
+"baseline","create a closure `function(x) x`","scalar",0.01602,0.01501,0.02201,5000,100,0.0201852
+"baseline","closure factory call with `force()`","scalar",0.27601,0.27002,0.302011,5000,100,0.3477726
+"baseline","`on.exit()` in a called function","scalar",0.08602,0.08401,0.09802,5000,100,0.1083852
+"baseline","`env[[k]] <- v` assign","scalar",0.05701,0.05401,0.06801,5000,100,0.0718326
+"baseline","`assign(k, v, envir = env)`","scalar",0.42,0.41101,0.47001,5000,100,0.5292
+"baseline","`x %||% y`","scalar",0.117,0.11401,0.13402,5000,100,0.14742
+"baseline","`isTRUE(x)`","scalar",0.18101,0.17501,0.19601,5000,100,0.2280726
+"string","`grepl(regex, s)` scalar","scalar",3.05851,2.92901,3.33301,5000,100,3.8537226
+"string","`grepl(s, fixed = TRUE)` scalar","scalar",0.78201,0.76001,0.873011,5000,100,0.9853326
+"string","`startsWith(s, p)` scalar","scalar",0.23701,0.232,0.25301,5000,100,0.2986326
+"string","`sub(regex, r, s)` scalar","scalar",2.432,2.371902,2.621201,5000,100,3.06432
+"string","`paste0(a, b)` scalar","scalar",0.82001,0.80902,0.87001,5000,100,1.0332126
+"string","`sprintf(""%s_%d"", a, i)` scalar","scalar",0.43601,0.42602,0.471,5000,100,0.5493726
+"string","`nchar(s)` scalar","scalar",0.211,0.20701,0.225001,5000,100,0.26586
+"string","`as.character(1.5)` scalar","scalar",0.43701,0.42701,0.47901,5000,100,0.5506326
+"string","`format(1.5, nsmall = 2)` scalar","scalar",9.202,8.901,10.101,4000,1,11.59452
+"string","`deparse(quote(f(x)))`","scalar",8.94851,8.584009,10.146818,5000,100,11.2751226
+"time","`as.numeric(<POSIXct>)`","scalar",0.40801,0.40201,0.43701,5000,100,0.5140926
+"time","`unclass(<POSIXct>)`","scalar",0.09901,0.09601,0.10901,5000,100,0.1247526
+"time","`.POSIXct(epoch, tz = ""UTC"")`","scalar",0.66501,0.65,0.73401,5000,100,0.8379126
+"time","`as.POSIXct(<POSIXct>, tz = ""UTC"")`","scalar",2.58801,2.547902,2.754001,5000,100,3.2608926
+"time","`as.POSIXct(epoch, tz = ""UTC"")`","scalar",2.42301,2.35901,2.59512,5000,100,3.0529926
+"time","`as.POSIXct(<ISO chr>, format = )`","scalar",11.414005,11.06501,12.98911,5000,100,14.3816463
+"time","`as.POSIXct(<chr>)` without format","scalar",20.145015,19.479019,24.89871,5000,100,25.3827189
+"time","`as.POSIXlt(<POSIXct>)`","scalar",2.31301,2.24702,2.51511,5000,100,2.9143926
+"time","`as.numeric(<POSIXlt>)`","scalar",5.11201,4.938911,5.67511,5000,100,6.4411326
+"time","`format(<POSIXct>, ISO)`","scalar",13.64751,13.17301,15.76381,5000,100,17.1958626
+"time","`as.Date(<POSIXct>)`","scalar",2.21701,2.164,2.439001,5000,100,2.7934326
+"time","`as.POSIXct(<Date>)`","scalar",2.36401,2.31601,2.571109,5000,100,2.9786526
+"time","`ledgr_utc(<POSIXct>)`","scalar",5.302,5.201,5.901,5000,1,6.68052
+"time","`ledgr_utc(<ISO chr>)`","scalar",227.9005,221.701,253.0109,1600,1,287.15463
+"time","`ledgr_iso_utc(<POSIXct>)`","scalar",18.27051,17.56101,21.83861,5000,100,23.0208426
+"time","`ledgr_normalize_ts_utc(<ISO chr>)`","scalar",55.561,52.7699,63.1304,5000,100,70.00686
+"time","epoch compare `e1 <= e2`","scalar",0.079,0.076,0.085,5000,100,0.09954
+"time","POSIXct compare `t1 <= t2`","scalar",6.872,6.615,7.7736,5000,100,8.65872
+"time","`as.numeric(<POSIXct>)` x500","500",0.675,0.649,0.982,5000,100,0.8505
+"time","`format(<POSIXct>)` x500 (vectorised)","500",2518.5,2451.04,2668.34,153,1,3173.31
+"time","`as.POSIXct(<ISO chr>, format = )` x500","500",1327.5,1266.75,1451,296,1,1672.65
+"time","`ledgr_utc(<ISO chr>)` x500 (vectorised)","500",59264.1,57484.91,61766.29,100,1,74672.766
+"time","`findInterval(epoch, epochs)` over 500","500",1.531,1.475,1.659,5000,100,1.92906
+"construction","`data.frame()` 500 x 9","500",211.7,202.3,239.85,1600,1,266.742
+"construction","`as.data.frame(<list>)` 500 x 9","500",198.5,190.2,230.55,2666,1,250.11
+"construction","`list2DF(<list>)` 500 x 9","500",4.999,4.81,5.7241,5000,100,6.29874
+"construction","`structure(<list>, class = ""data.frame"")` 500 x 9","500",2.085,1.996,2.3641,5000,100,2.6271
+"construction","`tibble::tibble()` 500 x 9","500",768.1,717.29,937.01,500,1,967.806
+"construction","`tibble::new_tibble()` 500 x 9","500",6.3,5.9,8.3,5000,1,7.938
+"construction","`collapse::qDF(<list>)` 500 x 9","500",1.683,1.625,1.828,5000,100,2.12058
+"construction","`rbind()` two 54-row frames","54",83,79.2,104.4,5000,1,104.58
+"construction","`df[rows, ]` 54 of 500 rows","54",32.794,31.3239,45.026,5000,100,41.32044
+"construction","`df[lgl, ]` logical filter of 500 rows","500",39,37.3,47.1,5000,1,49.14
+"construction","`df$col` read","scalar",0.364,0.356,0.397,5000,100,0.45864
+"construction","`df[[""col""]]` read","scalar",1.846,1.789,2.0821,5000,100,2.32596
+"construction","`df$col <- x` write (shallow copy)","500",2.1445,2.065,2.3451,5000,100,2.70207
+"construction","`list(...)` of 8 vectors","scalar",0.368,0.352,0.41,5000,100,0.46368
+"construction","`matrix(x, 500, 8)`","500",2.625,2.526,5.49100000000002,5000,100,3.3075
+"construction","`numeric(500)`","500",0.529,0.485,0.853,5000,100,0.66654
+"construction","`rep(NA_real_, 500)`","500",0.472,0.452,0.777,5000,100,0.59472
+"construction","`setNames(x, ids)` 500","500",0.584,0.57,0.6701,5000,100,0.73584
+"construction","`names(x) <- ids` 500","500",0.415,0.391,0.495,5000,100,0.5229
+"construction","`unname(x)` 500","500",0.485,0.475,0.5551,5000,100,0.6111
+"construction","`as.list(x)` 500","500",5.032,4.824,6.7315,5000,100,6.34032
+"construction","`unlist(<list of 500>)`","500",12.841,12.336,13.8781,5000,100,16.17966
+"construction","`list2env()` 500 names","500",16.855,16.2,19.895,5000,100,21.2373
+"construction","`c(x, y)` 500 + 500","500",0.904,0.862,1.044,5000,100,1.13904
+"construction","`x[length(x) + 1] <- v` grow by one","scalar",0.666,0.623,0.752,5000,100,0.83916
+"lookup","`match(ids, ids)` 500 in 500","500",6.078,5.871,6.7752,5000,100,7.65828
+"lookup","`ids %in% ids` 500 in 500","500",6.748,6.514,7.5082,5000,100,8.50248
+"lookup","`collapse::fmatch()` 500 in 500","500",2,2,2.3,5000,1,2.52
+"lookup","`match(id, ids)` 1 in 500","scalar",1.453,1.408,1.6711,5000,100,1.83078
+"lookup","`id %in% ids` 1 in 500","scalar",1.674,1.63,1.9511,5000,100,2.10924
+"lookup","`setdiff(ids, half)` 500","500",24.8,23.7,29.2,4000,1,31.248
+"lookup","`intersect(ids, half)` 500","500",26.083,24.993,31.4167,5000,100,32.86458
+"lookup","`unique(ids)` 500","500",5.426,5.253,5.9751,5000,100,6.83676
+"lookup","`duplicated(ids)` 500","500",4.357,4.19,4.9933,5000,100,5.48982
+"lookup","`identical()` 500 chr, differ at first","500",0.17,0.163,0.231,5000,100,0.2142
+"lookup","`identical()` 500 chr, equal copies","500",0.839,0.809,0.876,5000,100,1.05714
+"lookup","`identical()` 500 num, equal copies","500",1.686,1.5569,1.809,5000,100,2.12436
+"lookup","`all.equal(x, y)` 500 num","500",11.53,11.1069,13.1771,5000,100,14.5278
+"lookup","`nv[""id""]` by name, 500 names","scalar",0.658,0.642,0.704,5000,100,0.82908
+"lookup","`nv[[""id""]]` by name, 500 names","scalar",0.791,0.772,0.815,5000,100,0.99666
+"lookup","`nv[[i]]` by position","scalar",0.043,0.042,0.045,5000,100,0.05418
+"lookup","`named_list$id` 500 names","scalar",1.207,1.179,1.282,5000,100,1.52082
+"lookup","`exists(id, env)` hashed env","scalar",0.475,0.464,0.5231,5000,100,0.5985
+"lookup","`env[[id]]` hashed env","scalar",0.069,0.065,0.076,5000,100,0.08694
+"lookup","`get0(id, env)` hashed env","scalar",0.469,0.452,0.509,5000,100,0.59094
+"lookup","`ctx$field` on a list","scalar",0.079,0.077,0.082,5000,100,0.09954
+"lookup","`ctx$field` on an environment","scalar",0.052,0.051,0.056,5000,100,0.06552
+"lookup","`which(lgl)` 500","500",0.984,0.946,1.1831,5000,100,1.23984
+"vector","`x + y` 500","500",0.313,0.291,0.344,5000,100,0.39438
+"vector","`x[idx]` gather 500","500",0.66,0.639,0.713,5000,100,0.8316
+"vector","`x[idx] <- y` scatter 500 (copy)","500",1.142,1.119,1.196,5000,100,1.43892
+"vector","`collapse::setv(x, idx, y)` in place","500",0.989,0.969,1.1241,5000,100,1.24614
+"vector","`mat[, j]` column of 500 x 1260","500",0.742,0.719,0.8111,5000,100,0.93492
+"vector","`mat[i, j]` single cell","scalar",0.046,0.045,0.048,5000,100,0.05796
+"vector","`sum(x)` 500","500",0.41,0.4,0.444,5000,100,0.5166
+"vector","`is.finite(x)` 500","500",0.39,0.368,0.435,5000,100,0.4914
+"vector","`ifelse(lgl, x, y)` 500","500",6.436,6.2199,7.743,5000,100,8.10936
+"vector","`pmax(x, y)` 500","500",3.727,3.615,4.1881,5000,100,4.69602
+"vector","`order(x)` 500 num","500",12.444,12.12,13.9102,5000,100,15.67944
+"vector","`order(ids)` 500 chr, radix","500",19.9435,19.0048,21.824,5000,100,25.12881
+"vector","`sort(ids)` 500 chr, default","500",782.35,757.19,812.29,500,1,985.761
+"vector","`paste0(""x_"", ids)` 500","500",27.5675,26.57,29.2071,5000,100,34.73505
+"vector","`sprintf(""%.4f"", x)` 500","500",173.7,172.5,194.4,2666,1,218.862
+"vector","`as.character(x)` 500 num","500",0.482,0.473,0.541,5000,100,0.60732
+"vector","`vapply(x, f, numeric(1))` 500","500",151.7,148,162.6,2666,1,191.142
+"vector","`lapply(x, f)` 500","500",155,150.55,173.4,2666,1,195.3
+"vector","`for` loop 500 scalar writes","500",31.629,30.6048,33.7204,5000,100,39.85254
+"vector","`Map(f, x, y)` 500","500",284.1,277.4,311.6,1333,1,357.966
+"vector","`split(x, g)` 500 into 10","500",12.969,12.515,14.427,5000,100,16.34094
+"vector","`tabulate(g)` 500","500",2.837,2.739,3.13,5000,100,3.57462
+"vector","`table(g)` 500","500",40.625,39.282,46.6635,5000,100,51.1875
+"serialise","yyjsonr encode small fill record","scalar",2.02,1.963,2.2701,5000,100,2.5452
+"serialise","yyjsonr parse small fill record","scalar",1.48,1.442,1.608,5000,100,1.8648
+"serialise","yyjsonr encode state (2 x 500 lgl)","500",10.244,9.967,10.9132,5000,100,12.90744
+"serialise","yyjsonr parse state (2 x 500 lgl)","500",6.225,5.981,6.9871,5000,100,7.8435
+"serialise","jsonlite encode small fill record","scalar",164,157.18,185.32,1599,1,206.64
+"serialise","`ledgr_canonical_json_encode()` small fill record","scalar",21.269,20.509,25.6542,5000,100,26.79894
+"serialise","`digest(sha256)` of short string","scalar",5.222,5.061,5.674,5000,100,6.57972
+"serialise","`openssl::sha256()` of short string","scalar",16.909,16.267,19.035,5000,100,21.30534
+"serialise","`serialize(x, NULL)` 500 num","500",4,3.5,4.6,5000,1,5.04
+"duckdb","`dbGetQuery(""SELECT 1"")`","scalar",631.55,608.88,669.36,300,1,795.753
+"duckdb","`dbExecute()` insert 1 row, parameterised","scalar",884.5,865.1,935.37,300,1,1114.47
+"duckdb","`dbAppendTable()` 54 rows x 9","54",5914,5606.2,7089.55,100,1,7451.64
+"duckdb","`dbAppendTable()` 500 rows x 9","500",6106.95,5685.82,7230.45,100,1,7694.757
+"duckdb","`duckdb_register()` + unregister 500 x 9","500",828.1,802.67,891.36,300,1,1043.406
