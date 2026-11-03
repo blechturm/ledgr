@@ -425,6 +425,10 @@ DSL, helper performance promise, hash, seal or durable context is added.
   maintained consumers, contracts and teaching, restores the exact surface
   census and completes final verification. The decision bridge is removed;
   the external-helper and historical-panel owners remain open.
+- **Bounded follow-up (2026-11-03):** accepted Cut 10 keeps the two inspection
+  contracts unchanged and replaces their avoidable general materialization
+  work with direct typed output over the frozen lookup. It adds no callback
+  cost promise and does not reopen WS6 architecture.
 
 ### WS7. One result reader and print (C8)
 

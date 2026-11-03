@@ -1169,6 +1169,67 @@ cuts:
       registered profiles, source build and R CMD check. A design concern
       returns NEEDS_TYPE_2. Finding-bearing reviews get packet files; a third
       correction round on one workstream stops for maintainer disposition.
+  - id: 10
+    name: "Pulse inspection materialization"
+    cut: "2026-11-03"
+    status: "open"
+    accepted: >-
+      2026-11-03 by the maintainer after the bounded implementation spike.
+      The maintainer waived a separate cut review; one clean-context Claude
+      Type 1 code review remains required before closure.
+    opening: >-
+      Cut 9 correctly retired eager context frames, but retained inspection
+      helpers still package prepared pulse primitives inefficiently. A bounded
+      spike compared exact-output alternatives and showed that direct typed
+      construction is smaller and faster than the current long-then-wide path
+      and than generic pivoting. This cut changes only those two explicit
+      inspection boundaries and does not reopen Cut 9 semantics.
+    authority: >-
+      Cut 9 accepted helper behavior and exact-output tests; contracts.md
+      contract-context-inspection and contract-context-feature-resolution;
+      optimization_coding_style.qmd; the 2026-11-03 maintainer instruction to
+      implement the bounded direct-materialization result immediately.
+    measured_input: >-
+      On Windows 11, R 4.6.1 and collapse 2.1.8, the 600-instrument,
+      three-feature spike measured ledgr_pulse_features() at about 868
+      microseconds, direct construction with its existing character timestamp
+      parse at 331 microseconds, and direct construction from cutoff_num at
+      120 microseconds. At the same shape ledgr_pulse_wide() measured 11.32
+      milliseconds and 1.29 MB allocated, direct construction 0.72
+      milliseconds and 640 KB, and collapse::pivot() 0.99 milliseconds and
+      948 KB. All compared values were identical to the current output.
+    decisions: >-
+      Preserve the public helpers, signatures, values, column types, tibble
+      classes, aliases, concrete IDs, declared/map/radix ordering, typed empty
+      results and refusal classes. Reuse the lookup's prepared numeric cutoff;
+      do not parse the pulse timestamp. Construct long output directly from
+      final vectors. Construct wide output directly from aligned bar and
+      feature vectors; it must not call ledgr_pulse_features(), create a long
+      table or invoke a generic pivot. The accepted no-callback-cost-promise
+      remains unchanged; performance evidence verifies this implementation,
+      not a new public SLA.
+    identity_and_release_impact: >-
+      No snapshot, store, run, strategy, result or configuration identity
+      changes. No schema version, compatibility path, dependency or public
+      signature changes. Inspection outputs must remain identical; only their
+      transient construction and allocation behavior changes.
+    sequencing: >-
+      One workstream with two serial tickets: optimize the long helper first,
+      then make the wide helper independent of it and close integrated
+      evidence. LDG-3198 -> LDG-3199.
+    out_of_scope: >-
+      Context or history redesign; callback-grade helper guarantees; a new
+      bars helper; caching manifested frames; changing alias, order, empty or
+      error semantics; generic collapse adoption; fold, execution, accounting,
+      persistence or schema work.
+    workstreams: [22]
+    review_lifecycle: >-
+      No cut review. After implementation a fresh clean-context Claude CLI
+      Type 1 code review verifies exact behavior, the structural fast paths,
+      the seven optimization shapes, paired timing/allocation evidence and the
+      absence of identity or dependency drift. Finding-bearing review writes
+      close_review_22.md; Codex applies bounded corrections until PASS or a
+      design question is returned to the maintainer.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -1368,6 +1429,14 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 21, after LDG-3197", reason: "One migration/closure claim joins LDG-3196 and LDG-3197: every maintained consumer, contract, reference and manual teaches only flat pulse columns, explicit current-pulse inspection and causal history; the exact-name census is clean; the peer strategy preserves targets, fills and public results without re-recording its oracle; all profiles, fixture parity, build and package check pass; and RFC/decision routing closes only after implementation evidence exists."}
     close_review: "CHANGES_REQUIRED in close_review_21.md (independent clean-context Type 1): no runtime product or design defect; F1-F5 required exact missing-bar teaching, two inspection contract boundaries, a non-vacuous exact-name census, durable profile/probe provenance, and removal of two stale governance statements. Bounded corrections landed at fbc02ba8; focused surface/documentation/census tests, source build and supported-locale R CMD check passed. Final clean-context Claude confirmation returned PASS with no remaining patch."
+  - id: 22
+    name: "Direct pulse inspection materialization"
+    cut: 10
+    status: "pending"
+    accepted: null
+    depends_on_workstream: 21
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 22, after LDG-3199", reason: "One bounded optimization claim joins LDG-3198 and LDG-3199: both public pulse inspection helpers retain exact Cut 9 output and refusal behavior, reuse the prepared timestamp, allocate their final typed outputs directly, and wide inspection never constructs or pivots through long inspection; paired clocks meet the recorded materiality bounds without identity, dependency or callback-contract change."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -3286,3 +3355,48 @@ tickets:
       - "dev/bench/v0_2_3_hot_path_scan/scan.csv reruns on the candidate at 173 function/call rows and 251 calls, down from the Cut 7 record's 186 rows and 267 calls. Retired frame rows are absent and WS21 adds no product hot-path row. The codebase checker reports LEDGR_CODEBASE_CENSUS_OK (70 connections, 176 versions, 90 run configs, 1991 helpers, 2474 conditions, 88 findings), and the fold-phase checker reports LEDGR_FOLD_PHASE_CONTRACT_OK."
       - "A standard R CMD build passes with vignette creation. R CMD check --no-manual --no-build-vignettes on the resulting ledgr_0.2.2.tar.gz finishes Status: OK with package tests, examples and every executable vignette passing. Both package YAML authorities parse and git diff --check is clean; generated tarball, check directory and binding line-ending churn are removed."
       - "The accepted six contract groups, help, source/rendered manuals, NEWS and claims are reconciled. The context-frame decision bridge is removed; the RFC row is Implemented; the strategy-authoring flat-context handoff and fold-phase P2 limit are consumed; the roadmap and macro plan record closure while external-helper, historical-panel, persisted-placement and compiled-envelope obligations remain open."
+  - id: "LDG-3198"
+    title: "Materialize long pulse features directly"
+    workstream: 22
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      Preserve ledgr_pulse_features() exactly while replacing general tibble
+      construction and character timestamp parsing with direct typed columns
+      over the prepared feature vectors and lookup cutoff_num. Resolve the map
+      once, retrieve each requested vector once, allocate each final output
+      column once and add no cache, hash, query, row loop or new public
+      surface. Register exact-output and structural mutation witnesses for
+      active maps, explicit maps, unmapped IDs, retained contexts and typed
+      empty axes.
+    acceptance:
+      - "all existing long-helper value, alias, concrete-ID, Daxis/map order, retained-context, empty-axis and refusal tests pass unchanged"
+      - "the helper reads the prepared numeric cutoff and contains no ledgr_utc, as.POSIXct character parse, regex, per-row timestamp conversion, rbind or growing output"
+      - "a counted lookup witness proves each requested feature vector is read once, and changing the direct interleave or prepared timestamp fails a registered block"
+      - "on the registered 600x3 paired protocol, candidate median time is at most 0.40 of base and measured allocation does not exceed base"
+    evidence: []
+  - id: "LDG-3199"
+    title: "Materialize wide pulse inspection directly and close Cut 10"
+    workstream: 22
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3198"]
+    scope: >-
+      Preserve ledgr_pulse_wide() exactly while constructing its one-row
+      output directly from the prepared bar and feature vectors. Do not call
+      ledgr_pulse_features(), build a long intermediate, invoke pivot or
+      regroup values. Preserve radix instrument order, map/alias feature order,
+      delimiter refusal, typed empty behavior and the three metadata columns.
+      Freeze the spike runner, diff checker and gut mutation; run focused
+      suites, paired timing/allocation evidence, source checks and package
+      metadata checks; reconcile Cut 10 and Workstream 22 status only after the
+      independent code review is green.
+    acceptance:
+      - "all existing wide-helper values, names, order, alias, empty-axis and refusal tests pass unchanged, and direct output is identical to the pre-cut helper over the registered matrix"
+      - "source and mutation witnesses reject any call to ledgr_pulse_features(), pivot, long-table construction, per-cell name growth, timestamp reparsing, rbind or database/provenance work"
+      - "on the registered 600x3 paired protocol, candidate median time is at most 0.25 of base and measured allocation does not exceed base"
+      - "focused feature-inspection and context-retirement suites, YAML, dependency, claims and diff checks pass; the review finds no new optimization antipattern"
+    evidence: []
