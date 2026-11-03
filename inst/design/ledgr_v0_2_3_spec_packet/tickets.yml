@@ -1024,7 +1024,17 @@ cuts:
   - id: 9
     name: "Context frame retirement (macro WS6)"
     cut: "2026-11-03"
-    status: "accepted"
+    status: "closed"
+    closed: >-
+      2026-11-03 after both workstreams completed and independent close review.
+      Eight independent verdicts were recorded over four completed tickets
+      (2.000, measured rather than gated): three cut verdicts, three WS20
+      verdicts and two WS21 verdicts. Five finding-bearing verdicts changed
+      ticket ownership, runtime/detectors or documentation/evidence; three
+      focused PASS verdicts confirmed the corrections. Maintainer decisions
+      preserved target_restricted with richer reasons routed to
+      availability-follow-ups and accepted the reviewed cut. No ticket was
+      added, dropped or padded for review accounting.
     accepted: >-
       2026-11-03 by the maintainer after independent clean-context Claude
       review, focused PASS_AFTER_PATCHES and final focused PASS. The accepted
@@ -1349,12 +1359,15 @@ workstreams:
   - id: 21
     name: "Context-frame migration and WS6 closure (macro WS6)"
     cut: 9
-    status: "review_pending"
-    accepted: null
+    status: "complete"
+    accepted: >-
+      2026-11-03 by the maintainer's delegated cut-completion authority after
+      independent Type 1 close review, bounded documentation/test/evidence
+      corrections at fbc02ba8 and final clean-context Claude PASS.
     depends_on_workstream: 20
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 21, after LDG-3197", reason: "One migration/closure claim joins LDG-3196 and LDG-3197: every maintained consumer, contract, reference and manual teaches only flat pulse columns, explicit current-pulse inspection and causal history; the exact-name census is clean; the peer strategy preserves targets, fills and public results without re-recording its oracle; all profiles, fixture parity, build and package check pass; and RFC/decision routing closes only after implementation evidence exists."}
-    close_review: "CHANGES_REQUIRED in close_review_21.md (independent clean-context Type 1): no runtime product or design defect; F1-F5 require exact missing-bar teaching, two inspection contract boundaries, a non-vacuous exact-name census, durable profile/probe provenance, and removal of two stale governance statements. Bounded corrections are applied in the next candidate and await focused confirmation."
+    close_review: "CHANGES_REQUIRED in close_review_21.md (independent clean-context Type 1): no runtime product or design defect; F1-F5 required exact missing-bar teaching, two inspection contract boundaries, a non-vacuous exact-name census, durable profile/probe provenance, and removal of two stale governance statements. Bounded corrections landed at fbc02ba8; focused surface/documentation/census tests, source build and supported-locale R CMD check passed. Final clean-context Claude confirmation returned PASS with no remaining patch."
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
